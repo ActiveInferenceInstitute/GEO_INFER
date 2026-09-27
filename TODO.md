@@ -47,6 +47,8 @@ next steps.
 | ID | Area / status | Bounded next step | Acceptance evidence / dependencies |
 | --- | --- | --- | --- |
 | **TEST-04** | TEST / advisor review repeat | [DEFERRED-VERIFY] The configured advisor exited with an error during the September GNN campaign so no advisor review ran (gnn_space_time_2026_09.md): repeat the advisor review when the service is available. | 2026-09-10 probe: the configured advisor is Cato via Codex CLI 0.153.2; ChatGPT-account auth rejects the gpt-5.2 slug (HTTP 400) and no OPENAI_API_KEY is configured, so no review could run — probe appended to the continuation receipt. Unblocking is an account-level auth decision (codex login --with-api-key). 2026-09-11 re-check: environment still exposes no OPENAI_API_KEY and the CLI auth state is unchanged — remains blocked on the account-level decision. 2026-09-15 re-check: environment still exposes no OPENAI_API_KEY — remains blocked, unchanged. |
+| **ANT-DEP-01** | ANT / undeclared cross-member test dep | `tests/integration/test_swarm_integration.py` imports `geo_infer_math` (import hoisted 2026-09-26 in PR #41 when the masking availability guard was deleted); `geo-infer-math` is declared nowhere in `GEO-INFER-ANT/pyproject.toml` (deps :39-46, extras :49-61) and resolves only via workspace-wide sync. Add `geo-infer-math` to ANT's declared deps or its `integrations` extra using the fleet `>=0.3.0` floor convention, regen `uv.lock`, then `validate_packaging --strict`. | `grep geo.infer.math GEO-INFER-ANT/pyproject.toml` → 1 declaration; `uv lock --check` green; `validate_packaging --strict` green (45 modules); ANT suite green. 2026-09-26: filed from lane t-0001 execution receipts. |
+| **ART-FLAKE-01** | ART / live-network slow test | `tests/unit/test_style_transfer.py::TestStyleTransfer::test_apply_style_transfer` downloads VGG19 weights live from `storage.googleapis.com`; on 2026-09-27 it failed the scheduled slow lane (run 36287083986 attempt 1, `Errno 104 Connection reset by peer`) — a runner-side network reset, cleared on the bounded rerun (attempt 2 success). Precedent exists for de-networking tests (LOG signed-envelope writer, GS19-07 collateral). Stub/serve the weights locally (fixture or recorded artifact), or gate the fetch behind an explicit opt-in marker per the test-contract rules. | slow-scheduled green without a live GCS fetch: grep confirms no `storage.googleapis.com` fetch in the ART test tree (or the fetch is behind an opt-in marker); slow lane green on a fresh push. |
 
 ## Completed-record reset (2026-09-11)
 
@@ -158,22 +160,41 @@ disposition, recorded at branch `wave/scope-2026-09-19` after reconciling
 Fresh audit of both 2026-09-19 specs (78 main items + 88 GS19 items) against
 `origin/main @ 5a1e3801` by two read-only audit lanes. Verdicts: 158 of 166
 item-records DELIVERED (73 + 85; unique set is smaller after the addendum
-overlap mapping). Six unique OPEN items and one EXTERNAL action remain:
+overlap mapping). Six unique OPEN items and one EXTERNAL action remained;
+all six OPEN items landed the same day (receipts below):
 
-- **OPEN — dispatched this pass as two edit-only worktree lanes** (folded as
-  PRs through CI): lane `test-guards` = TST-03 + M1-05 (availability guards
-  over hard deps in NORMS/SPACE/WATER/ANT tests); lane `dep-truth` = M5-03
-  (HEALTH geopandas stance: required, delete CLI guards) + GS19-50 (BIO
-  requirements.txt geopandas floor) + GS19-87 (TEST module_health
-  `MIN_PYTHON` (3,9) → (3,11), fleet floor >=3.11).
-- **OPEN — trivial, landed this pass**: DOC-05 residual stamp dropped
-  (CODE_OF_CONDUCT.md; content unchanged since `0f6945c2`, so the dated stamp
-  was removed per the item's own probe).
+- **RESOLVED the same pass (2026-09-26/27)** — all six OPEN items landed:
+  PR #40 (merge `a55a0460`) = this ledger + the DOC-05 stamp drop (main
+  ci.yml run 36285058396 success); PR #41 (merge `fbf5681b`, lane t-0001
+  `test-guards`) = TST-03 + M1-05 (155/155 touched-file tests green; local
+  CI-gate battery replicated: diff-scoped ruff check + format, repo-wide
+  src/tests surfaces, `validate_test_contracts --strict`); PR #42
+  (merge `565aa438`, lane t-0002 `dep-truth`) = M5-03 + GS19-50 + GS19-87
+  (cli import + 15 CLI tests + `SystemValidator.MIN_PYTHON == (3, 11)`;
+  `validate_test_contracts --strict` green; `rewrite_readme_agents --check`
+  green, 1617 files current). Both lane PRs had green pre-merge CI (runs
+  36285562519 / 36285588084); their main push runs (36286371848 /
+  36286450117) were CANCELLED by ci.yml cancel-in-progress when PR #43
+  (GNN pair bump c30) pushed at 01:57Z; the successor run at tip
+  `0b482cfa` (36287083986) re-measured the union — all substantive jobs
+  success, slow-scheduled failed once on the ART VGG19 live-fetch flake
+  (below) and passed on the bounded rerun (attempt 2, 02:32:42Z).
 - **EXTERNAL (owner-gated, unchanged)**: CI-01 ≙ GS19-01 v0.3.0 wheel
   re-release — see the REL-01 row and the SCOPE-2026-09-19.md Disposition
   (2026-09-26) section.
 - **Branch hygiene**: `wave/scope-2026-09-19` fully delivered via PR #35
   (`6f8fd263`); obsolete, retained for history. No repo TASKS.md exists
   (`git ls-tree -r main`); this TODO.md is the sole task ledger. No
-  completed TODO rows were cleared this pass — the seven open rows above are
-  all externally blocked or owner-gated and verified still open.
+  completed TODO rows were cleared this pass — the seven pre-existing open
+  rows are all externally blocked or owner-gated and verified still open;
+  the two new self-serve rows (ANT-DEP-01, ART-FLAKE-01) are filed in the
+  Minor table.
+- **Execution findings → new Minor rows `ANT-DEP-01` and `ART-FLAKE-01`
+  (below)**: ANT's undeclared `geo_infer_math` test dep (the deleted
+  availability guard masked it; resolves via workspace-wide sync today), and
+  the ART `test_style_transfer.py` live VGG19 GCS download that flaked the
+  scheduled slow lane (run 36287083986 attempt 1, network reset; rerun
+  green).
+- **Verified non-defect**: `GEO-INFER-HEALTH/src/geo_infer_health/cli.py:256`
+  and `:340` geopandas sites are try/log-**reraise** wrappers (loud failure,
+  not graceful degrade) — left as-is; receipt recorded 2026-09-26.
