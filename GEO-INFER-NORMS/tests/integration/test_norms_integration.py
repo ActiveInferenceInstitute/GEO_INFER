@@ -8,12 +8,7 @@ working together in a compliance assessment and norm diffusion pipeline.
 import pytest
 import datetime
 
-try:
-    from shapely.geometry import Point, Polygon
-
-    HAS_SHAPELY = True
-except ImportError:
-    HAS_SHAPELY = False
+from shapely.geometry import Point, Polygon
 
 pytestmark = [
     pytest.mark.integration,

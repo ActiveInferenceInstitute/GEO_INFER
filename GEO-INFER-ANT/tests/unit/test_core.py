@@ -24,6 +24,7 @@ from geo_infer_ant.core.agent_base import SwarmAgent, SensoryInput, ActionDecisi
 from geo_infer_ant.core.population import AgentPopulation, EnvironmentalState
 from geo_infer_ant.core.stigmergy import PheromoneSystem
 from geo_infer_ant.core.digital_stigmergy import DigitalStigmergy
+from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
 
 
 class TestSwarmAgent:
@@ -599,18 +600,12 @@ class TestIntegration:
     def test_spatial_integration(self):
         """Test spatial integration capabilities."""
         # Test spatial indexing integration
-        try:
-            from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
+        indexer = SpatialIndexingInterface(backend="h3")
+        assert indexer is not None
 
-            indexer = SpatialIndexingInterface(backend="h3")
-            assert indexer is not None
-
-            # Test coordinate conversion (H3 v4 uses integer resolution)
-            cell_id = indexer.latlng_to_cell(37.7749, -122.4194, 8)
-            assert cell_id is not None
-
-        except ImportError:
-            pytest.fail("Spatial indexing not available")
+        # Test coordinate conversion (H3 v4 uses integer resolution)
+        cell_id = indexer.latlng_to_cell(37.7749, -122.4194, 8)
+        assert cell_id is not None
 
 
 class TestPerformance:

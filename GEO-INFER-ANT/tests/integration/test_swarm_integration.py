@@ -36,6 +36,9 @@ from geo_infer_ant.algorithms import (
 )  # noqa: F401
 from geo_infer_ant.applications import EnvironmentalMonitoringSwarm
 from geo_infer_ant.analysis import SwarmPatternAnalyzer
+from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
+from geo_infer_act.core.active_inference import ActiveInferenceModel
+from geo_infer_math.core.optimization import Optimizer
 
 
 class TestEndToEndSimulation:
@@ -226,51 +229,33 @@ class TestCrossModuleIntegration:
 
     def test_spatial_integration(self):
         """Test integration with GEO-INFER-SPACE."""
-        try:
-            from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
+        # Test spatial indexing with swarm data
+        indexer = SpatialIndexingInterface(backend="h3")
 
-            # Test spatial indexing with swarm data
-            indexer = SpatialIndexingInterface(backend="h3")
+        # Test coordinate conversion
+        cell_id = indexer.latlng_to_cell(37.7749, -122.4194, 8)
+        assert cell_id is not None
 
-            # Test coordinate conversion
-            cell_id = indexer.latlng_to_cell(37.7749, -122.4194, 8)
-            assert cell_id is not None
-
-            # Test with swarm positions
-            positions = np.random.uniform(-10, 10, (20, 2))
-            for pos in positions:
-                cell = indexer.latlng_to_cell(pos[0], pos[1], 8)
-                assert cell is not None
-
-        except ImportError:
-            pytest.fail("GEO-INFER-SPACE not available")
+        # Test with swarm positions
+        positions = np.random.uniform(-10, 10, (20, 2))
+        for pos in positions:
+            cell = indexer.latlng_to_cell(pos[0], pos[1], 8)
+            assert cell is not None
 
     def test_act_integration(self):
         """Test integration with GEO-INFER-ACT."""
-        try:
-            from geo_infer_act.core.active_inference import ActiveInferenceModel
+        # Test Active Inference model creation
+        model = ActiveInferenceModel(
+            model_type="spatial_temporal", preferences={"forage": 0.8, "rest": 0.6}
+        )
 
-            # Test Active Inference model creation
-            model = ActiveInferenceModel(
-                model_type="spatial_temporal", preferences={"forage": 0.8, "rest": 0.6}
-            )
-
-            assert model.model_type == "spatial_temporal"
-            assert model.preferences is not None
-
-        except ImportError:
-            pytest.fail("GEO-INFER-ACT not available")
+        assert model.model_type == "spatial_temporal"
+        assert model.preferences is not None
 
     def test_math_integration(self):
         """Test integration with GEO-INFER-MATH."""
-        try:
-            from geo_infer_math.core.optimization import Optimizer
-
-            # Test mathematical optimization integration
-            assert issubclass(Optimizer, object)
-
-        except ImportError:
-            pytest.fail("GEO-INFER-MATH not available")
+        # Test mathematical optimization integration
+        assert issubclass(Optimizer, object)
 
 
 class TestPerformanceIntegration:

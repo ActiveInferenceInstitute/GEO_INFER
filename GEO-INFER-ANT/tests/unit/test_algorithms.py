@@ -23,6 +23,7 @@ import os
 from geo_infer_ant.algorithms.aco import AntColonyOptimization
 from geo_infer_ant.algorithms.pso import ParticleSwarmOptimization
 from geo_infer_ant.algorithms.abc import ArtificialBeeColony, FoodSource
+from geo_infer_ant.core.stigmergy import PheromoneSystem
 
 
 class TestAntColonyOptimization:
@@ -633,28 +634,22 @@ class TestAlgorithmIntegration:
 
     def test_aco_with_pheromone_system(self):
         """Test ACO integration with pheromone system."""
-        try:
-            from geo_infer_ant.core.stigmergy import PheromoneSystem
+        # Create pheromone system
+        PheromoneSystem(
+            pheromone_types=["trail"],
+            bounds={"min_lat": -10, "max_lat": 10, "min_lng": -10, "max_lng": 10},
+        )
 
-            # Create pheromone system
-            PheromoneSystem(
-                pheromone_types=["trail"],
-                bounds={"min_lat": -10, "max_lat": 10, "min_lng": -10, "max_lng": 10},
-            )
+        # Create ACO with pheromone integration
+        aco = AntColonyOptimization(number_of_ants=10, max_iterations=5)
 
-            # Create ACO with pheromone integration
-            aco = AntColonyOptimization(number_of_ants=10, max_iterations=5)
+        # Initialize simple problem
+        cities = [[0, 0], [1, 0], [1, 1], [0, 1]]
+        distances = np.ones((4, 4)) - np.eye(4)
+        aco.initialize_problem(cities, distances)
 
-            # Initialize simple problem
-            cities = [[0, 0], [1, 0], [1, 1], [0, 1]]
-            distances = np.ones((4, 4)) - np.eye(4)
-            aco.initialize_problem(cities, distances)
-
-            # Verify integration
-            assert aco.pheromone_system is not None
-
-        except ImportError:
-            pytest.fail("Pheromone system not available")
+        # Verify integration
+        assert aco.pheromone_system is not None
 
     def test_pso_with_spatial_constraints(self):
         """Test PSO with spatial constraints."""
