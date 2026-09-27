@@ -386,90 +386,80 @@ class TestApplicationIntegration:
 
     def test_monitoring_with_pheromone_system(self):
         """Test environmental monitoring integration with pheromone system."""
-        try:
-            pheromone_system = PheromoneSystem(
-                pheromone_types=["monitoring", "anomaly"]
-            )
+        pheromone_system = PheromoneSystem(pheromone_types=["monitoring", "anomaly"])
 
-            swarm = EnvironmentalMonitoringSwarm(swarm_size=20)
+        swarm = EnvironmentalMonitoringSwarm(swarm_size=20)
 
-            async def integration_test():
-                # Deploy agents
-                deployment = await swarm.deploy_agents()
+        async def integration_test():
+            # Deploy agents
+            deployment = await swarm.deploy_agents()
 
-                # Simulate pheromone-guided coordination
-                agent_positions = [agent["position"] for agent in deployment["agents"]]
+            # Simulate pheromone-guided coordination
+            agent_positions = [agent["position"] for agent in deployment["agents"]]
 
-                # Add monitoring pheromones
-                for i, pos in enumerate(agent_positions):
-                    await pheromone_system.deposit_pheromone(
-                        agent_id=f"monitor_{i}",
-                        pheromone_type="monitoring",
-                        location=pos,
-                        intensity=1.0,
-                    )
-
-                # Check pheromone sensing
-                sensed = await pheromone_system.sense_pheromones(
-                    location=agent_positions[0], sensory_range=5.0
+            # Add monitoring pheromones
+            for i, pos in enumerate(agent_positions):
+                await pheromone_system.deposit_pheromone(
+                    agent_id=f"monitor_{i}",
+                    pheromone_type="monitoring",
+                    location=pos,
+                    intensity=1.0,
                 )
 
-                assert "monitoring" in sensed
+            # Check pheromone sensing
+            sensed = await pheromone_system.sense_pheromones(
+                location=agent_positions[0], sensory_range=5.0
+            )
 
-            asyncio.run(integration_test())
+            assert "monitoring" in sensed
 
-        except ImportError:
-            pytest.fail("Pheromone system not available")
+        asyncio.run(integration_test())
 
     def test_monitoring_with_digital_stigmergy(self):
         """Test environmental monitoring integration with digital stigmergy."""
-        try:
-            digital_stigmergy = DigitalStigmergy(
-                information_types=["sensor_data", "anomaly_detection"]
-            )
+        digital_stigmergy = DigitalStigmergy(
+            information_types=["sensor_data", "anomaly_detection"]
+        )
 
-            _swarm = EnvironmentalMonitoringSwarm(swarm_size=10)
+        _swarm = EnvironmentalMonitoringSwarm(swarm_size=10)
 
-            async def integration_test():
-                # Generate sensor data
-                sensor_readings = []
-                for i in range(20):
-                    reading = SensorReading(
-                        agent_id=f"agent_{i}",
-                        sensor_type="temperature",
-                        value=np.random.normal(20, 3),
-                        location=np.random.uniform(-5, 5, 2),
-                        timestamp=datetime.now(),
-                        quality_score=0.8,
-                    )
-                    sensor_readings.append(reading)
+        async def integration_test():
+            # Generate sensor data
+            sensor_readings = []
+            for i in range(20):
+                reading = SensorReading(
+                    agent_id=f"agent_{i}",
+                    sensor_type="temperature",
+                    value=np.random.normal(20, 3),
+                    location=np.random.uniform(-5, 5, 2),
+                    timestamp=datetime.now(),
+                    quality_score=0.8,
+                )
+                sensor_readings.append(reading)
 
-                # Contribute to digital stigmergy
-                for reading in sensor_readings:
-                    await digital_stigmergy.contribute_information(
-                        agent_id=reading.agent_id,
-                        information_type="sensor_data",
-                        content={
-                            "sensor_type": reading.sensor_type,
-                            "value": reading.value,
-                            "quality_score": reading.quality_score,
-                        },
-                        location=reading.location,
-                    )
-
-                # Query for anomalies
-                anomaly_info = await digital_stigmergy.query_stigmergy(
-                    agent_id="coordinator",
-                    query_type="anomaly_detection",
-                    credibility_threshold=0.7,
+            # Contribute to digital stigmergy
+            for reading in sensor_readings:
+                await digital_stigmergy.contribute_information(
+                    agent_id=reading.agent_id,
+                    information_type="sensor_data",
+                    content={
+                        "sensor_type": reading.sensor_type,
+                        "value": reading.value,
+                        "quality_score": reading.quality_score,
+                    },
+                    location=reading.location,
                 )
 
-                assert len(anomaly_info) >= 0  # May be empty but should not error
+            # Query for anomalies
+            anomaly_info = await digital_stigmergy.query_stigmergy(
+                agent_id="coordinator",
+                query_type="anomaly_detection",
+                credibility_threshold=0.7,
+            )
 
-            asyncio.run(integration_test())
+            assert len(anomaly_info) >= 0  # May be empty but should not error
 
-        except ImportError:
-            pytest.fail("Digital stigmergy not available")
+        asyncio.run(integration_test())
 
 
 class TestApplicationPerformance:

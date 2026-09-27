@@ -401,57 +401,49 @@ class TestIntegrationWithCoreComponents:
 
     def test_analyzer_with_pheromone_system(self):
         """Test pattern analyzer integration with pheromone system."""
-        try:
-            pheromone_system = PheromoneSystem(pheromone_types=["trail", "food"])
+        pheromone_system = PheromoneSystem(pheromone_types=["trail", "food"])
 
-            _analyzer = SwarmPatternAnalyzer()
+        _analyzer = SwarmPatternAnalyzer()
 
-            async def integration_test():
-                # Add pheromone deposits
-                for i in range(20):
-                    await pheromone_system.deposit_pheromone(
-                        agent_id=f"agent_{i}",
-                        pheromone_type="trail",
-                        location=np.random.uniform(-10, 10, 2),
-                        intensity=np.random.uniform(0.5, 2.0),
-                    )
+        async def integration_test():
+            # Add pheromone deposits
+            for i in range(20):
+                await pheromone_system.deposit_pheromone(
+                    agent_id=f"agent_{i}",
+                    pheromone_type="trail",
+                    location=np.random.uniform(-10, 10, 2),
+                    intensity=np.random.uniform(0.5, 2.0),
+                )
 
-                # The field is populated through the public spatial deposit API.
-                assert pheromone_system.pheromone_types is not None
+            # The field is populated through the public spatial deposit API.
+            assert pheromone_system.pheromone_types is not None
 
-            asyncio.run(integration_test())
-
-        except ImportError:
-            pytest.fail("Pheromone system not available")
+        asyncio.run(integration_test())
 
     def test_analyzer_with_digital_stigmergy(self):
         """Test pattern analyzer integration with digital stigmergy."""
-        try:
-            digital_stigmergy = DigitalStigmergy(information_types=["sensor_data"])
+        digital_stigmergy = DigitalStigmergy(information_types=["sensor_data"])
 
-            _analyzer = SwarmPatternAnalyzer()
+        _analyzer = SwarmPatternAnalyzer()
 
-            async def integration_test():
-                # Add digital traces
-                for i in range(15):
-                    await digital_stigmergy.contribute_information(
-                        agent_id=f"agent_{i}",
-                        information_type="sensor_data",
-                        content={"temperature": 20 + i},
-                        location=np.random.uniform(-5, 5, 2),
-                    )
-
-                # Extract patterns from digital stigmergy
-                patterns = await digital_stigmergy.extract_patterns(
-                    pattern_types=["clusters", "flows"]
+        async def integration_test():
+            # Add digital traces
+            for i in range(15):
+                await digital_stigmergy.contribute_information(
+                    agent_id=f"agent_{i}",
+                    information_type="sensor_data",
+                    content={"temperature": 20 + i},
+                    location=np.random.uniform(-5, 5, 2),
                 )
 
-                assert "status" in patterns
+            # Extract patterns from digital stigmergy
+            patterns = await digital_stigmergy.extract_patterns(
+                pattern_types=["clusters", "flows"]
+            )
 
-            asyncio.run(integration_test())
+            assert "status" in patterns
 
-        except ImportError:
-            pytest.fail("Digital stigmergy not available")
+        asyncio.run(integration_test())
 
 
 class TestAnalysisPerformance:

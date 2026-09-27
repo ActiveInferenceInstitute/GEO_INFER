@@ -2,13 +2,8 @@
 
 import pytest
 
-try:
-    import geopandas as gpd
-    from shapely.geometry import Point
-
-    HAS_GEOPANDAS = True
-except ImportError:
-    HAS_GEOPANDAS = False
+import geopandas as gpd
+from shapely.geometry import Point
 
 from geo_infer_space.gis.gis_manager import GISManager
 
