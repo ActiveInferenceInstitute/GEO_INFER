@@ -132,7 +132,7 @@ class SystemValidator:
     disk space, and key global packages.
     """
 
-    MIN_PYTHON = (3, 9)
+    MIN_PYTHON = (3, 11)
     REQUIRED_PACKAGES = ["pytest", "numpy", "pandas"]
 
     def __init__(self, logger: Optional[logging.Logger] = None):

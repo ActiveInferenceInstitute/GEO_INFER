@@ -438,72 +438,63 @@ def run_environment_analysis(args: argparse.Namespace, config: Any) -> None:
         raise ValueError(
             "Environmental analysis requires --air-quality and/or --water-quality"
         )
-    try:
-        import geopandas as gpd
+    import geopandas as gpd
 
-        population_gdf = gpd.read_file(args.population)
-        logger.info(f"Loaded {len(population_gdf)} population areas")
+    population_gdf = gpd.read_file(args.population)
+    logger.info(f"Loaded {len(population_gdf)} population areas")
 
-        # Population area centroids become the exposure target locations.
-        target_locations: List[Location] = []
-        population_data: List[PopulationData] = []
-        for index, (_, row) in enumerate(population_gdf.iterrows()):
-            centroid = row.geometry.centroid
-            target_locations.append(Location(latitude=centroid.y, longitude=centroid.x))
-            population_data.append(
-                PopulationData(
-                    area_id=str(row.get("area_id", f"area_{index}")),
-                    population_count=int(row.get("population", 0)),
-                )
+    # Population area centroids become the exposure target locations.
+    target_locations: List[Location] = []
+    population_data: List[PopulationData] = []
+    for index, (_, row) in enumerate(population_gdf.iterrows()):
+        centroid = row.geometry.centroid
+        target_locations.append(Location(latitude=centroid.y, longitude=centroid.x))
+        population_data.append(
+            PopulationData(
+                area_id=str(row.get("area_id", f"area_{index}")),
+                population_count=int(row.get("population", 0)),
             )
+        )
 
-        results: Dict[str, Any] = {
-            "analysis_type": "environmental_health",
-            "population_areas": len(population_data),
-            "total_population": sum(p.population_count for p in population_data),
-        }
+    results: Dict[str, Any] = {
+        "analysis_type": "environmental_health",
+        "population_areas": len(population_data),
+        "total_population": sum(p.population_count for p in population_data),
+    }
 
-        exposure_inputs = [
-            ("air_quality", getattr(args, "air_quality", None), "air_quality", "AQI"),
-            (
-                "water_quality",
-                getattr(args, "water_quality", None),
-                "water_quality",
-                "index",
-            ),
-        ]
-        radius_km = float(getattr(args, "radius", 10.0))
-        time_window_days = int(getattr(args, "time_window_days", 30))
+    exposure_inputs = [
+        ("air_quality", getattr(args, "air_quality", None), "air_quality", "AQI"),
+        (
+            "water_quality",
+            getattr(args, "water_quality", None),
+            "water_quality",
+            "index",
+        ),
+    ]
+    radius_km = float(getattr(args, "radius", 10.0))
+    time_window_days = int(getattr(args, "time_window_days", 30))
 
-        for key, path, default_parameter, default_unit in exposure_inputs:
-            if not path:
-                continue
-            readings = _load_environmental_readings(
-                path, default_parameter, default_unit
+    for key, path, default_parameter, default_unit in exposure_inputs:
+        if not path:
+            continue
+        readings = _load_environmental_readings(path, default_parameter, default_unit)
+        results[f"{key}_file"] = path
+        results[f"{key}_readings"] = len(readings)
+        if readings:
+            analyzer = EnvironmentalHealthAnalyzer(environmental_readings=readings)
+            results[f"{key}_average_exposure"] = analyzer.calculate_average_exposure(
+                target_locations=target_locations,
+                radius_km=radius_km,
+                parameter_name=default_parameter,
+                time_window_days=time_window_days,
             )
-            results[f"{key}_file"] = path
-            results[f"{key}_readings"] = len(readings)
-            if readings:
-                analyzer = EnvironmentalHealthAnalyzer(environmental_readings=readings)
-                results[f"{key}_average_exposure"] = (
-                    analyzer.calculate_average_exposure(
-                        target_locations=target_locations,
-                        radius_km=radius_km,
-                        parameter_name=default_parameter,
-                        time_window_days=time_window_days,
-                    )
-                )
-            else:
-                results[f"{key}_average_exposure"] = {}
+        else:
+            results[f"{key}_average_exposure"] = {}
 
-        with open(args.output, "w", encoding="utf-8") as f:
-            json.dump(results, f, indent=2, default=str)
+    with open(args.output, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2, default=str)
 
-        logger.info(f"Environmental health analysis completed, saved to {args.output}")
-
-    except Exception as e:
-        logger.error(f"Environmental health analysis failed: {e}")
-        raise
+    logger.info(f"Environmental health analysis completed, saved to {args.output}")
 
 
 def run_batch_processing(args: argparse.Namespace, config: Any) -> List[Dict[str, Any]]:
@@ -569,13 +560,9 @@ def run_validation(args: argparse.Namespace, config: Any) -> None:
     if not input_path.exists():
         raise FileNotFoundError(f"Input file not found: {input_path}")
 
-    try:
-        import geopandas as gpd
+    import geopandas as gpd
 
-        gdf = gpd.read_file(input_path)
-    except Exception as e:
-        logger.error(f"Validation failed: {e}")
-        raise
+    gdf = gpd.read_file(input_path)
 
     # Basic validation
     if gdf.empty:

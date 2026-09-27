@@ -1,7 +1,7 @@
 # Runtime dependencies — mirror of [project.dependencies] in pyproject.toml
 biopython>=1.79
 fastapi>=0.100.0
-geopandas>=0.9.0
+geopandas>=0.13.0
 graphql-core>=3.1.0
 matplotlib>=3.4.0
 numpy>=1.21.0
