@@ -7,4 +7,4 @@ pyyaml>=6.0.0
 loguru>=0.7.0
 
 # Geospatial data loading (CLI)
-geopandas>=0.14.0
+geopandas>=0.13.0
