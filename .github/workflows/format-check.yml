@@ -24,5 +24,15 @@ jobs:
         with:
           persist-credentials: false
 
+      # GS19-03: the hosted runners ship no uv on PATH, so the repo-wide
+      # ruff step exited 127 on every scheduled/dispatch run. Bootstrap uv
+      # exactly as ci.yml does (same action, SHA pin, and inputs).
+      - name: Set up uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.10.7"
+          enable-cache: true
+          cache-suffix: format-check
+
       - name: Repo-wide ruff format check
         run: uv run --with 'ruff>=0.15.6,<0.16' ruff format --check .
