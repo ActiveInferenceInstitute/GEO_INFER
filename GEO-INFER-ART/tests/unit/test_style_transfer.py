@@ -15,6 +15,30 @@ from PIL import Image
 from geo_infer_art.core.aesthetics.style_transfer import StyleTransfer
 
 
+@pytest.fixture
+def offline_vgg19(monkeypatch):
+    """Run real VGG19 with seeded local weights; never fetch ImageNet weights."""
+    import tensorflow as tf
+    from tensorflow.keras.applications import vgg19
+
+    real_vgg19 = vgg19.VGG19
+
+    def build_offline_vgg19(*args, **kwargs):
+        # Only replace weight acquisition, retaining the full feature extractor.
+        kwargs["weights"] = None
+        return real_vgg19(*args, **kwargs)
+
+    def reject_network(*args, **kwargs):
+        raise AssertionError("Style-transfer unit tests must not access the network")
+
+    tf.keras.utils.set_random_seed(42)
+    monkeypatch.setattr(vgg19, "VGG19", build_offline_vgg19)
+    monkeypatch.setattr("urllib.request.urlopen", reject_network)
+    monkeypatch.setattr("socket.socket.connect", reject_network)
+    yield
+    tf.keras.backend.clear_session()
+
+
 class TestStyleTransfer(unittest.TestCase):
     """Test suite for the StyleTransfer class."""
 
@@ -108,52 +132,58 @@ class TestStyleTransfer(unittest.TestCase):
         self.assertIsNotNone(style_transfer.style_image)
 
     @pytest.mark.slow
+    @pytest.mark.usefixtures("offline_vgg19")
     def test_apply_style_transfer(self):
         """Test applying style transfer to geospatial data."""
         # Gated by tests/conftest.py: deselected at collection when the
         # heavy optional TensorFlow dependency is not installed.
         import tensorflow as tf  # noqa: F401
 
-        # Test with a real fixture image; predefined package assets are optional.
-        try:
-            styled_image = StyleTransfer.apply(
-                geo_data=self.geo_data,
-                style=self.style_image_path,
-                iterations=5,  # Use low iterations for faster test
-            )
+        # Synthetic inputs and local weights exercise the real optimization,
+        # without asserting the aesthetic quality of a pretrained network.
+        styled_image = StyleTransfer.apply(
+            geo_data=self.geo_data,
+            style=self.style_image_path,
+            iterations=5,  # Use low iterations for faster test
+        )
 
-            self.assertIsInstance(styled_image, Image.Image)
+        self.assertIsInstance(styled_image, Image.Image)
+        self.assertEqual(styled_image.size, (224, 224))
+        self.assertEqual(styled_image.mode, "RGB")
+        pixels = np.asarray(styled_image)
+        self.assertEqual(pixels.dtype, np.uint8)
+        self.assertGreater(np.ptp(pixels), 0)
 
-            # Save and check output
-            output_path = os.path.join(self.test_dir, "output.png")
-            styled_image.save(output_path)
-            self.assertTrue(os.path.exists(output_path))
-
-        except Exception as e:
-            self.fail(f"Style transfer test failed: {str(e)}")
+        # Save and verify the output can be read back without pixel changes.
+        output_path = os.path.join(self.test_dir, "output.png")
+        styled_image.save(output_path)
+        with Image.open(output_path) as saved_image:
+            np.testing.assert_array_equal(np.asarray(saved_image), pixels)
 
     @pytest.mark.slow
+    @pytest.mark.usefixtures("offline_vgg19")
     def test_apply_with_custom_weights(self):
         """Test applying style transfer with custom weights."""
         # Gated by tests/conftest.py: deselected at collection when the
         # heavy optional TensorFlow dependency is not installed.
         import tensorflow as tf  # noqa: F401
 
-        try:
-            # Apply with custom weights
-            styled_image = StyleTransfer.apply(
-                geo_data=self.geo_data,
-                style=self.style_image_path,
-                content_image=self.content_image_path,
-                style_weight=1e-3,
-                content_weight=1e3,
-                iterations=3,  # Use low iterations for faster test
-            )
+        # Apply with custom loss weights and an explicit synthetic content image.
+        styled_image = StyleTransfer.apply(
+            geo_data=self.geo_data,
+            style=self.style_image_path,
+            content_image=self.content_image_path,
+            style_weight=1e-3,
+            content_weight=1e3,
+            iterations=3,  # Use low iterations for faster test
+        )
 
-            self.assertIsInstance(styled_image, Image.Image)
-
-        except Exception as e:
-            self.fail(f"Style transfer with custom weights failed: {str(e)}")
+        self.assertIsInstance(styled_image, Image.Image)
+        self.assertEqual(styled_image.size, (224, 224))
+        self.assertEqual(styled_image.mode, "RGB")
+        pixels = np.asarray(styled_image)
+        self.assertEqual(pixels.dtype, np.uint8)
+        self.assertGreater(np.ptp(pixels), 0)
 
     def test_apply_with_invalid_inputs(self):
         """Test applying style transfer with invalid inputs."""
