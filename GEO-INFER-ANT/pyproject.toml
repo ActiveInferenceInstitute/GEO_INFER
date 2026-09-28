@@ -49,6 +49,7 @@ dependencies = [
 integrations = [
     "geo-infer-act",
     "geo-infer-agent",
+    "geo-infer-math>=0.3.0",
     "geo-infer-space",
 ]
 dev = [
@@ -161,4 +162,5 @@ exclude_lines = [
 [tool.uv.sources]
 geo-infer-act = { workspace = true }
 geo-infer-agent = { workspace = true }
+geo-infer-math = { workspace = true }
 geo-infer-space = { workspace = true }

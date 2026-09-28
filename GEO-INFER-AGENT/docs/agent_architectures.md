@@ -165,6 +165,4 @@ flowchart TD
     Q3 -->|No| SIMPLE[Simple]
 ```
 
----
 
-**Last Updated**: 2026-02-24

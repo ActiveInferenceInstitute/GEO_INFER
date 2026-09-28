@@ -94,6 +94,4 @@ artwork = GenerativeMap.from_elevation(
 artwork.save("city_art.png")
 ```
 
----
 
-**Last Updated**: 2026-02-24
