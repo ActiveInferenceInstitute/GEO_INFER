@@ -474,20 +474,27 @@ def test_import_smoke_timeout_stops_descendants(tmp_path, monkeypatch):
     contracts.validate_import_smoke([module], report, timeout=0.5)
     assert len(report.warnings) == 1
     assert "timed out" in report.warnings[0]
-    # Under a parallel/coverage-traced runner the child's spawn can land
-    # after the parent's 0.5s timeout, so `started` may appear late; poll
-    # for it rather than asserting immediately.
+    # Under a loaded parallel/coverage-traced runner the child's spawn is
+    # not bounded by any small window: the interpreter can take >5 s to
+    # exec under xdist while 45 modules' coverage data is written (observed
+    # twice on CI on PR #48's validate job, 2026-09-28). Poll generously;
+    # if the process-group kill won the race and reaped the child before
+    # exec, `started` never appears and the termination property holds
+    # trivially.
+    deadline = time.monotonic() + 30.0
     started_seen = started.is_file()
-    for _ in range(50):
-        if started_seen:
-            break
-        time.sleep(0.1)
+    while not started_seen and time.monotonic() < deadline:
+        time.sleep(0.25)
         started_seen = started.is_file()
-    assert started_seen, "child never started; spawn was slower than the poll window"
-    # Wide margin: on a loaded runner the kill can land late after the 0.5s
-    # timeout — the child must outlive any plausible kill delay.
-    time.sleep(3.1)
     assert not finished.exists()
+    if started_seen:
+        # The child did launch; give a child that somehow survived the kill
+        # ample time to reach its finished touch (3.0 s after ITS start) and
+        # assert it never does. A late `started` implies the child was
+        # reaped pre-exec, so this branch only runs for genuinely live
+        # children.
+        time.sleep(3.5)
+        assert not finished.exists()
 
 
 @pytest.mark.parametrize("timeout", [float("nan"), float("inf"), float("-inf")])

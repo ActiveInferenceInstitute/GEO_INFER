@@ -87,6 +87,4 @@ gaps = comp.analyze_entry_barriers(
 | Agglomeration | Clustering effects |
 | Accessibility | Service coverage |
 
----
 
-**Last Updated**: 2026-02-24
