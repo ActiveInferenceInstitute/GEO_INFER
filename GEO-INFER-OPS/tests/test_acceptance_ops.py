@@ -72,9 +72,10 @@ class TestMetricsServerPortSelection:
 
     def test_yields_a_port(self):
         """The context manager yields a valid port number."""
-        with start_metrics_server(port=9094) as port:
+        requested = _kernel_assigned_port()
+        with start_metrics_server(port=requested) as port:
             assert isinstance(port, int)
-            assert port >= 9094
+            assert port >= requested
 
     def test_cleans_up_after_exit(self):
         """After exiting, the port is released."""
