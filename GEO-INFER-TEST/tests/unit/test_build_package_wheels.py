@@ -139,7 +139,7 @@ def test_wheel_import_timeout_stops_descendants(tmp_path):
     finished = tmp_path / "child-finished"
     child = (
         f"import pathlib,time; pathlib.Path({str(started)!r}).touch(); "
-        f"time.sleep(1.2); pathlib.Path({str(finished)!r}).touch()"
+        f"time.sleep(3.0); pathlib.Path({str(finished)!r}).touch()"
     )
     wheel = _wheel(
         tmp_path,
@@ -149,9 +149,26 @@ def test_wheel_import_timeout_stops_descendants(tmp_path):
     )
     with pytest.raises(subprocess.TimeoutExpired):
         _driver().verify_wheels([wheel], [sys.executable], import_timeout=0.5)
-    assert started.is_file()
-    time.sleep(1.3)
+    # FLK-01: the same latency-tolerant pattern as the import-smoke
+    # descendant test (PR #51). On a loaded runner the child's exec is not
+    # bounded by any small window, so `started` can appear well after the
+    # 0.5 s timeout; the old immediate assert plus a 1.3 s wait against a
+    # 1.2 s child left ~0.1 s of structural margin. Poll generously; if the
+    # tree kill reaped the child before exec, `started` never appears and
+    # the termination property holds trivially.
+    deadline = time.monotonic() + 30.0
+    started_seen = started.is_file()
+    while not started_seen and time.monotonic() < deadline:
+        time.sleep(0.25)
+        started_seen = started.is_file()
     assert not finished.exists()
+    if started_seen:
+        # The child did launch; a child that survived the kill reaches its
+        # finished touch 3.0 s after ITS start, which is no later than
+        # 3.0 s after `started` was observed. Waiting 3.5 s from the
+        # observation therefore always outlasts a surviving child.
+        time.sleep(3.5)
+        assert not finished.exists()
 
 
 @pytest.mark.parametrize("timeout", [float("nan"), float("inf"), float("-inf")])

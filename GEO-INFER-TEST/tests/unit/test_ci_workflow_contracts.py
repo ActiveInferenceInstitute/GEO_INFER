@@ -235,12 +235,96 @@ def test_pr_triggers_share_one_branch_policy():
 
 
 def test_release_job_is_timeout_bounded_and_release_queue_is_serialized():
-    """GS19-22: the release job has a ceiling; tag races queue, not race."""
+    """GS19-22 + CI-08: the release job has a ceiling; one target's releases queue.
+
+    CI-08: keying on ``github.ref`` gave every branch dispatch its own group
+    and never tied the group to the release object being written. The group
+    is keyed on the release target: tag refs (the tag push and a
+    workflow_dispatch recovery run at that tag) resolve to ``tag-<name>``;
+    branch dispatches, which never write a release object, share one fixed
+    ``dispatch`` group.
+    """
     release = _load("release.yml")
     assert release["jobs"]["release"].get("timeout-minutes") == 60
     concurrency = release["concurrency"]
-    assert concurrency["group"] == "geo-infer-release-${{ github.ref }}"
+    assert concurrency["group"] == (
+        "geo-infer-release-${{ github.ref_type == 'tag'"
+        " && format('tag-{0}', github.ref_name) || 'dispatch' }}"
+    )
+    # The dispatch case: a branch dispatch must not key per-branch on the ref.
+    assert "github.ref }}" not in concurrency["group"]
+    assert "|| 'dispatch'" in concurrency["group"]
     assert concurrency.get("cancel-in-progress", False) is False
+
+
+def test_release_ci_gate_polls_only_the_tag_push_run():
+    """CI-07: other ci.yml runs on the tagged SHA must not shadow the tag's run.
+
+    A tagged main-tip SHA carries a main-push run (routinely cancelled by
+    supersession), the tag-push run, and schedule/dispatch runs. The gate
+    polls only the tag-push run and exports its id for the REL-03 attach.
+    """
+    gate = _load("release.yml")["jobs"]["ci-gate"]
+    steps = [s for s in gate["steps"] if s.get("id") == "wait_ci"]
+    assert len(steps) == 1
+    script = steps[0]["run"]
+    assert '--commit "$GITHUB_SHA"' in script
+    assert '--event push --branch "$GITHUB_REF_NAME"' in script
+    assert "--limit 1" in script
+    assert 'echo "ci_run_id=$run_id" >> "$GITHUB_OUTPUT"' in script
+    # The id is exported only on the success branch, never for a failed run.
+    success = script.index('if [ "$conclusion" = "success" ]; then')
+    assert success < script.index("ci_run_id=") < script.index("exit 0")
+    assert gate["outputs"]["ci_run_id"] == "${{ steps.wait_ci.outputs.ci_run_id }}"
+
+
+def test_release_attaches_the_manuscript_pdf_from_the_gate_validated_run():
+    """REL-03: the PDF reaches the release object from the ci-gate's CI run.
+
+    v0.3.0 carries the manuscript PDF but no workflow attached it. The
+    release job cross-run downloads ci.yml's render receipts from exactly
+    the run the ci-gate validated; it never renders LaTeX itself (the
+    release job has a 60-minute ceiling).
+    """
+    release = _load("release.yml")
+    job = release["jobs"]["release"]
+    assert job["permissions"] == {"contents": "write", "actions": "read"}
+
+    names = [step.get("name", "") for step in job["steps"]]
+    wheel_index = names.index("Attach wheels to the release object")
+    pdf_index = names.index("Attach the manuscript PDF to the release object")
+    assert pdf_index > wheel_index, "the wheels attach first"
+
+    step = job["steps"][pdf_index]
+    assert step["env"]["GH_TOKEN"] == "${{ github.token }}"
+    assert step["env"]["CI_RUN_ID"] == "${{ needs.ci-gate.outputs.ci_run_id }}"
+    script = step["run"]
+    artifact = "geo-infer-manuscript-render-receipts"
+    assert 'gh run download "$CI_RUN_ID"' in script
+    assert f"--name {artifact}" in script
+    assert 'asset="GEO-INFER-manuscript-${released}.pdf"' in script
+    assert 'gh release upload "$GITHUB_REF_NAME" "$asset" --clobber' in script
+    # Non-tag refs, gate-less dispatches and a missing release object skip
+    # loudly; an absent PDF in the validated receipts fails closed.
+    assert '[ "$GITHUB_REF_TYPE" != "tag" ]' in script
+    assert '[ -z "$CI_RUN_ID" ]' in script
+    assert script.count("::warning::") == 2
+    assert '[ ! -s "$pdf" ]' in script
+    assert 'grep -Fxq "$asset"' in script
+
+    # The artifact name and PDF path are the ones ci.yml actually uploads.
+    uploads = [
+        s
+        for s in _load("ci.yml")["jobs"]["manuscript"]["steps"]
+        if s.get("with", {}).get("name") == artifact
+    ]
+    assert len(uploads) == 1
+    assert "output/pdf/GEO-INFER_combined.pdf" in uploads[0]["with"]["path"]
+    assert 'pdf="manuscript-receipts/GEO-INFER_combined.pdf"' in script
+
+    release_text = _dump(release["jobs"])
+    for marker in ("render_manuscript_pdf.py", "xelatex", "texlive"):
+        assert marker not in release_text, f"release must not render: {marker}"
 
 
 def test_scheduled_runs_get_their_own_concurrency_bucket():
@@ -269,6 +353,18 @@ def test_import_probes_derive_pytest_from_the_workspace_lock():
     job = _dump(_load("import-probes.yml")["jobs"]["probes"])
     assert "steps.locked_tools.outputs.pytest_version" in job
     assert "pytest==8.4.2" not in job
+
+
+def test_import_probes_do_not_rerun_on_main_push():
+    """CI-09: a merge must not re-run the probe matrix its PR leg just ran.
+
+    GS-007 dropped the same duplicate push leg from gnn-interchange.yml; the
+    probes keep their PR leg and an on-demand workflow_dispatch.
+    """
+    trigger = _trigger(_load("import-probes.yml"))
+    assert "push" not in trigger
+    assert "pull_request" in trigger
+    assert "workflow_dispatch" in trigger
 
 
 def test_repo_wide_format_check_is_scheduled():
