@@ -6,6 +6,7 @@ import exceeds DUMP_AFTER seconds and exits. Parent enforces a hard
 subprocess timeout. Requires the literal stdout line 'IMPORTED <path>' to
 count as success.
 """
+
 import subprocess
 import sys
 import time
@@ -27,7 +28,9 @@ for i in range(1, reps + 1):
     try:
         p = subprocess.run(
             [venv_python, "-c", CHILD],
-            capture_output=True, text=True, timeout=300,
+            capture_output=True,
+            text=True,
+            timeout=300,
         )
         elapsed = time.perf_counter() - t0
         ok = p.returncode == 0 and "IMPORTED" in p.stdout
@@ -45,4 +48,6 @@ for i in range(1, reps + 1):
 
 if times:
     times.sort()
-    print(f"[{label}] min={times[0]:.2f}s median={times[len(times)//2]:.2f}s max={times[-1]:.2f}s n={len(times)}")
+    print(
+        f"[{label}] min={times[0]:.2f}s median={times[len(times) // 2]:.2f}s max={times[-1]:.2f}s n={len(times)}"
+    )
