@@ -62,6 +62,4 @@ capacity = bioregion.run_analysis(
 | Water | Watershed-based planning |
 | Tourism | Eco-tourism development |
 
----
 
-**Last Updated**: 2026-02-24

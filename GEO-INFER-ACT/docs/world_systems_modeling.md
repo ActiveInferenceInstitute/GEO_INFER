@@ -161,6 +161,4 @@ development_plan = sdg_agent.optimize(
 - [Geospatial Applications](./geospatial_applications.md)
 - [Mathematical Framework](./mathematical_framework.md)
 
----
 
-**Last Updated**: 2026-02-24
