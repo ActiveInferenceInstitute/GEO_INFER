@@ -244,7 +244,9 @@ class WebSocketConnector(StreamConnector):
         self._session = aiohttp.ClientSession()
         try:
             self._connection = await self._session.ws_connect(self.url)
-        except Exception:
+        except BaseException:
+            # Covers asyncio.CancelledError (a BaseException, not an
+            # Exception) so a cancelled connect() cannot leak the session.
             await self._session.close()
             self._session = None
             raise

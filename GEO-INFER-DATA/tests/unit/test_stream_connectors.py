@@ -5,6 +5,7 @@ Tests for stream connectors in geo_infer_data.connectors.stream.
 import asyncio
 import socket
 
+import warnings
 import aiohttp
 import pytest
 from aiohttp import web
@@ -174,5 +175,69 @@ class TestWebSocketConnector:
                 await connector.disconnect()
             finally:
                 await runner.cleanup()
+
+        asyncio.run(main())
+
+    def test_connect_closes_session_on_cancellation(self, monkeypatch):
+        # A cancelled connect() must still close the aiohttp session:
+        # CancelledError is a BaseException, so the original ``except
+        # Exception`` handler leaked the session ('Unclosed client session').
+        sessions = []
+        # aiohttp discourages subclassing ClientSession; we only record
+        # instances, so silence that one-time definition-time warning.
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+
+            class RecordingClientSession(aiohttp.ClientSession):
+                def __init__(self, *args, **kwargs):
+                    super().__init__(*args, **kwargs)
+                    sessions.append(self)
+
+        async def main():
+            connected = asyncio.Event()
+            release = asyncio.Event()
+
+            async def hold(reader, writer):
+                # Accept the TCP connection but never answer the HTTP
+                # upgrade, leaving ws_connect pending.
+                connected.set()
+                await release.wait()
+                writer.close()
+                await writer.wait_closed()
+
+            server = await asyncio.start_server(hold, "127.0.0.1", 0)
+            try:
+                port = server.sockets[0].getsockname()[1]
+                connector = WebSocketConnector({"url": f"ws://127.0.0.1:{port}/x"})
+                monkeypatch.setattr(aiohttp, "ClientSession", RecordingClientSession)
+                task = asyncio.ensure_future(connector.connect())
+                try:
+                    # Proves the connection is established and ws_connect is
+                    # pending before we cancel.
+                    await asyncio.wait_for(connected.wait(), timeout=5)
+                    task.cancel()
+                    with pytest.raises(asyncio.CancelledError):
+                        await task
+                finally:
+                    if not task.done():
+                        task.cancel()
+                        try:
+                            await task
+                        except BaseException:
+                            pass
+
+                assert connector._session is None
+                assert len(sessions) == 1
+                assert sessions[0].closed is True
+            finally:
+                release.set()
+                server.close()
+                try:
+                    # If the client leaked the connection (the defect this
+                    # test guards against) the server transport never
+                    # closes; bound the wait so the real failure surfaces.
+                    await asyncio.wait_for(server.wait_closed(), timeout=5)
+                except asyncio.TimeoutError:
+                    pass
 
         asyncio.run(main())
