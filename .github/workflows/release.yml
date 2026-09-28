@@ -73,6 +73,11 @@ jobs:
     needs: ci-gate
     if: ${{ !cancelled() && (needs.ci-gate.result == 'success' || needs.ci-gate.result == 'skipped') }}
     runs-on: ubuntu-latest
+    # REL-02: `gh release upload` writes assets onto the release object, which
+    # the workflow-level `contents: read` cannot do. The grant is scoped to
+    # this job so the ci-gate poller keeps its read-only token.
+    permissions:
+      contents: write
     # GS19-22: an unbounded release job could hang the whole release pipeline
     # behind the concurrency queue; the 45-wheel build + verify fits well
     # inside this ceiling.
@@ -148,6 +153,37 @@ jobs:
           path: dist/*.whl
           if-no-files-found: error
           retention-days: 30
+
+      # REL-02: the artifact above expires after 30 days and never reaches the
+      # GitHub release object. That gap is how v0.3.0 shipped wheel-less behind
+      # a green pipeline - the run succeeded, `geo-infer-wheels` existed, and
+      # the release stayed PDF-only until a manual owner attach on 2026-09-27.
+      # The attach is codified here; the retention artifact is complementary
+      # and deliberately kept, so a failed attach still leaves the wheels.
+      - name: Attach wheels to the release object
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # A workflow_dispatch can run at a branch, where no release object
+          # exists. Both skip paths are loud (annotated) and never silent.
+          if [ "$GITHUB_REF_TYPE" != "tag" ]; then
+            echo "::notice::REL-02: ref '$GITHUB_REF_NAME' is a $GITHUB_REF_TYPE, not a tag; there is no release object to attach to. The wheels remain available as the 'geo-infer-wheels' artifact."
+            exit 0
+          fi
+          if ! gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::warning::REL-02: no release object exists for tag '$GITHUB_REF_NAME'; wheels were NOT attached. Create the release and re-run this workflow, or attach manually: gh release upload $GITHUB_REF_NAME dist/*.whl --clobber"
+            exit 0
+          fi
+          gh release upload "$GITHUB_REF_NAME" dist/*.whl --clobber --repo "$GITHUB_REPOSITORY"
+          built="$(find dist -maxdepth 1 -name '*.whl' | wc -l | tr -d ' ')"
+          attached="$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --json assets --jq '[.assets[] | select(.name | endswith(".whl"))] | length')"
+          echo "Release $GITHUB_REF_NAME now carries $attached .whl assets ($built built)"
+          if [ "$attached" -lt "$built" ]; then
+            echo "FAIL: release $GITHUB_REF_NAME carries $attached .whl assets but $built wheels were built" >&2
+            exit 1
+          fi
 
       - name: Prune uv cache
         if: always()

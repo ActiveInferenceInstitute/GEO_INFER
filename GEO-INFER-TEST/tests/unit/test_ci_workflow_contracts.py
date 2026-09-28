@@ -57,6 +57,40 @@ def test_release_requires_ci_gate_and_always_verifies_wheels():
     assert "run_isolated_verify != 'false'" in script
 
 
+def test_release_attaches_wheels_to_the_release_object_after_verification():
+    """REL-02: wheels must reach the release object, not only the 30-day artifact.
+
+    v0.3.0 shipped wheel-less behind a green pipeline because release.yml
+    published its 45 wheels solely as the ``geo-infer-wheels`` artifact and
+    the release object stayed PDF-only until a manual owner attach. This pins
+    the codified attach: it runs after the namespace verification, the
+    retention artifact survives beside it, and both skip paths are annotated.
+    """
+    job = _load("release.yml")["jobs"]["release"]
+    # `gh release upload` writes assets; the workflow-level grant is read-only.
+    assert job["permissions"]["contents"] == "write"
+
+    names = [step.get("name", "") for step in job["steps"]]
+    verify_index = names.index("Verify built wheels cover all distribution namespaces")
+    attach_index = names.index("Attach wheels to the release object")
+    assert attach_index > verify_index, "the attach must follow the wheel verification"
+    # Retention artifact and release attach are complementary, not exclusive.
+    assert "Upload wheel artifacts" in names
+
+    attach = job["steps"][attach_index]
+    assert attach["env"]["GH_TOKEN"] == "${{ github.token }}"
+    script = attach["run"]
+    assert 'gh release upload "$GITHUB_REF_NAME" dist/*.whl --clobber' in script
+    # A dispatch may run at a branch, and a tag may precede its release
+    # object; both cases skip loudly via workflow annotations, never silently.
+    assert '[ "$GITHUB_REF_TYPE" != "tag" ]' in script
+    assert "::notice::" in script
+    assert "::warning::" in script
+    # The attach is verified against the build: a green step that uploaded
+    # nothing is exactly the REL-02 failure mode.
+    assert '"$attached" -lt "$built"' in script
+
+
 def test_validate_job_runs_gates_once_outside_test_matrix():
     """GS-005: interpreter-independent gates live in one non-matrix validate job."""
     jobs = _load("ci.yml")["jobs"]
