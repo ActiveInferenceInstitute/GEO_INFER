@@ -11,26 +11,19 @@ import pandas as pd
 from datetime import datetime, timezone, timedelta
 
 # Real imports from the testing library
-try:
-    from geo_infer_test import (
-        DataQualityValidator,
-        SpatialValidator,
-        IoTValidator,
-        BayesianValidator,
-        PerformanceValidator,
-        QualityController,
-    )
-except ImportError:
-    pytest.fail("geo_infer_test package not available")
-
-try:
-    from geo_infer_test.core.log_integration import (
-        LogIntegration,
-        LoggingTestReporter,
-        LogAnalyzer,
-    )
-except ImportError:
-    pytest.fail("geo_infer_test.core.log_integration not available")
+from geo_infer_test import (
+    BayesianValidator,
+    DataQualityValidator,
+    IoTValidator,
+    PerformanceValidator,
+    QualityController,
+    SpatialValidator,
+)
+from geo_infer_test.core.log_integration import (
+    LogAnalyzer,
+    LogIntegration,
+    LoggingTestReporter,
+)
 
 
 # ---------------------------------------------------------------------------

@@ -253,148 +253,134 @@ def run_analysis(args: argparse.Namespace, config: Any) -> None:
 
 def run_hotspot_analysis(args: argparse.Namespace, config: Any) -> None:
     """Run disease hotspot analysis."""
-    try:
-        # Load disease reports
-        import geopandas as gpd
+    # Load disease reports
+    import geopandas as gpd
 
-        reports_gdf = gpd.read_file(args.input)
-        logger.info(f"Loaded {len(reports_gdf)} disease reports")
+    reports_gdf = gpd.read_file(args.input)
+    logger.info(f"Loaded {len(reports_gdf)} disease reports")
 
-        # Convert to internal format
-        from geo_infer_health.models import DiseaseReport, Location, PopulationData
+    # Convert to internal format
+    from geo_infer_health.models import DiseaseReport, Location, PopulationData
 
-        # Location stores EPSG:4326 coordinates; reproject any other CRS
-        # before extracting point coordinates or centroids.
-        if reports_gdf.crs is not None and reports_gdf.crs.to_epsg() != 4326:
-            reports_gdf = reports_gdf.to_crs("EPSG:4326")
+    # Location stores EPSG:4326 coordinates; reproject any other CRS
+    # before extracting point coordinates or centroids.
+    if reports_gdf.crs is not None and reports_gdf.crs.to_epsg() != 4326:
+        reports_gdf = reports_gdf.to_crs("EPSG:4326")
 
-        reports: List[DiseaseReport] = []
-        for _, row in reports_gdf.iterrows():
-            geometry = row.geometry
-            if geometry is None:
-                raise ValueError(
-                    "geo_infer_health.cli.run_hotspot_analysis: disease report "
-                    f"{len(reports)} has no geometry; a point or areal geometry "
-                    "is required to derive a Location"
-                )
-            if geometry.geom_type != "Point":
-                # Areal (polygon/multipolygon) inputs are collapsed to their
-                # centroid so hotspot analysis still operates on a point.
-                geometry = geometry.centroid
-            report_date = row.get("report_date")
-            if report_date is None:
-                raise ValueError(
-                    "geo_infer_health.cli.run_hotspot_analysis: input is missing "
-                    "the required 'report_date' column (or a row has no value); "
-                    "every disease report needs a report date for hotspot "
-                    "analysis"
-                )
-            location = Location(latitude=geometry.y, longitude=geometry.x)
-            report = DiseaseReport(
-                report_id=str(row.get("report_id", f"report_{len(reports)}")),
-                disease_code=row.get("disease_code", "UNKNOWN"),
-                location=location,
-                report_date=report_date,
-                case_count=int(row.get("case_count", 1)),
+    reports: List[DiseaseReport] = []
+    for _, row in reports_gdf.iterrows():
+        geometry = row.geometry
+        if geometry is None:
+            raise ValueError(
+                "geo_infer_health.cli.run_hotspot_analysis: disease report "
+                f"{len(reports)} has no geometry; a point or areal geometry "
+                "is required to derive a Location"
             )
-            reports.append(report)
-
-        # Load population data if provided
-        population_data: Optional[List[PopulationData]] = None
-        if args.population:
-            pop_gdf = gpd.read_file(args.population)
-            from geo_infer_health.models import PopulationData
-
-            population_data = []
-            for _, row in pop_gdf.iterrows():
-                pop_data = PopulationData(
-                    area_id=str(row.get("area_id", f"area_{len(population_data)}")),
-                    population_count=int(row.get("population", 0)),
-                )
-                population_data.append(pop_data)
-            logger.info(f"Loaded {len(population_data)} population areas")
-
-        # Run analysis
-        analyzer = DiseaseHotspotAnalyzer(
-            reports=reports, population_data=population_data
-        )
-        hotspots = analyzer.identify_simple_hotspots(
-            threshold_case_count=args.threshold, scan_radius_km=args.radius
-        )
-
-        # Save results
-        import json
-
-        with open(args.output, "w") as f:
-            json.dump(hotspots, f, indent=2)
-
-        logger.info(f"Found {len(hotspots)} hotspots, saved to {args.output}")
-
-    except Exception as e:
-        logger.error(f"Hotspot analysis failed: {e}")
-        raise
-
-
-def run_accessibility_analysis(args: argparse.Namespace, config: Any) -> None:
-    """Run healthcare accessibility analysis."""
-    try:
-        # Load facilities and population data
-        import geopandas as gpd
-
-        facilities_gdf = gpd.read_file(args.facilities)
-        population_gdf = gpd.read_file(args.population)
-
-        logger.info(f"Loaded {len(facilities_gdf)} facilities")
-        logger.info(f"Loaded {len(population_gdf)} population areas")
-
-        # Convert to internal format
-        from geo_infer_health.models import HealthFacility, PopulationData, Location
-
-        facilities: List[HealthFacility] = []
-        for _, row in facilities_gdf.iterrows():
-            location = Location(latitude=row.geometry.y, longitude=row.geometry.x)
-            facility = HealthFacility(
-                facility_id=str(row.get("facility_id", f"facility_{len(facilities)}")),
-                name=row.get("name", "Unknown"),
-                facility_type=row.get("facility_type", "Unknown"),
-                location=location,
-                capacity=int(row.get("capacity", 0)) if row.get("capacity") else None,
+        if geometry.geom_type != "Point":
+            # Areal (polygon/multipolygon) inputs are collapsed to their
+            # centroid so hotspot analysis still operates on a point.
+            geometry = geometry.centroid
+        report_date = row.get("report_date")
+        if report_date is None:
+            raise ValueError(
+                "geo_infer_health.cli.run_hotspot_analysis: input is missing "
+                "the required 'report_date' column (or a row has no value); "
+                "every disease report needs a report date for hotspot "
+                "analysis"
             )
-            facilities.append(facility)
+        location = Location(latitude=geometry.y, longitude=geometry.x)
+        report = DiseaseReport(
+            report_id=str(row.get("report_id", f"report_{len(reports)}")),
+            disease_code=row.get("disease_code", "UNKNOWN"),
+            location=location,
+            report_date=report_date,
+            case_count=int(row.get("case_count", 1)),
+        )
+        reports.append(report)
 
-        population_data: List[PopulationData] = []
-        for _, row in population_gdf.iterrows():
+    # Load population data if provided
+    population_data: Optional[List[PopulationData]] = None
+    if args.population:
+        pop_gdf = gpd.read_file(args.population)
+        from geo_infer_health.models import PopulationData
+
+        population_data = []
+        for _, row in pop_gdf.iterrows():
             pop_data = PopulationData(
                 area_id=str(row.get("area_id", f"area_{len(population_data)}")),
                 population_count=int(row.get("population", 0)),
             )
             population_data.append(pop_data)
+        logger.info(f"Loaded {len(population_data)} population areas")
 
-        # Summary output reports basic statistics
-        total_facilities = len(facilities)
-        total_population = sum(p.population_count for p in population_data)
-        ratio = (
-            total_facilities / total_population * 1000 if total_population > 0 else 0
+    # Run analysis
+    analyzer = DiseaseHotspotAnalyzer(reports=reports, population_data=population_data)
+    hotspots = analyzer.identify_simple_hotspots(
+        threshold_case_count=args.threshold, scan_radius_km=args.radius
+    )
+
+    # Save results
+    import json
+
+    with open(args.output, "w") as f:
+        json.dump(hotspots, f, indent=2)
+
+    logger.info(f"Found {len(hotspots)} hotspots, saved to {args.output}")
+
+
+def run_accessibility_analysis(args: argparse.Namespace, config: Any) -> None:
+    """Run healthcare accessibility analysis."""
+    # Load facilities and population data
+    import geopandas as gpd
+
+    facilities_gdf = gpd.read_file(args.facilities)
+    population_gdf = gpd.read_file(args.population)
+
+    logger.info(f"Loaded {len(facilities_gdf)} facilities")
+    logger.info(f"Loaded {len(population_gdf)} population areas")
+
+    # Convert to internal format
+    from geo_infer_health.models import HealthFacility, PopulationData, Location
+
+    facilities: List[HealthFacility] = []
+    for _, row in facilities_gdf.iterrows():
+        location = Location(latitude=row.geometry.y, longitude=row.geometry.x)
+        facility = HealthFacility(
+            facility_id=str(row.get("facility_id", f"facility_{len(facilities)}")),
+            name=row.get("name", "Unknown"),
+            facility_type=row.get("facility_type", "Unknown"),
+            location=location,
+            capacity=int(row.get("capacity", 0)) if row.get("capacity") else None,
         )
+        facilities.append(facility)
 
-        results = {
-            "total_facilities": total_facilities,
-            "total_population": total_population,
-            "facility_ratio_per_1000": ratio,
-            "method": args.method,
-        }
+    population_data: List[PopulationData] = []
+    for _, row in population_gdf.iterrows():
+        pop_data = PopulationData(
+            area_id=str(row.get("area_id", f"area_{len(population_data)}")),
+            population_count=int(row.get("population", 0)),
+        )
+        population_data.append(pop_data)
 
-        # Save results
-        import json
+    # Summary output reports basic statistics
+    total_facilities = len(facilities)
+    total_population = sum(p.population_count for p in population_data)
+    ratio = total_facilities / total_population * 1000 if total_population > 0 else 0
 
-        with open(args.output, "w") as f:
-            json.dump(results, f, indent=2)
+    results = {
+        "total_facilities": total_facilities,
+        "total_population": total_population,
+        "facility_ratio_per_1000": ratio,
+        "method": args.method,
+    }
 
-        logger.info(f"Accessibility analysis completed, saved to {args.output}")
+    # Save results
+    import json
 
-    except Exception as e:
-        logger.error(f"Accessibility analysis failed: {e}")
-        raise
+    with open(args.output, "w") as f:
+        json.dump(results, f, indent=2)
+
+    logger.info(f"Accessibility analysis completed, saved to {args.output}")
 
 
 def _load_environmental_readings(

@@ -127,18 +127,15 @@ class TestEcosystemStatistics:
 
     def test_test_discoverer_finds_all_modules(self):
         """TestDiscoverer should find all modules."""
-        try:
-            from geo_infer_test.core.test_discoverer import TestDiscoverer
+        from geo_infer_test.core.test_discoverer import TestDiscoverer
 
-            discoverer = TestDiscoverer(base_path=REPO_ROOT)
-            results = discoverer.discover_all_tests(GEO_INFER_MODULES)
-            # Should discover at least 40 modules
-            modules_with_tests = [m for m in GEO_INFER_MODULES if m in results]
-            assert len(modules_with_tests) >= 40, (
-                f"TestDiscoverer found tests for {len(modules_with_tests)} modules, expected >=40"
-            )
-        except ImportError:
-            pytest.fail("geo_infer_test.core.test_discoverer not available")
+        discoverer = TestDiscoverer(base_path=REPO_ROOT)
+        results = discoverer.discover_all_tests(GEO_INFER_MODULES)
+        # Should discover at least 40 modules
+        modules_with_tests = [m for m in GEO_INFER_MODULES if m in results]
+        assert len(modules_with_tests) >= 40, (
+            f"TestDiscoverer found tests for {len(modules_with_tests)} modules, expected >=40"
+        )
 
 
 # ============================================================================
