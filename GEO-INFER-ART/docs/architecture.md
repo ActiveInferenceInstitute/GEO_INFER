@@ -91,6 +91,4 @@ gen = GenerativeMap.from_elevation(
 | Styles | Custom style formats |
 | Filters | Post-processing effects |
 
----
 
-**Last Updated**: 2026-02-24

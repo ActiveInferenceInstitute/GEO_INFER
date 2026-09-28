@@ -155,6 +155,4 @@ graph LR
     LIK --> |normalize| POST
 ```
 
----
 
-**Last Updated**: 2026-02-24

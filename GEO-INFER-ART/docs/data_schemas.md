@@ -81,6 +81,4 @@ output:
   dpi: 300
 ```
 
----
 
-**Last Updated**: 2026-02-24
