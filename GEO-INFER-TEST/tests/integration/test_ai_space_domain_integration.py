@@ -10,51 +10,19 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point, Polygon
 
-# Try to import actual modules
-try:
-    from geo_infer_ai.core.training import ModelTrainer
-    from geo_infer_ai.models.predictive.spatial_predictor import (
-        SpatialPredictor,  # noqa: F401
-    )  # noqa: F401
-    from geo_infer_ai.preprocessing.feature_engineering import GeospatialFeatureEngineer
-
-    AI_AVAILABLE = True
-except ImportError:
-    AI_AVAILABLE = False
-    pytest.fail("GEO-INFER-AI not available")
-
-try:
-    from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
-    from geo_infer_space.core.analytics import SpatialAnalyticsInterface  # noqa: F401
-
-    SPACE_AVAILABLE = True
-except ImportError:
-    SPACE_AVAILABLE = False
-    pytest.fail("GEO-INFER-SPACE not available")
-
-try:
-    from geo_infer_ag.core.agricultural_analysis import (
-        AgriculturalAnalysis,  # noqa: F401
-    )  # noqa: F401
-    from geo_infer_ag.models.crop_yield import CropYieldModel  # noqa: F401
-
-    AG_AVAILABLE = True
-except ImportError:
-    AG_AVAILABLE = False
-
-try:
-    from geo_infer_health.core.epidemiology import EpidemiologyAnalyzer  # noqa: F401
-
-    HEALTH_AVAILABLE = True
-except ImportError:
-    HEALTH_AVAILABLE = False
-
-try:
-    from geo_infer_econ.core.economic import EconomicModel  # noqa: F401
-
-    ECON_AVAILABLE = True
-except ImportError:
-    ECON_AVAILABLE = False
+from geo_infer_ag.core.agricultural_analysis import (
+    AgriculturalAnalysis,  # noqa: F401
+)
+from geo_infer_ag.models.crop_yield import CropYieldModel  # noqa: F401
+from geo_infer_ai.core.training import ModelTrainer
+from geo_infer_ai.models.predictive.spatial_predictor import (
+    SpatialPredictor,  # noqa: F401
+)
+from geo_infer_ai.preprocessing.feature_engineering import GeospatialFeatureEngineer
+from geo_infer_econ import EconomicModelingEngine  # noqa: F401
+from geo_infer_health.core import DiseaseHotspotAnalyzer  # noqa: F401
+from geo_infer_space.core.analytics import SpatialAnalyticsInterface  # noqa: F401
+from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
 
 
 @pytest.fixture
@@ -122,9 +90,6 @@ class TestAiSpaceAgIntegration:
         self, sample_agricultural_data
     ):
         """Test spatial feature engineering for agricultural ML models."""
-        if not (AI_AVAILABLE and SPACE_AVAILABLE and AG_AVAILABLE):
-            pytest.fail("Required modules not available")
-
         sensors = sample_agricultural_data["sensors"]
 
         # Use SPACE for spatial indexing
@@ -158,9 +123,6 @@ class TestAiSpaceAgIntegration:
 
     def test_crop_yield_prediction_with_spatial_ai(self, sample_agricultural_data):
         """Test crop yield prediction using AI and spatial analysis."""
-        if not (AI_AVAILABLE and SPACE_AVAILABLE and AG_AVAILABLE):
-            pytest.fail("Required modules not available")
-
         fields = sample_agricultural_data["fields"]
         sensors = sample_agricultural_data["sensors"]
 
@@ -216,9 +178,6 @@ class TestAiSpaceHealthIntegration:
 
     def test_epidemiological_analysis_with_spatial_ai(self):
         """Test epidemiological analysis using AI and spatial analysis."""
-        if not (AI_AVAILABLE and SPACE_AVAILABLE):
-            pytest.fail("Required modules not available")
-
         # Create sample health data
         np.random.seed(42)
         regions = gpd.GeoDataFrame(
@@ -274,9 +233,6 @@ class TestAiSpaceEconIntegration:
 
     def test_economic_modeling_with_spatial_ai(self):
         """Test economic modeling using AI and spatial analysis."""
-        if not (AI_AVAILABLE and SPACE_AVAILABLE):
-            pytest.fail("Required modules not available")
-
         # Create sample economic data
         np.random.seed(42)
         economic_regions = gpd.GeoDataFrame(

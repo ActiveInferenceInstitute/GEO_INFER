@@ -11,33 +11,12 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
 
-# Try to import actual modules
-try:
-    from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
-    from geo_infer_space.core.analytics import SpatialAnalyticsInterface
-
-    SPACE_AVAILABLE = True
-except ImportError:
-    SPACE_AVAILABLE = False
-    pytest.fail("GEO-INFER-SPACE not available")
-
-try:
-    from geo_infer_time.core.analysis import TemporalAnalyzer
-    from geo_infer_time.models.timeseries import TimeSeries
-
-    TIME_AVAILABLE = True
-except ImportError:
-    TIME_AVAILABLE = False
-    pytest.fail("GEO-INFER-TIME not available")
-
-try:
-    from geo_infer_data.core.ingestion import MultiSourceDataIngestion
-    from geo_infer_data.core.storage import AdaptiveDataStorage
-
-    DATA_AVAILABLE = True
-except ImportError:
-    DATA_AVAILABLE = False
-    pytest.fail("GEO-INFER-DATA not available")
+from geo_infer_data.core.ingestion import MultiSourceDataIngestion
+from geo_infer_data.core.storage import AdaptiveDataStorage
+from geo_infer_space.core.analytics import SpatialAnalyticsInterface
+from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
+from geo_infer_time.core.analysis import TemporalAnalyzer
+from geo_infer_time.models.timeseries import TimeSeries
 
 
 @pytest.fixture
@@ -80,9 +59,6 @@ class TestSpaceTimeDataIntegration:
 
     def test_spatial_indexing_with_temporal_data(self, sample_spatial_temporal_data):
         """Test spatial indexing of temporal geospatial data."""
-        if not (SPACE_AVAILABLE and TIME_AVAILABLE):
-            pytest.fail("Required modules not available")
-
         gdf = sample_spatial_temporal_data
 
         # Use SPACE module for spatial indexing
@@ -109,9 +85,6 @@ class TestSpaceTimeDataIntegration:
 
     def test_temporal_analysis_with_spatial_context(self, sample_spatial_temporal_data):
         """Test temporal analysis with spatial grouping."""
-        if not (TIME_AVAILABLE and SPACE_AVAILABLE):
-            pytest.fail("Required modules not available")
-
         import sys
 
         if "geo_infer_time" in sys.modules:
@@ -158,9 +131,6 @@ class TestSpaceTimeDataIntegration:
         self, sample_spatial_temporal_data, tmp_path
     ):
         """Test data storage and retrieval with spatial-temporal queries."""
-        if not (DATA_AVAILABLE and SPACE_AVAILABLE and TIME_AVAILABLE):
-            pytest.fail("Required modules not available")
-
         gdf = sample_spatial_temporal_data
 
         # Add spatial indexing
@@ -191,9 +161,6 @@ class TestSpaceTimeDataIntegration:
         self, sample_spatial_temporal_data
     ):
         """Test spatial-temporal interpolation workflow."""
-        if not (SPACE_AVAILABLE and TIME_AVAILABLE):
-            pytest.fail("Required modules not available")
-
         gdf = sample_spatial_temporal_data
 
         # Group by time for spatial interpolation
@@ -221,9 +188,6 @@ class TestDataIngestionToSpatialTemporal:
 
     def test_multi_source_ingestion_to_spatial_temporal(self, tmp_path):
         """Test ingesting data from multiple sources and processing with SPACE+TIME."""
-        if not (DATA_AVAILABLE and SPACE_AVAILABLE and TIME_AVAILABLE):
-            pytest.fail("Required modules not available")
-
         # Create sample data sources
         sensor_data = pd.DataFrame(
             {
