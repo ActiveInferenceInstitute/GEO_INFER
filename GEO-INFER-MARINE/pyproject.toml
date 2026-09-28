@@ -38,12 +38,6 @@ dependencies = [
     "netcdf4>=1.5.8",
 ]
 
-[project.optional-dependencies]
-dev = [
-    # Test-only dependencies (imported by tests/, not by src/)
-    "pytest>=6.2.0",
-]
-
 [project.urls]
 Homepage = "https://github.com/ActiveInferenceInstitute/GEO_INFER"
 Documentation = "https://geo-infer.readthedocs.io/"
