@@ -24,6 +24,13 @@ from geo_infer_ops.core.monitoring import (
 )
 
 
+def _kernel_assigned_port() -> int:
+    """Return a port the kernel just handed out as free (not a fixed number)."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("localhost", 0))
+        return s.getsockname()[1]
+
+
 # ---------------------------------------------------------------------------
 # is_port_in_use
 # ---------------------------------------------------------------------------
@@ -71,28 +78,24 @@ class TestMetricsServerPortSelection:
 
     def test_cleans_up_after_exit(self):
         """After exiting, the port is released."""
-        with start_metrics_server(port=9095) as port:
+        with start_metrics_server(port=_kernel_assigned_port()) as port:
             assert is_port_in_use(port) is True
-        # After exit, the port should be free (may have slight delay)
-        # We verify the server object is cleaned up by checking the port
-        # is eventually available
-        import time
-
-        time.sleep(0.2)
+        # Exit runs server.shutdown() + server_close() synchronously and the
+        # server never accepted a connection (no TIME_WAIT), so the release
+        # is observable immediately; no sleep or grace period is needed.
         assert is_port_in_use(port) is False
 
     def test_shifts_to_next_port_if_occupied(self):
         """If the requested port is busy, the server moves to the next free one."""
-        # Occupy port 9096
-        blocker = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        blocker.bind(("localhost", 9096))
-        blocker.listen(1)
-        try:
-            with start_metrics_server(port=9096) as port:
-                assert port != 9096  # Must have shifted
-                assert port > 9096
-        finally:
-            blocker.close()
+        # Occupy a kernel-assigned port so parallel runs never collide on a
+        # fixed number.
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as blocker:
+            blocker.bind(("localhost", 0))
+            blocker.listen(1)
+            occupied = blocker.getsockname()[1]
+            with start_metrics_server(port=occupied) as port:
+                assert port != occupied  # Must have shifted
+                assert port > occupied
 
 
 # ---------------------------------------------------------------------------
