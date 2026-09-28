@@ -14,6 +14,7 @@ from geo_infer_pep.models.talent_models import (
     JobRequisitionStatus,
     InterviewType,
 )
+from geo_infer_pep.talent import importer as talent_importer_module
 from geo_infer_pep.talent.importer import CSVTalentImporter
 from geo_infer_pep.talent.transformer import (
     clean_candidate_data,
@@ -242,8 +243,19 @@ def test_job_requisition_model():
 
 
 # Importer Tests
-def test_csv_talent_importer(dummy_talent_csv_files, caplog):
+def test_csv_talent_importer(dummy_talent_csv_files, caplog, monkeypatch):
     """Behavior-focused test: test_csv_talent_importer."""
+    # Freeze the importer's clock so the opened_at default is deterministic
+    # (no midnight race between the SUT's date.today() and the assertion).
+    frozen_today = date(2031, 5, 17)
+
+    class _FrozenDate(date):
+        @classmethod
+        def today(cls):
+            return frozen_today
+
+    monkeypatch.setattr(talent_importer_module, "date", _FrozenDate)
+
     importer = CSVTalentImporter(
         candidate_file_path=str(dummy_talent_csv_files["candidates"]),
         requisition_file_path=str(dummy_talent_csv_files["requisitions"]),
@@ -286,8 +298,8 @@ def test_csv_talent_importer(dummy_talent_csv_files, caplog):
 
     req_bad_date_obj = next(r for r in requisitions if r.requisition_id == "req_csv_3")
     assert req_bad_date_obj.status == JobRequisitionStatus.ON_HOLD
-    # opened_at for req_csv_3 should be date.today() or very close
-    assert req_bad_date_obj.opened_at == date.today()
+    # opened_at for req_csv_3 defaults to the importer's date.today()
+    assert req_bad_date_obj.opened_at == frozen_today
 
 
 # Transformer Tests

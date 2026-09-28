@@ -3,6 +3,7 @@ Tests for stream connectors in geo_infer_data.connectors.stream.
 """
 
 import asyncio
+import socket
 
 import aiohttp
 import pytest
@@ -137,9 +138,17 @@ class TestWebSocketConnector:
         assert connector.reconnect_interval == 10
 
     def test_connect_refused_raises(self):
-        connector = WebSocketConnector({"url": "ws://127.0.0.1:1/ws"})
+        # Use a loopback port the kernel just handed out and released: nothing
+        # is bound there, so the connect is refused with RST, unlike a fixed
+        # low port that a DROP firewall rule could blackhole into a hang.
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            probe.bind(("127.0.0.1", 0))
+            port = probe.getsockname()[1]
+        connector = WebSocketConnector({"url": f"ws://127.0.0.1:{port}/ws"})
         with pytest.raises(aiohttp.ClientError):
-            asyncio.run(connector.connect())
+            # Explicit client-side bound: a hang fails loudly with
+            # TimeoutError instead of stalling the suite.
+            asyncio.run(asyncio.wait_for(connector.connect(), timeout=10))
 
     def test_stream_data_requires_connection(self):
         connector = WebSocketConnector({})
