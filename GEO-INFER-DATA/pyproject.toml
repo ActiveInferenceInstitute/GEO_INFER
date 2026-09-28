@@ -75,6 +75,8 @@ dev = [
     "pyarrow>=14.0.0",
     "mypy>=0.910",
     "black>=21.9.0",
+    # Test-only dependencies (imported by tests/, not by src/)
+    "botocore>=1.31.0",
 ]
 docs = [
     "mkdocs>=1.5.0",

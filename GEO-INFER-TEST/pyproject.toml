@@ -79,12 +79,36 @@ dev = [
     "pytest-cov>=2.12.0",
     "black>=21.9.0",
     "mypy>=0.910",
-    ]
+    # Test-only dependencies (imported by tests/, not by src/)
+    "pyproj>=3.3.0",
+    "scikit-learn>=1.0.0",
+    "scipy>=1.7.0",
+    "shapely>=2.0.0",
+]
 docs = [
     "sphinx>=4.2.0",
     "sphinx-rtd-theme>=1.0.0",
     "nbsphinx>=0.8.0",
     "myst-parser>=0.15.0",
+]
+integrations = [
+    # Workspace siblings imported by this module's tests (resolved via [tool.uv.sources])
+    "geo-infer-act>=0.3.0",
+    "geo-infer-ag>=0.3.0",
+    "geo-infer-agent>=0.3.0",
+    "geo-infer-ai>=0.3.0",
+    "geo-infer-ant>=0.3.0",
+    "geo-infer-api>=0.3.0",
+    "geo-infer-app>=0.3.0",
+    "geo-infer-bayes>=0.3.0",
+    "geo-infer-data>=0.3.0",
+    "geo-infer-econ>=0.3.0",
+    "geo-infer-health>=0.3.0",
+    "geo-infer-math>=0.3.0",
+    "geo-infer-risk>=0.3.0",
+    "geo-infer-sec>=0.3.0",
+    "geo-infer-space>=0.3.0",
+    "geo-infer-time>=0.3.0",
 ]
 
 [project.urls]
@@ -92,6 +116,24 @@ Homepage = "https://github.com/ActiveInferenceInstitute/GEO_INFER"
 Documentation = "https://geo-infer.readthedocs.io/"
 Repository = "https://github.com/ActiveInferenceInstitute/GEO_INFER"
 "Bug Tracker" = "https://github.com/ActiveInferenceInstitute/GEO_INFER/issues"
+
+[tool.uv.sources]
+geo-infer-act = { workspace = true }
+geo-infer-ag = { workspace = true }
+geo-infer-agent = { workspace = true }
+geo-infer-ai = { workspace = true }
+geo-infer-ant = { workspace = true }
+geo-infer-api = { workspace = true }
+geo-infer-app = { workspace = true }
+geo-infer-bayes = { workspace = true }
+geo-infer-data = { workspace = true }
+geo-infer-econ = { workspace = true }
+geo-infer-health = { workspace = true }
+geo-infer-math = { workspace = true }
+geo-infer-risk = { workspace = true }
+geo-infer-sec = { workspace = true }
+geo-infer-space = { workspace = true }
+geo-infer-time = { workspace = true }
 
 [tool.setuptools]
 package-dir = {"" = "src"}

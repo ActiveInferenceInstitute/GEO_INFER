@@ -68,12 +68,20 @@ dev = [
     "black>=21.9.0",
     "mypy>=0.910",
     "geo-infer-ai>=0.3.0",
-    ]
+    # Test-only dependencies (imported by tests/, not by src/)
+    "geopandas>=0.13.0",
+    "hypothesis>=6.0.0",
+    "pillow>=8.3.0",
+]
 docs = [
     "sphinx>=4.2.0",
     "sphinx-rtd-theme>=1.0.0",
     "nbsphinx>=0.8.0",
     "myst-parser>=0.15.0",
+]
+integrations = [
+    # Workspace siblings imported by this module's tests (resolved via [tool.uv.sources])
+    "geo-infer-test>=0.3.0",
 ]
 
 [project.urls]
@@ -177,3 +185,4 @@ geo-infer-ai = { workspace = true }
 geo-infer-bayes = { workspace = true }
 geo-infer-space = { workspace = true }
 geo-infer-time = { workspace = true }
+geo-infer-test = { workspace = true }

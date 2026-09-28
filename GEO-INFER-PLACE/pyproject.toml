@@ -61,12 +61,18 @@ dev = [
     "pytest-asyncio>=0.20.0",
     "black>=21.9.0",
         "mypy>=0.910",
-    ]
+    # Test-only dependencies (imported by tests/, not by src/)
+    "pyproj>=3.3.0",
+]
 docs = [
     "sphinx>=4.2.0",
     "sphinx-rtd-theme>=1.0.0",
     "nbsphinx>=0.8.0",
     "myst-parser>=0.15.0",
+]
+integrations = [
+    # Workspace siblings imported by this module's tests (resolved via [tool.uv.sources])
+    "geo-infer-test>=0.3.0",
 ]
 
 [project.urls]
@@ -160,8 +166,8 @@ exclude_lines = [
     "@(abc\\.)?abstractmethod",
 ]
 
-
 [tool.uv.sources]
 geo-infer-space = { workspace = true }
 geo-infer-data = { workspace = true }
 geo-infer-time = { workspace = true }
+geo-infer-test = { workspace = true }
