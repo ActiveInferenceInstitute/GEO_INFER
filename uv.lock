@@ -4398,12 +4398,20 @@ dependencies = [
     { name = "xarray", version = "2025.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
 ]
 
+[package.dev-dependencies]
+test = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "netcdf4", specifier = ">=1.5.8" },
     { name = "numpy", specifier = ">=1.20.0" },
     { name = "xarray", specifier = ">=0.19.0" },
 ]
+
+[package.metadata.requires-dev]
+test = [{ name = "pytest", specifier = ">=6.2.0" }]
 
 [[package]]
 name = "geo-infer-math"
@@ -5476,12 +5484,20 @@ dependencies = [
     { name = "xarray", version = "2025.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
 ]
 
+[package.dev-dependencies]
+test = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "numpy", specifier = ">=1.20.0" },
     { name = "scipy", specifier = ">=1.7.0" },
     { name = "xarray", specifier = ">=0.19.0" },
 ]
+
+[package.metadata.requires-dev]
+test = [{ name = "pytest", specifier = ">=6.2.0" }]
 
 [[package]]
 name = "geojson-pydantic"
