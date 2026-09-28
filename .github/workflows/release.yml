@@ -24,10 +24,16 @@ permissions:
   actions: read
 
 # GS19-22: the release publishes fleet wheels; a second tag push or dispatch
-# for the same ref must queue behind the running release, never race it.
-# cancel-in-progress is deliberately omitted (releases are not preemptible).
+# for the same release target must queue behind the running release, never
+# race it. cancel-in-progress is deliberately omitted (releases are not
+# preemptible).
+# CI-08: the group is keyed on the release target, not on github.ref. Every
+# run that can write the release object of tag X (the tag push and any
+# workflow_dispatch recovery run at that tag) resolves to `tag-X`; branch
+# dispatches, which never touch a release object, share one fixed
+# `dispatch` group instead of fanning out per branch.
 concurrency:
-  group: geo-infer-release-${{ github.ref }}
+  group: geo-infer-release-${{ github.ref_type == 'tag' && format('tag-{0}', github.ref_name) || 'dispatch' }}
 
 jobs:
   ci-gate:
@@ -39,22 +45,36 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 130
+    outputs:
+      # REL-03: the release job sources the manuscript PDF from exactly the
+      # CI run this gate validated, never from another run on the SHA.
+      ci_run_id: ${{ steps.wait_ci.outputs.ci_run_id }}
     steps:
       - name: Wait for CI success on the tagged commit
+        id: wait_ci
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           deadline=$(( $(date +%s) + 7200 ))
           while :; do
+            # CI-07: a tagged main-tip SHA carries several ci.yml runs (the
+            # main push, the tag push, schedule/dispatch runs). An unfiltered
+            # `--limit 1` returned whichever row was newest, so a superseded
+            # and cancelled main-push run shadowed the tag's own run and
+            # failed the release. Poll only the tag-push run: tag-push runs
+            # carry the tag name as their head branch.
             row="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml \
-              --commit "$GITHUB_SHA" --limit 1 --json status,conclusion --jq '.[0] // empty')"
+              --commit "$GITHUB_SHA" --event push --branch "$GITHUB_REF_NAME" --limit 1 \
+              --json databaseId,status,conclusion --jq '.[0] // empty')"
             if [ -n "$row" ]; then
               status="$(printf '%s' "$row" | jq -r .status)"
               conclusion="$(printf '%s' "$row" | jq -r '.conclusion // ""')"
               if [ "$status" = "completed" ]; then
                 if [ "$conclusion" = "success" ]; then
-                  echo "GEO-INFER CI passed on $GITHUB_SHA; release proceeds"
+                  run_id="$(printf '%s' "$row" | jq -r .databaseId)"
+                  echo "ci_run_id=$run_id" >> "$GITHUB_OUTPUT"
+                  echo "GEO-INFER CI run $run_id passed on $GITHUB_SHA ($GITHUB_REF_NAME); release proceeds"
                   exit 0
                 fi
                 echo "FAIL: GEO-INFER CI on $GITHUB_SHA concluded '$conclusion'; blocking the wheel release" >&2
@@ -76,8 +96,11 @@ jobs:
     # REL-02: `gh release upload` writes assets onto the release object, which
     # the workflow-level `contents: read` cannot do. The grant is scoped to
     # this job so the ci-gate poller keeps its read-only token.
+    # REL-03: a job-level block replaces the workflow-level grant wholesale,
+    # so `actions: read` is restated for the cross-run manuscript download.
     permissions:
       contents: write
+      actions: read
     # GS19-22: an unbounded release job could hang the whole release pipeline
     # behind the concurrency queue; the 45-wheel build + verify fits well
     # inside this ceiling.
@@ -184,6 +207,54 @@ jobs:
             echo "FAIL: release $GITHUB_REF_NAME carries $attached .whl assets but $built wheels were built" >&2
             exit 1
           fi
+
+      # REL-03: v0.3.0 carries the manuscript PDF on its release object, but
+      # no workflow put it there (it was a manual attach). The PDF is
+      # rendered by ci.yml's manuscript job (artifact
+      # `geo-infer-manuscript-render-receipts`);
+      # rendering LaTeX here would break the 60-minute release ceiling, so the
+      # attach downloads that artifact from the exact CI run the ci-gate
+      # validated. The asset keeps the prior release shape:
+      # GEO-INFER-manuscript-<release date>.pdf.
+      - name: Attach the manuscript PDF to the release object
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_RUN_ID: ${{ needs.ci-gate.outputs.ci_run_id }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF_TYPE" != "tag" ]; then
+            echo "::notice::REL-03: ref '$GITHUB_REF_NAME' is a $GITHUB_REF_TYPE, not a tag; there is no release object to attach the manuscript PDF to."
+            exit 0
+          fi
+          if [ -z "$CI_RUN_ID" ]; then
+            echo "::warning::REL-03: this dispatch skipped the ci-gate, so no validated CI run exists to source the manuscript PDF from; the PDF was NOT attached. Attach it from the tag's successful CI run: gh run download <run-id> --name geo-infer-manuscript-render-receipts"
+            exit 0
+          fi
+          if ! gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::warning::REL-03: no release object exists for tag '$GITHUB_REF_NAME'; the manuscript PDF was NOT attached. Create the release and re-run this workflow, or attach manually: gh run download $CI_RUN_ID --name geo-infer-manuscript-render-receipts"
+            exit 0
+          fi
+          gh run download "$CI_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name geo-infer-manuscript-render-receipts --dir manuscript-receipts
+          pdf="manuscript-receipts/GEO-INFER_combined.pdf"
+          if [ ! -s "$pdf" ]; then
+            echo "FAIL: CI run $CI_RUN_ID's render receipts carry no GEO-INFER_combined.pdf" >&2
+            exit 1
+          fi
+          released="$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --json createdAt --jq '.createdAt[0:10]')"
+          asset="GEO-INFER-manuscript-${released}.pdf"
+          cp "$pdf" "$asset"
+          gh release upload "$GITHUB_REF_NAME" "$asset" --clobber --repo "$GITHUB_REPOSITORY"
+          # Capture before matching: under pipefail an early-exiting
+          # `grep -q` can SIGPIPE the producer and fake a failed attach.
+          assets="$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --json assets --jq '.assets[].name')"
+          if ! printf '%s\n' "$assets" | grep -Fxq "$asset"; then
+            echo "FAIL: release $GITHUB_REF_NAME does not carry $asset after the upload" >&2
+            exit 1
+          fi
+          echo "Release $GITHUB_REF_NAME now carries $asset from CI run $CI_RUN_ID"
 
       - name: Prune uv cache
         if: always()

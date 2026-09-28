@@ -1,8 +1,10 @@
 name: Import probe portability
 
 on:
-  push:
-    branches: ["main"]
+  # CI-09: no push leg. A merge to main re-ran the full probe matrix that the
+  # PR leg had just run on the identical tree (GS-007 removed the same
+  # duplicate from gnn-interchange.yml); post-merge probes are on demand via
+  # workflow_dispatch.
   # GS19-21: PR legs target main/develop like ci.yml so feature-branch PRs
   # stay cheap; a feature-branch run is available on demand via
   # workflow_dispatch (Actions tab or `gh workflow run`).
