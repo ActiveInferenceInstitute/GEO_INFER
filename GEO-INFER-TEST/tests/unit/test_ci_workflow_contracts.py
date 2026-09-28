@@ -209,6 +209,27 @@ def test_release_job_is_timeout_bounded_and_release_queue_is_serialized():
     assert concurrency.get("cancel-in-progress", False) is False
 
 
+def test_scheduled_runs_get_their_own_concurrency_bucket():
+    """CI-06: schedule events must not share the push-to-main group.
+
+    The weekly slow-scheduled lane resolves github.ref to refs/heads/main,
+    which previously collided with push concurrency and let the Monday
+    fire (or a mid-lane push) cancel the slow category.
+    """
+    group = _load("ci.yml")["concurrency"]["group"]
+    assert "'schedule'" in group
+    assert "'scheduled'" in group
+    # Non-schedule events keep the existing PR-number/ref behavior.
+    assert "github.event.pull_request.number || github.ref" in group
+    # The push expression is preserved verbatim (the schedule arm only
+    # prepends a ternary to the same parenthesized fallback).
+    assert (
+        group == "geo-infer-ci-${{ github.workflow }}-"
+        "${{ github.event_name == 'schedule' && 'scheduled' ||"
+        " (github.event.pull_request.number || github.ref) }}"
+    )
+
+
 def test_import_probes_derive_pytest_from_the_workspace_lock():
     """GS19-23: no floating pytest pin; the version comes from uv.lock."""
     job = _dump(_load("import-probes.yml")["jobs"]["probes"])
