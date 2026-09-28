@@ -1,4 +1,6 @@
+# GEO-INFER-INTRA runtime requirements: generated mirror of [project.dependencies] in pyproject.toml.
+# pyproject.toml is canonical; optional/test extras live only in [project.optional-dependencies].
 h3>=4.5.0,<5
 jsonschema>=4.0.0
-Pillow>=10.0
+pillow>=10.0.0
 pyyaml>=6.0
