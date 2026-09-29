@@ -1,8 +1,5 @@
-# GEO-INFER-DATA runtime dependencies.
-# This file mirrors [project.dependencies] in pyproject.toml (the canonical
-# source) plus the optional extras.  Keep both in sync.
-#
-# Runtime dependencies
+# GEO-INFER-DATA runtime requirements: generated mirror of [project.dependencies] in pyproject.toml.
+# pyproject.toml is canonical; optional/test extras live only in [project.optional-dependencies].
 aiohttp>=3.8.0
 aiomqtt>=2.4.0
 boto3>=1.28.0
@@ -26,21 +23,3 @@ shapely>=2.0.0
 sqlalchemy>=2.0.0
 urllib3>=2.0.6
 uvicorn[standard]>=0.23.0
-#
-# Optional: [project.optional-dependencies] integrations
-#   duckdb  — optional DuckDB spatial backend (utils/duckdb_spatial)
-#   pymongo — MongoDBConnector (connectors/database.py)
-#   xarray  — optional raster/array ingestion paths
-duckdb>=0.9.0
-pymongo>=4.5.0
-xarray>=2023.1.0
-#
-# Optional: [project.optional-dependencies] dev (tests / lint / docs)
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
-pytest-cov>=4.1.0
-pytest-mock>=3.11.0
-httpx>=0.24.0
-pyarrow>=14.0.0
-mypy>=1.5.0
-black>=21.9.0

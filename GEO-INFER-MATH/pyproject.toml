@@ -57,7 +57,10 @@ dev = [
     "pytest-asyncio>=0.20.0",
     "black>=21.9.0",
         "mypy>=0.910",
-    ]
+    # Test-only dependencies (imported by tests/, not by src/)
+    "geopandas>=0.13.0",
+    "shapely>=2.0.0",
+]
 docs = [
     "sphinx>=4.2.0",
     "sphinx-rtd-theme>=1.0.0",

@@ -1,18 +1,12 @@
-# GEO-INFER-ACT runtime requirements.
-# Mirrors [project.dependencies] in pyproject.toml (the canonical source).
-# Optional backend/integration extras (torch, pyro-ppl, pymc, arviz,
-# bayeux-ml, jax, networkx, shapely, imageio, plotly), the cross-module
-# geo-infer-space / geo-infer-time extras, and the dev/test extra
-# (pytest tooling plus geo-infer-ai, which is test-only) are declared in
-# pyproject.toml and installed via
-# `uv pip install geo-infer-act[backends|space|gnn|dev]`.
+# GEO-INFER-ACT runtime requirements: generated mirror of [project.dependencies] in pyproject.toml.
+# pyproject.toml is canonical; optional/test extras live only in [project.optional-dependencies].
 matplotlib>=3.4.0
 numpy>=1.20.0
 pandas>=1.3.0
 pyyaml>=6.0
 requests>=2.25.0
+scipy>=1.7.0
 seaborn>=0.11.0
 inferactively-pymdp==1.0.3
 h3>=4.5.0,<5
-geo-infer-bayes>=0.2.0
-scipy>=1.7.0
+geo-infer-bayes>=0.3.0

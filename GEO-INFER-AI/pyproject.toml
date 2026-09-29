@@ -51,6 +51,8 @@ dev = [
     "pytest-asyncio>=0.20.0",
     "black>=21.9.0",
     "mypy>=0.910",
+    # Test-only dependencies (imported by tests/, not by src/)
+    "matplotlib>=3.5.0",
 ]
 docs = [
     "sphinx>=4.2.0",

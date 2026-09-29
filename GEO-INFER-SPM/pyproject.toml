@@ -60,6 +60,9 @@ dev = [
     "mypy>=0.910",
     "psutil>=5.8.0",
     "statsmodels>=0.13.0",
+    # Test-only dependencies (imported by tests/, not by src/)
+    "ruptures>=1.1.0",
+    "shapely>=2.0.0",
 ]
 docs = [
     "sphinx>=4.2.0",

@@ -2509,7 +2509,10 @@ backends = [
 dev = [
     { name = "black" },
     { name = "geo-infer-ai" },
+    { name = "geopandas" },
+    { name = "hypothesis" },
     { name = "mypy" },
+    { name = "pillow" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -2523,6 +2526,9 @@ docs = [
 gnn = [
     { name = "geo-infer-time" },
 ]
+integrations = [
+    { name = "geo-infer-test" },
+]
 space = [
     { name = "geo-infer-space" },
 ]
@@ -2535,8 +2541,11 @@ requires-dist = [
     { name = "geo-infer-ai", marker = "extra == 'dev'", editable = "GEO-INFER-AI" },
     { name = "geo-infer-bayes", editable = "GEO-INFER-BAYES" },
     { name = "geo-infer-space", marker = "extra == 'space'", editable = "GEO-INFER-SPACE" },
+    { name = "geo-infer-test", marker = "extra == 'integrations'", editable = "GEO-INFER-TEST" },
     { name = "geo-infer-time", marker = "extra == 'gnn'", editable = "GEO-INFER-TIME" },
+    { name = "geopandas", marker = "extra == 'dev'", specifier = ">=0.13.0" },
     { name = "h3", specifier = ">=4.5.0,<5" },
+    { name = "hypothesis", marker = "extra == 'dev'", specifier = ">=6.0.0" },
     { name = "imageio", marker = "extra == 'backends'", specifier = ">=2.9.0" },
     { name = "inferactively-pymdp", specifier = "==1.0.3" },
     { name = "jax", marker = "extra == 'backends'", specifier = ">=0.2.0" },
@@ -2547,6 +2556,7 @@ requires-dist = [
     { name = "networkx", marker = "extra == 'backends'", specifier = ">=2.6.0" },
     { name = "numpy", specifier = ">=1.20.0" },
     { name = "pandas", specifier = ">=1.3.0" },
+    { name = "pillow", marker = "extra == 'dev'", specifier = ">=8.3.0" },
     { name = "plotly", marker = "extra == 'backends'", specifier = ">=5.0.0" },
     { name = "pymc", marker = "extra == 'backends'", specifier = ">=4.0.0" },
     { name = "pyro-ppl", marker = "extra == 'backends'", specifier = ">=1.7.0" },
@@ -2562,7 +2572,7 @@ requires-dist = [
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
     { name = "torch", marker = "extra == 'backends'", specifier = ">=1.9.0" },
 ]
-provides-extras = ["backends", "space", "gnn", "dev", "docs"]
+provides-extras = ["backends", "space", "gnn", "dev", "docs", "integrations"]
 
 [[package]]
 name = "geo-infer-ag"
@@ -2704,6 +2714,7 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "black" },
+    { name = "matplotlib" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -2723,6 +2734,7 @@ mlops = [
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "h3", specifier = ">=4.5.0,<5" },
+    { name = "matplotlib", marker = "extra == 'dev'", specifier = ">=3.5.0" },
     { name = "mlflow", marker = "extra == 'mlops'", specifier = ">=2.0.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
@@ -2756,6 +2768,7 @@ dev = [
     { name = "black" },
     { name = "h3" },
     { name = "mypy" },
+    { name = "psutil" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -2787,6 +2800,7 @@ requires-dist = [
     { name = "nbsphinx", marker = "extra == 'docs'", specifier = ">=0.8.0" },
     { name = "networkx", specifier = ">=2.8" },
     { name = "numpy", specifier = ">=1.21.0" },
+    { name = "psutil", marker = "extra == 'dev'", specifier = ">=5.9.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
@@ -2901,9 +2915,12 @@ dependencies = [
 dev = [
     { name = "black" },
     { name = "mypy" },
+    { name = "pandas", version = "2.1.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "pandas", version = "2.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "shapely" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -2935,6 +2952,7 @@ requires-dist = [
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
     { name = "nbsphinx", marker = "extra == 'docs'", specifier = ">=0.8.0" },
     { name = "numpy", specifier = ">=1.21.0" },
+    { name = "pandas", marker = "extra == 'dev'", specifier = ">=1.3.0" },
     { name = "pillow", specifier = ">=8.3.0" },
     { name = "plotly", marker = "extra == 'integrations'", specifier = ">=5.0.0" },
     { name = "psutil", marker = "extra == 'integrations'", specifier = ">=5.8.0" },
@@ -2943,6 +2961,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "rasterio", specifier = ">=1.2.0" },
     { name = "scipy", specifier = ">=1.7.0" },
+    { name = "shapely", marker = "extra == 'dev'", specifier = ">=2.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
     { name = "tensorflow", marker = "extra == 'neural'", specifier = ">=2.6.0" },
@@ -2984,6 +3003,7 @@ integrations = [
 test = [
     { name = "geopandas" },
     { name = "pytest" },
+    { name = "shapely" },
 ]
 
 [package.metadata]
@@ -3002,6 +3022,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'test'", specifier = ">=6.2.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "scipy", specifier = ">=1.7.0" },
+    { name = "shapely", marker = "extra == 'test'", specifier = ">=2.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
     { name = "tqdm", specifier = ">=4.60.0" },
@@ -3038,6 +3059,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "setuptools" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -3078,6 +3100,7 @@ requires-dist = [
     { name = "rasterio", marker = "extra == 'integrations'", specifier = ">=1.2" },
     { name = "requests", specifier = ">=2.28" },
     { name = "seaborn", specifier = ">=0.11.0" },
+    { name = "setuptools", marker = "extra == 'dev'", specifier = ">=77.0" },
     { name = "shapely", specifier = ">=2.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
@@ -3296,6 +3319,7 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "black" },
+    { name = "botocore" },
     { name = "httpx" },
     { name = "mypy" },
     { name = "pyarrow" },
@@ -3321,6 +3345,7 @@ requires-dist = [
     { name = "aiomqtt", specifier = ">=2.4.0" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "boto3", specifier = ">=1.28.0" },
+    { name = "botocore", marker = "extra == 'dev'", specifier = ">=1.31.0" },
     { name = "duckdb", marker = "extra == 'integrations'", specifier = ">=0.9.0" },
     { name = "fastapi", specifier = ">=0.100.0" },
     { name = "geopandas", specifier = ">=0.13.0" },
@@ -3386,6 +3411,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "starlette" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -3431,6 +3457,7 @@ requires-dist = [
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
     { name = "spreg", marker = "extra == 'econometrics'", specifier = ">=1.2.0" },
+    { name = "starlette", marker = "extra == 'dev'", specifier = ">=0.27.0" },
     { name = "uvicorn", marker = "extra == 'api'", specifier = ">=0.23.0" },
 ]
 provides-extras = ["dev", "docs", "api", "econometrics", "visualization"]
@@ -3964,12 +3991,15 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "black" },
+    { name = "geopandas" },
     { name = "isort" },
     { name = "mypy" },
+    { name = "numpy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "radon" },
+    { name = "shapely" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -3978,6 +4008,7 @@ docs = [
     { name = "sphinx-rtd-theme" },
 ]
 integrations = [
+    { name = "geo-infer-test" },
     { name = "redis" },
 ]
 
@@ -3985,12 +4016,15 @@ integrations = [
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "fastapi", specifier = ">=0.104.0" },
+    { name = "geo-infer-test", marker = "extra == 'integrations'", editable = "GEO-INFER-TEST" },
+    { name = "geopandas", marker = "extra == 'dev'", specifier = ">=0.13.0" },
     { name = "gitpython", specifier = ">=3.1.0" },
     { name = "isort", marker = "extra == 'dev'", specifier = ">=5.12.0" },
     { name = "jsonschema", specifier = ">=4.17.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
     { name = "nbsphinx", marker = "extra == 'docs'", specifier = ">=0.8.0" },
+    { name = "numpy", marker = "extra == 'dev'", specifier = ">=1.20.0" },
     { name = "pydantic", specifier = ">=2.5.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.3.1" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
@@ -3999,6 +4033,7 @@ requires-dist = [
     { name = "radon", marker = "extra == 'dev'", specifier = ">=5.1.0" },
     { name = "redis", marker = "extra == 'integrations'", specifier = ">=4.5.0" },
     { name = "requests", specifier = ">=2.28.1" },
+    { name = "shapely", marker = "extra == 'dev'", specifier = ">=2.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
     { name = "starlette", specifier = ">=0.27.0" },
@@ -4026,9 +4061,13 @@ dependencies = [
 dev = [
     { name = "httpx" },
     { name = "mypy" },
+    { name = "numpy" },
+    { name = "pandas", version = "2.1.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "pandas", version = "2.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "shapely" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -4036,27 +4075,34 @@ docs = [
     { name = "sphinx" },
     { name = "sphinx-rtd-theme" },
 ]
+integrations = [
+    { name = "geo-infer-test" },
+]
 
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.104.0" },
+    { name = "geo-infer-test", marker = "extra == 'integrations'", editable = "GEO-INFER-TEST" },
     { name = "geopandas", specifier = ">=0.13.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.25.0" },
     { name = "loguru", specifier = ">=0.7.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
     { name = "nbsphinx", marker = "extra == 'docs'", specifier = ">=0.8.0" },
+    { name = "numpy", marker = "extra == 'dev'", specifier = ">=1.20.0" },
+    { name = "pandas", marker = "extra == 'dev'", specifier = ">=1.3.0" },
     { name = "pydantic", specifier = ">=2.5.0" },
     { name = "pydantic-settings", specifier = ">=2.1.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1.0" },
     { name = "pyyaml", specifier = ">=6.0.0" },
+    { name = "shapely", marker = "extra == 'dev'", specifier = ">=2.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
     { name = "uvicorn", specifier = ">=0.24.0" },
 ]
-provides-extras = ["dev", "docs"]
+provides-extras = ["dev", "docs", "integrations"]
 
 [[package]]
 name = "geo-infer-insurance"
@@ -4074,6 +4120,7 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-timeout" },
+    { name = "requests" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -4096,6 +4143,7 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "pytest-timeout", marker = "extra == 'dev'", specifier = ">=2.1.0" },
+    { name = "requests", marker = "extra == 'dev'", specifier = ">=2.28.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
 ]
@@ -4116,6 +4164,7 @@ dependencies = [
 dev = [
     { name = "black" },
     { name = "mypy" },
+    { name = "prometheus-client" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -4126,16 +4175,25 @@ docs = [
     { name = "sphinx" },
     { name = "sphinx-rtd-theme" },
 ]
+integrations = [
+    { name = "geo-infer-data" },
+    { name = "geo-infer-space" },
+    { name = "geo-infer-test" },
+]
 
 [package.metadata]
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
+    { name = "geo-infer-data", marker = "extra == 'integrations'", editable = "GEO-INFER-DATA" },
+    { name = "geo-infer-space", marker = "extra == 'integrations'", editable = "GEO-INFER-SPACE" },
+    { name = "geo-infer-test", marker = "extra == 'integrations'", editable = "GEO-INFER-TEST" },
     { name = "h3", specifier = ">=4.5.0,<5" },
     { name = "jsonschema", specifier = ">=4.0.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
     { name = "nbsphinx", marker = "extra == 'docs'", specifier = ">=0.8.0" },
     { name = "pillow", specifier = ">=10.0.0" },
+    { name = "prometheus-client", marker = "extra == 'dev'", specifier = ">=0.12.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
@@ -4143,7 +4201,7 @@ requires-dist = [
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
 ]
-provides-extras = ["dev", "docs"]
+provides-extras = ["dev", "docs", "integrations"]
 
 [[package]]
 name = "geo-infer-iot"
@@ -4340,12 +4398,20 @@ dependencies = [
     { name = "xarray", version = "2025.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
 ]
 
+[package.dev-dependencies]
+test = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "netcdf4", specifier = ">=1.5.8" },
     { name = "numpy", specifier = ">=1.20.0" },
     { name = "xarray", specifier = ">=0.19.0" },
 ]
+
+[package.metadata.requires-dev]
+test = [{ name = "pytest", specifier = ">=6.2.0" }]
 
 [[package]]
 name = "geo-infer-math"
@@ -4363,10 +4429,12 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "black" },
+    { name = "geopandas" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "shapely" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -4390,6 +4458,7 @@ web = [
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "flask", marker = "extra == 'web'", specifier = ">=2.3.0" },
+    { name = "geopandas", marker = "extra == 'dev'", specifier = ">=0.13.0" },
     { name = "matplotlib", marker = "extra == 'examples'", specifier = ">=3.5.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
@@ -4401,6 +4470,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "scikit-learn", specifier = ">=1.0.0" },
     { name = "scipy", specifier = ">=1.7.0" },
+    { name = "shapely", marker = "extra == 'dev'", specifier = ">=2.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
     { name = "sympy", specifier = ">=1.9.0" },
@@ -4694,6 +4764,7 @@ dependencies = [
 dev = [
     { name = "black" },
     { name = "mypy" },
+    { name = "pyproj" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -4708,6 +4779,9 @@ full = [
     { name = "geo-infer-data" },
     { name = "geo-infer-time" },
 ]
+integrations = [
+    { name = "geo-infer-test" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -4716,6 +4790,7 @@ requires-dist = [
     { name = "folium", specifier = ">=0.14.0" },
     { name = "geo-infer-data", marker = "extra == 'full'", editable = "GEO-INFER-DATA" },
     { name = "geo-infer-space", editable = "GEO-INFER-SPACE" },
+    { name = "geo-infer-test", marker = "extra == 'integrations'", editable = "GEO-INFER-TEST" },
     { name = "geo-infer-time", marker = "extra == 'full'", editable = "GEO-INFER-TIME" },
     { name = "geopandas", specifier = ">=0.13.0" },
     { name = "h3", specifier = ">=4.5.0,<5" },
@@ -4727,6 +4802,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.20.0" },
     { name = "pandas", specifier = ">=1.3.0" },
     { name = "plotly", specifier = ">=5.0.0" },
+    { name = "pyproj", marker = "extra == 'dev'", specifier = ">=3.3.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
@@ -4737,7 +4813,7 @@ requires-dist = [
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
     { name = "urllib3", specifier = ">=2.0.6" },
 ]
-provides-extras = ["full", "dev", "docs"]
+provides-extras = ["full", "dev", "docs", "integrations"]
 
 [[package]]
 name = "geo-infer-req"
@@ -4807,6 +4883,7 @@ integrations = [
     { name = "geo-infer-data" },
     { name = "geo-infer-math" },
     { name = "geo-infer-space" },
+    { name = "geo-infer-test" },
     { name = "geo-infer-time" },
 ]
 ml = [
@@ -4821,6 +4898,7 @@ requires-dist = [
     { name = "geo-infer-data", marker = "extra == 'integrations'", editable = "GEO-INFER-DATA" },
     { name = "geo-infer-math", marker = "extra == 'integrations'", editable = "GEO-INFER-MATH" },
     { name = "geo-infer-space", marker = "extra == 'integrations'", editable = "GEO-INFER-SPACE" },
+    { name = "geo-infer-test", marker = "extra == 'integrations'", editable = "GEO-INFER-TEST" },
     { name = "geo-infer-time", marker = "extra == 'integrations'", editable = "GEO-INFER-TIME" },
     { name = "geopandas", specifier = ">=0.13.0" },
     { name = "joblib", marker = "extra == 'ml'", specifier = ">=1.0" },
@@ -4862,16 +4940,23 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "black" },
+    { name = "minio" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "redis" },
 ]
 docs = [
     { name = "myst-parser" },
     { name = "nbsphinx" },
     { name = "sphinx" },
     { name = "sphinx-rtd-theme" },
+]
+integrations = [
+    { name = "geo-infer-data" },
+    { name = "geo-infer-git" },
+    { name = "geo-infer-ops" },
 ]
 ml = [
     { name = "joblib" },
@@ -4883,9 +4968,13 @@ requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "cryptography", specifier = ">=36.0.0" },
     { name = "flask", specifier = ">=2.0" },
+    { name = "geo-infer-data", marker = "extra == 'integrations'", editable = "GEO-INFER-DATA" },
+    { name = "geo-infer-git", marker = "extra == 'integrations'", editable = "GEO-INFER-GIT" },
+    { name = "geo-infer-ops", marker = "extra == 'integrations'", editable = "GEO-INFER-OPS" },
     { name = "geopandas", specifier = ">=0.13.0" },
     { name = "h3", specifier = ">=4.5.0,<5" },
     { name = "joblib", marker = "extra == 'ml'", specifier = ">=1.0" },
+    { name = "minio", marker = "extra == 'dev'", specifier = ">=7.1.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
     { name = "nbsphinx", marker = "extra == 'docs'", specifier = ">=0.8.0" },
@@ -4896,12 +4985,13 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "redis", marker = "extra == 'dev'", specifier = ">=4.5.0" },
     { name = "scikit-learn", marker = "extra == 'ml'", specifier = ">=1.0" },
     { name = "shapely", specifier = ">=2.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
 ]
-provides-extras = ["dev", "docs", "ml"]
+provides-extras = ["dev", "docs", "ml", "integrations"]
 
 [[package]]
 name = "geo-infer-sim"
@@ -5004,6 +5094,10 @@ docs = [
     { name = "sphinx" },
     { name = "sphinx-rtd-theme" },
 ]
+integrations = [
+    { name = "geo-infer-math" },
+    { name = "geo-infer-test" },
+]
 optional = [
     { name = "dask", extra = ["dataframe"] },
     { name = "laspy" },
@@ -5030,7 +5124,9 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.100.0" },
     { name = "fiona", specifier = ">=1.8.0" },
     { name = "folium", marker = "extra == 'viz'", specifier = ">=0.12.0" },
+    { name = "geo-infer-math", marker = "extra == 'integrations'", editable = "GEO-INFER-MATH" },
     { name = "geo-infer-space", extras = ["optional", "viz"], marker = "extra == 'all'" },
+    { name = "geo-infer-test", marker = "extra == 'integrations'", editable = "GEO-INFER-TEST" },
     { name = "geojson-pydantic", specifier = ">=2.0.0" },
     { name = "geopandas", specifier = ">=0.13.0" },
     { name = "h3", specifier = ">=4.5.0,<5" },
@@ -5067,7 +5163,7 @@ requires-dist = [
     { name = "uvicorn", specifier = ">=0.15.0" },
     { name = "xarray", marker = "extra == 'optional'", specifier = ">=0.20.0" },
 ]
-provides-extras = ["dev", "docs", "optional", "viz", "all"]
+provides-extras = ["dev", "docs", "optional", "viz", "all", "integrations"]
 
 [[package]]
 name = "geo-infer-spm"
@@ -5100,6 +5196,8 @@ dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruptures" },
+    { name = "shapely" },
     { name = "statsmodels" },
 ]
 docs = [
@@ -5128,8 +5226,10 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "rasterio", specifier = ">=1.2.0" },
+    { name = "ruptures", marker = "extra == 'dev'", specifier = ">=1.1.0" },
     { name = "scikit-learn", specifier = ">=1.0.0" },
     { name = "scipy", specifier = ">=1.7.0" },
+    { name = "shapely", marker = "extra == 'dev'", specifier = ">=2.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
     { name = "statsmodels", marker = "extra == 'dev'", specifier = ">=0.13.0" },
@@ -5169,14 +5269,36 @@ browser = [
 dev = [
     { name = "black" },
     { name = "mypy" },
+    { name = "pyproj" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+    { name = "shapely" },
 ]
 docs = [
     { name = "myst-parser" },
     { name = "nbsphinx" },
     { name = "sphinx" },
     { name = "sphinx-rtd-theme" },
+]
+integrations = [
+    { name = "geo-infer-act" },
+    { name = "geo-infer-ag" },
+    { name = "geo-infer-agent" },
+    { name = "geo-infer-ai" },
+    { name = "geo-infer-ant" },
+    { name = "geo-infer-api" },
+    { name = "geo-infer-app" },
+    { name = "geo-infer-bayes" },
+    { name = "geo-infer-data" },
+    { name = "geo-infer-econ" },
+    { name = "geo-infer-health" },
+    { name = "geo-infer-math" },
+    { name = "geo-infer-risk" },
+    { name = "geo-infer-sec" },
+    { name = "geo-infer-space" },
+    { name = "geo-infer-time" },
 ]
 load = [
     { name = "locust" },
@@ -5202,6 +5324,22 @@ requires-dist = [
     { name = "coverage", extras = ["toml"], specifier = ">=7.0.0" },
     { name = "factory-boy", marker = "extra == 'synthetic'", specifier = ">=3.2.0" },
     { name = "faker", marker = "extra == 'synthetic'", specifier = ">=18.0.0" },
+    { name = "geo-infer-act", marker = "extra == 'integrations'", editable = "GEO-INFER-ACT" },
+    { name = "geo-infer-ag", marker = "extra == 'integrations'", editable = "GEO-INFER-AG" },
+    { name = "geo-infer-agent", marker = "extra == 'integrations'", editable = "GEO-INFER-AGENT" },
+    { name = "geo-infer-ai", marker = "extra == 'integrations'", editable = "GEO-INFER-AI" },
+    { name = "geo-infer-ant", marker = "extra == 'integrations'", editable = "GEO-INFER-ANT" },
+    { name = "geo-infer-api", marker = "extra == 'integrations'", editable = "GEO-INFER-API" },
+    { name = "geo-infer-app", marker = "extra == 'integrations'", editable = "GEO-INFER-APP" },
+    { name = "geo-infer-bayes", marker = "extra == 'integrations'", editable = "GEO-INFER-BAYES" },
+    { name = "geo-infer-data", marker = "extra == 'integrations'", editable = "GEO-INFER-DATA" },
+    { name = "geo-infer-econ", marker = "extra == 'integrations'", editable = "GEO-INFER-ECON" },
+    { name = "geo-infer-health", marker = "extra == 'integrations'", editable = "GEO-INFER-HEALTH" },
+    { name = "geo-infer-math", marker = "extra == 'integrations'", editable = "GEO-INFER-MATH" },
+    { name = "geo-infer-risk", marker = "extra == 'integrations'", editable = "GEO-INFER-RISK" },
+    { name = "geo-infer-sec", marker = "extra == 'integrations'", editable = "GEO-INFER-SEC" },
+    { name = "geo-infer-space", marker = "extra == 'integrations'", editable = "GEO-INFER-SPACE" },
+    { name = "geo-infer-time", marker = "extra == 'integrations'", editable = "GEO-INFER-TIME" },
     { name = "geopandas", specifier = ">=0.13.0" },
     { name = "h3", specifier = ">=4.5.0,<5" },
     { name = "hypothesis", specifier = ">=6.0.0" },
@@ -5216,6 +5354,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.20.0" },
     { name = "pandas", specifier = ">=1.3.0" },
     { name = "psutil", specifier = ">=5.9.0" },
+    { name = "pyproj", marker = "extra == 'dev'", specifier = ">=3.3.0" },
     { name = "pytest", specifier = ">=7.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-benchmark", specifier = ">=4.0.0" },
@@ -5227,13 +5366,16 @@ requires-dist = [
     { name = "pytest-xdist", specifier = ">=3.0.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", marker = "extra == 'load'", specifier = ">=2.28.0" },
+    { name = "scikit-learn", marker = "extra == 'dev'", specifier = ">=1.0.0" },
+    { name = "scipy", marker = "extra == 'dev'", specifier = ">=1.7.0" },
     { name = "seaborn", marker = "extra == 'reporting'", specifier = ">=0.11.0" },
     { name = "selenium", marker = "extra == 'browser'", specifier = ">=4.0.0" },
+    { name = "shapely", marker = "extra == 'dev'", specifier = ">=2.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
     { name = "tabulate", marker = "extra == 'reporting'", specifier = ">=0.9.0" },
 ]
-provides-extras = ["load", "browser", "reporting", "synthetic", "profiling", "dev", "docs"]
+provides-extras = ["load", "browser", "reporting", "synthetic", "profiling", "dev", "docs", "integrations"]
 
 [[package]]
 name = "geo-infer-time"
@@ -5251,6 +5393,7 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "black" },
+    { name = "matplotlib" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -5271,6 +5414,7 @@ streaming = [
 requires-dist = [
     { name = "aiokafka", marker = "extra == 'streaming'", specifier = ">=0.12,<1" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
+    { name = "matplotlib", marker = "extra == 'dev'", specifier = ">=3.5.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
     { name = "nbsphinx", marker = "extra == 'docs'", specifier = ">=0.8.0" },
@@ -5340,12 +5484,20 @@ dependencies = [
     { name = "xarray", version = "2025.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
 ]
 
+[package.dev-dependencies]
+test = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "numpy", specifier = ">=1.20.0" },
     { name = "scipy", specifier = ">=1.7.0" },
     { name = "xarray", specifier = ">=0.19.0" },
 ]
+
+[package.metadata.requires-dev]
+test = [{ name = "pytest", specifier = ">=6.2.0" }]
 
 [[package]]
 name = "geojson-pydantic"

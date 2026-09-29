@@ -55,6 +55,8 @@ integrations = [
     "geo-infer-math",
     "geo-infer-bayes",
     "geo-infer-data",
+    # Workspace siblings imported by this module's tests (resolved via [tool.uv.sources])
+    "geo-infer-test>=0.3.0",
 ]
 
 # Optional machine-learning backend for hotspot clustering. The KMeans
@@ -86,6 +88,7 @@ geo-infer-time = { workspace = true }
 geo-infer-math = { workspace = true }
 geo-infer-bayes = { workspace = true }
 geo-infer-data = { workspace = true }
+geo-infer-test = { workspace = true }
 
 [project.urls]
 Homepage = "https://github.com/ActiveInferenceInstitute/GEO_INFER"

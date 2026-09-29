@@ -53,3 +53,10 @@ exclude = ["tests*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.md", "*.txt"]
+
+[dependency-groups]
+# Test-only dependencies (imported by tests/, not by src/). A PEP 735 group,
+# not an extra: MODULE_EXTRAS maps this module to no optional-dependency groups.
+test = [
+    "pytest>=6.2.0",
+]

@@ -51,6 +51,8 @@ integrations = [
 test = [
     "geopandas>=0.13.0",
     "pytest>=6.2.0",
+    # Test-only dependencies (imported by tests/, not by src/)
+    "shapely>=2.0.0",
 ]
 dev = [
     "pytest>=6.2.0",
