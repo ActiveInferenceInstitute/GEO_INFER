@@ -8,10 +8,8 @@ Climate modeling, weather analysis, and climate change impact assessment for geo
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

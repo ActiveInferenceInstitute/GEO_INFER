@@ -9,11 +9,9 @@ Advanced meta-governance frameworks, organizational governance methods, and mult
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `IMPLEMENTATION_SUMMARY.md`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

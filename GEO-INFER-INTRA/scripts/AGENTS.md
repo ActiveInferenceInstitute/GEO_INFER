@@ -23,16 +23,6 @@
 
 - `maintenance/`
 - `markdown_to_pdf/`
-- `add_missing_deps.py`
-- `analyze_module_dependencies.py`
-- `audit_agents_docs.py`
-- `cleanup_pyproject_deps.py`
-- `fix_existing_pyproject.py`
-- `fix_installation_issues.py`
-- `migrate_to_uv.py`
-- `validate_dependencies.py`
-- `validate_uv_migration.py`
-- `validate_uv_setup.py`
 
 ## Validation
 

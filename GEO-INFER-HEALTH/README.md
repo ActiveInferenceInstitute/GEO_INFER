@@ -10,12 +10,10 @@ Epidemiology, healthcare accessibility analysis, disease surveillance, and spati
 - `logs/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `.gitignore`
 - `MANIFEST.in`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

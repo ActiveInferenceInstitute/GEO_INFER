@@ -7,10 +7,8 @@ Water resources management, hydrology, and water quality monitoring.
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

@@ -80,7 +80,8 @@ For a complete pre-merge check, use the command list in the root
 
 - Do not install an unrelated PyPI package named `geo-infer` and assume it is
   this checkout.
-- Do not use `python setup.py develop` as the primary workflow.
+- Do not reintroduce `setup.py` or `requirements.txt` mirrors; modules build
+  from `pyproject.toml` and the root `uv.lock` pins resolution.
 - Do not run examples with a system interpreter that bypasses the uv lockfile.
 
 ## Next step

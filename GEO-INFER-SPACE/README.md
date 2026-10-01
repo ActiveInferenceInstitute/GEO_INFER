@@ -14,7 +14,6 @@ H3 v4 spatial indexing and comprehensive geospatial analysis framework with adva
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

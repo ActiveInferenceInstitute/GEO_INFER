@@ -8,10 +8,8 @@ Social-technical compliance modeling with deterministic and probabilistic analys
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

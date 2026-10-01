@@ -8,12 +8,10 @@ Core mathematical and statistical engine providing geometric operations, spatial
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `CHANGELOG.md`
 - `IMPROVEMENTS.md`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

@@ -8,10 +8,8 @@ Requirements analysis, dependency resolution, traceability, and validation for g
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

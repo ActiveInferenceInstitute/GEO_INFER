@@ -1,4 +1,0 @@
-# GEO-INFER-EXAMPLES runtime requirements (library code).
-# Only PyYAML is imported by the installed package; the heavier example
-# dependencies are declared in the `examples` extra in pyproject.toml.
-pyyaml>=6.0

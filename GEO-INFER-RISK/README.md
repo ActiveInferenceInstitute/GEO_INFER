@@ -9,10 +9,8 @@ Advanced risk analysis and catastrophe modeling framework for geospatial applica
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

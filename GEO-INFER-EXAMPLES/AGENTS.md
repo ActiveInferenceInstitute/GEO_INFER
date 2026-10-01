@@ -30,11 +30,9 @@
 - `src/`
 - `tests/`
 - `demo_orchestrator.py`
-- `setup.py`
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Validation
 

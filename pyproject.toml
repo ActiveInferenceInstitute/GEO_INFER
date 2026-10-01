@@ -128,13 +128,11 @@ quality = [
     "pytest-cov>=2.12.0",
     "pytest-asyncio>=0.20.0",
     "pytest-mock>=3.12.0",
-    "black>=21.9.0",
     "ruff>=0.15.6,<0.16",
     "mypy>=0.910",
     "hypothesis>=6.0.0",
     "ruptures>=1.1.9",
     "srai>=0.10.2",
-    "pydocstyle>=6.0.0",
 ]
 
 # Documentation
@@ -198,10 +196,8 @@ all = [
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
     "pytest-asyncio>=0.20.0",
-    "black>=21.9.0",
     "ruff>=0.15.6,<0.16",
     "mypy>=0.910",
-    "pydocstyle>=6.0.0",
     "pytest-mock>=3.12.0",
     "hypothesis>=6.0.0",
     "ruptures>=1.1.9",
@@ -234,30 +230,6 @@ Discord = "https://discord.activeinference.institute/"
 [project.scripts]
 # NOTE: Intentionally omitted at root. Use module-provided CLIs and
 # `GEO-INFER-TEST/run_unified_tests.py` for testing.
-
-
-[tool.black]
-line-length = 88
-target-version = ['py311', 'py312']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-line_length = 88
 
 [tool.mypy]
 python_version = "3.11"
@@ -413,3 +385,4 @@ members = ["GEO-INFER-*"]
 [tool.ruff]
 target-version = "py311"
 line-length = 88
+

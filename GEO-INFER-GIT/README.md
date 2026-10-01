@@ -10,11 +10,9 @@ Version control and repository management tools specifically designed for geospa
 - `src/`
 - `tests/`
 - `clone_repos.py`
-- `setup.py`
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

@@ -9,10 +9,8 @@ Communications infrastructure for geospatial systems enabling data exchange, mes
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

@@ -10,11 +10,9 @@ Comprehensive swarm intelligence and complex adaptive systems modeling using Act
 - `src/`
 - `tests/`
 - `run_tests.py`
-- `setup.py`
 - `IMPLEMENTATION_STATUS.md`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

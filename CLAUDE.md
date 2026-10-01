@@ -92,8 +92,7 @@ GEO-INFER-MODULE/
 │   ├── unit/
 │   └── integration/
 ├── examples/            # Examples; verify each one before running
-├── pyproject.toml
-├── requirements.txt
+├── pyproject.toml       # Sole packaging + dependency declaration (no setup.py/requirements.txt)
 ├── README.md            # Module overview and usage
 ├── AGENTS.md            # Agent capabilities and integration
 └── SKILL.md             # Claude Code skill (auto-discovered)

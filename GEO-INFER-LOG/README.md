@@ -8,10 +8,8 @@ Geospatial intelligence for logistics optimization, supply chain management, rou
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

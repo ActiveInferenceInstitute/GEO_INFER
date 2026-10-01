@@ -163,14 +163,15 @@ class TestSourceStructure:
         )
 
     @pytest.mark.parametrize("module", GEO_INFER_MODULES)
-    def test_module_has_pyproject_or_setup(self, module):
-        """Each module should have a pyproject.toml or setup.py."""
+    def test_module_packaging_is_pyproject_only(self, module):
+        """Each module packages from pyproject.toml with no legacy mirrors."""
         mod_dir = REPO_ROOT / f"GEO-INFER-{module}"
         if not mod_dir.is_dir():
             pytest.fail(f"Module {module} directory missing")
-        has_pyproject = (mod_dir / "pyproject.toml").is_file()
-        has_setup = (mod_dir / "setup.py").is_file()
-        has_setup_cfg = (mod_dir / "setup.cfg").is_file()
-        assert has_pyproject or has_setup or has_setup_cfg, (
-            f"GEO-INFER-{module} has no pyproject.toml, setup.py, or setup.cfg"
+        assert (mod_dir / "pyproject.toml").is_file(), (
+            f"GEO-INFER-{module} has no pyproject.toml"
         )
+        for retired in ("setup.py", "setup.cfg", "requirements.txt"):
+            assert not (mod_dir / retired).exists(), (
+                f"GEO-INFER-{module} carries retired packaging file {retired}"
+            )

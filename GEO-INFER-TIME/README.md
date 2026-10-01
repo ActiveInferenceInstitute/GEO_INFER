@@ -11,7 +11,6 @@ Temporal analysis, time series processing, forecasting, and spatio-temporal data
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

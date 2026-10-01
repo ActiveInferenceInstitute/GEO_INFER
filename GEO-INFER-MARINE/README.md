@@ -8,10 +8,8 @@ Marine and oceanographic analysis, coastal management, and marine ecosystem moni
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

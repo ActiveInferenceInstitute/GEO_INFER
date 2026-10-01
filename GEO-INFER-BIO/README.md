@@ -8,12 +8,10 @@ Bioinformatics and biological data analysis with geospatial context for spatial 
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `Dockerfile`
 - `SKILL.md`
 - `docker-compose.yml`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

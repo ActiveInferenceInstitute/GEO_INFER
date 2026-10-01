@@ -164,10 +164,9 @@ def validate_docstrings() -> None:
 
 
 def validate_packaging() -> None:
-    setup_text = (ACT_ROOT / "setup.py").read_text()
+    if (ACT_ROOT / "setup.py").exists():
+        fail("setup.py is retired; ACT packaging is pyproject-only")
     pyproject_text = (ACT_ROOT / "pyproject.toml").read_text()
-    if "h3>=3.7.0" in setup_text:
-        fail("setup.py still advertises h3>=3.7.0")
     if "h3>=4.5.0,<5" not in pyproject_text:
         fail("pyproject.toml does not require h3>=4.5.0,<5")
     if "inferactively-pymdp==1.0.3" not in pyproject_text:

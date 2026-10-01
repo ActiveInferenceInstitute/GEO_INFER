@@ -39,7 +39,7 @@
 # Install packages
 uv pip install package-name
 uv pip install -e ./GEO-INFER-MODULE
-uv pip install -r requirements.txt
+uv sync --all-packages --all-extras
 
 # Run scripts
 uv run python script.py

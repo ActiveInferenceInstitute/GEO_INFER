@@ -83,10 +83,8 @@ class ModuleHealthChecker:
         else:
             metrics.has_tests = False
 
-        # 5. pyproject.toml / setup.py
-        metrics.has_pyproject = (module_dir / "pyproject.toml").is_file() or (
-            module_dir / "setup.py"
-        ).is_file()
+        # 5. pyproject.toml (the only packaging source of truth)
+        metrics.has_pyproject = (module_dir / "pyproject.toml").is_file()
 
         # 6. Dependency check
         dep_checker = DependencyChecker(base_path=self.base_path, logger=self.logger)

@@ -1,3 +1,0 @@
-# GEO-INFER-EMERGENCY runtime requirements: generated mirror of [project.dependencies] in pyproject.toml.
-# pyproject.toml is canonical; optional/test extras live only in [project.optional-dependencies].
-networkx>=2.6.0

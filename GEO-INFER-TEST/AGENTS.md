@@ -41,7 +41,6 @@
 - `run_model_audit.py`
 - `run_unified_tests.py`
 - `secret_scan_metric.py`
-- `setup.py`
 - `stale_assessment_metric.py`
 - `tests_lint_metric.py`
 - `validate_act_geospatial_contract.py`
@@ -63,7 +62,6 @@
 - `TESTING.md`
 - `coverage_baseline.json`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Validation
 

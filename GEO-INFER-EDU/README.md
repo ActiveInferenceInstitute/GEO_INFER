@@ -11,7 +11,6 @@ Educational technology for geospatial systems including curriculum design, inter
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

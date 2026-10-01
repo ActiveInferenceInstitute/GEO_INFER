@@ -13,11 +13,9 @@ Reproducible documentation previews and configuration utilities for the GEO-INFE
 - `templates/`
 - `tests/`
 - `assess_repository.py`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
 - `requirements-dev.txt`
-- `requirements.txt`
 
 ## Public Interface
 

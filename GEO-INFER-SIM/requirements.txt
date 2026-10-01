@@ -1,5 +1,0 @@
-# GEO-INFER-SIM runtime requirements (mirrors [project] dependencies)
-numpy>=1.20.0
-pandas>=1.3.0
-# Optional: Mesa agent-based backend (pip install geo-infer-sim[mesa])
-# mesa>=0.8.9

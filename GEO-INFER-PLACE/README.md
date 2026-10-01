@@ -11,10 +11,8 @@ Comprehensive place-based analysis framework providing deep insights into specif
 - `locations/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

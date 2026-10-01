@@ -277,19 +277,64 @@ def test_concrete_pass_contract_allows_abstract_methods_and_except_handlers(
     assert report.errors == []
 
 
-def test_python_tool_targets_reject_black_targets_below_python_311(
+def test_python_tool_targets_reject_ruff_target_below_python_311(
     tmp_path, monkeypatch
 ):
     contracts = load_contracts_module()
     monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
-    (tmp_path / "pyproject.toml").write_text(
-        "[tool.black]\ntarget-version = ['py310', 'py311']\n"
-    )
+    (tmp_path / "pyproject.toml").write_text('[tool.ruff]\ntarget-version = "py310"\n')
     report = contracts.ContractReport()
 
     contracts.validate_python_tool_targets(report)
 
     assert any("py310" in error for error in report.errors)
+
+
+def test_python_tool_targets_reject_retired_formatter_sections(
+    tmp_path, monkeypatch
+):
+    contracts = load_contracts_module()
+    monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.black]\nline-length = 88\n\n[tool.isort]\nprofile = 'black'\n"
+    )
+    report = contracts.ContractReport()
+
+    contracts.validate_python_tool_targets(report)
+
+    assert any("[tool.black]" in error for error in report.errors)
+    assert any("[tool.isort]" in error for error in report.errors)
+
+
+def test_pyproject_only_packaging_rejects_retired_mirrors(tmp_path, monkeypatch):
+    contracts = load_contracts_module()
+    monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
+    module_dir = tmp_path / "GEO-INFER-SAMPLE"
+    module_dir.mkdir()
+    (module_dir / "setup.py").write_text("from setuptools import setup\nsetup()\n")
+    (module_dir / "requirements.txt").write_text("numpy\n")
+    report = contracts.ContractReport()
+
+    contracts.validate_pyproject_only_packaging([module_dir], report)
+
+    assert any("setup.py" in error for error in report.errors)
+    assert any("requirements.txt" in error for error in report.errors)
+
+
+def test_declared_requirements_reject_stdlib_dependencies(tmp_path, monkeypatch):
+    contracts = load_contracts_module()
+    monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
+    module_dir = tmp_path / "GEO-INFER-SAMPLE"
+    module_dir.mkdir()
+    (module_dir / "pyproject.toml").write_text(
+        '[project]\nname = "geo-infer-sample"\ndependencies = ["json", "numpy"]\n'
+    )
+    report = contracts.ContractReport()
+
+    contracts.validate_declared_requirements(report)
+
+    assert any("json" in error for error in report.errors)
+    assert not any("numpy" in error for error in report.errors)
 
 
 def test_h3_dependency_metadata_rejects_old_h3_v4_floor(tmp_path, monkeypatch):

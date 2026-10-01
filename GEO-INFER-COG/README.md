@@ -8,10 +8,8 @@ Human-centered geospatial tools that model perception, reasoning, and spatial co
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

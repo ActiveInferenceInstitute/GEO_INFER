@@ -10,7 +10,6 @@ Transportation planning and traffic analysis for geospatial systems.
 - `tests/`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

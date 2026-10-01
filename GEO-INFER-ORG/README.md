@@ -8,10 +8,8 @@ Organizational structures, governance frameworks, and community processes for ge
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

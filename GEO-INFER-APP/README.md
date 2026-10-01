@@ -8,10 +8,8 @@ Human-computer interaction layer providing accessible geospatial applications, d
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

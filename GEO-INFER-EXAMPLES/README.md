@@ -13,11 +13,9 @@ Comprehensive collection of working examples and tutorials demonstrating cross-m
 - `src/`
 - `tests/`
 - `demo_orchestrator.py`
-- `setup.py`
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

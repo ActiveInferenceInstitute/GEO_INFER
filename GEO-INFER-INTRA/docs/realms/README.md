@@ -7,7 +7,6 @@ Realms workspace within `GEO-INFER-INTRA`.
 - `outputs/`
 - `realms_api_probe.py`
 - `API_TESTING_GUIDE.md`
-- `UPDATES_SUMMARY.md`
 - `realm_schema.json`
 - `realms-geo-infer.md`
 - `requirements.txt`

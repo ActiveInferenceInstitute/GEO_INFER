@@ -8,10 +8,8 @@ Comprehensive security and privacy framework for geospatial information systems 
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

@@ -43,10 +43,10 @@ class TestExamplesModule:
         readme = Path(__file__).parent.parent / "README.md"
         assert readme.exists()
 
-    def test_requirements_exists(self):
-        """Test that requirements.txt exists."""
-        requirements = Path(__file__).parent.parent / "requirements.txt"
-        assert requirements.exists()
+    def test_pyproject_exists(self):
+        """Test that pyproject.toml declares the module package."""
+        pyproject = Path(__file__).parent.parent / "pyproject.toml"
+        assert pyproject.exists()
 
 
 class TestExamplesStructure:

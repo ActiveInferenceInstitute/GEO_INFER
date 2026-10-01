@@ -1,4 +1,0 @@
-# GEO-INFER-REQ runtime dependencies.
-# Mirrors [project.dependencies] in pyproject.toml (the canonical source):
-# the package is pure-stdlib and has no third-party runtime dependencies.
-# Optional dev tooling lives in [project.optional-dependencies] dev.

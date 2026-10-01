@@ -6,7 +6,6 @@ Guides workspace within `GEO-INFER-INTRA`.
 
 - `ENVIRONMENTAL_MONITORING_INTEGRATION.md`
 - `MODULE_INTEGRATION_GUIDE.md`
-- `UV_MIGRATION_GUIDE.md`
 
 ## Public Interface
 

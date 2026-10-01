@@ -93,9 +93,8 @@ def expected_package_name(pyproject: dict) -> str | None:
     return package_name_from_distribution(distribution)
 
 
-# Requirements-name normalization: one definition shared by the validators
-# so requirements.txt lines and pyproject dependency strings compare by
-# normalized distribution name only.
+# Requirement-name normalization: one definition shared by the validators so
+# pyproject dependency strings compare by normalized distribution name only.
 _REQUIREMENT_NAME_RE = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)")
 
 
@@ -105,26 +104,6 @@ def normalize_dependency_name(raw: str) -> str:
     if not match:
         return ""
     return match.group(1).lower().replace("_", "-")
-
-
-def parse_requirements_names(path: Path) -> list[str]:
-    """Return normalized dependency names from a ``requirements.txt`` file.
-
-    Blank lines, comments and pip options (``-r``/``-e``/``--index-url``...)
-    are ignored; extras and version specifiers are stripped so lines compare
-    by name only.
-    """
-    if not path.is_file():
-        return []
-    names: list[str] = []
-    for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or stripped.startswith("-"):
-            continue
-        name = normalize_dependency_name(stripped.split(";", 1)[0])
-        if name:
-            names.append(name)
-    return names
 
 
 def pyproject_dependency_names(pyproject: dict) -> set:
@@ -143,28 +122,6 @@ def pyproject_optional_names(pyproject: dict) -> set:
             if name:
                 names.add(name)
     return names
-
-
-def parse_setup_py_requires(module_dir: Path) -> tuple[set | None, bool]:
-    """Return ``(setup.py install_requires names, setup.py reads requirements.txt)``.
-
-    ``(None, False)`` when setup.py is absent. Some modules build through a
-    legacy setup.py that reads ``requirements.txt`` directly; for those the
-    requirements file is the authoritative install source.
-    """
-    setup = module_dir / "setup.py"
-    if not setup.is_file():
-        return None, False
-    text = setup.read_text(encoding="utf-8", errors="ignore")
-    reads_requirements = bool(re.search(r"requirements\.txt", text))
-    names: set = set()
-    match = re.search(r"install_requires\s*=\s*[\[\(](.*?)[\]\)]", text, re.S)
-    if match:
-        for literal in re.findall(r"['\"]([^'\"]+)['\"]", match.group(1)):
-            name = normalize_dependency_name(literal.split(";", 1)[0])
-            if name:
-                names.add(name)
-    return names, reads_requirements
 
 
 # Standard-library modules that must never be listed as PyPI dependencies.
@@ -210,19 +167,11 @@ STDLIB_REQUIREMENT_NAMES = {
 def internal_requirement_names(repo_root: Path) -> frozenset[str]:
     """Internal distribution names, derived from the workspace tree.
 
-    A requirement line pinned ``>=0.0.0`` names an internal workspace member
-    masquerading as a PyPI dependency; such lines must be resolved through
-    ``[tool.uv.sources]`` instead. The derivation covers every live surface:
-    each member's own ``geo-infer-*`` distribution name comes from its
-    ``pyproject.toml``.
-
-    Historically requirements files also referenced bare sub-distribution
-    names (for example ``cognitive-engine``) with placeholder pins; no
-    requirements file in the tree contains such a line any more (verified
-    2026-09-09 against every ``GEO-INFER-*/requirements*.txt``). Bare
-    sub-distribution names are therefore not enumerable from the tree; if
-    one returns, extend this derivation explicitly rather than growing a
-    hand-maintained allowlist.
+    A dependency pinned ``>=0.0.0`` names an internal workspace member
+    masquerading as a PyPI dependency; such entries must be resolved through
+    ``[tool.uv.sources]`` instead. Each member's own ``geo-infer-*``
+    distribution name comes from its ``pyproject.toml``, so the set never
+    needs a hand-maintained allowlist.
     """
     names: set[str] = set()
     for module_dir in discover_module_dirs(repo_root):

@@ -27,12 +27,10 @@
 - `src/`
 - `tests/`
 - `debug_models.py`
-- `setup.py`
 - `verify_comprehensive.py`
 - `verify_pipeline.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Validation
 

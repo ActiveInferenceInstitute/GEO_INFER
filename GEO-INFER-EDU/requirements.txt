@@ -1,2 +1,0 @@
-# GEO-INFER-EDU Requirements (runtime dependencies; mirrors [project] in pyproject.toml)
-pyyaml>=6.0

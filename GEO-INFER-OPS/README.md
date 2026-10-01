@@ -12,12 +12,10 @@ System orchestration, monitoring, infrastructure management, and deployment auto
 - `monitoring/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `Dockerfile`
 - `SKILL.md`
 - `docker-compose.yml`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

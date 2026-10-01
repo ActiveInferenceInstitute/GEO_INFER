@@ -6,11 +6,9 @@ Underwriting, policy, claims, and pricing operations for geospatial insurance wo
 
 - `src/`
 - `tests/`
-- `setup.py`
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

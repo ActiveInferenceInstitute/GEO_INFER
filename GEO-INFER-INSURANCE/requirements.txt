@@ -1,8 +1,0 @@
-# GEO-INFER-INSURANCE runtime dependencies.
-# This file mirrors [project.dependencies] in pyproject.toml.
-# Keep in sync with [project.dependencies] in pyproject.toml.
-# Optional cross-module integrations (geo-infer-risk, geo-infer-space) are
-# declared in pyproject.toml and installed via
-# `uv pip install geo-infer-insurance[integrations]`.
-numpy>=1.20.0
-pandas>=1.3.0

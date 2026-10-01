@@ -25,13 +25,6 @@ across all ``GEO-INFER-*`` modules:
   file matching no glob (a resource that would silently miss the wheel) is
   an error, and per-module deviations from the canonical pattern set are
   surfaced.
-- Requirements parity: every runtime dependency declared in a module's
-  ``[project.dependencies]`` must appear in the module's
-  ``requirements.txt`` (the module's own distribution name is exempt), and
-  every ``requirements.txt`` entry must be declared by the module in
-  ``[project.dependencies]``, any ``[project.optional-dependencies]`` group,
-  or a legacy ``setup.py`` ``install_requires``. Names compare normalized
-  (lowercase, ``_`` == ``-``) with version specifiers and extras stripped.
 - Out-of-package source traversal is reported as a diagnostic so authors can
   migrate ``Path(__file__).parent...`` config lookups to an installed-wheel
   safe discovery mechanism when publishing wheels. Modules migrated to
@@ -57,8 +50,6 @@ from _validator_common import (
     distribution_name,
     internal_requirement_names,
     package_name_from_distribution,
-    parse_requirements_names,
-    parse_setup_py_requires,
     pyproject_dependency_names,
     pyproject_optional_names,
     read_pyproject as parse_pyproject,
@@ -411,52 +402,6 @@ def validate_module(module_dir: Path, pyproject: dict, report: ContractReport) -
     validate_package_data(module_dir, pyproject, report)
 
 
-def validate_requirements_parity(
-    module_dir: Path, pyproject: dict, report: ContractReport
-) -> None:
-    """Enforce two-way parity between [project.dependencies] and requirements.txt.
-
-    Forward direction: every runtime dependency declared in
-    ``[project.dependencies]`` must appear in the module's
-    ``requirements.txt``. The module's own distribution name (a
-    self-dependency such as ``geo-infer-x`` inside GEO-INFER-X) is exempt.
-
-    Reverse direction: every ``requirements.txt`` entry must be declared by
-    the module — in ``[project.dependencies]``, any
-    ``[project.optional-dependencies]`` group, or a legacy ``setup.py``
-    ``install_requires``. Modules whose ``setup.py`` feeds
-    ``install_requires`` from ``requirements.txt`` are treated as
-    requirements-authoritative and are exempt from the reverse direction.
-    """
-    label = module_dir.name
-    distribution = distribution_name(pyproject)
-    required = pyproject_dependency_names(pyproject)
-    optional = pyproject_optional_names(pyproject)
-    declared = required | optional
-    listed = parse_requirements_names(module_dir / "requirements.txt")
-    setup_names, setup_reads_requirements = parse_setup_py_requires(module_dir)
-
-    for dep in sorted(required):
-        if dep == distribution:
-            continue
-        if dep not in listed:
-            report.errors.append(
-                f"{label}: requirements.txt missing runtime dependency "
-                f"{dep!r} declared in [project.dependencies]"
-            )
-
-    if setup_reads_requirements:
-        return
-    accepted = declared | (setup_names or set())
-    for name in sorted(set(listed)):
-        if name not in accepted:
-            report.errors.append(
-                f"{label}: requirements.txt lists {name!r} which is not "
-                "declared in [project.dependencies], "
-                "[project.optional-dependencies] or setup.py install_requires"
-            )
-
-
 def validate_source_traversal(module_dir: Path, report: ContractReport) -> None:
     """Flag source files that reach outside the module package for resources."""
     src_dir = module_dir / "src"
@@ -645,7 +590,6 @@ def validate_all(target_dirs: Optional[List[Path]] = None) -> ContractReport:
             continue
         inventories.append((module_dir.name, pyproject))
         validate_module(module_dir, pyproject, report)
-        validate_requirements_parity(module_dir, pyproject, report)
         validate_import_parity(module_dir, pyproject, report)
         validate_source_traversal(module_dir, report)
     validate_version_uniformity(inventories, report)

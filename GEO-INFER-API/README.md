@@ -8,10 +8,8 @@ Comprehensive API development and integration services enabling interoperability
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

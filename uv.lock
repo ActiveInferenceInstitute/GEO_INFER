@@ -326,7 +326,7 @@ name = "apptools"
 version = "5.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "traits" },
+    { name = "traits", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/c7/e8/55a5ab9f2a158d21b93a7dfcedf59935663e519564afcf2852ffa1f5d7da/apptools-5.3.1.tar.gz", hash = "sha256:7dd8f3a95ca02fc1c03f82cebbe6bed0f74e74fb93e4f66987fa4d8e606ff167", size = 185335, upload-time = "2025-05-13T13:50:27.562Z" }
 wheels = [
@@ -335,7 +335,7 @@ wheels = [
 
 [package.optional-dependencies]
 preferences = [
-    { name = "configobj" },
+    { name = "configobj", marker = "python_full_version < '3.12'" },
 ]
 
 [[package]]
@@ -494,11 +494,11 @@ name = "astropy"
 version = "7.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "astropy-iers-data" },
-    { name = "numpy" },
-    { name = "packaging" },
-    { name = "pyerfa" },
-    { name = "pyyaml" },
+    { name = "astropy-iers-data", marker = "python_full_version < '3.12'" },
+    { name = "numpy", marker = "python_full_version < '3.12'" },
+    { name = "packaging", marker = "python_full_version < '3.12'" },
+    { name = "pyerfa", marker = "python_full_version < '3.12'" },
+    { name = "pyyaml", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/83/91/124d020cea78e4e4b6db7ff726c2c2e4a5865293d0a4355d13b0312d99f1/astropy-7.1.0.tar.gz", hash = "sha256:c8f254322295b1b8cf24303d6f155bf7efdb6c1282882b966ce3040eff8c53c5", size = 6976116, upload-time = "2025-05-20T13:40:10.557Z" }
 wheels = [
@@ -719,34 +719,6 @@ wheels = [
 ]
 
 [[package]]
-name = "black"
-version = "25.1.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "click" },
-    { name = "mypy-extensions" },
-    { name = "packaging" },
-    { name = "pathspec" },
-    { name = "platformdirs" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/94/49/26a7b0f3f35da4b5a65f081943b7bcd22d7002f5f0fb8098ec1ff21cb6ef/black-25.1.0.tar.gz", hash = "sha256:33496d5cd1222ad73391352b4ae8da15253c5de89b93a80b3e2c8d9a19ec2666", size = 649449, upload-time = "2025-01-29T04:15:40.373Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/4f/87f596aca05c3ce5b94b8663dbfe242a12843caaa82dd3f85f1ffdc3f177/black-25.1.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:a39337598244de4bae26475f77dda852ea00a93bd4c728e09eacd827ec929df0", size = 1614372, upload-time = "2025-01-29T05:37:11.71Z" },
-    { url = "https://files.pythonhosted.org/packages/e7/d0/2c34c36190b741c59c901e56ab7f6e54dad8df05a6272a9747ecef7c6036/black-25.1.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:96c1c7cd856bba8e20094e36e0f948718dc688dba4a9d78c3adde52b9e6c2299", size = 1442865, upload-time = "2025-01-29T05:37:14.309Z" },
-    { url = "https://files.pythonhosted.org/packages/21/d4/7518c72262468430ead45cf22bd86c883a6448b9eb43672765d69a8f1248/black-25.1.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:bce2e264d59c91e52d8000d507eb20a9aca4a778731a08cfff7e5ac4a4bb7096", size = 1749699, upload-time = "2025-01-29T04:18:17.688Z" },
-    { url = "https://files.pythonhosted.org/packages/58/db/4f5beb989b547f79096e035c4981ceb36ac2b552d0ac5f2620e941501c99/black-25.1.0-cp311-cp311-win_amd64.whl", hash = "sha256:172b1dbff09f86ce6f4eb8edf9dede08b1fce58ba194c87d7a4f1a5aa2f5b3c2", size = 1428028, upload-time = "2025-01-29T04:18:51.711Z" },
-    { url = "https://files.pythonhosted.org/packages/83/71/3fe4741df7adf015ad8dfa082dd36c94ca86bb21f25608eb247b4afb15b2/black-25.1.0-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:4b60580e829091e6f9238c848ea6750efed72140b91b048770b64e74fe04908b", size = 1650988, upload-time = "2025-01-29T05:37:16.707Z" },
-    { url = "https://files.pythonhosted.org/packages/13/f3/89aac8a83d73937ccd39bbe8fc6ac8860c11cfa0af5b1c96d081facac844/black-25.1.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:1e2978f6df243b155ef5fa7e558a43037c3079093ed5d10fd84c43900f2d8ecc", size = 1453985, upload-time = "2025-01-29T05:37:18.273Z" },
-    { url = "https://files.pythonhosted.org/packages/6f/22/b99efca33f1f3a1d2552c714b1e1b5ae92efac6c43e790ad539a163d1754/black-25.1.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:3b48735872ec535027d979e8dcb20bf4f70b5ac75a8ea99f127c106a7d7aba9f", size = 1783816, upload-time = "2025-01-29T04:18:33.823Z" },
-    { url = "https://files.pythonhosted.org/packages/18/7e/a27c3ad3822b6f2e0e00d63d58ff6299a99a5b3aee69fa77cd4b0076b261/black-25.1.0-cp312-cp312-win_amd64.whl", hash = "sha256:ea0213189960bda9cf99be5b8c8ce66bb054af5e9e861249cd23471bd7b0b3ba", size = 1440860, upload-time = "2025-01-29T04:19:12.944Z" },
-    { url = "https://files.pythonhosted.org/packages/98/87/0edf98916640efa5d0696e1abb0a8357b52e69e82322628f25bf14d263d1/black-25.1.0-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:8f0b18a02996a836cc9c9c78e5babec10930862827b1b724ddfe98ccf2f2fe4f", size = 1650673, upload-time = "2025-01-29T05:37:20.574Z" },
-    { url = "https://files.pythonhosted.org/packages/52/e5/f7bf17207cf87fa6e9b676576749c6b6ed0d70f179a3d812c997870291c3/black-25.1.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:afebb7098bfbc70037a053b91ae8437c3857482d3a690fefc03e9ff7aa9a5fd3", size = 1453190, upload-time = "2025-01-29T05:37:22.106Z" },
-    { url = "https://files.pythonhosted.org/packages/e3/ee/adda3d46d4a9120772fae6de454c8495603c37c4c3b9c60f25b1ab6401fe/black-25.1.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:030b9759066a4ee5e5aca28c3c77f9c64789cdd4de8ac1df642c40b708be6171", size = 1782926, upload-time = "2025-01-29T04:18:58.564Z" },
-    { url = "https://files.pythonhosted.org/packages/cc/64/94eb5f45dcb997d2082f097a3944cfc7fe87e071907f677e80788a2d7b7a/black-25.1.0-cp313-cp313-win_amd64.whl", hash = "sha256:a22f402b410566e2d1c950708c77ebf5ebd5d0d88a6a2e87c86d9fb48afa0d18", size = 1442613, upload-time = "2025-01-29T04:19:27.63Z" },
-    { url = "https://files.pythonhosted.org/packages/09/71/54e999902aed72baf26bca0d50781b01838251a462612966e9fc4891eadd/black-25.1.0-py3-none-any.whl", hash = "sha256:95e8176dae143ba9097f351d174fdaf0ccd29efb414b362ae3fd72bf0f710717", size = 207646, upload-time = "2025-01-29T04:15:38.082Z" },
-]
-
-[[package]]
 name = "blackjax"
 version = "1.3"
 source = { registry = "https://pypi.org/simple" }
@@ -949,11 +921,11 @@ name = "bqplot"
 version = "0.12.45"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ipywidgets" },
-    { name = "numpy" },
-    { name = "pandas", version = "2.3.1", source = { registry = "https://pypi.org/simple" } },
-    { name = "traitlets" },
-    { name = "traittypes" },
+    { name = "ipywidgets", marker = "python_full_version < '3.12'" },
+    { name = "numpy", marker = "python_full_version < '3.12'" },
+    { name = "pandas", version = "2.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "traitlets", marker = "python_full_version < '3.12'" },
+    { name = "traittypes", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a3/e0/727335c5ff8cee68d21a8c79f5b8406011639a76ecd7a6462a60aa8b0608/bqplot-0.12.45.tar.gz", hash = "sha256:ede00e9fdf7d92e43cc2d1b9691c7da176b6216fdd187c8e92f19d7beaca5e2a", size = 1205882, upload-time = "2025-05-21T17:32:29.143Z" }
 wheels = [
@@ -1685,8 +1657,8 @@ name = "cupy"
 version = "13.5.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "fastrlock" },
-    { name = "numpy" },
+    { name = "fastrlock", marker = "sys_platform != 'darwin'" },
+    { name = "numpy", marker = "sys_platform != 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b1/2f/f07c3d5952c2abcc256d9a77f26f51a6e8f2e924cf52612f89b6e91de457/cupy-13.5.1.tar.gz", hash = "sha256:3dba2f30258463482d52deb420862fbbbaf2c446165a5e8d67377ac6cb5c0870", size = 3508817, upload-time = "2025-07-11T04:39:26.462Z" }
 
@@ -1975,11 +1947,11 @@ name = "envisage"
 version = "7.0.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "apptools", extra = ["preferences"] },
-    { name = "pyface" },
-    { name = "setuptools" },
-    { name = "traits" },
-    { name = "traitsui" },
+    { name = "apptools", extra = ["preferences"], marker = "python_full_version < '3.12'" },
+    { name = "pyface", marker = "python_full_version < '3.12'" },
+    { name = "setuptools", marker = "python_full_version < '3.12'" },
+    { name = "traits", marker = "python_full_version < '3.12'" },
+    { name = "traitsui", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/41/08/868155cd6d939c766c70deae697649f0ee890d25c69d42c1a628efd95c53/envisage-7.0.4.tar.gz", hash = "sha256:d6bb2938bbb45c4ef1766c55ed6f6c1c72b6fce70468ac9f5b0efcd1ef8c1d97", size = 168828, upload-time = "2025-04-25T14:54:38.885Z" }
 wheels = [
@@ -2507,7 +2479,6 @@ backends = [
     { name = "torch" },
 ]
 dev = [
-    { name = "black" },
     { name = "geo-infer-ai" },
     { name = "geopandas" },
     { name = "hypothesis" },
@@ -2516,6 +2487,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -2537,7 +2509,6 @@ space = [
 requires-dist = [
     { name = "arviz", marker = "extra == 'backends'", specifier = ">=0.11.0" },
     { name = "bayeux-ml", marker = "extra == 'backends'", specifier = ">=0.0.1" },
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "geo-infer-ai", marker = "extra == 'dev'", editable = "GEO-INFER-AI" },
     { name = "geo-infer-bayes", editable = "GEO-INFER-BAYES" },
     { name = "geo-infer-space", marker = "extra == 'space'", editable = "GEO-INFER-SPACE" },
@@ -2565,6 +2536,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", specifier = ">=2.25.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scipy", specifier = ">=1.7.0" },
     { name = "seaborn", specifier = ">=0.11.0" },
     { name = "shapely", marker = "extra == 'backends'", specifier = ">=2.0.0" },
@@ -2596,11 +2568,11 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -2614,7 +2586,6 @@ integrations = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "geopandas", specifier = ">=0.13.0" },
     { name = "joblib", specifier = ">=1.0.0" },
     { name = "matplotlib", specifier = ">=3.3.0" },
@@ -2629,6 +2600,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "rasterio", specifier = ">=1.2.0" },
     { name = "requests", marker = "extra == 'integrations'", specifier = ">=2.25.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scikit-learn", specifier = ">=1.0.0" },
     { name = "scipy", specifier = ">=1.6.0" },
     { name = "shapely", specifier = ">=2.0.0" },
@@ -2656,13 +2628,13 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "httpx" },
     { name = "matplotlib" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -2676,7 +2648,6 @@ integrations = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.24.0" },
     { name = "matplotlib", marker = "extra == 'dev'", specifier = ">=3.7.1" },
@@ -2692,6 +2663,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", specifier = ">=2.28.2" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
     { name = "torch", specifier = ">=2.0.0" },
@@ -2713,12 +2685,12 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "matplotlib" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -2732,7 +2704,6 @@ mlops = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "h3", specifier = ">=4.5.0,<5" },
     { name = "matplotlib", marker = "extra == 'dev'", specifier = ">=3.5.0" },
     { name = "mlflow", marker = "extra == 'mlops'", specifier = ">=2.0.0" },
@@ -2744,6 +2715,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scikit-learn", specifier = ">=1.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
@@ -2765,13 +2737,13 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "h3" },
     { name = "mypy" },
     { name = "psutil" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -2788,7 +2760,6 @@ integrations = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "geo-infer-act", marker = "extra == 'integrations'", editable = "GEO-INFER-ACT" },
     { name = "geo-infer-agent", marker = "extra == 'integrations'", editable = "GEO-INFER-AGENT" },
     { name = "geo-infer-math", marker = "extra == 'integrations'", editable = "GEO-INFER-MATH" },
@@ -2805,6 +2776,7 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scikit-learn", specifier = ">=1.1.0" },
     { name = "scipy", specifier = ">=1.7.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
@@ -2826,12 +2798,12 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "httpx" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -2845,7 +2817,6 @@ examples = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "fastapi", specifier = ">=0.100.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.24.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
@@ -2857,6 +2828,7 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1.0" },
     { name = "requests", marker = "extra == 'examples'", specifier = ">=2.28.2" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
     { name = "starlette", specifier = ">=0.27.0" },
@@ -2871,11 +2843,11 @@ source = { editable = "GEO-INFER-APP" }
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -2886,13 +2858,13 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
     { name = "nbsphinx", marker = "extra == 'docs'", specifier = ">=0.8.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
 ]
@@ -2913,13 +2885,13 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pandas", version = "2.1.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
     { name = "pandas", version = "2.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
     { name = "shapely" },
 ]
 docs = [
@@ -2943,7 +2915,6 @@ viz3d = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "folium", marker = "extra == 'integrations'", specifier = ">=0.12.0" },
     { name = "geopandas", specifier = ">=0.13.0" },
     { name = "matplotlib", specifier = ">=3.4.0" },
@@ -2960,6 +2931,7 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "rasterio", specifier = ">=1.2.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scipy", specifier = ">=1.7.0" },
     { name = "shapely", marker = "extra == 'dev'", specifier = ">=2.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
@@ -2986,10 +2958,10 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -3009,7 +2981,6 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "arviz", specifier = ">=0.12.0" },
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "geopandas", marker = "extra == 'test'", specifier = ">=0.13.0" },
     { name = "matplotlib", specifier = ">=3.5.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
@@ -3021,6 +2992,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=6.2.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scipy", specifier = ">=1.7.0" },
     { name = "shapely", marker = "extra == 'test'", specifier = ">=2.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
@@ -3054,11 +3026,11 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
     { name = "setuptools" },
 ]
 docs = [
@@ -3079,7 +3051,6 @@ integrations = [
 [package.metadata]
 requires-dist = [
     { name = "biopython", specifier = ">=1.79" },
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "fastapi", specifier = ">=0.100.0" },
     { name = "geo-infer-ai", marker = "extra == 'geo-infer'", editable = "GEO-INFER-AI" },
     { name = "geo-infer-space", marker = "extra == 'geo-infer'", editable = "GEO-INFER-SPACE" },
@@ -3099,6 +3070,7 @@ requires-dist = [
     { name = "python-multipart", specifier = ">=0.0.7" },
     { name = "rasterio", marker = "extra == 'integrations'", specifier = ">=1.2" },
     { name = "requests", specifier = ">=2.28" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "seaborn", specifier = ">=0.11.0" },
     { name = "setuptools", marker = "extra == 'dev'", specifier = ">=77.0" },
     { name = "shapely", specifier = ">=2.0.0" },
@@ -3116,11 +3088,11 @@ source = { editable = "GEO-INFER-CIV" }
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -3131,13 +3103,13 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
     { name = "nbsphinx", marker = "extra == 'docs'", specifier = ">=0.8.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
 ]
@@ -3201,13 +3173,13 @@ api = [
     { name = "flask-cors" },
 ]
 dev = [
-    { name = "black" },
     { name = "flask" },
     { name = "flask-cors" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -3218,7 +3190,6 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "flask", marker = "extra == 'api'", specifier = ">=2.0" },
     { name = "flask", marker = "extra == 'dev'", specifier = ">=2.0" },
     { name = "flask-cors", marker = "extra == 'api'", specifier = ">=3.0" },
@@ -3232,6 +3203,7 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "pyyaml", specifier = ">=5.4" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
 ]
@@ -3252,11 +3224,11 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -3267,7 +3239,6 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "fastapi", specifier = ">=0.100.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
@@ -3278,6 +3249,7 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "requests", specifier = ">=2.31.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
     { name = "uvicorn", specifier = ">=0.23.0" },
@@ -3318,7 +3290,6 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "botocore" },
     { name = "httpx" },
     { name = "mypy" },
@@ -3327,6 +3298,7 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-mock" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "mkdocs" },
@@ -3343,7 +3315,6 @@ integrations = [
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.8.0" },
     { name = "aiomqtt", specifier = ">=2.4.0" },
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "boto3", specifier = ">=1.28.0" },
     { name = "botocore", marker = "extra == 'dev'", specifier = ">=1.31.0" },
     { name = "duckdb", marker = "extra == 'integrations'", specifier = ">=0.9.0" },
@@ -3372,6 +3343,7 @@ requires-dist = [
     { name = "redis", specifier = ">=4.5.0" },
     { name = "requests", specifier = ">=2.31.0" },
     { name = "rtree", specifier = ">=1.0.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "shapely", specifier = ">=2.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0.0" },
     { name = "starlette", specifier = ">=0.27.0" },
@@ -3406,11 +3378,11 @@ api = [
     { name = "uvicorn" },
 ]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
     { name = "starlette" },
 ]
 docs = [
@@ -3431,7 +3403,6 @@ visualization = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "esda", marker = "extra == 'econometrics'", specifier = ">=2.5.0" },
     { name = "fastapi", marker = "extra == 'api'", specifier = ">=0.100.0" },
     { name = "folium", marker = "extra == 'visualization'", specifier = ">=0.14.0" },
@@ -3450,6 +3421,7 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "requests", specifier = ">=2.28.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scikit-learn", specifier = ">=1.0.0" },
     { name = "scipy", specifier = ">=1.7.0" },
     { name = "seaborn", specifier = ">=0.12.0" },
@@ -3472,7 +3444,6 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "geopandas" },
     { name = "mypy" },
     { name = "numpy" },
@@ -3482,6 +3453,7 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-timeout" },
+    { name = "ruff" },
     { name = "shapely" },
 ]
 test = [
@@ -3498,7 +3470,6 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "geo-infer-edu", extras = ["test"], marker = "extra == 'dev'" },
     { name = "geopandas", marker = "extra == 'test'", specifier = ">=0.13.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
@@ -3509,6 +3480,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=2.12.0" },
     { name = "pytest-timeout", marker = "extra == 'test'", specifier = ">=2.0.0" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "shapely", marker = "extra == 'test'", specifier = ">=2.0.0" },
 ]
 provides-extras = ["test", "dev"]
@@ -3523,24 +3495,24 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "geopandas" },
     { name = "mypy" },
     { name = "numpy" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "ruff" },
     { name = "shapely" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "geopandas", marker = "extra == 'dev'", specifier = ">=0.13.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "networkx", specifier = ">=2.6.0" },
     { name = "numpy", marker = "extra == 'dev'", specifier = ">=1.20.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "shapely", marker = "extra == 'dev'", specifier = ">=2.0.0" },
 ]
 provides-extras = ["dev"]
@@ -3588,11 +3560,11 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 examples = [
     { name = "h3" },
@@ -3610,7 +3582,6 @@ examples = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "h3", marker = "extra == 'examples'", specifier = ">=4.5.0,<5" },
     { name = "jupyterlab", marker = "extra == 'examples'", specifier = ">=3.4.0" },
     { name = "matplotlib", marker = "extra == 'examples'", specifier = ">=3.5.0" },
@@ -3624,6 +3595,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", marker = "extra == 'examples'", specifier = ">=2.28.0" },
     { name = "rich", marker = "extra == 'examples'", specifier = ">=12.0.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "streamlit", marker = "extra == 'examples'", specifier = ">=1.30" },
     { name = "typer", marker = "extra == 'examples'", specifier = ">=0.7.0" },
 ]
@@ -3725,7 +3697,6 @@ all = [
     { name = "aiomqtt" },
     { name = "arviz" },
     { name = "biopython" },
-    { name = "black" },
     { name = "cdo" },
     { name = "cf-units" },
     { name = "corner" },
@@ -3748,7 +3719,6 @@ all = [
     { name = "optuna" },
     { name = "paho-mqtt" },
     { name = "pydantic" },
-    { name = "pydocstyle" },
     { name = "pymc" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -3812,10 +3782,8 @@ performance = [
     { name = "vaex", marker = "python_full_version < '3.12'" },
 ]
 quality = [
-    { name = "black" },
     { name = "hypothesis" },
     { name = "mypy" },
-    { name = "pydocstyle" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -3846,8 +3814,6 @@ requires-dist = [
     { name = "arviz", marker = "extra == 'bayesian'", specifier = ">=0.11.0" },
     { name = "biopython", marker = "extra == 'all'", specifier = ">=1.79" },
     { name = "biopython", marker = "extra == 'bio'", specifier = ">=1.79" },
-    { name = "black", marker = "extra == 'all'", specifier = ">=21.9.0" },
-    { name = "black", marker = "extra == 'quality'", specifier = ">=21.9.0" },
     { name = "branca", specifier = ">=0.4.0" },
     { name = "cdo", marker = "extra == 'all'", specifier = ">=1.5.0" },
     { name = "cdo", marker = "extra == 'climate'", specifier = ">=1.5.0" },
@@ -3909,8 +3875,6 @@ requires-dist = [
     { name = "plotly", specifier = ">=5.3.0" },
     { name = "pydantic", marker = "extra == 'all'", specifier = ">=2.0.0" },
     { name = "pydantic", marker = "extra == 'web'", specifier = ">=2.0.0" },
-    { name = "pydocstyle", marker = "extra == 'all'", specifier = ">=6.0.0" },
-    { name = "pydocstyle", marker = "extra == 'quality'", specifier = ">=6.0.0" },
     { name = "pymc", marker = "extra == 'all'", specifier = ">=5.0.0" },
     { name = "pymc", marker = "extra == 'bayesian'", specifier = ">=4.0.0" },
     { name = "pymc", marker = "extra == 'health'", specifier = ">=5.0.0" },
@@ -3990,15 +3954,14 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "geopandas" },
-    { name = "isort" },
     { name = "mypy" },
     { name = "numpy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "radon" },
+    { name = "ruff" },
     { name = "shapely" },
 ]
 docs = [
@@ -4014,12 +3977,10 @@ integrations = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "geo-infer-test", marker = "extra == 'integrations'", editable = "GEO-INFER-TEST" },
     { name = "geopandas", marker = "extra == 'dev'", specifier = ">=0.13.0" },
     { name = "gitpython", specifier = ">=3.1.0" },
-    { name = "isort", marker = "extra == 'dev'", specifier = ">=5.12.0" },
     { name = "jsonschema", specifier = ">=4.17.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
@@ -4033,6 +3994,7 @@ requires-dist = [
     { name = "radon", marker = "extra == 'dev'", specifier = ">=5.1.0" },
     { name = "redis", marker = "extra == 'integrations'", specifier = ">=4.5.0" },
     { name = "requests", specifier = ">=2.28.1" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "shapely", marker = "extra == 'dev'", specifier = ">=2.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
@@ -4162,12 +4124,12 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "prometheus-client" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -4183,7 +4145,6 @@ integrations = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "geo-infer-data", marker = "extra == 'integrations'", editable = "GEO-INFER-DATA" },
     { name = "geo-infer-space", marker = "extra == 'integrations'", editable = "GEO-INFER-SPACE" },
     { name = "geo-infer-test", marker = "extra == 'integrations'", editable = "GEO-INFER-TEST" },
@@ -4198,6 +4159,7 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
 ]
@@ -4238,12 +4200,12 @@ coap = [
     { name = "aiocoap" },
 ]
 dev = [
-    { name = "black" },
     { name = "geopandas" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
     { name = "shapely" },
 ]
 docs = [
@@ -4281,7 +4243,6 @@ requires-dist = [
     { name = "aiocoap", marker = "extra == 'coap'", specifier = ">=0.4.3" },
     { name = "aiomqtt", specifier = ">=2.4.0" },
     { name = "arviz", marker = "extra == 'advanced'", specifier = ">=0.12.0" },
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "chirpstack-api", marker = "extra == 'lorawan'", specifier = ">=3.12.0" },
     { name = "confluent-kafka", marker = "extra == 'kafka'", specifier = ">=1.8.0" },
     { name = "fastapi", specifier = ">=0.100.0" },
@@ -4311,6 +4272,7 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scikit-learn", specifier = ">=1.0.0" },
     { name = "scipy", specifier = ">=1.7.0" },
     { name = "sgp4", marker = "extra == 'satellite'", specifier = ">=2.20" },
@@ -4344,11 +4306,11 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -4362,7 +4324,6 @@ solver = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "fastapi", specifier = ">=0.100.0" },
     { name = "folium", specifier = ">=0.14.0" },
     { name = "geopandas", specifier = ">=0.13.0" },
@@ -4379,6 +4340,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scipy", specifier = ">=1.9.0" },
     { name = "shapely", specifier = ">=2.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
@@ -4428,12 +4390,12 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "geopandas" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
     { name = "shapely" },
 ]
 docs = [
@@ -4456,7 +4418,6 @@ web = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "flask", marker = "extra == 'web'", specifier = ">=2.3.0" },
     { name = "geopandas", marker = "extra == 'dev'", specifier = ">=0.13.0" },
     { name = "matplotlib", marker = "extra == 'examples'", specifier = ">=3.5.0" },
@@ -4468,6 +4429,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scikit-learn", specifier = ">=1.0.0" },
     { name = "scipy", specifier = ">=1.7.0" },
     { name = "shapely", marker = "extra == 'dev'", specifier = ">=2.0.0" },
@@ -4487,11 +4449,11 @@ source = { editable = "GEO-INFER-METAGOV" }
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -4508,7 +4470,6 @@ integrations = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "geo-infer-norms", marker = "extra == 'integrations'", editable = "GEO-INFER-NORMS" },
     { name = "geo-infer-org", marker = "extra == 'integrations'", editable = "GEO-INFER-ORG" },
     { name = "geo-infer-sec", marker = "extra == 'integrations'", editable = "GEO-INFER-SEC" },
@@ -4519,6 +4480,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
 ]
@@ -4543,11 +4505,11 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -4558,7 +4520,6 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "fastapi", specifier = ">=0.95.0,<1" },
     { name = "geopandas", specifier = ">=0.13.0,<2" },
     { name = "matplotlib", specifier = ">=3.7.0,<4" },
@@ -4572,6 +4533,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "shapely", specifier = ">=2.0.0,<3" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
@@ -4600,12 +4562,12 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-timeout" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -4622,7 +4584,6 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "cryptography", specifier = ">=40.0.0" },
     { name = "fastapi", specifier = ">=0.100.0" },
     { name = "kubernetes", specifier = ">=29.0.0" },
@@ -4644,6 +4605,7 @@ requires-dist = [
     { name = "pytest-timeout", marker = "extra == 'test'" },
     { name = "pyyaml", specifier = ">=6.0.0" },
     { name = "redis", specifier = ">=4.5.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
     { name = "structlog", specifier = ">=21.1.0" },
@@ -4658,12 +4620,12 @@ source = { editable = "GEO-INFER-ORG" }
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "networkx" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -4674,7 +4636,6 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
     { name = "nbsphinx", marker = "extra == 'docs'", specifier = ">=0.8.0" },
@@ -4682,6 +4643,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
 ]
@@ -4704,11 +4666,11 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -4719,7 +4681,6 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "fastapi", specifier = ">=0.100.0" },
     { name = "matplotlib", specifier = ">=3.7.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
@@ -4730,6 +4691,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "seaborn", specifier = ">=0.13.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
@@ -4762,12 +4724,12 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pyproj" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -4785,7 +4747,6 @@ integrations = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "branca", specifier = ">=0.6.0" },
     { name = "folium", specifier = ">=0.14.0" },
     { name = "geo-infer-data", marker = "extra == 'full'", editable = "GEO-INFER-DATA" },
@@ -4808,6 +4769,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", specifier = ">=2.28.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "shapely", specifier = ">=2.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
@@ -4822,11 +4784,11 @@ source = { editable = "GEO-INFER-REQ" }
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -4837,13 +4799,13 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
     { name = "nbsphinx", marker = "extra == 'docs'", specifier = ">=0.8.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
 ]
@@ -4866,11 +4828,11 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -4893,7 +4855,6 @@ ml = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "geo-infer-bayes", marker = "extra == 'integrations'", editable = "GEO-INFER-BAYES" },
     { name = "geo-infer-data", marker = "extra == 'integrations'", editable = "GEO-INFER-DATA" },
     { name = "geo-infer-math", marker = "extra == 'integrations'", editable = "GEO-INFER-MATH" },
@@ -4912,6 +4873,7 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scikit-learn", marker = "extra == 'ml'", specifier = ">=1.0" },
     { name = "scipy", specifier = ">=1.7.0" },
     { name = "shapely", specifier = ">=2.0.0" },
@@ -4939,13 +4901,13 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "minio" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "redis" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -4965,7 +4927,6 @@ ml = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "cryptography", specifier = ">=36.0.0" },
     { name = "flask", specifier = ">=2.0" },
     { name = "geo-infer-data", marker = "extra == 'integrations'", editable = "GEO-INFER-DATA" },
@@ -4986,6 +4947,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "redis", marker = "extra == 'dev'", specifier = ">=4.5.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scikit-learn", marker = "extra == 'ml'", specifier = ">=1.0" },
     { name = "shapely", specifier = ">=2.0.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
@@ -5005,11 +4967,11 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -5023,7 +4985,6 @@ mesa = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "mesa", marker = "extra == 'mesa'", specifier = ">=0.8.9" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
@@ -5033,6 +4994,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
 ]
@@ -5082,11 +5044,11 @@ all = [
     { name = "xarray", version = "2025.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
 ]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -5118,7 +5080,6 @@ viz = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "dask", marker = "extra == 'optional'", specifier = ">=2021.10.0" },
     { name = "dask", extras = ["dataframe"], marker = "extra == 'optional'", specifier = ">=2021.10.0" },
     { name = "fastapi", specifier = ">=0.100.0" },
@@ -5153,6 +5114,7 @@ requires-dist = [
     { name = "redis", marker = "extra == 'optional'", specifier = ">=4.0.0" },
     { name = "requests", specifier = ">=2.28.0" },
     { name = "rioxarray", marker = "extra == 'optional'", specifier = ">=0.11.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scikit-learn", specifier = ">=1.0.0" },
     { name = "scipy", specifier = ">=1.7.0" },
     { name = "seaborn", marker = "extra == 'viz'", specifier = ">=0.11.0" },
@@ -5190,12 +5152,12 @@ bayesian = [
     { name = "pymc" },
 ]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "psutil" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
     { name = "ruptures" },
     { name = "shapely" },
     { name = "statsmodels" },
@@ -5210,7 +5172,6 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "arviz", marker = "extra == 'bayesian'", specifier = ">=0.12.0" },
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "geopandas", specifier = ">=0.13.0" },
     { name = "h5py", specifier = ">=3.6.0" },
     { name = "matplotlib", specifier = ">=3.5.0" },
@@ -5226,6 +5187,7 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
     { name = "rasterio", specifier = ">=1.2.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "ruptures", marker = "extra == 'dev'", specifier = ">=1.1.0" },
     { name = "scikit-learn", specifier = ">=1.0.0" },
     { name = "scipy", specifier = ">=1.7.0" },
@@ -5267,11 +5229,11 @@ browser = [
     { name = "selenium", version = "4.39.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
 ]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pyproj" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "ruff" },
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "shapely" },
@@ -5320,7 +5282,6 @@ synthetic = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "coverage", extras = ["toml"], specifier = ">=7.0.0" },
     { name = "factory-boy", marker = "extra == 'synthetic'", specifier = ">=3.2.0" },
     { name = "faker", marker = "extra == 'synthetic'", specifier = ">=18.0.0" },
@@ -5366,6 +5327,7 @@ requires-dist = [
     { name = "pytest-xdist", specifier = ">=3.0.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", marker = "extra == 'load'", specifier = ">=2.28.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scikit-learn", marker = "extra == 'dev'", specifier = ">=1.0.0" },
     { name = "scipy", marker = "extra == 'dev'", specifier = ">=1.7.0" },
     { name = "seaborn", marker = "extra == 'reporting'", specifier = ">=0.11.0" },
@@ -5392,12 +5354,12 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "matplotlib" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -5413,7 +5375,6 @@ streaming = [
 [package.metadata]
 requires-dist = [
     { name = "aiokafka", marker = "extra == 'streaming'", specifier = ">=0.12,<1" },
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "matplotlib", marker = "extra == 'dev'", specifier = ">=3.5.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.15.0" },
@@ -5423,6 +5384,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.20.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scikit-learn", specifier = ">=1.6.1" },
     { name = "scipy", specifier = ">=1.7.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=4.2.0" },
@@ -5442,10 +5404,10 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "black" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 log = [
     { name = "geo-infer-log" },
@@ -5460,7 +5422,6 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=21.9.0" },
     { name = "geo-infer-log", marker = "extra == 'log'", editable = "GEO-INFER-LOG" },
     { name = "geopandas", marker = "extra == 'test'", specifier = ">=0.13.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=0.910" },
@@ -5469,6 +5430,7 @@ requires-dist = [
     { name = "pandas", marker = "extra == 'test'", specifier = ">=1.3.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=2.12.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "shapely", marker = "extra == 'test'", specifier = ">=2.0.0" },
 ]
 provides-extras = ["test", "log", "dev"]
@@ -6203,9 +6165,9 @@ name = "ipydatawidgets"
 version = "4.3.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ipywidgets" },
-    { name = "numpy" },
-    { name = "traittypes" },
+    { name = "ipywidgets", marker = "python_full_version < '3.12'" },
+    { name = "numpy", marker = "python_full_version < '3.12'" },
+    { name = "traittypes", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/bc/88/332ba20bb0e0b8078f97bc1469f332be796b804c565b41163b93241e0657/ipydatawidgets-4.3.5.tar.gz", hash = "sha256:394f2489576587cfd755377a09a067f46cad22081965092021fd1abcbe7852a8", size = 799182, upload-time = "2023-06-14T11:16:06.587Z" }
 wheels = [
@@ -6241,11 +6203,11 @@ name = "ipyleaflet"
 version = "0.20.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "branca" },
-    { name = "ipywidgets" },
-    { name = "jupyter-leaflet" },
-    { name = "traittypes" },
-    { name = "xyzservices" },
+    { name = "branca", marker = "python_full_version < '3.12'" },
+    { name = "ipywidgets", marker = "python_full_version < '3.12'" },
+    { name = "jupyter-leaflet", marker = "python_full_version < '3.12'" },
+    { name = "traittypes", marker = "python_full_version < '3.12'" },
+    { name = "xyzservices", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d8/f2/00facc58a1e9581d9365df5761bf7e12f9fa7132132111f6ee484fd58e42/ipyleaflet-0.20.0.tar.gz", hash = "sha256:098f317dd63c4bcac5176d5b78d40d5758c623f7cd013f0d0c9d7a70cefcdb34", size = 28932, upload-time = "2025-06-13T08:33:43.441Z" }
 wheels = [
@@ -6257,12 +6219,12 @@ name = "ipympl"
 version = "0.9.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ipython" },
-    { name = "ipywidgets" },
-    { name = "matplotlib" },
-    { name = "numpy" },
-    { name = "pillow" },
-    { name = "traitlets" },
+    { name = "ipython", marker = "python_full_version < '3.12'" },
+    { name = "ipywidgets", marker = "python_full_version < '3.12'" },
+    { name = "matplotlib", marker = "python_full_version < '3.12'" },
+    { name = "numpy", marker = "python_full_version < '3.12'" },
+    { name = "pillow", marker = "python_full_version < '3.12'" },
+    { name = "traitlets", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/39/1b/acd3d481869d614a7acbb831bd9304411eae47b05d7607db989613028788/ipympl-0.9.7.tar.gz", hash = "sha256:3e505a56b6e9a7bfc4d40c1a861a0547adb16820eb67ec79131335dd0a5084f0", size = 58547447, upload-time = "2025-03-05T03:51:14.609Z" }
 wheels = [
@@ -6308,18 +6270,18 @@ name = "ipyvolume"
 version = "0.6.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "bqplot" },
-    { name = "ipyvue" },
-    { name = "ipyvuetify" },
-    { name = "ipywebrtc" },
-    { name = "ipywidgets" },
-    { name = "matplotlib" },
-    { name = "numpy" },
-    { name = "pillow" },
-    { name = "pythreejs" },
-    { name = "requests" },
-    { name = "traitlets" },
-    { name = "traittypes" },
+    { name = "bqplot", marker = "python_full_version < '3.12'" },
+    { name = "ipyvue", marker = "python_full_version < '3.12'" },
+    { name = "ipyvuetify", marker = "python_full_version < '3.12'" },
+    { name = "ipywebrtc", marker = "python_full_version < '3.12'" },
+    { name = "ipywidgets", marker = "python_full_version < '3.12'" },
+    { name = "matplotlib", marker = "python_full_version < '3.12'" },
+    { name = "numpy", marker = "python_full_version < '3.12'" },
+    { name = "pillow", marker = "python_full_version < '3.12'" },
+    { name = "pythreejs", marker = "python_full_version < '3.12'" },
+    { name = "requests", marker = "python_full_version < '3.12'" },
+    { name = "traitlets", marker = "python_full_version < '3.12'" },
+    { name = "traittypes", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/bc/8c/560b41f231006d6b10749289aa33173268afc06cee92a77570d3fc4dff38/ipyvolume-0.6.3.tar.gz", hash = "sha256:823226f90a59ce08b1da2699a9ec505f34f65f01ce43accd80e7d3554082d035", size = 1596303, upload-time = "2023-06-02T14:33:08.671Z" }
 wheels = [
@@ -6331,7 +6293,7 @@ name = "ipyvue"
 version = "1.11.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ipywidgets" },
+    { name = "ipywidgets", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f8/c7/fc11a2b3e9114190504a18d0e661230de2ea165f0a47ab835c69e86a40ef/ipyvue-1.11.2.tar.gz", hash = "sha256:3b1381bd120184f970a5d66deac33b8592a666c8e1ab7a5afd33ecff342e0a95", size = 1741459, upload-time = "2024-11-14T12:45:24.94Z" }
 wheels = [
@@ -6343,7 +6305,7 @@ name = "ipyvuetify"
 version = "1.11.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ipyvue" },
+    { name = "ipyvue", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a4/07/31c9615532b6c190a3033460e4aa83a64ac532281758ff734e1bc42e3c00/ipyvuetify-1.11.3.tar.gz", hash = "sha256:3580afa76d9add4ae04ccb7fd57d4a0cf03a261705742e7137def3ebb65ac71d", size = 6170730, upload-time = "2025-07-02T11:25:12.691Z" }
 wheels = [
@@ -6364,11 +6326,11 @@ name = "ipywidgets"
 version = "8.1.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "comm" },
-    { name = "ipython" },
-    { name = "jupyterlab-widgets" },
-    { name = "traitlets" },
-    { name = "widgetsnbextension" },
+    { name = "comm", marker = "python_full_version < '3.12'" },
+    { name = "ipython", marker = "python_full_version < '3.12'" },
+    { name = "jupyterlab-widgets", marker = "python_full_version < '3.12'" },
+    { name = "traitlets", marker = "python_full_version < '3.12'" },
+    { name = "widgetsnbextension", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/3e/48/d3dbac45c2814cb73812f98dd6b38bbcc957a4e7bb31d6ea9c03bf94ed87/ipywidgets-8.1.7.tar.gz", hash = "sha256:15f1ac050b9ccbefd45dccfbb2ef6bed0029d8278682d569d71b8dd96bee0376", size = 116721, upload-time = "2025-05-05T12:42:03.489Z" }
 wheels = [
@@ -6385,49 +6347,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/7c/1a/3c8edc664e06e6bd06cce40c6b22da5f1429aa4224d0c590f3be21c91ead/isoduration-20.11.0.tar.gz", hash = "sha256:ac2f9015137935279eac671f94f89eb00584f940f5dc49462a0c4ee692ba1bd9", size = 11649, upload-time = "2020-11-01T11:00:00.312Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7b/55/e5326141505c5d5e34c5e0935d2908a74e4561eca44108fbfb9c13d2911a/isoduration-20.11.0-py3-none-any.whl", hash = "sha256:b2904c2a4228c3d44f409c8ae8e2370eb21a26f7ac2ec5446df141dde3452042", size = 11321, upload-time = "2020-11-01T10:59:58.02Z" },
-]
-
-[[package]]
-name = "isort"
-version = "9.0.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "mypy-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e6/43/067e17bfa10b6486b408d5294105ac894149a9abb94b338568b1f53a73c9/isort-9.0.1.tar.gz", hash = "sha256:ba23db109e3e93ef1999f7209a651214994cd807801addd16ac485982eb4edd7", size = 667724, upload-time = "2026-08-27T20:54:26.699Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/20/79/f73cc50a8749f17246372fe7d9398a8e0195cf5fb8b9955f59baa3c6e597/isort-9.0.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:9dd4664ad009552bc4c9f464bd31190d0f04132412ee4d9392145fdf58d92127", size = 1039913, upload-time = "2026-08-27T20:53:36.244Z" },
-    { url = "https://files.pythonhosted.org/packages/b0/92/bf89a5b76464685256bdcc866705d5cd5a07de5babef02a4519af55cb3ca/isort-9.0.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:fb7d55156a1f766a2b097165524f07be61ececa41a71ca33d24a00777f79a829", size = 1575299, upload-time = "2026-08-27T20:53:37.715Z" },
-    { url = "https://files.pythonhosted.org/packages/5f/23/e05939b0f1254488476929b998464ce69205f769de64beacaedeb47e1a45/isort-9.0.1-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:771d5b7385292a0b2106229b792b8750954bbaf231e0475b1f53f1dd43e00936", size = 1559017, upload-time = "2026-08-27T20:53:39.161Z" },
-    { url = "https://files.pythonhosted.org/packages/f9/1f/f6a0c7d968322b23d248ec5ae3262bcae9ee57926cace0d1f99dfdb50b22/isort-9.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:1878b5165b0db434c0c62373a81a111e1afffb373f20e57bd2020ebdbaa36808", size = 864877, upload-time = "2026-08-27T20:53:40.582Z" },
-    { url = "https://files.pythonhosted.org/packages/b1/bd/7221ab6fa6912487953334a9953dcc11816f8568e8d1fec07cda0bc01d87/isort-9.0.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:c3ce022ccedf63aa5fc77bd0e926b8561a1476c9709d7cedf63abd7967772aac", size = 1045272, upload-time = "2026-08-27T20:53:42.378Z" },
-    { url = "https://files.pythonhosted.org/packages/65/3e/ef6f9247dd0b7faad0450883808c94b94f22fc254524b5b05b5c6c4f94b2/isort-9.0.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:7a75d4c21d8b93345a2743b96cc75c6f085aa89ddbaadd6edd5e9765be12ab77", size = 1659645, upload-time = "2026-08-27T20:53:44.087Z" },
-    { url = "https://files.pythonhosted.org/packages/49/16/4f791073e6f91f8e9442ed7eb370886a0f0a52c9dadba540fcd24b4c2074/isort-9.0.1-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:f6877ed17054eae153d686270678b11c1f6cb79433a1c07453140cccbaf7cc1d", size = 1649411, upload-time = "2026-08-27T20:53:45.597Z" },
-    { url = "https://files.pythonhosted.org/packages/1f/17/28a06514565129fbb225138045323fb2876aaf871cf77f5976e62e5624bc/isort-9.0.1-cp312-cp312-win_amd64.whl", hash = "sha256:182918b730772292d33564a6ac5b201ca2bb79a8ad2ac77e7681ecc0f19a8f84", size = 871297, upload-time = "2026-08-27T20:53:47.24Z" },
-    { url = "https://files.pythonhosted.org/packages/e1/65/aba682b6d0853de85f5bb5c18f0269d2980760783f5144dfcded6b8a1f14/isort-9.0.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:67680927f739d4b48d67d8b7430faa92c95b02fb6075ca0351c6446214f6c7bb", size = 1021693, upload-time = "2026-08-27T20:53:48.792Z" },
-    { url = "https://files.pythonhosted.org/packages/d7/bb/7025f3606b42f7db084fa234d61462a73443af166ecf7c1a0e8e3b448433/isort-9.0.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:3727eb33a9759649346481cf2a9287d656a170c31ed7c105856f9c6f5b539756", size = 1648575, upload-time = "2026-08-27T20:53:50.701Z" },
-    { url = "https://files.pythonhosted.org/packages/47/78/a92b09507565f8bd27eb72a7df3ba59a1ea0a5baacbf155c587d0be51a13/isort-9.0.1-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:466b0c3f156a21c10edefba697e641666bc26ffb0122bf08b42caa3d464c20aa", size = 1639624, upload-time = "2026-08-27T20:53:52.22Z" },
-    { url = "https://files.pythonhosted.org/packages/52/ba/f5efd28563bc751792a7a1f64ae73db57dcbfa0563dc3e0cbbd825a48252/isort-9.0.1-cp313-cp313-pyemscripten_2025_0_wasm32.whl", hash = "sha256:5832683294dd61c59d00cd043a68d42f6ecd7dc7d04b73ac777f7f90a534d6ae", size = 457708, upload-time = "2026-08-27T20:53:53.837Z" },
-    { url = "https://files.pythonhosted.org/packages/53/d6/a776ea214de5403f038b182e1d5fd2211d0cee41f2c62ac9f2f9a0ecc463/isort-9.0.1-cp313-cp313-win_amd64.whl", hash = "sha256:7281cdf538f682b8d75fa44bcdad1b299036bbc440855f7d61412b3b85d5727d", size = 874790, upload-time = "2026-08-27T20:53:56.154Z" },
-    { url = "https://files.pythonhosted.org/packages/db/42/d75a674a7fcbbf4374cd358b8529535d3c59e0ab6acc164b6862acb95058/isort-9.0.1-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:7ea5f505b152fedd2b990b39d8b76108a48b355da874025aad4982e8ceeb0f3d", size = 1020950, upload-time = "2026-08-27T20:53:57.744Z" },
-    { url = "https://files.pythonhosted.org/packages/2b/b6/04d74c7c42b9af1c0d47f34a79722dbbcff71bae3765c9250376ebd44ec5/isort-9.0.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:873cf1b6371d41e2a74d57d7c0176d311822f0415441abf8251ad074c9fe4a66", size = 1653678, upload-time = "2026-08-27T20:53:59.292Z" },
-    { url = "https://files.pythonhosted.org/packages/53/6c/621969c0cde272b7a183484589cc9f28132775d78fd708c231fd292c7abd/isort-9.0.1-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:99b7bc28b1f05f7e3267629043a99c6c479a750df3689327a10324e396827f94", size = 1645589, upload-time = "2026-08-27T20:54:00.911Z" },
-    { url = "https://files.pythonhosted.org/packages/8c/26/e3db1ae5d5fbe9e2dff0c6a0b2b9dda07a742ede20f8fbc7d78d5d73f472/isort-9.0.1-cp314-cp314-pyemscripten_2026_0_wasm32.whl", hash = "sha256:89ebbcdbdd9d66cc14909bbac36acb9db29f37325606113c9f270242f8a1f896", size = 457029, upload-time = "2026-08-27T20:54:02.551Z" },
-    { url = "https://files.pythonhosted.org/packages/b8/f2/b9cf816c8dfd5d9066b65a2f738f8d03fb0f6001bcffa3d436cfdbe1b421/isort-9.0.1-cp314-cp314-win_amd64.whl", hash = "sha256:2057236a764f31c78dac78f7343057621fcc2fd40461ce61061f34fd09066f46", size = 894580, upload-time = "2026-08-27T20:54:03.985Z" },
-    { url = "https://files.pythonhosted.org/packages/9b/d7/e5e9e477ff7ec9f75b4c07b25aef10814775200c1e90bc9acbb788def54a/isort-9.0.1-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:5e72a7063570f1d740f0284c7ae5739dc34c6a2d9f1049b13027a5bdadb56682", size = 1088685, upload-time = "2026-08-27T20:54:05.376Z" },
-    { url = "https://files.pythonhosted.org/packages/96/6f/915effa62cdcdc757bd0c567ee4d611c7a73ce7da097c820b3b2f340c2f7/isort-9.0.1-cp314-cp314t-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c2525606f62742fc4ed9f8ca89043b9522ac3e6f9c9892e6cb16f4870d937f38", size = 1863445, upload-time = "2026-08-27T20:54:06.851Z" },
-    { url = "https://files.pythonhosted.org/packages/e5/d4/af84d711cda084ddcb7a01a3d6a2608542c16ae7d418d99169b7deb775a4/isort-9.0.1-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:e3a2697ebcb54b51af4833de44447dbf31ddf081c5f163772092d21c0267483b", size = 1878639, upload-time = "2026-08-27T20:54:08.618Z" },
-    { url = "https://files.pythonhosted.org/packages/58/d0/d77ec7d1c648a0b92ea6a8da3591a342550404af98a338106278a872ea1a/isort-9.0.1-cp314-cp314t-win_amd64.whl", hash = "sha256:fd326823ddbe338357ba1823b7f96481d4421d54c83ebd43c92f1b51314a24ae", size = 919565, upload-time = "2026-08-27T20:54:10.094Z" },
-    { url = "https://files.pythonhosted.org/packages/72/d8/9963610d22fa55cbbd3c141a350f7011dd1023be9d3ba06212053c3639c6/isort-9.0.1-cp315-cp315-macosx_11_0_arm64.whl", hash = "sha256:5022b332ac91ccb39dc28bb206d5ae96ae7f8d45e710b072cb039b2fcda6602a", size = 1020254, upload-time = "2026-08-27T20:54:11.732Z" },
-    { url = "https://files.pythonhosted.org/packages/11/20/9f22f2574d94cc2b86f7c1764a186843ed19e7215666b57b10935335614f/isort-9.0.1-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:930879e4cfab3264f1d7346abeec10726b5382dc4be9f4251c25ec7fa057926b", size = 1667500, upload-time = "2026-08-27T20:54:13.193Z" },
-    { url = "https://files.pythonhosted.org/packages/5e/4a/5a46b814d7fa49fc778e65a6703e4bb4d60149e01574afd7366b5ac7a1dc/isort-9.0.1-cp315-cp315-musllinux_1_2_x86_64.whl", hash = "sha256:825c05d2d63a1b9c608c352503c10b6411a3c6e12bcacc97b306774ee379786f", size = 1655914, upload-time = "2026-08-27T20:54:14.827Z" },
-    { url = "https://files.pythonhosted.org/packages/a7/09/b575e1837f3b182c97f937cf39cb55b3942f44dedfec4303403e4aa9bbd0/isort-9.0.1-cp315-cp315-pyemscripten_2026_5_wasm32.whl", hash = "sha256:cc9814ce2ee42c17007d822455e4db55e32e589808ecfc2665d51c848d0bb30a", size = 457120, upload-time = "2026-08-27T20:54:16.145Z" },
-    { url = "https://files.pythonhosted.org/packages/65/60/3c73139b71b7031caf54aa098bc589b18374533b5f96f31c541b36112896/isort-9.0.1-cp315-cp315-win_amd64.whl", hash = "sha256:1b8d6c836fb83232f5f4c1c037d332caf743bb24dca63167bad9174ae13e150e", size = 894525, upload-time = "2026-08-27T20:54:17.895Z" },
-    { url = "https://files.pythonhosted.org/packages/e5/27/5c17d4c8239a33a876f91e52426cc0d3fc75eb8438f34c40f403998057ac/isort-9.0.1-cp315-cp315t-macosx_11_0_arm64.whl", hash = "sha256:2fb33e0c0f9f87821acf6d82c83f0a0c7e54680fdf3fe4131409d2b95901f00a", size = 1088576, upload-time = "2026-08-27T20:54:19.599Z" },
-    { url = "https://files.pythonhosted.org/packages/32/9b/9e80dee125b3d1208fb89afa380cae6fdfac660ad682eb0139a8fd8d790a/isort-9.0.1-cp315-cp315t-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:cdf765657edb2bcccbb1b20d26e710acbcb27379c0a407c6cb376e5619059a7b", size = 1853379, upload-time = "2026-08-27T20:54:21.119Z" },
-    { url = "https://files.pythonhosted.org/packages/34/43/f9f456c223ba34293ab28f736f00e26875b26913f24451e5a2938a8c4e02/isort-9.0.1-cp315-cp315t-musllinux_1_2_x86_64.whl", hash = "sha256:23d3b6657763f9be1b15bb9664b016abfce34849d6215a46a42af7945d4acd68", size = 1871162, upload-time = "2026-08-27T20:54:22.593Z" },
-    { url = "https://files.pythonhosted.org/packages/38/5c/17fedc2bee564bb13b50ed3cb2ce7d66dd8e09184fb45d7a263ebaaaa97e/isort-9.0.1-cp315-cp315t-win_amd64.whl", hash = "sha256:8f490acc182253d07071cc8255b57a281855e2e027b929a89eaa7c797f7b213e", size = 918269, upload-time = "2026-08-27T20:54:23.996Z" },
-    { url = "https://files.pythonhosted.org/packages/af/6e/4ec84f19b008864656b9f158bad006aa6346e754694aff47a7fa9ee65a19/isort-9.0.1-py3-none-any.whl", hash = "sha256:5aac7263b7a7f9f647f94fb6df2761ff5b60a7168eb492ff39dd30443207fa19", size = 103487, upload-time = "2026-08-27T20:54:25.395Z" },
 ]
 
 [[package]]
@@ -7052,8 +6971,8 @@ name = "lmoments3"
 version = "1.0.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy" },
-    { name = "scipy" },
+    { name = "numpy", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "scipy", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/84/12/a44008bbf71d0bae58e53552478b40b8de61ae034c7c085681ba3e8525ee/lmoments3-1.0.8.tar.gz", hash = "sha256:bb58bfc23c924ebe30852b57a9ac4fe15549bf9376843b7ab67aed79bc06bee1", size = 77689, upload-time = "2024-10-18T20:25:30.821Z" }
 wheels = [
@@ -7337,17 +7256,17 @@ name = "mayavi"
 version = "4.8.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "apptools" },
-    { name = "configobj" },
-    { name = "envisage" },
-    { name = "numpy" },
-    { name = "packaging" },
-    { name = "puremagic" },
-    { name = "pyface" },
-    { name = "pygments" },
-    { name = "traits" },
-    { name = "traitsui" },
-    { name = "vtk" },
+    { name = "apptools", marker = "python_full_version < '3.12'" },
+    { name = "configobj", marker = "python_full_version < '3.12'" },
+    { name = "envisage", marker = "python_full_version < '3.12'" },
+    { name = "numpy", marker = "python_full_version < '3.12'" },
+    { name = "packaging", marker = "python_full_version < '3.12'" },
+    { name = "puremagic", marker = "python_full_version < '3.12'" },
+    { name = "pyface", marker = "python_full_version < '3.12'" },
+    { name = "pygments", marker = "python_full_version < '3.12'" },
+    { name = "traits", marker = "python_full_version < '3.12'" },
+    { name = "traitsui", marker = "python_full_version < '3.12'" },
+    { name = "vtk", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/69/db/73b4270d5f0c5330f778696325be9e8b745655578b7cba96d787be19d32f/mayavi-4.8.3.tar.gz", hash = "sha256:ef69ccbdf58f20f1b394930d5e3a16dda4b1a39adcbc76f79abd26483d29acf5", size = 7103564, upload-time = "2025-05-16T12:42:40.572Z" }
 
@@ -7550,7 +7469,7 @@ resolution-markers = [
     "(python_full_version == '3.13.*' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version == '3.13.*' and sys_platform != 'darwin' and sys_platform != 'linux')",
 ]
 dependencies = [
-    { name = "numpy" },
+    { name = "numpy", marker = "python_full_version >= '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/fd/15/76f86faa0902836cc133939732f7611ace68cf54148487a99c539c272dc8/ml_dtypes-0.4.1.tar.gz", hash = "sha256:fad5f2de464fd09127e49b7fd1252b9006fb43d2edc1ff112d390c324af5ca7a", size = 692594, upload-time = "2024-09-13T19:07:11.624Z" }
 wheels = [
@@ -7577,7 +7496,7 @@ resolution-markers = [
     "(python_full_version < '3.12' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform != 'darwin' and sys_platform != 'linux')",
 ]
 dependencies = [
-    { name = "numpy" },
+    { name = "numpy", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/78/a7/aad060393123cfb383956dca68402aff3db1e1caffd5764887ed5153f41b/ml_dtypes-0.5.3.tar.gz", hash = "sha256:95ce33057ba4d05df50b1f3cfefab22e351868a843b3b15a46c65836283670c9", size = 692316, upload-time = "2025-07-29T18:39:19.454Z" }
 wheels = [
@@ -8243,7 +8162,7 @@ name = "nvidia-cudnn-cu12"
 version = "9.10.2.21"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas-cu12" },
+    { name = "nvidia-cublas-cu12", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ba/51/e123d997aa098c61d029f76663dedbfb9bc8dcf8c60cbd6adbe42f76d049/nvidia_cudnn_cu12-9.10.2.21-py3-none-manylinux_2_27_x86_64.whl", hash = "sha256:949452be657fa16687d0930933f032835951ef0892b37d2d53824d1a84dc97a8", size = 706758467, upload-time = "2025-06-06T21:54:08.597Z" },
@@ -8254,7 +8173,7 @@ name = "nvidia-cufft-cu12"
 version = "11.3.3.83"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-nvjitlink-cu12" },
+    { name = "nvidia-nvjitlink-cu12", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1f/13/ee4e00f30e676b66ae65b4f08cb5bcbb8392c03f54f2d5413ea99a5d1c80/nvidia_cufft_cu12-11.3.3.83-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:4d2dd21ec0b88cf61b62e6b43564355e5222e4a3fb394cac0db101f2dd0d4f74", size = 193118695, upload-time = "2025-03-07T01:45:27.821Z" },
@@ -8281,9 +8200,9 @@ name = "nvidia-cusolver-cu12"
 version = "11.7.3.90"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas-cu12" },
-    { name = "nvidia-cusparse-cu12" },
-    { name = "nvidia-nvjitlink-cu12" },
+    { name = "nvidia-cublas-cu12", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
+    { name = "nvidia-cusparse-cu12", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
+    { name = "nvidia-nvjitlink-cu12", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/85/48/9a13d2975803e8cf2777d5ed57b87a0b6ca2cc795f9a4f59796a910bfb80/nvidia_cusolver_cu12-11.7.3.90-py3-none-manylinux_2_27_x86_64.whl", hash = "sha256:4376c11ad263152bd50ea295c05370360776f8c3427b30991df774f9fb26c450", size = 267506905, upload-time = "2025-03-07T01:47:16.273Z" },
@@ -8294,7 +8213,7 @@ name = "nvidia-cusparse-cu12"
 version = "12.5.8.93"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-nvjitlink-cu12" },
+    { name = "nvidia-nvjitlink-cu12", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c2/f5/e1854cb2f2bcd4280c44736c93550cc300ff4b8c95ebe370d0aa7d2b473d/nvidia_cusparse_cu12-12.5.8.93-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:1ec05d76bbbd8b61b06a80e1eaf8cf4959c3d4ce8e711b65ebd0443bb0ebb13b", size = 288216466, upload-time = "2025-03-07T01:48:13.779Z" },
@@ -8718,10 +8637,10 @@ resolution-markers = [
     "python_full_version == '3.13.*' and sys_platform == 'darwin'",
 ]
 dependencies = [
-    { name = "numpy" },
-    { name = "python-dateutil" },
-    { name = "pytz" },
-    { name = "tzdata" },
+    { name = "numpy", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "python-dateutil", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "pytz", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "tzdata", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/6f/41/eb562668eaf93790762f600536b28c97b45803cba9253cd8e436cda96aef/pandas-2.1.4.tar.gz", hash = "sha256:fcb68203c833cc735321512e13861358079a96c174a61f5116a1de89c58c0ef7", size = 4274800, upload-time = "2023-12-08T15:38:29.713Z" }
 wheels = [
@@ -8748,10 +8667,10 @@ resolution-markers = [
     "(python_full_version < '3.12' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform != 'darwin' and sys_platform != 'linux')",
 ]
 dependencies = [
-    { name = "numpy" },
-    { name = "python-dateutil" },
-    { name = "pytz" },
-    { name = "tzdata" },
+    { name = "numpy", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "python-dateutil", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "pytz", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "tzdata", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d1/6f/75aa71f8a14267117adeeed5d21b204770189c0a0025acbdc03c337b28fc/pandas-2.3.1.tar.gz", hash = "sha256:0a95b9ac964fe83ce317827f80304d37388ea77616b1425f0ae41c9d2d0d7bb2", size = 4487493, upload-time = "2025-07-07T19:20:04.079Z" }
 wheels = [
@@ -9024,7 +8943,7 @@ name = "progressbar2"
 version = "4.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "python-utils" },
+    { name = "python-utils", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/19/24/3587e795fc590611434e4bcb9fbe0c3dddb5754ce1a20edfd86c587c0004/progressbar2-4.5.0.tar.gz", hash = "sha256:6662cb624886ed31eb94daf61e27583b5144ebc7383a17bae076f8f4f59088fb", size = 101449, upload-time = "2024-08-28T22:50:12.391Z" }
 wheels = [
@@ -9482,23 +9401,11 @@ wheels = [
 ]
 
 [[package]]
-name = "pydocstyle"
-version = "6.3.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "snowballstemmer" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e9/5c/d5385ca59fd065e3c6a5fe19f9bc9d5ea7f2509fa8c9c22fb6b2031dd953/pydocstyle-6.3.0.tar.gz", hash = "sha256:7ce43f0c0ac87b07494eb9c0b462c0b73e6ff276807f204d6b53edc72b7e44e1", size = 36796, upload-time = "2023-01-17T20:29:19.838Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/36/ea/99ddefac41971acad68f14114f38261c1f27dac0b3ec529824ebc739bdaa/pydocstyle-6.3.0-py3-none-any.whl", hash = "sha256:118762d452a49d6b05e194ef344a55822987a462831ade91ec5c06fd2169d019", size = 38038, upload-time = "2023-01-17T20:29:18.094Z" },
-]
-
-[[package]]
 name = "pyerfa"
 version = "2.0.1.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy" },
+    { name = "numpy", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/71/39/63cc8291b0cf324ae710df41527faf7d331bce573899199d926b3e492260/pyerfa-2.0.1.5.tar.gz", hash = "sha256:17d6b24fe4846c65d5e7d8c362dcb08199dc63b30a236aedd73875cc83e1f6c0", size = 818430, upload-time = "2024-11-11T15:22:30.852Z" }
 wheels = [
@@ -9516,7 +9423,7 @@ name = "pyface"
 version = "8.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "traits" },
+    { name = "traits", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0d/eb/69bbe2ff61ebe978b46d76cba33cc5a4ad3940528cfed322ddbb3843a5b1/pyface-8.0.0.tar.gz", hash = "sha256:7e13618347b7a648ed20cdbd4fd1a51648f5010291f35e4e0ff1bf70a720cbf8", size = 7793450, upload-time = "2023-04-06T12:52:27.619Z" }
 wheels = [
@@ -10015,7 +9922,7 @@ name = "python-utils"
 version = "3.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", version = "4.14.1", source = { registry = "https://pypi.org/simple" } },
+    { name = "typing-extensions", version = "4.14.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/13/4c/ef8b7b1046d65c1f18ca31e5235c7d6627ca2b3f389ab1d44a74d22f5cc9/python_utils-3.9.1.tar.gz", hash = "sha256:eb574b4292415eb230f094cbf50ab5ef36e3579b8f09e9f2ba74af70891449a0", size = 35403, upload-time = "2024-11-26T00:38:58.736Z" }
 wheels = [
@@ -10027,10 +9934,10 @@ name = "pythreejs"
 version = "2.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ipydatawidgets" },
-    { name = "ipywidgets" },
-    { name = "numpy" },
-    { name = "traitlets" },
+    { name = "ipydatawidgets", marker = "python_full_version < '3.12'" },
+    { name = "ipywidgets", marker = "python_full_version < '3.12'" },
+    { name = "numpy", marker = "python_full_version < '3.12'" },
+    { name = "traitlets", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0a/2e/0ec94286b8eb3fe1200700080e8adb2c8d871bb8db589858a49600d97a7d/pythreejs-2.4.2.tar.gz", hash = "sha256:a568bfdc4c3797c4c2339158928edc7dcf6fa4a267b08e3cec5121e2078b5bd6", size = 4731310, upload-time = "2023-02-20T00:23:30.081Z" }
 wheels = [
@@ -10747,12 +10654,12 @@ resolution-markers = [
     "(python_full_version < '3.12' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform != 'darwin' and sys_platform != 'linux')",
 ]
 dependencies = [
-    { name = "certifi", version = "2025.8.3", source = { registry = "https://pypi.org/simple" } },
-    { name = "trio" },
-    { name = "trio-websocket" },
-    { name = "typing-extensions", version = "4.14.1", source = { registry = "https://pypi.org/simple" } },
-    { name = "urllib3", extra = ["socks"] },
-    { name = "websocket-client" },
+    { name = "certifi", version = "2025.8.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "trio", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "trio-websocket", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "typing-extensions", version = "4.14.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "urllib3", extra = ["socks"], marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "websocket-client", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/10/35/33d3d84e3399c9d00b489aeccfdc78115e149e45816fb8fe84274329e8a2/selenium-4.36.0.tar.gz", hash = "sha256:0eced83038736c3a013b824116df0b6dbb83e93721545f51b680451013416723", size = 913613, upload-time = "2025-10-02T15:24:37.483Z" }
 wheels = [
@@ -10768,12 +10675,12 @@ resolution-markers = [
     "python_full_version == '3.13.*' and sys_platform == 'darwin'",
 ]
 dependencies = [
-    { name = "certifi", version = "2026.2.25", source = { registry = "https://pypi.org/simple" } },
-    { name = "trio" },
-    { name = "trio-websocket" },
-    { name = "typing-extensions", version = "4.15.0", source = { registry = "https://pypi.org/simple" } },
-    { name = "urllib3", extra = ["socks"] },
-    { name = "websocket-client" },
+    { name = "certifi", version = "2026.2.25", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "trio", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "trio-websocket", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "typing-extensions", version = "4.15.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "urllib3", extra = ["socks"], marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "websocket-client", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/af/19/27c1bf9eb1f7025632d35a956b50746efb4b10aa87f961b263fa7081f4c5/selenium-4.39.0.tar.gz", hash = "sha256:12f3325f02d43b6c24030fc9602b34a3c6865abbb1db9406641d13d108aa1889", size = 928575, upload-time = "2025-12-06T23:12:34.896Z" }
 wheels = [
@@ -11338,16 +11245,16 @@ resolution-markers = [
     "(python_full_version == '3.13.*' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version == '3.13.*' and sys_platform != 'darwin' and sys_platform != 'linux')",
 ]
 dependencies = [
-    { name = "absl-py" },
-    { name = "grpcio" },
-    { name = "markdown" },
-    { name = "numpy" },
-    { name = "packaging" },
-    { name = "protobuf" },
-    { name = "setuptools" },
-    { name = "six" },
-    { name = "tensorboard-data-server" },
-    { name = "werkzeug" },
+    { name = "absl-py", marker = "python_full_version >= '3.13'" },
+    { name = "grpcio", marker = "python_full_version >= '3.13'" },
+    { name = "markdown", marker = "python_full_version >= '3.13'" },
+    { name = "numpy", marker = "python_full_version >= '3.13'" },
+    { name = "packaging", marker = "python_full_version >= '3.13'" },
+    { name = "protobuf", marker = "python_full_version >= '3.13'" },
+    { name = "setuptools", marker = "python_full_version >= '3.13'" },
+    { name = "six", marker = "python_full_version >= '3.13'" },
+    { name = "tensorboard-data-server", marker = "python_full_version >= '3.13'" },
+    { name = "werkzeug", marker = "python_full_version >= '3.13'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b1/de/021c1d407befb505791764ad2cbd56ceaaa53a746baed01d2e2143f05f18/tensorboard-2.18.0-py3-none-any.whl", hash = "sha256:107ca4821745f73e2aefa02c50ff70a9b694f39f790b11e6f682f7d326745eab", size = 5503036, upload-time = "2024-09-25T21:21:50.169Z" },
@@ -11366,16 +11273,16 @@ resolution-markers = [
     "(python_full_version < '3.12' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform != 'darwin' and sys_platform != 'linux')",
 ]
 dependencies = [
-    { name = "absl-py" },
-    { name = "grpcio" },
-    { name = "markdown" },
-    { name = "numpy" },
-    { name = "packaging" },
-    { name = "protobuf" },
-    { name = "setuptools" },
-    { name = "six" },
-    { name = "tensorboard-data-server" },
-    { name = "werkzeug" },
+    { name = "absl-py", marker = "python_full_version < '3.13'" },
+    { name = "grpcio", marker = "python_full_version < '3.13'" },
+    { name = "markdown", marker = "python_full_version < '3.13'" },
+    { name = "numpy", marker = "python_full_version < '3.13'" },
+    { name = "packaging", marker = "python_full_version < '3.13'" },
+    { name = "protobuf", marker = "python_full_version < '3.13'" },
+    { name = "setuptools", marker = "python_full_version < '3.13'" },
+    { name = "six", marker = "python_full_version < '3.13'" },
+    { name = "tensorboard-data-server", marker = "python_full_version < '3.13'" },
+    { name = "werkzeug", marker = "python_full_version < '3.13'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5d/12/4f70e8e2ba0dbe72ea978429d8530b0333f0ed2140cc571a48802878ef99/tensorboard-2.19.0-py3-none-any.whl", hash = "sha256:5e71b98663a641a7ce8a6e70b0be8e1a4c0c45d48760b076383ac4755c35b9a0", size = 5503412, upload-time = "2025-02-12T08:17:27.21Z" },
@@ -11404,28 +11311,28 @@ resolution-markers = [
     "(python_full_version == '3.13.*' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version == '3.13.*' and sys_platform != 'darwin' and sys_platform != 'linux')",
 ]
 dependencies = [
-    { name = "absl-py" },
-    { name = "astunparse" },
-    { name = "flatbuffers" },
-    { name = "gast" },
-    { name = "google-pasta" },
-    { name = "grpcio" },
-    { name = "h5py" },
-    { name = "keras" },
-    { name = "libclang" },
-    { name = "ml-dtypes", version = "0.4.1", source = { registry = "https://pypi.org/simple" } },
-    { name = "numpy" },
-    { name = "opt-einsum" },
-    { name = "packaging" },
-    { name = "protobuf" },
-    { name = "requests" },
-    { name = "setuptools" },
-    { name = "six" },
-    { name = "tensorboard", version = "2.18.0", source = { registry = "https://pypi.org/simple" } },
-    { name = "termcolor" },
-    { name = "typing-extensions", version = "4.14.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin'" },
-    { name = "typing-extensions", version = "4.15.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
-    { name = "wrapt" },
+    { name = "absl-py", marker = "python_full_version >= '3.13'" },
+    { name = "astunparse", marker = "python_full_version >= '3.13'" },
+    { name = "flatbuffers", marker = "python_full_version >= '3.13'" },
+    { name = "gast", marker = "python_full_version >= '3.13'" },
+    { name = "google-pasta", marker = "python_full_version >= '3.13'" },
+    { name = "grpcio", marker = "python_full_version >= '3.13'" },
+    { name = "h5py", marker = "python_full_version >= '3.13'" },
+    { name = "keras", marker = "python_full_version >= '3.13'" },
+    { name = "libclang", marker = "python_full_version >= '3.13'" },
+    { name = "ml-dtypes", version = "0.4.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
+    { name = "numpy", marker = "python_full_version >= '3.13'" },
+    { name = "opt-einsum", marker = "python_full_version >= '3.13'" },
+    { name = "packaging", marker = "python_full_version >= '3.13'" },
+    { name = "protobuf", marker = "python_full_version >= '3.13'" },
+    { name = "requests", marker = "python_full_version >= '3.13'" },
+    { name = "setuptools", marker = "python_full_version >= '3.13'" },
+    { name = "six", marker = "python_full_version >= '3.13'" },
+    { name = "tensorboard", version = "2.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
+    { name = "termcolor", marker = "python_full_version >= '3.13'" },
+    { name = "typing-extensions", version = "4.14.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform != 'darwin'" },
+    { name = "typing-extensions", version = "4.15.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "wrapt", marker = "python_full_version >= '3.13'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a1/88/57e2acd11a2587cc5c0a6612a389a57f3bda3cd60d132934cb7a9bb00a81/tensorflow-2.18.1-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:661029cd769b311db910b79a3a6ef50a5a61ecc947172228c777a49989722508", size = 239549037, upload-time = "2025-03-12T00:12:38.202Z" },
@@ -11451,28 +11358,28 @@ resolution-markers = [
     "(python_full_version < '3.12' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform != 'darwin' and sys_platform != 'linux')",
 ]
 dependencies = [
-    { name = "absl-py" },
-    { name = "astunparse" },
-    { name = "flatbuffers" },
-    { name = "gast" },
-    { name = "google-pasta" },
-    { name = "grpcio" },
-    { name = "h5py" },
-    { name = "keras" },
-    { name = "libclang" },
-    { name = "ml-dtypes", version = "0.5.3", source = { registry = "https://pypi.org/simple" } },
-    { name = "numpy" },
-    { name = "opt-einsum" },
-    { name = "packaging" },
-    { name = "protobuf" },
-    { name = "requests" },
-    { name = "setuptools" },
-    { name = "six" },
-    { name = "tensorboard", version = "2.19.0", source = { registry = "https://pypi.org/simple" } },
-    { name = "tensorflow-io-gcs-filesystem", marker = "python_full_version != '3.12.*'" },
-    { name = "termcolor" },
-    { name = "typing-extensions", version = "4.14.1", source = { registry = "https://pypi.org/simple" } },
-    { name = "wrapt" },
+    { name = "absl-py", marker = "python_full_version < '3.13'" },
+    { name = "astunparse", marker = "python_full_version < '3.13'" },
+    { name = "flatbuffers", marker = "python_full_version < '3.13'" },
+    { name = "gast", marker = "python_full_version < '3.13'" },
+    { name = "google-pasta", marker = "python_full_version < '3.13'" },
+    { name = "grpcio", marker = "python_full_version < '3.13'" },
+    { name = "h5py", marker = "python_full_version < '3.13'" },
+    { name = "keras", marker = "python_full_version < '3.13'" },
+    { name = "libclang", marker = "python_full_version < '3.13'" },
+    { name = "ml-dtypes", version = "0.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
+    { name = "numpy", marker = "python_full_version < '3.13'" },
+    { name = "opt-einsum", marker = "python_full_version < '3.13'" },
+    { name = "packaging", marker = "python_full_version < '3.13'" },
+    { name = "protobuf", marker = "python_full_version < '3.13'" },
+    { name = "requests", marker = "python_full_version < '3.13'" },
+    { name = "setuptools", marker = "python_full_version < '3.13'" },
+    { name = "six", marker = "python_full_version < '3.13'" },
+    { name = "tensorboard", version = "2.19.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
+    { name = "tensorflow-io-gcs-filesystem", marker = "python_full_version < '3.12'" },
+    { name = "termcolor", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", version = "4.14.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
+    { name = "wrapt", marker = "python_full_version < '3.13'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/20/cf/55b68d5896e58e25f41e5bc826c96678073b512be8ca2b1f4b101e0f195c/tensorflow-2.19.0-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:68d462278ad88c193c16d7b905864ff0117d61dc20deded9264d1999d513c115", size = 252589222, upload-time = "2025-03-12T01:05:14.273Z" },
@@ -11769,8 +11676,8 @@ name = "traitsui"
 version = "8.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyface" },
-    { name = "traits" },
+    { name = "pyface", marker = "python_full_version < '3.12'" },
+    { name = "traits", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/5e/ce/f8f3d97659822cac8ff6b80b4636161126d3a13a86a8c0d407498611d506/traitsui-8.0.0.tar.gz", hash = "sha256:901b9d1cbc45513e00a7397677b098441b28774b688f30a159bad4801bf40364", size = 6774847, upload-time = "2023-05-22T15:07:21.5Z" }
 wheels = [
@@ -11782,7 +11689,7 @@ name = "traittypes"
 version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "traitlets" },
+    { name = "traitlets", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/8a/71/0578e44d2110f93c2136eb705f5b11e706e1e8ea3acaaaeac043bd40d8fd/traittypes-0.2.1.tar.gz", hash = "sha256:be6fa26294733e7489822ded4ae25da5b4824a8a7a0e0c2dccfde596e3489bd6", size = 13544, upload-time = "2018-06-16T07:34:00.929Z" }
 wheels = [
@@ -11825,7 +11732,7 @@ name = "triton"
 version = "3.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "setuptools" },
+    { name = "setuptools", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7d/39/43325b3b651d50187e591eefa22e236b2981afcebaefd4f2fc0ea99df191/triton-3.4.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:7b70f5e6a41e52e48cfc087436c8a28c17ff98db369447bcaff3b887a3ab4467", size = 155531138, upload-time = "2025-07-30T19:58:29.908Z" },
@@ -12005,13 +11912,13 @@ name = "vaex"
 version = "4.17.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "vaex-astro" },
-    { name = "vaex-core" },
-    { name = "vaex-hdf5" },
-    { name = "vaex-jupyter" },
-    { name = "vaex-ml" },
-    { name = "vaex-server" },
-    { name = "vaex-viz" },
+    { name = "vaex-astro", marker = "python_full_version < '3.12'" },
+    { name = "vaex-core", marker = "python_full_version < '3.12'" },
+    { name = "vaex-hdf5", marker = "python_full_version < '3.12'" },
+    { name = "vaex-jupyter", marker = "python_full_version < '3.12'" },
+    { name = "vaex-ml", marker = "python_full_version < '3.12'" },
+    { name = "vaex-server", marker = "python_full_version < '3.12'" },
+    { name = "vaex-viz", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/85/3c/49233556ef1401d2b9cec3e8b6bcb7f25f8fc5db1931b0090d1d749ecd5e/vaex-4.17.0.tar.gz", hash = "sha256:2303a5382f2048f50389bbd2f24c06147599cdc09e585b138c5b52e0369d5787", size = 4835, upload-time = "2023-07-21T10:41:32.561Z" }
 wheels = [
@@ -12023,8 +11930,8 @@ name = "vaex-astro"
 version = "0.9.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "astropy" },
-    { name = "vaex-core" },
+    { name = "astropy", marker = "python_full_version < '3.12'" },
+    { name = "vaex-core", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/bb/8f/c3201d2d2b015b6a332a7e78ee5ff1beb45c140a4d14770f56b762474a10/vaex-astro-0.9.3.tar.gz", hash = "sha256:5474ccf335875a7da9e15bd9acff6c467d551805fafb4c9bdd8e4a06077ef518", size = 16411, upload-time = "2022-12-02T18:38:55.765Z" }
 wheels = [
@@ -12036,24 +11943,24 @@ name = "vaex-core"
 version = "4.17.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "aplus" },
-    { name = "blake3" },
-    { name = "cloudpickle" },
-    { name = "dask" },
-    { name = "filelock" },
-    { name = "frozendict" },
-    { name = "future" },
-    { name = "nest-asyncio" },
-    { name = "numpy" },
-    { name = "pandas", version = "2.3.1", source = { registry = "https://pypi.org/simple" } },
-    { name = "progressbar2" },
-    { name = "pyarrow" },
-    { name = "pydantic" },
-    { name = "pyyaml" },
-    { name = "requests" },
-    { name = "rich" },
-    { name = "six" },
-    { name = "tabulate" },
+    { name = "aplus", marker = "python_full_version < '3.12'" },
+    { name = "blake3", marker = "python_full_version < '3.12'" },
+    { name = "cloudpickle", marker = "python_full_version < '3.12'" },
+    { name = "dask", marker = "python_full_version < '3.12'" },
+    { name = "filelock", marker = "python_full_version < '3.12'" },
+    { name = "frozendict", marker = "python_full_version < '3.12'" },
+    { name = "future", marker = "python_full_version < '3.12'" },
+    { name = "nest-asyncio", marker = "python_full_version < '3.12'" },
+    { name = "numpy", marker = "python_full_version < '3.12'" },
+    { name = "pandas", version = "2.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "progressbar2", marker = "python_full_version < '3.12'" },
+    { name = "pyarrow", marker = "python_full_version < '3.12'" },
+    { name = "pydantic", marker = "python_full_version < '3.12'" },
+    { name = "pyyaml", marker = "python_full_version < '3.12'" },
+    { name = "requests", marker = "python_full_version < '3.12'" },
+    { name = "rich", marker = "python_full_version < '3.12'" },
+    { name = "six", marker = "python_full_version < '3.12'" },
+    { name = "tabulate", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d1/91/7ddb6b1ac3a862adaa3a2f20bd8e1e2c2cce52fd777565550afefcec7c71/vaex-core-4.17.1.tar.gz", hash = "sha256:ca433ca719c8dc8f2eae961e24249ced4ce7765e2179f403ac257237fa2dfde7", size = 2459334, upload-time = "2023-07-21T09:56:53.701Z" }
 
@@ -12062,8 +11969,8 @@ name = "vaex-hdf5"
 version = "0.14.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "h5py" },
-    { name = "vaex-core" },
+    { name = "h5py", marker = "python_full_version < '3.12'" },
+    { name = "vaex-core", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/7e/e2/5d3ff26f298007b468ba8b5f73f86d3064b96b72b5864e6fe5f56503efdb/vaex-hdf5-0.14.1.tar.gz", hash = "sha256:ac6ab69b2d6a1a3b0aec14a6314b743dcda0247cffa1fb9266b1b1839319ec81", size = 14188, upload-time = "2022-12-02T18:38:28.457Z" }
 wheels = [
@@ -12075,14 +11982,14 @@ name = "vaex-jupyter"
 version = "0.8.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "bqplot" },
-    { name = "ipyleaflet" },
-    { name = "ipympl" },
-    { name = "ipyvolume" },
-    { name = "ipyvuetify" },
-    { name = "vaex-core" },
-    { name = "vaex-viz" },
-    { name = "xarray", version = "2025.7.1", source = { registry = "https://pypi.org/simple" } },
+    { name = "bqplot", marker = "python_full_version < '3.12'" },
+    { name = "ipyleaflet", marker = "python_full_version < '3.12'" },
+    { name = "ipympl", marker = "python_full_version < '3.12'" },
+    { name = "ipyvolume", marker = "python_full_version < '3.12'" },
+    { name = "ipyvuetify", marker = "python_full_version < '3.12'" },
+    { name = "vaex-core", marker = "python_full_version < '3.12'" },
+    { name = "vaex-viz", marker = "python_full_version < '3.12'" },
+    { name = "xarray", version = "2025.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d9/5d/2785dba0b7ec078d5e5ec4230b94156c12a2590af7a97a3386af8eb87d87/vaex-jupyter-0.8.2.tar.gz", hash = "sha256:0cf28ea625f39abb5e2cb095e421a538789d62b27400629477d47a2585034964", size = 35494, upload-time = "2023-07-21T10:39:49.854Z" }
 wheels = [
@@ -12094,10 +12001,10 @@ name = "vaex-ml"
 version = "0.18.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "jinja2" },
-    { name = "numba" },
-    { name = "traitlets" },
-    { name = "vaex-core" },
+    { name = "jinja2", marker = "python_full_version < '3.12'" },
+    { name = "numba", marker = "python_full_version < '3.12'" },
+    { name = "traitlets", marker = "python_full_version < '3.12'" },
+    { name = "vaex-core", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/8d/2f/18ad5449036aa134c608daeed588040580dd6396849e38544a46cb283a84/vaex-ml-0.18.3.tar.gz", hash = "sha256:242bbf5403dfa902f1a7548231074d6e5676d1c0652c5c47129256fd6645ed8c", size = 48913, upload-time = "2023-07-21T10:39:57.465Z" }
 wheels = [
@@ -12109,11 +12016,11 @@ name = "vaex-server"
 version = "0.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cachetools" },
-    { name = "fastapi" },
-    { name = "tornado" },
-    { name = "uvicorn", extra = ["standard"] },
-    { name = "vaex-core" },
+    { name = "cachetools", marker = "python_full_version < '3.12'" },
+    { name = "fastapi", marker = "python_full_version < '3.12'" },
+    { name = "tornado", marker = "python_full_version < '3.12'" },
+    { name = "uvicorn", extra = ["standard"], marker = "python_full_version < '3.12'" },
+    { name = "vaex-core", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/91/d2/56cc73f1df20b45057e7e5a0e16663ef61e269a536f0cd9feaf04f2365fd/vaex-server-0.9.0.tar.gz", hash = "sha256:c76f971d3c81d5b42b7e5e02ad8e43cee0f8ea861e0ae24d44fb9d270cd05688", size = 18066, upload-time = "2023-07-21T10:38:34.594Z" }
 wheels = [
@@ -12125,9 +12032,9 @@ name = "vaex-viz"
 version = "0.5.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "matplotlib" },
-    { name = "pillow" },
-    { name = "vaex-core" },
+    { name = "matplotlib", marker = "python_full_version < '3.12'" },
+    { name = "pillow", marker = "python_full_version < '3.12'" },
+    { name = "vaex-core", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/61/25/29450a12cbbc0f0ee25c21021ae21a6b7d37a53b4a004296a56689b1406b/vaex-viz-0.5.4.tar.gz", hash = "sha256:1b3b0b9cccc6c3590f191c674d5b6e03cb9790dea7e9a40a826d61ecc7aacc38", size = 16218, upload-time = "2022-09-23T18:11:18.39Z" }
 wheels = [
@@ -12139,7 +12046,7 @@ name = "vtk"
 version = "9.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "matplotlib" },
+    { name = "matplotlib", marker = "python_full_version < '3.12'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/75/54/0e0789d2c65bd59034d78d1508dd06b3552c8eefc3f62a7192645769e177/vtk-9.6.0-cp311-cp311-macosx_10_10_x86_64.whl", hash = "sha256:8df76d131c284e99aac2e76055e5f0a8c94d54197089f8bd2f67213f51de6333", size = 114283990, upload-time = "2026-02-11T04:17:35.917Z" },
@@ -12486,9 +12393,9 @@ resolution-markers = [
     "python_full_version == '3.13.*' and sys_platform == 'darwin'",
 ]
 dependencies = [
-    { name = "numpy" },
-    { name = "packaging" },
-    { name = "pandas", version = "2.1.4", source = { registry = "https://pypi.org/simple" } },
+    { name = "numpy", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "packaging", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "pandas", version = "2.1.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/19/ec/e50d833518f10b0c24feb184b209bb6856f25b919ba8c1f89678b930b1cd/xarray-2025.6.1.tar.gz", hash = "sha256:a84f3f07544634a130d7dc615ae44175419f4c77957a7255161ed99c69c7c8b0", size = 3003185, upload-time = "2025-06-12T03:04:09.099Z" }
 wheels = [
@@ -12512,9 +12419,9 @@ resolution-markers = [
     "(python_full_version < '3.12' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform != 'darwin' and sys_platform != 'linux')",
 ]
 dependencies = [
-    { name = "numpy" },
-    { name = "packaging" },
-    { name = "pandas", version = "2.3.1", source = { registry = "https://pypi.org/simple" } },
+    { name = "numpy", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "packaging", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "pandas", version = "2.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/e8/c5/a31ba8605005ef080c3d35efc696ddd851aee0a7a22420f9afebec386281/xarray-2025.7.1.tar.gz", hash = "sha256:2884bf5672b540fcc6ff8c20a3196bda0d78fbfb4d67398d60526e97c2faceef", size = 3013717, upload-time = "2025-07-10T04:53:07.01Z" }
 wheels = [
@@ -12545,23 +12452,23 @@ resolution-markers = [
     "python_full_version == '3.13.*' and sys_platform == 'darwin'",
 ]
 dependencies = [
-    { name = "boltons" },
-    { name = "bottleneck" },
-    { name = "cf-xarray" },
-    { name = "cftime" },
-    { name = "click" },
-    { name = "dask", extra = ["array"] },
-    { name = "jsonpickle" },
-    { name = "lmoments3" },
-    { name = "numba" },
-    { name = "numpy" },
-    { name = "pandas", version = "2.1.4", source = { registry = "https://pypi.org/simple" } },
-    { name = "pint" },
-    { name = "pyyaml" },
-    { name = "scikit-learn" },
-    { name = "scipy" },
-    { name = "statsmodels" },
-    { name = "xarray", version = "2025.6.1", source = { registry = "https://pypi.org/simple" } },
+    { name = "boltons", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "bottleneck", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "cf-xarray", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "cftime", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "click", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "dask", extra = ["array"], marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "jsonpickle", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "lmoments3", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "numba", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "numpy", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "pandas", version = "2.1.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "pint", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "pyyaml", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "scikit-learn", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "scipy", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "statsmodels", marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "xarray", version = "2025.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/c3/5b/0104859861cf47f0cd57306da1417ca89f51a3a41d9cbf8c8fa1ed8a31de/xclim-0.46.0.tar.gz", hash = "sha256:810b87f12264e0bf5333a3731aa753a3e7b55b7eb7ba4f239bfce93d69e4415d", size = 853187, upload-time = "2023-10-24T18:02:28.354Z" }
 wheels = [
@@ -12585,24 +12492,24 @@ resolution-markers = [
     "(python_full_version < '3.12' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform != 'darwin' and sys_platform != 'linux')",
 ]
 dependencies = [
-    { name = "boltons" },
-    { name = "bottleneck" },
-    { name = "cf-xarray" },
-    { name = "cftime" },
-    { name = "click" },
-    { name = "dask", extra = ["array"] },
-    { name = "filelock" },
-    { name = "numba" },
-    { name = "numpy" },
-    { name = "packaging" },
-    { name = "pandas", version = "2.3.1", source = { registry = "https://pypi.org/simple" } },
-    { name = "pint" },
-    { name = "pyarrow" },
-    { name = "pyyaml" },
-    { name = "scikit-learn" },
-    { name = "scipy" },
-    { name = "xarray", version = "2025.7.1", source = { registry = "https://pypi.org/simple" } },
-    { name = "yamale" },
+    { name = "boltons", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "bottleneck", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "cf-xarray", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "cftime", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "click", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "dask", extra = ["array"], marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "filelock", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "numba", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "numpy", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "packaging", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "pandas", version = "2.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "pint", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "pyarrow", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "pyyaml", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "scikit-learn", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "scipy", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "xarray", version = "2025.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+    { name = "yamale", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/9f/51/c2b702b844f505ffcbfebc3f59f08d796542aa7a6fec17b7013e7ca279be/xclim-0.57.0.tar.gz", hash = "sha256:eda2efa62947507212fb132ab1b09352ec91352abd6de1918db58bbe2669128f", size = 861543, upload-time = "2025-05-22T21:23:54.442Z" }
 wheels = [
@@ -12643,7 +12550,7 @@ name = "yamale"
 version = "6.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyyaml" },
+    { name = "pyyaml", marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/37/27/da3742a358015f3c2a069ccdaf7e5766ac358e8200319f640755db3128ae/yamale-6.0.0.tar.gz", hash = "sha256:60be681f35e4939320b89de0d6f187ee0e5479ae7f7286b7f17f0859ddee4a66", size = 41959, upload-time = "2025-01-02T20:40:43.849Z" }
 wheels = [

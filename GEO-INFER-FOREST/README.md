@@ -8,10 +8,8 @@ Forest management, carbon sequestration, wildfire risk, and forest ecosystem ana
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

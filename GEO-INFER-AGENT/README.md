@@ -10,10 +10,8 @@ Intelligent autonomous agents for geospatial decision-making, perception, and ac
 - `src/`
 - `tests/`
 - `tools/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

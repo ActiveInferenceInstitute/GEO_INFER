@@ -45,8 +45,6 @@ GEO-INFER-PLACE/locations/cascadia/data/improvements/tl_2023_us_zcta520/tl_2023_
 
 # Audit output
 scripts/audit_results.txt
-# validate_dependencies.py regenerates this report on every run.
-GEO-INFER-INTRA/assessment_results/DEPENDENCY_VALIDATION_REPORT.md
 /.hypothesis
 config/
 

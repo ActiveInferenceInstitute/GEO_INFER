@@ -10,7 +10,6 @@ Advanced simulation environments for geospatial hypothesis testing, policy evalu
 - `tests/`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

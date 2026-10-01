@@ -8,10 +8,8 @@ Advanced machine learning and artificial intelligence capabilities specifically 
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

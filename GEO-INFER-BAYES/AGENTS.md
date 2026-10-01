@@ -26,13 +26,11 @@
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `mcmc_traces.png`
 - `mean_prediction.png`
 - `posterior_distributions.png`
 - `pyproject.toml`
-- `requirements.txt`
 - `spatial_data.png`
 - `uncertainty.png`
 

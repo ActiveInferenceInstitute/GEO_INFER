@@ -1,2 +1,0 @@
-# GEO-INFER-ORG has no runtime dependencies beyond the Python standard
-# library; canonical dependency metadata lives in pyproject.toml.

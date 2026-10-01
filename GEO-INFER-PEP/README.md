@@ -11,7 +11,6 @@ Comprehensive people operations management including HR, CRM, talent acquisition
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

@@ -3,8 +3,9 @@
 Validate repo-wide GEO-INFER structural contracts.
 
 The default mode fails on structural drift that should never be tolerated:
-module inventory, local signposting, package casing, setup.py syntax, and
-pyproject package-name sanity. Source-language debt is reported by default and
+module inventory, local signposting, package casing, pyproject-only packaging
+(no setup.py / setup.cfg / requirements.txt mirrors), and pyproject
+package-name sanity. Source-language debt is reported by default and
 can be made fatal with ``--strict-source-language``. Import-smoke failures are
 advisory warnings by default and can be made fatal with
 ``--strict-import-smoke``.
@@ -101,7 +102,11 @@ LEGACY_PYTHON_METADATA_PATTERN = re.compile(
 )
 LEGACY_H3_PATTERN = re.compile(r"\bh3\s*>=\s*(?:3\.|4\.0\.0)", re.IGNORECASE)
 LEGACY_PYMDP_RUNTIME_IMPORTS = ("pymdp.control", "pymdp.inference")
-BLACK_TARGET_VERSION_MINIMUM = 11
+RUFF_TARGET_VERSION_MINIMUM = 11
+# pyproject.toml + uv.lock are the only packaging sources of truth; these
+# module-root files are retired mirrors and must not reappear.
+RETIRED_PACKAGING_FILES = ("setup.py", "setup.cfg", "requirements.txt")
+RETIRED_TOOL_SECTIONS = ("black", "isort", "flake8", "pydocstyle")
 
 # Internal distributions are derived from the workspace tree (each member's
 # geo-infer-* distribution name) instead of a hand-maintained allowlist; see
@@ -350,14 +355,24 @@ def is_main_guard(node: ast.AST) -> bool:
     )
 
 
-def validate_setup_syntax(module_dirs: list[Path], report: ContractReport) -> None:
-    for setup_py in sorted(module_dir / "setup.py" for module_dir in module_dirs):
-        if not setup_py.exists():
-            continue
-        try:
-            ast.parse(setup_py.read_text(encoding="utf-8"), filename=str(setup_py))
-        except SyntaxError as exc:
-            report.error(f"{setup_py.relative_to(REPO_ROOT)}: syntax error: {exc}")
+def validate_pyproject_only_packaging(
+    module_dirs: list[Path], report: ContractReport
+) -> None:
+    """Reject retired packaging mirrors at module roots.
+
+    Every module builds through ``setuptools.build_meta`` from its
+    ``pyproject.toml``; dependency resolution is pinned by the root
+    ``uv.lock``. A ``setup.py`` shim or ``requirements.txt`` copy only
+    reintroduces a second, drifting dependency declaration.
+    """
+    for module_dir in module_dirs:
+        for name in RETIRED_PACKAGING_FILES:
+            candidate = module_dir / name
+            if candidate.exists():
+                report.error(
+                    f"{candidate.relative_to(REPO_ROOT)}: retired packaging file; "
+                    "declare metadata and dependencies in pyproject.toml only"
+                )
 
 
 def validate_python_source_syntax(report: ContractReport) -> None:
@@ -466,7 +481,6 @@ def validate_runtime_metadata(module_dirs: list[Path], report: ContractReport) -
     metadata_files = [
         REPO_ROOT / "pyproject.toml",
         *REPO_ROOT.glob("GEO-INFER-*/**/pyproject.toml"),
-        *REPO_ROOT.glob("GEO-INFER-*/**/setup.py"),
     ]
 
     for metadata_file in sorted(set(metadata_files)):
@@ -494,33 +508,27 @@ def validate_python_tool_targets(report: ContractReport) -> None:
             )
             continue
 
-        black_targets = (
-            pyproject.get("tool", {}).get("black", {}).get("target-version", [])
-        )
-        if isinstance(black_targets, str):
-            black_targets = [black_targets]
-        if not isinstance(black_targets, list):
-            report.error(
-                f"{pyproject_file.relative_to(REPO_ROOT)}: "
-                "tool.black.target-version must be a list"
-            )
-            continue
-        for target in black_targets:
-            if not isinstance(target, str):
-                continue
-            match = re.fullmatch(r"py3(\d+)", target)
-            if match and int(match.group(1)) < BLACK_TARGET_VERSION_MINIMUM:
+        relative = pyproject_file.relative_to(REPO_ROOT)
+        tool = pyproject.get("tool", {})
+        for section in RETIRED_TOOL_SECTIONS:
+            if section in tool:
                 report.error(
-                    f"{pyproject_file.relative_to(REPO_ROOT)}: "
-                    f"Black target-version {target!r} is below Python 3.11"
+                    f"{relative}: [tool.{section}] is retired; Ruff owns lint "
+                    "and format configuration in the root pyproject.toml"
                 )
+        target = tool.get("ruff", {}).get("target-version")
+        if target is None:
+            continue
+        match = re.fullmatch(r"py3(\d+)", str(target))
+        if not match or int(match.group(1)) < RUFF_TARGET_VERSION_MINIMUM:
+            report.error(
+                f"{relative}: Ruff target-version {target!r} is below Python 3.11"
+            )
 
 
 def validate_h3_dependency_metadata(report: ContractReport) -> None:
     metadata_files = [
         *REPO_ROOT.glob("GEO-INFER-*/pyproject.toml"),
-        *REPO_ROOT.glob("GEO-INFER-*/setup.py"),
-        *REPO_ROOT.glob("GEO-INFER-*/requirements*.txt"),
         *REPO_ROOT.glob("GEO-INFER-*/locations/*/requirements*.txt"),
         REPO_ROOT / "pyproject.toml",
     ]
@@ -655,38 +663,46 @@ def validate_source_language(report: ContractReport, strict: bool) -> None:
 
 
 def requirement_name(requirement: str) -> str:
-    """Normalize a requirement line to its distribution name.
+    """Normalize a requirement string to its distribution name.
 
     Thin delegate to the shared normalizer; strips inline comments, environment
-    markers, extras and version specifiers the same way for requirements.txt
-    lines and pyproject dependency strings.
+    markers, extras and version specifiers.
     """
     cleaned = requirement.split("#", 1)[0].split(";", 1)[0].strip()
     return normalize_dependency_name(cleaned)
 
 
-def validate_requirements_files(report: ContractReport) -> None:
-    for requirements_file in sorted(REPO_ROOT.glob("GEO-INFER-*/requirements*.txt")):
-        for lineno, line in enumerate(
-            requirements_file.read_text(encoding="utf-8", errors="ignore").splitlines(),
-            start=1,
-        ):
-            stripped = line.strip()
-            if not stripped or stripped.startswith(("#", "-")):
-                continue
-            name = requirement_name(stripped)
+def _declared_requirements(pyproject: dict) -> list[str]:
+    """Return runtime and optional requirement strings from a pyproject."""
+    project = pyproject.get("project", {})
+    requirements = [str(dep) for dep in project.get("dependencies") or []]
+    for group in (project.get("optional-dependencies") or {}).values():
+        requirements.extend(str(dep) for dep in group)
+    return requirements
+
+
+def validate_declared_requirements(report: ContractReport) -> None:
+    """Reject stdlib modules and unpinned internal modules as dependencies."""
+    for pyproject_file in sorted(REPO_ROOT.glob("GEO-INFER-*/pyproject.toml")):
+        relative = pyproject_file.relative_to(REPO_ROOT)
+        try:
+            pyproject = tomllib.loads(pyproject_file.read_text(encoding="utf-8"))
+        except tomllib.TOMLDecodeError:
+            continue  # validate_python_tool_targets reports invalid TOML.
+        for requirement in _declared_requirements(pyproject):
+            name = requirement_name(requirement)
             if not name:
                 continue
-            normalized = name.replace("-", "_")
-            if normalized in STDLIB_REQUIREMENT_NAMES:
+            if name.replace("-", "_") in STDLIB_REQUIREMENT_NAMES:
                 report.error(
-                    f"{requirements_file.relative_to(REPO_ROOT)}:{lineno}: "
-                    f"stdlib module listed as dependency: {stripped}"
+                    f"{relative}: stdlib module listed as dependency: {requirement}"
                 )
-            if stripped.endswith(">=0.0.0") and name in INTERNAL_REQUIREMENT_NAMES:
+            if requirement.strip().endswith(">=0.0.0") and (
+                name in INTERNAL_REQUIREMENT_NAMES
+            ):
                 report.error(
-                    f"{requirements_file.relative_to(REPO_ROOT)}:{lineno}: "
-                    f"internal/local module listed as PyPI dependency: {stripped}"
+                    f"{relative}: internal module listed with a placeholder "
+                    f"floor: {requirement}"
                 )
 
 
@@ -849,14 +865,14 @@ def main() -> int:
     validate_uv_environment(report)
     validate_uv_setup_documentation(report)
     validate_test_inventory(module_dirs, report)
-    validate_setup_syntax(module_dirs, report)
+    validate_pyproject_only_packaging(module_dirs, report)
     validate_python_source_syntax(report)
     validate_no_concrete_pass_bodies(report)
     validate_runtime_metadata(module_dirs, report)
     validate_python_tool_targets(report)
     validate_h3_dependency_metadata(report)
     validate_pymdp_runtime_imports(report)
-    validate_requirements_files(report)
+    validate_declared_requirements(report)
     validate_markdown_local_links(report)
     validate_runner_documentation(report)
     validate_generated_doc_freshness(report)

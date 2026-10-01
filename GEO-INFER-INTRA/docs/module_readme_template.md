@@ -102,7 +102,6 @@ GEO-INFER-[MODULE]/
         integration/
             test_[integration_scenario].py
     pyproject.toml
-    requirements.txt
     README.md
     SKILL.md
     AGENTS.md

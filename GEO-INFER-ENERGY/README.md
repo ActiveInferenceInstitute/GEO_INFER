@@ -8,11 +8,9 @@ Energy systems analysis, renewable energy optimization, and grid management.
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

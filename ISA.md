@@ -77,8 +77,7 @@ Ideal state criteria:
 - Exactly 45 `GEO-INFER-*` modules are present.
 - Every module has `README.md`, `AGENTS.md`, `SKILL.md`, and `pyproject.toml`.
 - Python package directories use lowercase `geo_infer_<module>` casing.
-- `pyproject.toml` is the canonical packaging surface; `setup.py` is compatibility only.
-- Existing `setup.py` files parse successfully.
+- `pyproject.toml` is the only packaging surface; module-root `setup.py`, `setup.cfg` and `requirements.txt` mirrors are retired and rejected by `validate_repo_contracts.py`.
 - Optional dependency failures degrade gracefully or are reported as warnings by contract checks.
 - Source-language implementation debt is tracked and driven down.
 

@@ -27,11 +27,9 @@
 - `src/`
 - `tests/`
 - `clone_repos.py`
-- `setup.py`
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Validation
 

@@ -10,7 +10,6 @@ Emergency management and disaster response capabilities for geospatial systems.
 - `tests/`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

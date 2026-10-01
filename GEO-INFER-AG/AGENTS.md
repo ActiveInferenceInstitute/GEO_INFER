@@ -26,11 +26,9 @@
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
 - `requirements-test.txt`
-- `requirements.txt`
 - `run_tests.sh`
 
 ## Validation

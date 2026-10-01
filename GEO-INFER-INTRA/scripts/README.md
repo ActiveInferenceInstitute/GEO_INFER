@@ -6,39 +6,10 @@ Scripts workspace within `GEO-INFER-INTRA`.
 
 - `maintenance/`
 - `markdown_to_pdf/`
-- `add_missing_deps.py`
-- `analyze_module_dependencies.py`
-- `audit_agents_docs.py`
-- `cleanup_pyproject_deps.py`
-- `fix_existing_pyproject.py`
-- `fix_installation_issues.py`
-- `migrate_to_uv.py`
-- `validate_dependencies.py`
-- `validate_uv_migration.py`
-- `validate_uv_setup.py`
 
 ## Public Interface
 
-- `add_missing_deps.py:add_dependencies` (function)
-- `add_missing_deps.py:main` (function)
-- `analyze_module_dependencies.py:extract_imports_from_file` (function)
-- `analyze_module_dependencies.py:extract_imports_from_module` (function)
-- `analyze_module_dependencies.py:normalize_package_name` (function)
-- `analyze_module_dependencies.py:parse_pyproject_dependencies` (function)
-- `analyze_module_dependencies.py:analyze_module` (function)
-- `analyze_module_dependencies.py:main` (function)
-- `audit_agents_docs.py:ImportExtractor` (class)
-- `audit_agents_docs.py:ModuleChecker` (class)
-- `audit_agents_docs.py:audit_agents_file` (function)
-- `audit_agents_docs.py:main` (function)
-- `cleanup_pyproject_deps.py:normalize_dep_name` (function)
-- `cleanup_pyproject_deps.py:deduplicate_dependencies` (function)
-- `cleanup_pyproject_deps.py:cleanup_pyproject` (function)
-- `cleanup_pyproject_deps.py:main` (function)
-- `fix_existing_pyproject.py:convert_pep_from_poetry` (function)
-- `fix_existing_pyproject.py:fix_health_pyproject` (function)
-- `fix_existing_pyproject.py:main` (function)
-- `fix_installation_issues.py:relax_version_constraints` (function)
+- No public Python symbols are defined directly in this directory.
 
 ## Module Metadata
 

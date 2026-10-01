@@ -11,8 +11,8 @@ uv pip install -e ./GEO-INFER-MODULE
 # Install a dependency
 uv pip install package-name
 
-# Install from requirements
-uv pip install -r requirements.txt
+# Synchronize the locked workspace (pyproject.toml + uv.lock)
+uv sync --all-packages --all-extras
 
 # Run a Python script
 uv run python script.py

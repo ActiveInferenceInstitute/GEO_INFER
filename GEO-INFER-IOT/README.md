@@ -10,10 +10,8 @@ IoT sensor networks, real-time geospatial data streams, and sensor data fusion f
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 

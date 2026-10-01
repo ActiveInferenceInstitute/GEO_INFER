@@ -24,7 +24,6 @@ Unified testing framework for quality assurance across all GEO-INFER modules wit
 - `run_model_audit.py`
 - `run_unified_tests.py`
 - `secret_scan_metric.py`
-- `setup.py`
 - `stale_assessment_metric.py`
 - `tests_lint_metric.py`
 - `validate_act_geospatial_contract.py`
@@ -46,7 +45,6 @@ Unified testing framework for quality assurance across all GEO-INFER modules wit
 - `TESTING.md`
 - `coverage_baseline.json`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -58,10 +56,8 @@ Unified testing framework for quality assurance across all GEO-INFER modules wit
 - `_validator_common.py:package_name_from_distribution` (function)
 - `_validator_common.py:expected_package_name` (function)
 - `_validator_common.py:normalize_dependency_name` (function)
-- `_validator_common.py:parse_requirements_names` (function)
 - `_validator_common.py:pyproject_dependency_names` (function)
 - `_validator_common.py:pyproject_optional_names` (function)
-- `_validator_common.py:parse_setup_py_requires` (function)
 - `_validator_common.py:internal_requirement_names` (function)
 - `build_package_wheels.py:BuildResult` (class)
 - `build_package_wheels.py:BuildSummary` (class)
@@ -70,6 +66,8 @@ Unified testing framework for quality assurance across all GEO-INFER modules wit
 - `build_package_wheels.py:verify_wheels` (function)
 - `build_package_wheels.py:install_and_verify` (function)
 - `build_package_wheels.py:main` (function)
+- `check_coverage_floor.py:main` (function)
+- `coverage_baseline_metric.py:main` (function)
 
 ## Module Metadata
 
