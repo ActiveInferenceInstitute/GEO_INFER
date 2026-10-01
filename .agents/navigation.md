@@ -49,20 +49,18 @@ What do you need?
 | CI Config | `.github/workflows/ci.yml` |
 | Root Agent Rules | `.agents/` (this directory) |
 
-## Module Categories (44 modules)
+## Module Themes
 
-| Category | Modules |
-|----------|---------|
-| 🧠 **Analytical Core** | ACT, BAYES, AI, MATH, COG, AGENT, SPM |
-| 🗺️ **Spatial-Temporal** | SPACE, TIME, IOT |
-| 💾 **Data Management** | DATA, API |
-| 🔒 **Security & Governance** | SEC, NORMS, REQ, METAGOV |
-| 🧪 **Simulation & Modeling** | SIM, ANT |
-| 👥 **People & Community** | CIV, PEP, ORG, COMMS |
-| 🖥️ **Applications** | APP, ART |
-| 🏢 **Domain-Specific** | AG, ECON, RISK, LOG, BIO, HEALTH, CLIMATE, ENERGY, WATER, TRANSPORT, FOREST, MARINE, EMERGENCY, EDU |
-| 📍 **Place-Based** | PLACE |
-| ⚙️ **Operations** | OPS, INTRA, GIT, TEST, EXAMPLES |
+These are the root README "Module Themes" (45 modules).
+
+| Theme | Modules |
+|-------|---------|
+| 🌍 **Spatial & Place-based** | SPACE, PLACE, TIME, MARINE, WATER, FOREST, CLIMATE, ENERGY, TRANSPORT, EMERGENCY |
+| 🧠 **Bayesian & Active Inference** | BAYES, SIM, SPM, COG, ACT, MATH |
+| 🤖 **Agents & AI Orchestration** | AGENT, AG, AI, ANT, OPS, COMMS |
+| 🏛️ **Governance, Risk & Domain** | INSURANCE, METAGOV, NORMS, ECON, PEP, REQ, SEC, CIV, HEALTH, ORG, RISK |
+| 🗄️ **Data, API & Applications** | API, APP, DATA, IOT, ART, EDU |
+| 🛠️ **Infrastructure & Validation** | INTRA, TEST, LOG, GIT, EXAMPLES, BIO |
 
 ## Understanding Dependencies
 
@@ -70,7 +68,7 @@ What do you need?
 - Review the dependency matrix in `integration.md`
 - Understand the layered architecture: Foundation → Data → Domain → Application
 - Consider both direct and transitive dependencies
-- Use `uv pip install -e .` to install a module with its deps
+- Use `uv sync --package geo-infer-<module>` to install a module with its deps
 
 ## Contributing
 

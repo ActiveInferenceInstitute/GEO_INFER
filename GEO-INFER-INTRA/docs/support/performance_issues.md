@@ -54,8 +54,7 @@ python -m cProfile -s cumulative my_analysis.py 2>&1 | head -30
 Use `line_profiler` for line-level profiling of the slow function:
 
 ```bash
-uv pip install line_profiler
-kernprof -l -v my_analysis.py
+uv run --with line_profiler kernprof -l -v my_analysis.py
 ```
 
 ## H3 Resolution vs Performance Tradeoffs

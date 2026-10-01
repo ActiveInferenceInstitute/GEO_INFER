@@ -5,6 +5,79 @@ All notable changes to the GEO-INFER framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Post-0.3.0 waves (2026-09-26 .. 2026-09-28, PRs #40-#60)
+
+- Ledger reconciliation and scope passes (#40, #44, #45, #52); test-guard and
+  dependency-truth lanes (#41, #42, #47, #56, #60); ART offline VGG19 fixture
+  (#46); release wheel attach and scheduled-run concurrency (#48, #49); stamp
+  sweep (#50); flake hardening (#51, #53, #54, #59); repo-wide `ruff format`
+  and format-check uv install (#55, #57); tag-scoped release gate,
+  target-keyed release queue, manuscript PDF attach and no import-probe push
+  leg (#53); GNN pair-pin bumps (#43 and later).
+
+### Legacy sweep (2026-10-01)
+
+#### Removed
+
+- **Packaging mirrors**: 38 module `setup.py` shims and 45 module
+  `requirements.txt` files; `pyproject.toml` + root `uv.lock` are the only
+  dependency declaration. The `wheel` build requirement, `[tool.black]`,
+  `[tool.isort]`, and the black/isort/pydocstyle dev dependencies are gone
+  (Ruff is the only lint/format tool).
+- **One-shot migration tooling and snapshots**: ten `GEO-INFER-INTRA/scripts`
+  migration/fix scripts, the UV migration guide, and every bannered
+  "Historical artifact" assessment snapshot.
+- **Compatibility aliases and branches** (breaking for any external caller):
+  `numpy.random.RandomState` seeds in every `resolve_rng`; ACT untyped
+  coordinate-only boundaries, the SPACE `sys.path` fallback and
+  `obj_array_zeros`; BAYES split `SpatioTemporalGP.predict(spatial, temporal)`
+  and 3-argument `log_likelihood`; MATH `core` star re-exports,
+  `info_spatial_entropy`, `GeoInferMathError` and `New*Error` aliases; SPM
+  PyMC3 fallback and global-stream default; SPACE `HAS_CUPY/HAS_GPU/HAS_JAX/
+  HAS_TORCH`, `use_gpu` and `spatial_join_kernel(resolution=)`; PLACE OSC
+  loader attributes and Cascadia re-export shims; IOT `CoordinateTransform`,
+  `OSCCatalog`, `HAS_GEO_*` and flat `max_change_rate`; SEC
+  `SecurityUtils.sanitize_input`; OPS `DeploymentConfig.DockerConfig/
+  KubernetesConfig`; RISK `seed` keyword/param aliases, legacy vulnerability
+  keys and `CatastropheModelManager.models`; ART custom-algorithm files
+  without `function_name`; SIM checkpoints without RNG snapshots.
+- **Stray entrypoints**: ANT `run_tests.py`, ART `tests/run_all_tests.py`,
+  GIT `clone_repos.py`, EXAMPLES `demo_orchestrator.py` and
+  `update_to_thin_orchestrators.py`, OPS `setup_framework.py` and
+  `geo_infer_paths.py`; `sys.path` hacks across tests, examples and scripts.
+
+#### Changed
+
+- Root `[tool.ruff.lint]` contract (E4/E7/E9/F/UP/B/NPY); the whole tree is
+  clean and CI now runs `ruff check .` plus root-config `ruff check` on changed
+  files. PEP 585/604 typing throughout.
+- The seven vendored `utils/rng.py` helpers share one implementation
+  (`resolve_rng`, `resolve_optional_rng`, `spawn_rng`, `derive_int_seed`),
+  enforced by `validate_rng_helper_parity`.
+- `validate_repo_contracts.py` rejects module `setup.py`/`setup.cfg`/
+  `requirements.txt` and retired formatter sections; requirement-file parity
+  machinery is deleted from `validate_packaging.py`.
+- TIME and DATA timestamp normalisers reject naive datetimes.
+- `calculate_aal` requires `exposure_years`; ART generators, MATH optimizers,
+  SEC anonymization and IOT cross-validation take explicit seeds.
+- `geo_infer_examples.orchestration` hosts the orchestrator engine used by all
+  `run_orchestrator.py` scripts.
+- README theme table is validated to list every module exactly once; module
+  signposts advertise `uv sync --package <dist>`.
+
+#### Fixed
+
+- NORMS zoning report printed format specs instead of values, and area
+  statistics were in square degrees / Web Mercator (now EPSG:6933 equal-area).
+- RISK spatial correlation mixed degrees and kilometres.
+- PLACE `process_to_h3` always returned `{}`.
+- SPACE H3 visualization used the removed `plt.cm.get_cmap`.
+- HEALTH loguru log format; CLI tests no longer write `logs/` into the repo.
+- MATH/SPM/EXAMPLES scripts printed literal `".3f"` format specs.
+- DATA tests whose `assert False` sat inside `except Exception`.
+
 ## [0.3.0] - 2026-09-17 — manuscript catalog wave + token auto-injection
 
 > **Manuscript catalog.** The research manuscript became a deterministic,
@@ -881,5 +954,6 @@ pass at that SHA.
 
 [0.2.0]: https://github.com/ActiveInferenceInstitute/GEO_INFER/compare/v0.1.0...v0.2.0
 [0.2.1]: https://github.com/ActiveInferenceInstitute/GEO_INFER/compare/v0.2.0...v0.2.1
+[Unreleased]: https://github.com/ActiveInferenceInstitute/GEO_INFER/compare/v0.3.0...HEAD
 [0.3.0]: https://github.com/ActiveInferenceInstitute/GEO_INFER/compare/v0.2.1...v0.3.0
 [0.1.0]: https://github.com/ActiveInferenceInstitute/GEO_INFER/releases/tag/v0.1.0

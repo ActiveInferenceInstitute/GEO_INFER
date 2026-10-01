@@ -21,7 +21,7 @@ Unit workspace within `GEO-INFER-INTRA`.
 - Module: `GEO-INFER-INTRA`
 - Package: `geo_infer_intra`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-INTRA`
+- Install: `uv sync --package geo-infer-intra`
 - Tests: `uv run python -m pytest GEO-INFER-INTRA/tests/unit`
 
 ## Dependencies

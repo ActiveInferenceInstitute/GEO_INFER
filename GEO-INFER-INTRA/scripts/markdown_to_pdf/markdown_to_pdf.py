@@ -213,7 +213,7 @@ class MarkdownToPDFConverter:
             self.logger.info(f"Converting {input_path} to {output_path}")
 
             # Execute conversion
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
 
             if output_path.exists():
                 self.logger.info(f"Successfully created: {output_path}")

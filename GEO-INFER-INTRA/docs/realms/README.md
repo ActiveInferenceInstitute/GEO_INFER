@@ -9,7 +9,6 @@ Realms workspace within `GEO-INFER-INTRA`.
 - `API_TESTING_GUIDE.md`
 - `realm_schema.json`
 - `realms-geo-infer.md`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -21,7 +20,7 @@ Realms workspace within `GEO-INFER-INTRA`.
 - Module: `GEO-INFER-INTRA`
 - Package: `geo_infer_intra`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-INTRA`
+- Install: `uv sync --package geo-infer-intra`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module INTRA`
 
 ## Dependencies

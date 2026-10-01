@@ -50,7 +50,7 @@ class RealmsAPITester:
         self,
         schema_path: str = "realm_schema.json",
         timeout: int = 30,
-        output_dir: str = None,
+        output_dir: str | None = None,
     ):
         """
         Initialize the API tester.
@@ -190,7 +190,7 @@ class RealmsAPITester:
         Validate data against the realm schema.
 
         Returns:
-            Tuple of (is_valid: bool, error_message: Optional[str])
+            Tuple of (is_valid: bool, error_message: str | None)
         """
         if not self.schema:
             return True, "No schema loaded - skipping validation"
@@ -227,7 +227,7 @@ class RealmsAPITester:
             }
         )
 
-    def test_search_by_name(self, search_terms: list[str] = None) -> None:
+    def test_search_by_name(self, search_terms: list[str] | None = None) -> None:
         """
         Test the search Realms by name endpoint.
 
@@ -347,7 +347,7 @@ class RealmsAPITester:
 
             time.sleep(0.5)
 
-    def test_get_realm_by_id(self, realm_ids: list[int] = None) -> None:
+    def test_get_realm_by_id(self, realm_ids: list[int] | None = None) -> None:
         """
         Test the get Realm by ID endpoint.
 
@@ -463,7 +463,7 @@ class RealmsAPITester:
             time.sleep(0.5)
 
     def run_all_tests(
-        self, search_terms: list[str] = None, realm_ids: list[int] = None
+        self, search_terms: list[str] | None = None, realm_ids: list[int] | None = None
     ) -> dict[str, Any]:
         """
         Run all API tests.

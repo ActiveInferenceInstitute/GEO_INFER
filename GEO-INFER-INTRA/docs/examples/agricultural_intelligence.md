@@ -29,8 +29,9 @@ This maps naturally onto seasonal farming cycles where decisions are sequential 
 ## Prerequisites
 
 ```bash
-uv pip install -e ./GEO-INFER-ACT ./GEO-INFER-AG ./GEO-INFER-CLIMATE
-uv pip install numpy pandas matplotlib
+# From the repository root: installs ACT, AG, CLIMATE and the locked
+# numpy, pandas and matplotlib versions
+uv sync --all-packages --all-extras
 ```
 
 ## Section 1: NDVI Integration and Vegetation Monitoring
@@ -43,11 +44,10 @@ Normalized Difference Vegetation Index (NDVI) time series serve as the primary o
 import numpy as np
 import pandas as pd
 import h3
-from typing import List, Dict
 
 
 def generate_ndvi_time_series(
-    h3_cells: List[str],
+    h3_cells: list[str],
     n_timesteps: int = 36,
     seed: int = 42
 ) -> pd.DataFrame:
@@ -158,7 +158,7 @@ def build_seasonal_ag_model(
     n_states: int = 4,
     n_observations: int = 5,
     n_actions: int = 3
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """Build the generative model matrices for seasonal agriculture.
 
     Hidden states: [dormant, growing, peak, senescent]
@@ -260,7 +260,7 @@ def discretize_ndvi(ndvi_value: float) -> int:
 
 def run_seasonal_inference(
     field_ndvi: pd.DataFrame,
-    model_params: Dict[str, np.ndarray],
+    model_params: dict[str, np.ndarray],
     planning_horizon: int = 3
 ) -> pd.DataFrame:
     """Run Active Inference over the seasonal NDVI time series.
@@ -379,7 +379,7 @@ def build_market_preferences(
     price_per_tonne: float = 300.0,
     irrigation_cost: float = 50.0,
     fertilizer_cost: float = 80.0
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Compute action-dependent preference vectors incorporating market prices.
 
     The preference over observations shifts based on the cost/benefit
@@ -424,9 +424,9 @@ for action, prefs in market_prefs.items():
 ```python
 def evaluate_rotation_policies(
     agent: ActiveInferenceAgent,
-    crop_sequence: List[str],
+    crop_sequence: list[str],
     seasons_per_crop: int = 4
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Evaluate expected free energy for different crop rotation sequences.
 
     Each crop modifies the observation model (A matrix) and transition
@@ -493,7 +493,7 @@ from geo_infer_climate.core.climate_analyzer import ClimateAnalyzer
 def generate_climate_scenarios(
     n_years: int = 10,
     seed: int = 42
-) -> Dict[str, pd.DataFrame]:
+) -> dict[str, pd.DataFrame]:
     """Generate simplified climate scenarios for agricultural planning.
 
     Produces three scenarios: baseline, moderate warming, high warming.
@@ -553,10 +553,10 @@ for name, df in climate_scenarios.items():
 
 ```python
 def adapt_model_to_climate(
-    base_params: Dict[str, np.ndarray],
+    base_params: dict[str, np.ndarray],
     climate_df: pd.DataFrame,
     year: int
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """Adjust the generative model parameters based on climate projections.
 
     Warmer temperatures and lower precipitation shift the transition
@@ -621,9 +621,9 @@ print(f"Transition matrix change (no_action, dormant->growing): "
 
 ```python
 def generate_adaptation_report(
-    scenarios: Dict[str, pd.DataFrame],
-    base_params: Dict[str, np.ndarray],
-    target_years: List[int]
+    scenarios: dict[str, pd.DataFrame],
+    base_params: dict[str, np.ndarray],
+    target_years: list[int]
 ) -> pd.DataFrame:
     """Generate a multi-scenario adaptation report.
 

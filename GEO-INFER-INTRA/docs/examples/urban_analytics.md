@@ -30,8 +30,9 @@ The output is a composite risk-equity map that identifies areas with high hazard
 ## Prerequisites
 
 ```bash
-uv pip install -e ./GEO-INFER-SPACE ./GEO-INFER-RISK ./GEO-INFER-CIV ./GEO-INFER-DATA
-uv pip install numpy pandas geopandas matplotlib shapely h3
+# From the repository root: installs SPACE, RISK, CIV, DATA and the locked
+# numpy, pandas, geopandas, matplotlib, shapely and h3 versions
+uv sync --all-packages --all-extras
 ```
 
 ## Section 1: Population Density H3 Maps
@@ -46,7 +47,6 @@ import pandas as pd
 import geopandas as gpd
 import h3
 from shapely.geometry import Polygon, Point
-from typing import List, Dict, Tuple
 
 
 def create_city_h3_grid(
@@ -254,7 +254,7 @@ Exposure quantifies how much is at risk. This section loads infrastructure layer
 def generate_infrastructure_layers(
     city_grid: gpd.GeoDataFrame,
     seed: int = 42
-) -> Dict[str, gpd.GeoDataFrame]:
+) -> dict[str, gpd.GeoDataFrame]:
     """Generate synthetic infrastructure data for exposure modeling.
 
     Creates three layers: buildings, roads, utilities.
@@ -315,8 +315,8 @@ from geo_infer_risk.core.exposure_model import ExposureModel
 
 def compute_exposure_index(
     pop_grid: gpd.GeoDataFrame,
-    infra: Dict[str, gpd.GeoDataFrame],
-    weights: Dict[str, float] = None
+    infra: dict[str, gpd.GeoDataFrame],
+    weights: dict[str, float] | None = None
 ) -> gpd.GeoDataFrame:
     """Compute a composite exposure index per H3 cell.
 
@@ -378,7 +378,7 @@ Risk is the product of hazard, exposure, and vulnerability. This section combine
 def generate_hazard_layers(
     city_grid: gpd.GeoDataFrame,
     seed: int = 42
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """Generate synthetic hazard probability maps.
 
     Creates three hazard layers:
@@ -434,8 +434,8 @@ from geo_infer_risk.core.risk_engine import RiskEngine
 
 def compute_composite_risk(
     exposure_grid: gpd.GeoDataFrame,
-    hazards: Dict[str, np.ndarray],
-    hazard_weights: Dict[str, float] = None,
+    hazards: dict[str, np.ndarray],
+    hazard_weights: dict[str, float] | None = None,
     vulnerability_factor: float = 0.5
 ) -> gpd.GeoDataFrame:
     """Compute composite risk index from multiple hazards and exposure.
@@ -677,7 +677,7 @@ plt.savefig("civic_risk_overlay.png", dpi=150)
 ## Full Pipeline Integration
 
 ```python
-from typing import Dict, Any
+from typing import Any
 
 
 def run_urban_analytics_pipeline(
@@ -685,7 +685,7 @@ def run_urban_analytics_pipeline(
     center_lng: float,
     h3_resolution: int = 8,
     ring_size: int = 30
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Execute the complete urban analytics pipeline.
 
     Steps:

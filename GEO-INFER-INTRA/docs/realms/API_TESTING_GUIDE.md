@@ -1,35 +1,111 @@
 # Realms API Testing Guide
 
 ## Overview
-The `realms_api_probe.py` script provides testing for all documented Realms API endpoints. It validates responses against the provided JSON schema and generates reports.
+
+The `realms_api_probe.py` script tests the documented Realms API endpoints. It
+validates responses against `realm_schema.json` and writes a report.
 
 ## Installation
 
-```
-bash # Install dependencies uv pip install -r requirements.txt # Ensure you have the schema file in the same directory ls realm_schema.json
-```
- ## Usage ### Basic Usage
-```
-bash # Run all tests with default parameters python realms_api_probe.py # Run with custom schema file python realms_api_probe.py --schema /path/to/realm_schema.json # Quick test mode (fewer test cases) python realms_api_probe.py --quick
-```
- ### Options
+The script needs `requests` and `jsonschema`, both installed by the workspace
+sync; there is no separate requirements file.
+
 ```bash
- # Custom search terms python realms_api_probe.py --search-terms "Forest" "Ocean" "Park" # Custom realm IDs to test python realms_api_probe.py --realm-ids 2188 6472 8155 # Custom timeout python realms_api_probe.py --timeout 60 # Combined options python realms_api_probe.py --quick --search-terms "Avana" --realm-ids 2188
+# From the repository root
+uv sync --all-packages --all-extras
 ```
- ## What Gets Tested ### 1. Search Realms by Name - **Endpoint**: `GET https://api.guardiansofearth.io/realms` - **Tests**: Multiple search terms with various parameters - **Validates**: Response structure, required fields, data types ### 2. Get All Realms - **Endpoint**: `GET https://portal.biosmart.life/api/v1/contest/109/regions.json` - **Tests**: Pagination, sorting by ID and bioscore - **Validates**: Schema compliance, data consistency ### 3. Get Realm by ID - **Endpoint**: `GET https://portal.biosmart.life/api/v1/region/{id}` - **Tests**: Multiple realm IDs (extracted from previous tests) - **Validates**: schema compliance, ID matching ### 4. Error Cases - **Tests**: Invalid IDs, malformed parameters, edge cases - **Validates**: Proper error handling and status codes ## Output The script generates: 1. **Console Output**: Real-time progress and summary 2. **Log File**: `realms_api_test_YYYYMMDD_HHMMSS.log` 3. **Results File**: `realms_api_test_results_YYYYMMDD_HHMMSS.json` ### Example Output
+
+Run the script from this directory so the default `realm_schema.json` path
+resolves.
+
+## Usage
+
+### Basic Usage
+
+```bash
+cd GEO-INFER-INTRA/docs/realms
+
+# Run all tests with default parameters
+uv run python realms_api_probe.py
+
+# Run with a custom schema file
+uv run python realms_api_probe.py --schema /path/to/realm_schema.json
+
+# Quick test mode (fewer test cases)
+uv run python realms_api_probe.py --quick
 ```
- 🚀 Starting Realms API Testing ============================================================ Testing: Search Realms by Name ============================================================ ✓ GET https://api.guardiansofearth.io/realms - 200 (0.45s) Found 2 results for 'Avana' 📊 TEST SUMMARY REPORT ================================================================================ Total Tests: 15 Passed: 14 Failed: 1 Success Rate: 93.3% Total Duration: 12.34s 📈 ENDPOINT BREAKDOWN: search_by_name: 5/5 (100.0%) get_all_realms: 6/6 (100.0%) get_realm_by_id: 3/4 (75.0%)
+
+### Options
+
+```bash
+# Custom search terms
+uv run python realms_api_probe.py --search-terms "Forest" "Ocean" "Park"
+
+# Custom realm IDs to test
+uv run python realms_api_probe.py --realm-ids 2188 6472 8155
+
+# Custom timeout (seconds, default 30)
+uv run python realms_api_probe.py --timeout 60
+
+# Combined options
+uv run python realms_api_probe.py --quick --search-terms "Avana" --realm-ids 2188
 ```
- ## Schema Validation The script validates all responses against `realm_schema.json`: - Checks data types for all fields - Validates required fields are present - Ensures proper structure for arrays and objects - Reports any schema violations ## Error Handling - **Network Issues**: Timeout, connection errors - **HTTP Errors**: 4xx, 5xx status codes - **Data Issues**: Invalid JSON, schema violations - **Rate Limiting**: Built-in delays between requests ## Customization To test additional scenarios, modify the script:
-```
-python # Add custom search terms search_terms = ["YourCustomTerm", "AnotherTerm"] # Add custom realm IDs realm_ids = [1234, 5678, 9012] # Add custom test cases test_cases = [ {'name': 'custom_test', 'params': {'limit': 100}} ]
-```
- ## Troubleshooting ### Common Issues 1. **Schema file not found**
-```
-bash # Ensure schema file exists ls realm_schema.json
-```
- 2. **Network timeouts**
-```
-bash # Increase timeout python realms_api_probe.py --timeout 60
-```
- 3. **API rate limiting** - The script includes delays between requests - Reduce test scope with `--quick` option 4. **Authentication errors** - Currently no authentication is documented - If needed, modify the script to add API keys/tokens ### What You Need to Know To use this script effectively, you may need: 1. **API Keys/Authentication**: Not documented but may be required 2. **Rate Limits**: Unknown - script includes basic rate limiting 3. **Base URL Changes**: URLs are hardcoded from documentation 4. **Additional Endpoints**: Script only tests documented endpoints ## Next Steps If the API requires authentication or has undocumented endpoints, you'll need to provide: - API keys or authentication tokens - Additional endpoint URLs - Rate limiting information - Error response format documentation
+
+## What Gets Tested
+
+1. **Search Realms by Name**
+   - Endpoint: `GET https://api.guardiansofearth.io/realms`
+   - Tests: multiple search terms with various parameters
+   - Validates: response structure, required fields, data types
+2. **Get All Realms**
+   - Endpoint: `GET https://portal.biosmart.life/api/v1/contest/109/regions.json`
+   - Tests: pagination, sorting by ID and bioscore
+   - Validates: schema compliance, data consistency
+3. **Get Realm by ID**
+   - Endpoint: `GET https://portal.biosmart.life/api/v1/region/{id}`
+   - Tests: multiple realm IDs (extracted from previous tests)
+   - Validates: schema compliance, ID matching
+4. **Error Cases**
+   - Tests: invalid IDs, malformed parameters, edge cases
+   - Validates: error handling and status codes
+
+## Output
+
+Each run writes to `outputs/test_run_YYYYMMDD_HHMMSS/`:
+
+1. `test_execution.log`: progress and per-request log
+2. `test_results.json`: per-test results and summary
+
+The process exits with status 0 when every test passes and 1 otherwise.
+
+## Schema Validation
+
+Responses are validated against `realm_schema.json`:
+
+- data types for all fields
+- required fields present
+- structure of arrays and objects
+- every schema violation is reported
+
+## Error Handling
+
+- **Network issues**: timeouts, connection errors
+- **HTTP errors**: 4xx and 5xx status codes
+- **Data issues**: invalid JSON, schema violations
+- **Rate limiting**: fixed delays between requests
+
+## Troubleshooting
+
+1. **Schema file not found**: run from `GEO-INFER-INTRA/docs/realms/` or pass
+   `--schema`.
+2. **Network timeouts**: increase `--timeout`.
+3. **API rate limiting**: reduce scope with `--quick`.
+4. **Authentication errors**: no authentication is documented for these
+   endpoints; if one becomes required, add the key or token to the request
+   headers in `RealmsAPITester`.
+
+## Known Limits
+
+- Base URLs are hardcoded from the published API documentation.
+- Only documented endpoints are tested.
+- Rate limits are not documented; the script uses fixed delays.

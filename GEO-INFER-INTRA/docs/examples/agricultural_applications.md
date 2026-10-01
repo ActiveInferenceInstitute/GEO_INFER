@@ -29,8 +29,9 @@ Each stage uses a different GEO-INFER module, and the final section ties them in
 ## Prerequisites
 
 ```bash
-uv pip install -e ./GEO-INFER-AG ./GEO-INFER-BAYES ./GEO-INFER-SPACE ./GEO-INFER-DATA
-uv pip install numpy pandas geopandas matplotlib shapely
+# From the repository root: installs AG, BAYES, SPACE, DATA and the locked
+# numpy, pandas, geopandas, matplotlib and shapely versions
+uv sync --all-packages --all-extras
 ```
 
 ## Section 1: H3-Gridded Field Analysis
@@ -68,10 +69,9 @@ print(f"Field area: {field_gdf.to_crs(epsg=32610).area.iloc[0] / 10000:.1f} hect
 
 ```python
 import h3
-from typing import List, Dict
 
 
-def polygon_to_h3_cells(polygon: Polygon, resolution: int = 10) -> List[str]:
+def polygon_to_h3_cells(polygon: Polygon, resolution: int = 10) -> list[str]:
     """Convert a Shapely polygon to a list of H3 cell indexes.
 
     Uses h3 v4 API (latlng_to_cell, polygon_to_cells).
@@ -91,7 +91,7 @@ def polygon_to_h3_cells(polygon: Polygon, resolution: int = 10) -> List[str]:
     return cells
 
 
-def cells_to_geodataframe(cells: List[str]) -> gpd.GeoDataFrame:
+def cells_to_geodataframe(cells: list[str]) -> gpd.GeoDataFrame:
     """Convert H3 cell indexes to a GeoDataFrame with hex geometries.
 
     Args:
@@ -491,7 +491,7 @@ graph LR
 ### End-to-End Pipeline
 
 ```python
-from typing import Dict, Any
+from typing import Any
 from shapely.geometry import Polygon
 import geopandas as gpd
 import numpy as np
@@ -502,7 +502,7 @@ def run_precision_ag_pipeline(
     sensor_gdf: gpd.GeoDataFrame,
     h3_resolution: int = 10,
     gp_length_scale: float = 0.002,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Execute the full precision agriculture analysis pipeline.
 
     Steps:

@@ -26,7 +26,6 @@
 - `API_TESTING_GUIDE.md`
 - `realm_schema.json`
 - `realms-geo-infer.md`
-- `requirements.txt`
 
 ## Validation
 

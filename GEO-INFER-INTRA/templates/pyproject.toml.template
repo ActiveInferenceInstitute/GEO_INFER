@@ -1,13 +1,13 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-{MODULE_NAME}"
-version = "0.1.0"
+version = "{WORKSPACE_VERSION}"
 description = "{DESCRIPTION}"
 readme = "README.md"
-license = {text = "CC BY-ND-SA 4.0"}
+license = "CC-BY-NC-SA-4.0"
 requires-python = ">=3.11"
 authors = [
     {name = "GEO-INFER Development Team", email = "geo-infer@activeinference.institute"}
@@ -17,7 +17,6 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Creative Commons License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -25,20 +24,24 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 
+# pyproject.toml is the only dependency declaration for a module; the root
+# uv.lock pins the resolution. Do not add setup.py, setup.cfg or
+# requirements.txt (validate_repo_contracts.py rejects them).
 dependencies = [
-    # Add module-specific dependencies here
     {DEPENDENCIES}
 ]
 
 [project.optional-dependencies]
+# Workspace siblings are optional integrations; guard their imports in src/.
+integrations = [
+    {WORKSPACE_DEPENDENCIES}
+]
 dev = [
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
     "pytest-asyncio>=0.20.0",
-    "black>=21.9.0",
-    "flake8>=3.9.0",
+    "ruff>=0.15.6,<0.16",
     "mypy>=0.910",
-    "isort>=5.9.0",
 ]
 docs = [
     "sphinx>=4.2.0",
@@ -48,11 +51,15 @@ docs = [
 ]
 {OPTIONAL_DEPS}
 
+# One entry per workspace sibling listed above.
+[tool.uv.sources]
+{WORKSPACE_SOURCES}
+
 [project.urls]
-Homepage = "https://github.com/geo-infer/geo-infer"
+Homepage = "https://github.com/ActiveInferenceInstitute/GEO_INFER"
 Documentation = "https://geo-infer.readthedocs.io/"
-Repository = "https://github.com/geo-infer/geo-infer"
-"Bug Tracker" = "https://github.com/geo-infer/geo-infer/issues"
+Repository = "https://github.com/ActiveInferenceInstitute/GEO_INFER"
+"Bug Tracker" = "https://github.com/ActiveInferenceInstitute/GEO_INFER/issues"
 
 [project.scripts]
 {ENTRY_POINTS}
@@ -67,32 +74,12 @@ exclude = ["tests*"]
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.md", "*.txt"]
 
-[tool.black]
-line-length = 88
-target-version = ['py39', 'py310', 'py311', 'py312']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-line_length = 88
-known_first_party = ["geo_infer_{MODULE_NAME_LOWER}"]
+# Ruff, pytest markers and warning filters are configured once in the root
+# pyproject.toml; do not duplicate [tool.ruff] or [tool.pytest.ini_options]
+# here. The module keeps its mypy and coverage scope.
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -124,23 +111,6 @@ module = [
 ]
 ignore_missing_imports = true
 
-[tool.pytest.ini_options]
-minversion = "6.0"
-testpaths = ["tests"]
-python_files = ["test_*.py", "*_test.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = [
-    "--strict-markers",
-    "--strict-config",
-]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
-    "unit: marks tests as unit tests",
-    "performance: marks tests as performance tests",
-]
-
 [tool.coverage.run]
 source = ["src"]
 omit = [
@@ -159,4 +129,3 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
-

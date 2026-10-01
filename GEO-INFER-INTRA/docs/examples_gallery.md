@@ -27,13 +27,10 @@ Install the required modules for the example you want to run:
 
 ```bash
 # Install from the GEO-INFER root directory
-cd /path/to/GEO-INFER
+cd /path/to/GEO_INFER
 
-# Install core modules (needed for most examples)
-uv pip install -e ./GEO-INFER-MATH ./GEO-INFER-SPACE ./GEO-INFER-TIME ./GEO-INFER-DATA
-
-# Install domain modules as needed
-uv pip install -e ./GEO-INFER-ACT ./GEO-INFER-BAYES ./GEO-INFER-AG
+# Install every module (core and domain) with all optional extras
+uv sync --all-packages --all-extras
 ```
 
 ### Running a Python Example
@@ -50,8 +47,7 @@ uv run python spatial/h3_grid_analysis.py
 ### Running a Jupyter Notebook
 
 ```bash
-uv pip install jupyter
-uv run jupyter notebook GEO-INFER-EXAMPLES/examples/spatial/h3_grid_analysis.ipynb
+uv run --with jupyter jupyter notebook GEO-INFER-EXAMPLES/examples/spatial/h3_grid_analysis.ipynb
 ```
 
 ### Environment Variables

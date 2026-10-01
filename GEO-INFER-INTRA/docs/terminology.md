@@ -377,9 +377,10 @@ to handle optional dependencies gracefully:
 discovers and runs tests across all 45 modules. Supports filtering by module,
 category, and pytest markers. See also: *conftest.py*.
 
-**uv**: The Python package manager used by GEO-INFER. Replaces pip/pip-tools for
-dependency resolution and virtual environment management. Install via
-`pip install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`.
+**uv**: The Python package manager used by GEO-INFER. Manages the root workspace
+(`pyproject.toml`, `uv.lock`, `.venv/`); `uv sync --all-packages --all-extras`
+installs every module. Install via
+`curl -LsSf https://astral.sh/uv/install.sh | sh`.
 See also: *pyproject.toml*.
 
 ---

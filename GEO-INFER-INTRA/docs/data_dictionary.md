@@ -102,7 +102,7 @@ print(gdf[["h3_index", "value", "category", "confidence"]].to_string())
 
 ## H3 Cell Conventions
 
-GEO-INFER uses H3 v4 (h3 >= 4.0.0) as its primary spatial indexing system.
+GEO-INFER uses H3 v4 (`h3>=4.5.0,<5`) as its primary spatial indexing system.
 The v3 API (geo_to_h3, h3_to_geo) is deprecated and must not be used.
 
 ### Resolution Guide
@@ -372,7 +372,8 @@ GEO-INFER uses strict type annotations throughout. These are the standard types
 used across modules:
 
 ```python
-from typing import Dict, List, Optional, Tuple, Union, Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 import numpy as np
 import numpy.typing as npt
 import geopandas as gpd
@@ -383,12 +384,12 @@ from shapely.geometry import (
 from shapely.geometry.base import BaseGeometry
 
 # Standard type aliases used across GEO-INFER
-Coordinate = Tuple[float, float]              # (latitude, longitude)
-BoundingBox = Tuple[float, float, float, float]  # (min_lng, min_lat, max_lng, max_lat)
+Coordinate = tuple[float, float]              # (latitude, longitude)
+BoundingBox = tuple[float, float, float, float]  # (min_lng, min_lat, max_lng, max_lat)
 H3CellId = str                                 # H3 hex string
 H3Resolution = int                              # 0-15
-CRSType = Union[str, int]                       # "EPSG:4326" or 4326
-TimestampType = Union[str, pd.Timestamp]        # ISO 8601 string or Timestamp
+CRSType = str | int                       # "EPSG:4326" or 4326
+TimestampType = str | pd.Timestamp        # ISO 8601 string or Timestamp
 ProbabilityVector = npt.NDArray[np.float64]      # sums to 1.0
 StateVector = npt.NDArray[np.float64]            # arbitrary float vector
 TransitionMatrix = npt.NDArray[np.float64]       # square stochastic matrix
@@ -400,8 +401,8 @@ def analyze_region(
     radius_km: float,
     resolution: H3Resolution = 9,
     crs: CRSType = "EPSG:4326",
-    start_time: Optional[TimestampType] = None,
-    end_time: Optional[TimestampType] = None,
+    start_time: TimestampType | None = None,
+    end_time: TimestampType | None = None,
 ) -> gpd.GeoDataFrame:
     """Analyze a circular region around a center point."""
     ...

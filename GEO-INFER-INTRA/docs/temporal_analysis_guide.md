@@ -250,7 +250,6 @@ For moving objects (vehicles, wildlife, ships), combine temporal and spatial ana
 ```python
 import numpy as np
 from dataclasses import dataclass
-from typing import List
 
 @dataclass
 class TrajectoryPoint:
@@ -258,7 +257,7 @@ class TrajectoryPoint:
     lat: float
     lng: float
 
-def compute_trajectory_metrics(points: List[TrajectoryPoint]) -> dict:
+def compute_trajectory_metrics(points: list[TrajectoryPoint]) -> dict:
     """Compute speed, distance, and bearing for a trajectory."""
     total_distance = 0.0
     speeds = []

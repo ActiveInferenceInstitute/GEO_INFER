@@ -77,7 +77,7 @@ class TestVisualPreviewContract:
 
     def test_module_profiles_have_valid_spatial_attributes(self) -> None:
         """Ensure each module profile defines valid coordinates, colors, and features."""
-        for mod_id, profile in MODULE_PROFILES.items():
+        for profile in MODULE_PROFILES.values():
             assert "name" in profile
             assert "description" in profile
             assert "category" in profile

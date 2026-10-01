@@ -45,7 +45,7 @@ uv --version
 | Issue | Fix |
 |-------|-----|
 | `command not found: uv` | Add `~/.cargo/bin` to PATH, or restart your shell |
-| `uv pip` fails silently | Ensure you are in a virtual environment or use `--system` |
+| `uv sync` reports a stale lock | Run `uv lock` after editing a `pyproject.toml`, then `uv sync --all-packages --all-extras` |
 | Old version of uv | `uv self update` |
 
 ## Installing GEO-INFER Modules
@@ -57,42 +57,29 @@ uv --version
 git clone https://github.com/ActiveInferenceInstitute/GEO_INFER.git
 cd GEO_INFER
 
-# Create a virtual environment
-uv venv .venv
-source .venv/bin/activate  # macOS/Linux
-# .venv\Scripts\activate   # Windows
-
-# Install core modules (editable mode)
-uv pip install -e ./GEO-INFER-MATH
-uv pip install -e ./GEO-INFER-SPACE
-uv pip install -e ./GEO-INFER-ACT
+# Create .venv and install every workspace module (editable) with all extras
+uv sync --all-packages --all-extras
 ```
 
-### Installing Multiple Modules
+`uv sync` creates `.venv/` itself; use `uv run <command>` instead of activating
+it.
+
+### Installing Selected Modules
 
 ```bash
-# Install a working set of modules
-uv pip install -e ./GEO-INFER-MATH ./GEO-INFER-SPACE ./GEO-INFER-ACT ./GEO-INFER-BAYES ./GEO-INFER-TIME
+# One module and its workspace dependencies
+uv sync --package geo-infer-space
 
-# Install with optional development extras
-uv pip install -e "./GEO-INFER-AI[dev,docs]"
+# One module with a named optional extra
+uv sync --package geo-infer-ai --extra dev --extra docs
 ```
+
+Workspace siblings resolve through each module's `[tool.uv.sources]`
+(`{ workspace = true }`), so run uv from anywhere inside the checkout; it
+always uses the root `pyproject.toml` and `uv.lock`. Modules have no
+`setup.py` or `requirements.txt`; dependencies come only from `pyproject.toml`.
 
 ### Editable Install Issues
-
-**Problem:** `uv pip install -e ./GEO-INFER-SPACE` fails with "No pyproject.toml found".
-
-**Fix:** Ensure you are running the command from the repository root, not from inside the module directory.
-
-```bash
-# Wrong (from inside the module)
-cd GEO-INFER-SPACE
-uv pip install -e .  # may fail if dependencies reference sibling modules
-
-# Correct (from repo root)
-cd /path/to/GEO-INFER
-uv pip install -e ./GEO-INFER-SPACE
-```
 
 **Problem:** Editable install succeeds but imports fail.
 
@@ -100,13 +87,13 @@ uv pip install -e ./GEO-INFER-SPACE
 
 ```bash
 # Verify the package is findable
-python -c "import geo_infer_space; print(geo_infer_space.__file__)"
+uv run python -c "import geo_infer_space; print(geo_infer_space.__file__)"
 ```
 
-If this prints `None` or a path outside your repo, the editable install may have linked to a stale build. Reinstall:
+If this prints `None` or a path outside your repo, the environment holds a stale build. Reinstall the workspace member:
 
 ```bash
-uv pip install --force-reinstall -e ./GEO-INFER-SPACE
+uv sync --package geo-infer-space --reinstall-package geo-infer-space
 ```
 
 ## GDAL System Dependency
@@ -122,8 +109,9 @@ brew install gdal
 # Verify
 gdal-config --version
 
-# Install Python bindings matching system version
-uv pip install GDAL==$(gdal-config --version)
+# Run with Python bindings matching the system version
+# (GDAL is not a workspace dependency; rasterio/fiona ship their own GDAL)
+uv run --with "GDAL==$(gdal-config --version)" python -c "from osgeo import gdal; print(gdal.__version__)"
 ```
 
 **Common macOS issues:**
@@ -141,11 +129,11 @@ uv pip install GDAL==$(gdal-config --version)
 sudo apt update
 sudo apt install gdal-bin libgdal-dev python3-gdal
 
-# Set environment for pip
+# Point the binding build at the system headers
 export CPLUS_INCLUDE_PATH=/usr/include/gdal
 export C_INCLUDE_PATH=/usr/include/gdal
 
-uv pip install GDAL==$(gdal-config --version)
+uv run --with "GDAL==$(gdal-config --version)" python -c "from osgeo import gdal; print(gdal.__version__)"
 ```
 
 ### Linux (Fedora/RHEL)
@@ -156,22 +144,16 @@ sudo dnf install gdal gdal-devel python3-gdal
 
 ### Windows
 
-The simplest approach on Windows is to use pre-built wheels:
-
-```bash
-# Install from Christoph Gohlke's wheels or conda-forge
-uv pip install rasterio fiona geopandas
-
-# If that fails, use conda
-conda install -c conda-forge gdal rasterio fiona geopandas
-```
+`rasterio`, `fiona` and `geopandas` are locked workspace dependencies and ship
+binary wheels for Windows, so `uv sync --all-packages --all-extras` installs
+them without a system GDAL. Use WSL2 if a native build is still required.
 
 ## H3 Library Installation
 
-H3 v4 is required. The Python `h3` package includes pre-built wheels for most platforms.
+H3 v4 is required (`h3>=4.5.0,<5`, pinned in `uv.lock`). The Python `h3` package includes pre-built wheels for most platforms, and `uv sync` installs it.
 
 ```bash
-uv pip install "h3>=4.5.0,<5"
+uv sync --all-packages --all-extras
 
 # Verify
 python -c "import h3; print(h3.versions())"
@@ -185,7 +167,7 @@ brew install h3
 
 # Ubuntu
 sudo apt install cmake
-pip install h3 --no-binary h3  # builds from source
+uv sync --all-packages --all-extras --no-binary-package h3  # builds from source
 ```
 
 **H3 v3 vs v4 check:**
@@ -198,18 +180,18 @@ try:
     h3.latlng_to_cell(37.7749, -122.4194, 7)
     print("H3 v4 installed correctly")
 except AttributeError:
-    print("ERROR: H3 v3 installed. Upgrade with: uv pip install 'h3>=4.5.0,<5'")
+    print("ERROR: H3 v3 installed. Re-sync the locked environment: uv sync --all-packages --all-extras")
 ```
 
-## Common pip/uv Error Messages
+## Common uv Error Messages
 
 | Error | Meaning | Fix |
 |-------|---------|-----|
-| `ResolutionImpossible` | Conflicting version requirements | Check which modules have conflicting deps: `uv pip check` |
+| `No solution found when resolving dependencies` | Conflicting version requirements across module `pyproject.toml` files | Read the conflict chain uv prints, align the floors (see `.agents/standards.md` Dependency Floor Policy), then `uv lock` |
 | `ERROR: No matching distribution` | Package not available for your Python/OS | Check PyPI for available platforms; consider building from source |
 | `subprocess-exited-with-error` during install | C extension build failed | Install system dev libraries (gcc, python3-dev, libffi-dev) |
-| `externally-managed-environment` | System Python refuses pip installs | Use a virtual environment: `uv venv .venv && source .venv/bin/activate` |
-| `error: legacy-install-failure` | Old setup.py that fails with modern pip | Try `uv pip install --no-build-isolation package` |
+| `externally-managed-environment` | System Python refuses package installs | Use the workspace environment: `uv sync --all-packages --all-extras` creates `.venv/` |
+| `The lockfile at uv.lock needs to be updated` | A `pyproject.toml` changed without re-locking (`--locked` mode) | Run `uv lock` and commit the updated `uv.lock` |
 
 ## Virtual Environment Conflicts
 
@@ -222,24 +204,25 @@ If you have multiple environments, ensure you activate the correct one:
 which python
 python -c "import sys; print(sys.prefix)"
 
-# List installed GEO-INFER modules
-uv pip list | grep geo-infer
+# List installed GEO-INFER modules in the workspace environment
+uv pip list --python .venv | grep geo-infer
 ```
 
 ### Conda + uv Interaction
 
-If you use conda for system dependencies (GDAL) and uv for Python packages:
+If conda provides system libraries (GDAL, PROJ, GEOS), keep it to C libraries
+only and let uv own every Python package:
 
 ```bash
-# Create conda env with system deps
-conda create -n geoinfer python=3.11 gdal rasterio fiona -c conda-forge
-conda activate geoinfer
+conda create -n geoinfer-sys gdal proj geos -c conda-forge
+conda activate geoinfer-sys
 
-# Install GEO-INFER modules with uv inside the conda env
-uv pip install -e ./GEO-INFER-MATH ./GEO-INFER-SPACE
+# uv still builds the workspace environment from uv.lock
+uv sync --all-packages --all-extras
 ```
 
-Do not mix `conda install` and `uv pip install` for the same package. Use conda for C-library dependencies and uv for pure-Python packages.
+Do not install Python packages with conda into the uv environment; `uv sync`
+removes packages that are not in `uv.lock`.
 
 ## Platform-Specific Notes
 
@@ -248,7 +231,7 @@ Do not mix `conda install` and `uv pip install` for the same package. Use conda 
 - Use the arm64 Homebrew (`/opt/homebrew/bin/brew`)
 - Ensure Python is arm64: `python -c "import platform; print(platform.machine())"`
 - Some packages may require Rosetta 2 for x86_64 emulation
-- If `numpy` or `scipy` build fails, install via: `uv pip install numpy scipy` (wheels are available for arm64)
+- If `numpy` or `scipy` attempts a source build, confirm the interpreter is arm64 and re-run `uv sync --all-packages --all-extras` (arm64 wheels are available)
 
 ### Windows
 
@@ -269,20 +252,20 @@ Run these checks to verify your installation:
 
 ```bash
 # 1. Check Python version
-python --version  # Should be 3.9+
+uv run python --version  # Should be 3.11+
 
 # 2. Check core imports
-python -c "
+uv run python -c "
 import geo_infer_math; print('MATH OK')
 import geo_infer_space; print('SPACE OK')
 import geo_infer_act; print('ACT OK')
 "
 
 # 3. Check H3 version
-python -c "import h3; print(f'H3 v4: {hasattr(h3, \"latlng_to_cell\")}')"
+uv run python -c "import h3; print(f'H3 v4: {hasattr(h3, \"latlng_to_cell\")}')"
 
 # 4. Check GDAL (if needed)
-python -c "from osgeo import gdal; print(f'GDAL {gdal.VersionInfo()}')"
+uv run --with "GDAL==$(gdal-config --version)" python -c "from osgeo import gdal; print(f'GDAL {gdal.VersionInfo()}')"
 
 # 5. Run module tests
 uv run python -m pytest GEO-INFER-MATH/tests/ -v --tb=short -q

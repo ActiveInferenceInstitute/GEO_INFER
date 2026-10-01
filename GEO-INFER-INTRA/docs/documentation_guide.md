@@ -46,8 +46,11 @@ broader framework of perception, belief updating, and action selection.
 
 ## README Structure
 
-Every GEO-INFER module must have a `README.md` at its root with the following
-sections in this order:
+Module-root `README.md` and `AGENTS.md` files are generated signposts
+(`uv run python GEO-INFER-TEST/rewrite_readme_agents.py`) and are not written by
+hand. The structure below applies to hand-written module overview pages, such
+as `GEO-INFER-INTRA/docs/modules/geo-infer-<module>.md` and a module's `docs/`
+pages, in this order:
 
 ### Required Sections
 
@@ -65,7 +68,7 @@ sections in this order:
    - Each item: bold feature name followed by 1-sentence description
 
 4. **Quick Start**
-   - Installation command: `uv pip install -e ./GEO-INFER-MODULE`
+   - Installation command: `uv sync --package geo-infer-module`
    - Minimal working code example (under 15 lines)
    - Expected output or result description
 
@@ -270,8 +273,8 @@ def compute_spatial_autocorrelation(
     gdf: gpd.GeoDataFrame,
     value_column: str,
     method: str = "moran",
-    weights: Optional[str] = "queen",
-) -> Dict[str, float]:
+    weights: str | None = "queen",
+) -> dict[str, float]:
     """Compute spatial autocorrelation statistics for a GeoDataFrame.
 
     Calculates the specified spatial autocorrelation statistic using the

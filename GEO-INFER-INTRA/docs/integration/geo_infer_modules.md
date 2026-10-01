@@ -22,7 +22,10 @@ Data Sources --> GEO-INFER-DATA --> SPACE/TIME --> MATH/BAYES/ACT --> AI/AGENT -
 | **Infrastructure** | DATA, API, SEC, OPS, METAGOV, NORMS, REQ | Data management, API gateway, security, operations. |
 | **Operations** | INTRA, GIT, TEST, EXAMPLES, PLACE | Documentation, version control, testing, demos, location intelligence. |
 
-## Module Categories
+## Layer Roles
+
+The layers above describe dependency direction. The thematic grouping of all
+45 modules is the root README "Module Themes" table.
 
 ### Analytical Core
 
@@ -42,20 +45,18 @@ DATA manages ETL and data formats. API exposes module functionality over REST/Gr
 
 ## Installing Multiple Modules
 
-GEO-INFER uses `uv` as its package manager. Install modules in editable mode for development:
+GEO-INFER is a uv workspace; `uv sync` installs members in editable mode from
+the root `uv.lock`:
 
 ```bash
-# Install foundation + core
-uv pip install -e ./GEO-INFER-MATH ./GEO-INFER-SPACE ./GEO-INFER-ACT
+# Every module with every optional extra (what CI uses)
+uv sync --all-packages --all-extras
 
-# Add Bayesian and AI capabilities
-uv pip install -e ./GEO-INFER-BAYES ./GEO-INFER-AI
+# One module and its workspace dependencies
+uv sync --package geo-infer-ag
 
-# Add a domain module
-uv pip install -e ./GEO-INFER-AG
-
-# Install with optional extras (dev tools, documentation)
-uv pip install -e "./GEO-INFER-AI[dev,docs]"
+# One module with optional extras (dev tools, documentation)
+uv sync --package geo-infer-ai --extra dev --extra docs
 ```
 
 Module load order does not matter at install time; Python resolves imports at runtime. However, if a module's optional dependency is missing, its `__init__.py` uses `try/except` to degrade gracefully:
@@ -225,37 +226,30 @@ best_model = results.best_model
 
 ## Dependency Management with uv
 
-The `uv` package manager handles all Python dependencies. Each module has its own `pyproject.toml` specifying its requirements.
+The `uv` package manager handles all Python dependencies. Each module's
+`pyproject.toml` is its only dependency declaration (no `setup.py` or
+`requirements.txt`), and the root `uv.lock` resolves all of them together.
 
 ```bash
-# Create a virtual environment
-uv venv
-
-# Activate it
-source .venv/bin/activate
-
-# Install specific modules
-uv pip install -e ./GEO-INFER-MATH
-uv pip install -e ./GEO-INFER-SPACE
-
 # Install all modules for integration testing
-for module_dir in GEO-INFER-*/; do
-    if [ -f "$module_dir/pyproject.toml" ]; then
-        uv pip install -e "./$module_dir"
-    fi
-done
+uv sync --all-packages --all-extras
+
+# Add a dependency to one module and refresh uv.lock
+uv add --package geo-infer-space "pyproj>=3.0"
 
 # Check what is installed
-uv pip list | grep geo-infer
+uv pip list --python .venv | grep geo-infer
 ```
 
 ### Resolving Dependency Conflicts
 
 If two modules pin conflicting versions of a shared dependency, `uv` will report the conflict. Resolution options:
 
-1. Relax the version constraint in one module's `pyproject.toml`.
-2. Use `uv pip install --resolution lowest` to find the lowest compatible set.
-3. Install conflicting modules in separate virtual environments and communicate via API/files.
+1. Relax the version constraint in one module's `pyproject.toml`, then run `uv lock`.
+2. Align shared floors across the root and module `pyproject.toml` files (see
+   the Dependency Floor Policy in `.agents/standards.md`).
+3. Check the lower bounds with `uv lock --resolution lowest-direct` in a
+   scratch checkout.
 
 ## Using GEO-INFER-API as the Integration Layer
 

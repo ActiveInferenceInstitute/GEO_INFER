@@ -73,7 +73,7 @@ uv run python GEO-INFER-TEST/validate_test_contracts.py --strict
 uv run python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
 uv run python GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42
 uv run python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible
-uv run --with 'ruff>=0.15.6,<0.16' ruff check GEO-INFER-*/src --select F821,F823,E721,E722
+uv run --with 'ruff>=0.15.6,<0.16' ruff check .
 
 # behavioral suites
 uv run python GEO-INFER-TEST/run_unified_tests.py --category unit
@@ -106,7 +106,8 @@ needed to diagnose a failure. Deleted Python paths are excluded from the
 changed-file formatter/linter step because they are not present in the
 checkout. Changed-file Ruff checks only runtime-invalid constructs
 (`F821`, `F823`, `E721`, and `E722`); repository-wide source hygiene owns the
-same critical rules across every module, and Black remains the formatting gate.
+same critical rules across every module, and `ruff format --check` is the
+formatting gate.
 
 When local and hosted results differ, first compare Python versions and the
 native-only dependency exclusions, then inspect the uploaded summary and

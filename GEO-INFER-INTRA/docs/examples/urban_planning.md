@@ -25,8 +25,9 @@ This guide covers five interconnected analyses that feed into a final site selec
 ## Prerequisites
 
 ```bash
-uv pip install -e ./GEO-INFER-CIV ./GEO-INFER-TRANSPORT ./GEO-INFER-SPACE
-uv pip install numpy pandas geopandas matplotlib shapely h3 networkx
+# From the repository root: installs CIV, TRANSPORT, SPACE and the locked
+# numpy, pandas, geopandas, matplotlib, shapely, h3 and networkx versions
+uv sync --all-packages --all-extras
 ```
 
 ## Section 1: Zoning Analysis
@@ -41,7 +42,6 @@ import pandas as pd
 import geopandas as gpd
 import h3
 from shapely.geometry import Polygon, Point, LineString
-from typing import List, Dict, Tuple, Optional
 import networkx as nx
 
 
@@ -355,7 +355,7 @@ def compute_isochrone(
     G: nx.Graph,
     origin: str,
     max_time_minutes: float = 15.0
-) -> List[str]:
+) -> list[str]:
     """Compute an isochrone: all cells reachable within a time limit.
 
     Uses Dijkstra's algorithm on the travel time-weighted network.
@@ -380,7 +380,7 @@ def compute_isochrone(
 def compute_accessibility_score(
     G: nx.Graph,
     grid: gpd.GeoDataFrame,
-    time_thresholds: List[float] = None
+    time_thresholds: list[float] | None = None
 ) -> gpd.GeoDataFrame:
     """Compute accessibility score: how many cells are reachable.
 
@@ -693,7 +693,7 @@ print(f"Cells with community input: {(community_grid['response_count'] > 0).sum(
 ```python
 def compute_policy_preferences(
     grid: gpd.GeoDataFrame,
-    priority_weights: Dict[str, float] = None
+    priority_weights: dict[str, float] | None = None
 ) -> gpd.GeoDataFrame:
     """Model planning policy preferences using a simplified Active Inference approach.
 
@@ -779,9 +779,9 @@ The final workflow combines all layers into a multi-criteria analysis for select
 ```python
 def site_selection_analysis(
     grid: gpd.GeoDataFrame,
-    criteria_weights: Dict[str, float] = None,
+    criteria_weights: dict[str, float] | None = None,
     n_candidates: int = 10
-) -> Tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """Perform multi-criteria site selection for a community facility.
 
     Criteria:

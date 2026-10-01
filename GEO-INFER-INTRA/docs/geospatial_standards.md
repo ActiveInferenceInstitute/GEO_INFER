@@ -6,7 +6,7 @@ modules must conform to these standards.
 
 ## H3 v4 API Reference
 
-GEO-INFER uses **H3 version 4** (h3 >= 4.0.0) exclusively. The legacy v3 API
+GEO-INFER uses **H3 version 4** (`h3>=4.5.0,<5`) exclusively. The legacy v3 API
 (geo_to_h3, h3_to_geo, h3_to_geo_boundary, etc.) must not be used anywhere
 in the codebase.
 

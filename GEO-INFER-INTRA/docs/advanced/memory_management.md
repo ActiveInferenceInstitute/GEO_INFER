@@ -28,13 +28,13 @@ Rasterio provides windowed reading for GeoTIFF and other GDAL-supported raster f
 import rasterio
 from rasterio.windows import Window
 import numpy as np
-from typing import Generator, Tuple
+from collections.abc import Generator
 
 
 def read_raster_in_windows(
     path: str,
     window_size: int = 1024
-) -> Generator[Tuple[Window, np.ndarray], None, None]:
+) -> Generator[tuple[Window, np.ndarray], None, None]:
     """Read a raster file in fixed-size windows.
 
     Args:
@@ -142,7 +142,7 @@ def read_raster_within_polygon(
     raster_path: str,
     polygon_gdf: gpd.GeoDataFrame,
     all_touched: bool = True
-) -> Tuple[np.ndarray, dict]:
+) -> tuple[np.ndarray, dict]:
     """Read only the pixels within a polygon boundary.
 
     This avoids loading the full raster when your AOI is small
@@ -178,8 +178,13 @@ def read_raster_within_polygon(
 
 ### Installation
 
+`dask-geopandas` is not a workspace dependency. Add it to the module that
+uses it, or load it for a one-off run:
+
 ```bash
-uv pip install dask-geopandas
+uv add --package geo-infer-<module> dask-geopandas
+# or
+uv run --with dask-geopandas python my_script.py
 ```
 
 ### Loading Large Vector Files
@@ -267,10 +272,10 @@ National or continental H3 grids are too large to process at once. The key insig
 ```python
 import h3
 import numpy as np
-from typing import List, Set, Generator
+from collections.abc import Generator
 
 
-def get_parent_cells(cells: List[str], parent_resolution: int) -> Set[str]:
+def get_parent_cells(cells: list[str], parent_resolution: int) -> set[str]:
     """Get unique parent cells at a coarser resolution.
 
     Args:
@@ -287,9 +292,9 @@ def get_parent_cells(cells: List[str], parent_resolution: int) -> Set[str]:
 
 
 def chunk_cells_by_parent(
-    cells: List[str],
+    cells: list[str],
     chunk_resolution: int
-) -> Generator[List[str], None, None]:
+) -> Generator[list[str], None, None]:
     """Partition H3 cells into chunks based on parent cells.
 
     For a resolution-9 grid, using chunk_resolution=4 yields
@@ -320,7 +325,7 @@ def chunk_cells_by_parent(
 import h3
 import numpy as np
 from shapely.geometry import Polygon
-from typing import Dict, Any
+from typing import Any
 
 
 def process_national_h3_grid(
@@ -328,7 +333,7 @@ def process_national_h3_grid(
     target_resolution: int = 9,
     chunk_resolution: int = 4,
     process_fn=None
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Process H3 cells within a national boundary in memory-safe chunks.
 
     Instead of generating all cells and holding them in memory,
@@ -493,9 +498,8 @@ def read_selected_columns(
 
 ### Using memory_profiler
 
-```bash
-uv pip install memory_profiler
-```
+`memory_profiler` is locked in the workspace and installed by
+`uv sync --all-packages --all-extras`.
 
 ```python
 from memory_profiler import profile
@@ -521,17 +525,18 @@ def spatial_join_large(
 Run with:
 
 ```bash
-python -m memory_profiler my_script.py
+uv run python -m memory_profiler my_script.py
 ```
 
 ### Using tracemalloc for Peak Tracking
 
 ```python
 import tracemalloc
-from typing import Callable, Any, Tuple
+from collections.abc import Callable
+from typing import Any
 
 
-def measure_peak_memory(fn: Callable, *args, **kwargs) -> Tuple[Any, float]:
+def measure_peak_memory(fn: Callable, *args, **kwargs) -> tuple[Any, float]:
     """Execute a function and measure its peak memory allocation.
 
     Args:
@@ -559,9 +564,8 @@ def measure_peak_memory(fn: Callable, *args, **kwargs) -> Tuple[Any, float]:
 
 For detailed object-level memory inspection:
 
-```bash
-uv pip install guppy3
-```
+`guppy3` is not a workspace dependency; run with
+`uv run --with guppy3 python my_script.py`.
 
 ```python
 from guppy import hpy
@@ -594,7 +598,8 @@ A generator-based pipeline keeps memory constant regardless of input size.
 ```python
 import geopandas as gpd
 import pandas as pd
-from typing import Generator, Callable, Any, Optional
+from collections.abc import Callable, Generator
+from typing import Any
 from pathlib import Path
 
 

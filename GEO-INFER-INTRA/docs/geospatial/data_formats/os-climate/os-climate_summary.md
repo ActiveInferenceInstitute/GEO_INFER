@@ -38,7 +38,7 @@ Both repositories share a similar environment setup process, designed to create 
 1. **Environment Variable Configuration**: Setting up necessary environment variables with `source ./bin/environment.sh`[1][2]
 2. **Virtual Environment Creation**: Creating a Python virtual environment with `$PROJECT_DIR/bin/venv.sh`[1][2]
 3. **Virtual Environment Activation**: Activating the environment with `source $PROJECT_DIR/bin/vactivate.sh`[1][2]
-4. **Dependency Installation**: Installing required libraries with `uv pip install -r requirements.txt`[1][2]
+4. **Dependency Installation**: Installing the libraries pinned in each external repository's own `requirements.txt`[1][2]
 5. **Testing**: Running tests with `pytest ./test`[1][2]
 Both repositories also follow structured branch naming guidelines to maintain organization in the development process. Each branch should have an associated GitHub issue and follow the naming pattern: `/issue--`, where branch types include feature, bugfix, and hotfix[1][2].
 ## Integration with OS-Climate Data Commons

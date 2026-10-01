@@ -1,1 +1,55 @@
-# Installation Guide This guide provides instructions for installing GEO-INFER-INTRA on various platforms. ## Prerequisites Before installing GEO-INFER-INTRA, ensure that you have the following prerequisites: - Python 3.9 or higher - uv (Python package manager) - Git - Node.js 16 or higher (for UI components) - Docker (optional, for containerized deployment) ## Installation Methods GEO-INFER-INTRA can be installed using one of the following methods: ### Method 1: Install from the canonical monorepo ```bash # Initialize a project environment (if not already) uv init --no-workspace . # Install the package uv pip install -e ./GEO-INFER-INTRA ``` ### Method 2: Install from Source ```bash # Clone the repository git clone https://github.com/ActiveInferenceInstitute/GEO_INFER.git cd GEO-INFER # Install in development mode uv pip install -e ./GEO-INFER-INTRA # Install development dependencies (optional) uv pip install -e "./GEO-INFER-INTRA[dev]" ``` ### Method 3: Install with Docker ```bash # Pull the Docker image docker pull geoinfer/geo-infer-intra:latest # Run the container docker run -p 8000:8000 geoinfer/geo-infer-intra:latest ``` ## Post-Installation Setup After installing GEO-INFER-INTRA, the following setup steps: 1. Create a configuration file: ```bash cp config/example.yaml config/local.yaml ``` 2. Edit the configuration file with your settings: ```bash nano config/local.yaml # or use any text editor ``` 3. Initialize the knowledge base: ```bash uv run geo-infer-intra init ``` 4. Start the documentation server: ```bash uv run geo-infer-intra docs serve ``` ## Verifying the Installation To verify that GEO-INFER-INTRA is installed correctly: 1. Access the documentation web interface at `http://localhost:8000` 2. Run the version check command: ```bash uv run geo-infer-intra --version ``` 3. Run the system check: ```bash uv run geo-infer-intra check ``` ## Troubleshooting If you encounter issues during installation: - Check that all prerequisites are installed (including `uv`) - Ensure that you have sufficient permissions - Verify that your Python version is compatible - Check the logs in `logs/installation.log` - See the [Troubleshooting Guide](troubleshooting.md) for more information ## Next Steps After installing GEO-INFER-INTRA, see the [Configuration](configuration.md) guide for information on configuring the system, and the [Getting Started](getting_started.md) guide for instructions on using the system.
+# Installation Guide
+
+GEO-INFER-INTRA is a member of the GEO-INFER uv workspace. Install it from the
+repository checkout; similarly named PyPI projects are not official releases.
+The canonical, workspace-wide instructions are in the
+[Installation Guide](../getting_started/installation_guide.md).
+
+## Prerequisites
+
+- Python 3.11 or newer
+- `uv` on `PATH`
+- Git
+
+## Install
+
+```bash
+git clone https://github.com/ActiveInferenceInstitute/GEO_INFER.git
+cd GEO_INFER
+
+# GEO-INFER-INTRA and its workspace dependencies
+uv sync --package geo-infer-intra
+
+# Or the whole workspace with every optional extra
+uv sync --all-packages --all-extras
+```
+
+Dependencies are declared only in `GEO-INFER-INTRA/pyproject.toml` and pinned
+by the root `uv.lock`; there is no `setup.py` or `requirements.txt`.
+
+## Configuration
+
+`GEO-INFER-INTRA/config/example.yaml` is the reference configuration. Copy it
+before editing:
+
+```bash
+cp GEO-INFER-INTRA/config/example.yaml GEO-INFER-INTRA/config/local.yaml
+```
+
+## Verify the Installation
+
+```bash
+uv run python -c "import geo_infer_intra; print(geo_infer_intra.__version__)"
+uv run python -m pytest GEO-INFER-INTRA/tests -q
+```
+
+## Troubleshooting
+
+See [Installation Issues](../support/installation_issues.md) for uv, GDAL and
+H3 problems, and [Troubleshooting](../support/troubleshooting.md) for runtime
+errors.
+
+## Next Steps
+
+- [Your First Analysis](../getting_started/first_analysis.md)
+- [Knowledge Base Usage](knowledge_base_usage.md)

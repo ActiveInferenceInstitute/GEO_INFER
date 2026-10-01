@@ -265,7 +265,7 @@ class WildfireRiskModel:
     interpolation for risk surface estimation.
     """
 
-    def __init__(self, gp_config: dict = None):
+    def __init__(self, gp_config: dict | None = None):
         self.gp = TFPInterface(model_config=gp_config or {
             "lengthscale": 5.0, "variance": 2.0, "noise": 0.05
         })

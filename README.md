@@ -30,10 +30,10 @@ domain modeling, agent workflows, and reproducible repository validation in one
 | Metric | Value |
 | --- | ---: |
 | Modules | 45 |
-| Python source files | 924 |
+| Python source files | 925 |
 | Python test files | 749 |
-| Repository README.md files | 810 |
-| Repository AGENTS.md files | 807 |
+| Repository README.md files | 809 |
+| Repository AGENTS.md files | 806 |
 
 ## Quick Start
 
@@ -90,7 +90,7 @@ the exact reproducible exception list.
 | 🌍 Spatial & Place-based | `GEO-INFER-SPACE`, `GEO-INFER-PLACE`, `GEO-INFER-TIME`, `GEO-INFER-MARINE`, `GEO-INFER-WATER`, `GEO-INFER-FOREST`, `GEO-INFER-CLIMATE`, `GEO-INFER-ENERGY`, `GEO-INFER-TRANSPORT`, `GEO-INFER-EMERGENCY` |
 | 🧠 Bayesian & Active Inference | `GEO-INFER-BAYES`, `GEO-INFER-SIM`, `GEO-INFER-SPM`, `GEO-INFER-COG`, `GEO-INFER-ACT`, `GEO-INFER-MATH` |
 | 🤖 Agents & AI Orchestration | `GEO-INFER-AGENT`, `GEO-INFER-AG`, `GEO-INFER-AI`, `GEO-INFER-ANT`, `GEO-INFER-OPS`, `GEO-INFER-COMMS` |
-| 🏛️ Governance, Risk & Domain | `GEO-INFER-INSURANCE`, `GEO-INFER-METAGOV`, `GEO-INFER-NORMS`, `GEO-INFER-ECON`, `GEO-INFER-PEP`, `GEO-INFER-REQ`, `GEO-INFER-SEC`, `GEO-INFER-CIV`, `GEO-INFER-HEALTH`, `GEO-INFER-ORG` |
+| 🏛️ Governance, Risk & Domain | `GEO-INFER-RISK`, `GEO-INFER-INSURANCE`, `GEO-INFER-METAGOV`, `GEO-INFER-NORMS`, `GEO-INFER-ECON`, `GEO-INFER-PEP`, `GEO-INFER-REQ`, `GEO-INFER-SEC`, `GEO-INFER-CIV`, `GEO-INFER-HEALTH`, `GEO-INFER-ORG` |
 | 🗄️ Data, API & Applications | `GEO-INFER-API`, `GEO-INFER-APP`, `GEO-INFER-DATA`, `GEO-INFER-IOT`, `GEO-INFER-ART`, `GEO-INFER-EDU` |
 | 🛠️ Infrastructure & Validation | `GEO-INFER-INTRA`, `GEO-INFER-TEST`, `GEO-INFER-LOG`, `GEO-INFER-GIT`, `GEO-INFER-EXAMPLES`, `GEO-INFER-BIO` |
 
@@ -117,7 +117,7 @@ the exact reproducible exception list.
 | `GEO-INFER-EDU` | `geo_infer_edu` | 7 | 7 |
 | `GEO-INFER-EMERGENCY` | `geo_infer_emergency` | 8 | 9 |
 | `GEO-INFER-ENERGY` | `geo_infer_energy` | 9 | 9 |
-| `GEO-INFER-EXAMPLES` | `geo_infer_examples` | 5 | 10 |
+| `GEO-INFER-EXAMPLES` | `geo_infer_examples` | 6 | 10 |
 | `GEO-INFER-FOREST` | `geo_infer_forest` | 9 | 8 |
 | `GEO-INFER-GIT` | `geo_infer_git` | 22 | 19 |
 | `GEO-INFER-HEALTH` | `geo_infer_health` | 18 | 15 |
@@ -168,7 +168,7 @@ the exact reproducible exception list.
 - Test contract: `uv run python GEO-INFER-TEST/validate_test_contracts.py --strict`
 - Model contract: `uv run python GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42`
 - Reproducible model audit: `uv run python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible`
-- Source runtime hygiene: `uv run --with 'ruff>=0.15.6,<0.16' ruff check GEO-INFER-*/src --select F821,F823,E721,E722`
+- Lint contract: `uv run --with 'ruff>=0.15.6,<0.16' ruff check .`
 - Manuscript variables, figures, captions, and resolved copies: `uv run python manuscript/generate_research_artifacts.py`
 
 ## Repo-wide Change Workflow

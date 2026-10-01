@@ -4,11 +4,12 @@ This document covers Python environment configuration, package management, envir
 
 ## Python Requirements
 
-GEO-INFER requires Python 3.11+ (the workspace target). The framework uses `uv` as its package manager (not pip, conda, or poetry).
+GEO-INFER requires Python 3.11+ (pinned for the workspace in `.python-version`).
+The framework uses `uv` as its package manager (not pip, conda, or poetry).
 
 ```bash
 # Verify Python version
-python3 --version  # Must be 3.9+
+python3 --version  # Must be 3.11+
 
 # Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -17,85 +18,93 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv --version
 ```
 
-## Virtual Environment Setup
+## Workspace Setup
 
-Create an isolated environment for GEO-INFER development:
+The repository is a single uv workspace. The root `pyproject.toml` lists every
+`GEO-INFER-*` directory as a member, and the root `uv.lock` pins one resolution
+for all of them. `uv sync` creates `.venv/` and installs every workspace member
+in editable mode, so source changes take effect without reinstalling.
 
 ```bash
 # Navigate to the repository root
-cd /path/to/GEO-INFER
+cd /path/to/GEO_INFER
 
-# Create a virtual environment
-uv venv
+# Install every module with all optional extras (what CI uses)
+uv sync --all-packages --all-extras
 
-# Activate it (Linux/macOS)
-source .venv/bin/activate
+# Or install a single module and its workspace dependencies
+uv sync --package geo-infer-math
 
-# Activate it (Windows)
-.venv\Scripts\activate
-
-# Install foundation modules
-uv pip install -e ./GEO-INFER-MATH ./GEO-INFER-SPACE ./GEO-INFER-ACT
-
-# Install a module with development extras
-uv pip install -e "./GEO-INFER-AI[dev,docs]"
+# Run commands inside the environment without activating it
+uv run python -c "import geo_infer_math, geo_infer_space; print('ok')"
 ```
 
-Each module is installed in editable mode (`-e`) so that source changes take effect immediately without reinstallation.
+CI adds `--locked` so a stale `uv.lock` fails instead of being rewritten, and
+skips native-only extras (`cupy`, `mayavi`, `vaex`) that cannot build on its
+CPU runners; see `.github/workflows/ci.yml`.
 
-## Module Installation
+## Dependency Changes
 
-### Development Mode
+Dependencies are declared only in each module's `pyproject.toml`. Modules have
+no `setup.py`, `setup.cfg` or `requirements.txt`; the repository contract
+validator rejects them.
 
 ```bash
-# Single module
-uv pip install -e ./GEO-INFER-MATH
+# Add a dependency to a module and refresh uv.lock
+uv add --package geo-infer-math "numpy>=1.20.0"
 
-# Multiple modules
-uv pip install -e ./GEO-INFER-MATH ./GEO-INFER-SPACE ./GEO-INFER-BAYES ./GEO-INFER-ACT
+# Add an optional dependency to a named extra
+uv add --package geo-infer-math --optional spatial "geopandas>=0.13.0"
 
-# All modules (for integration testing)
-for dir in GEO-INFER-*/; do
-    [ -f "$dir/pyproject.toml" ] && uv pip install -e "./$dir"
-done
+# Re-resolve after editing a pyproject.toml by hand
+uv lock
+uv sync --all-packages --all-extras
 ```
 
-### Production Mode
+### Production Builds
 
-In production, install without editable mode for smaller footprint:
+Build wheels from the workspace instead of installing source trees:
 
 ```bash
-uv pip install ./GEO-INFER-MATH ./GEO-INFER-SPACE ./GEO-INFER-ACT
+# One module
+uv build --package geo-infer-math --out-dir dist/
+
+# Every module (the CI build-smoke job)
+python GEO-INFER-TEST/build_package_wheels.py --outdir dist/
 ```
 
 ## pyproject.toml Configuration
 
-Each module has a `pyproject.toml` defining its metadata and dependencies. The root `pyproject.toml` configures shared tooling (Black, isort, mypy, flake8).
+Each module's `pyproject.toml` defines its metadata, dependencies and optional
+extras. Lint, format and pytest configuration live once in the root
+`pyproject.toml` (`[tool.ruff]`, `[tool.ruff.lint]`,
+`[tool.pytest.ini_options]`).
 
 ```toml
-# Example: GEO-INFER-MATH/pyproject.toml
+# Excerpt: GEO-INFER-MATH/pyproject.toml
+[build-system]
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "geo-infer-math"
-version = "0.2.0"
-requires-python = ">=3.9"
+version = "0.3.0"
+license = "CC-BY-NC-SA-4.0"
+requires-python = ">=3.11"
 dependencies = [
-    "numpy>=1.24",
-    "scipy>=1.10",
-    "shapely>=2.0",
+    "numpy>=1.20.0",
+    "scipy>=1.7.0",
+    "pandas>=1.3.0",
+    "scikit-learn>=1.0.0",
+    "sympy>=1.9.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0",
-    "pytest-cov>=4.0",
-    "black>=23.0",
-    "isort>=5.12",
-    "mypy>=1.0",
-    "flake8>=6.0",
-]
-docs = [
-    "mkdocs>=1.5",
-    "mkdocs-material>=9.0",
+    "pytest>=6.2.0",
+    "pytest-cov>=2.12.0",
+    "ruff>=0.15.6,<0.16",
+    "mypy>=0.910",
 ]
 ```
 
@@ -337,68 +346,53 @@ config = load_config(f"config/{env}.yaml")
 
 ## Code Quality Tools
 
-All GEO-INFER modules share the same code quality configuration, defined in the root `pyproject.toml`.
-
-### Black (Formatter)
-
-Line length 88. Runs on all source files.
+Ruff is the only lint and format tool. It is configured once in the root
+`pyproject.toml`: `[tool.ruff]` targets `py311` with line length 88, and
+`[tool.ruff.lint]` selects `E4`, `E7`, `E9`, `F`, `UP`, `B` and `NPY`
+(`NPY002` is allowed in tests, examples and scripts). Ruff runs as an
+ephemeral tool through `uv run --with`, pinned to the repository range.
 
 ```bash
-# Format a single module
-black GEO-INFER-MATH/src/
+# Format a module
+uv run --with 'ruff>=0.15.6,<0.16' ruff format GEO-INFER-MATH/
 
 # Check formatting without changing files
-black --check GEO-INFER-MATH/src/
+uv run --with 'ruff>=0.15.6,<0.16' ruff format --check GEO-INFER-MATH/
 
-# Format the entire repo
-black GEO-INFER-*/src/
+# Lint a module (add --fix to apply safe fixes)
+uv run --with 'ruff>=0.15.6,<0.16' ruff check GEO-INFER-MATH/
 ```
 
-### isort (Import Sorting)
+### mypy (Optional Type Checking)
 
-Profile set to "black" for compatibility.
+The root `pyproject.toml` carries a strict `[tool.mypy]` configuration for
+local use; mypy is not a CI gate.
 
 ```bash
-# Sort imports for a module
-isort GEO-INFER-MATH/src/
-
-# Check without modifying
-isort --check-only GEO-INFER-MATH/src/
+uv run mypy GEO-INFER-MATH/src/
 ```
 
-### mypy (Type Checking)
+### CI Quality Gates
 
-Strict mode enabled. All function parameters and return values require type annotations.
+`.github/workflows/ci.yml` runs, among other gates:
 
 ```bash
-# Type-check a module
-mypy GEO-INFER-MATH/src/
+# Changed Python files only
+uv run --with 'ruff>=0.15.6,<0.16' ruff check <files>
+uv run --with 'ruff>=0.15.6,<0.16' ruff format --check <files>
 
-# Type-check with a specific config
-mypy --config-file pyproject.toml GEO-INFER-MATH/src/
+# Repository-wide lint contract (root pyproject [tool.ruff.lint])
+uv run --with 'ruff>=0.15.6,<0.16' ruff check .
 ```
 
-### flake8 (Linting)
-
-```bash
-# Lint a module
-flake8 GEO-INFER-MATH/src/
-```
-
-### Running All Quality Checks
-
-```bash
-# Full quality sweep for a module
-MODULE="GEO-INFER-MATH"
-black --check "$MODULE/src/" && \
-isort --check-only "$MODULE/src/" && \
-mypy "$MODULE/src/" && \
-flake8 "$MODULE/src/"
-```
+The complete command list is in root `AGENTS.md` "Standard Commands".
 
 ## CI/CD Environment Setup
 
-### GitHub Actions Example
+### GitHub Actions
+
+The repository's workflow is `.github/workflows/ci.yml`. A downstream project
+that needs PostGIS for integration tests can follow the same uv pattern:
 
 ```yaml
 # .github/workflows/test.yml
@@ -410,7 +404,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.11", "3.12"]
 
     services:
       postgres:
@@ -435,19 +429,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
 
-      - name: Create virtual environment
-        run: uv venv
-
-      - name: Install modules
-        run: |
-          source .venv/bin/activate
-          uv pip install -e ./GEO-INFER-MATH
-          uv pip install -e ./GEO-INFER-SPACE
-          uv pip install -e ./GEO-INFER-ACT
-          uv pip install pytest pytest-cov
+      - name: Install locked dependencies
+        run: uv sync --locked --python "$(command -v python)" --all-packages --all-extras
 
       - name: Run tests
         env:
@@ -456,17 +442,10 @@ jobs:
           GEO_INFER_DB_NAME: geo_infer_test
           GEO_INFER_DB_USER: geo_infer
           GEO_INFER_DB_PASSWORD: test_password
-        run: |
-          source .venv/bin/activate
-          uv run python GEO-INFER-TEST/run_unified_tests.py --category unit
+        run: uv run python GEO-INFER-TEST/run_unified_tests.py --category unit
 
       - name: Code quality
-        run: |
-          source .venv/bin/activate
-          uv pip install black isort mypy flake8
-          black --check GEO-INFER-MATH/src/
-          isort --check-only GEO-INFER-MATH/src/
-          flake8 GEO-INFER-MATH/src/
+        run: uv run --with 'ruff>=0.15.6,<0.16' ruff format --check .
 ```
 
 ### Docker Development Environment
@@ -481,19 +460,17 @@ RUN apt-get update && apt-get install -y \
     libproj-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 COPY . .
 
-RUN uv venv && \
-    . .venv/bin/activate && \
-    for dir in GEO-INFER-*/; do \
-        [ -f "$dir/pyproject.toml" ] && uv pip install -e "./$dir"; \
-    done
+RUN uv sync --locked --all-packages --all-extras \
+    --no-install-package cupy --no-install-package mayavi \
+    --no-install-package vaex --no-install-package vaex-core
 
 ENV PATH="/app/.venv/bin:$PATH"
-CMD ["python", "-m", "pytest", "GEO-INFER-TEST/"]
+CMD ["python", "GEO-INFER-TEST/run_unified_tests.py", "--category", "unit"]
 ```
 
 Build and run:

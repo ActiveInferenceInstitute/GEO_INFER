@@ -798,6 +798,7 @@ def render_root_readme(
         (
             "🏛️ Governance, Risk & Domain",
             [
+                "RISK",
                 "INSURANCE",
                 "METAGOV",
                 "NORMS",
@@ -817,6 +818,14 @@ def render_root_readme(
         ),
     ]
     name_set = {m.name for m in modules.values()}
+    themed = [f"GEO-INFER-{n}" for _, group in theme_groups for n in group]
+    unthemed = sorted(name_set - set(themed))
+    duplicated = sorted({n for n in themed if themed.count(n) > 1})
+    if unthemed or duplicated:
+        raise ValueError(
+            "README theme groups must list every module exactly once; "
+            f"missing={unthemed} duplicated={duplicated}"
+        )
     theme_rows = []
     for icon, group in theme_groups:
         present = [f"GEO-INFER-{n}" for n in group if f"GEO-INFER-{n}" in name_set]
@@ -943,7 +952,7 @@ the exact reproducible exception list.
 - Test contract: `uv run python GEO-INFER-TEST/validate_test_contracts.py --strict`
 - Model contract: `uv run python GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42`
 - Reproducible model audit: `uv run python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible`
-- Source runtime hygiene: `uv run --with 'ruff>=0.15.6,<0.16' ruff check GEO-INFER-*/src --select F821,F823,E721,E722`
+- Lint contract: `uv run --with 'ruff>=0.15.6,<0.16' ruff check .`
 - Manuscript variables, figures, captions, and resolved copies: `uv run python manuscript/generate_research_artifacts.py`
 
 ## Repo-wide Change Workflow
@@ -1038,7 +1047,7 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --h3-migration
 uv run python GEO-INFER-TEST/validate_test_contracts.py --strict
 uv run python GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42
 uv run python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible
-uv run --with 'ruff>=0.15.6,<0.16' ruff check GEO-INFER-*/src --select F821,F823,E721,E722
+uv run --with 'ruff>=0.15.6,<0.16' ruff check .
 gitleaks detect --source . --config .gitleaks.toml --redact --verbose
 uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check
 ```
@@ -1101,7 +1110,7 @@ def render_readme(
             "\n".join(f"- `{dep}`" for dep in module.dependencies)
             or "- Dependencies are declared in `pyproject.toml` or inherited from the workspace."
         )
-        install = f"uv pip install -e ./{module.name}"
+        install = f"uv sync --package {module.package.replace('_', '-')}"
         module_lines = f"""
 ## Module Metadata
 

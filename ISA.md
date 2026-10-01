@@ -207,7 +207,8 @@ isolation before attributing them to code.
 - A repository-wide fix wave applied the repo contract (real implementations
   instead of simplified/stub paths, deterministic RNG threading, passive
   library logging, H3 v4 API usage) across all modules; per-module outcomes are
-  recorded in `CHANGELOG.md` under `[Unreleased]`.
+  recorded in `CHANGELOG.md` under `[0.2.0]` (the September
+  `[Unreleased]` section was folded into that release).
 - The contract validators were run against the reconciled state:
   `GEO-INFER-TEST/validate_test_contracts.py --strict`,
   `GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42`,

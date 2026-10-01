@@ -30,8 +30,9 @@ The workflow processes gridded climate data through anomaly detection, trend ana
 ## Prerequisites
 
 ```bash
-uv pip install -e ./GEO-INFER-CLIMATE ./GEO-INFER-TIME ./GEO-INFER-BAYES ./GEO-INFER-SPACE
-uv pip install numpy pandas xarray matplotlib scipy
+# From the repository root: installs CLIMATE, TIME, BAYES, SPACE and the locked
+# numpy, pandas, xarray, matplotlib and scipy versions
+uv sync --all-packages --all-extras
 ```
 
 ## Section 1: Temperature Anomaly Detection
@@ -44,14 +45,13 @@ Temperature anomalies are departures from a climatological baseline. The standar
 import numpy as np
 import pandas as pd
 import xarray as xr
-from typing import Tuple
 
 
 def generate_temperature_dataset(
-    lat_range: Tuple[float, float] = (42.0, 49.0),
-    lon_range: Tuple[float, float] = (-125.0, -116.0),
+    lat_range: tuple[float, float] = (42.0, 49.0),
+    lon_range: tuple[float, float] = (-125.0, -116.0),
     spatial_resolution: float = 0.25,
-    years: Tuple[int, int] = (1970, 2024),
+    years: tuple[int, int] = (1970, 2024),
     seed: int = 42
 ) -> xr.Dataset:
     """Generate a synthetic gridded temperature dataset.
@@ -253,13 +253,13 @@ The Mann-Kendall test detects monotonic trends without assuming a specific distr
 
 ```python
 from scipy.stats import kendalltau
-from typing import Dict, Any
+from typing import Any
 
 
 def mann_kendall_trend(
     time_series: np.ndarray,
     alpha: float = 0.05
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Compute Mann-Kendall trend statistic for a single time series.
 
     Args:
@@ -384,10 +384,10 @@ from shapely.geometry import Point
 def create_downscaling_grids(
     coarse_ds: xr.Dataset,
     fine_resolution_deg: float = 0.01,
-    target_lat_range: Tuple[float, float] = (44.0, 45.0),
-    target_lon_range: Tuple[float, float] = (-123.0, -122.0),
+    target_lat_range: tuple[float, float] = (44.0, 45.0),
+    target_lon_range: tuple[float, float] = (-123.0, -122.0),
     seed: int = 42
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Create coarse and fine grids for downscaling.
 
     Generates synthetic elevation data as the covariate. In practice,
@@ -453,7 +453,7 @@ def downscale_temperature(
     fine_elev: np.ndarray,
     length_scale: float = 0.1,
     elev_scale: float = 0.001
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Downscale temperature using GP with elevation covariate.
 
     The feature space is [lat, lon, elevation * elev_scale], so the
@@ -563,7 +563,7 @@ def detect_change_points(
     annual_series: np.ndarray,
     min_segment_length: int = 10,
     penalty: float = 3.0
-) -> List[int]:
+) -> list[int]:
     """Detect change points in an annual temperature time series.
 
     Uses a simple PELT-like approach: iteratively finds the split point
@@ -631,7 +631,7 @@ def project_with_uncertainty(
     projection_years: int = 30,
     n_samples: int = 1000,
     seed: int = 42
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """Project temperature trend forward with bootstrap uncertainty.
 
     Fits a linear trend to the most recent 30 years, then projects

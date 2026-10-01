@@ -3,9 +3,12 @@
 ## Code Quality Standards
 
 - Use professional, functional, modular, concise code
-- Follow PEP 8 with Black formatting and isort import ordering
-- Apply ruff for linting (`ruff check --fix`)
-- Use type hints for all function parameters and return values
+- Follow PEP 8; Ruff is the only lint and format tool, configured in the root
+  `pyproject.toml`:
+  `uv run --with 'ruff>=0.15.6,<0.16' ruff check .` and
+  `uv run --with 'ruff>=0.15.6,<0.16' ruff format .`
+- Use type hints for all function parameters and return values, in modern
+  syntax (PEP 585/604: `list[int]`, `dict[str, Any]`, `X | None`)
 - Write clearly-commented, interpretable code
 - Implement proper error handling and structured logging
 
@@ -39,8 +42,10 @@ class Engine:
 
 ## Dependency Management
 
-- Use `uv` for all package operations (`uv pip install`, `uv run python`)
-- Declare dependencies in `pyproject.toml` under `[project.dependencies]`
+- Use `uv` for all package operations (`uv sync --all-packages --all-extras`,
+  `uv add --package geo-infer-<module> <dep>`, `uv run python`)
+- Declare dependencies only in the module's `pyproject.toml` under
+  `[project.dependencies]`; the root `uv.lock` pins the resolution
 - Use optional dependency groups for heavy/specialised packages:
 
 ```toml
@@ -78,6 +83,25 @@ def load_config(path: str = "config/default.yaml") -> dict:
     # Override with environment variables
     config["api_key"] = os.environ.get("GEO_INFER_API_KEY", config.get("api_key", ""))
     return config
+```
+
+## Randomness
+
+- Library code never draws from the global `numpy.random` stream; ruff `NPY002`
+  enforces this outside tests, examples and scripts
+- Stochastic functions accept a `seed`/`rng` argument and resolve it through
+  the module's `utils/rng.py` `resolve_rng`, which returns a
+  `numpy.random.Generator` (`numpy.random.RandomState` is rejected)
+
+```python
+import numpy as np
+
+from geo_infer_math.utils.rng import SeedLike, resolve_rng
+
+
+def sample_noise(n: int, seed: SeedLike = None) -> np.ndarray:
+    rng = resolve_rng(seed)
+    return rng.normal(size=n)
 ```
 
 ## Mathematical Rigor
@@ -125,18 +149,18 @@ async def fetch_data(source_id: str) -> dict[str, Any]:
 ## Type Safety
 
 - Use type hints everywhere: parameters, returns, class attributes
-- Run `mypy --strict` on analytical core modules (MATH, ACT, BAYES)
+- Run `uv run mypy GEO-INFER-MODULE/src/` against the root `[tool.mypy]`
+  configuration when changing typed interfaces (not a CI gate)
 - Use `TypeVar`, `Generic`, `Protocol` for complex type relationships
 - Use runtime validation with Pydantic models for API boundaries
 
 ```python
-from typing import Optional
 from pydantic import BaseModel, Field
 
 class AnalysisResult(BaseModel):
     score: float = Field(ge=0.0, le=1.0)
     confidence: float = Field(ge=0.0, le=1.0)
-    metadata: Optional[dict[str, str]] = None
+    metadata: dict[str, str] | None = None
 ```
 
 ## Error Handling

@@ -28,16 +28,16 @@ uv pip list | grep geo-infer
 which python
 
 # Try importing the base package
-python -c "import geo_infer_space; print(geo_infer_space.__file__)"
+uv run python -c "import geo_infer_space; print(geo_infer_space.__file__)"
 ```
 
 **Common causes and fixes:**
 
 | Error Message | Cause | Fix |
 |--------------|-------|-----|
-| `No module named 'geo_infer_space'` | Module not installed | `uv pip install -e ./GEO-INFER-SPACE` |
-| `No module named 'h3'` | Missing system dependency | `uv pip install h3` |
-| `ImportError: cannot import name 'latlng_to_cell'` | H3 v3 installed instead of v4 | `uv pip install "h3>=4.5.0,<5"` |
+| `No module named 'geo_infer_space'` | Module not installed, or command run outside the workspace environment | `uv sync --all-packages --all-extras`, then run through `uv run` |
+| `No module named 'h3'` | Environment not synced | `uv sync --all-packages --all-extras` |
+| `ImportError: cannot import name 'latlng_to_cell'` | H3 v3 installed instead of the locked v4 | `uv sync --all-packages --all-extras` (restores `h3>=4.5.0,<5` from `uv.lock`) |
 | `No module named 'tensorflow_probability'` | Optional dependency | Install TFP or use NumPy fallback |
 
 GEO-INFER modules use graceful degradation for optional dependencies. If you see a log message like `"TensorFlow Probability not installed; using NumPy/SciPy GP backend."`, the module is working correctly with the fallback.
@@ -144,8 +144,8 @@ uv pip list --format=columns
 
 | Conflict | Root Cause | Fix |
 |----------|-----------|-----|
-| numpy version mismatch | Module A needs numpy>=1.24, B pins <1.24 | Update both modules |
-| GDAL binding mismatch | System GDAL differs from Python binding | `uv pip install GDAL==$(gdal-config --version)` |
+| numpy version mismatch | Module A needs numpy>=1.24, B pins <1.24 | Update both module `pyproject.toml` files, then `uv lock` |
+| GDAL binding mismatch | System GDAL differs from Python binding | `uv run --with "GDAL==$(gdal-config --version)" ...` (GDAL is not a workspace dependency) |
 | shapely 1.x vs 2.x | API changed between major versions | Use `shapely>=2.0` |
 
 ## Step-by-Step Diagnosis Workflow

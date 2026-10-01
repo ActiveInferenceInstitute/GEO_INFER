@@ -59,7 +59,7 @@ OPS, INTRA, GIT, TEST, EXAMPLES ──→ Support all modules
 
 All spatial operations must use H3 v4:
 
-| v4 Method | Deprecated v3 Method |
+| v4 Method | Removed v3 method (do not use) |
 |-----------|---------------------|
 | `h3.latlng_to_cell()` | ~~`h3.geo_to_h3()`~~ |
 | `h3.cell_to_latlng()` | ~~`h3.h3_to_geo()`~~ |
@@ -137,15 +137,15 @@ projections = climate.project(scenario='rcp8.5', target_year=2050)
 ## Error Propagation
 
 ```python
-from geo_infer_math.core import GeoInferError
+from geo_infer_math.utils.exceptions import MathError
 
 try:
     result = external_module.process(data)
-except GeoInferError:
+except MathError:
     raise  # Re-raise framework errors
 except Exception as e:
     logger.error("Integration error with %s: %s", module_name, e)
-    raise IntegrationError(f"Failed to process via {module_name}") from e
+    raise RuntimeError(f"Failed to process via {module_name}") from e
 ```
 
 ## Best Practices

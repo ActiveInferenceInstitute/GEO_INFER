@@ -34,9 +34,8 @@ stats.print_stats(20)  # top 20 by cumulative time
 
 ### line_profiler for Hot Loops
 
-```bash
-uv pip install line_profiler
-```
+`line_profiler` is not a workspace dependency; load it for one run with
+`uv run --with line_profiler` (see below).
 
 ```python
 # Decorate the function you suspect is slow
@@ -53,7 +52,7 @@ def compute_spatial_weights(coordinates: np.ndarray, bandwidth: float) -> np.nda
 Run with:
 
 ```bash
-kernprof -l -v my_script.py
+uv run --with line_profiler kernprof -l -v my_script.py
 ```
 
 ### memory_profiler for Spatial Data
