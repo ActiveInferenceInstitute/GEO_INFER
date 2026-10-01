@@ -12,21 +12,20 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from pathlib import Path
 from typing import Any
 
 import numpy as np
-
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
 def _operation() -> dict[str, Any]:
-    from geo_infer_ops import HealthChecker, HealthCheck, HealthStatus
-    from geo_infer_ops import Orchestrator, TaskStatus
+    from geo_infer_ops import (
+        HealthCheck,
+        HealthChecker,
+        HealthStatus,
+        Orchestrator,
+        TaskStatus,
+    )
 
     rng = np.random.default_rng(42)
 

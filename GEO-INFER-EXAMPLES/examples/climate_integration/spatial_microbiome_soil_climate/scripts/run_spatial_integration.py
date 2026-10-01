@@ -2,76 +2,34 @@
 """
 Spatial Microbiome-Climate-Soil Integration Script
 
-This script demonstrates the integration of multiple biological datasets using
-GEO-INFER-BIO and GEO-INFER-SPACE modules. It showcases minimal orchestration
-of powerful module capabilities to create sophisticated spatial biological analyses.
-
-Key Features:
-- Earth Microbiome Project data loading and processing
-- WorldClim climate data integration
-- ISRIC SoilGrids soil property integration
-- H3 spatial indexing for multi-scale analysis
-- Interactive visualization with multiple overlays
-- Real-world dataset integration
+Generates seeded synthetic microbiome, climate and soil datasets (following
+Earth Microbiome Project, WorldClim and ISRIC SoilGrids value ranges), indexes
+them on an H3 v4 grid and writes a multi-layer interactive folium map. Real
+dataset loaders live in ``geo_infer_bio.microbiome``, ``geo_infer_bio.climate``
+and ``geo_infer_bio.soil`` and require locally downloaded source files.
 
 Usage:
     python run_spatial_integration.py --h3_resolution=7 --output_format="interactive"
 """
 
-import sys
-import logging
 import argparse
 import json
-from pathlib import Path
+import logging
+import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
-# Add parent directories to path for module imports
-current_dir = Path(__file__).parent
-example_dir = current_dir.parent
-examples_root = example_dir.parent.parent.parent
-repo_root = examples_root.parent
-
-sys.path.insert(0, str(repo_root))
-sys.path.insert(0, str(repo_root / "GEO-INFER-BIO" / "src"))
-sys.path.insert(0, str(repo_root / "GEO-INFER-SPACE"))
+import folium
+import h3
+import numpy as np
+from folium.plugins import MarkerCluster
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("spatial_microbiome_integration")
-
-# Import GEO-INFER modules
-try:
-    from geo_infer_bio.microbiome import MicrobiomeDataLoader, MicrobiomeDataset
-    from geo_infer_bio.climate import ClimateDataProcessor, ClimateDataset
-    from geo_infer_bio.soil import SoilDataIntegrator, SoilDataset
-
-    # Import SPACE module H3 capabilities (using existing demo structure)
-    from h3_geospatial_demo import H3GeospatialDemo
-
-    HAS_GEO_INFER = True
-    logger.info("✅ Successfully imported GEO-INFER modules")
-except ImportError as e:
-    logger.error(f"❌ Failed to import GEO-INFER modules: {e}")
-    logger.warning("🔄 Continuing with demonstration mode...")
-    HAS_GEO_INFER = False
-
-# Standard scientific libraries
-try:
-    import pandas as pd
-    import numpy as np
-    import folium
-    from folium import plugins
-    from folium.plugins import MarkerCluster, HeatMap
-    import h3
-
-    HAS_DEPS = True
-except ImportError as e:
-    logger.error(f"❌ Missing required dependencies: {e}")
-    logger.info("📦 Install with: uv pip install pandas numpy folium h3-py")
-    HAS_DEPS = False
 
 
 class SpatialMicrobiomeIntegrator:
@@ -94,23 +52,6 @@ class SpatialMicrobiomeIntegrator:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.h3_resolution = h3_resolution
 
-        # Initialize data processors if available
-        if HAS_GEO_INFER:
-            self.microbiome_loader = MicrobiomeDataLoader()
-            self.climate_processor = ClimateDataProcessor()
-            self.soil_integrator = SoilDataIntegrator()
-
-            # Initialize H3 spatial processor using existing SPACE demo
-            self.h3_demo = H3GeospatialDemo(
-                output_dir=str(self.output_dir / "h3_spatial"),
-                h3_resolution=h3_resolution,
-            )
-        else:
-            self.microbiome_loader = None
-            self.climate_processor = None
-            self.soil_integrator = None
-            self.h3_demo = None
-
         logger.info("🚀 SpatialMicrobiomeIntegrator initialized")
         logger.info(f"📁 Output directory: {self.output_dir}")
         logger.info(f"🔷 H3 resolution: {h3_resolution}")
@@ -121,7 +62,10 @@ class SpatialMicrobiomeIntegrator:
         max_samples: int = 1000,
     ) -> dict[str, Any]:
         """
-        Load all biological datasets for the specified region.
+        Generate seeded synthetic microbiome, climate and soil datasets.
+
+        The datasets follow Earth Microbiome Project, WorldClim and SoilGrids
+        value ranges; no external data are downloaded.
 
         Args:
             region_bbox: Bounding box (min_lon, min_lat, max_lon, max_lat)
@@ -130,63 +74,7 @@ class SpatialMicrobiomeIntegrator:
         Returns:
             Dictionary containing all loaded datasets
         """
-        logger.info("=== Loading Biological Datasets ===")
-
-        if not HAS_GEO_INFER:
-            return self._generate_demo_datasets(region_bbox, max_samples)
-
-        # Load microbiome data (Earth Microbiome Project)
-        logger.info("🧬 Loading Earth Microbiome Project data...")
-        microbiome_data = self.microbiome_loader.load_emp_data(
-            region_bbox=region_bbox,
-            sample_types=["soil", "sediment", "water"],
-            max_samples=max_samples,
-            quality_filters=True,
-        )
-        logger.info(f"✅ Loaded {len(microbiome_data)} microbiome samples")
-
-        # Get coordinates from microbiome samples
-        coordinates = microbiome_data.get_coordinates()
-
-        # Load climate data for those coordinates
-        logger.info("🌡️ Loading WorldClim climate data...")
-        climate_variables = [
-            "bio1",
-            "bio12",
-            "bio15",
-        ]  # Temperature, precipitation, seasonality
-        climate_data = self.climate_processor.load_worldclim_data(
-            variables=climate_variables, coordinates=coordinates, buffer_km=5.0
-        )
-        logger.info(f"✅ Loaded climate data: {climate_data.get_variables()}")
-
-        # Load soil data for those coordinates
-        logger.info("🌱 Loading ISRIC SoilGrids soil data...")
-        soil_properties = ["phh2o", "soc", "clay", "sand"]
-        soil_depths = ["0-5cm", "5-15cm"]
-        soil_data = self.soil_integrator.load_soilgrids_data(
-            coordinates=coordinates, properties=soil_properties, depths=soil_depths
-        )
-        logger.info(
-            f"✅ Loaded soil data: {soil_data.properties} at depths {soil_data.depths}"
-        )
-
-        datasets = {
-            "microbiome": microbiome_data,
-            "climate": climate_data,
-            "soil": soil_data,
-            "coordinates": coordinates,
-            "region_bbox": region_bbox,
-        }
-
-        logger.info("🎉 Successfully loaded all biological datasets")
-        return datasets
-
-    def _generate_demo_datasets(
-        self, region_bbox: tuple[float, float, float, float], max_samples: int
-    ) -> dict[str, Any]:
-        """Generate demo datasets when GEO-INFER modules are not available."""
-        logger.info("🔄 Generating demonstration biological datasets...")
+        logger.info("=== Generating Synthetic Biological Datasets ===")
 
         np.random.seed(42)  # For reproducible results
         min_lon, min_lat, max_lon, max_lat = region_bbox
@@ -211,7 +99,7 @@ class SpatialMicrobiomeIntegrator:
 
         for i, (center_lat, center_lon) in enumerate(cluster_centers):
             # Create dense clusters around each center
-            for j in range(samples_per_cluster):
+            for _ in range(samples_per_cluster):
                 # Add random offset within ~50km radius
                 lat_offset = np.random.normal(0, 0.5)  # ~50km at mid-latitudes
                 lon_offset = np.random.normal(0, 0.5)
@@ -243,9 +131,7 @@ class SpatialMicrobiomeIntegrator:
         }
 
         # Generate diversity metrics with cluster patterns
-        for i, (lat, lon) in enumerate(coordinates):
-            cluster_id = cluster_assignments[i]
-
+        for i, cluster_id in enumerate(cluster_assignments):
             # Different diversity patterns for each cluster
             if cluster_id == 0:  # NYC - Urban, lower diversity
                 base_diversity = 1.2
@@ -299,10 +185,10 @@ class SpatialMicrobiomeIntegrator:
         climate_coordinates = []
 
         # Add major climate stations near cluster centers
-        for i, (center_lat, center_lon) in enumerate(cluster_centers):
+        for center_lat, center_lon in cluster_centers:
             # Add 3-5 climate stations per region
             stations_per_region = np.random.randint(3, 6)
-            for j in range(stations_per_region):
+            for _ in range(stations_per_region):
                 # Climate stations within ~100km of center
                 lat_offset = np.random.normal(0, 1.0)
                 lon_offset = np.random.normal(0, 1.0)

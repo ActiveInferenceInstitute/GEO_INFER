@@ -131,11 +131,11 @@ class AgentConfiguration:
         errors = []
 
         # Check required fields
-        for field in schema.fields:
-            if field.required and (
-                field.name not in config or config[field.name] is None
+        for schema_field in schema.fields:
+            if schema_field.required and (
+                schema_field.name not in config or config[schema_field.name] is None
             ):
-                errors.append(f"Missing required field: {field.name}")
+                errors.append(f"Missing required field: {schema_field.name}")
 
         # Check field types and validation rules
         for field_name, field_value in config.items():
@@ -265,9 +265,9 @@ class AgentConfiguration:
         schema = cls.get_schema(agent_type)
         default_config = {}
 
-        for field in schema.fields:
-            if field.default_value is not None:
-                default_config[field.name] = field.default_value
+        for schema_field in schema.fields:
+            if schema_field.default_value is not None:
+                default_config[schema_field.name] = schema_field.default_value
 
         return default_config
 

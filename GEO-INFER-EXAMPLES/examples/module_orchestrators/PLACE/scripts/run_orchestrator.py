@@ -18,18 +18,14 @@ import os
 import shutil
 import sys
 import tempfile
+from collections.abc import Callable
 from datetime import date
 from pathlib import Path
 from typing import Any
-from collections.abc import Callable
 
 os.environ.setdefault("MPLBACKEND", "Agg")
 
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
 def _monthly_dates(start: date, count: int) -> list[str]:
@@ -75,7 +71,6 @@ class _SyntheticForestIntegrator:
 
 def _operation() -> dict[str, Any]:
     import numpy as np
-
     from geo_infer_place.locations.del_norte_county.forest_health_monitor import (
         ForestHealthMonitor,
     )

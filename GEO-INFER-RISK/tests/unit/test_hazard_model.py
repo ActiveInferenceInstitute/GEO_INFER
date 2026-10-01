@@ -143,6 +143,22 @@ class TestEnhancedHazardModel:
         assert "spatial_cluster_neighbours" not in untouched[0]["metadata"]
         assert untouched[0]["intensity"] == 10.0
 
+    def test_spatial_correlation_distance_converts_latitude_to_km(self) -> None:
+        """Five degrees of latitude (~555 km) lies outside the 100 km radius."""
+        events = [
+            {
+                "intensity": 10.0,
+                "location": {"latitude": lat, "longitude": 0.0},
+                "metadata": {},
+            }
+            for lat in (0.0, 5.0)
+        ]
+        self.model.spatial_interface = object()  # enable the correlation path
+        untouched = self.model._apply_spatial_correlation(events, {})
+
+        assert "spatial_cluster_neighbours" not in untouched[0]["metadata"]
+        assert untouched[0]["intensity"] == 10.0
+
     def test_base_earthquake_annualization_uses_record_span(self) -> None:
         """Base-class annual_rate divides by the actual year span, not 50."""
         import pandas as pd

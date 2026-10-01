@@ -5,8 +5,6 @@ spans, not by the number of distinct events (which over-estimates AAL
 whenever multiple events occur per year).
 """
 
-import logging
-
 import pandas as pd
 import pytest
 
@@ -40,23 +38,26 @@ def test_aal_exposure_years_positive_required(multi_event_table):
         calculate_aal(multi_event_table, exposure_years=-1)
 
 
-def test_aal_legacy_event_count_semantics_warns(multi_event_table, caplog):
-    """Legacy path (no exposure_years) warns and uses event-count semantics."""
-    with caplog.at_level(logging.WARNING, logger="geo_infer_risk"):
-        result = calculate_aal(multi_event_table)
-    assert result["total"] == pytest.approx(100.0)  # 400 / 4 events
-    assert any("exposure_years" in rec.message for rec in caplog.records)
+def test_aal_requires_exposure_years(multi_event_table):
+    """The removed event-count fallback: omitting exposure_years is an error."""
+    with pytest.raises(TypeError, match="exposure_years"):
+        calculate_aal(multi_event_table)  # type: ignore[call-arg]
+    with pytest.raises(ValueError, match="requires exposure_years"):
+        calculate_aal(multi_event_table, exposure_years=None)  # type: ignore[arg-type]
 
 
-def test_aal_exposure_years_matches_legacy_when_one_event_per_year():
-    """When each event spans one year, both semantics agree."""
+def test_aal_by_hazard_uses_exposure_years_not_event_counts():
+    """Per-hazard AAL shares the exposure-years denominator."""
     table = pd.DataFrame(
         {
-            "event_id": ["e1", "e2"],
-            "hazard_type": ["wind", "wind"],
-            "loss": [50.0, 150.0],
+            "event_id": ["e1", "e2", "e3"],
+            "hazard_type": ["wind", "wind", "flood"],
+            "loss": [50.0, 150.0, 30.0],
         }
     )
-    legacy = calculate_aal(table)
-    annual = calculate_aal(table, exposure_years=2.0)
-    assert legacy["total"] == pytest.approx(annual["total"])
+    result = calculate_aal(table, exposure_years=10.0)
+    assert result["total"] == pytest.approx(23.0)
+    assert result["by_hazard"] == {
+        "wind": pytest.approx(20.0),
+        "flood": pytest.approx(3.0),
+    }

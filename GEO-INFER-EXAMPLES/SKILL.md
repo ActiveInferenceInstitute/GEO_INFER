@@ -80,6 +80,26 @@ risk = EnhancedRiskEngine()
 ```
 
 ```python
+# Per-module orchestrator scripts
+# (examples/module_orchestrators/<MODULE>/scripts/run_orchestrator.py)
+# hand one real operation to the packaged engine; no sys.path setup needed.
+import sys
+
+from geo_infer_examples.orchestration import run_module_orchestrator
+
+
+def _operation() -> dict:
+    from geo_infer_math import haversine_distance  # module's public API
+
+    return {"km": haversine_distance(0.0, 0.0, 0.0, 1.0)}
+
+
+sys.exit(run_module_orchestrator("MATH", _operation))
+# Exit codes: 0 ok, 1 operation raised, 2 missing dependency (JSON names the
+# verified geo-infer-<module>[extra] from MODULE_EXTRAS).
+```
+
+```python
 # Import surface of this package
 from geo_infer_examples import ModuleOrchestrator, ExecutionStrategy, ModuleStatus
 from geo_infer_examples.core import ModuleOrchestrator as CoreOrchestrator

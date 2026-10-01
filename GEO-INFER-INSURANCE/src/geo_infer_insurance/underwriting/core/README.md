@@ -42,7 +42,7 @@ Core workspace within `GEO-INFER-INSURANCE`.
 - Module: `GEO-INFER-INSURANCE`
 - Package: `geo_infer_insurance`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-INSURANCE`
+- Install: `uv sync --package geo-infer-insurance`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module INSURANCE`
 
 ## Dependencies

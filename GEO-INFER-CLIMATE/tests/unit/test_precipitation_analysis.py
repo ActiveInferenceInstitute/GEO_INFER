@@ -33,7 +33,7 @@ class TestIDFCurve:
         }
         result = analyzer.fit_idf_curve(annual_maxima)
         assert len(result) == 4
-        for dur, entry in result.items():
+        for entry in result.values():
             rp_intensities = entry["return_period_intensities"]
             assert 2 in rp_intensities
             assert 100 in rp_intensities

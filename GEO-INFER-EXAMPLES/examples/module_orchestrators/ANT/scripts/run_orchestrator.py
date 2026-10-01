@@ -12,16 +12,10 @@ from __future__ import annotations
 
 import sys
 from itertools import permutations
-from pathlib import Path
 from typing import Any
 
 import numpy as np
-
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
 def _path_length(path: list[int], distances: np.ndarray) -> float:

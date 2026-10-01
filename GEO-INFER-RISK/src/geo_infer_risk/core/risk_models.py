@@ -182,7 +182,7 @@ class RiskModel:
             "Running %d Monte Carlo iterations", self.parameters.monte_carlo_iterations
         )
         results = []
-        for i in range(self.parameters.monte_carlo_iterations):
+        for _ in range(self.parameters.monte_carlo_iterations):
             # Generate random variations in hazard, vulnerability and exposure.
             hazard_variation = self._sample_component(self.hazard, len(geometry))
             vulnerability_variation = self._sample_component(

@@ -97,12 +97,10 @@ jobs:
 
           echo "Checking changed Python files:"
           printf '%s\n' "$changed_files"
-          # Keep this gate focused on runtime-invalid constructs. The full
-          # source hygiene contract below owns the repository-wide critical
-          # rules, while Ruff provides the deterministic formatting gate.
+          # Changed files are linted under the root pyproject [tool.ruff.lint]
+          # contract (no rule-selection override), then format-checked.
           git diff --no-renames --name-only -z --diff-filter=ACMRTUXB "$base_sha" "$HEAD_SHA" -- '*.py' | \
-            xargs -0 uv run --with 'ruff>=0.15.6,<0.16' ruff check \
-              --select F821,F823,E721,E722
+            xargs -0 uv run --with 'ruff>=0.15.6,<0.16' ruff check
           git diff --no-renames --name-only -z --diff-filter=ACMRTUXB "$base_sha" "$HEAD_SHA" -- '*.py' | \
             xargs -0 uv run --with 'ruff>=0.15.6,<0.16' ruff format --check
 
@@ -133,15 +131,10 @@ jobs:
 
       - name: Run source runtime hygiene
         run: |
-          uv run --with 'ruff>=0.15.6,<0.16' ruff check \
-            GEO-INFER-*/src --select F821,F823,E721,E722
-          # HYG-04: the module test suites carry no dead imports or unused
-          # locals; sanctioned availability probes are preserved as
-          # redundant-alias re-exports, which this rule set does not flag.
-          # GS19-03: the root tests/ tree gets the same hygiene surface and
-          # F823 (unused name redefined from an outer scope) joins the set.
-          uv run --with 'ruff>=0.15.6,<0.16' ruff check \
-            GEO-INFER-*/tests tests --select F401,F841,F811,F823
+          # The whole tree (src, tests, examples, scripts, manuscript) is
+          # clean under the root pyproject [tool.ruff.lint] contract
+          # (E4/E7/E9/F/UP/B/NPY); any new finding fails the gate.
+          uv run --with 'ruff>=0.15.6,<0.16' ruff check .
 
       - name: Install pinned gitleaks
         run: |

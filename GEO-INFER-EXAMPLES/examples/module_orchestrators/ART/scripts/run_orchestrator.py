@@ -15,16 +15,11 @@ from __future__ import annotations
 
 import os
 import sys
-from pathlib import Path
 from typing import Any
 
 os.environ.setdefault("MPLBACKEND", "Agg")
 
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
 def _image_stats(image: Any) -> dict[str, Any]:

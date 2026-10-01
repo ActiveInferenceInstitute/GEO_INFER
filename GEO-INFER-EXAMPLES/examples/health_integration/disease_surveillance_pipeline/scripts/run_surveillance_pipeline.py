@@ -693,7 +693,7 @@ def main():
 
     try:
         pipeline = DiseaseSurveillancePipeline()
-        results = pipeline.run_pipeline()
+        pipeline.run_pipeline()
 
         print("\n🎉 Disease surveillance pipeline completed successfully!")
         print(

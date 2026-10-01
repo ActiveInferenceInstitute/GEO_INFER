@@ -13,24 +13,22 @@ from __future__ import annotations
 
 import sys
 import tempfile
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 import numpy as np
-
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
 def _operation() -> dict[str, Any]:
     import pandas as pd
-
-    from geo_infer_sec import AuditEventSeverity, AuditEventType, AuditLogger
-    from geo_infer_sec import SecurityUtils
+    from geo_infer_sec import (
+        AuditEventSeverity,
+        AuditEventType,
+        AuditLogger,
+        SecurityUtils,
+    )
     from geo_infer_sec.utils.security_utils import SecurityConfig
 
     config = SecurityConfig(token_secret="synthetic-sec-demo-secret")

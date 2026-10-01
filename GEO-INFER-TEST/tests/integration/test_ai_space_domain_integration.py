@@ -10,18 +10,8 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point, Polygon
 
-from geo_infer_ag.core.agricultural_analysis import (
-    AgriculturalAnalysis,  # noqa: F401
-)
-from geo_infer_ag.models.crop_yield import CropYieldModel  # noqa: F401
 from geo_infer_ai.core.training import ModelTrainer
-from geo_infer_ai.models.predictive.spatial_predictor import (
-    SpatialPredictor,  # noqa: F401
-)
 from geo_infer_ai.preprocessing.feature_engineering import GeospatialFeatureEngineer
-from geo_infer_econ import EconomicModelingEngine  # noqa: F401
-from geo_infer_health.core import DiseaseHotspotAnalyzer  # noqa: F401
-from geo_infer_space.core.analytics import SpatialAnalyticsInterface  # noqa: F401
 from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
 
 
@@ -64,7 +54,7 @@ def sample_agricultural_data():
     points = []
     for _, field in fields.iterrows():
         bounds = field.geometry.bounds
-        for i in range(10):
+        for _ in range(10):
             lat = np.random.uniform(bounds[1], bounds[3])
             lng = np.random.uniform(bounds[0], bounds[2])
             points.append(

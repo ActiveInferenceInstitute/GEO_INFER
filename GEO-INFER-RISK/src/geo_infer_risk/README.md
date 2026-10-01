@@ -27,7 +27,7 @@ Geo Infer Risk workspace within `GEO-INFER-RISK`.
 - Module: `GEO-INFER-RISK`
 - Package: `geo_infer_risk`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-RISK`
+- Install: `uv sync --package geo-infer-risk`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module RISK`
 
 ## Dependencies

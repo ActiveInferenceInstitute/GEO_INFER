@@ -45,7 +45,7 @@ Unit workspace within `GEO-INFER-TEST`.
 - Module: `GEO-INFER-TEST`
 - Package: `geo_infer_test`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-TEST`
+- Install: `uv sync --package geo-infer-test`
 - Tests: `uv run python -m pytest GEO-INFER-TEST/tests/unit`
 
 ## Dependencies

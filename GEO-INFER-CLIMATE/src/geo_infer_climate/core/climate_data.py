@@ -13,6 +13,14 @@ import xarray as xr
 logger = logging.getLogger(__name__)
 
 
+def _detrend_series(ts: np.ndarray, x: np.ndarray) -> np.ndarray:
+    """Remove the least-squares linear trend of ``ts`` against ``x``."""
+    if np.isnan(ts).all():
+        return ts
+    trend = np.polyfit(x, ts, 1)
+    return ts - np.polyval(trend, x)
+
+
 class ClimateDataProcessor:
     """
     Process and validate climate datasets.
@@ -207,16 +215,9 @@ class ClimateDataProcessor:
                     # Detrend along time dimension
                     time_axis = dataset[var].dims.index("time")
                     x = np.arange(data.shape[time_axis])
-
                     # Fit and remove linear trend along time_axis
-                    def _detrend_1d(ts: np.ndarray) -> np.ndarray:
-                        if not np.isnan(ts).all():
-                            trend = np.polyfit(x, ts, 1)
-                            return ts - np.polyval(trend, x)
-                        return ts
-
                     detrended[var].values = np.apply_along_axis(
-                        _detrend_1d, time_axis, data
+                        _detrend_series, time_axis, data, x
                     )
 
         return detrended

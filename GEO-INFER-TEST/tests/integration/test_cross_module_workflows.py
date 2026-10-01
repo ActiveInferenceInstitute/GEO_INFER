@@ -15,6 +15,16 @@ from shapely.geometry import Point, Polygon
 
 
 # Test data fixtures
+
+
+def _linear_trend(series: pd.Series) -> float:
+    """Least-squares slope of a series against its sample index."""
+    values = pd.to_numeric(series, errors="coerce").dropna().to_numpy(dtype=float)
+    if len(values) < 2:
+        return 0.0
+    return float(np.polyfit(np.arange(len(values), dtype=float), values, 1)[0])
+
+
 @pytest.fixture
 def sample_spatial_temporal_data():
     """Sample spatial-temporal data for integration testing."""
@@ -24,7 +34,7 @@ def sample_spatial_temporal_data():
 
     # Generate spatial points
     points = []
-    for i in range(10):
+    for _ in range(10):
         lat = 37.7749 + np.random.normal(0, 0.01)
         lng = -122.4194 + np.random.normal(0, 0.01)
         points.append(Point(lng, lat))
@@ -283,9 +293,9 @@ class TestAgriculturalWorkflow:
         _field_centroids = metric_fields.geometry.centroid
 
         # 2. Temporal analysis of sensor data
-        _temporal_trends = sensor_data.groupby("field_id").agg(
+        temporal_trends = sensor_data.groupby("field_id").agg(
             {
-                "temperature": ["mean", "trend"],
+                "temperature": ["mean", _linear_trend],
                 "rainfall": "sum",
                 "soil_moisture": "mean",
                 "ndvi": "mean",
@@ -313,6 +323,10 @@ class TestAgriculturalWorkflow:
         assert len(field_analysis) == 2  # 2 fields
         assert "avg_temperature" in field_analysis.columns
         assert "yield_prediction" in field_analysis.columns
+        assert len(temporal_trends) == 2
+        assert np.isfinite(
+            temporal_trends[("temperature", "_linear_trend")].to_numpy()
+        ).all()
 
     def test_crop_health_monitoring(self, sample_agricultural_workflow_data):
         """Test crop health monitoring with spatial-temporal analysis."""

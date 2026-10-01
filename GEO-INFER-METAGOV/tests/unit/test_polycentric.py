@@ -1,10 +1,6 @@
 """Unit tests for polycentric governance system."""
 
 import pytest
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../src"))
 
 from geo_infer_metagov.core.polycentric import (
     PolycentricGovernanceSystem,

@@ -168,7 +168,7 @@ def main() -> int:
             )
         )
         return 2
-    except Exception as exc:  # noqa: BLE001 - demo entrypoint boundary
+    except Exception as exc:
         print(
             json.dumps(
                 {

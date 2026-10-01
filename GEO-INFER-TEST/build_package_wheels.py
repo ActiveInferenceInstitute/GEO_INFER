@@ -27,8 +27,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from import_probe import run_import_probe
-from validate_packaging import (  # noqa: F401
-    ContractReport,
+from validate_packaging import (
     distribution_name,
     module_dirs,
     parse_pyproject,

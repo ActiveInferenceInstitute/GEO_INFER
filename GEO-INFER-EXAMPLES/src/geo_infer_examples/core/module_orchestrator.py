@@ -638,7 +638,7 @@ class ModuleOrchestrator:
             results.update(group_results)
 
             # Update data with group results
-            for step_name, step_result in group_results.items():
+            for step_result in group_results.values():
                 if isinstance(step_result, dict) and "error" not in step_result:
                     current_data.update(step_result)
 

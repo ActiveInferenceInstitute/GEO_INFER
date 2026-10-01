@@ -328,34 +328,29 @@ def parse_crescent_city_hazard(
 
 def load_crescent_city_hazard(
     source: CrescentCitySeed = None,
-    *,
-    seed: CrescentCitySeed = None,
 ) -> CrescentCityHazardIntel:
     """Load Crescent City hazard policy from an injected mapping or JSON path.
 
     ``source`` accepts an injected mapping, an explicit local JSON path, or
-    ``None`` to load the reviewed package seed.  ``seed`` is a deprecated
-    keyword alias retained for compatibility and is used only when
-    ``source`` is ``None``.  A missing package seed or explicit path returns
-    an empty result.  Existing but malformed files fail closed.  The loader
+    ``None`` to load the reviewed package seed.  A missing package seed or
+    explicit path returns an empty result.  Existing but malformed files fail closed.  The loader
     never searches sibling projects, downloads data, or falls back to a live
     service.
     """
 
-    resolved = source if source is not None else seed
-    if isinstance(resolved, Mapping):
-        return parse_crescent_city_hazard(resolved)
-    if resolved is None:
+    if isinstance(source, Mapping):
+        return parse_crescent_city_hazard(source)
+    if source is None:
         # The reviewed package seed is the canonical bundled contract copy
         # owned by GEO-INFER-BAYES; RISK no longer ships its own duplicate.
         contract = load_crescent_city_contract()
         if contract is None:
             return _empty_hazard_intel()
         return parse_crescent_city_hazard(contract)
-    if not isinstance(resolved, (str, os.PathLike)):
+    if not isinstance(source, (str, os.PathLike)):
         raise TypeError("source must be a mapping, local JSON path, or None")
 
-    path = Path(resolved)
+    path = Path(source)
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:

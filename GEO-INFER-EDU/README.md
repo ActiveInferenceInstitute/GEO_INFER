@@ -21,7 +21,7 @@ Educational technology for geospatial systems including curriculum design, inter
 - Module: `GEO-INFER-EDU`
 - Package: `geo_infer_edu`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-EDU`
+- Install: `uv sync --package geo-infer-edu`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module EDU`
 
 ## Dependencies

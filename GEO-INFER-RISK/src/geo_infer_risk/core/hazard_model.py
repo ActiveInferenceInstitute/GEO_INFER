@@ -507,7 +507,7 @@ class EnhancedHazardModel:
         """Generate a batch of hazard events."""
         events = []
 
-        for i in range(batch_size):
+        for _ in range(batch_size):
             event = self._generate_single_event(region, time_period, climate_multiplier)
             events.append(event)
 
@@ -783,11 +783,14 @@ class EnhancedHazardModel:
             # 1 degree longitude ~ 111 km * cos(latitude).
             km_per_degree = 111.0
             coords_km = [
-                (lat, lon * km_per_degree * math.cos(math.radians(lat)))
+                (
+                    lat * km_per_degree,
+                    lon * km_per_degree * math.cos(math.radians(lat)),
+                )
                 for lat, lon in coords
             ]
 
-            for i, event in enumerate(events):
+            for i in range(len(events)):
                 neighbours = 0
                 lat_i, lon_i = coords_km[i]
                 for j, (lat_j, lon_j) in enumerate(coords_km):

@@ -20,7 +20,7 @@ from collections.abc import Iterator
 
 # Check if GEO-INFER-LOG is available
 try:
-    import geo_infer_log  # noqa: F401
+    import geo_infer_log  # noqa: F401 -- availability probe
 
     LOG_MODULE_AVAILABLE = True
 except ImportError:

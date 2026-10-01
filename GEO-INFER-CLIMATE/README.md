@@ -20,7 +20,7 @@ Climate modeling, weather analysis, and climate change impact assessment for geo
 - Module: `GEO-INFER-CLIMATE`
 - Package: `geo_infer_climate`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-CLIMATE`
+- Install: `uv sync --package geo-infer-climate`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module CLIMATE`
 
 ## Dependencies

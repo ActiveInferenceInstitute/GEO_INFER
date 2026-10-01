@@ -295,8 +295,8 @@ def run_command(
     )
     if crash_class and not _is_retry:
         print(
-            "CRASH-COMPLETION rc=%d — one bounded retry for crash-class failure"
-            % completed.returncode
+            f"CRASH-COMPLETION rc={completed.returncode} — one bounded retry for "
+            "crash-class failure"
         )
         # A killed interpreter's faulthandler banner (the crash reason and
         # the faulting import) sits at the HEAD of stderr; the default
@@ -364,8 +364,7 @@ def test_file_paths(path: Path, *, recursive: bool = True) -> list[Path]:
     """Return deterministic pytest file paths below *path*.
 
     Keeping file discovery in one helper prevents the module, category, and
-    performance runners from silently diverging as legacy test layouts are
-    migrated.
+    performance runners from silently diverging.
     """
     if not path.is_dir():
         return []
@@ -388,11 +387,9 @@ def has_test_files(path: Path) -> bool:
 def category_test_paths(module: Module, category: str) -> list[Path]:
     """Resolve a module's test files for one canonical category.
 
-    Unit tests in older modules may live directly under ``tests/`` or under
-    the legacy ``tests/tools/`` directory. Include those files alongside the
-    canonical unit directory so the category cannot silently omit behavior
-    tests, together with any nested test trees registered in
-    ``EXTRA_TEST_PATHS``. Integration, system, and performance remain bounded
+    The unit category covers ``tests/unit/``, test files directly under
+    ``tests/`` and any nested test trees registered in ``EXTRA_TEST_PATHS``,
+    so it cannot silently omit behavior tests. Integration, system, and performance remain bounded
     by their named directories. The ``slow`` category shares the unit path
     set; the marker filter applied by :func:`run_module_category_tests`
     selects the slow-marked complement.
@@ -403,7 +400,6 @@ def category_test_paths(module: Module, category: str) -> list[Path]:
     if path_category != "unit":
         return paths
     paths.extend(test_file_paths(module.test_path, recursive=False))
-    paths.extend(test_file_paths(module.test_path / "tools"))
     for extra_path in EXTRA_TEST_PATHS.get(module.name, {}).get(path_category, ()):
         paths.extend(test_file_paths(extra_path))
     return sorted(set(paths))

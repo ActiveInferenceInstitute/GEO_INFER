@@ -47,7 +47,7 @@ class TestWeibullPDF:
     def test_pdf_integrates_approximately_to_one(self, analyzer):
         speeds = np.linspace(0.01, 30, 1000)
         pdf = analyzer.weibull_pdf(speeds, k=2.0, c=7.0)
-        integral = float(np.trapz(pdf, speeds))
+        integral = float(np.sum(np.diff(speeds) * (pdf[1:] + pdf[:-1]) / 2.0))
         assert abs(integral - 1.0) < 0.01
 
     def test_zero_speed(self, analyzer):

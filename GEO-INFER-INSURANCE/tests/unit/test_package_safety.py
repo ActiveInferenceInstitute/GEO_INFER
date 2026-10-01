@@ -6,6 +6,7 @@ from built wheels (it still imports in the dev tree as an implicit namespace
 package). These tests pin the invariant for geo_infer_insurance.
 """
 
+import importlib
 from pathlib import Path
 
 PKG_ROOT = Path(__file__).resolve().parents[2] / "src" / "geo_infer_insurance"
@@ -27,9 +28,11 @@ def test_every_directory_with_modules_is_a_package() -> None:
 
 
 def test_underwriting_subpackages_importable() -> None:
-    import geo_infer_insurance.underwriting.core as core_pkg  # noqa: F401
-    import geo_infer_insurance.underwriting.utils as utils_pkg  # noqa: F401
-    import geo_infer_insurance.underwriting.models as models_pkg  # noqa: F401
+    for subpackage in ("core", "utils", "models"):
+        module = importlib.import_module(
+            f"geo_infer_insurance.underwriting.{subpackage}"
+        )
+        assert module.__name__.endswith(subpackage)
     import geo_infer_insurance.underwriting as uw_pkg
 
     for name in ("UnderwritingEngine", "create_underwriting_engine"):

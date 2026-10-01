@@ -315,12 +315,23 @@ class SimulationEngine:
         Load simulation checkpoint from file.
 
         Args:
-            filepath: Path to checkpoint file
+            filepath: Path to a checkpoint written by :meth:`save_checkpoint`.
+
+        Raises:
+            ValueError: If the checkpoint lacks the ``config`` or ``rng_state``
+                snapshot required for a bit-reproducible resume.
         """
         import json
 
         with open(filepath) as f:
             checkpoint = json.load(f)
+
+        missing = [key for key in ("config", "rng_state") if key not in checkpoint]
+        if missing:
+            raise ValueError(
+                f"checkpoint {filepath} lacks {', '.join(missing)}; only "
+                "checkpoints written by save_checkpoint can be resumed"
+            )
 
         self.current_time = checkpoint["current_time"]
         self.state = SimulationState(checkpoint["state"])
@@ -330,24 +341,14 @@ class SimulationEngine:
 
         # Restore the embedded configuration and the exact RNG stream state so
         # a resumed run is bit-reproducible from the checkpoint.
-        saved_config = checkpoint.get("config")
-        if saved_config is not None:
-            self.config = SimulationConfig(
-                time_step=saved_config["time_step"],
-                max_time=saved_config["max_time"],
-                output_interval=saved_config["output_interval"],
-                random_seed=saved_config["random_seed"],
-            )
-
-        rng_state = checkpoint.get("rng_state")
-        if rng_state is not None:
-            self.rng.bit_generator.state = rng_state
-        else:
-            # Legacy checkpoint without an RNG snapshot: fall back to seeding
-            # from the saved random_seed (deterministic, but restarts stream).
-            self.rng = np.random.default_rng(
-                self.config.random_seed if saved_config else None
-            )
+        saved_config = checkpoint["config"]
+        self.config = SimulationConfig(
+            time_step=saved_config["time_step"],
+            max_time=saved_config["max_time"],
+            output_interval=saved_config["output_interval"],
+            random_seed=saved_config["random_seed"],
+        )
+        self.rng.bit_generator.state = checkpoint["rng_state"]
 
         logger.info(f"Checkpoint loaded from {filepath}")
 

@@ -9,7 +9,7 @@ __version__ = "0.3.0"
 __author__ = "GEO-INFER Team"
 __license__ = "CC-BY-NC-SA-4.0"
 
-from typing import Any, Optional
+from typing import Any
 
 from geo_infer_risk.civic_intel import (
     CRESCENT_CITY_GEO_INTEL_SCHEMA,
@@ -31,35 +31,20 @@ from geo_infer_risk.civic_intel import (
 # core/risk_engine) guard it and degrade gracefully when the extra is not
 # installed.
 from geo_infer_risk.core import (
+    CatastropheConfig,
+    EnhancedCatastropheModel,
+    EnhancedExposureModel,
+    EnhancedHazardModel,
     EnhancedRiskEngine,
-    RiskModel,
-    HazardModel,
-    VulnerabilityModel,
+    EnhancedVulnerabilityModel,
     ExposureModel,
+    HazardModel,
     MultiHazardInteractionMatrix,
+    RiskModel,
+    VulnerabilityModel,
     calculate_compound_exceedance_probability,
 )
-
-# Utility helpers (also re-exported for `from geo_infer_risk import ...`).
-from geo_infer_risk.utils import (
-    config_loader as config_loader,
-    risk_metrics as risk_metrics,
-    validation as validation,
-)
-
-
-# Enhanced core components (hazard/vulnerability/exposure/catastrophe model classes).
-from geo_infer_risk.core import (
-    EnhancedRiskEngine,  # noqa: F811  (re-export of the same class)
-    EnhancedHazardModel as EnhancedHazardModel,
-    EnhancedVulnerabilityModel as EnhancedVulnerabilityModel,
-    EnhancedExposureModel as EnhancedExposureModel,
-    EnhancedCatastropheModel as EnhancedCatastropheModel,
-    CatastropheConfig as CatastropheConfig,
-    MultiHazardInteractionMatrix,  # noqa: F811
-)
-
-ENHANCED_CORE_AVAILABLE = True
+from geo_infer_risk.utils import config_loader, risk_metrics, validation
 
 # Define module level constants
 DEFAULT_CONFIDENCE_LEVEL = 0.95
@@ -106,7 +91,11 @@ __all__ = [
     "HazardModel",
     "VulnerabilityModel",
     "ExposureModel",
+    "EnhancedHazardModel",
+    "EnhancedVulnerabilityModel",
     "EnhancedExposureModel",
+    "EnhancedCatastropheModel",
+    "CatastropheConfig",
     "MultiHazardInteractionMatrix",
     "calculate_compound_exceedance_probability",
     "DEFAULT_CONFIDENCE_LEVEL",
@@ -115,4 +104,7 @@ __all__ = [
     "load_crescent_city_hazard",
     "parse_crescent_city_hazard",
     "create_risk_analysis",
+    "config_loader",
+    "risk_metrics",
+    "validation",
 ]

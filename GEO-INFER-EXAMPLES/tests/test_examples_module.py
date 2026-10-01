@@ -2,12 +2,7 @@
 Unit tests for GEO-INFER-EXAMPLES module.
 """
 
-import pytest
 from pathlib import Path
-import sys
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from geo_infer_examples import __version__
 
@@ -64,7 +59,3 @@ class TestExamplesStructure:
         )
         assert orchestrators_dir.exists()
         assert orchestrators_dir.is_dir()
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])

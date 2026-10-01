@@ -12,22 +12,15 @@ simulation. All work goes through the real ``geo_infer_risk`` public API.
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 from typing import Any
 
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
 def _operation() -> dict[str, Any]:
     import geopandas as gpd
     import h3
     import numpy as np
-    from shapely.geometry import Polygon
-
     from geo_infer_risk import RiskModel
     from geo_infer_risk.core.risk_models import (
         BuildingVulnerabilityModel,
@@ -35,6 +28,7 @@ def _operation() -> dict[str, Any]:
         PopulationExposureModel,
         RiskParameters,
     )
+    from shapely.geometry import Polygon
 
     rng = np.random.default_rng(42)
 

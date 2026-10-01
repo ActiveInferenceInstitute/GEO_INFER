@@ -41,6 +41,7 @@ SUBSET = (
     "EDU",
     "EMERGENCY",
     "ENERGY",
+    "REQ",
 )
 
 

@@ -5,7 +5,7 @@ validation shared across the risk, hazard, vulnerability, and exposure
 models.
 """
 
-from geo_infer_risk.utils import config_loader, risk_metrics, validation  # noqa: F401
+from geo_infer_risk.utils import config_loader, risk_metrics, validation
 from geo_infer_risk.utils.rng import (
     SeedLike,
     derive_int_seed,

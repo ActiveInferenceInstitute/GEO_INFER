@@ -8,17 +8,18 @@ Geo Infer Examples workspace within `GEO-INFER-EXAMPLES`.
 - `models/`
 - `workflows/`
 - `__init__.py`
+- `orchestration.py`
 
 ## Public Interface
 
-- No public Python symbols are defined directly in this directory.
+- `orchestration.py:run_module_orchestrator` (function)
 
 ## Module Metadata
 
 - Module: `GEO-INFER-EXAMPLES`
 - Package: `geo_infer_examples`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-EXAMPLES`
+- Install: `uv sync --package geo-infer-examples`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module EXAMPLES`
 
 ## Dependencies

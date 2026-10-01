@@ -13,14 +13,9 @@ with ``RoutingEngine.route``, model traffic flow on one segment with
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 from typing import Any
 
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
 def _operation() -> dict[str, Any]:

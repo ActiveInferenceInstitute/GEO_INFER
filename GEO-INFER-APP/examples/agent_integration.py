@@ -7,18 +7,17 @@ This script demonstrates how to integrate GEO-INFER-AGENT with
 the GEO-INFER-APP for building intelligent geospatial applications.
 """
 
-import os
 import asyncio
 import logging
+import os
+
+from geo_infer_app.api.agent_api import AgentManager
+from geo_infer_app.components.agent_widget import WebAgentWidget
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-
-# Import agent API
-from geo_infer_app.api.agent_api import AgentManager
-from geo_infer_app.components.agent_widget import WebAgentWidget
 
 # Set paths for agent configuration and state
 CONFIG_DIR = os.path.join(os.path.dirname(__file__), "../config/agents")

@@ -15,7 +15,7 @@ Integration workspace within `GEO-INFER-SIM`.
 - Module: `GEO-INFER-SIM`
 - Package: `geo_infer_sim`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-SIM`
+- Install: `uv sync --package geo-infer-sim`
 - Tests: `uv run python -m pytest GEO-INFER-SIM/tests/integration`
 
 ## Dependencies

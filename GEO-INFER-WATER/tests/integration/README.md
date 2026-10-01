@@ -15,7 +15,7 @@ Integration workspace within `GEO-INFER-WATER`.
 - Module: `GEO-INFER-WATER`
 - Package: `geo_infer_water`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-WATER`
+- Install: `uv sync --package geo-infer-water`
 - Tests: `uv run python -m pytest GEO-INFER-WATER/tests/integration`
 
 ## Dependencies

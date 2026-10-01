@@ -22,7 +22,7 @@ Unit workspace within `GEO-INFER-APP`.
 - Module: `GEO-INFER-APP`
 - Package: `geo_infer_app`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-APP`
+- Install: `uv sync --package geo-infer-app`
 - Tests: `uv run python -m pytest GEO-INFER-APP/tests/unit`
 
 ## Dependencies

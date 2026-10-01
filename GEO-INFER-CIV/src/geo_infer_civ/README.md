@@ -16,7 +16,7 @@ Geo Infer Civ workspace within `GEO-INFER-CIV`.
 - Module: `GEO-INFER-CIV`
 - Package: `geo_infer_civ`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-CIV`
+- Install: `uv sync --package geo-infer-civ`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module CIV`
 
 ## Dependencies

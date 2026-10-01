@@ -6,11 +6,6 @@ Demonstrates multi-hazard monitoring using the real GEO-INFER-EMERGENCY
 public API: per-hazard threat assessment via SituationalAwareness,
 multi-source data fusion, and consequence-aware resource allocation via
 ResourceDeployer.
-
-Note: the legacy "HazardAssessment / VulnerabilityAnalyzer / ImpactPredictor /
-EarlyWarningSystem / RiskMapper" classes referenced in early drafts of this
-example never existed in the package; this example now exercises the actual
-module API.
 """
 
 from geo_infer_emergency import SituationalAwareness, ResourceDeployer
@@ -22,25 +17,40 @@ HAZARDS = [
     {
         "name": "Wildfire",
         "hazard": {"type": "wildfire", "intensity": 0.8},
-        "affected_area": {"population": 25000, "size_sq_km": 50.0},
+        "affected_area": {"area_sq_km": 50.0},
         "assets_at_risk": [
-            {"id": "subdivision_1", "type": "residential", "value": 500e6},
+            {
+                "id": "subdivision_1",
+                "type": "residential",
+                "population": 25000,
+                "value": 500e6,
+            },
         ],
     },
     {
         "name": "Flood",
         "hazard": {"type": "flood", "intensity": 0.6},
-        "affected_area": {"population": 18000, "size_sq_km": 30.0},
+        "affected_area": {"area_sq_km": 30.0},
         "assets_at_risk": [
-            {"id": "industrial_park", "type": "industrial", "value": 300e6},
+            {
+                "id": "industrial_park",
+                "type": "industrial",
+                "population": 18000,
+                "value": 300e6,
+            },
         ],
     },
     {
         "name": "Earthquake",
         "hazard": {"type": "earthquake", "intensity": 0.5},
-        "affected_area": {"population": 40000, "size_sq_km": 120.0},
+        "affected_area": {"area_sq_km": 120.0},
         "assets_at_risk": [
-            {"id": "hospital_1", "type": "critical_infrastructure", "value": 800e6},
+            {
+                "id": "hospital_1",
+                "type": "critical_infrastructure",
+                "population": 40000,
+                "value": 800e6,
+            },
         ],
     },
 ]

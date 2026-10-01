@@ -32,7 +32,7 @@ Api workspace within `GEO-INFER-BIO`.
 - Module: `GEO-INFER-BIO`
 - Package: `geo_infer_bio`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-BIO`
+- Install: `uv sync --package geo-infer-bio`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module BIO`
 
 ## Dependencies

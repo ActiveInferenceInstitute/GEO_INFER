@@ -146,7 +146,7 @@ class TestMultiLevelGovernanceFramework:
         )
 
         assert len(structure.information_flows) > 0
-        for entity_id, flows in structure.information_flows.items():
+        for flows in structure.information_flows.values():
             assert isinstance(flows, list)
 
     def test_decision_escalation_rules(
@@ -161,7 +161,7 @@ class TestMultiLevelGovernanceFramework:
         )
 
         assert len(structure.decision_escalation_rules) > 0
-        for domain, rules in structure.decision_escalation_rules.items():
+        for rules in structure.decision_escalation_rules.values():
             assert "implementation_level" in rules
             assert "escalation_condition" in rules
 

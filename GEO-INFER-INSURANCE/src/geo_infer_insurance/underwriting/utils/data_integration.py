@@ -513,7 +513,7 @@ class DataIntegrationManager:
 
         # Check each data source
         source_status = {}
-        for name, source in self.data_sources.items():
+        for name in self.data_sources:
             try:
                 # Test connectivity
                 test_data = self.get_data(name, {"test": True})

@@ -10,11 +10,12 @@ import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from pathlib import Path
-
-from typing import Any
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
+from .log_integration import LogIntegration
+from .test_discoverer import ALL_MODULES
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +25,6 @@ logger = logging.getLogger(__name__)
 # run_unified_tests.py's PROJECT_ROOT behavior.
 _MODULE_ROOT = Path(__file__).resolve().parents[3]
 _REPO_ROOT = _MODULE_ROOT.parent
-
-from .log_integration import LogIntegration
-from .test_discoverer import ALL_MODULES
 
 
 @dataclass

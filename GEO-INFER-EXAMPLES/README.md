@@ -12,7 +12,6 @@ Comprehensive collection of working examples and tutorials demonstrating cross-m
 - `scripts/`
 - `src/`
 - `tests/`
-- `demo_orchestrator.py`
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
@@ -26,7 +25,7 @@ Comprehensive collection of working examples and tutorials demonstrating cross-m
 - Module: `GEO-INFER-EXAMPLES`
 - Package: `geo_infer_examples`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-EXAMPLES`
+- Install: `uv sync --package geo-infer-examples`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module EXAMPLES`
 
 ## Dependencies

@@ -6,24 +6,20 @@ This is the actual Streamlit application that gets called by the launcher.
 It contains only the UI components and data visualization.
 """
 
-import sys
-import os
+import json
 import logging
 from datetime import datetime
 
-# Add parent directory to path to import from scripts
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-# Import the AreaStudyConsoleViewer for data loading
-from show_results import AreaStudyConsoleViewer
-
-# Import required libraries for the dashboard
-import streamlit as st
-import pandas as pd
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import streamlit as st
 from plotly.subplots import make_subplots
+
+# ``streamlit run`` puts this script's directory on sys.path, so the sibling
+# console viewer is importable directly.
+from show_results import AreaStudyConsoleViewer
 
 
 def setup_logging():
@@ -44,10 +40,6 @@ class StreamlitAreaStudyDashboard:
 
     def create_dashboard(self):
         """Create the Streamlit dashboard."""
-        import streamlit as st
-        import pandas as pd
-        import plotly.express as px
-
         # Set page configuration
         st.set_page_config(
             page_title="Area Study Dashboard",
@@ -91,17 +83,6 @@ class StreamlitAreaStudyDashboard:
         # Check if data is loaded
         data_status = "✅ Data Loaded" if self.viewer.data else "❌ No Data"
         st.sidebar.markdown(f"**Data:** {data_status}")
-
-        # Check if all dependencies are available
-        try:
-            import pandas as pd
-            import numpy as np
-            import plotly.express as px
-
-            deps_status = "✅ Dependencies OK"
-        except ImportError:
-            deps_status = "❌ Missing Dependencies"
-        st.sidebar.markdown(f"**Dependencies:** {deps_status}")
 
         # Auto-refresh info
         st.sidebar.markdown("---")
@@ -161,14 +142,6 @@ class StreamlitAreaStudyDashboard:
                 help="Choose the base map layer",
             )
 
-            zoom_level = st.slider(
-                "Zoom Level",
-                min_value=10,
-                max_value=18,
-                value=13,
-                help="Adjust map zoom level",
-            )
-
         with col2:
             st.markdown("**Data Layers**")
             show_technical = st.checkbox(
@@ -196,9 +169,6 @@ class StreamlitAreaStudyDashboard:
             )
             show_boundaries = st.checkbox(
                 "🗺️ Boundaries", value=True, help="Show study area boundaries"
-            )
-            show_heatmap = st.checkbox(
-                "🌡️ Heat Map", value=False, help="Show density heat map overlay"
             )
 
         # Advanced Filtering Section
@@ -294,8 +264,8 @@ class StreamlitAreaStudyDashboard:
                 lons = [p["lon"] for p in all_points]
 
                 col1, col2, col3 = st.columns(3)
-                col1.metric("Latitude Range", ".4f")
-                col2.metric("Longitude Range", ".4f")
+                col1.metric("Latitude Range", f"{max(lats) - min(lats):.4f}")
+                col2.metric("Longitude Range", f"{max(lons) - min(lons):.4f}")
                 col3.metric("Total Points", len(all_points))
 
                 # Point density calculation
@@ -303,36 +273,40 @@ class StreamlitAreaStudyDashboard:
                     (max(lats) - min(lats)) * (max(lons) - min(lons)) * 111 * 111
                 )  # Rough km² calculation
                 density = len(all_points) / area_km2 if area_km2 > 0 else 0
-                st.metric("Point Density", ".2f")
+                st.metric("Point Density", f"{density:.2f} per km²")
 
-        # Export and Actions Section
-        st.subheader("📤 Export & Actions")
+        # Export the filtered layers as GeoJSON ([lng, lat] coordinate order)
+        st.subheader("📤 Export Map Data")
+        st.download_button(
+            "📄 Download filtered layers as GeoJSON",
+            data=json.dumps(self.to_geojson(filtered_map_data), indent=2),
+            file_name="area_study_layers.geojson",
+            mime="application/geo+json",
+        )
 
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            st.markdown("**Data Export**")
-            if st.button("📄 Export GeoJSON"):
-                st.info("Exporting map data as GeoJSON...")
-
-            if st.button("🗺️ Export KML"):
-                st.info("Exporting map data as KML...")
-
-        with col2:
-            st.markdown("**Analysis Export**")
-            if st.button("📊 Export Statistics"):
-                st.info("Exporting spatial statistics...")
-
-            if st.button("📋 Generate Map Report"):
-                st.info("Generating comprehensive map report...")
-
-        with col3:
-            st.markdown("**Advanced Tools**")
-            if st.button("🔍 Spatial Analysis"):
-                st.info("Running spatial analysis tools...")
-
-            if st.button("📈 Trend Analysis"):
-                st.info("Analyzing spatial trends...")
+    @staticmethod
+    def to_geojson(map_data):
+        """Convert layered point data into a GeoJSON FeatureCollection."""
+        features = []
+        for layer in ("technical", "social", "environmental", "hotspots"):
+            for point in map_data.get(layer, []):
+                properties = {
+                    key: value
+                    for key, value in point.items()
+                    if key not in ("lat", "lon")
+                }
+                properties["layer"] = layer
+                features.append(
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [point["lon"], point["lat"]],
+                        },
+                        "properties": properties,
+                    }
+                )
+        return {"type": "FeatureCollection", "features": features}
 
     def apply_filters(self, map_data, tech_min_score, social_min_score, env_min_score):
         """Apply filters to map data based on user selections."""
@@ -1066,24 +1040,6 @@ class StreamlitAreaStudyDashboard:
         col2.metric("Social Points", len(map_data.get("social", [])))
         col3.metric("Environmental Points", len(map_data.get("environmental", [])))
         col4.metric("Hotspots", len(map_data.get("hotspots", [])))
-
-        # Export options
-        st.subheader("📤 Export Map Data")
-        col1, col2 = st.columns(2)
-
-        with col1:
-            if st.button("📄 Export as GeoJSON"):
-                st.info("GeoJSON export functionality would be implemented here")
-
-            if st.button("🗺️ Export as Shapefile"):
-                st.info("Shapefile export functionality would be implemented here")
-
-        with col2:
-            if st.button("📊 Export Statistics"):
-                st.info("Statistics export functionality would be implemented here")
-
-            if st.button("📋 Generate Report"):
-                st.info("Report generation functionality would be implemented here")
 
 
 def main():

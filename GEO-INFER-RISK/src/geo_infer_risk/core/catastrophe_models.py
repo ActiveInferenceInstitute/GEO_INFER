@@ -992,7 +992,7 @@ class EnhancedCatastropheModel:
         """Generate a batch of catastrophe events."""
         events = []
 
-        for i in range(batch_size):
+        for _ in range(batch_size):
             event = self._generate_single_event(region, time_period, climate_multiplier)
             events.append(event)
 
@@ -1876,11 +1876,6 @@ class CatastropheModelManager:
         self.config = config or CatastropheConfig()
         self._models: dict[str, EnhancedCatastropheModel] = {}
         self.hazard_interactions = MultiHazardInteractionMatrix(self.config.event_types)
-
-    @property
-    def models(self) -> dict[str, EnhancedCatastropheModel]:
-        """Return the live model registry for compatibility with managers."""
-        return self._models
 
     def register_model(self, name: str, model: EnhancedCatastropheModel) -> None:
         """Register a catastrophe model under a given name."""

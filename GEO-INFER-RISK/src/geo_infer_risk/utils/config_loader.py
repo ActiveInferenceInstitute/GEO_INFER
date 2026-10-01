@@ -98,8 +98,10 @@ class ConfigurationLoader:
             else:
                 raise ValueError(f"Unsupported configuration file format: {suffix}")
 
-        except (yaml.YAMLError, json.JSONDecodeError) as e:
-            raise ValueError(f"Error parsing configuration file {config_path}: {e}")
+        except (yaml.YAMLError, json.JSONDecodeError) as exc:
+            raise ValueError(
+                f"Error parsing configuration file {config_path}: {exc}"
+            ) from exc
 
     def _validate_and_process_config(
         self, config: dict[str, Any], strict: bool = False

@@ -12,6 +12,11 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
+def _trapezoid(y: np.ndarray, x: np.ndarray) -> float:
+    """Trapezoidal-rule integral of ``y`` over ``x`` (NumPy-version independent)."""
+    return float(np.sum(np.diff(x) * (y[1:] + y[:-1]) / 2.0))
+
+
 class WindAnalyzer:
     """Analyze wind energy potential using statistical and engineering methods.
 
@@ -223,7 +228,7 @@ class WindAnalyzer:
             speeds, rated_power_kw, cut_in_speed, rated_speed, cut_out_speed
         )
 
-        aep_kwh = float(np.trapz(power * pdf, speeds) * 8760.0 * availability)
+        aep_kwh = float(_trapezoid(power * pdf, speeds) * 8760.0 * availability)
         capacity_factor = (
             aep_kwh / (rated_power_kw * 8760.0) if rated_power_kw > 0 else 0.0
         )

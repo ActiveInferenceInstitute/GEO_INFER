@@ -13,21 +13,14 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from pathlib import Path
 from typing import Any
 
 import numpy as np
-
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
 def _operation() -> dict[str, Any]:
     import pandas as pd
-
     from geo_infer_data import DataQualityManager
     from geo_infer_data.models.schemas import DataLineage, DatasetMetadata
 

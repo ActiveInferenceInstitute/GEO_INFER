@@ -673,7 +673,7 @@ def main():
 
     try:
         climate_system = ClimateAnalysisSystem()
-        results = climate_system.run_climate_analysis()
+        climate_system.run_climate_analysis()
 
         print("\n🎉 Climate analysis system completed successfully!")
         print(

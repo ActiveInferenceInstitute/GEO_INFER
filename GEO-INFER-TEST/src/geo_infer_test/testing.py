@@ -278,7 +278,7 @@ def local_http_server() -> Iterator[str]:
     """Serve deterministic JSON over localhost without external network access."""
 
     class Handler(http.server.BaseHTTPRequestHandler):
-        def do_GET(self) -> None:  # noqa: N802 - stdlib protocol name
+        def do_GET(self) -> None:
             body = json.dumps({"status": "ok", "source": "local-fixture"}).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")

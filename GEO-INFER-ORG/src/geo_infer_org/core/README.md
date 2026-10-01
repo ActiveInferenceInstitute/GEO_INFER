@@ -37,7 +37,7 @@ Core workspace within `GEO-INFER-ORG`.
 - Module: `GEO-INFER-ORG`
 - Package: `geo_infer_org`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-ORG`
+- Install: `uv sync --package geo-infer-org`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module ORG`
 
 ## Dependencies

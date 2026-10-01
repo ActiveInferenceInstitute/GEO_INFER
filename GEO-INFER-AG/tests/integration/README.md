@@ -16,7 +16,7 @@ Integration workspace within `GEO-INFER-AG`.
 - Module: `GEO-INFER-AG`
 - Package: `geo_infer_ag`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-AG`
+- Install: `uv sync --package geo-infer-ag`
 - Tests: `uv run python -m pytest GEO-INFER-AG/tests/integration`
 
 ## Dependencies

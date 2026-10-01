@@ -29,7 +29,6 @@
 - `scripts/`
 - `src/`
 - `tests/`
-- `demo_orchestrator.py`
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`

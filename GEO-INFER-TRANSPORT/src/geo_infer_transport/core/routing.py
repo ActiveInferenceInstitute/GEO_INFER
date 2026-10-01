@@ -306,9 +306,9 @@ class RoutingEngine:
         """
         matrix = []
 
-        for i, origin in enumerate(origins):
+        for origin in origins:
             row = []
-            for j, dest in enumerate(destinations):
+            for dest in destinations:
                 route = self.route(origin, dest, optimization=metric)
 
                 if metric == "time":

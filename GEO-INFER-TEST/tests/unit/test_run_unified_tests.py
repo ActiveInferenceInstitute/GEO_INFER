@@ -73,23 +73,21 @@ def test_module_discovery_ignores_non_test_files(tmp_path, monkeypatch):
     assert module.has_tests is False
 
 
-def test_unit_category_falls_back_to_root_test_files(tmp_path, monkeypatch):
+def test_unit_category_includes_root_test_files(tmp_path, monkeypatch):
     runner = load_runner_module()
     module_path = make_test_module(tmp_path, "SAMPLE")
-    root_test = module_path / "tests" / "test_legacy_layout.py"
-    root_test.write_text("def test_legacy_layout():\n    assert True\n")
+    root_test = module_path / "tests" / "test_root_layout.py"
+    root_test.write_text("def test_root_layout():\n    assert True\n")
     unit_test = module_path / "tests" / "unit" / "test_unit_layout.py"
     unit_test.write_text("def test_unit_layout():\n    assert True\n")
+    # The retired tests/tools/ layout is no longer a unit-category source.
     tools_dir = module_path / "tests" / "tools"
     tools_dir.mkdir()
-    tool_test = tools_dir / "test_tool_layout.py"
-    tool_test.write_text("def test_tool_layout():\n    assert True\n")
+    (tools_dir / "test_tool_layout.py").write_text("def test_tool():\n    pass\n")
     monkeypatch.setattr(runner, "PROJECT_ROOT", tmp_path)
     module = runner.discover_geo_infer_modules()[0]
 
-    assert runner.category_test_paths(module, "unit") == sorted(
-        [root_test, unit_test, tool_test]
-    )
+    assert runner.category_test_paths(module, "unit") == sorted([root_test, unit_test])
     assert runner.category_test_paths(module, "integration") == []
     assert runner.category_test_paths(module, "system") == []
 

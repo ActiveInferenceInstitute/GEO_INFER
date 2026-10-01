@@ -73,12 +73,17 @@ class EnhancedExposureModel:
             exposure_type: Type of exposure (``property``, ``population``,
                 ``infrastructure`` or ``business``).
             params: Model parameters and configuration. A ``random_seed`` key
-                (or its alias ``seed``) sets the seed for this model's
-                generator; see
+                sets the seed for this model's generator; see
                 :func:`geo_infer_risk.utils.rng.resolve_rng` for accepted
                 forms. Omitting it gives a generator seeded from OS entropy,
                 so results are not replayable.
+
+        Raises:
+            ValueError: If ``params`` carries a ``seed`` key; the seed key is
+                ``random_seed``.
         """
+        if "seed" in params:
+            raise ValueError("exposure params take 'random_seed', not 'seed'")
         self.exposure_type = exposure_type
         self.params = params
         self.logger = logging.getLogger(f"{__name__}.{exposure_type}")
@@ -86,10 +91,7 @@ class EnhancedExposureModel:
         # All stochastic draws in this model come from this generator, never
         # from the process-wide numpy.random singleton. Checking for None
         # explicitly keeps random_seed=0 a valid, replayable seed.
-        seed = params.get("random_seed")
-        if seed is None:
-            seed = params.get("seed")
-        self._rng: np.random.Generator = resolve_rng(seed)
+        self._rng: np.random.Generator = resolve_rng(params.get("random_seed"))
 
         # Enhanced parameter handling
         self.data_sources = params.get("data_sources", [])

@@ -3,17 +3,18 @@ Sequence analysis module for GEO-INFER-BIO.
 """
 
 from typing import Any, cast
+
 import pandas as pd
 from Bio import SeqIO
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
 from Bio.Align import MultipleSeqAlignment, PairwiseAligner, substitution_matrices
 from Bio.Data import CodonTable
-
-_BLOSUM62 = substitution_matrices.load("BLOSUM62")
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 
 from ..utils.validation import DataValidator
 from ..utils.visualization import BioVisualizer
+
+_BLOSUM62 = substitution_matrices.load("BLOSUM62")
 
 
 class SequenceAnalyzer:

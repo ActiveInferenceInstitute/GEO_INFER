@@ -78,7 +78,8 @@ compound_probability = interactions.compound_exceedance_probability(
 ```
 
 Risk metrics from an event loss table. `exposure_years` is how many years the
-table spans; omit it and every per-year figure is inflated (a warning says so):
+table spans. `calculate_aal` requires it; the exceedance metrics accept it
+optionally, and omitting it inflates every per-year figure (a warning says so):
 
 ```python
 import pandas as pd
@@ -111,8 +112,9 @@ understates the tail.
 
 Every stochastic entry point in this module takes a `random_seed` and routes it
 through `geo_infer_risk.utils.rng.resolve_rng`, which accepts `None`, an `int`,
-a `SeedSequence`, a `BitGenerator`, a `numpy.random.Generator`, or a legacy
-`RandomState`, and always returns a `Generator`. Consequences worth knowing:
+a `SeedSequence`, a `BitGenerator`, or a `numpy.random.Generator`, and always
+returns a `Generator`; a `RandomState` or the `numpy.random` module raises
+`TypeError`. Consequences worth knowing:
 
 - Passing an `int` makes a run replayable; `0` is a valid seed.
 - Passing a `Generator` threads one stream through a whole pipeline.
@@ -135,8 +137,9 @@ a `SeedSequence`, a `BitGenerator`, a `numpy.random.Generator`, or a legacy
 - Exceedance-probability curves use the Weibull plotting position and
   interpolate loss as a function of exceedance probability; return periods
   beyond the record are clamped, not extrapolated
-- Pass `exposure_years` to any per-year metric (AAL, OEP, AEP, and the
-  annualized EP curve); the fallback treats the table as spanning one year
+- `calculate_aal` requires `exposure_years`; pass it to the other per-year
+  metrics too (OEP, AEP, and the annualized EP curve), whose fallback treats
+  the table as spanning one year
 - Simplified conversions, stand-in probabilities, and loss-tail multipliers
   are catalogued in the Honest Capability Register below; source sites point
   here instead of re-explaining themselves

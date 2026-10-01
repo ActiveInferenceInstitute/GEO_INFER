@@ -16,8 +16,16 @@ class TestCivImports:
     def test_import_participation(self):
         from geo_infer_civ import (
             ParticipationAnalyzer,
-            ParticipationMethod as ParticipationMethod,
-            ParticipantRecord as ParticipantRecord,
+            ParticipationMethod,
+            ParticipantRecord,
+        )
+
+        assert all(
+            isinstance(exported, type)
+            for exported in (
+                ParticipationMethod,
+                ParticipantRecord,
+            )
         )
 
         assert ParticipationAnalyzer is not None

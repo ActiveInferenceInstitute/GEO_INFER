@@ -76,7 +76,7 @@ class TestFieldBoundaryManager:
         assert fbm.fields["name"].iloc[1] == "Custom Field"
         assert fbm.fields["crop_type"].iloc[1] == "wheat"
         assert fbm.fields["soil_type"].iloc[1] == "clay"
-        assert fbm.fields["irrigated"].iloc[1] == True
+        assert bool(fbm.fields["irrigated"].iloc[1]) is True
 
         # Test adding a MultiPolygon
         multi_geom = MultiPolygon(
@@ -107,12 +107,12 @@ class TestFieldBoundaryManager:
 
         # Test removing a field
         assert len(fbm.fields) == 2
-        assert fbm.remove_field("field_1") == True
+        assert fbm.remove_field("field_1") is True
         assert len(fbm.fields) == 1
         assert "field_1" not in fbm.fields["field_id"].values
 
         # Test removing nonexistent field
-        assert fbm.remove_field("nonexistent") == False
+        assert fbm.remove_field("nonexistent") is False
         assert len(fbm.fields) == 1
 
     def test_update_field(self):
@@ -135,7 +135,7 @@ class TestFieldBoundaryManager:
                 crop_type="wheat",
                 attributes={"status": "active"},
             )
-            == True
+            is True
         )
 
         field = fbm.get_field("field_1")
@@ -147,13 +147,13 @@ class TestFieldBoundaryManager:
         original_area = field["area_ha"]
         new_geom = Polygon([(0, 0), (0, 20), (20, 20), (20, 0)])
 
-        assert fbm.update_field(field_id="field_1", geometry=new_geom) == True
+        assert fbm.update_field(field_id="field_1", geometry=new_geom) is True
 
         field = fbm.get_field("field_1")
         assert field["area_ha"] > original_area
 
         # Test updating nonexistent field
-        assert fbm.update_field(field_id="nonexistent") == False
+        assert fbm.update_field(field_id="nonexistent") is False
 
         # Test invalid geometry
         with pytest.raises(ValueError):

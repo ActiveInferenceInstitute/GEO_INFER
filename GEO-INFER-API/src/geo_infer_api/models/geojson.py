@@ -7,7 +7,7 @@ https://tools.ietf.org/html/rfc7946
 
 from enum import StrEnum
 import math
-from typing import Any, Literal, Union
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -188,7 +188,7 @@ class MultiPolygon(GeometryBase):
 
 
 # Union of all geometry types
-Geometry = Union[Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon]
+Geometry = Point | LineString | Polygon | MultiPoint | MultiLineString | MultiPolygon
 
 
 class Feature(BaseModel):

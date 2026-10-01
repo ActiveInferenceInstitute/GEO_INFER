@@ -64,6 +64,7 @@ except ImportError:
         """Minimal intention container used when GEO-INFER-AGENT is unavailable."""
 
 
+from geo_infer_app.models.agent_factory import AgentFactory
 from geo_infer_app.models.agent_interface import AgentInterface, AgentState, AgentType
 
 # Configure logging
@@ -377,6 +378,4 @@ class BDIAgentInterface(AgentInterface):
 
 
 # Register this interface with the agent factory
-from geo_infer_app.models.agent_factory import AgentFactory  # noqa: E402
-
 AgentFactory.register_interface(AgentType.BDI, BDIAgentInterface)

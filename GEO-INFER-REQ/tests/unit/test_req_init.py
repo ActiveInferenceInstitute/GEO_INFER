@@ -16,9 +16,18 @@ class TestReqImports:
     def test_import_requirements(self):
         from geo_infer_req import (
             RequirementsAnalyzer,
-            Requirement as Requirement,
-            RequirementType as RequirementType,
-            PriorityLevel as PriorityLevel,
+            Requirement,
+            RequirementType,
+            PriorityLevel,
+        )
+
+        assert all(
+            isinstance(exported, type)
+            for exported in (
+                Requirement,
+                RequirementType,
+                PriorityLevel,
+            )
         )
 
         assert RequirementsAnalyzer is not None
@@ -29,8 +38,10 @@ class TestReqImports:
         from geo_infer_req import (
             TraceabilityManager,
             TraceLink,
-            ArtifactType as ArtifactType,
+            ArtifactType,
         )
+
+        assert all(isinstance(exported, type) for exported in (ArtifactType,))
 
         assert TraceabilityManager is not None
         assert TraceLink is not None
@@ -39,8 +50,10 @@ class TestReqImports:
         from geo_infer_req import (
             RequirementValidator,
             RequirementSpec,
-            ValidationSeverity as ValidationSeverity,
+            ValidationSeverity,
         )
+
+        assert all(isinstance(exported, type) for exported in (ValidationSeverity,))
 
         assert RequirementValidator is not None
         assert RequirementSpec is not None

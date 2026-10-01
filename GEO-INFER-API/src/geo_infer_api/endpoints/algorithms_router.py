@@ -127,7 +127,7 @@ async def get_algorithm(algorithm_id: str) -> AlgorithmOut:
     try:
         algorithm = registry.get(algorithm_id)
     except KeyError:
-        raise NotFoundError(f"unknown algorithm: {algorithm_id}")
+        raise NotFoundError(f"unknown algorithm: {algorithm_id}") from None
     return _algorithm_out(algorithm)
 
 
@@ -145,7 +145,7 @@ async def run_algorithm(
     try:
         registry.get(algorithm_id)
     except KeyError:
-        raise NotFoundError(f"unknown algorithm: {algorithm_id}")
+        raise NotFoundError(f"unknown algorithm: {algorithm_id}") from None
 
     # ProcessingContext is bound by the import above; _require_registry()
     # raises 503 first when the import failed, so this is safe at runtime.

@@ -10,7 +10,7 @@ __version__ = "0.3.0"
 __author__ = "GEO-INFER Development Team"
 __license__ = "CC-BY-NC-SA-4.0"
 
-from typing import Any, Optional
+from typing import Any
 
 from geo_infer_insurance.underwriting import (
     UnderwritingEngine,

@@ -332,8 +332,8 @@ class FieldBoundaryManager:
 
                 return len(self.fields) - orig_count
 
-        except Exception as e:
-            raise ValueError(f"Error extracting fields from raster: {str(e)}")
+        except Exception as exc:
+            raise ValueError(f"Error extracting fields from raster: {exc}") from exc
 
     def export_to_file(self, output_path: str, driver: str = "ESRI Shapefile") -> None:
         """
@@ -356,8 +356,8 @@ class FieldBoundaryManager:
                     lambda value: f"{float(value):.12g}"
                 )
             export_fields.to_file(output_path, driver=driver)
-        except Exception as e:
-            raise ValueError(f"Error exporting fields: {str(e)}")
+        except Exception as exc:
+            raise ValueError(f"Error exporting fields: {exc}") from exc
 
     def _calculate_areas(self) -> None:
         """Calculate area in hectares for all fields."""

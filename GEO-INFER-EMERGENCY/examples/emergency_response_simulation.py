@@ -106,10 +106,21 @@ def main():
 
     threat = sa.assess_threat(
         hazard={"type": "wildfire", "intensity": 0.8},
-        affected_area={"population": 25000, "size_sq_km": 50.0},
-        assets_at_risk=[{"id": "subdivision_1", "type": "residential", "value": 500e6}],
+        affected_area={"area_sq_km": 50.0},
+        assets_at_risk=[
+            {
+                "id": "subdivision_1",
+                "type": "residential",
+                "value": 500e6,
+                "population": 25000,
+            }
+        ],
     )
-    print(f"   Threat level: {sa.get_current_threat_level()}")
+    print(
+        f"   Threat level: {sa.get_current_threat_level()} "
+        f"(score {threat['threat_score']}, "
+        f"{threat['assets_at_risk']['population']} people at risk)"
+    )
 
     # 3. Optimize Resource Deployment
     print("\n3. Optimizing Emergency Resource Deployment...")

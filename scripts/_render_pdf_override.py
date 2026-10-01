@@ -15,7 +15,7 @@ from pathlib import Path
 
 def main() -> int:
     renderer = Path(__file__).with_name("render_manuscript_pdf.py")
-    result = subprocess.run(  # noqa: S603 - fixed sibling path, no shell
+    result = subprocess.run(
         [sys.executable, str(renderer)],
         check=False,
     )

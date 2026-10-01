@@ -54,20 +54,20 @@ def weibull_reference(losses: list[float], prob: float) -> float:
 
 
 class TestAal:
-    def test_array_input_returns_mean_event_loss(self) -> None:
+    def test_array_input_one_event_per_year_is_mean_event_loss(self) -> None:
         losses = np.array([1000.0, 2000.0, 500.0, 3000.0, 1500.0])
-        assert calculate_aal(losses) == pytest.approx(1600.0)
+        assert calculate_aal(losses, exposure_years=5.0) == pytest.approx(1600.0)
 
     def test_array_input_annualizes_when_given_exposure_years(self) -> None:
         losses = np.array([100.0, 300.0])
         assert calculate_aal(losses, exposure_years=4.0) == pytest.approx(100.0)
 
     def test_empty_array_is_zero(self) -> None:
-        assert calculate_aal(np.array([])) == 0.0
+        assert calculate_aal(np.array([]), exposure_years=1.0) == 0.0
 
     def test_rejects_two_dimensional_array(self) -> None:
         with pytest.raises(ValueError, match="one-dimensional"):
-            calculate_aal(np.zeros((2, 2)))
+            calculate_aal(np.zeros((2, 2)), exposure_years=1.0)
 
     def test_dataframe_splits_by_hazard(self) -> None:
         table = pd.DataFrame(
@@ -86,7 +86,9 @@ class TestAal:
 
     def test_missing_column_is_rejected(self) -> None:
         with pytest.raises(ValueError, match="hazard_type"):
-            calculate_aal(pd.DataFrame({"event_id": ["a"], "loss": [1.0]}))
+            calculate_aal(
+                pd.DataFrame({"event_id": ["a"], "loss": [1.0]}), exposure_years=1.0
+            )
 
 
 class TestEpCurve:

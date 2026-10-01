@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 # Optional organizational integration
 try:
-    from geo_infer_org.core import OrganizationModel  # type: ignore[import-untyped]  # noqa: F401
+    from geo_infer_org.core import OrganizationModel  # type: ignore[import-untyped]  # noqa: F401 -- availability probe
 
     ORG_AVAILABLE = True
 except ImportError:

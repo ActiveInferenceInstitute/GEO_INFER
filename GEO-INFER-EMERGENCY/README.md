@@ -20,7 +20,7 @@ Emergency management and disaster response capabilities for geospatial systems.
 - Module: `GEO-INFER-EMERGENCY`
 - Package: `geo_infer_emergency`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-EMERGENCY`
+- Install: `uv sync --package geo-infer-emergency`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module EMERGENCY`
 
 ## Dependencies

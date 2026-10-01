@@ -1,239 +1,164 @@
 #!/usr/bin/env python3
-"""
-REQ Module Orchestrator - GEO-INFER Examples
-Demonstrates: Requirements
+"""GEO-INFER-REQ module orchestrator.
 
-Thin orchestrator pattern: Focuses on orchestration structure and patterns,
-not detailed module implementations.
+Runs one documented end-to-end REQ operation on synthetic data: register five
+requirements for an H3 analytics service, build the dependency graph and
+priority scores, trace each requirement to design/test artifacts, analyze the
+impact of changing the indexing requirement, and validate consistency,
+conflicts and feasibility against a resource budget. All work goes through
+the real ``geo_infer_req`` public API.
 """
+
+from __future__ import annotations
 
 import sys
-import time
-import json
-import logging
-from pathlib import Path
-from datetime import datetime
-import numpy as np
+from typing import Any
 
-# Add parent directories to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent / "src"))
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
-def setup_logging():
-    """Configure logging for the orchestrator."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+def _operation() -> dict[str, Any]:
+    from geo_infer_req import (
+        ArtifactType,
+        PriorityLevel,
+        Requirement,
+        RequirementsAnalyzer,
+        RequirementSpec,
+        RequirementType,
+        RequirementValidator,
+        TraceabilityManager,
+        TraceLink,
     )
-    return logging.getLogger("req_orchestrator")
 
+    requirements = [
+        Requirement(
+            "R001",
+            "H3 indexing",
+            "The system shall index observations with H3 v4 cells",
+            RequirementType.FUNCTIONAL,
+            PriorityLevel.CRITICAL,
+            stakeholders=["analysts", "platform"],
+            acceptance_criteria=["latlng_to_cell round-trips at resolution 9"],
+            effort_estimate=8.0,
+        ),
+        Requirement(
+            "R002",
+            "Query latency",
+            "Spatial queries shall return within 200 ms at p95",
+            RequirementType.PERFORMANCE,
+            PriorityLevel.HIGH,
+            dependencies=["R001"],
+            stakeholders=["analysts"],
+            acceptance_criteria=["p95 latency below 200 ms on 1e6 cells"],
+            effort_estimate=5.0,
+        ),
+        Requirement(
+            "R003",
+            "Access control",
+            "Only authenticated users shall read restricted layers",
+            RequirementType.SECURITY,
+            PriorityLevel.HIGH,
+            stakeholders=["security"],
+            acceptance_criteria=["unauthenticated reads return 401"],
+            effort_estimate=4.0,
+        ),
+        Requirement(
+            "R004",
+            "GeoJSON export",
+            "The system shall export cell aggregates as GeoJSON",
+            RequirementType.INTERFACE,
+            PriorityLevel.MEDIUM,
+            dependencies=["R001", "R003"],
+            stakeholders=["analysts"],
+            acceptance_criteria=["exported polygons use [lng, lat] order"],
+            effort_estimate=3.0,
+        ),
+        Requirement(
+            "R005",
+            "Aggregation dashboard",
+            "The system shall render daily cell aggregates",
+            RequirementType.FUNCTIONAL,
+            PriorityLevel.LOW,
+            dependencies=["R002", "R004"],
+            effort_estimate=6.0,
+        ),
+    ]
 
-class REQOrchestrator:
-    """Thin orchestrator for GEO-INFER-REQ module demonstrations."""
+    analyzer = RequirementsAnalyzer()
+    analyzer.add_requirements(requirements)
+    graph = analyzer.build_dependency_graph()
+    scores = analyzer.compute_priority_scores()
+    completeness = analyzer.check_completeness()
 
-    def __init__(self, config_path=None):
-        """Initialize the REQ orchestrator."""
-        self.logger = setup_logging()
-        self.config = self._load_config(config_path)
-        np.random.seed(42)  # Reproducible results
-        self.module_name = "REQ"
-        self.dependencies = ["NORMS", "SEC"]
-
-    def _load_config(self, config_path):
-        """Load configuration from YAML file."""
-        if config_path is None:
-            config_path = (
-                Path(__file__).parent.parent / "config" / "orchestrator_config.yaml"
-            )
-
-        try:
-            import yaml
-
-            with open(config_path) as f:
-                return yaml.safe_load(f)
-        except FileNotFoundError:
-            self.logger.warning(f"Config file not found: {config_path}, using defaults")
-            return {"operations": {"sample_size": 10}}
-
-    def run_orchestrator(self):
-        """Run the complete REQ module demonstration."""
-        self.logger.info("🚀 Starting REQ Module Orchestrator (Thin)")
-        self.logger.info("Demonstrating: Requirements")
-
-        start_time = time.time()
-        results = {
-            "module": "REQ",
-            "timestamp": datetime.now().isoformat(),
-            "orchestrator_type": "thin",
-            "operations": {},
-        }
-
-        try:
-            # Operation 1: Module Initialization
-            self.logger.info("\n🔧 OPERATION 1: Module Initialization")
-            init_results = self._demonstrate_initialization()
-            results["operations"]["initialization"] = init_results
-            self.logger.info("✅ Module initialization orchestrated")
-
-            # Operation 2: Core Operations
-            self.logger.info("\n⚙️ OPERATION 2: Core Operations")
-            core_results = self._demonstrate_core_operations()
-            results["operations"]["core"] = core_results
-            self.logger.info("✅ Core operations orchestrated")
-
-            # Operation 3: Dependency Integration
-            self.logger.info("\n🔗 OPERATION 3: Dependency Integration")
-            integration_results = self._demonstrate_integration()
-            results["operations"]["integration"] = integration_results
-            self.logger.info("✅ Integration orchestrated")
-
-            # Operation 4: Error Handling
-            self.logger.info("\n🛡️ OPERATION 4: Error Handling")
-            error_results = self._demonstrate_error_handling()
-            results["operations"]["error_handling"] = error_results
-            self.logger.info("✅ Error handling orchestrated")
-
-            # Operation 5: Workflow Demonstration
-            self.logger.info("\n🔄 OPERATION 5: Complete Workflow")
-            workflow_results = self._demonstrate_workflow()
-            results["operations"]["workflow"] = workflow_results
-            self.logger.info("✅ Workflow orchestrated")
-
-            execution_time = time.time() - start_time
-            results["execution_metadata"] = {
-                "execution_time_seconds": execution_time,
-                "operations_completed": len(results["operations"]),
-                "status": "success",
-                "orchestrator_type": "thin",
-            }
-
-            self._display_summary(results, execution_time)
-            self._save_results(results)
-
-            return results
-
-        except Exception as e:
-            self.logger.error(f"❌ Orchestrator failed: {e}", exc_info=True)
-            results["execution_metadata"] = {"status": "error", "error": str(e)}
-            self._save_results(results)
-            raise
-
-    def _demonstrate_initialization(self):
-        """Demonstrate module initialization orchestration."""
-        return {
-            "module": "REQ",
-            "status": "initialized",
-            "config_loaded": True,
-            "orchestration_note": "Thin orchestrator - demonstrates initialization pattern",
-        }
-
-    def _demonstrate_core_operations(self):
-        """Demonstrate core module operations orchestration."""
-        # Thin orchestrator: demonstrate operation structure, not implementation
-        operations = ["operation_1", "operation_2", "operation_3"]
-        return {
-            "operations": operations,
-            "orchestration_note": "Thin orchestrator - demonstrates operation orchestration pattern",
-            "note": "Actual module operations would be called here in production",
-        }
-
-    def _demonstrate_integration(self):
-        """Demonstrate integration with dependencies."""
-        deps = ["NORMS", "SEC"]
-        return {
-            "dependencies": deps if deps != ["All modules"] else "all_modules",
-            "integration_status": "orchestrated",
-            "orchestration_note": "Thin orchestrator - demonstrates dependency integration pattern",
-            "note": "Actual dependency modules would be integrated here in production",
-        }
-
-    def _demonstrate_error_handling(self):
-        """Demonstrate error handling orchestration."""
-        return {
-            "error_handling": "orchestrated",
-            "validation": "pattern_demonstrated",
-            "orchestration_note": "Thin orchestrator - demonstrates error handling pattern",
-            "note": "Actual error handling would be implemented here in production",
-        }
-
-    def _demonstrate_workflow(self):
-        """Demonstrate complete workflow orchestration."""
-        workflow_steps = [
-            "initialization",
-            "core_operations",
-            "dependency_integration",
-            "error_handling",
-            "workflow_completion",
+    trace = TraceabilityManager()
+    trace.register_requirements([req.req_id for req in requirements])
+    trace.add_trace_links(
+        [
+            TraceLink("R001", "design_h3_index.md", ArtifactType.DESIGN_DOCUMENT),
+            TraceLink("R001", "test_h3_index.py", ArtifactType.TEST_CASE),
+            TraceLink("R002", "bench_query_latency.py", ArtifactType.TEST_CASE),
+            TraceLink("R003", "auth_middleware.py", ArtifactType.SOURCE_CODE),
+            TraceLink("R004", "geojson_export.py", ArtifactType.SOURCE_CODE),
         ]
-        return {
-            "workflow": "orchestrated",
-            "steps": workflow_steps,
-            "orchestration_note": "Thin orchestrator - demonstrates workflow orchestration pattern",
-            "note": "Actual workflow would be executed here in production",
-        }
+    )
+    trace.verify_link("R001", "test_h3_index.py")
+    coverage = trace.analyze_coverage()
+    impact = trace.analyze_impact("R001")
 
-    def _display_summary(self, results, execution_time):
-        """Display results summary."""
-        print("\n" + "=" * 70)
-        print("🎯 REQ MODULE ORCHESTRATOR RESULTS (Thin)")
-        print("=" * 70)
+    validator = RequirementValidator()
+    validator.add_specs(
+        [
+            RequirementSpec(
+                req.req_id,
+                req.title,
+                req.description,
+                priority=req.priority.value,
+                effort_estimate=req.effort_estimate or 0.0,
+                dependencies=list(req.dependencies),
+                resources_required=["backend_dev"],
+            )
+            for req in requirements
+        ]
+    )
+    validator.set_resource_capacity({"backend_dev": 20.0})
+    consistency = validator.check_consistency()
+    conflicts = validator.detect_conflicts()
+    feasibility = validator.assess_feasibility(available_effort=24.0)
 
-        print("\n📊 Operations Orchestrated:")
-        for op_name, op_data in results["operations"].items():
-            print(f"  ✅ {op_name}: orchestrated")
-
-        print("\n⚡ Performance:")
-        print(f"  ├─ Execution Time: {execution_time:.2f} seconds")
-        print("  ├─ Module: GEO-INFER-REQ")
-        print("  ├─ Orchestrator Type: Thin (orchestration patterns)")
-        print(f"  └─ Status: {results['execution_metadata']['status']}")
-
-        print("\n💡 Orchestration Patterns Demonstrated:")
-        print("  ├─ Module Initialization Pattern")
-        print("  ├─ Core Operations Pattern")
-        print("  ├─ Dependency Integration Pattern")
-        print("  ├─ Error Handling Pattern")
-        print("  └─ Complete Workflow Pattern")
-
-        if self.dependencies:
-            print(f"\n🔗 Dependencies: {', '.join(self.dependencies)}")
-
-        print("\n✨ REQ thin orchestrator demonstration complete!")
-        print("📝 Note: This is a thin orchestrator focusing on orchestration patterns")
-        print("🚀 For detailed implementations, see module-specific examples")
-        print("=" * 70)
-
-    def _save_results(self, results):
-        """Save results to JSON file."""
-        output_dir = Path(__file__).parent.parent / "output"
-        output_dir.mkdir(exist_ok=True)
-
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_file = output_dir / f"req_orchestrator_results_{timestamp}.json"
-
-        with open(output_file, "w") as f:
-            json.dump(results, f, indent=2, default=str)
-
-        self.logger.info(f"📁 Results saved to: {output_file.name}")
-
-
-def main():
-    """Main function."""
-    print("🌟 GEO-INFER-REQ Module Orchestrator (Thin)")
-    print("Demonstrating: Requirements")
-    print("Orchestrator Type: Thin (focuses on orchestration patterns)")
-
-    try:
-        config_path = (
-            Path(__file__).parent.parent / "config" / "orchestrator_config.yaml"
-        )
-        orchestrator = REQOrchestrator(config_path=config_path)
-        orchestrator.run_orchestrator()
-        return 0
-    except Exception as e:
-        print(f"❌ Orchestrator failed: {e}")
-        return 1
+    return {
+        "dependency_graph": {
+            "topological_order": graph.topological_order,
+            "critical_path": graph.critical_path,
+            "depth": graph.depth,
+            "cycles": graph.cycles,
+        },
+        "priority_scores": {k: round(v, 4) for k, v in scores.items()},
+        "completeness": {
+            "score": completeness.completeness_score,
+            "missing_acceptance_criteria": completeness.missing_acceptance_criteria,
+        },
+        "traceability": {
+            "coverage_ratio": coverage.coverage_ratio,
+            "untraced_requirements": coverage.untraced_requirements,
+            "unverified_links": len(trace.get_unverified_links()),
+        },
+        "impact_of_R001": {
+            "affected_count": impact.affected_count,
+            "indirectly_affected_requirements": (
+                impact.indirectly_affected_requirements
+            ),
+            "impact_severity": impact.impact_severity,
+        },
+        "validation": {
+            "is_consistent": consistency.is_consistent,
+            "consistency_score": consistency.consistency_score,
+            "total_conflicts": conflicts.total_conflicts,
+            "overall_feasibility": feasibility.overall_feasibility,
+            "resource_utilization": feasibility.resource_utilization,
+            "bottleneck_requirements": feasibility.bottleneck_requirements,
+        },
+    }
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run_module_orchestrator("REQ", _operation))

@@ -8,23 +8,14 @@ actually exists in the target module's ``pyproject.toml`` (GS-300: the old
 from __future__ import annotations
 
 import contextlib
-import importlib.util
 import io
 import json
 import tomllib
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
+from geo_infer_examples.orchestration import MODULE_EXTRAS, run_module_orchestrator
 
-_LIB_PATH = (
-    _REPO_ROOT / "GEO-INFER-EXAMPLES" / "examples" / "module_orchestrators" / "_lib.py"
-)
-_spec = importlib.util.spec_from_file_location("_gs300_lib", _LIB_PATH)
-assert _spec is not None and _spec.loader is not None
-_lib = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_lib)
-MODULE_EXTRAS = _lib.MODULE_EXTRAS
-run_module_orchestrator = _lib.run_module_orchestrator
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_module_extras_values_exist_in_module_pyprojects() -> None:

@@ -85,7 +85,7 @@ class ComprehensiveAreaStudy:
             self.results["sustainability_plan"] = sustainability_plan
 
             execution_time = time.time() - start_time
-            self.logger.info(".2f")
+            self.logger.info(f"Area study completed in {execution_time:.2f} s")
             self._display_area_study_results(execution_time)
             self._save_area_study_results(execution_time)
 
@@ -161,7 +161,7 @@ class ComprehensiveAreaStudy:
 
         for i in range(50):  # 50 sensors across the area
             sensor = {
-                "sensor_id": "03d",
+                "sensor_id": f"sensor_{i:03d}",
                 "type": np.random.choice(sensor_types),
                 "location": {
                     "latitude": 40.7128 + np.random.uniform(-0.01, 0.01),
@@ -1018,7 +1018,7 @@ def main():
 
     try:
         study = ComprehensiveAreaStudy()
-        results = study.run_area_study()
+        study.run_area_study()
 
         print("\n🎉 Area study completed successfully!")
         print(

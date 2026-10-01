@@ -13,14 +13,9 @@ creation, listing, area, and point-containment operations.
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 from typing import Any
 
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
 def _operation() -> dict[str, Any]:
@@ -31,8 +26,6 @@ def _operation() -> dict[str, Any]:
     os.environ.setdefault("SECRET_KEY", "synthetic-orchestrator-demo-secret-key")
 
     from fastapi.testclient import TestClient
-    from pydantic import ValidationError
-
     from geo_infer_api import (
         Feature,
         FeatureCollection,
@@ -43,6 +36,7 @@ def _operation() -> dict[str, Any]:
         get_settings,
     )
     from geo_infer_api.app import main_app
+    from pydantic import ValidationError
 
     settings = get_settings()
 

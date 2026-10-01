@@ -366,8 +366,10 @@ class RiskAssessmentEngine:
             )  # 10% of value threshold
 
             return float(risk_score)
-        except Exception:
-            raise RuntimeError("Risk engine results did not contain a valid risk score")
+        except Exception as exc:
+            raise RuntimeError(
+                "Risk engine results did not contain a valid risk score"
+            ) from exc
 
     def _calculate_basic_risk_score(self, property_info: dict[str, Any]) -> float:
         """Calculate basic risk score from property information."""

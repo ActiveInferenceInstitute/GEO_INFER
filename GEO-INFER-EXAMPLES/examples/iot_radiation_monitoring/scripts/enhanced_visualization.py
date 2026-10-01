@@ -4,27 +4,14 @@ GEO-INFER Examples: Enhanced IoT Radiation Monitoring with Interactive Visualiza
 Generates interactive H3 visualization dashboard with Bayesian posterior overlays.
 """
 
-import sys
 import json
-import folium
-import pandas as pd
-import numpy as np
+from datetime import UTC, datetime
 from pathlib import Path
-from datetime import datetime, UTC
 
-# Add parent directories to path for imports
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-
-try:
-    import h3
-    import geopandas as gpd
-    from shapely.geometry import Point
-
-    print("✓ Successfully imported spatial dependencies")
-except ImportError as e:
-    print(f"✗ Error importing spatial dependencies: {e}")
-    print("Please install: uv pip install h3 geopandas shapely folium")
-    sys.exit(1)
+import folium
+import h3
+import numpy as np
+import pandas as pd
 
 
 class InteractiveRadiationDashboard:
@@ -298,15 +285,15 @@ def generate_time_series_plot_html(anomaly_data: dict, output_path: str):
                     <p>Total Anomalies</p>
                 </div>
                 <div class="stat-box">
-                    <h3>{anomaly_data["summary"]["critical"]}</h3>
+                    <h3>{anomaly_data["by_severity"]["critical"]}</h3>
                     <p>Critical Alerts</p>
                 </div>
                 <div class="stat-box">
-                    <h3>{anomaly_data["summary"]["severe"]}</h3>
+                    <h3>{anomaly_data["by_severity"]["severe"]}</h3>
                     <p>Severe Alerts</p>
                 </div>
                 <div class="stat-box">
-                    <h3>{anomaly_data["summary"]["mild"]}</h3>
+                    <h3>{anomaly_data["by_severity"]["mild"]}</h3>
                     <p>Mild Alerts</p>
                 </div>
             </div>
@@ -412,9 +399,6 @@ def main():
 
     # Load existing results
     try:
-        with open("output/sensor_summary.json") as f:
-            sensor_summary = json.load(f)
-
         with open("output/anomaly_report.json") as f:
             anomaly_data = json.load(f)
 

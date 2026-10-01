@@ -106,12 +106,10 @@ def test_validate_job_runs_gates_once_outside_test_matrix():
         "run_model_audit.py",
         "gitleaks detect",
         "check_coverage_floor.py",
-        # CI-04: the four ruff surfaces (changed-file check, changed-file
-        # format, src runtime hygiene, module-test hygiene).
+        # CI-04: the ruff surfaces (changed-file check and format under the
+        # root lint contract; the repository-wide check is pinned below).
         "xargs -0 uv run --with 'ruff>=0.15.6,<0.16' ruff check",
         "ruff format --check",
-        "--select F821,F823,E721,E722",
-        "--select F401,F841,F811,F823",
         # CI-04: the validator commands the marker list did not pin.
         "validate_packaging.py --strict",
         "validate_logging_hygiene.py",
@@ -119,6 +117,15 @@ def test_validate_job_runs_gates_once_outside_test_matrix():
         "rewrite_readme_agents.py --check",
     ):
         assert marker in gate_text, f"missing gate marker: {marker}"
+    # The root pyproject [tool.ruff.lint] table is the only lint contract; a
+    # --select override would silently narrow it.
+    assert "--select" not in gate_text
+    hygiene = next(
+        step["run"]
+        for step in jobs["validate"]["steps"]
+        if step.get("name") == "Run source runtime hygiene"
+    )
+    assert "uv run --with 'ruff>=0.15.6,<0.16' ruff check .\n" in hygiene
 
     test_text = _dump(jobs["test"])
     for marker in (

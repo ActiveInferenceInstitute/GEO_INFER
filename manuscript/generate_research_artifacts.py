@@ -1526,7 +1526,7 @@ def generate_figures(
         # directly comparable with a bar in the left one.
         count_limit = max((*source_counts, *test_counts, 1)) * 1.08
         bar_height = 0.38
-        for index, (axis, (start, stop)) in enumerate(zip(axes, panels)):
+        for axis, (start, stop) in zip(axes, panels):
             panel_labels = labels[start:stop]
             y = list(range(len(panel_labels)))
             axis.barh(
@@ -2515,7 +2515,7 @@ def bibliography_policy(root: Path) -> dict[str, bool]:
             continue
         if not in_bibliography:
             continue
-        for prefix, name, default in _BIBLIOGRAPHY_POLICY:
+        for prefix, name, _default in _BIBLIOGRAPHY_POLICY:
             if line.startswith(prefix):
                 policy[name] = line[len(prefix) :].strip().lower() == "true"
                 matched[name] = True

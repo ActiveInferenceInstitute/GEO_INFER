@@ -437,12 +437,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/DataUploadResponse'
 
-  # Compatibility endpoints retained for existing clients
+  # Assessment-registry design endpoints
   /assessments:
     get:
       tags: [analysis]
       summary: List risk assessments
-      description: Retrieve list of risk assessments through the compatibility route
+      description: Retrieve list of risk assessments
       parameters:
         - name: project_id
           in: query
@@ -469,7 +469,7 @@ paths:
     post:
       tags: [analysis]
       summary: Create risk assessment
-      description: Create a new risk assessment through the compatibility route
+      description: Create a new risk assessment
       requestBody:
         required: true
         content:
@@ -488,7 +488,7 @@ paths:
     get:
       tags: [analysis]
       summary: Get assessment details
-      description: Retrieve detailed information about a risk assessment through the compatibility route
+      description: Retrieve detailed information about a risk assessment
       parameters:
         - name: assessment_id
           in: path
@@ -1463,7 +1463,7 @@ components:
           items:
             type: string
 
-    # Compatibility schemas retained for existing clients
+    # Assessment-registry design schemas
     AssessmentRequest:
       type: object
       required: [name, scope, methodology]
@@ -1796,7 +1796,7 @@ components:
         request_id:
           type: string
 
-    # Compatibility schemas retained for existing clients
+    # Assessment-registry design schemas
     AssessmentResponse:
       type: object
       properties:

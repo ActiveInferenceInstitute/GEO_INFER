@@ -1,10 +1,6 @@
 """Integration tests for GEO-INFER-NORMS integration."""
 
 import pytest
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../src"))
 
 from geo_infer_metagov.integrations.normative import NormativeGovernanceIntegration
 

@@ -15,11 +15,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
 def _operation() -> dict[str, Any]:
@@ -27,7 +23,6 @@ def _operation() -> dict[str, Any]:
 
     import networkx as nx
     import numpy as np
-
     from geo_infer_log import RouteOptimizer
     from geo_infer_log.core.routing import RoutingParameters, save_gpickle
 

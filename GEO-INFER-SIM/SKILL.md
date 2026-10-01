@@ -19,7 +19,7 @@ examples_dir: ../GEO-INFER-EXAMPLES/examples/
 
 ### Core Capabilities
 
-- **Simulation engine**: `SimulationEngine` with a validated `SimulationConfig`, explicit state machine (INITIALIZED/RUNNING/PAUSED/COMPLETED/FAILED/CANCELLED), pause/resume/cancel, metrics, state history, and JSON checkpoints that restore both configuration and the exact RNG stream
+- **Simulation engine**: `SimulationEngine` with a validated `SimulationConfig`, explicit state machine (INITIALIZED/RUNNING/PAUSED/COMPLETED/FAILED/CANCELLED), pause/resume/cancel, metrics, state history, and JSON checkpoints that restore both configuration and the exact RNG stream (`load_checkpoint` raises `ValueError` when a checkpoint lacks the `config` or `rng_state` snapshot)
 - **Paradigms**: agent-based models (`AgentBasedModel`, `Agent`), system dynamics (`SystemDynamicsModel`), cellular automata (`CellularAutomata`)
 - **Mesa bridge** (optional): `MesaModelBridge` wraps any `mesa.Model` with snapshot/metric collection; install with the `mesa` extra — everything else works without it
 - **Scenario analysis**: `ScenarioManager` for scenario storage, comparison, and sequential or parallel batch execution with per-scenario error reporting

@@ -47,21 +47,17 @@ Module Orchestrators workspace within `GEO-INFER-EXAMPLES`.
 - `TIME/`
 - `TRANSPORT/`
 - `WATER/`
-- `_lib.py`
-- `update_to_thin_orchestrators.py`
 
 ## Public Interface
 
-- `_lib.py:run_module_orchestrator` (function)
-- `update_to_thin_orchestrators.py:create_thin_orchestrator_script` (function)
-- `update_to_thin_orchestrators.py:main` (function)
+- No public Python symbols are defined directly in this directory.
 
 ## Module Metadata
 
 - Module: `GEO-INFER-EXAMPLES`
 - Package: `geo_infer_examples`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-EXAMPLES`
+- Install: `uv sync --package geo-infer-examples`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module EXAMPLES`
 
 ## Dependencies

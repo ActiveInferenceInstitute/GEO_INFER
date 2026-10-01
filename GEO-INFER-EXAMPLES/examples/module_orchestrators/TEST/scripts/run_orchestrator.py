@@ -11,29 +11,22 @@ spatial, IoT, Bayesian, and performance validators coordinated by the
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
-
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
 def _operation() -> dict[str, Any]:
     import h3
-
     from geo_infer_test import (
         QualityController,
+        as_finite_array,
         assert_probability,
         assert_seed_replay,
         assert_stochastic_matrix,
     )
-    from geo_infer_test import as_finite_array
 
     rng = np.random.default_rng(42)
 

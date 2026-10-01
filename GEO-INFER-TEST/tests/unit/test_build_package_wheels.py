@@ -13,19 +13,15 @@ pytestmark = pytest.mark.unit
 
 
 def _driver():
-    """Load the wheel CLI module with its sibling validator available."""
+    """Load the wheel CLI module; conftest makes its sibling validator importable."""
     directory = Path(__file__).resolve().parents[2]
-    sys.path.insert(0, str(directory))
-    try:
-        spec = importlib.util.spec_from_file_location(
-            "geo_wheel_driver", directory / "build_package_wheels.py"
-        )
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[spec.name] = module
-        spec.loader.exec_module(module)
-        return module
-    finally:
-        sys.path.remove(str(directory))
+    spec = importlib.util.spec_from_file_location(
+        "geo_wheel_driver", directory / "build_package_wheels.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _wheel(directory: Path, source: str) -> Path:

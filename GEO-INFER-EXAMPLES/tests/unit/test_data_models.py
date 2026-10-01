@@ -318,7 +318,7 @@ class TestGeoInferModules:
         assert "MATH" in spec.dependencies
 
     def test_modules_have_valid_types(self):
-        for key, spec in GEO_INFER_MODULES.items():
+        for spec in GEO_INFER_MODULES.values():
             assert isinstance(spec, ModuleSpec)
             assert isinstance(spec.module_type, ModuleType)
             assert spec.version is not None

@@ -119,15 +119,12 @@ class TestExposureModelSeeding:
         b = EnhancedExposureModel("property", {"random_seed": 0})
         assert a._rng.random() == b._rng.random()
 
-    def test_seed_alias_is_honoured(self) -> None:
-        a = EnhancedExposureModel("property", {"seed": 12})
-        b = EnhancedExposureModel("property", {"random_seed": 12})
-        assert a._rng.random() == b._rng.random()
-
-    def test_random_seed_wins_over_the_alias(self) -> None:
-        aliased = EnhancedExposureModel("property", {"random_seed": 1, "seed": 2})
-        expected = EnhancedExposureModel("property", {"random_seed": 1})
-        assert aliased._rng.random() == expected._rng.random()
+    def test_removed_seed_alias_is_rejected(self) -> None:
+        """Only ``random_seed`` seeds the model; a ``seed`` key fails loudly."""
+        with pytest.raises(ValueError, match="random_seed"):
+            EnhancedExposureModel("property", {"seed": 12})
+        with pytest.raises(ValueError, match="random_seed"):
+            EnhancedExposureModel("property", {"random_seed": 1, "seed": 2})
 
     def test_unseeded_models_are_independent(self) -> None:
         a = EnhancedExposureModel("property", {})

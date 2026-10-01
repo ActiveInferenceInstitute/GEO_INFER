@@ -20,9 +20,11 @@ this module is a summary of that table:
 
 Annualization is explicit throughout. Several metrics need to know how many
 years of exposure the table spans; a table of ``n`` events says nothing about
-that on its own. Those functions take an ``exposure_years`` argument and log a
-warning when it is omitted, because the fallback (treating each event as one
-year) systematically distorts anything expressed per year.
+that on its own. :func:`calculate_aal` requires ``exposure_years``. The
+exceedance functions take an optional ``exposure_years``: without it their
+probabilities are per-event frequencies (EP curve, PML) or the table is
+assumed to span one year (annual OEP/AEP, tail fit), and a warning is logged
+because that assumption distorts anything expressed per year.
 """
 
 from __future__ import annotations
@@ -187,77 +189,49 @@ def _interpolate_loss_at_probs(
 
 def calculate_aal(
     event_loss_table: pd.DataFrame | np.ndarray,
-    exposure_years: float | None = None,
+    exposure_years: float,
 ) -> float | dict[str, Any]:
     """Calculate the Average Annual Loss (AAL).
 
     The AAL is the expected loss per year: total modelled loss divided by the
-    number of years of exposure the table represents.
+    number of years of exposure the table represents,
+    ``AAL = total loss / exposure_years``. The event count cannot stand in for
+    the exposure period, so ``exposure_years`` is required.
 
     Args:
         event_loss_table: Either a DataFrame of event losses with columns
             ``event_id``, ``hazard_type`` and ``loss``, or a 1-D numpy array of
             per-event losses.
-        exposure_years: Number of exposure years the loss table spans. When
-            provided, ``AAL = total loss / exposure_years``. When omitted, the
-            denominator falls back to the number of distinct events, which
-            equals the AAL only if exactly one event occurs per year and
-            otherwise over-estimates it; a warning is logged in that case.
+        exposure_years: Number of exposure years the loss table spans.
 
     Returns:
-        For an array input, the mean loss per event as a float. For a DataFrame
-        input, a dict with ``total`` (float) and ``by_hazard``
-        (``Dict[str, float]``) keys.
+        For an array input, the AAL as a float. For a DataFrame input, a dict
+        with ``total`` (float) and ``by_hazard`` (``Dict[str, float]``) keys.
 
     Raises:
         ValueError: If a DataFrame input lacks a required column, if an array
             input is not one-dimensional, or if ``exposure_years`` is not
             finite and positive.
     """
+    if exposure_years is None:
+        raise ValueError(
+            "calculate_aal requires exposure_years: the number of years of "
+            "exposure the loss table spans"
+        )
     if isinstance(event_loss_table, np.ndarray):
         losses = _event_total_losses(event_loss_table)
-        if losses.size == 0:
-            return 0.0
-        if exposure_years is not None:
-            years = _resolve_exposure_years(
-                exposure_years, losses.size, "calculate_aal"
-            )
-            return float(losses.sum() / years)
-        return float(np.mean(losses))
+        years = _resolve_exposure_years(exposure_years, losses.size, "calculate_aal")
+        return float(losses.sum() / years) if losses.size else 0.0
 
     _validate_columns(event_loss_table)
-    total_loss = float(event_loss_table["loss"].sum())
     num_events = int(event_loss_table["event_id"].nunique())
-
-    if exposure_years is not None:
-        denominator = _resolve_exposure_years(
-            exposure_years, num_events, "calculate_aal"
-        )
-    else:
-        denominator = float(num_events) if num_events > 0 else 1.0
-        logger.warning(
-            "calculate_aal called without exposure_years; dividing by the %d "
-            "distinct events instead of by years of exposure. That equals the "
-            "AAL only at one event per year. Pass exposure_years for a true "
-            "average annual loss.",
-            num_events,
-        )
-
-    hazard_aal: dict[str, float] = {}
-    for hazard_type, group in event_loss_table.groupby("hazard_type"):
-        hazard_loss = float(group["loss"].sum())
-        if exposure_years is not None:
-            hazard_aal[str(hazard_type)] = hazard_loss / denominator
-        else:
-            hazard_events = int(group["event_id"].nunique())
-            hazard_aal[str(hazard_type)] = (
-                hazard_loss / hazard_events if hazard_events > 0 else 0.0
-            )
-
-    return {
-        "total": total_loss / denominator if total_loss else 0.0,
-        "by_hazard": hazard_aal,
+    years = _resolve_exposure_years(exposure_years, num_events, "calculate_aal")
+    total_loss = float(event_loss_table["loss"].sum())
+    hazard_aal = {
+        str(hazard_type): float(group["loss"].sum()) / years
+        for hazard_type, group in event_loss_table.groupby("hazard_type")
     }
+    return {"total": total_loss / years, "by_hazard": hazard_aal}
 
 
 def calculate_ep_curve(

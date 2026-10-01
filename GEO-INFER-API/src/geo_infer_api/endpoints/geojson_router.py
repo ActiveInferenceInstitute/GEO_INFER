@@ -175,7 +175,7 @@ async def list_polygon_features(
             raise BadRequestError(
                 "Invalid bbox format. Expected 'minLon,minLat,maxLon,maxLat'",
                 field="bbox",
-            )
+            ) from None
 
         def polygon_intersects_bbox(polygon_feature: PolygonFeature) -> bool:
             coordinates = [
@@ -414,7 +414,7 @@ async def calculate_intersection_endpoint(
             [pf.geometry for pf in request.polygons]
         )
     except ValueError as exc:
-        raise ValidationError(str(exc))
+        raise ValidationError(str(exc)) from exc
 
     return PolygonFeature(
         type=GeoJSONType.FEATURE,

@@ -140,7 +140,7 @@ class TraceabilityManager:
         matrix: dict[str, TraceMatrixEntry] = {}
 
         for req_id in self._req_ids:
-            req_links = [l for l in self._links if l.req_id == req_id]
+            req_links = [link for link in self._links if link.req_id == req_id]
 
             linked_artifacts: dict[str, list[str]] = {}
             verified_count = 0
@@ -156,7 +156,7 @@ class TraceabilityManager:
             forward_coverage = 1.0 if total_links > 0 else 0.0
 
             # Backward: what fraction of linked artifacts trace back
-            bidirectional_count = sum(1 for l in req_links if l.bidirectional)
+            bidirectional_count = sum(1 for link in req_links if link.bidirectional)
             backward_coverage = (
                 bidirectional_count / total_links if total_links > 0 else 0.0
             )

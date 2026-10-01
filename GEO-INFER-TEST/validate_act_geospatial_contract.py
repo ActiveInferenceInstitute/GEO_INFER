@@ -10,7 +10,6 @@ import inspect
 import json
 import math
 import re
-import sys
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -21,7 +20,6 @@ from PIL import Image
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ACT_ROOT = REPO_ROOT / "GEO-INFER-ACT"
 ACT_SRC = ACT_ROOT / "src"
-sys.path.insert(0, str(ACT_SRC))
 
 REQUIRED_GEOSPATIAL_FILES = {
     "data/full_history.json",
@@ -540,12 +538,12 @@ def validate_lattice_animation_payload(
             fail(f"{scenario} frame has no cell metrics")
         for cell_id, cell_data in metrics.items():
             if not isinstance(cell_data, dict):
-                fail(f"{scenario} cell metric is not a dict")
+                fail(f"{scenario} cell metric for {cell_id} is not a dict")
             if "free_energy" not in cell_data and "entropy" not in cell_data:
-                fail(f"{scenario} cell metric missing free_energy or entropy")
+                fail(f"{scenario} cell {cell_id} missing free_energy or entropy")
             for value in cell_data.values():
                 if isinstance(value, (int, float)) and not math.isfinite(value):
-                    fail(f"{scenario} non-finite cell metric value")
+                    fail(f"{scenario} non-finite metric value for cell {cell_id}")
 
 
 def validate_research_statistics(

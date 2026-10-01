@@ -282,7 +282,7 @@ class ScenarioManager:
         results = {}
 
         if parallel:
-            # Parallel execution (simplified - would use multiprocessing in production)
+            # Thread-pool execution: scenarios run concurrently in one process.
             import concurrent.futures
 
             with concurrent.futures.ThreadPoolExecutor() as executor:

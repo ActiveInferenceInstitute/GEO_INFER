@@ -231,6 +231,6 @@ class TestPollutionSourceIdentification:
         result = assessor.identify_pollution_sources(conc, flow_direction=flow_dir)
         sources = result["potential_sources"].values
         # Left cell (col 0): downstream neighbour (col 1) is a hotspot -> not a source.
-        assert sources[0, 0] == False
+        assert not sources[0, 0]
         # Right cell (col 1): downstream neighbour (col 2) is NOT a hotspot -> source.
-        assert sources[0, 1] == True
+        assert sources[0, 1]

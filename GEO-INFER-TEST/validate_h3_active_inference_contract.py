@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import ast
 import math
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -82,12 +81,6 @@ OBSOLETE_PYMDP_RUNTIME_IMPORTS = [
 ]
 REQUIRED_PYMDP_VERSION = "1.0.3"
 REQUIRED_H3_VERSION = "4.5.0"
-
-
-def _ensure_import_path() -> None:
-    for src in (str(ACT_SRC), str(SPACE_SRC)):
-        if src not in sys.path:
-            sys.path.insert(0, src)
 
 
 def _is_runtime_file(path: Path) -> bool:
@@ -240,7 +233,7 @@ def _assert_spatial_trace(
     expected_leaf_cells: int,
     label: str,
 ) -> None:
-    from geo_infer_act import SpatialInferenceTrace  # noqa: PLC0415
+    from geo_infer_act import SpatialInferenceTrace
 
     assert isinstance(trace, SpatialInferenceTrace), f"{label} wrong trace type"
     assert trace.cell_diagnostics, f"{label} missing cell diagnostics"
@@ -284,8 +277,8 @@ def _assert_spatial_trace(
 
 
 def _validate_space_indexing_contract() -> list[str]:
-    import h3  # noqa: PLC0415
-    from geo_infer_space.core.spatial_indexing import (  # noqa: PLC0415
+    import h3
+    from geo_infer_space.core.spatial_indexing import (
         SpatialIndexingInterface,
     )
 
@@ -333,7 +326,7 @@ def _validate_space_indexing_contract() -> list[str]:
 
 
 def _validate_act_h3_runtime(cells: list[str]) -> None:
-    from geo_infer_act import (  # noqa: PLC0415
+    from geo_infer_act import (
         ActiveInferenceModel,
         ActiveInferenceStepResult,
         GenerativeModel,
@@ -344,21 +337,21 @@ def _validate_act_h3_runtime(cells: list[str]) -> None:
         NestedH3GridInferenceResult,
         SpatialActiveInferenceAgent,
     )
-    from geo_infer_act.models.multi_agent import MultiAgentModel  # noqa: PLC0415
-    from geo_infer_act.utils.h3_adapter import get_h3_adapter  # noqa: PLC0415
+    from geo_infer_act.models.multi_agent import MultiAgentModel
+    from geo_infer_act.utils.h3_adapter import get_h3_adapter
     from geo_infer_act.utils.pymdp_adapter import (
         validate_pymdp_version,
-    )  # noqa: PLC0415
-    from geo_infer_act.runners.h3 import (  # noqa: PLC0415
+    )
+    from geo_infer_act.runners.h3 import (
         generate_realistic_environmental_observations,
         h3_cells_for_config,
         observation_dict_to_vector,
     )
-    from geo_infer_act.utils.spatial_research import (  # noqa: PLC0415
+    from geo_infer_act.utils.spatial_research import (
         apply_h3_research_profile,
         build_spatial_research_statistics,
     )
-    from geo_infer_space.nested import NestedH3Grid  # noqa: PLC0415
+    from geo_infer_space.nested import NestedH3Grid
 
     assert validate_pymdp_version() == REQUIRED_PYMDP_VERSION
 
@@ -655,7 +648,6 @@ def _validate_act_h3_runtime(cells: list[str]) -> None:
 
 
 def main() -> int:
-    _ensure_import_path()
 
     _validate_no_h3_v3_calls()
     _validate_no_inert_h3_methods()

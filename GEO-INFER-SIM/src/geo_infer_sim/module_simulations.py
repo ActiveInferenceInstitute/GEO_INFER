@@ -1318,7 +1318,7 @@ class ModuleSimulations:
         def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate documentation generation
             docs_generated = 0
-            for doc_type in documentation_needs:
+            for _ in documentation_needs:
                 docs = int(self.rng.poisson(2.0 * self.config.time_step))
                 docs_generated += docs
 
@@ -1530,7 +1530,7 @@ class ModuleSimulations:
         def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate compliance checking
             compliance_score = 0.0
-            for requirement in regulatory_requirements:
+            for _ in regulatory_requirements:
                 compliance = 0.9 + self.rng.normal(0, 0.05)
                 compliance = np.clip(compliance, 0, 1)
                 compliance_score += compliance

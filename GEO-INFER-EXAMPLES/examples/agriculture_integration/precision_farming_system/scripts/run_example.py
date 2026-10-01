@@ -651,7 +651,7 @@ def main():
 
     try:
         farming_system = PrecisionFarmingSystem()
-        results = farming_system.run_farming_system()
+        farming_system.run_farming_system()
 
         print("\n🎉 Precision farming system completed successfully!")
         print("This example demonstrates IoT-driven agricultural optimization.")

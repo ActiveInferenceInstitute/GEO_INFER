@@ -253,7 +253,7 @@ class OrganizationModel:
 
         # Average span of control (avg number of direct children for non-leaf nodes)
         spans = []
-        for uid, children in self._adjacency.items():
+        for children in self._adjacency.values():
             if children:
                 spans.append(len(children))
         avg_span = sum(spans) / len(spans) if spans else 0.0
