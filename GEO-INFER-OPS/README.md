@@ -8,7 +8,6 @@ System orchestration, monitoring, infrastructure management, and deployment auto
 - `deployment/`
 - `docs/`
 - `examples/`
-- `logs/`
 - `monitoring/`
 - `src/`
 - `tests/`

@@ -23,7 +23,6 @@ Config workspace within `GEO-INFER-PLACE`.
 - `cascadia_volcanoes.source.json`
 - `cascadia_watersheds.source.json`
 - `county_boundaries.yaml`
-- `data_cleanup_config.json`
 - `data_urls.json`
 
 ## Public Interface

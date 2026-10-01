@@ -4,7 +4,7 @@ Logs workspace within `GEO-INFER-EXAMPLES`.
 
 ## Contents
 
-- `example_runner.log`
+- No direct tracked child entries.
 
 ## Public Interface
 

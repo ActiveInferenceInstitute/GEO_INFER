@@ -77,3 +77,11 @@ GEO-INFER-NORMS/tests/test-outputs/
 # (the re-include above overrides the global pycache rules for those trees).
 GEO-INFER-*/src/**/config/__pycache__/
 GEO-INFER-*/src/**/config/**/*.pyc
+
+# Runtime logs and machine-specific generated config never ship. The ACT
+# audit evidence bundle and the INTRA realms probe receipts are curated
+# exceptions referenced by docs.
+*.log
+!GEO-INFER-ACT/examples/output/comprehensive_act_audit/**/*.log
+!GEO-INFER-INTRA/docs/realms/outputs/**/*.log
+GEO-INFER-PLACE/locations/cascadia/config/data_cleanup_config.json

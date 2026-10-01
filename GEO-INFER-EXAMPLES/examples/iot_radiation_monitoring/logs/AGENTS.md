@@ -22,7 +22,6 @@
 ## Local Contents
 
 - `radiation_monitoring_20250620_084037.jsonl`
-- `radiation_monitoring_demo.log`
 - `radiation_monitoring_demo_structured.jsonl`
 
 ## Validation

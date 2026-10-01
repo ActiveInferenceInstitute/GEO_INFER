@@ -67,8 +67,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README theme table is validated to list every module exactly once; module
   signposts advertise `uv sync --package <dist>`.
 
+- **Hard-dependency import guards**: 72 `try/except ImportError` guards
+  (plus `HAS_*`/`*_AVAILABLE` flags and fallback branches) around packages
+  each module declares in `[project.dependencies]` are removed across ACT,
+  ANT, API, BAYES, COMMS, DATA, IOT, MATH, NORMS, PEP, PLACE, RISK, SPACE,
+  SPM and TEST; guards remain only for optional extras. BAYES LOO is always
+  PSIS-LOO; DATA spatial indexes always use a real R-tree.
+- **Tracked runtime logs** (EXAMPLES, OPS, PLACE, Cascadia) and the
+  machine-specific Cascadia `data_cleanup_config.json`; `*.log` is ignored
+  except the curated ACT audit bundle and INTRA realms receipts.
+
+#### Added
+
+- `validate_packaging.validate_test_import_parity` (DEP-02): every
+  third-party or sibling import under a module's `tests/` must be declared
+  (dependency, extra, or PEP 735 `[dependency-groups]`); remaining gaps live
+  in `test` groups. CI and the canonical sync command use `--all-groups`.
+- `validate_repo_contracts.validate_rng_helper_parity` and
+  `validate_pyproject_only_packaging`.
+- IOT `models.measurement.normalize_timestamp` (explicit-UTC contract shared
+  with TIME/DATA).
+
 #### Fixed
 
+- SPM scale-location plot imported a nonexistent `scipy.stats.lowess`.
+- ANT mutual information divided nats by an entropy in bits.
+- PLACE Cascadia CLI validated an always-empty `locals()` lookup; data
+  quality is wired to `geo_infer_data`'s `GeospatialValidator`; the cleanup
+  config is written with portable relative paths.
 - NORMS zoning report printed format specs instead of values, and area
   statistics were in square degrees / Web Mercator (now EPSG:6933 equal-area).
 - RISK spatial correlation mixed degrees and kilometres.

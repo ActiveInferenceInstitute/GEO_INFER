@@ -25,7 +25,6 @@
 - `deployment/`
 - `docs/`
 - `examples/`
-- `logs/`
 - `monitoring/`
 - `src/`
 - `tests/`

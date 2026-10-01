@@ -249,16 +249,17 @@ class DataCleanupManager:
         """
         logger.info("🔄 Updating data manager configuration...")
 
-        # Create a new configuration that points to module directories
+        # Paths are stored relative to the location root so the generated
+        # configuration is portable across checkouts.
         config = {
             "module_data_paths": {},
-            "output_summary_path": str(self.output_dir),
+            "output_summary_path": self._portable_path(self.output_dir),
             "cache_cleanup_enabled": True,
             "keep_recent_runs": 3,
         }
 
         for module_name, module_dir in self.module_dirs.items():
-            config["module_data_paths"][module_name] = str(module_dir)
+            config["module_data_paths"][module_name] = self._portable_path(module_dir)
 
         config_path = self.base_dir / "config" / "data_cleanup_config.json"
         config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -267,6 +268,14 @@ class DataCleanupManager:
             json.dump(config, f, indent=2)
 
         logger.info(f"✅ Updated data manager configuration: {config_path}")
+
+    def _portable_path(self, path: Path) -> str:
+        """Return ``path`` relative to the location root when it lies inside it."""
+        resolved = Path(path).resolve()
+        try:
+            return resolved.relative_to(Path(self.base_dir).resolve()).as_posix()
+        except ValueError:
+            return resolved.as_posix()
 
     def _extract_timestamp(self, filename: str) -> str | None:
         """Extract timestamp from filename."""
