@@ -46,7 +46,7 @@ Domain modules register their own algorithms on the same
 ## Availability
 
 The registry is imported gracefully. When the full uv workspace is synced
-(`uv sync --all-packages --all-extras`), `geo_infer_space` provides the
+(`uv sync --all-packages --all-extras --all-groups`), `geo_infer_space` provides the
 reference registry. If `geo_infer_space` is not importable the endpoints
 return HTTP 503 with a clear message instead of failing at import time.
 

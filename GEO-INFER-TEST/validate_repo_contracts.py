@@ -39,7 +39,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 EXPECTED_MODULE_COUNT = 45
 SIGNPOST_FILES = ("README.md", "AGENTS.md", "SKILL.md")
 MIN_TEST_FILES_PER_MODULE = 4
-CANONICAL_UV_SYNC_COMMAND = "uv sync --all-packages --all-extras"
+CANONICAL_UV_SYNC_COMMAND = "uv sync --all-packages --all-extras --all-groups"
 CANONICAL_UV_DOC_FILES = (
     "README.md",
     "AGENTS.md",

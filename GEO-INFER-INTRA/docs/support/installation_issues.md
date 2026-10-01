@@ -45,7 +45,7 @@ uv --version
 | Issue | Fix |
 |-------|-----|
 | `command not found: uv` | Add `~/.cargo/bin` to PATH, or restart your shell |
-| `uv sync` reports a stale lock | Run `uv lock` after editing a `pyproject.toml`, then `uv sync --all-packages --all-extras` |
+| `uv sync` reports a stale lock | Run `uv lock` after editing a `pyproject.toml`, then `uv sync --all-packages --all-extras --all-groups` |
 | Old version of uv | `uv self update` |
 
 ## Installing GEO-INFER Modules
@@ -58,7 +58,7 @@ git clone https://github.com/ActiveInferenceInstitute/GEO_INFER.git
 cd GEO_INFER
 
 # Create .venv and install every workspace module (editable) with all extras
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 ```
 
 `uv sync` creates `.venv/` itself; use `uv run <command>` instead of activating
@@ -145,7 +145,7 @@ sudo dnf install gdal gdal-devel python3-gdal
 ### Windows
 
 `rasterio`, `fiona` and `geopandas` are locked workspace dependencies and ship
-binary wheels for Windows, so `uv sync --all-packages --all-extras` installs
+binary wheels for Windows, so `uv sync --all-packages --all-extras --all-groups` installs
 them without a system GDAL. Use WSL2 if a native build is still required.
 
 ## H3 Library Installation
@@ -153,7 +153,7 @@ them without a system GDAL. Use WSL2 if a native build is still required.
 H3 v4 is required (`h3>=4.5.0,<5`, pinned in `uv.lock`). The Python `h3` package includes pre-built wheels for most platforms, and `uv sync` installs it.
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 
 # Verify
 python -c "import h3; print(h3.versions())"
@@ -167,7 +167,7 @@ brew install h3
 
 # Ubuntu
 sudo apt install cmake
-uv sync --all-packages --all-extras --no-binary-package h3  # builds from source
+uv sync --all-packages --all-extras --all-groups --no-binary-package h3  # builds from source
 ```
 
 **H3 v3 vs v4 check:**
@@ -180,7 +180,7 @@ try:
     h3.latlng_to_cell(37.7749, -122.4194, 7)
     print("H3 v4 installed correctly")
 except AttributeError:
-    print("ERROR: H3 v3 installed. Re-sync the locked environment: uv sync --all-packages --all-extras")
+    print("ERROR: H3 v3 installed. Re-sync the locked environment: uv sync --all-packages --all-extras --all-groups")
 ```
 
 ## Common uv Error Messages
@@ -190,7 +190,7 @@ except AttributeError:
 | `No solution found when resolving dependencies` | Conflicting version requirements across module `pyproject.toml` files | Read the conflict chain uv prints, align the floors (see `.agents/standards.md` Dependency Floor Policy), then `uv lock` |
 | `ERROR: No matching distribution` | Package not available for your Python/OS | Check PyPI for available platforms; consider building from source |
 | `subprocess-exited-with-error` during install | C extension build failed | Install system dev libraries (gcc, python3-dev, libffi-dev) |
-| `externally-managed-environment` | System Python refuses package installs | Use the workspace environment: `uv sync --all-packages --all-extras` creates `.venv/` |
+| `externally-managed-environment` | System Python refuses package installs | Use the workspace environment: `uv sync --all-packages --all-extras --all-groups` creates `.venv/` |
 | `The lockfile at uv.lock needs to be updated` | A `pyproject.toml` changed without re-locking (`--locked` mode) | Run `uv lock` and commit the updated `uv.lock` |
 
 ## Virtual Environment Conflicts
@@ -218,7 +218,7 @@ conda create -n geoinfer-sys gdal proj geos -c conda-forge
 conda activate geoinfer-sys
 
 # uv still builds the workspace environment from uv.lock
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 ```
 
 Do not install Python packages with conda into the uv environment; `uv sync`
@@ -231,7 +231,7 @@ removes packages that are not in `uv.lock`.
 - Use the arm64 Homebrew (`/opt/homebrew/bin/brew`)
 - Ensure Python is arm64: `python -c "import platform; print(platform.machine())"`
 - Some packages may require Rosetta 2 for x86_64 emulation
-- If `numpy` or `scipy` attempts a source build, confirm the interpreter is arm64 and re-run `uv sync --all-packages --all-extras` (arm64 wheels are available)
+- If `numpy` or `scipy` attempts a source build, confirm the interpreter is arm64 and re-run `uv sync --all-packages --all-extras --all-groups` (arm64 wheels are available)
 
 ### Windows
 

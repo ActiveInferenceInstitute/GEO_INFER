@@ -76,6 +76,12 @@ Repository = "https://github.com/ActiveInferenceInstitute/GEO_INFER"
 [project.scripts]
 geo-infer-health = "geo_infer_health.cli:main"
 
+[dependency-groups]
+# Test-only dependencies (imported by tests/, not by src/ or any extra).
+test = [
+    "pyogrio>=0.7.2",
+]
+
 [tool.uv.sources]
 geo-infer-test = { workspace = true }
 

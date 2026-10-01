@@ -33,75 +33,24 @@ from .core.hierarchy import HierarchyManager
 from .boundaries.boundary_manager import H3BoundaryManager
 from .boundaries.detector import BoundaryDetector, BoundarySegment, BoundaryType
 
-logger = logging.getLogger(__name__)
-
 # Message passing
-try:
-    from .messaging.message_broker import (
-        H3MessageBroker as H3MessageBroker,
-        Message as Message,
-        MessageType as MessageType,
-    )
-    from .messaging.routing import (
-        MessageRouter as MessageRouter,
-        RoutingStrategy as RoutingStrategy,
-    )
-    from .messaging.protocols import (
-        MessageProtocol as MessageProtocol,
-        ProtocolType as ProtocolType,
-    )
-
-    MESSAGING_AVAILABLE = True
-except ImportError as e:
-    logger.warning(f"Messaging components not fully available: {e}")
-    MESSAGING_AVAILABLE = False
+from .messaging.message_broker import H3MessageBroker, Message, MessageType
+from .messaging.routing import MessageRouter, RoutingStrategy
+from .messaging.protocols import MessageProtocol, ProtocolType
 
 # Operations
-try:
-    from .operations.lumping import (
-        H3LumpingEngine as H3LumpingEngine,
-        LumpingStrategy as LumpingStrategy,
-    )
-    from .operations.splitting import (
-        H3SplittingEngine as H3SplittingEngine,
-        SplittingStrategy as SplittingStrategy,
-    )
-    from .operations.aggregation import (
-        H3AggregationEngine as H3AggregationEngine,
-        AggregationFunction as AggregationFunction,
-    )
-
-    OPERATIONS_AVAILABLE = True
-except ImportError as e:
-    logger.warning(f"Operations components not fully available: {e}")
-    OPERATIONS_AVAILABLE = False
+from .operations.lumping import H3LumpingEngine, LumpingStrategy
+from .operations.splitting import H3SplittingEngine, SplittingStrategy
+from .operations.aggregation import H3AggregationEngine, AggregationFunction
 
 # Analytics
-try:
-    from .analytics.flow_analysis import (
-        H3FlowAnalyzer as H3FlowAnalyzer,
-        FlowType as FlowType,
-        FlowPattern as FlowPattern,
-    )
-    from .analytics.hierarchy_metrics import (
-        H3HierarchyAnalyzer as H3HierarchyAnalyzer,
-        HierarchyMetric as HierarchyMetric,
-    )
-    from .analytics.pattern_detection import (
-        H3PatternDetector as H3PatternDetector,
-        PatternType as PatternType,
-    )
-    from .analytics.performance_metrics import (
-        H3PerformanceAnalyzer as H3PerformanceAnalyzer,
-        PerformanceMetric as PerformanceMetric,
-    )
+from .analytics.flow_analysis import H3FlowAnalyzer, FlowType, FlowPattern
+from .analytics.hierarchy_metrics import H3HierarchyAnalyzer, HierarchyMetric
+from .analytics.pattern_detection import H3PatternDetector, PatternType
+from .analytics.performance_metrics import H3PerformanceAnalyzer, PerformanceMetric
 
-    ANALYTICS_AVAILABLE = True
-except ImportError as e:
-    logger.warning(f"Analytics components not fully available: {e}")
-    ANALYTICS_AVAILABLE = False
+logger = logging.getLogger(__name__)
 
-# Define public API
 __all__ = [
     # Core
     "NestedH3Grid",
@@ -112,63 +61,45 @@ __all__ = [
     "BoundaryDetector",
     "BoundarySegment",
     "BoundaryType",
+    # Messaging
+    "H3MessageBroker",
+    "Message",
+    "MessageType",
+    "MessageRouter",
+    "RoutingStrategy",
+    "MessageProtocol",
+    "ProtocolType",
+    # Operations
+    "H3LumpingEngine",
+    "LumpingStrategy",
+    "H3SplittingEngine",
+    "SplittingStrategy",
+    "H3AggregationEngine",
+    "AggregationFunction",
+    # Analytics
+    "H3FlowAnalyzer",
+    "FlowType",
+    "FlowPattern",
+    "H3HierarchyAnalyzer",
+    "HierarchyMetric",
+    "H3PatternDetector",
+    "PatternType",
+    "H3PerformanceAnalyzer",
+    "PerformanceMetric",
 ]
-
-# Add messaging components if available
-if MESSAGING_AVAILABLE:
-    __all__.extend(
-        [
-            "H3MessageBroker",
-            "Message",
-            "MessageType",
-            "MessageRouter",
-            "RoutingStrategy",
-            "MessageProtocol",
-            "ProtocolType",
-        ]
-    )
-
-# Add operations components if available
-if OPERATIONS_AVAILABLE:
-    __all__.extend(
-        [
-            "H3LumpingEngine",
-            "LumpingStrategy",
-            "H3SplittingEngine",
-            "SplittingStrategy",
-            "H3AggregationEngine",
-            "AggregationFunction",
-        ]
-    )
-
-# Add analytics components if available
-if ANALYTICS_AVAILABLE:
-    __all__.extend(
-        [
-            "H3FlowAnalyzer",
-            "FlowType",
-            "FlowPattern",
-            "H3HierarchyAnalyzer",
-            "HierarchyMetric",
-            "H3PatternDetector",
-            "PatternType",
-            "H3PerformanceAnalyzer",
-            "PerformanceMetric",
-        ]
-    )
 
 # Module metadata
 __version__ = "1.0.0"
 __author__ = "GEO-INFER Development Team"
 __description__ = "Nested H3 Hexagonal Grid Systems for Advanced Geospatial Modeling"
 
-# Availability flags for external checking
+# Component inventory; every component imports with the hard SPACE dependencies.
 NESTED_COMPONENTS = {
     "core": True,
     "boundaries": True,
-    "messaging": MESSAGING_AVAILABLE,
-    "operations": OPERATIONS_AVAILABLE,
-    "analytics": ANALYTICS_AVAILABLE,
+    "messaging": True,
+    "operations": True,
+    "analytics": True,
 }
 
 
@@ -206,11 +137,3 @@ def create_nested_system(system_id: str, **kwargs: Any) -> NestedH3Grid:
         Configured NestedH3Grid instance
     """
     return NestedH3Grid(name=system_id, **kwargs)
-
-
-# Log module initialization
-logger.info(
-    "Nested H3 module initialized - "
-    f"{sum(NESTED_COMPONENTS.values())}/{len(NESTED_COMPONENTS)} "
-    "components available"
-)

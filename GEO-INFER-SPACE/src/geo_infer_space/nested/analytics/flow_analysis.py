@@ -16,15 +16,9 @@ from collections import defaultdict
 
 import numpy as np
 
+import h3
+
 logger = logging.getLogger(__name__)
-
-try:
-    import h3
-
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available")
 
 
 class FlowType(Enum):
@@ -492,13 +486,42 @@ class H3FlowAnalyzer:
         return cast(float, parallel_score)
 
     def _analyze_circular_flow(self, vectors: list[FlowVector]) -> float:
-        """Analyze circular/spiral flow patterns."""
-        if not vectors or not H3_AVAILABLE:
+        """
+        Score rotation of the flow field about the centroid of its source cells.
+
+        Each vector contributes the normalized cross product of its offset from
+        the centroid and its displacement (sine of the angle between them), on
+        a local equirectangular projection of the H3 cell centres. The score is
+        the absolute mean, so 1.0 is pure rotation in one sense and 0.0 is no
+        net rotation.
+        """
+        segments: list[tuple[float, float, float, float]] = []
+        for vector in vectors:
+            try:
+                src_lat, src_lng = h3.cell_to_latlng(vector.source_cell)
+                dst_lat, dst_lng = h3.cell_to_latlng(vector.target_cell)
+            except ValueError:
+                continue
+            segments.append((src_lat, src_lng, dst_lat, dst_lng))
+
+        if len(segments) < 3:
             return 0.0
 
-        # This would analyze spatial arrangement of vectors for circular patterns
-        # For now, return a simple heuristic
-        return 0.0
+        lat0 = float(np.mean([seg[0] for seg in segments]))
+        lng0 = float(np.mean([seg[1] for seg in segments]))
+        lng_scale = float(np.cos(np.radians(lat0)))
+
+        tangential: list[float] = []
+        for src_lat, src_lng, dst_lat, dst_lng in segments:
+            rx, ry = (src_lng - lng0) * lng_scale, src_lat - lat0
+            vx, vy = (dst_lng - src_lng) * lng_scale, dst_lat - src_lat
+            norm = float(np.hypot(rx, ry) * np.hypot(vx, vy))
+            if norm > 0.0:
+                tangential.append((rx * vy - ry * vx) / norm)
+
+        if len(tangential) < 3:
+            return 0.0
+        return float(abs(np.mean(tangential)))
 
     def _analyze_turbulence(self, vectors: list[FlowVector]) -> float:
         """Analyze turbulent flow patterns."""
@@ -554,17 +577,13 @@ class H3FlowAnalyzer:
         total_efficiency = 0.0
 
         for vector in flow_field.vectors.values():
-            if H3_AVAILABLE:
-                try:
-                    # Calculate H3 distance
-                    distance = h3.grid_distance(vector.source_cell, vector.target_cell)
-                    if distance > 0:
-                        efficiency = vector.magnitude / distance
-                        total_efficiency += efficiency
-                except Exception:
-                    total_efficiency += vector.magnitude
-            else:
+            try:
+                distance = h3.grid_distance(vector.source_cell, vector.target_cell)
+            except ValueError:
                 total_efficiency += vector.magnitude
+                continue
+            if distance > 0:
+                total_efficiency += vector.magnitude / distance
 
         return total_efficiency / len(flow_field.vectors)
 

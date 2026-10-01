@@ -124,6 +124,41 @@ def pyproject_optional_names(pyproject: dict) -> set:
     return names
 
 
+def pyproject_group_names(pyproject: dict, group: str | None = None) -> set:
+    """Return normalized names from PEP 735 ``[dependency-groups]``.
+
+    With ``group`` the named group is resolved, following
+    ``{include-group = "..."}`` entries transitively; without it every group
+    is resolved and the union returned. An include naming an absent group, or
+    an include cycle, contributes nothing (uv rejects both at lock time).
+    """
+    groups = pyproject.get("dependency-groups") or {}
+    if not isinstance(groups, dict):
+        return set()
+
+    def resolve(name: str, seen: frozenset[str]) -> set:
+        entries = groups.get(name)
+        if name in seen or not isinstance(entries, list):
+            return set()
+        names: set = set()
+        for entry in entries:
+            if isinstance(entry, str):
+                normalized = normalize_dependency_name(entry)
+                if normalized:
+                    names.add(normalized)
+            elif isinstance(entry, dict) and isinstance(
+                included := entry.get("include-group"), str
+            ):
+                names |= resolve(included, seen | {name})
+        return names
+
+    selected = [group] if group is not None else list(groups)
+    resolved: set = set()
+    for name in selected:
+        resolved |= resolve(name, frozenset())
+    return resolved
+
+
 # Standard-library modules that must never be listed as PyPI dependencies.
 STDLIB_REQUIREMENT_NAMES = {
     "argparse",

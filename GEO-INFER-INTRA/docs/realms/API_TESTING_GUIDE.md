@@ -12,7 +12,7 @@ sync; there is no separate requirements file.
 
 ```bash
 # From the repository root
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 ```
 
 Run the script from this directory so the default `realm_schema.json` path

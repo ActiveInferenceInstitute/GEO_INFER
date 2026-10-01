@@ -30,7 +30,7 @@ in editable mode, so source changes take effect without reinstalling.
 cd /path/to/GEO_INFER
 
 # Install every module with all optional extras (what CI uses)
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 
 # Or install a single module and its workspace dependencies
 uv sync --package geo-infer-math
@@ -58,7 +58,7 @@ uv add --package geo-infer-math --optional spatial "geopandas>=0.13.0"
 
 # Re-resolve after editing a pyproject.toml by hand
 uv lock
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 ```
 
 ### Production Builds

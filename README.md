@@ -38,7 +38,7 @@ domain modeling, agent workflows, and reproducible repository validation in one
 ## Quick Start
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
 uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language --strict-import-smoke
 uv run python GEO-INFER-TEST/validate_documentation.py --strict
@@ -72,7 +72,7 @@ The repository is a uv workspace. Use the full sync when working across module
 boundaries, or sync a single package when developing one module:
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv sync --package geo-infer-act
 uv sync --package geo-infer-space
 uv sync --package geo-infer-ant
@@ -147,7 +147,7 @@ the exact reproducible exception list.
 ## Modular Hygiene
 
 - Root `pyproject.toml`, `uv.lock`, and `.python-version` are the canonical uv environment surfaces.
-- Sync the full workspace with `uv sync --all-packages --all-extras` before repo-wide validation.
+- Sync the full workspace with `uv sync --all-packages --all-extras --all-groups` before repo-wide validation.
 - Each module owns importable behavior under `src/` and keeps at least four pytest files under `tests/`.
 - Planned work belongs in root `TODO.md` or a tracked issue, not source or test task markers.
 - Importable libraries use `logging.getLogger(__name__)`; process-wide logging configuration belongs in CLI entrypoints.

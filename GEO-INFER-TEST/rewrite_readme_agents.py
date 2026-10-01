@@ -254,7 +254,7 @@ def validation_commands(path: Path, module: ModuleInfo | None) -> str:
     """Return the validation command block for a documentation file."""
     commands: list[str] = []
     if module and module.name == "GEO-INFER-TEST":
-        commands.append("uv sync --all-packages --all-extras")
+        commands.append("uv sync --all-packages --all-extras --all-groups")
     commands.append(test_command(path, module))
     return "\n".join(commands)
 
@@ -871,7 +871,7 @@ domain modeling, agent workflows, and reproducible repository validation in one
 ## Quick Start
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
 uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language --strict-import-smoke
 uv run python GEO-INFER-TEST/validate_documentation.py --strict
@@ -905,7 +905,7 @@ The repository is a uv workspace. Use the full sync when working across module
 boundaries, or sync a single package when developing one module:
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv sync --package geo-infer-act
 uv sync --package geo-infer-space
 uv sync --package geo-infer-ant
@@ -931,7 +931,7 @@ the exact reproducible exception list.
 ## Modular Hygiene
 
 - Root `pyproject.toml`, `uv.lock`, and `.python-version` are the canonical uv environment surfaces.
-- Sync the full workspace with `uv sync --all-packages --all-extras` before repo-wide validation.
+- Sync the full workspace with `uv sync --all-packages --all-extras --all-groups` before repo-wide validation.
 - Each module owns importable behavior under `src/` and keeps at least four pytest files under `tests/`.
 - Planned work belongs in root `TODO.md` or a tracked issue, not source or test task markers.
 - Importable libraries use `logging.getLogger(__name__)`; process-wide logging configuration belongs in CLI entrypoints.
@@ -1033,7 +1033,7 @@ New to this repo? In order:
 ## Standard Commands
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
 uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language --strict-import-smoke
 uv run python GEO-INFER-TEST/validate_logging_hygiene.py
@@ -1055,7 +1055,7 @@ uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check
 ## Modular Hygiene Contract
 
 - Use root `pyproject.toml`, `uv.lock`, and `.python-version` as the shared uv environment contract.
-- Sync the shared workspace with `uv sync --all-packages --all-extras`.
+- Sync the shared workspace with `uv sync --all-packages --all-extras --all-groups`.
 - Keep module behavior in the owning `GEO-INFER-*` package under `src/`; keep scripts and examples as orchestration surfaces.
 - Treat `manuscript/generate_research_artifacts.py` as the only producer of manuscript variables, figure captions, figure registries, and resolved manuscript copies; never hand-edit ignored `output/`.
 - Keep every module's local test inventory above the minimum release gate of four pytest files.
@@ -1138,7 +1138,7 @@ def render_readme(
   `geo_infer_test.testing` fixtures for deterministic RNG, filesystem, HTTP,
   SQLite, service, model, and artifact boundaries.
 - Dependencies: required test/runtime dependencies are installed by
-  `uv sync --all-packages --all-extras`; missing backends are failures.
+  `uv sync --all-packages --all-extras --all-groups`; missing backends are failures.
 - Expected artifacts: JUnit XML under `.geo-infer-test-results/`; model and
   visualization outputs require finite statistics, sidecars, hashes, and a
   manifest.

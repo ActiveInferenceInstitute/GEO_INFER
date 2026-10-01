@@ -19,11 +19,12 @@ GEO-INFER is a 45-module geospatial inference framework implementing Active Infe
 ## Build & Development Commands
 
 ```bash
-# Synchronize the shared workspace and all package extras
-uv sync --all-packages --all-extras
+# Synchronize the shared workspace, all package extras and dependency groups
+uv sync --all-packages --all-extras --all-groups
 
-# Synchronize one workspace package when a focused check needs it
-uv sync --package geo-infer-math
+# Synchronize one workspace package with its test dependency group, for an
+# isolated check (modules declare test-only deps in [dependency-groups] test)
+uv sync --package geo-infer-ops --group test
 ```
 
 ## Testing

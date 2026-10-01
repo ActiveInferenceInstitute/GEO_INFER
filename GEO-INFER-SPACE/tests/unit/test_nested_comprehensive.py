@@ -5,122 +5,43 @@ This test suite provides complete coverage of all nested module functionality
 including core structures, boundary management, messaging, operations, and analytics.
 """
 
-import pytest
 import uuid
 
-# Test imports with graceful degradation
-try:
-    import h3
+import h3
+import numpy as np
 
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-
-try:
-    import numpy as np
-
-    NUMPY_AVAILABLE = True
-except ImportError:
-    NUMPY_AVAILABLE = False
-
-# Import nested module components
+from geo_infer_space.backends.h3.core import H3Cell
 from geo_infer_space.nested import (
-    NestedH3Grid,
-    NestedCell,
-    HierarchyManager,
-    H3BoundaryManager,
+    AggregationFunction,
     BoundaryDetector,
     BoundaryType,
+    H3AggregationEngine,
+    H3BoundaryManager,
+    H3FlowAnalyzer,
+    H3HierarchyAnalyzer,
+    H3LumpingEngine,
+    H3MessageBroker,
+    H3PatternDetector,
+    H3SplittingEngine,
+    HierarchyManager,
+    LumpingStrategy,
+    Message,
+    MessageRouter,
+    MessageType,
+    NestedCell,
+    NestedH3Grid,
+    SplittingStrategy,
     create_nested_system,
     get_component_status,
 )
-
-# Import H3 core components
-try:
-    from geo_infer_space.h3.core import H3Cell
-
-    H3_CORE_AVAILABLE = True
-except ImportError:
-    H3_CORE_AVAILABLE = False
-
-# Import operations if available
-try:
-    from geo_infer_space.nested import (
-        H3LumpingEngine,
-        H3SplittingEngine,
-        H3AggregationEngine,
-        LumpingStrategy,
-        SplittingStrategy,
-        AggregationFunction,
-    )
-
-    OPERATIONS_AVAILABLE = True
-except ImportError:
-    OPERATIONS_AVAILABLE = False
-
-# Import messaging if available
-try:
-    from geo_infer_space.nested import (
-        H3MessageBroker,
-        MessageRouter,
-        Message,
-        MessageType,
-    )
-
-    MESSAGING_AVAILABLE = True
-except ImportError:
-    MESSAGING_AVAILABLE = False
-
-# Import analytics if available
-try:
-    from geo_infer_space.nested import (
-        H3FlowAnalyzer,
-        H3HierarchyAnalyzer,
-        H3PatternDetector,
-    )
-
-    ANALYTICS_AVAILABLE = True
-except ImportError:
-    ANALYTICS_AVAILABLE = False
 
 
 def create_test_cell(
     cell_idx: str, resolution: int = 9, system_id: str = "test_system"
 ) -> NestedCell:
-    """Helper function to create test cells with proper structure."""
-    if H3_CORE_AVAILABLE and H3_AVAILABLE:
-        try:
-            h3_cell = H3Cell(index=cell_idx, resolution=resolution)
-            cell = NestedCell(h3_cell=h3_cell, system_id=system_id)
-        except Exception:
-            # Fall back to simple cell if H3 cell creation fails
-            class SimpleH3Cell:
-                def __init__(self, index, resolution):
-                    self.index = index
-                    self.resolution = resolution
-                    self.latitude = 0.0
-                    self.longitude = 0.0
-                    self.area_km2 = 1.0
-                    self.boundary = []
-                    self.properties = {}
-
-            simple_cell = SimpleH3Cell(index=cell_idx, resolution=resolution)
-            cell = NestedCell(h3_cell=simple_cell, system_id=system_id)
-    else:
-        # Create simple H3Cell-like object for testing
-        class SimpleH3Cell:
-            def __init__(self, index, resolution):
-                self.index = index
-                self.resolution = resolution
-                self.latitude = 0.0
-                self.longitude = 0.0
-                self.area_km2 = 1.0
-                self.boundary = []
-                self.properties = {}
-
-        simple_cell = SimpleH3Cell(index=cell_idx, resolution=resolution)
-        cell = NestedCell(h3_cell=simple_cell, system_id=system_id)
-
+    """Create a NestedCell backed by a real H3 cell."""
+    h3_cell = H3Cell(index=cell_idx, resolution=resolution)
+    cell = NestedCell(h3_cell=h3_cell, system_id=system_id)
     return cell
 
 
@@ -152,19 +73,12 @@ class TestNestedModuleCore:
         grid = create_nested_system("test_grid")
 
         # Test adding cells to grid first
-        if H3_AVAILABLE:
-            # Use real H3 indices
-            test_cells = ["8928308280fffff", "8928308280bffff", "89283082807ffff"]
-        else:
-            # Use mock indices
-            test_cells = ["cell_1", "cell_2", "cell_3"]
-
+        # Use real H3 indices
+        test_cells = ["8928308280fffff", "8928308280bffff", "89283082807ffff"]
         # Add cells to grid
         for cell_idx in test_cells:
             cell = create_test_cell(cell_idx, resolution=9, system_id="test_system")
-            cell.state_variables["value"] = (
-                np.random.random() if NUMPY_AVAILABLE else 0.5
-            )
+            cell.state_variables["value"] = np.random.random()
             grid.add_cell(cell)
 
         # Test adding a system with the cells
@@ -469,76 +383,71 @@ class TestIntegration:
             print(f"Boundary detection note: {e}")
 
         # Test operations if available
-        if OPERATIONS_AVAILABLE:
-            # Test lumping
-            lumping_engine = H3LumpingEngine()
-            try:
-                lump_result = lumping_engine.lump_cells(
-                    grid,
-                    strategy=LumpingStrategy.ATTRIBUTE_BASED,
-                    system_id="main_system",
-                    grouping_field="category",
-                )
-                assert lump_result.num_input_cells == 20
-                print(f"Lumping created {lump_result.num_output_lumps} lumps")
-            except Exception as e:
-                print(f"Lumping test note: {e}")
-
-            # Test aggregation
-            aggregation_engine = H3AggregationEngine()
-            from geo_infer_space.nested.operations.aggregation import (
-                AggregationRule,
-                AggregationScope,
+        # Test lumping
+        lumping_engine = H3LumpingEngine()
+        try:
+            lump_result = lumping_engine.lump_cells(
+                grid,
+                strategy=LumpingStrategy.ATTRIBUTE_BASED,
+                system_id="main_system",
+                grouping_field="category",
             )
+            assert lump_result.num_input_cells == 20
+            print(f"Lumping created {lump_result.num_output_lumps} lumps")
+        except Exception as e:
+            print(f"Lumping test note: {e}")
 
-            # Add aggregation rule
-            rule = AggregationRule(
-                rule_id="test_rule",
-                source_field="value",
-                target_field="avg_value",
-                function=AggregationFunction.MEAN,
-                scope=AggregationScope.SYSTEM_WIDE,
+        # Test aggregation
+        aggregation_engine = H3AggregationEngine()
+        from geo_infer_space.nested.operations.aggregation import (
+            AggregationRule,
+            AggregationScope,
+        )
+
+        # Add aggregation rule
+        rule = AggregationRule(
+            rule_id="test_rule",
+            source_field="value",
+            target_field="avg_value",
+            function=AggregationFunction.MEAN,
+            scope=AggregationScope.SYSTEM_WIDE,
+        )
+        aggregation_engine.add_rule(rule)
+
+        try:
+            agg_result = aggregation_engine.aggregate_data(
+                grid, system_id="main_system"
             )
-            aggregation_engine.add_rule(rule)
-
-            try:
-                agg_result = aggregation_engine.aggregate_data(
-                    grid, system_id="main_system"
-                )
-                assert agg_result.cells_processed == 20
-                print(f"Aggregation processed {agg_result.cells_processed} cells")
-            except Exception as e:
-                print(f"Aggregation test note: {e}")
+            assert agg_result.cells_processed == 20
+            print(f"Aggregation processed {agg_result.cells_processed} cells")
+        except Exception as e:
+            print(f"Aggregation test note: {e}")
 
         # Test messaging if available
-        if MESSAGING_AVAILABLE:
-            broker = H3MessageBroker()
+        broker = H3MessageBroker()
 
-            # Register a test handler
-            def integration_handler(message):
-                return f"Integration test handled: {message.payload}"
+        # Register a test handler
+        def integration_handler(message):
+            return f"Integration test handled: {message.payload}"
 
-            handler_id = broker.register_handler(
-                system_id="main_system", handler_function=integration_handler
-            )
+        handler_id = broker.register_handler(
+            system_id="main_system", handler_function=integration_handler
+        )
 
-            # Send test message
-            msg_id = broker.send_message(
-                sender_id="test_sender",
-                recipient_id="main_system",
-                payload="Integration test message",
-            )
+        # Send test message
+        msg_id = broker.send_message(
+            sender_id="test_sender",
+            recipient_id="main_system",
+            payload="Integration test message",
+        )
 
-            assert msg_id in broker.messages
-            broker.unregister_handler(handler_id)
+        assert msg_id in broker.messages
+        broker.unregister_handler(handler_id)
 
         print("✅ Integration test completed successfully")
 
     def test_h3_integration_real(self):
         """Test integration with real H3 indices if available."""
-        if not H3_AVAILABLE:
-            pytest.fail("H3 library not available")
-
         # Create system with real H3 cells
         grid = create_nested_system("h3_integration_test")
 
@@ -557,7 +466,7 @@ class TestIntegration:
             cell.state_variables.update(
                 {
                     "value": i * 10,
-                    "density": np.random.random() if NUMPY_AVAILABLE else 0.5,
+                    "density": np.random.random(),
                     "category": "urban",
                 }
             )
@@ -581,20 +490,19 @@ class TestIntegration:
             print(f"H3 boundary detection note: {e}")
 
         # Test operations with real H3 data
-        if OPERATIONS_AVAILABLE:
-            lumping_engine = H3LumpingEngine()
-            try:
-                result = lumping_engine.lump_cells(
-                    grid,
-                    strategy=LumpingStrategy.PROXIMITY_BASED,
-                    system_id="h3_system",
-                    distance_threshold=1,
-                )
-                print(
-                    f"✅ H3 lumping: {result.num_input_cells} → {result.num_output_lumps}"
-                )
-            except Exception as e:
-                print(f"H3 lumping note: {e}")
+        lumping_engine = H3LumpingEngine()
+        try:
+            result = lumping_engine.lump_cells(
+                grid,
+                strategy=LumpingStrategy.PROXIMITY_BASED,
+                system_id="h3_system",
+                distance_threshold=1,
+            )
+            print(
+                f"✅ H3 lumping: {result.num_input_cells} → {result.num_output_lumps}"
+            )
+        except Exception as e:
+            print(f"H3 lumping note: {e}")
 
 
 def run_comprehensive_tests():
@@ -618,14 +526,11 @@ def run_comprehensive_tests():
     ]
 
     # Add conditional test classes
-    if OPERATIONS_AVAILABLE:
-        test_classes.append(TestOperations)
+    test_classes.append(TestOperations)
 
-    if MESSAGING_AVAILABLE:
-        test_classes.append(TestMessaging)
+    test_classes.append(TestMessaging)
 
-    if ANALYTICS_AVAILABLE:
-        test_classes.append(TestAnalytics)
+    test_classes.append(TestAnalytics)
 
     test_classes.append(TestIntegration)
 

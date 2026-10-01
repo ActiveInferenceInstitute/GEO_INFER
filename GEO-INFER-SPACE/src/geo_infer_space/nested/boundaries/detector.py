@@ -14,28 +14,12 @@ from enum import Enum
 from collections import defaultdict
 
 import numpy as np
+import h3
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from ..core.nested_grid import NestedH3Grid, NestedSystem
-
-try:
-    from scipy import ndimage as ndimage
-    from scipy.spatial import ConvexHull as ConvexHull
-
-    SCIPY_AVAILABLE = True
-except ImportError:
-    SCIPY_AVAILABLE = False
-    logger.warning("SciPy not available. Advanced boundary analysis will be limited.")
-
-try:
-    import h3
-
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available")
 
 
 class BoundaryType(Enum):
@@ -88,7 +72,7 @@ class BoundarySegment:
 
     def __post_init__(self) -> None:
         """Calculate geometric properties after creation."""
-        if self.cell_indices and H3_AVAILABLE:
+        if self.cell_indices:
             self._calculate_geometric_properties()
 
     def _calculate_geometric_properties(self) -> None:
@@ -393,13 +377,11 @@ class BoundaryDetector:
     def _detect_edge_boundaries(
         self, system: "NestedSystem", **kwargs: Any
     ) -> list[BoundarySegment]:
-        """Detect boundaries using edge detection algorithms."""
-        if not SCIPY_AVAILABLE:
-            logger.warning("SciPy required for edge detection")
-            return self._detect_neighbor_boundaries(system, **kwargs)
+        """Detect boundaries for the EDGE method.
 
-        # This would implement more sophisticated edge detection
-        # For now, fall back to neighbor analysis
+        On the hexagonal H3 lattice, edge detection is the neighbour-difference
+        test, so this delegates to ``_detect_neighbor_boundaries``.
+        """
         return self._detect_neighbor_boundaries(system, **kwargs)
 
     def _detect_topological_boundaries(

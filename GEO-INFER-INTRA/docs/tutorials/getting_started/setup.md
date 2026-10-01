@@ -23,7 +23,7 @@ cd GEO_INFER
 uv sync --package geo-infer-intra
 ```
 
-Use `uv sync --all-packages --all-extras` instead when you will work across
+Use `uv sync --all-packages --all-extras --all-groups` instead when you will work across
 modules.
 
 ## Step 2: Create a Configuration File

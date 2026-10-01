@@ -7,7 +7,7 @@
 
 ```bash
 # Synchronize the locked workspace with every package and extra
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 
 # Synchronize one workspace package for a focused check
 uv sync --package geo-infer-module

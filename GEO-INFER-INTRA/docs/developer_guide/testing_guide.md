@@ -37,7 +37,7 @@ The generated `tests/README.md` records the current inventory.
 From the repository root:
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python -c "import sys; print(sys.executable)"
 ```
 

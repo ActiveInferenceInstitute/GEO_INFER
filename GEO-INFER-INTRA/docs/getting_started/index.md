@@ -7,7 +7,7 @@ is the current working directory.
 ## Five-minute path
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python -c "import geo_infer_space, geo_infer_act; print('GEO-INFER imports are ready')"
 uv run python GEO-INFER-TEST/run_unified_tests.py --module SPACE
 ```

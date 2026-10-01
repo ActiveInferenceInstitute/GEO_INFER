@@ -8,6 +8,7 @@ depend on, the same way the acceptance probes grep the workflow sources.
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
 from pathlib import Path
 
@@ -353,6 +354,43 @@ def test_scheduled_runs_get_their_own_concurrency_bucket():
         "${{ github.event_name == 'schedule' && 'scheduled' ||"
         " (github.event.pull_request.number || github.ref) }}"
     )
+
+
+CI_EXCLUDED_PACKAGES = ("cupy", "mayavi", "vaex", "vaex-core")
+
+
+def _workspace_sync_commands(text: str) -> list[str]:
+    """Return every ``uv sync`` command in a workflow, continuations joined."""
+    joined = re.sub(r"\\\n\s*", " ", text)
+    return [
+        line.strip() for line in joined.splitlines() if re.match(r"^\s*uv sync\b", line)
+    ]
+
+
+def test_workspace_syncs_install_every_dependency_group():
+    """DEP-02: workspace syncs install PEP 735 groups as well as extras.
+
+    ``uv sync`` installs only the default ``dev`` group, so the per-module
+    ``[dependency-groups] test`` declarations would never reach CI without
+    ``--all-groups``. Every workspace-wide sync keeps the CPU-runner package
+    exclusions alongside it.
+    """
+    commands = [
+        command
+        for workflow in sorted(WORKFLOWS.glob("*.yml"))
+        for command in _workspace_sync_commands(workflow.read_text(encoding="utf-8"))
+        if "--all-packages" in command
+    ]
+    assert len(commands) >= 6
+    for command in commands:
+        tokens = command.split()
+        assert {"--locked", "--all-extras", "--all-groups"} <= set(tokens), command
+        excluded = {
+            tokens[index + 1]
+            for index, token in enumerate(tokens[:-1])
+            if token == "--no-install-package"
+        }
+        assert set(CI_EXCLUDED_PACKAGES) <= excluded, command
 
 
 def test_import_probes_derive_pytest_from_the_workspace_lock():

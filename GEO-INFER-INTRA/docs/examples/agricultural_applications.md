@@ -31,7 +31,7 @@ Each stage uses a different GEO-INFER module, and the final section ties them in
 ```bash
 # From the repository root: installs AG, BAYES, SPACE, DATA and the locked
 # numpy, pandas, geopandas, matplotlib and shapely versions
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 ```
 
 ## Section 1: H3-Gridded Field Analysis

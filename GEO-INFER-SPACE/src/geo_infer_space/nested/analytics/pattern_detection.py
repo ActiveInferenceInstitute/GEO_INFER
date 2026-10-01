@@ -15,36 +15,12 @@ from enum import Enum
 from collections import defaultdict
 
 import numpy as np
+from scipy import stats
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+import h3
 
 logger = logging.getLogger(__name__)
-
-try:
-    from scipy import signal as signal, stats
-    from scipy.spatial import distance as distance
-
-    SCIPY_AVAILABLE = True
-except ImportError:
-    SCIPY_AVAILABLE = False
-    logger.warning("SciPy not available. Advanced pattern detection will be limited.")
-
-try:
-    from sklearn.cluster import DBSCAN, KMeans as KMeans
-    from sklearn.preprocessing import StandardScaler
-
-    SKLEARN_AVAILABLE = True
-except ImportError:
-    SKLEARN_AVAILABLE = False
-    logger.warning(
-        "scikit-learn not available. ML-based pattern detection will be limited."
-    )
-
-try:
-    import h3
-
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available")
 
 
 class PatternType(Enum):
@@ -518,7 +494,7 @@ class H3PatternDetector:
         """Detect gradients using statistical methods."""
         patterns: list[Pattern] = []
 
-        if not H3_AVAILABLE or len(values) < 5:
+        if len(values) < 5:
             return patterns
 
         gradient_threshold = kwargs.get("gradient_threshold", 0.3)
@@ -580,7 +556,7 @@ class H3PatternDetector:
         """Detect patterns using clustering methods."""
         patterns: list[Pattern] = []
 
-        if not SKLEARN_AVAILABLE or PatternType.SPATIAL_CLUSTER not in pattern_types:
+        if PatternType.SPATIAL_CLUSTER not in pattern_types:
             return patterns
 
         # Extract features for clustering
@@ -657,9 +633,6 @@ class H3PatternDetector:
         """Detect patterns using signal processing methods."""
         patterns: list[Pattern] = []
 
-        if not SCIPY_AVAILABLE:
-            return patterns
-
         # This would implement signal processing-based pattern detection
         # For now, return empty list
         return patterns
@@ -673,9 +646,6 @@ class H3PatternDetector:
         """Detect patterns using machine learning methods."""
         patterns: list[Pattern] = []
 
-        if not SKLEARN_AVAILABLE:
-            return patterns
-
         # This would implement ML-based pattern detection
         # For now, return empty list
         return patterns
@@ -688,9 +658,6 @@ class H3PatternDetector:
     ) -> list[Pattern]:
         """Detect spatial patterns."""
         patterns: list[Pattern] = []
-
-        if not H3_AVAILABLE:
-            return patterns
 
         # This would implement spatial analysis-based pattern detection
         # For now, return empty list

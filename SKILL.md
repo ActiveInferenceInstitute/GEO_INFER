@@ -162,7 +162,7 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --category coverage
 ### Modular Hygiene
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language --skip-import-smoke
 ```
 

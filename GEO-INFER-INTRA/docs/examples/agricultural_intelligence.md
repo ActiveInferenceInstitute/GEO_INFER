@@ -31,7 +31,7 @@ This maps naturally onto seasonal farming cycles where decisions are sequential 
 ```bash
 # From the repository root: installs ACT, AG, CLIMATE and the locked
 # numpy, pandas and matplotlib versions
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 ```
 
 ## Section 1: NDVI Integration and Vegetation Monitoring

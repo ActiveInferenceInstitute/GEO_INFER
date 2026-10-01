@@ -4041,6 +4041,11 @@ integrations = [
     { name = "geo-infer-test" },
 ]
 
+[package.dev-dependencies]
+test = [
+    { name = "pyogrio" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.104.0" },
@@ -4065,6 +4070,9 @@ requires-dist = [
     { name = "uvicorn", specifier = ">=0.24.0" },
 ]
 provides-extras = ["dev", "docs", "integrations"]
+
+[package.metadata.requires-dev]
+test = [{ name = "pyogrio", specifier = ">=0.7.2" }]
 
 [[package]]
 name = "geo-infer-insurance"
@@ -4582,6 +4590,19 @@ test = [
     { name = "pytest-timeout" },
 ]
 
+[package.dev-dependencies]
+test = [
+    { name = "geo-infer-act" },
+    { name = "geo-infer-agent" },
+    { name = "geo-infer-bayes" },
+    { name = "geo-infer-iot" },
+    { name = "geo-infer-math" },
+    { name = "geo-infer-place" },
+    { name = "geo-infer-sec" },
+    { name = "geo-infer-sim" },
+    { name = "geo-infer-space" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "cryptography", specifier = ">=40.0.0" },
@@ -4612,6 +4633,19 @@ requires-dist = [
     { name = "uvicorn", specifier = ">=0.23.0" },
 ]
 provides-extras = ["dev", "docs", "test"]
+
+[package.metadata.requires-dev]
+test = [
+    { name = "geo-infer-act", editable = "GEO-INFER-ACT" },
+    { name = "geo-infer-agent", editable = "GEO-INFER-AGENT" },
+    { name = "geo-infer-bayes", editable = "GEO-INFER-BAYES" },
+    { name = "geo-infer-iot", editable = "GEO-INFER-IOT" },
+    { name = "geo-infer-math", editable = "GEO-INFER-MATH" },
+    { name = "geo-infer-place", editable = "GEO-INFER-PLACE" },
+    { name = "geo-infer-sec", editable = "GEO-INFER-SEC" },
+    { name = "geo-infer-sim", editable = "GEO-INFER-SIM" },
+    { name = "geo-infer-space", editable = "GEO-INFER-SPACE" },
+]
 
 [[package]]
 name = "geo-infer-org"
@@ -5280,6 +5314,37 @@ synthetic = [
     { name = "faker" },
 ]
 
+[package.dev-dependencies]
+test = [
+    { name = "geo-infer-art" },
+    { name = "geo-infer-bio" },
+    { name = "geo-infer-civ" },
+    { name = "geo-infer-climate" },
+    { name = "geo-infer-cog" },
+    { name = "geo-infer-comms" },
+    { name = "geo-infer-edu" },
+    { name = "geo-infer-emergency" },
+    { name = "geo-infer-energy" },
+    { name = "geo-infer-examples" },
+    { name = "geo-infer-forest" },
+    { name = "geo-infer-git" },
+    { name = "geo-infer-intra" },
+    { name = "geo-infer-iot" },
+    { name = "geo-infer-log" },
+    { name = "geo-infer-marine" },
+    { name = "geo-infer-metagov" },
+    { name = "geo-infer-norms" },
+    { name = "geo-infer-ops" },
+    { name = "geo-infer-org" },
+    { name = "geo-infer-pep" },
+    { name = "geo-infer-place" },
+    { name = "geo-infer-req" },
+    { name = "geo-infer-sim" },
+    { name = "geo-infer-spm" },
+    { name = "geo-infer-transport" },
+    { name = "geo-infer-water" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "coverage", extras = ["toml"], specifier = ">=7.0.0" },
@@ -5338,6 +5403,37 @@ requires-dist = [
     { name = "tabulate", marker = "extra == 'reporting'", specifier = ">=0.9.0" },
 ]
 provides-extras = ["load", "browser", "reporting", "synthetic", "profiling", "dev", "docs", "integrations"]
+
+[package.metadata.requires-dev]
+test = [
+    { name = "geo-infer-art", editable = "GEO-INFER-ART" },
+    { name = "geo-infer-bio", editable = "GEO-INFER-BIO" },
+    { name = "geo-infer-civ", editable = "GEO-INFER-CIV" },
+    { name = "geo-infer-climate", editable = "GEO-INFER-CLIMATE" },
+    { name = "geo-infer-cog", editable = "GEO-INFER-COG" },
+    { name = "geo-infer-comms", editable = "GEO-INFER-COMMS" },
+    { name = "geo-infer-edu", editable = "GEO-INFER-EDU" },
+    { name = "geo-infer-emergency", editable = "GEO-INFER-EMERGENCY" },
+    { name = "geo-infer-energy", editable = "GEO-INFER-ENERGY" },
+    { name = "geo-infer-examples", editable = "GEO-INFER-EXAMPLES" },
+    { name = "geo-infer-forest", editable = "GEO-INFER-FOREST" },
+    { name = "geo-infer-git", editable = "GEO-INFER-GIT" },
+    { name = "geo-infer-intra", editable = "GEO-INFER-INTRA" },
+    { name = "geo-infer-iot", editable = "GEO-INFER-IOT" },
+    { name = "geo-infer-log", editable = "GEO-INFER-LOG" },
+    { name = "geo-infer-marine", editable = "GEO-INFER-MARINE" },
+    { name = "geo-infer-metagov", editable = "GEO-INFER-METAGOV" },
+    { name = "geo-infer-norms", editable = "GEO-INFER-NORMS" },
+    { name = "geo-infer-ops", editable = "GEO-INFER-OPS" },
+    { name = "geo-infer-org", editable = "GEO-INFER-ORG" },
+    { name = "geo-infer-pep", editable = "GEO-INFER-PEP" },
+    { name = "geo-infer-place", editable = "GEO-INFER-PLACE" },
+    { name = "geo-infer-req", editable = "GEO-INFER-REQ" },
+    { name = "geo-infer-sim", editable = "GEO-INFER-SIM" },
+    { name = "geo-infer-spm", editable = "GEO-INFER-SPM" },
+    { name = "geo-infer-transport", editable = "GEO-INFER-TRANSPORT" },
+    { name = "geo-infer-water", editable = "GEO-INFER-WATER" },
+]
 
 [[package]]
 name = "geo-infer-time"

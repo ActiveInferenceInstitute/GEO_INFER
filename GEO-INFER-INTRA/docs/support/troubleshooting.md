@@ -35,9 +35,9 @@ uv run python -c "import geo_infer_space; print(geo_infer_space.__file__)"
 
 | Error Message | Cause | Fix |
 |--------------|-------|-----|
-| `No module named 'geo_infer_space'` | Module not installed, or command run outside the workspace environment | `uv sync --all-packages --all-extras`, then run through `uv run` |
-| `No module named 'h3'` | Environment not synced | `uv sync --all-packages --all-extras` |
-| `ImportError: cannot import name 'latlng_to_cell'` | H3 v3 installed instead of the locked v4 | `uv sync --all-packages --all-extras` (restores `h3>=4.5.0,<5` from `uv.lock`) |
+| `No module named 'geo_infer_space'` | Module not installed, or command run outside the workspace environment | `uv sync --all-packages --all-extras --all-groups`, then run through `uv run` |
+| `No module named 'h3'` | Environment not synced | `uv sync --all-packages --all-extras --all-groups` |
+| `ImportError: cannot import name 'latlng_to_cell'` | H3 v3 installed instead of the locked v4 | `uv sync --all-packages --all-extras --all-groups` (restores `h3>=4.5.0,<5` from `uv.lock`) |
 | `No module named 'tensorflow_probability'` | Optional dependency | Install TFP or use NumPy fallback |
 
 GEO-INFER modules use graceful degradation for optional dependencies. If you see a log message like `"TensorFlow Probability not installed; using NumPy/SciPy GP backend."`, the module is working correctly with the fallback.

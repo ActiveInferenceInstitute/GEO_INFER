@@ -21,7 +21,7 @@ cd GEO_INFER
 uv sync --package geo-infer-intra
 
 # Or the whole workspace with every optional extra
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 ```
 
 Dependencies are declared only in `GEO-INFER-INTRA/pyproject.toml` and pinned

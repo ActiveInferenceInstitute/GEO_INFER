@@ -41,7 +41,6 @@ next steps.
 | ID | Area / status | Bounded next step | Acceptance evidence / dependencies |
 | --- | --- | --- | --- |
 | **TEST-GNN-01** | TEST / Python 3.12 PROJ SQLite disk-I/O cause | Investigate the failure observed during the combined ACT/SPACE/TIME test process; a fresh integrity probe and all 587 SPACE tests passed separately, and the continuation receipt records non-recurrence with versions (Python 3.12.13, pyproj 3.7.1, PROJ 9.5.1, SQLite 3.53.1) — establish the historical cause, not just current success. | Minimal import/order reproduction, loaded PROJ/GDAL/SQLite versions and file-descriptor state; correct a reproducible cause without suppressing CRS tests or declaring an unverified environment fix. 2026-09-10 bounded investigation delivered (dated section in the continuation receipt): the exact historical version combination reproduced clean across 400 CRS iterations, concurrent-process stress clean — leading hypothesis transient concurrent-access contention on the shared embedded proj.db; exact trigger honestly unexplained. 2026-09-11 follow-up probe (dated section in the receipt): combined ACT/SPACE/TIME CRS subsets in one pytest process ×8 (1,557 tests), intra-process thread hammering (~42,800 CRS ops) and a simultaneous pytest+thread storm — all clean on the current build (Python 3.12.11, SQLite 3.50.4); this weakens the internal-concurrency half of the hypothesis, while `journal_mode=delete` on the shared in-worktree proj.db plus live-observed co-tenant worktree edits during the clean runs keep external interference a demonstrated always-present factor; 2026-09-15 induced-lock probe (dated section in the receipt): a verified external SQLite `BEGIN EXCLUSIVE` lock on the shared embedded proj.db did NOT reproduce — database-bound CRS creation and authority lookups succeeded under the lock while ordinary SQLite readers in the same process were blocked (`database is locked`), so SQLite-level lock contention is ruled out as the trigger for PROJ CRS reads on this build (libproj's lock-bypass mechanism itself unresolved) and the causal chain narrows to I/O-class/file-content-level external interference (the historical text is a disk-I/O/SQLITE_IOERR-class error, orthogonal to the SQLITE_BUSY class); still open (no reproducer; induced-lock minimal case negative). [Receipt](GEO-INFER-TEST/docs/gnn_continuation_2026_09.md). |
-| **DEP-02** | Fleet / undeclared test dependencies (10 modules cross-member, 12 third-party) | DepSweep compared every module's test imports against its pyproject deps + all extras: 10 modules import undeclared `geo_infer_*` siblings (TEST worst: 16 siblings, zero declared; SEC data/git/ops unguarded; INTRA space/data unguarded; PLACE/RISK/ACT/GIT/HEALTH/SPACE import `geo_infer_test` undeclared) and 12 modules use undeclared third-party test deps (ANT psutil, ART pandas, GIT numpy/geopandas/shapely, HEALTH numpy/pandas/shapely, TIME matplotlib/websockets/aiokafka, SEC minio/redis, PLACE pyproj, INTRA prometheus_client; **MARINE and WATER declare no extras at all — pytest itself is undeclared**). All resolve only via workspace-wide sync — the exact masking that hid ANT-DEP-01. | Per module: declare test imports (cross-member under integrations-style extras with the fleet `>=0.3.0` floor; third-party under a test/dev extra — convention modeled by CLIMATE/ENERGY/FOREST + TRANSPORT), `uv lock`, `validate_packaging --strict`. Batchable ~5 lanes × 9 modules. Probe: re-run the DepSweep method → zero undeclared; `uv lock --check` green; `validate_packaging --strict` green (45). Effort L. Filed from [SCOPE-2026-09-27.md](SCOPE-2026-09-27.md). |
 
 ### Minor — bounded single-session changes
 
@@ -267,11 +266,19 @@ repository-wide legacy removal and modernization branch
 - **DEP-03**: retired at the root — module `requirements.txt` mirrors (and
   `setup.py` shims) are deleted and `validate_repo_contracts.py` now rejects
   them; `pyproject.toml` + `uv.lock` are the only dependency declaration.
+- **DEP-02 / TST-11**: `validate_packaging.py` gains
+  `validate_test_import_parity` (every third-party or sibling import under a
+  module's `tests/`, including guarded, function-local and string-literal
+  dynamic imports, must be declared as a runtime dep, an extra, or a PEP 735
+  `[dependency-groups]` entry); the remaining undeclared test imports (HEALTH
+  pyogrio, OPS and TEST workspace siblings) live in `test` groups with
+  `[tool.uv.sources]` workspace pins. CI and the canonical sync command add
+  `--all-groups`.
 - **DOC-06**: `[Unreleased]` CHANGELOG section opened. **DOC-07**: ISA
   cross-reference repointed at `[0.2.0]`. **DOC-08**: CLAUDE.md "Module
   Themes" now mirrors the generated README theme table, which the generator
   enforces lists every module exactly once (RISK was missing).
 
-**Still open:** DEP-02 (undeclared test dependencies), DOC-09 (other-date
+**Still open:** DOC-09 (other-date
 stamps), and the externally blocked Major/Medium rows.
 

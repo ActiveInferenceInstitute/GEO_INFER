@@ -16,16 +16,9 @@ from enum import Enum
 from collections import defaultdict
 
 import numpy as np
+import h3
 
 logger = logging.getLogger(__name__)
-
-try:
-    import h3
-
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available")
 
 
 class AggregationFunction(Enum):
@@ -400,10 +393,6 @@ class H3AggregationEngine:
         """Aggregate data using cell neighbors."""
         neighbor_radius = rule.scope_parameters.get("radius", 1)
 
-        if not H3_AVAILABLE:
-            logger.warning("h3-py required for neighbor-based aggregation")
-            return {}
-
         results = {}
 
         # Create cell index lookup
@@ -438,10 +427,6 @@ class H3AggregationEngine:
     ) -> dict[str, dict[str, Any]]:
         """Aggregate data by resolution level."""
         target_resolution = rule.scope_parameters.get("resolution")
-
-        if not H3_AVAILABLE:
-            logger.warning("h3-py required for resolution-based aggregation")
-            return {}
 
         # Group cells by resolution
         resolution_groups = defaultdict(list)
@@ -503,10 +488,6 @@ class H3AggregationEngine:
         nested_grid: Any,
     ) -> dict[str, dict[str, Any]]:
         """Aggregate data hierarchically."""
-        if not H3_AVAILABLE:
-            logger.warning("h3-py required for hierarchical aggregation")
-            return {}
-
         # Group cells by parent-child relationships
         hierarchy_groups = defaultdict(list)
 

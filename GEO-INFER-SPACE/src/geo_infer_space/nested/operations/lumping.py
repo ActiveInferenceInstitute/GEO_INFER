@@ -15,25 +15,10 @@ from enum import Enum
 from collections import defaultdict
 
 import numpy as np
+import h3
+from sklearn.cluster import DBSCAN, AgglomerativeClustering
 
 logger = logging.getLogger(__name__)
-
-try:
-    import h3
-
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available")
-
-try:
-    from sklearn.cluster import KMeans as KMeans, DBSCAN, AgglomerativeClustering
-    from sklearn.metrics import silhouette_score as silhouette_score
-
-    SKLEARN_AVAILABLE = True
-except ImportError:
-    SKLEARN_AVAILABLE = False
-    logger.warning("scikit-learn not available. Advanced clustering will be limited.")
 
 
 class LumpingStrategy(Enum):
@@ -353,10 +338,6 @@ class H3LumpingEngine:
         """Lump cells based on spatial proximity."""
         distance_threshold = kwargs.get("distance_threshold", 2)  # H3 distance
 
-        if not H3_AVAILABLE:
-            logger.warning("h3-py required for proximity-based lumping")
-            return self._simple_proximity_lumping(cells)
-
         lumps = {}
         visited = set()
         lump_counter = 0
@@ -396,10 +377,6 @@ class H3LumpingEngine:
         self, cells: list[Any], **kwargs: Any
     ) -> dict[str, list[str]]:
         """Lump cells using hierarchical clustering."""
-        if not SKLEARN_AVAILABLE:
-            logger.warning("scikit-learn required for hierarchical lumping")
-            return self._simple_proximity_lumping(cells)
-
         n_clusters = kwargs.get("n_clusters", None)
         linkage = kwargs.get("linkage", "ward")
         attribute_fields = kwargs.get("attribute_fields", ["value"])
@@ -487,10 +464,6 @@ class H3LumpingEngine:
 
     def _lump_by_density(self, cells: list[Any], **kwargs: Any) -> dict[str, list[str]]:
         """Lump cells using density-based clustering."""
-        if not SKLEARN_AVAILABLE:
-            logger.warning("scikit-learn required for density-based lumping")
-            return self._simple_proximity_lumping(cells)
-
         eps = kwargs.get("eps", 0.5)
         min_samples = kwargs.get("min_samples", 3)
         attribute_fields = kwargs.get("attribute_fields", ["value"])
@@ -631,7 +604,7 @@ class H3LumpingEngine:
 
     def _calculate_compactness_score(self, lumps: dict[str, list[str]]) -> float:
         """Calculate compactness score for lumps."""
-        if not lumps or not H3_AVAILABLE:
+        if not lumps:
             return 0.0
 
         compactness_scores = []
@@ -680,13 +653,8 @@ class H3LumpingEngine:
         members that are immediately adjacent (distance=1) yield 0.5, perfectly
         co-located cells yield 1.0, and dispersed cells approach 0.0.
 
-        Falls back to 0.5 when H3 is unavailable or lumps are singletons.
+        Returns 0.5 when there are no lumps.
         """
-        try:
-            import h3
-        except ImportError:
-            return 0.5
-
         if not lumps:
             return 0.5
 

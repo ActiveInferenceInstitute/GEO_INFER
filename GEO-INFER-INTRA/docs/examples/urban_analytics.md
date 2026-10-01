@@ -32,7 +32,7 @@ The output is a composite risk-equity map that identifies areas with high hazard
 ```bash
 # From the repository root: installs SPACE, RISK, CIV, DATA and the locked
 # numpy, pandas, geopandas, matplotlib, shapely and h3 versions
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 ```
 
 ## Section 1: Population Density H3 Maps

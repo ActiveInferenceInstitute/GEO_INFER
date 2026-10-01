@@ -28,7 +28,7 @@
 | Type-hint all function signatures | Parameters, returns, class attributes; `list[int]`, `X \| None` |
 | Validate input data | Pydantic models or explicit checks at boundaries |
 | Handle optional dependencies gracefully | `try/except ImportError` with warning |
-| Use `uv` for all package operations | `uv sync --all-packages --all-extras`, `uv run python` |
+| Use `uv` for all package operations | `uv sync --all-packages --all-extras --all-groups`, `uv run python` |
 | Update docs with code changes | README.md, docstrings, AGENTS.md |
 | Use precise, technical language | "Show don't tell" |
 
@@ -38,7 +38,7 @@
 
 ```bash
 # Synchronize the workspace (all packages, all extras) or one package
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv sync --package geo-infer-module
 
 # Add a dependency to a module's pyproject.toml and refresh uv.lock

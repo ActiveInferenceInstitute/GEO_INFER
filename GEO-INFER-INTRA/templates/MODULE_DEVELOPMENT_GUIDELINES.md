@@ -91,7 +91,7 @@ GEO-INFER-{MODULE}/
 
    ```bash
    uv lock
-   uv sync --all-packages --all-extras
+   uv sync --all-packages --all-extras --all-groups
    ```
 
    Add later dependencies with `uv add --package geo-infer-{module} <dep>`.

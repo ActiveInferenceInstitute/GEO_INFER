@@ -77,6 +77,31 @@ Documentation = "https://geo-infer.readthedocs.io/"
 Repository = "https://github.com/ActiveInferenceInstitute/GEO_INFER"
 "Bug Tracker" = "https://github.com/ActiveInferenceInstitute/GEO_INFER/issues"
 
+[dependency-groups]
+# Workspace siblings imported by this module's tests (resolved via [tool.uv.sources]).
+test = [
+    "geo-infer-act>=0.3.0",
+    "geo-infer-agent>=0.3.0",
+    "geo-infer-bayes>=0.3.0",
+    "geo-infer-iot>=0.3.0",
+    "geo-infer-math>=0.3.0",
+    "geo-infer-place>=0.3.0",
+    "geo-infer-sec>=0.3.0",
+    "geo-infer-sim>=0.3.0",
+    "geo-infer-space>=0.3.0",
+]
+
+[tool.uv.sources]
+geo-infer-act = { workspace = true }
+geo-infer-agent = { workspace = true }
+geo-infer-bayes = { workspace = true }
+geo-infer-iot = { workspace = true }
+geo-infer-math = { workspace = true }
+geo-infer-place = { workspace = true }
+geo-infer-sec = { workspace = true }
+geo-infer-sim = { workspace = true }
+geo-infer-space = { workspace = true }
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 

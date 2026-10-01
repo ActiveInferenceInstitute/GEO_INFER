@@ -58,6 +58,7 @@ Unified testing framework for quality assurance across all GEO-INFER modules wit
 - `_validator_common.py:normalize_dependency_name` (function)
 - `_validator_common.py:pyproject_dependency_names` (function)
 - `_validator_common.py:pyproject_optional_names` (function)
+- `_validator_common.py:pyproject_group_names` (function)
 - `_validator_common.py:internal_requirement_names` (function)
 - `build_package_wheels.py:BuildResult` (class)
 - `build_package_wheels.py:BuildSummary` (class)
@@ -67,7 +68,6 @@ Unified testing framework for quality assurance across all GEO-INFER modules wit
 - `build_package_wheels.py:install_and_verify` (function)
 - `build_package_wheels.py:main` (function)
 - `check_coverage_floor.py:main` (function)
-- `coverage_baseline_metric.py:main` (function)
 
 ## Module Metadata
 
@@ -100,7 +100,7 @@ Unified testing framework for quality assurance across all GEO-INFER modules wit
 ## Validation
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python GEO-INFER-TEST/run_unified_tests.py --module TEST
 ```
 

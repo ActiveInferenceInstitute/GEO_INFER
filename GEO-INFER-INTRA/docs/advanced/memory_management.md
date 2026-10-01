@@ -499,7 +499,7 @@ def read_selected_columns(
 ### Using memory_profiler
 
 `memory_profiler` is locked in the workspace and installed by
-`uv sync --all-packages --all-extras`.
+`uv sync --all-packages --all-extras --all-groups`.
 
 ```python
 from memory_profiler import profile

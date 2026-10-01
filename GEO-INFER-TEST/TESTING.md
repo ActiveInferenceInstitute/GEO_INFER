@@ -7,7 +7,7 @@ The repository test contract is zero-warning, zero-failure, and zero-skip. The s
 Run from the repository root:
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
 uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language
 uv run python GEO-INFER-TEST/validate_packaging.py --strict

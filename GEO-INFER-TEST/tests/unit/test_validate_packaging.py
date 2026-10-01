@@ -176,3 +176,155 @@ def test_citation_version_missing_file_warns(tmp_path):
         citation_path=tmp_path / "absent" / "CITATION.cff",
     )
     assert any("CITATION.cff" in warning for warning in report.warnings)
+
+
+def _make_test_parity_module(tmp_path: Path, pyproject_extra: str) -> Path:
+    """Plant a module with a src package and a pyproject carrying deps."""
+    module_dir = tmp_path / "GEO-INFER-SAMPLE"
+    package_dir = module_dir / "src" / "geo_infer_sample"
+    package_dir.mkdir(parents=True)
+    (package_dir / "__init__.py").write_text("__version__ = '0.3.0'\n")
+    (module_dir / "tests" / "unit").mkdir(parents=True)
+    (module_dir / "pyproject.toml").write_text(
+        "\n".join(
+            [
+                "[project]",
+                'name = "geo-infer-sample"',
+                'version = "0.3.0"',
+                'dependencies = ["numpy>=1.20.0"]',
+                "",
+                "[project.optional-dependencies]",
+                'config = ["pyyaml>=6.0"]',
+                "",
+                pyproject_extra,
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    return module_dir
+
+
+WORKSPACE_PACKAGES = frozenset({"geo_infer_math", "geo_infer_sample"})
+
+
+def test_pyproject_group_names_resolves_include_group():
+    packaging = load_packaging_module()
+    pyproject = {
+        "dependency-groups": {
+            "test": ["pytest>=6.2.0", {"include-group": "lint"}],
+            "lint": ["ruff>=0.15.6,<0.16"],
+            "cycle": [{"include-group": "cycle"}, "Py_Proj>=3.3.0"],
+            "dangling": [{"include-group": "absent"}],
+        }
+    }
+    assert packaging.pyproject_group_names(pyproject, "test") == {"pytest", "ruff"}
+    assert packaging.pyproject_group_names(pyproject, "cycle") == {"py-proj"}
+    assert packaging.pyproject_group_names(pyproject, "dangling") == set()
+    assert packaging.pyproject_group_names(pyproject) == {"pytest", "ruff", "py-proj"}
+    assert packaging.pyproject_group_names({}) == set()
+
+
+def test_test_import_parity_accepts_declared_and_local_imports(tmp_path):
+    packaging = load_packaging_module()
+    module_dir = _make_test_parity_module(
+        tmp_path,
+        "\n".join(
+            [
+                "[dependency-groups]",
+                'test = [{include-group = "base"}, "geo-infer-math>=0.3.0"]',
+                'base = ["pytest>=6.2.0", "psutil>=5.9.0"]',
+            ]
+        ),
+    )
+    tests_dir = module_dir / "tests"
+    (tests_dir / "unit" / "helpers.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (tests_dir / "unit" / "test_sample.py").write_text(
+        "\n".join(
+            [
+                "import importlib",
+                "import json",
+                "import numpy as np",
+                "import pytest",
+                "import yaml",
+                "from geo_infer_sample import __version__",
+                "from helpers import VALUE",
+                "from . import helpers",
+                "",
+                "MODULES = ['geo_infer_math', 'geo_infer_sample.core']",
+                "",
+                "def test_import(name='geo_infer_math'):",
+                "    try:",
+                "        import psutil",
+                "    except ImportError:",
+                "        psutil = None",
+                "    importlib.import_module(name)",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    report = packaging.ContractReport()
+    packaging.validate_test_import_parity(
+        module_dir,
+        packaging.parse_pyproject(module_dir),
+        report,
+        WORKSPACE_PACKAGES,
+    )
+    assert report.errors == []
+
+
+def test_test_import_parity_rejects_guarded_dynamic_and_sibling_imports(tmp_path):
+    packaging = load_packaging_module()
+    module_dir = _make_test_parity_module(
+        tmp_path, '[dependency-groups]\ntest = ["pytest>=6.2.0"]'
+    )
+    (module_dir / "tests" / "conftest.py").write_text(
+        "\n".join(
+            [
+                "import importlib",
+                "import pytest",
+                "",
+                "SIBLINGS = ['geo_infer_math.core']",
+                "",
+                "def load(name):",
+                "    try:",
+                "        import psutil",
+                "    except ImportError:",
+                "        return None",
+                # Spelled in two parts so the test-contract text scan does not
+                # flag this fixture line as a real skip.
+                "    h3 = pytest.import" + "orskip('h3')",
+                "    return importlib.import_module(name)",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    report = packaging.ContractReport()
+    packaging.validate_test_import_parity(
+        module_dir,
+        packaging.parse_pyproject(module_dir),
+        report,
+        WORKSPACE_PACKAGES,
+    )
+    flagged = sorted(error.split("'")[1] for error in report.errors)
+    assert flagged == ["geo_infer_math", "h3", "psutil"]
+    assert all("tests/conftest.py" in error for error in report.errors)
+
+
+def test_test_import_parity_maps_import_aliases_to_distributions(tmp_path):
+    packaging = load_packaging_module()
+    module_dir = _make_test_parity_module(tmp_path, "")
+    (module_dir / "tests" / "test_alias.py").write_text(
+        "from sklearn.linear_model import LinearRegression\n", encoding="utf-8"
+    )
+    report = packaging.ContractReport()
+    packaging.validate_test_import_parity(
+        module_dir,
+        packaging.parse_pyproject(module_dir),
+        report,
+        WORKSPACE_PACKAGES,
+    )
+    assert len(report.errors) == 1
+    assert "'scikit-learn'" in report.errors[0]

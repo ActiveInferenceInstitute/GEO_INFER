@@ -8,7 +8,7 @@ contract validators.
 ## Install and run
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python GEO-INFER-TEST/run_unified_tests.py --list-modules
 uv run python GEO-INFER-TEST/run_unified_tests.py --module ACT
 ```

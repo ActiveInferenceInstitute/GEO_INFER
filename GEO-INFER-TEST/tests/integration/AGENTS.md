@@ -35,7 +35,7 @@
 ## Validation
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python -m pytest GEO-INFER-TEST/tests/integration
 ```
 

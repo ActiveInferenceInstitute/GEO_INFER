@@ -50,7 +50,7 @@ the root `uv.lock`:
 
 ```bash
 # Every module with every optional extra (what CI uses)
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 
 # One module and its workspace dependencies
 uv sync --package geo-infer-ag
@@ -232,7 +232,7 @@ The `uv` package manager handles all Python dependencies. Each module's
 
 ```bash
 # Install all modules for integration testing
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 
 # Add a dependency to one module and refresh uv.lock
 uv add --package geo-infer-space "pyproj>=3.0"

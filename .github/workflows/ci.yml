@@ -64,7 +64,7 @@ jobs:
           # requires that optional backend.
           # Vaex is an optional Python <3.12 performance extra whose C++
           # extension does not build against the hosted runner toolchain.
-          uv sync --locked --python "$(command -v python)" --all-packages --all-extras \
+          uv sync --locked --python "$(command -v python)" --all-packages --all-extras --all-groups \
             --no-install-package cupy --no-install-package mayavi \
             --no-install-package vaex --no-install-package vaex-core
 
@@ -291,7 +291,7 @@ jobs:
           # requires that optional backend.
           # Vaex is an optional Python <3.12 performance extra whose C++
           # extension does not build against the hosted runner toolchain.
-          uv sync --locked --python "$(command -v python)" --all-packages --all-extras \
+          uv sync --locked --python "$(command -v python)" --all-packages --all-extras --all-groups \
             --no-install-package cupy --no-install-package mayavi \
             --no-install-package vaex --no-install-package vaex-core
 
@@ -360,7 +360,7 @@ jobs:
 
       - name: Install locked workspace dependencies
         run: |
-          uv sync --locked --python "$(command -v python)" --all-packages --all-extras \
+          uv sync --locked --python "$(command -v python)" --all-packages --all-extras --all-groups \
             --no-install-package cupy --no-install-package mayavi \
             --no-install-package vaex --no-install-package vaex-core
 
@@ -486,7 +486,7 @@ jobs:
           # requires that optional backend.
           # Vaex is an optional Python <3.12 performance extra whose C++
           # extension does not build against the hosted runner toolchain.
-          uv sync --locked --python "$(command -v python)" --all-packages --all-extras \
+          uv sync --locked --python "$(command -v python)" --all-packages --all-extras --all-groups \
             --no-install-package cupy --no-install-package mayavi \
             --no-install-package vaex --no-install-package vaex-core
 

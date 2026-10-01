@@ -50,6 +50,7 @@ from _validator_common import (
     internal_requirement_names,
     package_name_from_distribution,
     pyproject_dependency_names,
+    pyproject_group_names,
     pyproject_optional_names,
     read_pyproject as parse_pyproject,
     read_toml,
@@ -449,6 +450,8 @@ IMPORT_ROOT_ALIASES = {
     "jwt": "pyjwt",
     "jose": "python-jose",
     "strawberry": "strawberry-graphql",
+    "_pytest": "pytest",
+    "pymdp": "inferactively-pymdp",
 }
 
 # Complete standard-library root set for the running interpreter; the
@@ -577,11 +580,173 @@ def validate_import_parity(
             )
 
 
+# Call targets that import the module named by their first argument; a
+# string literal there is a dynamic test import that counts toward parity.
+_DYNAMIC_IMPORT_CALLS = frozenset(
+    {"import_module", "importorskip", "__import__", "find_spec"}
+)
+
+_DOTTED_MODULE_PATH = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$")
+
+
+def _dynamic_import_call(node: ast.Call) -> bool:
+    """True for ``import_module(...)``-style calls, by bare or attribute name."""
+    func = node.func
+    name = func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", None)
+    return name in _DYNAMIC_IMPORT_CALLS and bool(node.args)
+
+
+def _literal_import_root(node: ast.Call) -> str | None:
+    """Root of a dynamic import call whose first argument is a string literal."""
+    first = node.args[0]
+    if not isinstance(first, ast.Constant) or not isinstance(first.value, str):
+        return None
+    if not _DOTTED_MODULE_PATH.fullmatch(first.value):
+        return None
+    return first.value.split(".")[0]
+
+
+def all_import_roots(
+    tree: ast.Module, workspace_packages: frozenset[str] = frozenset()
+) -> set[str]:
+    """Every absolute import root in a module, wherever it appears.
+
+    Unlike ``_top_level_import_roots`` this includes function-local imports,
+    imports under try/except ImportError guards, ``if`` and ``if
+    TYPE_CHECKING:`` branches, and string-literal dynamic imports
+    (``importlib.import_module``, ``pytest.importorskip``, ``__import__``,
+    ``importlib.util.find_spec``): a test suite must declare everything it
+    can import. When the module also performs a dynamic import with a
+    computed argument (``import_module(name)`` over a parametrized list),
+    every dotted-path string literal rooted at a ``workspace_packages`` name
+    counts as imported too, because the call's argument cannot be resolved
+    statically and workspace package names are unambiguous.
+    """
+    roots: set[str] = set()
+    computed_dynamic_import = False
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            roots.update(alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            roots.add(node.module.split(".")[0])
+        elif isinstance(node, ast.Call) and _dynamic_import_call(node):
+            root = _literal_import_root(node)
+            if root is None:
+                computed_dynamic_import = True
+            else:
+                roots.add(root)
+    if computed_dynamic_import and workspace_packages:
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Constant)
+                and isinstance(node.value, str)
+                and _DOTTED_MODULE_PATH.fullmatch(node.value)
+                and (root := node.value.split(".")[0]) in workspace_packages
+            ):
+                roots.add(root)
+    return roots
+
+
+def _local_import_roots(module_dir: Path, tests_dir: Path) -> set[str]:
+    """Import roots that resolve to files inside the module itself.
+
+    Covers the module's own ``src/`` packages, the ``src``/``tests`` roots,
+    module-root packages and scripts (e.g. TEST's ``demo`` package and
+    ``run_unified_tests.py``), and test helper modules or packages under
+    ``tests/`` that pytest's rootdir-relative ``sys.path`` insertion makes
+    importable by bare name. Plain directories without ``__init__.py`` are
+    not import roots and are not exempted.
+    """
+    local: set[str] = {"src", "tests"}
+    src_dir = module_dir / "src"
+    if src_dir.is_dir():
+        local.update(path.name for path in src_dir.iterdir() if path.is_dir())
+    candidates = [*module_dir.iterdir(), *tests_dir.rglob("*")]
+    for path in candidates:
+        if "__pycache__" in path.parts:
+            continue
+        if path.is_dir() and (path / "__init__.py").is_file():
+            local.add(path.name)
+        elif path.is_file() and path.suffix == ".py":
+            local.add(path.stem)
+    return local
+
+
+def workspace_package_names(repo_root: Path) -> frozenset[str]:
+    """Importable package names of every workspace member (``geo_infer_*``)."""
+    return frozenset(
+        package_name_from_distribution(name)
+        for name in internal_requirement_names(repo_root)
+    )
+
+
+def collect_test_import_roots(
+    module_dir: Path, workspace_packages: frozenset[str] = frozenset()
+) -> dict[str, Path]:
+    """Map each absolute import root used under ``tests/`` to its first file."""
+    tests_dir = module_dir / "tests"
+    roots: dict[str, Path] = {}
+    if not tests_dir.is_dir():
+        return roots
+    for path in sorted(tests_dir.rglob("*.py")):
+        if "__pycache__" in path.parts:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8", errors="ignore"))
+        for root in sorted(all_import_roots(tree, workspace_packages)):
+            roots.setdefault(root, path.relative_to(module_dir))
+    return roots
+
+
+def validate_test_import_parity(
+    module_dir: Path,
+    pyproject: dict,
+    report: ContractReport,
+    workspace_packages: frozenset[str] | None = None,
+) -> None:
+    """Every third-party or sibling import under ``tests/`` must be declared.
+
+    A test import is satisfied by a runtime dependency, any optional extra,
+    or any PEP 735 ``[dependency-groups]`` group (convention: ``test``).
+    Sibling ``geo_infer_*`` packages are NOT exempt here, unlike the runtime
+    import check: a test suite importing a sibling must declare it (with a
+    ``[tool.uv.sources]`` workspace source) or it only resolves through a
+    workspace-wide sync. Standard-library roots and roots resolving to the
+    module's own files are exempt; guarded and function-local imports count.
+    """
+    tests_dir = module_dir / "tests"
+    if not tests_dir.is_dir():
+        return
+    if workspace_packages is None:
+        workspace_packages = workspace_package_names(REPO_ROOT)
+    declared = {
+        name.rstrip(".")
+        for name in (
+            pyproject_dependency_names(pyproject)
+            | pyproject_optional_names(pyproject)
+            | pyproject_group_names(pyproject)
+        )
+    }
+    local = _local_import_roots(module_dir, tests_dir)
+    roots = collect_test_import_roots(module_dir, workspace_packages)
+    for root, first in sorted(roots.items()):
+        if root not in IMPORT_ROOT_ALIASES and (root in _STDLIB_ROOTS or root in local):
+            continue
+        dist = IMPORT_ROOT_ALIASES.get(root, root.lower().replace("_", "-"))
+        if dist in declared:
+            continue
+        report.error(
+            f"{module_dir.name}: test import '{root}' (distribution {dist!r}) is "
+            "not declared in dependencies, an extra, or a dependency group "
+            f"(first: {first})"
+        )
+
+
 def validate_all(target_dirs: list[Path] | None = None) -> ContractReport:
     report = ContractReport()
     if target_dirs is None:
         target_dirs = module_dirs()
     inventories: list[tuple[str, dict]] = []
+    workspace_packages = workspace_package_names(REPO_ROOT)
     for module_dir in target_dirs:
         pyproject = parse_pyproject(module_dir)
         if not pyproject:
@@ -590,6 +755,7 @@ def validate_all(target_dirs: list[Path] | None = None) -> ContractReport:
         inventories.append((module_dir.name, pyproject))
         validate_module(module_dir, pyproject, report)
         validate_import_parity(module_dir, pyproject, report)
+        validate_test_import_parity(module_dir, pyproject, report, workspace_packages)
         validate_source_traversal(module_dir, report)
     validate_version_uniformity(inventories, report)
     validate_citation_version(inventories, report)

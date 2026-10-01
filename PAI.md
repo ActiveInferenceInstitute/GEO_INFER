@@ -30,7 +30,7 @@ For a GEO-INFER change:
 ## Repository verification surfaces
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python GEO-INFER-TEST/run_unified_tests.py --module MODULE
 uv run python GEO-INFER-TEST/validate_repo_contracts.py
 uv run python GEO-INFER-TEST/validate_documentation.py --strict

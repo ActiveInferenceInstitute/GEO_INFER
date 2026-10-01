@@ -15,14 +15,6 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
-try:
-    import h3 as h3
-
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available")
-
 
 class RoutingStrategy(Enum):
     """Routing strategies for message delivery."""

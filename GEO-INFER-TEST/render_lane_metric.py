@@ -25,7 +25,7 @@ the measured state falls short of the goal: the metric value carries that
 signal.
 
 Environment contract: the shared uv workspace is already synced
-(``uv sync --all-packages --all-extras``); every pytest run uses
+(``uv sync --all-packages --all-extras --all-groups``); every pytest run uses
 ``uv run --no-sync`` so the workload never touches the network.
 """
 

@@ -27,7 +27,7 @@ This guide covers five interconnected analyses that feed into a final site selec
 ```bash
 # From the repository root: installs CIV, TRANSPORT, SPACE and the locked
 # numpy, pandas, geopandas, matplotlib, shapely, h3 and networkx versions
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 ```
 
 ## Section 1: Zoning Analysis

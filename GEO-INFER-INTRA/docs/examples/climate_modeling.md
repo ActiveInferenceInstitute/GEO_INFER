@@ -32,7 +32,7 @@ The workflow processes gridded climate data through anomaly detection, trend ana
 ```bash
 # From the repository root: installs CLIMATE, TIME, BAYES, SPACE and the locked
 # numpy, pandas, xarray, matplotlib and scipy versions
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 ```
 
 ## Section 1: Temperature Anomaly Detection

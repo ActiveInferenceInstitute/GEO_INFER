@@ -15,16 +15,9 @@ from enum import Enum
 from collections import defaultdict, deque
 
 import numpy as np
+import h3
 
 logger = logging.getLogger(__name__)
-
-try:
-    import h3
-
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available")
 
 
 class HierarchyMetric(Enum):
@@ -248,7 +241,7 @@ class H3HierarchyAnalyzer:
 
         # Get H3 resolution if available
         h3_resolution = None
-        if h3_index and H3_AVAILABLE:
+        if h3_index:
             try:
                 h3_resolution = h3.get_resolution(h3_index)
             except Exception:
@@ -401,11 +394,10 @@ class H3HierarchyAnalyzer:
         metrics.structural_stability = self._calculate_structural_stability(hierarchy)
 
         # H3-specific metrics
-        if H3_AVAILABLE:
-            metrics.resolution_distribution = self._calculate_resolution_distribution(
-                hierarchy
-            )
-            metrics.spatial_coherence = self._calculate_spatial_coherence(hierarchy)
+        metrics.resolution_distribution = self._calculate_resolution_distribution(
+            hierarchy
+        )
+        metrics.spatial_coherence = self._calculate_spatial_coherence(hierarchy)
 
         metrics.calculation_time = (datetime.now() - start_time).total_seconds()
 
@@ -679,9 +671,6 @@ class H3HierarchyAnalyzer:
 
         Nodes without H3 indices are skipped; if no H3 nodes are present, returns 0.0.
         """
-        if not H3_AVAILABLE:
-            return 0.0
-
         coherent_edges = 0
         total_edges = 0
 

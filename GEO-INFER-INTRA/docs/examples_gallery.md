@@ -30,7 +30,7 @@ Install the required modules for the example you want to run:
 cd /path/to/GEO_INFER
 
 # Install every module (core and domain) with all optional extras
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 ```
 
 ### Running a Python Example

@@ -42,7 +42,7 @@ class Engine:
 
 ## Dependency Management
 
-- Use `uv` for all package operations (`uv sync --all-packages --all-extras`,
+- Use `uv` for all package operations (`uv sync --all-packages --all-extras --all-groups`,
   `uv add --package geo-infer-<module> <dep>`, `uv run python`)
 - Declare dependencies only in the module's `pyproject.toml` under
   `[project.dependencies]`; the root `uv.lock` pins the resolution

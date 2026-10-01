@@ -12,18 +12,9 @@ from dataclasses import dataclass, field
 from typing import Any, cast
 from enum import Enum
 from collections import defaultdict, deque
+import networkx as nx
 
 logger = logging.getLogger(__name__)
-
-try:
-    import networkx as nx
-
-    NETWORKX_AVAILABLE = True
-except ImportError:
-    NETWORKX_AVAILABLE = False
-    logger.warning(
-        "NetworkX not available. Graph-based hierarchy analysis will be limited."
-    )
 
 
 class RelationshipType(Enum):
@@ -112,10 +103,8 @@ class HierarchyManager:
         self.root_systems: set[str] = set()
         self.leaf_systems: set[str] = set()
 
-        # Graph representation (if NetworkX available)
-        self.hierarchy_graph: nx.DiGraph | None = None
-        if NETWORKX_AVAILABLE:
-            self.hierarchy_graph = nx.DiGraph()
+        # Graph representation
+        self.hierarchy_graph: nx.DiGraph = nx.DiGraph()
 
         # Metadata
         self.created_at = datetime.now()
@@ -128,8 +117,7 @@ class HierarchyManager:
         if level is not None:
             self.set_system_level(system_id, level)
 
-        if NETWORKX_AVAILABLE and self.hierarchy_graph:
-            self.hierarchy_graph.add_node(system_id)
+        self.hierarchy_graph.add_node(system_id)
 
         self._update_system_classification()
         self.updated_at = datetime.now()
@@ -175,9 +163,8 @@ class HierarchyManager:
             del self.parent_child_map[system_id]
 
         # Remove from graph
-        if NETWORKX_AVAILABLE and self.hierarchy_graph:
-            if self.hierarchy_graph.has_node(system_id):
-                self.hierarchy_graph.remove_node(system_id)
+        if self.hierarchy_graph.has_node(system_id):
+            self.hierarchy_graph.remove_node(system_id)
 
         self._update_system_classification()
         self.updated_at = datetime.now()
@@ -218,14 +205,13 @@ class HierarchyManager:
                 self.set_system_level(target_id, child_level)
 
         # Update graph
-        if NETWORKX_AVAILABLE and self.hierarchy_graph:
-            self.hierarchy_graph.add_edge(
-                source_id,
-                target_id,
-                relationship_type=relationship_type.value,
-                strength=strength,
-                **properties or {},
-            )
+        self.hierarchy_graph.add_edge(
+            source_id,
+            target_id,
+            relationship_type=relationship_type.value,
+            strength=strength,
+            **properties or {},
+        )
 
         self._update_system_classification()
         self.updated_at = datetime.now()
@@ -248,13 +234,12 @@ class HierarchyManager:
                 del self.child_parent_map[relationship.target_id]
 
         # Remove from graph
-        if NETWORKX_AVAILABLE and self.hierarchy_graph:
-            if self.hierarchy_graph.has_edge(
+        if self.hierarchy_graph.has_edge(
+            relationship.source_id, relationship.target_id
+        ):
+            self.hierarchy_graph.remove_edge(
                 relationship.source_id, relationship.target_id
-            ):
-                self.hierarchy_graph.remove_edge(
-                    relationship.source_id, relationship.target_id
-                )
+            )
 
         del self.relationships[rel_id]
         self._update_system_classification()
@@ -332,61 +317,22 @@ class HierarchyManager:
         return self.level_assignments.get(system_id)
 
     def find_path(self, source_id: str, target_id: str) -> list[str] | None:
-        """Find path between two systems in the hierarchy."""
-        if not NETWORKX_AVAILABLE or not self.hierarchy_graph:
-            # Fallback to simple traversal
-            return self._find_path_simple(source_id, target_id)
+        """Find the shortest path between two systems, ignoring edge direction.
 
+        Traversal uses the undirected view of the relationship graph, so
+        siblings connect through their shared parent.
+        """
         try:
             return cast(
                 list[str],
-                nx.shortest_path(self.hierarchy_graph, source_id, target_id),
+                nx.shortest_path(
+                    self.hierarchy_graph.to_undirected(as_view=True),
+                    source_id,
+                    target_id,
+                ),
             )
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return None
-
-    def _find_path_simple(self, source_id: str, target_id: str) -> list[str] | None:
-        """Simple path finding without NetworkX."""
-        if source_id == target_id:
-            return [source_id]
-
-        # Try going up to common ancestor then down
-        source_ancestors = [source_id] + self.get_ancestors(source_id)
-        target_ancestors = [target_id] + self.get_ancestors(target_id)
-
-        # Find common ancestor
-        common_ancestor = None
-        for ancestor in source_ancestors:
-            if ancestor in target_ancestors:
-                common_ancestor = ancestor
-                break
-
-        if not common_ancestor:
-            return None
-
-        # Build path: source -> common_ancestor -> target
-        source_to_ancestor = []
-        current = source_id
-        while current != common_ancestor:
-            source_to_ancestor.append(current)
-            source_parent = self.get_parent(current)
-            if not source_parent:
-                break
-            current = source_parent
-        source_to_ancestor.append(common_ancestor)
-
-        ancestor_to_target = []
-        current = target_id
-        while current != common_ancestor:
-            ancestor_to_target.append(current)
-            target_parent = self.get_parent(current)
-            if not target_parent:
-                break
-            current = target_parent
-
-        # Combine paths
-        path = source_to_ancestor + ancestor_to_target[::-1][1:]
-        return path if len(path) > 1 else None
 
     def calculate_hierarchy_metrics(self) -> dict[str, Any]:
         """Calculate comprehensive hierarchy metrics."""
@@ -439,15 +385,14 @@ class HierarchyManager:
             metrics["max_depth"] = 0
 
         # NetworkX-based metrics
-        if NETWORKX_AVAILABLE and self.hierarchy_graph:
-            try:
-                metrics["is_tree"] = nx.is_tree(self.hierarchy_graph)
-                metrics["is_forest"] = nx.is_forest(self.hierarchy_graph)
-                metrics["num_connected_components"] = (
-                    nx.number_weakly_connected_components(self.hierarchy_graph)
-                )
-            except Exception as e:
-                logger.warning(f"Failed to calculate NetworkX metrics: {e}")
+        try:
+            metrics["is_tree"] = nx.is_tree(self.hierarchy_graph)
+            metrics["is_forest"] = nx.is_forest(self.hierarchy_graph)
+            metrics["num_connected_components"] = nx.number_weakly_connected_components(
+                self.hierarchy_graph
+            )
+        except Exception as e:
+            logger.warning(f"Failed to calculate NetworkX metrics: {e}")
 
         return metrics
 
@@ -474,13 +419,12 @@ class HierarchyManager:
         warnings = []
 
         # Check for cycles
-        if NETWORKX_AVAILABLE and self.hierarchy_graph:
-            try:
-                cycles = list(nx.simple_cycles(self.hierarchy_graph))
-                if cycles:
-                    issues.append(f"Cycles detected: {cycles}")
-            except Exception as e:
-                warnings.append(f"Could not check for cycles: {e}")
+        try:
+            cycles = list(nx.simple_cycles(self.hierarchy_graph))
+            if cycles:
+                issues.append(f"Cycles detected: {cycles}")
+        except Exception as e:
+            warnings.append(f"Could not check for cycles: {e}")
 
         # Check for orphaned systems
         orphaned = []

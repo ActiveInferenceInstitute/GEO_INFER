@@ -16,16 +16,9 @@ from enum import Enum
 from collections import defaultdict
 
 import numpy as np
+import h3
 
 logger = logging.getLogger(__name__)
-
-try:
-    import h3
-
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available")
 
 
 class SplittingStrategy(Enum):
@@ -305,10 +298,6 @@ class H3SplittingEngine:
         """Split cells by increasing resolution."""
         target_resolution = kwargs.get("target_resolution")
 
-        if not H3_AVAILABLE:
-            logger.warning("h3-py required for resolution-based splitting")
-            return {}
-
         split_cells = {}
 
         for cell in cells:
@@ -341,10 +330,6 @@ class H3SplittingEngine:
         load_threshold = kwargs.get("load_threshold", 1.0)
         target_load = kwargs.get("target_load", 0.5)
 
-        if not H3_AVAILABLE:
-            logger.warning("h3-py required for load-based splitting")
-            return {}
-
         split_cells = {}
 
         for cell in cells:
@@ -376,10 +361,6 @@ class H3SplittingEngine:
         """Split cells using adaptive subdivision."""
         adaptation_field = kwargs.get("adaptation_field", "gradient")
         adaptation_threshold = kwargs.get("adaptation_threshold", 0.5)
-
-        if not H3_AVAILABLE:
-            logger.warning("h3-py required for adaptive splitting")
-            return {}
 
         split_cells = {}
 
@@ -414,10 +395,6 @@ class H3SplittingEngine:
         """Split cells based on gradient analysis."""
         gradient_field = kwargs.get("gradient_field", "value")
         gradient_threshold = kwargs.get("gradient_threshold", 0.3)
-
-        if not H3_AVAILABLE:
-            logger.warning("h3-py required for gradient-based splitting")
-            return {}
 
         split_cells = {}
 
@@ -474,10 +451,6 @@ class H3SplittingEngine:
         threshold_field = kwargs.get("threshold_field", "value")
         threshold_value = kwargs.get("threshold_value", 1.0)
 
-        if not H3_AVAILABLE:
-            logger.warning("h3-py required for threshold-based splitting")
-            return {}
-
         split_cells = {}
 
         for cell in cells:
@@ -505,10 +478,6 @@ class H3SplittingEngine:
     def _split_uniform(self, cells: list[Any], **kwargs: Any) -> dict[str, list[str]]:
         """Split all cells uniformly."""
         target_resolution = kwargs.get("target_resolution")
-
-        if not H3_AVAILABLE:
-            logger.warning("h3-py required for uniform splitting")
-            return {}
 
         split_cells = {}
 
@@ -573,7 +542,7 @@ class H3SplittingEngine:
         self, cells: list, split_cells: dict[str, list[str]]
     ) -> float:
         """Calculate refinement score for split results."""
-        if not split_cells or not H3_AVAILABLE:
+        if not split_cells:
             return 0.0
 
         refinement_scores = []

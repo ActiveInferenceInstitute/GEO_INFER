@@ -117,6 +117,40 @@ Documentation = "https://geo-infer.readthedocs.io/"
 Repository = "https://github.com/ActiveInferenceInstitute/GEO_INFER"
 "Bug Tracker" = "https://github.com/ActiveInferenceInstitute/GEO_INFER/issues"
 
+[dependency-groups]
+# Further workspace siblings imported by this module's tests (the package
+# import sweep in tests/integration/test_module_imports.py covers every member);
+# resolved via [tool.uv.sources]. Test-only, so a group rather than an extra.
+test = [
+    "geo-infer-art>=0.3.0",
+    "geo-infer-bio>=0.3.0",
+    "geo-infer-civ>=0.3.0",
+    "geo-infer-climate>=0.3.0",
+    "geo-infer-cog>=0.3.0",
+    "geo-infer-comms>=0.3.0",
+    "geo-infer-edu>=0.3.0",
+    "geo-infer-emergency>=0.3.0",
+    "geo-infer-energy>=0.3.0",
+    "geo-infer-examples>=0.3.0",
+    "geo-infer-forest>=0.3.0",
+    "geo-infer-git>=0.3.0",
+    "geo-infer-intra>=0.3.0",
+    "geo-infer-iot>=0.3.0",
+    "geo-infer-log>=0.3.0",
+    "geo-infer-marine>=0.3.0",
+    "geo-infer-metagov>=0.3.0",
+    "geo-infer-norms>=0.3.0",
+    "geo-infer-ops>=0.3.0",
+    "geo-infer-org>=0.3.0",
+    "geo-infer-pep>=0.3.0",
+    "geo-infer-place>=0.3.0",
+    "geo-infer-req>=0.3.0",
+    "geo-infer-sim>=0.3.0",
+    "geo-infer-spm>=0.3.0",
+    "geo-infer-transport>=0.3.0",
+    "geo-infer-water>=0.3.0",
+]
+
 [tool.uv.sources]
 geo-infer-act = { workspace = true }
 geo-infer-ag = { workspace = true }
@@ -125,15 +159,42 @@ geo-infer-ai = { workspace = true }
 geo-infer-ant = { workspace = true }
 geo-infer-api = { workspace = true }
 geo-infer-app = { workspace = true }
+geo-infer-art = { workspace = true }
 geo-infer-bayes = { workspace = true }
+geo-infer-bio = { workspace = true }
+geo-infer-civ = { workspace = true }
+geo-infer-climate = { workspace = true }
+geo-infer-cog = { workspace = true }
+geo-infer-comms = { workspace = true }
 geo-infer-data = { workspace = true }
 geo-infer-econ = { workspace = true }
+geo-infer-edu = { workspace = true }
+geo-infer-emergency = { workspace = true }
+geo-infer-energy = { workspace = true }
+geo-infer-examples = { workspace = true }
+geo-infer-forest = { workspace = true }
+geo-infer-git = { workspace = true }
 geo-infer-health = { workspace = true }
+geo-infer-intra = { workspace = true }
+geo-infer-iot = { workspace = true }
+geo-infer-log = { workspace = true }
+geo-infer-marine = { workspace = true }
 geo-infer-math = { workspace = true }
+geo-infer-metagov = { workspace = true }
+geo-infer-norms = { workspace = true }
+geo-infer-ops = { workspace = true }
+geo-infer-org = { workspace = true }
+geo-infer-pep = { workspace = true }
+geo-infer-place = { workspace = true }
+geo-infer-req = { workspace = true }
 geo-infer-risk = { workspace = true }
 geo-infer-sec = { workspace = true }
+geo-infer-sim = { workspace = true }
 geo-infer-space = { workspace = true }
+geo-infer-spm = { workspace = true }
 geo-infer-time = { workspace = true }
+geo-infer-transport = { workspace = true }
+geo-infer-water = { workspace = true }
 
 [tool.setuptools]
 package-dir = {"" = "src"}

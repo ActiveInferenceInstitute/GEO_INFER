@@ -378,7 +378,7 @@ discovers and runs tests across all 45 modules. Supports filtering by module,
 category, and pytest markers. See also: *conftest.py*.
 
 **uv**: The Python package manager used by GEO-INFER. Manages the root workspace
-(`pyproject.toml`, `uv.lock`, `.venv/`); `uv sync --all-packages --all-extras`
+(`pyproject.toml`, `uv.lock`, `.venv/`); `uv sync --all-packages --all-extras --all-groups`
 installs every module. Install via
 `curl -LsSf https://astral.sh/uv/install.sh | sh`.
 See also: *pyproject.toml*.

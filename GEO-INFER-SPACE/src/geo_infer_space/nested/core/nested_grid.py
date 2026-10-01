@@ -13,42 +13,31 @@ from collections.abc import Callable
 from enum import Enum
 from collections import defaultdict
 
+import h3
 import numpy as np
+
+from ...backends.h3.core import H3Grid as H3Grid, H3Cell
+from ...core import SpatialIndexingInterface
 
 logger = logging.getLogger(__name__)
 
-try:
-    import h3
+# Create module-level interface for convenience
+_spatial = SpatialIndexingInterface()
 
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available. Install with 'uv pip install h3'")
 
-# Import H3 components from the backends module (unified architecture)
-try:
-    from ...backends.h3.core import H3Grid as H3Grid, H3Cell
-    from ...core import SpatialIndexingInterface
+def grid_disk(cell_index: str, k: int = 1) -> list[str]:
+    """Get cells within grid distance k using the unified interface."""
+    return _spatial.get_cell_neighbors(cell_index, k)
 
-    # Create module-level interface for convenience
-    _spatial = SpatialIndexingInterface()
 
-    def grid_disk(cell_index: str, k: int = 1) -> list[str]:
-        """Get cells within grid distance k using the unified interface."""
-        return _spatial.get_cell_neighbors(cell_index, k)
+def grid_distance(cell1: str, cell2: str) -> int:
+    """Get grid distance using unified interface."""
+    return _spatial.get_cell_distance(cell1, cell2)
 
-    def grid_distance(cell1: str, cell2: str) -> int:
-        """Get grid distance using unified interface."""
-        return _spatial.get_cell_distance(cell1, cell2)
 
-    def neighbor_cells(cell_index: str) -> list[str]:
-        """Get immediate neighbors using unified interface."""
-        return _spatial.get_cell_neighbors(cell_index, 1)
-
-    H3_CORE_AVAILABLE = True
-except ImportError:
-    H3_CORE_AVAILABLE = False
-    logger.warning("H3 core components not available")
+def neighbor_cells(cell_index: str) -> list[str]:
+    """Get immediate neighbors using unified interface."""
+    return _spatial.get_cell_neighbors(cell_index, 1)
 
 
 class NestedCellType(Enum):
@@ -113,7 +102,7 @@ class NestedCell:
 
     def __post_init__(self) -> None:
         """Initialize nested cell after creation."""
-        if H3_AVAILABLE and self.h3_cell:
+        if self.h3_cell:
             # Initialize neighbor relationships
             self._update_neighbors()
 
@@ -160,7 +149,7 @@ class NestedCell:
 
     def _update_neighbors(self) -> None:
         """Update neighbor cell relationships."""
-        if not H3_AVAILABLE or not self.h3_cell:
+        if not self.h3_cell:
             return
 
         try:
@@ -555,13 +544,10 @@ class NestedH3Grid:
         coarser levels are derived from ``cell_to_parent`` so the hierarchy is
         closed by construction.
         """
-        if not H3_AVAILABLE:
-            raise RuntimeError("h3-py package required for nested H3 hierarchy")
         ordered = self._validate_h3_resolution_sequence(resolutions)
         finest = ordered[-1]
         cells: list[str] = []
-        if H3_CORE_AVAILABLE:
-            cells = list(_spatial.polygon_to_cells(boundary, finest))
+        cells = list(_spatial.polygon_to_cells(boundary, finest))
         if not cells:
             cells = self._cells_from_boundary_vertices(boundary, finest)
         if not cells:
@@ -582,8 +568,6 @@ class NestedH3Grid:
         reduced to the finest requested resolution, and cells at resolutions not
         in the configured sequence fail clearly.
         """
-        if not H3_AVAILABLE:
-            raise RuntimeError("h3-py package required for nested H3 hierarchy")
         ordered = self._validate_h3_resolution_sequence(resolutions)
         if not cells:
             raise ValueError("At least one H3 cell is required")
@@ -664,17 +648,6 @@ class NestedH3Grid:
         Returns a JSON-compatible validation report instead of raising so the
         method can be used by contracts, tests, and generated diagnostics.
         """
-        if not H3_AVAILABLE:
-            return {
-                "is_valid": False,
-                "issues": ["h3-py package is not available"],
-                "warnings": [],
-                "orphan_count": 0,
-                "parent_count": 0,
-                "child_count": 0,
-                "multi_child_parent": False,
-                "validated_at": datetime.now().isoformat(),
-            }
         hierarchy = hierarchy or getattr(self, "h3_hierarchy", None)
         if not hierarchy:
             return {
@@ -808,8 +781,6 @@ class NestedH3Grid:
         """
         Aggregate numeric child vectors to H3 parents with finite normalized means.
         """
-        if not H3_AVAILABLE:
-            raise RuntimeError("h3-py package required for H3 aggregation")
         grouped: dict[str, list[np.ndarray]] = defaultdict(list)
         grouped_weights: dict[str, list[float]] = defaultdict(list)
         for child, values in values_by_child.items():
@@ -990,10 +961,6 @@ class NestedH3Grid:
         bounds: tuple[float, float, float, float],
     ) -> dict[int, NestedSystem]:
         """Create hierarchical nested systems across multiple resolutions."""
-        if not H3_AVAILABLE:
-            logger.error("H3 not available for hierarchical system creation")
-            return {}
-
         hierarchical_systems = {}
 
         try:
@@ -1008,34 +975,31 @@ class NestedH3Grid:
                 center_lat = (min_lat + max_lat) / 2
                 center_lng = (min_lng + max_lng) / 2
 
-                if H3_CORE_AVAILABLE:
-                    from ...backends.h3.core import H3Cell
+                center_cell = H3Cell.from_coordinates(
+                    center_lat, center_lng, resolution
+                )
 
-                    center_cell = H3Cell.from_coordinates(
-                        center_lat, center_lng, resolution
-                    )
+                # Get surrounding cells
+                surrounding_indices = grid_disk(
+                    center_cell.index, 5
+                )  # 5-ring neighborhood
 
-                    # Get surrounding cells
-                    surrounding_indices = grid_disk(
-                        center_cell.index, 5
-                    )  # 5-ring neighborhood
+                # Create cells and system
+                cell_indices = []
+                for h3_index in surrounding_indices:
+                    h3_cell = H3Cell(index=h3_index, resolution=resolution)
+                    self.add_cell(h3_cell, system_id)
+                    cell_indices.append(h3_index)
 
-                    # Create cells and system
-                    cell_indices = []
-                    for h3_index in surrounding_indices:
-                        h3_cell = H3Cell(index=h3_index, resolution=resolution)
-                        self.add_cell(h3_cell, system_id)
-                        cell_indices.append(h3_index)
+                # Create the system
+                system = self.create_system(
+                    system_id,
+                    cell_indices,
+                    name=f"Hierarchical System Resolution {resolution}",
+                    description=f"System at H3 resolution {resolution}",
+                )
 
-                    # Create the system
-                    system = self.create_system(
-                        system_id,
-                        cell_indices,
-                        name=f"Hierarchical System Resolution {resolution}",
-                        description=f"System at H3 resolution {resolution}",
-                    )
-
-                    hierarchical_systems[resolution] = system
+                hierarchical_systems[resolution] = system
 
         except Exception as e:
             logger.error(f"Failed to create hierarchical system: {e}")

@@ -17,7 +17,7 @@ metadata, the shared lockfile, and module extras stay aligned.
 ```bash
 git clone https://github.com/ActiveInferenceInstitute/GEO_INFER.git
 cd GEO_INFER
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python -c "import geo_infer_space, geo_infer_act; print('GEO-INFER ready')"
 ```
 
@@ -45,7 +45,7 @@ bioinformatics, health, climate, performance, quality, documentation, web, and
 IoT work. The broadest local setup is:
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 ```
 
 For a smaller environment, sync the workspace first and add only the extra
