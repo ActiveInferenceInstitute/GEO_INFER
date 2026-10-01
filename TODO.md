@@ -251,7 +251,8 @@ with the landed :441/:572 treatment argues for finishing it.
 
 Full review of `main @ 510f1008` (local `main` == `origin/main`), followed by a
 repository-wide legacy removal and modernization branch
-(`review/2026-10-01-legacy-sweep`); details in `CHANGELOG.md` `[Unreleased]`.
+(`review/2026-10-01-legacy-sweep`); details in `CHANGELOG.md` `[Unreleased]`;
+prioritized next steps with file paths in [HANDOFF-2026-10-01.md](HANDOFF-2026-10-01.md).
 
 **Closed rows (removed from the tables above):**
 
