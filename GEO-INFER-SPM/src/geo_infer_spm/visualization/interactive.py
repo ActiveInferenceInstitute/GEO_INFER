@@ -10,13 +10,8 @@ import numpy as np
 from typing import Any
 import warnings
 
-try:
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-
-    PLOTLY_AVAILABLE = True
-except ImportError:
-    PLOTLY_AVAILABLE = False
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from ..models.data_models import SPMResult
 
@@ -26,7 +21,7 @@ def create_interactive_map(
     contrast_idx: int = 0,
     map_type: str = "scattergeo",
     **kwargs: Any,
-) -> Any | None:
+) -> Any:
     """
     Create interactive geographical map of SPM results.
 
@@ -37,14 +32,8 @@ def create_interactive_map(
         **kwargs: Additional plotting parameters
 
     Returns:
-        Plotly figure object or None if plotly not available
+        Plotly figure object
     """
-    if not PLOTLY_AVAILABLE:
-        warnings.warn(
-            "plotly not available for interactive visualization", stacklevel=2
-        )
-        return None
-
     if not isinstance(contrast_idx, int) or contrast_idx < 0:
         raise ValueError("contrast_idx must be a non-negative integer")
     coordinates = np.asarray(spm_result.spm_data.coordinates, dtype=float)
@@ -171,9 +160,7 @@ def create_interactive_map(
     return fig
 
 
-def create_dashboard(
-    spm_result: SPMResult, include_diagnostics: bool = True
-) -> Any | None:
+def create_dashboard(spm_result: SPMResult, include_diagnostics: bool = True) -> Any:
     """
     Create comprehensive interactive dashboard of SPM results.
 
@@ -182,12 +169,8 @@ def create_dashboard(
         include_diagnostics: Whether to include diagnostic plots
 
     Returns:
-        Plotly figure with dashboard or None if plotly not available
+        Plotly figure with dashboard
     """
-    if not PLOTLY_AVAILABLE:
-        warnings.warn("plotly not available for dashboard creation", stacklevel=2)
-        return None
-
     # Create subplot figure
     n_rows = 2 if include_diagnostics else 1
     n_cols = 3
@@ -346,10 +329,6 @@ def create_time_series_explorer(spm_result: SPMResult) -> Any | None:
     Returns:
         Plotly figure for time series exploration or None
     """
-    if not PLOTLY_AVAILABLE:
-        warnings.warn("plotly not available for time series explorer", stacklevel=2)
-        return None
-
     if not spm_result.spm_data.has_temporal:
         warnings.warn(
             "No temporal data available for time series explorer", stacklevel=2

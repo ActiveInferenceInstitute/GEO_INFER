@@ -7,12 +7,51 @@ including batch processing, quality metadata, and temporal analysis.
 
 import logging
 from typing import Any
-from datetime import datetime
+from datetime import datetime, UTC
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 import numpy as np
 import h3
 
 logger = logging.getLogger(__name__)
+
+
+def normalize_timestamp(value: datetime | str) -> datetime:
+    """Return a timezone-aware UTC datetime from a datetime or ISO-8601 string.
+
+    Naive values are ambiguous (local wall-clock or UTC) and raise
+    ``ValueError``, matching ``geo_infer_time.core.stream_ingest
+    .normalize_timestamp``; attach an explicit offset (e.g. ``+00:00`` or
+    ``datetime.UTC``). Aware values in any offset are converted to UTC.
+
+    Raises:
+        TypeError: If ``value`` is neither a datetime nor a string.
+        ValueError: If the string is not ISO-8601, the value is NaT, or the
+            value is timezone-naive.
+    """
+    if isinstance(value, str):
+        try:
+            parsed = datetime.fromisoformat(value)
+        except ValueError as exc:
+            raise ValueError(
+                f"timestamp must be an ISO-8601 string, got {value!r}"
+            ) from exc
+    elif isinstance(value, datetime):
+        parsed = value
+    else:
+        raise TypeError("timestamp must be a datetime or an ISO-8601 string")
+    if parsed != parsed:  # Reject pandas NaT, a datetime subclass.
+        raise ValueError("timestamp must not be NaT")
+    if parsed.utcoffset() is None:
+        raise ValueError(
+            "timestamp must be timezone-aware; naive datetimes are ambiguous "
+            f"(got {parsed.isoformat()!r}, attach tzinfo such as UTC)"
+        )
+    return parsed.astimezone(UTC)
+
+
+def _utc_now() -> datetime:
+    """Current time as a timezone-aware UTC datetime."""
+    return datetime.now(UTC)
 
 
 class MeasurementQuality(BaseModel):
@@ -60,7 +99,7 @@ class Measurement(BaseModel):
     value: float = Field(..., description="Measured value")
     unit: str = Field(..., description="Unit of measurement")
     timestamp: datetime = Field(
-        default_factory=datetime.now, description="Measurement timestamp"
+        default_factory=_utc_now, description="Measurement timestamp (aware UTC)"
     )
 
     # Location information
@@ -96,6 +135,12 @@ class Measurement(BaseModel):
     processing_version: str | None = Field(
         None, description="Processing pipeline version"
     )
+
+    @field_validator("timestamp", "processed_at")
+    @classmethod
+    def validate_timestamps(cls, v: datetime | None) -> datetime | None:
+        """Require timezone-aware timestamps and normalize them to UTC."""
+        return None if v is None else normalize_timestamp(v)
 
     @field_validator("h3_index")
     def validate_h3_index(cls, v: str | None, info: Any) -> str | None:
@@ -160,7 +205,7 @@ class Measurement(BaseModel):
             "processed_at": (
                 self.processed_at.isoformat() if self.processed_at else None
             ),
-            "age_seconds": (datetime.now() - self.timestamp).total_seconds(),
+            "age_seconds": (_utc_now() - self.timestamp).total_seconds(),
             "processing_version": self.processing_version,
         }
 
@@ -192,7 +237,7 @@ class MeasurementBatch(BaseModel):
     # Batch processing information
     batch_size: int = Field(..., description="Number of measurements in batch")
     created_at: datetime = Field(
-        default_factory=datetime.now, description="Batch creation timestamp"
+        default_factory=_utc_now, description="Batch creation timestamp (aware UTC)"
     )
     processed_at: datetime | None = Field(
         None, description="Batch processing timestamp"
@@ -202,6 +247,12 @@ class MeasurementBatch(BaseModel):
     quality_summary: dict[str, Any] = Field(
         default_factory=dict, description="Quality summary for batch"
     )
+
+    @field_validator("created_at", "processed_at")
+    @classmethod
+    def validate_batch_timestamps(cls, v: datetime | None) -> datetime | None:
+        """Require timezone-aware batch timestamps and normalize them to UTC."""
+        return None if v is None else normalize_timestamp(v)
 
     @field_validator("measurements")
     def validate_measurements(
@@ -397,7 +448,7 @@ class MeasurementStream(BaseModel):
 
     # Status
     is_active: bool = Field(True, description="Stream active status")
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=_utc_now)
 
     def add_sensor(self, sensor_id: str) -> None:
         """Add a sensor to the stream."""
@@ -458,8 +509,8 @@ class MeasurementValidation(BaseModel):
 
     # Metadata
     description: str = Field("", description="Validation rule description")
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=_utc_now)
+    updated_at: datetime = Field(default_factory=_utc_now)
 
     @field_validator("action_on_failure")
     def validate_action(cls, v: str) -> str:

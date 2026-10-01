@@ -10,7 +10,6 @@ Examples workspace within `GEO-INFER-PLACE`.
 
 ## Public Interface
 
-- `del_norte_county_demo.py:check_dependencies` (function)
 - `del_norte_county_demo.py:load_api_keys` (function)
 - `del_norte_county_demo.py:demonstrate_data_sources` (function)
 - `del_norte_county_demo.py:demonstrate_api_connections` (function)

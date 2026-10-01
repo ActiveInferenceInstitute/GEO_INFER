@@ -453,20 +453,24 @@ class TestModuleEnrichment(unittest.TestCase):
 
     def test_enrich_degrades_gracefully_on_missing_module(self) -> None:
         """A missing sibling module records ``unavailable`` and the rest compute."""
-        name = "geo_infer_bayes"
-        sub = "geo_infer_bayes.civic_intel"
-        original_pkg = sys.modules.get(name)
-        original_sub = sys.modules.get(sub)
+        # geo-infer-act declares geo-infer-bayes as a hard dependency, so an
+        # environment without BAYES has no ACT either; both are blocked.
+        blocked = (
+            "geo_infer_bayes",
+            "geo_infer_bayes.civic_intel",
+            "geo_infer_act.core.civic_intel",
+        )
+        originals = {key: sys.modules.get(key) for key in blocked}
         try:
-            # Simulate an absent BAYES package via the real import machinery:
-            # a ``None`` sys.modules entry makes ``importlib.import_module``
-            # raise ImportError, exercising the same defensive path as an
+            # Simulate absent packages via the real import machinery: a
+            # ``None`` sys.modules entry makes ``importlib.import_module`` raise
+            # ImportError, exercising the same defensive path as an
             # uninstalled dependency (not a stubbed result).
-            sys.modules[name] = None  # type: ignore[index]
-            sys.modules[sub] = None  # type: ignore[index]
+            for key in blocked:
+                sys.modules[key] = None  # type: ignore[assignment]
             enriched = self._enrich()
         finally:
-            for key, value in ((name, original_pkg), (sub, original_sub)):
+            for key, value in originals.items():
                 if value is None:
                     sys.modules.pop(key, None)
                 else:
@@ -475,10 +479,11 @@ class TestModuleEnrichment(unittest.TestCase):
         assert enriched["moduleResults"]["status"] == "ok"
         assert enriched["moduleResults"]["sources"]["bayes"] == "unavailable"
         assert enriched["bayesPriors"]["status"] == "unavailable"
-        # RISK and ACT are independent and still compute, so the map keeps
-        # full civic-intel coverage without the missing module.
+        assert enriched["moduleResults"]["sources"]["act"] == "unavailable"
+        assert enriched["actPolicy"]["status"] == "unavailable"
+        # RISK does not depend on BAYES and still computes, so the map keeps
+        # its hazard weighting without the missing modules.
         assert "tsunami" in enriched["riskWeights"]
-        assert enriched["actPolicy"]["status"] == "ok"
 
     def test_module_popup_block_escapes_hostile_tags(self) -> None:
         """The pre-built module popup block HTML-escapes contract-derived tags.

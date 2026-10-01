@@ -17,6 +17,7 @@ Key Features:
 
 import numpy as np
 import logging
+from sklearn.metrics import mutual_info_score
 from typing import Any, cast
 from datetime import datetime
 from collections import defaultdict
@@ -1236,38 +1237,24 @@ class SwarmPatternAnalyzer:
                 np.linspace(np.min(collective_array), np.max(collective_array), n_bins),
             )
 
-            # Calculate mutual information using scikit-learn
-            try:
-                from sklearn.metrics import mutual_info_score
-
-                mi_score = mutual_info_score(individual_binned, collective_binned)
-                # Normalize by minimum entropy (normalized mutual information)
-                entropy_individual = self._calculate_entropy(individual_binned)
-                entropy_collective = self._calculate_entropy(collective_binned)
-                min_entropy = min(entropy_individual, entropy_collective)
-                normalized_mi = mi_score / min_entropy if min_entropy > 0 else 0.0
-                mi_score = min(1.0, normalized_mi)  # Normalize to [0, 1]
-            except ImportError:
-                # Fallback: calculate MI manually
-                mi_score = self._calculate_mutual_information_manual(
-                    individual_binned, collective_binned
-                )
+            # Mutual information normalized by the minimum entropy, in [0, 1].
+            # sklearn returns nats; _calculate_entropy returns bits.
+            mi_score = mutual_info_score(individual_binned, collective_binned) / np.log(
+                2
+            )
+            entropy_individual = self._calculate_entropy(individual_binned)
+            entropy_collective = self._calculate_entropy(collective_binned)
+            min_entropy = min(entropy_individual, entropy_collective)
+            normalized_mi = mi_score / min_entropy if min_entropy > 0 else 0.0
+            mi_score = min(1.0, normalized_mi)
 
             return {
                 "mutual_information_score": float(mi_score),
                 "interpretation": (
                     "high" if mi_score > 0.7 else "medium" if mi_score > 0.3 else "low"
                 ),
-                "entropy_individual": (
-                    float(entropy_individual)
-                    if "entropy_individual" in locals()
-                    else 0.0
-                ),
-                "entropy_collective": (
-                    float(entropy_collective)
-                    if "entropy_collective" in locals()
-                    else 0.0
-                ),
+                "entropy_individual": float(entropy_individual),
+                "entropy_collective": float(entropy_collective),
             }
 
         except Exception as e:
@@ -1286,35 +1273,6 @@ class SwarmPatternAnalyzer:
         # Calculate entropy
         entropy = -np.sum(probabilities * np.log2(probabilities + 1e-10))
         return float(entropy)
-
-    def _calculate_mutual_information_manual(
-        self, x: np.ndarray, y: np.ndarray
-    ) -> float:
-        """Calculate mutual information manually."""
-        # Create joint distribution
-        unique_x, counts_x = np.unique(x, return_counts=True)
-        unique_y, counts_y = np.unique(y, return_counts=True)
-
-        # Joint probability
-        joint_counts = np.zeros((len(unique_x), len(unique_y)))
-        for i, val_x in enumerate(unique_x):
-            for j, val_y in enumerate(unique_y):
-                joint_counts[i, j] = np.sum((x == val_x) & (y == val_y))
-
-        joint_prob = joint_counts / len(x)
-        prob_x = counts_x / len(x)
-        prob_y = counts_y / len(y)
-
-        # Calculate MI
-        mi = 0.0
-        for i in range(len(unique_x)):
-            for j in range(len(unique_y)):
-                if joint_prob[i, j] > 0 and prob_x[i] > 0 and prob_y[j] > 0:
-                    mi += joint_prob[i, j] * np.log2(
-                        joint_prob[i, j] / (prob_x[i] * prob_y[j])
-                    )
-
-        return max(0.0, mi)
 
     def _calculate_transfer_entropy(
         self,

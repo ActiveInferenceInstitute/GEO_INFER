@@ -11,14 +11,8 @@ from datetime import datetime
 from fastapi import FastAPI, HTTPException, Query
 import h3
 
-# Optional imports for enhanced functionality
-try:
-    from geo_infer_iot.core.registry import SensorRegistry
-    from geo_infer_iot.core.ingestion import IoTDataIngestion
-
-    HAS_CORE_MODULES = True
-except ImportError:
-    HAS_CORE_MODULES = False
+from geo_infer_iot.core.ingestion import IoTDataIngestion
+from geo_infer_iot.core.registry import SensorRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -38,15 +32,8 @@ class SensorAPI:
         self.config = config or {}
         self.app = FastAPI(title="GEO-INFER-IOT Sensor API", version="1.0.0")
 
-        # Initialize core components if available
-        self.registry: Any | None = None
-        self.ingestion: Any | None = None
-        if HAS_CORE_MODULES:
-            self.registry = SensorRegistry(config)
-            self.ingestion = IoTDataIngestion(self.registry, config)
-        else:
-            self.registry = None
-            self.ingestion = None
+        self.registry: Any = SensorRegistry(config)
+        self.ingestion: Any = IoTDataIngestion(self.registry, config)
 
         # Setup API routes
         self._setup_routes()
@@ -76,11 +63,6 @@ class SensorAPI:
             offset: int = Query(0, description="Offset for pagination"),
         ) -> dict[str, Any]:
             """List sensors with optional filtering."""
-            if self.registry is None:
-                raise HTTPException(
-                    status_code=503, detail="Sensor registry not available"
-                )
-
             try:
                 sensors = []
 
@@ -137,11 +119,6 @@ class SensorAPI:
         @self.app.get("/sensors/{sensor_id}")
         async def get_sensor(sensor_id: str) -> dict[str, Any]:
             """Get detailed information about a specific sensor."""
-            if self.registry is None:
-                raise HTTPException(
-                    status_code=503, detail="Sensor registry not available"
-                )
-
             sensor = self.registry.sensors.get(sensor_id)
             if not sensor:
                 raise HTTPException(
@@ -166,11 +143,6 @@ class SensorAPI:
         @self.app.post("/sensors")
         async def register_sensor(sensor_data: dict) -> dict[str, Any]:
             """Register a new sensor."""
-            if self.registry is None:
-                raise HTTPException(
-                    status_code=503, detail="Sensor registry not available"
-                )
-
             try:
                 sensor = self.registry.register_sensor(sensor_data)
                 return {
@@ -201,11 +173,6 @@ class SensorAPI:
             limit: int = Query(1000, description="Maximum measurements to return"),
         ) -> dict[str, Any]:
             """Query sensor measurements with temporal and spatial filtering."""
-            if self.ingestion is None:
-                raise HTTPException(
-                    status_code=503, detail="Data ingestion not available"
-                )
-
             if h3_index is not None and not h3.is_valid_cell(h3_index):
                 raise HTTPException(
                     status_code=400, detail=f"Invalid H3 index: {h3_index}"
@@ -289,11 +256,6 @@ class SensorAPI:
         @self.app.post("/measurements")
         async def submit_measurements(measurements: list[dict]) -> dict[str, Any]:
             """Submit new sensor measurements."""
-            if self.ingestion is None:
-                raise HTTPException(
-                    status_code=503, detail="Data ingestion not available"
-                )
-
             try:
                 processed_count = 0
                 failed_count = 0
@@ -321,11 +283,6 @@ class SensorAPI:
         @self.app.get("/networks")
         async def list_networks() -> dict[str, Any]:
             """List all sensor networks."""
-            if self.registry is None:
-                raise HTTPException(
-                    status_code=503, detail="Sensor registry not available"
-                )
-
             networks = []
             for network in self.registry.networks.values():
                 networks.append(
@@ -370,11 +327,6 @@ class SensorAPI:
         @self.app.get("/spatial/{h3_index}/sensors")
         async def get_sensors_in_h3_cell(h3_index: str) -> dict[str, Any]:
             """Get all sensors in a specific H3 cell."""
-            if self.registry is None:
-                raise HTTPException(
-                    status_code=503, detail="Sensor registry not available"
-                )
-
             sensors = self.registry.get_sensors_in_h3_cell(h3_index)
 
             return {

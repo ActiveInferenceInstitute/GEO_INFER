@@ -16,8 +16,12 @@ import json
 import yaml
 from pathlib import Path
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
+import requests
+from shapely.geometry import Point, box
+from sqlalchemy import create_engine
 
 from ..models.schemas import (
     ETLPipeline,
@@ -230,10 +234,6 @@ class TransformationEngine:
         self, data: Any, parameters: dict[str, Any], context: dict[str, Any]
     ) -> Any:
         """Join a GeoDataFrame with a configured or contextual spatial layer."""
-        try:
-            import geopandas as gpd
-        except ImportError as exc:
-            raise RuntimeError("spatial_join requires geopandas") from exc
 
         if not isinstance(data, gpd.GeoDataFrame):
             raise TypeError("spatial_join transformation requires a GeoDataFrame")
@@ -302,13 +302,6 @@ class TransformationEngine:
         ]
         if missing:
             raise ValueError(f"Geocoding columns not found: {missing}")
-        try:
-            import geopandas as gpd
-            from shapely.geometry import Point
-        except ImportError as exc:
-            raise RuntimeError(
-                "geocode transformation requires geopandas and shapely"
-            ) from exc
         result = data.copy()
         result["geometry"] = [
             Point(float(lon), float(lat))
@@ -324,10 +317,6 @@ class TransformationEngine:
         self, data: Any, parameters: dict[str, Any], context: dict[str, Any]
     ) -> Any:
         """Reproject a GeoDataFrame to the requested CRS."""
-        try:
-            import geopandas as gpd
-        except ImportError as exc:
-            raise RuntimeError("reproject transformation requires geopandas") from exc
         if not isinstance(data, gpd.GeoDataFrame):
             raise TypeError("reproject transformation requires a GeoDataFrame")
         target_crs = parameters.get("target_crs") or parameters.get("crs")
@@ -339,10 +328,6 @@ class TransformationEngine:
         self, data: Any, parameters: dict[str, Any], context: dict[str, Any]
     ) -> Any:
         """Clip a GeoDataFrame to a configured geometry or bounding box."""
-        try:
-            import geopandas as gpd
-        except ImportError as exc:
-            raise RuntimeError("clip transformation requires geopandas") from exc
         if not isinstance(data, gpd.GeoDataFrame):
             raise TypeError("clip transformation requires a GeoDataFrame")
 
@@ -356,7 +341,6 @@ class TransformationEngine:
             raise ValueError("clip requires mask_layer, mask_path, or bounds")
         if len(bounds) != 4:
             raise ValueError("clip bounds must be [minx, miny, maxx, maxy]")
-        from shapely.geometry import box
 
         return gpd.clip(data, gpd.GeoDataFrame(geometry=[box(*bounds)], crs=data.crs))
 
@@ -800,12 +784,6 @@ class IntelligentETLPipeline:
         if fmt in {"parquet", "pq"}:
             return pd.read_parquet(path)
         if fmt in {"geojson", "gpkg", "shp", "geopackage"}:
-            try:
-                import geopandas as gpd
-            except ImportError as exc:
-                raise RuntimeError(
-                    "geospatial file extraction requires geopandas"
-                ) from exc
             return gpd.read_file(path)
         raise ValueError(f"Unsupported file format: {fmt}")
 
@@ -822,10 +800,6 @@ class IntelligentETLPipeline:
             raise ValueError(
                 "database source requires connection_string and query or table"
             )
-        try:
-            from sqlalchemy import create_engine
-        except ImportError as exc:
-            raise RuntimeError("database extraction requires sqlalchemy") from exc
         engine = create_engine(connection)
         try:
             return (
@@ -843,10 +817,6 @@ class IntelligentETLPipeline:
         endpoint = config.get("url") or config.get("endpoint")
         if not endpoint:
             raise ValueError("api source requires url or endpoint")
-        try:
-            import requests
-        except ImportError as exc:
-            raise RuntimeError("api extraction requires requests") from exc
         headers = dict(config.get("headers", {}))
         token = config.get("api_key") or config.get("token")
         if token:
@@ -1001,10 +971,6 @@ class IntelligentETLPipeline:
                 raise ValueError(
                     "database destination requires connection_string and table"
                 )
-            try:
-                from sqlalchemy import create_engine
-            except ImportError as exc:
-                raise RuntimeError("database loading requires sqlalchemy") from exc
             engine = create_engine(connection)
             try:
                 transformed_data.to_sql(
@@ -1020,10 +986,6 @@ class IntelligentETLPipeline:
             endpoint = configuration.get("url") or configuration.get("endpoint")
             if not endpoint:
                 raise ValueError("api destination requires url or endpoint")
-            try:
-                import requests
-            except ImportError as exc:
-                raise RuntimeError("api loading requires requests") from exc
             response = requests.post(
                 endpoint,
                 json=(

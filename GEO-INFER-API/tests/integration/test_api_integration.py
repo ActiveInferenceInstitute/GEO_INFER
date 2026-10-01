@@ -7,13 +7,8 @@ working together. Uses FastAPI's TestClient for HTTP-level integration testing.
 
 import pytest
 
-try:
-    from fastapi import FastAPI
-    from fastapi.testclient import TestClient
-
-    HAS_FASTAPI = True
-except ImportError:
-    HAS_FASTAPI = False
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 pytestmark = [
     pytest.mark.integration,

@@ -16,19 +16,21 @@ Features:
 - Modular, professional, and fully documented code
 
 Requirements:
-    uv pip install folium h3 geopandas shapely numpy pandas
+    folium (the ``viz`` extra of geo-infer-space)
 
 Usage:
-    python california_multilayer_demo.py
+    uv run python GEO-INFER-SPACE/examples/california_multilayer_demo.py
 """
 
 import json
 import logging
 from pathlib import Path
 from typing import Any
-import numpy as np
 import folium
-from shapely.geometry import Polygon, LineString, Point
+import numpy as np
+from shapely.geometry import LineString, Point, Polygon, shape
+
+from geo_infer_space.backends.h3.operations import cell_to_boundary, coordinate_to_cell
 
 logger = logging.getLogger("california_multilayer_demo")
 
@@ -165,9 +167,6 @@ def geojson_to_h3_polygons(
 
     Returns a list of H3 indices and a mapping of properties.
     """
-    import h3
-    from shapely.geometry import shape
-
     h3_indices = []
     properties = {}
 
@@ -178,7 +177,7 @@ def geojson_to_h3_polygons(
         if geom.geom_type == "Point":
             # Direct point conversion
             lat, lon = geom.y, geom.x
-            h3_index = h3.latlng_to_cell(lat, lon, resolution)
+            h3_index = coordinate_to_cell(lat, lon, resolution)
             h3_indices.append(h3_index)
             properties[h3_index] = props
 
@@ -188,7 +187,7 @@ def geojson_to_h3_polygons(
             # covered cell-by-cell.
             centroid = geom.centroid
             lat, lon = centroid.y, centroid.x
-            h3_index = h3.latlng_to_cell(lat, lon, resolution)
+            h3_index = coordinate_to_cell(lat, lon, resolution)
             h3_indices.append(h3_index)
             properties[h3_index] = props
 
@@ -196,7 +195,7 @@ def geojson_to_h3_polygons(
             # Use midpoint for lines
             midpoint = geom.interpolate(0.5, normalized=True)
             lat, lon = midpoint.y, midpoint.x
-            h3_index = h3.latlng_to_cell(lat, lon, resolution)
+            h3_index = coordinate_to_cell(lat, lon, resolution)
             h3_indices.append(h3_index)
             properties[h3_index] = props
 
@@ -212,16 +211,13 @@ def cell_to_latlngjson_polygons(
     """
     Convert H3 indices back to GeoJSON format.
     """
-    import h3
-
     features = []
 
     for h3_index in h3_indices:
         # Get the hexagon boundary
-        boundary = h3.cell_to_boundary(h3_index)
-
-        # Convert to GeoJSON polygon format
-        polygon_coords = [[lon, lat] for lat, lon in boundary]
+        polygon_coords = [
+            [lon, lat] for lon, lat in cell_to_boundary(h3_index, geo_json=True)
+        ]
 
         # Close the polygon if needed
         if polygon_coords[0] != polygon_coords[-1]:
@@ -249,11 +245,9 @@ def add_h3_layer_to_map(
     """
     Add an H3 hexagon layer to a Folium map.
     """
-    import h3
-
     fg = folium.FeatureGroup(name=layer_name)
     for h3_index in h3_indices:
-        boundary = h3.cell_to_boundary(h3_index)
+        boundary = cell_to_boundary(h3_index)
         prop = properties.get(h3_index, {})
         popup_text = "<br>".join(
             [
@@ -387,8 +381,8 @@ def main() -> None:
     )
 
     # Save map
-    output_dir = Path(__file__).parent / "california_demo_outputs"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = Path(__file__).parent / "outputs" / "california_multilayer"
+    output_dir.mkdir(parents=True, exist_ok=True)
     map_path = output_dir / "california_multilayer_demo.html"
     m.save(str(map_path))
     logger.info(f"Interactive map saved to: {map_path}")

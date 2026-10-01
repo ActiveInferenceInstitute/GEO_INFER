@@ -10,7 +10,6 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any, cast
 from datetime import datetime, UTC
-from importlib.util import find_spec
 import asyncio
 from dataclasses import dataclass
 
@@ -21,8 +20,6 @@ import requests
 from ..models.schemas import QualityCheck
 from ..utils.validation import GeospatialValidator
 from ..utils.format_detection import FormatDetector
-
-HAS_RASTERIO = find_spec("rasterio") is not None
 
 
 logger = logging.getLogger(__name__)

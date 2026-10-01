@@ -11,6 +11,8 @@ from functools import wraps
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 from collections.abc import Callable
 
+import h3
+
 from ...core.interfaces import H3UnavailableError
 
 if TYPE_CHECKING:
@@ -58,41 +60,34 @@ class H3Backend:
 
     This class provides H3-specific implementations of the generic spatial
     interfaces. All operations require the H3 library - operations will
-    raise H3UnavailableError if H3 is not installed.
+    raise H3UnavailableError if the installed h3-py violates >=4.5.0,<5.
 
     Implements: IndexingBackendProtocol, AnalyticsBackendProtocol
     """
 
     def __init__(self) -> None:
-        """Initialize the H3 backend and check library availability."""
+        """Initialize the H3 backend and check the h3-py version contract."""
         self._check_h3_availability()
 
     def _check_h3_availability(self) -> None:
-        """Check if H3 library is available."""
-        try:
-            import h3
-
-            self.h3 = h3
-            version = getattr(h3, "__version__", None)
-            parsed_version = _version_tuple(cast(str, version))
-            if (
-                parsed_version is None
-                or parsed_version < MIN_H3_VERSION
-                or parsed_version[0] >= MAX_H3_MAJOR
-            ):
-                self._available = False
-                logger.error(
-                    "Unsupported H3 version %r; GEO-INFER requires h3-py >=4.5.0,<5",
-                    version,
-                )
-                return
-
-            self._available = True
-            logger.info("H3 library v%s loaded successfully", version)
-        except ImportError:
-            self.h3 = None
+        """Bind the h3 module and verify the installed version contract."""
+        self.h3 = h3
+        version = getattr(h3, "__version__", None)
+        parsed_version = _version_tuple(cast(str, version))
+        if (
+            parsed_version is None
+            or parsed_version < MIN_H3_VERSION
+            or parsed_version[0] >= MAX_H3_MAJOR
+        ):
             self._available = False
-            logger.warning("H3 library is not installed - install with: pip install h3")
+            logger.error(
+                "Unsupported H3 version %r; GEO-INFER requires h3-py >=4.5.0,<5",
+                version,
+            )
+            return
+
+        self._available = True
+        logger.info("H3 library v%s loaded successfully", version)
 
     @property
     def name(self) -> str:
@@ -102,9 +97,7 @@ class H3Backend:
     @property
     def version(self) -> str:
         """Return the backend version."""
-        if self.h3:
-            return getattr(self.h3, "__version__", "unknown")
-        return "not-installed"
+        return cast(str, getattr(self.h3, "__version__", "unknown"))
 
     def is_available(self) -> bool:
         """Check if the backend is available and functional."""
@@ -172,7 +165,7 @@ class H3Backend:
             H3 cell identifier string
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If coordinates or resolution are invalid
         """
         logger.debug(f"Converting ({lat}, {lng}) to H3 cell at resolution {resolution}")
@@ -190,7 +183,7 @@ class H3Backend:
             Tuple of (latitude, longitude)
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cell identifier is invalid
         """
         logger.debug(f"Converting H3 cell {cell} to coordinates")
@@ -209,7 +202,7 @@ class H3Backend:
             List of H3 cell identifiers covering the polygon
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If polygon format is invalid
         """
         if hasattr(polygon, "__geo_interface__"):
@@ -271,7 +264,7 @@ class H3Backend:
             List of neighboring H3 cell identifiers
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cell identifier is invalid
         """
         logger.debug(f"Getting k={k} neighbors for cell {cell}")
@@ -303,7 +296,7 @@ class H3Backend:
             Grid distance between cells
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cells are at different resolutions or invalid
         """
         logger.debug(f"Calculating distance between {cell1} and {cell2}")
@@ -421,7 +414,7 @@ class H3Backend:
             Compacted list of cell identifiers at mixed resolutions
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
         """
         logger.debug(f"Compacting {len(cells)} cells")
         result = list(self.h3.compact_cells(cells))
@@ -441,7 +434,7 @@ class H3Backend:
             List of individual cell identifiers at target resolution
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
         """
         logger.debug(
             f"Uncompacting {len(compacted_cells)} cells to resolution {resolution}"
@@ -463,7 +456,7 @@ class H3Backend:
             Parent cell identifier
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If resolutions are incompatible
         """
         logger.debug(f"Getting parent of {cell} at resolution {resolution}")
@@ -485,7 +478,7 @@ class H3Backend:
             List of child cell identifiers
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If resolutions are incompatible
         """
         logger.debug(f"Getting children of {cell} at resolution {resolution}")
@@ -507,7 +500,7 @@ class H3Backend:
             List of cell identifiers in the path (inclusive)
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cells are invalid or disconnected
         """
         logger.debug(f"Calculating path from {start_cell} to {end_cell}")
@@ -530,7 +523,7 @@ class H3Backend:
             List of cell identifiers in the ring
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cell or k matches invalid
         """
         logger.debug(f"Getting ring k={k} for {cell}")
@@ -558,7 +551,7 @@ class H3Backend:
                 - hotspot_count: Number of identified hotspots
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cells and values have different lengths
         """
         cells = data.get("cells", [])
@@ -616,7 +609,7 @@ class H3Backend:
                 - analyzed_pairs: Number of successfully analyzed pairs
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
         """
         logger.info(f"Computing proximity for {len(points)} points")
 
@@ -667,7 +660,7 @@ class H3Backend:
             Resolution level (0-15)
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cell identifier is invalid
         """
         logger.debug(f"Getting resolution for cell: {cell}")
@@ -691,7 +684,7 @@ class H3Backend:
             List of (latitude, longitude) tuples forming the cell boundary
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cell identifier is invalid
         """
         logger.debug(f"Getting boundary for cell: {cell}")
@@ -719,7 +712,7 @@ class H3Backend:
             Area in specified unit
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cell identifier is invalid
         """
         logger.debug(f"Getting area for cell: {cell} in {unit}")
@@ -744,7 +737,7 @@ class H3Backend:
             GeoJSON-like dictionary with 'type' and 'coordinates'
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cell identifiers are invalid
         """
         logger.info(f"Converting {len(cells)} cells to MultiPolygon")

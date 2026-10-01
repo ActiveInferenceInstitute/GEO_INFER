@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Any
 
+import h3
 import pytest
 
 
@@ -15,19 +16,9 @@ def del_norte_bbox() -> tuple:
 @pytest.fixture
 def sample_h3_cells() -> list[str]:
     """A small set of valid H3 resolution-8 cells over Del Norte County."""
-    try:
-        import h3
-
-        center_lat, center_lon = 41.75, -124.2
-        center_cell = h3.latlng_to_cell(center_lat, center_lon, 8)
-        return list(h3.grid_disk(center_cell, 1))
-    except ImportError:
-        # Return hard-coded cells if h3 is unavailable
-        return [
-            "8828308dddfffff",
-            "8828308db9fffff",
-            "8828308d91fffff",
-        ]
+    center_lat, center_lon = 41.75, -124.2
+    center_cell = h3.latlng_to_cell(center_lat, center_lon, 8)
+    return list(h3.grid_disk(center_cell, 1))
 
 
 @pytest.fixture

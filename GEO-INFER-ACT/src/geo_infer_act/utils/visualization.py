@@ -13,13 +13,10 @@ from typing import Any
 from pathlib import Path
 import logging
 
-# Additional imports for H3 and interactive visualization
-try:
-    import h3
+import h3
+from matplotlib.lines import Line2D
 
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
+# Optional interactive/geometry backends (``backends`` extra)
 
 try:
     from shapely.geometry import Polygon
@@ -1587,7 +1584,22 @@ def plot_markov_blanket(blanket: Any) -> plt.Figure:
     fig, ax = plt.subplots(figsize=(8, 8))
     try:
         import networkx as nx
-
+    except ImportError:
+        # Fallback if networkx is not installed
+        y = 0.8
+        for k, v in blanket.items():
+            ax.text(
+                0.5,
+                y,
+                f"{k.capitalize()} States: {len(v)} nodes",
+                ha="center",
+                va="center",
+                size=14,
+                bbox=dict(boxstyle="round,pad=0.3", fc="lightgray", ec="gray"),
+            )
+            y -= 0.2
+        ax.axis("off")
+    else:
         G = nx.DiGraph()
 
         # Standard colors and radii for Markov Blanket components
@@ -1660,8 +1672,6 @@ def plot_markov_blanket(blanket: Any) -> plt.Figure:
         )
         nx.draw_networkx_labels(G, pos, labels, ax=ax, font_size=12, font_weight="bold")
 
-        from matplotlib.lines import Line2D
-
         legend_elements = [
             Line2D(
                 [0],
@@ -1680,21 +1690,6 @@ def plot_markov_blanket(blanket: Any) -> plt.Figure:
                 handles=legend_elements, loc="upper right", bbox_to_anchor=(1.1, 1.1)
             )
 
-        ax.axis("off")
-    except ImportError:
-        # Fallback if networkx is not installed
-        y = 0.8
-        for k, v in blanket.items():
-            ax.text(
-                0.5,
-                y,
-                f"{k.capitalize()} States: {len(v)} nodes",
-                ha="center",
-                va="center",
-                size=14,
-                bbox=dict(boxstyle="round,pad=0.3", fc="lightgray", ec="gray"),
-            )
-            y -= 0.2
         ax.axis("off")
 
     ax.set_title("Markov Blanket Topology", fontsize=16, fontweight="bold", pad=20)
@@ -1716,19 +1711,6 @@ def plot_h3_grid_static(
         Matplotlib figure
     """
     fig, ax = plt.subplots(figsize=(12, 10))
-
-    if not H3_AVAILABLE:
-        ax.text(
-            0.5,
-            0.5,
-            "H3 package not available",
-            transform=ax.transAxes,
-            ha="center",
-            va="center",
-            fontsize=16,
-        )
-        ax.set_title(title)
-        return fig
 
     if not SHAPELY_AVAILABLE:
         ax.text(
@@ -1925,10 +1907,6 @@ def create_interactive_h3_slider(
     """
     if not PLOTLY_AVAILABLE:
         logger.error("plotly package required for interactive plots")
-        return None
-
-    if not H3_AVAILABLE:
-        logger.error("h3 package required for interactive H3 plots")
         return None
 
     if not history:

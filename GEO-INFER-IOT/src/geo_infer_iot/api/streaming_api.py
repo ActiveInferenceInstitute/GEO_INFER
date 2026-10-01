@@ -13,13 +13,7 @@ from typing import Any
 from datetime import datetime
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
-# Optional imports for enhanced functionality
-try:
-    from geo_infer_iot.core.ingestion import IoTDataIngestion
-
-    HAS_INGESTION = True
-except ImportError:
-    HAS_INGESTION = False
+from geo_infer_iot.core.ingestion import IoTDataIngestion
 
 logger = logging.getLogger(__name__)
 
@@ -51,12 +45,9 @@ class StreamingAPI:
         # Share the caller's ingestion instance when one is provided so
         # measurements submitted through the SensorAPI reach stream
         # subscribers; otherwise own a private instance.
-        if ingestion is not None:
-            self.ingestion: IoTDataIngestion | None = ingestion
-        elif HAS_INGESTION:
-            self.ingestion = IoTDataIngestion(None, self.config)
-        else:
-            self.ingestion = None
+        self.ingestion: IoTDataIngestion = (
+            ingestion if ingestion is not None else IoTDataIngestion(None, self.config)
+        )
 
         # Setup API routes
         self._setup_routes()
@@ -119,17 +110,14 @@ class StreamingAPI:
                 # Keep connection alive, forwarding measurements ingested
                 # since the last tick to this connection's subscriptions.
                 ingestion = self.ingestion
-                cursor: int | None = None
-                if ingestion is not None:
-                    cursor = len(ingestion.measurements)
+                cursor = len(ingestion.measurements)
 
                 while True:
-                    if ingestion is not None and cursor is not None:
-                        for measurement in ingestion.measurements[cursor:]:
-                            await self._forward_to_socket(
-                                websocket, measurement, sensor_ids, h3_indices
-                            )
-                        cursor = len(ingestion.measurements)
+                    for measurement in ingestion.measurements[cursor:]:
+                        await self._forward_to_socket(
+                            websocket, measurement, sensor_ids, h3_indices
+                        )
+                    cursor = len(ingestion.measurements)
 
                     # Example: Send periodic heartbeat
                     await asyncio.sleep(1)

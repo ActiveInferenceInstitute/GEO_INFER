@@ -21,33 +21,10 @@ from typing import Any, cast
 from collections.abc import Callable
 import json
 
-try:
-    import rasterio
-
-    RASTERIO_AVAILABLE = True
-except ImportError:
-    RASTERIO_AVAILABLE = False
-
-try:
-    import geopandas as gpd
-
-    GEOPANDAS_AVAILABLE = True
-except ImportError:
-    GEOPANDAS_AVAILABLE = False
-
-try:
-    import xarray as xr
-
-    XARRAY_AVAILABLE = True
-except ImportError:
-    XARRAY_AVAILABLE = False
-
-try:
-    import h5py
-
-    HDF5_AVAILABLE = True
-except ImportError:
-    HDF5_AVAILABLE = False
+import geopandas as gpd
+import h5py
+import rasterio
+import xarray as xr
 
 from ..models.data_models import SPMData, SPMResult
 
@@ -106,9 +83,6 @@ def load_geotiff(
     Returns:
         SPMData object with raster data
     """
-    if not RASTERIO_AVAILABLE:
-        raise ImportError("rasterio package required for GeoTIFF loading")
-
     with rasterio.open(file_path) as src:
         if band is None:
             band = 1
@@ -174,9 +148,6 @@ def load_netcdf(
     Returns:
         SPMData object with NetCDF data
     """
-    if not XARRAY_AVAILABLE:
-        raise ImportError("xarray package required for NetCDF loading")
-
     # Open dataset
     ds = xr.open_dataset(file_path)
 
@@ -255,9 +226,6 @@ def load_geojson(file_path: str, value_column: str | None = None) -> SPMData:
     Returns:
         SPMData object with vector data
     """
-    if not GEOPANDAS_AVAILABLE:
-        raise ImportError("geopandas package required for GeoJSON loading")
-
     # Read GeoJSON
     gdf = gpd.read_file(file_path)
 
@@ -303,9 +271,6 @@ def load_geopackage(
     Returns:
         SPMData object with vector data
     """
-    if not GEOPANDAS_AVAILABLE:
-        raise ImportError("geopandas package required for GeoPackage loading")
-
     # Read GeoPackage
     gpd.read_file(file_path, layer=layer)
 
@@ -403,9 +368,6 @@ def load_hdf5(
     Returns:
         SPMData object with HDF5 data
     """
-    if not HDF5_AVAILABLE:
-        raise ImportError("h5py package required for HDF5 loading")
-
     with h5py.File(file_path, "r") as f:
         # Load main dataset
         if dataset_path not in f:
@@ -591,9 +553,6 @@ def _save_spm_json(spm_result: SPMResult, file_path: str, **kwargs: Any) -> None
 
 def _save_spm_hdf5(spm_result: SPMResult, file_path: str, **kwargs: Any) -> None:
     """Save SPM results as HDF5."""
-    if not HDF5_AVAILABLE:
-        raise ImportError("h5py package required for HDF5 saving")
-
     with h5py.File(file_path, "w") as f:
         # Save main results
         f.create_dataset("beta_coefficients", data=spm_result.beta_coefficients)

@@ -330,7 +330,6 @@ class TestAdvancedDashboard(unittest.TestCase):
             from geo_infer_place.locations.del_norte_county.dashboard import (
                 AdvancedDashboard,
             )
-            import folium  # noqa: F401 — needed by dashboard
 
             cls.tmpdir = tempfile.mkdtemp(prefix="test_dashboard_")
             cls.dashboard = AdvancedDashboard(output_dir=cls.tmpdir)

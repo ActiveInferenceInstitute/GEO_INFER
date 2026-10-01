@@ -9,7 +9,9 @@ Tests cover:
 
 import logging
 
+import geopandas as gpd
 import pytest
+from shapely.geometry import Point
 
 from geo_infer_space.core import SpatialIndexingInterface
 
@@ -108,12 +110,6 @@ class TestSpatialProcessorWorkflows:
         """
         Workflow: Create geometries -> buffer -> check spatial relationships.
         """
-        try:
-            import geopandas as gpd
-            from shapely.geometry import Point
-        except ImportError:
-            pytest.fail("geopandas or shapely not available")
-
         from geo_infer_space.core.spatial_processor import SpatialProcessor
 
         processor = SpatialProcessor()

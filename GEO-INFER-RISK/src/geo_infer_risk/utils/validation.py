@@ -13,6 +13,7 @@ from collections.abc import Callable
 from pathlib import Path
 from importlib.resources import as_file, files as resource_files
 
+import geopandas as gpd
 import jsonschema
 import pandas as pd
 from dataclasses import dataclass
@@ -738,8 +739,6 @@ def validate_shapefile(file_path: str) -> ValidationResult:
     warnings: list[str] = []
 
     try:
-        import geopandas as gpd
-
         # Check if it's a valid shapefile
         if not file_path.endswith(".shp"):
             # Try to find the .shp file
@@ -778,10 +777,6 @@ def validate_shapefile(file_path: str) -> ValidationResult:
                 len(errors) == 0, errors, warnings, gdf.to_dict("records")
             )
 
-    except ImportError:
-        return ValidationResult(
-            False, ["geopandas not available for shapefile validation"], [], {}
-        )
     except Exception as e:
         return ValidationResult(False, [f"Error reading shapefile: {str(e)}"], [], {})
 

@@ -11,32 +11,10 @@ from typing import Any, cast
 import math
 from .core import H3Grid, H3Cell
 
+import h3
 import numpy as np
 
 logger = logging.getLogger(__name__)
-
-
-MIN_H3_VERSION = (4, 5, 0)
-try:
-    import h3
-except ImportError:
-    H3_AVAILABLE = False
-else:
-    try:
-        _h3_version: tuple[int, ...] | None = tuple(
-            int(part.split("+")[0].split("-")[0])
-            for part in h3.__version__.lstrip("v").split(".")[:3]
-        )
-    except (AttributeError, TypeError, ValueError):
-        _h3_version = None
-    H3_AVAILABLE = bool(
-        _h3_version is not None and _h3_version >= MIN_H3_VERSION and _h3_version[0] < 5
-    )
-if not H3_AVAILABLE:
-    logger.error(
-        "H3 neighbor analytics requires h3-py >=4.5.0,<5; "
-        "H3-backed operations are unavailable."
-    )
 
 
 class H3SpatialAnalyzer:
@@ -121,8 +99,6 @@ class H3SpatialAnalyzer:
 
         for cell in self.grid.cells:
             try:
-                import h3
-
                 neighbors = h3.grid_disk(cell.index, 1)
                 # Remove self from neighbors
                 neighbors = [n for n in neighbors if n != cell.index]
@@ -271,7 +247,7 @@ class H3SpatialAnalyzer:
             # errors (there is no h3.CellError in this version).
             try:
                 neighbors = h3.grid_disk(cell.index, 1)
-            except (ImportError, ValueError, h3.H3BaseException) as e:
+            except (ValueError, h3.H3BaseException) as e:
                 logger.warning(
                     f"grid_disk failed for {cell.index}; using self-only neighborhood "
                     f"in Getis-Ord Gi*: {e}"
@@ -359,7 +335,7 @@ class H3SpatialAnalyzer:
             try:
                 neighbors = h3.grid_disk(cell.index, 1)
                 neighbors = [n for n in neighbors if n != cell.index]  # Exclude self
-            except (ImportError, ValueError, h3.H3BaseException) as e:
+            except (ValueError, h3.H3BaseException) as e:
                 logger.warning(
                     f"grid_disk failed for {cell.index}; using empty neighborhood in "
                     f"Local Moran's I; results may be degraded: {e}"
@@ -616,14 +592,11 @@ class H3ClusterAnalyzer:
         neighbors = []
 
         try:
-            if H3_AVAILABLE:
-                import h3
-
-                neighbor_set = h3.grid_disk(cell_index, rings)
-                # Remove self and filter to valid cells
-                neighbors = [
-                    n for n in neighbor_set if n != cell_index and n in cell_value_map
-                ]
+            neighbor_set = h3.grid_disk(cell_index, rings)
+            # Remove self and filter to valid cells
+            neighbors = [
+                n for n in neighbor_set if n != cell_index and n in cell_value_map
+            ]
         except Exception as e:
             logger.warning(f"Failed to get neighbors for {cell_index}: {e}")
 
@@ -823,10 +796,7 @@ class H3ClusterAnalyzer:
             Grid distance (normalized)
         """
         try:
-            if H3_AVAILABLE:
-                import h3
-
-                return float(h3.grid_distance(cell1, cell2))
+            return float(h3.grid_distance(cell1, cell2))
         except Exception as e:
             logger.warning(f"Failed to calculate H3 distance: {e}")
 
@@ -1071,8 +1041,6 @@ class H3DensityAnalyzer:
         Returns:
             List of neighbor cell indices
         """
-        if not H3_AVAILABLE:
-            raise RuntimeError("H3 neighbor analytics requires h3-py >=4.5.0,<5")
         try:
             neighbor_set = h3.grid_disk(cell_index, rings)
             return sorted(neighbor_set)
@@ -1128,10 +1096,7 @@ class H3DensityAnalyzer:
             Distance in rings
         """
         try:
-            if H3_AVAILABLE:
-                import h3
-
-                return cast(int, h3.grid_distance(cell1, cell2))
+            return cast(int, h3.grid_distance(cell1, cell2))
         except Exception as e:
             logger.warning(f"Failed to calculate ring distance: {e}")
 
@@ -1298,10 +1263,9 @@ class H3DensityAnalyzer:
         # h3.H3BaseException subclasses for library errors (there is no
         # h3.CellError in this version).
         try:
-            if H3_AVAILABLE:
-                neighbors = h3.grid_disk(cell_index, 1)
-                neighbors = [n for n in neighbors if n != cell_index]
-        except (ImportError, ValueError, h3.H3BaseException) as e:
+            neighbors = h3.grid_disk(cell_index, 1)
+            neighbors = [n for n in neighbors if n != cell_index]
+        except (ValueError, h3.H3BaseException) as e:
             logger.warning(
                 f"grid_disk failed for {cell_index}; using empty neighborhood in "
                 f"spatial lag (local gradient); results may be degraded: {e}"
@@ -1685,8 +1649,6 @@ class H3NetworkAnalyzer:
         Returns:
             List of cell indices at the specified ring distance
         """
-        if not H3_AVAILABLE:
-            raise RuntimeError("H3 ring analytics requires h3-py >=4.5.0,<5")
         if not isinstance(ring_distance, int) or ring_distance < 1:
             raise ValueError("ring_distance must be a positive integer")
         try:
@@ -1728,8 +1690,6 @@ class H3NetworkAnalyzer:
                     if prop_value >= flow_threshold:
                         # Add spatial neighbors as connected
                         try:
-                            import h3
-
                             neighbors = h3.grid_disk(cell.index, 1)
                             for neighbor in neighbors:
                                 if neighbor != cell.index and neighbor in adjacency:

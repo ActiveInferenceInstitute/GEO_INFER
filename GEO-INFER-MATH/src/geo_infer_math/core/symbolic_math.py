@@ -46,6 +46,7 @@ limitations programmatically.
 """
 
 import numpy as np
+from scipy.optimize import minimize as sci_minimize
 from typing import Any
 from collections.abc import Callable
 import logging
@@ -541,85 +542,68 @@ class SymbolicMath:
                     self._engine.diff(objective_expr, ps) for ps in param_symbols
                 ]
 
-                try:
-                    from scipy.optimize import minimize as sci_minimize
+                obj_fn = self._engine.lambdify(
+                    param_symbols, objective_expr, modules="numpy"
+                )
+                jac_fn = self._engine.lambdify(
+                    param_symbols, self._engine.Matrix(grad_exprs), modules="numpy"
+                )
 
-                    obj_fn = self._engine.lambdify(
-                        param_symbols, objective_expr, modules="numpy"
-                    )
-                    jac_fn = self._engine.lambdify(
-                        param_symbols, self._engine.Matrix(grad_exprs), modules="numpy"
-                    )
+                def _f(x: Any) -> float:
+                    return float(obj_fn(*x))
 
-                    def _f(x: Any) -> float:
-                        return float(obj_fn(*x))
+                def _jac(x: Any) -> np.ndarray:
+                    g = jac_fn(*x)
+                    return np.array(g).flatten().astype(float)
 
-                    def _jac(x: Any) -> np.ndarray:
-                        g = jac_fn(*x)
-                        return np.array(g).flatten().astype(float)
+                # Apply bounds if provided
+                sci_bounds = (
+                    [bounds.get(p, (None, None)) for p in parameters]
+                    if bounds
+                    else None
+                )
 
-                    # Apply bounds if provided
-                    sci_bounds = (
-                        [bounds.get(p, (None, None)) for p in parameters]
-                        if bounds
-                        else None
-                    )
+                x0 = np.zeros(len(parameters))
+                result = sci_minimize(
+                    _f, x0, jac=_jac, bounds=sci_bounds, method="L-BFGS-B"
+                )
 
-                    x0 = np.zeros(len(parameters))
-                    result = sci_minimize(
-                        _f, x0, jac=_jac, bounds=sci_bounds, method="L-BFGS-B"
-                    )
-
-                    return {
-                        "success": bool(result.success),
-                        "parameters": dict(zip(parameters, result.x.tolist())),
-                        "objective_value": float(result.fun),
-                        "iterations": result.nit,
-                        "message": result.message,
-                        "backend": self.backend,
-                    }
-                except ImportError:
-                    return {
-                        "success": False,
-                        "message": "scipy required for symbolic optimization (pip install scipy)",
-                        "backend": self.backend,
-                    }
+                return {
+                    "success": bool(result.success),
+                    "parameters": dict(zip(parameters, result.x.tolist())),
+                    "objective_value": float(result.fun),
+                    "iterations": result.nit,
+                    "message": result.message,
+                    "backend": self.backend,
+                }
 
             else:
                 # Numpy backend: objective must be callable; use scipy numerically
-                try:
-                    from scipy.optimize import minimize as sci_minimize
 
-                    if not callable(objective):
-                        raise TypeError("Numpy backend requires a callable objective")
+                if not callable(objective):
+                    raise TypeError("Numpy backend requires a callable objective")
 
-                    sci_bounds = (
-                        [bounds.get(p, (None, None)) for p in parameters]
-                        if bounds
-                        else None
-                    )
+                sci_bounds = (
+                    [bounds.get(p, (None, None)) for p in parameters]
+                    if bounds
+                    else None
+                )
 
-                    x0 = np.zeros(len(parameters))
-                    result = sci_minimize(
-                        lambda x: float(objective(*x)),
-                        x0,
-                        bounds=sci_bounds,
-                        method="L-BFGS-B",
-                    )
-                    return {
-                        "success": bool(result.success),
-                        "parameters": dict(zip(parameters, result.x.tolist())),
-                        "objective_value": float(result.fun),
-                        "iterations": result.nit,
-                        "message": result.message,
-                        "backend": self.backend,
-                    }
-                except ImportError:
-                    return {
-                        "success": False,
-                        "message": "scipy required for numerical optimization (pip install scipy)",
-                        "backend": self.backend,
-                    }
+                x0 = np.zeros(len(parameters))
+                result = sci_minimize(
+                    lambda x: float(objective(*x)),
+                    x0,
+                    bounds=sci_bounds,
+                    method="L-BFGS-B",
+                )
+                return {
+                    "success": bool(result.success),
+                    "parameters": dict(zip(parameters, result.x.tolist())),
+                    "objective_value": float(result.fun),
+                    "iterations": result.nit,
+                    "message": result.message,
+                    "backend": self.backend,
+                }
 
         except Exception as e:
             logger.error(f"Error optimizing symbolic model: {e}")

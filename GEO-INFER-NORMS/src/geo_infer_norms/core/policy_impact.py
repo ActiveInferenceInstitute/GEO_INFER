@@ -727,26 +727,21 @@ class PolicyImpactAnalyzer:
         if environmental_gdf.empty:
             return None
 
-        try:
-            import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt
 
-            fig, ax = plt.subplots(figsize=(10, 8))
-            if "impact_score" in environmental_gdf.columns:
-                ax.barh(
-                    environmental_gdf["impact_category"],
-                    environmental_gdf["impact_score"],
-                )
-                ax.set_xlabel("Impact Score")
-                ax.set_title(f"Spatial Impact: {self.policy}")
-            else:
-                ax.text(
-                    0.5, 0.5, "No impact data to visualize", ha="center", va="center"
-                )
+        fig, ax = plt.subplots(figsize=(10, 8))
+        if "impact_score" in environmental_gdf.columns:
+            ax.barh(
+                environmental_gdf["impact_category"],
+                environmental_gdf["impact_score"],
+            )
+            ax.set_xlabel("Impact Score")
+            ax.set_title(f"Spatial Impact: {self.policy}")
+        else:
+            ax.text(0.5, 0.5, "No impact data to visualize", ha="center", va="center")
 
-            plt.tight_layout()
-            return fig
-        except ImportError:
-            return None
+        plt.tight_layout()
+        return fig
 
 
 class RegulatoryImpactAssessment:

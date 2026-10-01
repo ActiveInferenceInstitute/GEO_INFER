@@ -15,18 +15,7 @@ from typing import Any, cast
 
 import requests
 
-try:
-    from geo_infer_space.core.api_clients import BaseAPIManager
-except ImportError:
-
-    class _BaseAPIManagerFallback:
-        """Fallback base for API clients when geo_infer_space is unavailable."""
-
-        def __init__(self, base_url: str) -> None:
-            self.base_url = base_url
-            self.session = requests.Session()
-
-    BaseAPIManager = _BaseAPIManagerFallback
+from geo_infer_space.core.api_clients import BaseAPIManager
 
 logger = logging.getLogger(__name__)
 

@@ -11,8 +11,9 @@ from typing import Any
 import h3
 from fastapi.testclient import TestClient
 
-from geo_infer_iot.api import sensor_api as sensor_api_module
 from geo_infer_iot.api.sensor_api import SensorAPI
+from geo_infer_iot.core.ingestion import IoTDataIngestion
+from geo_infer_iot.core.registry import SensorRegistry
 
 LATITUDE = 40.7
 LONGITUDE = -74.0
@@ -112,12 +113,11 @@ class StubIngestion:
         return {"total_measurements": len(self.measurements)}
 
 
-def test_healthy_install_wires_core_components() -> None:
-    assert sensor_api_module.HAS_CORE_MODULES is True
+def test_api_wires_real_core_components() -> None:
     api = SensorAPI({})
-    # Healthy install: real registry/ingestion wired, not the 503 stubs.
-    assert api.registry is not None
-    assert api.ingestion is not None
+    assert isinstance(api.registry, SensorRegistry)
+    assert isinstance(api.ingestion, IoTDataIngestion)
+    assert api.ingestion.registry is api.registry
 
 
 def test_register_sensor_via_post() -> None:

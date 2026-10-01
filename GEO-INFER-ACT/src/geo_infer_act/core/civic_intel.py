@@ -21,8 +21,6 @@ deterministic result.
 
 from __future__ import annotations
 
-import json
-import math
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -33,94 +31,22 @@ import numpy as np
 
 # Shared civic-intel ingestion core: the canonical schema constant, raw
 # contract resolver, JSON decoder, and validator family live in
-# GEO-INFER-BAYES, so every consumer resolves the SAME objects and reads the
-# ONE reviewed crescent-city-geo-intel.json copy. The import stays guarded:
-# the sibling-absent degradation path is a pinned contract (GEO-INFER-PLACE's
-# dashboard suite simulates the absence through the real import machinery),
-# so the fallback block below keeps this module's own parse-and-prior surface
-# fully working without BAYES.
+# GEO-INFER-BAYES (a hard dependency), so every consumer resolves the SAME
+# objects and reads the ONE reviewed crescent-city-geo-intel.json copy.
+from geo_infer_bayes.civic_intel import (
+    CRESCENT_CITY_INTEL_SCHEMA,
+    decode_contract_json,
+    load_crescent_city_contract,
+    parse_contract_bounds,
+    require_list,
+    require_mapping,
+)
+from geo_infer_bayes.geo_observations import (
+    CRESCENT_CITY_OBSERVATIONS_SCHEMA,  # noqa: F401 - re-exported for ACT consumers
+    load_crescent_city_geo_observations,  # noqa: F401 - re-exported for ACT consumers
+)
+
 CivicIntelSource: TypeAlias = None | str | Path | dict[str, Any] | Mapping[str, Any]
-
-try:
-    from geo_infer_bayes.civic_intel import (
-        CRESCENT_CITY_INTEL_SCHEMA,
-        parse_contract_bounds,
-        require_list,
-        require_mapping,
-        decode_contract_json,
-        load_crescent_city_contract,
-    )
-    from geo_infer_bayes.geo_observations import (
-        CRESCENT_CITY_OBSERVATIONS_SCHEMA,  # noqa: F401 - re-exported for ACT consumers
-        load_crescent_city_geo_observations,  # noqa: F401 - re-exported for ACT consumers
-    )
-except ImportError:  # pragma: no cover - sibling-absent degradation path
-    CRESCENT_CITY_INTEL_SCHEMA = "crescent-city-geo-intel/v1"
-    CRESCENT_CITY_OBSERVATIONS_SCHEMA = "crescent-city-geo-observations/v1"
-
-    def load_crescent_city_contract(
-        source: CivicIntelSource = None,
-    ) -> Mapping[str, object] | None:
-        raise ImportError(
-            "load_crescent_city_contract requires geo-infer-bayes; the canonical"
-            " crescent-city-geo-intel.json copy ships with geo-infer-bayes"
-        )
-
-    def load_crescent_city_geo_observations(
-        source: Any = None,
-    ) -> Mapping[str, object] | None:
-        raise ImportError(
-            "load_crescent_city_geo_observations requires geo-infer-bayes; the"
-            " canonical crescent-city-geo-observations.json copy ships with"
-            " geo-infer-bayes"
-        )
-
-    def decode_contract_json(text: str, path_label: str) -> dict[str, Any]:
-        """Degraded-mode decoder matching the BAYES core's contract."""
-        try:
-            loaded = json.loads(text)
-        except json.JSONDecodeError as exc:
-            raise ValueError(
-                f"invalid Crescent City intel JSON at {path_label}: {exc}"
-            ) from exc
-        if not isinstance(loaded, dict):
-            raise ValueError(
-                f"Crescent City intel JSON from {path_label} must be an object"
-            )
-        return loaded
-
-    def require_mapping(value: object, field_name: str) -> Mapping[str, Any]:
-        if not isinstance(value, Mapping):
-            raise ValueError(f"{field_name} must be an object")
-        return value
-
-    def require_list(value: object, field_name: str) -> list[Any]:
-        if not isinstance(value, list):
-            raise ValueError(f"{field_name} must be an array")
-        return value
-
-    def _require_finite_float(value: object, field_name: str) -> float:
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
-            raise ValueError(f"{field_name} must be a finite number")
-        number = float(value)
-        if not math.isfinite(number):
-            raise ValueError(f"{field_name} must be a finite number")
-        return number
-
-    def parse_contract_bounds(value: object) -> dict[str, Any]:
-        """Degraded-mode WGS84 bounds validation matching the BAYES core."""
-        raw = require_mapping(value, "anchor.bounds")
-        bounds = {
-            "west": _require_finite_float(raw.get("west"), "anchor.bounds.west"),
-            "south": _require_finite_float(raw.get("south"), "anchor.bounds.south"),
-            "east": _require_finite_float(raw.get("east"), "anchor.bounds.east"),
-            "north": _require_finite_float(raw.get("north"), "anchor.bounds.north"),
-        }
-        if not -180.0 <= bounds["west"] < bounds["east"] <= 180.0:
-            raise ValueError("anchor.bounds must satisfy -180 <= west < east <= 180")
-        if not -90.0 <= bounds["south"] < bounds["north"] <= 90.0:
-            raise ValueError("anchor.bounds must satisfy -90 <= south < north <= 90")
-        return bounds
 
 
 SUPPORTED_SCHEMA = CRESCENT_CITY_INTEL_SCHEMA

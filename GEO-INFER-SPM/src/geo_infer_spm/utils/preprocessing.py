@@ -11,6 +11,7 @@ Preprocessing steps ensure data quality and compatibility with SPM statistical m
 import numpy as np
 from typing import Any, cast
 from scipy import stats
+from scipy.signal import savgol_filter
 import warnings
 
 from ..models.data_models import SPMData
@@ -348,18 +349,11 @@ def _detect_outliers_1d(data: np.ndarray, method: str, threshold: float) -> np.n
         outliers = z_scores > threshold
 
     elif method == "isolation_forest":
-        # Isolation Forest method
-        try:
-            from sklearn.ensemble import IsolationForest
+        # Isolation Forest method (scikit-learn imported lazily for import cost)
+        from sklearn.ensemble import IsolationForest
 
-            iso_forest = IsolationForest(contamination=0.1, random_state=42)
-            outliers = iso_forest.fit_predict(data.reshape(-1, 1)) == -1
-        except ImportError:
-            warnings.warn(
-                "scikit-learn required for isolation forest. Using IQR method.",
-                stacklevel=2,
-            )
-            outliers = _detect_outliers_1d(data, "iqr", threshold)
+        iso_forest = IsolationForest(contamination=0.1, random_state=42)
+        outliers = iso_forest.fit_predict(data.reshape(-1, 1)) == -1
 
     else:
         raise ValueError(f"Unknown outlier detection method: {method}")
@@ -460,16 +454,7 @@ def temporal_filter(
             filtered_data = _exponential_filter(data.data, alpha)
 
         elif method == "savitzky_golay":
-            try:
-                from scipy.signal import savgol_filter
-
-                filtered_data = savgol_filter(data.data, window_size, 2)
-            except ImportError:
-                warnings.warn(
-                    "SciPy required for Savitzky-Golay filter. Using moving average.",
-                    stacklevel=2,
-                )
-                filtered_data = _moving_average_filter(data.data, window_size)
+            filtered_data = savgol_filter(data.data, window_size, 2)
 
     else:
         # Multi-dimensional filtering (apply to each spatial point)

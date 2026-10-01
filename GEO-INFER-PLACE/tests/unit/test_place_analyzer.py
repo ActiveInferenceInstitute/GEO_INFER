@@ -10,6 +10,8 @@ import os
 import sys
 import unittest
 
+import yaml
+
 
 class TestPlaceAnalyzer(unittest.TestCase):
     """Tests for the PlaceInterface API (replaces phantom PlaceAnalyzer tests)."""
@@ -80,40 +82,35 @@ class TestLocationConfigurations(unittest.TestCase):
         )
 
         if os.path.exists(config_path):
-            try:
-                import yaml
+            with open(config_path) as f:
+                config = yaml.safe_load(f)
 
-                with open(config_path) as f:
-                    config = yaml.safe_load(f)
+            # Test required configuration sections
+            self.assertIn("location", config)
+            self.assertIn("analyses", config)
 
-                # Test required configuration sections
-                self.assertIn("location", config)
-                self.assertIn("analyses", config)
+            # Test location metadata
+            location = config["location"]
+            self.assertIn("name", location)
+            self.assertIn("bounds", location)
+            self.assertIn("coordinate_systems", location)
 
-                # Test location metadata
-                location = config["location"]
-                self.assertIn("name", location)
-                self.assertIn("bounds", location)
-                self.assertIn("coordinate_systems", location)
+            # Test analysis configurations
+            analyses = config["analyses"]
+            expected_analyses = [
+                "forest_health",
+                "coastal_resilience",
+                "fire_risk",
+                "community_development",
+            ]
 
-                # Test analysis configurations
-                analyses = config["analyses"]
-                expected_analyses = [
-                    "forest_health",
-                    "coastal_resilience",
-                    "fire_risk",
-                    "community_development",
-                ]
+            for analysis in expected_analyses:
+                self.assertIn(
+                    analysis,
+                    analyses,
+                    f"Analysis '{analysis}' should be configured",
+                )
 
-                for analysis in expected_analyses:
-                    self.assertIn(
-                        analysis,
-                        analyses,
-                        f"Analysis '{analysis}' should be configured",
-                    )
-
-            except ImportError:
-                self.fail("PyYAML not available for config testing")
         else:
             self.fail("Del Norte County config file not found")
 

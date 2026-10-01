@@ -12,17 +12,10 @@ from typing import Any
 from datetime import datetime
 from .core import H3Grid, H3Cell
 
+import h3
 import numpy as np
 
 logger = logging.getLogger(__name__)
-
-try:
-    import h3
-
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available. Install with 'uv pip install h3'")
 
 
 class H3MLFeatureEngine:
@@ -108,19 +101,18 @@ class H3MLFeatureEngine:
 
         # Basic cell properties
         try:
-            if H3_AVAILABLE:
-                # Cell area and geometry features
-                features["cell_area_km2"] = h3.cell_area(cell.index, "km^2")
-                features["cell_area_m2"] = h3.cell_area(cell.index, "m^2")
+            # Cell area and geometry features
+            features["cell_area_km2"] = h3.cell_area(cell.index, "km^2")
+            features["cell_area_m2"] = h3.cell_area(cell.index, "m^2")
 
-                # Cell coordinates
-                lat, lng = h3.cell_to_latlng(cell.index)
-                features["cell_lat"] = lat
-                features["cell_lng"] = lng
+            # Cell coordinates
+            lat, lng = h3.cell_to_latlng(cell.index)
+            features["cell_lat"] = lat
+            features["cell_lng"] = lng
 
-                # Distance from equator and prime meridian
-                features["distance_from_equator"] = abs(lat)
-                features["distance_from_prime_meridian"] = abs(lng)
+            # Distance from equator and prime meridian
+            features["distance_from_equator"] = abs(lat)
+            features["distance_from_prime_meridian"] = abs(lng)
         except Exception as e:
             logger.warning(f"Failed to extract basic features for {cell.index}: {e}")
 
@@ -154,76 +146,61 @@ class H3MLFeatureEngine:
         neighbor_features = {}
 
         try:
-            if H3_AVAILABLE:
-                # Get neighbors at different ring distances
-                for ring in range(1, neighbor_rings + 1):
-                    ring_cells = h3.grid_ring(cell.index, ring)
+            # Get neighbors at different ring distances
+            for ring in range(1, neighbor_rings + 1):
+                ring_cells = h3.grid_ring(cell.index, ring)
 
-                    # Find corresponding cells in grid
-                    ring_values = []
-                    for ring_cell_idx in ring_cells:
-                        for grid_cell in self.grid.cells:
-                            if grid_cell.index == ring_cell_idx:
-                                if target_column in grid_cell.properties:
-                                    ring_values.append(
-                                        grid_cell.properties[target_column]
-                                    )
-                                break
-
-                    if ring_values:
-                        neighbor_features[f"ring_{ring}_mean"] = float(
-                            np.mean(ring_values)
-                        )
-                        neighbor_features[f"ring_{ring}_std"] = float(
-                            np.std(ring_values)
-                        )
-                        neighbor_features[f"ring_{ring}_max"] = float(
-                            np.max(ring_values)
-                        )
-                        neighbor_features[f"ring_{ring}_min"] = float(
-                            np.min(ring_values)
-                        )
-
-                        neighbor_features[f"ring_{ring}_count"] = len(ring_values)
-                    else:
-                        # No neighbors found at this ring
-                        neighbor_features[f"ring_{ring}_mean"] = 0.0
-                        neighbor_features[f"ring_{ring}_std"] = 0.0
-                        neighbor_features[f"ring_{ring}_max"] = 0.0
-                        neighbor_features[f"ring_{ring}_min"] = 0.0
-                        neighbor_features[f"ring_{ring}_count"] = 0
-
-                # Overall neighbor statistics
-                all_neighbor_values = []
-                all_neighbors = list(h3.grid_disk(cell.index, neighbor_rings))
-                if cell.index in all_neighbors:
-                    all_neighbors.remove(cell.index)  # Remove self
-
-                for neighbor_idx in all_neighbors:
+                # Find corresponding cells in grid
+                ring_values = []
+                for ring_cell_idx in ring_cells:
                     for grid_cell in self.grid.cells:
-                        if grid_cell.index == neighbor_idx:
+                        if grid_cell.index == ring_cell_idx:
                             if target_column in grid_cell.properties:
-                                all_neighbor_values.append(
-                                    grid_cell.properties[target_column]
-                                )
+                                ring_values.append(grid_cell.properties[target_column])
                             break
 
-                if all_neighbor_values:
-                    neighbor_features["neighbor_density"] = (
-                        len(all_neighbor_values) / len(all_neighbors)
-                        if all_neighbors
-                        else 0
-                    )
-                    neighbor_features["neighbor_total"] = float(
-                        np.sum(all_neighbor_values)
-                    )
-                    neighbor_features["neighbor_avg"] = float(
-                        np.mean(all_neighbor_values)
-                    )
+                if ring_values:
+                    neighbor_features[f"ring_{ring}_mean"] = float(np.mean(ring_values))
+                    neighbor_features[f"ring_{ring}_std"] = float(np.std(ring_values))
+                    neighbor_features[f"ring_{ring}_max"] = float(np.max(ring_values))
+                    neighbor_features[f"ring_{ring}_min"] = float(np.min(ring_values))
+
+                    neighbor_features[f"ring_{ring}_count"] = len(ring_values)
                 else:
-                    neighbor_features["neighbor_density"] = 0.0
-                    neighbor_features["neighbor_total"] = 0.0
-                    neighbor_features["neighbor_avg"] = 0.0
+                    # No neighbors found at this ring
+                    neighbor_features[f"ring_{ring}_mean"] = 0.0
+                    neighbor_features[f"ring_{ring}_std"] = 0.0
+                    neighbor_features[f"ring_{ring}_max"] = 0.0
+                    neighbor_features[f"ring_{ring}_min"] = 0.0
+                    neighbor_features[f"ring_{ring}_count"] = 0
+
+            # Overall neighbor statistics
+            all_neighbor_values = []
+            all_neighbors = list(h3.grid_disk(cell.index, neighbor_rings))
+            if cell.index in all_neighbors:
+                all_neighbors.remove(cell.index)  # Remove self
+
+            for neighbor_idx in all_neighbors:
+                for grid_cell in self.grid.cells:
+                    if grid_cell.index == neighbor_idx:
+                        if target_column in grid_cell.properties:
+                            all_neighbor_values.append(
+                                grid_cell.properties[target_column]
+                            )
+                        break
+
+            if all_neighbor_values:
+                neighbor_features["neighbor_density"] = (
+                    len(all_neighbor_values) / len(all_neighbors)
+                    if all_neighbors
+                    else 0
+                )
+                neighbor_features["neighbor_total"] = float(np.sum(all_neighbor_values))
+                neighbor_features["neighbor_avg"] = float(np.mean(all_neighbor_values))
+            else:
+                neighbor_features["neighbor_density"] = 0.0
+                neighbor_features["neighbor_total"] = 0.0
+                neighbor_features["neighbor_avg"] = 0.0
 
         except Exception as e:
             logger.warning(f"Failed to extract neighbor features for {cell.index}: {e}")
@@ -443,11 +420,8 @@ class H3MLFeatureEngine:
 
         # Demand density (demand per unit area)
         try:
-            if H3_AVAILABLE:
-                area_km2 = h3.cell_area(cell.index, "km^2")
-                patterns["demand_density"] = (
-                    demand_value / area_km2 if area_km2 > 0 else 0
-                )
+            area_km2 = h3.cell_area(cell.index, "km^2")
+            patterns["demand_density"] = demand_value / area_km2 if area_km2 > 0 else 0
         except Exception:
             patterns["demand_density"] = 0
 
@@ -460,35 +434,32 @@ class H3MLFeatureEngine:
         gradients = {}
 
         try:
-            if H3_AVAILABLE:
-                cell_demand = cell.properties.get(demand_column, 0)
+            cell_demand = cell.properties.get(demand_column, 0)
 
-                # Get immediate neighbors
-                neighbors = list(h3.grid_disk(cell.index, 1))
-                if cell.index in neighbors:
-                    neighbors.remove(cell.index)
+            # Get immediate neighbors
+            neighbors = list(h3.grid_disk(cell.index, 1))
+            if cell.index in neighbors:
+                neighbors.remove(cell.index)
 
-                neighbor_demands = []
-                for neighbor_idx in neighbors:
-                    for grid_cell in self.grid.cells:
-                        if grid_cell.index == neighbor_idx:
-                            if demand_column in grid_cell.properties:
-                                neighbor_demands.append(
-                                    grid_cell.properties[demand_column]
-                                )
-                            break
+            neighbor_demands = []
+            for neighbor_idx in neighbors:
+                for grid_cell in self.grid.cells:
+                    if grid_cell.index == neighbor_idx:
+                        if demand_column in grid_cell.properties:
+                            neighbor_demands.append(grid_cell.properties[demand_column])
+                        break
 
-                if neighbor_demands:
-                    avg_neighbor_demand = sum(neighbor_demands) / len(neighbor_demands)
-                    gradients["demand_gradient"] = cell_demand - avg_neighbor_demand
-                    gradients["demand_gradient_abs"] = abs(gradients["demand_gradient"])
-                    gradients["demand_gradient_normalized"] = gradients[
-                        "demand_gradient"
-                    ] / max(1, cell_demand + avg_neighbor_demand)
-                else:
-                    gradients["demand_gradient"] = 0
-                    gradients["demand_gradient_abs"] = 0
-                    gradients["demand_gradient_normalized"] = 0
+            if neighbor_demands:
+                avg_neighbor_demand = sum(neighbor_demands) / len(neighbor_demands)
+                gradients["demand_gradient"] = cell_demand - avg_neighbor_demand
+                gradients["demand_gradient_abs"] = abs(gradients["demand_gradient"])
+                gradients["demand_gradient_normalized"] = gradients[
+                    "demand_gradient"
+                ] / max(1, cell_demand + avg_neighbor_demand)
+            else:
+                gradients["demand_gradient"] = 0
+                gradients["demand_gradient_abs"] = 0
+                gradients["demand_gradient_normalized"] = 0
         except Exception as e:
             logger.warning(f"Failed to calculate demand gradients: {e}")
             gradients["demand_gradient"] = 0
@@ -634,9 +605,6 @@ class H3DisasterResponse:
     ) -> dict[str, Any]:
         """Calculate evacuation zone around a hazard cell."""
         try:
-            if not H3_AVAILABLE:
-                return {"error": "H3 not available"}
-
             # Estimate number of rings needed for radius
             # Approximate: each ring adds ~edge_length to radius
             cell_resolution = h3.get_resolution(hazard_cell.index)
@@ -805,7 +773,7 @@ class H3DisasterResponse:
 
     def _cluster_environmental_changes(self, changes: list[dict]) -> list[dict]:
         """Cluster spatially adjacent environmental changes."""
-        if not changes or not H3_AVAILABLE:
+        if not changes:
             return []
 
         clusters: list[dict[str, Any]] = []
@@ -906,9 +874,6 @@ class H3PerformanceOptimizer:
             >>> results = optimizer.benchmark_h3_operations(coords)
             >>> print(f"Coordinate conversion: {results['coordinate_conversion']['avg_time_ms']:.2f}ms")
         """
-        if not H3_AVAILABLE:
-            return {"error": "H3 not available for benchmarking"}
-
         if resolutions is None:
             resolutions = [6, 7, 8, 9, 10]
 
@@ -986,7 +951,7 @@ class H3PerformanceOptimizer:
         single_cell_size = sys.getsizeof(test_cells[0]) if test_cells else 0
 
         # Estimate neighbor storage
-        if test_cells and H3_AVAILABLE:
+        if test_cells:
             neighbors = h3.grid_disk(test_cells[0], 2)
             neighbor_storage = sys.getsizeof(neighbors) + sum(
                 sys.getsizeof(cell) for cell in neighbors

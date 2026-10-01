@@ -13,15 +13,10 @@ from pathlib import Path
 import numpy as np
 import h3
 
-# Optional imports for enhanced visualization
-try:
-    import folium
-    from folium.plugins import HeatMap, MarkerCluster
-    import matplotlib.pyplot as plt
-
-    HAS_VISUALIZATION = True
-except ImportError:
-    HAS_VISUALIZATION = False
+import folium
+import matplotlib
+import matplotlib.pyplot as plt
+from folium.plugins import HeatMap, MarkerCluster
 
 logger = logging.getLogger(__name__)
 
@@ -73,11 +68,6 @@ class IoTVisualization:
             "animation_duration": 1000,  # milliseconds
         }
 
-        if not HAS_VISUALIZATION:
-            logger.warning(
-                "Visualization libraries not available - map generation disabled"
-            )
-
         logger.info("IoTVisualization initialized")
 
     def create_sensor_map(
@@ -97,9 +87,6 @@ class IoTVisualization:
         Returns:
             Dictionary with map metadata and generation status
         """
-        if not HAS_VISUALIZATION:
-            return {"error": "Visualization libraries not available"}
-
         try:
             if not isinstance(sensors, list):
                 raise ValueError("sensors must be a list of mappings")
@@ -283,9 +270,6 @@ class IoTVisualization:
         Returns:
             Dictionary with map generation results
         """
-        if not HAS_VISUALIZATION:
-            return {"error": "Visualization libraries not available"}
-
         try:
             if not isinstance(interpolation_data, dict):
                 raise ValueError("interpolation_data must be a mapping")
@@ -429,9 +413,6 @@ class IoTVisualization:
         Returns:
             Dictionary with plot generation results
         """
-        if not HAS_VISUALIZATION:
-            return {"error": "Visualization libraries not available"}
-
         try:
             fig, ax = plt.subplots(figsize=(12, 8))
 
@@ -497,9 +478,6 @@ class IoTVisualization:
         Returns:
             Dictionary with dashboard generation results
         """
-        if not HAS_VISUALIZATION:
-            return {"error": "Visualization libraries not available"}
-
         try:
             # Create HTML dashboard
             html_content = f"""
@@ -640,9 +618,6 @@ class IoTVisualization:
         Returns:
             Dictionary with heatmap generation results
         """
-        if not HAS_VISUALIZATION:
-            return {"error": "Visualization libraries not available"}
-
         try:
             # Extract data for plotting
             latitudes = []
@@ -728,13 +703,12 @@ class IoTVisualization:
     def get_visualization_status(self) -> dict:
         """Get status of visualization capabilities."""
         return {
-            "visualization_available": HAS_VISUALIZATION,
+            "visualization_available": True,
             "libraries": {
-                "folium": HAS_VISUALIZATION,
-                "matplotlib": HAS_VISUALIZATION,
-                "plotly": HAS_VISUALIZATION,
+                "folium": folium.__version__,
+                "matplotlib": matplotlib.__version__,
             },
-            "supported_formats": ["html", "png", "svg"] if HAS_VISUALIZATION else [],
+            "supported_formats": ["html", "png", "svg"],
             "cache_size": len(self.maps_cache),
             "default_parameters": self.default_params,
             "timestamp": datetime.now().isoformat(),

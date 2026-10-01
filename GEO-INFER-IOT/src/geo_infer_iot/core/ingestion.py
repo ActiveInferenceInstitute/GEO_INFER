@@ -23,9 +23,11 @@ from collections import defaultdict
 import time
 
 # Core dependencies
+import aiomqtt as asyncio_mqtt
 import h3
 import numpy as np
 import pandas as pd
+import paho.mqtt.client as mqtt
 
 # GEO-INFER-SPACE and GEO-INFER-BAYES are required workspace dependencies for
 # this module. Import their current public paths directly so API drift is an
@@ -36,6 +38,8 @@ from geo_infer_space.utils.h3_utils import (
     h3_resolution_stats,
 )
 from geo_infer_bayes import GaussianProcess, SpatialCovariance  # type: ignore[import-untyped]
+
+from geo_infer_iot.models.measurement import normalize_timestamp
 
 
 class SpatialOperations:
@@ -50,21 +54,6 @@ class SpatialOperations:
         """Convert latitude/longitude to a deterministic local metric approximation."""
         return longitude * 111_320.0, latitude * 110_540.0
 
-
-# Protocol handlers
-try:
-    import paho.mqtt.client as mqtt
-
-    HAS_MQTT = True
-except ImportError:
-    HAS_MQTT = False
-
-try:
-    import aiomqtt as asyncio_mqtt
-
-    HAS_ASYNC_MQTT = True
-except ImportError:
-    HAS_ASYNC_MQTT = False
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +75,12 @@ class SensorMeasurement:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        """Automatically compute H3 index from coordinates."""
+        """Normalize the timestamp to aware UTC and compute the H3 index.
+
+        Raises:
+            ValueError: If ``timestamp`` is timezone-naive.
+        """
+        self.timestamp = normalize_timestamp(self.timestamp)
         if self.h3_index is None and self.latitude and self.longitude:
             self.h3_index = h3.latlng_to_cell(
                 self.latitude, self.longitude, self.h3_resolution
@@ -149,11 +143,8 @@ class IoTDataIngestion:
 
     def _setup_protocol_handlers(self) -> None:
         """Setup handlers for different IoT protocols."""
-        if HAS_MQTT:
-            self.protocol_handlers["mqtt"] = self._handle_mqtt
-        if HAS_ASYNC_MQTT:
-            self.protocol_handlers["async_mqtt"] = self._handle_async_mqtt
-        # Protocol handlers are registered only when their dependencies are available.
+        self.protocol_handlers["mqtt"] = self._handle_mqtt
+        self.protocol_handlers["async_mqtt"] = self._handle_async_mqtt
 
     async def ingest_measurement(self, measurement: dict | SensorMeasurement) -> bool:
         """
@@ -219,17 +210,21 @@ class IoTDataIngestion:
     def _dict_to_measurement(self, data: dict) -> SensorMeasurement:
         """Convert dictionary to SensorMeasurement object.
 
-        Naive timestamps are normalized to UTC here so every downstream
-        temporal comparison sees a consistent, tz-aware datetime.
+        The timestamp must be timezone-aware (ISO-8601 with an offset or an
+        aware datetime) and is normalized to UTC; a missing timestamp defaults
+        to the current UTC time.
+
+        Raises:
+            ValueError: If the timestamp is timezone-naive or not ISO-8601.
         """
-        raw_timestamp = datetime.fromisoformat(
-            data.get("timestamp", datetime.now(UTC).isoformat())
-        )
-        if raw_timestamp.tzinfo is None:
-            raw_timestamp = raw_timestamp.replace(tzinfo=UTC)
+        raw_timestamp = data.get("timestamp")
         return SensorMeasurement(
             sensor_id=data["sensor_id"],
-            timestamp=raw_timestamp,
+            timestamp=(
+                datetime.now(UTC)
+                if raw_timestamp is None
+                else normalize_timestamp(raw_timestamp)
+            ),
             variable=data["variable"],
             value=float(data["value"]),
             unit=data.get("unit", ""),
@@ -532,12 +527,6 @@ class IoTDataIngestion:
         and ingests incoming measurements into the spatial index.
         Runs in a thread-executor to avoid blocking the event loop.
         """
-        if not HAS_MQTT:
-            logger.warning(
-                "paho-mqtt not installed; MQTT handler disabled. Install with: pip install paho-mqtt"
-            )
-            return
-
         broker_config = self.config.get("mqtt", {})
         host = broker_config.get("host", "localhost")
         port = broker_config.get("port", 1883)
@@ -607,15 +596,8 @@ class IoTDataIngestion:
     async def _handle_async_mqtt(self) -> None:
         """Handle MQTT protocol using asyncio-mqtt (coroutine-native).
 
-        Connects with asyncio-mqtt for non-blocking message consumption.
-        Falls back gracefully if asyncio-mqtt is not installed.
+        Connects with aiomqtt for non-blocking message consumption.
         """
-        if not HAS_ASYNC_MQTT:
-            logger.warning(
-                "asyncio-mqtt not installed; async MQTT handler disabled. "
-                "Install with: pip install asyncio-mqtt"
-            )
-            return
 
         broker_config = self.config.get("mqtt", {})
         host = broker_config.get("host", "localhost")

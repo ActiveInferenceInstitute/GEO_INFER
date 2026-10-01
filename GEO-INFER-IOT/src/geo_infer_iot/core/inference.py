@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import Any
 
 import numpy as np
+from geo_infer_bayes import GaussianProcess, SpatialCovariance  # type: ignore[import-untyped]
 from scipy.stats import norm
 
 logger = logging.getLogger(__name__)
@@ -38,48 +39,39 @@ class BayesianSpatialInference:
         self.config = config or {}
 
         # Integration with GEO-INFER-BAYES
-        self.gp_model: Any | None = None
+        self.gp_model: Any = None
         self.posterior_cache: dict[str, Any] = {}
 
-        # Setup Bayesian inference if available
         self._setup_bayesian_inference()
 
     def _setup_bayesian_inference(self) -> None:
-        """Setup Bayesian spatial inference model."""
-        try:
-            # Import GEO-INFER-BAYES components
-            from geo_infer_bayes import GaussianProcess, SpatialCovariance  # type: ignore[import-untyped]
-
-            # Configure covariance function based on variable characteristics
-            if self.variable in ["soil_moisture", "temperature"]:
-                # Environmental variables with smooth spatial correlation
-                cov_func = SpatialCovariance.matern_52(
-                    length_scale=self.config.get("length_scale", 1000.0),
-                    variance=self.config.get("variance", 1.0),
-                )
-            elif self.variable in ["air_quality", "radiation"]:
-                # Variables with more complex spatial patterns
-                cov_func = SpatialCovariance.matern_32(
-                    length_scale=self.config.get("length_scale", 2000.0),
-                    variance=self.config.get("variance", 0.5),
-                )
-            else:
-                # Default configuration
-                cov_func = SpatialCovariance.matern_52(
-                    length_scale=self.config.get("length_scale", 1500.0),
-                    variance=self.config.get("variance", 1.0),
-                )
-
-            # Initialize Gaussian Process model
-            self.gp_model = GaussianProcess(
-                covariance_function=cov_func,
-                mean_function=self.config.get("mean_function", "constant"),
-                noise_variance=self.config.get("noise_variance", 0.01),
+        """Configure the GEO-INFER-BAYES Gaussian-process spatial model."""
+        # Configure covariance function based on variable characteristics
+        if self.variable in ["soil_moisture", "temperature"]:
+            # Environmental variables with smooth spatial correlation
+            cov_func = SpatialCovariance.matern_52(
+                length_scale=self.config.get("length_scale", 1000.0),
+                variance=self.config.get("variance", 1.0),
+            )
+        elif self.variable in ["air_quality", "radiation"]:
+            # Variables with more complex spatial patterns
+            cov_func = SpatialCovariance.matern_32(
+                length_scale=self.config.get("length_scale", 2000.0),
+                variance=self.config.get("variance", 0.5),
+            )
+        else:
+            # Default configuration
+            cov_func = SpatialCovariance.matern_52(
+                length_scale=self.config.get("length_scale", 1500.0),
+                variance=self.config.get("variance", 1.0),
             )
 
-        except ImportError:
-            self.gp_model = None
-            logger.warning("GEO-INFER-BAYES not available, spatial inference disabled")
+        # Initialize Gaussian Process model
+        self.gp_model = GaussianProcess(
+            covariance_function=cov_func,
+            mean_function=self.config.get("mean_function", "constant"),
+            noise_variance=self.config.get("noise_variance", 0.01),
+        )
 
     def infer_spatial_distribution(
         self,
@@ -98,9 +90,6 @@ class BayesianSpatialInference:
         Returns:
             Dictionary containing posterior distribution and uncertainty estimates
         """
-        if self.gp_model is None:
-            return {"error": "Bayesian inference not available"}
-
         try:
             # Extract coordinates and values from sensor data
             coords_list = []

@@ -13,6 +13,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from scipy.special import logsumexp
 from typing import Any
 from ..utils.rng import SeedLike, resolve_rng
 
@@ -348,9 +349,8 @@ class ModelComparison:
         """Pareto-smoothed importance-sampling LOO (PSIS-LOO, Vehtari et al. 2017).
 
         Uses ``arviz.stats.stats.psislw`` on the pointwise log-likelihood
-        matrix and the same elpd/p_loo/se formulas as arviz's ``loo``. Falls
-        back to naive log-mean-exp LOO (labelled ``naive-loo``) only when
-        arviz is unavailable.
+        matrix and the same elpd/p_loo/se formulas as arviz's ``loo``; the
+        result is labelled ``method="psis-loo"``.
 
         Args:
             model: The model to compare.
@@ -363,46 +363,27 @@ class ModelComparison:
         )
         n_samples, n_obs = ll_matrix.shape
 
-        try:
-            from arviz.stats.stats import psislw
-            from scipy.special import logsumexp
+        # Function-local: arviz import cost is paid only when LOO is requested.
+        from arviz.stats.stats import psislw
 
-            # arviz loo semantics: psislw expects (n_obs, n_samples) — the
-            # LAST dimension is samples — and returns (smoothed_log_weights,
-            # pareto_shape). Verified numerically against az.loo.
-            ll_t = ll_matrix.T
-            log_weights_t, pareto_k = psislw(-ll_t, reff=1.0)
-            elpd_loo_i = logsumexp(log_weights_t + ll_t, axis=1)
-            # Normalized log predictive density (log of the mean).
-            lpd_i = logsumexp(ll_t, axis=1) - np.log(n_samples)
-            elpd_loo = float(np.sum(elpd_loo_i))
-            p_loo = float(np.sum(lpd_i) - elpd_loo)
-            se = float(np.sqrt(n_obs * np.var(elpd_loo_i)))
-            return {
-                "elpd_loo": elpd_loo,
-                "p_loo": p_loo,
-                "se": se,
-                "method": "psis-loo",
-                "pareto_k_max": float(np.max(pareto_k)) if len(pareto_k) else 0.0,
-            }
-        except ImportError:
-            # Naive LOO fallback (no PSIS smoothing).
-            elpd_i = np.zeros(n_obs)
-            for j in range(n_obs):
-                max_ll = np.max(ll_matrix[:, j])
-                elpd_i[j] = max_ll + np.log(np.mean(np.exp(ll_matrix[:, j] - max_ll)))
-
-            elpd_loo = float(np.sum(elpd_i))
-            se = float(np.sqrt(n_obs * np.var(elpd_i)))
-            p_loo = float(np.sum(np.var(ll_matrix, axis=0)))
-
-            return {
-                "elpd_loo": elpd_loo,
-                "p_loo": p_loo,
-                "se": se,
-                "method": "naive-loo",
-                "pareto_k_max": 0.0,
-            }
+        # arviz loo semantics: psislw expects (n_obs, n_samples) — the
+        # LAST dimension is samples — and returns (smoothed_log_weights,
+        # pareto_shape). Verified numerically against az.loo.
+        ll_t = ll_matrix.T
+        log_weights_t, pareto_k = psislw(-ll_t, reff=1.0)
+        elpd_loo_i = logsumexp(log_weights_t + ll_t, axis=1)
+        # Normalized log predictive density (log of the mean).
+        lpd_i = logsumexp(ll_t, axis=1) - np.log(n_samples)
+        elpd_loo = float(np.sum(elpd_loo_i))
+        p_loo = float(np.sum(lpd_i) - elpd_loo)
+        se = float(np.sqrt(n_obs * np.var(elpd_loo_i)))
+        return {
+            "elpd_loo": elpd_loo,
+            "p_loo": p_loo,
+            "se": se,
+            "method": "psis-loo",
+            "pareto_k_max": float(np.max(pareto_k)) if len(pareto_k) else 0.0,
+        }
 
     def _waic_comparison(
         self, model: Any, data: Any, random_seed: SeedLike = None

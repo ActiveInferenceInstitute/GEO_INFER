@@ -10,6 +10,7 @@ Models workspace within `GEO-INFER-IOT`.
 
 ## Public Interface
 
+- `measurement.py:normalize_timestamp` (function)
 - `measurement.py:MeasurementQuality` (class)
 - `measurement.py:Measurement` (class)
 - `measurement.py:MeasurementBatch` (class)

@@ -10,6 +10,8 @@ from typing import Any
 from datetime import datetime
 import logging
 
+import pandas as pd
+
 from ..models.hr_models import Employee, EmploymentStatus
 from .data_store import PEPDataManager, pep_data_manager
 
@@ -236,20 +238,11 @@ class PEPEngine:
             "details": f"Data store contains {data_summary['employees']['total']} employees, {data_summary['customers']['total']} customers, {data_summary['candidates']['total']} candidates",
         }
 
-        # Check module availability
-        try:
-            import pandas as pd  # noqa: F401
-
-            health_status["checks"]["dependencies"] = {
-                "status": "healthy",
-                "details": "All required dependencies available",
-            }
-        except ImportError as e:
-            health_status["checks"]["dependencies"] = {
-                "status": "unhealthy",
-                "details": f"Missing dependency: {str(e)}",
-            }
-            health_status["overall_health"] = "unhealthy"
+        # Report the tabular data backend
+        health_status["checks"]["dependencies"] = {
+            "status": "healthy",
+            "details": f"pandas {pd.__version__}",
+        }
 
         # Check data processing capabilities
         try:

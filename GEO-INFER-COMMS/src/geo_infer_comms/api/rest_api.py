@@ -15,6 +15,7 @@ from fastapi import FastAPI, HTTPException, Depends, status, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+import jwt as pyjwt
 import uvicorn
 
 from geo_infer_comms import (
@@ -586,19 +587,13 @@ class CommunicationAPI:
                 detail="Invalid authentication token",
             )
 
-        # Attempt real JWT decode when PyJWT is available and a secret is
-        # configured. A token that fails validation is rejected outright;
-        # the hash fallback only applies when JWT validation is not
-        # configured (PyJWT missing or no COMMS_JWT_SECRET set).
-        try:
-            import jwt as pyjwt
-        except ImportError:
-            pyjwt = None  # type: ignore[assignment]
-
+        # Decode the token as an HS256 JWT when COMMS_JWT_SECRET is set. A
+        # token that fails validation is rejected outright; the hash fallback
+        # only applies when JWT validation is not configured (no secret).
         import os
 
         secret = os.environ.get("COMMS_JWT_SECRET", "")
-        if pyjwt is not None and secret:
+        if secret:
             try:
                 payload = pyjwt.decode(token, secret, algorithms=["HS256"])
             except Exception as e:

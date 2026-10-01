@@ -13,6 +13,10 @@ import numpy as np
 from pathlib import Path
 import logging
 
+import geopandas as gpd
+import h3
+from shapely.geometry import Polygon
+
 from geo_infer_space.core import SpatialIndexingInterface
 
 # Configure logging
@@ -20,24 +24,6 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-try:
-    import h3
-
-    H3_AVAILABLE = True
-except ImportError:
-    logger.error("h3-py package not available. Install with 'uv pip install h3'")
-    H3_AVAILABLE = False
-    # logic continues, backend might handle gracefully or fail later
-
-try:
-    import geopandas as gpd
-    from shapely.geometry import Polygon
-
-    GEOPANDAS_AVAILABLE = True
-except ImportError:
-    GEOPANDAS_AVAILABLE = False
-    logger.warning("GeoPandas/Shapely not available")
 
 
 def example_1_basic_h3_operations():
@@ -200,22 +186,19 @@ def example_3_transportation_corridor():
 
             # Simple path finding simulation (line between cells)
             # In a real scenario, use h3.grid_path_cells if wrapped, or implement generic A*
-            if H3_AVAILABLE:
-                try:
-                    path_cells = h3.grid_path_cells(start_cell, end_cell)
-                    print(f"Path length: {len(path_cells)} cells")
+            try:
+                path_cells = h3.grid_path_cells(start_cell, end_cell)
+                print(f"Path length: {len(path_cells)} cells")
 
-                    # Buffer logic simulated by neighbors
-                    corridor_cells = set()
-                    for cell in path_cells:
-                        neighbors = indexer.get_cell_neighbors(cell, k=2)
-                        corridor_cells.update(neighbors)
+                # Buffer logic simulated by neighbors
+                corridor_cells = set()
+                for cell in path_cells:
+                    neighbors = indexer.get_cell_neighbors(cell, k=2)
+                    corridor_cells.update(neighbors)
 
-                    print(f"Corridor cells (with buffer): {len(corridor_cells)}")
-                except Exception as e:
-                    print(f"H3 path finding error: {e}")
-            else:
-                print("H3 library required for path finding.")
+                print(f"Corridor cells (with buffer): {len(corridor_cells)}")
+            except Exception as e:
+                print(f"H3 path finding error: {e}")
 
         except Exception as e:
             print(f"Distance/Path failed: {e}")
@@ -401,42 +384,38 @@ def example_7_visualization_showcase():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. GeoJSON/Shapefile Export via GeoPandas
-    if GEOPANDAS_AVAILABLE:
-        print("\n1. Exporting to GeoJSON via GeoPandas...")
+    print("\n1. Exporting to GeoJSON via GeoPandas...")
 
-        geometries = []
-        rows = []
-        for item in data:
-            try:
-                boundary = indexer.get_cell_boundary(item["cell_index"])
-                # Shapely polygon: (lng, lat)
-                poly = Polygon([(lng, lat) for lat, lng in boundary])
-                geometries.append(poly)
-                rows.append(item)
-            except Exception as e:
-                print(f"Error creating geometry for {item['cell_index']}: {e}")
+    geometries = []
+    rows = []
+    for item in data:
+        try:
+            boundary = indexer.get_cell_boundary(item["cell_index"])
+            # Shapely polygon: (lng, lat)
+            poly = Polygon([(lng, lat) for lat, lng in boundary])
+            geometries.append(poly)
+            rows.append(item)
+        except Exception as e:
+            print(f"Error creating geometry for {item['cell_index']}: {e}")
 
-        if geometries:
-            gdf = gpd.GeoDataFrame(rows, geometry=geometries, crs="EPSG:4326")
-            geojson_path = output_dir / "sample_grid.geojson"
-            gdf.to_file(geojson_path, driver="GeoJSON")
-            print(f"   Saved: {geojson_path}")
+    if geometries:
+        gdf = gpd.GeoDataFrame(rows, geometry=geometries, crs="EPSG:4326")
+        geojson_path = output_dir / "sample_grid.geojson"
+        gdf.to_file(geojson_path, driver="GeoJSON")
+        print(f"   Saved: {geojson_path}")
 
-            # Simple static plot
-            try:
-                import matplotlib.pyplot as plt
+        # Simple static plot
+        try:
+            import matplotlib.pyplot as plt
 
-                fig, ax = plt.subplots(figsize=(10, 10))
-                gdf.plot(column="value", ax=ax, legend=True)
-                plt.title("H3 Grid Visualization")
-                png_path = output_dir / "grid_plot.png"
-                plt.savefig(png_path)
-                print(f"   Saved: {png_path}")
-            except ImportError:
-                print("   Matplotlib not available for plotting.")
-
-    else:
-        print("\nGeoPandas not available. Skipping GeoJSON export.")
+            fig, ax = plt.subplots(figsize=(10, 10))
+            gdf.plot(column="value", ax=ax, legend=True)
+            plt.title("H3 Grid Visualization")
+            png_path = output_dir / "grid_plot.png"
+            plt.savefig(png_path)
+            print(f"   Saved: {png_path}")
+        except ImportError:
+            print("   Matplotlib not available for plotting.")
 
     print(f"\nVisualization showcase complete! Check {output_dir} for outputs.")
 

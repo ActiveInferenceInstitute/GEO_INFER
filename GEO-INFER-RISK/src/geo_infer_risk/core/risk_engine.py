@@ -31,6 +31,7 @@ from collections.abc import Mapping, Sequence
 
 import numpy as np
 from scipy import stats
+from scipy.spatial.distance import pdist, squareform
 
 # GEO-INFER module imports with error handling
 try:
@@ -575,8 +576,6 @@ class EnhancedRiskEngine:
             n = len(vals)
 
             # Distance-based spatial weights (inverse distance)
-            from scipy.spatial.distance import pdist, squareform
-
             dists = squareform(pdist(coords_arr))
             np.fill_diagonal(dists, np.inf)
             W = 1.0 / dists
@@ -599,14 +598,6 @@ class EnhancedRiskEngine:
                 "geary_c": float(geary_c),
                 "local_indicators": [float(d) for d in dev[:10]],
                 "source": "inline_fallback",
-            }
-        except ImportError:
-            self.logger.warning("scipy not available for spatial statistics")
-            return {
-                "spatial_autocorrelation": 0.0,
-                "morans_i": 0.0,
-                "geary_c": 0.0,
-                "local_indicators": [],
             }
         except Exception as e:
             self.logger.warning(f"Spatial statistics failed: {e}")

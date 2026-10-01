@@ -15,17 +15,10 @@ from shapely.geometry import Point
 from scipy.spatial.distance import pdist, squareform
 from scipy.stats import zscore
 from sklearn.cluster import DBSCAN, KMeans
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 
 logger = logging.getLogger(__name__)
-
-try:
-    from sklearn.gaussian_process import GaussianProcessRegressor
-    from sklearn.gaussian_process.kernels import RBF, ConstantKernel
-
-    SKLEARN_GP_AVAILABLE = True
-except ImportError:
-    SKLEARN_GP_AVAILABLE = False
-    logger.warning("Scikit-learn Gaussian Process not available for kriging")
 
 
 def spatial_interpolation(
@@ -77,7 +70,7 @@ def spatial_interpolation(
         power = kwargs.get("power", 2)
         interpolated_values = _idw_interpolation(coords, values, grid_points, power)
 
-    elif method == "kriging" and SKLEARN_GP_AVAILABLE:
+    elif method == "kriging":
         interpolated_values = _kriging_interpolation(
             coords, values, grid_points, **kwargs
         )
@@ -573,9 +566,6 @@ def _kriging_interpolation(
     **kwargs: Any,
 ) -> np.ndarray:
     """Simple kriging using Gaussian Process."""
-    if not SKLEARN_GP_AVAILABLE:
-        raise ImportError("Scikit-learn required for kriging interpolation")
-
     # Set up Gaussian Process with RBF kernel
     length_scale = kwargs.get("length_scale", 1.0)
     kernel = ConstantKernel() * RBF(length_scale=length_scale)

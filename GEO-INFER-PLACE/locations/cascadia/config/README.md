@@ -4,7 +4,6 @@ Config workspace within `GEO-INFER-PLACE`.
 
 ## Contents
 
-- `county_boundary_loader.py`
 - `analysis_config.yaml`
 - `ca_del_norte_boundary.geojson`
 - `ca_humboldt_boundary.geojson`
@@ -29,8 +28,7 @@ Config workspace within `GEO-INFER-PLACE`.
 
 ## Public Interface
 
-- `county_boundary_loader.py:CountyBoundaryLoader` (class)
-- `county_boundary_loader.py:create_county_boundary_loader` (function)
+- No public Python symbols are defined directly in this directory.
 
 ## Module Metadata
 

@@ -126,6 +126,42 @@ class TestCascadiaDataQuality:
         assert isinstance(result, dict)
         assert "available" in result
 
+    def test_validates_h3_hexagon_outputs_with_geo_infer_data(self):
+        import h3
+        import pytest
+
+        from src.core.geo_infer_integrations import CascadiaDataQuality
+
+        center = h3.latlng_to_cell(41.75, -124.2, 7)
+        hexagons = {cell: {"score": 0.5} for cell in sorted(h3.grid_disk(center, 1))}
+        result = CascadiaDataQuality().validate_module_outputs(
+            {
+                "zoning": {"hexagons": hexagons},
+                "raw_cells": hexagons,
+                "summary": {"score": 0.8},
+            }
+        )
+        assert result["available"] is True
+        scores = result["quality_scores"]
+        for name in ("zoning", "raw_cells"):
+            assert scores[name]["status"] == "pass"
+            assert scores[name]["score"] == pytest.approx(1.0)
+            assert scores[name]["n_features"] == len(hexagons)
+        assert scores["summary"]["status"] == "skipped"
+
+    def test_reports_invalid_geometry(self):
+        import geopandas as gpd
+        from shapely.geometry import Polygon
+
+        from src.core.geo_infer_integrations import CascadiaDataQuality
+
+        bowtie = Polygon([(0, 0), (1, 1), (1, 0), (0, 1), (0, 0)])
+        frame = gpd.GeoDataFrame({"score": [0.1]}, geometry=[bowtie], crs="EPSG:4326")
+        result = CascadiaDataQuality().validate_module_outputs({"bad": frame})
+        check = result["quality_scores"]["bad"]
+        assert check["score"] < 1.0
+        assert any(issue["type"] == "invalid_geometry" for issue in check["issues"])
+
 
 class TestCascadiaClimateAnalysis:
     def test_missing_yaml_returns_error_dict(self, tmp_path):

@@ -13,6 +13,7 @@ import logging
 from typing import Any, cast
 from datetime import datetime, UTC
 
+import jwt as pyjwt
 import websockets
 from websockets.asyncio.server import ServerConnection
 from websockets.exceptions import ConnectionClosed
@@ -242,18 +243,6 @@ class WebSocketConnection:
         user_id: str | None = None
 
         if secret:
-            try:
-                import jwt as pyjwt
-            except ImportError as exc:
-                self.logger.error(
-                    "COMMS_JWT_SECRET is configured but PyJWT is unavailable (%s); "
-                    "rejecting authentication instead of falling back to "
-                    "hash-derived identity",
-                    exc,
-                )
-                await self.send_error("Invalid authentication token")
-                return
-
             try:
                 payload = pyjwt.decode(token, secret, algorithms=["HS256"])
             except Exception as e:

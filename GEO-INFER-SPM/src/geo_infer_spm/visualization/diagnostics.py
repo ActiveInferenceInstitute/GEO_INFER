@@ -5,20 +5,16 @@ This module provides functions for creating diagnostic plots and
 visual assessments of SPM model fit and statistical assumptions.
 """
 
-import numpy as np
 import logging
 from typing import Any
 
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import stats
+
+from ..models.data_models import SPMResult, ContrastResult
+
 logger = logging.getLogger(__name__)
-
-try:
-    import matplotlib.pyplot as plt
-
-    MATPLOTLIB_AVAILABLE = True
-except ImportError:
-    MATPLOTLIB_AVAILABLE = False
-
-from ..models.data_models import SPMResult, ContrastResult  # noqa: E402
 
 
 def plot_model_diagnostics(
@@ -34,9 +30,6 @@ def plot_model_diagnostics(
     Returns:
         Dictionary with diagnostic plots and statistics
     """
-    if not MATPLOTLIB_AVAILABLE:
-        return {"error": "matplotlib not available"}
-
     fig, axes = plt.subplots(2, 3, figsize=figsize)
 
     # 1. Residual Q-Q plot
@@ -78,9 +71,6 @@ def plot_contrast_results(
     Returns:
         Dictionary with contrast plots
     """
-    if not MATPLOTLIB_AVAILABLE:
-        return {"error": "matplotlib not available"}
-
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
 
     # T-statistic distribution
@@ -109,8 +99,6 @@ def plot_contrast_results(
 
 def _plot_qq_residuals(spm_result: SPMResult, ax: Any) -> None:
     """Plot Q-Q plot for residuals."""
-    from scipy import stats
-
     residuals = spm_result.residuals
     stats.probplot(residuals, dist="norm", plot=ax)
     ax.set_title("Normal Q-Q Plot\n(Residuals)")
@@ -163,7 +151,7 @@ def _plot_scale_location(spm_result: SPMResult, ax: Any) -> None:
 
     # Add smoothed line
     try:
-        from scipy.stats import lowess
+        from statsmodels.nonparametric.smoothers_lowess import lowess
 
         smoothed = lowess(sqrt_abs_residuals, fitted, frac=0.3)
         ax.plot(smoothed[:, 0], smoothed[:, 1], color="blue", linewidth=2, alpha=0.8)
@@ -192,20 +180,15 @@ def _plot_residual_histogram(spm_result: SPMResult, ax: Any) -> None:
     ax.legend()
 
     # Add Shapiro-Wilk test
-    try:
-        from scipy.stats import shapiro
-
-        stat, p_value = shapiro(residuals)
-        ax.text(
-            0.05,
-            0.95,
-            f"Shapiro-Wilk\np = {p_value:.3f}",
-            transform=ax.transAxes,
-            verticalalignment="top",
-            bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
-        )
-    except ImportError:
-        logger.debug("statsmodels is unavailable; skipping optional diagnostic overlay")
+    stat, p_value = stats.shapiro(residuals)
+    ax.text(
+        0.05,
+        0.95,
+        f"Shapiro-Wilk\np = {p_value:.3f}",
+        transform=ax.transAxes,
+        verticalalignment="top",
+        bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
+    )
 
 
 def _plot_cooks_distance(spm_result: SPMResult, ax: Any) -> None:
@@ -295,8 +278,6 @@ def _plot_leverage(spm_result: SPMResult, ax: Any) -> None:
 
 def _compute_diagnostic_stats(spm_result: SPMResult) -> dict[str, Any]:
     """Compute comprehensive diagnostic statistics."""
-    from scipy import stats
-
     residuals = spm_result.residuals
     X = spm_result.design_matrix.matrix
     n, p = X.shape
@@ -312,15 +293,10 @@ def _compute_diagnostic_stats(spm_result: SPMResult) -> dict[str, Any]:
     }
 
     # Normality tests
-    try:
-        from scipy.stats import shapiro, normaltest
-
-        _, shapiro_p = shapiro(residuals)
-        _, normal_p = normaltest(residuals)
-        stats_dict["shapiro_normality_p"] = float(shapiro_p)
-        stats_dict["dagostino_normality_p"] = float(normal_p)
-    except ImportError:
-        logger.debug("statsmodels is unavailable; skipping optional diagnostic overlay")
+    _, shapiro_p = stats.shapiro(residuals)
+    _, normal_p = stats.normaltest(residuals)
+    stats_dict["shapiro_normality_p"] = float(shapiro_p)
+    stats_dict["dagostino_normality_p"] = float(normal_p)
 
     # Leverage and influence
     hat_matrix = X @ np.linalg.pinv(X.T @ X) @ X.T

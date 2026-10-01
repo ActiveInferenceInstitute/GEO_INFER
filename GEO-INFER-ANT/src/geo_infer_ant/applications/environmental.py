@@ -17,6 +17,7 @@ Key Features:
 
 import numpy as np
 import logging
+from sklearn.ensemble import IsolationForest
 from typing import Any, cast
 from datetime import datetime
 from dataclasses import dataclass, field
@@ -1227,8 +1228,6 @@ class EnvironmentalMonitoringSwarm:
     def _isolation_forest_anomaly_detection(self, values: np.ndarray) -> list[int]:
         """Isolation forest anomaly detection using scikit-learn."""
         try:
-            from sklearn.ensemble import IsolationForest
-
             if len(values) < 5:
                 return []
 
@@ -1248,12 +1247,6 @@ class EnvironmentalMonitoringSwarm:
 
             return anomaly_indices
 
-        except ImportError:
-            # Fallback to statistical method if sklearn not available
-            logger.warning(
-                "scikit-learn not available, using statistical anomaly detection"
-            )
-            return self._statistical_anomaly_detection(values)
         except Exception as e:
             logger.warning(
                 f"Isolation forest anomaly detection failed: {e}, using statistical method"

@@ -11,14 +11,8 @@ from datetime import datetime
 import numpy as np
 import h3
 
-# Optional imports for enhanced functionality
-try:
-    from scipy import interpolate
-    from scipy.spatial.distance import cdist
-
-    HAS_SCIPY = True
-except ImportError:
-    HAS_SCIPY = False
+from scipy import interpolate
+from scipy.spatial.distance import cdist
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +125,7 @@ class SpatialInterpolation:
                 interpolated_values = self._nearest_neighbor(
                     sensor_latlon, sensor_values, target_latlon
                 )
-            elif method == "linear" and HAS_SCIPY:
+            elif method == "linear":
                 interpolated_values = self._linear_interpolation(
                     sensor_latlon, sensor_values, target_latlon
                 )
@@ -220,12 +214,6 @@ class SpatialInterpolation:
         target_latlon: np.ndarray,
     ) -> np.ndarray:
         """Perform linear interpolation using scipy on projected planar meters."""
-        if not HAS_SCIPY:
-            # Fall back to IDW
-            return self._inverse_distance_weighted(
-                sensor_latlon, sensor_values, target_latlon
-            )
-
         try:
             # Project degrees to a local equirectangular metric plane so
             # scipy's planar griddata operates in consistent units

@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import ast
 import fnmatch
+import importlib.metadata
 import re
 from collections import Counter
 from pathlib import Path
@@ -454,6 +455,21 @@ IMPORT_ROOT_ALIASES = {
     "pymdp": "inferactively-pymdp",
 }
 
+# Installed import-root -> distribution map, so aliases above only need to
+# cover roots whose distribution is not installed in the validating env.
+_INSTALLED_ROOT_DISTRIBUTIONS = importlib.metadata.packages_distributions()
+
+
+def distribution_for_import_root(root: str) -> str:
+    """Return the normalized distribution name that provides ``root``."""
+    if root in IMPORT_ROOT_ALIASES:
+        return IMPORT_ROOT_ALIASES[root]
+    installed = _INSTALLED_ROOT_DISTRIBUTIONS.get(root)
+    if installed and len(installed) == 1:
+        return installed[0].lower().replace("_", "-").replace(".", "-")
+    return root.lower().replace("_", "-")
+
+
 # Complete standard-library root set for the running interpreter; the
 # hand-maintained STDLIB_REQUIREMENT_NAMES stays as a belt-and-braces floor.
 _STDLIB_ROOTS = frozenset(getattr(sys, "stdlib_module_names", ())) | frozenset(
@@ -562,7 +578,7 @@ def validate_import_parity(
                 continue
             if root == "src":
                 continue
-            dist = IMPORT_ROOT_ALIASES.get(root, root.lower().replace("_", "-"))
+            dist = distribution_for_import_root(root)
             if dist in declared:
                 continue
             rel = None
@@ -731,7 +747,7 @@ def validate_test_import_parity(
     for root, first in sorted(roots.items()):
         if root not in IMPORT_ROOT_ALIASES and (root in _STDLIB_ROOTS or root in local):
             continue
-        dist = IMPORT_ROOT_ALIASES.get(root, root.lower().replace("_", "-"))
+        dist = distribution_for_import_root(root)
         if dist in declared:
             continue
         report.error(

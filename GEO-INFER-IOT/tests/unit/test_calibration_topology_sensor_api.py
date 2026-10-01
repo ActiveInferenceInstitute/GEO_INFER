@@ -1,6 +1,6 @@
 """Unit tests for the public exports SensorCalibration, NetworkTopology, SensorAPI.
 
-Covers both HAS_SCIPY branches of SensorCalibration (forced via monkeypatch),
+Covers SensorCalibration linear/polynomial fits and scipy drift significance,
 NetworkTopology construction from Sensor models, and SensorAPI route
 registration.
 """
@@ -17,7 +17,6 @@ from geo_infer_iot.models.network import (
     NetworkTopologyType,
 )
 from geo_infer_iot.models.sensor import Location, Sensor
-from geo_infer_iot.utils import calibration as calibration_module
 from geo_infer_iot.utils.calibration import SensorCalibration
 
 
@@ -45,8 +44,7 @@ def _sensor(sensor_id: str, latitude: float, longitude: float) -> Sensor:
 
 
 class TestSensorCalibration:
-    def test_linear_round_trip_with_scipy(self, monkeypatch):
-        monkeypatch.setattr(calibration_module, "HAS_SCIPY", True)
+    def test_linear_round_trip(self):
         calibrator = SensorCalibration()
 
         result = calibrator.calibrate_sensor("s1", _reference_data(), "linear")
@@ -61,19 +59,18 @@ class TestSensorCalibration:
         )
         assert calibrated[0] == pytest.approx(9.0, abs=1e-9)
 
-    def test_linear_round_trip_without_scipy(self, monkeypatch):
-        monkeypatch.setattr(calibration_module, "HAS_SCIPY", False)
+    def test_polynomial_calibration_recovers_quadratic(self):
         calibrator = SensorCalibration()
+        reference = [
+            {"sensor_value": value, "reference_value": 0.5 * value**2 + 1.0}
+            for value in (0.0, 1.0, 2.0, 3.0, 4.0)
+        ]
 
-        result = calibrator.calibrate_sensor("s1", _reference_data(), "linear")
+        result = calibrator.calibrate_sensor("s1", reference, "polynomial")
         assert result.success is True
-        assert result.calibration_parameters["slope"] == pytest.approx(2.0, abs=1e-9)
-        assert result.calibration_parameters["offset"] == pytest.approx(1.0, abs=1e-9)
         assert result.calibration_error < 1e-6
-        assert "r_squared" not in result.calibration_parameters
 
-    def test_drift_detection_with_scipy(self, monkeypatch):
-        monkeypatch.setattr(calibration_module, "HAS_SCIPY", True)
+    def test_drift_detection_reports_significance(self):
         calibrator = SensorCalibration()
         baseline, drifted = _drift_data()
 
@@ -81,16 +78,6 @@ class TestSensorCalibration:
         assert report["drift_detected"] is True
         assert report["drift_score"] > report["threshold"]
         assert report["confidence"] > 0.9
-
-    def test_drift_detection_without_scipy(self, monkeypatch):
-        monkeypatch.setattr(calibration_module, "HAS_SCIPY", False)
-        calibrator = SensorCalibration()
-        baseline, drifted = _drift_data()
-
-        report = calibrator.detect_drift("s1", drifted, baseline)
-        assert report["drift_detected"] is True
-        assert report["drift_score"] > report["threshold"]
-        assert report["confidence"] == 0.5
 
     def test_drift_detection_stable_sensor(self):
         calibrator = SensorCalibration()

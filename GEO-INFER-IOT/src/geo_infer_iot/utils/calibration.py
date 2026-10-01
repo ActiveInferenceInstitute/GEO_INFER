@@ -11,14 +11,7 @@ from datetime import datetime, timedelta
 import numpy as np
 from dataclasses import dataclass
 
-# Optional imports for enhanced functionality
-try:
-    from scipy import stats
-    from scipy.optimize import curve_fit as curve_fit
-
-    HAS_SCIPY = True
-except ImportError:
-    HAS_SCIPY = False
+from scipy import stats
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +91,7 @@ class SensorCalibration:
                 calibration_params = self._linear_calibration(
                     sensor_values, reference_values
                 )
-            elif calibration_method == "polynomial" and HAS_SCIPY:
+            elif calibration_method == "polynomial":
                 calibration_params = self._polynomial_calibration(
                     sensor_values, reference_values
                 )
@@ -157,13 +150,6 @@ class SensorCalibration:
         if len(sensor_values) < 2:
             return {"slope": 1.0, "offset": 0.0}
 
-        if not HAS_SCIPY:
-            # Degraded mode (no scipy): least-squares fit via numpy only.
-            slope, offset = (
-                float(c) for c in np.polyfit(sensor_values, reference_values, 1)
-            )
-            return {"slope": slope, "offset": offset}
-
         # Linear regression
         slope, offset, r_value, p_value, std_err = stats.linregress(
             sensor_values, reference_values
@@ -180,8 +166,8 @@ class SensorCalibration:
         self, sensor_values: list[float], reference_values: list[float]
     ) -> dict:
         """Perform polynomial calibration (2nd order)."""
-        if not HAS_SCIPY or len(sensor_values) < 3:
-            # Fall back to linear
+        if len(sensor_values) < 3:
+            # A quadratic fit needs at least three points; fall back to linear
             return self._linear_calibration(sensor_values, reference_values)
 
         try:
@@ -267,11 +253,8 @@ class SensorCalibration:
             drift_score = (mean_drift + std_drift) / 2
 
             # Statistical significance test
-            if HAS_SCIPY:
-                t_stat, p_value = stats.ttest_ind(recent_values, baseline_values)
-                confidence = 1 - p_value if p_value < 0.05 else 0.5
-            else:
-                confidence = 0.5  # Default confidence if scipy not available
+            t_stat, p_value = stats.ttest_ind(recent_values, baseline_values)
+            confidence = 1 - p_value if p_value < 0.05 else 0.5
 
             # Determine if drift is significant
             threshold = self.config.get("drift_threshold", 0.05)

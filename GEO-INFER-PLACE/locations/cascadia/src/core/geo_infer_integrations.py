@@ -7,11 +7,15 @@ raising exceptions.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 from typing import Any
 
+import geopandas as gpd
+import h3
 import numpy as np
+from shapely.geometry import Polygon
 
 logger = logging.getLogger(__name__)
 
@@ -312,7 +316,7 @@ class CascadiaEcosystemServices:
 # Data quality validation — GEO-INFER-DATA
 # ---------------------------------------------------------------------------
 try:
-    from geo_infer_data.core.validation import DataValidator  # type: ignore[import]
+    from geo_infer_data.utils.validation import GeospatialValidator
 
     _DATA_AVAILABLE = True
 except ImportError as _e:
@@ -320,33 +324,64 @@ except ImportError as _e:
     _DATA_REASON = str(_e)
 
 
+def _module_output_frame(data: Any) -> gpd.GeoDataFrame | None:
+    """Return a module output as a WGS84 GeoDataFrame, or None if unsupported.
+
+    Accepts a GeoDataFrame, an H3 hexagon mapping ``{cell: properties}``, or a
+    module result dict carrying that mapping under ``"hexagons"``.
+    """
+    if isinstance(data, gpd.GeoDataFrame):
+        return data
+    if not isinstance(data, dict):
+        return None
+    hexagons = data.get("hexagons", data)
+    if not isinstance(hexagons, dict) or not hexagons:
+        return None
+    if not all(isinstance(cell, str) and h3.is_valid_cell(cell) for cell in hexagons):
+        return None
+    rows: list[dict[str, Any]] = []
+    geometries: list[Polygon] = []
+    for cell, properties in hexagons.items():
+        ring = [(lng, lat) for lat, lng in h3.cell_to_boundary(cell)]
+        geometries.append(Polygon(ring))
+        attributes = properties if isinstance(properties, dict) else {"value": properties}
+        rows.append({"h3_index": cell, **attributes})
+    return gpd.GeoDataFrame(rows, geometry=geometries, crs="EPSG:4326")
+
+
 class CascadiaDataQuality:
-    """Data validation and quality scoring via GEO-INFER-DATA."""
+    """Data validation and quality scoring via GEO-INFER-DATA GeospatialValidator."""
 
     def validate_module_outputs(self, modules_data: dict[str, Any]) -> dict[str, Any]:
-        """Quality scores per module output — completeness, consistency, accuracy."""
+        """Score each module output with ``GeospatialValidator.validate_data``.
+
+        GeoDataFrames and H3 hexagon mappings are validated (geometry,
+        coordinates, attributes, metadata, temporal, spatial reference); any
+        other output is reported as ``{"status": "skipped"}``.
+        """
         if not _DATA_AVAILABLE:
             return {"available": False, "reason": _DATA_REASON}
-        try:
-            import asyncio
-
-            validator = DataValidator()
-            quality_scores = {}
-            for module_name, data in modules_data.items():
-                # Use sync method if available, otherwise run async
-                if hasattr(validator, "validate"):
-                    quality_scores[module_name] = validator.validate(data)
-                elif hasattr(validator, "validate_async"):
-                    quality_scores[module_name] = asyncio.run(validator.validate_async(data))
-                else:
-                    quality_scores[module_name] = {
-                        "score": None,
-                        "note": "No validate method found",
-                    }
-            return {"available": True, "quality_scores": quality_scores}
-        except Exception as exc:
-            logger.warning("Data quality validation failed: %s", exc)
-            return {"available": True, "error": str(exc)}
+        validator = GeospatialValidator()
+        quality_scores: dict[str, Any] = {}
+        for module_name, data in modules_data.items():
+            frame = _module_output_frame(data)
+            if frame is None:
+                quality_scores[module_name] = {
+                    "status": "skipped",
+                    "reason": "not a GeoDataFrame or H3 hexagon mapping",
+                }
+                continue
+            try:
+                check = asyncio.run(validator.validate_data(frame))
+            except Exception as exc:
+                logger.warning("Data quality validation failed for %s: %s", module_name, exc)
+                quality_scores[module_name] = {"status": "error", "error": str(exc)}
+                continue
+            quality_scores[module_name] = {
+                **check.model_dump(mode="json"),
+                "n_features": len(frame),
+            }
+        return {"available": True, "quality_scores": quality_scores}
 
 
 # ---------------------------------------------------------------------------

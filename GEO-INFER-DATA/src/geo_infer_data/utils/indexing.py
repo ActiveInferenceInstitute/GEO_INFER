@@ -10,9 +10,11 @@ import math
 from typing import Any, cast
 
 import geopandas as gpd
+import h3
 import pandas as pd
 from pyproj import Transformer
 from shapely.geometry import Polygon
+from rtree import index as rtree_index_module
 from shapely.ops import transform as transform_geometry
 
 
@@ -20,15 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def _require_h3() -> Any:
-    """Load the supported native H3 runtime or fail explicitly."""
-    try:
-        import h3
-    except ImportError as exc:
-        raise ImportError(
-            "H3 indexing requires h3-py>=4.5.0,<5; install the GEO-INFER "
-            "workspace dependencies"
-        ) from exc
-
+    """Return the h3-py module after enforcing the supported v4 range."""
     version = tuple(
         int(part.split("+")[0].split("-")[0])
         for part in h3.__version__.lstrip("v").split(".")[:3]
@@ -150,16 +144,7 @@ class SpatialIndexer:
 
     def _create_rtree_index(self, data: gpd.GeoDataFrame) -> dict[str, Any]:
         """Create R-tree spatial index."""
-        try:
-            from rtree import index
-        except ImportError:
-            logger.warning(
-                "Rtree not available, using deterministic local implementation"
-            )
-            return {"type": "local_rtree", "data": data}
-
-        # Create R-tree index
-        idx = index.Index()
+        idx = rtree_index_module.Index()
 
         for i, row in data.iterrows():
             geom = row.geometry
@@ -190,9 +175,6 @@ class SpatialIndexer:
             return self._query_h3_bounds(index_data, bbox)
         elif index_type == "rtree":
             return self._query_rtree_bounds(index_data, bbox)
-        elif index_type == "local_rtree":
-            # rtree not installed: fall back to a direct bounding-box filter
-            return self._query_bbox_filter(index_data["data"], bbox)
         else:
             raise ValueError(f"Unsupported spatial index type: {index_type}")
 
@@ -240,13 +222,6 @@ class SpatialIndexer:
         if not candidate_ids:
             return gpd.GeoDataFrame()
         return index_data["data"].loc[candidate_ids]
-
-    @staticmethod
-    def _query_bbox_filter(
-        data: gpd.GeoDataFrame, bbox: list[float]
-    ) -> gpd.GeoDataFrame:
-        """Filter a GeoDataFrame to geometries within the given bounding box."""
-        return data[data.geometry.within(Polygon.from_bounds(*bbox))]
 
     def latlng_to_cell(self, lat: float, lng: float, resolution: int = 9) -> str:
         """

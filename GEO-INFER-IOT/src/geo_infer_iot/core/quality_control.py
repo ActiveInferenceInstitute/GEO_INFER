@@ -8,19 +8,14 @@ spatial consistency validation.
 
 import logging
 from typing import Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import numpy as np
 from dataclasses import dataclass
 from collections import defaultdict, deque
 
-# Optional imports for enhanced functionality
-try:
-    from sklearn.ensemble import IsolationForest
-    from sklearn.preprocessing import StandardScaler as StandardScaler
+from sklearn.ensemble import IsolationForest
 
-    HAS_SKLEARN = True
-except ImportError:
-    HAS_SKLEARN = False
+from geo_infer_iot.models.measurement import normalize_timestamp
 
 logger = logging.getLogger(__name__)
 
@@ -88,9 +83,7 @@ class QualityController:
             },
         }
 
-        # Initialize outlier detector if available
-        if HAS_SKLEARN:
-            self._initialize_outlier_detector()
+        self._initialize_outlier_detector()
 
         logger.info("QualityController initialized")
 
@@ -112,11 +105,19 @@ class QualityController:
         Perform comprehensive quality validation on a single measurement.
 
         Args:
-            measurement: Sensor measurement to validate
+            measurement: Sensor measurement to validate. ``timestamp`` (when
+                present) must be a timezone-aware datetime or an ISO-8601
+                string with an offset; it is normalized to UTC.
 
         Returns:
             QualityCheckResult with validation outcome
+
+        Raises:
+            ValueError: If ``timestamp`` is timezone-naive or not ISO-8601.
+            TypeError: If ``timestamp`` is neither a datetime nor a string.
         """
+        # Reject ambiguous timestamps at the boundary, before any state change.
+        observed_at = self._parse_timestamp(measurement.get("timestamp"))
         issues = []
         quality_score = 1.0
 
@@ -150,14 +151,14 @@ class QualityController:
             quality_score = max(0.0, quality_score - 0.1 * len(issues))
 
         # Retain after scoring so a measurement is never compared against itself.
-        self._record_measurement(measurement)
+        self._record_measurement(measurement, observed_at)
 
         return QualityCheckResult(
             passed=passed,
             issues=issues,
             quality_score=quality_score,
             metadata={
-                "validation_timestamp": datetime.now().isoformat(),
+                "validation_timestamp": datetime.now(UTC).isoformat(),
                 "validation_checks": ["range", "temporal", "outlier", "spatial"],
             },
         )
@@ -329,28 +330,27 @@ class QualityController:
         return QualityCheckResult(len(issues) == 0, issues, quality_score)
 
     @staticmethod
-    def _parse_timestamp(timestamp: Any) -> datetime | None:
-        """Coerce a measurement timestamp to a naive datetime, or None.
+    def _parse_timestamp(timestamp: datetime | str | None) -> datetime | None:
+        """Normalize a measurement timestamp to aware UTC; None when absent.
 
         Args:
-            timestamp: An ISO-8601 string, a datetime, or anything else.
+            timestamp: A timezone-aware datetime, an ISO-8601 string with an
+                offset, or None.
 
         Returns:
-            A timezone-naive datetime, or None when the value is unusable.
-        """
-        if isinstance(timestamp, datetime):
-            parsed = timestamp
-        elif isinstance(timestamp, str):
-            try:
-                parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-            except ValueError:
-                return None
-        else:
-            return None
-        # Drop tzinfo so mixed-awareness histories stay comparable.
-        return parsed.replace(tzinfo=None)
+            The timestamp as a timezone-aware UTC datetime, or None.
 
-    def _record_measurement(self, measurement: dict) -> None:
+        Raises:
+            ValueError: If the timestamp is timezone-naive or not ISO-8601.
+            TypeError: If the timestamp is neither a datetime nor a string.
+        """
+        if timestamp is None:
+            return None
+        return normalize_timestamp(timestamp)
+
+    def _record_measurement(
+        self, measurement: dict, observed_at: datetime | None
+    ) -> None:
         """Append a measurement to its sensor's history ring.
 
         Measurements without a usable numeric value or timestamp are not
@@ -358,13 +358,13 @@ class QualityController:
 
         Args:
             measurement: The measurement that was just validated.
+            observed_at: Its timestamp, already normalized to aware UTC.
         """
         value = measurement.get("value")
         if not isinstance(value, (int, float)) or isinstance(value, bool):
             return
         if np.isnan(value) or np.isinf(value):
             return
-        observed_at = self._parse_timestamp(measurement.get("timestamp"))
         if observed_at is None:
             return
         sensor_id = measurement.get("sensor_id", "unknown")
@@ -400,7 +400,7 @@ class QualityController:
                 "mean": value,
                 "std": 0.1,
                 "count": 1,
-                "last_update": datetime.now(),
+                "last_update": datetime.now(UTC),
             }
         else:
             baseline = self.sensor_baselines[sensor_id]
@@ -427,7 +427,7 @@ class QualityController:
                     "mean": new_mean,
                     "std": new_std,
                     "count": count + 1,
-                    "last_update": datetime.now(),
+                    "last_update": datetime.now(UTC),
                 }
             )
 
@@ -492,5 +492,5 @@ class QualityController:
                 }
                 for sensor_id, baseline in self.sensor_baselines.items()
             },
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
         }

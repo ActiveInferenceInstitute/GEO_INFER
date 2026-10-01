@@ -11,18 +11,9 @@ from datetime import datetime
 import numpy as np
 import h3
 
-# Optional imports for enhanced functionality
-try:
-    from geo_infer_space.utils.h3_utils import get_h3_neighbors
-
-    HAS_GEO_SPACE = True
-except ImportError:
-    HAS_GEO_SPACE = False
+from geo_infer_space.utils.h3_utils import get_h3_neighbors
 
 logger = logging.getLogger(__name__)
-
-if not HAS_GEO_SPACE:
-    logger.warning("GEO-INFER-SPACE not available, using basic spatial operations")
 
 
 class SpatialDataFusion:
@@ -39,11 +30,7 @@ class SpatialDataFusion:
     def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.fusion_cache: dict[str, Any] = {}
-        self.spatial_operations: dict[str, Any] | None = None
-
-        # Initialize spatial operations if available
-        if HAS_GEO_SPACE:
-            self.spatial_operations = {"h3_neighbors": get_h3_neighbors}
+        self.spatial_operations: dict[str, Any] = {"h3_neighbors": get_h3_neighbors}
 
         # Default fusion parameters
         self.default_params = {
@@ -293,32 +280,27 @@ class SpatialDataFusion:
                 std_value = np.std(values)
 
                 # Get neighboring cells for between-cell consistency
-                if HAS_GEO_SPACE:
-                    try:
-                        neighbors = get_h3_neighbors(h3_index, ring_size=1)
-                        neighbor_values = []
+                try:
+                    neighbors = get_h3_neighbors(h3_index, ring_size=1)
+                    neighbor_values = []
 
-                        for neighbor_h3 in neighbors:
-                            if neighbor_h3 in h3_measurements:
-                                neighbor_vals = [
-                                    m["value"] for m in h3_measurements[neighbor_h3]
-                                ]
-                                neighbor_values.extend(neighbor_vals)
+                    for neighbor_h3 in neighbors:
+                        if neighbor_h3 in h3_measurements:
+                            neighbor_vals = [
+                                m["value"] for m in h3_measurements[neighbor_h3]
+                            ]
+                            neighbor_values.extend(neighbor_vals)
 
-                        if neighbor_values:
-                            neighbor_mean = np.mean(neighbor_values)
-                            between_cell_diff = abs(mean_value - neighbor_mean)
-                            between_cell_consistency = max(
-                                0, 1.0 - between_cell_diff / consistency_threshold
-                            )
-                        else:
-                            between_cell_consistency = 1.0
-                    except Exception:
-                        between_cell_consistency = (
-                            1.0  # Default if neighbor analysis fails
+                    if neighbor_values:
+                        neighbor_mean = np.mean(neighbor_values)
+                        between_cell_diff = abs(mean_value - neighbor_mean)
+                        between_cell_consistency = max(
+                            0, 1.0 - between_cell_diff / consistency_threshold
                         )
-                else:
-                    between_cell_consistency = 1.0
+                    else:
+                        between_cell_consistency = 1.0
+                except Exception:
+                    between_cell_consistency = 1.0  # Default if neighbor analysis fails
 
                 # Overall consistency score
                 within_cell_consistency = max(

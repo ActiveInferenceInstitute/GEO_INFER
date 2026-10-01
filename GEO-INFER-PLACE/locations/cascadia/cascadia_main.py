@@ -934,14 +934,16 @@ def main():
             )
             profiler = cProfile.Profile()
             profiler.enable()
-            redevelopment_scores, summary = run_comprehensive_analysis_with_enhanced_data(
-                backend,
-                modules,
-                data_manager,
-                h3_fusion,
-                real_data_acquisition,
-                viz_engine,
-                args,
+            redevelopment_scores, summary, module_data = (
+                run_comprehensive_analysis_with_enhanced_data(
+                    backend,
+                    modules,
+                    data_manager,
+                    h3_fusion,
+                    real_data_acquisition,
+                    viz_engine,
+                    args,
+                )
             )
             profiler.disable()
             with open(prof_path, "w") as f:
@@ -949,14 +951,16 @@ def main():
                 ps.print_stats(50)
             logger.info(f"📈 Profile written: {prof_path}")
         else:
-            redevelopment_scores, summary = run_comprehensive_analysis_with_enhanced_data(
-                backend,
-                modules,
-                data_manager,
-                h3_fusion,
-                real_data_acquisition,
-                viz_engine,
-                args,
+            redevelopment_scores, summary, module_data = (
+                run_comprehensive_analysis_with_enhanced_data(
+                    backend,
+                    modules,
+                    data_manager,
+                    h3_fusion,
+                    real_data_acquisition,
+                    viz_engine,
+                    args,
+                )
             )
 
         # Export results with visualization options
@@ -980,9 +984,8 @@ def main():
             if available_modules:
                 logger.info(f"🔗 GEO-INFER integrations available: {available_modules}")
                 suite = build_integration_suite()
-                config_dir = Path(__file__).resolve().parent / "config"
                 integration_results["data_quality"] = suite["data_quality"].validate_module_outputs(
-                    {k: v for k, v in locals().get("module_data", {}).items()}
+                    module_data
                 )
                 summary["geo_infer_integrations"] = integration_results
             else:
@@ -1058,6 +1061,9 @@ def run_comprehensive_analysis_with_enhanced_data(
     backend, modules, data_manager, h3_fusion, real_data_acquisition, viz_engine, args
 ):
     """Run comprehensive analysis with enhanced data management, real acquisition, and H3 fusion.
+
+    Returns ``(redevelopment_scores, summary, module_data)``; ``module_data`` maps
+    each module name to its H3 output for downstream validation.
 
     Implements parallel module processing when --parallelism > 0, using threads for I/O-bound
     acquisition and CPU-backed geospatial ops that release the GIL in vectorized libs.
@@ -1443,7 +1449,7 @@ def run_comprehensive_analysis_with_enhanced_data(
     except Exception as e:
         logger.warning(f"Failed to write provenance manifest: {e}")
 
-    return redevelopment_scores, summary
+    return redevelopment_scores, summary, module_data
 
 
 def _summarize_and_score_module(module_name: str, rep: dict) -> dict:

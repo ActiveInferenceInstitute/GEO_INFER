@@ -19,7 +19,7 @@ Usage:
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 import json
 
 import numpy as np
@@ -27,21 +27,14 @@ import pandas as pd
 import folium
 from folium.plugins import HeatMap, MarkerCluster
 import h3
+import paho.mqtt.client as mqtt
+import yaml
 
 # GEO-INFER imports. geo_infer_space/geo_infer_bayes are required workspace
 # dependencies of geo_infer_iot, so a plain import failing means the
 # installation is broken and the example must not pretend to work.
 from geo_infer_iot import IoTSystem, BayesianSpatialInference
-
-# Standard dependencies
-try:
-    import paho.mqtt.client as mqtt
-    import yaml
-
-    HAS_DEPS = True
-except ImportError as e:
-    logging.error(f"Missing dependencies: {e}")
-    HAS_DEPS = False
+from geo_infer_iot.models.measurement import normalize_timestamp
 
 # Configure logging
 logging.basicConfig(
@@ -96,7 +89,7 @@ class SoilSensorNetwork:
             # Parse sensor data
             data = json.loads(msg.payload.decode())
             sensor_id = data.get("sensor_id")
-            timestamp = data.get("timestamp", datetime.now().isoformat())
+            timestamp = data.get("timestamp", datetime.now(UTC).isoformat())
 
             # Extract sensor measurements
             measurement = {
@@ -216,11 +209,11 @@ class SoilSensorNetwork:
 
     def _get_recent_measurements(self, hours: int = 1) -> pd.DataFrame:
         """Get recent measurements within specified time window."""
-        cutoff_time = datetime.now() - timedelta(hours=hours)
+        cutoff_time = datetime.now(UTC) - timedelta(hours=hours)
 
         recent = []
         for measurement in self.measurements:
-            if datetime.fromisoformat(measurement["timestamp"]) > cutoff_time:
+            if normalize_timestamp(measurement["timestamp"]) > cutoff_time:
                 recent.append(measurement)
 
         return pd.DataFrame(recent)

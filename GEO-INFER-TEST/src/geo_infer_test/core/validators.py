@@ -5,6 +5,7 @@ Validators for GEO-INFER data quality and system health.
 import time
 import logging
 import statistics
+import h3
 import numpy as np
 import pandas as pd
 from datetime import datetime, UTC
@@ -12,14 +13,6 @@ from typing import Any
 from abc import ABC, abstractmethod
 
 from ..models.types import ValidationRule
-
-# Optional dependencies
-try:
-    import h3
-
-    HAS_H3 = True
-except ImportError:
-    HAS_H3 = False
 
 
 class BaseValidator(ABC):
@@ -303,7 +296,7 @@ class SpatialValidator(BaseValidator):
             spatial_validation_out["coordinate_validity"] = coord_results
 
         # Validate H3 indices
-        if "h3_index" in df.columns and HAS_H3:
+        if "h3_index" in df.columns:
             h3_results = self._validate_h3_indices(df)
             spatial_validation_out["h3_validation"] = h3_results
 
@@ -355,9 +348,6 @@ class SpatialValidator(BaseValidator):
 
     def _validate_h3_indices(self, df: pd.DataFrame) -> dict[str, Any]:
         """Validate H3 index values."""
-        if not HAS_H3:
-            return {"error": "H3 library not available"}
-
         valid_count = 0
         invalid_indices = []
 

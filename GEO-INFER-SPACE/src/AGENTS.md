@@ -21,7 +21,6 @@
 
 ## Local Contents
 
-- `examples/`
 - `geo_infer_space/`
 
 ## Validation

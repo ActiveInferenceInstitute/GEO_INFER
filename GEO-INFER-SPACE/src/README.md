@@ -4,7 +4,6 @@ Src workspace within `GEO-INFER-SPACE`.
 
 ## Contents
 
-- `examples/`
 - `geo_infer_space/`
 
 ## Public Interface

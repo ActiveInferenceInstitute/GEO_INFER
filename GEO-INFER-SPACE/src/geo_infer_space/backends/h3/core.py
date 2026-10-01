@@ -16,18 +16,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 import json
 
+import h3
 import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
-
-try:
-    import h3
-
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available. Install with 'uv pip install h3'")
 
 
 @dataclass
@@ -50,7 +43,7 @@ class H3Cell:
 
     def __post_init__(self) -> None:
         """Initialize cell properties after creation."""
-        if H3_AVAILABLE and self.index:
+        if self.index:
             try:
                 # Get coordinates
                 self.latitude, self.longitude = h3.cell_to_latlng(self.index)
@@ -88,9 +81,6 @@ class H3Cell:
         Returns:
             H3Cell instance
         """
-        if not H3_AVAILABLE:
-            raise ImportError("h3-py package required for H3Cell operations")
-
         index = h3.latlng_to_cell(lat, lng, resolution)
         return cls(
             index=index,
@@ -110,9 +100,6 @@ class H3Cell:
         Returns:
             List of neighboring H3Cell instances
         """
-        if not H3_AVAILABLE:
-            return []
-
         try:
             neighbor_indices = h3.grid_disk(self.index, k)
             neighbors = []
@@ -138,9 +125,6 @@ class H3Cell:
         Returns:
             Parent H3Cell or None if invalid
         """
-        if not H3_AVAILABLE:
-            return None
-
         if parent_resolution is None:
             parent_resolution = max(0, self.resolution - 1)
 
@@ -167,9 +151,6 @@ class H3Cell:
         Returns:
             List of child H3Cell instances
         """
-        if not H3_AVAILABLE:
-            return []
-
         if child_resolution is None:
             child_resolution = min(15, self.resolution + 1)
 
@@ -203,9 +184,6 @@ class H3Cell:
         Returns:
             Grid distance (number of cells)
         """
-        if not H3_AVAILABLE:
-            return -1
-
         if self.resolution != other.resolution:
             logger.warning(
                 "Distance calculation between different resolutions may be inaccurate"
@@ -229,9 +207,6 @@ class H3Cell:
         Returns:
             True if cells are neighbors
         """
-        if not H3_AVAILABLE:
-            return False
-
         try:
             return cast(bool, h3.are_neighbor_cells(self.index, other.index))
         except Exception as e:
@@ -353,9 +328,6 @@ class H3Grid:
         Returns:
             H3Grid instance covering the polygon
         """
-        if not H3_AVAILABLE:
-            raise ImportError("h3-py package required for H3Grid operations")
-
         # Convert to GeoJSON format (lng, lat order)
         geojson_coords = [[lng, lat] for lat, lng in polygon_coords]
 
@@ -401,9 +373,6 @@ class H3Grid:
         Returns:
             H3Grid instance
         """
-        if not H3_AVAILABLE:
-            raise ImportError("h3-py package required for H3Grid operations")
-
         try:
             center_index = h3.latlng_to_cell(lat, lng, resolution)
             cell_indices = h3.grid_disk(center_index, k)
@@ -426,7 +395,7 @@ class H3Grid:
         Returns:
             New H3Grid with compacted cells
         """
-        if not H3_AVAILABLE or not self.cells:
+        if not self.cells:
             return H3Grid(name=f"{self.name}_compacted")
 
         try:
@@ -455,7 +424,7 @@ class H3Grid:
         Returns:
             New H3Grid with uniform resolution
         """
-        if not H3_AVAILABLE or not self.cells:
+        if not self.cells:
             return H3Grid(name=f"{self.name}_uncompacted")
 
         try:
@@ -647,7 +616,7 @@ class H3Analytics:
         Returns:
             Dictionary with connectivity metrics
         """
-        if not H3_AVAILABLE or not self.grid.cells:
+        if not self.grid.cells:
             return {}
 
         # Build adjacency information
@@ -958,10 +927,6 @@ class H3Validator:
             "warnings": [],
             "properties": {},
         }
-
-        if not H3_AVAILABLE:
-            result["errors"].append("h3-py package not available")
-            return result
 
         try:
             # Check if index is valid

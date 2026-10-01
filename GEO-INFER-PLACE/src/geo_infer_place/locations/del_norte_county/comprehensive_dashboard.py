@@ -18,18 +18,8 @@ from pathlib import Path
 from typing import Any, cast
 from folium.plugins import MarkerCluster
 
-# Import GEO-INFER modules (optional)
-try:
-    from geo_infer_space.utils.config_loader import LocationConfigLoader, LocationBounds
-    from geo_infer_space.core.visualization_receipt import write_visualization_receipt
-except ImportError:
-    LocationConfigLoader = None
-    LocationBounds = None
-
-    def write_visualization_receipt(*args: Any, **kwargs: Any) -> None:
-        """Fallback no-op when SPACE core is unavailable."""
-        return None
-
+from geo_infer_space.utils.config_loader import LocationConfigLoader
+from geo_infer_space.core.visualization_receipt import write_visualization_receipt
 
 from ...utils.data_sources import CaliforniaDataSources
 from ...core.api_clients import CaliforniaAPIManager

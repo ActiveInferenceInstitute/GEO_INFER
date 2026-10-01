@@ -17,16 +17,11 @@ import gzip
 import geopandas as gpd
 import pandas as pd
 import numpy as np
+import rasterio
 
 from ..models.schemas import DatasetMetadata
 from ..utils.format_detection import FormatDetector
 
-try:
-    import rasterio
-
-    HAS_RASTERIO = True
-except ImportError:
-    HAS_RASTERIO = False
 
 HAS_FIONA = importlib.util.find_spec("fiona") is not None
 

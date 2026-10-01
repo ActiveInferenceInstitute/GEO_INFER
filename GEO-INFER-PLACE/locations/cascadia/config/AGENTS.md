@@ -21,7 +21,6 @@
 
 ## Local Contents
 
-- `county_boundary_loader.py`
 - `analysis_config.yaml`
 - `ca_del_norte_boundary.geojson`
 - `ca_humboldt_boundary.geojson`

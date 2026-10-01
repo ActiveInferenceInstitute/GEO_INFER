@@ -6,18 +6,10 @@ import os
 import json
 from functools import lru_cache
 
-from pydantic import field_validator
-
 from importlib.metadata import PackageNotFoundError, version as _distribution_version
 
-try:
-    from pydantic_settings import BaseSettings, SettingsConfigDict
-
-    _SETTINGS_CONFIG = SettingsConfigDict(env_file=".env", case_sensitive=True)
-except ImportError:
-    from pydantic import BaseSettings  # type: ignore[no-redef]
-
-    _SETTINGS_CONFIG = None  # type: ignore[assignment]
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def _installed_version(fallback: str) -> str:
@@ -44,8 +36,7 @@ class Settings(BaseSettings):
       origin list is non-empty and does not contain ``"*"``.
     """
 
-    if _SETTINGS_CONFIG is not None:
-        model_config = _SETTINGS_CONFIG
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
     # Application metadata
     app_name: str = "GEO-INFER-API"

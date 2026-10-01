@@ -21,7 +21,7 @@ examples_dir: ../GEO-INFER-EXAMPLES/examples/
 - **Ingestion**: `IoTDataIngestion` — dict/SensorMeasurement ingestion, H3 spatial indexing, MQTT (paho-mqtt thread bridge + aiomqtt async), Bayesian spatial inference via GEO-INFER-BAYES
 - **Registry**: `SensorRegistry` — sensor/network registration (`SensorMetadata`, `SensorNetworkRecord`) with H3 spatial queries
 - **Streaming**: `StreamingAPI` — FastAPI WebSocket `/ws/sensor-stream` with async broadcasts; `SensorAPI` — REST for sensors/measurements/networks
-- **Quality control**: `QualityController` — range validation, temporal consistency, outlier detection (IsolationForest with real z-score fallback), spatial consistency
+- **Quality control**: `QualityController` — range validation, temporal consistency, outlier detection (IsolationForest over the retained window plus a running 3-sigma z-score check), spatial consistency
 - **Bayesian inference**: `BayesianSpatialInference` (in `geo_infer_iot.core.inference`) — Gaussian-process spatial posteriors over an H3 grid
 - **Radiation monitoring**: `RadiationMonitoringSystem` — end-to-end radiation ingestion, anomaly detection, and spatial inference
 
@@ -79,7 +79,8 @@ print(f"Passed: {result.passed}, score: {result.quality_score:.2f}, issues: {res
 ## Guidelines
 
 - MQTT handlers use real paho-mqtt (thread bridge) or aiomqtt (async); broker connection happens in `start_stream_processing` inside a running event loop
-- geo_infer_space and geo_infer_bayes are required workspace dependencies — they import unconditionally and fail loudly on a broken install
+- geo_infer_space, geo_infer_bayes, scipy, scikit-learn, folium, matplotlib, paho-mqtt and aiomqtt are hard dependencies — they import unconditionally (no availability flags or degraded fallbacks) and fail loudly on a broken install
+- Timestamps are timezone-aware UTC end to end (same contract as GEO-INFER-TIME `normalize_timestamp`): `QualityController.validate_measurement`, `IoTDataIngestion` dict input, `SensorMeasurement` and the `Measurement` models accept aware datetimes or ISO-8601 strings with an offset (`Z` included), normalize them to UTC, and raise `ValueError` on naive or malformed input (`TypeError` for non-string, non-datetime values); helper: `geo_infer_iot.models.measurement.normalize_timestamp`. A missing timestamp defaults to the current UTC time on ingestion and skips temporal checks in quality control
 - Quality-control config nests under documented keys (e.g. `temporal_consistency.max_change_rate`); flat top-level keys such as `max_change_rate` are not read
 - Test: `uv run python GEO-INFER-TEST/run_unified_tests.py --module IOT`
 

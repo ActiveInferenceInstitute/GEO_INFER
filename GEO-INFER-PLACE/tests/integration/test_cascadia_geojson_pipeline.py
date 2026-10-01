@@ -29,6 +29,9 @@ from geo_infer_place.core.bioregion_visualization import (
     create_bioregion_map,
     _load_json,
 )
+from geo_infer_place.locations.cascadia.config.county_boundary_loader import (
+    create_county_boundary_loader,
+)
 
 PLACE_DIR = Path(__file__).resolve().parents[2]
 CASCADIA_DIR = PLACE_DIR / "locations" / "cascadia"
@@ -153,9 +156,7 @@ class TestCascadiaGeoJsonLayers:
 
     def test_county_geometry_loader_loads_all_ca_counties(self):
         """CountyBoundaryLoader loads the three CA counties from real GeoJSON."""
-        loader_path = CASCADIA_CONFIG / "county_boundary_loader.py"
-        loader_module = _load_module("county_boundary_loader", loader_path)
-        loader = loader_module.create_county_boundary_loader()
+        loader = create_county_boundary_loader()
         geos = loader.get_all_county_geometries(
             {"CA": ["Del Norte", "Humboldt", "Lassen"]}
         )
