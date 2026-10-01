@@ -1,59 +1,128 @@
-"""Deterministic-by-default RNG resolution for geo_infer_econ.
+"""Explicit random-number-generator plumbing for GEO-INFER-ECON.
 
-Mirrors the repo-wide ``resolve_rng`` pattern (see GEO-INFER-SPM/MATH/RISK/
-BAYES ``utils/rng.py``) with one deliberate difference: a ``None`` seed
-resolves to a *fixed* seed so library code paths are reproducible by default.
-Callers that want fresh entropy pass an explicit unseeded
-``numpy.random.Generator``.
+Economic simulations and Monte Carlo estimators draw randomness; a fixed
+default seed keeps library paths reproducible unless a caller opts out.
+
+Every stochastic entry point resolves its ``seed`` / ``random_state`` argument
+through :func:`resolve_rng`, so no code path touches the process-wide
+``numpy.random`` singleton. This file shares one implementation with every
+other ``geo_infer_*/utils/rng.py``; only this docstring and
+:data:`DEFAULT_SEED` differ, and ``validate_repo_contracts.py`` enforces that.
 """
 
 from __future__ import annotations
 
-from typing import Union
+from typing import TypeAlias
 
 import numpy as np
 
-__all__ = ["SeedLike", "resolve_rng", "resolve_optional_rng"]
-
-SeedLike = Union[
-    None,
-    int,
-    np.integer,
-    np.random.SeedSequence,
-    np.random.BitGenerator,
-    np.random.Generator,
-    np.random.RandomState,
+__all__ = [
+    "DEFAULT_SEED",
+    "SeedLike",
+    "derive_int_seed",
+    "resolve_optional_rng",
+    "resolve_rng",
+    "spawn_rng",
 ]
 
-#: Seed used when a caller does not supply one, so that library paths are
-#: deterministic by default.
-DEFAULT_SEED = 0
+#: Anything accepted by :func:`resolve_rng`.
+SeedLike: TypeAlias = (
+    int
+    | np.integer
+    | np.random.SeedSequence
+    | np.random.BitGenerator
+    | np.random.Generator
+    | None
+)
+
+#: ``None`` seeds resolve to this fixed value so library paths are
+#: reproducible by default; pass an unseeded ``Generator`` for fresh entropy.
+DEFAULT_SEED: int | None = 0
 
 
 def resolve_rng(seed: SeedLike = None) -> np.random.Generator:
-    """Resolve ``seed`` into a :class:`numpy.random.Generator`.
+    """Return a :class:`numpy.random.Generator` for ``seed``.
 
-    - A ``Generator`` is returned unchanged.
-    - A legacy ``RandomState`` is bridged to a fresh, isolated ``Generator``.
-    - Any other seed form (``int``, ``SeedSequence``, ``BitGenerator``) is
-      passed to :func:`numpy.random.default_rng`.
-    - ``None`` resolves to ``default_rng(DEFAULT_SEED)`` — deterministic by
-      default, unlike the SPM/MATH/RISK/BAYES variants which draw fresh
-      entropy for ``None``.
+    Parameters
+    ----------
+    seed:
+        * ``None`` -- ``default_rng(DEFAULT_SEED)``.
+        * ``int`` / ``numpy.integer`` -- a deterministic generator; equal
+          values give equal streams.
+        * :class:`numpy.random.SeedSequence` or
+          :class:`numpy.random.BitGenerator` -- used directly, the supported
+          way to hand out independent child streams.
+        * :class:`numpy.random.Generator` -- returned unchanged so one
+          generator can be threaded through a pipeline.
+
+    Returns
+    -------
+    numpy.random.Generator
+        A generator instance, never the ``numpy.random`` module.
+
+    Raises
+    ------
+    TypeError
+        If ``seed`` cannot produce a generator (including the legacy
+        ``numpy.random.RandomState`` and the ``numpy.random`` module).
+
+    Examples
+    --------
+    >>> resolve_rng(11).integers(0, 10) == resolve_rng(11).integers(0, 10)
+    True
+    >>> shared = np.random.default_rng(0)
+    >>> resolve_rng(shared) is shared
+    True
     """
     if isinstance(seed, np.random.Generator):
         return seed
-    if isinstance(seed, np.random.RandomState):
-        return np.random.default_rng(int(seed.randint(0, 2**31 - 1)))
-    return np.random.default_rng(DEFAULT_SEED if seed is None else seed)
+    if seed is None:
+        return np.random.default_rng(DEFAULT_SEED)
+    if isinstance(
+        seed, (int, np.integer, np.random.SeedSequence, np.random.BitGenerator)
+    ):
+        return np.random.default_rng(seed)
+    raise TypeError(
+        "seed must be None, an int, a SeedSequence, a BitGenerator or a "
+        f"Generator; got {type(seed).__name__}"
+    )
 
 
-def resolve_optional_rng(
-    rng: SeedLike | np.random.Generator | None,
-) -> np.random.Generator | None:
-    """Return ``None`` when ``rng`` is ``None``, else :func:`resolve_rng`.
+def resolve_optional_rng(seed: SeedLike) -> np.random.Generator | None:
+    """Return ``None`` for ``None``, else :func:`resolve_rng`.
 
-    For call sites where absence of an RNG means "take the deterministic
-    non-stochastic branch" rather than "use the default seed".
+    For call sites where an absent RNG selects a deterministic,
+    non-stochastic branch rather than the default seed.
     """
-    return None if rng is None else resolve_rng(rng)
+    return None if seed is None else resolve_rng(seed)
+
+
+def spawn_rng(seed: SeedLike, n: int) -> list[np.random.Generator]:
+    """Return ``n`` statistically independent generators derived from ``seed``.
+
+    Uses :meth:`numpy.random.SeedSequence.spawn`, the supported mechanism for
+    splitting one seed into non-overlapping streams (unlike ``seed``,
+    ``seed + 1``, ... which carries no independence guarantee).
+
+    Raises
+    ------
+    ValueError
+        If ``n`` is negative.
+    """
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    entropy = int(resolve_rng(seed).integers(0, 2**63 - 1, dtype=np.int64))
+    return [
+        np.random.default_rng(child)
+        for child in np.random.SeedSequence(entropy).spawn(n)
+    ]
+
+
+def derive_int_seed(seed: SeedLike = None) -> int:
+    """Derive a plain ``int`` seed in ``[0, 2**32)`` from any seed-like value.
+
+    Use at boundaries (scikit-learn ``random_state``, some SciPy routines)
+    that accept only integers. Passing a ``Generator`` advances it, so
+    repeated calls on one generator give distinct downstream seeds.
+    """
+    return int(resolve_rng(seed).integers(0, 2**32, dtype=np.int64))

@@ -562,3 +562,40 @@ def test_import_smoke_strict_promotes_failures_to_errors(tmp_path, monkeypatch):
     assert len(report.errors) == 1
     assert not report.warnings
     assert "timed out" in report.errors[0]
+
+
+def _write_rng_helper(root, module: str, body: str) -> None:
+    package = root / f"GEO-INFER-{module}" / "src" / f"geo_infer_{module.lower()}"
+    (package / "utils").mkdir(parents=True)
+    (package / "utils" / "rng.py").write_text(body)
+
+
+def test_rng_helper_parity_allows_docstring_and_default_seed_drift(
+    tmp_path, monkeypatch
+):
+    contracts = load_contracts_module()
+    monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
+    shared = "def resolve_rng(seed=None):\n    return seed\n"
+    _write_rng_helper(
+        tmp_path, "AAA", '"""A."""\nDEFAULT_SEED: int | None = None\n' + shared
+    )
+    _write_rng_helper(
+        tmp_path, "BBB", '"""B."""\nDEFAULT_SEED: int | None = 0\n' + shared
+    )
+    report = contracts.ContractReport()
+
+    contracts.validate_rng_helper_parity(report)
+
+    assert report.errors == []
+
+
+def test_rng_helper_parity_rejects_behavioral_drift(tmp_path, monkeypatch):
+    contracts = load_contracts_module()
+    monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
+    _write_rng_helper(tmp_path, "AAA", "def resolve_rng(seed=None):\n    return seed\n")
+    _write_rng_helper(tmp_path, "BBB", "def resolve_rng(seed=None):\n    return None\n")
+    report = contracts.ContractReport()
+
+    contracts.validate_rng_helper_parity(report)
+
+    assert any("GEO-INFER-BBB" in error for error in report.errors)

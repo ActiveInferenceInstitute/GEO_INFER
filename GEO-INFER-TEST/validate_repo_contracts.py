@@ -375,6 +375,47 @@ def validate_pyproject_only_packaging(
                 )
 
 
+def _rng_helper_signature(path: Path) -> str:
+    """Return the AST of an rng helper minus its docstring and DEFAULT_SEED."""
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    body = [
+        node
+        for index, node in enumerate(tree.body)
+        if not (
+            index == 0
+            and isinstance(node, ast.Expr)
+            and isinstance(node.value, ast.Constant)
+        )
+        and not (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "DEFAULT_SEED"
+        )
+    ]
+    return ast.dump(ast.Module(body=body, type_ignores=[]))
+
+
+def validate_rng_helper_parity(report: ContractReport) -> None:
+    """Keep every ``geo_infer_*/utils/rng.py`` on one shared implementation.
+
+    Modules stay independently installable, so the helper is vendored rather
+    than imported across packages; only the module docstring and
+    ``DEFAULT_SEED`` may differ between copies.
+    """
+    helpers = sorted(REPO_ROOT.glob("GEO-INFER-*/src/geo_infer_*/utils/rng.py"))
+    if len(helpers) < 2:
+        return
+    reference = helpers[0]
+    expected = _rng_helper_signature(reference)
+    for helper in helpers[1:]:
+        if _rng_helper_signature(helper) != expected:
+            report.error(
+                f"{helper.relative_to(REPO_ROOT)}: rng helper diverges from "
+                f"{reference.relative_to(REPO_ROOT)}; only the docstring and "
+                "DEFAULT_SEED may differ"
+            )
+
+
 def validate_python_source_syntax(report: ContractReport) -> None:
     """Fail fast on any syntax errors in module source and examples."""
     source_files = [
@@ -867,6 +908,7 @@ def main() -> int:
     validate_test_inventory(module_dirs, report)
     validate_pyproject_only_packaging(module_dirs, report)
     validate_python_source_syntax(report)
+    validate_rng_helper_parity(report)
     validate_no_concrete_pass_bodies(report)
     validate_runtime_metadata(module_dirs, report)
     validate_python_tool_targets(report)

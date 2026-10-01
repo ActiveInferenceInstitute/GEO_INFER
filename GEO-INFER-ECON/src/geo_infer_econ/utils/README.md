@@ -20,6 +20,8 @@ Utils workspace within `GEO-INFER-ECON`.
 - `indicators.py:EconomicIndicators` (class)
 - `rng.py:resolve_rng` (function)
 - `rng.py:resolve_optional_rng` (function)
+- `rng.py:spawn_rng` (function)
+- `rng.py:derive_int_seed` (function)
 - `validator.py:ModelValidator` (class)
 - `visualizer.py:ResultsVisualizer` (class)
 

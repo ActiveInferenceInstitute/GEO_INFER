@@ -60,21 +60,11 @@ class TestResolveRng:
         b = resolve_rng(np.random.PCG64(5)).random()
         assert a == b
 
-    def test_random_state_bridge_is_deterministic(self) -> None:
-        """A legacy RandomState still yields a reproducible generator."""
-        a = resolve_rng(np.random.RandomState(4)).random()
-        b = resolve_rng(np.random.RandomState(4)).random()
-        assert a == b
-
-    def test_random_state_bridge_advances_the_caller_state(self) -> None:
-        """The seed is drawn from the state, so successive calls differ."""
-        state = np.random.RandomState(4)
-        assert resolve_rng(state).random() != resolve_rng(state).random()
-
-    def test_the_numpy_random_module_warns_and_is_replaced(self) -> None:
-        with pytest.warns(RuntimeWarning, match="numpy.random module"):
-            generator = resolve_rng(np.random)
-        assert isinstance(generator, np.random.Generator)
+    @pytest.mark.parametrize("legacy", [np.random.RandomState(4), np.random])
+    def test_legacy_numpy_random_objects_are_rejected(self, legacy: object) -> None:
+        """RandomState and the numpy.random module are not seed forms."""
+        with pytest.raises(TypeError, match="seed must be"):
+            resolve_rng(legacy)
 
     @pytest.mark.parametrize("bad", ["abc", 1.5, [1, 2], {"seed": 1}])
     def test_unusable_seeds_are_rejected(self, bad: object) -> None:

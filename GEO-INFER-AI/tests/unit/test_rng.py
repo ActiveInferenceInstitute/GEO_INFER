@@ -81,21 +81,12 @@ class TestResolveRngSeedForms:
         assert a == b
 
 
-class TestResolveRngRandomStateBridge:
-    def test_bridge_is_deterministic_from_equal_states(self) -> None:
-        """Equal legacy states seed equal fresh Generators."""
-        a = resolve_rng(np.random.RandomState(4)).random()
-        b = resolve_rng(np.random.RandomState(4)).random()
-        assert a == b
-
-    def test_bridge_draws_from_the_caller_state(self) -> None:
-        """The seed comes from the state, so successive calls differ."""
-        state = np.random.RandomState(4)
-        assert resolve_rng(state).random() != resolve_rng(state).random()
-
-    def test_bridge_returns_a_generator_not_a_random_state(self) -> None:
-        resolved = resolve_rng(np.random.RandomState(4))
-        assert isinstance(resolved, np.random.Generator)
+class TestResolveRngRejectsLegacyState:
+    @pytest.mark.parametrize("legacy", [np.random.RandomState(4), np.random])
+    def test_legacy_numpy_random_objects_are_rejected(self, legacy: object) -> None:
+        """RandomState and the numpy.random module are not seed forms."""
+        with pytest.raises(TypeError, match="seed must be"):
+            resolve_rng(legacy)
 
 
 class TestUtilsExports:
