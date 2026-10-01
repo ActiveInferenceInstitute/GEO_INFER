@@ -10,11 +10,11 @@ import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -44,7 +44,7 @@ def tmp_output_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def gp_kernel_config() -> Dict[str, Any]:
+def gp_kernel_config() -> dict[str, Any]:
     """Gaussian Process kernel configuration for spatial modeling.
 
     Specifies a squared exponential (RBF) kernel with a length scale
@@ -85,7 +85,7 @@ def mcmc_samples() -> np.ndarray:
 
 
 @pytest.fixture
-def prior_params() -> Dict[str, Any]:
+def prior_params() -> dict[str, Any]:
     """Prior distribution parameters for Bayesian models.
 
     Specifies normal priors for regression coefficients and

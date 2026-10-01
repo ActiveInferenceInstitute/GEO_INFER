@@ -10,7 +10,7 @@ import logging
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-from typing import Union, Dict, Any, Optional, Tuple, cast
+from typing import Any, cast
 from shapely.geometry import Point
 from scipy.spatial.distance import pdist, squareform
 from scipy.stats import zscore
@@ -31,7 +31,7 @@ except ImportError:
 def spatial_interpolation(
     points_gdf: gpd.GeoDataFrame,
     value_column: str,
-    grid_bounds: Tuple[float, float, float, float],
+    grid_bounds: tuple[float, float, float, float],
     grid_resolution: float,
     method: str = "idw",
     **kwargs: Any,
@@ -184,7 +184,7 @@ def clustering_analysis(
 
 def hotspot_detection(
     points_gdf: gpd.GeoDataFrame,
-    value_column: Optional[str] = None,
+    value_column: str | None = None,
     method: str = "getis_ord",
     **kwargs: Any,
 ) -> gpd.GeoDataFrame:
@@ -220,7 +220,7 @@ def hotspot_detection(
 
 def spatial_autocorrelation(
     points_gdf: gpd.GeoDataFrame, value_column: str, method: str = "morans_i"
-) -> Dict[str, Union[float, str]]:
+) -> dict[str, float | str]:
     """
     Calculate global spatial autocorrelation statistics.
 
@@ -317,7 +317,7 @@ def spatial_autocorrelation(
 def variogram_analysis(
     points_gdf: gpd.GeoDataFrame,
     value_column: str,
-    max_distance: Optional[float] = None,
+    max_distance: float | None = None,
     n_lags: int = 15,
 ) -> pd.DataFrame:
     """
@@ -405,7 +405,7 @@ def variogram_analysis(
 
 def _getis_ord_gi_star(
     points_gdf: gpd.GeoDataFrame,
-    value_column: Optional[str],
+    value_column: str | None,
     distance_threshold: float = 1000,
 ) -> gpd.GeoDataFrame:
     """Calculate Getis-Ord Gi* statistic for hotspot detection."""
@@ -471,7 +471,7 @@ def _getis_ord_gi_star(
 
 def _local_morans_i(
     points_gdf: gpd.GeoDataFrame,
-    value_column: Optional[str],
+    value_column: str | None,
     distance_threshold: float = 1000,
 ) -> gpd.GeoDataFrame:
     """Calculate Local Moran's I for hotspot detection."""

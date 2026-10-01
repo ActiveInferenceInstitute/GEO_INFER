@@ -46,7 +46,8 @@ limitations programmatically.
 """
 
 import numpy as np
-from typing import List, Tuple, Dict, Optional, Any, Callable
+from typing import Any
+from collections.abc import Callable
 import logging
 import warnings
 import ast
@@ -100,7 +101,7 @@ class SymbolicMath:
         """
         self.backend = backend
         self._engine: Any = None
-        self._symbols: Dict[str, Any] = {}
+        self._symbols: dict[str, Any] = {}
 
         try:
             if backend == "sympy":
@@ -157,11 +158,11 @@ class SymbolicMath:
         self.Matrix = self._numpy_matrix
         self.Function = self._numpy_function
 
-    def _numpy_symbol(self, name: str) -> Dict[str, Any]:
+    def _numpy_symbol(self, name: str) -> dict[str, Any]:
         """Create a numpy-based symbolic symbol."""
         return {"type": "symbol", "name": name}
 
-    def _numpy_symbols(self, *names: str) -> List[Dict[str, Any]]:
+    def _numpy_symbols(self, *names: str) -> list[dict[str, Any]]:
         """Create multiple numpy-based symbolic symbols."""
         return [self._numpy_symbol(name) for name in names]
 
@@ -218,7 +219,7 @@ class SymbolicMath:
         return {"type": "derivative", "expression": expr, "variable": var, "order": 1}
 
     def _numpy_lambdify(
-        self, expr: Any, variable_names: List[str]
+        self, expr: Any, variable_names: list[str]
     ) -> Callable[..., float]:
         """Convert an expression into a numeric function for the numpy backend.
 
@@ -232,7 +233,7 @@ class SymbolicMath:
         if callable(expr):
             return expr
 
-        expression_str: Optional[str] = None
+        expression_str: str | None = None
         if isinstance(expr, str):
             expression_str = expr
         elif isinstance(expr, dict):
@@ -285,7 +286,7 @@ class SymbolicMath:
         result, _abserr = quad(_integrand, float(lower), float(upper))
         return float(result)
 
-    def _numpy_solve(self, expr: Any, var: Any) -> Dict[str, float]:
+    def _numpy_solve(self, expr: Any, var: Any) -> dict[str, float]:
         """Solve a linear system numerically with np.linalg.solve.
 
         ``expr`` is a single equation or a list of equations (strings such as
@@ -309,9 +310,9 @@ class SymbolicMath:
         ]
         variable_symbols = [sp.Symbol(name) for name in variable_names]
 
-        parsed_equations: List[Any] = []
+        parsed_equations: list[Any] = []
         for item in equation_items:
-            text: Optional[str] = None
+            text: str | None = None
             if isinstance(item, str):
                 text = item
             elif isinstance(item, dict) and isinstance(item.get("string"), str):
@@ -382,16 +383,16 @@ class SymbolicMath:
         """Create a numeric matrix using numpy."""
         return np.array(data)
 
-    def _numpy_function(self, name: str) -> Dict[str, Any]:
+    def _numpy_function(self, name: str) -> dict[str, Any]:
         """Create a callable descriptor for a named numpy-backend function."""
         return {"type": "function", "name": name}
 
     def define_spatial_model(
         self,
-        variables: List[str],
-        equations: List[str],
-        constraints: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        variables: list[str],
+        equations: list[str],
+        constraints: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Define a symbolic spatial model.
 
@@ -441,7 +442,7 @@ class SymbolicMath:
             "backend": self.backend,
         }
 
-    def _parse_equation(self, equation: str, symbols: List[Any]) -> Any:
+    def _parse_equation(self, equation: str, symbols: list[Any]) -> Any:
         """Parse an equation string into symbolic form."""
         if self.backend in ["sympy", "symengine"]:
             # Use the actual symbolic engine
@@ -454,7 +455,7 @@ class SymbolicMath:
             # Numpy backend
             return {"type": "equation", "string": equation}
 
-    def _parse_constraint(self, constraint: str, symbols: List[Any]) -> Any:
+    def _parse_constraint(self, constraint: str, symbols: list[Any]) -> Any:
         """Parse a constraint string."""
         if self.backend in ["sympy", "symengine"]:
             return self._engine.sympify(constraint)
@@ -462,8 +463,8 @@ class SymbolicMath:
             return {"type": "constraint", "string": constraint}
 
     def compute_gradients(
-        self, model: Dict[str, Any], parameters: List[str]
-    ) -> Dict[str, Any]:
+        self, model: dict[str, Any], parameters: list[str]
+    ) -> dict[str, Any]:
         """
         Compute gradients of model equations with respect to parameters.
 
@@ -474,7 +475,7 @@ class SymbolicMath:
         Returns:
             Dictionary of gradients
         """
-        gradients: Dict[str, Any] = {}
+        gradients: dict[str, Any] = {}
 
         for param in parameters:
             try:
@@ -509,11 +510,11 @@ class SymbolicMath:
 
     def optimize_symbolic_model(
         self,
-        model: Dict[str, Any],
+        model: dict[str, Any],
         objective: str,
-        parameters: List[str],
-        bounds: Optional[Dict[str, Tuple[float, float]]] = None,
-    ) -> Dict[str, Any]:
+        parameters: list[str],
+        bounds: dict[str, tuple[float, float]] | None = None,
+    ) -> dict[str, Any]:
         """
         Optimize a symbolic model.
 
@@ -628,7 +629,7 @@ class SymbolicMath:
         coordinates: np.ndarray,
         values: np.ndarray,
         relationship_type: str = "polynomial",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Derive symbolic relationships between spatial coordinates and values.
 
@@ -693,8 +694,8 @@ class SymbolicMath:
             }
 
     def create_symbolic_spatial_field(
-        self, domain: Dict[str, float], expression: str, variables: List[str]
-    ) -> Dict[str, Any]:
+        self, domain: dict[str, float], expression: str, variables: list[str]
+    ) -> dict[str, Any]:
         """
         Create a symbolic spatial field.
 
@@ -736,7 +737,7 @@ class SymbolicMath:
             return {"expression": None, "error": str(e), "backend": self.backend}
 
     def evaluate_symbolic_expression(
-        self, expression: Any, variable_values: Dict[str, float]
+        self, expression: Any, variable_values: dict[str, float]
     ) -> float:
         """
         Evaluate a symbolic expression with given variable values.
@@ -787,8 +788,8 @@ class SymbolicMath:
             return np.nan
 
     def differentiate_spatially(
-        self, expression: Any, variables: List[str]
-    ) -> Dict[str, Any]:
+        self, expression: Any, variables: list[str]
+    ) -> dict[str, Any]:
         """
         Compute spatial derivatives of an expression.
 
@@ -820,9 +821,9 @@ class SymbolicMath:
     def integrate_spatially(
         self,
         expression: Any,
-        variables: List[str],
-        limits: Dict[str, Tuple[float, float]],
-    ) -> Dict[str, Any]:
+        variables: list[str],
+        limits: dict[str, tuple[float, float]],
+    ) -> dict[str, Any]:
         """
         Compute spatial integrals of an expression.
 
@@ -856,8 +857,8 @@ class SymbolicMath:
         return integrals
 
     def solve_spatial_equations(
-        self, equations: List[Any], variables: List[str]
-    ) -> Dict[str, Any]:
+        self, equations: list[Any], variables: list[str]
+    ) -> dict[str, Any]:
         """
         Solve systems of spatial equations.
 
@@ -892,7 +893,7 @@ class SymbolicMath:
             logger.error(f"Error solving spatial equations: {e}")
             return {"solutions": None, "error": str(e), "backend": self.backend}
 
-    def get_backend_info(self) -> Dict[str, Any]:
+    def get_backend_info(self) -> dict[str, Any]:
         """
         Get information about the symbolic math backend.
 
@@ -921,8 +922,8 @@ class SymbolicMath:
         }
 
     def generate_proof(
-        self, expression: Any, operation: str, result: Optional[Any] = None
-    ) -> Optional[Dict[str, Any]]:
+        self, expression: Any, operation: str, result: Any | None = None
+    ) -> dict[str, Any] | None:
         """
         Generate proof for a symbolic operation.
 
@@ -977,7 +978,7 @@ class SymbolicMath:
 
     def improved_differentiate(
         self, expression: Any, variable: Any, order: int = 1, verify: bool = False
-    ) -> Tuple[Any, Optional[Dict[str, Any]]]:
+    ) -> tuple[Any, dict[str, Any] | None]:
         """
         Improved automatic differentiation with optional proof generation.
 
@@ -1005,8 +1006,8 @@ class SymbolicMath:
         return derivative, proof_info
 
     def verify_spatial_model(
-        self, model: Dict[str, Any], constraints: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        self, model: dict[str, Any], constraints: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         Verify a spatial model using theorem proving.
 
@@ -1041,9 +1042,9 @@ class SymbolicMath:
     def symbolic_to_numeric_with_proof(
         self,
         expression: Any,
-        variable_values: Dict[str, float],
+        variable_values: dict[str, float],
         preserve_proof: bool = True,
-    ) -> Tuple[float, Optional[Dict[str, Any]]]:
+    ) -> tuple[float, dict[str, Any] | None]:
         """
         Convert symbolic expression to numeric with proof preservation.
 
@@ -1078,16 +1079,16 @@ def create_symbolic_math_engine(backend: str = "sympy") -> SymbolicMath:
 
 
 def define_spatial_model(
-    variables: List[str], equations: List[str], constraints: Optional[List[str]] = None
-) -> Dict[str, Any]:
+    variables: list[str], equations: list[str], constraints: list[str] | None = None
+) -> dict[str, Any]:
     """Define a symbolic spatial model."""
     engine = SymbolicMath()
     return engine.define_spatial_model(variables, equations, constraints)
 
 
 def compute_spatial_gradients(
-    model: Dict[str, Any], parameters: List[str]
-) -> Dict[str, Any]:
+    model: dict[str, Any], parameters: list[str]
+) -> dict[str, Any]:
     """Compute gradients of spatial model."""
     engine = SymbolicMath()
     return engine.compute_gradients(model, parameters)

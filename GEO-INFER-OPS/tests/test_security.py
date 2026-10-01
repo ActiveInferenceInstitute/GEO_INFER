@@ -2,7 +2,7 @@
 Tests for security management.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from unittest.mock import patch, mock_open
 
 import pytest
@@ -96,7 +96,7 @@ def test_verify_jwt_token_expired(security_manager):
     payload = {
         "user_id": "test-user",
         "roles": ["admin"],
-        "exp": datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=1),
+        "exp": datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=1),
     }
     token = jwt.encode(payload, TEST_JWT_SECRET, algorithm="HS256")
 
@@ -173,7 +173,7 @@ def test_security_disabled(security_manager):
 
 def test_load_keys_failure(security_manager):
     """Test key loading failure."""
-    with patch("builtins.open", side_effect=IOError("File not found")):
+    with patch("builtins.open", side_effect=OSError("File not found")):
         with pytest.raises(Exception):
             security_manager._load_keys()
 

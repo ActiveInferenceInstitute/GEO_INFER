@@ -13,7 +13,7 @@ import hashlib
 import os
 import time
 import logging
-from typing import Dict, List, Optional, Tuple, Any, cast
+from typing import Any, cast
 from datetime import datetime
 from pathlib import Path
 
@@ -51,12 +51,12 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
 
     def __init__(
         self,
-        modules: Dict[str, Any],
+        modules: dict[str, Any],
         resolution: int = 8,
         bioregion: str = "Cascadia",
-        target_counties: Optional[Dict[str, List[str]]] = None,
-        base_data_dir: Optional[Path] = None,
-        osc_repo_dir: Optional[str] = None,
+        target_counties: dict[str, list[str]] | None = None,
+        base_data_dir: Path | None = None,
+        osc_repo_dir: str | None = None,
         enable_caching: bool = True,
     ) -> None:
         """
@@ -118,10 +118,10 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
         self.cascadia_config = self._load_cascadia_config()
 
         # Enhanced data structures
-        self.spatial_analysis_results: Dict[str, Any] = {}
-        self.h3_spatial_correlations: Dict[str, Any] = {}
-        self.hotspot_analysis: Dict[str, Any] = {}
-        self.redevelopment_scores: Dict[str, Any] = {}
+        self.spatial_analysis_results: dict[str, Any] = {}
+        self.h3_spatial_correlations: dict[str, Any] = {}
+        self.hotspot_analysis: dict[str, Any] = {}
+        self.redevelopment_scores: dict[str, Any] = {}
 
         # Add Cascadia-specific initialization here
         self.target_hexagons_by_state, self.target_hexagons = (
@@ -140,7 +140,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
             "SPACE integration: Spatial processor, data integrator, and visualization engine available"
         )
 
-    def _load_cascadia_config(self) -> Dict[str, Any]:
+    def _load_cascadia_config(self) -> dict[str, Any]:
         """Load the tracked Cascadia configuration required by the backend."""
         import yaml
 
@@ -180,7 +180,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
         logger.info("Cascadia configuration loaded from %s", config_path)
         return config
 
-    def _get_cache_key(self, target_counties: Dict[str, List[str]]) -> str:
+    def _get_cache_key(self, target_counties: dict[str, list[str]]) -> str:
         """Generate a cache key based on target counties and resolution."""
         cache_data = {
             "target_counties": target_counties,
@@ -192,7 +192,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
 
     def _load_from_cache(
         self, cache_key: str
-    ) -> Optional[Tuple[Dict[str, Dict[str, Any]], List[str]]]:
+    ) -> tuple[dict[str, dict[str, Any]], list[str]] | None:
         """Load county geometries and hexagons from cache."""
         if not self.cache_dir:
             return None
@@ -204,11 +204,11 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
 
         try:
             logger.info(f"Loading region data from cache: {cache_file}")
-            with open(cache_file, "r") as f:
+            with open(cache_file) as f:
                 cache_data = json.load(f)
 
             # Reconstruct geometries from GeoJSON
-            county_geoms: Dict[str, Dict[str, Any]] = {}
+            county_geoms: dict[str, dict[str, Any]] = {}
             for state, counties in cache_data["county_geoms"].items():
                 county_geoms[state] = {}
                 for county, geom_data in counties.items():
@@ -225,8 +225,8 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
     def _save_to_cache(
         self,
         cache_key: str,
-        county_geoms: Dict[str, Any],
-        hexagons: List[str],
+        county_geoms: dict[str, Any],
+        hexagons: list[str],
     ) -> None:
         """Save county geometries and hexagons to cache."""
         if not self.cache_dir:
@@ -236,7 +236,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
 
         try:
             # Convert geometries to GeoJSON for serialization
-            serializable_geoms: Dict[str, Any] = {}
+            serializable_geoms: dict[str, Any] = {}
 
             # Handle case where county_geoms might be a list or have unexpected structure
             if isinstance(county_geoms, dict):
@@ -282,8 +282,8 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
             logger.debug(f"Cache error details: {traceback.format_exc()}")
 
     def _define_target_region_cached(
-        self, target_counties: Optional[Dict[str, List[str]]] = None
-    ) -> Tuple[Any, List[str]]:
+        self, target_counties: dict[str, list[str]] | None = None
+    ) -> tuple[Any, list[str]]:
         """
         Define target region with caching support.
 
@@ -314,8 +314,8 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
         return county_geoms, all_hexagons
 
     def _define_target_region(
-        self, target_counties: Optional[Dict[str, List[str]]] = None
-    ) -> Tuple[Dict[str, List[str]], List[str]]:
+        self, target_counties: dict[str, list[str]] | None = None
+    ) -> tuple[dict[str, list[str]], list[str]]:
         """
         Define the target region based on county geometries.
 
@@ -335,7 +335,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
             )
             return {}, []
 
-        hexagons_by_state: Dict[str, set] = {
+        hexagons_by_state: dict[str, set] = {
             state: set() for state in county_geoms.keys()
         }
 
@@ -501,8 +501,8 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
         return final_hex_by_state, final_all_hexagons
 
     def _get_county_geometries(
-        self, target_counties: Optional[Dict[str, List[str]]]
-    ) -> Dict[str, Dict[str, Any]]:
+        self, target_counties: dict[str, list[str]] | None
+    ) -> dict[str, dict[str, Any]]:
         """
         Enhanced county geometry loading with county boundary loader.
         Falls back to baseline bounding boxes if the loader is not available.
@@ -538,7 +538,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
                     logger.info(
                         "Successfully loaded county geometries using boundary loader"
                     )
-                    return cast(Dict[str, Dict[str, Any]], county_geometries)
+                    return cast(dict[str, dict[str, Any]], county_geometries)
             except ImportError:
                 logger.warning(
                     "county_boundary_loader not found, trying alternative methods"
@@ -563,7 +563,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
                                     / f"{state.lower()}_counties_boundary.geojson"
                                 )
                                 if state_file.exists():
-                                    with open(state_file, "r") as f:
+                                    with open(state_file) as f:
                                         geojson_data = json.load(f)
 
                                     if geojson_data.get("type") == "FeatureCollection":
@@ -589,7 +589,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
                                     / f"{state.lower()}_{county.lower()}_boundary.geojson"
                                 )
                                 if county_file.exists():
-                                    with open(county_file, "r") as f:
+                                    with open(county_file) as f:
                                         geojson_data = json.load(f)
 
                                     if geojson_data.get("type") == "FeatureCollection":
@@ -623,7 +623,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
                 try:
                     lassen_file = config_dir / "ca_lassen_boundary.geojson"
                     if lassen_file.exists():
-                        with open(lassen_file, "r") as f:
+                        with open(lassen_file) as f:
                             geojson_data = json.load(f)
 
                         if "CA" not in county_geometries:
@@ -659,7 +659,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
             return self._create_bounding_box_geometries(target_counties)
 
     # Known county bounding boxes from US Census TIGER/Line data.
-    _COUNTY_BOUNDS: Dict[str, Dict[str, Tuple[float, float, float, float]]] = {
+    _COUNTY_BOUNDS: dict[str, dict[str, tuple[float, float, float, float]]] = {
         "CA": {
             "Del Norte": (-124.4098, 41.4652, -123.4344, 42.0095),
             "Humboldt": (-124.4084, 40.0016, -123.4054, 41.4695),
@@ -673,15 +673,15 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
         "WA": {},  # populated on demand
     }
     # State-level bounding boxes
-    _STATE_BOUNDS: Dict[str, Tuple[float, float, float, float]] = {
+    _STATE_BOUNDS: dict[str, tuple[float, float, float, float]] = {
         "CA": (-124.482, 32.528, -114.131, 42.009),
         "OR": (-124.567, 41.992, -116.463, 46.292),
         "WA": (-124.849, 45.544, -116.916, 49.002),
     }
 
     def _create_bounding_box_geometries(
-        self, target_counties: Dict[str, List[str]]
-    ) -> Dict[str, Dict[str, Any]]:
+        self, target_counties: dict[str, list[str]]
+    ) -> dict[str, dict[str, Any]]:
         """Create county boundary geometries from US Census TIGER bounding boxes.
 
         Uses precise bounding-box coordinates from the TIGER/Line
@@ -690,7 +690,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
         """
         logger.info("Creating boundary geometries from TIGER data...")
 
-        result: Dict[str, Dict[str, Any]] = {}
+        result: dict[str, dict[str, Any]] = {}
         for state, counties in target_counties.items():
             if counties == ["all"] or "all" in counties:
                 bounds = self._STATE_BOUNDS.get(state)
@@ -740,8 +740,8 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
         logger.info(
             "Starting enhanced comprehensive analysis with SPACE integration..."
         )
-        module_results: Dict[str, Any] = {}
-        data_acquisition_stats: Dict[str, Any] = {}
+        module_results: dict[str, Any] = {}
+        data_acquisition_stats: dict[str, Any] = {}
 
         for name, module in self.modules.items():
             logger.info(
@@ -749,7 +749,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
             )
 
             # Track data acquisition for this module
-            module_stats: Dict[str, Any] = {
+            module_stats: dict[str, Any] = {
                 "raw_data_acquired": False,
                 "h3_data_processed": 0,
                 "final_analysis_completed": False,
@@ -915,7 +915,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
             logger.info(
                 "📊 Spatial correlations disabled for performance - skipping calculation"
             )
-            self.spatial_correlations: Dict[str, Any] = {}
+            self.spatial_correlations: dict[str, Any] = {}
 
         except Exception as e:
             logger.warning(f"⚠️ Spatial correlation analysis failed: {e}")
@@ -1024,12 +1024,12 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
         except Exception as e:
             logger.error(f"❌ Spatial relationship analysis failed: {e}")
 
-    def _aggregate_module_results(self, results: Dict[str, Any]) -> None:
+    def _aggregate_module_results(self, results: dict[str, Any]) -> None:
         """Enhanced aggregation with SPACE H3 utilities"""
         logger.info("Aggregating results from all modules using SPACE utilities...")
 
         for hexagon in self.target_hexagons:
-            hex_data: Dict[str, Any] = {"hex_id": hexagon}
+            hex_data: dict[str, Any] = {"hex_id": hexagon}
 
             # Add geometry and metadata using SPACE utilities
             try:
@@ -1054,7 +1054,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
             f"✅ Aggregated data for {len(self.target_hexagons)} hexagons from {len(results)} modules using SPACE utilities."
         )
 
-    def calculate_agricultural_redevelopment_potential(self) -> Dict[str, Dict]:
+    def calculate_agricultural_redevelopment_potential(self) -> dict[str, dict]:
         """
         Enhanced redevelopment score calculation with SPACE integration.
 
@@ -1116,8 +1116,8 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
         return self.redevelopment_scores
 
     def _calculate_spatial_context(
-        self, h3_index: str, scores: Dict[str, float]
-    ) -> Dict[str, Any]:
+        self, h3_index: str, scores: dict[str, float]
+    ) -> dict[str, Any]:
         """Calculate spatial context for a hexagon using SPACE utilities"""
         try:
             # Get neighboring hexagons
@@ -1170,7 +1170,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
             return "unknown_cluster"
 
     def _adjust_score_with_spatial_context(
-        self, base_score: float, spatial_context: Dict[str, Any]
+        self, base_score: float, spatial_context: dict[str, Any]
     ) -> float:
         """Adjust score based on spatial context"""
         try:
@@ -1194,7 +1194,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
             return base_score
 
     # Enhanced scoring helper methods with SPACE integration
-    def _score_zoning(self, data: Dict) -> float:
+    def _score_zoning(self, data: dict) -> float:
         """Enhanced zoning scoring with spatial considerations"""
         if not data:
             return 0.1
@@ -1205,7 +1205,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
             score += 0.4
         return min(1.0, score)
 
-    def _score_current_use(self, data: Dict) -> float:
+    def _score_current_use(self, data: dict) -> float:
         """Enhanced current use scoring"""
         if not data:
             return 0.1
@@ -1217,7 +1217,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
         score = (1.0 - intensity) * 0.6 + (min(diversity, 5) / 5.0) * 0.4
         return min(1.0, float(score))
 
-    def _score_water(self, surface: Dict, ground: Dict) -> float:
+    def _score_water(self, surface: dict, ground: dict) -> float:
         """Enhanced water scoring with spatial water availability"""
         if not surface and not ground:
             return 0.1
@@ -1229,31 +1229,31 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
         score = surface_score * 0.6 + ground_score * 0.4
         return min(1.0, score)
 
-    def _score_water_rights(self, data: Dict) -> float:
+    def _score_water_rights(self, data: dict) -> float:
         """Enhanced water rights scoring"""
         return float(data.get("water_security_score", 0.5))
 
-    def _score_infrastructure(self, improvements: Dict, power: Dict) -> float:
+    def _score_infrastructure(self, improvements: dict, power: dict) -> float:
         """Enhanced infrastructure scoring"""
         infra_score = improvements.get("modernization_score", 0) if improvements else 0
         power_score = power.get("grid_reliability_score", 0) if power else 0
         return infra_score * 0.6 + power_score * 0.4
 
-    def _score_ownership(self, data: Dict) -> float:
+    def _score_ownership(self, data: dict) -> float:
         """Enhanced ownership scoring with spatial concentration analysis"""
         if not data:
             return 0.1
         concentration = data.get("ownership_concentration", 0.5)
         return float(1.0 - concentration)
 
-    def _score_mortgage_debt(self, data: Dict) -> float:
+    def _score_mortgage_debt(self, data: dict) -> float:
         """Enhanced mortgage debt scoring"""
         if not data:
             return 0.1
         risk_level = data.get("financial_risk_level", 0.5)
         return float(1.0 - risk_level)
 
-    def get_comprehensive_summary(self) -> Dict[str, Any]:
+    def get_comprehensive_summary(self) -> dict[str, Any]:
         """
         Enhanced comprehensive summary with SPACE integration.
 
@@ -1265,7 +1265,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
 
         scores = [s["composite_score"] for s in self.redevelopment_scores.values()]
 
-        summary: Dict[str, Any] = {
+        summary: dict[str, Any] = {
             "bioregion": self.bioregion,
             "h3_resolution": self.resolution,
             "total_hexagons": len(self.target_hexagons),
@@ -1379,7 +1379,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
             )
         return str(output_path)
 
-    def _export_geojson_enhanced(self, data_to_export: Dict, output_path: str) -> None:
+    def _export_geojson_enhanced(self, data_to_export: dict, output_path: str) -> None:
         """Enhanced GeoJSON export using SPACE utilities"""
         try:
             # Use SPACE H3 utilities for enhanced GeoJSON generation
@@ -1422,7 +1422,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
             # Fall back to basic export
             self._export_geojson(data_to_export, output_path)
 
-    def _export_geojson(self, data_to_export: Dict, output_path: str) -> None:
+    def _export_geojson(self, data_to_export: dict, output_path: str) -> None:
         """Basic GeoJSON export (fallback)"""
         features = []
         for hex_id, properties in data_to_export.items():
@@ -1445,7 +1445,7 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
         with open(output_path, "w") as f:
             json.dump(feature_collection, f, cls=NumpyEncoder)
 
-    def _export_csv(self, data_to_export: Dict, output_path: str) -> None:
+    def _export_csv(self, data_to_export: dict, output_path: str) -> None:
         """Enhanced CSV export with spatial analysis data"""
         # This will flatten the nested dictionary structure
         flat_data = []

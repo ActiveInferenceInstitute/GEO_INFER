@@ -14,7 +14,7 @@ import os
 import yaml
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any
 
 from geo_infer_place.utils.integration import DelNorteDataIntegrator
 from .analyzers import ClimateAnalyzer, ZoningAnalyzer, AgroEconomicAnalyzer
@@ -34,8 +34,8 @@ class AdvancedDashboard:
     def __init__(
         self,
         output_dir: str = "./del_norte_dashboard",
-        api_keys: Optional[Dict[str, str]] = None,
-        layer_config: Optional[Dict[str, Any]] = None,
+        api_keys: dict[str, str] | None = None,
+        layer_config: dict[str, Any] | None = None,
     ):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -58,7 +58,7 @@ class AdvancedDashboard:
         self.layer_configs = LAYER_CONFIGS
 
         # Dashboard state
-        self.dashboard_data: Dict[str, Any] = {}
+        self.dashboard_data: dict[str, Any] = {}
 
         # Initialize layer groups
         self.layer_groups = {
@@ -103,7 +103,7 @@ class AdvancedDashboard:
 
     def _apply_location_bounds(self, config_path: Path) -> None:
         """Apply location.bounds/center from an analysis_config.yaml file."""
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             cfg = yaml.safe_load(f)
         bounds = cfg.get("location", {}).get("bounds", {})
         if all(k in bounds for k in ["north", "south", "east", "west"]):
@@ -113,7 +113,7 @@ class AdvancedDashboard:
             self.county_center = [cy, cx]
             logger.info("Loaded bounds from analysis_config.yaml")
 
-    def fetch_real_time_data(self) -> Dict[str, Any]:
+    def fetch_real_time_data(self) -> dict[str, Any]:
         """Fetch real-time data from all configured sources using the shared integrator."""
         logger.info("Fetching real-time data from California sources...")
 
@@ -126,7 +126,7 @@ class AdvancedDashboard:
         earthquakes = self.data_integrator.usgs_client.get_earthquakes()
         tides = self.data_integrator.noaa_client.get_tide_gauge_data()
 
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "fire_data": fire_incidents,
             "fire_perimeters": (
                 {"success": True, "geojson": fire_perimeters}
@@ -175,7 +175,7 @@ class AdvancedDashboard:
 
         return data
 
-    def _persist_json(self, obj: Dict[str, Any], filename: str) -> None:
+    def _persist_json(self, obj: dict[str, Any], filename: str) -> None:
         """Persist a JSON object into the dashboard output directory."""
         filepath = self.output_dir / filename
         with open(filepath, "w", encoding="utf-8") as f:
@@ -187,7 +187,7 @@ class AdvancedDashboard:
         try:
             perims = sorted(self.output_dir.glob("fire_perimeters_*.geojson"))
             if perims:
-                with open(perims[-1], "r", encoding="utf-8") as f:
+                with open(perims[-1], encoding="utf-8") as f:
                     geojson = json.load(f)
                 self.dashboard_data["fire_perimeters"] = {
                     "success": True,
@@ -196,7 +196,7 @@ class AdvancedDashboard:
 
             tides = sorted(self.output_dir.glob("tide_levels_*.json"))
             if tides:
-                with open(tides[-1], "r", encoding="utf-8") as f:
+                with open(tides[-1], encoding="utf-8") as f:
                     tid = json.load(f)
                 # Reconstruct tide data structure expected by dashboard
                 self.dashboard_data["tide_levels"] = {
@@ -211,7 +211,7 @@ class AdvancedDashboard:
         except Exception as e:
             logger.warning(f"Failed loading cached datasets: {e}")
 
-    def generate_analysis_panels(self) -> Dict[str, str]:
+    def generate_analysis_panels(self) -> dict[str, str]:
         """Generate HTML panels for different analysis components."""
         panels = {}
 
@@ -245,7 +245,7 @@ class AdvancedDashboard:
 
         return panels
 
-    def _create_climate_panel(self, climate_data: Dict, risks: Dict) -> str:
+    def _create_climate_panel(self, climate_data: dict, risks: dict) -> str:
         """Create climate analysis panel HTML."""
         risk_items = ""
         for risk_name, risk_value in risks.items():
@@ -263,7 +263,7 @@ class AdvancedDashboard:
 
         return f'<div style="background: white; padding: 15px; border-radius: 8px; margin: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><h3 style="color: #2c3e50; margin-top: 0;">🌡️ Climate Analysis</h3><div style="margin: 10px 0;"><h4>Climate Risk Assessment</h4>{risk_items}</div><div style="margin: 10px 0;"><h4>Key Insights</h4><ul style="list-style-type: none; padding: 0;"><li>🔥 Fire weather risk is elevated in summer months</li><li>🌊 Coastal flooding risk increasing with sea level rise</li><li>🌡️ Temperature increases affecting forest ecosystems</li><li>💧 Drought risk requires enhanced water management</li></ul></div></div>'
 
-    def _create_zoning_panel(self, zoning_data: Dict) -> str:
+    def _create_zoning_panel(self, zoning_data: dict) -> str:
         """Create zoning analysis panel HTML."""
         zoning_items = ""
         for zone, data in zoning_data["zoning_breakdown"].items():
@@ -271,7 +271,7 @@ class AdvancedDashboard:
 
         return f'<div style="background: white; padding: 15px; border-radius: 8px; margin: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><h3 style="color: #2c3e50; margin-top: 0;">🏘️ Zoning & Land Use</h3><div style="margin: 10px 0;"><h4>Land Use Distribution</h4>{zoning_items}</div><div style="margin: 10px 0;"><h4>Development Insights</h4><ul style="list-style-type: none; padding: 0;"><li>🌲 {zoning_data["zoning_breakdown"]["forest_conservation"]["percentage"]}% in forest conservation</li><li>🚜 Agricultural areas support rural economy</li><li>🏠 Limited residential development pressure</li><li>🛡️ Strong environmental protections in place</li></ul></div></div>'
 
-    def _create_economic_panel(self, economic_data: Dict) -> str:
+    def _create_economic_panel(self, economic_data: dict) -> str:
         """Create economic analysis panel HTML."""
         sector_items = ""
         for sector, data in economic_data["sector_analysis"].items():
@@ -454,7 +454,7 @@ class AdvancedDashboard:
             ).add_to(self.layer_groups["forest"])
 
     def _add_climate_risk_zones(self, m: folium.Map) -> None:
-        zones: List[Dict[str, Any]] = [
+        zones: list[dict[str, Any]] = [
             {
                 "name": "High Fire Risk",
                 "bounds": [
@@ -482,7 +482,7 @@ class AdvancedDashboard:
             ).add_to(self.layer_groups["climate"])
 
     def _add_zoning_overlay(self, m: folium.Map) -> None:
-        areas: List[Dict[str, Any]] = [
+        areas: list[dict[str, Any]] = [
             {
                 "name": "Conservation",
                 "bounds": [
@@ -509,7 +509,7 @@ class AdvancedDashboard:
         ).add_to(self.layer_groups["conservation"])
 
     def _add_economic_indicators(self, m: folium.Map) -> None:
-        centers: List[Dict[str, Any]] = [
+        centers: list[dict[str, Any]] = [
             {"loc": [41.7558, -124.2026], "name": "Crescent City", "emp": 3500}
         ]
         for c in centers:
@@ -522,7 +522,7 @@ class AdvancedDashboard:
             ).add_to(self.layer_groups["economic"])
 
     def _add_emergency_services_layer(self, m: folium.Map) -> None:
-        facilities: List[Dict[str, Any]] = [
+        facilities: list[dict[str, Any]] = [
             {
                 "loc": [41.7586, -124.2031],
                 "name": "Sutter Coast Hospital",
@@ -623,13 +623,13 @@ class AdvancedDashboard:
         """
 
     def generate_dashboard(
-        self, filename: Optional[str] = None, fetch_data: bool = False
+        self, filename: str | None = None, fetch_data: bool = False
     ) -> str:
         """Alias for save_dashboard() — generates HTML without fetching live data by default."""
         return self.save_dashboard(filename=filename, fetch_data=fetch_data)
 
     def save_dashboard(
-        self, filename: Optional[str] = None, fetch_data: bool = True
+        self, filename: str | None = None, fetch_data: bool = True
     ) -> str:
         if filename is None:
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")

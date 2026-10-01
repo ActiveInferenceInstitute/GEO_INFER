@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Active Inference Agent for Geospatial Exploration
@@ -16,7 +15,7 @@ import asyncio
 import numpy as np
 import logging
 import matplotlib.pyplot as plt
-from typing import Dict, List, Any, Tuple
+from typing import Any
 
 from geo_infer_agent.models.active_inference import ActiveInferenceAgent
 
@@ -92,7 +91,7 @@ class GeospatialEnvironment:
 
     def _generate_points_of_interest(
         self, num_points: int
-    ) -> List[Tuple[int, int, float]]:
+    ) -> list[tuple[int, int, float]]:
         """
         Generate points of interest with associated rewards.
 
@@ -110,7 +109,7 @@ class GeospatialEnvironment:
             points.append((x, y, reward))
         return points
 
-    def get_observation(self, position: List[int], obs_radius: int = 2) -> np.ndarray:
+    def get_observation(self, position: list[int], obs_radius: int = 2) -> np.ndarray:
         """
         Get an observation centered on the given position.
 
@@ -149,7 +148,7 @@ class GeospatialEnvironment:
 
         return obs
 
-    def take_action(self, action_idx: int) -> Tuple[np.ndarray, float]:
+    def take_action(self, action_idx: int) -> tuple[np.ndarray, float]:
         """
         Execute an action and return observation and reward.
 
@@ -270,8 +269,8 @@ class GeospatialActiveInferenceAgent(ActiveInferenceAgent):
         self.environment = None
 
     async def _handle_move_action(
-        self, agent, action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent, action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle movement actions in the environment.
 
@@ -310,7 +309,7 @@ class GeospatialActiveInferenceAgent(ActiveInferenceAgent):
             "position": self.environment.agent_position.copy(),
         }
 
-    def _convert_action_index_to_action(self, action_idx: int) -> Dict[str, Any]:
+    def _convert_action_index_to_action(self, action_idx: int) -> dict[str, Any]:
         """Convert action index to action dictionary."""
         action_names = ["move_north", "move_south", "move_east", "move_west", "sample"]
 
@@ -322,7 +321,7 @@ class GeospatialActiveInferenceAgent(ActiveInferenceAgent):
             else "unknown",
         }
 
-    async def explore(self, steps: int) -> List[Dict[str, Any]]:
+    async def explore(self, steps: int) -> list[dict[str, Any]]:
         """
         Run an exploration sequence for a given number of steps.
 

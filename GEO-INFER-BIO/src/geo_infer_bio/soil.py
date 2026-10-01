@@ -17,7 +17,7 @@ import logging
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Any
 import requests
 from urllib.parse import urljoin
 
@@ -33,7 +33,7 @@ class SoilDataIntegrator:
     - Custom soil datasets (CSV/TSV)
     """
 
-    def __init__(self, cache_dir: Optional[str] = None):
+    def __init__(self, cache_dir: str | None = None):
         """
         Initialize soil data integrator.
 
@@ -48,7 +48,7 @@ class SoilDataIntegrator:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         # ISRIC SoilGrids configuration
-        self.soilgrids_config: Dict[str, Any] = {
+        self.soilgrids_config: dict[str, Any] = {
             "base_url": "https://rest.isric.org/soilgrids/v2.0/",
             "properties": {
                 "bdod": "Bulk density of the fine earth fraction",
@@ -79,9 +79,9 @@ class SoilDataIntegrator:
 
     def load_soilgrids_data(
         self,
-        coordinates: List[Tuple[float, float]],
-        properties: List[str],
-        depths: Optional[List[str]] = None,
+        coordinates: list[tuple[float, float]],
+        properties: list[str],
+        depths: list[str] | None = None,
     ) -> "SoilDataset":
         """
         Load ISRIC SoilGrids data for specified coordinates.
@@ -177,8 +177,8 @@ class SoilDataIntegrator:
     def load_custom_soil_data(
         self,
         soil_data_path: str,
-        coordinates: List[Tuple[float, float]],
-        property_columns: Dict[str, str],
+        coordinates: list[tuple[float, float]],
+        property_columns: dict[str, str],
     ) -> "SoilDataset":
         """
         Load custom soil dataset.
@@ -262,8 +262,8 @@ class SoilDataset:
 
     def __init__(
         self,
-        data: Dict[str, Any],
-        coordinates: List[Tuple[float, float]],
+        data: dict[str, Any],
+        coordinates: list[tuple[float, float]],
         data_source: str = "Unknown",
     ):
         """
@@ -303,16 +303,16 @@ class SoilDataset:
         self.properties = sorted(list(properties))
         self.depths = sorted(list(depths))
 
-    def get_properties(self) -> List[str]:
+    def get_properties(self) -> list[str]:
         """Get list of available soil properties."""
         return self.properties
 
-    def get_depths(self) -> List[str]:
+    def get_depths(self) -> list[str]:
         """Get list of available depth intervals."""
         return self.depths
 
     def get_property_data(
-        self, property_name: str, depth: Optional[str] = None
+        self, property_name: str, depth: str | None = None
     ) -> pd.DataFrame:
         """
         Get data for a specific soil property.
@@ -425,7 +425,7 @@ class SoilDataset:
         health_data = []
 
         # Group data by coordinates
-        coord_groups: Dict[Tuple[float, float], Dict[str, Any]] = {}
+        coord_groups: dict[tuple[float, float], dict[str, Any]] = {}
         for key, prop_data in self.data.items():
             for coord_data in prop_data["coordinates"]:
                 coord_key = (coord_data["latitude"], coord_data["longitude"])
@@ -482,7 +482,7 @@ class SoilDataset:
 
         return pd.DataFrame(health_data)
 
-    def export_for_h3_integration(self) -> Dict[str, Any]:
+    def export_for_h3_integration(self) -> dict[str, Any]:
         """
         Export soil data for H3 spatial integration.
 
@@ -491,7 +491,7 @@ class SoilDataset:
         """
         properties_out = self.coordinates
         soil_props = self.properties
-        export_data: Dict[str, Any] = {
+        export_data: dict[str, Any] = {
             "coordinates": properties_out,
             "soil_properties": soil_props,
             "depths": self.depths,

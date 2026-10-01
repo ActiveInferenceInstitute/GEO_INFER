@@ -7,7 +7,7 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import arviz as az
 import pandas as pd
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from ..models.base import BayesianModel
 from ..utils.rng import SeedLike
@@ -41,8 +41,8 @@ class PosteriorAnalysis:
     def __init__(
         self,
         model: "BayesianModel",
-        samples: Union[Dict[str, np.ndarray], xr.Dataset, Any],
-        data: Union[Dict[str, np.ndarray], xr.Dataset, None],
+        samples: dict[str, np.ndarray] | xr.Dataset | Any,
+        data: dict[str, np.ndarray] | xr.Dataset | None,
         method: str,
         n_chains: int = 1,
     ):
@@ -60,7 +60,7 @@ class PosteriorAnalysis:
         else:
             self.arviz_data = samples
 
-    def chain_samples(self) -> Dict[str, np.ndarray]:
+    def chain_samples(self) -> dict[str, np.ndarray]:
         """Return the draws reshaped to ``(chain, draw, ...)``.
 
         Samplers concatenate chains in C order, so reshaping the leading axis
@@ -82,7 +82,7 @@ class PosteriorAnalysis:
         """
         if not isinstance(self.samples, dict):
             raise TypeError("chain_samples requires dict-valued samples")
-        reshaped: Dict[str, np.ndarray] = {}
+        reshaped: dict[str, np.ndarray] = {}
         for name, values in self.samples.items():
             array = np.asarray(values)
             if array.shape[0] % self.n_chains:
@@ -95,9 +95,7 @@ class PosteriorAnalysis:
             )
         return reshaped
 
-    def _convert_to_arviz(
-        self, samples: Union[Dict[str, np.ndarray], xr.Dataset]
-    ) -> Any:
+    def _convert_to_arviz(self, samples: dict[str, np.ndarray] | xr.Dataset) -> Any:
         """Convert samples to ArviZ InferenceData format.
 
         Draws arrive pooled across chains; ArviZ needs an explicit chain axis
@@ -121,7 +119,7 @@ class PosteriorAnalysis:
         # as-is rather than reshaped.
         return az.InferenceData(posterior=samples)
 
-    def summary(self, parameters: Optional[List[str]] = None) -> pd.DataFrame:
+    def summary(self, parameters: list[str] | None = None) -> pd.DataFrame:
         """
         Summarize the posterior distribution.
 
@@ -137,7 +135,7 @@ class PosteriorAnalysis:
         """
         return az.summary(self.arviz_data, var_names=parameters)
 
-    def plot_trace(self, parameters: Optional[List[str]] = None) -> None:
+    def plot_trace(self, parameters: list[str] | None = None) -> None:
         """
         Plot MCMC traces for the posterior samples.
 
@@ -149,7 +147,7 @@ class PosteriorAnalysis:
         az.plot_trace(self.arviz_data, var_names=parameters)
         plt.tight_layout()
 
-    def plot_posterior(self, parameters: Optional[List[str]] = None) -> None:
+    def plot_posterior(self, parameters: list[str] | None = None) -> None:
         """
         Plot posterior distributions.
 
@@ -161,7 +159,7 @@ class PosteriorAnalysis:
         az.plot_posterior(self.arviz_data, var_names=parameters)
         plt.tight_layout()
 
-    def plot_forest(self, parameters: Optional[List[str]] = None) -> None:
+    def plot_forest(self, parameters: list[str] | None = None) -> None:
         """
         Forest plot of posterior distributions.
 
@@ -174,8 +172,8 @@ class PosteriorAnalysis:
         plt.tight_layout()
 
     def plot_spatial_prediction(
-        self, grid: Optional[np.ndarray] = None, uncertainty: bool = True
-    ) -> Tuple[plt.Figure, plt.Axes]:
+        self, grid: np.ndarray | None = None, uncertainty: bool = True
+    ) -> tuple[plt.Figure, plt.Axes]:
         """
         Plot spatial predictions from the posterior.
 
@@ -195,7 +193,7 @@ class PosteriorAnalysis:
 
     def predict(
         self, X_new: np.ndarray, samples: int = 100, return_std: bool = False
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """
         Make predictions at new locations using the posterior.
 
@@ -221,7 +219,7 @@ class PosteriorAnalysis:
 
     def credible_interval(
         self, parameter: str, alpha: float = 0.05
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Compute credible interval for a parameter.
 
@@ -259,7 +257,7 @@ class PosteriorAnalysis:
         return float(lower), float(upper)
 
     def posterior_predictive(
-        self, X: Optional[np.ndarray] = None, samples: int = 100
+        self, X: np.ndarray | None = None, samples: int = 100
     ) -> np.ndarray:
         """
         Generate posterior predictive samples.
@@ -318,11 +316,11 @@ class PosteriorAnalysis:
 
     def predictive_interval(
         self,
-        X: Optional[np.ndarray] = None,
+        X: np.ndarray | None = None,
         level: float = 0.95,
         samples: int = 200,
         random_seed: SeedLike = None,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Posterior predictive interval ``(mean, lower, upper)`` at ``level``.
 

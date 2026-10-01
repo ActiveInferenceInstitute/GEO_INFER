@@ -6,7 +6,7 @@ in the GEO-INFER framework.
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any
 from dataclasses import dataclass
 from urllib.parse import quote
 
@@ -23,9 +23,9 @@ class AgriculturalConfig:
     timeout: int = 30
 
     # Agricultural parameters
-    crop_types: Optional[List[str]] = None
-    soil_types: Optional[List[str]] = None
-    climate_zones: Optional[List[str]] = None
+    crop_types: list[str] | None = None
+    soil_types: list[str] | None = None
+    climate_zones: list[str] | None = None
 
     def __post_init__(self) -> None:
         if self.crop_types is None:
@@ -44,7 +44,7 @@ class AgriculturalAPI:
     and precision agriculture services.
     """
 
-    def __init__(self, config: Optional[AgriculturalConfig] = None) -> None:
+    def __init__(self, config: AgriculturalConfig | None = None) -> None:
         """
         Initialize agricultural API client.
 
@@ -52,7 +52,7 @@ class AgriculturalAPI:
             config: API configuration
         """
         self.config = config or AgriculturalConfig()
-        self.session: Optional[Any] = None
+        self.session: Any | None = None
         self._initialize_session()
 
     def _initialize_session(self) -> None:
@@ -73,7 +73,7 @@ class AgriculturalAPI:
             logger.warning("Requests library not available, API functionality limited")
             self.session = None
 
-    def _request(self, path: str, params: Optional[Dict[str, Any]] = None) -> Any:
+    def _request(self, path: str, params: dict[str, Any] | None = None) -> Any:
         """Fetch a JSON payload from the configured agricultural service."""
         if self.session is None:
             raise RuntimeError("requests is required for agricultural data access")
@@ -89,8 +89,8 @@ class AgriculturalAPI:
             ) from exc
 
     def get_crop_data(
-        self, crop_type: str, region: Optional[str] = None, year: Optional[int] = None
-    ) -> Dict[str, Any]:
+        self, crop_type: str, region: str | None = None, year: int | None = None
+    ) -> dict[str, Any]:
         """
         Get agricultural data for a specific crop.
 
@@ -117,8 +117,8 @@ class AgriculturalAPI:
         return data
 
     def get_soil_data(
-        self, location: Dict[str, float], depth: Optional[float] = None
-    ) -> Dict[str, Any]:
+        self, location: dict[str, float], depth: float | None = None
+    ) -> dict[str, Any]:
         """
         Get soil data for a specific location.
 
@@ -142,8 +142,8 @@ class AgriculturalAPI:
         return soil_data
 
     def get_weather_forecast(
-        self, location: Dict[str, float], days: int = 7
-    ) -> List[Dict[str, Any]]:
+        self, location: dict[str, float], days: int = 7
+    ) -> list[dict[str, Any]]:
         """
         Get weather forecast for agricultural planning.
 
@@ -174,10 +174,10 @@ class AgriculturalAPI:
     def analyze_crop_yield(
         self,
         crop_type: str,
-        location: Dict[str, float],
-        soil_data: Dict[str, Any],
-        weather_data: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        location: dict[str, float],
+        soil_data: dict[str, Any],
+        weather_data: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Analyze potential crop yield based on conditions.
 
@@ -236,7 +236,7 @@ class AgriculturalAPI:
         return analysis
 
     @staticmethod
-    def _weather_totals(weather_data: List[Dict[str, Any]]) -> Tuple[float, float]:
+    def _weather_totals(weather_data: list[dict[str, Any]]) -> tuple[float, float]:
         """Compute (mean daily high temperature, total precipitation).
 
         Args:
@@ -267,8 +267,8 @@ class AgriculturalAPI:
         return avg_temp, total_precip
 
     def _generate_recommendations(
-        self, soil_data: Dict[str, Any], weather_data: List[Dict[str, Any]]
-    ) -> List[str]:
+        self, soil_data: dict[str, Any], weather_data: list[dict[str, Any]]
+    ) -> list[str]:
         """Generate agricultural recommendations."""
         recommendations = []
 
@@ -297,8 +297,8 @@ class AgriculturalAPI:
         return recommendations
 
     def get_precision_agriculture_data(
-        self, field_id: str, sensor_type: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, field_id: str, sensor_type: str | None = None
+    ) -> dict[str, Any]:
         """
         Get precision agriculture sensor data.
 
@@ -322,8 +322,8 @@ class AgriculturalAPI:
         return precision_data
 
     def optimize_irrigation(
-        self, field_data: Dict[str, Any], weather_forecast: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, field_data: dict[str, Any], weather_forecast: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Optimize irrigation schedule based on field and weather data.
 
@@ -369,7 +369,7 @@ class AgriculturalAPI:
 
     def _generate_irrigation_schedule(
         self, irrigation_needed: bool, amount: float
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Generate irrigation schedule."""
         if not irrigation_needed:
             return []
@@ -395,15 +395,15 @@ class AgriculturalAPI:
 
 # Convenience functions
 def create_agricultural_api(
-    config: Optional[AgriculturalConfig] = None,
+    config: AgriculturalConfig | None = None,
 ) -> AgriculturalAPI:
     """Create a new AgriculturalAPI instance."""
     return AgriculturalAPI(config)
 
 
 def get_crop_recommendations(
-    location: Dict[str, float], soil_data: Dict[str, Any]
-) -> List[str]:
+    location: dict[str, float], soil_data: dict[str, Any]
+) -> list[str]:
     """Get crop recommendations for a location."""
     api = AgriculturalAPI()
 

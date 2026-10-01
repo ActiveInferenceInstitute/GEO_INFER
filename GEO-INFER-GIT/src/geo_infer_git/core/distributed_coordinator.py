@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Distributed coordination for large-scale operations across multiple nodes.
@@ -13,9 +12,10 @@ import json
 import time
 import socket
 import threading
-from typing import Dict, List, Any, Optional, Callable, Union, Tuple, cast
+from typing import Any, cast
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 import uuid
 import hashlib
 import queue
@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 
 def _utc_now() -> datetime:
     """Return the current UTC time as a timezone-aware datetime."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 @dataclass
@@ -40,11 +40,11 @@ class NodeInfo:
     port: int
     role: str = "worker"  # master, worker, coordinator
     status: str = "active"  # active, inactive, busy, error
-    capabilities: List[str] = field(default_factory=list)
+    capabilities: list[str] = field(default_factory=list)
     current_load: float = 0.0
     max_load: float = 1.0
     last_heartbeat: datetime = field(default_factory=_utc_now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -56,17 +56,17 @@ class JobInfo:
     status: str = "pending"  # pending, running, completed, failed, cancelled
     priority: int = 1
     created_at: datetime = field(default_factory=_utc_now)
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    assigned_node: Optional[str] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    assigned_node: str | None = None
     progress: float = 0.0
     total_items: int = 0
     completed_items: int = 0
     failed_items: int = 0
     retry_count: int = 0
     max_retries: int = 3
-    dependencies: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    dependencies: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -78,7 +78,7 @@ class CoordinationMessage:
     sender_id: str
     recipient_id: str = "*"
     timestamp: datetime = field(default_factory=_utc_now)
-    payload: Dict[str, Any] = field(default_factory=dict)
+    payload: dict[str, Any] = field(default_factory=dict)
     ttl: int = 300  # Time to live in seconds
 
 
@@ -96,7 +96,7 @@ class DistributedCoordinator:
 
     def __init__(
         self,
-        node_id: Optional[str] = None,
+        node_id: str | None = None,
         role: str = "coordinator",
         discovery_port: int = 5555,
         coordination_port: int = 5556,
@@ -116,7 +116,7 @@ class DistributedCoordinator:
         self.coordination_port = coordination_port
 
         # Node management
-        self.nodes: Dict[str, NodeInfo] = {}
+        self.nodes: dict[str, NodeInfo] = {}
         self.current_node = NodeInfo(
             node_id=self.node_id,
             hostname=socket.gethostname(),
@@ -128,28 +128,28 @@ class DistributedCoordinator:
         self.nodes[self.node_id] = self.current_node
 
         # Job management
-        self.jobs: Dict[str, JobInfo] = {}
+        self.jobs: dict[str, JobInfo] = {}
         self.job_queue: queue.PriorityQueue = queue.PriorityQueue()
-        self.running_jobs: Dict[str, str] = {}  # job_id -> node_id
+        self.running_jobs: dict[str, str] = {}  # job_id -> node_id
 
         # Communication
         self.message_queue: queue.Queue = queue.Queue()
-        self.message_handlers: Dict[str, Callable] = {}
+        self.message_handlers: dict[str, Callable] = {}
 
         # Synchronization
         self.lock = threading.Lock()
         self.shutdown_event = threading.Event()
 
         # Background threads
-        self.discovery_thread: Optional[threading.Thread] = None
-        self.coordination_thread: Optional[threading.Thread] = None
-        self.heartbeat_thread: Optional[threading.Thread] = None
-        self.job_scheduler_thread: Optional[threading.Thread] = None
+        self.discovery_thread: threading.Thread | None = None
+        self.coordination_thread: threading.Thread | None = None
+        self.heartbeat_thread: threading.Thread | None = None
+        self.job_scheduler_thread: threading.Thread | None = None
 
         # Server sockets held by background services (closed on stop() to
         # unblock threads parked in recvfrom/accept).
-        self._discovery_socket: Optional[socket.socket] = None
-        self._coordination_socket: Optional[socket.socket] = None
+        self._discovery_socket: socket.socket | None = None
+        self._coordination_socket: socket.socket | None = None
 
         # Initialize message handlers
         self._setup_message_handlers()
@@ -278,7 +278,7 @@ class DistributedCoordinator:
         """Service for discovering and registering nodes."""
         import socket as sock
 
-        discovery_socket: Optional[sock.socket] = None
+        discovery_socket: sock.socket | None = None
         try:
             discovery_socket = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
             discovery_socket.setsockopt(sock.SOL_SOCKET, sock.SO_BROADCAST, 1)
@@ -305,7 +305,7 @@ class DistributedCoordinator:
                 discovery_socket.close()
 
     def _handle_node_discovery(
-        self, message: Dict[str, Any], addr: Tuple[str, int]
+        self, message: dict[str, Any], addr: tuple[str, int]
     ) -> None:
         """Handle node discovery message."""
         node_info = message.get("node_info", {})
@@ -316,7 +316,7 @@ class DistributedCoordinator:
             if node_id in self.nodes:
                 self.nodes[node_id].ip_address = addr[0]
                 self.nodes[node_id].port = addr[1]
-                self.nodes[node_id].last_heartbeat = datetime.now(timezone.utc)
+                self.nodes[node_id].last_heartbeat = datetime.now(UTC)
 
                 logger.info(f"Updated node discovery info for {node_id}")
             else:
@@ -340,7 +340,7 @@ class DistributedCoordinator:
         """Service for handling coordination messages."""
         import socket as sock
 
-        coord_socket: Optional[sock.socket] = None
+        coord_socket: sock.socket | None = None
         try:
             coord_socket = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
             coord_socket.setsockopt(sock.SOL_SOCKET, sock.SO_REUSEADDR, 1)
@@ -420,7 +420,7 @@ class DistributedCoordinator:
         """Monitor node heartbeats and detect failures."""
         while not self.shutdown_event.is_set():
             try:
-                self._check_heartbeats(datetime.now(timezone.utc))
+                self._check_heartbeats(datetime.now(UTC))
                 self.shutdown_event.wait(10)  # Check every 10 seconds
             except Exception as e:
                 logger.error(f"Error in heartbeat monitor: {e}")
@@ -463,7 +463,7 @@ class DistributedCoordinator:
                 logger.error(f"Error in job scheduler: {e}")
                 time.sleep(5)
 
-    def _get_available_nodes(self) -> List[NodeInfo]:
+    def _get_available_nodes(self) -> list[NodeInfo]:
         """Get list of available nodes for job assignment."""
         available_nodes = []
 
@@ -479,8 +479,8 @@ class DistributedCoordinator:
         return available_nodes
 
     def _select_node_for_job(
-        self, job: JobInfo, available_nodes: List[NodeInfo]
-    ) -> Optional[NodeInfo]:
+        self, job: JobInfo, available_nodes: list[NodeInfo]
+    ) -> NodeInfo | None:
         """Select the best node for a job based on load and capabilities."""
         if not available_nodes:
             return None
@@ -508,7 +508,7 @@ class DistributedCoordinator:
         try:
             # Update job status
             job.status = "running"
-            job.started_at = datetime.now(timezone.utc)
+            job.started_at = datetime.now(UTC)
             job.assigned_node = node.node_id
 
             # Update node load
@@ -536,10 +536,10 @@ class DistributedCoordinator:
                 f"Error assigning job {job.job_id} to node {node.node_id}: {e}"
             )
 
-    def _process_message(self, message: Dict[str, Any]) -> None:
+    def _process_message(self, message: dict[str, Any]) -> None:
         """Process an incoming coordination message."""
         try:
-            message_type = cast(Optional[str], message.get("type"))
+            message_type = cast(str | None, message.get("type"))
             handler = self.message_handlers.get(message_type) if message_type else None
 
             if handler:
@@ -550,14 +550,14 @@ class DistributedCoordinator:
         except Exception as e:
             logger.error(f"Error processing message: {e}")
 
-    def _handle_heartbeat(self, message: Dict[str, Any]) -> None:
+    def _handle_heartbeat(self, message: dict[str, Any]) -> None:
         """Handle heartbeat message from a node."""
         node_id = message.get("node_id")
         if node_id in self.nodes:
-            self.nodes[node_id].last_heartbeat = datetime.now(timezone.utc)
+            self.nodes[node_id].last_heartbeat = datetime.now(UTC)
             self.nodes[node_id].status = "active"
 
-    def _handle_node_register(self, message: Dict[str, Any]) -> None:
+    def _handle_node_register(self, message: dict[str, Any]) -> None:
         """Handle node registration message."""
         node_info = message.get("node_info", {})
         node_id = node_info.get("node_id")
@@ -578,7 +578,7 @@ class DistributedCoordinator:
 
             logger.info(f"Registered node {node_id}")
 
-    def _handle_node_unregister(self, message: Dict[str, Any]) -> None:
+    def _handle_node_unregister(self, message: dict[str, Any]) -> None:
         """Handle node unregistration message."""
         node_id = message.get("node_id")
 
@@ -588,7 +588,7 @@ class DistributedCoordinator:
 
             logger.info(f"Unregistered node {node_id}")
 
-    def _handle_job_request(self, message: Dict[str, Any]) -> None:
+    def _handle_job_request(self, message: dict[str, Any]) -> None:
         """Handle job request from a node."""
         job_info = message.get("job_info", {})
         job_id = job_info.get("job_id")
@@ -596,18 +596,18 @@ class DistributedCoordinator:
         if job_id and job_id in self.jobs:
             job = self.jobs[job_id]
             job.status = "running"
-            job.started_at = datetime.now(timezone.utc)
+            job.started_at = datetime.now(UTC)
 
             logger.info(f"Job {job_id} started execution")
 
-    def _handle_job_complete(self, message: Dict[str, Any]) -> None:
+    def _handle_job_complete(self, message: dict[str, Any]) -> None:
         """Handle job completion message."""
         job_id = message.get("job_id")
 
         if job_id in self.jobs:
             job = self.jobs[job_id]
             job.status = "completed"
-            job.completed_at = datetime.now(timezone.utc)
+            job.completed_at = datetime.now(UTC)
             job.progress = 100.0
 
             # Update node load
@@ -616,7 +616,7 @@ class DistributedCoordinator:
 
             logger.info(f"Job {job_id} completed successfully")
 
-    def _handle_job_failed(self, message: Dict[str, Any]) -> None:
+    def _handle_job_failed(self, message: dict[str, Any]) -> None:
         """Handle job failure message."""
         job_id = message.get("job_id")
         error = message.get("error", "Unknown error")
@@ -627,7 +627,7 @@ class DistributedCoordinator:
 
             if job.retry_count >= job.max_retries:
                 job.status = "failed"
-                job.completed_at = datetime.now(timezone.utc)
+                job.completed_at = datetime.now(UTC)
 
                 # Update node load
                 if job.assigned_node and job.assigned_node in self.nodes:
@@ -644,7 +644,7 @@ class DistributedCoordinator:
                     f"Job {job_id} failed, retrying (attempt {job.retry_count + 1})"
                 )
 
-    def _handle_status_request(self, message: Dict[str, Any]) -> None:
+    def _handle_status_request(self, message: dict[str, Any]) -> None:
         """Handle status request message."""
         sender_id = message.get("sender_id")
 
@@ -666,13 +666,13 @@ class DistributedCoordinator:
 
         self._send_message_to_node(cast(str, sender_id), status_message)
 
-    def _handle_coordination_message(self, message: Dict[str, Any]) -> None:
+    def _handle_coordination_message(self, message: dict[str, Any]) -> None:
         """Handle custom coordination message."""
         # Custom message handling can be implemented here
         logger.debug(f"Received coordination message: {message}")
 
     def _send_message_to_node(
-        self, node: Union[NodeInfo, str], message: CoordinationMessage
+        self, node: NodeInfo | str, message: CoordinationMessage
     ) -> None:
         """Send a message to a specific node."""
         try:
@@ -762,9 +762,9 @@ class DistributedCoordinator:
     def submit_job(
         self,
         job_type: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
         priority: int = 1,
-        dependencies: Optional[List[str]] = None,
+        dependencies: list[str] | None = None,
     ) -> str:
         """
         Submit a job for distributed execution.
@@ -798,7 +798,7 @@ class DistributedCoordinator:
 
         return job_id
 
-    def get_job_status(self, job_id: str) -> Optional[JobInfo]:
+    def get_job_status(self, job_id: str) -> JobInfo | None:
         """
         Get the status of a specific job.
 
@@ -826,7 +826,7 @@ class DistributedCoordinator:
                 job = self.jobs[job_id]
                 if job.status in ["pending", "running"]:
                     job.status = "cancelled"
-                    job.completed_at = datetime.now(timezone.utc)
+                    job.completed_at = datetime.now(UTC)
 
                     # Update node load if job was assigned
                     if job.assigned_node and job.assigned_node in self.nodes:
@@ -837,7 +837,7 @@ class DistributedCoordinator:
 
         return False
 
-    def get_cluster_status(self) -> Dict[str, Any]:
+    def get_cluster_status(self) -> dict[str, Any]:
         """
         Get overall cluster status.
 

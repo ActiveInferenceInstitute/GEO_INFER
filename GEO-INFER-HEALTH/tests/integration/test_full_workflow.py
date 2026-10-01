@@ -3,7 +3,7 @@ Integration tests for full GEO-INFER-HEALTH workflows.
 """
 
 import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, UTC
 
 from geo_infer_health.core import (
     DiseaseHotspotAnalyzer,
@@ -25,7 +25,7 @@ class TestDiseaseSurveillanceWorkflow:
     def test_complete_disease_analysis_workflow(self):
         """Test end-to-end disease surveillance analysis."""
         # Create comprehensive test dataset
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
         center_location = Location(latitude=34.0522, longitude=-118.2437)
 
         # Create disease reports around center
@@ -106,7 +106,7 @@ class TestDiseaseSurveillanceWorkflow:
 
         reports = []
         base_location = Location(latitude=34.0522, longitude=-118.2437)
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         for i in range(40):
             location = Location(
@@ -300,7 +300,7 @@ class TestEnvironmentalHealthWorkflow:
         """Test end-to-end environmental health analysis."""
         # Create comprehensive environmental dataset
         base_location = Location(latitude=34.0522, longitude=-118.2437)
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         readings = []
         parameters = ["PM2.5", "PM10", "NO2", "Temperature", "Humidity"]
@@ -390,7 +390,7 @@ class TestEnvironmentalHealthWorkflow:
     def test_environmental_temporal_analysis(self):
         """Test environmental data temporal analysis."""
         base_location = Location(latitude=34.0522, longitude=-118.2437)
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         # Create readings over time
         readings = []
@@ -452,7 +452,7 @@ class TestCrossModuleIntegration:
     def test_disease_and_environmental_integration(self):
         """Test integration between disease surveillance and environmental health."""
         base_location = Location(latitude=34.0522, longitude=-118.2437)
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         # Create disease reports
         disease_reports = []
@@ -666,7 +666,7 @@ class TestPerformanceIntegration:
 
         # Create large integrated dataset
         base_location = Location(latitude=34.0522, longitude=-118.2437)
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         # Generate disease reports
         disease_reports = []

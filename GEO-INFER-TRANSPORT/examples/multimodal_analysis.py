@@ -9,7 +9,6 @@ isochrones, and transit coverage/scenario evaluation.
 """
 
 from geo_infer_transport import (
-    AccessibilityAnalyzer,
     RoutingEngine,
     TrafficAnalyzer,
     TransportNetwork,

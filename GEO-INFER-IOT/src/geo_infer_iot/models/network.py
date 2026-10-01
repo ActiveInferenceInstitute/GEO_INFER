@@ -6,10 +6,10 @@ patterns, and network management for IoT sensor deployments.
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Set, cast
+from typing import Any, cast
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
-from enum import Enum
+from enum import StrEnum
 import networkx as nx
 import h3
 import numpy as np
@@ -17,7 +17,7 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
-class NetworkTopologyType(str, Enum):
+class NetworkTopologyType(StrEnum):
     """Network topology types."""
 
     MESH = "mesh"
@@ -28,7 +28,7 @@ class NetworkTopologyType(str, Enum):
     HYBRID = "hybrid"
 
 
-class CommunicationProtocol(str, Enum):
+class CommunicationProtocol(StrEnum):
     """Communication protocol types."""
 
     MQTT = "MQTT"
@@ -48,42 +48,40 @@ class NetworkNode(BaseModel):
     node_type: str = Field(
         ..., description="Type of node (sensor, gateway, coordinator)"
     )
-    sensor_id: Optional[str] = Field(
+    sensor_id: str | None = Field(
         None, description="Associated sensor ID if this is a sensor node"
     )
 
     # Network position and connections
-    parent_node: Optional[str] = Field(
+    parent_node: str | None = Field(
         None, description="Parent node in hierarchical topology"
     )
-    child_nodes: List[str] = Field(
+    child_nodes: list[str] = Field(
         default_factory=list, description="Child nodes in hierarchical topology"
     )
-    connected_nodes: List[str] = Field(
+    connected_nodes: list[str] = Field(
         default_factory=list, description="Directly connected nodes"
     )
 
     # Location information
-    latitude: Optional[float] = Field(None, description="Node latitude")
-    longitude: Optional[float] = Field(None, description="Node longitude")
-    h3_index: Optional[str] = Field(None, description="H3 hexagonal index")
+    latitude: float | None = Field(None, description="Node latitude")
+    longitude: float | None = Field(None, description="Node longitude")
+    h3_index: str | None = Field(None, description="H3 hexagonal index")
 
     # Network properties
     protocol: CommunicationProtocol = Field(
         CommunicationProtocol.MQTT, description="Communication protocol"
     )
-    transmission_range: Optional[float] = Field(
+    transmission_range: float | None = Field(
         None, description="Transmission range in meters"
     )
-    battery_level: Optional[float] = Field(None, description="Battery level percentage")
-    signal_strength: Optional[float] = Field(None, description="Signal strength dBm")
+    battery_level: float | None = Field(None, description="Battery level percentage")
+    signal_strength: float | None = Field(None, description="Signal strength dBm")
 
     # Operational status
     status: str = Field("active", description="Node status")
-    last_seen: Optional[datetime] = Field(
-        None, description="Last communication timestamp"
-    )
-    uptime_seconds: Optional[float] = Field(None, description="Uptime in seconds")
+    last_seen: datetime | None = Field(None, description="Last communication timestamp")
+    uptime_seconds: float | None = Field(None, description="Uptime in seconds")
 
     # Performance metrics
     packets_sent: int = Field(0, description="Total packets sent")
@@ -155,10 +153,8 @@ class NetworkLink(BaseModel):
     protocol: CommunicationProtocol = Field(
         CommunicationProtocol.MQTT, description="Link protocol"
     )
-    bandwidth_mbps: Optional[float] = Field(None, description="Link bandwidth in Mbps")
-    latency_ms: Optional[float] = Field(
-        None, description="Link latency in milliseconds"
-    )
+    bandwidth_mbps: float | None = Field(None, description="Link bandwidth in Mbps")
+    latency_ms: float | None = Field(None, description="Link latency in milliseconds")
 
     # Link quality metrics
     signal_quality: float = Field(1.0, description="Signal quality score")
@@ -186,7 +182,7 @@ class NetworkTopology(BaseModel):
 
     topology_id: str = Field(..., description="Unique topology identifier")
     name: str = Field(..., description="Topology name")
-    description: Optional[str] = Field(None, description="Topology description")
+    description: str | None = Field(None, description="Topology description")
 
     # Topology configuration
     topology_type: NetworkTopologyType = Field(
@@ -197,10 +193,10 @@ class NetworkTopology(BaseModel):
     )
 
     # Network structure
-    nodes: Dict[str, NetworkNode] = Field(
+    nodes: dict[str, NetworkNode] = Field(
         default_factory=dict, description="Network nodes"
     )
-    links: Dict[str, NetworkLink] = Field(
+    links: dict[str, NetworkLink] = Field(
         default_factory=dict, description="Network links"
     )
 
@@ -211,13 +207,13 @@ class NetworkTopology(BaseModel):
     active_links: int = Field(0, description="Number of active links")
 
     # Coverage area
-    spatial_bounds: Optional[Dict[str, float]] = Field(
+    spatial_bounds: dict[str, float] | None = Field(
         None, description="Network coverage bounds"
     )
     h3_resolution: int = Field(8, description="H3 resolution for spatial indexing")
 
     # Performance metrics
-    average_latency_ms: Optional[float] = Field(
+    average_latency_ms: float | None = Field(
         None, description="Average network latency"
     )
     packet_loss_rate: float = Field(0.0, description="Overall packet loss rate")
@@ -325,7 +321,7 @@ class NetworkTopology(BaseModel):
             del self.links[link_id]
             self._update_derived_fields()
 
-    def get_connected_components(self) -> List[List[str]]:
+    def get_connected_components(self) -> list[list[str]]:
         """Get connected components in the network."""
         if not self.nodes:
             return []
@@ -336,10 +332,10 @@ class NetworkTopology(BaseModel):
         }
 
         # Find connected components
-        visited: Set[str] = set()
-        components: List[List[str]] = []
+        visited: set[str] = set()
+        components: list[list[str]] = []
 
-        def dfs(node_id: str, component: List[str]) -> None:
+        def dfs(node_id: str, component: list[str]) -> None:
             if node_id in visited:
                 return
             visited.add(node_id)
@@ -349,14 +345,14 @@ class NetworkTopology(BaseModel):
 
         for node_id in self.nodes:
             if node_id not in visited:
-                component: List[str] = []
+                component: list[str] = []
                 dfs(node_id, component)
                 if component:
                     components.append(component)
 
         return components
 
-    def get_network_diameter(self) -> Optional[int]:
+    def get_network_diameter(self) -> int | None:
         """Calculate network diameter (longest shortest path)."""
         if not self.nodes:
             return None
@@ -389,7 +385,7 @@ class NetworkTopology(BaseModel):
             logger.warning(f"Error calculating network diameter: {e}")
             return None
 
-    def get_sensor_coverage(self) -> Dict[str, Any]:
+    def get_sensor_coverage(self) -> dict[str, Any]:
         """Get sensor coverage analysis."""
         sensor_nodes = [
             node for node in self.nodes.values() if node.node_type == "sensor"
@@ -440,13 +436,13 @@ class NetworkEvent(BaseModel):
     event_type: str = Field(..., description="Type of network event")
 
     # Event details
-    node_id: Optional[str] = Field(None, description="Affected node ID")
-    link_id: Optional[str] = Field(None, description="Affected link ID")
+    node_id: str | None = Field(None, description="Affected node ID")
+    link_id: str | None = Field(None, description="Affected link ID")
     severity: str = Field("info", description="Event severity")
 
     # Event data
     message: str = Field(..., description="Event message")
-    details: Dict[str, Any] = Field(
+    details: dict[str, Any] = Field(
         default_factory=dict, description="Additional event details"
     )
 
@@ -454,13 +450,13 @@ class NetworkEvent(BaseModel):
     timestamp: datetime = Field(
         default_factory=datetime.now, description="Event timestamp"
     )
-    duration_ms: Optional[float] = Field(
+    duration_ms: float | None = Field(
         None, description="Event duration in milliseconds"
     )
 
     # Context
-    network_id: Optional[str] = Field(None, description="Associated network ID")
-    session_id: Optional[str] = Field(None, description="Associated session ID")
+    network_id: str | None = Field(None, description="Associated network ID")
+    session_id: str | None = Field(None, description="Associated session ID")
 
     @field_validator("severity")
     def validate_severity(cls, v: str) -> str:
@@ -480,13 +476,13 @@ class NetworkConfiguration(BaseModel):
     network_id: str = Field(..., description="Associated network ID")
 
     # Configuration settings
-    topology_config: Dict[str, Any] = Field(
+    topology_config: dict[str, Any] = Field(
         default_factory=dict, description="Topology-specific configuration"
     )
-    protocol_config: Dict[str, Any] = Field(
+    protocol_config: dict[str, Any] = Field(
         default_factory=dict, description="Protocol-specific configuration"
     )
-    security_config: Dict[str, Any] = Field(
+    security_config: dict[str, Any] = Field(
         default_factory=dict, description="Security configuration"
     )
 
@@ -496,17 +492,15 @@ class NetworkConfiguration(BaseModel):
     redundancy_level: int = Field(1, description="Network redundancy level")
 
     # Performance settings
-    max_latency_ms: Optional[float] = Field(
-        None, description="Maximum acceptable latency"
-    )
+    max_latency_ms: float | None = Field(None, description="Maximum acceptable latency")
     target_reliability: float = Field(0.99, description="Target network reliability")
-    bandwidth_limits: Dict[str, float] = Field(
+    bandwidth_limits: dict[str, float] = Field(
         default_factory=dict, description="Bandwidth limits per node type"
     )
 
     # Monitoring settings
     monitoring_enabled: bool = Field(True, description="Enable network monitoring")
-    alert_thresholds: Dict[str, float] = Field(
+    alert_thresholds: dict[str, float] = Field(
         default_factory=dict, description="Alert threshold configuration"
     )
 
@@ -534,7 +528,7 @@ class NetworkPerformance(BaseModel):
     network_id: str = Field(..., description="Associated network ID")
 
     # Performance metrics
-    metrics: Dict[str, float] = Field(
+    metrics: dict[str, float] = Field(
         default_factory=dict, description="Performance metrics"
     )
     timestamp: datetime = Field(
@@ -542,27 +536,27 @@ class NetworkPerformance(BaseModel):
     )
 
     # Detailed breakdown
-    node_metrics: Dict[str, Dict[str, float]] = Field(
+    node_metrics: dict[str, dict[str, float]] = Field(
         default_factory=dict, description="Per-node metrics"
     )
-    link_metrics: Dict[str, Dict[str, float]] = Field(
+    link_metrics: dict[str, dict[str, float]] = Field(
         default_factory=dict, description="Per-link metrics"
     )
 
     # Analysis results
     performance_score: float = Field(1.0, description="Overall performance score")
-    bottlenecks: List[Dict[str, Any]] = Field(
+    bottlenecks: list[dict[str, Any]] = Field(
         default_factory=list, description="Identified bottlenecks"
     )
-    recommendations: List[str] = Field(
+    recommendations: list[str] = Field(
         default_factory=list, description="Performance recommendations"
     )
 
     # Comparison data
-    baseline_metrics: Optional[Dict[str, float]] = Field(
+    baseline_metrics: dict[str, float] | None = Field(
         None, description="Baseline metrics for comparison"
     )
-    trend_analysis: Optional[Dict[str, Any]] = Field(
+    trend_analysis: dict[str, Any] | None = Field(
         None, description="Trend analysis results"
     )
 
@@ -570,8 +564,8 @@ class NetworkPerformance(BaseModel):
         self,
         metric_name: str,
         value: float,
-        node_id: Optional[str] = None,
-        link_id: Optional[str] = None,
+        node_id: str | None = None,
+        link_id: str | None = None,
     ) -> None:
         """Add a performance metric."""
         if node_id:
@@ -615,7 +609,7 @@ class NetworkPerformance(BaseModel):
 
         return score / total_weight if total_weight > 0 else 0.0
 
-    def identify_bottlenecks(self) -> List[Dict[str, Any]]:
+    def identify_bottlenecks(self) -> list[dict[str, Any]]:
         """Identify network bottlenecks."""
         bottlenecks = []
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Unit tests for BDI agent internals (belief merging, intention lifecycle,
@@ -393,7 +392,7 @@ class TestMessagingServiceLifecycle(unittest.TestCase):
                 _run(
                     asyncio.wait_for(messaging_service._process_messages(), timeout=0.2)
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass  # loop idles after processing; timeout cancels it
         finally:
             messaging_service.running = False
@@ -407,7 +406,7 @@ class TestMessagingServiceLifecycle(unittest.TestCase):
                 _run(
                     asyncio.wait_for(messaging_service._process_messages(), timeout=0.2)
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
         finally:
             messaging_service.running = False

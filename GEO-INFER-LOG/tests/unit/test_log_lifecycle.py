@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import gc
 import weakref
-from typing import List, Tuple
 
 from geo_infer_log import EnhancedLogger, LogEntry, _shutdown_logger_at_exit
 
@@ -18,13 +17,13 @@ class _Recorder:
     """Instance-level stand-in for _write_log_entry capturing every entry."""
 
     def __init__(self) -> None:
-        self.entries: List[LogEntry] = []
+        self.entries: list[LogEntry] = []
 
     def __call__(self, entry: LogEntry) -> None:
         self.entries.append(entry)
 
 
-def _async_logger(name: str) -> Tuple[EnhancedLogger, _Recorder]:
+def _async_logger(name: str) -> tuple[EnhancedLogger, _Recorder]:
     logger = EnhancedLogger(
         name,
         {"async_logging": True, "outputs": {"console": {"enabled": False}}},

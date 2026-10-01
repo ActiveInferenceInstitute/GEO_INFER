@@ -8,7 +8,6 @@ service area analysis, and delivery scheduling.
 from functools import lru_cache
 
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Dict, Optional, Tuple
 from pydantic import ConfigDict, Field
 from geo_infer_log.models.base import BaseModel
 from datetime import datetime
@@ -32,9 +31,9 @@ class DeliveryOptimizationRequest(BaseModel):
     """Request model for delivery optimization."""
 
     depot: Location
-    deliveries: List[Location]
-    vehicles: List[Vehicle]
-    constraints: Dict = Field(default_factory=dict)
+    deliveries: list[Location]
+    vehicles: list[Vehicle]
+    constraints: dict = Field(default_factory=dict)
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -82,8 +81,8 @@ class ScheduleRequest(BaseModel):
     """Request model for delivery scheduling."""
 
     depot: Location
-    deliveries: List[Location]
-    vehicles: List[Vehicle]
+    deliveries: list[Location]
+    vehicles: list[Vehicle]
     start_date: datetime
     end_date: datetime
     max_deliveries_per_day: int = 50
@@ -128,9 +127,9 @@ class ServiceAreaRequest(BaseModel):
     """Request model for service area definition."""
 
     depot_id: str
-    depot_location: Tuple[float, float]
-    max_time: Optional[int] = None
-    max_distance: Optional[float] = None
+    depot_location: tuple[float, float]
+    max_time: int | None = None
+    max_distance: float | None = None
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -147,8 +146,8 @@ class ServiceAreaRequest(BaseModel):
 class CoverageAnalysisRequest(BaseModel):
     """Request model for service area coverage analysis."""
 
-    service_areas: Dict[str, Dict]
-    demand_points: List[Dict]
+    service_areas: dict[str, dict]
+    demand_points: list[dict]
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -213,11 +212,11 @@ def get_service_area_analyzer() -> ServiceAreaAnalyzer:
     return ServiceAreaAnalyzer()
 
 
-@router.post("/optimize", response_model=List[Dict])
+@router.post("/optimize", response_model=list[dict])
 async def optimize_deliveries(
     request: DeliveryOptimizationRequest,
     router: LastMileRouter = Depends(get_last_mile_router),
-) -> List[Dict]:
+) -> list[dict]:
     """Optimize deliveries from a depot."""
     try:
         routes = router.optimize_deliveries(
@@ -233,11 +232,11 @@ async def optimize_deliveries(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/schedule", response_model=Dict)
+@router.post("/schedule", response_model=dict)
 async def create_schedule(
     request: ScheduleRequest,
     scheduler: DeliveryScheduler = Depends(get_delivery_scheduler),
-) -> Dict:
+) -> dict:
     """Create a delivery schedule for a date range."""
     try:
         result = scheduler.create_schedule(
@@ -253,10 +252,10 @@ async def create_schedule(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/schedule/{date}", response_model=List[Dict])
+@router.get("/schedule/{date}", response_model=list[dict])
 async def get_daily_schedule(
     date: str, scheduler: DeliveryScheduler = Depends(get_delivery_scheduler)
-) -> List[Dict]:
+) -> list[dict]:
     """Get the delivery schedule for a specific day."""
     try:
         # Parse date string to datetime
@@ -269,10 +268,10 @@ async def get_daily_schedule(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/schedule/vehicle/{vehicle_id}", response_model=List[Dict])
+@router.get("/schedule/vehicle/{vehicle_id}", response_model=list[dict])
 async def get_vehicle_schedule(
     vehicle_id: str, scheduler: DeliveryScheduler = Depends(get_delivery_scheduler)
-) -> List[Dict]:
+) -> list[dict]:
     """Get the schedule for a specific vehicle."""
     try:
         routes = scheduler.get_vehicle_schedule(vehicle_id)
@@ -283,11 +282,11 @@ async def get_vehicle_schedule(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/reschedule", response_model=Dict)
+@router.post("/reschedule", response_model=dict)
 async def reschedule_delivery(
     request: RescheduleRequest,
     scheduler: DeliveryScheduler = Depends(get_delivery_scheduler),
-) -> Dict:
+) -> dict:
     """Reschedule a delivery to a different date."""
     try:
         result = scheduler.reschedule_delivery(
@@ -300,11 +299,11 @@ async def reschedule_delivery(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/service-area", response_model=Dict)
+@router.post("/service-area", response_model=dict)
 async def create_service_area(
     request: ServiceAreaRequest,
     analyzer: ServiceAreaAnalyzer = Depends(get_service_area_analyzer),
-) -> Dict:
+) -> dict:
     """Create a service area around a depot."""
     try:
         gdf = analyzer.create_service_area(
@@ -327,11 +326,11 @@ async def create_service_area(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/coverage", response_model=Dict)
+@router.post("/coverage", response_model=dict)
 async def analyze_coverage(
     request: CoverageAnalysisRequest,
     analyzer: ServiceAreaAnalyzer = Depends(get_service_area_analyzer),
-) -> Dict:
+) -> dict:
     """Analyze coverage of demand points by service areas."""
     try:
         # Convert service area GeoJSON to Shapely polygons and test
@@ -339,7 +338,7 @@ async def analyze_coverage(
         from shapely.errors import ShapelyError
         from shapely.geometry import shape, Point
 
-        depot_coverage: Dict = {}
+        depot_coverage: dict = {}
         covered_ids: set = set()
 
         for depot_id, geojson in request.service_areas.items():
@@ -350,7 +349,7 @@ async def analyze_coverage(
                     f"Invalid service-area geometry for depot {depot_id}: {e}"
                 ) from e
 
-            dep_covered: List[str] = []
+            dep_covered: list[str] = []
             for dp in request.demand_points:
                 loc = dp.get("location")
                 if loc is None:

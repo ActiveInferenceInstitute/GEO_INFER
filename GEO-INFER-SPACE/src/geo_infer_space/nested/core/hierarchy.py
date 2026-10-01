@@ -9,7 +9,7 @@ level management, and hierarchical operations.
 import logging
 from datetime import datetime
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, cast
+from typing import Any, cast
 from enum import Enum
 from collections import defaultdict, deque
 
@@ -57,7 +57,7 @@ class HierarchicalRelationship:
     target_id: str
     relationship_type: RelationshipType
     strength: float = 1.0
-    properties: Dict[str, Any] = field(default_factory=dict)
+    properties: dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.now)
 
     def __post_init__(self) -> None:
@@ -65,7 +65,7 @@ class HierarchicalRelationship:
         if not 0.0 <= self.strength <= 1.0:
             raise ValueError("Relationship strength must be between 0.0 and 1.0")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "source_id": self.source_id,
@@ -96,24 +96,24 @@ class HierarchyManager:
         self.name = name
 
         # Hierarchy structure
-        self.relationships: Dict[str, HierarchicalRelationship] = {}
-        self.parent_child_map: Dict[str, Set[str]] = defaultdict(
+        self.relationships: dict[str, HierarchicalRelationship] = {}
+        self.parent_child_map: dict[str, set[str]] = defaultdict(
             set
         )  # parent -> children
-        self.child_parent_map: Dict[str, str] = {}  # child -> parent
+        self.child_parent_map: dict[str, str] = {}  # child -> parent
 
         # Level management
-        self.level_assignments: Dict[str, int] = {}
-        self.levels: Dict[int, Set[str]] = defaultdict(set)
+        self.level_assignments: dict[str, int] = {}
+        self.levels: dict[int, set[str]] = defaultdict(set)
         self.max_level: int = 0
 
         # System registry
-        self.systems: Set[str] = set()
-        self.root_systems: Set[str] = set()
-        self.leaf_systems: Set[str] = set()
+        self.systems: set[str] = set()
+        self.root_systems: set[str] = set()
+        self.leaf_systems: set[str] = set()
 
         # Graph representation (if NetworkX available)
-        self.hierarchy_graph: Optional["nx.DiGraph"] = None
+        self.hierarchy_graph: nx.DiGraph | None = None
         if NETWORKX_AVAILABLE:
             self.hierarchy_graph = nx.DiGraph()
 
@@ -121,7 +121,7 @@ class HierarchyManager:
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
 
-    def add_system(self, system_id: str, level: Optional[int] = None) -> None:
+    def add_system(self, system_id: str, level: int | None = None) -> None:
         """Add a system to the hierarchy."""
         self.systems.add(system_id)
 
@@ -188,7 +188,7 @@ class HierarchyManager:
         target_id: str,
         relationship_type: RelationshipType,
         strength: float = 1.0,
-        properties: Optional[Dict[str, Any]] = None,
+        properties: dict[str, Any] | None = None,
     ) -> str:
         """Add a hierarchical relationship."""
         if source_id not in self.systems:
@@ -277,15 +277,15 @@ class HierarchyManager:
 
         self.updated_at = datetime.now()
 
-    def get_children(self, system_id: str) -> Set[str]:
+    def get_children(self, system_id: str) -> set[str]:
         """Get direct children of a system."""
         return self.parent_child_map.get(system_id, set()).copy()
 
-    def get_parent(self, system_id: str) -> Optional[str]:
+    def get_parent(self, system_id: str) -> str | None:
         """Get parent of a system."""
         return self.child_parent_map.get(system_id)
 
-    def get_ancestors(self, system_id: str) -> List[str]:
+    def get_ancestors(self, system_id: str) -> list[str]:
         """Get all ancestors of a system (path to root)."""
         ancestors = []
         current = system_id
@@ -297,7 +297,7 @@ class HierarchyManager:
 
         return ancestors
 
-    def get_descendants(self, system_id: str) -> Set[str]:
+    def get_descendants(self, system_id: str) -> set[str]:
         """Get all descendants of a system."""
         descendants = set()
         queue = deque([system_id])
@@ -313,7 +313,7 @@ class HierarchyManager:
 
         return descendants
 
-    def get_siblings(self, system_id: str) -> Set[str]:
+    def get_siblings(self, system_id: str) -> set[str]:
         """Get siblings of a system (same parent)."""
         parent = self.get_parent(system_id)
         if not parent:
@@ -323,15 +323,15 @@ class HierarchyManager:
         siblings.discard(system_id)
         return siblings
 
-    def get_systems_at_level(self, level: int) -> Set[str]:
+    def get_systems_at_level(self, level: int) -> set[str]:
         """Get all systems at a specific level."""
         return self.levels.get(level, set()).copy()
 
-    def get_level(self, system_id: str) -> Optional[int]:
+    def get_level(self, system_id: str) -> int | None:
         """Get the level of a system."""
         return self.level_assignments.get(system_id)
 
-    def find_path(self, source_id: str, target_id: str) -> Optional[List[str]]:
+    def find_path(self, source_id: str, target_id: str) -> list[str] | None:
         """Find path between two systems in the hierarchy."""
         if not NETWORKX_AVAILABLE or not self.hierarchy_graph:
             # Fallback to simple traversal
@@ -339,13 +339,13 @@ class HierarchyManager:
 
         try:
             return cast(
-                List[str],
+                list[str],
                 nx.shortest_path(self.hierarchy_graph, source_id, target_id),
             )
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return None
 
-    def _find_path_simple(self, source_id: str, target_id: str) -> Optional[List[str]]:
+    def _find_path_simple(self, source_id: str, target_id: str) -> list[str] | None:
         """Simple path finding without NetworkX."""
         if source_id == target_id:
             return [source_id]
@@ -388,7 +388,7 @@ class HierarchyManager:
         path = source_to_ancestor + ancestor_to_target[::-1][1:]
         return path if len(path) > 1 else None
 
-    def calculate_hierarchy_metrics(self) -> Dict[str, Any]:
+    def calculate_hierarchy_metrics(self) -> dict[str, Any]:
         """Calculate comprehensive hierarchy metrics."""
         metrics = {
             "total_systems": len(self.systems),
@@ -404,7 +404,7 @@ class HierarchyManager:
         }
 
         # Count relationship types
-        rel_type_counts: Dict[str, int] = defaultdict(int)
+        rel_type_counts: dict[str, int] = defaultdict(int)
         for relationship in self.relationships.values():
             rel_type_counts[relationship.relationship_type.value] += 1
         metrics["relationship_type_distribution"] = dict(rel_type_counts)
@@ -468,7 +468,7 @@ class HierarchyManager:
             ):
                 self.leaf_systems.add(system_id)
 
-    def validate_hierarchy(self) -> Dict[str, Any]:
+    def validate_hierarchy(self) -> dict[str, Any]:
         """Validate the hierarchy structure and return issues."""
         issues = []
         warnings = []
@@ -518,7 +518,7 @@ class HierarchyManager:
             "validation_timestamp": datetime.now().isoformat(),
         }
 
-    def export_hierarchy(self) -> Dict[str, Any]:
+    def export_hierarchy(self) -> dict[str, Any]:
         """Export hierarchy structure."""
         return {
             "name": self.name,
@@ -533,7 +533,7 @@ class HierarchyManager:
             "updated_at": self.updated_at.isoformat(),
         }
 
-    def get_hierarchy_summary(self) -> Dict[str, Any]:
+    def get_hierarchy_summary(self) -> dict[str, Any]:
         """Get a summary of the hierarchy."""
         metrics = self.calculate_hierarchy_metrics()
         validation = self.validate_hierarchy()

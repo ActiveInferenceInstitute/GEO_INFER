@@ -8,9 +8,7 @@ It contains only the UI components and data visualization.
 
 import sys
 import os
-import json
 import logging
-from pathlib import Path
 from datetime import datetime
 
 # Add parent directory to path to import from scripts
@@ -49,8 +47,6 @@ class StreamlitAreaStudyDashboard:
         import streamlit as st
         import pandas as pd
         import plotly.express as px
-        import plotly.graph_objects as go
-        from plotly.subplots import make_subplots
 
         # Set page configuration
         st.set_page_config(
@@ -116,7 +112,7 @@ class StreamlitAreaStudyDashboard:
         # Manual connection test
         if st.sidebar.button("🔍 Test Connection"):
             st.sidebar.success("✅ Connection OK")
-            st.sidebar.markdown(f"**Response Time:** <1s")
+            st.sidebar.markdown("**Response Time:** <1s")
 
         # Main content
         if page == "Overview":

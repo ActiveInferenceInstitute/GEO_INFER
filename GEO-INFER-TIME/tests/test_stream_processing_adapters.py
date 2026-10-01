@@ -5,7 +5,7 @@ anomaly alert handlers for GEO-INFER-TIME's StreamProcessor.
 """
 
 import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 from geo_infer_time.core.stream_processing import (
     StreamProcessor,
@@ -21,7 +21,7 @@ def _ts(base, seconds_offset):
     return base + timedelta(seconds=seconds_offset)
 
 
-BASE_TIME = datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+BASE_TIME = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
 
 
 # ===================================================================
@@ -43,7 +43,7 @@ class TestStreamIngestAdapter:
         adapter = ReplayIngestAdapter([])
         record = {"timestamp": "2024-01-01T00:00:00", "value": 42.5, "sensor": "a"}
         ts, value, meta = adapter.parse_record(record)
-        assert ts == datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        assert ts == datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
         assert value == 42.5
         assert meta == {"sensor": "a"}
 

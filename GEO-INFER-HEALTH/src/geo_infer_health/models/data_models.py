@@ -1,25 +1,25 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional, List, Dict, Any
+from typing import Any
 from datetime import datetime
 
 
 class Location(BaseModel):
     """Represents a geographic location."""
 
-    latitude: Optional[float] = Field(..., description="Latitude of the location.")
-    longitude: Optional[float] = Field(..., description="Longitude of the location.")
+    latitude: float | None = Field(..., description="Latitude of the location.")
+    longitude: float | None = Field(..., description="Longitude of the location.")
     crs: str = Field(default="EPSG:4326", description="Coordinate Reference System.")
 
     @field_validator("latitude")
     @classmethod
-    def validate_latitude(cls, value: Optional[float]) -> Optional[float]:
+    def validate_latitude(cls, value: float | None) -> float | None:
         if value is not None and not -90 <= value <= 90:
             raise ValueError("Latitude must be between -90 and 90 degrees.")
         return value
 
     @field_validator("longitude")
     @classmethod
-    def validate_longitude(cls, value: Optional[float]) -> Optional[float]:
+    def validate_longitude(cls, value: float | None) -> float | None:
         if value is not None and not -180 <= value <= 180:
             raise ValueError("Longitude must be between -180 and 180 degrees.")
         return value
@@ -34,22 +34,22 @@ class HealthFacility(BaseModel):
         ..., description="Type of health facility (e.g., hospital, clinic)."
     )
     location: Location = Field(..., description="Geographic location of the facility.")
-    capacity: Optional[int] = Field(
+    capacity: int | None = Field(
         default=None, description="Capacity of the facility (e.g., number of beds)."
     )
-    services_offered: List[str] = Field(
+    services_offered: list[str] = Field(
         default_factory=list, description="List of services offered."
     )
-    operating_hours: Optional[str] = Field(
+    operating_hours: str | None = Field(
         default=None, description="Operating hours of the facility."
     )
-    contact_info: Optional[Dict[str, str]] = Field(
+    contact_info: dict[str, str] | None = Field(
         default=None, description="Contact information (e.g., phone, email)."
     )
 
     @field_validator("capacity")
     @classmethod
-    def validate_capacity(cls, value: Optional[int]) -> Optional[int]:
+    def validate_capacity(cls, value: int | None) -> int | None:
         if value is not None and value < 0:
             raise ValueError("Capacity must be non-negative.")
         return value
@@ -69,13 +69,13 @@ class DiseaseReport(BaseModel):
     case_count: int = Field(
         default=1, description="Number of cases in this report.", ge=1
     )
-    source: Optional[str] = Field(
+    source: str | None = Field(
         default=None, description="Source of the report (e.g., hospital, lab)."
     )
-    demographics: Optional[Dict[str, Any]] = Field(
+    demographics: dict[str, Any] | None = Field(
         default=None, description="Anonymized demographic data if available."
     )
-    notes: Optional[str] = Field(
+    notes: str | None = Field(
         default=None, description="Additional notes for the report."
     )
 
@@ -88,10 +88,10 @@ class PopulationData(BaseModel):
     )
     # geometry: Any # Would typically be a GeoJSON dict or a Shapely geometry object
     population_count: int = Field(..., description="Total population in the area.")
-    age_distribution: Optional[Dict[str, int]] = Field(
+    age_distribution: dict[str, int] | None = Field(
         default=None, description="Population count by age group."
     )
-    other_demographics: Optional[Dict[str, Any]] = Field(
+    other_demographics: dict[str, Any] | None = Field(
         default=None, description="Other relevant demographic splits."
     )
 

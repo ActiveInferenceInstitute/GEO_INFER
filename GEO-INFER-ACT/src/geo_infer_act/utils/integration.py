@@ -5,7 +5,7 @@ Enhanced with support for RxInfer, Bayeux, pymdp, and other state-of-the-art
 Active Inference frameworks based on Active Inference Institute resources.
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Any
 import importlib
 import logging
 import numpy as np
@@ -38,7 +38,7 @@ class ModernToolsIntegration:
     - Pyro (Deep probabilistic programming)
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the integration hub.
 
@@ -50,8 +50,8 @@ class ModernToolsIntegration:
         logger.info(f"Available tools: {list(self.available_tools.keys())}")
 
     def _execute_dynamic_source(
-        self, source: str, namespace: Dict[str, Any], description: str
-    ) -> Dict[str, Any]:
+        self, source: str, namespace: dict[str, Any], description: str
+    ) -> dict[str, Any]:
         """Execute optional model source only after explicit caller opt-in."""
         if not self.config.get("allow_dynamic_code", False):
             raise RuntimeError(
@@ -63,7 +63,7 @@ class ModernToolsIntegration:
         exec(source, namespace, namespace)
         return namespace
 
-    def _check_available_tools(self) -> Dict[str, bool]:
+    def _check_available_tools(self) -> dict[str, bool]:
         """Check which modern tools are available in the environment."""
         tools = {}
 
@@ -101,8 +101,8 @@ class ModernToolsIntegration:
         return tools
 
     def create_rxinfer_model(
-        self, model_spec: str, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, model_spec: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Create and run RxInfer model for constrained Bayesian inference.
 
@@ -180,9 +180,9 @@ class ModernToolsIntegration:
     def create_bayeux_model(
         self,
         log_density_fn: str,
-        test_point: Dict[str, Any],
-        transform_fn: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        test_point: dict[str, Any],
+        transform_fn: str | None = None,
+    ) -> dict[str, Any]:
         """
         Create and optimize Bayeux model for scalable inference.
 
@@ -275,11 +275,11 @@ class ModernToolsIntegration:
 
     def create_pymdp_agent(
         self,
-        num_obs: List[int],
-        num_states: List[int],
-        A: Optional[np.ndarray] = None,
-        B: Optional[np.ndarray] = None,
-    ) -> Dict[str, Any]:
+        num_obs: list[int],
+        num_states: list[int],
+        A: np.ndarray | None = None,
+        B: np.ndarray | None = None,
+    ) -> dict[str, Any]:
         """
         Create pymdp agent for discrete Active Inference.
 
@@ -350,8 +350,8 @@ class ModernToolsIntegration:
             return {"status": "error", "message": str(e), "tool": "pymdp"}
 
     def create_pymc_model(
-        self, model_spec: str, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, model_spec: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Create PyMC model for Bayesian inference.
 
@@ -411,8 +411,8 @@ class ModernToolsIntegration:
             return {"status": "error", "message": str(e), "tool": "pymc"}
 
     def create_pyro_model(
-        self, model_fn: str, guide_fn: str, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, model_fn: str, guide_fn: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Create Pyro model for deep probabilistic programming.
 
@@ -494,8 +494,8 @@ class ModernToolsIntegration:
 
 
 def integrate_rxinfer(
-    config: Dict[str, Any], model_params: Dict[str, Any]
-) -> Dict[str, Any]:
+    config: dict[str, Any], model_params: dict[str, Any]
+) -> dict[str, Any]:
     """Integrate with RxInfer for scalable nested inference."""
     integration_config = dict(config or {})
     integration_config.setdefault("allow_local_fallback", True)
@@ -543,8 +543,8 @@ def integrate_rxinfer(
 
 
 def integrate_bayeux(
-    config: Dict[str, Any], model_params: Dict[str, Any]
-) -> Dict[str, Any]:
+    config: dict[str, Any], model_params: dict[str, Any]
+) -> dict[str, Any]:
     """Integrate with Bayeux for JAX-based scalable inference."""
     integration_hub = ModernToolsIntegration(config)
 
@@ -583,8 +583,8 @@ def transform_fn(params):
 
 
 def integrate_pymdp(
-    config: Dict[str, Any], model_params: Dict[str, Any]
-) -> Dict[str, Any]:
+    config: dict[str, Any], model_params: dict[str, Any]
+) -> dict[str, Any]:
     """Integrate with pymdp for discrete Active Inference."""
     integration_hub = ModernToolsIntegration(config)
 
@@ -597,8 +597,8 @@ def integrate_pymdp(
 
 
 def integrate_space(
-    config: Dict[str, Any], data: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+    config: dict[str, Any], data: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """
     Integrate with GEO-INFER-SPACE module.
 
@@ -662,8 +662,8 @@ def integrate_space(
 
 
 def integrate_time(
-    config: Dict[str, Any], data: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+    config: dict[str, Any], data: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """
     Integrate with GEO-INFER-TIME module.
 
@@ -726,8 +726,8 @@ def integrate_time(
 
 
 def integrate_sim(
-    config: Dict[str, Any], data: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+    config: dict[str, Any], data: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """
     Integrate with GEO-INFER-SIM module.
 
@@ -788,8 +788,8 @@ def integrate_sim(
 
 
 def create_h3_spatial_model(
-    config: Dict[str, Any], h3_resolution: int, boundary: Dict[str, Any]
-) -> Dict[str, Any]:
+    config: dict[str, Any], h3_resolution: int, boundary: dict[str, Any]
+) -> dict[str, Any]:
     """
     Create H3-based spatial Active Inference model.
 
@@ -876,8 +876,8 @@ def create_h3_spatial_model(
 
 
 def coordinate_multi_agent_system(
-    config: Dict[str, Any], agents: List[Dict[str, Any]], environment: Dict[str, Any]
-) -> Dict[str, Any]:
+    config: dict[str, Any], agents: list[dict[str, Any]], environment: dict[str, Any]
+) -> dict[str, Any]:
     """
     Coordinate multiple Active Inference agents.
 
@@ -955,7 +955,7 @@ def coordinate_multi_agent_system(
         return {"status": "error", "message": str(e)}
 
 
-def _consensus_belief_updating(coordination_state: Dict[str, Any]) -> Dict[str, Any]:
+def _consensus_belief_updating(coordination_state: dict[str, Any]) -> dict[str, Any]:
     """Implement consensus-based belief updating among agents."""
     # Simplified consensus algorithm
     agents = coordination_state["agents"]
@@ -974,7 +974,7 @@ def _consensus_belief_updating(coordination_state: Dict[str, Any]) -> Dict[str, 
     return coordination_state
 
 
-def _hierarchical_coordination(coordination_state: Dict[str, Any]) -> Dict[str, Any]:
+def _hierarchical_coordination(coordination_state: dict[str, Any]) -> dict[str, Any]:
     """Implement hierarchical coordination among agents."""
     # Simplified hierarchical coordination
     agents = coordination_state["agents"]
@@ -992,7 +992,7 @@ def _hierarchical_coordination(coordination_state: Dict[str, Any]) -> Dict[str, 
     return coordination_state
 
 
-def _pairwise_coordination(coordination_state: Dict[str, Any]) -> Dict[str, Any]:
+def _pairwise_coordination(coordination_state: dict[str, Any]) -> dict[str, Any]:
     """Implement pairwise coordination among agents."""
     # Simplified pairwise coordination
     agents = coordination_state["agents"]
@@ -1018,19 +1018,19 @@ class IntegrationUtils:
         return ModernToolsIntegration()
 
     @staticmethod
-    def integrate_with_space(spatial_data: Dict[str, Any]) -> Dict[str, Any]:
+    def integrate_with_space(spatial_data: dict[str, Any]) -> dict[str, Any]:
         """Integrate with GEO-INFER-SPACE module."""
         return integrate_space(spatial_data)
 
     @staticmethod
-    def integrate_with_time(temporal_data: Dict[str, Any]) -> Dict[str, Any]:
+    def integrate_with_time(temporal_data: dict[str, Any]) -> dict[str, Any]:
         """Integrate with GEO-INFER-TIME module."""
         return integrate_time(temporal_data)
 
     @staticmethod
     def create_multi_agent_system(
-        agent_configs: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        agent_configs: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Create and coordinate a multi-agent system."""
         return coordinate_multi_agent_system({}, agent_configs, {})
 

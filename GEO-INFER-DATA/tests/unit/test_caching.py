@@ -5,7 +5,7 @@ Tests for CacheManager and CacheEntry in geo_infer_data.utils.caching.
 import asyncio
 import logging
 import threading
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from unittest import mock
 
 import pytest
@@ -35,7 +35,7 @@ class TestCacheEntry:
             key="k",
             data="v",
             ttl=1,
-            created_at=datetime.now(timezone.utc) - timedelta(seconds=5),
+            created_at=datetime.now(UTC) - timedelta(seconds=5),
         )
         assert entry.is_expired() is True
 
@@ -170,7 +170,7 @@ class TestCacheManager:
         cache = CacheManager(max_size=10, default_ttl=1)
         self._run(cache.set("k", "v", ttl=1))
         # Manually expire
-        cache.cache["k"].created_at = datetime.now(timezone.utc) - timedelta(seconds=10)
+        cache.cache["k"].created_at = datetime.now(UTC) - timedelta(seconds=10)
         result = self._run(cache.get("k"))
         assert result is None
 
@@ -223,7 +223,7 @@ class TestCacheManager:
             self._run(cache.set(f"k{i}", i))
         # Expire all
         for entry in cache.cache.values():
-            entry.created_at = datetime.now(timezone.utc) - timedelta(seconds=10)
+            entry.created_at = datetime.now(UTC) - timedelta(seconds=10)
         cache.optimize_cache()
         assert len(cache.cache) == 0
 

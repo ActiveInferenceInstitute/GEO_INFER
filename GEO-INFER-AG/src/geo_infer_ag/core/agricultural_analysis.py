@@ -2,7 +2,7 @@
 Agricultural analysis core functionality providing methods for analyzing agricultural data.
 """
 
-from typing import Dict, Optional, Any
+from typing import Any
 import pandas as pd
 import geopandas as gpd
 from datetime import datetime
@@ -23,7 +23,7 @@ class AgriculturalAnalysis:
     """
 
     def __init__(
-        self, model: AgricultureModel, config: Optional[Dict[str, Any]] = None
+        self, model: AgricultureModel, config: dict[str, Any] | None = None
     ) -> None:
         """
         Initialize the agricultural analysis with a model.
@@ -34,14 +34,14 @@ class AgriculturalAnalysis:
         """
         self.model = model
         self.config = config or {}
-        self.results: Optional["AgriculturalResults"] = None
+        self.results: AgriculturalResults | None = None
 
     def run(
         self,
         field_data: gpd.GeoDataFrame,
-        weather_data: Optional[pd.DataFrame] = None,
-        soil_data: Optional[gpd.GeoDataFrame] = None,
-        management_data: Optional[pd.DataFrame] = None,
+        weather_data: pd.DataFrame | None = None,
+        soil_data: gpd.GeoDataFrame | None = None,
+        management_data: pd.DataFrame | None = None,
         **kwargs: Any,
     ) -> "AgriculturalResults":
         """
@@ -80,9 +80,9 @@ class AgriculturalAnalysis:
     def _validate_inputs(
         self,
         field_data: gpd.GeoDataFrame,
-        weather_data: Optional[pd.DataFrame] = None,
-        soil_data: Optional[gpd.GeoDataFrame] = None,
-        management_data: Optional[pd.DataFrame] = None,
+        weather_data: pd.DataFrame | None = None,
+        soil_data: gpd.GeoDataFrame | None = None,
+        management_data: pd.DataFrame | None = None,
     ) -> None:
         """
         Validate input data for correctness and compatibility.
@@ -115,11 +115,11 @@ class AgriculturalAnalysis:
     def _prepare_data(
         self,
         field_data: gpd.GeoDataFrame,
-        weather_data: Optional[pd.DataFrame] = None,
-        soil_data: Optional[gpd.GeoDataFrame] = None,
-        management_data: Optional[pd.DataFrame] = None,
+        weather_data: pd.DataFrame | None = None,
+        soil_data: gpd.GeoDataFrame | None = None,
+        management_data: pd.DataFrame | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Prepare and integrate data sources for model input.
 
@@ -165,9 +165,9 @@ class AgriculturalResults:
 
     def __init__(
         self,
-        model_results: Dict[str, Any],
+        model_results: dict[str, Any],
         field_data: gpd.GeoDataFrame,
-        model_metadata: Dict[str, Any],
+        model_metadata: dict[str, Any],
     ) -> None:
         """
         Initialize results container.
@@ -179,13 +179,13 @@ class AgriculturalResults:
         """
         self.results = model_results
         self.field_data = self._merge_results_with_field_data(field_data, model_results)
-        self.metadata: Dict[str, Any] = {
+        self.metadata: dict[str, Any] = {
             "timestamp": datetime.now().isoformat(),
             "model": model_metadata,
         }
 
     def _merge_results_with_field_data(
-        self, field_data: gpd.GeoDataFrame, model_results: Dict[str, Any]
+        self, field_data: gpd.GeoDataFrame, model_results: dict[str, Any]
     ) -> gpd.GeoDataFrame:
         """
         Merge model results with field geometries.
@@ -233,7 +233,7 @@ class AgriculturalResults:
         self,
         variable: str,
         cmap: str = "viridis",
-        title: Optional[str] = None,
+        title: str | None = None,
         **kwargs: Any,
     ) -> Any:
         """
@@ -263,7 +263,7 @@ class AgriculturalResults:
 
         return ax
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """
         Generate a summary of the analysis results.
 

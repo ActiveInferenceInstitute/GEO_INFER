@@ -12,7 +12,7 @@ tracking; without it the pipeline degrades gracefully to disabled mode.
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class MLflowPipeline:
     def __init__(
         self,
         experiment_name: str = "geospatial_ai",
-        tracking_uri: Optional[str] = None,
+        tracking_uri: str | None = None,
         enabled: bool = True,
     ) -> None:
         """
@@ -53,7 +53,7 @@ class MLflowPipeline:
         self.experiment_name = experiment_name
         self.tracking_uri = tracking_uri
         self.enabled = enabled and MLFLOW_AVAILABLE
-        self.current_run: Optional[Any] = None
+        self.current_run: Any | None = None
 
         if self.enabled:
             self._setup_mlflow()
@@ -89,7 +89,7 @@ class MLflowPipeline:
             self.enabled = False
 
     def start_run(
-        self, run_name: Optional[str] = None, tags: Optional[Dict[str, str]] = None
+        self, run_name: str | None = None, tags: dict[str, str] | None = None
     ) -> None:
         """
         Start a new MLflow run.
@@ -120,7 +120,7 @@ class MLflowPipeline:
         except Exception as e:
             logger.warning(f"Failed to end MLflow run: {e}")
 
-    def log_params(self, params: Dict[str, Any]) -> None:
+    def log_params(self, params: dict[str, Any]) -> None:
         """
         Log parameters to MLflow.
 
@@ -136,9 +136,7 @@ class MLflowPipeline:
         except Exception as e:
             logger.warning(f"Failed to log parameters: {e}")
 
-    def log_metrics(
-        self, metrics: Dict[str, float], step: Optional[int] = None
-    ) -> None:
+    def log_metrics(self, metrics: dict[str, float], step: int | None = None) -> None:
         """
         Log metrics to MLflow.
 
@@ -159,7 +157,7 @@ class MLflowPipeline:
         self,
         model: Any,
         artifact_path: str = "model",
-        registered_model_name: Optional[str] = None,
+        registered_model_name: str | None = None,
     ) -> None:
         """
         Log a model to MLflow.
@@ -194,7 +192,7 @@ class MLflowPipeline:
             logger.warning(f"Failed to log model: {e}")
 
     def log_artifacts(
-        self, local_dir: Union[str, Path], artifact_path: Optional[str] = None
+        self, local_dir: str | Path, artifact_path: str | None = None
     ) -> None:
         """
         Log artifacts (files) to MLflow.

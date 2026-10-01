@@ -5,7 +5,7 @@ This module provides API endpoints for interacting with policy definitions,
 implementations, and impact assessments.
 """
 
-from typing import Dict, List, Optional, Union, Any
+from typing import Any
 import datetime
 import uuid
 from fastapi import APIRouter, HTTPException, Query, Path
@@ -36,25 +36,25 @@ class PolicyCreate(BaseModel):
     """Request model for creating a policy"""
 
     name: str = Field(..., description="Name of the policy")
-    description: Optional[str] = Field(None, description="Description of the policy")
+    description: str | None = Field(None, description="Description of the policy")
     category: str = Field(..., description="Category of policy")
-    issuing_authority: Optional[str] = Field(
+    issuing_authority: str | None = Field(
         None, description="Authority that issued the policy"
     )
-    effective_date: Optional[datetime.datetime] = Field(
+    effective_date: datetime.datetime | None = Field(
         None, description="When the policy takes effect"
     )
-    expiration_date: Optional[datetime.datetime] = Field(
+    expiration_date: datetime.datetime | None = Field(
         None, description="When the policy expires"
     )
-    jurisdiction_ids: List[str] = Field(
+    jurisdiction_ids: list[str] = Field(
         ..., description="IDs of jurisdictions where this policy applies"
     )
-    status: Optional[str] = Field(
+    status: str | None = Field(
         "active", description="Status of the policy (draft, active, expired)"
     )
-    source_url: Optional[str] = Field(None, description="URL to the source document")
-    tags: Optional[List[str]] = Field(None, description="Tags for the policy")
+    source_url: str | None = Field(None, description="URL to the source document")
+    tags: list[str] | None = Field(None, description="Tags for the policy")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -77,28 +77,28 @@ class PolicyImplementationCreate(BaseModel):
 
     policy_id: str = Field(..., description="ID of the policy being implemented")
     name: str = Field(..., description="Name of the implementation")
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None, description="Description of the implementation"
     )
-    start_date: Optional[datetime.datetime] = Field(
+    start_date: datetime.datetime | None = Field(
         None, description="Start date of implementation"
     )
-    end_date: Optional[datetime.datetime] = Field(
+    end_date: datetime.datetime | None = Field(
         None, description="End date of implementation"
     )
     jurisdiction_id: str = Field(
         ..., description="ID of jurisdiction where implemented"
     )
-    geometry: Optional[GeometryModel] = Field(
+    geometry: GeometryModel | None = Field(
         None, description="GeoJSON geometry of implementation area"
     )
-    budget: Optional[float] = Field(
+    budget: float | None = Field(
         None, description="Budget allocated for implementation"
     )
-    status: Optional[str] = Field(
+    status: str | None = Field(
         "planned", description="Status (planned, in_progress, completed, canceled)"
     )
-    metrics: Optional[Dict[str, Any]] = Field(
+    metrics: dict[str, Any] | None = Field(
         None, description="Metrics for measuring implementation"
     )
 
@@ -133,15 +133,13 @@ class ImpactAssessmentRequest(BaseModel):
     assessment_type: str = Field(
         ..., description="Type of assessment (environmental, economic, social)"
     )
-    assessment_date: Optional[datetime.datetime] = Field(
+    assessment_date: datetime.datetime | None = Field(
         None, description="Date of assessment"
     )
-    spatial_extent: Optional[GeometryModel] = Field(
+    spatial_extent: GeometryModel | None = Field(
         None, description="GeoJSON geometry of assessment area"
     )
-    parameters: Optional[Dict[str, Any]] = Field(
-        None, description="Assessment parameters"
-    )
+    parameters: dict[str, Any] | None = Field(None, description="Assessment parameters")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -170,11 +168,11 @@ class ImpactAssessmentRequest(BaseModel):
 class RegulationComparisonRequest(BaseModel):
     """Request model for comparing regulations"""
 
-    regulation_ids: List[str] = Field(..., description="IDs of regulations to compare")
-    jurisdiction_id: Optional[str] = Field(
+    regulation_ids: list[str] = Field(..., description="IDs of regulations to compare")
+    jurisdiction_id: str | None = Field(
         None, description="Optional jurisdiction ID for context"
     )
-    comparison_metrics: List[str] = Field(
+    comparison_metrics: list[str] = Field(
         ..., description="Metrics to use for comparison"
     )
 
@@ -198,8 +196,8 @@ class PolicyAPI:
 
     def __init__(
         self,
-        policy_impact_analyzer: Optional[PolicyImpactAnalyzer] = None,
-        regulatory_impact_assessment: Optional[RegulatoryImpactAssessment] = None,
+        policy_impact_analyzer: PolicyImpactAnalyzer | None = None,
+        regulatory_impact_assessment: RegulatoryImpactAssessment | None = None,
     ):
         """
         Initialize the PolicyAPI.
@@ -223,58 +221,58 @@ class PolicyAPI:
         self._setup_routes()
 
         # Temporary storage for policies and implementations
-        self._policies: Dict[str, Policy] = {}
-        self._implementations: Dict[str, PolicyImplementation] = {}
-        self._regulations: Dict[str, Dict[str, Any]] = {}
+        self._policies: dict[str, Policy] = {}
+        self._implementations: dict[str, PolicyImplementation] = {}
+        self._regulations: dict[str, dict[str, Any]] = {}
 
     def _setup_routes(self) -> None:
         """Set up API routes"""
         # Policy endpoints
-        self.router.post("/policies", response_model=Dict[str, Any])(self.create_policy)
-        self.router.get("/policies", response_model=List[Dict[str, Any]])(
+        self.router.post("/policies", response_model=dict[str, Any])(self.create_policy)
+        self.router.get("/policies", response_model=list[dict[str, Any]])(
             self.list_policies
         )
-        self.router.get("/policies/{policy_id}", response_model=Dict[str, Any])(
+        self.router.get("/policies/{policy_id}", response_model=dict[str, Any])(
             self.get_policy
         )
 
         # Policy implementation endpoints
-        self.router.post("/implementations", response_model=Dict[str, Any])(
+        self.router.post("/implementations", response_model=dict[str, Any])(
             self.create_policy_implementation
         )
-        self.router.get("/implementations", response_model=List[Dict[str, Any]])(
+        self.router.get("/implementations", response_model=list[dict[str, Any]])(
             self.list_policy_implementations
         )
         self.router.get(
-            "/implementations/{implementation_id}", response_model=Dict[str, Any]
+            "/implementations/{implementation_id}", response_model=dict[str, Any]
         )(self.get_policy_implementation)
         self.router.get(
-            "/policies/{policy_id}/implementations", response_model=List[Dict[str, Any]]
+            "/policies/{policy_id}/implementations", response_model=list[dict[str, Any]]
         )(self.get_implementations_by_policy)
 
         # Impact assessment endpoints
-        self.router.post("/impact/assess", response_model=Dict[str, Any])(
+        self.router.post("/impact/assess", response_model=dict[str, Any])(
             self.assess_policy_impact
         )
         self.router.get(
-            "/impact/history/{policy_id}", response_model=List[Dict[str, Any]]
+            "/impact/history/{policy_id}", response_model=list[dict[str, Any]]
         )(self.get_impact_assessment_history)
 
         # Regulatory comparison endpoints
-        self.router.post("/comparison/regulations", response_model=Dict[str, Any])(
+        self.router.post("/comparison/regulations", response_model=dict[str, Any])(
             self.compare_regulations
         )
 
         # Export endpoints
-        self.router.get("/export/geojson", response_model=Dict[str, Any])(
+        self.router.get("/export/geojson", response_model=dict[str, Any])(
             self.export_to_geojson
         )
 
     # Helper methods
 
     def _geometry_from_model(
-        self, geometry_model: Optional[GeometryModel]
-    ) -> Optional[BaseGeometry]:
+        self, geometry_model: GeometryModel | None
+    ) -> BaseGeometry | None:
         """
         Convert a GeometryModel to a Shapely geometry object.
 
@@ -297,7 +295,7 @@ class PolicyAPI:
         except Exception as e:
             raise ValueError(f"Invalid geometry: {str(e)}")
 
-    def _policy_to_dict(self, policy: Policy) -> Dict[str, Any]:
+    def _policy_to_dict(self, policy: Policy) -> dict[str, Any]:
         """
         Convert a Policy object to a dictionary for API response.
 
@@ -327,7 +325,7 @@ class PolicyAPI:
 
     def _policy_implementation_to_dict(
         self, implementation: PolicyImplementation
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Convert a PolicyImplementation object to a dictionary for API response.
 
@@ -365,7 +363,7 @@ class PolicyAPI:
 
     # Policy endpoints
 
-    async def create_policy(self, policy_data: PolicyCreate) -> Dict[str, Any]:
+    async def create_policy(self, policy_data: PolicyCreate) -> dict[str, Any]:
         """
         Create a new policy.
 
@@ -406,13 +404,13 @@ class PolicyAPI:
 
     async def list_policies(
         self,
-        category: Optional[str] = Query(None, description="Filter by category"),
-        jurisdiction_id: Optional[str] = Query(
+        category: str | None = Query(None, description="Filter by category"),
+        jurisdiction_id: str | None = Query(
             None, description="Filter by jurisdiction ID"
         ),
-        status: Optional[str] = Query(None, description="Filter by status"),
-        tag: Optional[str] = Query(None, description="Filter by tag"),
-    ) -> List[Dict[str, Any]]:
+        status: str | None = Query(None, description="Filter by status"),
+        tag: str | None = Query(None, description="Filter by tag"),
+    ) -> list[dict[str, Any]]:
         """
         List all policies, optionally filtered.
 
@@ -448,7 +446,7 @@ class PolicyAPI:
 
     async def get_policy(
         self, policy_id: str = Path(..., description="ID of the policy")
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get a policy by ID.
 
@@ -474,7 +472,7 @@ class PolicyAPI:
 
     async def create_policy_implementation(
         self, implementation_data: PolicyImplementationCreate
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a new policy implementation.
 
@@ -526,11 +524,11 @@ class PolicyAPI:
 
     async def list_policy_implementations(
         self,
-        status: Optional[str] = Query(None, description="Filter by status"),
-        jurisdiction_id: Optional[str] = Query(
+        status: str | None = Query(None, description="Filter by status"),
+        jurisdiction_id: str | None = Query(
             None, description="Filter by jurisdiction ID"
         ),
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List all policy implementations, optionally filtered.
 
@@ -561,7 +559,7 @@ class PolicyAPI:
         implementation_id: str = Path(
             ..., description="ID of the policy implementation"
         ),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get a policy implementation by ID.
 
@@ -586,7 +584,7 @@ class PolicyAPI:
 
     async def get_implementations_by_policy(
         self, policy_id: str = Path(..., description="ID of the policy")
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get all implementations for a specific policy.
 
@@ -615,7 +613,7 @@ class PolicyAPI:
 
     async def assess_policy_impact(
         self, assessment_request: ImpactAssessmentRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Assess the impact of a policy.
 
@@ -644,7 +642,7 @@ class PolicyAPI:
 
             # Generate deterministic assessment results based on type
             if assessment_request.assessment_type == "environmental":
-                metrics: Dict[str, Any] = {
+                metrics: dict[str, Any] = {
                     "water_quality_improvement": {"value": 25, "unit": "percent"},
                     "carbon_sequestration": {"value": 150, "unit": "tons/year"},
                     "habitat_improvement": {"value": 18, "unit": "hectares"},
@@ -691,7 +689,7 @@ class PolicyAPI:
 
     async def get_impact_assessment_history(
         self, policy_id: str = Path(..., description="ID of the policy")
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get the history of impact assessments for a policy.
 
@@ -744,7 +742,7 @@ class PolicyAPI:
     # Regulatory comparison endpoints
 
     def register_regulation(
-        self, regulation_id: str, name: str, metrics: Dict[str, Union[int, float]]
+        self, regulation_id: str, name: str, metrics: dict[str, int | float]
     ) -> None:
         """Register measured regulation metrics for comparison."""
         if not regulation_id or not name or not metrics:
@@ -757,7 +755,7 @@ class PolicyAPI:
 
     async def compare_regulations(
         self, comparison_request: RegulationComparisonRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compare multiple regulations.
 
@@ -835,11 +833,9 @@ class PolicyAPI:
 
     async def export_to_geojson(
         self,
-        policy_id: Optional[str] = Query(None, description="Filter by policy ID"),
-        status: Optional[str] = Query(
-            None, description="Filter by implementation status"
-        ),
-    ) -> Dict[str, Any]:
+        policy_id: str | None = Query(None, description="Filter by policy ID"),
+        status: str | None = Query(None, description="Filter by implementation status"),
+    ) -> dict[str, Any]:
         """
         Export policy implementations to GeoJSON.
 

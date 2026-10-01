@@ -5,7 +5,8 @@ Handles coastal vulnerability assessment and coastal zone management.
 """
 
 import logging
-from typing import Any, Dict, Optional, Sequence
+from typing import Any
+from collections.abc import Sequence
 import xarray as xr
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ class CoastalAnalyzer:
     Analyze coastal zones and assess vulnerability.
     """
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize coastal analyzer."""
         self.config = config or {}
 
@@ -24,7 +25,7 @@ class CoastalAnalyzer:
         self,
         elevation: xr.DataArray,
         sea_level: xr.DataArray,
-        wave_height: Optional[xr.DataArray] = None,
+        wave_height: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """
         Assess coastal vulnerability to sea-level rise.

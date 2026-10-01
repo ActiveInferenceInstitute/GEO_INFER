@@ -7,7 +7,7 @@ including Active Inference-based disease surveillance, advanced geospatial analy
 and integrated health analytics.
 """
 
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, UTC
 import numpy as np
 
 from geo_infer_health.core.enhanced_disease_surveillance import (
@@ -49,7 +49,7 @@ def create_sample_disease_data():
     """Create comprehensive sample disease surveillance data."""
     logger.info("Creating sample disease surveillance data...")
 
-    base_time = datetime.now(timezone.utc)
+    base_time = datetime.now(UTC)
 
     # Create multiple disease types
     diseases = ["COVID-19", "Influenza", "RSV", "Pertussis"]
@@ -168,7 +168,7 @@ def create_sample_environmental_data():
     """Create comprehensive sample environmental health data."""
     logger.info("Creating sample environmental health data...")
 
-    base_time = datetime.now(timezone.utc)
+    base_time = datetime.now(UTC)
     base_location = Location(latitude=34.0522, longitude=-118.2437)
 
     parameters = ["PM2.5", "PM10", "NO2", "Temperature", "Humidity", "O3"]
@@ -337,11 +337,11 @@ def demonstrate_active_inference_disease_analysis():
     logger.info("Risk Score: {:.3f}".format(risk["score"]))
     logger.info("Risk Factors:")
     for factor, value in risk["factors"].items():
-        logger.info("  {}: {:.3f}".format(factor, value))
+        logger.info(f"  {factor}: {value:.3f}")
 
     logger.info("\nRECOMMENDATIONS:")
     for rec in results["recommendations"]:
-        logger.info("  • {}".format(rec))
+        logger.info(f"  • {rec}")
 
     return results
 
@@ -370,16 +370,11 @@ def demonstrate_healthcare_accessibility_analysis():
         center_loc=test_location, radius_km=5.0
     )
 
-    logger.info("Found {} facilities within 5km:".format(len(nearby_facilities)))
+    logger.info(f"Found {len(nearby_facilities)} facilities within 5km:")
     for facility in nearby_facilities[:5]:  # Show first 5
         distance = analyzer._calculate_distance(test_location, facility.location)
         logger.info(
-            "  {} ({:.2f} km): {} (capacity {})".format(
-                facility.name,
-                distance,
-                facility.facility_type,
-                facility.capacity,
-            )
+            f"  {facility.name} ({distance:.2f} km): {facility.facility_type} (capacity {facility.capacity})"
         )
     # Find nearest facility
     logger.info("\nFinding nearest facility...")
@@ -387,9 +382,9 @@ def demonstrate_healthcare_accessibility_analysis():
 
     if nearest_result:
         facility, distance = nearest_result
-        logger.info("Nearest facility: {} ({:.2f} km)".format(facility.name, distance))
-        logger.info("  Type: {}".format(facility.facility_type))
-        logger.info("  Capacity: {}".format(facility.capacity))
+        logger.info(f"Nearest facility: {facility.name} ({distance:.2f} km)")
+        logger.info(f"  Type: {facility.facility_type}")
+        logger.info(f"  Capacity: {facility.capacity}")
         logger.info("  Services: {}".format(", ".join(facility.services_offered)))
 
     # Calculate facility-to-population ratios
@@ -405,7 +400,7 @@ def demonstrate_healthcare_accessibility_analysis():
                     pop_area.area_id, ratio_result["ratio_per_1000_pop"]
                 )
             )
-            logger.info("  Population: {}".format(pop_area.population_count))
+            logger.info(f"  Population: {pop_area.population_count}")
             logger.info("  Facilities: {}".format(ratio_result["facility_count"]))
 
     return {
@@ -441,13 +436,13 @@ def demonstrate_environmental_health_analysis():
         center_loc=test_location, radius_km=2.0, parameter_name="PM2.5"
     )
 
-    logger.info("Found {} PM2.5 readings within 2km".format(len(nearby_readings)))
+    logger.info(f"Found {len(nearby_readings)} PM2.5 readings within 2km")
 
     if nearby_readings:
         values = [r.value for r in nearby_readings]
-        logger.info("  Average PM2.5: {:.2f} µg/m³".format(np.mean(values)))
-        logger.info("  Min PM2.5: {:.2f} µg/m³".format(np.min(values)))
-        logger.info("  Max PM2.5: {:.2f} µg/m³".format(np.max(values)))
+        logger.info(f"  Average PM2.5: {np.mean(values):.2f} µg/m³")
+        logger.info(f"  Min PM2.5: {np.min(values):.2f} µg/m³")
+        logger.info(f"  Max PM2.5: {np.max(values):.2f} µg/m³")
 
     # Calculate average exposure for multiple locations
     logger.info("\nCalculating average exposure for multiple locations...")
@@ -472,7 +467,7 @@ def demonstrate_environmental_health_analysis():
 
     logger.info("Average PM2.5 exposure (last 24 hours):")
     for key, value in exposure_results.items():
-        logger.info("  {}: {:.2f} µg/m³".format(key, value if value else 0))
+        logger.info(f"  {key}: {value if value else 0:.2f} µg/m³")
 
     # Get readings with time filter
     logger.info("\nGetting recent readings (last 12 hours)...")
@@ -480,21 +475,17 @@ def demonstrate_environmental_health_analysis():
         center_loc=test_location,
         radius_km=5.0,
         parameter_name="Temperature",
-        start_time=datetime.now(timezone.utc) - timedelta(hours=12),
-        end_time=datetime.now(timezone.utc),
+        start_time=datetime.now(UTC) - timedelta(hours=12),
+        end_time=datetime.now(UTC),
     )
 
-    logger.info(
-        "Found {} temperature readings in last 12 hours".format(len(recent_readings))
-    )
+    logger.info(f"Found {len(recent_readings)} temperature readings in last 12 hours")
 
     if recent_readings:
         temps = [r.value for r in recent_readings]
-        logger.info("  Average temperature: {:.1f}°C".format(np.mean(temps)))
+        logger.info(f"  Average temperature: {np.mean(temps):.1f}°C")
         logger.info(
-            "  Temperature range: {:.1f}°C - {:.1f}°C".format(
-                np.min(temps), np.max(temps)
-            )
+            f"  Temperature range: {np.min(temps):.1f}°C - {np.max(temps):.1f}°C"
         )
 
     return {
@@ -564,15 +555,15 @@ def demonstrate_advanced_geospatial_analysis():
     if validation_result["warnings"]:
         logger.info("Warnings:")
         for warning in validation_result["warnings"]:
-            logger.info("  • {}".format(warning))
+            logger.info(f"  • {warning}")
 
     # Perform spatial clustering
     logger.info("\nPerforming spatial clustering...")
     clusters = spatial_clustering(locations, eps_km=1.0, min_samples=3)
 
-    logger.info("Found {} clusters:".format(len(clusters)))
+    logger.info(f"Found {len(clusters)} clusters:")
     for i, cluster in enumerate(clusters):
-        logger.info("  Cluster {}: {} points".format(i + 1, len(cluster)))
+        logger.info(f"  Cluster {i + 1}: {len(cluster)} points")
 
     # Calculate spatial statistics
     logger.info("\nCalculating spatial statistics...")
@@ -690,9 +681,7 @@ def main():
         )
         if healthcare_results.get("nearest_facility"):
             facility, distance = healthcare_results["nearest_facility"]
-            logger.info(
-                "  • Nearest facility: {} ({:.1f} km)".format(facility.name, distance)
-            )
+            logger.info(f"  • Nearest facility: {facility.name} ({distance:.1f} km)")
 
         logger.info("\nEnvironmental Health:")
         logger.info(
@@ -705,9 +694,7 @@ def main():
             avg_exposure = [v for v in exposure.values() if v]
             if avg_exposure:
                 logger.info(
-                    "  • Average PM2.5 exposure: {:.1f} µg/m³".format(
-                        sum(avg_exposure) / len(avg_exposure)
-                    )
+                    f"  • Average PM2.5 exposure: {sum(avg_exposure) / len(avg_exposure):.1f} µg/m³"
                 )
 
         logger.info("\nAdvanced Geospatial:")
@@ -733,7 +720,7 @@ def main():
 
         # Save results summary
         summary = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "disease_analysis": {
                 "hotspots": len(disease_results.get("enhanced_hotspots", [])),
                 "risk_level": disease_results.get("risk_assessment", {}).get(
@@ -766,7 +753,7 @@ def main():
         logger.info("Results summary saved to health_analysis_summary.json")
 
     except Exception as e:
-        logger.error("Error during analysis: {}".format(e))
+        logger.error(f"Error during analysis: {e}")
         import traceback
 
         traceback.print_exc()

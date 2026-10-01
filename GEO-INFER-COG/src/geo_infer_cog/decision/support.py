@@ -26,7 +26,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Any
+from typing import Any
 
 import numpy as np
 
@@ -56,11 +56,11 @@ class DecisionAlternative:
 
     alternative_id: str
     description: str
-    spatial_context: Dict[str, Any]
-    cognitive_factors: Dict[str, float] = field(default_factory=dict)
-    uncertainty_measures: Dict[str, float] = field(default_factory=dict)
-    expected_outcomes: Dict[str, Any] = field(default_factory=dict)
-    risk_assessment: Dict[str, float] = field(default_factory=dict)
+    spatial_context: dict[str, Any]
+    cognitive_factors: dict[str, float] = field(default_factory=dict)
+    uncertainty_measures: dict[str, float] = field(default_factory=dict)
+    expected_outcomes: dict[str, Any] = field(default_factory=dict)
+    risk_assessment: dict[str, float] = field(default_factory=dict)
 
     def calculate_cognitive_compatibility(
         self, user_profile: UserCognitiveProfile
@@ -114,13 +114,13 @@ class DecisionRecommendation:
     recommendation_score: float
     confidence_level: float
     primary_rationale: str
-    supporting_factors: List[str] = field(default_factory=list)
-    risk_warnings: List[str] = field(default_factory=list)
-    cognitive_considerations: List[str] = field(default_factory=list)
+    supporting_factors: list[str] = field(default_factory=list)
+    risk_warnings: list[str] = field(default_factory=list)
+    cognitive_considerations: list[str] = field(default_factory=list)
 
-    def to_display_format(self, user_profile: UserCognitiveProfile) -> Dict[str, Any]:
+    def to_display_format(self, user_profile: UserCognitiveProfile) -> dict[str, Any]:
         """Format recommendation for user display."""
-        display_format: Dict[str, Any] = {
+        display_format: dict[str, Any] = {
             "alternative_id": self.alternative_id,
             "recommendation_score": self.recommendation_score,
             "confidence_level": self.confidence_level,
@@ -169,8 +169,8 @@ class SpatialDecisionSupport:
         cognitive_bias_mitigation: bool = True,
         spatial_reasoning_model: str = "mental_maps",
         uncertainty_incorporation: str = "bayesian",
-        config: Optional[Dict[str, Any]] = None,
-        rng: Optional[np.random.Generator] = None,
+        config: dict[str, Any] | None = None,
+        rng: np.random.Generator | None = None,
     ):
         """
         Initialize spatial decision support system.
@@ -223,11 +223,11 @@ class SpatialDecisionSupport:
 
     def analyze_decision(
         self,
-        decision_problem: Dict[str, Any],
-        spatial_alternatives: List[Dict[str, Any]],
-        decision_criteria: List[str],
-        stakeholder_profiles: List[UserCognitiveProfile],
-    ) -> Dict[str, Any]:
+        decision_problem: dict[str, Any],
+        spatial_alternatives: list[dict[str, Any]],
+        decision_criteria: list[str],
+        stakeholder_profiles: list[UserCognitiveProfile],
+    ) -> dict[str, Any]:
         """
         Analyze spatial decision scenario and provide recommendations.
 
@@ -315,10 +315,10 @@ class SpatialDecisionSupport:
             raise
 
     def _extract_decision_alternatives(
-        self, spatial_alternatives: List[Dict[str, Any]]
-    ) -> List[DecisionAlternative]:
+        self, spatial_alternatives: list[dict[str, Any]]
+    ) -> list[DecisionAlternative]:
         """Extract and structure decision alternatives."""
-        alternatives: List[DecisionAlternative] = []
+        alternatives: list[DecisionAlternative] = []
 
         for alt_data in spatial_alternatives:
             alternative = DecisionAlternative(
@@ -336,9 +336,9 @@ class SpatialDecisionSupport:
 
     def _apply_bias_mitigation(
         self,
-        alternatives: List[DecisionAlternative],
-        stakeholder_profiles: List[UserCognitiveProfile],
-    ) -> List[DecisionAlternative]:
+        alternatives: list[DecisionAlternative],
+        stakeholder_profiles: list[UserCognitiveProfile],
+    ) -> list[DecisionAlternative]:
         """Apply cognitive bias mitigation strategies."""
         mitigated_alternatives = []
 
@@ -363,8 +363,8 @@ class SpatialDecisionSupport:
     def _detect_cognitive_biases(
         self,
         alternative: DecisionAlternative,
-        stakeholder_profiles: List[UserCognitiveProfile],
-    ) -> List[str]:
+        stakeholder_profiles: list[UserCognitiveProfile],
+    ) -> list[str]:
         """Detect cognitive biases in decision alternative evaluation."""
         biases = []
 
@@ -383,7 +383,7 @@ class SpatialDecisionSupport:
         return biases
 
     def _mitigate_detected_biases(
-        self, alternative: DecisionAlternative, bias_warnings: List[str]
+        self, alternative: DecisionAlternative, bias_warnings: list[str]
     ) -> DecisionAlternative:
         """Apply mitigation strategies for detected biases."""
         # Create a copy of the alternative with mitigated factors
@@ -418,8 +418,8 @@ class SpatialDecisionSupport:
         return mitigated
 
     def _apply_prospect_theory(
-        self, alternatives: List[DecisionAlternative], criteria: List[str]
-    ) -> Dict[str, float]:
+        self, alternatives: list[DecisionAlternative], criteria: list[str]
+    ) -> dict[str, float]:
         """Apply prospect theory for decision evaluation."""
         evaluations = {}
 
@@ -462,10 +462,10 @@ class SpatialDecisionSupport:
 
     def _apply_cognitive_weighting(
         self,
-        alternatives: List[DecisionAlternative],
-        stakeholder_profiles: List[UserCognitiveProfile],
-        criteria: List[str],
-    ) -> Dict[str, float]:
+        alternatives: list[DecisionAlternative],
+        stakeholder_profiles: list[UserCognitiveProfile],
+        criteria: list[str],
+    ) -> dict[str, float]:
         """Apply cognitive weighting based on user profiles."""
         evaluations = {}
 
@@ -502,8 +502,8 @@ class SpatialDecisionSupport:
         return evaluations
 
     def _apply_bayesian_decision(
-        self, alternatives: List[DecisionAlternative], criteria: List[str]
-    ) -> Dict[str, float]:
+        self, alternatives: list[DecisionAlternative], criteria: list[str]
+    ) -> dict[str, float]:
         """Apply Bayesian decision theory."""
         evaluations = {}
 
@@ -546,8 +546,8 @@ class SpatialDecisionSupport:
         return evaluations
 
     def _apply_multi_criteria_analysis(
-        self, alternatives: List[DecisionAlternative], criteria: List[str]
-    ) -> Dict[str, float]:
+        self, alternatives: list[DecisionAlternative], criteria: list[str]
+    ) -> dict[str, float]:
         """Apply multi-criteria decision analysis."""
         evaluations = {}
 
@@ -575,11 +575,11 @@ class SpatialDecisionSupport:
 
     def _generate_recommendations(
         self,
-        evaluations: Dict[str, float],
-        alternatives: List[DecisionAlternative],
-        stakeholder_profiles: List[UserCognitiveProfile],
-        criteria: List[str],
-    ) -> List[DecisionRecommendation]:
+        evaluations: dict[str, float],
+        alternatives: list[DecisionAlternative],
+        stakeholder_profiles: list[UserCognitiveProfile],
+        criteria: list[str],
+    ) -> list[DecisionRecommendation]:
         """Generate decision recommendations based on evaluations."""
         recommendations = []
 
@@ -654,8 +654,8 @@ class SpatialDecisionSupport:
         return f"Strong performance in {best_criterion} ({max_factor:.3f})"
 
     def _generate_supporting_factors(
-        self, alternative: DecisionAlternative, criteria: List[str]
-    ) -> List[str]:
+        self, alternative: DecisionAlternative, criteria: list[str]
+    ) -> list[str]:
         """Generate supporting factors for recommendation."""
         factors = []
 
@@ -673,7 +673,7 @@ class SpatialDecisionSupport:
 
         return factors[:3]  # Limit to top 3 factors
 
-    def _generate_risk_warnings(self, alternative: DecisionAlternative) -> List[str]:
+    def _generate_risk_warnings(self, alternative: DecisionAlternative) -> list[str]:
         """Generate risk warnings for alternative."""
         warnings = []
 
@@ -696,8 +696,8 @@ class SpatialDecisionSupport:
     def _generate_cognitive_considerations(
         self,
         alternative: DecisionAlternative,
-        stakeholder_profiles: List[UserCognitiveProfile],
-    ) -> List[str]:
+        stakeholder_profiles: list[UserCognitiveProfile],
+    ) -> list[str]:
         """Generate cognitive considerations for recommendation."""
         considerations = []
 
@@ -724,8 +724,8 @@ class SpatialDecisionSupport:
         return considerations
 
     def _assess_decision_uncertainty(
-        self, alternatives: List[DecisionAlternative], evaluations: Dict[str, float]
-    ) -> Dict[str, Any]:
+        self, alternatives: list[DecisionAlternative], evaluations: dict[str, float]
+    ) -> dict[str, Any]:
         """Assess overall uncertainty in decision analysis."""
         uncertainty_measures = []
 
@@ -762,9 +762,9 @@ class SpatialDecisionSupport:
 
     def _assess_decision_risks(
         self,
-        alternatives: List[DecisionAlternative],
-        stakeholder_profiles: List[UserCognitiveProfile],
-    ) -> Dict[str, Any]:
+        alternatives: list[DecisionAlternative],
+        stakeholder_profiles: list[UserCognitiveProfile],
+    ) -> dict[str, Any]:
         """Assess risks associated with decision alternatives."""
         risk_measures = []
 
@@ -793,8 +793,8 @@ class SpatialDecisionSupport:
 
     def _assess_risk_tolerance_compatibility(
         self,
-        risk_measures: List[float],
-        stakeholder_profiles: List[UserCognitiveProfile],
+        risk_measures: list[float],
+        stakeholder_profiles: list[UserCognitiveProfile],
     ) -> float:
         """Assess compatibility between alternative risks and stakeholder risk tolerance."""
         if not stakeholder_profiles or not risk_measures:
@@ -831,11 +831,11 @@ class SpatialDecisionSupport:
 
     def _analyze_stakeholder_compatibility(
         self,
-        alternatives: List[DecisionAlternative],
-        stakeholder_profiles: List[UserCognitiveProfile],
-    ) -> Dict[str, Any]:
+        alternatives: list[DecisionAlternative],
+        stakeholder_profiles: list[UserCognitiveProfile],
+    ) -> dict[str, Any]:
         """Analyze stakeholder compatibility with decision alternatives."""
-        analysis: Dict[str, Any] = {
+        analysis: dict[str, Any] = {
             "overall_compatibility": 0.0,
             "stakeholder_preferences": {},
             "consensus_potential": 0.0,
@@ -896,10 +896,10 @@ class SpatialDecisionSupport:
         return analysis
 
     def get_decision_insights(
-        self, decision_analysis: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, decision_analysis: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate insights and explanations for decision analysis."""
-        insights: Dict[str, Any] = {
+        insights: dict[str, Any] = {
             "decision_summary": {},
             "key_factors": [],
             "uncertainty_insights": [],
@@ -951,7 +951,7 @@ class SpatialDecisionSupport:
 
         return insights
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current status of the decision support system."""
         return {
             "system_type": "spatial_decision_support",

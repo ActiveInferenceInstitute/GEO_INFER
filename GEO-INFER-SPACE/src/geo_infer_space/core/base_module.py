@@ -12,7 +12,7 @@ import json
 import time
 from pathlib import Path
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Set
+from typing import Any
 import geopandas as gpd
 from shapely.geometry import shape
 
@@ -37,7 +37,7 @@ class BaseAnalysisModule(ABC):
     def __init__(
         self,
         module_name: str,
-        config_path: Optional[Path] = None,
+        config_path: Path | None = None,
         h3_resolution: int = 8,
     ) -> None:
         """
@@ -60,12 +60,12 @@ class BaseAnalysisModule(ABC):
         )
 
         # Initialize target hexagons (will be set by backend)
-        self.target_hexagons: Set[str] = set()
+        self.target_hexagons: set[str] = set()
 
         self.logger = logging.getLogger(f"{__name__}.{module_name}")
 
         # Load configuration if provided
-        self.config: Dict[str, Any] = {}
+        self.config: dict[str, Any] = {}
         if config_path and config_path.exists():
             self._load_config()  # type: ignore[attr-defined]
 
@@ -150,7 +150,7 @@ class BaseAnalysisModule(ABC):
             )
 
             # Initialize H3 data storage
-            h3_data: Dict[str, Any] = {}
+            h3_data: dict[str, Any] = {}
             processed_features = 0
             failed_features = 0
 
@@ -328,7 +328,7 @@ class BaseAnalysisModule(ABC):
 
             # Convert the h3_data to a serializable format before returning
             # This ensures that Shapely geometries are converted to GeoJSON
-            serializable_h3_data: Dict[str, Any] = {}
+            serializable_h3_data: dict[str, Any] = {}
             for h3_cell, cell_data in h3_data.items():
                 serializable_h3_data[h3_cell] = {}
                 for module_name, module_data in cell_data.items():
@@ -409,7 +409,7 @@ class BaseAnalysisModule(ABC):
                 return False
 
             # Try to read the first few characters to check if it's valid JSON
-            with open(cache_path, "r") as f:
+            with open(cache_path) as f:
                 first_chars = f.read(50)
                 if not first_chars.strip().startswith("{"):
                     logger.warning(
@@ -418,7 +418,7 @@ class BaseAnalysisModule(ABC):
                     return False
 
             # Try to parse the entire file
-            with open(cache_path, "r") as f:
+            with open(cache_path) as f:
                 json.load(f)
 
             return True
@@ -439,7 +439,7 @@ class BaseAnalysisModule(ABC):
         logger.info(f"[{self.module_name}] 🚀 Starting real data analysis workflow...")
 
         # Track data processing statistics
-        analysis_stats: Dict[str, Any] = {
+        analysis_stats: dict[str, Any] = {
             "cached_data_used": False,
             "raw_data_acquired": False,
             "h3_data_processed": 0,
@@ -458,7 +458,7 @@ class BaseAnalysisModule(ABC):
                 )
                 try:
                     if self._validate_cache_file(self.h3_cache_path):
-                        with open(self.h3_cache_path, "r") as f:
+                        with open(self.h3_cache_path) as f:
                             h3_data = json.load(f)
 
                         if h3_data and len(h3_data) > 0:

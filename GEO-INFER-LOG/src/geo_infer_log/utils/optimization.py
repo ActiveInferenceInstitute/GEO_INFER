@@ -6,13 +6,13 @@ problems like TSP and VRP.
 """
 
 import numpy as np
-from typing import Any, List, Dict, Tuple, Optional, cast
+from typing import Any, cast
 
-_ORTOOLS_MODULES: Optional[Tuple[Optional[object], Optional[object]]] = None
-_HAS_ORTOOLS: Optional[bool] = None
+_ORTOOLS_MODULES: tuple[object | None, object | None] | None = None
+_HAS_ORTOOLS: bool | None = None
 
 
-def _load_ortools() -> Tuple[Optional[object], Optional[object]]:
+def _load_ortools() -> tuple[object | None, object | None]:
     """Import ortools on demand; return (routing_enums_pb2, pywrapcp) or Nones.
 
     The import is lazy because a module-level ``from ortools...`` segfaults
@@ -40,7 +40,7 @@ def _load_ortools() -> Tuple[Optional[object], Optional[object]]:
 from geo_infer_log.utils.geo import haversine_distance
 
 
-def _require_ortools() -> Tuple[Any, Any]:
+def _require_ortools() -> tuple[Any, Any]:
     """Return the ortools modules or raise ImportError if not installed."""
     _load_ortools()
     if not _HAS_ORTOOLS:
@@ -51,12 +51,12 @@ def _require_ortools() -> Tuple[Any, Any]:
 
 
 def solve_tsp(
-    points: List[Tuple[float, float]],
+    points: list[tuple[float, float]],
     start_index: int = 0,
-    end_index: Optional[int] = None,
-    time_windows: Optional[List[Tuple[int, int]]] = None,
-    time_matrix: Optional[List[List[int]]] = None,
-) -> Dict:
+    end_index: int | None = None,
+    time_windows: list[tuple[int, int]] | None = None,
+    time_matrix: list[list[int]] | None = None,
+) -> dict:
     """
     Solve a Traveling Salesman Problem (TSP).
 
@@ -187,15 +187,15 @@ def solve_tsp(
 
 
 def solve_vrp(
-    depots: List[Tuple[float, float]],
-    deliveries: List[Tuple[float, float]],
+    depots: list[tuple[float, float]],
+    deliveries: list[tuple[float, float]],
     num_vehicles: int,
-    vehicle_capacities: Optional[List[float]] = None,
-    delivery_demands: Optional[List[float]] = None,
-    time_windows: Optional[List[Tuple[int, int]]] = None,
-    max_distance: Optional[float] = None,
-    max_time: Optional[int] = None,
-) -> Dict:
+    vehicle_capacities: list[float] | None = None,
+    delivery_demands: list[float] | None = None,
+    time_windows: list[tuple[int, int]] | None = None,
+    max_distance: float | None = None,
+    max_time: int | None = None,
+) -> dict:
     """
     Solve a Vehicle Routing Problem (VRP).
 

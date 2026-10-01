@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Tests for agent_base module: AgentState and BaseAgent lifecycle.
@@ -159,7 +158,7 @@ class TestBaseAgentLifecycle(unittest.TestCase):
             self.assertEqual(saved_path, filepath)
 
             # Verify JSON is valid
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 data = json.load(f)
             self.assertEqual(data["agent_id"], "save-test")
             self.assertEqual(data["beliefs"]["key"], "value")

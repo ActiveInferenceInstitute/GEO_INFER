@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 _ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
 if str(_ORCHESTRATORS_DIR) not in sys.path:
@@ -22,7 +22,7 @@ if str(_ORCHESTRATORS_DIR) not in sys.path:
 from _lib import run_module_orchestrator  # noqa: E402
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     import numpy as np
 
     from geo_infer_econ import EcosystemServicesValuation
@@ -34,7 +34,7 @@ def _operation() -> Dict[str, Any]:
 
     # Same TEEB service catalog assessed over three synthetic bioregions;
     # areas and biome-quality factors differ per region.
-    service_catalog: List[Tuple[str, str]] = [
+    service_catalog: list[tuple[str, str]] = [
         ("provisioning", "water"),
         ("regulating", "climate_regulation"),
         ("regulating", "water_purification"),
@@ -43,7 +43,7 @@ def _operation() -> Dict[str, Any]:
     ]
     regions = ("fir_river_watershed", "oak_savanna", "coastal_dunes")
 
-    regional_results: Dict[str, Dict[str, float]] = {}
+    regional_results: dict[str, dict[str, float]] = {}
     for region in regions:
         services = [
             {

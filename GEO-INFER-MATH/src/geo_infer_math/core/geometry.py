@@ -7,7 +7,7 @@ intersections, and other geometric properties.
 """
 
 import numpy as np
-from typing import List, Tuple, Optional, cast
+from typing import cast
 from dataclasses import dataclass
 
 # Constants for Earth calculations
@@ -24,7 +24,7 @@ class Point:
 
     x: float
     y: float
-    z: Optional[float] = None
+    z: float | None = None
 
     def distance_to(self, other: "Point") -> float:
         """Calculate Euclidean distance to another point."""
@@ -51,7 +51,7 @@ class Point:
 class LineString:
     """Representation of a line string (sequence of points)."""
 
-    points: List[Point]
+    points: list[Point]
 
     def length(self) -> float:
         """Calculate the length of the line string."""
@@ -79,8 +79,8 @@ class LineString:
 class Polygon:
     """Representation of a polygon (exterior ring and optional interior rings)."""
 
-    exterior: List[Point]
-    interiors: Optional[List[List[Point]]] = None
+    exterior: list[Point]
+    interiors: list[list[Point]] | None = None
 
     def area(self) -> float:
         """Calculate the area of the polygon using Shoelace formula."""
@@ -114,7 +114,7 @@ class Polygon:
         if len(self.exterior) < 3:
             raise ValueError("Polygon must have at least 3 points")
 
-        def ring_contribution(ring: List[Point]) -> Tuple[float, float, float]:
+        def ring_contribution(ring: list[Point]) -> tuple[float, float, float]:
             """Return (weighted_cx, weighted_cy, abs_area) for one ring."""
             cx = cy = a2 = 0.0
             n = len(ring)
@@ -339,7 +339,7 @@ def bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 def destination_point(
     lat: float, lon: float, bearing: float, distance: float
-) -> Tuple[float, float]:
+) -> tuple[float, float]:
     """
     Calculate the destination point given a starting point, bearing, and distance.
 
@@ -490,7 +490,7 @@ def points_in_polygon_vectorized(
 
 def buffer_point(
     lat: float, lon: float, distance: float, segments: int = 32
-) -> List[Tuple[float, float]]:
+) -> list[tuple[float, float]]:
     """
     Create a circular buffer around a point.
 
@@ -517,7 +517,7 @@ def buffer_point(
 
 def line_intersection(
     line1_start: Point, line1_end: Point, line2_start: Point, line2_end: Point
-) -> Optional[Point]:
+) -> Point | None:
     """
     Find the intersection point of two line segments.
 
@@ -567,7 +567,7 @@ def line_intersection(
     return None
 
 
-def polygon_area_spherical(polygon: List[Tuple[float, float]]) -> float:
+def polygon_area_spherical(polygon: list[tuple[float, float]]) -> float:
     """
     Calculate the area of a polygon on the Earth's surface.
 

@@ -17,7 +17,7 @@ time. This keeps GEO-INFER-API importable without the SPACE dependency.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
@@ -39,7 +39,7 @@ try:  # pragma: no cover - workspace availability is environment dependent
         build_reference_registry,
     )
 
-    _REGISTRY: Optional[AlgorithmRegistry] = build_reference_registry()
+    _REGISTRY: AlgorithmRegistry | None = build_reference_registry()
     HAS_ALGORITHM_REGISTRY: bool = True
 except ImportError:  # pragma: no cover - exercised when geo_infer_space is absent
     _REGISTRY = None
@@ -54,7 +54,7 @@ class AlgorithmParameterOut(BaseModel):
     id: str
     label: str
     required: bool = False
-    default: Optional[Any] = None
+    default: Any | None = None
     type: str = "auto"
 
 
@@ -64,22 +64,22 @@ class AlgorithmOut(BaseModel):
     id: str
     name: str
     description: str
-    parameters: List[AlgorithmParameterOut] = Field(default_factory=list)
+    parameters: list[AlgorithmParameterOut] = Field(default_factory=list)
 
 
 class AlgorithmRunRequest(BaseModel):
     """Request body for running a registered algorithm."""
 
-    layers: List[Dict[str, Any]] = Field(default_factory=list)
-    parameters: Dict[str, Any] = Field(default_factory=dict)
+    layers: list[dict[str, Any]] = Field(default_factory=list)
+    parameters: dict[str, Any] = Field(default_factory=dict)
 
 
 class AlgorithmRunResponse(BaseModel):
     """Result of running a registered algorithm."""
 
     algorithm_id: str
-    result: Optional[Any] = None
-    logs: List[str] = Field(default_factory=list)
+    result: Any | None = None
+    logs: list[str] = Field(default_factory=list)
 
 
 def _algorithm_out(algorithm: ProcessingAlgorithm) -> AlgorithmOut:
@@ -113,7 +113,7 @@ def _require_registry() -> AlgorithmRegistry:
 
 
 @router.get("/algorithms", summary="List registered processing algorithms")
-async def list_algorithms() -> Dict[str, Any]:
+async def list_algorithms() -> dict[str, Any]:
     """List all registered processing algorithms and their parameters."""
     registry = _require_registry()
     algorithms = [_algorithm_out(a) for a in registry.list()]

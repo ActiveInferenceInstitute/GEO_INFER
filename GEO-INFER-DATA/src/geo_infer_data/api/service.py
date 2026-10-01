@@ -7,8 +7,8 @@ dataset management, data access, and integration with other modules.
 
 import logging
 import inspect
-from typing import Dict, List, Optional, Any, cast
-from datetime import datetime, timezone
+from typing import Any, cast
+from datetime import datetime, UTC
 
 import geopandas as gpd
 import pandas as pd
@@ -61,8 +61,8 @@ class DataService:
 
     def __init__(
         self,
-        storage_service: Optional[AdaptiveDataStorage] = None,
-        quality_service: Optional[DataQualityManager] = None,
+        storage_service: AdaptiveDataStorage | None = None,
+        quality_service: DataQualityManager | None = None,
     ):
         self.storage_service = storage_service or AdaptiveDataStorage(
             storage_backends=["local"], optimization_strategy="access_pattern_based"
@@ -72,14 +72,14 @@ class DataService:
             validation_rules="comprehensive", quality_threshold=0.8
         )
 
-        self.datasets: Dict[str, Dataset] = {}
-        self.access_log: List[Dict[str, Any]] = []
+        self.datasets: dict[str, Dataset] = {}
+        self.access_log: list[dict[str, Any]] = []
 
         logger.info("Initialized DataService")
 
     async def list_datasets(
-        self, filters: Optional[Dict[str, Any]] = None, limit: int = 50, offset: int = 0
-    ) -> List[Dataset]:
+        self, filters: dict[str, Any] | None = None, limit: int = 50, offset: int = 0
+    ) -> list[Dataset]:
         """
         List available datasets.
 
@@ -113,7 +113,7 @@ class DataService:
         # Paginate over the filtered result set
         return datasets[offset : offset + limit]
 
-    def _bboxes_intersect(self, bbox1: List[float], bbox2: List[float]) -> bool:
+    def _bboxes_intersect(self, bbox1: list[float], bbox2: list[float]) -> bool:
         """Check if two bounding boxes intersect."""
         if len(bbox1) < 4 or len(bbox2) < 4:
             return False
@@ -128,7 +128,7 @@ class DataService:
             or min_lat1 > max_lat2
         )
 
-    async def get_dataset(self, dataset_id: str) -> Optional[Dataset]:
+    async def get_dataset(self, dataset_id: str) -> Dataset | None:
         """
         Get dataset information.
 
@@ -149,8 +149,8 @@ class DataService:
     async def get_dataset_data(
         self,
         dataset_id: str,
-        spatial_bounds: Optional[List[float]] = None,
-        temporal_range: Optional[tuple] = None,
+        spatial_bounds: list[float] | None = None,
+        temporal_range: tuple | None = None,
         format: str = "geojson",
     ) -> Any:
         """
@@ -174,7 +174,7 @@ class DataService:
         self.access_log.append(
             {
                 "dataset_id": dataset_id,
-                "timestamp": datetime.now(timezone.utc),
+                "timestamp": datetime.now(UTC),
                 "spatial_bounds": spatial_bounds,
                 "temporal_range": temporal_range,
                 "format": format,
@@ -260,9 +260,9 @@ class DataService:
         logger.info(f"Dataset created successfully: {dataset_id}")
         return dataset_id
 
-    def _analyze_access_patterns(self, metadata: DatasetMetadata) -> Dict[str, Any]:
+    def _analyze_access_patterns(self, metadata: DatasetMetadata) -> dict[str, Any]:
         """Analyze expected access patterns for optimization."""
-        patterns: Dict[str, Any] = {
+        patterns: dict[str, Any] = {
             "spatial_queries": [],
             "temporal_queries": [],
             "query_frequency": "medium",
@@ -287,7 +287,7 @@ class DataService:
 
         return patterns
 
-    async def update_dataset(self, dataset_id: str, updates: Dict[str, Any]) -> bool:
+    async def update_dataset(self, dataset_id: str, updates: dict[str, Any]) -> bool:
         """
         Update dataset information.
 
@@ -312,7 +312,7 @@ class DataService:
             elif hasattr(dataset.metadata, key):
                 setattr(dataset.metadata, key, value)
 
-        dataset.updated_at = datetime.now(timezone.utc)
+        dataset.updated_at = datetime.now(UTC)
 
         return True
 
@@ -350,7 +350,7 @@ class DataService:
             await _maybe_await(self.quality_service.validate_dataset(dataset_id)),
         )
 
-    def get_access_patterns(self, dataset_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_access_patterns(self, dataset_id: str | None = None) -> dict[str, Any]:
         """
         Get data access patterns.
 
@@ -370,7 +370,7 @@ class DataService:
             # Get overall patterns
             return self._analyze_access_log(self.access_log)
 
-    def _analyze_access_log(self, access_log: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_access_log(self, access_log: list[dict[str, Any]]) -> dict[str, Any]:
         """Analyze access log for patterns."""
         if not access_log:
             return {"message": "No access data available"}
@@ -389,9 +389,9 @@ class DataService:
             "peak_hours": self._find_peak_hours(access_log),
         }
 
-    def _find_peak_hours(self, access_log: List[Dict[str, Any]]) -> List[int]:
+    def _find_peak_hours(self, access_log: list[dict[str, Any]]) -> list[int]:
         """Find peak access hours."""
-        hour_counts: Dict[int, int] = {}
+        hour_counts: dict[int, int] = {}
 
         for log in access_log:
             hour = log["timestamp"].hour
@@ -404,13 +404,13 @@ class DataService:
 
         return []
 
-    def get_storage_stats(self) -> Dict[str, Any]:
+    def get_storage_stats(self) -> dict[str, Any]:
         """Get storage statistics."""
         return self.storage_service.get_storage_stats()
 
-    def optimize_performance(self) -> Dict[str, Any]:
+    def optimize_performance(self) -> dict[str, Any]:
         """Optimize data service performance."""
-        optimizations: Dict[str, Any] = {
+        optimizations: dict[str, Any] = {
             "cache_optimization": {},
             "storage_optimization": {},
             "query_optimization": {},

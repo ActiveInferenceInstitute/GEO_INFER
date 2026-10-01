@@ -6,15 +6,10 @@ normative compliance using probabilistic approaches.
 """
 
 from typing import (
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
     Any,
-    Callable,
     cast,
 )
+from collections.abc import Callable
 import datetime
 import logging
 import uuid
@@ -42,24 +37,22 @@ class NormativeInference:
 
     def __init__(self) -> None:
         """Initialize a NormativeInference instance."""
-        self.norms: Dict[str, Dict[str, Any]] = {}  # norm ID -> norm definitions
-        self.observations: Dict[
-            str, Dict[str, List[Dict[str, Any]]]
+        self.norms: dict[str, dict[str, Any]] = {}  # norm ID -> norm definitions
+        self.observations: dict[
+            str, dict[str, list[dict[str, Any]]]
         ] = {}  # entity ID -> behavior -> observations
-        self.prior_beliefs: Dict[Tuple[str, Optional[str]], float] = {}
-        self.norm_relationships: Dict[str, Dict[str, Any]] = {}
+        self.prior_beliefs: dict[tuple[str, str | None], float] = {}
+        self.norm_relationships: dict[str, dict[str, Any]] = {}
 
     def add_norm(
         self,
         name: str,
-        condition: Callable[[Dict[str, Any]], bool],
+        condition: Callable[[dict[str, Any]], bool],
         probability: float = 1.0,
         description: str = "",
-        spatial_constraint: Optional[Polygon] = None,
-        temporal_constraint: Optional[
-            Tuple[datetime.datetime, datetime.datetime]
-        ] = None,
-        attributes: Optional[Dict[str, Any]] = None,
+        spatial_constraint: Polygon | None = None,
+        temporal_constraint: tuple[datetime.datetime, datetime.datetime] | None = None,
+        attributes: dict[str, Any] | None = None,
     ) -> str:
         """
         Add a norm to the inference engine.
@@ -135,8 +128,8 @@ class NormativeInference:
         entity_id: str,
         behavior: str,
         value: Any,
-        timestamp: Optional[datetime.datetime] = None,
-        location: Optional[Point] = None,
+        timestamp: datetime.datetime | None = None,
+        location: Point | None = None,
         certainty: float = 1.0,
     ) -> None:
         """
@@ -169,7 +162,7 @@ class NormativeInference:
     def set_prior_belief(
         self,
         norm_id: str,
-        entity_id: Optional[str] = None,
+        entity_id: str | None = None,
         compliance_probability: float = 0.5,
     ) -> None:
         """
@@ -199,7 +192,7 @@ class NormativeInference:
 
     def get_latest_observation(
         self, entity_id: str, behavior: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Get the most recent observation for an entity's behavior.
 
@@ -223,7 +216,7 @@ class NormativeInference:
         # Return the most recent observation
         return max(observations, key=lambda o: o["timestamp"])
 
-    def get_entity_observations(self, entity_id: str) -> Dict[str, Any]:
+    def get_entity_observations(self, entity_id: str) -> dict[str, Any]:
         """
         Get all latest observations for an entity.
 
@@ -246,7 +239,7 @@ class NormativeInference:
 
     def check_norm_compliance(
         self, norm_id: str, entity_id: str
-    ) -> Tuple[Union[bool, str], Optional[float]]:
+    ) -> tuple[bool | str, float | None]:
         """
         Check if an entity complies with a norm.
 
@@ -329,8 +322,8 @@ class NormativeInference:
             return "error", None
 
     def infer_compliance(
-        self, entity_id: str, norm_id: Optional[str] = None
-    ) -> Union[float, Dict[str, float]]:
+        self, entity_id: str, norm_id: str | None = None
+    ) -> float | dict[str, float]:
         """
         Infer the probability of norm compliance for an entity.
 
@@ -383,7 +376,7 @@ class NormativeInference:
             return probability
         else:
             # Infer compliance for all norms
-            result: Dict[str, float] = {}
+            result: dict[str, float] = {}
             for norm_id in self.norms:
                 result[norm_id] = cast(float, self.infer_compliance(entity_id, norm_id))
             return result
@@ -450,7 +443,7 @@ class NormativeInference:
 
     def identify_norm_violations(
         self, entity_id: str, threshold: float = 0.3
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Identify potential norm violations for an entity.
 
@@ -484,7 +477,7 @@ class NormativeInference:
 
     def suggest_compliance_improvements(
         self, entity_id: str, improvement_threshold: float = 0.7
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Suggest improvements to increase compliance.
 
@@ -604,18 +597,18 @@ class SocialNormDiffusion:
 
     def __init__(self) -> None:
         """Initialize a SocialNormDiffusion instance."""
-        self.entities: Dict[str, Dict[str, Any]] = {}
-        self.norms: Dict[str, Dict[str, Any]] = {}
-        self.social_connections: Dict[str, Dict[str, float]] = {}
-        self.spatial_locations: Dict[str, Point] = {}
-        self.adoption_state: Dict[str, Dict[str, bool]] = {}
-        self.history: List[Dict[str, Any]] = []
+        self.entities: dict[str, dict[str, Any]] = {}
+        self.norms: dict[str, dict[str, Any]] = {}
+        self.social_connections: dict[str, dict[str, float]] = {}
+        self.spatial_locations: dict[str, Point] = {}
+        self.adoption_state: dict[str, dict[str, bool]] = {}
+        self.history: list[dict[str, Any]] = []
 
     def add_entity(
         self,
         entity_id: str,
-        attributes: Dict[str, Any],
-        location: Optional[Point] = None,
+        attributes: dict[str, Any],
+        location: Point | None = None,
         adoption_threshold: float = 0.5,
     ) -> None:
         """
@@ -640,11 +633,11 @@ class SocialNormDiffusion:
         self,
         norm_id: str,
         name: str,
-        initial_adopters: Optional[List[str]] = None,
+        initial_adopters: list[str] | None = None,
         spatial_factor: float = 0.5,
         network_factor: float = 0.5,
         content_factor: float = 0.0,
-        attributes: Optional[Dict[str, Any]] = None,
+        attributes: dict[str, Any] | None = None,
     ) -> None:
         """
         Add a norm to the diffusion model.
@@ -787,14 +780,14 @@ class SocialNormDiffusion:
 
         return cast(float, total_influence)
 
-    def simulate_step(self) -> Dict[str, Any]:
+    def simulate_step(self) -> dict[str, Any]:
         """
         Simulate one step of norm diffusion.
 
         Returns:
             A dictionary with changes made in this step
         """
-        step_changes: Dict[str, Any] = {
+        step_changes: dict[str, Any] = {
             "time_step": len(self.history) + 1,
             "norm_changes": {},
         }
@@ -821,7 +814,7 @@ class SocialNormDiffusion:
         self.history.append(step_changes)
         return step_changes
 
-    def simulate(self, steps: int) -> List[Dict[str, Any]]:
+    def simulate(self, steps: int) -> list[dict[str, Any]]:
         """
         Simulate multiple steps of norm diffusion.
 
@@ -845,7 +838,7 @@ class SocialNormDiffusion:
 
         return results
 
-    def get_adoption_summary(self) -> Dict[str, Dict[str, float]]:
+    def get_adoption_summary(self) -> dict[str, dict[str, float]]:
         """
         Get a summary of norm adoption.
 
@@ -871,14 +864,14 @@ class SocialNormDiffusion:
 
         return summary
 
-    def get_adoption_history(self) -> Dict[str, List[float]]:
+    def get_adoption_history(self) -> dict[str, list[float]]:
         """
         Get the history of adoption rates over time.
 
         Returns:
             Dictionary mapping norm IDs to lists of adoption rates
         """
-        history: Dict[str, List[float]] = {norm_id: [] for norm_id in self.norms}
+        history: dict[str, list[float]] = {norm_id: [] for norm_id in self.norms}
 
         # Calculate initial state
         for norm_id in self.norms:

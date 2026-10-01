@@ -9,7 +9,8 @@ mirroring the ``ErrorHandlerMiddleware`` pattern in GEO-INFER-LOG
 """
 
 import logging
-from typing import Any, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse

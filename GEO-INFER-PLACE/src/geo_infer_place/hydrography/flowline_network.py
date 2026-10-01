@@ -12,7 +12,7 @@ import logging
 from itertools import islice
 import math
 
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, cast
 
 import geopandas as gpd
 import networkx as nx
@@ -84,10 +84,10 @@ class FlowlineTopologyValidator:
         """
         self.graph = graph
 
-    def validate_is_dag(self) -> Dict[str, Any]:
+    def validate_is_dag(self) -> dict[str, Any]:
         """Validate that the flowline network is a directed acyclic graph (no loops)."""
         is_dag = nx.is_directed_acyclic_graph(self.graph)
-        cycles: List[List[Any]] = []
+        cycles: list[list[Any]] = []
         if not is_dag:
             try:
                 cycles = list(islice(nx.simple_cycles(self.graph), 11))
@@ -101,12 +101,12 @@ class FlowlineTopologyValidator:
             "cycles": cycles[:10],
         }
 
-    def validate_strahler_monotonicity(self) -> Dict[str, Any]:
+    def validate_strahler_monotonicity(self) -> dict[str, Any]:
         """Verify that stream order is non-decreasing in the downstream direction.
 
         Along any valid flowline path (u -> v), stream_order(v) >= stream_order(u).
         """
-        violations: List[Dict[str, Any]] = []
+        violations: list[dict[str, Any]] = []
         for u, v, data in self.graph.edges(data=True):
             u_order = data.get("stream_order")
             # Look at downstream edges from v
@@ -135,7 +135,7 @@ class FlowlineTopologyValidator:
             "violations": violations,
         }
 
-    def find_headwaters(self) -> List[Any]:
+    def find_headwaters(self) -> list[Any]:
         """Find headwater nodes (nodes with in-degree == 0 and out-degree > 0)."""
         return [
             node
@@ -143,7 +143,7 @@ class FlowlineTopologyValidator:
             if self.graph.in_degree(node) == 0 and self.graph.out_degree(node) > 0
         ]
 
-    def find_outlets(self) -> List[Any]:
+    def find_outlets(self) -> list[Any]:
         """Find terminal outlet nodes (nodes with out-degree == 0 and in-degree > 0)."""
         return [
             node
@@ -151,7 +151,7 @@ class FlowlineTopologyValidator:
             if self.graph.out_degree(node) == 0 and self.graph.in_degree(node) > 0
         ]
 
-    def validate_all(self) -> Dict[str, Any]:
+    def validate_all(self) -> dict[str, Any]:
         """Run full battery of hydrological network validation checks."""
         dag_res = self.validate_is_dag()
         monotonic_res = self.validate_strahler_monotonicity()
@@ -187,7 +187,7 @@ class CascadiaFlowlineNetwork:
     topology traversal, drainage path finding, and spatial integration with H3 grids.
     """
 
-    def __init__(self, flowlines_gdf: Optional[gpd.GeoDataFrame] = None) -> None:
+    def __init__(self, flowlines_gdf: gpd.GeoDataFrame | None = None) -> None:
         """Initialize flowline network.
 
         Args:
@@ -199,12 +199,12 @@ class CascadiaFlowlineNetwork:
             else gpd.GeoDataFrame(geometry=[], crs="EPSG:4326")
         )
         self.graph = nx.MultiDiGraph()
-        self._comid_to_edge: Dict[int, Tuple[Any, Any]] = {}
+        self._comid_to_edge: dict[int, tuple[Any, Any]] = {}
         if not self.flowlines_gdf.empty:
             self._build_graph()
 
     @classmethod
-    def from_geojson(cls, path_or_dict: Any) -> "CascadiaFlowlineNetwork":
+    def from_geojson(cls, path_or_dict: Any) -> CascadiaFlowlineNetwork:
         """Construct CascadiaFlowlineNetwork from GeoJSON file path or dict."""
         if isinstance(path_or_dict, str):
             gdf = gpd.read_file(path_or_dict)
@@ -268,20 +268,20 @@ class CascadiaFlowlineNetwork:
             self.graph.number_of_edges(),
         )
 
-    def validate(self) -> Dict[str, Any]:
+    def validate(self) -> dict[str, Any]:
         """Validate network topology and return diagnostic report."""
         validator = FlowlineTopologyValidator(self.graph)
         return validator.validate_all()
 
-    def get_flowline_by_comid(self, comid: int) -> Optional[Dict[str, Any]]:
+    def get_flowline_by_comid(self, comid: int) -> dict[str, Any] | None:
         """Retrieve edge attributes for a given flowline COMID."""
         edge = self._comid_to_edge.get(comid)
         if edge is None:
             return None
         data = self.graph.get_edge_data(edge[0], edge[1], key=comid)
-        return cast(Optional[Dict[str, Any]], data)
+        return cast(dict[str, Any] | None, data)
 
-    def trace_downstream(self, comid: int) -> List[Dict[str, Any]]:
+    def trace_downstream(self, comid: int) -> list[dict[str, Any]]:
         """Trace downstream from a flowline reach to the terminal outlet.
 
         Returns:
@@ -291,13 +291,13 @@ class CascadiaFlowlineNetwork:
         if edge is None:
             return []
 
-        path_edges: List[Dict[str, Any]] = []
+        path_edges: list[dict[str, Any]] = []
         current_data = self.graph.get_edge_data(edge[0], edge[1], key=comid)
         if current_data:
             path_edges.append(dict(current_data))
 
         current_node = edge[1]
-        visited_nodes: Set[Any] = {edge[0], current_node}
+        visited_nodes: set[Any] = {edge[0], current_node}
 
         while self.graph.out_degree(current_node) > 0:
             out_edges = list(self.graph.out_edges(current_node, data=True))
@@ -324,7 +324,7 @@ class CascadiaFlowlineNetwork:
 
         return path_edges
 
-    def trace_upstream(self, comid: int) -> List[Dict[str, Any]]:
+    def trace_upstream(self, comid: int) -> list[dict[str, Any]]:
         """Trace all upstream tributary flowlines contributing to a given reach.
 
         Returns:
@@ -334,12 +334,12 @@ class CascadiaFlowlineNetwork:
         if edge is None:
             return []
 
-        upstream_comids: Set[int] = {comid}
+        upstream_comids: set[int] = {comid}
         start_node = edge[0]
 
         # Reverse BFS/DFS upstream
         nodes_to_visit = [start_node]
-        visited_nodes: Set[Any] = {edge[1], start_node}
+        visited_nodes: set[Any] = {edge[1], start_node}
 
         while nodes_to_visit:
             curr = nodes_to_visit.pop()
@@ -352,7 +352,7 @@ class CascadiaFlowlineNetwork:
                     visited_nodes.add(u)
                     nodes_to_visit.append(u)
 
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
         for c in sorted(upstream_comids):
             e = self._comid_to_edge.get(c)
             if e:
@@ -392,7 +392,7 @@ class CascadiaFlowlineNetwork:
             ].copy()
         return self.flowlines_gdf.copy()
 
-    def index_to_h3(self, resolution: int = 8) -> Dict[str, Dict[str, Any]]:
+    def index_to_h3(self, resolution: int = 8) -> dict[str, dict[str, Any]]:
         """Build an approximate H3 index from vertices and segment midpoints.
 
         This samples coverage rather than enumerating every intersected cell.
@@ -405,7 +405,7 @@ class CascadiaFlowlineNetwork:
         if self.flowlines_gdf.empty:
             return {}
 
-        hex_data: Dict[str, Dict[str, Any]] = {}
+        hex_data: dict[str, dict[str, Any]] = {}
 
         for _, row in self.flowlines_gdf.iterrows():
             geom = row.geometry
@@ -422,7 +422,7 @@ class CascadiaFlowlineNetwork:
             comid = int(row.get("comid", row.get("COMID", 0)))
 
             # Sample points along flowline geometry to map into H3 cells
-            sampled_cells: Set[str] = set()
+            sampled_cells: set[str] = set()
             lines = list(geom.geoms) if isinstance(geom, MultiLineString) else [geom]
             for line in lines:
                 coords = list(line.coords)

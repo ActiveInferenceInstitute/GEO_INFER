@@ -16,7 +16,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 os.environ.setdefault("MPLBACKEND", "Agg")
 
@@ -27,7 +27,7 @@ if str(_ORCHESTRATORS_DIR) not in sys.path:
 from _lib import run_module_orchestrator  # noqa: E402
 
 
-def _image_stats(image: Any) -> Dict[str, Any]:
+def _image_stats(image: Any) -> dict[str, Any]:
     """Summarize a PIL RGBA image as deterministic scalar statistics."""
     import numpy as np
 
@@ -45,7 +45,7 @@ def _image_stats(image: Any) -> Dict[str, Any]:
     }
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     from geo_infer_art import ColorPalette, ProceduralArt
 
     # --- Palette construction from color theory --------------------------
@@ -98,7 +98,7 @@ def _operation() -> Dict[str, Any]:
     if geo_piece.image is None:
         raise RuntimeError("from_geo_coordinates generation produced no image")
 
-    palette_colors: List[str] = list(blended.colors)
+    palette_colors: list[str] = list(blended.colors)
 
     return {
         "operation": "geo_palette_and_procedural_art_pipeline",

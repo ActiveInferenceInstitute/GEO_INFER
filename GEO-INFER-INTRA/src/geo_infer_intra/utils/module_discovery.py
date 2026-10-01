@@ -10,10 +10,9 @@ import importlib.util
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import Dict, List, Optional
 
 
-def collect_test_modules(root_dir: Path) -> Dict[str, Path]:
+def collect_test_modules(root_dir: Path) -> dict[str, Path]:
     """Collect all GEO-INFER modules in the given root directory.
 
     Args:
@@ -22,7 +21,7 @@ def collect_test_modules(root_dir: Path) -> Dict[str, Path]:
     Returns:
         Mapping of snake_case module package names to their module directories.
     """
-    modules: Dict[str, Path] = {}
+    modules: dict[str, Path] = {}
     if not root_dir.exists():
         return modules
 
@@ -34,7 +33,7 @@ def collect_test_modules(root_dir: Path) -> Dict[str, Path]:
     return modules
 
 
-def import_module_by_path(path: str, name: str) -> Optional[ModuleType]:
+def import_module_by_path(path: str, name: str) -> ModuleType | None:
     """Import a module from a file path.
 
     Args:
@@ -53,7 +52,7 @@ def import_module_by_path(path: str, name: str) -> Optional[ModuleType]:
     return None
 
 
-def find_modules_by_name(root_dir: Path, pattern: str) -> List[Path]:
+def find_modules_by_name(root_dir: Path, pattern: str) -> list[Path]:
     """Find GEO-INFER module directories matching a glob pattern.
 
     Args:
@@ -63,7 +62,7 @@ def find_modules_by_name(root_dir: Path, pattern: str) -> List[Path]:
     Returns:
         Sorted list of matching module directories.
     """
-    modules: List[Path] = []
+    modules: list[Path] = []
     if not root_dir.exists():
         return modules
 

@@ -19,10 +19,7 @@ Usage:
 
 import asyncio
 import logging
-import argparse
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 import json
 
 import numpy as np
@@ -64,13 +61,13 @@ class SoilSensorNetwork:
     - Real-time visualization and monitoring
     """
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         self.config = config
         self.sensors = {}
         self.measurements = []
         self.spatial_index = {}
         self.current_map = None
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._loop: asyncio.AbstractEventLoop | None = None
 
         # Initialize GEO-INFER components
         self.iot_system = IoTSystem(config)
@@ -145,7 +142,7 @@ class SoilSensorNetwork:
         except Exception as e:
             logger.error(f"Error processing MQTT message: {e}")
 
-    def _register_sensor(self, sensor_id: str, measurement: Dict):
+    def _register_sensor(self, sensor_id: str, measurement: dict):
         """Register a new sensor in the network."""
         sensor_info = {
             "sensor_id": sensor_id,
@@ -287,7 +284,7 @@ class SoilSensorNetwork:
         except Exception as e:
             logger.error(f"Error generating visualization: {e}")
 
-    def _get_latest_measurement(self, sensor_id: str) -> Dict:
+    def _get_latest_measurement(self, sensor_id: str) -> dict:
         """Get the latest measurement for a specific sensor."""
         sensor_measurements = [
             m for m in self.measurements if m["sensor_id"] == sensor_id
@@ -421,17 +418,17 @@ class SoilSensorNetwork:
             self.mqtt_client.disconnect()
 
 
-def load_config(config_file: str) -> Dict:
+def load_config(config_file: str) -> dict:
     """Load configuration from YAML file."""
     try:
-        with open(config_file, "r") as f:
+        with open(config_file) as f:
             return yaml.safe_load(f)
     except FileNotFoundError:
         logger.warning(f"Config file {config_file} not found, using defaults")
         return get_default_config()
 
 
-def get_default_config() -> Dict:
+def get_default_config() -> dict:
     """Get default configuration for the soil sensor network."""
     return {
         "mqtt": {
@@ -457,7 +454,6 @@ def get_default_config() -> Dict:
 def simulate_sensor_data():
     """Generate simulated sensor data for testing."""
     import random
-    import time
 
     # Define a test area (e.g., around a farm)
     center_lat, center_lon = 40.7128, -74.0060  # New York area

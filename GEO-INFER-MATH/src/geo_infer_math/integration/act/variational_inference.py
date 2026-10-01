@@ -9,7 +9,7 @@ References:
 """
 
 import numpy as np
-from typing import Optional, Dict, Any, List, cast
+from typing import Any, cast
 import logging
 
 logger = logging.getLogger(__name__)
@@ -48,9 +48,9 @@ class VariationalInferenceHelpers:
         self,
         observations: np.ndarray,
         prior: np.ndarray,
-        likelihood: Optional[np.ndarray] = None,
+        likelihood: np.ndarray | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform mean-field variational inference.
 
         Minimises the variational free energy F = -ELBO by iteratively
@@ -75,7 +75,7 @@ class VariationalInferenceHelpers:
         # Initialise approximate posterior as the prior
         q = prior.copy()
 
-        elbo_history: List[float] = []
+        elbo_history: list[float] = []
 
         for iteration in range(self.max_iterations):
             # E-step: compute expected log-likelihood

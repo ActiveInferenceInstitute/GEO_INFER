@@ -17,7 +17,8 @@ import numpy as np
 import logging
 import json
 import csv
-from typing import Dict, List, Optional, Any, Mapping, Iterable
+from typing import Any
+from collections.abc import Mapping, Iterable
 from datetime import datetime
 from pathlib import Path
 
@@ -44,7 +45,7 @@ class SpatialDiagnostics:
     information flow, and agent performance in H3 grids.
     """
 
-    def __init__(self, output_dir: Optional[str] = None):
+    def __init__(self, output_dir: str | None = None):
         """
         Initialize spatial diagnostics.
 
@@ -54,12 +55,12 @@ class SpatialDiagnostics:
         self.output_dir = Path(output_dir) if output_dir else Path("output")
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        self.metrics_history: List[Dict] = []
-        self.analysis_cache: Dict[str, Any] = {}
+        self.metrics_history: list[dict] = []
+        self.analysis_cache: dict[str, Any] = {}
 
     def compute_spatial_coherence(
         self, beliefs: np.ndarray, neighbor_matrix: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compute spatial coherence metrics.
 
@@ -106,12 +107,12 @@ class SpatialDiagnostics:
         scenario: str,
         timestep: int,
         cell_results: Mapping[str, Any],
-        neighbor_map: Optional[Mapping[str, Iterable[str]]] = None,
-        previous_beliefs: Optional[Mapping[str, Any]] = None,
-        hierarchy: Optional[Mapping[str, Any]] = None,
-        parent_beliefs: Optional[Mapping[str, Any]] = None,
-        backend_metadata: Optional[Mapping[str, Any]] = None,
-        metadata: Optional[Mapping[str, Any]] = None,
+        neighbor_map: Mapping[str, Iterable[str]] | None = None,
+        previous_beliefs: Mapping[str, Any] | None = None,
+        hierarchy: Mapping[str, Any] | None = None,
+        parent_beliefs: Mapping[str, Any] | None = None,
+        backend_metadata: Mapping[str, Any] | None = None,
+        metadata: Mapping[str, Any] | None = None,
     ) -> SpatialInferenceTrace:
         """
         Build typed H3 trace diagnostics from cell inference results.
@@ -130,8 +131,8 @@ class SpatialDiagnostics:
             for child, parent in hierarchy.get("child_parent_map", {}).items()
         }
 
-        result_beliefs: Dict[str, np.ndarray] = {}
-        result_payloads: Dict[str, Any] = {}
+        result_beliefs: dict[str, np.ndarray] = {}
+        result_payloads: dict[str, Any] = {}
         for cell, result in sorted(cell_results.items()):
             cell = str(cell)
             result_beliefs[cell] = SpatialDiagnostics._belief_from_result(result)
@@ -141,7 +142,7 @@ class SpatialDiagnostics:
             str(cell): _trace_belief_vector(value)
             for cell, value in sorted(parent_beliefs.items())
         }
-        all_beliefs: Dict[str, np.ndarray] = {
+        all_beliefs: dict[str, np.ndarray] = {
             **aggregate_parent_beliefs,
             **result_beliefs,
         }
@@ -162,7 +163,7 @@ class SpatialDiagnostics:
             timestep,
         )
 
-        cross_level_scores: Dict[str, float] = {}
+        cross_level_scores: dict[str, float] = {}
         for child, parent in child_parent_map.items():
             if child not in all_beliefs or parent not in all_beliefs:
                 continue
@@ -174,7 +175,7 @@ class SpatialDiagnostics:
             )
             cross_level_scores[child] = _finite_float(1.0 / (1.0 + distance))
 
-        cell_diagnostics: List[H3CellDiagnostics] = []
+        cell_diagnostics: list[H3CellDiagnostics] = []
         for cell in sorted(all_beliefs):
             belief = _trace_belief_vector(all_beliefs[cell])
             result = result_payloads.get(cell)
@@ -284,7 +285,7 @@ class SpatialDiagnostics:
         return _trace_belief_vector(result)
 
     @staticmethod
-    def _pymdp_metadata_from_result(result: Any) -> Dict[str, Any]:
+    def _pymdp_metadata_from_result(result: Any) -> dict[str, Any]:
         """Extract pymdp metadata from a cell result."""
         if result is None:
             return {}
@@ -301,7 +302,7 @@ class SpatialDiagnostics:
     def _free_energy_from_result(result: Any, belief: np.ndarray) -> float:
         """Return result free energy or a finite KL-to-uniform aggregate."""
         if result is not None and hasattr(result, "free_energy"):
-            return _finite_float(getattr(result, "free_energy"))
+            return _finite_float(result.free_energy)
         uniform = np.ones_like(belief, dtype=float) / max(1, belief.size)
         return _finite_float(np.sum(belief * np.log((belief + 1e-12) / uniform)))
 
@@ -312,20 +313,20 @@ class SpatialDiagnostics:
             result is not None
             and getattr(result, "expected_free_energy", None) is not None
         ):
-            return _finite_float(getattr(result, "expected_free_energy"))
+            return _finite_float(result.expected_free_energy)
         return _finite_float(-selected_negative_efe)
 
     @staticmethod
     def _same_resolution_graph(
         cells: Iterable[str],
         *,
-        neighbor_map: Optional[Mapping[str, Iterable[str]]],
+        neighbor_map: Mapping[str, Iterable[str]] | None,
         hierarchy: Mapping[str, Any],
-    ) -> Dict[str, set[str]]:
+    ) -> dict[str, set[str]]:
         """Build or normalize a same-resolution H3 neighbor graph."""
         adapter = get_h3_adapter()
         cell_set = {str(cell) for cell in cells}
-        graph: Dict[str, set[str]] = {cell: set() for cell in cell_set}
+        graph: dict[str, set[str]] = {cell: set() for cell in cell_set}
         if hierarchy.get("same_level_neighbors"):
             for level_neighbors in hierarchy.get("same_level_neighbors", {}).values():
                 for cell, neighbors in level_neighbors.items():
@@ -356,7 +357,7 @@ class SpatialDiagnostics:
                 except Exception:
                     continue
 
-        filtered: Dict[str, set[str]] = {cell: set() for cell in cell_set}
+        filtered: dict[str, set[str]] = {cell: set() for cell in cell_set}
         for cell, neighbors in graph.items():
             try:
                 resolution = adapter.get_resolution(cell)
@@ -382,7 +383,7 @@ class SpatialDiagnostics:
         beliefs: Mapping[str, np.ndarray],
         graph: Mapping[str, Iterable[str]],
         previous_beliefs: Mapping[str, Any],
-    ) -> Dict[str, Dict[str, float]]:
+    ) -> dict[str, dict[str, float]]:
         """Compute local coherence, posterior delta, and belief flux by cell."""
         normalized = {
             cell: _trace_belief_vector(belief) for cell, belief in beliefs.items()
@@ -392,7 +393,7 @@ class SpatialDiagnostics:
             for cell, value in previous_beliefs.items()
             if str(cell) in normalized
         }
-        metrics: Dict[str, Dict[str, float]] = {}
+        metrics: dict[str, dict[str, float]] = {}
         entropies = {cell: _entropy(belief) for cell, belief in normalized.items()}
         for cell, belief in normalized.items():
             neighbors = [
@@ -438,13 +439,13 @@ class SpatialDiagnostics:
         beliefs: Mapping[str, np.ndarray],
         graph: Mapping[str, Iterable[str]],
         timestep: int,
-    ) -> List[H3EdgeDiagnostics]:
+    ) -> list[H3EdgeDiagnostics]:
         """Return one undirected edge diagnostic per same-resolution edge."""
         adapter = get_h3_adapter()
         normalized = {
             cell: _trace_belief_vector(belief) for cell, belief in beliefs.items()
         }
-        rows: List[H3EdgeDiagnostics] = []
+        rows: list[H3EdgeDiagnostics] = []
         seen: set[tuple[str, str]] = set()
         for source, neighbors in graph.items():
             if source not in normalized:
@@ -481,12 +482,12 @@ class SpatialDiagnostics:
 
     @staticmethod
     def _level_diagnostics(
-        cells: List[H3CellDiagnostics],
-        edges: List[H3EdgeDiagnostics],
+        cells: list[H3CellDiagnostics],
+        edges: list[H3EdgeDiagnostics],
         timestep: int,
-    ) -> List[H3LevelDiagnostics]:
+    ) -> list[H3LevelDiagnostics]:
         """Aggregate per-resolution diagnostics from cell and edge rows."""
-        by_resolution: Dict[int, List[H3CellDiagnostics]] = {}
+        by_resolution: dict[int, list[H3CellDiagnostics]] = {}
         for cell in cells:
             by_resolution.setdefault(int(cell.resolution), []).append(cell)
         edge_counts = {
@@ -499,7 +500,7 @@ class SpatialDiagnostics:
             )
             for resolution in by_resolution
         }
-        rows: List[H3LevelDiagnostics] = []
+        rows: list[H3LevelDiagnostics] = []
         for resolution, level_cells in sorted(by_resolution.items()):
             cross_values = [
                 float(value)
@@ -532,7 +533,7 @@ class SpatialDiagnostics:
         return rows
 
     @staticmethod
-    def _first_pymdp_metadata(cell_results: Mapping[str, Any]) -> Dict[str, Any]:
+    def _first_pymdp_metadata(cell_results: Mapping[str, Any]) -> dict[str, Any]:
         """Return the first non-empty pymdp metadata payload."""
         for result in cell_results.values():
             pymdp = SpatialDiagnostics._pymdp_metadata_from_result(result)
@@ -542,7 +543,7 @@ class SpatialDiagnostics:
 
     def compute_morans_i(
         self, values: np.ndarray, weights: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compute Moran's I spatial autocorrelation.
 
@@ -599,8 +600,8 @@ class SpatialDiagnostics:
         }
 
     def analyze_free_energy_landscape(
-        self, free_energy_history: List[float], belief_history: List[np.ndarray]
-    ) -> Dict[str, Any]:
+        self, free_energy_history: list[float], belief_history: list[np.ndarray]
+    ) -> dict[str, Any]:
         """
         Analyze the free energy landscape over time.
 
@@ -659,8 +660,8 @@ class SpatialDiagnostics:
         }
 
     def compute_belief_dynamics(
-        self, belief_history: List[np.ndarray]
-    ) -> Dict[str, Any]:
+        self, belief_history: list[np.ndarray]
+    ) -> dict[str, Any]:
         """
         Analyze belief dynamics over time.
 
@@ -699,8 +700,8 @@ class SpatialDiagnostics:
         step: int,
         beliefs: np.ndarray,
         free_energy: float,
-        action: Optional[Dict] = None,
-        spatial_metrics: Optional[Dict] = None,
+        action: dict | None = None,
+        spatial_metrics: dict | None = None,
     ) -> None:
         """Record a single step for analysis."""
         entry = {
@@ -785,8 +786,8 @@ def compute_spatial_kl_divergence(
 
 
 def compute_information_flow(
-    belief_history: List[np.ndarray], neighbor_matrix: np.ndarray
-) -> Dict[str, float]:
+    belief_history: list[np.ndarray], neighbor_matrix: np.ndarray
+) -> dict[str, float]:
     """
     Compute information flow between neighboring cells.
 
@@ -834,7 +835,7 @@ def _finite_float(value: Any, default: float = 0.0) -> float:
     return result if np.isfinite(result) else float(default)
 
 
-def _normalize_optional_distribution(values: Any) -> List[float]:
+def _normalize_optional_distribution(values: Any) -> list[float]:
     """Normalize optional policy arrays and return an empty list when absent."""
     if values is None:
         return []

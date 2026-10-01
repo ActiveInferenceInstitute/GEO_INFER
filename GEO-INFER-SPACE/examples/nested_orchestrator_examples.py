@@ -10,7 +10,7 @@ environmental monitoring, and supply chain optimization.
 import json
 import logging
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any
 from pathlib import Path
 import sys
 
@@ -93,7 +93,7 @@ class NestedH3Orchestrator:
 
         print(f"🚀 {self.name} initialized at {self.created_at}")
 
-    def scenario_1_urban_planning(self) -> Dict[str, Any]:
+    def scenario_1_urban_planning(self) -> dict[str, Any]:
         """
         Scenario 1: Urban Planning and Development Analysis
         """
@@ -220,7 +220,7 @@ class NestedH3Orchestrator:
         self.results["scenario_1"] = scenario_results
         return scenario_results
 
-    def scenario_2_environmental_monitoring(self) -> Dict[str, Any]:
+    def scenario_2_environmental_monitoring(self) -> dict[str, Any]:
         """Scenario 2: Environmental Monitoring"""
         print("\n" + "=" * 60)
         print("🌍 SCENARIO 2: ENVIRONMENTAL MONITORING")
@@ -291,7 +291,7 @@ class NestedH3Orchestrator:
         self.results["scenario_2"] = scenario_results
         return scenario_results
 
-    def scenario_3_supply_chain(self) -> Dict[str, Any]:
+    def scenario_3_supply_chain(self) -> dict[str, Any]:
         """Scenario 3: Supply Chain Optimization"""
         print("\n" + "=" * 60)
         print("🚚 SCENARIO 3: SUPPLY CHAIN OPTIMIZATION")

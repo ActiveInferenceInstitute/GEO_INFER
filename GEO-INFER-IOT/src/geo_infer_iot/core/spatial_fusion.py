@@ -6,7 +6,7 @@ integrating with GEO-INFER-SPACE for H3 spatial indexing and spatial operations.
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
 from datetime import datetime
 import numpy as np
 import h3
@@ -36,10 +36,10 @@ class SpatialDataFusion:
     - Temporal consistency validation across spatial regions
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
-        self.fusion_cache: Dict[str, Any] = {}
-        self.spatial_operations: Optional[Dict[str, Any]] = None
+        self.fusion_cache: dict[str, Any] = {}
+        self.spatial_operations: dict[str, Any] | None = None
 
         # Initialize spatial operations if available
         if HAS_GEO_SPACE:
@@ -58,10 +58,10 @@ class SpatialDataFusion:
 
     def fuse_sensor_data(
         self,
-        measurements: List[Dict],
+        measurements: list[dict],
         target_variable: str,
-        target_location: Optional[Tuple[float, float]] = None,
-    ) -> Dict:
+        target_location: tuple[float, float] | None = None,
+    ) -> dict:
         """
         Fuse sensor data using spatial interpolation and uncertainty quantification.
 
@@ -118,8 +118,8 @@ class SpatialDataFusion:
             return {"error": f"Fusion failed: {str(e)}"}
 
     def _interpolate_to_location(
-        self, measurements: List[Dict], target_location: Tuple[float, float]
-    ) -> Dict:
+        self, measurements: list[dict], target_location: tuple[float, float]
+    ) -> dict:
         """Interpolate measurements to a target location."""
         target_lat, target_lon = target_location
 
@@ -182,10 +182,10 @@ class SpatialDataFusion:
             ),
         }
 
-    def _aggregate_measurements(self, measurements: List[Dict]) -> Dict:
+    def _aggregate_measurements(self, measurements: list[dict]) -> dict:
         """Aggregate measurements spatially without target location."""
         # Simple spatial averaging with H3-based grouping
-        h3_groups: Dict[str, List[Dict[str, Any]]] = {}
+        h3_groups: dict[str, list[dict[str, Any]]] = {}
 
         for measurement in measurements:
             h3_index = h3.latlng_to_cell(
@@ -252,8 +252,8 @@ class SpatialDataFusion:
         return float(R * c)
 
     def validate_spatial_consistency(
-        self, measurements: List[Dict], consistency_threshold: float = 2.0
-    ) -> Dict:
+        self, measurements: list[dict], consistency_threshold: float = 2.0
+    ) -> dict:
         """
         Validate spatial consistency of measurements using H3-based analysis.
 
@@ -266,7 +266,7 @@ class SpatialDataFusion:
         """
         try:
             # Group measurements by H3 cell
-            h3_measurements: Dict[str, List[Dict[str, Any]]] = {}
+            h3_measurements: dict[str, list[dict[str, Any]]] = {}
             for measurement in measurements:
                 h3_index = h3.latlng_to_cell(
                     measurement["latitude"], measurement["longitude"], 8

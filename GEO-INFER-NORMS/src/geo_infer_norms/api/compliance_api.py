@@ -5,7 +5,7 @@ This module provides API endpoints for interacting with compliance tracking
 functionality, including status checks, evaluations, and reporting.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 import datetime
 from fastapi import APIRouter, HTTPException, Query, Path, Body
 from pydantic import BaseModel, Field, ConfigDict
@@ -31,10 +31,10 @@ class ComplianceStatusCreate(BaseModel):
     compliance_level: float = Field(
         ..., ge=0.0, le=1.0, description="Compliance level between 0.0 and 1.0"
     )
-    notes: Optional[str] = Field(
+    notes: str | None = Field(
         None, description="Additional notes about the compliance status"
     )
-    metric_results: Optional[List[Dict[str, Any]]] = Field(
+    metric_results: list[dict[str, Any]] | None = Field(
         None, description="Results of individual metric evaluations"
     )
 
@@ -64,7 +64,7 @@ class ComplianceMetricCreate(BaseModel):
     """Request model for creating a compliance metric"""
 
     name: str = Field(..., description="Name of the compliance metric")
-    description: Optional[str] = Field(None, description="Description of the metric")
+    description: str | None = Field(None, description="Description of the metric")
     regulation_id: str = Field(
         ..., description="ID of the regulation this metric is for"
     )
@@ -72,19 +72,19 @@ class ComplianceMetricCreate(BaseModel):
         ..., description="Type of evaluation (threshold, range, boolean)"
     )
     primary_field: str = Field(..., description="Primary data field for evaluation")
-    required_fields: List[str] = Field(
+    required_fields: list[str] = Field(
         ..., description="Required data fields for evaluation"
     )
-    threshold_value: Optional[float] = Field(
+    threshold_value: float | None = Field(
         None, description="Threshold value for threshold evaluation"
     )
-    comparison: Optional[str] = Field(
+    comparison: str | None = Field(
         None, description="Comparison operator for threshold evaluation"
     )
-    range_min: Optional[float] = Field(
+    range_min: float | None = Field(
         None, description="Minimum value for range evaluation"
     )
-    range_max: Optional[float] = Field(
+    range_max: float | None = Field(
         None, description="Maximum value for range evaluation"
     )
 
@@ -111,7 +111,7 @@ class EvaluationData(BaseModel):
     regulation_id: str = Field(
         ..., description="ID of the regulation to evaluate against"
     )
-    evaluation_data: Dict[str, Any] = Field(
+    evaluation_data: dict[str, Any] = Field(
         ..., description="Data points for evaluation"
     )
 
@@ -141,20 +141,16 @@ class GeoPoint(BaseModel):
 class ReportParams(BaseModel):
     """Parameters for generating reports"""
 
-    title: Optional[str] = Field(None, description="Report title")
-    description: Optional[str] = Field(None, description="Report description")
-    as_of_date: Optional[datetime.datetime] = Field(
-        None, description="Report as of date"
-    )
-    export_format: Optional[str] = Field(
-        "json", description="Export format (json, html)"
-    )
+    title: str | None = Field(None, description="Report title")
+    description: str | None = Field(None, description="Report description")
+    as_of_date: datetime.datetime | None = Field(None, description="Report as of date")
+    export_format: str | None = Field("json", description="Export format (json, html)")
 
 
 class ComplianceAPI:
     """API for compliance tracking and reporting"""
 
-    def __init__(self, compliance_tracker: Optional[ComplianceTracker] = None):
+    def __init__(self, compliance_tracker: ComplianceTracker | None = None):
         """
         Initialize the ComplianceAPI.
 
@@ -171,48 +167,48 @@ class ComplianceAPI:
     def _setup_routes(self) -> None:
         """Set up API routes"""
         # Status endpoints
-        self.router.post("/status", response_model=Dict[str, Any])(
+        self.router.post("/status", response_model=dict[str, Any])(
             self.add_compliance_status
         )
-        self.router.get("/status/entity/{entity_id}", response_model=Dict[str, Any])(
+        self.router.get("/status/entity/{entity_id}", response_model=dict[str, Any])(
             self.get_entity_compliance
         )
         self.router.get(
-            "/status/regulation/{regulation_id}", response_model=Dict[str, Any]
+            "/status/regulation/{regulation_id}", response_model=dict[str, Any]
         )(self.get_regulation_compliance)
 
         # Metric endpoints
-        self.router.post("/metrics", response_model=Dict[str, Any])(
+        self.router.post("/metrics", response_model=dict[str, Any])(
             self.add_compliance_metric
         )
-        self.router.get("/metrics", response_model=List[Dict[str, Any]])(
+        self.router.get("/metrics", response_model=list[dict[str, Any]])(
             self.list_compliance_metrics
         )
 
         # Evaluation endpoints
-        self.router.post("/evaluate", response_model=Dict[str, Any])(
+        self.router.post("/evaluate", response_model=dict[str, Any])(
             self.evaluate_compliance
         )
-        self.router.post("/evaluate/location", response_model=Dict[str, Any])(
+        self.router.post("/evaluate/location", response_model=dict[str, Any])(
             self.evaluate_compliance_at_location
         )
 
         # Report endpoints
-        self.router.post("/reports/summary", response_model=Dict[str, Any])(
+        self.router.post("/reports/summary", response_model=dict[str, Any])(
             self.generate_summary_report
         )
-        self.router.post("/reports/entity/{entity_id}", response_model=Dict[str, Any])(
+        self.router.post("/reports/entity/{entity_id}", response_model=dict[str, Any])(
             self.generate_entity_report
         )
         self.router.post(
-            "/reports/regulation/{regulation_id}", response_model=Dict[str, Any]
+            "/reports/regulation/{regulation_id}", response_model=dict[str, Any]
         )(self.generate_regulation_report)
-        self.router.post("/reports/export", response_model=Dict[str, Any])(
+        self.router.post("/reports/export", response_model=dict[str, Any])(
             self.export_report
         )
 
         # GeoJSON endpoints
-        self.router.post("/geo/export", response_model=Dict[str, Any])(
+        self.router.post("/geo/export", response_model=dict[str, Any])(
             self.export_to_geojson
         )
 
@@ -220,7 +216,7 @@ class ComplianceAPI:
 
     async def add_compliance_status(
         self, status_data: ComplianceStatusCreate
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Add a new compliance status.
 
@@ -257,10 +253,10 @@ class ComplianceAPI:
     async def get_entity_compliance(
         self,
         entity_id: str = Path(..., description="ID of the entity"),
-        as_of_date: Optional[datetime.datetime] = Query(
+        as_of_date: datetime.datetime | None = Query(
             None, description="As of date (default: current time)"
         ),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get compliance status for all regulations for a specific entity.
 
@@ -282,10 +278,10 @@ class ComplianceAPI:
     async def get_regulation_compliance(
         self,
         regulation_id: str = Path(..., description="ID of the regulation"),
-        as_of_date: Optional[datetime.datetime] = Query(
+        as_of_date: datetime.datetime | None = Query(
             None, description="As of date (default: current time)"
         ),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get compliance status for all entities for a specific regulation.
 
@@ -308,7 +304,7 @@ class ComplianceAPI:
 
     async def add_compliance_metric(
         self, metric_data: ComplianceMetricCreate
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Add a new compliance metric.
 
@@ -347,10 +343,8 @@ class ComplianceAPI:
 
     async def list_compliance_metrics(
         self,
-        regulation_id: Optional[str] = Query(
-            None, description="Filter by regulation ID"
-        ),
-    ) -> List[Dict[str, Any]]:
+        regulation_id: str | None = Query(None, description="Filter by regulation ID"),
+    ) -> list[dict[str, Any]]:
         """
         List all compliance metrics, optionally filtered by regulation.
 
@@ -389,7 +383,7 @@ class ComplianceAPI:
 
     async def evaluate_compliance(
         self, evaluation_data: EvaluationData
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Evaluate compliance of an entity with a regulation based on data.
 
@@ -471,14 +465,14 @@ class ComplianceAPI:
     async def evaluate_compliance_at_location(
         self,
         point: GeoPoint,
-        regulation_ids: Optional[List[str]] = Body(
+        regulation_ids: list[str] | None = Body(
             None, description="List of regulation IDs to evaluate"
         ),
         entity_id: str = Body(..., description="ID of the entity to evaluate"),
-        evaluation_data: Dict[str, Any] = Body(
+        evaluation_data: dict[str, Any] = Body(
             ..., description="Data points for evaluation"
         ),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Evaluate compliance at a specific geographic location.
 
@@ -519,7 +513,7 @@ class ComplianceAPI:
 
     # Report endpoints
 
-    async def generate_summary_report(self, params: ReportParams) -> Dict[str, Any]:
+    async def generate_summary_report(self, params: ReportParams) -> dict[str, Any]:
         """
         Generate a summary compliance report.
 
@@ -548,7 +542,7 @@ class ComplianceAPI:
         self,
         entity_id: str = Path(..., description="ID of the entity"),
         params: ReportParams = Body(...),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate a detailed compliance report for a specific entity.
 
@@ -581,7 +575,7 @@ class ComplianceAPI:
         self,
         regulation_id: str = Path(..., description="ID of the regulation"),
         params: ReportParams = Body(...),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate a detailed compliance report for a specific regulation.
 
@@ -615,14 +609,12 @@ class ComplianceAPI:
         report_type: str = Body(
             ..., description="Type of report (summary, entity, regulation)"
         ),
-        entity_id: Optional[str] = Body(
-            None, description="Entity ID for entity reports"
-        ),
-        regulation_id: Optional[str] = Body(
+        entity_id: str | None = Body(None, description="Entity ID for entity reports"),
+        regulation_id: str | None = Body(
             None, description="Regulation ID for regulation reports"
         ),
         params: ReportParams = Body(...),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Export a report in the specified format.
 
@@ -688,14 +680,14 @@ class ComplianceAPI:
 
     async def export_to_geojson(
         self,
-        entity_ids: List[str] = Body(..., description="List of entity IDs to include"),
-        regulation_id: Optional[str] = Body(
+        entity_ids: list[str] = Body(..., description="List of entity IDs to include"),
+        regulation_id: str | None = Body(
             None, description="Optional regulation ID to filter by"
         ),
-        as_of_date: Optional[datetime.datetime] = Body(
+        as_of_date: datetime.datetime | None = Body(
             None, description="As of date (default: current time)"
         ),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Export compliance data to GeoJSON format for mapping.
 

@@ -6,7 +6,7 @@ threat assessment, and real-time dashboard capabilities.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -42,8 +42,8 @@ class SensoryInput:
     source_id: str
     source_type: DataSource
     timestamp: datetime
-    location: Optional[Dict[str, float]] = None
-    data: Dict[str, Any] = field(default_factory=dict)
+    location: dict[str, float] | None = None
+    data: dict[str, Any] = field(default_factory=dict)
     confidence: float = 0.8
 
 
@@ -56,7 +56,7 @@ class LayerConfig:
     source: str
     visible: bool = True
     refresh_rate_seconds: int = 60
-    symbology: Dict[str, Any] = field(default_factory=dict)
+    symbology: dict[str, Any] = field(default_factory=dict)
 
 
 class SituationalAwareness:
@@ -67,8 +67,8 @@ class SituationalAwareness:
 
     def __init__(
         self,
-        data_sources: Optional[List[str]] = None,
-        fusion_algorithms: Optional[List[str]] = None,
+        data_sources: list[str] | None = None,
+        fusion_algorithms: list[str] | None = None,
         update_interval: int = 60,
     ):
         """
@@ -84,8 +84,8 @@ class SituationalAwareness:
         self.data_sources = data_sources or ["sensors", "field_reports", "satellite"]
         self.fusion_algorithms = fusion_algorithms or ["kalman", "bayesian"]
         self.update_interval = update_interval
-        self._sensor_data: Dict[str, SensoryInput] = {}
-        self._layers: Dict[str, LayerConfig] = {}
+        self._sensor_data: dict[str, SensoryInput] = {}
+        self._layers: dict[str, LayerConfig] = {}
         self._current_threat_level = ThreatLevel.LOW
         logger.info(
             f"Initialized SituationalAwareness with {len(self.data_sources)} sources"
@@ -93,10 +93,10 @@ class SituationalAwareness:
 
     def integrate_sensors(
         self,
-        sensor_network: Dict[str, Any],
-        data_types: List[str],
+        sensor_network: dict[str, Any],
+        data_types: list[str],
         sampling_rate: str = "continuous",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Integrate sensor network data.
 
@@ -110,8 +110,8 @@ class SituationalAwareness:
         """
         sensors = sensor_network.get("sensors", [])
 
-        sensors_out: List[Dict[str, Any]] = []
-        integration: Dict[str, Any] = {
+        sensors_out: list[dict[str, Any]] = []
+        integration: dict[str, Any] = {
             "sensor_count": len(sensors),
             "data_types": data_types,
             "sampling_rate": sampling_rate,
@@ -149,11 +149,11 @@ class SituationalAwareness:
 
     def build_cop(
         self,
-        layers: List[Dict[str, Any]],
-        extent: Dict[str, Any],
-        symbology: Dict[str, Any],
+        layers: list[dict[str, Any]],
+        extent: dict[str, Any],
+        symbology: dict[str, Any],
         refresh_rate: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Build common operating picture.
 
@@ -166,8 +166,8 @@ class SituationalAwareness:
         Returns:
             COP configuration
         """
-        layers_out: List[Dict[str, Any]] = []
-        cop: Dict[str, Any] = {
+        layers_out: list[dict[str, Any]] = []
+        cop: dict[str, Any] = {
             "cop_id": f"cop_{datetime.now().strftime('%Y%m%d%H%M%S')}",
             "created_at": datetime.now().isoformat(),
             "extent": extent,
@@ -204,11 +204,11 @@ class SituationalAwareness:
 
     def assess_threat(
         self,
-        hazard: Dict[str, Any],
-        affected_area: Dict[str, Any],
-        assets_at_risk: List[Dict[str, Any]],
+        hazard: dict[str, Any],
+        affected_area: dict[str, Any],
+        assets_at_risk: list[dict[str, Any]],
         projection_hours: int = 24,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Assess current threat level.
 
@@ -281,8 +281,8 @@ class SituationalAwareness:
         return assessment
 
     def _generate_recommendations(
-        self, level: ThreatLevel, hazard: Dict[str, Any]
-    ) -> List[str]:
+        self, level: ThreatLevel, hazard: dict[str, Any]
+    ) -> list[str]:
         """Generate action recommendations based on threat level."""
         recommendations = {
             ThreatLevel.LOW: ["Continue normal monitoring", "Review emergency plans"],
@@ -314,10 +314,10 @@ class SituationalAwareness:
 
     def fuse_data(
         self,
-        sources: List[Dict[str, Any]],
+        sources: list[dict[str, Any]],
         fusion_method: str = "weighted_average",
         confidence_weighting: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Fuse data from multiple sources.
 
@@ -339,8 +339,8 @@ class SituationalAwareness:
                 "'weighted_average' is implemented"
             )
 
-        fused_data_out: Dict[str, Any] = {}
-        fused: Dict[str, Any] = {
+        fused_data_out: dict[str, Any] = {}
+        fused: dict[str, Any] = {
             "fusion_method": fusion_method,
             "source_count": len(sources),
             "timestamp": datetime.now().isoformat(),
@@ -357,8 +357,8 @@ class SituationalAwareness:
         total_confidence = 0.0
         fused_field_count = 0
         for field in all_fields:
-            values: List[float] = []
-            weights: List[float] = []
+            values: list[float] = []
+            weights: list[float] = []
 
             for source in sources:
                 if field in source.get("data", {}):
@@ -398,10 +398,10 @@ class SituationalAwareness:
 
     def generate_dashboard(
         self,
-        widgets: List[Dict[str, Any]],
+        widgets: list[dict[str, Any]],
         layout: str = "standard",
         update_frequency: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate real-time dashboard.
 
@@ -413,8 +413,8 @@ class SituationalAwareness:
         Returns:
             Dashboard configuration
         """
-        widgets_out: List[Dict[str, Any]] = []
-        dashboard: Dict[str, Any] = {
+        widgets_out: list[dict[str, Any]] = []
+        dashboard: dict[str, Any] = {
             "dashboard_id": f"dash_{datetime.now().strftime('%Y%m%d%H%M%S')}",
             "layout": layout,
             "update_frequency_seconds": update_frequency,
@@ -424,7 +424,7 @@ class SituationalAwareness:
         }
 
         for widget in widgets:
-            widget_config: Dict[str, Any] = {
+            widget_config: dict[str, Any] = {
                 "widget_id": widget.get("id", f"widget_{len(widgets_out)}"),
                 "type": widget.get("type", "text"),
                 "title": widget.get("title", "Widget"),

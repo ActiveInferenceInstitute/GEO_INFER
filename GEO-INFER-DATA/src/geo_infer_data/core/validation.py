@@ -12,9 +12,9 @@ compatibility; this module hosts ``DataQualityManager``.
 """
 
 import logging
-from typing import Any, Dict, List, Tuple, Union
-from datetime import datetime, timedelta, timezone
-from enum import Enum
+from typing import Any
+from datetime import datetime, timedelta, UTC
+from enum import StrEnum
 
 from ..models.schemas import DataQualityReport, DatasetMetadata, QualityStatus
 from ..utils.validation import (
@@ -27,7 +27,7 @@ from ..utils.validation import (
 logger = logging.getLogger(__name__)
 
 
-class ValidationLevel(str, Enum):
+class ValidationLevel(StrEnum):
     """Validation strictness levels."""
 
     BASIC = "basic"
@@ -134,8 +134,8 @@ class DataQualityManager:
         )
 
         self.validator = GeospatialValidator(self.config)
-        self.quality_history: List[DataQualityReport] = []
-        self._datasets: Dict[str, Tuple[Any, DatasetMetadata]] = {}
+        self.quality_history: list[DataQualityReport] = []
+        self._datasets: dict[str, tuple[Any, DatasetMetadata]] = {}
         self.monitoring_enabled = real_time_monitoring
 
         logger.info(
@@ -144,8 +144,8 @@ class DataQualityManager:
 
     @staticmethod
     def _normalize_validation_rules(
-        validation_rules: Union[str, List[str]],
-    ) -> List[str]:
+        validation_rules: str | list[str],
+    ) -> list[str]:
         """Expand named rule sets and reject unknown validation rules."""
         available = {rule.value for rule in ValidationRule}
         presets = {
@@ -277,7 +277,7 @@ class DataQualityManager:
         logger.info(f"Dataset validation completed: {quality_report.overall_score:.2f}")
         return quality_report
 
-    def get_improvement_recommendations(self, report: DataQualityReport) -> List[str]:
+    def get_improvement_recommendations(self, report: DataQualityReport) -> list[str]:
         """Get improvement recommendations based on quality report."""
         recommendations = []
 
@@ -294,14 +294,14 @@ class DataQualityManager:
 
         return recommendations
 
-    def get_quality_trends(self, days: int = 30) -> Dict[str, Any]:
+    def get_quality_trends(self, days: int = 30) -> dict[str, Any]:
         """Get quality trends over time."""
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff_date = datetime.now(UTC) - timedelta(days=days)
 
         def as_utc(value: datetime) -> datetime:
             if value.tzinfo is None:
-                return value.replace(tzinfo=timezone.utc)
-            return value.astimezone(timezone.utc)
+                return value.replace(tzinfo=UTC)
+            return value.astimezone(UTC)
 
         recent_reports = [
             r for r in self.quality_history if as_utc(r.generated_at) >= cutoff_date

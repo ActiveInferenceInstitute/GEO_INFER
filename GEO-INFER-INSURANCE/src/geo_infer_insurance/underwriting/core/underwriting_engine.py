@@ -8,7 +8,7 @@ processing, and portfolio management.
 
 import logging
 import time
-from typing import Dict, List, Optional, Any
+from typing import Any
 from datetime import datetime
 from dataclasses import dataclass, field
 from enum import Enum
@@ -92,10 +92,10 @@ class UnderwritingConfig:
     payment_processing_days: int = 30
 
     # Integration settings
-    external_data_sources: List[str] = field(
+    external_data_sources: list[str] = field(
         default_factory=lambda: ["credit_bureau", "property_database"]
     )
-    api_endpoints: Dict[str, str] = field(default_factory=dict)
+    api_endpoints: dict[str, str] = field(default_factory=dict)
     real_time_updates: bool = False
 
     # Performance settings
@@ -121,8 +121,8 @@ class UnderwritingMetrics:
         self.portfolio_concentration = 0.0
 
         # Track processing times
-        self.processing_times: List[float] = []
-        self.premium_amounts: List[float] = []
+        self.processing_times: list[float] = []
+        self.premium_amounts: list[float] = []
 
     def update_metrics(self, case: UnderwritingCase, processing_time: float) -> None:
         """Update metrics with a completed underwriting case."""
@@ -144,7 +144,7 @@ class UnderwritingMetrics:
         if self.premium_amounts:
             self.average_premium = float(np.mean(self.premium_amounts))
 
-    def get_metrics_summary(self) -> Dict[str, Any]:
+    def get_metrics_summary(self) -> dict[str, Any]:
         """Get summary of underwriting metrics."""
         return {
             "total_cases": self.total_cases_processed,
@@ -175,7 +175,7 @@ class UnderwritingEngine:
     - Integration with external data sources
     """
 
-    def __init__(self, config: Optional[UnderwritingConfig] = None):
+    def __init__(self, config: UnderwritingConfig | None = None):
         """
         Initialize the underwriting engine.
 
@@ -215,7 +215,7 @@ class UnderwritingEngine:
         self.validator = UnderwritingValidator()
 
         # Initialize state management
-        self.active_cases: Dict[str, UnderwritingCase] = {}
+        self.active_cases: dict[str, UnderwritingCase] = {}
         self.case_counter = 0
         self.metrics = UnderwritingMetrics()
 
@@ -257,7 +257,7 @@ class UnderwritingEngine:
         return logger
 
     def underwrite_policy(
-        self, application_data: Dict[str, Any], auto_decide: bool = True
+        self, application_data: dict[str, Any], auto_decide: bool = True
     ) -> UnderwritingCase:
         """
         Underwrite a new insurance policy application.
@@ -356,8 +356,8 @@ class UnderwritingEngine:
         return f"UW_{timestamp}_{self.case_counter}"
 
     def _perform_risk_assessment(
-        self, application_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, application_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Perform comprehensive risk assessment for underwriting."""
         try:
             # Use risk engine if available
@@ -377,8 +377,8 @@ class UnderwritingEngine:
             raise RuntimeError("Underwriting risk assessment failed") from e
 
     def _convert_to_risk_format(
-        self, application_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, application_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Convert underwriting application to risk analysis format."""
         # Extract property information
         property_info = application_data.get("property", {})
@@ -406,9 +406,9 @@ class UnderwritingEngine:
 
     def _make_underwriting_decision(
         self,
-        application_data: Dict[str, Any],
-        risk_assessment: Dict[str, Any],
-        rule_evaluation: Dict[str, Any],
+        application_data: dict[str, Any],
+        risk_assessment: dict[str, Any],
+        rule_evaluation: dict[str, Any],
         auto_decide: bool,
     ) -> Decision:
         """Make underwriting decision based on risk assessment and rules."""
@@ -466,7 +466,7 @@ class UnderwritingEngine:
                 conditions=["system_error"],
             )
 
-    def process_claim(self, claim_data: Dict[str, Any]) -> Claim:
+    def process_claim(self, claim_data: dict[str, Any]) -> Claim:
         """
         Process an insurance claim.
 
@@ -516,9 +516,7 @@ class UnderwritingEngine:
                 description=f"Processing error: {str(e)}",
             )
 
-    def get_portfolio_summary(
-        self, portfolio_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+    def get_portfolio_summary(self, portfolio_id: str | None = None) -> dict[str, Any]:
         """
         Get portfolio summary and performance metrics.
 
@@ -530,11 +528,11 @@ class UnderwritingEngine:
         """
         return self.portfolio_manager.get_portfolio_summary(portfolio_id)
 
-    def get_underwriting_metrics(self) -> Dict[str, Any]:
+    def get_underwriting_metrics(self) -> dict[str, Any]:
         """Get comprehensive underwriting performance metrics."""
         return self.metrics.get_metrics_summary()
 
-    def get_case_status(self, case_id: str) -> Optional[Dict[str, Any]]:
+    def get_case_status(self, case_id: str) -> dict[str, Any] | None:
         """Get status of a specific underwriting case."""
         if case_id not in self.active_cases:
             return None
@@ -568,7 +566,7 @@ class UnderwritingEngine:
 
         return False
 
-    def get_active_cases(self) -> List[Dict[str, Any]]:
+    def get_active_cases(self) -> list[dict[str, Any]]:
         """Get list of all active underwriting cases."""
         return [
             {
@@ -585,7 +583,7 @@ class UnderwritingEngine:
             ]
         ]
 
-    def update_configuration(self, config_updates: Dict[str, Any]) -> None:
+    def update_configuration(self, config_updates: dict[str, Any]) -> None:
         """Update underwriting configuration."""
         # Update config attributes
         for key, value in config_updates.items():
@@ -598,16 +596,16 @@ class UnderwritingEngine:
 
         self.logger.info("Underwriting configuration updated")
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform health check on underwriting system."""
-        health_status: Dict[str, Any] = {
+        health_status: dict[str, Any] = {
             "overall_status": "healthy",
             "timestamp": datetime.now().isoformat(),
             "components": {},
         }
 
         # Check core components
-        components_to_check: List[tuple] = [
+        components_to_check: list[tuple] = [
             ("risk_assessment", self.risk_assessment),
             ("policy_manager", self.policy_manager),
             ("claims_processor", self.claims_processor),
@@ -670,14 +668,14 @@ class UnderwritingEngine:
 
 # Convenience functions
 def create_underwriting_engine(
-    config: Optional[UnderwritingConfig] = None,
+    config: UnderwritingConfig | None = None,
 ) -> UnderwritingEngine:
     """Create a new underwriting engine instance."""
     return UnderwritingEngine(config)
 
 
 def create_risk_assessment(
-    config: Optional[UnderwritingConfig] = None,
+    config: UnderwritingConfig | None = None,
 ) -> RiskAssessmentEngine:
     """Create a risk assessment engine."""
     risk_config = RiskAssessmentConfig()
@@ -690,7 +688,7 @@ def create_risk_assessment(
     return RiskAssessmentEngine(risk_config)
 
 
-def create_policy_manager(config: Optional[UnderwritingConfig] = None) -> PolicyManager:
+def create_policy_manager(config: UnderwritingConfig | None = None) -> PolicyManager:
     """Create a policy manager."""
     from .policy_management import PolicyManager
 
@@ -698,7 +696,7 @@ def create_policy_manager(config: Optional[UnderwritingConfig] = None) -> Policy
 
 
 def create_claims_processor(
-    config: Optional[UnderwritingConfig] = None,
+    config: UnderwritingConfig | None = None,
 ) -> ClaimsProcessor:
     """Create a claims processor."""
     from .claims_processing import ClaimsProcessor

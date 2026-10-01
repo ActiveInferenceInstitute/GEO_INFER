@@ -18,11 +18,8 @@ This example showcases the core SPM methodology adapted for geospatial analysis.
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
-from pathlib import Path
 
 # Import GEO-INFER-SPM modules
-from geo_infer_spm.models.data_models import SPMData, DesignMatrix
 from geo_infer_spm.core.glm import fit_glm
 from geo_infer_spm.core.contrasts import contrast
 from geo_infer_spm.core.rft import compute_spm

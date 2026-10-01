@@ -16,7 +16,7 @@ Key Features:
 
 import numpy as np
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from collections import defaultdict
@@ -31,12 +31,12 @@ class DisasterScenario:
     """Configuration for disaster response scenario."""
 
     disaster_type: str  # 'flood', 'earthquake', 'wildfire', 'hurricane', etc.
-    affected_area: Dict[str, float]  # Geographic bounds
+    affected_area: dict[str, float]  # Geographic bounds
     severity_level: str  # 'low', 'medium', 'high', 'critical'
-    response_phases: List[str]  # 'preparedness', 'response', 'recovery'
-    available_resources: Dict[str, Any]
-    environmental_conditions: Dict[str, Any]
-    time_constraints: Dict[str, float]
+    response_phases: list[str]  # 'preparedness', 'response', 'recovery'
+    available_resources: dict[str, Any]
+    environmental_conditions: dict[str, Any]
+    time_constraints: dict[str, float]
 
     def __post_init__(self) -> None:
         """Validate scenario configuration."""
@@ -77,8 +77,8 @@ class DisasterResponseSwarm:
 
     def __init__(
         self,
-        response_types: Optional[List[str]] = None,
-        swarm_composition: Optional[Dict[str, int]] = None,
+        response_types: list[str] | None = None,
+        swarm_composition: dict[str, int] | None = None,
         coordination_protocol: str = "stigmergic",
         real_time_adaptation: bool = True,
         **kwargs: Any,
@@ -107,11 +107,11 @@ class DisasterResponseSwarm:
         self.real_time_adaptation = real_time_adaptation
 
         # Response system state
-        self.response_agents: List[Dict[str, Any]] = []
-        self.current_scenario: Optional[DisasterScenario] = None
-        self.response_coordination: Dict[str, Any] = {}
-        self.resource_allocation: Dict[str, Any] = {}
-        self.scenario_started_at: Optional[datetime] = None
+        self.response_agents: list[dict[str, Any]] = []
+        self.current_scenario: DisasterScenario | None = None
+        self.response_coordination: dict[str, Any] = {}
+        self.resource_allocation: dict[str, Any] = {}
+        self.scenario_started_at: datetime | None = None
 
         # Performance tracking
         self.response_efficiency: float = 0.0
@@ -125,12 +125,12 @@ class DisasterResponseSwarm:
     async def assess_situation(
         self,
         disaster_type: str,
-        affected_area: Dict[str, float],
+        affected_area: dict[str, float],
         incident_severity: str = "medium",
-        available_resources: Optional[Dict[str, Any]] = None,
-        environmental_conditions: Optional[Dict[str, Any]] = None,
+        available_resources: dict[str, Any] | None = None,
+        environmental_conditions: dict[str, Any] | None = None,
         time_available: float = 7200,  # 2 hours in seconds
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Assess disaster situation and determine response requirements.
 
@@ -149,7 +149,7 @@ class DisasterResponseSwarm:
             f"Assessing disaster situation: {disaster_type}, severity: {incident_severity}"
         )
 
-        assessment: Dict[str, Any] = {
+        assessment: dict[str, Any] = {
             "assessment_time": datetime.now(),
             "disaster_type": disaster_type,
             "affected_area": affected_area,
@@ -213,8 +213,8 @@ class DisasterResponseSwarm:
         return assessment
 
     def _calculate_response_requirements(
-        self, disaster_type: str, severity: str, affected_area: Dict[str, float]
-    ) -> Dict[str, Any]:
+        self, disaster_type: str, severity: str, affected_area: dict[str, float]
+    ) -> dict[str, Any]:
         """Calculate response requirements based on disaster characteristics."""
         requirements = {}
 
@@ -273,7 +273,7 @@ class DisasterResponseSwarm:
 
     def _get_resource_needs(
         self, response_type: str, multiplier: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get resource requirements for response type."""
         resource_needs = {
             "search_rescue": {"drones": 10, "human_teams": 5, "medical_kits": 20},
@@ -293,10 +293,10 @@ class DisasterResponseSwarm:
         return {k: int(v * multiplier) for k, v in base_needs.items()}
 
     def _calculate_resource_requirements(
-        self, requirements: Dict[str, Any], available_resources: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, requirements: dict[str, Any], available_resources: dict[str, Any]
+    ) -> dict[str, Any]:
         """Calculate resource allocation requirements."""
-        resource_reqs: Dict[str, Any] = {
+        resource_reqs: dict[str, Any] = {
             "total_required": {},
             "resource_gaps": {},
             "allocation_priority": {},
@@ -324,11 +324,11 @@ class DisasterResponseSwarm:
 
     def _identify_priority_zones(
         self,
-        affected_area: Dict[str, float],
+        affected_area: dict[str, float],
         disaster_type: str,
         severity: str,
-        environmental_conditions: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        environmental_conditions: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """Identify priority zones within affected area."""
         conditions = environmental_conditions or {}
         custom_zones = conditions.get("priority_zones", [])
@@ -378,10 +378,10 @@ class DisasterResponseSwarm:
         return priority_zones
 
     def _assess_risk_factors(
-        self, environmental_conditions: Dict[str, Any], disaster_type: str
-    ) -> Dict[str, Any]:
+        self, environmental_conditions: dict[str, Any], disaster_type: str
+    ) -> dict[str, Any]:
         """Assess risk factors for response operations."""
-        risk_factors: Dict[str, Any] = {
+        risk_factors: dict[str, Any] = {
             "environmental_risks": {},
             "operational_risks": {},
             "coordination_risks": {},
@@ -412,7 +412,7 @@ class DisasterResponseSwarm:
         }
 
         # Overall risk assessment
-        all_risks: List[float] = []
+        all_risks: list[float] = []
         for category in [
             "environmental_risks",
             "operational_risks",
@@ -436,7 +436,7 @@ class DisasterResponseSwarm:
         return risk_factors
 
     def _estimate_response_time(
-        self, requirements: Dict[str, Any], resource_reqs: Dict[str, Any]
+        self, requirements: dict[str, Any], resource_reqs: dict[str, Any]
     ) -> float:
         """Estimate total response time."""
         setup_time = float(resource_reqs.get("setup_time_minutes", 15.0))
@@ -461,11 +461,11 @@ class DisasterResponseSwarm:
 
     async def coordinate_response(
         self,
-        situation_assessment: Dict[str, Any],
-        response_priorities: Optional[Dict[str, float]] = None,
-        resource_allocation: Optional[Dict[str, Any]] = None,
-        communication_networks: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        situation_assessment: dict[str, Any],
+        response_priorities: dict[str, float] | None = None,
+        resource_allocation: dict[str, Any] | None = None,
+        communication_networks: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Coordinate disaster response activities.
 
@@ -480,7 +480,7 @@ class DisasterResponseSwarm:
         """
         logger.info("Coordinating disaster response activities")
 
-        coordination_plan: Dict[str, Any] = {
+        coordination_plan: dict[str, Any] = {
             "coordination_time": datetime.now(),
             "response_assignments": {},
             "communication_plan": {},
@@ -529,12 +529,12 @@ class DisasterResponseSwarm:
 
     def _assign_response_tasks(
         self,
-        assessment: Dict[str, Any],
-        priorities: Optional[Dict[str, float]],
-        resources: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        assessment: dict[str, Any],
+        priorities: dict[str, float] | None,
+        resources: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         """Assign response tasks to available agents."""
-        assignments: Dict[str, Any] = {
+        assignments: dict[str, Any] = {
             "task_assignments": {},
             "agent_utilization": {},
             "coverage_analysis": {},
@@ -578,10 +578,10 @@ class DisasterResponseSwarm:
         return assignments
 
     def _generate_communication_plan(
-        self, assessment: Dict[str, Any], networks: List[str]
-    ) -> Dict[str, Any]:
+        self, assessment: dict[str, Any], networks: list[str]
+    ) -> dict[str, Any]:
         """Generate communication plan for response coordination."""
-        plan: Dict[str, Any] = {
+        plan: dict[str, Any] = {
             "primary_network": networks[0] if networks else "radio",
             "backup_networks": networks[1:] if len(networks) > 1 else [],
             "communication_frequency": "continuous",
@@ -614,10 +614,10 @@ class DisasterResponseSwarm:
         return plan
 
     def _plan_resource_deployment(
-        self, assessment: Dict[str, Any], allocation: Optional[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, assessment: dict[str, Any], allocation: dict[str, Any] | None
+    ) -> dict[str, Any]:
         """Plan deployment of response resources."""
-        deployment: Dict[str, Any] = {
+        deployment: dict[str, Any] = {
             "deployment_schedule": {},
             "resource_routes": {},
             "staging_areas": [],
@@ -638,8 +638,8 @@ class DisasterResponseSwarm:
         return deployment
 
     def _calculate_coordination_metrics(
-        self, assignments: Dict[str, Any], deployment: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, assignments: dict[str, Any], deployment: dict[str, Any]
+    ) -> dict[str, Any]:
         """Calculate coordination quality metrics."""
         metrics = {
             "assignment_efficiency": 0.0,
@@ -690,10 +690,10 @@ class DisasterResponseSwarm:
         return metrics
 
     def _generate_contingency_plans(
-        self, assessment: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        self, assessment: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Generate contingency plans for various scenarios."""
-        contingencies: List[Dict[str, Any]] = []
+        contingencies: list[dict[str, Any]] = []
 
         # Risk-based contingency planning
         risk_factors = assessment.get("risk_factors", {})
@@ -742,11 +742,11 @@ class DisasterResponseSwarm:
 
     async def adapt_response(
         self,
-        current_situation: Dict[str, Any],
-        performance_feedback: Dict[str, Any],
-        environmental_changes: Optional[Dict[str, Any]] = None,
-        resource_availability: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        current_situation: dict[str, Any],
+        performance_feedback: dict[str, Any],
+        environmental_changes: dict[str, Any] | None = None,
+        resource_availability: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Adapt response strategy based on current conditions and performance.
 
@@ -761,7 +761,7 @@ class DisasterResponseSwarm:
         """
         logger.info("Adapting disaster response strategy")
 
-        adaptation: Dict[str, Any] = {
+        adaptation: dict[str, Any] = {
             "adaptation_time": datetime.now(),
             "strategy_changes": [],
             "resource_reallocations": {},
@@ -817,10 +817,10 @@ class DisasterResponseSwarm:
         return adaptation
 
     def _adapt_to_environmental_changes(
-        self, env_changes: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, env_changes: dict[str, Any]
+    ) -> dict[str, Any]:
         """Adapt response to environmental changes."""
-        adaptation: Dict[str, Any] = {
+        adaptation: dict[str, Any] = {
             "environmental_changes": env_changes,
             "strategy_changes": [],
             "safety_measures": [],
@@ -851,8 +851,8 @@ class DisasterResponseSwarm:
         return adaptation
 
     def _adapt_to_resource_changes(
-        self, resource_availability: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, resource_availability: dict[str, Any]
+    ) -> dict[str, Any]:
         """Adapt response to resource availability changes."""
         reallocations = {}
 
@@ -869,8 +869,8 @@ class DisasterResponseSwarm:
         return reallocations
 
     def _update_response_priorities(
-        self, current_situation: Dict[str, Any]
-    ) -> Dict[str, float]:
+        self, current_situation: dict[str, Any]
+    ) -> dict[str, float]:
         """Update response priorities based on current situation."""
         priorities = {}
 
@@ -900,8 +900,8 @@ class DisasterResponseSwarm:
         return priorities
 
     def _update_communication_strategy(
-        self, current_situation: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, current_situation: dict[str, Any]
+    ) -> dict[str, Any]:
         """Update communication strategy based on current conditions."""
         updates = {
             "communication_frequency": "standard",
@@ -923,9 +923,9 @@ class DisasterResponseSwarm:
 
         return updates
 
-    def get_response_status(self) -> Dict[str, Any]:
+    def get_response_status(self) -> dict[str, Any]:
         """Get current disaster response status."""
-        status: Dict[str, Any] = {
+        status: dict[str, Any] = {
             "response_active": self.current_scenario is not None,
             "current_scenario": (
                 self.current_scenario.__dict__ if self.current_scenario else None

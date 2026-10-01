@@ -5,7 +5,7 @@ families: Normal-Normal, Beta-Binomial, Gamma-Poisson.
 """
 
 import numpy as np
-from typing import Dict, Any
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -30,10 +30,10 @@ class PosteriorHelpers:
     def calculate_posterior(
         self,
         likelihood_data: np.ndarray,
-        prior_params: Dict[str, Any],
+        prior_params: dict[str, Any],
         family: str = "normal_normal",
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate conjugate posterior.
 
         Args:
@@ -59,7 +59,7 @@ class PosteriorHelpers:
         else:
             raise ValueError(f"Unknown conjugate family: {family}")
 
-    def _normal_normal(self, data: np.ndarray, prior: Dict[str, Any]) -> Dict[str, Any]:
+    def _normal_normal(self, data: np.ndarray, prior: dict[str, Any]) -> dict[str, Any]:
         """Normal-Normal conjugate update.
 
         Prior: μ ~ N(μ₀, σ₀²)
@@ -94,7 +94,7 @@ class PosteriorHelpers:
             "n_obs": n,
         }
 
-    def _beta_binomial(self, data: np.ndarray, prior: Dict[str, Any]) -> Dict[str, Any]:
+    def _beta_binomial(self, data: np.ndarray, prior: dict[str, Any]) -> dict[str, Any]:
         """Beta-Binomial conjugate update.
 
         Prior: θ ~ Beta(α, β)
@@ -127,7 +127,7 @@ class PosteriorHelpers:
             "n_obs": n,
         }
 
-    def _gamma_poisson(self, data: np.ndarray, prior: Dict[str, Any]) -> Dict[str, Any]:
+    def _gamma_poisson(self, data: np.ndarray, prior: dict[str, Any]) -> dict[str, Any]:
         """Gamma-Poisson conjugate update.
 
         Prior: λ ~ Gamma(α, β)

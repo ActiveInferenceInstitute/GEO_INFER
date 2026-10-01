@@ -16,9 +16,9 @@ WRAPPER = REPO_ROOT / "clone_repos.py"
 def _install_stub_main(monkeypatch, impl):
     """Swap geo_infer_git.main for a stub module whose main() runs impl."""
     main_module = types.ModuleType("geo_infer_git.main")
-    setattr(main_module, "main", impl)
+    main_module.main = impl
     fake_pkg = types.ModuleType("geo_infer_git")
-    setattr(fake_pkg, "main", main_module)
+    fake_pkg.main = main_module
     real_pkg = sys.modules.get("geo_infer_git")
     real_main = sys.modules.get("geo_infer_git.main")
     sys.modules["geo_infer_git"] = fake_pkg

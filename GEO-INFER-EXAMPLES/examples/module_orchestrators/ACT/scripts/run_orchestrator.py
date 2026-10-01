@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 _ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
 if str(_ORCHESTRATORS_DIR) not in sys.path:
@@ -22,7 +22,7 @@ if str(_ORCHESTRATORS_DIR) not in sys.path:
 from _lib import run_module_orchestrator  # noqa: E402
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     import numpy as np
 
     from geo_infer_act import ActiveInferenceModel, GenerativeModel
@@ -64,8 +64,8 @@ def _operation() -> Dict[str, Any]:
     agent.set_generative_model(generative_model)
 
     rng = np.random.default_rng(7)
-    available_actions: List[int] = list(range(n_actions))
-    steps: List[Dict[str, Any]] = []
+    available_actions: list[int] = list(range(n_actions))
+    steps: list[dict[str, Any]] = []
     for _ in range(6):
         true_state = int(rng.integers(0, n_states))
         observation = np.zeros(n_obs, dtype=float)

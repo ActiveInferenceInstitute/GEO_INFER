@@ -5,11 +5,12 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from importlib import metadata
 import mimetypes
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
+from typing import Any
+from collections.abc import Iterable, Mapping, Sequence
 
 import numpy as np
 
@@ -95,7 +96,7 @@ def package_version() -> str:
 
 def utc_now() -> str:
     """Return an ISO-8601 UTC timestamp for runner metadata."""
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def ensure_output_tree(output_dir: Path) -> Path:
@@ -117,7 +118,7 @@ def write_csv(path: Path, rows: Iterable[Mapping[str, Any]]) -> Path:
     """Write row dictionaries to CSV."""
     path.parent.mkdir(parents=True, exist_ok=True)
     rows = [dict(row) for row in rows]
-    fieldnames: List[str] = []
+    fieldnames: list[str] = []
     for row in rows:
         for key in row:
             if key not in fieldnames:
@@ -183,7 +184,7 @@ def figure_sidecar_paths(path: Path) -> tuple[Path, Path]:
     return metadata_path, data_path
 
 
-def _image_size(path: Path) -> Dict[str, int]:
+def _image_size(path: Path) -> dict[str, int]:
     """Return pixel dimensions for image artifacts when Pillow can read them."""
     try:
         from PIL import Image  # noqa: PLC0415
@@ -205,7 +206,7 @@ def build_figure_metadata(
     data_sources: Sequence[str],
     figure_data_path: Path,
     visualization_kind: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build JSON-safe metadata shared by embedded and sidecar figure records."""
     if config.output_dir is None:
         raise ValueError(
@@ -233,7 +234,7 @@ def build_figure_metadata(
 def _write_figure_sidecars(
     config: RunConfig,
     artifact_path: Path,
-    metadata_payload: Dict[str, Any],
+    metadata_payload: dict[str, Any],
     plotted_data: Any,
     prefer_csv: bool,
 ) -> tuple[Path, Path]:
@@ -264,8 +265,8 @@ def _finalize_figure_metadata(
     artifact_path: Path,
     metadata_path: Path,
     data_path: Path,
-    metadata_payload: Dict[str, Any],
-) -> Dict[str, Any]:
+    metadata_payload: dict[str, Any],
+) -> dict[str, Any]:
     """Write final sidecar metadata after the artifact exists on disk."""
     if config.output_dir is None:
         raise ValueError(
@@ -390,7 +391,7 @@ def write_html_figure_artifact(
     return artifact_path
 
 
-def relative_files(output_dir: Path) -> List[Dict[str, Any]]:
+def relative_files(output_dir: Path) -> list[dict[str, Any]]:
     """Return generated file metadata relative to an output directory."""
     files = []
     for path in sorted(item for item in output_dir.rglob("*") if item.is_file()):
@@ -431,11 +432,11 @@ def relative_files(output_dir: Path) -> List[Dict[str, Any]]:
 
 
 def validate_generated_outputs(
-    output_dir: Path, config: RunConfig, generated_files: List[Dict[str, Any]]
-) -> Dict[str, Any]:
+    output_dir: Path, config: RunConfig, generated_files: list[dict[str, Any]]
+) -> dict[str, Any]:
     """Validate required data and visualization artifacts for one run."""
     paths = {item["path"] for item in generated_files}
-    errors: List[str] = []
+    errors: list[str] = []
     required = {"data/full_history.json", "data/step_metrics.csv"}
     if config.scenario in {"h3", "spatial"}:
         required.update(GEOSPATIAL_REQUIRED_FILES)
@@ -480,7 +481,7 @@ def validate_generated_outputs(
     return {
         "status": "failed" if errors else "passed",
         "errors": errors,
-        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "checked_at": datetime.now(UTC).isoformat(),
         "output_dir": str(output_dir),
     }
 
@@ -488,9 +489,9 @@ def validate_generated_outputs(
 def write_run_manifest(
     output_dir: Path,
     config: RunConfig,
-    metrics: Dict[str, Any],
-    command: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    metrics: dict[str, Any],
+    command: list[str] | None = None,
+) -> dict[str, Any]:
     """Write ``manifest.json`` for one scenario run."""
     generated_files = relative_files(output_dir)
     validation = validate_generated_outputs(output_dir, config, generated_files)
@@ -501,7 +502,7 @@ def write_run_manifest(
         "scenario": config.scenario,
         "config": config.to_manifest_dict(),
         "command": command or [],
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "generated_files": generated_files,
         "metrics": to_jsonable(metrics),
         "validation": validation,
@@ -512,9 +513,9 @@ def write_run_manifest(
 
 def write_suite_manifest(
     output_dir: Path,
-    results: List[Any],
-    command: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    results: list[Any],
+    command: list[str] | None = None,
+) -> dict[str, Any]:
     """Write a suite-level manifest for ``run_all_scenarios``."""
     scenarios = [
         {
@@ -531,7 +532,7 @@ def write_suite_manifest(
         "schema_version": SUITE_MANIFEST_SCHEMA_VERSION,
         "package": "geo-infer-act",
         "package_version": package_version(),
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "command": command or [],
         "scenarios": to_jsonable(scenarios),
         "validation": {

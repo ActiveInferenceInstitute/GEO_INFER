@@ -6,7 +6,7 @@ including interactive maps, static plots, animations, and analytical visualizati
 """
 
 import logging
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -71,7 +71,7 @@ class H3MapVisualizer:
 
     def create_folium_map(
         self,
-        value_column: Optional[str] = None,
+        value_column: str | None = None,
         color_scheme: str = "viridis",
         **kwargs: Any,
     ) -> "folium.Map":
@@ -208,9 +208,7 @@ class H3MapVisualizer:
                 tooltip=f"H3: {cell.index}",
             ).add_to(m)
 
-    def _create_cell_popup(
-        self, cell: H3Cell, extra_data: Optional[Dict] = None
-    ) -> str:
+    def _create_cell_popup(self, cell: H3Cell, extra_data: dict | None = None) -> str:
         """Create HTML popup for cell."""
         popup_html = f"""
         <div style="font-family: Arial, sans-serif;">
@@ -349,9 +347,9 @@ class H3StaticVisualizer:
 
     def plot_grid_overview(
         self,
-        figsize: Tuple[int, int] = (12, 8),
-        save_path: Optional[str] = None,
-    ) -> Optional[Any]:
+        figsize: tuple[int, int] = (12, 8),
+        save_path: str | None = None,
+    ) -> Any | None:
         """
         Create comprehensive grid overview plot.
 
@@ -543,10 +541,10 @@ class H3StaticVisualizer:
 
     def plot_hexagon_grid(
         self,
-        value_column: Optional[str] = None,
-        figsize: Tuple[int, int] = (12, 10),
-        save_path: Optional[str] = None,
-    ) -> Optional[Any]:
+        value_column: str | None = None,
+        figsize: tuple[int, int] = (12, 10),
+        save_path: str | None = None,
+    ) -> Any | None:
         """
         Plot actual hexagonal grid with proper hexagon shapes.
 
@@ -639,9 +637,9 @@ class H3StaticVisualizer:
 
     def plot_connectivity_analysis(
         self,
-        figsize: Tuple[int, int] = (10, 6),
-        save_path: Optional[str] = None,
-    ) -> Optional[Any]:
+        figsize: tuple[int, int] = (10, 6),
+        save_path: str | None = None,
+    ) -> Any | None:
         """
         Plot connectivity analysis results.
 
@@ -755,7 +753,7 @@ class H3InteractiveVisualizer:
         self.analytics = H3Analytics(grid)
 
     def create_plotly_map(
-        self, value_column: Optional[str] = None, **kwargs: Any
+        self, value_column: str | None = None, **kwargs: Any
     ) -> "go.Figure":
         """
         Create interactive Plotly map with H3 hexagons.
@@ -954,7 +952,7 @@ class H3AnimationVisualizer:
     temporal analysis, and dynamic spatial patterns.
     """
 
-    def __init__(self, grids: List[H3Grid]) -> None:
+    def __init__(self, grids: list[H3Grid]) -> None:
         """
         Initialize animation visualizer for multiple H3Grids.
 
@@ -967,7 +965,7 @@ class H3AnimationVisualizer:
     def create_temporal_animation(
         self,
         value_column: str,
-        save_path: Optional[str] = None,
+        save_path: str | None = None,
         **kwargs: Any,
     ) -> "go.Figure":
         """

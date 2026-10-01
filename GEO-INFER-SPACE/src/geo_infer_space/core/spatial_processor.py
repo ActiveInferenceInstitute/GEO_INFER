@@ -2,7 +2,7 @@
 
 import logging
 import geopandas as gpd
-from typing import Dict, Any
+from typing import Any
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ class SpatialProcessor:
 
     def proximity_analysis(
         self, gdf1: gpd.GeoDataFrame, gdf2: gpd.GeoDataFrame
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate proximity between two sets of features.
 
         Args:
@@ -85,7 +85,7 @@ class SpatialProcessor:
             raise
 
     def perform_multi_overlay(
-        self, spatial_datasets: Dict[str, gpd.GeoDataFrame]
+        self, spatial_datasets: dict[str, gpd.GeoDataFrame]
     ) -> gpd.GeoDataFrame:
         """
         Perform multi-layer spatial overlay on multiple GeoDataFrames.
@@ -126,7 +126,7 @@ class SpatialProcessor:
 
         return base_gdf
 
-    def calculate_spatial_correlation(self, gdf: gpd.GeoDataFrame) -> Dict[str, float]:
+    def calculate_spatial_correlation(self, gdf: gpd.GeoDataFrame) -> dict[str, float]:
         """
         Calculate spatial correlation metrics for a GeoDataFrame.
 

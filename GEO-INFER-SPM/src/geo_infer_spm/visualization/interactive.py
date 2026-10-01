@@ -7,7 +7,7 @@ result presentation.
 """
 
 import numpy as np
-from typing import Optional, Any
+from typing import Any
 import warnings
 
 try:
@@ -26,7 +26,7 @@ def create_interactive_map(
     contrast_idx: int = 0,
     map_type: str = "scattergeo",
     **kwargs: Any,
-) -> Optional[Any]:
+) -> Any | None:
     """
     Create interactive geographical map of SPM results.
 
@@ -170,7 +170,7 @@ def create_interactive_map(
 
 def create_dashboard(
     spm_result: SPMResult, include_diagnostics: bool = True
-) -> Optional[Any]:
+) -> Any | None:
     """
     Create comprehensive interactive dashboard of SPM results.
 
@@ -333,7 +333,7 @@ def create_dashboard(
     return fig
 
 
-def create_time_series_explorer(spm_result: SPMResult) -> Optional[Any]:
+def create_time_series_explorer(spm_result: SPMResult) -> Any | None:
     """
     Create interactive time series explorer for temporal SPM data.
 

@@ -11,7 +11,6 @@ import os
 import json
 import logging
 from pathlib import Path
-from datetime import datetime
 
 # Optional dependencies with graceful handling
 try:
@@ -70,7 +69,7 @@ class AreaStudyDashboard:
         json_files = list(output_dir.glob("*area_study_results*.json"))
         if json_files:
             latest_file = max(json_files, key=lambda f: f.stat().st_mtime)
-            with open(latest_file, "r") as f:
+            with open(latest_file) as f:
                 self.data = json.load(f)
             self.logger.info(f"Loaded data from {latest_file.name}")
         else:
@@ -167,9 +166,7 @@ def run_streamlit_app(port=8501):
     """Run Streamlit app with robust server management."""
     import subprocess
     import sys
-    import os
     import time
-    import signal
     import atexit
 
     # Get the current script directory

@@ -9,7 +9,7 @@ import pickle
 import numpy as np
 import geopandas as gpd
 import networkx as nx
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, cast
 import logging
 from geo_infer_log.models.schemas import (
     Vehicle,
@@ -74,18 +74,18 @@ def _load_gpickle(path: str) -> nx.Graph:
 class RouteOptimizer:
     """Base class for route optimization."""
 
-    def __init__(self, parameters: Optional[RoutingParameters] = None):
+    def __init__(self, parameters: RoutingParameters | None = None):
         """Initialize a route optimizer.
 
         Args:
             parameters: Routing parameters
         """
         self.parameters = parameters or RoutingParameters()
-        self.network: Optional[nx.Graph] = None
-        self.vehicles: List[Vehicle] = []
-        self._node_tree: Optional[KDTree] = None
-        self._node_indices: Optional[List[int]] = None
-        self._nodes_list: Optional[List[int]] = None
+        self.network: nx.Graph | None = None
+        self.vehicles: list[Vehicle] = []
+        self._node_tree: KDTree | None = None
+        self._node_indices: list[int] | None = None
+        self._nodes_list: list[int] | None = None
 
     def load_network(self, network_file: str) -> None:
         """Load a transportation network from a file.
@@ -139,10 +139,10 @@ class RouteOptimizer:
 
     def optimize_route(
         self,
-        origin: Tuple[float, float],
-        destination: Tuple[float, float],
-        waypoints: Optional[List[Tuple[float, float]]] = None,
-    ) -> Dict:
+        origin: tuple[float, float],
+        destination: tuple[float, float],
+        waypoints: list[tuple[float, float]] | None = None,
+    ) -> dict:
         """Optimize a route between origin and destination.
 
         With a loaded network, routing runs over the network graph. Without
@@ -221,10 +221,10 @@ class RouteOptimizer:
 
     def _optimize_route_haversine(
         self,
-        origin: Tuple[float, float],
-        destination: Tuple[float, float],
-        waypoints: Optional[List[Tuple[float, float]]] = None,
-    ) -> Dict:
+        origin: tuple[float, float],
+        destination: tuple[float, float],
+        waypoints: list[tuple[float, float]] | None = None,
+    ) -> dict:
         """Route over great-circle distances without a loaded network.
 
         Stops are visited in greedy nearest-neighbor order; distance is the
@@ -241,7 +241,7 @@ class RouteOptimizer:
         """
         remaining = list(waypoints or [])
         current = origin
-        ordered: List[Tuple[float, float]] = []
+        ordered: list[tuple[float, float]] = []
         while remaining:
             nearest = min(remaining, key=lambda p: haversine_distance(current, p))
             ordered.append(nearest)
@@ -263,7 +263,7 @@ class RouteOptimizer:
             "waypoints": waypoints or [],
         }
 
-    def _find_nearest_node(self, point: Tuple[float, float]) -> int:
+    def _find_nearest_node(self, point: tuple[float, float]) -> int:
         """Find the nearest node in the network to a point.
 
         Args:
@@ -294,8 +294,8 @@ class RouteOptimizer:
         return cast(int, nearest or list(self.network.nodes)[0])
 
     def _solve_with_waypoints(
-        self, origin_node: int, dest_node: int, waypoint_nodes: List[int]
-    ) -> Tuple[List, float, float]:
+        self, origin_node: int, dest_node: int, waypoint_nodes: list[int]
+    ) -> tuple[list, float, float]:
         """Solve routing problem with waypoints (TSP-like).
 
         Args:
@@ -315,7 +315,7 @@ class RouteOptimizer:
             # Simple greedy approach: Nearest Neighbor
             current_node = origin_node
             unvisited = set(waypoint_nodes)
-            full_path: List[int] = []
+            full_path: list[int] = []
             total_distance = 0.0
             total_time = 0.0
 
@@ -398,7 +398,7 @@ class RouteOptimizer:
             logger.error(f"TSP solving failed: {e}")
             raise ValueError(f"Waypoint routing failed: {e}") from e
 
-    def _extract_route_geometry(self, path: List[int]) -> gpd.GeoSeries:
+    def _extract_route_geometry(self, path: list[int]) -> gpd.GeoSeries:
         """Extract the geometry of a route from the path.
 
         Args:
@@ -426,8 +426,8 @@ class FleetManager:
 
     def __init__(self) -> None:
         """Initialize a fleet manager."""
-        self.vehicles: Dict[str, Vehicle] = {}  # id -> Vehicle
-        self.assignments: Dict[str, Dict[str, Any]] = {}  # vehicle_id -> assignment
+        self.vehicles: dict[str, Vehicle] = {}  # id -> Vehicle
+        self.assignments: dict[str, dict[str, Any]] = {}  # vehicle_id -> assignment
         self.route_optimizer = RouteOptimizer()
 
     def add_vehicle(self, vehicle: Vehicle) -> None:
@@ -442,9 +442,9 @@ class FleetManager:
     def assign_delivery(
         self,
         vehicle_id: str,
-        delivery_points: List[Tuple[float, float]],
-        depot: Tuple[float, float],
-    ) -> Dict:
+        delivery_points: list[tuple[float, float]],
+        depot: tuple[float, float],
+    ) -> dict:
         """Assign a delivery route to a vehicle.
 
         Args:
@@ -476,7 +476,7 @@ class FleetManager:
         self.assignments[vehicle_id] = assignment
         return assignment
 
-    def get_fleet_status(self) -> Dict:
+    def get_fleet_status(self) -> dict:
         """Get the current status of the fleet.
 
         Returns:
@@ -507,10 +507,10 @@ class VehicleRouter:
 
     def solve_vrp(
         self,
-        deliveries: List[Dict],
-        depots: List[Tuple[float, float]],
-        constraints: Dict,
-    ) -> Dict:
+        deliveries: list[dict],
+        depots: list[tuple[float, float]],
+        constraints: dict,
+    ) -> dict:
         """Solve a vehicle routing problem.
 
         Args:
@@ -523,7 +523,7 @@ class VehicleRouter:
         """
         # Greedy cluster-first implementation
 
-        solution: Dict[str, Any] = {"routes": {}, "unassigned": []}
+        solution: dict[str, Any] = {"routes": {}, "unassigned": []}
 
         # Simple heuristic: Assign nearest deliveries to vehicles until capacity/range constraint
 
@@ -588,7 +588,7 @@ class TravelTimeEstimator:
             use_historical_data: Whether to use historical traffic data
         """
         self.use_historical_data = use_historical_data
-        self.historical_data: Optional[Any] = None
+        self.historical_data: Any | None = None
 
     def load_historical_data(self, data_file: str) -> None:
         """Load historical traffic data.
@@ -608,9 +608,9 @@ class TravelTimeEstimator:
 
     def estimate_travel_time(
         self,
-        origin: Tuple[float, float],
-        destination: Tuple[float, float],
-        departure_time: Optional[str] = None,
+        origin: tuple[float, float],
+        destination: tuple[float, float],
+        departure_time: str | None = None,
     ) -> float:
         """Estimate travel time between points.
 
@@ -665,7 +665,7 @@ class TravelTimeEstimator:
             return 1.0
 
     def calculate_time_matrix(
-        self, locations: List[Tuple[float, float]], departure_time: Optional[str] = None
+        self, locations: list[tuple[float, float]], departure_time: str | None = None
     ) -> np.ndarray:
         """Calculate a travel time matrix between all locations.
 
@@ -689,7 +689,7 @@ class TravelTimeEstimator:
         return matrix
 
     def calculate_distance_matrix(
-        self, locations: List[Tuple[float, float]]
+        self, locations: list[tuple[float, float]]
     ) -> np.ndarray:
         """Calculate a distance matrix between all locations.
 
@@ -711,10 +711,10 @@ class TravelTimeEstimator:
 
     def estimate_arrival_times(
         self,
-        route: List[Tuple[float, float]],
+        route: list[tuple[float, float]],
         departure_time: str,
-        service_times: Optional[List[float]] = None,
-    ) -> List[str]:
+        service_times: list[float] | None = None,
+    ) -> list[str]:
         """Estimate arrival times at each stop along a route.
 
         Args:
@@ -746,7 +746,7 @@ class TravelTimeEstimator:
 class MultiObjectiveOptimizer:
     """Multi-objective optimization for logistics routing."""
 
-    def __init__(self, objectives: List[str]):
+    def __init__(self, objectives: list[str]):
         """Initialize multi-objective optimizer.
 
         Args:
@@ -755,7 +755,7 @@ class MultiObjectiveOptimizer:
         self.objectives = objectives
         self.weights = {obj: 1.0 / len(objectives) for obj in objectives}
 
-    def set_weights(self, weights: Dict[str, float]) -> None:
+    def set_weights(self, weights: dict[str, float]) -> None:
         """Set objective weights.
 
         Args:
@@ -764,7 +764,7 @@ class MultiObjectiveOptimizer:
         total = sum(weights.values())
         self.weights = {k: v / total for k, v in weights.items()}
 
-    def calculate_pareto_front(self, solutions: List[Dict]) -> List[Dict]:
+    def calculate_pareto_front(self, solutions: list[dict]) -> list[dict]:
         """Calculate the Pareto front from a set of solutions.
 
         Args:
@@ -800,7 +800,7 @@ class MultiObjectiveOptimizer:
 
         return pareto_front
 
-    def select_compromise(self, pareto_front: List[Dict]) -> Dict:
+    def select_compromise(self, pareto_front: list[dict]) -> dict:
         """Select a compromise solution from the Pareto front.
 
         Args:
@@ -820,7 +820,7 @@ class MultiObjectiveOptimizer:
             obj: max(s.get(obj, 0) for s in pareto_front) for obj in self.objectives
         }
 
-        best_solution: Optional[Dict[str, Any]] = None
+        best_solution: dict[str, Any] | None = None
         best_score = float("inf")
 
         for solution in pareto_front:
@@ -848,13 +848,13 @@ class RealTimeTracker:
     def __init__(self) -> None:
         """Initialize real-time tracker."""
         # vehicle_id -> (lon, lat, timestamp)
-        self.vehicle_positions: Dict[str, Tuple[float, float, str]] = {}
-        self.active_routes: Dict[str, Dict[str, Any]] = {}  # vehicle_id -> route info
-        self.events: List[Any] = []  # List of events (delays, completions, etc.)
+        self.vehicle_positions: dict[str, tuple[float, float, str]] = {}
+        self.active_routes: dict[str, dict[str, Any]] = {}  # vehicle_id -> route info
+        self.events: list[Any] = []  # List of events (delays, completions, etc.)
 
     def update_position(
-        self, vehicle_id: str, position: Tuple[float, float], timestamp: str
-    ) -> Dict:
+        self, vehicle_id: str, position: tuple[float, float], timestamp: str
+    ) -> dict:
         """Update vehicle position.
 
         Args:
@@ -867,7 +867,7 @@ class RealTimeTracker:
         """
         self.vehicle_positions[vehicle_id] = (position[0], position[1], timestamp)
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "vehicle_id": vehicle_id,
             "position": position,
             "timestamp": timestamp,
@@ -892,8 +892,8 @@ class RealTimeTracker:
 
     def _is_at_stop(
         self,
-        position: Tuple[float, float],
-        stop: Optional[Tuple[float, float]],
+        position: tuple[float, float],
+        stop: tuple[float, float] | None,
         threshold_km: float = 0.1,
     ) -> bool:
         """Check if position is at a stop.
@@ -911,7 +911,7 @@ class RealTimeTracker:
 
         return haversine_distance(position, stop) <= threshold_km
 
-    def get_fleet_positions(self) -> Dict:
+    def get_fleet_positions(self) -> dict:
         """Get current positions of all tracked vehicles.
 
         Returns:
@@ -925,9 +925,9 @@ class RealTimeTracker:
     def calculate_eta(
         self,
         vehicle_id: str,
-        destination: Tuple[float, float],
+        destination: tuple[float, float],
         estimator: TravelTimeEstimator,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Calculate ETA for a vehicle to reach destination.
 
         Args:

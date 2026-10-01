@@ -3,7 +3,7 @@
 Command-line interface for GEO-INFER-ART.
 """
 
-from typing import Any, List, Union
+from typing import Any
 import argparse
 import os
 import sys
@@ -376,7 +376,7 @@ def process_animation(args: argparse.Namespace) -> int:
         print(f"Creating parameter sweep animation for {args.parameter}")
 
         try:
-            sweep_values: List[Union[float, str]] = (
+            sweep_values: list[float | str] = (
                 [float(v) for v in args.values]
                 if args.parameter == "abstraction_level"
                 else [str(v) for v in args.values]

@@ -1,6 +1,6 @@
 """Unit tests for the Active Inference disease surveillance analyzer."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 import pytest
 
@@ -24,7 +24,7 @@ def _report(
 @pytest.fixture
 def clustered_reports():
     """Two tight clusters plus reports spread over several days."""
-    base = datetime(2024, 3, 1, tzinfo=timezone.utc)
+    base = datetime(2024, 3, 1, tzinfo=UTC)
     reports = []
     for day in range(10):
         reports.append(

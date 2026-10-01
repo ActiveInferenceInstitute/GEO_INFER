@@ -25,7 +25,6 @@ import sys
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
 
 from import_probe import run_import_probe
 from validate_packaging import (  # noqa: F401
@@ -40,22 +39,22 @@ from validate_packaging import (  # noqa: F401
 @dataclass
 class BuildResult:
     module: str
-    distribution: Optional[str]
-    wheel: Optional[Path] = None
+    distribution: str | None
+    wheel: Path | None = None
     ok: bool = False
     error: str = ""
 
 
 @dataclass
 class BuildSummary:
-    results: List[BuildResult] = field(default_factory=list)
+    results: list[BuildResult] = field(default_factory=list)
 
     @property
     def namespaces_valid(self) -> bool:
         return bool(self.results) and all(r.ok for r in self.results)
 
     @property
-    def failures(self) -> List[BuildResult]:
+    def failures(self) -> list[BuildResult]:
         return [r for r in self.results if not r.ok]
 
 
@@ -123,7 +122,7 @@ def validate_wheel_contents(wheel: Path, module_dir: Path) -> None:
                 raise ValueError("Wheel resource differs from source: " + resource)
 
 
-def build_wheel(module_dir: Path, outdir: Path, python: List[str]) -> BuildResult:
+def build_wheel(module_dir: Path, outdir: Path, python: list[str]) -> BuildResult:
     """Build in a fresh directory so stale neighboring wheels cannot be selected."""
     distribution = distribution_name(parse_pyproject(module_dir))
     result = BuildResult(module=module_dir.name, distribution=distribution)
@@ -169,7 +168,7 @@ def build_wheel(module_dir: Path, outdir: Path, python: List[str]) -> BuildResul
 
 
 def verify_wheels(
-    wheels: List[Path], python: List[str], *, import_timeout: float = 120
+    wheels: list[Path], python: list[str], *, import_timeout: float = 120
 ) -> None:
     """Install wheels in a clean environment and execute actual import/resource probes."""
     if not wheels:
@@ -266,7 +265,7 @@ print(json.dumps({'package':name,'version':dist.version,'origin':str(origin),'re
             print(result.stdout.strip(), flush=True)
 
 
-def install_and_verify(wheel: Path, python: List[str]) -> None:
+def install_and_verify(wheel: Path, python: list[str]) -> None:
     """Verify one wheel with the same isolation and resource contract as a release."""
     verify_wheels([wheel], python)
 

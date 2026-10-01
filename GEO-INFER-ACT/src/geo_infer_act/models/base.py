@@ -2,7 +2,7 @@
 Base models for active inference framework.
 """
 
-from typing import Dict, Optional, Any
+from typing import Any
 import numpy as np
 
 from geo_infer_act.utils.math import categorical_posterior
@@ -22,7 +22,7 @@ class BaseActiveInferenceModel:
     exports at top level.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the model.
 
@@ -31,7 +31,7 @@ class BaseActiveInferenceModel:
         """
         self.config = config if config is not None else {}
 
-    def step(self, actions: Optional[Any] = None) -> Any:
+    def step(self, actions: Any | None = None) -> Any:
         """
         Advance the model by one step.
 
@@ -77,7 +77,7 @@ class CategoricalModel(BaseActiveInferenceModel):
 
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
         state_dim: int = 1,
         obs_dim: int = 1,
     ):
@@ -105,8 +105,8 @@ class CategoricalModel(BaseActiveInferenceModel):
 
         # Spatial attributes (used by multi-agent H3 coordination)
         self.location = 0
-        self.cell_id: Optional[str] = None
-        self.spatial_index: Optional[int] = None
+        self.cell_id: str | None = None
+        self.spatial_index: int | None = None
 
     def set_preferences(self, preferences: np.ndarray) -> None:
         """
@@ -192,7 +192,7 @@ class CategoricalModel(BaseActiveInferenceModel):
 
         return self.beliefs
 
-    def step(self, action: Optional[int] = None) -> np.ndarray:
+    def step(self, action: int | None = None) -> np.ndarray:
         """
         Advance the model by one step.
 
@@ -241,7 +241,7 @@ class GaussianModel(BaseActiveInferenceModel):
 
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
         state_dim: int = 1,
         obs_dim: int = 1,
     ):
@@ -296,8 +296,8 @@ class GaussianModel(BaseActiveInferenceModel):
     def set_transition_model(
         self,
         A: np.ndarray,
-        B: Optional[np.ndarray] = None,
-        Q: Optional[np.ndarray] = None,
+        B: np.ndarray | None = None,
+        Q: np.ndarray | None = None,
     ) -> None:
         """
         Set transition model parameters.
@@ -326,9 +326,7 @@ class GaussianModel(BaseActiveInferenceModel):
                 raise ValueError(f"Q matrix must have shape {expected_Q_shape}")
             self.Q = Q
 
-    def set_observation_model(
-        self, C: np.ndarray, R: Optional[np.ndarray] = None
-    ) -> None:
+    def set_observation_model(self, C: np.ndarray, R: np.ndarray | None = None) -> None:
         """
         Set observation model parameters.
 
@@ -348,7 +346,7 @@ class GaussianModel(BaseActiveInferenceModel):
                 raise ValueError(f"R matrix must have shape {expected_R_shape}")
             self.R = R
 
-    def update_beliefs(self, observation: np.ndarray) -> Dict[str, np.ndarray]:
+    def update_beliefs(self, observation: np.ndarray) -> dict[str, np.ndarray]:
         """
         Update beliefs given observation (Kalman filter).
 
@@ -389,7 +387,7 @@ class GaussianModel(BaseActiveInferenceModel):
 
         return {"mean": self.belief_mean, "cov": self.belief_cov}
 
-    def step(self, control: Optional[np.ndarray] = None) -> Dict[str, np.ndarray]:
+    def step(self, control: np.ndarray | None = None) -> dict[str, np.ndarray]:
         """
         Advance the model by one step.
 
@@ -413,7 +411,7 @@ class GaussianModel(BaseActiveInferenceModel):
 
         return {"mean": self.belief_mean, "cov": self.belief_cov}
 
-    def reset(self) -> Dict[str, np.ndarray]:
+    def reset(self) -> dict[str, np.ndarray]:
         """
         Reset beliefs to initial state.
 

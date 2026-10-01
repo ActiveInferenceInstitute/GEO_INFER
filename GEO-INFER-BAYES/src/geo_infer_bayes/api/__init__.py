@@ -6,16 +6,16 @@ from typing import Any, Optional, Type
 try:
     from .pymc_interface import PyMCInterface
 except ImportError:
-    PyMCInterface: Optional[Type[Any]] = None  # type: ignore[no-redef]
+    PyMCInterface: type[Any] | None = None  # type: ignore[no-redef]
 
 try:
     from .stan_interface import StanInterface
 except ImportError:
-    StanInterface: Optional[Type[Any]] = None  # type: ignore[no-redef]
+    StanInterface: type[Any] | None = None  # type: ignore[no-redef]
 
 try:
     from .tfp_interface import TFPInterface
 except ImportError:
-    TFPInterface: Optional[Type[Any]] = None  # type: ignore[no-redef]
+    TFPInterface: type[Any] | None = None  # type: ignore[no-redef]
 
 __all__ = ["PyMCInterface", "StanInterface", "TFPInterface"]

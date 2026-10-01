@@ -25,7 +25,7 @@ Usage:
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Any
 import numpy as np
 import folium
 from shapely.geometry import Polygon, LineString, Point
@@ -44,7 +44,7 @@ def configure_logging() -> None:
     )
 
 
-def generate_zoning_geojson() -> Dict[str, Any]:
+def generate_zoning_geojson() -> dict[str, Any]:
     """
     Simulate zoning polygons (e.g., residential, commercial, industrial) over California.
     Returns a GeoJSON FeatureCollection.
@@ -76,7 +76,7 @@ def generate_zoning_geojson() -> Dict[str, Any]:
     return {"type": "FeatureCollection", "features": features}
 
 
-def generate_water_geojson() -> Dict[str, Any]:
+def generate_water_geojson() -> dict[str, Any]:
     """
     Simulate water features (rivers as lines, lakes as polygons) over California.
     Returns a GeoJSON FeatureCollection.
@@ -121,7 +121,7 @@ def generate_water_geojson() -> Dict[str, Any]:
     return {"type": "FeatureCollection", "features": features}
 
 
-def generate_climate_geojson() -> Dict[str, Any]:
+def generate_climate_geojson() -> dict[str, Any]:
     """
     Simulate climate data (points with temperature/precipitation) over California.
     Returns a GeoJSON FeatureCollection.
@@ -149,8 +149,8 @@ def generate_climate_geojson() -> Dict[str, Any]:
 
 
 def geojson_to_h3_polygons(
-    geojson: Dict[str, Any], resolution: int
-) -> Tuple[List[str], Dict[str, Any]]:
+    geojson: dict[str, Any], resolution: int
+) -> tuple[list[str], dict[str, Any]]:
     """
     Convert GeoJSON features to H3 indices.
 
@@ -207,8 +207,8 @@ def geojson_to_h3_polygons(
 
 
 def cell_to_latlngjson_polygons(
-    h3_indices: List[str], properties: Dict[str, Any]
-) -> Dict[str, Any]:
+    h3_indices: list[str], properties: dict[str, Any]
+) -> dict[str, Any]:
     """
     Convert H3 indices back to GeoJSON format.
     """
@@ -240,11 +240,11 @@ def cell_to_latlngjson_polygons(
 
 def add_h3_layer_to_map(
     m: folium.Map,
-    h3_indices: List[str],
-    properties: Dict[str, Any],
+    h3_indices: list[str],
+    properties: dict[str, Any],
     layer_name: str,
     color: str,
-    popup_fields: Optional[List[str]] = None,
+    popup_fields: list[str] | None = None,
 ) -> None:
     """
     Add an H3 hexagon layer to a Folium map.
@@ -276,10 +276,10 @@ def add_h3_layer_to_map(
 
 def add_point_layer_to_map(
     m: folium.Map,
-    geojson: Dict[str, Any],
+    geojson: dict[str, Any],
     layer_name: str,
     color: str,
-    popup_fields: Optional[List[str]] = None,
+    popup_fields: list[str] | None = None,
 ) -> None:
     """
     Add a point layer to a Folium map.

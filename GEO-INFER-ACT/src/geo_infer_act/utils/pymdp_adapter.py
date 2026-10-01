@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from importlib import metadata
-from typing import Any, Dict, List, Optional
+from typing import Any
 import warnings
 
 import numpy as np
@@ -25,9 +25,9 @@ class PymdpStepResult:
     negative_expected_free_energy: np.ndarray
     selected_action_index: int
     free_energy: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_metadata(self) -> Dict[str, Any]:
+    def to_metadata(self) -> dict[str, Any]:
         """Return JSON-safe pymdp backend metadata."""
         return {
             "backend": "inferactively-pymdp",
@@ -62,7 +62,7 @@ def validate_pymdp_version(expected: str = EXPECTED_PYMDP_VERSION) -> str:
     return version
 
 
-def real_h3_version_metadata() -> Dict[str, Any]:
+def real_h3_version_metadata() -> dict[str, Any]:
     """Return h3-py runtime version metadata and fail if h3 is unavailable."""
     import h3  # noqa: PLC0415
 
@@ -161,7 +161,7 @@ def _model_num_controls(model: Any, default: int = 3) -> int:
     return _coerce_action_count(value, default=default)
 
 
-def _extract_agent_belief(qs: List[Any]) -> np.ndarray:
+def _extract_agent_belief(qs: list[Any]) -> np.ndarray:
     if not qs:
         raise ValueError("pymdp returned no posterior states")
     array = np.asarray(qs[0], dtype=float)
@@ -170,7 +170,7 @@ def _extract_agent_belief(qs: List[Any]) -> np.ndarray:
     return _normalize_distribution(array)
 
 
-def _scalar_free_energy(info: Dict[str, Any]) -> float:
+def _scalar_free_energy(info: dict[str, Any]) -> float:
     for key in ("vfe", "free_energy", "F"):
         if key in info:
             array = np.asarray(info[key], dtype=float)
@@ -201,7 +201,7 @@ def run_pymdp_step(
     policy_prior: Any = None,
     strict: bool = False,
     posterior: Any = None,
-    perception_free_energy: Optional[float] = None,
+    perception_free_energy: float | None = None,
 ) -> PymdpStepResult:
     """Run pymdp perception/policy inference, optionally rejecting all repairs.
 
@@ -361,11 +361,11 @@ def run_model_step(
     model: Any,
     observation: Any,
     *,
-    action_count: Optional[int] = None,
+    action_count: int | None = None,
     random_seed: int = 0,
     prior: Any = None,
     posterior: Any = None,
-    perception_free_energy: Optional[float] = None,
+    perception_free_energy: float | None = None,
 ) -> PymdpStepResult:
     """Run pymdp inference for a GEO-INFER categorical GenerativeModel."""
     if getattr(model, "model_type", None) != "categorical":
@@ -375,8 +375,8 @@ def run_model_step(
     )
     return run_pymdp_step(
         observation=observation,
-        observation_model=getattr(model, "observation_model"),
-        transition_model=getattr(model, "transition_model"),
+        observation_model=model.observation_model,
+        transition_model=model.transition_model,
         preferences=getattr(model, "preferences", None),
         prior=prior if prior is not None else getattr(model, "beliefs", None),
         action_count=controls,
@@ -386,7 +386,7 @@ def run_model_step(
     )
 
 
-def obj_array_zeros(shape_list: List[Any]) -> Any:
+def obj_array_zeros(shape_list: list[Any]) -> Any:
     """Zero-init pymdp-style matrix list under legacy ``obj_array_zeros`` semantics.
 
     pymdp 1.0.3 renamed this helper to ``list_array_zeros`` and returns immutable
@@ -407,7 +407,7 @@ def jax_prng_key(seed: int) -> Any:
     return jr.PRNGKey(seed)
 
 
-def random_A_array(rng_key: Any, num_obs: List[int], num_states: List[int]) -> Any:
+def random_A_array(rng_key: Any, num_obs: list[int], num_states: list[int]) -> Any:
     """Bridge facade for ``pymdp.utils.random_A_array`` with version validation."""
     validate_pymdp_version()
     from pymdp.utils import random_A_array as _pymdp_random_A_array  # noqa: PLC0415
@@ -415,7 +415,7 @@ def random_A_array(rng_key: Any, num_obs: List[int], num_states: List[int]) -> A
     return _pymdp_random_A_array(rng_key, num_obs, num_states)
 
 
-def random_B_array(rng_key: Any, num_states: List[int], num_controls: List[int]) -> Any:
+def random_B_array(rng_key: Any, num_states: list[int], num_controls: list[int]) -> Any:
     """Bridge facade for ``pymdp.utils.random_B_array`` with version validation."""
     validate_pymdp_version()
     from pymdp.utils import random_B_array as _pymdp_random_B_array  # noqa: PLC0415
@@ -423,7 +423,7 @@ def random_B_array(rng_key: Any, num_states: List[int], num_controls: List[int])
     return _pymdp_random_B_array(rng_key, num_states, num_controls)
 
 
-def onehot_batch(num_obs: List[int], indices: List[Any]) -> List[Any]:
+def onehot_batch(num_obs: list[int], indices: list[Any]) -> list[Any]:
     """Return one-hot (1, dim) JAX rows for each modality, pymdp batch style."""
     import jax.numpy as jnp  # noqa: PLC0415
 
@@ -438,7 +438,7 @@ def build_agent(
     B: Any,
     C: Any,
     D: Any,
-    num_controls: List[int],
+    num_controls: list[int],
     categorical_obs: bool = True,
     batch_size: int = 1,
 ) -> Any:

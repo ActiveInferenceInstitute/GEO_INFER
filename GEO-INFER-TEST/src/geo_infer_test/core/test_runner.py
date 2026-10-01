@@ -12,7 +12,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from typing import Dict, List, Any, Optional
+from typing import Any
 from dataclasses import dataclass
 
 
@@ -33,8 +33,8 @@ from .test_discoverer import ALL_MODULES
 class TestConfiguration:
     """Configuration for test execution."""
 
-    modules_to_test: List[str]
-    test_types: List[str]  # ['unit', 'integration', 'performance', 'load']
+    modules_to_test: list[str]
+    test_types: list[str]  # ['unit', 'integration', 'performance', 'load']
     parallel_execution: bool = True
     max_workers: int = 4
     timeout_seconds: int = 300
@@ -42,7 +42,7 @@ class TestConfiguration:
     coverage_enabled: bool = True
     performance_benchmarks: bool = True
     log_integration_enabled: bool = True
-    log_integration: Optional[LogIntegration] = None
+    log_integration: LogIntegration | None = None
     """Pre-built log integration injected by the caller (constructor
     injection preferred over post-construction attribute replacement)."""
 
@@ -57,8 +57,8 @@ class TestResult:
     status: str
     duration: float
     message: str
-    details: Dict[str, Any]
-    performance_metrics: Optional[Dict[str, float]] = None
+    details: dict[str, Any]
+    performance_metrics: dict[str, float] | None = None
 
 
 class GeoInferTestRunner:
@@ -80,8 +80,8 @@ class GeoInferTestRunner:
             if config.log_integration is not None
             else (LogIntegration() if config.log_integration_enabled else None)
         )
-        self.test_results: List[TestResult] = []
-        self.discovered_tests: Dict[str, List[str]] = {}
+        self.test_results: list[TestResult] = []
+        self.discovered_tests: dict[str, list[str]] = {}
         self._setup_test_environment()
 
     def _setup_test_environment(self) -> None:
@@ -92,7 +92,7 @@ class GeoInferTestRunner:
         if self.log_integration:
             self.log_integration.logger.info("GeoInferTestRunner initialized")
 
-    def discover_tests(self) -> Dict[str, List[str]]:
+    def discover_tests(self) -> dict[str, list[str]]:
         """
         Discover all available tests across specified modules.
 
@@ -118,9 +118,9 @@ class GeoInferTestRunner:
         self.discovered_tests = discovered
         return discovered
 
-    def _discover_module_tests(self, module: str) -> List[str]:
+    def _discover_module_tests(self, module: str) -> list[str]:
         """Discover tests for a specific module."""
-        tests: List[str] = []
+        tests: list[str] = []
 
         # Look for module test directory
         module_test_dir = _REPO_ROOT / f"GEO-INFER-{module}/tests"
@@ -143,7 +143,7 @@ class GeoInferTestRunner:
 
         return tests
 
-    def run_all_tests(self) -> Dict[str, Any]:
+    def run_all_tests(self) -> dict[str, Any]:
         """
         Execute all discovered tests with comprehensive logging and reporting.
 
@@ -256,7 +256,7 @@ class GeoInferTestRunner:
                     if self.log_integration:
                         self.log_integration.logger.error(f"Test execution error: {e}")
 
-    def _execute_single_test(self, module: str, test: str) -> Optional[TestResult]:
+    def _execute_single_test(self, module: str, test: str) -> TestResult | None:
         """Execute a single test with comprehensive logging."""
         test_id = f"{module}_{test}_{int(time.time())}"
 
@@ -351,7 +351,7 @@ class GeoInferTestRunner:
 
         return proc.returncode == 0
 
-    def _generate_execution_report(self, total_duration: float) -> Dict[str, Any]:
+    def _generate_execution_report(self, total_duration: float) -> dict[str, Any]:
         """Generate comprehensive test execution report."""
         total_tests = len(self.test_results)
         passed = sum(1 for r in self.test_results if r.status == "PASS")
@@ -414,7 +414,7 @@ class GeoInferTestRunner:
 
         return report
 
-    def run_module_tests(self, module: str) -> Dict[str, Any]:
+    def run_module_tests(self, module: str) -> dict[str, Any]:
         """Run tests for a specific module only."""
         if module not in self.AVAILABLE_MODULES:
             raise ValueError(f"Unknown module: {module}")
@@ -432,7 +432,7 @@ class GeoInferTestRunner:
             # Restore original configuration
             self.config.modules_to_test = original_modules
 
-    def run_cross_module_tests(self) -> Dict[str, Any]:
+    def run_cross_module_tests(self) -> dict[str, Any]:
         """Run integration tests that verify cross-module interactions.
 
         Discovers and executes every test file located in a
@@ -445,7 +445,7 @@ class GeoInferTestRunner:
 
         start_time = time.time()
 
-        cross_results: Dict[str, Any] = {}
+        cross_results: dict[str, Any] = {}
         total_tests = 0
         total_passed = 0
         total_failed = 0

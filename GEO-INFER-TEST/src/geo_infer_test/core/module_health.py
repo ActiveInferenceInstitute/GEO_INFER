@@ -13,7 +13,7 @@ import sys
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -29,7 +29,7 @@ class HealthMetrics:
     has_pyproject: bool = False
     dependency_status: str = "unknown"  # ok | missing | unknown
     overall_status: str = "unknown"  # healthy | degraded | unhealthy | unknown
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 class ModuleHealthChecker:
@@ -40,8 +40,8 @@ class ModuleHealthChecker:
 
     def __init__(
         self,
-        base_path: Optional[Path] = None,
-        logger: Optional[logging.Logger] = None,
+        base_path: Path | None = None,
+        logger: logging.Logger | None = None,
     ):
         self.base_path = base_path or Path.cwd()
         self.logger = logger or logging.getLogger(__name__)
@@ -95,9 +95,9 @@ class ModuleHealthChecker:
         metrics.overall_status = self._assess_status(metrics)
         return metrics
 
-    def check_all_modules(self, modules: List[str]) -> Dict[str, HealthMetrics]:
+    def check_all_modules(self, modules: list[str]) -> dict[str, HealthMetrics]:
         """Check health across a list of module names."""
-        results: Dict[str, HealthMetrics] = {}
+        results: dict[str, HealthMetrics] = {}
         for module_name in modules:
             results[module_name] = self.check_module(module_name)
             self.logger.info(
@@ -133,14 +133,14 @@ class SystemValidator:
     MIN_PYTHON = (3, 11)
     REQUIRED_PACKAGES = ["pytest", "numpy", "pandas"]
 
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: logging.Logger | None = None):
         self.logger = logger or logging.getLogger(__name__)
 
-    def validate(self) -> Dict[str, Any]:
+    def validate(self) -> dict[str, Any]:
         """Return a comprehensive system-level validation report."""
         py_ok = sys.version_info[:2] >= self.MIN_PYTHON
 
-        missing_packages: List[str] = []
+        missing_packages: list[str] = []
         for pkg in self.REQUIRED_PACKAGES:
             try:
                 importlib.import_module(pkg)
@@ -149,7 +149,7 @@ class SystemValidator:
 
         total, used, free = shutil.disk_usage(Path.cwd())
 
-        report: Dict[str, Any] = {
+        report: dict[str, Any] = {
             "python_version": platform.python_version(),
             "python_meets_minimum": py_ok,
             "platform": platform.platform(),
@@ -194,13 +194,13 @@ class DependencyChecker:
 
     def __init__(
         self,
-        base_path: Optional[Path] = None,
-        logger: Optional[logging.Logger] = None,
+        base_path: Path | None = None,
+        logger: logging.Logger | None = None,
     ):
         self.base_path = base_path or Path.cwd()
         self.logger = logger or logging.getLogger(__name__)
 
-    def check_module_dependencies(self, module_name: str) -> Dict[str, Any]:
+    def check_module_dependencies(self, module_name: str) -> dict[str, Any]:
         """Check installed status of a module's declared dependencies."""
         module_dir = self.base_path / f"GEO-INFER-{module_name}"
         pyproject = module_dir / "pyproject.toml"
@@ -217,8 +217,8 @@ class DependencyChecker:
                 "status": "unknown",
                 "reason": f"pyproject.toml parse failed: {exc}",
             }
-        missing: List[str] = []
-        installed: List[str] = []
+        missing: list[str] = []
+        installed: list[str] = []
 
         for dep in deps:
             pkg = self._normalize_dep_name(dep)
@@ -237,7 +237,7 @@ class DependencyChecker:
         }
 
     @staticmethod
-    def _extract_dependencies(pyproject_path: Path) -> List[str]:
+    def _extract_dependencies(pyproject_path: Path) -> list[str]:
         """Robust extraction of dependencies using tomllib.
 
         Raises ``OSError`` when the file cannot be read and

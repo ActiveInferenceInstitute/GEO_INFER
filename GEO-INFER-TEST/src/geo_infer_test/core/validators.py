@@ -7,8 +7,8 @@ import logging
 import statistics
 import numpy as np
 import pandas as pd
-from datetime import datetime, timezone
-from typing import Dict, List, Any, Union, Optional
+from datetime import datetime, UTC
+from typing import Any
 from abc import ABC, abstractmethod
 
 from ..models.types import ValidationRule
@@ -27,12 +27,12 @@ class BaseValidator(ABC):
 
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
-        logger: Optional[logging.Logger] = None,
+        config: dict[str, Any] | None = None,
+        logger: logging.Logger | None = None,
     ) -> None:
         self.config = config or {}
         self.logger = logger or logging.getLogger(__name__)
-        self.validation_rules: List[ValidationRule] = []
+        self.validation_rules: list[ValidationRule] = []
         self.setup_rules()
 
     @abstractmethod
@@ -41,7 +41,7 @@ class BaseValidator(ABC):
         pass
 
     @abstractmethod
-    def validate(self, data: Any) -> Dict[str, Any]:
+    def validate(self, data: Any) -> dict[str, Any]:
         """Validate data and return results."""
         pass
 
@@ -75,7 +75,7 @@ class DataQualityValidator(BaseValidator):
             ),
         ]
 
-    def validate(self, data: Union[pd.DataFrame, List[Dict], Dict]) -> Dict[str, Any]:
+    def validate(self, data: pd.DataFrame | list[dict] | dict) -> dict[str, Any]:
         """Validate data quality."""
         start_time = time.time()
 
@@ -86,10 +86,10 @@ class DataQualityValidator(BaseValidator):
         else:
             df = data.copy()
 
-        errors_out: List[Dict[str, Any]] = []
-        warnings_out: List[Dict[str, Any]] = []
-        field_quality_out: Dict[str, float] = {}
-        validation_results: Dict[str, Any] = {
+        errors_out: list[dict[str, Any]] = []
+        warnings_out: list[dict[str, Any]] = []
+        field_quality_out: dict[str, float] = {}
+        validation_results: dict[str, Any] = {
             "total_records": len(df),
             "valid_records": 0,
             "validation_errors": errors_out,
@@ -162,7 +162,7 @@ class DataQualityValidator(BaseValidator):
 
         return validation_results
 
-    def _validate_range(self, df: pd.DataFrame, rule: ValidationRule) -> Dict[str, Any]:
+    def _validate_range(self, df: pd.DataFrame, rule: ValidationRule) -> dict[str, Any]:
         """Validate value ranges."""
         field = rule.field
         if field not in df.columns:
@@ -188,7 +188,7 @@ class DataQualityValidator(BaseValidator):
 
     def _validate_format(
         self, df: pd.DataFrame, rule: ValidationRule
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Validate data formats."""
         field = rule.field
         if field not in df.columns:
@@ -214,7 +214,7 @@ class DataQualityValidator(BaseValidator):
 
     def _validate_custom(
         self, df: pd.DataFrame, rule: ValidationRule
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Apply custom validation logic."""
         if rule.name == "no_nulls_in_required_fields":
             required_fields = rule.parameters.get("required_fields", [])
@@ -277,7 +277,7 @@ class SpatialValidator(BaseValidator):
             ),
         ]
 
-    def validate(self, data: Union[pd.DataFrame, List[Dict]]) -> Dict[str, Any]:
+    def validate(self, data: pd.DataFrame | list[dict]) -> dict[str, Any]:
         """Validate spatial data."""
         if isinstance(data, list):
             df = pd.DataFrame(data)
@@ -286,12 +286,12 @@ class SpatialValidator(BaseValidator):
 
         start_time = time.time()
 
-        spatial_validation_out: Dict[str, Any] = {
+        spatial_validation_out: dict[str, Any] = {
             "coordinate_validity": {},
             "h3_validation": {},
             "spatial_distribution": {},
         }
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "total_records": len(df),
             "spatial_validation": spatial_validation_out,
             "validation_time": 0.0,
@@ -316,7 +316,7 @@ class SpatialValidator(BaseValidator):
 
         return results
 
-    def _validate_coordinates(self, df: pd.DataFrame) -> Dict[str, Any]:
+    def _validate_coordinates(self, df: pd.DataFrame) -> dict[str, Any]:
         """Validate coordinate values."""
         # Ensure numeric types
         try:
@@ -353,7 +353,7 @@ class SpatialValidator(BaseValidator):
             ),
         }
 
-    def _validate_h3_indices(self, df: pd.DataFrame) -> Dict[str, Any]:
+    def _validate_h3_indices(self, df: pd.DataFrame) -> dict[str, Any]:
         """Validate H3 index values."""
         if not HAS_H3:
             return {"error": "H3 library not available"}
@@ -382,7 +382,7 @@ class SpatialValidator(BaseValidator):
             "h3_quality_score": valid_count / len(df) if len(df) > 0 else 0.0,
         }
 
-    def _analyze_spatial_distribution(self, df: pd.DataFrame) -> Dict[str, Any]:
+    def _analyze_spatial_distribution(self, df: pd.DataFrame) -> dict[str, Any]:
         """Analyze spatial distribution of data points."""
         try:
             lats = pd.to_numeric(df["latitude"], errors="coerce").values.astype(
@@ -443,7 +443,7 @@ class IoTValidator(BaseValidator):
             ),
         ]
 
-    def validate(self, data: Union[pd.DataFrame, List[Dict]]) -> Dict[str, Any]:
+    def validate(self, data: pd.DataFrame | list[dict]) -> dict[str, Any]:
         """Validate IoT sensor data."""
         if isinstance(data, list):
             df = pd.DataFrame(data)
@@ -452,12 +452,12 @@ class IoTValidator(BaseValidator):
 
         start_time = time.time()
 
-        sensor_validation_out: Dict[str, Any] = {
+        sensor_validation_out: dict[str, Any] = {
             "data_quality": {},
             "temporal_analysis": {},
             "anomaly_detection": {},
         }
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "total_sensors": len(df),
             "sensor_validation": sensor_validation_out,
             "validation_time": 0.0,
@@ -481,17 +481,17 @@ class IoTValidator(BaseValidator):
 
         return results
 
-    def _analyze_temporal_patterns(self, df: pd.DataFrame) -> Dict[str, Any]:
+    def _analyze_temporal_patterns(self, df: pd.DataFrame) -> dict[str, Any]:
         """Analyze temporal patterns in sensor data."""
         try:
             timestamps = pd.to_datetime(df["timestamp"])
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             # Calculate time differences
             # Handle potential tz-naive timestamps by ensuring both are aware or naive?
             # Prefer aware. If timestamps are naive, assume UTC.
             if timestamps.dt.tz is None:
-                timestamps = timestamps.dt.tz_localize(timezone.utc)
+                timestamps = timestamps.dt.tz_localize(UTC)
 
             time_diffs = [
                 (now - ts).total_seconds() / 3600 for ts in timestamps
@@ -518,7 +518,7 @@ class IoTValidator(BaseValidator):
         except Exception as e:
             return {"error": f"Temporal analysis failed: {str(e)}"}
 
-    def _detect_radiation_anomalies(self, df: pd.DataFrame) -> Dict[str, Any]:
+    def _detect_radiation_anomalies(self, df: pd.DataFrame) -> dict[str, Any]:
         """Detect anomalies in radiation measurements."""
         # Ensure numeric types
         try:
@@ -620,17 +620,17 @@ class BayesianValidator(BaseValidator):
             ),
         ]
 
-    def validate(self, inference_results: Dict[str, Any]) -> Dict[str, Any]:
+    def validate(self, inference_results: dict[str, Any]) -> dict[str, Any]:
         """Validate Bayesian inference results."""
         start_time = time.time()
 
-        inference_validation_out: Dict[str, Any] = {
+        inference_validation_out: dict[str, Any] = {
             "convergence": False,
             "prediction_quality": {},
             "uncertainty_analysis": {},
             "model_diagnostics": {},
         }
-        validation_results: Dict[str, Any] = {
+        validation_results: dict[str, Any] = {
             "inference_validation": inference_validation_out,
             "validation_time": 0.0,
             "overall_quality": "unknown",
@@ -666,11 +666,11 @@ class BayesianValidator(BaseValidator):
 
         return validation_results
 
-    def _check_convergence(self, results: Dict[str, Any]) -> bool:
+    def _check_convergence(self, results: dict[str, Any]) -> bool:
         """Check if Bayesian inference converged."""
         return bool(results.get("converged", False))
 
-    def _validate_predictions(self, predictions: Any) -> Dict[str, Any]:
+    def _validate_predictions(self, predictions: Any) -> dict[str, Any]:
         """Validate prediction values."""
         # Handle non-sequence inputs
         if not isinstance(predictions, (list, tuple, np.ndarray)):
@@ -708,7 +708,7 @@ class BayesianValidator(BaseValidator):
             },
         }
 
-    def _analyze_uncertainty(self, uncertainty: Any) -> Dict[str, Any]:
+    def _analyze_uncertainty(self, uncertainty: Any) -> dict[str, Any]:
         """Analyze uncertainty estimates."""
         # Handle non-sequence inputs
         if not isinstance(uncertainty, (list, tuple, np.ndarray)):
@@ -748,7 +748,7 @@ class BayesianValidator(BaseValidator):
             ),
         }
 
-    def _model_diagnostics(self, results: Dict[str, Any]) -> Dict[str, Any]:
+    def _model_diagnostics(self, results: dict[str, Any]) -> dict[str, Any]:
         """Perform model diagnostics."""
         diagnostics = {
             "has_predictions": "predictions" in results,
@@ -761,7 +761,7 @@ class BayesianValidator(BaseValidator):
 
         return diagnostics
 
-    def _assess_overall_quality(self, validation_results: Dict[str, Any]) -> str:
+    def _assess_overall_quality(self, validation_results: dict[str, Any]) -> str:
         """Assess overall quality of Bayesian inference."""
         convergence = validation_results.get("convergence", False)
 
@@ -791,19 +791,19 @@ class BayesianValidator(BaseValidator):
 class PerformanceValidator:
     """Validator for system performance metrics."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config = config or {}
         self.thresholds = self.config.get("validation", {})
 
-    def validate_performance(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_performance(self, metrics: dict[str, Any]) -> dict[str, Any]:
         """Validate system performance metrics."""
-        performance_out: Dict[str, Any] = {
+        performance_out: dict[str, Any] = {
             "timing_checks": {},
             "throughput_checks": {},
             "resource_checks": {},
             "overall_performance": "unknown",
         }
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "performance_validation": performance_out,
         }
 
@@ -895,8 +895,8 @@ class QualityController:
 
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
-        logger: Optional[logging.Logger] = None,
+        config: dict[str, Any] | None = None,
+        logger: logging.Logger | None = None,
     ) -> None:
         self.config = config or {}
         self.logger = logger or logging.getLogger(__name__)
@@ -910,17 +910,17 @@ class QualityController:
 
     def run_comprehensive_validation(
         self,
-        sensor_data: Optional[pd.DataFrame] = None,
-        spatial_results: Optional[Dict[str, Any]] = None,
-        inference_results: Optional[Dict[str, Any]] = None,
-        performance_metrics: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        sensor_data: pd.DataFrame | None = None,
+        spatial_results: dict[str, Any] | None = None,
+        inference_results: dict[str, Any] | None = None,
+        performance_metrics: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Run comprehensive validation across all components."""
         start_time = time.time()
 
-        components_out: List[str] = []
-        validation_summary: Dict[str, Any] = {
-            "validation_timestamp": datetime.now(timezone.utc).isoformat(),
+        components_out: list[str] = []
+        validation_summary: dict[str, Any] = {
+            "validation_timestamp": datetime.now(UTC).isoformat(),
             "components_validated": components_out,
             "overall_results": {},
             "total_validation_time": 0.0,
@@ -972,8 +972,8 @@ class QualityController:
         return validation_summary
 
     def _assess_overall_system_quality(
-        self, validation_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, validation_results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Assess overall system quality based on all validation results."""
         quality_scores = []
 
@@ -1040,12 +1040,12 @@ class QualityController:
 
 def run_full_system_test(
     sensor_data: pd.DataFrame,
-    spatial_results: Dict[str, Any],
-    inference_results: Dict[str, Any],
-    performance_metrics: Dict[str, Any],
-    config: Optional[Dict[str, Any]] = None,
-    logger: Optional[logging.Logger] = None,
-) -> Dict[str, Any]:
+    spatial_results: dict[str, Any],
+    inference_results: dict[str, Any],
+    performance_metrics: dict[str, Any],
+    config: dict[str, Any] | None = None,
+    logger: logging.Logger | None = None,
+) -> dict[str, Any]:
     """Run a complete system test with all validators."""
     qc = QualityController(config, logger)
     return qc.run_comprehensive_validation(

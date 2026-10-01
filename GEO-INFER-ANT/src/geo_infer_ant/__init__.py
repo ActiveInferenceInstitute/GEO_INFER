@@ -77,7 +77,7 @@ from .utils.integration import IntegrationManager
 
 
 # Configuration and setup
-def setup_ant_module(config_path: Optional[str] = None) -> Dict[str, Any]:
+def setup_ant_module(config_path: str | None = None) -> dict[str, Any]:
     """
     Set up the GEO-INFER-ANT module with configuration.
 
@@ -90,7 +90,7 @@ def setup_ant_module(config_path: Optional[str] = None) -> Dict[str, Any]:
     """
     logger.info("Setting up GEO-INFER-ANT module")
 
-    config: Dict[str, Any] = {}
+    config: dict[str, Any] = {}
 
     if config_path:
         try:
@@ -121,7 +121,7 @@ def setup_ant_module(config_path: Optional[str] = None) -> Dict[str, Any]:
     return config
 
 
-def get_available_components() -> Dict[str, List[str]]:
+def get_available_components() -> dict[str, list[str]]:
     """
     Get information about available components in the ANT module.
 
@@ -131,7 +131,7 @@ def get_available_components() -> Dict[str, List[str]]:
     Returns:
         Dictionary with component availability information
     """
-    components: Dict[str, List[str]] = {
+    components: dict[str, list[str]] = {
         "core": [],
         "algorithms": [],
         "applications": [],

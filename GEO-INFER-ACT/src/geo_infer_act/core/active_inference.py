@@ -8,7 +8,8 @@ and free energy minimization.
 
 import copy
 import numpy as np
-from typing import Dict, List, Any, Optional, Tuple, Union, Iterable, cast
+from typing import Any, cast
+from collections.abc import Iterable
 import logging
 
 from geo_infer_act.core.generative_model import GenerativeModel
@@ -95,7 +96,7 @@ class ActiveInferenceModel:
         self.random_seed = random_seed
 
         # Initialize core components
-        self.generative_model: Optional[GenerativeModel] = None
+        self.generative_model: GenerativeModel | None = None
         self.free_energy_calculator = FreeEnergyCalculator()
         self.policy_selector = PolicySelector(
             temperature=policy_temperature,
@@ -114,14 +115,14 @@ class ActiveInferenceModel:
             )
 
         # State variables
-        self.current_beliefs: Optional[Any] = None
-        self.current_observations: Optional[Any] = None
-        self.current_actions: Optional[Any] = None
-        self.latest_policy_evaluation: Optional[PolicyEvaluation] = None
-        self.latest_policy_selection: Optional[Dict[str, Any]] = None
-        self.latest_pymdp_result: Optional[PymdpStepResult] = None
-        self._perception_free_energy: Optional[float] = None
-        self.history: List[Dict[str, Any]] = []
+        self.current_beliefs: Any | None = None
+        self.current_observations: Any | None = None
+        self.current_actions: Any | None = None
+        self.latest_policy_evaluation: PolicyEvaluation | None = None
+        self.latest_policy_selection: dict[str, Any] | None = None
+        self.latest_pymdp_result: PymdpStepResult | None = None
+        self._perception_free_energy: float | None = None
+        self.history: list[dict[str, Any]] = []
 
         logger.info(f"Initialized ActiveInferenceModel with type: {model_type}")
 
@@ -189,7 +190,7 @@ class ActiveInferenceModel:
 
         return cast(np.ndarray, self._clone_beliefs(self.current_beliefs))
 
-    def act(self, available_actions: Optional[List[Any]] = None) -> Any:
+    def act(self, available_actions: list[Any] | None = None) -> Any:
         """
         Select action based on expected free energy minimization.
 
@@ -312,18 +313,18 @@ class ActiveInferenceModel:
         self.current_actions = selected_action
         return selected_action
 
-    def update_observations(self, observations: Dict[str, Any]) -> None:
+    def update_observations(self, observations: dict[str, Any]) -> None:
         """Update observations for the active inference model."""
         self.current_observations = observations
         self._perception_free_energy = None
         self.latest_pymdp_result = None
 
-    def update_preferences(self, preferences: Dict[str, float]) -> None:
+    def update_preferences(self, preferences: dict[str, float]) -> None:
         """Update preferences for the active inference model."""
         self.set_preferences(preferences)
 
     def update_with_outcome(
-        self, decision: Dict[str, Any], outcome: Dict[str, Any]
+        self, decision: dict[str, Any], outcome: dict[str, Any]
     ) -> None:
         """
         Update model based on decision outcome for learning.
@@ -348,12 +349,12 @@ class ActiveInferenceModel:
             self.perceive(obs)
 
     def generate_policies(
-        self, available_actions: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, available_actions: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Generate policy options from available actions."""
         return available_actions
 
-    def select_policy(self, policies: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def select_policy(self, policies: list[dict[str, Any]]) -> dict[str, Any]:
         """Select optimal policy from candidates."""
         if not policies:
             return {}
@@ -367,9 +368,9 @@ class ActiveInferenceModel:
         )
         self.latest_policy_evaluation = policy_info.get("evaluation")
         self.latest_policy_selection = policy_info
-        return cast(Dict[str, Any], policy_info.get("policy", {}))
+        return cast(dict[str, Any], policy_info.get("policy", {}))
 
-    def compute_expected_free_energy(self, policy: Dict[str, Any]) -> float:
+    def compute_expected_free_energy(self, policy: dict[str, Any]) -> float:
         """Compute expected free energy for a given policy.
 
         Delegates to FreeEnergyCalculator.compute_expected_free_energy using
@@ -398,9 +399,9 @@ class ActiveInferenceModel:
     def step(
         self,
         observation: np.ndarray,
-        available_actions: Optional[List[Any]] = None,
+        available_actions: list[Any] | None = None,
         return_result: bool = False,
-    ) -> Union[Tuple[np.ndarray, Any], ActiveInferenceStepResult]:
+    ) -> tuple[np.ndarray, Any] | ActiveInferenceStepResult:
         """
         Perform one complete active inference step.
 
@@ -554,11 +555,11 @@ class ActiveInferenceModel:
         self._perception_free_energy = None
         self.history = []
 
-    def get_history(self) -> List[Dict[str, Any]]:
+    def get_history(self) -> list[dict[str, Any]]:
         """Get the complete history of interactions."""
         return [copy.deepcopy(entry) for entry in self.history]
 
-    def get_current_state(self) -> Dict[str, Any]:
+    def get_current_state(self) -> dict[str, Any]:
         """Get current model state."""
         return {
             "beliefs": self._clone_beliefs(self.current_beliefs),
@@ -573,7 +574,7 @@ class ActiveInferenceModel:
         }
 
     def apply_to_h3(
-        self, h3_obs: Dict[str, np.ndarray], return_result: bool = False
+        self, h3_obs: dict[str, np.ndarray], return_result: bool = False
     ) -> Any:
         """
         Update a spatial generative model from H3-indexed observations.
@@ -598,7 +599,7 @@ class ActiveInferenceModel:
         )
 
     def infer_over_h3_grid(
-        self, h3_grid: Dict[str, Any], return_result: bool = False
+        self, h3_grid: dict[str, Any], return_result: bool = False
     ) -> Any:
         """
         Run independent one-step inference across an H3 observation grid.
@@ -625,7 +626,7 @@ class ActiveInferenceModel:
         observations_by_cell = {str(cell): obs for cell, obs in h3_grid.items()}
         observed_cells = adapter.validate_cells(observations_by_cell.keys())
         results = {}
-        typed_results: Dict[str, ActiveInferenceStepResult] = {}
+        typed_results: dict[str, ActiveInferenceStepResult] = {}
         original_beliefs = self._clone_beliefs(self.current_beliefs)
         original_observations = (
             self.current_observations.copy()
@@ -713,11 +714,11 @@ class ActiveInferenceModel:
 
     def trace_over_h3_grid(
         self,
-        h3_grid: Dict[str, Any],
+        h3_grid: dict[str, Any],
         *,
         timestep: int = 0,
-        previous_beliefs: Optional[Dict[str, Any]] = None,
-        grid_result: Optional[H3GridInferenceResult] = None,
+        previous_beliefs: dict[str, Any] | None = None,
+        grid_result: H3GridInferenceResult | None = None,
         scenario: str = "h3",
     ) -> SpatialInferenceTrace:
         """
@@ -746,9 +747,9 @@ class ActiveInferenceModel:
 
     def infer_over_nested_h3_grid(
         self,
-        h3_grid: Dict[str, Any],
+        h3_grid: dict[str, Any],
         return_result: bool = False,
-        top_down_weight: Optional[float] = None,
+        top_down_weight: float | None = None,
     ) -> Any:
         """
         Run one-step inference across an enabled nested H3 hierarchy.
@@ -798,12 +799,12 @@ class ActiveInferenceModel:
 
     def trace_over_nested_h3_grid(
         self,
-        h3_grid: Dict[str, Any],
+        h3_grid: dict[str, Any],
         *,
         timestep: int = 0,
-        previous_beliefs: Optional[Dict[str, Any]] = None,
-        grid_result: Optional[NestedH3GridInferenceResult] = None,
-        top_down_weight: Optional[float] = None,
+        previous_beliefs: dict[str, Any] | None = None,
+        grid_result: NestedH3GridInferenceResult | None = None,
+        top_down_weight: float | None = None,
         scenario: str = "h3",
     ) -> SpatialInferenceTrace:
         """
@@ -838,7 +839,7 @@ class ActiveInferenceModel:
         )
 
     def _compute_h3_grid_consistency(
-        self, cell_beliefs: Dict[str, Optional[np.ndarray]]
+        self, cell_beliefs: dict[str, np.ndarray | None]
     ) -> H3SpatialConsistency:
         """Compute spatial consistency for an H3 grid inference result."""
         valid_beliefs = {
@@ -894,10 +895,10 @@ class ActiveInferenceModel:
             global_coherence=global_coherence,
             neighbor_correlations=neighbor_correlations,
             cell_count=len(valid_beliefs),
-            edge_count=edge_count_from_graph(cast("Dict[str, Iterable[str]]", graph)),
+            edge_count=edge_count_from_graph(cast("dict[str, Iterable[str]]", graph)),
         )
 
-    def set_preferences(self, preferences: Union[np.ndarray, Dict[str, Any]]) -> None:
+    def set_preferences(self, preferences: np.ndarray | dict[str, Any]) -> None:
         """Override prior preferences used during inference."""
         self.preferences = copy.deepcopy(preferences)
         if self.generative_model is None:
@@ -967,7 +968,7 @@ class ActiveInferenceModel:
             return None
         if isinstance(prefs, dict):
             if self.model_type == "categorical":
-                extracted: Dict[str, Any] = {}
+                extracted: dict[str, Any] = {}
                 if "states" in prefs:
                     states_flat = self._safe_flatten(prefs["states"])
                     if states_flat is not None:
@@ -980,7 +981,7 @@ class ActiveInferenceModel:
                         )
                 return extracted or None
             if self.model_type == "gaussian":
-                result: Dict[str, Any] = {}
+                result: dict[str, Any] = {}
                 if "mean" in prefs:
                     result["mean"] = np.asarray(prefs["mean"], dtype=float).copy()
                 if "precision" in prefs:
@@ -1114,7 +1115,7 @@ class ActiveInferenceModel:
 
         return self.current_beliefs
 
-    def _safe_flatten(self, data: Any) -> Optional[np.ndarray]:
+    def _safe_flatten(self, data: Any) -> np.ndarray | None:
         """Safely flatten data that might be a list of arrays or object array."""
         if data is None:
             return None
@@ -1153,7 +1154,7 @@ class ActiveInferenceModel:
 
         return np.array([float(data)])
 
-    def _extract_belief_vector(self, beliefs: Any) -> Optional[np.ndarray]:
+    def _extract_belief_vector(self, beliefs: Any) -> np.ndarray | None:
         if beliefs is None:
             return None
         if isinstance(beliefs, dict) and "states" in beliefs:
@@ -1166,7 +1167,7 @@ class ActiveInferenceModel:
             return None
         return normalize_distribution(flat)
 
-    def _ensure_gaussian_beliefs(self, beliefs: Any) -> Optional[Dict[str, np.ndarray]]:
+    def _ensure_gaussian_beliefs(self, beliefs: Any) -> dict[str, np.ndarray] | None:
         if isinstance(beliefs, dict) and "mean" in beliefs and "precision" in beliefs:
             return {
                 "mean": np.asarray(beliefs["mean"], dtype=float),
@@ -1185,7 +1186,7 @@ class ActiveInferenceModel:
                 }
         return None
 
-    def _get_preferences_vector(self, length: Optional[int] = None) -> np.ndarray:
+    def _get_preferences_vector(self, length: int | None = None) -> np.ndarray:
         vector = None
 
         # 1. Try to get state preferences directly
@@ -1248,8 +1249,8 @@ class ActiveInferenceModel:
 
         return normalize_distribution(vector)
 
-    def _get_gaussian_preferences(self) -> Dict[str, np.ndarray]:
-        prefs: Dict[str, np.ndarray] = {}
+    def _get_gaussian_preferences(self) -> dict[str, np.ndarray]:
+        prefs: dict[str, np.ndarray] = {}
         if isinstance(self.preferences, dict):
             if "mean" in self.preferences:
                 prefs["mean"] = np.asarray(self.preferences["mean"], dtype=float)

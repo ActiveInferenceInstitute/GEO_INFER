@@ -16,7 +16,7 @@ Key Features:
 
 import numpy as np
 import logging
-from typing import Dict, List, Any, Optional, Tuple, cast
+from typing import Any, cast
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 import math
@@ -69,7 +69,7 @@ class PheromoneDeposit:
     intensity: float
     location: np.ndarray  # [lat, lng] coordinates
     timestamp: datetime
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate deposit after initialization."""
@@ -83,13 +83,13 @@ class PheromoneField:
 
     pheromone_type: str
     spatial_resolution: str  # H3 resolution (e.g., 'h3_r8')
-    bounds: Dict[str, float]  # Spatial bounds
+    bounds: dict[str, float]  # Spatial bounds
 
     # Pheromone concentration data
-    concentrations: Dict[str, float] = field(
+    concentrations: dict[str, float] = field(
         default_factory=dict
     )  # h3_cell_id -> concentration
-    deposits: List[PheromoneDeposit] = field(default_factory=list)
+    deposits: list[PheromoneDeposit] = field(default_factory=list)
 
     # Field metadata
     last_update: datetime = field(default_factory=datetime.now)
@@ -97,7 +97,7 @@ class PheromoneField:
 
     # Integration references set by PheromoneSystem after field creation
     spatial_indexer: Any = field(default=None)
-    pheromone_types: List[Any] = field(default_factory=list)
+    pheromone_types: list[Any] = field(default_factory=list)
 
     def get_concentration(self, location: np.ndarray) -> float:
         """Get pheromone concentration at specific location."""
@@ -176,11 +176,11 @@ class PheromoneSystem:
     def __init__(
         self,
         spatial_resolution: str = "h3_r8",
-        pheromone_types: Optional[List[str]] = None,
-        bounds: Optional[Dict[str, float]] = None,
-        environmental_factors: Optional[Dict[str, Any]] = None,
+        pheromone_types: list[str] | None = None,
+        bounds: dict[str, float] | None = None,
+        environmental_factors: dict[str, Any] | None = None,
         spatial_backend: str = "h3",
-        evaporation_rate: Optional[float] = None,
+        evaporation_rate: float | None = None,
     ):
         """
         Initialize pheromone communication system.
@@ -206,7 +206,7 @@ class PheromoneSystem:
         )
 
         # Pheromone fields for each type
-        self.pheromone_fields: Dict[str, PheromoneField] = {}
+        self.pheromone_fields: dict[str, PheromoneField] = {}
 
         # Integration components
         self.spatial_indexer: Any = None
@@ -231,8 +231,8 @@ class PheromoneSystem:
         )
 
     def _initialize_pheromone_types(
-        self, pheromone_type_names: List[str]
-    ) -> List[PheromoneType]:
+        self, pheromone_type_names: list[str]
+    ) -> list[PheromoneType]:
         """Initialize pheromone type configurations."""
         types = []
 
@@ -324,8 +324,8 @@ class PheromoneSystem:
         agent_id: str,
         pheromone_type: str,
         location: np.ndarray,
-        intensity: Optional[float] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        intensity: float | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> bool:
         """
         Deposit pheromone at specified location.
@@ -432,9 +432,9 @@ class PheromoneSystem:
         self,
         location: np.ndarray,
         sensory_range: float,
-        pheromone_types: Optional[List[str]] = None,
+        pheromone_types: list[str] | None = None,
         sensitivity_threshold: float = 0.01,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Sense pheromone concentrations around a location.
 
@@ -532,9 +532,9 @@ class PheromoneSystem:
     async def diffuse_pheromones(
         self,
         time_step: float,
-        environmental_conditions: Optional[Dict[str, Any]] = None,
-        spatial_barriers: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Dict[str, Any]]:
+        environmental_conditions: dict[str, Any] | None = None,
+        spatial_barriers: dict[str, Any] | None = None,
+    ) -> dict[str, dict[str, Any]]:
         """
         Update pheromone diffusion and evaporation across all fields.
 
@@ -699,7 +699,7 @@ class PheromoneSystem:
         field: PheromoneField,
         phero_type: PheromoneType,
         time_step: float,
-        barriers: Optional[Dict[str, Any]] = None,
+        barriers: dict[str, Any] | None = None,
     ) -> None:
         """Apply spatial diffusion to pheromone field."""
         if not self.spatial_indexer or not field.concentrations:
@@ -776,7 +776,7 @@ class PheromoneSystem:
 
     def get_pheromone_gradient(
         self, location: np.ndarray, pheromone_type: str, radius: float = 100.0
-    ) -> Tuple[float, np.ndarray]:
+    ) -> tuple[float, np.ndarray]:
         """
         Get pheromone gradient (intensity and direction) at location.
 
@@ -829,7 +829,7 @@ class PheromoneSystem:
         start_location: np.ndarray,
         pheromone_type: str = "trail",
         search_radius: float = 1000.0,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Find the strongest pheromone trail within search radius.
 
@@ -865,7 +865,7 @@ class PheromoneSystem:
                                 np.array(h["center"]) - start_location
                             ),
                         )
-                        return cast(Dict[str, Any], closest_hotspot)
+                        return cast(dict[str, Any], closest_hotspot)
 
                 except Exception as e:
                     logger.warning(f"Spatial analytics search failed: {e}")
@@ -898,7 +898,7 @@ class PheromoneSystem:
             logger.error(f"Failed to find pheromone trail: {e}")
             return None
 
-    def get_field_statistics(self, pheromone_type: str) -> Dict[str, Any]:
+    def get_field_statistics(self, pheromone_type: str) -> dict[str, Any]:
         """
         Get statistical summary of pheromone field.
 
@@ -977,7 +977,7 @@ class PheromoneSystem:
         logger.info(f"Cleared pheromone field: {pheromone_type}")
         return True
 
-    def get_performance_statistics(self) -> Dict[str, Any]:
+    def get_performance_statistics(self) -> dict[str, Any]:
         """Get performance statistics for the pheromone system."""
         return self.performance_stats.copy()
 
@@ -986,7 +986,7 @@ class PheromoneSystem:
         try:
             import json
 
-            data: Dict[str, Any] = {
+            data: dict[str, Any] = {
                 "pheromone_types": [pt.name for pt in self.pheromone_types],
                 "spatial_resolution": self.spatial_resolution,
                 "bounds": self.bounds,
@@ -1026,7 +1026,7 @@ class PheromoneSystem:
         try:
             import json
 
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 data = json.load(f)
 
             # Restore pheromone fields

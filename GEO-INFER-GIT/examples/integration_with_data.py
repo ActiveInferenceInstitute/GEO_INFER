@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Integration example: GEO-INFER-GIT with GEO-INFER-DATA
@@ -12,7 +11,6 @@ Requires network access to the GitHub API. Set GITHUB_TOKEN to raise rate
 limits (optional).
 """
 
-import os
 import logging
 from pathlib import Path
 

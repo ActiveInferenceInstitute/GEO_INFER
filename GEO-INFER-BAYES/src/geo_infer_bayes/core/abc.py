@@ -6,7 +6,8 @@ Bayesian inference when likelihood functions are intractable.
 """
 
 import numpy as np
-from typing import Dict, Any, Optional, Union, List, Callable
+from typing import Any
+from collections.abc import Callable
 import logging
 from ..utils.rng import SeedLike, resolve_rng
 
@@ -59,11 +60,11 @@ class ApproximateBayesianComputation:
     def run(
         self,
         observed_data: Any,
-        simulator: Optional[Callable] = None,
+        simulator: Callable | None = None,
         progress_bar: bool = True,
-        prior_samples: Optional[Union[Dict[str, np.ndarray], Any]] = None,
+        prior_samples: dict[str, np.ndarray] | Any | None = None,
         **kwargs: Any,
-    ) -> Union[Dict[str, np.ndarray], Any]:
+    ) -> dict[str, np.ndarray] | Any:
         """
         Run ABC sampling for the model.
 
@@ -116,8 +117,8 @@ class ApproximateBayesianComputation:
         return self._convert_samples_to_dict(samples)
 
     def _sample_from_prior(
-        self, prior_samples: Optional[Union[Dict[str, np.ndarray], Any]] = None
-    ) -> Dict[str, float]:
+        self, prior_samples: dict[str, np.ndarray] | Any | None = None
+    ) -> dict[str, float]:
         """Sample parameter values from the prior distribution."""
         if prior_samples is not None:
             if isinstance(prior_samples, dict):
@@ -197,8 +198,8 @@ class ApproximateBayesianComputation:
         return float(distance)
 
     def _convert_samples_to_dict(
-        self, samples: List[Dict[str, float]]
-    ) -> Dict[str, np.ndarray]:
+        self, samples: list[dict[str, float]]
+    ) -> dict[str, np.ndarray]:
         """Convert list of parameter dictionaries to the expected format."""
         if not samples:
             return {}
@@ -215,9 +216,9 @@ class ApproximateBayesianComputation:
     def update(
         self,
         new_data: Any,
-        previous_samples: Union[Dict[str, np.ndarray], Any],
+        previous_samples: dict[str, np.ndarray] | Any,
         **kwargs: Any,
-    ) -> Union[Dict[str, np.ndarray], Any]:
+    ) -> dict[str, np.ndarray] | Any:
         """
         Update ABC samples with new data.
 

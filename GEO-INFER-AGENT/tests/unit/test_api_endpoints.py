@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Smoke tests for the FastAPI application in geo_infer_agent.api.agent_endpoints.

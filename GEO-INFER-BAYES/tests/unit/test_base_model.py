@@ -7,7 +7,7 @@ log_likelihood and log_prior, and that concrete subclasses work as expected.
 
 import numpy as np
 import pytest
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any
 
 import sys
 import os
@@ -26,7 +26,7 @@ class SimpleBayesianModel(BayesianModel):
             "sigma": {"prior": "log_normal", "hyperparams": {"mu": 0.0, "sigma": 1.0}},
         }
 
-    def log_likelihood(self, theta: Dict[str, Any], data: Any) -> float:
+    def log_likelihood(self, theta: dict[str, Any], data: Any) -> float:
         mu = theta["mu"]
         sigma = max(theta["sigma"], 1e-10)
         observations = np.asarray(data)
@@ -36,7 +36,7 @@ class SimpleBayesianModel(BayesianModel):
             sigma * np.sqrt(2 * np.pi)
         )
 
-    def log_prior(self, theta: Dict[str, Any]) -> float:
+    def log_prior(self, theta: dict[str, Any]) -> float:
         mu = theta["mu"]
         sigma = theta["sigma"]
         # Normal(0, 10) prior on mu
@@ -53,7 +53,7 @@ class SimpleBayesianModel(BayesianModel):
         posterior: Any = None,
         samples: int = 100,
         return_std: bool = False,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         mean = np.full(len(X_new), 0.0)
         if return_std:
             return mean, np.ones(len(X_new))
@@ -62,7 +62,7 @@ class SimpleBayesianModel(BayesianModel):
     def posterior_predictive(
         self,
         posterior: Any,
-        X: Optional[np.ndarray] = None,
+        X: np.ndarray | None = None,
         samples: int = 100,
     ) -> np.ndarray:
         n = len(X) if X is not None else 10

@@ -13,13 +13,9 @@ from dataclasses import dataclass, field
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Set,
     cast,
 )
+from collections.abc import Callable
 from enum import Enum
 from collections import defaultdict
 
@@ -81,11 +77,11 @@ class BoundaryFlow:
     flow_type: str = "generic"  # e.g., "mass", "energy", "information"
 
     # Flow data
-    flow_data: Dict[str, Any] = field(default_factory=dict)
+    flow_data: dict[str, Any] = field(default_factory=dict)
 
     # Constraints
-    max_flow_rate: Optional[float] = None
-    min_flow_rate: Optional[float] = None
+    max_flow_rate: float | None = None
+    min_flow_rate: float | None = None
 
     # Metadata
     created_at: datetime = field(default_factory=datetime.now)
@@ -94,7 +90,7 @@ class BoundaryFlow:
     def update_flow(
         self,
         new_rate: float,
-        flow_data: Optional[Dict[str, Any]] = None,
+        flow_data: dict[str, Any] | None = None,
     ) -> None:
         """Update flow rate and data."""
         # Apply constraints
@@ -122,10 +118,10 @@ class BoundaryConstraint:
     constraint_type: str  # e.g., "permeability", "capacity", "resistance"
 
     # Constraint parameters
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
 
     # Validation function
-    validation_function: Optional[Callable] = None
+    validation_function: Callable | None = None
 
     # Status
     is_active: bool = True
@@ -170,26 +166,26 @@ class H3BoundaryManager:
         self.detector = BoundaryDetector(f"{name}_detector")
 
         # Storage
-        self.boundaries: Dict[str, BoundarySegment] = {}
-        self.flows: Dict[str, BoundaryFlow] = {}
-        self.constraints: Dict[str, BoundaryConstraint] = {}
+        self.boundaries: dict[str, BoundarySegment] = {}
+        self.flows: dict[str, BoundaryFlow] = {}
+        self.constraints: dict[str, BoundaryConstraint] = {}
 
         # System relationships
-        self.system_boundaries: Dict[str, Set[str]] = defaultdict(
+        self.system_boundaries: dict[str, set[str]] = defaultdict(
             set
         )  # system_id -> boundary_ids
-        self.boundary_systems: Dict[str, Set[str]] = defaultdict(
+        self.boundary_systems: dict[str, set[str]] = defaultdict(
             set
         )  # boundary_id -> system_ids
 
         # Flow networks
-        self.flow_networks: Dict[
-            str, Dict[str, List[str]]
+        self.flow_networks: dict[
+            str, dict[str, list[str]]
         ] = {}  # network_id -> {source -> [targets]}
 
         # Monitoring
-        self.boundary_history: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
-        self.flow_history: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        self.boundary_history: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        self.flow_history: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
         # Metadata
         self.created_at = datetime.now()
@@ -200,7 +196,7 @@ class H3BoundaryManager:
         nested_grid: "NestedH3Grid",
         method: BoundaryDetectionMethod = (BoundaryDetectionMethod.NEIGHBOR_ANALYSIS),
         **kwargs: Any,
-    ) -> Dict[str, List[BoundarySegment]]:
+    ) -> dict[str, list[BoundarySegment]]:
         """
         Detect boundaries in nested grid systems.
 
@@ -226,7 +222,7 @@ class H3BoundaryManager:
 
     def get_shared_boundaries(
         self, system_id1: str, system_id2: str
-    ) -> List[BoundarySegment]:
+    ) -> list[BoundarySegment]:
         """
         Find boundaries shared between two systems.
 
@@ -249,8 +245,8 @@ class H3BoundaryManager:
         ]
 
     def split_boundary(
-        self, boundary_id: str, split_points: List[str]
-    ) -> List[BoundarySegment]:
+        self, boundary_id: str, split_points: list[str]
+    ) -> list[BoundarySegment]:
         """
         Split a boundary segment at specified points.
 
@@ -276,7 +272,7 @@ class H3BoundaryManager:
         split_positions.sort()
 
         # Create new segments
-        new_segments: List[BoundarySegment] = []
+        new_segments: list[BoundarySegment] = []
         start_idx = 0
 
         for split_pos in split_positions + [len(cell_indices)]:
@@ -316,7 +312,7 @@ class H3BoundaryManager:
 
         return new_segments
 
-    def merge_boundaries(self, boundary_ids: List[str]) -> BoundarySegment:
+    def merge_boundaries(self, boundary_ids: list[str]) -> BoundarySegment:
         """
         Merge multiple boundary segments into one.
 
@@ -429,7 +425,7 @@ class H3BoundaryManager:
         return flow
 
     def update_flow(
-        self, flow_id: str, new_rate: float, flow_data: Optional[Dict[str, Any]] = None
+        self, flow_id: str, new_rate: float, flow_data: dict[str, Any] | None = None
     ) -> None:
         """
         Update flow rate and data.
@@ -474,8 +470,8 @@ class H3BoundaryManager:
         self,
         boundary_segment_id: str,
         constraint_type: str,
-        parameters: Dict[str, Any],
-        validation_function: Optional[Callable] = None,
+        parameters: dict[str, Any],
+        validation_function: Callable | None = None,
     ) -> BoundaryConstraint:
         """
         Add a constraint to a boundary.
@@ -551,7 +547,7 @@ class H3BoundaryManager:
 
         return type_permeability.get(boundary.boundary_type, 0.5)
 
-    def analyze_flow_network(self, network_id: str) -> Dict[str, Any]:
+    def analyze_flow_network(self, network_id: str) -> dict[str, Any]:
         """
         Analyze flow patterns in a network.
 
@@ -601,19 +597,19 @@ class H3BoundaryManager:
             "analysis_timestamp": datetime.now().isoformat(),
         }
 
-    def get_boundary_statistics(self) -> Dict[str, Any]:
+    def get_boundary_statistics(self) -> dict[str, Any]:
         """Get comprehensive boundary statistics."""
         total_boundaries = len(self.boundaries)
         total_flows = len(self.flows)
         total_constraints = len(self.constraints)
 
         # Boundary type distribution
-        type_counts: Dict[str, int] = defaultdict(int)
+        type_counts: dict[str, int] = defaultdict(int)
         for boundary in self.boundaries.values():
             type_counts[boundary.boundary_type.value] += 1
 
         # Flow type distribution
-        flow_type_counts: Dict[str, int] = defaultdict(int)
+        flow_type_counts: dict[str, int] = defaultdict(int)
         for flow in self.flows.values():
             flow_type_counts[flow.flow_type] += 1
 
@@ -672,7 +668,7 @@ class H3BoundaryManager:
     def _record_boundary_operation(
         self,
         operation: BoundaryOperation,
-        details: Dict[str, Any],
+        details: dict[str, Any],
     ) -> None:
         """Record boundary operation in history."""
         record = {

@@ -1,14 +1,13 @@
 """Talent Data Transformers."""
 
 import logging
-from typing import List, Optional
 import pandas as pd
 from ..models.talent_models import Candidate, JobRequisition
 
 logger = logging.getLogger(__name__)
 
 
-def clean_candidate_data(candidates: List[Candidate]) -> List[Candidate]:
+def clean_candidate_data(candidates: list[Candidate]) -> list[Candidate]:
     """
     Performs comprehensive cleaning operations on a list of Candidate objects.
 
@@ -84,9 +83,9 @@ def clean_candidate_data(candidates: List[Candidate]) -> List[Candidate]:
 
 
 def enrich_candidate_data(
-    candidates: List[Candidate],
-    requisitions: Optional[List[JobRequisition]] = None,
-) -> List[Candidate]:
+    candidates: list[Candidate],
+    requisitions: list[JobRequisition] | None = None,
+) -> list[Candidate]:
     """
     Enriches candidate data with calculated fields and requisition context.
 
@@ -258,7 +257,7 @@ def enrich_candidate_data(
     return enriched_candidates
 
 
-def convert_candidates_to_dataframe(candidates: List[Candidate]) -> pd.DataFrame:
+def convert_candidates_to_dataframe(candidates: list[Candidate]) -> pd.DataFrame:
     """
     Converts a list of Candidate Pydantic models to a Pandas DataFrame.
     """
@@ -271,7 +270,7 @@ def convert_candidates_to_dataframe(candidates: List[Candidate]) -> pd.DataFrame
 
 
 def convert_requisitions_to_dataframe(
-    requisitions: List[JobRequisition],
+    requisitions: list[JobRequisition],
 ) -> pd.DataFrame:
     """
     Converts a list of JobRequisition Pydantic models to a Pandas DataFrame.

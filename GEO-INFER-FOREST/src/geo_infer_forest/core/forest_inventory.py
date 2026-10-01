@@ -1,7 +1,6 @@
 """Forest inventory and biomass estimation."""
 
 import logging
-from typing import Dict, Optional
 import xarray as xr
 
 import numpy as np
@@ -26,12 +25,12 @@ logger = logging.getLogger(__name__)
 class ForestInventory:
     """Forest inventory and biomass estimation."""
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize forest inventory."""
         self.config = config or {}
 
     def estimate_biomass(
-        self, forest_cover: xr.DataArray, tree_density: Optional[xr.DataArray] = None
+        self, forest_cover: xr.DataArray, tree_density: xr.DataArray | None = None
     ) -> xr.DataArray:
         """
         Estimate forest biomass.
@@ -56,7 +55,7 @@ class ForestInventory:
         return biomass
 
     def calculate_forest_area(
-        self, forest_cover: xr.DataArray, cell_area: Optional[xr.DataArray] = None
+        self, forest_cover: xr.DataArray, cell_area: xr.DataArray | None = None
     ) -> xr.DataArray:
         """
         Calculate forest area.

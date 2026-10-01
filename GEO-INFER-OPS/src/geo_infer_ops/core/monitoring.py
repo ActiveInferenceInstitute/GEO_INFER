@@ -3,7 +3,8 @@
 import logging
 import socket
 from contextlib import contextmanager
-from typing import Optional, Dict, Any, Iterator
+from typing import Any
+from collections.abc import Iterator
 
 import prometheus_client as prom
 from prometheus_client import Counter, Gauge, Histogram, REGISTRY
@@ -38,7 +39,7 @@ CACHE_SIZE = Gauge(
 QUEUE_SIZE = Gauge("queue_size", "Current number of items in the queue", ["queue_name"])
 
 _STATIC_METRICS = [REQUEST_COUNT, REQUEST_LATENCY, ERROR_COUNT, CACHE_SIZE, QUEUE_SIZE]
-_CUSTOM_METRICS: Dict[str, Any] = {}
+_CUSTOM_METRICS: dict[str, Any] = {}
 
 
 def reset_metrics() -> None:
@@ -83,7 +84,7 @@ def record_metric(
     name: str,
     value: float,
     metric_type: str = "counter",
-    labels: Optional[Dict[str, str]] = None,
+    labels: dict[str, str] | None = None,
 ) -> None:
     """Record a metric value.
 
@@ -129,7 +130,7 @@ def record_metric(
         raise ValueError(f"Invalid metric type: {metric_type}")
 
 
-def get_metric_value(name: str, labels: Optional[Dict[str, str]] = None) -> float:
+def get_metric_value(name: str, labels: dict[str, str] | None = None) -> float:
     """Get the value of a metric.
 
     Args:
@@ -171,7 +172,7 @@ def is_port_in_use(port: int) -> bool:
         try:
             s.bind(("localhost", port))
             return False
-        except socket.error:
+        except OSError:
             return True
 
 
@@ -225,8 +226,8 @@ def instrument_app(app: Any, metrics_path: str = "/metrics") -> None:
 
 
 def setup_monitoring(
-    app: Optional[Any] = None,
-    port: Optional[int] = None,
+    app: Any | None = None,
+    port: int | None = None,
     metrics_path: str = "/metrics",
 ) -> None:
     """Set up monitoring.

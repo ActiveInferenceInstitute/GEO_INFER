@@ -24,7 +24,7 @@ import sys
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # --- EARLY PATH SETUP ---
 # This must happen before any imports that depend on geo_infer_place or geo_infer_space
@@ -1270,7 +1270,7 @@ def run_comprehensive_analysis_with_enhanced_data(
         and not getattr(args, "force_refresh", False)
     ):
         try:
-            with open(scores_cache_file, "r") as f:
+            with open(scores_cache_file) as f:
                 payload = json.load(f)
             cached = payload.get("scores", {})
             # Validate count roughly matches fused set
@@ -1373,8 +1373,8 @@ def run_comprehensive_analysis_with_enhanced_data(
             # Create interactive H3 map
             # Resolve layer visibility/include overrides from CLI/env
             visible_layers_env = os.environ.get("CASCADIA_VISIBLE_LAYERS")
-            visible_layers: Optional[List[str]] = None
-            include_layers: Optional[List[str]] = None
+            visible_layers: list[str] | None = None
+            include_layers: list[str] | None = None
             if args.visible_layers:
                 visible_layers = [l.strip() for l in args.visible_layers.split(",") if l.strip()]
             elif visible_layers_env:
@@ -1382,7 +1382,7 @@ def run_comprehensive_analysis_with_enhanced_data(
             if args.include_layers:
                 include_layers = [l.strip() for l in args.include_layers.split(",") if l.strip()]
             # Build per-module status for interactive HTML panel
-            module_status: Dict[str, Any] = {}
+            module_status: dict[str, Any] = {}
             try:
                 for mod_name, _data in module_data.items():
                     ds = data_manager.get_data_structure(mod_name)
@@ -1460,7 +1460,7 @@ def run_comprehensive_analysis_with_enhanced_data(
             "timestamp": datetime.now().isoformat(),
             "h3_resolution": args.h3_resolution,
             "modules": {},
-            "fusion_cache": str((Path(args.output_dir) / "data" / "cache" / "fusion")),
+            "fusion_cache": str(Path(args.output_dir) / "data" / "cache" / "fusion"),
             "scores_cache": str(scores_cache_file),
         }
         for mod_name, _data in module_data.items():

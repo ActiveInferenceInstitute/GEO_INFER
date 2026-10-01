@@ -7,11 +7,9 @@ and server endpoints.
 from __future__ import annotations
 
 import json
-import os
 import sys
 from pathlib import Path
 
-import pytest
 import yaml
 
 # Ensure cascadia src is on path
@@ -196,7 +194,6 @@ class TestBioregionVisualization:
 
     def test_bioregion_map_generates_html(self, tmp_path):
         # folium is a hard PLACE dependency; plain import.
-        import folium
 
         from src.core.visualization.bioregion_visualization import create_bioregion_map
 
@@ -209,7 +206,6 @@ class TestBioregionVisualization:
 
     def test_html_contains_volcano_layer(self, tmp_path):
         # folium is a hard PLACE dependency; plain import.
-        import folium
 
         from src.core.visualization.bioregion_visualization import create_bioregion_map
 
@@ -223,7 +219,6 @@ class TestBioregionVisualization:
 
     def test_html_file_size_under_5mb(self, tmp_path):
         # folium is a hard PLACE dependency; plain import.
-        import folium
 
         from src.core.visualization.bioregion_visualization import create_bioregion_map
 

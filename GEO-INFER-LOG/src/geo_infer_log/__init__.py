@@ -19,7 +19,7 @@ import json
 import time
 import threading
 import weakref
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, UTC
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field, asdict
 from collections import defaultdict, deque
@@ -122,24 +122,24 @@ class LogEntry:
     module: str
     operation: str
     message: str
-    context: Dict[str, Any] = field(default_factory=dict)
+    context: dict[str, Any] = field(default_factory=dict)
     spatial_context: Optional["SpatialLogContext"] = None
-    performance_metrics: Optional[Dict[str, float]] = None
-    trace_id: Optional[str] = None
-    span_id: Optional[str] = None
-    error_info: Optional[Dict[str, Any]] = None
+    performance_metrics: dict[str, float] | None = None
+    trace_id: str | None = None
+    span_id: str | None = None
+    error_info: dict[str, Any] | None = None
 
 
 @dataclass
 class SpatialLogContext:
     """Spatial context for geospatial operations."""
 
-    h3_index: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    resolution: Optional[int] = None
-    region: Optional[str] = None
-    bbox: Optional[List[float]] = None
+    h3_index: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    resolution: int | None = None
+    region: str | None = None
+    bbox: list[float] | None = None
     coordinate_system: str = "EPSG:4326"
 
 
@@ -147,11 +147,11 @@ class PerformanceMetrics:
     """Performance metrics collection and analysis."""
 
     def __init__(self) -> None:
-        self.metrics: Dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
-        self.counters: Dict[str, int] = defaultdict(int)
-        self.gauges: Dict[str, float] = defaultdict(float)
-        self.histograms: Dict[str, List[float]] = defaultdict(list)
-        self.start_times: Dict[str, Tuple[str, float]] = {}
+        self.metrics: dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
+        self.counters: dict[str, int] = defaultdict(int)
+        self.gauges: dict[str, float] = defaultdict(float)
+        self.histograms: dict[str, list[float]] = defaultdict(list)
+        self.start_times: dict[str, tuple[str, float]] = {}
         self.lock = threading.Lock()
 
     def start_timer(self, operation: str) -> str:
@@ -188,12 +188,12 @@ class PerformanceMetrics:
         with self.lock:
             self.gauges[name] = value
 
-    def get_stats(self, operation: str) -> Dict[str, float]:
+    def get_stats(self, operation: str) -> dict[str, float]:
         """Get statistics for an operation."""
         with self.lock:
             return self._stats_locked(operation)
 
-    def _stats_locked(self, operation: str) -> Dict[str, float]:
+    def _stats_locked(self, operation: str) -> dict[str, float]:
         """Compute operation statistics; the lock must already be held."""
         durations = sorted(self.metrics[f"{operation}_duration"])
         if not durations:
@@ -211,7 +211,7 @@ class PerformanceMetrics:
             "p99": durations[int(n * 0.99)] if n > 0 else 0,
         }
 
-    def get_all_metrics(self) -> Dict[str, Any]:
+    def get_all_metrics(self) -> dict[str, Any]:
         """Get all collected metrics."""
         with self.lock:
             return {
@@ -228,7 +228,7 @@ class PerformanceMetrics:
 class EnhancedLogger:
     """Enhanced logger with spatial context and performance tracking."""
 
-    def __init__(self, name: str, config: Optional[Dict] = None):
+    def __init__(self, name: str, config: dict | None = None):
         self.name = name
         self.config = config or {}
         self.metrics = PerformanceMetrics()
@@ -243,12 +243,12 @@ class EnhancedLogger:
         self._setup_handlers()
 
         # Log queue for async processing
-        self.log_queue: "queue.Queue[LogEntry]" = queue.Queue()
+        self.log_queue: queue.Queue[LogEntry] = queue.Queue()
         self.log_processor_running = False
         # Stop latch + processor handle; stop() must never resurrect the
         # background processor once it has drained.
         self._log_processor_stopped = False
-        self._log_processor_thread: Optional[threading.Thread] = None
+        self._log_processor_thread: threading.Thread | None = None
 
         # Start background log processor
         if self.config.get("async_logging", True):
@@ -387,16 +387,16 @@ class EnhancedLogger:
         level: str,
         operation: str,
         message: str,
-        context: Optional[Dict] = None,
-        spatial_context: Optional[SpatialLogContext] = None,
-        module: Optional[str] = None,
-        performance_metrics: Optional[Dict] = None,
-        error_info: Optional[Dict] = None,
+        context: dict | None = None,
+        spatial_context: SpatialLogContext | None = None,
+        module: str | None = None,
+        performance_metrics: dict | None = None,
+        error_info: dict | None = None,
     ) -> None:
         """Log a structured message."""
 
         entry = LogEntry(
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             level=level.upper(),
             module=module or self.name,
             operation=operation,
@@ -476,10 +476,10 @@ class EnhancedLogger:
     def log_spatial_operation(
         self,
         operation: str,
-        h3_index: Optional[str] = None,
-        lat: Optional[float] = None,
-        lon: Optional[float] = None,
-        resolution: Optional[int] = None,
+        h3_index: str | None = None,
+        lat: float | None = None,
+        lon: float | None = None,
+        resolution: int | None = None,
         **context: Any,
     ) -> None:
         """Log a spatial operation with geographic context."""
@@ -494,7 +494,7 @@ class EnhancedLogger:
             spatial_context=spatial_context,
         )
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get performance metrics."""
         return self.metrics.get_all_metrics()
 
@@ -504,9 +504,7 @@ class JSONFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         log_entry = {
-            "timestamp": datetime.fromtimestamp(
-                record.created, tz=timezone.utc
-            ).isoformat(),
+            "timestamp": datetime.fromtimestamp(record.created, tz=UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "module": getattr(record, "log_module", record.module),
@@ -541,7 +539,7 @@ class LogAnalyzer:
 
     def __init__(self, log_file_path: str):
         self.log_file_path = Path(log_file_path)
-        self.log_entries: List[Dict] = []
+        self.log_entries: list[dict] = []
 
         if self.log_file_path.exists():
             self._load_logs()
@@ -549,7 +547,7 @@ class LogAnalyzer:
     def _load_logs(self) -> None:
         """Load logs from file."""
         try:
-            with open(self.log_file_path, "r") as f:
+            with open(self.log_file_path) as f:
                 for line in f:
                     if line.strip():
                         try:
@@ -562,7 +560,7 @@ class LogAnalyzer:
                 "Error loading logs from %s: %s", self.log_file_path, e
             )
 
-    def analyze_performance(self, operation: Optional[str] = None) -> Dict[str, Any]:
+    def analyze_performance(self, operation: str | None = None) -> dict[str, Any]:
         """Analyze performance metrics from logs."""
         performance_data = []
 
@@ -602,9 +600,9 @@ class LogAnalyzer:
             },
         }
 
-    def find_errors(self, hours: int = 24) -> List[Dict]:
+    def find_errors(self, hours: int = 24) -> list[dict]:
         """Find error entries in the last N hours."""
-        cutoff_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+        cutoff_time = datetime.now(UTC) - timedelta(hours=hours)
 
         errors = []
         for entry in self.log_entries:
@@ -617,7 +615,7 @@ class LogAnalyzer:
 
         return sorted(errors, key=lambda x: x["timestamp"], reverse=True)
 
-    def spatial_analysis(self) -> Dict[str, Any]:
+    def spatial_analysis(self) -> dict[str, Any]:
         """Analyze spatial operations from logs."""
         spatial_operations = []
 
@@ -628,8 +626,8 @@ class LogAnalyzer:
         if not spatial_operations:
             return {"message": "No spatial operations found"}
 
-        h3_resolutions: Dict[Any, int] = defaultdict(int)
-        regions: Dict[Any, int] = defaultdict(int)
+        h3_resolutions: dict[Any, int] = defaultdict(int)
+        regions: dict[Any, int] = defaultdict(int)
 
         for op in spatial_operations:
             spatial = op["spatial_context"]
@@ -646,6 +644,6 @@ class LogAnalyzer:
 
 
 # Convenience logger factory
-def get_logger(name: str, config: Optional[Dict] = None) -> EnhancedLogger:
+def get_logger(name: str, config: dict | None = None) -> EnhancedLogger:
     """Get an enhanced logger instance."""
     return EnhancedLogger(name, config)

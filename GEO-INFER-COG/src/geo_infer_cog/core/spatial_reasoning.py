@@ -26,7 +26,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
 
 import numpy as np
 
@@ -51,7 +51,7 @@ class SpatialRelation:
     target_region: str
     relation_type: str  # 'disconnected', 'externally_connected', 'equal', 'partially_overlapping', 'tangential_proper_part', 'non_tangential_proper_part', 'tangential_proper_part_inverse', 'non_tangential_proper_part_inverse'
     confidence: float = 1.0
-    reasoning_path: List[str] = field(default_factory=list)
+    reasoning_path: list[str] = field(default_factory=list)
 
     def is_consistent_with(self, other_relation: "SpatialRelation") -> bool:
         """Check if this relation is consistent with another relation."""
@@ -98,7 +98,7 @@ class ReasoningStep:
         self,
         step_id: str,
         operation: str,
-        input_premises: List[str],
+        input_premises: list[str],
         conclusion: str,
         confidence: float,
         explanation: str = "",
@@ -135,8 +135,8 @@ class SpatialReasoningEngine:
         self,
         reasoning_type: str = "qualitative_spatial",
         uncertainty_method: str = "probabilistic",
-        config: Optional[Dict[str, Any]] = None,
-        rng: Optional[np.random.Generator] = None,
+        config: dict[str, Any] | None = None,
+        rng: np.random.Generator | None = None,
     ):
         """
         Initialize spatial reasoning engine.
@@ -158,7 +158,7 @@ class SpatialReasoningEngine:
         self._rng = resolve_rng(rng)
 
         # Knowledge base for spatial relations and rules
-        self.spatial_knowledge_base: Dict[str, Any] = {
+        self.spatial_knowledge_base: dict[str, Any] = {
             "topological_relations": {},
             "directional_relations": {},
             "distance_relations": {},
@@ -167,8 +167,8 @@ class SpatialReasoningEngine:
         }
 
         # Reasoning state
-        self.current_reasoning_chain: List[ReasoningStep] = []
-        self.reasoning_cache: Dict[Any, Any] = {}
+        self.current_reasoning_chain: list[ReasoningStep] = []
+        self.reasoning_cache: dict[Any, Any] = {}
 
         # Performance tracking
         self.reasoning_metrics = {
@@ -294,10 +294,10 @@ class SpatialReasoningEngine:
 
     def reason_about_space(
         self,
-        spatial_data: Dict[str, Any],
-        perception_result: Dict[str, Any],
+        spatial_data: dict[str, Any],
+        perception_result: dict[str, Any],
         cognitive_state: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform spatial reasoning on input data.
 
@@ -388,8 +388,8 @@ class SpatialReasoningEngine:
             raise
 
     def _extract_spatial_premises(
-        self, spatial_data: Dict[str, Any], perception_result: Dict[str, Any]
-    ) -> List[SpatialRelation]:
+        self, spatial_data: dict[str, Any], perception_result: dict[str, Any]
+    ) -> list[SpatialRelation]:
         """Extract spatial premises from input data.
 
         Geometric premises use RCC-8 relation types. Co-attended regions
@@ -430,7 +430,7 @@ class SpatialReasoningEngine:
 
         return premises
 
-    def _region_id(self, geom: Dict[str, Any]) -> str:
+    def _region_id(self, geom: dict[str, Any]) -> str:
         """Derive a deterministic region id from geometry content.
 
         Uses a stable SHA-256 digest of the canonical JSON serialization so
@@ -442,8 +442,8 @@ class SpatialReasoningEngine:
         return f"region_{int(digest[:8], 16) % 10000}"
 
     def _infer_spatial_relation(
-        self, geom1: Dict[str, Any], geom2: Dict[str, Any]
-    ) -> Optional[SpatialRelation]:
+        self, geom1: dict[str, Any], geom2: dict[str, Any]
+    ) -> SpatialRelation | None:
         """Infer spatial relation between two geometries."""
         # Simple relation inference based on bounding boxes
         bbox1 = self._calculate_bounding_box(geom1)
@@ -463,8 +463,8 @@ class SpatialReasoningEngine:
         )
 
     def _calculate_bounding_box(
-        self, geometry: Dict[str, Any]
-    ) -> Optional[Tuple[float, float, float, float]]:
+        self, geometry: dict[str, Any]
+    ) -> tuple[float, float, float, float] | None:
         """Calculate bounding box for a geometry."""
         coords = geometry.get("coordinates", [])
         if not coords:
@@ -473,8 +473,8 @@ class SpatialReasoningEngine:
         # Flatten arbitrarily nested coordinate arrays (Point [x, y],
         # LineString [[x, y], ...], Polygon [[[x, y], ...], ...]) into a list
         # of [x, y] pairs.
-        all_coords: List[Any] = []
-        stack: List[Any] = [coords]
+        all_coords: list[Any] = []
+        stack: list[Any] = [coords]
         while stack:
             item = stack.pop()
             if isinstance(item, (list, tuple)):
@@ -493,8 +493,8 @@ class SpatialReasoningEngine:
 
     def _determine_topological_relation(
         self,
-        bbox1: Tuple[float, float, float, float],
-        bbox2: Tuple[float, float, float, float],
+        bbox1: tuple[float, float, float, float],
+        bbox2: tuple[float, float, float, float],
     ) -> str:
         """Determine RCC-8 relation between two bounding boxes."""
         x1_min, y1_min, x1_max, y1_max = bbox1
@@ -563,8 +563,8 @@ class SpatialReasoningEngine:
 
     def _boxes_touch(
         self,
-        bbox1: Tuple[float, float, float, float],
-        bbox2: Tuple[float, float, float, float],
+        bbox1: tuple[float, float, float, float],
+        bbox2: tuple[float, float, float, float],
     ) -> bool:
         """Check if two bounding boxes touch at boundaries."""
         x1_min, y1_min, x1_max, y1_max = bbox1
@@ -584,7 +584,7 @@ class SpatialReasoningEngine:
         self,
         chain_id: str,
         operation: str,
-        input_premises: List[str],
+        input_premises: list[str],
         conclusion: str,
         confidence: float,
         explanation: str = "",
@@ -601,8 +601,8 @@ class SpatialReasoningEngine:
         self.current_reasoning_chain.append(step)
 
     def _qualitative_spatial_reasoning(
-        self, premises: List[SpatialRelation], chain_id: str
-    ) -> List[SpatialRelation]:
+        self, premises: list[SpatialRelation], chain_id: str
+    ) -> list[SpatialRelation]:
         """Perform qualitative spatial reasoning using RCC-8."""
         conclusions = []
 
@@ -618,7 +618,7 @@ class SpatialReasoningEngine:
 
     def _compose_relations(
         self, rel1: SpatialRelation, rel2: SpatialRelation
-    ) -> Optional[SpatialRelation]:
+    ) -> SpatialRelation | None:
         """Compose two spatial relations if possible."""
         # Simple composition: if rel1 connects A->B and rel2 connects B->C, infer A->C
         if rel1.target_region == rel2.source_region:
@@ -639,7 +639,7 @@ class SpatialReasoningEngine:
 
         return None
 
-    def _infer_composed_relation(self, rel1_type: str, rel2_type: str) -> Optional[str]:
+    def _infer_composed_relation(self, rel1_type: str, rel2_type: str) -> str | None:
         """Infer composed relation from two relation types."""
         # Simple composition rules for common cases
         composition_rules = {
@@ -654,8 +654,8 @@ class SpatialReasoningEngine:
         return composition_rules.get((rel1_type, rel2_type))
 
     def _analogical_reasoning(
-        self, premises: List[SpatialRelation], chain_id: str
-    ) -> List[SpatialRelation]:
+        self, premises: list[SpatialRelation], chain_id: str
+    ) -> list[SpatialRelation]:
         """Perform analogical reasoning on spatial premises."""
         conclusions = []
 
@@ -669,7 +669,7 @@ class SpatialReasoningEngine:
 
         return conclusions
 
-    def _find_spatial_analogies(self, premise: SpatialRelation) -> List[Dict[str, Any]]:
+    def _find_spatial_analogies(self, premise: SpatialRelation) -> list[dict[str, Any]]:
         """Find analogous spatial relations in knowledge base."""
         # Simple analogy matching based on relation type
         analogies = []
@@ -680,8 +680,8 @@ class SpatialReasoningEngine:
         return analogies
 
     def _apply_analogy(
-        self, premise: SpatialRelation, analogy: Dict[str, Any]
-    ) -> Optional[SpatialRelation]:
+        self, premise: SpatialRelation, analogy: dict[str, Any]
+    ) -> SpatialRelation | None:
         """Apply analogical mapping to generate conclusion."""
         # Create analogical conclusion
         return SpatialRelation(
@@ -693,8 +693,8 @@ class SpatialReasoningEngine:
         )
 
     def _deductive_reasoning(
-        self, premises: List[SpatialRelation], chain_id: str
-    ) -> List[SpatialRelation]:
+        self, premises: list[SpatialRelation], chain_id: str
+    ) -> list[SpatialRelation]:
         """Perform deductive reasoning on spatial premises."""
         conclusions = []
 
@@ -709,8 +709,8 @@ class SpatialReasoningEngine:
         return conclusions
 
     def _find_applicable_premises(
-        self, premises: List[SpatialRelation], rule: Dict[str, Any]
-    ) -> List[SpatialRelation]:
+        self, premises: list[SpatialRelation], rule: dict[str, Any]
+    ) -> list[SpatialRelation]:
         """Find premises that match a deductive rule."""
         required_relations = rule.get("required_relations", [])
         applicable = []
@@ -722,8 +722,8 @@ class SpatialReasoningEngine:
         return applicable
 
     def _apply_deductive_rule(
-        self, rule: Dict[str, Any], premises: List[SpatialRelation]
-    ) -> Optional[SpatialRelation]:
+        self, rule: dict[str, Any], premises: list[SpatialRelation]
+    ) -> SpatialRelation | None:
         """Apply a deductive rule to generate conclusion."""
         conclusion_type = rule.get("conclusion_relation")
 
@@ -741,8 +741,8 @@ class SpatialReasoningEngine:
         return None
 
     def _constraint_based_reasoning(
-        self, premises: List[SpatialRelation], chain_id: str
-    ) -> List[SpatialRelation]:
+        self, premises: list[SpatialRelation], chain_id: str
+    ) -> list[SpatialRelation]:
         """Perform constraint-based spatial reasoning."""
         conclusions = []
 
@@ -773,8 +773,8 @@ class SpatialReasoningEngine:
         return conclusions
 
     def _setup_spatial_constraints(
-        self, premises: List[SpatialRelation]
-    ) -> Tuple[List[str], Dict[str, List[str]], List[Dict[str, Any]]]:
+        self, premises: list[SpatialRelation]
+    ) -> tuple[list[str], dict[str, list[str]], list[dict[str, Any]]]:
         """Set up constraint satisfaction problem for spatial relations.
 
         Domain variables are restricted to premise pairs plus transitive
@@ -803,7 +803,7 @@ class SpatialReasoningEngine:
             parent[find(premise.source_region)] = find(premise.target_region)
 
         # Define domains (possible relations for each in-component pair)
-        domains: Dict[str, List[str]] = {}
+        domains: dict[str, list[str]] = {}
         for i, var1 in enumerate(variables):
             for var2 in variables[i + 1 :]:
                 if find(var1) == find(var2):
@@ -835,10 +835,10 @@ class SpatialReasoningEngine:
 
     def _solve_spatial_constraints(
         self,
-        variables: List[str],
-        domains: Dict[str, List[str]],
-        constraints: List[Dict[str, Any]],
-    ) -> List[Dict[str, str]]:
+        variables: list[str],
+        domains: dict[str, list[str]],
+        constraints: list[dict[str, Any]],
+    ) -> list[dict[str, str]]:
         """Solve the spatial constraint satisfaction problem.
 
         Backtracking with incremental constraint checking: premise-fixed
@@ -847,16 +847,16 @@ class SpatialReasoningEngine:
         evaluated candidate values is hard-capped (with a logged degradation
         warning) instead of enumerating the full Cartesian product.
         """
-        solutions: List[Dict[str, str]] = []
+        solutions: list[dict[str, str]] = []
         variable_pairs = list(domains.keys())
         if not variable_pairs:
             return solutions
 
-        constraints_by_var: Dict[str, List[Dict[str, Any]]] = {}
+        constraints_by_var: dict[str, list[dict[str, Any]]] = {}
         for constraint in constraints:
             constraints_by_var.setdefault(constraint["variable"], []).append(constraint)
 
-        assignment: Dict[str, str] = {}
+        assignment: dict[str, str] = {}
         evaluated = 0
         degraded = False
 
@@ -871,7 +871,7 @@ class SpatialReasoningEngine:
             var_constraints = constraints_by_var.get(var, [])
             if var_constraints:
                 # Fixed constraint: only the required value can succeed.
-                candidate_values: List[str] = [var_constraints[0]["value"]]
+                candidate_values: list[str] = [var_constraints[0]["value"]]
                 if candidate_values[0] not in domains[var]:
                     return  # Unsatisfiable pair: prune the branch.
             else:
@@ -901,8 +901,8 @@ class SpatialReasoningEngine:
         return solutions
 
     def _create_constraint_conclusion(
-        self, solution: Dict[str, str], premises: List[SpatialRelation]
-    ) -> Optional[SpatialRelation]:
+        self, solution: dict[str, str], premises: list[SpatialRelation]
+    ) -> SpatialRelation | None:
         """Create conclusion from constraint solution."""
         # Find a novel relation in the solution
         for var_pair, relation in solution.items():
@@ -926,8 +926,8 @@ class SpatialReasoningEngine:
         return None
 
     def _default_reasoning(
-        self, premises: List[SpatialRelation], chain_id: str
-    ) -> List[SpatialRelation]:
+        self, premises: list[SpatialRelation], chain_id: str
+    ) -> list[SpatialRelation]:
         """Default reasoning strategy when specific type not available."""
         conclusions = []
 
@@ -940,10 +940,10 @@ class SpatialReasoningEngine:
         return conclusions
 
     def _validate_reasoning_chain(
-        self, conclusions: List[SpatialRelation], chain_id: str
-    ) -> Dict[str, Any]:
+        self, conclusions: list[SpatialRelation], chain_id: str
+    ) -> dict[str, Any]:
         """Validate the consistency of the reasoning chain."""
-        validation_result: Dict[str, Any] = {
+        validation_result: dict[str, Any] = {
             "valid": True,
             "issues": [],
             "confidence": 1.0,
@@ -966,8 +966,8 @@ class SpatialReasoningEngine:
         return validation_result
 
     def _generate_spatial_alternatives(
-        self, conclusions: List[SpatialRelation], spatial_data: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        self, conclusions: list[SpatialRelation], spatial_data: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Generate spatial alternatives based on reasoning results."""
         alternatives = []
 
@@ -993,7 +993,7 @@ class SpatialReasoningEngine:
 
         return alternatives
 
-    def _get_alternative_relations(self, relation_type: str) -> List[str]:
+    def _get_alternative_relations(self, relation_type: str) -> list[str]:
         """Get alternative possible relations for a given relation type."""
         alternatives = []
 
@@ -1020,7 +1020,7 @@ class SpatialReasoningEngine:
         return alternatives
 
     def _calculate_overall_confidence(
-        self, conclusions: List[SpatialRelation]
+        self, conclusions: list[SpatialRelation]
     ) -> float:
         """Calculate overall confidence of reasoning results."""
         if not conclusions:
@@ -1041,8 +1041,8 @@ class SpatialReasoningEngine:
         return float(weighted_confidence)
 
     def update_model(
-        self, training_data: Dict[str, Any], learning_rate: float = 0.01
-    ) -> Dict[str, Any]:
+        self, training_data: dict[str, Any], learning_rate: float = 0.01
+    ) -> dict[str, Any]:
         """Update reasoning model based on training data."""
         update_results = {
             "rules_updated": 0,
@@ -1064,7 +1064,7 @@ class SpatialReasoningEngine:
 
         return update_results
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current status of the reasoning engine."""
         return {
             "engine_type": "spatial_reasoning",

@@ -57,7 +57,7 @@ class TimeSeriesStore(ABC):
         """
 
     @abstractmethod
-    def list_series(self) -> List[str]:
+    def list_series(self) -> list[str]:
         """List the names of all stored time series.
 
         Returns:
@@ -79,8 +79,8 @@ class TimeSeriesStore(ABC):
     def query(
         self,
         name: str,
-        start: Optional[datetime] = None,
-        end: Optional[datetime] = None,
+        start: datetime | None = None,
+        end: datetime | None = None,
     ) -> TimeSeries:
         """Query a stored time series for a specific time range.
 
@@ -116,7 +116,7 @@ class InMemoryStore(TimeSeriesStore):
     """
 
     def __init__(self) -> None:
-        self._data: Dict[str, TimeSeries] = {}
+        self._data: dict[str, TimeSeries] = {}
         logger.debug("Initialized InMemoryStore")
 
     def store(self, name: str, ts: TimeSeries) -> None:
@@ -140,7 +140,7 @@ class InMemoryStore(TimeSeriesStore):
             metadata=deepcopy(ts.metadata),
         )
 
-    def list_series(self) -> List[str]:
+    def list_series(self) -> list[str]:
         """Return a sorted list of all stored series names."""
         return sorted(self._data.keys())
 
@@ -154,8 +154,8 @@ class InMemoryStore(TimeSeriesStore):
     def query(
         self,
         name: str,
-        start: Optional[datetime] = None,
-        end: Optional[datetime] = None,
+        start: datetime | None = None,
+        end: datetime | None = None,
     ) -> TimeSeries:
         """Query a stored time series by time range.
 

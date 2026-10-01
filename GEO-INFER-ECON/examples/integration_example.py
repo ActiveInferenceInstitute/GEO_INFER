@@ -18,7 +18,6 @@ from geo_infer_econ.integrations import (
 )
 
 # Import economic analysis tools
-from geo_infer_econ.core.econometrics_engine import SpatialEconometricsEngine
 from geo_infer_econ.utils.indicators import EconomicIndicators
 
 

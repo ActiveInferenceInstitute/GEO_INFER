@@ -10,7 +10,7 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import yaml
 
@@ -131,7 +131,7 @@ def setup_data_integrator() -> DataIntegrator:
         raise
 
 
-def load_analysis_config(config_path: Path | str | None = None) -> Dict[str, Any]:
+def load_analysis_config(config_path: Path | str | None = None) -> dict[str, Any]:
     """Load Cascadia analysis configuration without depending on the caller's CWD.
 
     Args:

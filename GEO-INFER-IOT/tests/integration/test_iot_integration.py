@@ -7,7 +7,7 @@ and its interaction with other GEO-INFER modules.
 
 import unittest
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from unittest.mock import AsyncMock, Mock, patch
 
 # Import the module to test
@@ -57,7 +57,7 @@ class TestIoTModuleIntegration(unittest.TestCase):
         # Ingest a measurement
         measurement = SensorMeasurement(
             sensor_id="test_sensor_001",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="temperature",
             value=25.5,
             unit="celsius",
@@ -87,7 +87,7 @@ class TestIoTModuleIntegration(unittest.TestCase):
         for i in range(5):
             measurement = {
                 "sensor_id": f"sensor_{i}",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "variable": "temperature",
                 "value": 20.0 + i,
                 "unit": "celsius",
@@ -112,7 +112,7 @@ class TestIoTModuleIntegration(unittest.TestCase):
         for i in range(5):
             measurement = {
                 "sensor_id": f"sensor_{i}",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "variable": "temperature",
                 "value": 20.0 + i,
                 "unit": "celsius",
@@ -157,7 +157,7 @@ class TestIoTModuleIntegration(unittest.TestCase):
         for i in range(3):
             measurement = {
                 "sensor_id": f"test_sensor_{i}",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "variable": "temperature",
                 "value": 20.0 + i,
                 "unit": "celsius",
@@ -192,7 +192,7 @@ class TestIoTModuleIntegration(unittest.TestCase):
         # Test with invalid measurement data
         invalid_measurement = {
             "sensor_id": "invalid_sensor",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "variable": "temperature",
             "value": float("inf"),  # Invalid value
             "unit": "celsius",
@@ -284,7 +284,7 @@ class TestCrossModuleIntegration(unittest.TestCase):
                     # Test spatial indexing
                     measurement = SensorMeasurement(
                         sensor_id="test_sensor",
-                        timestamp=datetime.now(timezone.utc),
+                        timestamp=datetime.now(UTC),
                         variable="temperature",
                         value=25.5,
                         unit="celsius",

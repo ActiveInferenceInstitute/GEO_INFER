@@ -5,7 +5,7 @@ This module provides integration between theorem proving and
 symbolic mathematics capabilities.
 """
 
-from typing import Optional, List, Any
+from typing import Any
 import logging
 
 from geo_infer_math.core.theorem_proving.prover import TheoremProver, ProofResult
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def integrate_with_symbolic_math(
-    symbolic_expression: Any, prover: Optional[TheoremProver] = None
+    symbolic_expression: Any, prover: TheoremProver | None = None
 ) -> ProofResult:
     """
     Integrate symbolic math expression with theorem prover.
@@ -39,8 +39,8 @@ def integrate_with_symbolic_math(
 
 
 def generate_proof_from_symbolic(
-    symbolic_expression: Any, operation: str, prover: Optional[TheoremProver] = None
-) -> Optional[ProofResult]:
+    symbolic_expression: Any, operation: str, prover: TheoremProver | None = None
+) -> ProofResult | None:
     """
     Generate proof for a symbolic operation.
 
@@ -91,7 +91,7 @@ def _symbolic_to_theorem(symbolic_expression: Any) -> str:
     return str(symbolic_expression)
 
 
-def _operation_to_theorem(symbolic_expression: Any, operation: str) -> Optional[str]:
+def _operation_to_theorem(symbolic_expression: Any, operation: str) -> str | None:
     """
     Convert operation to theorem statement.
 
@@ -115,7 +115,7 @@ def _operation_to_theorem(symbolic_expression: Any, operation: str) -> Optional[
 
 
 def verify_symbolic_operation(
-    original: Any, result: Any, operation: str, prover: Optional[TheoremProver] = None
+    original: Any, result: Any, operation: str, prover: TheoremProver | None = None
 ) -> bool:
     """
     Verify a symbolic operation using theorem proving.
@@ -152,8 +152,8 @@ class SymbolicProofIntegrator:
 
     def __init__(
         self,
-        symbolic_math: Optional[SymbolicMath] = None,
-        prover: Optional[TheoremProver] = None,
+        symbolic_math: SymbolicMath | None = None,
+        prover: TheoremProver | None = None,
     ):
         """
         Initialize symbolic proof integrator.
@@ -166,7 +166,7 @@ class SymbolicProofIntegrator:
         self.prover = prover or TheoremProver()
 
     def prove_symbolic_expression(
-        self, expression: Any, assumptions: Optional[List[str]] = None
+        self, expression: Any, assumptions: list[str] | None = None
     ) -> ProofResult:
         """
         Prove a symbolic expression.
@@ -215,7 +215,7 @@ class SymbolicProofIntegrator:
 
     def generate_proof_for_operation(
         self, expression: Any, operation: str
-    ) -> Optional[ProofResult]:
+    ) -> ProofResult | None:
         """
         Generate proof for a symbolic operation.
 

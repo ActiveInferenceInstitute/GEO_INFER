@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import threading
 from typing import Dict, List, Optional, Any
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 
 # Core components
 from geo_infer_comms.core.messaging import (
@@ -147,7 +147,7 @@ class GeospatialCommunicationSystem:
 
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
         enable_all_components: bool = True,
     ):
         """
@@ -206,7 +206,7 @@ class GeospatialCommunicationSystem:
 
         # System state
         self._started = False
-        self.start_time: Optional[datetime] = None
+        self.start_time: datetime | None = None
 
         # Set up logging
         self.logger = logging.getLogger(__name__)
@@ -225,7 +225,7 @@ class GeospatialCommunicationSystem:
 
             # Mark as started
             self._started = True
-            self.start_time = datetime.now(timezone.utc)
+            self.start_time = datetime.now(UTC)
 
             self.logger.info("Geospatial communication system started")
 
@@ -252,7 +252,7 @@ class GeospatialCommunicationSystem:
         except Exception as e:
             self.logger.error(f"Error stopping communication system: {e}")
 
-    def get_system_health(self) -> Dict[str, Any]:
+    def get_system_health(self) -> dict[str, Any]:
         """Get overall system health status."""
         if not self._started:
             return {"status": "stopped", "components": {}}
@@ -275,14 +275,14 @@ class GeospatialCommunicationSystem:
             "status": status,
             "components": components,
             "uptime_seconds": (
-                (datetime.now(timezone.utc) - self.start_time).total_seconds()
+                (datetime.now(UTC) - self.start_time).total_seconds()
                 if self.start_time
                 else 0
             ),
             "started_at": self.start_time.isoformat() if self.start_time else None,
         }
 
-    def get_comprehensive_metrics(self) -> Dict[str, Any]:
+    def get_comprehensive_metrics(self) -> dict[str, Any]:
         """Get comprehensive system metrics."""
         return {
             "system_health": self.get_system_health(),
@@ -290,19 +290,19 @@ class GeospatialCommunicationSystem:
             "notification_metrics": self.notification_manager.get_metrics(),
             "channel_metrics": self.channel_manager.get_channel_statistics(),
             "event_metrics": self.event_manager.get_event_statistics(),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     # Convenience methods for common operations
     def send_message(
-        self, content: str, recipients: List[str], **kwargs: Any
+        self, content: str, recipients: list[str], **kwargs: Any
     ) -> MessageResponse:
         """Send a message with geospatial context."""
         request = MessageRequest(content=content, recipients=recipients, **kwargs)
         return self.message_broker.send_message(request, "system")
 
     def create_notification(
-        self, title: str, content: str, recipients: List[str], **kwargs: Any
+        self, title: str, content: str, recipients: list[str], **kwargs: Any
     ) -> NotificationResponse:
         """Create a notification."""
         request = NotificationRequest(
@@ -318,14 +318,14 @@ class GeospatialCommunicationSystem:
         return self.channel_manager.create_channel(request, "system")
 
     def publish_event(
-        self, event_type: str, payload: Dict[str, Any], **kwargs: Any
+        self, event_type: str, payload: dict[str, Any], **kwargs: Any
     ) -> EventPublishResponse:
         """Publish an event."""
         request = EventPublishRequest(event_type=event_type, payload=payload, **kwargs)
         return self.event_manager.publish_event(request)
 
     def subscribe_to_events(
-        self, subscriber_id: str, event_types: List[str], callback: Any, **kwargs: Any
+        self, subscriber_id: str, event_types: list[str], callback: Any, **kwargs: Any
     ) -> str:
         """Subscribe to events."""
         request = EventSubscriptionRequest(event_types=event_types, **kwargs)
@@ -338,21 +338,21 @@ class GeospatialCommunicationSystem:
 
     def __exit__(
         self,
-        exc_type: Optional[type],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[Any],
+        exc_type: type | None,
+        exc_val: BaseException | None,
+        exc_tb: Any | None,
     ) -> None:
         """Context manager exit."""
         self.stop()
 
 
 # Global system instance for convenience
-_global_system: Optional[GeospatialCommunicationSystem] = None
+_global_system: GeospatialCommunicationSystem | None = None
 _system_lock = threading.Lock()
 
 
 def get_communication_system(
-    config: Optional[Dict[str, Any]] = None,
+    config: dict[str, Any] | None = None,
 ) -> GeospatialCommunicationSystem:
     """Get or create the global communication system instance."""
     global _global_system
@@ -365,7 +365,7 @@ def get_communication_system(
     return _global_system
 
 
-def configure_system(config: Dict[str, Any]) -> None:
+def configure_system(config: dict[str, Any]) -> None:
     """Configure the global communication system.
 
     Must be called before the global system instance exists: component
@@ -389,8 +389,8 @@ def configure_system(config: Dict[str, Any]) -> None:
 def send_location_update(
     location: GeospatialPoint,
     message: str,
-    recipients: List[str],
-    system: Optional[GeospatialCommunicationSystem] = None,
+    recipients: list[str],
+    system: GeospatialCommunicationSystem | None = None,
 ) -> MessageResponse:
     """Send a location-based message update."""
     if system is None:
@@ -410,8 +410,8 @@ def create_geospatial_alert(
     location: GeospatialPoint,
     alert_type: str,
     message: str,
-    recipients: List[str],
-    system: Optional[GeospatialCommunicationSystem] = None,
+    recipients: list[str],
+    system: GeospatialCommunicationSystem | None = None,
 ) -> NotificationResponse:
     """Create a geospatial alert notification."""
     if system is None:
@@ -433,9 +433,9 @@ def create_geospatial_alert(
 
 
 def setup_emergency_monitoring(
-    emergency_zones: List[GeospatialBounds],
-    contact_info: Dict[str, Any],
-    system: Optional[GeospatialCommunicationSystem] = None,
+    emergency_zones: list[GeospatialBounds],
+    contact_info: dict[str, Any],
+    system: GeospatialCommunicationSystem | None = None,
 ) -> None:
     """Set up emergency monitoring for specific zones."""
     if system is None:

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Telemetry module for GEO-INFER-AGENT.
@@ -14,7 +13,8 @@ import json
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, List, Any, Optional, Callable, cast
+from typing import Any, Optional, cast
+from collections.abc import Callable
 from collections import defaultdict, deque
 
 logger = logging.getLogger("geo_infer_agent.api.telemetry")
@@ -36,8 +36,8 @@ class Metric:
         self,
         name: str,
         description: str,
-        agent_id: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
+        agent_id: str | None = None,
+        tags: dict[str, str] | None = None,
     ):
         """
         Initialize a metric.
@@ -52,10 +52,10 @@ class Metric:
         self.description = description
         self.agent_id = agent_id
         self.tags = tags or {}
-        self.metric_type: Optional[str] = None
+        self.metric_type: str | None = None
         self.created_at = datetime.now()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert metric to a dictionary."""
         return {
             "name": self.name,
@@ -74,8 +74,8 @@ class CounterMetric(Metric):
         self,
         name: str,
         description: str,
-        agent_id: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
+        agent_id: str | None = None,
+        tags: dict[str, str] | None = None,
     ):
         """Initialize a counter metric."""
         super().__init__(name, description, agent_id, tags)
@@ -91,7 +91,7 @@ class CounterMetric(Metric):
         """
         self.value += amount
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         result = super().to_dict()
         result["value"] = self.value
@@ -105,8 +105,8 @@ class GaugeMetric(Metric):
         self,
         name: str,
         description: str,
-        agent_id: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
+        agent_id: str | None = None,
+        tags: dict[str, str] | None = None,
     ):
         """Initialize a gauge metric."""
         super().__init__(name, description, agent_id, tags)
@@ -140,7 +140,7 @@ class GaugeMetric(Metric):
         """
         self.value -= amount
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         result = super().to_dict()
         result["value"] = self.value
@@ -154,8 +154,8 @@ class HistogramMetric(Metric):
         self,
         name: str,
         description: str,
-        agent_id: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
+        agent_id: str | None = None,
+        tags: dict[str, str] | None = None,
         max_samples: int = 1000,
     ):
         """
@@ -171,8 +171,8 @@ class HistogramMetric(Metric):
         super().__init__(name, description, agent_id, tags)
         self.metric_type = MetricType.HISTOGRAM
         self.values: deque[float] = deque(maxlen=max_samples)
-        self.min: Optional[float] = None
-        self.max: Optional[float] = None
+        self.min: float | None = None
+        self.max: float | None = None
         self.sum: float = 0
         self.count = 0
 
@@ -193,13 +193,13 @@ class HistogramMetric(Metric):
         if self.max is None or value > self.max:
             self.max = value
 
-    def mean(self) -> Optional[float]:
+    def mean(self) -> float | None:
         """Calculate the mean of recorded values."""
         if self.count == 0:
             return None
         return self.sum / self.count
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         result = super().to_dict()
         result.update(
@@ -221,13 +221,13 @@ class TimerMetric(Metric):
         self,
         name: str,
         description: str,
-        agent_id: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
+        agent_id: str | None = None,
+        tags: dict[str, str] | None = None,
     ):
         """Initialize a timer metric."""
         super().__init__(name, description, agent_id, tags)
         self.metric_type = MetricType.TIMER
-        self.start_time: Optional[float] = None
+        self.start_time: float | None = None
         self.histogram = HistogramMetric(
             f"{name}_histogram", f"Histogram for {description}", agent_id, tags
         )
@@ -251,7 +251,7 @@ class TimerMetric(Metric):
         self.start_time = None
         return duration
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         result = super().to_dict()
         result.update(
@@ -280,7 +280,7 @@ class TelemetryService:
     def __new__(cls) -> "TelemetryService":
         """Singleton pattern to ensure a single telemetry service instance."""
         if cls._instance is None:
-            cls._instance = super(TelemetryService, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance._initialized = False
         return cls._instance
 
@@ -290,22 +290,22 @@ class TelemetryService:
             return
 
         # Metrics storage
-        self.metrics: Dict[str, Metric] = {}
+        self.metrics: dict[str, Metric] = {}
 
         # Callbacks for metric updates
-        self.metric_callbacks: Dict[str, List[Callable[[str, Metric], None]]] = (
+        self.metric_callbacks: dict[str, list[Callable[[str, Metric], None]]] = (
             defaultdict(list)
         )
 
         # Agent health status
-        self.agent_health: Dict[str, Dict[str, Any]] = {}
+        self.agent_health: dict[str, dict[str, Any]] = {}
 
         # Configuration
         self.reporting_interval = 60  # seconds
 
         # Background tasks
-        self.reporting_task: Optional[asyncio.Task] = None
-        self.resource_monitoring_task: Optional[asyncio.Task] = None
+        self.reporting_task: asyncio.Task | None = None
+        self.resource_monitoring_task: asyncio.Task | None = None
         self.running = False
 
         self._initialized = True
@@ -362,8 +362,8 @@ class TelemetryService:
         self,
         name: str,
         description: str,
-        agent_id: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
+        agent_id: str | None = None,
+        tags: dict[str, str] | None = None,
     ) -> CounterMetric:
         """
         Register a counter metric.
@@ -390,8 +390,8 @@ class TelemetryService:
         self,
         name: str,
         description: str,
-        agent_id: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
+        agent_id: str | None = None,
+        tags: dict[str, str] | None = None,
     ) -> GaugeMetric:
         """
         Register a gauge metric.
@@ -418,8 +418,8 @@ class TelemetryService:
         self,
         name: str,
         description: str,
-        agent_id: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
+        agent_id: str | None = None,
+        tags: dict[str, str] | None = None,
     ) -> HistogramMetric:
         """
         Register a histogram metric.
@@ -446,8 +446,8 @@ class TelemetryService:
         self,
         name: str,
         description: str,
-        agent_id: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
+        agent_id: str | None = None,
+        tags: dict[str, str] | None = None,
     ) -> TimerMetric:
         """
         Register a timer metric.
@@ -474,7 +474,7 @@ class TelemetryService:
         self,
         agent_id: str,
         status: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         """
         Update health status for an agent.
@@ -491,7 +491,7 @@ class TelemetryService:
         }
         logger.debug(f"Updated health for agent {agent_id}: {status}")
 
-    def get_metrics(self, agent_id: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
+    def get_metrics(self, agent_id: str | None = None) -> dict[str, dict[str, Any]]:
         """
         Get all metrics, optionally filtered by agent ID.
 
@@ -508,8 +508,8 @@ class TelemetryService:
         return result
 
     def get_health_status(
-        self, agent_id: Optional[str] = None
-    ) -> Dict[str, Dict[str, Any]]:
+        self, agent_id: str | None = None
+    ) -> dict[str, dict[str, Any]]:
         """
         Get health status for agents.
 
@@ -537,7 +537,7 @@ class TelemetryService:
         logger.debug(f"Registered callback for metric {metric_name}")
 
     def _get_metric_id(
-        self, name: str, agent_id: Optional[str], tags: Optional[Dict[str, str]]
+        self, name: str, agent_id: str | None, tags: dict[str, str] | None
     ) -> str:
         """
         Generate a unique ID for a metric.

@@ -17,7 +17,7 @@ import json
 import sys
 import unittest
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import h3
 
@@ -32,9 +32,9 @@ _PACKAGED_SEED = (
 )
 
 
-def _seed_json() -> Dict[str, Any]:
+def _seed_json() -> dict[str, Any]:
     """Load the real packaged seed (the test fixture)."""
-    with open(_PACKAGED_SEED, "r", encoding="utf-8") as fh:
+    with open(_PACKAGED_SEED, encoding="utf-8") as fh:
         return json.load(fh)
 
 
@@ -49,9 +49,9 @@ def _mapper(seed_path: Path) -> Any:
 def _write_contract(
     tmpdir: str,
     *,
-    coastal_edge: Optional[str],
-    bounds: Dict[str, float],
-    hazard_tags: Optional[list] = None,
+    coastal_edge: str | None,
+    bounds: dict[str, float],
+    hazard_tags: list | None = None,
 ) -> Path:
     """Write a minimal ``crescent-city-geo-intel/v1`` contract to ``tmpdir``.
 
@@ -60,7 +60,7 @@ def _write_contract(
     ``anchor.coastalEdge`` declaration (None omits it entirely).
     """
     tags = list(hazard_tags) if hazard_tags is not None else ["erosion", "flood zone"]
-    anchor: Dict[str, Any] = {
+    anchor: dict[str, Any] = {
         "name": "Eastport",
         "municipality": "Eastport",
         "county": "Test County",
@@ -71,7 +71,7 @@ def _write_contract(
     }
     if coastal_edge is not None:
         anchor["coastalEdge"] = coastal_edge
-    contract: Dict[str, Any] = {
+    contract: dict[str, Any] = {
         "schema": "crescent-city-geo-intel/v1",
         "anchor": anchor,
         "domainCount": 1,
@@ -264,7 +264,7 @@ class TestCoastlineAgnosticOrientation(unittest.TestCase):
 
     # Synthetic eastern-coast municipality geometry: ocean on the EAST edge,
     # landward flank on the west (lng/lat span ~ Del Norte scale).
-    _EAST_BOUNDS: Dict[str, float] = {
+    _EAST_BOUNDS: dict[str, float] = {
         "west": -80.30,
         "south": 25.70,
         "east": -80.10,
@@ -272,7 +272,7 @@ class TestCoastlineAgnosticOrientation(unittest.TestCase):
     }
 
     @staticmethod
-    def _mid_lng(bounds: Dict[str, float]) -> float:
+    def _mid_lng(bounds: dict[str, float]) -> float:
         return (bounds["west"] + bounds["east"]) / 2.0
 
     def test_del_norte_default_still_orients_west_without_declaration(self) -> None:
@@ -389,7 +389,7 @@ class TestModuleEnrichment(unittest.TestCase):
 
         return DelNorteComprehensiveDashboard()
 
-    def _enrich(self) -> Dict[str, Any]:
+    def _enrich(self) -> dict[str, Any]:
         dashboard = self._dashboard()
         return dashboard.enrich_civic_intel_with_module_results(
             {"status": "ok"}, contract=_seed_json()

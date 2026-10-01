@@ -10,7 +10,7 @@ embed wall-clock time or module-level counters (IDs, timestamps).
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import numpy as np
 import pytest
@@ -32,7 +32,7 @@ VOLATILE_KEYS = {
 }
 
 
-def _synthetic_spatial_data() -> Dict[str, Any]:
+def _synthetic_spatial_data() -> dict[str, Any]:
     """Small, fixed spatial scene used for every integration run."""
     return {
         "geometries": [
@@ -64,7 +64,7 @@ def _strip_volatile(value: Any) -> Any:
     return value
 
 
-def _run_cycle(seed: int) -> Tuple[Dict[str, Any], CognitiveProcessingEngine]:
+def _run_cycle(seed: int) -> tuple[dict[str, Any], CognitiveProcessingEngine]:
     """Build a seeded engine, process one synthetic scene, return the result."""
     engine = CognitiveProcessingEngine(rng=np.random.default_rng(seed))
     result = engine.process_spatial_input(

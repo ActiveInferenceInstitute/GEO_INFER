@@ -15,7 +15,7 @@ Provides a single source of truth for all framework settings.
 import yaml
 import logging
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
@@ -27,8 +27,8 @@ class AnalysisConfig:
     """Configuration for analysis parameters."""
 
     h3_resolution: int = 8
-    target_counties: List[str] = None
-    active_modules: List[str] = None
+    target_counties: list[str] = None
+    active_modules: list[str] = None
     spatial_analysis_enabled: bool = False
     force_refresh: bool = False
     skip_cache: bool = False
@@ -48,8 +48,8 @@ class VisualizationConfig:
     interactive_maps: bool = True
     static_plots: bool = True
     export_data: bool = True
-    color_schemes: Dict[str, Dict[str, str]] = None
-    default_center: List[float] = None
+    color_schemes: dict[str, dict[str, str]] = None
+    default_center: list[float] = None
     default_zoom: int = 10
     tile_layer: str = "OpenStreetMap"
 
@@ -70,15 +70,15 @@ class DataConfig:
 class ModuleConfig:
     """Configuration for individual modules."""
 
-    zoning: Dict[str, Any] = None
-    current_use: Dict[str, Any] = None
-    ownership: Dict[str, Any] = None
-    improvements: Dict[str, Any] = None
-    water_rights: Dict[str, Any] = None
-    ground_water: Dict[str, Any] = None
-    surface_water: Dict[str, Any] = None
-    power_source: Dict[str, Any] = None
-    mortgage_debt: Dict[str, Any] = None
+    zoning: dict[str, Any] = None
+    current_use: dict[str, Any] = None
+    ownership: dict[str, Any] = None
+    improvements: dict[str, Any] = None
+    water_rights: dict[str, Any] = None
+    ground_water: dict[str, Any] = None
+    surface_water: dict[str, Any] = None
+    power_source: dict[str, Any] = None
+    mortgage_debt: dict[str, Any] = None
 
 
 @dataclass
@@ -215,7 +215,7 @@ class EnhancedConfigManager:
 
         if config_file.exists():
             try:
-                with open(config_file, "r") as f:
+                with open(config_file) as f:
                     config_data = yaml.safe_load(f)
 
                 # Merge with default configuration
@@ -254,7 +254,7 @@ class EnhancedConfigManager:
         except Exception as e:
             logger.error(f"Failed to save configuration: {e}")
 
-    def update_configuration(self, updates: Dict[str, Any]):
+    def update_configuration(self, updates: dict[str, Any]):
         """
         Update configuration with new values.
 
@@ -295,7 +295,7 @@ class EnhancedConfigManager:
         """Get the full module configuration object."""
         return self.config.modules
 
-    def get_active_modules(self) -> List[str]:
+    def get_active_modules(self) -> list[str]:
         """Get list of active modules."""
         return self.config.analysis.active_modules
 
@@ -306,12 +306,12 @@ class EnhancedConfigManager:
             return module_config.get("enabled", True) if module_config else True
         return False
 
-    def get_module_config(self, module_name: str) -> Dict[str, Any]:
+    def get_module_config(self, module_name: str) -> dict[str, Any]:
         """Get configuration for a specific module."""
         module_config = getattr(self.config.modules, module_name, {})
         return module_config if module_config else {}
 
-    def validate_configuration(self) -> Dict[str, Any]:
+    def validate_configuration(self) -> dict[str, Any]:
         """
         Validate configuration and return comprehensive validation results.
 
@@ -539,7 +539,7 @@ class EnhancedConfigManager:
         }
         return areas.get(resolution, 0)
 
-    def _validate_module_configurations(self) -> Dict[str, Any]:
+    def _validate_module_configurations(self) -> dict[str, Any]:
         """Validate module-specific configurations."""
         validation = {"all_valid": True, "warnings": [], "details": {}}
 
@@ -588,14 +588,14 @@ class EnhancedConfigManager:
         return validation
 
     def _merge_configs(
-        self, default_config: CascadiaConfig, updates: Dict[str, Any]
+        self, default_config: CascadiaConfig, updates: dict[str, Any]
     ) -> CascadiaConfig:
         """Merge default configuration with updates."""
         default_dict = self._config_to_dict(default_config)
         self._deep_update(default_dict, updates)
         return self._dict_to_config(default_dict)
 
-    def _config_to_dict(self, config: CascadiaConfig) -> Dict[str, Any]:
+    def _config_to_dict(self, config: CascadiaConfig) -> dict[str, Any]:
         """Convert configuration object to dictionary."""
         config_dict = asdict(config)
 
@@ -606,7 +606,7 @@ class EnhancedConfigManager:
 
         return config_dict
 
-    def _dict_to_config(self, config_dict: Dict[str, Any]) -> CascadiaConfig:
+    def _dict_to_config(self, config_dict: dict[str, Any]) -> CascadiaConfig:
         """Convert dictionary to configuration object."""
         # Reconstruct nested dataclass objects
         if "analysis" in config_dict:
@@ -623,7 +623,7 @@ class EnhancedConfigManager:
 
         return CascadiaConfig(**config_dict)
 
-    def _deep_update(self, base_dict: Dict[str, Any], updates: Dict[str, Any]):
+    def _deep_update(self, base_dict: dict[str, Any], updates: dict[str, Any]):
         """Recursively update dictionary with new values."""
         for key, value in updates.items():
             if key in base_dict and isinstance(base_dict[key], dict) and isinstance(value, dict):

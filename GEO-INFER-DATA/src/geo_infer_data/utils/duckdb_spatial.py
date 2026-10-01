@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 import geopandas as gpd
 
@@ -38,7 +38,7 @@ class DuckDBSpatialError(RuntimeError):
 
 def _fallback_read_vector(
     file_path: Path,
-    layer: Optional[str] = None,
+    layer: str | None = None,
     **kwargs: Any,
 ) -> gpd.GeoDataFrame:
     """Read a vector file through GeoPandas/Fiona (always available)."""
@@ -49,7 +49,7 @@ def _fallback_read_vector(
 
 def _duckdb_read_vector(
     file_path: Path,
-    layer: Optional[str] = None,
+    layer: str | None = None,
     **kwargs: Any,
 ) -> gpd.GeoDataFrame:
     """Read a cloud-native vector file through DuckDB Spatial.
@@ -180,10 +180,10 @@ def _geometry_crs(conn: Any, posix_path: str) -> Any:
 
 
 def read_cloud_native_vector(
-    file_path: Union[str, Path],
+    file_path: str | Path,
     *,
     use_duckdb: bool = True,
-    layer: Optional[str] = None,
+    layer: str | None = None,
     **kwargs: Any,
 ) -> gpd.GeoDataFrame:
     """Read a GeoParquet / FlatGeobuf / Shapefile into a GeoDataFrame.

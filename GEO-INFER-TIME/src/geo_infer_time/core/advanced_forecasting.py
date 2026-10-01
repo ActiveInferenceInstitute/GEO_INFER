@@ -12,7 +12,7 @@ unconditionally; there is no optional-fallback path.
 
 import logging
 import warnings
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 import numpy as np
 import pandas as pd
 from statsmodels.tsa.arima.model import ARIMA
@@ -26,10 +26,10 @@ logger = logging.getLogger(__name__)
 
 def fit_arima_forecast(
     values: Any,
-    order: Tuple[int, int, int] = (1, 1, 1),
-    seasonal: Optional[Tuple[int, int, int, int]] = None,
+    order: tuple[int, int, int] = (1, 1, 1),
+    seasonal: tuple[int, int, int, int] | None = None,
     forecast_steps: int = 10,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Fit an ARIMA (or SARIMAX when a seasonal order is given) model and
     forecast with confidence intervals.
@@ -87,12 +87,12 @@ def fit_arima_forecast(
 
 def fit_exponential_smoothing_forecast(
     values: Any,
-    trend: Optional[str] = None,
-    seasonal: Optional[str] = None,
-    seasonal_periods: Optional[int] = None,
-    alpha: Optional[float] = None,
+    trend: str | None = None,
+    seasonal: str | None = None,
+    seasonal_periods: int | None = None,
+    alpha: float | None = None,
     forecast_steps: int = 10,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Fit a Holt-Winters exponential smoothing model and forecast.
 
@@ -140,17 +140,17 @@ class AdvancedForecastingEngine:
     Advanced forecasting engine with multiple methods.
     """
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize advanced forecasting engine."""
         self.config = config or {}
 
     def forecast_arima(
         self,
         time_series: pd.Series,
-        order: Tuple[int, int, int] = (1, 1, 1),
+        order: tuple[int, int, int] = (1, 1, 1),
         forecast_steps: int = 10,
-        seasonal: Optional[Tuple[int, int, int, int]] = None,
-    ) -> Dict[str, Any]:
+        seasonal: tuple[int, int, int, int] | None = None,
+    ) -> dict[str, Any]:
         """
         Forecast using ARIMA (or SARIMAX with a seasonal order).
 
@@ -173,11 +173,11 @@ class AdvancedForecastingEngine:
     def forecast_exponential_smoothing(
         self,
         time_series: pd.Series,
-        trend: Optional[str] = "add",
-        seasonal: Optional[str] = None,
-        seasonal_periods: Optional[int] = None,
+        trend: str | None = "add",
+        seasonal: str | None = None,
+        seasonal_periods: int | None = None,
         forecast_steps: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Forecast using exponential smoothing (Holt-Winters).
 
@@ -206,7 +206,7 @@ class AdvancedForecastingEngine:
     def detect_trend_seasonality(
         self,
         time_series: pd.Series,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect trend and seasonality in time series.
 

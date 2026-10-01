@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 REST API implementation for GEO-INFER-GIT.
@@ -9,8 +8,8 @@ defined in the OpenAPI schema for repository management operations.
 """
 
 import time
-from typing import Dict, List, Any, Optional, Union, cast
-from datetime import datetime, timezone
+from typing import Any, cast
+from datetime import datetime, UTC
 
 import git
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
@@ -45,11 +44,11 @@ app.add_middleware(
 register_error_handlers(app)
 
 # Global instances
-repo_manager: Optional[RepoManager] = None
-github_api: Optional[GitHubAPI] = None
-config_loader: Optional[ConfigLoader] = None
-logger: Optional[Any] = None
-repository_records: Dict[str, Dict[str, Any]] = {}
+repo_manager: RepoManager | None = None
+github_api: GitHubAPI | None = None
+config_loader: ConfigLoader | None = None
+logger: Any | None = None
+repository_records: dict[str, dict[str, Any]] = {}
 
 
 # Pydantic models for request/response
@@ -57,12 +56,12 @@ class RepositoryRequest(BaseModel):
     """Request model for repository operations."""
 
     clone_url: str = Field(..., description="Repository clone URL")
-    name: Optional[str] = Field(None, description="Custom name for the repository")
-    description: Optional[str] = Field(None, description="Repository description")
+    name: str | None = Field(None, description="Custom name for the repository")
+    description: str | None = Field(None, description="Repository description")
     platform: str = Field(
         "github", description="Git platform (github, gitlab, bitbucket)"
     )
-    credentials: Optional[Dict[str, Any]] = Field(
+    credentials: dict[str, Any] | None = Field(
         None, description="Authentication credentials"
     )
     auto_sync: bool = Field(True, description="Enable automatic synchronization")
@@ -84,17 +83,17 @@ class RepositoryResponse(BaseModel):
     id: str
     name: str
     full_name: str
-    description: Optional[str]
+    description: str | None
     platform: str
     clone_url: str
-    ssh_url: Optional[str]
+    ssh_url: str | None
     default_branch: str
-    language: Optional[str]
+    language: str | None
     size: int
     branch_count: int
     commit_count: int
     status: str
-    last_sync: Optional[datetime]
+    last_sync: datetime | None
     created_at: datetime
     updated_at: datetime
 
@@ -102,7 +101,7 @@ class RepositoryResponse(BaseModel):
 class CloneRequest(BaseModel):
     """Request model for repository cloning."""
 
-    branch: Optional[str] = Field(None, description="Branch to clone")
+    branch: str | None = Field(None, description="Branch to clone")
     depth: int = Field(1, description="Clone depth")
     recursive: bool = Field(False, description="Clone submodules recursively")
     lfs: bool = Field(True, description="Include Git LFS files")
@@ -114,7 +113,7 @@ class CloneResponse(BaseModel):
     job_id: str
     status: str
     progress: float
-    estimated_completion: Optional[datetime]
+    estimated_completion: datetime | None
 
 
 class SyncRequest(BaseModel):
@@ -122,7 +121,7 @@ class SyncRequest(BaseModel):
 
     force: bool = Field(False, description="Force synchronization")
     prune: bool = Field(True, description="Prune deleted branches")
-    branches: Optional[List[str]] = Field(None, description="Specific branches to sync")
+    branches: list[str] | None = Field(None, description="Specific branches to sync")
 
 
 class SyncResponse(BaseModel):
@@ -161,7 +160,7 @@ class MergeRequest(BaseModel):
     """Request model for merge operations."""
 
     target_branch: str = Field(..., description="Target branch for merge")
-    message: Optional[str] = Field(None, description="Merge commit message")
+    message: str | None = Field(None, description="Merge commit message")
     strategy: str = Field("merge", description="Merge strategy")
     delete_source: bool = Field(False, description="Delete source branch after merge")
 
@@ -169,10 +168,10 @@ class MergeRequest(BaseModel):
 class MergeResponse(BaseModel):
     """Response model for merge operations."""
 
-    merge_commit_sha: Optional[str]
+    merge_commit_sha: str | None
     merged: bool
     message: str
-    conflicts: List[str]
+    conflicts: list[str]
 
 
 class HealthResponse(BaseModel):
@@ -180,7 +179,7 @@ class HealthResponse(BaseModel):
 
     status: str
     timestamp: datetime
-    components: Dict[str, Dict[str, Any]]
+    components: dict[str, dict[str, Any]]
 
 
 class SystemStatusResponse(BaseModel):
@@ -190,7 +189,7 @@ class SystemStatusResponse(BaseModel):
     uptime: int
     repository_count: int
     active_workflows: int
-    storage_usage: Dict[str, Any]
+    storage_usage: dict[str, Any]
     git_version: str
 
 
@@ -226,7 +225,7 @@ async def health_check() -> HealthResponse:
     """Health check endpoint."""
     return HealthResponse(
         status="healthy",
-        timestamp=datetime.now(timezone.utc).replace(tzinfo=None),
+        timestamp=datetime.now(UTC).replace(tzinfo=None),
         components={
             "repository_manager": {"status": "up" if repo_manager else "down"},
             "github_api": {"status": "up" if github_api else "down"},
@@ -235,14 +234,14 @@ async def health_check() -> HealthResponse:
     )
 
 
-@app.get("/repositories", response_model=Dict[str, Any], tags=["repositories"])
+@app.get("/repositories", response_model=dict[str, Any], tags=["repositories"])
 async def list_repositories(
-    status_filter: Optional[str] = None,
-    platform: Optional[str] = None,
-    organization: Optional[str] = None,
-    language: Optional[str] = None,
+    status_filter: str | None = None,
+    platform: str | None = None,
+    organization: str | None = None,
+    language: str | None = None,
     manager: RepoManager = Depends(get_repo_manager),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """List managed repositories with optional filtering.
 
     Note: status semantics are filesystem-derived — ``active`` means the
@@ -302,7 +301,7 @@ async def add_repository(
 
         # Create repository entry
         repo_id = f"{request.platform}_{request.name or 'unknown'}"
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
         repo_data = {
             "id": repo_id,
             "name": request.name or "unknown",
@@ -380,7 +379,7 @@ async def clone_repository(
             job_id=job_id,
             status="queued",
             progress=0.0,
-            estimated_completion=datetime.now(timezone.utc).replace(tzinfo=None),
+            estimated_completion=datetime.now(UTC).replace(tzinfo=None),
         )
 
     except HTTPException:
@@ -412,7 +411,7 @@ async def sync_repository(
             job_id=job_id,
             status="queued",
             changes_detected=False,  # Would be determined during sync
-            started_at=datetime.now(timezone.utc).replace(tzinfo=None),
+            started_at=datetime.now(UTC).replace(tzinfo=None),
         )
 
     except HTTPException:
@@ -420,14 +419,14 @@ async def sync_repository(
 
 
 @app.get(
-    "/repositories/{repo_id}/branches", response_model=Dict[str, Any], tags=["branches"]
+    "/repositories/{repo_id}/branches", response_model=dict[str, Any], tags=["branches"]
 )
 async def list_branches(
     repo_id: str,
-    status_filter: Optional[str] = None,
-    protected: Optional[bool] = None,
+    status_filter: str | None = None,
+    protected: bool | None = None,
     manager: RepoManager = Depends(get_repo_manager),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """List branches for a repository."""
     try:
         branches = manager.list_branches(repo_id)
@@ -469,7 +468,7 @@ async def create_branch(
             repo_id, request.name, request.base, protected=request.protected
         )
         branch["repository_id"] = repo_id
-        return BranchResponse(**cast(Dict[str, Any], branch))
+        return BranchResponse(**cast(dict[str, Any], branch))
     except FileExistsError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except FileNotFoundError as exc:
@@ -495,7 +494,7 @@ async def merge_branch(
     try:
         return MergeResponse(
             **cast(
-                Dict[str, Any],
+                dict[str, Any],
                 manager.merge_branch(
                     repo_id,
                     branch_name,
@@ -519,7 +518,7 @@ async def get_system_status() -> SystemStatusResponse:
     """Get comprehensive system status."""
     import git
 
-    records: Dict[str, Any] = repo_manager.check_repo_status() if repo_manager else {}
+    records: dict[str, Any] = repo_manager.check_repo_status() if repo_manager else {}
     active_repositories = sum(1 for value in records.values() if "error" not in value)
     return SystemStatusResponse(
         version="1.0.0",
@@ -533,8 +532,8 @@ async def get_system_status() -> SystemStatusResponse:
 
 # Background task functions
 async def clone_repository_background(
-    repo_id: Union[str, Dict[str, Any]],
-    clone_request: Union[RepositoryRequest, CloneRequest],
+    repo_id: str | dict[str, Any],
+    clone_request: RepositoryRequest | CloneRequest,
 ) -> None:
     """Background task for repository cloning."""
     try:
@@ -543,7 +542,7 @@ async def clone_repository_background(
         if isinstance(repo_id, dict):
             record = repo_id
             identifier = record["id"]
-            clone_config: Dict[str, Any] = {
+            clone_config: dict[str, Any] = {
                 "url": record["clone_url"],
                 "name": record["name"],
                 "branch": getattr(clone_request, "branch", None),
@@ -567,9 +566,7 @@ async def clone_repository_background(
         updated_record = repository_records.get(identifier)
         if updated_record is not None:
             updated_record["status"] = "active" if success else "error"
-            updated_record["updated_at"] = datetime.now(timezone.utc).replace(
-                tzinfo=None
-            )
+            updated_record["updated_at"] = datetime.now(UTC).replace(tzinfo=None)
             if success:
                 branches = repo_manager.list_branches(clone_config["name"])
                 updated_record["branch_count"] = len(branches)
@@ -600,7 +597,7 @@ async def sync_repository_background(repo_id: str, sync_request: SyncRequest) ->
         result = repo_manager.sync_repositories([repo_name])
         success = bool(result.get(repo_name))
         record["status"] = "active" if success else "error"
-        record["updated_at"] = datetime.now(timezone.utc).replace(tzinfo=None)
+        record["updated_at"] = datetime.now(UTC).replace(tzinfo=None)
         if success:
             record["last_sync"] = record["updated_at"]
     except Exception as e:
@@ -611,7 +608,7 @@ async def sync_repository_background(repo_id: str, sync_request: SyncRequest) ->
 
 
 # Initialization function
-def initialize_api(config_path: Optional[str] = None) -> None:
+def initialize_api(config_path: str | None = None) -> None:
     """Initialize the API with configuration."""
     global repo_manager, github_api, config_loader, logger
 
@@ -642,7 +639,7 @@ def initialize_api(config_path: Optional[str] = None) -> None:
 
 
 def run_api(
-    host: str = "0.0.0.0", port: int = 8000, config_path: Optional[str] = None
+    host: str = "0.0.0.0", port: int = 8000, config_path: str | None = None
 ) -> None:
     """Run the FastAPI server."""
     initialize_api(config_path)

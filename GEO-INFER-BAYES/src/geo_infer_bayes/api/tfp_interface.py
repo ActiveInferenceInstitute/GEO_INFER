@@ -9,7 +9,7 @@ module provides usable posterior sampling without TensorFlow installed.
 import logging
 import numpy as np
 from scipy import linalg
-from typing import Dict, Any, List, Optional, Tuple, Union
+from typing import Any
 from ..utils.rng import resolve_rng
 
 logger = logging.getLogger(__name__)
@@ -43,18 +43,18 @@ class TFPInterface:
     `create_spatial_gp_model` and `sample` always work without TensorFlow.
     """
 
-    def __init__(self, model_config: Optional[Dict[str, Any]] = None):
+    def __init__(self, model_config: dict[str, Any] | None = None):
         self.model_config = model_config or {}
         self.tfp_model = None
 
         # GP data cached after create_spatial_gp_model
-        self._X: Optional[np.ndarray] = None
-        self._y: Optional[np.ndarray] = None
+        self._X: np.ndarray | None = None
+        self._y: np.ndarray | None = None
         self._lengthscale: float = 1.0
         self._variance: float = 1.0
         self._noise: float = 1e-2
-        self._L: Optional[np.ndarray] = None  # cholesky factor cache
-        self._alpha: Optional[np.ndarray] = None
+        self._L: np.ndarray | None = None  # cholesky factor cache
+        self._alpha: np.ndarray | None = None
 
     # ------------------------------------------------------------------
     # GP model construction
@@ -120,7 +120,7 @@ class TFPInterface:
     # ------------------------------------------------------------------
     def sample(
         self, n_samples: int = 1000, n_warmup: int = 500, **kwargs: Any
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """
         Sample hyper-parameter posteriors.
 
@@ -157,7 +157,7 @@ class TFPInterface:
         )
         proposal_std = kwargs.get("proposal_std", 0.15)
 
-        traces: Dict[str, List[float]] = {
+        traces: dict[str, list[float]] = {
             k: [] for k in ("lengthscale", "variance", "noise")
         }
         current_ll = self._log_marginal_likelihood(np.exp(current))
@@ -184,7 +184,7 @@ class TFPInterface:
     # ------------------------------------------------------------------
     def predict(
         self, X_new: np.ndarray, return_std: bool = True
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """Make predictions with the fitted NumPy/SciPy GP.
 
         Computes the GP posterior predictive mean and, optionally, the
@@ -251,7 +251,7 @@ class TFPInterface:
             return -1e12  # reject non-PD proposals
 
     @staticmethod
-    def _prior_samples(n: int) -> Dict[str, np.ndarray]:
+    def _prior_samples(n: int) -> dict[str, np.ndarray]:
         """Draw samples from a weakly-informative log-normal prior."""
         rng = resolve_rng(0)
         return {

@@ -3,14 +3,13 @@
 import json
 import tempfile
 from pathlib import Path
-from typing import Dict, Optional
 
 
 def create_quarterly_overview(
-    hr_metrics: Dict,
-    crm_metrics: Dict,
-    talent_metrics: Dict,
-    output_path: Optional[str] = None,
+    hr_metrics: dict,
+    crm_metrics: dict,
+    talent_metrics: dict,
+    output_path: str | None = None,
 ) -> str:
     """Write a structured quarterly overview report to JSON."""
     report_content = {

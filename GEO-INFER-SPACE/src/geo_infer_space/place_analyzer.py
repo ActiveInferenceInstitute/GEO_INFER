@@ -7,7 +7,7 @@ including demographic analysis, environmental assessment, and spatial indexing.
 
 import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, cast
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -28,7 +28,7 @@ class PlaceAnalyzer:
     - Place-based data integration
     """
 
-    def __init__(self, base_dir: Optional[str] = None) -> None:
+    def __init__(self, base_dir: str | None = None) -> None:
         """
         Initialize PlaceAnalyzer with base directory.
 
@@ -44,19 +44,19 @@ class PlaceAnalyzer:
         self.config_dir.mkdir(parents=True, exist_ok=True)
 
         # Initialize analysis components
-        self.spatial_index: Dict[str, Any] = {}
-        self.place_data: Dict[str, Any] = {}
-        self.analysis_results: Dict[str, Any] = {}
+        self.spatial_index: dict[str, Any] = {}
+        self.place_data: dict[str, Any] = {}
+        self.analysis_results: dict[str, Any] = {}
 
         logger.info(f"PlaceAnalyzer initialized with base_dir: {self.base_dir}")
 
     def analyze_place(
         self,
         place_name: str,
-        coordinates: Tuple[float, float],
+        coordinates: tuple[float, float],
         radius_km: float = 10.0,
         synthetic: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform comprehensive place analysis.
 
@@ -130,7 +130,7 @@ class PlaceAnalyzer:
         center = Point(lon, lat)
         return center.buffer(radius_km / 111.0)
 
-    def _get_h3_cells(self, lat: float, lon: float, radius_km: float) -> List[str]:
+    def _get_h3_cells(self, lat: float, lon: float, radius_km: float) -> list[str]:
         """Get H3 cells covering the analysis area."""
         # Determine appropriate H3 resolution based on radius
         if radius_km <= 1:
@@ -147,7 +147,7 @@ class PlaceAnalyzer:
         cells = h3.grid_disk(center_cell, int(radius_km / 2))
         return list(cells)
 
-    def _calculate_spatial_metrics(self, area: Polygon) -> Dict[str, float]:
+    def _calculate_spatial_metrics(self, area: Polygon) -> dict[str, float]:
         """
         Calculate spatial metrics for the analysis area.
 
@@ -166,7 +166,7 @@ class PlaceAnalyzer:
 
     def _analyze_environmental_factors(
         self, lat: float, lon: float, radius_km: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate SYNTHETIC demo environmental factors.
 
@@ -192,7 +192,7 @@ class PlaceAnalyzer:
 
     def _calculate_accessibility(
         self, lat: float, lon: float, radius_km: float
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Generate SYNTHETIC demo accessibility metrics.
 
@@ -207,7 +207,7 @@ class PlaceAnalyzer:
             "commercial_centers": 8,
         }
 
-    def get_analysis_summary(self, place_name: str) -> Dict[str, Any]:
+    def get_analysis_summary(self, place_name: str) -> dict[str, Any]:
         """Get summary of analysis results for a place."""
         if place_name not in self.analysis_results:
             raise ValueError(f"No analysis results found for {place_name}")
@@ -243,7 +243,7 @@ class PlaceAnalyzer:
             summary["note"] = "environmental/accessibility metrics were not analyzed"
         return summary
 
-    def _calculate_environmental_score(self, factors: Dict[str, Any]) -> float:
+    def _calculate_environmental_score(self, factors: dict[str, Any]) -> float:
         """Calculate environmental quality score."""
         # Simple scoring algorithm
         score = 0.0
@@ -253,7 +253,7 @@ class PlaceAnalyzer:
         score += min(factors.get("protected_areas", 0) / 3, 1) * 0.2
         return cast(float, min(score, 1.0))
 
-    def _calculate_accessibility_score(self, metrics: Dict[str, float]) -> float:
+    def _calculate_accessibility_score(self, metrics: dict[str, float]) -> float:
         """Calculate accessibility score."""
         # Simple scoring algorithm
         score = 0.0

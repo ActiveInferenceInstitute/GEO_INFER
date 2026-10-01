@@ -7,7 +7,7 @@ and easily chainable.
 """
 
 import logging
-from typing import Dict, Any, List, Optional, Set, cast
+from typing import Any, cast
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class SpatialMethods:
     aggregation, and spatial outlier detection.
     """
 
-    def __init__(self, h3_backend: Optional[Any] = None) -> None:
+    def __init__(self, h3_backend: Any | None = None) -> None:
         """
         Initialize SpatialMethods.
 
@@ -42,8 +42,8 @@ class SpatialMethods:
         logger.info("SpatialMethods initialized")
 
     def buffer_analysis(
-        self, cells: List[str], buffer_rings: int = 1, include_center: bool = True
-    ) -> Dict[str, Any]:
+        self, cells: list[str], buffer_rings: int = 1, include_center: bool = True
+    ) -> dict[str, Any]:
         """
         Create buffer zones around cells.
 
@@ -60,7 +60,7 @@ class SpatialMethods:
 
         center_cells = set(cells)
         buffer_cells = set()
-        ring_cells: Dict[int, Set[str]] = {}
+        ring_cells: dict[int, set[str]] = {}
 
         for ring in range(1, buffer_rings + 1):
             ring_cells[ring] = set()
@@ -100,8 +100,8 @@ class SpatialMethods:
         }
 
     def overlay_cells(
-        self, cells_a: List[str], cells_b: List[str], operation: str = "intersection"
-    ) -> Dict[str, Any]:
+        self, cells_a: list[str], cells_b: list[str], operation: str = "intersection"
+    ) -> dict[str, Any]:
         """
         Perform overlay operations between two cell sets.
 
@@ -140,13 +140,13 @@ class SpatialMethods:
 
     def spatial_filter(
         self,
-        cells: List[str],
-        values: List[float],
+        cells: list[str],
+        values: list[float],
         filter_type: str = "threshold",
-        threshold: Optional[float] = None,
-        percentile: Optional[float] = None,
-        top_n: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        threshold: float | None = None,
+        percentile: float | None = None,
+        top_n: int | None = None,
+    ) -> dict[str, Any]:
         """
         Filter cells based on spatial criteria.
 
@@ -187,7 +187,7 @@ class SpatialMethods:
             filtered = [(c, v) for c, v in cell_values if v < lower or v > upper]
 
         else:
-            raise ValueError(f"Invalid filter configuration")
+            raise ValueError("Invalid filter configuration")
 
         return {
             "filter_type": filter_type,
@@ -200,11 +200,11 @@ class SpatialMethods:
 
     def aggregate_to_region(
         self,
-        cells: List[str],
-        values: List[float],
+        cells: list[str],
+        values: list[float],
         target_resolution: int,
         aggregation: str = "mean",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Aggregate cell values to a coarser resolution.
 
@@ -267,11 +267,11 @@ class SpatialMethods:
 
     def disaggregate_to_cells(
         self,
-        parent_cells: List[str],
-        values: List[float],
+        parent_cells: list[str],
+        values: list[float],
         target_resolution: int,
         method: str = "equal",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Disaggregate values to finer resolution cells.
 
@@ -320,8 +320,8 @@ class SpatialMethods:
         }
 
     def calculate_coverage(
-        self, cells: List[str], region_cells: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        self, cells: list[str], region_cells: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         Calculate coverage statistics for cell sets.
 
@@ -337,7 +337,7 @@ class SpatialMethods:
 
         cells_set = set(cells)
         total_area = 0.0
-        resolution_counts: Dict[int, int] = defaultdict(int)
+        resolution_counts: dict[int, int] = defaultdict(int)
 
         for cell in cells:
             try:
@@ -367,8 +367,8 @@ class SpatialMethods:
         return result
 
     def find_spatial_outliers(
-        self, cells: List[str], values: List[float], k: int = 1
-    ) -> Dict[str, Any]:
+        self, cells: list[str], values: list[float], k: int = 1
+    ) -> dict[str, Any]:
         """
         Find spatial outliers using Local Moran's I.
 
@@ -391,7 +391,7 @@ class SpatialMethods:
         cell_values = dict(zip(cells, values))
         mean_val = sum(values) / len(values)
 
-        outliers: Dict[str, List[Dict[str, Any]]] = {
+        outliers: dict[str, list[dict[str, Any]]] = {
             "HH": [],  # High value, high neighbors (cluster)
             "LL": [],  # Low value, low neighbors (cluster)
             "HL": [],  # High value, low neighbors (outlier)
@@ -456,10 +456,10 @@ class SpatialMethods:
 
     def compute_accessibility(
         self,
-        origin_cells: List[str],
-        destination_cells: List[str],
+        origin_cells: list[str],
+        destination_cells: list[str],
         max_distance: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compute accessibility from origins to destinations.
 
@@ -505,7 +505,7 @@ class SpatialMethods:
                 else 0,
             }
 
-        scores: List[float] = [
+        scores: list[float] = [
             cast(float, a["accessibility_score"]) for a in accessibility.values()
         ]
 
@@ -523,8 +523,8 @@ class SpatialMethods:
         }
 
     def calculate_spatial_weights(
-        self, cells: List[str], weight_type: str = "queen", k: int = 1
-    ) -> Dict[str, Any]:
+        self, cells: list[str], weight_type: str = "queen", k: int = 1
+    ) -> dict[str, Any]:
         """
         Calculate spatial weights matrix for cells.
 

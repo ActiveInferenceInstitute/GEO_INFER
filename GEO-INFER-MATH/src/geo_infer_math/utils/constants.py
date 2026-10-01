@@ -6,7 +6,7 @@ used throughout the GEO-INFER-MATH library.
 """
 
 import numpy as np
-from typing import Dict, Any, Optional, Union
+from typing import Any
 
 # Earth parameters (WGS84)
 EARTH_RADIUS_EQUATORIAL = 6378137.0  # Equatorial radius in meters
@@ -291,8 +291,8 @@ def get_constant(category: str, name: str) -> Any:
 
 
 def list_constants(
-    category: Optional[str] = None,
-) -> Union[Dict[str, Any], Dict[str, Dict[str, Any]]]:
+    category: str | None = None,
+) -> dict[str, Any] | dict[str, dict[str, Any]]:
     """
     List available constants.
 

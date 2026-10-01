@@ -6,7 +6,8 @@ import logging
 import os
 import inspect
 import json
-from typing import Dict, List, Optional, Callable, Any
+from typing import Any
+from collections.abc import Callable
 import types
 
 import numpy as np
@@ -29,15 +30,15 @@ class CustomAlgorithmFramework:
 
     def __init__(self) -> None:
         """Initialize the custom algorithm framework."""
-        self.registered_algorithms: Dict[str, Callable] = {}
-        self.algorithm_metadata: Dict[str, Dict[str, Any]] = {}
+        self.registered_algorithms: dict[str, Callable] = {}
+        self.algorithm_metadata: dict[str, dict[str, Any]] = {}
 
     def register_algorithm(
         self,
         name: str,
         algorithm_function: Callable,
         description: str = "",
-        parameters: Optional[Dict] = None,
+        parameters: dict | None = None,
         example_usage: str = "",
     ) -> None:
         """
@@ -91,7 +92,7 @@ class CustomAlgorithmFramework:
         del self.registered_algorithms[name]
         del self.algorithm_metadata[name]
 
-    def get_algorithm_info(self, name: str) -> Dict:
+    def get_algorithm_info(self, name: str) -> dict:
         """
         Get information about a registered algorithm.
 
@@ -109,7 +110,7 @@ class CustomAlgorithmFramework:
 
         return self.algorithm_metadata[name]
 
-    def list_algorithms(self) -> List[str]:
+    def list_algorithms(self) -> list[str]:
         """List all registered algorithm names."""
         return list(self.registered_algorithms.keys())
 
@@ -183,7 +184,7 @@ class CustomAlgorithmFramework:
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"Algorithms file not found: {filepath}")
 
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             algorithms_data = json.load(f)
 
         for name, data in algorithms_data.items():
@@ -227,7 +228,7 @@ class CustomAlgorithmFramework:
 
 
 def example_spiral_algorithm(
-    data: Any, params: Dict, width: int, height: int
+    data: Any, params: dict, width: int, height: int
 ) -> Figure:
     """
     Example custom algorithm that creates spiral patterns.
@@ -265,7 +266,7 @@ def example_spiral_algorithm(
 
 
 def example_cellular_growth_algorithm(
-    data: Any, params: Dict, width: int, height: int
+    data: Any, params: dict, width: int, height: int
 ) -> Figure:
     """
     Example algorithm simulating cellular growth patterns.
@@ -327,7 +328,7 @@ def example_cellular_growth_algorithm(
 
 
 def example_fractal_landscape_algorithm(
-    data: Any, params: Dict, width: int, height: int
+    data: Any, params: dict, width: int, height: int
 ) -> Figure:
     """
     Example algorithm creating fractal landscape patterns.

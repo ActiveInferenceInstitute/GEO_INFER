@@ -1,7 +1,7 @@
 """Conflict resolution system for governance conflicts."""
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
+from typing import Any
 from enum import Enum
 import logging
 import math
@@ -27,10 +27,10 @@ class ConflictResolution:
     conflict_id: str
     resolution_method: ConflictResolutionMethod
     resolved: bool
-    resolution_agreement: Optional[Dict[str, Any]] = None
-    stakeholder_acceptance: Dict[str, float] = field(default_factory=dict)
+    resolution_agreement: dict[str, Any] | None = None
+    stakeholder_acceptance: dict[str, float] = field(default_factory=dict)
     resolution_quality: float = 0.5
-    time_taken: Optional[float] = None  # in days
+    time_taken: float | None = None  # in days
     costs: float = 0.0
 
 
@@ -53,13 +53,13 @@ class ConflictResolver:
 
     def __init__(self) -> None:
         """Initialize conflict resolver."""
-        self.resolution_history: List[ConflictResolution] = []
+        self.resolution_history: list[ConflictResolution] = []
 
     def resolve_conflict(
         self,
-        conflict: Dict[str, Any],
-        stakeholders: List[Dict[str, Any]],
-        method: Optional[ConflictResolutionMethod] = None,
+        conflict: dict[str, Any],
+        stakeholders: list[dict[str, Any]],
+        method: ConflictResolutionMethod | None = None,
     ) -> ConflictResolution:
         """
         Resolve a conflict using specified or appropriate method.
@@ -107,7 +107,7 @@ class ConflictResolver:
         return resolution
 
     def _select_resolution_method(
-        self, conflict: Dict[str, Any], stakeholders: List[Dict[str, Any]]
+        self, conflict: dict[str, Any], stakeholders: list[dict[str, Any]]
     ) -> ConflictResolutionMethod:
         """Select appropriate resolution method based on conflict characteristics."""
         conflict_type = conflict.get("type", "unknown")
@@ -134,7 +134,7 @@ class ConflictResolver:
         return ConflictResolutionMethod.NEGOTIATION
 
     def _negotiate(
-        self, conflict: Dict[str, Any], stakeholders: List[Dict[str, Any]]
+        self, conflict: dict[str, Any], stakeholders: list[dict[str, Any]]
     ) -> ConflictResolution:
         """
         Resolve conflict through negotiation (Nash bargaining approach).
@@ -236,7 +236,7 @@ class ConflictResolver:
             )
 
     def _mediate(
-        self, conflict: Dict[str, Any], stakeholders: List[Dict[str, Any]]
+        self, conflict: dict[str, Any], stakeholders: list[dict[str, Any]]
     ) -> ConflictResolution:
         """Resolve conflict through mediation."""
         # Mediation involves a neutral third party facilitating discussion
@@ -284,7 +284,7 @@ class ConflictResolver:
             )
 
     def _arbitrate(
-        self, conflict: Dict[str, Any], stakeholders: List[Dict[str, Any]]
+        self, conflict: dict[str, Any], stakeholders: list[dict[str, Any]]
     ) -> ConflictResolution:
         """Resolve conflict through arbitration."""
         # Arbitration involves a third party making a binding decision
@@ -332,7 +332,7 @@ class ConflictResolver:
         )
 
     def _build_consensus(
-        self, conflict: Dict[str, Any], stakeholders: List[Dict[str, Any]]
+        self, conflict: dict[str, Any], stakeholders: list[dict[str, Any]]
     ) -> ConflictResolution:
         """Build consensus among stakeholders."""
         # Consensus building through iterative discussion and compromise

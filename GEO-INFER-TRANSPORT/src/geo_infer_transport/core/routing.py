@@ -6,7 +6,7 @@ for transportation networks.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -39,12 +39,12 @@ class Route:
     route_id: str
     origin: str
     destination: str
-    path: List[str]
+    path: list[str]
     total_distance_m: float
     total_time_s: float
-    geometry: Optional[List[Dict[str, float]]] = None
-    instructions: List[str] = field(default_factory=list)
-    alternatives: List["Route"] = field(default_factory=list)
+    geometry: list[dict[str, float]] | None = None
+    instructions: list[str] = field(default_factory=list)
+    alternatives: list["Route"] = field(default_factory=list)
     route_source: str = "network"
 
 
@@ -60,7 +60,7 @@ class RoutingEngine:
         self,
         network: Any = None,
         algorithm: str = "dijkstra",
-        modes: Optional[List[str]] = None,
+        modes: list[str] | None = None,
         real_time_traffic: bool = False,
     ):
         """
@@ -76,7 +76,7 @@ class RoutingEngine:
         self.algorithm = RoutingAlgorithm(algorithm)
         self.modes = modes or ["car"]
         self.real_time_traffic = real_time_traffic
-        self._traffic_data: Dict[str, float] = {}
+        self._traffic_data: dict[str, float] = {}
 
         logger.info(f"Initialized RoutingEngine with {algorithm} algorithm")
 
@@ -86,8 +86,8 @@ class RoutingEngine:
 
     def route(
         self,
-        origin: Dict[str, Any],
-        destination: Dict[str, Any],
+        origin: dict[str, Any],
+        destination: dict[str, Any],
         optimization: str = "time",
     ) -> Route:
         """
@@ -112,7 +112,7 @@ class RoutingEngine:
         dest_id = destination.get("node_id") or destination.get("id") or "destination"
 
         # Get path from network
-        path: List[str] = []
+        path: list[str] = []
         total_distance = 0.0
         total_time = 0.0
         route_source = "network"
@@ -189,7 +189,7 @@ class RoutingEngine:
         return route
 
     def _estimate_distance(
-        self, origin: Dict[str, Any], destination: Dict[str, Any]
+        self, origin: dict[str, Any], destination: dict[str, Any]
     ) -> float:
         """Estimate distance using Haversine formula."""
         import math
@@ -217,7 +217,7 @@ class RoutingEngine:
             traffic_factor = self._traffic_data.get(edge_id, 1.0)
             data["travel_time_adjusted"] = data.get("travel_time", 0) * traffic_factor
 
-    def _generate_instructions(self, path: List[str]) -> List[str]:
+    def _generate_instructions(self, path: list[str]) -> list[str]:
         """Generate turn-by-turn instructions."""
         if len(path) < 2:
             return ["Route not found"]
@@ -233,10 +233,10 @@ class RoutingEngine:
 
     def optimize_route(
         self,
-        waypoints: List[Dict[str, Any]],
-        constraints: Dict[str, Any],
+        waypoints: list[dict[str, Any]],
+        constraints: dict[str, Any],
         objective: str = "minimize_time",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Optimize route through multiple waypoints.
 
@@ -289,10 +289,10 @@ class RoutingEngine:
 
     def calculate_matrix(
         self,
-        origins: List[Dict[str, Any]],
-        destinations: List[Dict[str, Any]],
+        origins: list[dict[str, Any]],
+        destinations: list[dict[str, Any]],
         metric: str = "time",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate origin-destination matrix.
 
@@ -332,11 +332,11 @@ class RoutingEngine:
 
     def find_alternatives(
         self,
-        origin: Dict[str, Any],
-        destination: Dict[str, Any],
+        origin: dict[str, Any],
+        destination: dict[str, Any],
         count: int = 3,
         variation: float = 0.2,
-    ) -> List[Route]:
+    ) -> list[Route]:
         """
         Find alternative routes.
 
@@ -409,7 +409,7 @@ class RoutingEngine:
         logger.info(f"Found {len(alternatives)} routes including primary")
         return alternatives
 
-    def update_traffic(self, traffic_data: Dict[str, float]) -> None:
+    def update_traffic(self, traffic_data: dict[str, float]) -> None:
         """
         Update traffic data for real-time routing.
 

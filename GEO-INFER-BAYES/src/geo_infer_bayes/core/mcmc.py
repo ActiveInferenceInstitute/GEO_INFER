@@ -5,7 +5,7 @@ Markov Chain Monte Carlo implementation for Bayesian inference.
 import logging
 import numpy as np
 import xarray as xr
-from typing import Dict, Any, Union, List, Tuple, Optional
+from typing import Any
 from tqdm import tqdm
 from ..utils.rng import SeedLike, resolve_rng
 
@@ -64,9 +64,9 @@ class MCMC:
 
         # Acceptance and run telemetry, populated by :meth:`run`. The arrays
         # let a caller audit the adaptively-tuned proposals after the fact.
-        self.acceptance_rates: Optional[np.ndarray] = None
-        self.final_step_size: Optional[float] = None
-        self.total_iterations: Optional[int] = None
+        self.acceptance_rates: np.ndarray | None = None
+        self.final_step_size: float | None = None
+        self.total_iterations: int | None = None
 
     def run(
         self,
@@ -77,7 +77,7 @@ class MCMC:
         init_strategy: str = "random",
         progress_bar: bool = True,
         **kwargs: Any,
-    ) -> Union[Dict[str, np.ndarray], xr.Dataset]:
+    ) -> dict[str, np.ndarray] | xr.Dataset:
         """
         Run MCMC sampling for the model.
 
@@ -191,10 +191,10 @@ class MCMC:
     def update(
         self,
         new_data: Any,
-        previous_samples: Union[Dict[str, np.ndarray], xr.Dataset],
+        previous_samples: dict[str, np.ndarray] | xr.Dataset,
         n_samples: int = 500,
         **kwargs: Any,
-    ) -> Union[Dict[str, np.ndarray], xr.Dataset]:
+    ) -> dict[str, np.ndarray] | xr.Dataset:
         """
         Update previous samples with new data.
 
@@ -258,7 +258,7 @@ class MCMC:
 
     def _initialize_chains(
         self, data: Any, init_strategy: str, **kwargs: Any
-    ) -> List[Dict[str, float]]:
+    ) -> list[dict[str, float]]:
         """Initialize the Markov chains."""
         param_names = list(self.model.parameters.keys())
         chains = []
@@ -331,8 +331,8 @@ class MCMC:
         return chains
 
     def _propose(
-        self, current_theta: Dict[str, float]
-    ) -> Tuple[Dict[str, float], float]:
+        self, current_theta: dict[str, float]
+    ) -> tuple[dict[str, float], float]:
         """
         Generate a proposal for MCMC.
 
@@ -401,7 +401,7 @@ class MCMC:
 
         return proposed_theta, log_proposal_ratio
 
-    def _set_parameter_layout(self, theta: Dict[str, Any]) -> None:
+    def _set_parameter_layout(self, theta: dict[str, Any]) -> None:
         """Record flattening slices for scalar and array parameters."""
         layout = []
         offset = 0
@@ -414,7 +414,7 @@ class MCMC:
         self._parameter_layout = layout
         self._parameter_dimension = offset
 
-    def _flatten_theta(self, theta: Dict[str, Any]) -> np.ndarray:
+    def _flatten_theta(self, theta: dict[str, Any]) -> np.ndarray:
         return np.concatenate(
             [
                 np.asarray(theta[param], dtype=float).reshape(-1)
@@ -422,7 +422,7 @@ class MCMC:
             ]
         )
 
-    def _log_posterior(self, theta: Dict[str, float], data: Any) -> float:
+    def _log_posterior(self, theta: dict[str, float], data: Any) -> float:
         """Compute log posterior for a set of parameters."""
         try:
             return float(self.model.log_posterior(theta, data))

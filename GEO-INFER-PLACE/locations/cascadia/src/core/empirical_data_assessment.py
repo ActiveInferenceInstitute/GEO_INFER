@@ -134,7 +134,7 @@ class EmpiricalDataAssessor:
     def assess_json_file(self, file_path: Path):
         """Assess JSON file quality and content."""
         try:
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 data = json.load(f)
 
             logger.info("      📊 JSON loaded successfully")

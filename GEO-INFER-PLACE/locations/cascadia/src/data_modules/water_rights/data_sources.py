@@ -9,12 +9,9 @@ import os
 import logging
 import pandas as pd
 import geopandas as gpd
-import numpy as np
 import requests
-from shapely.geometry import Point, box
-from typing import Dict, Tuple
+from shapely.geometry import Point
 import json
-from datetime import datetime
 
 try:
     from geo_infer_space.utils.h3_utils import (
@@ -97,7 +94,7 @@ class CascadianWaterRightsDataSources:
         return gpd.GeoDataFrame()
 
     def _query_osm_overpass_wells(
-        self, bbox: Tuple[float, float, float, float]
+        self, bbox: tuple[float, float, float, float]
     ) -> gpd.GeoDataFrame:
         """Query OSM Overpass for wells and dams as water rights proxies."""
         min_lon, min_lat, max_lon, max_lat = bbox
@@ -127,7 +124,7 @@ class CascadianWaterRightsDataSources:
             nodes = {e["id"]: (e["lon"], e["lat"]) for e in elements if e["type"] == "node"}
             features = []
 
-            from shapely.geometry import LineString, Polygon
+            from shapely.geometry import LineString
 
             for element in elements:
                 coords = None
@@ -187,7 +184,7 @@ class CascadianWaterRightsDataSources:
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to download CA water rights from primary URL: {e}")
 
-    def _fetch_ca_data(self, bbox: Tuple[float, float, float, float]) -> gpd.GeoDataFrame:
+    def _fetch_ca_data(self, bbox: tuple[float, float, float, float]) -> gpd.GeoDataFrame:
         """Fetches CA water rights data, preferring ArcGIS then CSV."""
         # Try ArcGIS first
         if self.ca_service_url:
@@ -202,7 +199,7 @@ class CascadianWaterRightsDataSources:
         # unless user explicitly wants the huge CSV.
         return gpd.GeoDataFrame()
 
-    def _fetch_or_data(self, bbox: Tuple[float, float, float, float]) -> gpd.GeoDataFrame:
+    def _fetch_or_data(self, bbox: tuple[float, float, float, float]) -> gpd.GeoDataFrame:
         """Fetches Oregon water rights data (Points of Diversion) from the OWRD ArcGIS service."""
         if not self.or_url:
             return gpd.GeoDataFrame()
@@ -222,7 +219,7 @@ class CascadianWaterRightsDataSources:
         or_gdf["state"] = "OR"
         return or_gdf
 
-    def _fetch_wa_data(self, bbox: Tuple[float, float, float, float]) -> gpd.GeoDataFrame:
+    def _fetch_wa_data(self, bbox: tuple[float, float, float, float]) -> gpd.GeoDataFrame:
         """WA data not available via easy API, relying on OSM fallback only."""
         return gpd.GeoDataFrame()
 

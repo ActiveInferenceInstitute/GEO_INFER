@@ -6,7 +6,7 @@ including analysis parameters, indexing settings, API configuration,
 and database connections.
 """
 
-from typing import Dict, List, Any, Optional, Union
+from typing import Any
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -101,8 +101,8 @@ class AnalysisConfig(BaseModel):
 
     # Performance settings
     parallel_processing: bool = Field(True, description="Enable parallel processing")
-    max_workers: Optional[int] = Field(None, description="Maximum worker threads")
-    memory_limit_gb: Optional[float] = Field(None, description="Memory limit in GB")
+    max_workers: int | None = Field(None, description="Maximum worker threads")
+    memory_limit_gb: float | None = Field(None, description="Memory limit in GB")
 
     @field_validator("buffer_resolution")
     def validate_buffer_resolution(cls, v: int) -> int:
@@ -140,13 +140,13 @@ class APIConfig(BaseModel):
     reload: bool = Field(False, description="Enable auto-reload in development")
 
     # CORS settings
-    cors_origins: List[str] = Field(
+    cors_origins: list[str] = Field(
         default_factory=lambda: ["*"], description="Allowed CORS origins"
     )
-    cors_methods: List[str] = Field(
+    cors_methods: list[str] = Field(
         default_factory=lambda: ["*"], description="Allowed CORS methods"
     )
-    cors_headers: List[str] = Field(
+    cors_headers: list[str] = Field(
         default_factory=lambda: ["*"], description="Allowed CORS headers"
     )
 
@@ -156,7 +156,7 @@ class APIConfig(BaseModel):
 
     # Authentication
     auth_enabled: bool = Field(False, description="Enable authentication")
-    jwt_secret: Optional[str] = Field(None, description="JWT secret key")
+    jwt_secret: str | None = Field(None, description="JWT secret key")
     jwt_algorithm: str = Field("HS256", description="JWT algorithm")
     jwt_expiration_hours: int = Field(24, description="JWT expiration time in hours")
 
@@ -192,7 +192,7 @@ class LoggingConfig(BaseModel):
         description="Log message format",
     )
     file_enabled: bool = Field(True, description="Enable file logging")
-    file_path: Optional[Path] = Field(None, description="Log file path")
+    file_path: Path | None = Field(None, description="Log file path")
     file_max_size_mb: int = Field(10, description="Maximum log file size in MB")
     file_backup_count: int = Field(5, description="Number of backup log files")
     console_enabled: bool = Field(True, description="Enable console logging")
@@ -223,7 +223,7 @@ class CacheConfig(BaseModel):
     redis_host: str = Field("localhost", description="Redis host")
     redis_port: int = Field(6379, description="Redis port")
     redis_db: int = Field(0, description="Redis database number")
-    redis_password: Optional[str] = Field(None, description="Redis password")
+    redis_password: str | None = Field(None, description="Redis password")
 
     @field_validator("backend")
     def validate_backend(cls, v: str) -> str:
@@ -251,9 +251,7 @@ class SpaceConfig(BaseModel):
     )
 
     # Component configurations
-    database: Optional[DatabaseConfig] = Field(
-        None, description="Database configuration"
-    )
+    database: DatabaseConfig | None = Field(None, description="Database configuration")
     indexing: IndexingConfig = Field(
         default_factory=IndexingConfig,  # type: ignore[arg-type]
         description="Indexing configuration",
@@ -275,7 +273,7 @@ class SpaceConfig(BaseModel):
         description="Cache configuration",
     )
     # Custom settings
-    custom: Dict[str, Any] = Field(
+    custom: dict[str, Any] = Field(
         default_factory=dict, description="Custom configuration parameters"
     )
 
@@ -300,7 +298,7 @@ class SpaceConfig(BaseModel):
         return self
 
     @classmethod
-    def from_file(cls, config_path: Union[str, Path]) -> "SpaceConfig":
+    def from_file(cls, config_path: str | Path) -> "SpaceConfig":
         """Load configuration from YAML or JSON file."""
         import yaml
         import json
@@ -310,7 +308,7 @@ class SpaceConfig(BaseModel):
         if not config_path.exists():
             raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             if config_path.suffix.lower() in [".yaml", ".yml"]:
                 config_data = yaml.safe_load(f)
             elif config_path.suffix.lower() == ".json":
@@ -322,7 +320,7 @@ class SpaceConfig(BaseModel):
 
         return cls(**config_data)
 
-    def to_file(self, config_path: Union[str, Path], format: str = "yaml") -> None:
+    def to_file(self, config_path: str | Path, format: str = "yaml") -> None:
         """Save configuration to file."""
         import yaml
         import json
@@ -356,11 +354,11 @@ class PerformanceConfig(BaseModel):
     """Configuration for performance optimization."""
 
     # Memory management
-    memory_limit_gb: Optional[float] = Field(None, description="Memory limit in GB")
+    memory_limit_gb: float | None = Field(None, description="Memory limit in GB")
     gc_threshold: int = Field(1000, description="Garbage collection threshold")
 
     # Parallel processing
-    max_workers: Optional[int] = Field(None, description="Maximum worker threads")
+    max_workers: int | None = Field(None, description="Maximum worker threads")
     chunk_size: int = Field(1000, description="Processing chunk size")
     use_multiprocessing: bool = Field(True, description="Enable multiprocessing")
 

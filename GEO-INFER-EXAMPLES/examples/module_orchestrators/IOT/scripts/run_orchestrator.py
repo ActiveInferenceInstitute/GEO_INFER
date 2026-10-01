@@ -14,7 +14,7 @@ from __future__ import annotations
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 
@@ -25,7 +25,7 @@ if str(_ORCHESTRATORS_DIR) not in sys.path:
 from _lib import run_module_orchestrator  # noqa: E402
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     from geo_infer_iot import QualityController, SensorRegistry, SpatialDataFusion
 
     rng = np.random.default_rng(42)
@@ -68,7 +68,7 @@ def _operation() -> Dict[str, Any]:
     # Synthetic telemetry stream: 15-minute samples over 2 hours from each
     # temperature station, plus one stuck-sensor spike that QC must flag.
     now = datetime.now()
-    measurements: List[Dict[str, Any]] = []
+    measurements: list[dict[str, Any]] = []
     for step in range(8):
         timestamp = now - timedelta(minutes=15 * (8 - step))
         for sensor_id, latitude, longitude in station_locations:

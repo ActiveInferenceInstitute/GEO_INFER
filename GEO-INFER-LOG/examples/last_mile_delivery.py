@@ -13,8 +13,6 @@ from geo_infer_log import (
     FleetManager,
     MultiObjectiveOptimizer,
     RealTimeTracker,
-    RouteOptimizer,
-    RoutingParameters,
     TravelTimeEstimator,
     Vehicle,
     VehicleRouter,

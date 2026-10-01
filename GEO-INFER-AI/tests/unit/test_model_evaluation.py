@@ -2,8 +2,6 @@
 Unit tests for model evaluation functionality.
 """
 
-from typing import List
-
 import numpy as np
 import pytest
 from sklearn.ensemble import RandomForestRegressor
@@ -136,7 +134,7 @@ class TestGeospatialModelEvaluator:
         )
         y = np.repeat([0.0, 100.0, 200.0], 10) + np.random.uniform(0, 5, size=30)
 
-        folds: List[List[int]] = []
+        folds: list[list[int]] = []
 
         class SpyModel:
             """Echoes the test rows back so folds can be attributed."""

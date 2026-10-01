@@ -6,10 +6,8 @@ This module provides utilities for managing Python paths and imports
 across the GEO-INFER framework modules.
 """
 
-import os
 import sys
 from pathlib import Path
-from typing import List, Optional, Dict
 import logging
 import importlib
 
@@ -19,7 +17,7 @@ logger = logging.getLogger(__name__)
 class GEOINFERPathManager:
     """Manages Python paths for GEO-INFER framework modules."""
 
-    def __init__(self, framework_root: Optional[Path] = None):
+    def __init__(self, framework_root: Path | None = None):
         """
         Initialize the path manager.
 
@@ -63,7 +61,7 @@ class GEOINFERPathManager:
         logger.warning("Could not auto-detect framework root, using current directory")
         return current
 
-    def _discover_module_paths(self) -> Dict[str, Path]:
+    def _discover_module_paths(self) -> dict[str, Path]:
         """Discover all GEO-INFER module paths for development."""
         module_paths = {}
 
@@ -80,7 +78,7 @@ class GEOINFERPathManager:
 
         return module_paths
 
-    def _discover_installed_modules(self) -> Dict[str, str]:
+    def _discover_installed_modules(self) -> dict[str, str]:
         """Discover installed GEO-INFER modules."""
         installed_modules = {}
 
@@ -114,7 +112,7 @@ class GEOINFERPathManager:
 
         return installed_modules
 
-    def add_module_paths(self, modules: Optional[List[str]] = None) -> List[str]:
+    def add_module_paths(self, modules: list[str] | None = None) -> list[str]:
         """
         Add module paths to sys.path.
 
@@ -138,15 +136,15 @@ class GEOINFERPathManager:
 
         return added_paths
 
-    def add_all_paths(self) -> List[str]:
+    def add_all_paths(self) -> list[str]:
         """Add all discovered module paths to sys.path."""
         return self.add_module_paths()
 
-    def get_module_path(self, module_name: str) -> Optional[Path]:
+    def get_module_path(self, module_name: str) -> Path | None:
         """Get the path for a specific module."""
         return self.module_paths.get(module_name)
 
-    def list_available_modules(self) -> List[str]:
+    def list_available_modules(self) -> list[str]:
         """List all available modules (both installed and development)."""
         all_modules = set(self.module_paths.keys())
         all_modules.update(self.installed_modules.keys())
@@ -162,7 +160,7 @@ class GEOINFERPathManager:
 
     def import_module(
         self, module_name: str, ensure_path: bool = True
-    ) -> Optional[object]:
+    ) -> object | None:
         """
         Import a module, ensuring its path is available.
 
@@ -233,17 +231,17 @@ def get_path_manager() -> GEOINFERPathManager:
     return _path_manager
 
 
-def add_module_paths(modules: Optional[List[str]] = None) -> List[str]:
+def add_module_paths(modules: list[str] | None = None) -> list[str]:
     """Convenience function to add module paths."""
     return get_path_manager().add_module_paths(modules)
 
 
-def add_all_paths() -> List[str]:
+def add_all_paths() -> list[str]:
     """Convenience function to add all module paths."""
     return get_path_manager().add_all_paths()
 
 
-def import_module(module_name: str) -> Optional[object]:
+def import_module(module_name: str) -> object | None:
     """Convenience function to import a module."""
     return get_path_manager().import_module(module_name)
 
@@ -253,7 +251,7 @@ def import_from_module(module_name: str, item_name: str):
     return get_path_manager().import_from_module(module_name, item_name)
 
 
-def list_available_modules() -> List[str]:
+def list_available_modules() -> list[str]:
     """Convenience function to list available modules."""
     return get_path_manager().list_available_modules()
 

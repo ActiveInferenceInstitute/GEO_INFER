@@ -7,7 +7,7 @@ This module provides FastAPI endpoints for route optimization functionality.
 from functools import lru_cache
 
 from fastapi import APIRouter, HTTPException, Depends
-from typing import Any, List, Dict, Optional, Tuple
+from typing import Any
 from pydantic import ConfigDict, Field
 from geo_infer_log.models.base import BaseModel
 
@@ -25,15 +25,15 @@ router = APIRouter(
 class RouteRequest(BaseModel):
     """Request model for route optimization."""
 
-    origin: Tuple[float, float] = Field(..., description="(lon, lat) of origin")
-    destination: Tuple[float, float] = Field(
+    origin: tuple[float, float] = Field(..., description="(lon, lat) of origin")
+    destination: tuple[float, float] = Field(
         ..., description="(lon, lat) of destination"
     )
-    waypoints: Optional[List[Tuple[float, float]]] = Field(
+    waypoints: list[tuple[float, float]] | None = Field(
         default=None, description="List of (lon, lat) waypoints"
     )
-    parameters: Optional[RoutingParameters] = None
-    vehicle_id: Optional[str] = None
+    parameters: RoutingParameters | None = None
+    vehicle_id: str | None = None
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -85,9 +85,9 @@ class VRPRequest(BaseModel):
     """Request model for vehicle routing problem."""
 
     depot: Location
-    deliveries: List[Location]
-    vehicles: List[Vehicle]
-    constraints: Dict = Field(default_factory=dict)
+    deliveries: list[Location]
+    vehicles: list[Vehicle]
+    constraints: dict = Field(default_factory=dict)
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -149,10 +149,10 @@ def get_vehicle_router() -> VehicleRouter:
     return VehicleRouter(get_fleet_manager())
 
 
-@router.post("/optimize", response_model=Dict)
+@router.post("/optimize", response_model=dict)
 async def optimize_route(
     request: RouteRequest, optimizer: RouteOptimizer = Depends(get_route_optimizer)
-) -> Dict:
+) -> dict:
     """Optimize a route between origin and destination."""
     try:
         # Apply parameters if provided
@@ -171,11 +171,11 @@ async def optimize_route(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/vehicles", response_model=Dict)
+@router.post("/vehicles", response_model=dict)
 async def register_vehicle(
     registration: VehicleRegistration,
     fleet_manager: FleetManager = Depends(get_fleet_manager),
-) -> Dict:
+) -> dict:
     """Register a vehicle with the fleet manager."""
     try:
         fleet_manager.add_vehicle(registration.vehicle)
@@ -187,10 +187,10 @@ async def register_vehicle(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/vrp", response_model=Dict)
+@router.post("/vrp", response_model=dict)
 async def solve_vrp(
     request: VRPRequest, router: VehicleRouter = Depends(get_vehicle_router)
-) -> Dict:
+) -> dict:
     """Solve a vehicle routing problem."""
     try:
         # Register vehicles with fleet manager
@@ -209,10 +209,10 @@ async def solve_vrp(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/vehicles", response_model=List[Vehicle])
+@router.get("/vehicles", response_model=list[Vehicle])
 async def get_vehicles(
     fleet_manager: FleetManager = Depends(get_fleet_manager),
-) -> List[Any]:
+) -> list[Any]:
     """Get all registered vehicles."""
     try:
         return list(fleet_manager.vehicles.values())

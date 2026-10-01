@@ -237,7 +237,7 @@ class TestWebSocketConnector:
                     # test guards against) the server transport never
                     # closes; bound the wait so the real failure surfaces.
                     await asyncio.wait_for(server.wait_closed(), timeout=5)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     pass
 
         asyncio.run(main())

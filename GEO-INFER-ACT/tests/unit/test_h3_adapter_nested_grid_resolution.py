@@ -11,7 +11,8 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Iterator, List, Optional
+from typing import Any
+from collections.abc import Iterator
 
 import pytest
 
@@ -32,7 +33,7 @@ def _purge_space_modules(restore: dict) -> None:
 @pytest.fixture()
 def isolated_space_imports(
     monkeypatch: pytest.MonkeyPatch,
-) -> Iterator[List[str]]:
+) -> Iterator[list[str]]:
     """Freeze ``sys.path`` and the ``geo_infer_space`` module cache."""
     saved_modules = {
         name: module
@@ -56,7 +57,7 @@ def _block_space_import(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_default_resolution_works_from_empty_cwd(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    isolated_space_imports: List[str],
+    isolated_space_imports: list[str],
 ) -> None:
     """Default resolution returns the packaged NestedH3Grid with no cwd help."""
     monkeypatch.chdir(tmp_path)
@@ -73,7 +74,7 @@ def test_default_resolution_works_from_empty_cwd(
 def test_no_silent_repo_fallback_without_opt_in(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    isolated_space_imports: List[str],
+    isolated_space_imports: list[str],
 ) -> None:
     """Without the opt-in flag a missing package raises, sys.path untouched."""
     monkeypatch.chdir(tmp_path)
@@ -90,7 +91,7 @@ def test_no_silent_repo_fallback_without_opt_in(
 def test_fallback_requires_explicit_repo_root(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    isolated_space_imports: List[str],
+    isolated_space_imports: list[str],
 ) -> None:
     """Opt-in without an explicit checkout root is rejected, not climbed."""
     monkeypatch.chdir(tmp_path)
@@ -107,7 +108,7 @@ def test_fallback_requires_explicit_repo_root(
 def test_fallback_honors_explicit_repo_root(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    isolated_space_imports: List[str],
+    isolated_space_imports: list[str],
 ) -> None:
     """With flag plus explicit root, the sibling checkout is used verbatim."""
     monkeypatch.chdir(tmp_path)
@@ -135,8 +136,8 @@ def test_fallback_honors_explicit_repo_root(
         def find_spec(
             self,
             fullname: str,
-            path: Optional[Any] = None,
-            target: Optional[Any] = None,
+            path: Any | None = None,
+            target: Any | None = None,
         ) -> None:
             if self.armed and (
                 fullname == "geo_infer_space" or fullname.startswith("geo_infer_space.")

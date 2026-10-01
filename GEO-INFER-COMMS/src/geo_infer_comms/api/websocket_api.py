@@ -10,8 +10,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Dict, Optional, Any, Set, cast
-from datetime import datetime, timezone
+from typing import Any, cast
+from datetime import datetime, UTC
 
 import websockets
 from websockets.asyncio.server import ServerConnection
@@ -39,13 +39,13 @@ class WebSocketManager:
 
     def __init__(self, system: GeospatialCommunicationSystem):
         self.system = system
-        self.connections: Dict[str, WebSocketConnection] = {}
-        self.subscriptions: Dict[str, Set[str]] = {}  # message_type -> connection_ids
+        self.connections: dict[str, WebSocketConnection] = {}
+        self.subscriptions: dict[str, set[str]] = {}  # message_type -> connection_ids
 
         self.logger = logging.getLogger(__name__)
         # Event loop of the running WebSocket server; captured at
         # start_server so broker/worker threads can hand off broadcasts.
-        self.server_loop: Optional[asyncio.AbstractEventLoop] = None
+        self.server_loop: asyncio.AbstractEventLoop | None = None
         self.broadcasts_sent = 0
 
     async def handle_connection(self, websocket: ServerConnection) -> None:
@@ -66,7 +66,7 @@ class WebSocketManager:
                 {
                     "type": "connection_established",
                     "connection_id": connection_id,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
             )
 
@@ -88,7 +88,7 @@ class WebSocketManager:
             for message_type, connection_ids in self.subscriptions.items():
                 connection_ids.discard(connection_id)
 
-    def broadcast_message(self, message: Dict[str, Any]) -> None:
+    def broadcast_message(self, message: dict[str, Any]) -> None:
         """Broadcast a message to all connected clients.
 
         Safe to call from both async contexts and plain threads (e.g. a
@@ -124,7 +124,7 @@ class WebSocketManager:
         except RuntimeError:
             self.server_loop = None
 
-    async def _broadcast_to_all(self, message: Dict[str, Any]) -> None:
+    async def _broadcast_to_all(self, message: dict[str, Any]) -> None:
         """Broadcast message to all connections."""
         disconnected = []
 
@@ -145,7 +145,7 @@ class WebSocketManager:
         """Get the number of active connections."""
         return len(self.connections)
 
-    def get_connection_stats(self) -> Dict[str, Any]:
+    def get_connection_stats(self) -> dict[str, Any]:
         """Get WebSocket connection statistics."""
         return {
             "active_connections": len(self.connections),
@@ -168,10 +168,10 @@ class WebSocketConnection:
         self.websocket = websocket
         self.manager = manager
 
-        self.geospatial_context: Optional[GeospatialMetadata] = None
-        self.subscriptions: Set[str] = set()
+        self.geospatial_context: GeospatialMetadata | None = None
+        self.subscriptions: set[str] = set()
         self.authenticated = False
-        self.user_id: Optional[str] = None
+        self.user_id: str | None = None
 
         self.logger = logging.getLogger(__name__)
 
@@ -220,7 +220,7 @@ class WebSocketConnection:
             self.logger.error(f"Error processing message: {e}")
             await self.send_error(f"Processing error: {str(e)}")
 
-    async def _handle_authentication(self, data: Dict[str, Any]) -> None:
+    async def _handle_authentication(self, data: dict[str, Any]) -> None:
         """Handle authentication message.
 
         When ``COMMS_JWT_SECRET`` is configured and PyJWT is installed, the
@@ -239,7 +239,7 @@ class WebSocketConnection:
         import os
 
         secret = os.environ.get("COMMS_JWT_SECRET", "")
-        user_id: Optional[str] = None
+        user_id: str | None = None
 
         if secret:
             try:
@@ -279,7 +279,7 @@ class WebSocketConnection:
             {
                 "type": "authenticated",
                 "user_id": self.user_id,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         )
 
@@ -287,7 +287,7 @@ class WebSocketConnection:
             f"WebSocket authenticated: {self.connection_id} as {self.user_id}"
         )
 
-    async def _handle_subscription(self, data: Dict[str, Any]) -> None:
+    async def _handle_subscription(self, data: dict[str, Any]) -> None:
         """Handle subscription message."""
         if not self.authenticated:
             await self.send_error("Authentication required")
@@ -310,13 +310,13 @@ class WebSocketConnection:
             {
                 "type": "subscribed",
                 "event_types": list(self.subscriptions),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         )
 
         self.logger.info(f"WebSocket subscribed: {self.connection_id} to {event_types}")
 
-    async def _handle_unsubscription(self, data: Dict[str, Any]) -> None:
+    async def _handle_unsubscription(self, data: dict[str, Any]) -> None:
         """Handle unsubscription message."""
         event_types = data.get("event_types", list(self.subscriptions))
 
@@ -332,11 +332,11 @@ class WebSocketConnection:
                 "type": "unsubscribed",
                 "event_types": event_types,
                 "remaining_subscriptions": list(self.subscriptions),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         )
 
-    async def _handle_location_update(self, data: Dict[str, Any]) -> None:
+    async def _handle_location_update(self, data: dict[str, Any]) -> None:
         """Handle location update message."""
         location_data = data.get("location", {})
         longitude = location_data.get("longitude")
@@ -363,14 +363,14 @@ class WebSocketConnection:
                         "latitude": latitude,
                         "accuracy": self.geospatial_context.accuracy,
                     },
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
             )
 
         except Exception as e:
             await self.send_error(f"Invalid location data: {str(e)}")
 
-    async def _handle_send_message(self, data: Dict[str, Any]) -> None:
+    async def _handle_send_message(self, data: dict[str, Any]) -> None:
         """Handle send message request."""
         if not self.authenticated:
             await self.send_error("Authentication required")
@@ -395,20 +395,20 @@ class WebSocketConnection:
                 {
                     "type": "message_sent",
                     "message_id": message.message_id,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
             )
 
         except Exception as e:
             await self.send_error(f"Failed to send message: {str(e)}")
 
-    async def _handle_ping(self, data: Dict[str, Any]) -> None:
+    async def _handle_ping(self, data: dict[str, Any]) -> None:
         """Handle ping message."""
         await self.send_message(
-            {"type": "pong", "timestamp": datetime.now(timezone.utc).isoformat()}
+            {"type": "pong", "timestamp": datetime.now(UTC).isoformat()}
         )
 
-    async def send_message(self, message: Dict[str, Any]) -> None:
+    async def send_message(self, message: dict[str, Any]) -> None:
         """Send a message to this WebSocket connection."""
         try:
             message_json = json.dumps(message)
@@ -423,7 +423,7 @@ class WebSocketConnection:
             {
                 "type": "error",
                 "message": error_message,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         )
 
@@ -449,7 +449,7 @@ class WebSocketServer:
         self.max_connections = max_connections
 
         self.websocket_manager = WebSocketManager(system)
-        self.server: Optional[Any] = None
+        self.server: Any | None = None
 
         self.logger = logging.getLogger(__name__)
 
@@ -478,7 +478,7 @@ class WebSocketServer:
             await self.server.wait_closed()
             self.logger.info("WebSocket server stopped")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get WebSocket server statistics."""
         return {
             "connections": self.websocket_manager.get_connection_count(),
@@ -487,13 +487,13 @@ class WebSocketServer:
             "port": self.port,
         }
 
-    def broadcast_system_message(self, message: Dict[str, Any]) -> None:
+    def broadcast_system_message(self, message: dict[str, Any]) -> None:
         """Broadcast a system message to all connected clients."""
         self.websocket_manager.broadcast_message(
             {
                 "type": "system_message",
                 **message,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         )
 
@@ -508,12 +508,12 @@ class GeospatialWebSocketHandler:
 
     def __init__(self, websocket_manager: WebSocketManager):
         self.websocket_manager = websocket_manager
-        self.spatial_filters: Dict[str, Dict[str, Any]] = {}
+        self.spatial_filters: dict[str, dict[str, Any]] = {}
 
         self.logger = logging.getLogger(__name__)
 
     def add_spatial_filter(
-        self, connection_id: str, filter_config: Dict[str, Any]
+        self, connection_id: str, filter_config: dict[str, Any]
     ) -> None:
         """Add a spatial filter for a WebSocket connection."""
         self.spatial_filters[connection_id] = filter_config
@@ -562,7 +562,7 @@ class GeospatialWebSocketHandler:
 
         return True
 
-    def _point_in_bounds(self, point: GeospatialPoint, bounds: Dict[str, Any]) -> bool:
+    def _point_in_bounds(self, point: GeospatialPoint, bounds: dict[str, Any]) -> bool:
         """Check if point is within bounds."""
         min_lon = bounds.get("min_longitude", -180)
         max_lon = bounds.get("max_longitude", 180)
@@ -638,7 +638,7 @@ class RealTimeMessageBroadcaster:
 
         return True
 
-    def _format_message_for_websocket(self, message: MessageResponse) -> Dict[str, Any]:
+    def _format_message_for_websocket(self, message: MessageResponse) -> dict[str, Any]:
         """Format a message for WebSocket transmission."""
 
         def _enum_value(field: Any) -> Any:
@@ -646,7 +646,7 @@ class RealTimeMessageBroadcaster:
             (models configured with ``use_enum_values=True`` store str)."""
             return field.value if hasattr(field, "value") else field
 
-        formatted: Dict[str, Any] = {
+        formatted: dict[str, Any] = {
             "type": "message",
             "message_id": message.message_id,
             "content": message.content,
@@ -757,7 +757,7 @@ class WebSocketAPIManager:
 
     def _broadcast_notification(self, notification: NotificationResponse) -> None:
         """Broadcast a notification to WebSocket connections."""
-        notification_message: Dict[str, Any] = {
+        notification_message: dict[str, Any] = {
             "type": "notification",
             "notification_id": notification.notification_id,
             "title": notification.title,
@@ -780,7 +780,7 @@ class WebSocketAPIManager:
         """Stop the WebSocket API server."""
         await self.websocket_server.stop_server()
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get comprehensive WebSocket API statistics."""
         return {
             "websocket_server": self.websocket_server.get_stats(),

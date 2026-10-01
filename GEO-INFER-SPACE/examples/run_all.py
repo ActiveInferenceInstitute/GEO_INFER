@@ -16,7 +16,7 @@ import traceback
 import importlib.util
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Any
 
 # Add src to path for imports
 EXAMPLES_DIR = Path(__file__).parent
@@ -76,10 +76,10 @@ class ExampleRunner:
 
     def __init__(self, quick_mode: bool = False):
         self.quick_mode = quick_mode
-        self.results: List[Dict[str, Any]] = []
+        self.results: list[dict[str, Any]] = []
         self.start_time = datetime.now()
 
-    def run_example(self, example: Dict[str, Any]) -> Dict[str, Any]:
+    def run_example(self, example: dict[str, Any]) -> dict[str, Any]:
         """Run a single example and capture results."""
         result = {
             "name": example["name"],
@@ -133,7 +133,7 @@ class ExampleRunner:
         result["duration_seconds"] = time.time() - start
         return result
 
-    def run_all(self) -> Dict[str, Any]:
+    def run_all(self) -> dict[str, Any]:
         """Run all configured examples."""
         print("\n" + "=" * 70)
         print("🎯 GEO-INFER-SPACE Examples Runner")
@@ -155,7 +155,7 @@ class ExampleRunner:
 
         return self.generate_summary()
 
-    def generate_summary(self) -> Dict[str, Any]:
+    def generate_summary(self) -> dict[str, Any]:
         """Generate execution summary."""
         total_time = (datetime.now() - self.start_time).total_seconds()
 

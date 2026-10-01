@@ -9,7 +9,7 @@ References:
 """
 
 import numpy as np
-from typing import Optional, Dict, Any, cast
+from typing import Any, cast
 import logging
 
 logger = logging.getLogger(__name__)
@@ -35,10 +35,10 @@ class BeliefUpdating:
         self,
         current_beliefs: np.ndarray,
         new_observations: np.ndarray,
-        likelihood: Optional[np.ndarray] = None,
+        likelihood: np.ndarray | None = None,
         precision: float = 1.0,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Update beliefs given new observations.
 
         Performs Bayesian belief updating:

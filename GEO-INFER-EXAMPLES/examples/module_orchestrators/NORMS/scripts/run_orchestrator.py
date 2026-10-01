@@ -13,7 +13,7 @@ from __future__ import annotations
 import datetime
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 _ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
 if str(_ORCHESTRATORS_DIR) not in sys.path:
@@ -22,7 +22,7 @@ if str(_ORCHESTRATORS_DIR) not in sys.path:
 from _lib import run_module_orchestrator  # noqa: E402
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     from geo_infer_norms.core.compliance_tracking import (
         ComplianceReport,
         ComplianceTracker,
@@ -55,7 +55,7 @@ def _operation() -> Dict[str, Any]:
         ],
     ]
 
-    statuses: List[ComplianceStatus] = []
+    statuses: list[ComplianceStatus] = []
     for period_index, (timestamp, rows) in enumerate(zip((base, later), outcomes)):
         for entity_slot, (compliant, level) in enumerate(rows):
             entity_id = entity_ids[entity_slot]

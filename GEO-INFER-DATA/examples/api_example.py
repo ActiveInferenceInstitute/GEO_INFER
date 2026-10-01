@@ -18,15 +18,9 @@ import logging
 import requests
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 from geo_infer_data.api.rest_api import DataAPI
-from geo_infer_data.models.schemas import (
-    DatasetMetadata,
-    SpatialExtent,
-    TemporalExtent,
-    DataLineage,
-)
 
 
 # Configure logging
@@ -42,31 +36,31 @@ class DataAPIClient:
     def __init__(self, base_url: str = "http://localhost:8001/v1"):
         self.base_url = base_url
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Check API health."""
         response = requests.get(f"{self.base_url}/health")
         response.raise_for_status()
         return response.json()
 
-    def list_datasets(self, **filters) -> Dict[str, Any]:
+    def list_datasets(self, **filters) -> dict[str, Any]:
         """List available datasets."""
         response = requests.get(f"{self.base_url}/datasets", params=filters)
         response.raise_for_status()
         return response.json()
 
-    def get_dataset(self, dataset_id: str) -> Dict[str, Any]:
+    def get_dataset(self, dataset_id: str) -> dict[str, Any]:
         """Get dataset information."""
         response = requests.get(f"{self.base_url}/datasets/{dataset_id}")
         response.raise_for_status()
         return response.json()
 
-    def create_dataset(self, dataset_data: Dict[str, Any]) -> Dict[str, Any]:
+    def create_dataset(self, dataset_data: dict[str, Any]) -> dict[str, Any]:
         """Create a new dataset."""
         response = requests.post(f"{self.base_url}/datasets", json=dataset_data)
         response.raise_for_status()
         return response.json()
 
-    def get_dataset_data(self, dataset_id: str, **params) -> Dict[str, Any]:
+    def get_dataset_data(self, dataset_id: str, **params) -> dict[str, Any]:
         """Get dataset data."""
         response = requests.get(
             f"{self.base_url}/datasets/{dataset_id}/data", params=params
@@ -74,25 +68,25 @@ class DataAPIClient:
         response.raise_for_status()
         return response.json()
 
-    def search_datasets(self, **search_params) -> Dict[str, Any]:
+    def search_datasets(self, **search_params) -> dict[str, Any]:
         """Search datasets."""
         response = requests.get(f"{self.base_url}/search", params=search_params)
         response.raise_for_status()
         return response.json()
 
-    def ingest_multi_source(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def ingest_multi_source(self, data: dict[str, Any]) -> dict[str, Any]:
         """Ingest data from multiple sources."""
         response = requests.post(f"{self.base_url}/data/ingest/multi-source", json=data)
         response.raise_for_status()
         return response.json()
 
-    def get_storage_backends(self) -> Dict[str, Any]:
+    def get_storage_backends(self) -> dict[str, Any]:
         """Get storage backend information."""
         response = requests.get(f"{self.base_url}/storage/backends")
         response.raise_for_status()
         return response.json()
 
-    def get_api_metrics(self) -> Dict[str, Any]:
+    def get_api_metrics(self) -> dict[str, Any]:
         """Get API performance metrics."""
         response = requests.get(f"{self.base_url}/metrics")
         response.raise_for_status()

@@ -4,7 +4,7 @@ ProceduralArt module for creating procedural and algorithmic art from geospatial
 
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -58,8 +58,8 @@ class ProceduralArt:
     def __init__(
         self,
         algorithm: str = "noise_field",
-        params: Optional[Dict] = None,
-        resolution: Tuple[int, int] = (800, 800),
+        params: dict | None = None,
+        resolution: tuple[int, int] = (800, 800),
     ):
         """
         Initialize a ProceduralArt object.
@@ -86,10 +86,10 @@ class ProceduralArt:
             raise ValueError("Resolution must be a positive (width, height) tuple.")
 
         self.algorithm = algorithm
-        self.params: Dict[str, Any] = params or {}
-        self.resolution: Tuple[int, int] = resolution
-        self.image: Optional[Image.Image] = None
-        self._figure: Optional[Figure] = None
+        self.params: dict[str, Any] = params or {}
+        self.resolution: tuple[int, int] = resolution
+        self.image: Image.Image | None = None
+        self._figure: Figure | None = None
 
     @classmethod
     def from_geo_coordinates(
@@ -97,7 +97,7 @@ class ProceduralArt:
         lat: float,
         lon: float,
         algorithm: str = "noise_field",
-        additional_params: Optional[Dict] = None,
+        additional_params: dict | None = None,
     ) -> "ProceduralArt":
         """
         Create procedural art seeded by geographic coordinates.
@@ -153,7 +153,7 @@ class ProceduralArt:
         feature_type: str,
         feature_count: int,
         algorithm: str = "l_system",
-        additional_params: Optional[Dict] = None,
+        additional_params: dict | None = None,
     ) -> "ProceduralArt":
         """
         Create procedural art based on geographic feature statistics.
@@ -1814,9 +1814,9 @@ class ProceduralArt:
             points = np.array([[0, 0], [width, 0], [width // 2, height]])
 
             # Generate triangle points
-            triangle_points: List[Any] = [points]
+            triangle_points: list[Any] = [points]
             for _ in range(iterations):
-                new_points: List[Any] = []
+                new_points: list[Any] = []
                 for triangle in triangle_points:
                     # Calculate midpoints
                     p1, p2, p3 = triangle

@@ -14,8 +14,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import os
-import sys
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -43,7 +41,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 
-def create_app(output_dir: Path) -> "fastapi.FastAPI":
+def create_app(output_dir: Path) -> fastapi.FastAPI:
     """Build the FastAPI application."""
     app = FastAPI(
         title="Cascadia Bioregion Analysis API",

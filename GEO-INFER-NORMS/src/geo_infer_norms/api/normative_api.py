@@ -5,7 +5,7 @@ This module provides API endpoints for working with the normative inference syst
 to analyze, model, and predict the diffusion of social norms across geographies.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 import datetime
 import csv
 import json
@@ -38,23 +38,23 @@ class SocialNormCreate(BaseModel):
     """Request model for creating a social norm"""
 
     name: str = Field(..., description="Name of the social norm")
-    description: Optional[str] = Field(None, description="Description of the norm")
+    description: str | None = Field(None, description="Description of the norm")
     category: str = Field(
         ..., description="Category of norm (e.g., environmental, health, etc.)"
     )
     strength: float = Field(
         ..., ge=0.0, le=1.0, description="Initial strength of the norm (0.0 to 1.0)"
     )
-    jurisdiction_ids: List[str] = Field(
+    jurisdiction_ids: list[str] = Field(
         ..., description="IDs of jurisdictions where this norm applies"
     )
-    factors: Optional[Dict[str, float]] = Field(
+    factors: dict[str, float] | None = Field(
         None, description="Factors that influence norm strength"
     )
-    related_policies: Optional[List[str]] = Field(
+    related_policies: list[str] | None = Field(
         None, description="IDs of related policies"
     )
-    tags: Optional[List[str]] = Field(None, description="Tags for the norm")
+    tags: list[str] | None = Field(None, description="Tags for the norm")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -81,13 +81,11 @@ class NormDiffusionRequest(BaseModel):
 
     norm_id: str = Field(..., description="ID of the norm to simulate")
     time_steps: int = Field(..., gt=0, description="Number of time steps to simulate")
-    initial_conditions: Optional[Dict[str, Any]] = Field(
+    initial_conditions: dict[str, Any] | None = Field(
         None, description="Initial conditions for simulation"
     )
-    parameters: Optional[Dict[str, Any]] = Field(
-        None, description="Simulation parameters"
-    )
-    spatial_extent: Optional[GeometryModel] = Field(
+    parameters: dict[str, Any] | None = Field(None, description="Simulation parameters")
+    spatial_extent: GeometryModel | None = Field(
         None, description="GeoJSON geometry of simulation area"
     )
 
@@ -119,15 +117,13 @@ class NormativeInferenceRequest(BaseModel):
 
     data_source: str = Field(..., description="Source of data for inference")
     inference_type: str = Field(..., description="Type of inference to perform")
-    spatial_extent: Optional[GeometryModel] = Field(
+    spatial_extent: GeometryModel | None = Field(
         None, description="GeoJSON geometry of inference area"
     )
-    temporal_range: Optional[Dict[str, str]] = Field(
+    temporal_range: dict[str, str] | None = Field(
         None, description="Temporal range for inference"
     )
-    parameters: Optional[Dict[str, Any]] = Field(
-        None, description="Inference parameters"
-    )
+    parameters: dict[str, Any] | None = Field(None, description="Inference parameters")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -160,9 +156,7 @@ class NormPolicyImpactRequest(BaseModel):
     time_horizon: int = Field(
         ..., gt=0, description="Time horizon for assessment (in months)"
     )
-    parameters: Optional[Dict[str, Any]] = Field(
-        None, description="Assessment parameters"
-    )
+    parameters: dict[str, Any] | None = Field(None, description="Assessment parameters")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -192,8 +186,8 @@ class NormativeAPI:
 
     def __init__(
         self,
-        normative_inference: Optional[NormativeInference] = None,
-        social_norm_diffusion: Optional[SocialNormDiffusion] = None,
+        normative_inference: NormativeInference | None = None,
+        social_norm_diffusion: SocialNormDiffusion | None = None,
     ):
         """
         Initialize the NormativeAPI.
@@ -208,57 +202,57 @@ class NormativeAPI:
         self._setup_routes()
 
         # Temporary storage for social norms
-        self._social_norms: Dict[str, Dict[str, Any]] = {}
+        self._social_norms: dict[str, dict[str, Any]] = {}
 
     def _setup_routes(self) -> None:
         """Set up API routes"""
         # Social norm endpoints
-        self.router.post("/norms", response_model=Dict[str, Any])(
+        self.router.post("/norms", response_model=dict[str, Any])(
             self.create_social_norm
         )
-        self.router.get("/norms", response_model=List[Dict[str, Any]])(
+        self.router.get("/norms", response_model=list[dict[str, Any]])(
             self.list_social_norms
         )
-        self.router.get("/norms/{norm_id}", response_model=Dict[str, Any])(
+        self.router.get("/norms/{norm_id}", response_model=dict[str, Any])(
             self.get_social_norm
         )
 
         # Norm diffusion endpoints
-        self.router.post("/diffusion/simulate", response_model=Dict[str, Any])(
+        self.router.post("/diffusion/simulate", response_model=dict[str, Any])(
             self.simulate_norm_diffusion
         )
-        self.router.get("/diffusion/factors/{norm_id}", response_model=Dict[str, Any])(
+        self.router.get("/diffusion/factors/{norm_id}", response_model=dict[str, Any])(
             self.get_diffusion_factors
         )
 
         # Normative inference endpoints
-        self.router.post("/inference/analyze", response_model=Dict[str, Any])(
+        self.router.post("/inference/analyze", response_model=dict[str, Any])(
             self.perform_normative_inference
         )
-        self.router.post("/inference/spatial-patterns", response_model=Dict[str, Any])(
+        self.router.post("/inference/spatial-patterns", response_model=dict[str, Any])(
             self.analyze_spatial_patterns
         )
 
         # Policy impact endpoints
-        self.router.post("/policy-impact", response_model=Dict[str, Any])(
+        self.router.post("/policy-impact", response_model=dict[str, Any])(
             self.assess_policy_impact
         )
 
         # Spatial query endpoints
         self.router.post(
-            "/spatial/norms-at-point", response_model=List[Dict[str, Any]]
+            "/spatial/norms-at-point", response_model=list[dict[str, Any]]
         )(self.get_norms_at_point)
 
         # Export endpoints
-        self.router.get("/export/geojson", response_model=Dict[str, Any])(
+        self.router.get("/export/geojson", response_model=dict[str, Any])(
             self.export_to_geojson
         )
 
     # Helper methods
 
     def _geometry_from_model(
-        self, geometry_model: Optional[GeometryModel]
-    ) -> Optional[BaseGeometry]:
+        self, geometry_model: GeometryModel | None
+    ) -> BaseGeometry | None:
         """
         Convert a GeometryModel to a Shapely geometry object.
 
@@ -281,7 +275,7 @@ class NormativeAPI:
         except Exception as e:
             raise ValueError(f"Invalid geometry: {str(e)}")
 
-    def _social_norm_to_dict(self, norm: Dict[str, Any]) -> Dict[str, Any]:
+    def _social_norm_to_dict(self, norm: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a social norm to a dictionary for API response.
 
@@ -306,7 +300,7 @@ class NormativeAPI:
 
     # Social norm endpoints
 
-    async def create_social_norm(self, norm_data: SocialNormCreate) -> Dict[str, Any]:
+    async def create_social_norm(self, norm_data: SocialNormCreate) -> dict[str, Any]:
         """
         Create a new social norm.
 
@@ -374,15 +368,15 @@ class NormativeAPI:
 
     async def list_social_norms(
         self,
-        category: Optional[str] = Query(None, description="Filter by category"),
-        jurisdiction_id: Optional[str] = Query(
+        category: str | None = Query(None, description="Filter by category"),
+        jurisdiction_id: str | None = Query(
             None, description="Filter by jurisdiction ID"
         ),
-        tag: Optional[str] = Query(None, description="Filter by tag"),
-        min_strength: Optional[float] = Query(
+        tag: str | None = Query(None, description="Filter by tag"),
+        min_strength: float | None = Query(
             None, ge=0.0, le=1.0, description="Minimum strength"
         ),
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List all social norms, optionally filtered.
 
@@ -416,7 +410,7 @@ class NormativeAPI:
 
     async def get_social_norm(
         self, norm_id: str = Path(..., description="ID of the social norm")
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get a social norm by ID.
 
@@ -442,7 +436,7 @@ class NormativeAPI:
 
     async def simulate_norm_diffusion(
         self, diffusion_request: NormDiffusionRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Simulate the diffusion of a social norm over time.
 
@@ -522,7 +516,7 @@ class NormativeAPI:
 
     async def get_diffusion_factors(
         self, norm_id: str = Path(..., description="ID of the social norm")
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get the factors that influence the diffusion of a social norm.
 
@@ -565,7 +559,7 @@ class NormativeAPI:
 
     async def perform_normative_inference(
         self, inference_request: NormativeInferenceRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform normative inference from data.
 
@@ -666,7 +660,7 @@ class NormativeAPI:
 
     async def analyze_spatial_patterns(
         self, inference_request: NormativeInferenceRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze spatial patterns of social norms.
 
@@ -710,7 +704,7 @@ class NormativeAPI:
 
     async def assess_policy_impact(
         self, impact_request: NormPolicyImpactRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Assess the impact of a policy on a social norm.
 
@@ -814,7 +808,7 @@ class NormativeAPI:
 
     # Spatial query endpoints
 
-    async def get_norms_at_point(self, point: PointLocation) -> List[Dict[str, Any]]:
+    async def get_norms_at_point(self, point: PointLocation) -> list[dict[str, Any]]:
         """
         Get all social norms that apply to a specific geographic point.
 
@@ -839,11 +833,11 @@ class NormativeAPI:
 
     async def export_to_geojson(
         self,
-        category: Optional[str] = Query(None, description="Filter by category"),
-        min_strength: Optional[float] = Query(
+        category: str | None = Query(None, description="Filter by category"),
+        min_strength: float | None = Query(
             None, ge=0.0, le=1.0, description="Minimum strength"
         ),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Export social norm spatial distribution to GeoJSON.
 

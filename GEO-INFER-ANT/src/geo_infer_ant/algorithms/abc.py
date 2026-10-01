@@ -15,7 +15,8 @@ Key Features:
 
 import numpy as np
 import logging
-from typing import Dict, List, Any, Optional, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ class ABCParameters:
     employed_bees_ratio: float = 0.5
     scout_bees_ratio: float = 0.1
     dimensions: int = 2
-    bounds: List[tuple] = field(default_factory=lambda: [(-10, 10), (-10, 10)])
+    bounds: list[tuple] = field(default_factory=lambda: [(-10, 10), (-10, 10)])
     max_trials: float = 50.0  # Abandonment threshold
     limit: float = 100.0  # Maximum trials before abandonment
     max_iterations: int = 1000
@@ -79,7 +80,7 @@ class ArtificialBeeColony:
         self,
         colony_size: int = 100,
         dimensions: int = 2,
-        bounds: Optional[List[tuple]] = None,
+        bounds: list[tuple] | None = None,
         max_trials: int = 50,
         limit: int = 100,
         **kwargs: Any,
@@ -115,27 +116,27 @@ class ArtificialBeeColony:
         self.rng = np.random.default_rng(seed)
 
         # Colony state
-        self.food_sources: List[FoodSource] = []
+        self.food_sources: list[FoodSource] = []
         self.employed_bees: int = 0
         self.onlooker_bees: int = 0
         self.scout_bees: int = 0
 
         # Optimization state
-        self.global_best_position: Optional[np.ndarray] = None
+        self.global_best_position: np.ndarray | None = None
         self.global_best_fitness: float = 0.0
-        self._objective_function: Optional[Callable[[np.ndarray], float]] = None
+        self._objective_function: Callable[[np.ndarray], float] | None = None
 
         # History
-        self.convergence_history: List[float] = []
-        self.diversity_history: List[float] = []
+        self.convergence_history: list[float] = []
+        self.diversity_history: list[float] = []
 
         logger.info(f"ABC initialized with {colony_size} bees, {dimensions} dimensions")
 
     def optimize(
         self,
         objective_function: Callable[[np.ndarray], float],
-        max_iterations: Optional[int] = None,
-        spatial_constraints: Optional[Dict[str, Any]] = None,
+        max_iterations: int | None = None,
+        spatial_constraints: dict[str, Any] | None = None,
         parallel_computation: bool = True,
     ) -> np.ndarray:
         """
@@ -208,7 +209,7 @@ class ArtificialBeeColony:
         logger.info(
             f"ABC optimization completed: best fitness = {self.global_best_fitness}"
         )
-        best = cast(Optional[np.ndarray], self.global_best_position)
+        best = cast(np.ndarray | None, self.global_best_position)
         if best is None:
             raise RuntimeError("ABC completed without a valid food source")
         return best.copy()
@@ -271,7 +272,7 @@ class ArtificialBeeColony:
                 source.trial_count = 0
 
     def _scout_bee_phase(
-        self, objective_function: Optional[Callable[[np.ndarray], float]] = None
+        self, objective_function: Callable[[np.ndarray], float] | None = None
     ) -> None:
         """Scout bee phase: abandon poor food sources and explore randomly."""
         for source in self.food_sources:
@@ -393,11 +394,11 @@ class ArtificialBeeColony:
 
     def manage_food_sources(
         self,
-        current_sources: List[FoodSource],
+        current_sources: list[FoodSource],
         abandonment_criteria: str = "trial_limit",
         recruitment_strategy: str = "fitness_proportional",
         spatial_clustering: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Manage food sources with advanced strategies.
 
@@ -453,7 +454,7 @@ class ArtificialBeeColony:
         logger.info(f"Food source management completed: {management_results}")
         return management_results
 
-    def _apply_fitness_proportional_recruitment(self, sources: List[FoodSource]) -> int:
+    def _apply_fitness_proportional_recruitment(self, sources: list[FoodSource]) -> int:
         """Return the number of recruits that can be evaluated from current state.
 
         Recruitment requires an objective function to assign fitness to a new
@@ -478,10 +479,10 @@ class ArtificialBeeColony:
 
     def adapt_foraging_strategy(
         self,
-        environmental_conditions: Dict[str, Any],
-        colony_performance: Dict[str, Any],
+        environmental_conditions: dict[str, Any],
+        colony_performance: dict[str, Any],
         behavioral_adaptation: str = "learning_automaton",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Adapt foraging strategy based on environmental conditions and performance.
 
@@ -495,7 +496,7 @@ class ArtificialBeeColony:
         """
         logger.info(f"Adapting foraging strategy using {behavioral_adaptation}")
 
-        adaptation_results: Dict[str, Any] = {
+        adaptation_results: dict[str, Any] = {
             "adaptation_type": behavioral_adaptation,
             "parameters_updated": {},
             "strategy_changes": [],
@@ -551,7 +552,7 @@ class ArtificialBeeColony:
         )
         return adaptation_results
 
-    def get_optimization_statistics(self) -> Dict[str, Any]:
+    def get_optimization_statistics(self) -> dict[str, Any]:
         """Get comprehensive optimization statistics."""
         stats = {
             "algorithm": "Artificial Bee Colony",

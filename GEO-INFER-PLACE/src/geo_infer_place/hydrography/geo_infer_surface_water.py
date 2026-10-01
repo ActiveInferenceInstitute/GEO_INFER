@@ -8,7 +8,7 @@ and provides river network topology traversal, validation, and spatial analysis.
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 import geopandas as gpd
 import pandas as pd
@@ -37,7 +37,7 @@ class GeoInferSurfaceWater:
         self,
         backend: "CascadianAgriculturalH3Backend",
         *,
-        data_source: Optional[CascadianSurfaceWaterDataSources] = None,
+        data_source: CascadianSurfaceWaterDataSources | None = None,
         allow_projection_fallback: bool = False,
     ) -> None:
         self.backend = backend
@@ -48,7 +48,7 @@ class GeoInferSurfaceWater:
             if data_source is not None
             else CascadianSurfaceWaterDataSources()
         )
-        self._network: Optional[CascadiaFlowlineNetwork] = None
+        self._network: CascadiaFlowlineNetwork | None = None
         self.allow_projection_fallback = allow_projection_fallback
         self.projection_degraded = False
         # Will be injected
@@ -71,16 +71,16 @@ class GeoInferSurfaceWater:
         """Return full connectivity; the threshold selects a view without dropping tributaries."""
         return self.data_source.get_flowline_network(min_stream_order=min_stream_order)
 
-    def validate_network_topology(self, min_stream_order: int = 4) -> Dict[str, Any]:
+    def validate_network_topology(self, min_stream_order: int = 4) -> dict[str, Any]:
         """Validate network topology and Strahler stream order monotonicity."""
         net = self.get_flowline_network(min_stream_order=min_stream_order)
         return net.validate()
 
-    def trace_upstream_tributaries(self, comid: int) -> List[Dict[str, Any]]:
+    def trace_upstream_tributaries(self, comid: int) -> list[dict[str, Any]]:
         """Trace all upstream tributaries feeding into a flowline reach."""
         return self.network.trace_upstream(comid)
 
-    def trace_downstream_flowpath(self, comid: int) -> List[Dict[str, Any]]:
+    def trace_downstream_flowpath(self, comid: int) -> list[dict[str, Any]]:
         """Trace downstream flowpath from a reach to its terminal basin outlet."""
         return self.network.trace_downstream(comid)
 
@@ -129,8 +129,8 @@ class GeoInferSurfaceWater:
         return raw_out
 
     def _get_analysis_bbox(
-        self, target_hexagons: List[str]
-    ) -> Tuple[float, float, float, float]:
+        self, target_hexagons: list[str]
+    ) -> tuple[float, float, float, float]:
         """Calculates the total bounding box for a list of H3 hexagons."""
         if not target_hexagons:
             raise ValueError(
@@ -149,7 +149,7 @@ class GeoInferSurfaceWater:
             max_lats.append(max_lat)
         return (min(min_lons), min(min_lats), max(max_lons), max(max_lats))
 
-    def run_analysis(self, target_hexagons: List[str]) -> Dict[str, Dict[str, Any]]:
+    def run_analysis(self, target_hexagons: list[str]) -> dict[str, dict[str, Any]]:
         """Calculates water body area, flowline length, stream order metrics, and
 
         network connectivity for each target hexagon.
@@ -196,7 +196,7 @@ class GeoInferSurfaceWater:
         )
 
         # 4. Initialize results
-        results: Dict[str, Dict[str, Any]] = {
+        results: dict[str, dict[str, Any]] = {
             hex_id: {
                 "water_body_area_sqkm": None
                 if waterbodies_gdf is None
@@ -267,9 +267,9 @@ class GeoInferSurfaceWater:
         )
         return results
 
-    def run_final_analysis(self, h3_data: Dict[str, Any]) -> Dict[str, Any]:
+    def run_final_analysis(self, h3_data: dict[str, Any]) -> dict[str, Any]:
         """Summarize H3-indexed water features into per-hex metrics if provided as features."""
-        results: Dict[str, Any] = {}
+        results: dict[str, Any] = {}
         for hex_id, items in h3_data.items():
             if not isinstance(items, list) or any(
                 not isinstance(item, dict) for item in items

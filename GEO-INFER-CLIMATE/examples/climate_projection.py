@@ -12,7 +12,6 @@ import pandas as pd
 import xarray as xr
 
 from geo_infer_climate import (
-    ClimateIndicesCalculator,
     DownscalingMethods,
     ExtremeEventAnalyzer,
     ClimateProjections,

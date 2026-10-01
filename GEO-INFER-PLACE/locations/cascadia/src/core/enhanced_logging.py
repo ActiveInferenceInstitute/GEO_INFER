@@ -14,7 +14,7 @@ import logging
 import logging.config
 import sys
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Any
 import pandas as pd
 import geopandas as gpd
 
@@ -32,7 +32,7 @@ class EnhancedLoggingConfig:
     @staticmethod
     def setup_logging(
         log_level: str = "INFO",
-        log_file: Optional[Path] = None,
+        log_file: Path | None = None,
         console_output: bool = True,
         include_timestamps: bool = True,
         include_module_names: bool = True,
@@ -107,10 +107,10 @@ class DataSourceLogger:
         data_type: str,
         row_count: int,
         file_size_mb: float,
-        geometry_types: List[str],
+        geometry_types: list[str],
         crs: str,
-        bbox: Optional[tuple] = None,
-        attributes: Optional[List[str]] = None,
+        bbox: tuple | None = None,
+        attributes: list[str] | None = None,
     ):
         """Log comprehensive information about real data acquisition."""
         self.logger.info(f"📊 REAL DATA ACQUIRED - Module: {self.module_name}")
@@ -129,9 +129,9 @@ class DataSourceLogger:
 
     def log_data_validation(
         self,
-        validation_results: Dict[str, Any],
+        validation_results: dict[str, Any],
         quality_score: float,
-        issues: List[str],
+        issues: list[str],
     ):
         """Log data validation results."""
         self.logger.info(f"🔍 DATA VALIDATION - Module: {self.module_name}")
@@ -165,19 +165,19 @@ class ProcessingLogger:
         self.logger = logging.getLogger(f"cascadia.processing.{module_name}")
         self.module_name = module_name
 
-    def log_processing_start(self, operation: str, parameters: Dict[str, Any]):
+    def log_processing_start(self, operation: str, parameters: dict[str, Any]):
         """Log the start of a processing operation."""
         self.logger.info(f"🚀 PROCESSING START - {operation}")
         self.logger.info(f"   Module: {self.module_name}")
         self.logger.info(f"   Parameters: {parameters}")
 
-    def log_processing_step(self, step: str, details: Dict[str, Any]):
+    def log_processing_step(self, step: str, details: dict[str, Any]):
         """Log a processing step."""
         self.logger.info(f"   Step: {step}")
         for key, value in details.items():
             self.logger.info(f"     {key}: {value}")
 
-    def log_processing_complete(self, operation: str, results: Dict[str, Any], duration: float):
+    def log_processing_complete(self, operation: str, results: dict[str, Any], duration: float):
         """Log the completion of a processing operation."""
         self.logger.info(f"✅ PROCESSING COMPLETE - {operation}")
         self.logger.info(f"   Duration: {duration:.2f}s")
@@ -197,10 +197,10 @@ class VisualizationLogger:
     def log_visualization_creation(
         self,
         viz_type: str,
-        data_sources: List[str],
+        data_sources: list[str],
         hexagon_count: int,
-        layers: List[str],
-        interactive_features: List[str],
+        layers: list[str],
+        interactive_features: list[str],
     ):
         """Log visualization creation."""
         self.logger.info(f"🎨 VISUALIZATION CREATED - {viz_type}")

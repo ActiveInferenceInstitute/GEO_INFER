@@ -7,7 +7,7 @@ hierarchical clustering methods.
 """
 
 import numpy as np
-from typing import Optional, Any, cast
+from typing import Any, cast
 from dataclasses import dataclass
 from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, fcluster
@@ -25,10 +25,10 @@ class ClusteringResults:
 
     labels: np.ndarray
     n_clusters: int
-    centroids: Optional[np.ndarray] = None
-    silhouette_score: Optional[float] = None
-    cluster_sizes: Optional[np.ndarray] = None
-    within_cluster_distances: Optional[np.ndarray] = None
+    centroids: np.ndarray | None = None
+    silhouette_score: float | None = None
+    cluster_sizes: np.ndarray | None = None
+    within_cluster_distances: np.ndarray | None = None
 
 
 class SpatialKMeans:
@@ -41,7 +41,7 @@ class SpatialKMeans:
         n_init: int = 10,
         max_iter: int = 300,
         tol: float = 1e-4,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ):
         """
         Initialize spatial K-means.
@@ -61,14 +61,14 @@ class SpatialKMeans:
         self.tol = tol
         self.random_state = random_state
 
-        self.cluster_centers_: Optional[np.ndarray] = None
-        self.labels_: Optional[np.ndarray] = None
-        self.inertia_: Optional[float] = None
-        self.n_iter_: Optional[int] = None
+        self.cluster_centers_: np.ndarray | None = None
+        self.labels_: np.ndarray | None = None
+        self.inertia_: float | None = None
+        self.n_iter_: int | None = None
         self.is_fitted = False
 
     def fit(
-        self, X: np.ndarray, coordinates: Optional[np.ndarray] = None
+        self, X: np.ndarray, coordinates: np.ndarray | None = None
     ) -> "SpatialKMeans":
         """
         Fit K-means clustering.
@@ -129,7 +129,7 @@ class SpatialKMeans:
         return self
 
     def _kmeans_plus_plus_init(
-        self, X: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, X: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         """K-means++ initialization."""
         if rng is None:
@@ -183,7 +183,7 @@ class SpatialKMeans:
         return labels
 
     def fit_predict(
-        self, X: np.ndarray, coordinates: Optional[np.ndarray] = None
+        self, X: np.ndarray, coordinates: np.ndarray | None = None
     ) -> np.ndarray:
         """
         Fit model and return cluster labels.
@@ -206,7 +206,7 @@ class SpatiallyConstrainedKMeans:
         n_clusters: int = 8,
         spatial_weight: float = 0.5,
         max_iter: int = 100,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ):
         """
         Initialize spatially constrained K-means.
@@ -222,8 +222,8 @@ class SpatiallyConstrainedKMeans:
         self.max_iter = max_iter
         self.random_state = random_state
 
-        self.cluster_centers_: Optional[np.ndarray] = None
-        self.labels_: Optional[np.ndarray] = None
+        self.cluster_centers_: np.ndarray | None = None
+        self.labels_: np.ndarray | None = None
         self.is_fitted = False
 
     def fit(
@@ -353,14 +353,14 @@ class SpatialDBSCAN:
         self.metric = metric
         self.algorithm = algorithm
 
-        self.core_sample_indices_: Optional[np.ndarray] = None
-        self.components_: Optional[np.ndarray] = None
-        self.labels_: Optional[np.ndarray] = None
-        self.n_features_in_: Optional[int] = None
+        self.core_sample_indices_: np.ndarray | None = None
+        self.components_: np.ndarray | None = None
+        self.labels_: np.ndarray | None = None
+        self.n_features_in_: int | None = None
         self.is_fitted = False
 
     def fit(
-        self, X: np.ndarray, coordinates: Optional[np.ndarray] = None
+        self, X: np.ndarray, coordinates: np.ndarray | None = None
     ) -> "SpatialDBSCAN":
         """
         Fit DBSCAN clustering.
@@ -406,7 +406,7 @@ class SpatialDBSCAN:
         return self
 
     def fit_predict(
-        self, X: np.ndarray, coordinates: Optional[np.ndarray] = None
+        self, X: np.ndarray, coordinates: np.ndarray | None = None
     ) -> np.ndarray:
         """
         Fit model and return cluster labels.
@@ -435,7 +435,7 @@ class SKATERClustering:
         self.n_clusters = n_clusters
         self.min_cluster_size = min_cluster_size
 
-        self.labels_: Optional[np.ndarray] = None
+        self.labels_: np.ndarray | None = None
         self.is_fitted = False
 
     def fit(self, X: np.ndarray, coordinates: np.ndarray) -> "SKATERClustering":
@@ -568,12 +568,12 @@ class HierarchicalClustering:
         self.metric = metric
         self.spatial_weight = spatial_weight
 
-        self.labels_: Optional[np.ndarray] = None
-        self.linkage_matrix_: Optional[np.ndarray] = None
+        self.labels_: np.ndarray | None = None
+        self.linkage_matrix_: np.ndarray | None = None
         self.is_fitted = False
 
     def fit(
-        self, X: np.ndarray, coordinates: Optional[np.ndarray] = None
+        self, X: np.ndarray, coordinates: np.ndarray | None = None
     ) -> "HierarchicalClustering":
         """
         Fit hierarchical clustering.
@@ -619,7 +619,7 @@ class HierarchicalClustering:
         return self
 
     def fit_predict(
-        self, X: np.ndarray, coordinates: Optional[np.ndarray] = None
+        self, X: np.ndarray, coordinates: np.ndarray | None = None
     ) -> np.ndarray:
         """
         Fit model and return cluster labels.

@@ -6,7 +6,7 @@ for transportation systems.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 from enum import Enum
 import networkx as nx
@@ -44,10 +44,10 @@ class NetworkNode:
     """Represents a node in the transport network."""
 
     node_id: str
-    location: Dict[str, float]  # lat, lon
+    location: dict[str, float]  # lat, lon
     node_type: str = "intersection"
-    elevation: Optional[float] = None
-    properties: Dict[str, Any] = field(default_factory=dict)
+    elevation: float | None = None
+    properties: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -62,8 +62,8 @@ class NetworkEdge:
     speed_limit_kmh: float = 50
     lanes: int = 1
     one_way: bool = False
-    geometry: Optional[List[Dict[str, float]]] = None
-    properties: Dict[str, Any] = field(default_factory=dict)
+    geometry: list[dict[str, float]] | None = None
+    properties: dict[str, Any] = field(default_factory=dict)
 
 
 class TransportNetwork:
@@ -77,7 +77,7 @@ class TransportNetwork:
     def __init__(
         self,
         network_type: str = "road",
-        modes: Optional[List[str]] = None,
+        modes: list[str] | None = None,
         crs: str = "EPSG:4326",
     ):
         """
@@ -92,16 +92,16 @@ class TransportNetwork:
         self.modes = modes or ["car", "bicycle", "pedestrian"]
         self.crs = crs
         self._graph = nx.DiGraph()
-        self._nodes: Dict[str, NetworkNode] = {}
-        self._edges: Dict[str, NetworkEdge] = {}
+        self._nodes: dict[str, NetworkNode] = {}
+        self._edges: dict[str, NetworkEdge] = {}
         logger.info(f"Initialized TransportNetwork of type {network_type}")
 
     def build_from_edges(
         self,
-        edges: List[Dict[str, Any]],
-        nodes: Optional[List[Dict[str, Any]]] = None,
-        attributes: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        edges: list[dict[str, Any]],
+        nodes: list[dict[str, Any]] | None = None,
+        attributes: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Build network from edge list.
 
@@ -210,9 +210,9 @@ class TransportNetwork:
     def analyze_connectivity(
         self,
         method: str = "components",
-        origin: Optional[str] = None,
-        destinations: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        origin: str | None = None,
+        destinations: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Analyze network connectivity.
 
@@ -303,7 +303,7 @@ class TransportNetwork:
         centrality_type: str = "betweenness",
         weight: str = "length",
         top_n: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate network centrality measures.
 
@@ -342,7 +342,7 @@ class TransportNetwork:
         logger.info(f"Calculated {centrality_type} centrality")
         return result
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """
         Get network statistics.
 
@@ -379,7 +379,7 @@ class TransportNetwork:
             stats["total_length_km"] = total_length / 1000
 
             # Road class distribution
-            road_classes: Dict[str, int] = {}
+            road_classes: dict[str, int] = {}
             for _, _, data in self._graph.edges(data=True):
                 rc = data.get("road_class", "unknown")
                 road_classes[rc] = road_classes.get(rc, 0) + 1
@@ -388,7 +388,7 @@ class TransportNetwork:
         return stats
 
     def get_subgraph(
-        self, nodes: Optional[List[str]] = None, bbox: Optional[Dict[str, float]] = None
+        self, nodes: list[str] | None = None, bbox: dict[str, float] | None = None
     ) -> "TransportNetwork":
         """
         Extract a subgraph from the network.

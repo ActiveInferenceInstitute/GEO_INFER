@@ -2,7 +2,7 @@
 API client for an externally deployed GEO-INFER-ACT model service.
 """
 
-from typing import Any, Dict, cast
+from typing import Any, cast
 from urllib.parse import quote
 import requests
 
@@ -26,7 +26,7 @@ class Client:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
 
-    def _request(self, method: str, path: str, **kwargs: Any) -> Dict[str, Any]:
+    def _request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
         """Execute a bounded request and raise for non-success responses."""
         response = requests.request(
             method,
@@ -35,12 +35,12 @@ class Client:
             **kwargs,
         )
         response.raise_for_status()
-        return cast(Dict[str, Any], response.json())
+        return cast(dict[str, Any], response.json())
 
-    def create_model(self, model_config: Dict[str, Any]) -> Dict[str, Any]:
+    def create_model(self, model_config: dict[str, Any]) -> dict[str, Any]:
         """Create a new model via API."""
         return self._request("POST", "/models", json=model_config)
 
-    def get_model(self, model_id: str) -> Dict[str, Any]:
+    def get_model(self, model_id: str) -> dict[str, Any]:
         """Get model details via API."""
         return self._request("GET", f"/models/{quote(str(model_id), safe='')}")

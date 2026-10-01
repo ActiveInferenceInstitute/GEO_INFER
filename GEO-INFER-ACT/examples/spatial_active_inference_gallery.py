@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 from geo_infer_act.runners import run_spatial_active_inference_gallery
 
@@ -15,7 +15,7 @@ DEFAULT_OUTPUT_DIR = (
 )
 
 
-def main(argv: Optional[Iterable[str]] = None) -> int:
+def main(argv: Iterable[str] | None = None) -> int:
     """Run the package-owned gallery generator."""
     parser = argparse.ArgumentParser(
         description="Generate real-H3 + pymdp spatial active-inference gallery."

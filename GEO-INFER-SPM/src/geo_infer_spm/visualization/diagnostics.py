@@ -7,7 +7,7 @@ visual assessments of SPM model fit and statistical assumptions.
 
 import numpy as np
 import logging
-from typing import Dict, Any, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +22,8 @@ from ..models.data_models import SPMResult, ContrastResult  # noqa: E402
 
 
 def plot_model_diagnostics(
-    spm_result: SPMResult, figsize: Tuple[int, int] = (12, 10)
-) -> Dict[str, Any]:
+    spm_result: SPMResult, figsize: tuple[int, int] = (12, 10)
+) -> dict[str, Any]:
     """
     Create comprehensive model diagnostic plots.
 
@@ -66,8 +66,8 @@ def plot_model_diagnostics(
 
 
 def plot_contrast_results(
-    contrast_result: ContrastResult, figsize: Tuple[int, int] = (10, 6)
-) -> Dict[str, Any]:
+    contrast_result: ContrastResult, figsize: tuple[int, int] = (10, 6)
+) -> dict[str, Any]:
     """
     Create plots for contrast analysis results.
 
@@ -293,7 +293,7 @@ def _plot_leverage(spm_result: SPMResult, ax: Any) -> None:
         )
 
 
-def _compute_diagnostic_stats(spm_result: SPMResult) -> Dict[str, Any]:
+def _compute_diagnostic_stats(spm_result: SPMResult) -> dict[str, Any]:
     """Compute comprehensive diagnostic statistics."""
     from scipy import stats
 

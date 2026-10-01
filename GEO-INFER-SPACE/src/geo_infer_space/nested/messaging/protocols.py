@@ -8,7 +8,7 @@ message exchanges in nested geospatial systems.
 import logging
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Set, Tuple, cast
+from typing import Any, cast
 from enum import Enum
 from abc import ABC, abstractmethod
 
@@ -48,8 +48,8 @@ class ProtocolConfig:
     message_format: MessageFormat = MessageFormat.JSON
 
     # Timing parameters
-    timeout: Optional[timedelta] = None
-    retry_interval: Optional[timedelta] = None
+    timeout: timedelta | None = None
+    retry_interval: timedelta | None = None
     max_retries: int = 3
 
     # Reliability parameters
@@ -58,11 +58,11 @@ class ProtocolConfig:
     guarantee_delivery: bool = False
 
     # Batch parameters (for batch protocols)
-    batch_size: Optional[int] = None
-    batch_timeout: Optional[timedelta] = None
+    batch_size: int | None = None
+    batch_timeout: timedelta | None = None
 
     # Streaming parameters
-    buffer_size: Optional[int] = None
+    buffer_size: int | None = None
     flow_control: bool = False
 
     # Security parameters
@@ -70,7 +70,7 @@ class ProtocolConfig:
     authentication_required: bool = False
 
     # Custom parameters
-    custom_params: Dict[str, Any] = field(default_factory=dict)
+    custom_params: dict[str, Any] = field(default_factory=dict)
 
 
 class MessageProtocol(ABC):
@@ -92,8 +92,8 @@ class MessageProtocol(ABC):
         self.message_broker: Any = None  # Set externally
 
         # Protocol state
-        self.active_sessions: Dict[str, Dict[str, Any]] = {}
-        self.statistics: Dict[str, int] = {
+        self.active_sessions: dict[str, dict[str, Any]] = {}
+        self.statistics: dict[str, int] = {
             "messages_sent": 0,
             "messages_received": 0,
             "messages_failed": 0,
@@ -138,7 +138,7 @@ class MessageProtocol(ABC):
         )
 
     def create_session(
-        self, session_id: str, participants: List[str], **kwargs: Any
+        self, session_id: str, participants: list[str], **kwargs: Any
     ) -> bool:
         """
         Create a protocol session.
@@ -182,7 +182,7 @@ class MessageProtocol(ABC):
         self.statistics["sessions_closed"] += 1
         return True
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get protocol statistics."""
         return {
             "protocol_id": self.protocol_id,
@@ -198,9 +198,7 @@ class RequestResponseProtocol(MessageProtocol):
     Request-Response protocol implementation.
     """
 
-    def __init__(
-        self, protocol_id: str, config: Optional[ProtocolConfig] = None
-    ) -> None:
+    def __init__(self, protocol_id: str, config: ProtocolConfig | None = None) -> None:
         if config is None:
             config = ProtocolConfig(
                 protocol_type=ProtocolType.REQUEST_RESPONSE,
@@ -209,7 +207,7 @@ class RequestResponseProtocol(MessageProtocol):
             )
 
         super().__init__(protocol_id, config)
-        self.pending_requests: Dict[str, Dict[str, Any]] = {}
+        self.pending_requests: dict[str, dict[str, Any]] = {}
 
     def send_message(
         self, sender_id: str, recipient_id: str, payload: Any, **kwargs: Any
@@ -281,17 +279,15 @@ class PublishSubscribeProtocol(MessageProtocol):
     Publish-Subscribe protocol implementation.
     """
 
-    def __init__(
-        self, protocol_id: str, config: Optional[ProtocolConfig] = None
-    ) -> None:
+    def __init__(self, protocol_id: str, config: ProtocolConfig | None = None) -> None:
         if config is None:
             config = ProtocolConfig(
                 protocol_type=ProtocolType.PUBLISH_SUBSCRIBE, guarantee_delivery=False
             )
 
         super().__init__(protocol_id, config)
-        self.topics: Dict[str, Set[str]] = {}  # topic -> subscribers
-        self.subscriptions: Dict[str, Set[str]] = {}  # subscriber -> topics
+        self.topics: dict[str, set[str]] = {}  # topic -> subscribers
+        self.subscriptions: dict[str, set[str]] = {}  # subscriber -> topics
 
     def subscribe(self, subscriber_id: str, topic: str) -> bool:
         """
@@ -377,9 +373,7 @@ class FireAndForgetProtocol(MessageProtocol):
     Fire-and-Forget protocol implementation.
     """
 
-    def __init__(
-        self, protocol_id: str, config: Optional[ProtocolConfig] = None
-    ) -> None:
+    def __init__(self, protocol_id: str, config: ProtocolConfig | None = None) -> None:
         if config is None:
             config = ProtocolConfig(
                 protocol_type=ProtocolType.FIRE_AND_FORGET,
@@ -418,9 +412,7 @@ class StreamingProtocol(MessageProtocol):
     Streaming protocol implementation.
     """
 
-    def __init__(
-        self, protocol_id: str, config: Optional[ProtocolConfig] = None
-    ) -> None:
+    def __init__(self, protocol_id: str, config: ProtocolConfig | None = None) -> None:
         if config is None:
             config = ProtocolConfig(
                 protocol_type=ProtocolType.STREAMING,
@@ -429,7 +421,7 @@ class StreamingProtocol(MessageProtocol):
             )
 
         super().__init__(protocol_id, config)
-        self.streams: Dict[str, Dict[str, Any]] = {}
+        self.streams: dict[str, dict[str, Any]] = {}
 
     def create_stream(
         self, stream_id: str, sender_id: str, recipient_id: str, **kwargs: Any
@@ -546,9 +538,7 @@ class BatchProtocol(MessageProtocol):
     Batch protocol implementation.
     """
 
-    def __init__(
-        self, protocol_id: str, config: Optional[ProtocolConfig] = None
-    ) -> None:
+    def __init__(self, protocol_id: str, config: ProtocolConfig | None = None) -> None:
         if config is None:
             config = ProtocolConfig(
                 protocol_type=ProtocolType.BATCH,
@@ -557,8 +547,8 @@ class BatchProtocol(MessageProtocol):
             )
 
         super().__init__(protocol_id, config)
-        self.batches: Dict[
-            Tuple[str, str], Dict[str, Any]
+        self.batches: dict[
+            tuple[str, str], dict[str, Any]
         ] = {}  # (sender, recipient) -> batch
 
     def send_message(

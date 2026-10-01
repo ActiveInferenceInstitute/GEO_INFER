@@ -18,8 +18,6 @@ This showcases the full power of SPM for complex geospatial time series analysis
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
-from pathlib import Path
 import warnings
 
 # Import GEO-INFER-SPM modules
@@ -30,7 +28,6 @@ from geo_infer_spm.core.rft import compute_spm, RandomFieldTheory
 from geo_infer_spm.core.spatial_analysis import SpatialAnalyzer
 from geo_infer_spm.core.temporal_analysis import TemporalAnalyzer
 from geo_infer_spm.core.bayesian import BayesianSPM
-from geo_infer_spm.utils.helpers import generate_synthetic_data, create_design_matrix
 from geo_infer_spm.utils.preprocessing import preprocess_data
 from geo_infer_spm.visualization.interactive import create_interactive_map
 
@@ -215,7 +212,7 @@ def main():
     )
 
     print(".3f")
-    print(f"   Spatial regularization: λ = 0.1")
+    print("   Spatial regularization: λ = 0.1")
     print()
 
     # Step 5: Test climate change hypotheses

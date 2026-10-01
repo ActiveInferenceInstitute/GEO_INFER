@@ -11,11 +11,11 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -45,7 +45,7 @@ def tmp_output_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def economic_indicators() -> Dict[str, Any]:
+def economic_indicators() -> dict[str, Any]:
     """Dictionary of regional economic indicators for analysis tests.
 
     Contains GDP, unemployment, CPI, and trade balance values for a

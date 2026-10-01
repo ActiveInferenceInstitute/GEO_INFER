@@ -9,7 +9,7 @@ import logging
 import asyncio
 import dataclasses
 import json
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 from datetime import datetime
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
@@ -37,22 +37,22 @@ class StreamingAPI:
 
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
-        ingestion: Optional[IoTDataIngestion] = None,
+        config: dict[str, Any] | None = None,
+        ingestion: IoTDataIngestion | None = None,
     ) -> None:
         self.config = config or {}
         self.app = FastAPI(title="GEO-INFER-IOT Streaming API", version="1.0.0")
 
         # WebSocket connection management
-        self.active_connections: Set[WebSocket] = set()
-        self.sensor_subscriptions: Dict[str, Set[WebSocket]] = {}
-        self.spatial_subscriptions: Dict[str, Set[WebSocket]] = {}
+        self.active_connections: set[WebSocket] = set()
+        self.sensor_subscriptions: dict[str, set[WebSocket]] = {}
+        self.spatial_subscriptions: dict[str, set[WebSocket]] = {}
 
         # Share the caller's ingestion instance when one is provided so
         # measurements submitted through the SensorAPI reach stream
         # subscribers; otherwise own a private instance.
         if ingestion is not None:
-            self.ingestion: Optional[IoTDataIngestion] = ingestion
+            self.ingestion: IoTDataIngestion | None = ingestion
         elif HAS_INGESTION:
             self.ingestion = IoTDataIngestion(None, self.config)
         else:
@@ -67,7 +67,7 @@ class StreamingAPI:
         """Setup API routes and WebSocket endpoints."""
 
         @self.app.get("/")
-        async def root() -> Dict[str, Any]:
+        async def root() -> dict[str, Any]:
             """API root endpoint."""
             return {
                 "service": "GEO-INFER-IOT Streaming API",
@@ -119,7 +119,7 @@ class StreamingAPI:
                 # Keep connection alive, forwarding measurements ingested
                 # since the last tick to this connection's subscriptions.
                 ingestion = self.ingestion
-                cursor: Optional[int] = None
+                cursor: int | None = None
                 if ingestion is not None:
                     cursor = len(ingestion.measurements)
 
@@ -158,7 +158,7 @@ class StreamingAPI:
                 self.active_connections.discard(websocket)
 
         @self.app.get("/streams")
-        async def list_streams() -> Dict[str, Any]:
+        async def list_streams() -> dict[str, Any]:
             """List available data streams."""
             streams = {
                 "sensor_data_stream": {
@@ -186,7 +186,7 @@ class StreamingAPI:
             }
 
         @self.app.get("/subscriptions")
-        async def get_subscriptions() -> Dict[str, Any]:
+        async def get_subscriptions() -> dict[str, Any]:
             """Get current subscription status."""
             return {
                 "active_connections": len(self.active_connections),
@@ -201,7 +201,7 @@ class StreamingAPI:
                 "timestamp": datetime.now().isoformat(),
             }
 
-    async def broadcast_measurement(self, measurement: Dict) -> None:
+    async def broadcast_measurement(self, measurement: dict) -> None:
         """Broadcast a new measurement to subscribed clients.
 
         Sends directly on each subscribed WebSocket; subscribers whose send
@@ -227,7 +227,7 @@ class StreamingAPI:
             }
             await self._send_to_all(self.spatial_subscriptions[h3_index], message)
 
-    async def broadcast_spatial_inference(self, inference_result: Dict) -> None:
+    async def broadcast_spatial_inference(self, inference_result: dict) -> None:
         """Broadcast spatial inference results to all connected clients."""
         message = {
             "type": "spatial_inference",
@@ -236,10 +236,10 @@ class StreamingAPI:
         }
         await self._send_to_all(self.active_connections, message)
 
-    async def _send_to_all(self, connections: Set[WebSocket], message: Dict) -> None:
+    async def _send_to_all(self, connections: set[WebSocket], message: dict) -> None:
         """Send a message to every connection, dropping the disconnected."""
         payload = json.dumps(message)
-        disconnected: Set[WebSocket] = set()
+        disconnected: set[WebSocket] = set()
         for websocket in list(connections):
             try:
                 await websocket.send_text(payload)
@@ -255,7 +255,7 @@ class StreamingAPI:
                 subs.discard(websocket)
 
     @staticmethod
-    def _measurement_payload(measurement: Any) -> Dict:
+    def _measurement_payload(measurement: Any) -> dict:
         """Convert an ingested measurement to a JSON-serializable dict."""
         data = dataclasses.asdict(measurement)
         timestamp = data.get("timestamp")
@@ -267,8 +267,8 @@ class StreamingAPI:
         self,
         websocket: WebSocket,
         measurement: Any,
-        sensor_ids: List[str],
-        h3_indices: List[str],
+        sensor_ids: list[str],
+        h3_indices: list[str],
     ) -> None:
         """Forward one ingested measurement to a single subscribed socket."""
         sensor_id = getattr(measurement, "sensor_id", None)

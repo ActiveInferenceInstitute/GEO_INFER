@@ -25,7 +25,7 @@ Key Components:
 
 import numpy as np
 import h3
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Any
 from dataclasses import dataclass, field
 import logging
 from collections import defaultdict
@@ -53,10 +53,10 @@ def _suppress_estimator_warnings() -> Any:
 class H3SpatialGraph:
     """H3 neighbor graph keyed by cell and grid distance."""
 
-    def __init__(self, cells: List[str], max_distance: int = 3):
+    def __init__(self, cells: list[str], max_distance: int = 3):
         """Build distance-indexed H3 neighbor sets for known cells."""
         self.cells = cells
-        self.neighbors: Dict[str, Dict[int, set]] = {}
+        self.neighbors: dict[str, dict[int, set]] = {}
         cell_set = set(cells)
         for cell in cells:
             self.neighbors[cell] = {}
@@ -71,10 +71,10 @@ class H3SpatialGraph:
 class LevelSpatialGraph:
     """First-order H3 neighbor graph for one hierarchy level."""
 
-    def __init__(self, cells: List[str]):
+    def __init__(self, cells: list[str]):
         """Build direct H3 neighbor sets for known cells."""
         self.cells = cells
-        self.neighbors: Dict[str, set] = {}
+        self.neighbors: dict[str, set] = {}
         cell_set = set(cells)
         for cell in cells:
             try:
@@ -96,8 +96,8 @@ class EnvironmentalState:
     biodiversity_index: float = 0.5
     human_activity: float = 0.0
     carbon_flux: float = 0.0
-    timestamp: Optional[float] = None
-    uncertainty: Dict[str, float] = field(default_factory=dict)
+    timestamp: float | None = None
+    uncertainty: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -110,7 +110,7 @@ class ResourceAllocation:
     priority_score: float
     expected_benefit: float
     uncertainty: float
-    constraints: Dict[str, Any] = field(default_factory=dict)
+    constraints: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -120,9 +120,9 @@ class SpatialPrediction:
     location: str
     predicted_value: float
     uncertainty: float
-    confidence_interval: Tuple[float, float]
+    confidence_interval: tuple[float, float]
     prediction_horizon: float
-    contributing_factors: Dict[str, float] = field(default_factory=dict)
+    contributing_factors: dict[str, float] = field(default_factory=dict)
 
 
 class EnvironmentalActiveInferenceEngine:
@@ -137,7 +137,7 @@ class EnvironmentalActiveInferenceEngine:
     def __init__(
         self,
         h3_resolution: int = 8,
-        environmental_variables: Optional[List[str]] = None,
+        environmental_variables: list[str] | None = None,
         prediction_horizon: int = 10,
         uncertainty_threshold: float = 0.1,
     ) -> None:
@@ -164,10 +164,10 @@ class EnvironmentalActiveInferenceEngine:
         self.uncertainty_threshold = uncertainty_threshold
 
         # Initialize internal models
-        self.spatial_graph: Optional[H3SpatialGraph] = None
-        self.environmental_states: Dict[str, EnvironmentalState] = {}
-        self.observation_history: List[Any] = []
-        self.prediction_models: Dict[str, Any] = {}
+        self.spatial_graph: H3SpatialGraph | None = None
+        self.environmental_states: dict[str, EnvironmentalState] = {}
+        self.observation_history: list[Any] = []
+        self.prediction_models: dict[str, Any] = {}
         self.resource_optimizer = None
 
         # Gaussian Process models for each environmental variable
@@ -188,7 +188,7 @@ class EnvironmentalActiveInferenceEngine:
                 kernel=kernel, alpha=1e-6, normalize_y=True, n_restarts_optimizer=5
             )
 
-    def initialize_spatial_domain(self, boundary: Dict[str, Any]) -> None:
+    def initialize_spatial_domain(self, boundary: dict[str, Any]) -> None:
         """
         Initialize spatial domain using H3 hexagonal grid.
 
@@ -216,7 +216,7 @@ class EnvironmentalActiveInferenceEngine:
             logger.error(f"Failed to initialize spatial domain: {e}")
             raise
 
-    def _generate_h3_cells_from_boundary(self, boundary: Dict[str, Any]) -> List[str]:
+    def _generate_h3_cells_from_boundary(self, boundary: dict[str, Any]) -> list[str]:
         """Generate H3 cells from boundary specification.
 
         Handles GeoJSON Polygon, MultiPolygon, and bare coordinate lists.
@@ -234,7 +234,7 @@ class EnvironmentalActiveInferenceEngine:
                     and isinstance(item[1], (int, float))
                 )
 
-            def _extract_rings(data: Any) -> List[Any]:
+            def _extract_rings(data: Any) -> list[Any]:
                 if not isinstance(data, (list, tuple)) or len(data) == 0:
                     return []
                 if _is_coord_pair(data[0]):
@@ -272,13 +272,13 @@ class EnvironmentalActiveInferenceEngine:
         return list(cells)
 
     def _create_h3_spatial_graph(
-        self, h3_cells: List[str], max_neighbor_distance: int = 3
+        self, h3_cells: list[str], max_neighbor_distance: int = 3
     ) -> H3SpatialGraph:
         """Create a simple H3 spatial graph for neighbor relationships."""
         return H3SpatialGraph(h3_cells, max_neighbor_distance)
 
     def observe_environment(
-        self, observations: Dict[str, Dict[str, float]], timestamp: float
+        self, observations: dict[str, dict[str, float]], timestamp: float
     ) -> None:
         """
         Update environmental state beliefs based on new observations.
@@ -287,7 +287,7 @@ class EnvironmentalActiveInferenceEngine:
             observations: Dictionary mapping H3 cells to environmental observations
             timestamp: Observation timestamp
         """
-        observation_data: Dict[str, Any] = {
+        observation_data: dict[str, Any] = {
             "timestamp": timestamp,
             "observations": observations,
             "updated_cells": [],
@@ -347,8 +347,8 @@ class EnvironmentalActiveInferenceEngine:
                     logger.warning(f"Failed to update GP model for {var}: {e}")
 
     def predict_environmental_dynamics(
-        self, forecast_timesteps: Optional[int] = None
-    ) -> Dict[str, List[SpatialPrediction]]:
+        self, forecast_timesteps: int | None = None
+    ) -> dict[str, list[SpatialPrediction]]:
         """
         Predict future environmental states using learned dynamics.
 
@@ -413,7 +413,7 @@ class EnvironmentalActiveInferenceEngine:
         )
         return dict(predictions)
 
-    def _analyze_prediction_factors(self, cell: str, variable: str) -> Dict[str, float]:
+    def _analyze_prediction_factors(self, cell: str, variable: str) -> dict[str, float]:
         """Analyze factors contributing to predictions."""
         factors = {}
 
@@ -495,9 +495,9 @@ class EnvironmentalActiveInferenceEngine:
     def optimize_resource_allocation(
         self,
         resource_budget: float,
-        resource_types: List[str],
+        resource_types: list[str],
         optimization_objective: str = "biodiversity",
-    ) -> List[ResourceAllocation]:
+    ) -> list[ResourceAllocation]:
         """
         Optimize resource allocation using active inference principles.
 
@@ -567,8 +567,8 @@ class EnvironmentalActiveInferenceEngine:
         return allocations
 
     def _compute_allocation_priorities(
-        self, predictions: Dict[str, List[SpatialPrediction]], objective: str
-    ) -> Dict[str, Dict[str, float]]:
+        self, predictions: dict[str, list[SpatialPrediction]], objective: str
+    ) -> dict[str, dict[str, float]]:
         """Compute priority scores for resource allocation."""
         priorities = {}
 
@@ -656,11 +656,11 @@ class EnvironmentalActiveInferenceEngine:
     def _optimize_location_allocation(
         self,
         cell: str,
-        score_data: Dict[str, float],
-        resource_types: List[str],
+        score_data: dict[str, float],
+        resource_types: list[str],
         available_budget: float,
         objective: str,
-    ) -> Optional[ResourceAllocation]:
+    ) -> ResourceAllocation | None:
         """Optimize resource allocation for a specific location."""
 
         # Simple allocation strategy based on priority score
@@ -707,14 +707,14 @@ class EnvironmentalActiveInferenceEngine:
             },
         )
 
-    def analyze_environmental_uncertainty(self) -> Dict[str, Any]:
+    def analyze_environmental_uncertainty(self) -> dict[str, Any]:
         """
         Analyze environmental uncertainty across the spatial domain.
 
         Returns:
             Comprehensive uncertainty analysis
         """
-        uncertainty_analysis: Dict[str, Any] = {
+        uncertainty_analysis: dict[str, Any] = {
             "global_uncertainty": {},
             "spatial_uncertainty_patterns": {},
             "temporal_uncertainty_trends": {},
@@ -787,7 +787,7 @@ class EnvironmentalActiveInferenceEngine:
 
         return uncertainty_analysis
 
-    def compute_environmental_free_energy(self) -> Dict[str, float]:
+    def compute_environmental_free_energy(self) -> dict[str, float]:
         """
         Compute environmental free energy across the spatial domain.
 
@@ -802,7 +802,7 @@ class EnvironmentalActiveInferenceEngine:
         Returns:
             Dictionary containing free energy metrics
         """
-        free_energy_metrics: Dict[str, Any] = {
+        free_energy_metrics: dict[str, Any] = {
             "total_free_energy": 0.0,
             "spatial_free_energy": {},
             "variable_free_energy": {},
@@ -908,7 +908,7 @@ class EnvironmentalActiveInferenceEngine:
 
     def compute_spatial_priors(
         self, variable: str = "vegetation_density", n_states: int = 4
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """
         Compute Moran's I weighted spatial priors for Active Inference models.
 
@@ -923,7 +923,7 @@ class EnvironmentalActiveInferenceEngine:
         Returns:
             Dictionary mapping H3 cell to prior probability distribution
         """
-        priors: Dict[str, np.ndarray] = {}
+        priors: dict[str, np.ndarray] = {}
 
         # Extract values
         values = []
@@ -986,7 +986,7 @@ class EnvironmentalActiveInferenceEngine:
 
         return priors
 
-    def get_environmental_summary(self) -> Dict[str, Any]:
+    def get_environmental_summary(self) -> dict[str, Any]:
         """
         Get comprehensive summary of environmental state and analysis.
 
@@ -1045,7 +1045,7 @@ class EnvironmentalActiveInferenceEngine:
 
         return summary
 
-    def _compute_spatial_extent(self) -> Dict[str, float]:
+    def _compute_spatial_extent(self) -> dict[str, float]:
         """Compute spatial extent of the domain."""
         if not self.environmental_states:
             return {}
@@ -1065,7 +1065,7 @@ class EnvironmentalActiveInferenceEngine:
             "lng_span": max(lngs) - min(lngs),
         }
 
-    def _compute_time_span(self) -> Dict[str, float]:
+    def _compute_time_span(self) -> dict[str, float]:
         """Compute time span of observations."""
         if not self.observation_history:
             return {}
@@ -1077,7 +1077,7 @@ class EnvironmentalActiveInferenceEngine:
             "duration": max(timestamps) - min(timestamps),
         }
 
-    def _assess_model_status(self) -> Dict[str, str]:
+    def _assess_model_status(self) -> dict[str, str]:
         """Assess status of prediction models."""
         status = {}
         for var, model in self.gp_models.items():
@@ -1119,19 +1119,19 @@ class MultiScaleHierarchicalAnalyzer:
         self.scale_factor = scale_factor
 
         # Hierarchical structures
-        self.hierarchical_graphs: Dict[str, LevelSpatialGraph] = {}
-        self.hierarchical_beliefs: Dict[str, Dict[str, np.ndarray]] = {}
-        self.scale_relationships: Dict[str, Any] = {}
+        self.hierarchical_graphs: dict[str, LevelSpatialGraph] = {}
+        self.hierarchical_beliefs: dict[str, dict[str, np.ndarray]] = {}
+        self.scale_relationships: dict[str, Any] = {}
 
         logger.info(
             f"Initialized MultiScaleHierarchicalAnalyzer with {hierarchy_levels} levels"
         )
 
     def _create_hierarchical_h3_model(
-        self, base_resolution: int, boundary: Dict[str, Any], levels: int
-    ) -> Dict[str, LevelSpatialGraph]:
+        self, base_resolution: int, boundary: dict[str, Any], levels: int
+    ) -> dict[str, LevelSpatialGraph]:
         """Create hierarchical H3 models at different resolutions."""
-        hierarchical_graphs: Dict[str, LevelSpatialGraph] = {}
+        hierarchical_graphs: dict[str, LevelSpatialGraph] = {}
 
         for level in range(levels):
             resolution = max(0, base_resolution - level)
@@ -1147,8 +1147,8 @@ class MultiScaleHierarchicalAnalyzer:
         return hierarchical_graphs
 
     def _generate_h3_cells_from_boundary(
-        self, boundary: Dict[str, Any], resolution: int
-    ) -> List[str]:
+        self, boundary: dict[str, Any], resolution: int
+    ) -> list[str]:
         """Generate H3 cells from boundary at specified resolution."""
         cells = set()
 
@@ -1173,11 +1173,11 @@ class MultiScaleHierarchicalAnalyzer:
 
         return list(cells)
 
-    def _create_level_spatial_graph(self, cells: List[str]) -> LevelSpatialGraph:
+    def _create_level_spatial_graph(self, cells: list[str]) -> LevelSpatialGraph:
         """Create spatial graph for a hierarchical level."""
         return LevelSpatialGraph(cells)
 
-    def initialize_hierarchy(self, boundary: Dict[str, Any]) -> None:
+    def initialize_hierarchy(self, boundary: dict[str, Any]) -> None:
         """Initialize hierarchical structure."""
         self.hierarchical_graphs = self._create_hierarchical_h3_model(
             self.base_resolution, boundary, self.hierarchy_levels
@@ -1196,9 +1196,9 @@ class MultiScaleHierarchicalAnalyzer:
 
     def propagate_beliefs_hierarchically(
         self,
-        bottom_up_evidence: Dict[str, Dict[str, np.ndarray]],
-        top_down_priors: Optional[Dict[str, Dict[str, np.ndarray]]] = None,
-    ) -> Dict[str, Dict[str, np.ndarray]]:
+        bottom_up_evidence: dict[str, dict[str, np.ndarray]],
+        top_down_priors: dict[str, dict[str, np.ndarray]] | None = None,
+    ) -> dict[str, dict[str, np.ndarray]]:
         """
         Propagate beliefs hierarchically using message passing.
 
@@ -1242,7 +1242,7 @@ class MultiScaleHierarchicalAnalyzer:
         return updated_beliefs
 
     def _aggregate_beliefs_upward(
-        self, lower_level: str, higher_level: Optional[str] = None
+        self, lower_level: str, higher_level: str | None = None
     ) -> None:
         """Aggregate beliefs from lower level to higher level."""
         if higher_level is None:
@@ -1291,7 +1291,7 @@ class MultiScaleHierarchicalAnalyzer:
                 self.hierarchical_beliefs[higher_level][parent_cell] = posterior
 
     def _propagate_priors_downward(
-        self, higher_level: str, lower_level: Optional[str] = None
+        self, higher_level: str, lower_level: str | None = None
     ) -> None:
         """Propagate priors from higher level to lower level."""
         if lower_level is None:
@@ -1332,7 +1332,7 @@ class MultiScaleHierarchicalAnalyzer:
                         modulated_belief
                     )
 
-    def _find_child_cells(self, parent_cell: str, child_level: str) -> List[str]:
+    def _find_child_cells(self, parent_cell: str, child_level: str) -> list[str]:
         """Find child cells that map to a parent cell."""
         child_cells = []
 
@@ -1363,7 +1363,7 @@ class MultiScaleHierarchicalAnalyzer:
 
         return child_cells
 
-    def _find_parent_cell(self, child_cell: str, parent_level: str) -> Optional[str]:
+    def _find_parent_cell(self, child_cell: str, parent_level: str) -> str | None:
         """Find parent cell for a given child cell."""
         try:
             # Extract resolution from parent level name
@@ -1379,14 +1379,14 @@ class MultiScaleHierarchicalAnalyzer:
 
         return None
 
-    def analyze_cross_scale_interactions(self) -> Dict[str, Any]:
+    def analyze_cross_scale_interactions(self) -> dict[str, Any]:
         """
         Analyze interactions across different spatial scales.
 
         Returns:
             Analysis of cross-scale patterns and interactions
         """
-        interactions: Dict[str, Dict[str, Any]] = {
+        interactions: dict[str, dict[str, Any]] = {
             "scale_coherence": {},
             "information_flow": {},
             "emergence_indicators": {},
@@ -1478,7 +1478,7 @@ class MultiScaleHierarchicalAnalyzer:
 
         return np.mean(coherence_scores) if coherence_scores else 0.0
 
-    def detect_emergent_patterns(self) -> List[Dict[str, Any]]:
+    def detect_emergent_patterns(self) -> list[dict[str, Any]]:
         """
         Detect emergent spatial patterns across hierarchical levels.
 
@@ -1544,7 +1544,7 @@ class MultiScaleHierarchicalAnalyzer:
 
         return patterns
 
-    def _compute_spatial_extent(self, cells: List[str]) -> Dict[str, float]:
+    def _compute_spatial_extent(self, cells: list[str]) -> dict[str, float]:
         """Compute spatial extent of a set of cells."""
         if not cells:
             return {}
@@ -1567,9 +1567,9 @@ class MultiScaleHierarchicalAnalyzer:
 
 
 def analyze_multi_scale_patterns(
-    hierarchical_graphs: Dict[str, Any],
-    hierarchical_beliefs: Dict[str, Dict[str, np.ndarray]],
-) -> Dict[str, Any]:
+    hierarchical_graphs: dict[str, Any],
+    hierarchical_beliefs: dict[str, dict[str, np.ndarray]],
+) -> dict[str, Any]:
     """
     Analyze multi-scale patterns in hierarchical belief structures.
 
@@ -1580,7 +1580,7 @@ def analyze_multi_scale_patterns(
     Returns:
         Multi-scale pattern analysis results
     """
-    analysis: Dict[str, Any] = {
+    analysis: dict[str, Any] = {
         "scale_statistics": {},
         "pattern_diversity": {},
         "information_integration": {},

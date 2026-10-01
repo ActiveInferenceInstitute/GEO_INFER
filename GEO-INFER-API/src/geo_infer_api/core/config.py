@@ -5,7 +5,6 @@ Configuration settings for the GEO-INFER-API.
 import os
 import json
 from functools import lru_cache
-from typing import List, Optional, Union
 
 from pydantic import field_validator
 
@@ -59,7 +58,7 @@ class Settings(BaseSettings):
     api_prefix: str = "/api/v1"
 
     # CORS settings
-    cors_origins: List[str] = []
+    cors_origins: list[str] = []
 
     # Security settings
     secret_key: str
@@ -68,7 +67,7 @@ class Settings(BaseSettings):
     # that consumes them.
 
     # Database settings
-    database_url: Optional[str] = None
+    database_url: str | None = None
 
     # OGC API settings
     ogc_api_features_enabled: bool = True
@@ -88,7 +87,7 @@ class Settings(BaseSettings):
 
     @field_validator("cors_origins", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+    def assemble_cors_origins(cls, v: str | list[str]) -> list[str]:
         """Parse CORS origins from a JSON array string, comma list, or list."""
         if isinstance(v, str):
             v = v.strip()
@@ -98,7 +97,7 @@ class Settings(BaseSettings):
         return list(v)
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Get cached settings to avoid reloading from env every time.
 

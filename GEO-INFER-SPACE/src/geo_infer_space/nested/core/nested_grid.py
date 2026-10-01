@@ -8,7 +8,8 @@ with hierarchical relationships, boundary management, and system-level operation
 import logging
 from datetime import datetime
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Union, Tuple, Set, Callable
+from typing import Any
+from collections.abc import Callable
 from enum import Enum
 from collections import defaultdict
 
@@ -32,7 +33,7 @@ try:
     # Create module-level interface for convenience
     _spatial = SpatialIndexingInterface()
 
-    def grid_disk(cell_index: str, k: int = 1) -> List[str]:
+    def grid_disk(cell_index: str, k: int = 1) -> list[str]:
         """Get cells within grid distance k using the unified interface."""
         return _spatial.get_cell_neighbors(cell_index, k)
 
@@ -40,7 +41,7 @@ try:
         """Get grid distance using unified interface."""
         return _spatial.get_cell_distance(cell1, cell2)
 
-    def neighbor_cells(cell_index: str) -> List[str]:
+    def neighbor_cells(cell_index: str) -> list[str]:
         """Get immediate neighbors using unified interface."""
         return _spatial.get_cell_neighbors(cell_index, 1)
 
@@ -84,10 +85,10 @@ class NestedCell:
     h3_cell: H3Cell
 
     # Nested system properties
-    system_id: Optional[str] = None
-    parent_cells: Set[str] = field(default_factory=set)
-    child_cells: Set[str] = field(default_factory=set)
-    neighbor_cells: Set[str] = field(default_factory=set)
+    system_id: str | None = None
+    parent_cells: set[str] = field(default_factory=set)
+    child_cells: set[str] = field(default_factory=set)
+    neighbor_cells: set[str] = field(default_factory=set)
 
     # Cell classification
     cell_type: NestedCellType = NestedCellType.CORE
@@ -95,16 +96,16 @@ class NestedCell:
 
     # Boundary information
     is_boundary: bool = False
-    boundary_ids: Set[str] = field(default_factory=set)
+    boundary_ids: set[str] = field(default_factory=set)
     boundary_strength: float = 0.0
 
     # Message passing
-    message_queue: List[Any] = field(default_factory=list)
-    message_history: List[Any] = field(default_factory=list)
+    message_queue: list[Any] = field(default_factory=list)
+    message_history: list[Any] = field(default_factory=list)
 
     # System dynamics
-    state_variables: Dict[str, Any] = field(default_factory=dict)
-    flow_variables: Dict[str, float] = field(default_factory=dict)
+    state_variables: dict[str, Any] = field(default_factory=dict)
+    flow_variables: dict[str, float] = field(default_factory=dict)
 
     # Metadata
     created_at: datetime = field(default_factory=datetime.now)
@@ -130,7 +131,7 @@ class NestedCell:
         return self.h3_cell.resolution if self.h3_cell else 0
 
     @property
-    def coordinates(self) -> Tuple[float, float]:
+    def coordinates(self) -> tuple[float, float]:
         """Get latitude, longitude coordinates."""
         if self.h3_cell:
             return (self.h3_cell.latitude, self.h3_cell.longitude)
@@ -191,7 +192,7 @@ class NestedCell:
         self.message_queue.append(message)
         self.updated_at = datetime.now()
 
-    def process_messages(self) -> List[Any]:
+    def process_messages(self) -> list[Any]:
         """Process and return all queued messages."""
         messages = self.message_queue.copy()
         self.message_history.extend(messages)
@@ -221,7 +222,7 @@ class NestedCell:
             or other_index in self.child_cells
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "index": self.index,
@@ -266,23 +267,23 @@ class NestedSystem:
         self.description = description
 
         # System composition
-        self.cells: Dict[str, NestedCell] = {}
-        self.subsystems: Dict[str, "NestedSystem"] = {}
-        self.parent_system: Optional["NestedSystem"] = None
+        self.cells: dict[str, NestedCell] = {}
+        self.subsystems: dict[str, NestedSystem] = {}
+        self.parent_system: NestedSystem | None = None
 
         # System properties
         self.state = NestedSystemState.ACTIVE
         self.hierarchy_level = 0
-        self.boundary_cells: Set[str] = set()
+        self.boundary_cells: set[str] = set()
 
         # System metrics
         self.total_area: float = 0.0
-        self.center_coordinates: Tuple[float, float] = (0.0, 0.0)
-        self.bounding_box: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
+        self.center_coordinates: tuple[float, float] = (0.0, 0.0)
+        self.bounding_box: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
 
         # System dynamics
-        self.system_variables: Dict[str, Any] = {}
-        self.flow_balance: Dict[str, float] = {}
+        self.system_variables: dict[str, Any] = {}
+        self.flow_balance: dict[str, float] = {}
 
         # Metadata
         self.created_at = datetime.now()
@@ -322,7 +323,7 @@ class NestedSystem:
             return True
         return False
 
-    def get_all_cells(self, include_subsystems: bool = True) -> Dict[str, NestedCell]:
+    def get_all_cells(self, include_subsystems: bool = True) -> dict[str, NestedCell]:
         """Get all cells in the system and optionally subsystems."""
         all_cells = self.cells.copy()
 
@@ -332,11 +333,11 @@ class NestedSystem:
 
         return all_cells
 
-    def get_boundary_cells(self) -> Dict[str, NestedCell]:
+    def get_boundary_cells(self) -> dict[str, NestedCell]:
         """Get all boundary cells in the system."""
         return {idx: cell for idx, cell in self.cells.items() if cell.is_boundary}
 
-    def detect_boundaries(self, external_cells: Optional[Set[str]] = None) -> None:
+    def detect_boundaries(self, external_cells: set[str] | None = None) -> None:
         """Detect and mark boundary cells."""
         if not self.cells:
             return
@@ -359,7 +360,7 @@ class NestedSystem:
 
         self.updated_at = datetime.now()
 
-    def calculate_connectivity(self) -> Dict[str, Any]:
+    def calculate_connectivity(self) -> dict[str, Any]:
         """Calculate system connectivity metrics."""
         if not self.cells:
             return {"error": "No cells in system"}
@@ -441,7 +442,7 @@ class NestedSystem:
 
     def split_by_criteria(
         self, criteria_func: Callable[[NestedCell], Any]
-    ) -> List["NestedSystem"]:
+    ) -> list["NestedSystem"]:
         """Split system based on criteria function."""
         if not self.cells:
             return [self]
@@ -469,7 +470,7 @@ class NestedSystem:
 
         return split_systems
 
-    def get_system_summary(self) -> Dict[str, Any]:
+    def get_system_summary(self) -> dict[str, Any]:
         """Get comprehensive system summary."""
         connectivity = self.calculate_connectivity()
 
@@ -509,24 +510,24 @@ class NestedH3Grid:
         self.name = name
 
         # Grid components
-        self.cells: Dict[str, NestedCell] = {}
-        self.systems: Dict[str, NestedSystem] = {}
+        self.cells: dict[str, NestedCell] = {}
+        self.systems: dict[str, NestedSystem] = {}
 
         # Hierarchical structure
-        self.hierarchy_levels: Dict[int, Set[str]] = defaultdict(set)
-        self.root_systems: Set[str] = set()
+        self.hierarchy_levels: dict[int, set[str]] = defaultdict(set)
+        self.root_systems: set[str] = set()
 
         # Grid properties
-        self.resolutions: Set[int] = set()
+        self.resolutions: set[int] = set()
         self.total_area: float = 0.0
-        self.bounding_box: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
+        self.bounding_box: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
 
         # Metadata
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
 
     def add_cell(
-        self, h3_cell: Union[H3Cell, NestedCell], system_id: Optional[str] = None
+        self, h3_cell: H3Cell | NestedCell, system_id: str | None = None
     ) -> NestedCell:
         """Add an H3 cell or existing nested cell to the grid."""
         if isinstance(h3_cell, NestedCell):
@@ -543,10 +544,10 @@ class NestedH3Grid:
 
     def build_h3_hierarchy_from_boundary(
         self,
-        boundary: Dict[str, Any],
-        resolutions: List[int],
+        boundary: dict[str, Any],
+        resolutions: list[int],
         system_prefix: str = "nested_h3",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Build a deterministic nested H3 hierarchy from a GeoJSON-like boundary.
 
@@ -558,7 +559,7 @@ class NestedH3Grid:
             raise RuntimeError("h3-py package required for nested H3 hierarchy")
         ordered = self._validate_h3_resolution_sequence(resolutions)
         finest = ordered[-1]
-        cells: List[str] = []
+        cells: list[str] = []
         if H3_CORE_AVAILABLE:
             cells = list(_spatial.polygon_to_cells(boundary, finest))
         if not cells:
@@ -569,10 +570,10 @@ class NestedH3Grid:
 
     def build_h3_hierarchy_from_cells(
         self,
-        cells: List[str],
-        resolutions: List[int],
+        cells: list[str],
+        resolutions: list[int],
         system_prefix: str = "nested_h3",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Build a nested H3 hierarchy from root or leaf H3 cells.
 
@@ -589,7 +590,7 @@ class NestedH3Grid:
 
         finest = ordered[-1]
         finest_cells = self._normalize_cells_to_resolution(cells, finest, ordered)
-        cells_by_resolution: Dict[int, List[str]] = {}
+        cells_by_resolution: dict[int, list[str]] = {}
         for resolution in ordered:
             if resolution == finest:
                 level_cells = finest_cells
@@ -600,8 +601,8 @@ class NestedH3Grid:
             cells_by_resolution[resolution] = level_cells
             self._register_h3_level_cells(level_cells, resolution, system_prefix)
 
-        parent_child_map: Dict[str, List[str]] = {}
-        child_parent_map: Dict[str, str] = {}
+        parent_child_map: dict[str, list[str]] = {}
+        child_parent_map: dict[str, str] = {}
         for parent_res, child_res in zip(ordered, ordered[1:]):
             parents = set(cells_by_resolution[parent_res])
             for child in cells_by_resolution[child_res]:
@@ -655,8 +656,8 @@ class NestedH3Grid:
         return hierarchy
 
     def validate_h3_hierarchy(
-        self, hierarchy: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, hierarchy: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Validate H3 hierarchy closure, resolution consistency, and adjacency.
 
@@ -687,8 +688,8 @@ class NestedH3Grid:
                 "validated_at": datetime.now().isoformat(),
             }
 
-        issues: List[str] = []
-        warnings: List[str] = []
+        issues: list[str] = []
+        warnings: list[str] = []
         resolutions = [int(value) for value in hierarchy.get("resolutions", [])]
         try:
             ordered = self._validate_h3_resolution_sequence(resolutions)
@@ -709,7 +710,7 @@ class NestedH3Grid:
             for child, parent in hierarchy.get("child_parent_map", {}).items()
         }
 
-        all_cells: Set[str] = set()
+        all_cells: set[str] = set()
         for resolution in ordered:
             for cell in cells_by_resolution.get(resolution, []):
                 all_cells.add(cell)
@@ -780,7 +781,7 @@ class NestedH3Grid:
             "validated_at": datetime.now().isoformat(),
         }
 
-    def get_h3_parent_child_map(self) -> Dict[str, List[str]]:
+    def get_h3_parent_child_map(self) -> dict[str, list[str]]:
         """Return the current H3 parent-child map."""
         hierarchy = getattr(self, "h3_hierarchy", {})
         return {
@@ -788,7 +789,7 @@ class NestedH3Grid:
             for parent, children in hierarchy.get("parent_child_map", {}).items()
         }
 
-    def get_h3_same_level_neighbors(self) -> Dict[str, Dict[str, List[str]]]:
+    def get_h3_same_level_neighbors(self) -> dict[str, dict[str, list[str]]]:
         """Return same-resolution H3 neighbor maps for the current hierarchy."""
         hierarchy = getattr(self, "h3_hierarchy", {})
         return {
@@ -800,17 +801,17 @@ class NestedH3Grid:
 
     def aggregate_child_values_to_parents(
         self,
-        values_by_child: Dict[str, List[float]],
+        values_by_child: dict[str, list[float]],
         parent_resolution: int,
-        weights_by_child: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, List[float]]:
+        weights_by_child: dict[str, float] | None = None,
+    ) -> dict[str, list[float]]:
         """
         Aggregate numeric child vectors to H3 parents with finite normalized means.
         """
         if not H3_AVAILABLE:
             raise RuntimeError("h3-py package required for H3 aggregation")
-        grouped: Dict[str, List[np.ndarray]] = defaultdict(list)
-        grouped_weights: Dict[str, List[float]] = defaultdict(list)
+        grouped: dict[str, list[np.ndarray]] = defaultdict(list)
+        grouped_weights: dict[str, list[float]] = defaultdict(list)
         for child, values in values_by_child.items():
             if not h3.is_valid_cell(child):
                 raise ValueError(f"Invalid H3 child cell: {child}")
@@ -827,7 +828,7 @@ class NestedH3Grid:
                 float((weights_by_child or {}).get(child, 1.0))
             )
 
-        aggregated: Dict[str, List[float]] = {}
+        aggregated: dict[str, list[float]] = {}
         for parent, arrays in grouped.items():
             weights = np.asarray(grouped_weights[parent], dtype=float)
             weights = np.maximum(weights, 0.0)
@@ -841,7 +842,7 @@ class NestedH3Grid:
             aggregated[parent] = mean.tolist()
         return dict(sorted(aggregated.items()))
 
-    def _validate_h3_resolution_sequence(self, resolutions: List[int]) -> List[int]:
+    def _validate_h3_resolution_sequence(self, resolutions: list[int]) -> list[int]:
         """Validate an ordered unique H3 resolution sequence."""
         ordered = [int(resolution) for resolution in resolutions]
         if len(ordered) < 2:
@@ -854,10 +855,10 @@ class NestedH3Grid:
         return ordered
 
     def _normalize_cells_to_resolution(
-        self, cells: List[str], target_resolution: int, allowed_resolutions: List[int]
-    ) -> List[str]:
+        self, cells: list[str], target_resolution: int, allowed_resolutions: list[int]
+    ) -> list[str]:
         """Normalize valid H3 seed cells to the finest target resolution."""
-        normalized: Set[str] = set()
+        normalized: set[str] = set()
         for raw_cell in cells:
             cell = str(raw_cell)
             if not h3.is_valid_cell(cell):
@@ -879,7 +880,7 @@ class NestedH3Grid:
         return sorted(normalized)
 
     def _register_h3_level_cells(
-        self, cells: List[str], resolution: int, system_prefix: str
+        self, cells: list[str], resolution: int, system_prefix: str
     ) -> None:
         """Register cells and a per-resolution system for hierarchy exports."""
         cell_indices = []
@@ -898,13 +899,13 @@ class NestedH3Grid:
         self.hierarchy_levels[resolution].add(system_id)
 
     def _build_same_level_neighbor_map(
-        self, cells_by_resolution: Dict[int, List[str]]
-    ) -> Dict[str, Dict[str, List[str]]]:
+        self, cells_by_resolution: dict[int, list[str]]
+    ) -> dict[str, dict[str, list[str]]]:
         """Build deterministic same-resolution neighbor maps."""
-        result: Dict[str, Dict[str, List[str]]] = {}
+        result: dict[str, dict[str, list[str]]] = {}
         for resolution, cells in cells_by_resolution.items():
             cell_set = set(cells)
-            level_neighbors: Dict[str, List[str]] = {}
+            level_neighbors: dict[str, list[str]] = {}
             for cell in cells:
                 try:
                     neighbors = sorted(
@@ -918,7 +919,7 @@ class NestedH3Grid:
             result[str(resolution)] = level_neighbors
         return result
 
-    def _count_neighbor_edges(self, neighbor_map: Dict[str, List[str]]) -> int:
+    def _count_neighbor_edges(self, neighbor_map: dict[str, list[str]]) -> int:
         """Count undirected edges in a same-level neighbor map."""
         edges = {
             tuple(sorted((str(cell), str(neighbor))))
@@ -928,8 +929,8 @@ class NestedH3Grid:
         return len(edges)
 
     def _cells_from_boundary_vertices(
-        self, boundary: Dict[str, Any], resolution: int
-    ) -> List[str]:
+        self, boundary: dict[str, Any], resolution: int
+    ) -> list[str]:
         """Fallback boundary cell extraction from GeoJSON coordinate vertices."""
         coordinates = boundary.get("coordinates", [])
 
@@ -941,14 +942,14 @@ class NestedH3Grid:
                 and isinstance(value[1], (int, float))
             )
 
-        def walk(value: Any) -> List[Tuple[float, float]]:
+        def walk(value: Any) -> list[tuple[float, float]]:
             if not isinstance(value, (list, tuple)):
                 return []
             if value and is_pair(value[0]):
                 return [
                     (float(item[1]), float(item[0])) for item in value if is_pair(item)
                 ]
-            points: List[Tuple[float, float]] = []
+            points: list[tuple[float, float]] = []
             for child in value:
                 points.extend(walk(child))
             return points
@@ -960,7 +961,7 @@ class NestedH3Grid:
     def create_system(
         self,
         system_id: str,
-        cell_indices: List[str],
+        cell_indices: list[str],
         name: str = "",
         description: str = "",
     ) -> NestedSystem:
@@ -985,9 +986,9 @@ class NestedH3Grid:
     def create_hierarchical_system(
         self,
         base_resolution: int,
-        target_resolutions: List[int],
-        bounds: Tuple[float, float, float, float],
-    ) -> Dict[int, NestedSystem]:
+        target_resolutions: list[int],
+        bounds: tuple[float, float, float, float],
+    ) -> dict[int, NestedSystem]:
         """Create hierarchical nested systems across multiple resolutions."""
         if not H3_AVAILABLE:
             logger.error("H3 not available for hierarchical system creation")
@@ -1047,20 +1048,20 @@ class NestedH3Grid:
             system.detect_boundaries()
         self.updated_at = datetime.now()
 
-    def get_system_by_id(self, system_id: str) -> Optional[NestedSystem]:
+    def get_system_by_id(self, system_id: str) -> NestedSystem | None:
         """Get system by ID."""
         return self.systems.get(system_id)
 
-    def get_systems_at_level(self, level: int) -> List[NestedSystem]:
+    def get_systems_at_level(self, level: int) -> list[NestedSystem]:
         """Get all systems at a specific hierarchy level."""
         system_ids = self.hierarchy_levels.get(level, set())
         return [self.systems[sid] for sid in system_ids if sid in self.systems]
 
-    def get_root_systems(self) -> List[NestedSystem]:
+    def get_root_systems(self) -> list[NestedSystem]:
         """Get all root-level systems."""
         return [self.systems[sid] for sid in self.root_systems if sid in self.systems]
 
-    def merge_systems(self, system_id1: str, system_id2: str) -> Optional[NestedSystem]:
+    def merge_systems(self, system_id1: str, system_id2: str) -> NestedSystem | None:
         """Merge two systems."""
         system1 = self.systems.get(system_id1)
         system2 = self.systems.get(system_id2)
@@ -1082,7 +1083,7 @@ class NestedH3Grid:
         self,
         system_id: str,
         criteria_func: Callable[[NestedCell], Any],
-    ) -> List[NestedSystem]:
+    ) -> list[NestedSystem]:
         """Split a system based on criteria."""
         system = self.systems.get(system_id)
         if not system:
@@ -1117,7 +1118,7 @@ class NestedH3Grid:
                 max(lats),  # max_lng, max_lat
             )
 
-    def get_grid_summary(self) -> Dict[str, Any]:
+    def get_grid_summary(self) -> dict[str, Any]:
         """Get comprehensive grid summary."""
         return {
             "name": self.name,
@@ -1135,7 +1136,7 @@ class NestedH3Grid:
             "updated_at": self.updated_at.isoformat(),
         }
 
-    def export_to_geojson(self) -> Dict[str, Any]:
+    def export_to_geojson(self) -> dict[str, Any]:
         """Export grid to GeoJSON format."""
         features = []
 

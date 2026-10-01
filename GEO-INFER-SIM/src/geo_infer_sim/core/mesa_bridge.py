@@ -22,8 +22,9 @@ The bridge is responsible for:
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
-from typing import Any, Callable, Dict, Optional
+from datetime import datetime, UTC
+from typing import Any
+from collections.abc import Callable
 
 import numpy as np
 import pandas as pd
@@ -59,8 +60,8 @@ except ImportError:  # pragma: no cover - exercised when mesa is missing
 
 
 # Type aliases for clarity (kept permissive since Mesa is optional).
-StateExtractor = Callable[[Any], Dict[str, Any]]
-MetricExtractors = Dict[str, Callable[[Any], float]]
+StateExtractor = Callable[[Any], dict[str, Any]]
+MetricExtractors = dict[str, Callable[[Any], float]]
 
 
 class MesaModelBridge(SimulationEngine):
@@ -97,9 +98,9 @@ class MesaModelBridge(SimulationEngine):
     def __init__(
         self,
         model: Any,
-        config: Optional[SimulationConfig] = None,
-        state_extractor: Optional[StateExtractor] = None,
-        metric_extractors: Optional[MetricExtractors] = None,
+        config: SimulationConfig | None = None,
+        state_extractor: StateExtractor | None = None,
+        metric_extractors: MetricExtractors | None = None,
     ) -> None:
         """Initialize the Mesa-backed bridge.
 
@@ -132,7 +133,7 @@ class MesaModelBridge(SimulationEngine):
     # ------------------------------------------------------------------
     # Default extractors
     # ------------------------------------------------------------------
-    def _default_state_extractor(self, model: Any) -> Dict[str, Any]:
+    def _default_state_extractor(self, model: Any) -> dict[str, Any]:
         """Snapshot model state, preferring DataCollector model reporters."""
         collector = getattr(model, "datacollector", None)
         if isinstance(collector, _MesaDataCollector):
@@ -147,7 +148,7 @@ class MesaModelBridge(SimulationEngine):
                 # schema as post-step snapshots.
                 reporters = getattr(collector, "model_reporters", None) or {}
                 if reporters:
-                    snapshot: Dict[str, Any] = {}
+                    snapshot: dict[str, Any] = {}
                     for name, reporter in reporters.items():
                         try:
                             snapshot[str(name)] = _to_jsonable(reporter(model))
@@ -201,7 +202,7 @@ class MesaModelBridge(SimulationEngine):
     # ------------------------------------------------------------------
     # SimulationEngine interface
     # ------------------------------------------------------------------
-    def initialize(self, initial_state: Optional[Dict[str, Any]] = None) -> None:
+    def initialize(self, initial_state: dict[str, Any] | None = None) -> None:
         """Initialize the bridge.
 
         ``initial_state`` is optional for Mesa-backed runs because the model
@@ -228,7 +229,7 @@ class MesaModelBridge(SimulationEngine):
             )
         logger.info("Mesa-backed simulation initialized")
 
-    def step(self, step_func: Optional[Callable[..., Any]] = None) -> None:
+    def step(self, step_func: Callable[..., Any] | None = None) -> None:
         """Advance the Mesa model by one ``step()``.
 
         ``step_func`` is accepted for API parity with
@@ -276,7 +277,7 @@ class MesaModelBridge(SimulationEngine):
                     {"time": self.current_time, "state": new_state.copy()}
                 )
 
-    def run(self, step_func: Optional[Callable[..., Any]] = None) -> Dict[str, Any]:
+    def run(self, step_func: Callable[..., Any] | None = None) -> dict[str, Any]:
         """Run the Mesa model until ``max_time`` or the model stops.
 
         The loop terminates when *any* of the following holds:
@@ -306,7 +307,7 @@ class MesaModelBridge(SimulationEngine):
             self.initialize()
         if self.state == SimulationState.INITIALIZED:
             self.state = SimulationState.RUNNING
-        start_time = datetime.now(timezone.utc).replace(tzinfo=None)
+        start_time = datetime.now(UTC).replace(tzinfo=None)
 
         try:
             while self.current_time < self.config.max_time:
@@ -325,7 +326,7 @@ class MesaModelBridge(SimulationEngine):
             if self.state not in (SimulationState.CANCELLED, SimulationState.FAILED):
                 self.state = SimulationState.COMPLETED
 
-            end_time = datetime.now(timezone.utc).replace(tzinfo=None)
+            end_time = datetime.now(UTC).replace(tzinfo=None)
             duration = (end_time - start_time).total_seconds()
 
             results = {

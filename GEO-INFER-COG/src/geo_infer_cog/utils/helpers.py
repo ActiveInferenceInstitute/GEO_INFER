@@ -22,7 +22,7 @@ import numpy as np
 import logging
 import json
 import yaml
-from typing import Dict, List, Optional, Any, Union, cast
+from typing import Any, cast
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -32,8 +32,8 @@ logger = logging.getLogger(__name__)
 
 
 def load_cognitive_profile(
-    user_id: str, profile_path: Union[str, Path]
-) -> Optional[UserCognitiveProfile]:
+    user_id: str, profile_path: str | Path
+) -> UserCognitiveProfile | None:
     """
     Load user cognitive profile from file.
 
@@ -49,7 +49,7 @@ def load_cognitive_profile(
     # Try loading from specific file
     if profile_path.is_file():
         try:
-            with open(profile_path, "r") as f:
+            with open(profile_path) as f:
                 profile_data = json.load(f)
                 return UserCognitiveProfile.import_profile(profile_data)
         except Exception as e:
@@ -61,7 +61,7 @@ def load_cognitive_profile(
         profile_file = profile_path / f"{user_id}_profile.json"
         if profile_file.exists():
             try:
-                with open(profile_file, "r") as f:
+                with open(profile_file) as f:
                     profile_data = json.load(f)
                     return UserCognitiveProfile.import_profile(profile_data)
             except Exception as e:
@@ -72,7 +72,7 @@ def load_cognitive_profile(
 
 
 def save_cognitive_profile(
-    profile: UserCognitiveProfile, profile_path: Union[str, Path]
+    profile: UserCognitiveProfile, profile_path: str | Path
 ) -> bool:
     """
     Save user cognitive profile to file.
@@ -102,8 +102,8 @@ def save_cognitive_profile(
 
 
 def load_cognitive_model(
-    model_path: Union[str, Path], model_type: str = "auto"
-) -> Dict[str, Any]:
+    model_path: str | Path, model_type: str = "auto"
+) -> dict[str, Any]:
     """
     Load cognitive model from file.
 
@@ -134,7 +134,7 @@ def load_cognitive_model(
                 )
 
         logger.info(f"Model loaded from {model_path}")
-        return cast(Dict[str, Any], model_config)
+        return cast(dict[str, Any], model_config)
 
     except Exception as e:
         logger.error(f"Error loading model from {model_path}: {str(e)}")
@@ -142,7 +142,7 @@ def load_cognitive_model(
 
 
 def save_cognitive_model(
-    model_config: Dict[str, Any], model_path: Union[str, Path], model_type: str = "auto"
+    model_config: dict[str, Any], model_path: str | Path, model_type: str = "auto"
 ) -> bool:
     """
     Save cognitive model configuration to file.
@@ -185,7 +185,7 @@ def save_cognitive_model(
         return False
 
 
-def create_default_cognitive_config() -> Dict[str, Any]:
+def create_default_cognitive_config() -> dict[str, Any]:
     """Create default cognitive processing configuration."""
     return {
         "core": {
@@ -233,7 +233,7 @@ def create_default_cognitive_config() -> Dict[str, Any]:
     }
 
 
-def setup_cognitive_logging(config: Dict[str, Any]) -> None:
+def setup_cognitive_logging(config: dict[str, Any]) -> None:
     """Attach file/stream handlers to the ``geo_infer_cog`` logger.
 
     CLI-only helper. Command-line entrypoints may call this to route
@@ -270,7 +270,7 @@ def setup_cognitive_logging(config: Dict[str, Any]) -> None:
 
 
 def calculate_cognitive_load(
-    spatial_data: Dict[str, Any], user_profile: Optional[UserCognitiveProfile] = None
+    spatial_data: dict[str, Any], user_profile: UserCognitiveProfile | None = None
 ) -> float:
     """
     Calculate cognitive load for processing spatial data.
@@ -322,8 +322,8 @@ def calculate_cognitive_load(
 
 
 def format_spatial_data_for_display(
-    spatial_data: Dict[str, Any], user_profile: Optional[UserCognitiveProfile] = None
-) -> Dict[str, Any]:
+    spatial_data: dict[str, Any], user_profile: UserCognitiveProfile | None = None
+) -> dict[str, Any]:
     """
     Format spatial data for user-friendly display.
 
@@ -334,7 +334,7 @@ def format_spatial_data_for_display(
     Returns:
         Formatted data suitable for display
     """
-    formatted_data: Dict[str, Any] = {
+    formatted_data: dict[str, Any] = {
         "display_format": "standard",
         "simplified": False,
         "user_optimized": user_profile is not None,
@@ -372,8 +372,8 @@ def format_spatial_data_for_display(
 
 
 def _simplify_geometry(
-    geometry: Dict[str, Any], user_profile: Optional[UserCognitiveProfile] = None
-) -> Dict[str, Any]:
+    geometry: dict[str, Any], user_profile: UserCognitiveProfile | None = None
+) -> dict[str, Any]:
     """Simplify geometry for display purposes."""
     geom_type = geometry.get("type", "")
     coords = geometry.get("coordinates", [])
@@ -420,8 +420,8 @@ def _simplify_geometry(
 
 
 def _extract_key_properties(
-    properties: Dict[str, Any], user_profile: Optional[UserCognitiveProfile] = None
-) -> List[str]:
+    properties: dict[str, Any], user_profile: UserCognitiveProfile | None = None
+) -> list[str]:
     """Extract key properties for display."""
     key_props = []
 
@@ -462,7 +462,7 @@ def _extract_key_properties(
 
 
 def _calculate_display_priority(
-    geometry: Dict[str, Any], user_profile: Optional[UserCognitiveProfile] = None
+    geometry: dict[str, Any], user_profile: UserCognitiveProfile | None = None
 ) -> float:
     """Calculate display priority for a geometry element."""
     priority = 0.5  # Base priority
@@ -510,8 +510,8 @@ def _calculate_display_priority(
 
 
 def create_performance_report(
-    processing_results: List[Dict[str, Any]],
-) -> Dict[str, Any]:
+    processing_results: list[dict[str, Any]],
+) -> dict[str, Any]:
     """
     Create performance report from processing results.
 
@@ -524,7 +524,7 @@ def create_performance_report(
     if not processing_results:
         return {"error": "No processing results provided"}
 
-    report: Dict[str, Any] = {
+    report: dict[str, Any] = {
         "report_generated": datetime.now().isoformat(),
         "total_sessions": len(processing_results),
         "performance_summary": {},
@@ -621,8 +621,8 @@ def create_performance_report(
 
 
 def export_cognitive_insights(
-    insights: Dict[str, Any], format: str = "json"
-) -> Union[str, Dict[str, Any]]:
+    insights: dict[str, Any], format: str = "json"
+) -> str | dict[str, Any]:
     """
     Export cognitive insights in various formats.
 
@@ -646,7 +646,7 @@ def export_cognitive_insights(
         raise ValueError(f"Unsupported export format: {format}")
 
 
-def _format_insights_as_markdown(insights: Dict[str, Any]) -> str:
+def _format_insights_as_markdown(insights: dict[str, Any]) -> str:
     """Format insights as markdown text."""
     markdown = "# Cognitive Insights Report\n\n"
 
@@ -712,9 +712,7 @@ def _format_insights_as_markdown(insights: Dict[str, Any]) -> str:
     return markdown
 
 
-def validate_file_path(
-    file_path: str, required_extension: Optional[str] = None
-) -> bool:
+def validate_file_path(file_path: str, required_extension: str | None = None) -> bool:
     """
     Validate file path and check if file exists and is readable.
 
@@ -750,7 +748,7 @@ def validate_file_path(
         return False
 
     try:
-        with open(path, "r") as f:
+        with open(path) as f:
             f.read(1)  # Try to read at least one character
         return True
     except Exception as e:
@@ -758,7 +756,7 @@ def validate_file_path(
         return False
 
 
-def create_directory_structure(base_path: Union[str, Path]) -> None:
+def create_directory_structure(base_path: str | Path) -> None:
     """Create standard directory structure for cognitive processing."""
     base_path = Path(base_path)
 

@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from typing import Dict, List, Any, Optional
+from typing import Any
 from pathlib import Path
 import json
 import logging
@@ -40,7 +40,7 @@ class ActiveInferenceAnalyzer:
         (self.output_dir / "visualizations").mkdir(exist_ok=True)
 
         # Data storage
-        self.traces: Dict[str, list] = {
+        self.traces: dict[str, list] = {
             "beliefs": [],
             "observations": [],
             "actions": [],
@@ -109,10 +109,10 @@ class ActiveInferenceAnalyzer:
         beliefs: np.ndarray,
         observations: np.ndarray,
         actions: Any,
-        policies: Dict[str, Any],
+        policies: dict[str, Any],
         free_energy: float,
-        metrics: Optional[Dict[str, Any]] = None,
-        timestamp: Optional[float] = None,
+        metrics: dict[str, Any] | None = None,
+        timestamp: float | None = None,
     ) -> None:
         """Record a single Active Inference step for analysis."""
 
@@ -139,7 +139,7 @@ class ActiveInferenceAnalyzer:
         )
 
     @property
-    def step_history(self) -> List[Dict[str, Any]]:
+    def step_history(self) -> list[dict[str, Any]]:
         """Return a list of recorded step dictionaries for iteration."""
         history = []
         for i in range(len(self.traces["timestamps"])):
@@ -156,7 +156,7 @@ class ActiveInferenceAnalyzer:
             history.append(step)
         return history
 
-    def analyze_perception_patterns(self) -> Dict[str, Any]:
+    def analyze_perception_patterns(self) -> dict[str, Any]:
         """
         Analyze perception (belief updating) patterns.
 
@@ -204,7 +204,7 @@ class ActiveInferenceAnalyzer:
         logger.info("Perception pattern analysis completed")
         return analysis
 
-    def analyze_action_selection_patterns(self) -> Dict[str, Any]:
+    def analyze_action_selection_patterns(self) -> dict[str, Any]:
         """
         Analyze action selection (policy inference) patterns.
 
@@ -231,7 +231,7 @@ class ActiveInferenceAnalyzer:
         logger.info("Action selection pattern analysis completed")
         return analysis
 
-    def analyze_free_energy_patterns(self) -> Dict[str, Any]:
+    def analyze_free_energy_patterns(self) -> dict[str, Any]:
         """
         Analyze Variational Free Energy patterns and dynamics.
 
@@ -260,7 +260,7 @@ class ActiveInferenceAnalyzer:
         logger.info("Free Energy pattern analysis completed")
         return analysis
 
-    def _analyze_belief_dynamics(self, beliefs_array: np.ndarray) -> Dict[str, Any]:
+    def _analyze_belief_dynamics(self, beliefs_array: np.ndarray) -> dict[str, Any]:
         """Analyze belief evolution dynamics."""
         if beliefs_array.shape[0] < 2:
             return {"error": "Insufficient data for belief dynamics analysis"}
@@ -365,7 +365,7 @@ class ActiveInferenceAnalyzer:
 
     def _analyze_observation_response(
         self, beliefs_array: np.ndarray, observations_array: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze how beliefs respond to observations."""
         if len(beliefs_array) != len(observations_array) or len(beliefs_array) < 2:
             return {"error": "Insufficient or mismatched data"}
@@ -406,7 +406,7 @@ class ActiveInferenceAnalyzer:
 
     def _compute_obs_belief_correlation(
         self, beliefs: np.ndarray, observations: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Compute correlation between observations and belief changes."""
         if len(beliefs) < 3:
             return {"error": "Insufficient data"}
@@ -440,7 +440,7 @@ class ActiveInferenceAnalyzer:
             # string into that shape and break consumers far from the cause.
             return {}
 
-    def _assess_perception_quality(self, beliefs_array: np.ndarray) -> Dict[str, Any]:
+    def _assess_perception_quality(self, beliefs_array: np.ndarray) -> dict[str, Any]:
         """Assess the quality of perception (belief updating)."""
         # Check for flat patterns
         flat_threshold = 1e-3
@@ -544,7 +544,7 @@ class ActiveInferenceAnalyzer:
         else:
             return "Fair - Limited Structure"
 
-    def _detect_perception_patterns(self, beliefs_array: np.ndarray) -> Dict[str, Any]:
+    def _detect_perception_patterns(self, beliefs_array: np.ndarray) -> dict[str, Any]:
         """Detect specific patterns in perception."""
         patterns = {}
 
@@ -562,7 +562,7 @@ class ActiveInferenceAnalyzer:
 
         return patterns
 
-    def _detect_oscillations(self, data: np.ndarray) -> Dict[str, Any]:
+    def _detect_oscillations(self, data: np.ndarray) -> dict[str, Any]:
         """Detect oscillatory patterns in belief dynamics."""
         oscillation_info = {}
 
@@ -595,7 +595,7 @@ class ActiveInferenceAnalyzer:
 
         return oscillation_info
 
-    def _detect_convergence_patterns(self, data: np.ndarray) -> Dict[str, Any]:
+    def _detect_convergence_patterns(self, data: np.ndarray) -> dict[str, Any]:
         """Detect convergence patterns in beliefs."""
         convergence_info = {}
 
@@ -630,7 +630,7 @@ class ActiveInferenceAnalyzer:
 
         return convergence_info
 
-    def _detect_phase_transitions(self, data: np.ndarray) -> Dict[str, Any]:
+    def _detect_phase_transitions(self, data: np.ndarray) -> dict[str, Any]:
         """Detect phase transitions in belief dynamics."""
         if len(data) < 10:
             return {"error": "Insufficient data for phase transition detection"}
@@ -661,7 +661,7 @@ class ActiveInferenceAnalyzer:
 
     def _analyze_surprise_patterns(
         self, beliefs_array: np.ndarray, observations_array: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze surprise patterns in perception."""
         if len(beliefs_array) != len(observations_array) or len(beliefs_array) < 2:
             return {"error": "Insufficient data for surprise analysis"}
@@ -699,7 +699,7 @@ class ActiveInferenceAnalyzer:
             ),
         }
 
-    def _analyze_policy_dynamics(self) -> Dict[str, Any]:
+    def _analyze_policy_dynamics(self) -> dict[str, Any]:
         """Analyze policy selection dynamics."""
         if not self.traces["policies"]:
             return {"error": "No policy data available"}
@@ -747,7 +747,7 @@ class ActiveInferenceAnalyzer:
             "policy_distribution": np.mean(policy_probs, axis=0).tolist(),
         }
 
-    def _analyze_action_consistency(self) -> Dict[str, Any]:
+    def _analyze_action_consistency(self) -> dict[str, Any]:
         """Analyze consistency in action selection."""
         actions = self.traces["actions"]
 
@@ -773,7 +773,7 @@ class ActiveInferenceAnalyzer:
             "action_diversity": len(set(map(str, actions))),
         }
 
-    def _analyze_exploration_exploitation(self) -> Dict[str, Any]:
+    def _analyze_exploration_exploitation(self) -> dict[str, Any]:
         """Analyze exploration vs exploitation balance."""
         if not self.traces["policies"]:
             return {"error": "No policy data available"}
@@ -814,7 +814,7 @@ class ActiveInferenceAnalyzer:
             ),
         }
 
-    def _analyze_policy_convergence(self) -> Dict[str, Any]:
+    def _analyze_policy_convergence(self) -> dict[str, Any]:
         """Analyze convergence of policy selection."""
         if not self.traces["policies"] or len(self.traces["policies"]) < 5:
             return {"error": "Insufficient policy data for convergence analysis"}
@@ -856,7 +856,7 @@ class ActiveInferenceAnalyzer:
             ),
         }
 
-    def _assess_decision_quality(self) -> Dict[str, Any]:
+    def _assess_decision_quality(self) -> dict[str, Any]:
         """Assess overall quality of decision making."""
         if not self.traces["policies"] or not self.traces["free_energy"]:
             return {"error": "Insufficient data for decision quality assessment"}
@@ -913,7 +913,7 @@ class ActiveInferenceAnalyzer:
         else:
             return "Poor"
 
-    def _analyze_fe_minimization(self, fe_array: np.ndarray) -> Dict[str, Any]:
+    def _analyze_fe_minimization(self, fe_array: np.ndarray) -> dict[str, Any]:
         """Analyze free energy minimization dynamics."""
         if len(fe_array) < 2:
             return {"error": "Insufficient free energy data"}
@@ -956,7 +956,7 @@ class ActiveInferenceAnalyzer:
         else:
             return "Poor - Increasing free energy"
 
-    def _analyze_fe_convergence(self, fe_array: np.ndarray) -> Dict[str, Any]:
+    def _analyze_fe_convergence(self, fe_array: np.ndarray) -> dict[str, Any]:
         """Analyze free energy convergence."""
         if len(fe_array) < 5:
             return {"error": "Insufficient data for convergence analysis"}
@@ -989,7 +989,7 @@ class ActiveInferenceAnalyzer:
             ),
         }
 
-    def _assess_fe_stability(self, fe_array: np.ndarray) -> Dict[str, Any]:
+    def _assess_fe_stability(self, fe_array: np.ndarray) -> dict[str, Any]:
         """Assess stability of free energy."""
         if len(fe_array) < 3:
             return {"error": "Insufficient data for stability assessment"}
@@ -1024,7 +1024,7 @@ class ActiveInferenceAnalyzer:
         else:
             return "Unstable"
 
-    def _detect_fe_anomalies(self, fe_array: np.ndarray) -> Dict[str, Any]:
+    def _detect_fe_anomalies(self, fe_array: np.ndarray) -> dict[str, Any]:
         """Detect anomalies in free energy patterns."""
         if len(fe_array) < 5:
             return {"error": "Insufficient data for anomaly detection"}
@@ -1061,7 +1061,7 @@ class ActiveInferenceAnalyzer:
             / len(fe_array),
         }
 
-    def _compute_fe_efficiency(self, fe_array: np.ndarray) -> Dict[str, Any]:
+    def _compute_fe_efficiency(self, fe_array: np.ndarray) -> dict[str, Any]:
         """Compute free energy minimization efficiency."""
         if len(fe_array) < 2:
             return {"error": "Insufficient data for efficiency computation"}
@@ -1099,7 +1099,7 @@ class ActiveInferenceAnalyzer:
         else:
             return "Inefficient"
 
-    def _save_analysis(self, analysis: Dict[str, Any], filename: str) -> None:
+    def _save_analysis(self, analysis: dict[str, Any], filename: str) -> None:
         """Save analysis results to file."""
         filepath = self.output_dir / "analysis" / filename
         try:
@@ -1254,7 +1254,7 @@ def create_shared_visualizations(analyzer: ActiveInferenceAnalyzer) -> None:
     logger.info(f"Shared visualizations created in {viz_dir}")
 
 
-def create_belief_heatmap(beliefs: List[np.ndarray], output_dir: Path) -> None:
+def create_belief_heatmap(beliefs: list[np.ndarray], output_dir: Path) -> None:
     """Create a heatmap of belief evolution over time."""
     if not beliefs:
         return
@@ -1279,7 +1279,7 @@ def create_belief_heatmap(beliefs: List[np.ndarray], output_dir: Path) -> None:
         logger.error(f"Failed to create belief heatmap: {e}")
 
 
-def create_free_energy_plots(free_energies: List[float], output_dir: Path) -> None:
+def create_free_energy_plots(free_energies: list[float], output_dir: Path) -> None:
     """Create comprehensive free energy analysis plots."""
     if not free_energies:
         return
@@ -1347,7 +1347,7 @@ def create_free_energy_plots(free_energies: List[float], output_dir: Path) -> No
         logger.error(f"Failed to create free energy plots: {e}")
 
 
-def create_policy_plots(policies: List[Dict[str, Any]], output_dir: Path) -> None:
+def create_policy_plots(policies: list[dict[str, Any]], output_dir: Path) -> None:
     """Create policy analysis plots."""
     if not policies:
         return
@@ -1418,7 +1418,7 @@ def create_policy_plots(policies: List[Dict[str, Any]], output_dir: Path) -> Non
         logger.error(f"Failed to create policy plots: {e}")
 
 
-def create_correlation_analysis(traces: Dict[str, list], output_dir: Path) -> None:
+def create_correlation_analysis(traces: dict[str, list], output_dir: Path) -> None:
     """Create correlation analysis between different traces."""
     try:
         # Prepare data for correlation analysis

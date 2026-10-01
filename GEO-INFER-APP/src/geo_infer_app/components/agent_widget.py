@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 GEO-INFER-APP Agent Widget
@@ -11,7 +10,8 @@ intelligent agents in the application interface.
 import asyncio
 import html
 import logging
-from typing import Dict, List, Any, Optional, Callable
+from typing import Any
+from collections.abc import Callable
 from datetime import datetime
 
 from geo_infer_app.api.agent_api import AgentManager
@@ -31,8 +31,8 @@ class AgentWidget:
     def __init__(
         self,
         agent_manager: AgentManager,
-        agent_id: Optional[str] = None,
-        config: Optional[Dict[str, Any]] = None,
+        agent_id: str | None = None,
+        config: dict[str, Any] | None = None,
     ):
         """
         Initialize the agent widget.
@@ -48,17 +48,17 @@ class AgentWidget:
 
         # Widget state
         self.status = "initializing"
-        self.agent_info: Dict[str, Any] = {}
-        self.agent_metrics: Dict[str, Any] = {}
-        self.command_history: List[Dict[str, Any]] = []
+        self.agent_info: dict[str, Any] = {}
+        self.agent_metrics: dict[str, Any] = {}
+        self.command_history: list[dict[str, Any]] = []
         self.max_history = self.config.get("max_history", 100)
 
         # Update interval (milliseconds)
         self.update_interval = self.config.get("update_interval", 1000)
-        self._update_task: Optional[asyncio.Task[None]] = None
+        self._update_task: asyncio.Task[None] | None = None
 
         # Callbacks
-        self.status_callbacks: List[Callable[[str], None]] = []
+        self.status_callbacks: list[Callable[[str], None]] = []
 
     async def initialize(self) -> None:
         """Initialize the widget."""
@@ -157,8 +157,8 @@ class AgentWidget:
         return await self.agent_manager.stop_agent(self.agent_id)
 
     async def send_command(
-        self, command_type: str, parameters: Optional[Dict[str, Any]] = None
-    ) -> Optional[Dict[str, Any]]:
+        self, command_type: str, parameters: dict[str, Any] | None = None
+    ) -> dict[str, Any] | None:
         """
         Send a command to the current agent.
 
@@ -194,7 +194,7 @@ class AgentWidget:
 
         return result
 
-    async def get_agent_list(self) -> List[Dict[str, Any]]:
+    async def get_agent_list(self) -> list[dict[str, Any]]:
         """
         Get list of available agents.
 
@@ -297,8 +297,8 @@ class WebAgentWidget(AgentWidget):
     def __init__(
         self,
         agent_manager: AgentManager,
-        agent_id: Optional[str] = None,
-        config: Optional[Dict[str, Any]] = None,
+        agent_id: str | None = None,
+        config: dict[str, Any] | None = None,
     ):
         """
         Initialize the web agent widget.

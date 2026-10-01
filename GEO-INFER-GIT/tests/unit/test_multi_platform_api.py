@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Unit tests for MultiPlatformAPI: GitLab/Bitbucket response mapping, request

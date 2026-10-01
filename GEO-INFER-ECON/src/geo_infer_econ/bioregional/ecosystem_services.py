@@ -6,7 +6,7 @@ using benefit-transfer methodology, unit-value approaches, and flow-based
 accounting aligned with TEEB (The Economics of Ecosystems and Biodiversity).
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 import numpy as np
 import pandas as pd
 import logging
@@ -57,7 +57,7 @@ class EcosystemServicesValuation:
     via purchasing-power-parity (PPP) and biome quality multipliers.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize ecosystem services valuation.
 
         Args:
@@ -79,7 +79,7 @@ class EcosystemServicesValuation:
             self.time_horizon,
         )
 
-    def value_services(self, services: List[Dict[str, Any]]) -> Dict[str, float]:
+    def value_services(self, services: list[dict[str, Any]]) -> dict[str, float]:
         """Value a list of ecosystem services.
 
         Each service dict should contain:
@@ -93,7 +93,7 @@ class EcosystemServicesValuation:
             and 'total_npv'.
         """
         logger.info("Valuing %d ecosystem services", len(services))
-        results: Dict[str, float] = {}
+        results: dict[str, float] = {}
         total_annual = 0.0
 
         for svc in services:
@@ -127,7 +127,7 @@ class EcosystemServicesValuation:
         )
         return results
 
-    def estimate_value(self, services: List[Dict[str, Any]]) -> Dict[str, float]:
+    def estimate_value(self, services: list[dict[str, Any]]) -> dict[str, float]:
         """Alias for value_services for API compatibility."""
         return self.value_services(services)
 
@@ -143,7 +143,7 @@ class EcosystemServicesValuation:
 class ProvisioningServices:
     """Provisioning ecosystem services valuation (food, water, raw materials)."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.unit_values = self.config.get(
             "unit_values", DEFAULT_SERVICE_VALUES["provisioning"]
@@ -153,7 +153,7 @@ class ProvisioningServices:
             len(self.unit_values),
         )
 
-    def value_provisioning(self, data: Dict[str, Any]) -> float:
+    def value_provisioning(self, data: dict[str, Any]) -> float:
         """Value provisioning services for a region.
 
         Args:
@@ -184,7 +184,7 @@ class ProvisioningServices:
 class RegulatingServices:
     """Regulating ecosystem services (air quality, climate, water, etc.)."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.unit_values = self.config.get(
             "unit_values", DEFAULT_SERVICE_VALUES["regulating"]
@@ -194,7 +194,7 @@ class RegulatingServices:
             len(self.unit_values),
         )
 
-    def value_regulating(self, data: Dict[str, Any]) -> float:
+    def value_regulating(self, data: dict[str, Any]) -> float:
         """Value regulating services for a region.
 
         Args:
@@ -221,7 +221,7 @@ class RegulatingServices:
 class CulturalServices:
     """Cultural ecosystem services (recreation, tourism, aesthetics)."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.unit_values = self.config.get(
             "unit_values", DEFAULT_SERVICE_VALUES["cultural"]
@@ -230,7 +230,7 @@ class CulturalServices:
             "CulturalServices initialized with %d service types", len(self.unit_values)
         )
 
-    def value_cultural(self, data: Dict[str, Any]) -> float:
+    def value_cultural(self, data: dict[str, Any]) -> float:
         """Value cultural services for a region.
 
         Args:
@@ -260,7 +260,7 @@ class CulturalServices:
 class SupportingServices:
     """Supporting ecosystem services (nutrient cycling, soil, habitat)."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.unit_values = self.config.get(
             "unit_values", DEFAULT_SERVICE_VALUES["supporting"]
@@ -270,7 +270,7 @@ class SupportingServices:
             len(self.unit_values),
         )
 
-    def value_supporting(self, data: Dict[str, Any]) -> float:
+    def value_supporting(self, data: dict[str, Any]) -> float:
         """Value supporting services for a region.
 
         Args:
@@ -301,7 +301,7 @@ class ServiceFlowModeling:
     to benefiting areas using gravity-model approaches.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.decay_rate = self.config.get("distance_decay_rate", 0.01)
         self.flow_threshold = self.config.get("flow_threshold", 0.01)
@@ -311,7 +311,7 @@ class ServiceFlowModeling:
             self.flow_threshold,
         )
 
-    def model_flows(self, flow_data: Dict[str, Any]) -> pd.DataFrame:
+    def model_flows(self, flow_data: dict[str, Any]) -> pd.DataFrame:
         """Model ecosystem service flows between supply and demand areas.
 
         Args:

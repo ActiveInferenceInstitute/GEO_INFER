@@ -5,7 +5,7 @@ Provides geospatial-specific evaluation metrics and validation methods.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -27,7 +27,7 @@ class GeospatialModelEvaluator:
     Evaluate geospatial AI models with spatial-specific metrics.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
         """Initialize model evaluator."""
         self.config = config or {}
 
@@ -35,8 +35,8 @@ class GeospatialModelEvaluator:
         self,
         y_true: np.ndarray,
         y_pred: np.ndarray,
-        labels: Optional[List[Any]] = None,
-    ) -> Dict[str, float]:
+        labels: list[Any] | None = None,
+    ) -> dict[str, float]:
         """
         Evaluate classification model.
 
@@ -65,7 +65,7 @@ class GeospatialModelEvaluator:
 
     def evaluate_regression(
         self, y_true: np.ndarray, y_pred: np.ndarray
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Evaluate regression model.
 
@@ -91,7 +91,7 @@ class GeospatialModelEvaluator:
         y_pred: np.ndarray,
         coordinates: np.ndarray,
         buffer_distance: float = 100.0,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Evaluate prediction accuracy as a value-error-within-tolerance metric.
 
@@ -134,9 +134,9 @@ class GeospatialModelEvaluator:
         self,
         y_true: np.ndarray,
         y_pred: np.ndarray,
-        labels: Optional[List[Any]] = None,
-        normalize: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        labels: list[Any] | None = None,
+        normalize: str | None = None,
+    ) -> dict[str, Any]:
         """
         Compute confusion matrix and derived statistics.
 
@@ -202,7 +202,7 @@ class GeospatialModelEvaluator:
                 "f1_score": float(f1_val),
             }
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "confusion_matrix": cm.tolist(),
             "labels": [str(l) for l in labels],
             "per_class": per_class,
@@ -217,7 +217,7 @@ class GeospatialModelEvaluator:
         y_true: np.ndarray,
         y_score: np.ndarray,
         multi_class: str = "ovr",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compute ROC-AUC score.
 
@@ -237,7 +237,7 @@ class GeospatialModelEvaluator:
         unique_classes = np.unique(y_true)
         n_classes = len(unique_classes)
 
-        result: Dict[str, Any] = {"n_classes": n_classes}
+        result: dict[str, Any] = {"n_classes": n_classes}
 
         if n_classes == 2:
             # Binary case
@@ -285,7 +285,7 @@ class GeospatialModelEvaluator:
         y: np.ndarray,
         coordinates: np.ndarray,
         n_splits: int = 5,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform spatial block cross-validation.
 
@@ -319,7 +319,7 @@ class GeospatialModelEvaluator:
             coordinates
         )
 
-        scores: List[float] = []
+        scores: list[float] = []
         for block in np.unique(blocks):
             test_idx = np.where(blocks == block)[0]
             train_idx = np.where(blocks != block)[0]

@@ -7,7 +7,6 @@ and completeness checking for software and system requirements.
 
 import logging
 import math
-from typing import Dict, List, Optional, Tuple, Set
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -58,24 +57,24 @@ class Requirement:
     req_type: RequirementType
     priority: PriorityLevel = PriorityLevel.MEDIUM
     status: RequirementStatus = RequirementStatus.DRAFT
-    dependencies: List[str] = field(default_factory=list)
-    stakeholders: List[str] = field(default_factory=list)
-    acceptance_criteria: List[str] = field(default_factory=list)
-    tags: List[str] = field(default_factory=list)
-    effort_estimate: Optional[float] = None
+    dependencies: list[str] = field(default_factory=list)
+    stakeholders: list[str] = field(default_factory=list)
+    acceptance_criteria: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    effort_estimate: float | None = None
 
 
 @dataclass
 class DependencyGraph:
     """Representation of requirement dependency relationships."""
 
-    nodes: List[str]
-    edges: List[Tuple[str, str]]
-    topological_order: List[str]
-    cycles: List[List[str]]
-    critical_path: List[str]
+    nodes: list[str]
+    edges: list[tuple[str, str]]
+    topological_order: list[str]
+    cycles: list[list[str]]
+    critical_path: list[str]
     depth: int
-    dangling_dependencies: List[str] = field(default_factory=list)
+    dangling_dependencies: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -84,10 +83,10 @@ class CompletenessReport:
 
     total_requirements: int
     completeness_score: float
-    missing_descriptions: List[str]
-    missing_acceptance_criteria: List[str]
-    orphaned_requirements: List[str]
-    coverage_by_type: Dict[str, float]
+    missing_descriptions: list[str]
+    missing_acceptance_criteria: list[str]
+    orphaned_requirements: list[str]
+    coverage_by_type: dict[str, float]
 
 
 class RequirementsAnalyzer:
@@ -99,7 +98,7 @@ class RequirementsAnalyzer:
     """
 
     def __init__(self) -> None:
-        self._requirements: Dict[str, Requirement] = {}
+        self._requirements: dict[str, Requirement] = {}
 
     def add_requirement(self, req: Requirement) -> None:
         """
@@ -115,7 +114,7 @@ class RequirementsAnalyzer:
             raise ValueError(f"Requirement {req.req_id} already exists")
         self._requirements[req.req_id] = req
 
-    def add_requirements(self, requirements: List[Requirement]) -> None:
+    def add_requirements(self, requirements: list[Requirement]) -> None:
         """
         Add multiple requirements.
 
@@ -153,11 +152,11 @@ class RequirementsAnalyzer:
             DependencyGraph with structural analysis.
         """
         nodes = list(self._requirements.keys())
-        edges: List[Tuple[str, str]] = []
-        adjacency: Dict[str, List[str]] = {n: [] for n in nodes}
-        in_degree: Dict[str, int] = {n: 0 for n in nodes}
+        edges: list[tuple[str, str]] = []
+        adjacency: dict[str, list[str]] = {n: [] for n in nodes}
+        in_degree: dict[str, int] = {n: 0 for n in nodes}
 
-        dangling: List[str] = []
+        dangling: list[str] = []
         for req_id, req in self._requirements.items():
             for dep_id in req.dependencies:
                 if dep_id in self._requirements:
@@ -201,7 +200,7 @@ class RequirementsAnalyzer:
         )
 
     @staticmethod
-    def _validate_weights(weights: Dict[str, float]) -> Dict[str, float]:
+    def _validate_weights(weights: dict[str, float]) -> dict[str, float]:
         """Validate scoring weights: all required keys present, finite, non-negative.
 
         Weights are normalized to sum to 1 so custom weight sets produce
@@ -246,8 +245,8 @@ class RequirementsAnalyzer:
 
     def compute_priority_scores(
         self,
-        weights: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, float]:
+        weights: dict[str, float] | None = None,
+    ) -> dict[str, float]:
         """
         Compute weighted priority scores for all requirements.
 
@@ -276,7 +275,7 @@ class RequirementsAnalyzer:
         w = self._validate_weights(w)
 
         # Count dependents for each requirement
-        dependent_counts: Dict[str, int] = {rid: 0 for rid in self._requirements}
+        dependent_counts: dict[str, int] = {rid: 0 for rid in self._requirements}
         for req in self._requirements.values():
             for dep in req.dependencies:
                 if dep in dependent_counts:
@@ -295,7 +294,7 @@ class RequirementsAnalyzer:
             default=1.0,
         )
 
-        scores: Dict[str, float] = {}
+        scores: dict[str, float] = {}
         for rid, req in self._requirements.items():
             # Normalize priority to [0, 1]
             priority_norm = req.priority.value / PriorityLevel.CRITICAL.value
@@ -338,12 +337,12 @@ class RequirementsAnalyzer:
         Returns:
             CompletenessReport with detailed findings.
         """
-        missing_desc: List[str] = []
-        missing_criteria: List[str] = []
-        orphaned: List[str] = []
+        missing_desc: list[str] = []
+        missing_criteria: list[str] = []
+        orphaned: list[str] = []
 
         all_ids = set(self._requirements.keys())
-        referenced_ids: Set[str] = set()
+        referenced_ids: set[str] = set()
         for req in self._requirements.values():
             referenced_ids.update(req.dependencies)
 
@@ -358,8 +357,8 @@ class RequirementsAnalyzer:
                     orphaned.append(f"{rid} -> {dep}")
 
         # Coverage by type
-        type_counts: Dict[str, int] = {}
-        type_complete: Dict[str, int] = {}
+        type_counts: dict[str, int] = {}
+        type_complete: dict[str, int] = {}
         for req in self._requirements.values():
             t = req.req_type.value
             type_counts[t] = type_counts.get(t, 0) + 1
@@ -397,7 +396,7 @@ class RequirementsAnalyzer:
             coverage_by_type=coverage_by_type,
         )
 
-    def get_requirements_by_type(self, req_type: RequirementType) -> List[Requirement]:
+    def get_requirements_by_type(self, req_type: RequirementType) -> list[Requirement]:
         """
         Filter requirements by type.
 
@@ -411,7 +410,7 @@ class RequirementsAnalyzer:
 
     def get_requirements_by_status(
         self, status: RequirementStatus
-    ) -> List[Requirement]:
+    ) -> list[Requirement]:
         """
         Filter requirements by status.
 
@@ -424,14 +423,14 @@ class RequirementsAnalyzer:
         return [r for r in self._requirements.values() if r.status == status]
 
     def _compute_critical_path(
-        self, adjacency: Dict[str, List[str]], topo_order: List[str]
-    ) -> Tuple[List[str], int]:
+        self, adjacency: dict[str, list[str]], topo_order: list[str]
+    ) -> tuple[list[str], int]:
         """Compute the longest path (critical path) in the DAG."""
         if not topo_order:
             return [], 0
 
-        dist: Dict[str, int] = {n: 0 for n in topo_order}
-        predecessor: Dict[str, Optional[str]] = {n: None for n in topo_order}
+        dist: dict[str, int] = {n: 0 for n in topo_order}
+        predecessor: dict[str, str | None] = {n: None for n in topo_order}
 
         for node in topo_order:
             for neighbor in adjacency.get(node, []):
@@ -448,7 +447,7 @@ class RequirementsAnalyzer:
 
         # Reconstruct path
         path = []
-        current: Optional[str] = end_node
+        current: str | None = end_node
         while current is not None:
             path.append(current)
             current = predecessor[current]

@@ -1,7 +1,7 @@
 """Shared pytest fixtures for GEO-INFER-PLACE tests."""
 
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any
 
 import pytest
 
@@ -13,7 +13,7 @@ def del_norte_bbox() -> tuple:
 
 
 @pytest.fixture
-def sample_h3_cells() -> List[str]:
+def sample_h3_cells() -> list[str]:
     """A small set of valid H3 resolution-8 cells over Del Norte County."""
     try:
         import h3
@@ -39,7 +39,7 @@ def temp_output_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def minimal_config() -> Dict[str, Any]:
+def minimal_config() -> dict[str, Any]:
     """Minimal PlaceInterface config dict."""
     return {
         "location": {

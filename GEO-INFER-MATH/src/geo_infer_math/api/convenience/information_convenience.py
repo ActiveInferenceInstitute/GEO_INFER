@@ -6,7 +6,7 @@ on spatial data.
 """
 
 import numpy as np
-from typing import Optional, Any
+from typing import Any
 import logging
 
 from geo_infer_math.core.information_theory import (
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def spatial_entropy_helper(
     coordinates: np.ndarray,
-    values: Optional[np.ndarray] = None,
+    values: np.ndarray | None = None,
     method: str = "shannon",
     **kwargs: Any,
 ) -> float:

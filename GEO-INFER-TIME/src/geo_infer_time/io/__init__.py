@@ -39,10 +39,10 @@ class TimeSeriesReader:
 
     def read(
         self,
-        path: Union[str, Path],
-        time_column: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        spatial_location: Optional[Dict[str, float]] = None,
+        path: str | Path,
+        time_column: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        spatial_location: dict[str, float] | None = None,
         **kwargs: Any,
     ) -> TimeSeries:
         """Read a time series file into a TimeSeries object.
@@ -124,7 +124,7 @@ class TimeSeriesReader:
         return pd.read_parquet(path, **kwargs)
 
     @staticmethod
-    def _set_time_index(df: pd.DataFrame, time_column: Optional[str]) -> pd.DataFrame:
+    def _set_time_index(df: pd.DataFrame, time_column: str | None) -> pd.DataFrame:
         """Ensure the DataFrame has a DatetimeIndex.
 
         If *time_column* is given, that column is converted to datetime and
@@ -184,7 +184,7 @@ class TimeSeriesWriter:
     def write(
         self,
         ts: TimeSeries,
-        path: Union[str, Path],
+        path: str | Path,
         write_metadata: bool = True,
         **kwargs: Any,
     ) -> Path:
@@ -246,10 +246,10 @@ class TimeSeriesWriter:
 
 
 def read_timeseries(
-    path: Union[str, Path],
-    time_column: Optional[str] = None,
-    metadata: Optional[Dict[str, Any]] = None,
-    spatial_location: Optional[Dict[str, float]] = None,
+    path: str | Path,
+    time_column: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    spatial_location: dict[str, float] | None = None,
     **kwargs: Any,
 ) -> TimeSeries:
     """Read a time series file into a TimeSeries object.
@@ -278,7 +278,7 @@ def read_timeseries(
 
 def write_timeseries(
     ts: TimeSeries,
-    path: Union[str, Path],
+    path: str | Path,
     write_metadata: bool = True,
     **kwargs: Any,
 ) -> Path:

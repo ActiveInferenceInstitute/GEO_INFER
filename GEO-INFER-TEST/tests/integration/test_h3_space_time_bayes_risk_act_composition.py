@@ -12,7 +12,6 @@ Verifies full multi-module composition with zero mock leakage and strict H3 v4 c
 from __future__ import annotations
 
 import datetime
-from typing import Dict
 import numpy as np
 import pandas as pd
 import pytest
@@ -96,7 +95,7 @@ def test_space_time_spatiotemporal_stream_composition(h3_spatial_domain):
     cells = h3_spatial_domain["disk_cells"][:5]
     base_time = datetime.datetime(2026, 1, 1, 12, 0, 0)
 
-    cell_streams: Dict[str, StreamProcessor] = {}
+    cell_streams: dict[str, StreamProcessor] = {}
     for cell in cells:
         # Window size large enough to hold all 12 hourly readings
         processor = StreamProcessor(window_size=datetime.timedelta(hours=24))

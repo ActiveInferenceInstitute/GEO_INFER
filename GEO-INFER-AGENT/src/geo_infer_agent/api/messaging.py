@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Agent-to-agent messaging interface for GEO-INFER-AGENT.
@@ -11,7 +10,8 @@ GEO-INFER ecosystem.
 
 import asyncio
 import logging
-from typing import Dict, List, Any, Optional, Callable, Set
+from typing import Any, Optional
+from collections.abc import Callable
 from datetime import datetime
 from uuid import uuid4
 
@@ -25,10 +25,10 @@ class Message:
         self,
         from_agent_id: str,
         to_agent_id: str,
-        content: Dict[str, Any],
+        content: dict[str, Any],
         message_type: str = "standard",
         priority: int = 1,
-        expires_at: Optional[datetime] = None,
+        expires_at: datetime | None = None,
     ):
         """
         Initialize a new message.
@@ -59,7 +59,7 @@ class Message:
             return False
         return datetime.now() > self.expires_at
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert message to a dictionary."""
         return {
             "message_id": self.message_id,
@@ -76,7 +76,7 @@ class Message:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Message":
+    def from_dict(cls, data: dict[str, Any]) -> "Message":
         """Create a message from a dictionary."""
         msg = cls(
             from_agent_id=data["from_agent_id"],
@@ -113,7 +113,7 @@ class MessagingService:
     def __new__(cls) -> "MessagingService":
         """Singleton pattern to ensure a single messaging service instance."""
         if cls._instance is None:
-            cls._instance = super(MessagingService, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance._initialized = False
         return cls._instance
 
@@ -123,16 +123,16 @@ class MessagingService:
             return
 
         # Message queues by agent ID
-        self.message_queues: Dict[str, List[Message]] = {}
+        self.message_queues: dict[str, list[Message]] = {}
 
         # Pub/sub channels and subscribers
-        self.channels: Dict[str, Set[str]] = {}
+        self.channels: dict[str, set[str]] = {}
 
         # Callbacks for new message handlers
-        self.message_callbacks: Dict[str, Callable[[Message], None]] = {}
+        self.message_callbacks: dict[str, Callable[[Message], None]] = {}
 
         # Background task for message processing
-        self.processing_task: Optional[asyncio.Task] = None
+        self.processing_task: asyncio.Task | None = None
         self.running = False
 
         self._initialized = True
@@ -197,10 +197,10 @@ class MessagingService:
     async def broadcast_message(
         self,
         from_agent_id: str,
-        content: Dict[str, Any],
+        content: dict[str, Any],
         channel: str,
         priority: int = 1,
-        expires_at: Optional[datetime] = None,
+        expires_at: datetime | None = None,
     ) -> int:
         """
         Broadcast a message to all subscribers of a channel.
@@ -311,7 +311,7 @@ class MessagingService:
 
     async def get_messages(
         self, agent_id: str, mark_as_read: bool = True
-    ) -> List[Message]:
+    ) -> list[Message]:
         """
         Get all messages for an agent.
 

@@ -6,7 +6,7 @@ lines within an H3 grid, using data from the HIFLD open data portal.
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 from pathlib import Path
 import pandas as pd
 import geopandas as gpd
@@ -80,7 +80,7 @@ class GeoInferPowerSource:
         gdf.to_file(raw_out, driver="GeoJSON")
         return raw_out
 
-    def run_analysis(self, target_hexagons: List[str]) -> Dict[str, Dict[str, Any]]:
+    def run_analysis(self, target_hexagons: list[str]) -> dict[str, dict[str, Any]]:
         """
         Calculates the density of transmission lines and average voltage
         for each H3 hexagon.
@@ -177,13 +177,13 @@ class GeoInferPowerSource:
         logger.info(f"Completed power source analysis for {len(target_hexagons)} hexagons.")
         return h3_power
 
-    def run_final_analysis(self, h3_data: Dict[str, Any]) -> Dict[str, Any]:
+    def run_final_analysis(self, h3_data: dict[str, Any]) -> dict[str, Any]:
         """Summarize H3-indexed power infrastructure features into per-hex metrics.
 
         Expects h3_data[hex] to be a list of feature dicts with optional 'layer' and
         voltage fields. Returns counts and presence booleans.
         """
-        results: Dict[str, Any] = {}
+        results: dict[str, Any] = {}
         for hex_id, items in h3_data.items():
             try:
                 df = pd.DataFrame(items) if isinstance(items, list) else pd.DataFrame()

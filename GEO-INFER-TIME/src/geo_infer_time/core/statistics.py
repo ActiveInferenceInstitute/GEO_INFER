@@ -6,7 +6,7 @@ normality tests, and diagnostic statistics.
 """
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any
 import numpy as np
 from scipy import stats
 
@@ -27,8 +27,8 @@ class TemporalStatistics:
         self._logger.debug("TemporalStatistics initialized")
 
     def calculate_summary(
-        self, values: List[float], timestamps: Optional[List] = None
-    ) -> Dict[str, Any]:
+        self, values: list[float], timestamps: list | None = None
+    ) -> dict[str, Any]:
         """
         Calculate comprehensive summary statistics for a time series.
 
@@ -134,8 +134,8 @@ class TemporalStatistics:
         }
 
     def calculate_differences(
-        self, values: List[float], order: int = 1, seasonal_period: Optional[int] = None
-    ) -> Dict[str, Any]:
+        self, values: list[float], order: int = 1, seasonal_period: int | None = None
+    ) -> dict[str, Any]:
         """
         Calculate differenced series for stationarity.
 
@@ -187,7 +187,7 @@ class TemporalStatistics:
 
         return result
 
-    def ljung_box_test(self, values: List[float], lags: int = 10) -> Dict[str, Any]:
+    def ljung_box_test(self, values: list[float], lags: int = 10) -> dict[str, Any]:
         """
         Perform Ljung-Box test for autocorrelation in residuals.
 
@@ -245,7 +245,7 @@ class TemporalStatistics:
             ),
         }
 
-    def jarque_bera_test(self, values: List[float]) -> Dict[str, Any]:
+    def jarque_bera_test(self, values: list[float]) -> dict[str, Any]:
         """
         Perform Jarque-Bera test for normality.
 
@@ -294,7 +294,7 @@ class TemporalStatistics:
             ),
         }
 
-    def durbin_watson_test(self, residuals: List[float]) -> Dict[str, Any]:
+    def durbin_watson_test(self, residuals: list[float]) -> dict[str, Any]:
         """
         Calculate Durbin-Watson statistic for serial correlation.
 
@@ -346,8 +346,8 @@ class TemporalStatistics:
         }
 
     def hurst_exponent(
-        self, values: List[float], max_lag: Optional[int] = None
-    ) -> Dict[str, Any]:
+        self, values: list[float], max_lag: int | None = None
+    ) -> dict[str, Any]:
         """
         Calculate Hurst exponent for long-term memory.
 
@@ -423,10 +423,10 @@ class TemporalStatistics:
 
     def information_criteria(
         self,
-        residuals: List[float],
+        residuals: list[float],
         num_params: int,
-        log_likelihood: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        log_likelihood: float | None = None,
+    ) -> dict[str, Any]:
         """
         Calculate information criteria for model selection.
 
@@ -485,7 +485,7 @@ class TemporalStatistics:
             ),
         }
 
-    def residual_diagnostics(self, residuals: List[float]) -> Dict[str, Any]:
+    def residual_diagnostics(self, residuals: list[float]) -> dict[str, Any]:
         """
         Comprehensive residual diagnostics.
 

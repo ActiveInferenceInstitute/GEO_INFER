@@ -3,7 +3,7 @@ batch filtering, config key paths, candidate derivation, meter distances,
 and streaming API catalog honesty."""
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 import h3
 import numpy as np
@@ -105,7 +105,7 @@ class TestQualityControlConfigPath:
         controller = QualityController(
             {"temporal_consistency": {"max_change_rate": 0.01}}
         )
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         # Retain-after-scoring means the rate is computed among stored
         # history; feed a stable pair followed by a jump so the stored

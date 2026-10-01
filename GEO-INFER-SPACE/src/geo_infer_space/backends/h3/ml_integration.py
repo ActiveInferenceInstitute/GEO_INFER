@@ -8,7 +8,7 @@ https://www.analyticsvidhya.com/blog/2025/03/ubers-h3-for-spatial-indexing/
 
 import logging
 import math
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Any
 from datetime import datetime
 from .core import H3Grid, H3Cell
 
@@ -45,7 +45,7 @@ class H3MLFeatureEngine:
 
     def create_spatial_features(
         self, target_column: str, neighbor_rings: int = 2
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create spatial features for machine learning models.
 
@@ -88,7 +88,7 @@ class H3MLFeatureEngine:
 
     def _extract_cell_features(
         self, cell: H3Cell, target_column: str, neighbor_rings: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Extract features for a single cell.
 
@@ -139,7 +139,7 @@ class H3MLFeatureEngine:
 
     def _extract_neighbor_features(
         self, cell: H3Cell, target_column: str, neighbor_rings: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Extract neighbor-based features.
 
@@ -230,7 +230,7 @@ class H3MLFeatureEngine:
 
         return neighbor_features
 
-    def _extract_temporal_features(self, cell: H3Cell) -> Dict[str, Any]:
+    def _extract_temporal_features(self, cell: H3Cell) -> dict[str, Any]:
         """
         Extract temporal features from cell timestamp.
 
@@ -240,7 +240,7 @@ class H3MLFeatureEngine:
         Returns:
             Dictionary of temporal features
         """
-        temporal_features: Dict[str, Any] = {}
+        temporal_features: dict[str, Any] = {}
 
         try:
             timestamp_str = str(cell.properties["timestamp"])
@@ -285,7 +285,7 @@ class H3MLFeatureEngine:
 
         return temporal_features
 
-    def _parse_timestamp(self, timestamp_str: str) -> Optional[datetime]:
+    def _parse_timestamp(self, timestamp_str: str) -> datetime | None:
         """Parse timestamp string into datetime object."""
         try:
             # Try common timestamp formats
@@ -309,7 +309,7 @@ class H3MLFeatureEngine:
         except Exception:
             return None
 
-    def _get_feature_names(self, neighbor_rings: int) -> List[str]:
+    def _get_feature_names(self, neighbor_rings: int) -> list[str]:
         """Get list of feature names."""
         feature_names = [
             "cell_index",
@@ -360,7 +360,7 @@ class H3MLFeatureEngine:
 
     def create_demand_forecasting_features(
         self, demand_column: str, time_column: str = "timestamp"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create features specifically for demand forecasting models.
 
@@ -428,7 +428,7 @@ class H3MLFeatureEngine:
 
     def _calculate_demand_patterns(
         self, cell: H3Cell, demand_column: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate demand pattern features."""
         patterns = {}
 
@@ -455,7 +455,7 @@ class H3MLFeatureEngine:
 
     def _calculate_demand_gradients(
         self, cell: H3Cell, demand_column: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate spatial demand gradients."""
         gradients = {}
 
@@ -499,7 +499,7 @@ class H3MLFeatureEngine:
 
     def _calculate_supply_demand_balance(
         self, cell: H3Cell, demand_column: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate supply-demand balance indicators."""
         balance = {}
 
@@ -523,7 +523,7 @@ class H3MLFeatureEngine:
 
         return balance
 
-    def _get_demand_feature_names(self) -> List[str]:
+    def _get_demand_feature_names(self) -> list[str]:
         """Get demand forecasting feature names."""
         base_names = self._get_feature_names(3)  # 3 neighbor rings
 
@@ -567,7 +567,7 @@ class H3DisasterResponse:
         hazard_column: str,
         population_column: str = "population",
         evacuation_radius_km: float = 5.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze evacuation zones based on hazard locations.
 
@@ -631,7 +631,7 @@ class H3DisasterResponse:
 
     def _calculate_evacuation_zone(
         self, hazard_cell: H3Cell, radius_km: float, population_column: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate evacuation zone around a hazard cell."""
         try:
             if not H3_AVAILABLE:
@@ -685,8 +685,8 @@ class H3DisasterResponse:
             return {"error": str(e)}
 
     def _analyze_evacuation_capacity(
-        self, evacuation_zones: List[Dict]
-    ) -> Dict[str, Any]:
+        self, evacuation_zones: list[dict]
+    ) -> dict[str, Any]:
         """Analyze evacuation capacity and requirements."""
         total_zones = len(evacuation_zones)
         total_population = sum(zone["total_population"] for zone in evacuation_zones)
@@ -716,7 +716,7 @@ class H3DisasterResponse:
 
     def monitor_environmental_changes(
         self, baseline_column: str, current_column: str, change_threshold: float = 0.2
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Monitor environmental changes using H3 spatial analysis.
 
@@ -803,12 +803,12 @@ class H3DisasterResponse:
             "method": "H3 Environmental Change Monitoring",
         }
 
-    def _cluster_environmental_changes(self, changes: List[Dict]) -> List[Dict]:
+    def _cluster_environmental_changes(self, changes: list[dict]) -> list[dict]:
         """Cluster spatially adjacent environmental changes."""
         if not changes or not H3_AVAILABLE:
             return []
 
-        clusters: List[Dict[str, Any]] = []
+        clusters: list[dict[str, Any]] = []
         processed_cells = set()
 
         for change in changes:
@@ -882,14 +882,14 @@ class H3PerformanceOptimizer:
 
     def __init__(self) -> None:
         """Initialize performance optimizer."""
-        self.benchmark_results: Dict[str, Any] = {}
-        self.optimization_history: List[Dict[str, Any]] = []
+        self.benchmark_results: dict[str, Any] = {}
+        self.optimization_history: list[dict[str, Any]] = []
 
     def benchmark_h3_operations(
         self,
-        test_coordinates: List[Tuple[float, float]],
-        resolutions: Optional[List[int]] = None,
-    ) -> Dict[str, Any]:
+        test_coordinates: list[tuple[float, float]],
+        resolutions: list[int] | None = None,
+    ) -> dict[str, Any]:
         """
         Benchmark H3 operations performance.
 
@@ -978,7 +978,7 @@ class H3PerformanceOptimizer:
             "method": "H3 Performance Benchmarking",
         }
 
-    def _estimate_memory_usage(self, test_cells: List[str]) -> Dict[str, Any]:
+    def _estimate_memory_usage(self, test_cells: list[str]) -> dict[str, Any]:
         """Estimate memory usage for H3 operations."""
         import sys
 
@@ -1003,9 +1003,9 @@ class H3PerformanceOptimizer:
     def optimize_grid_resolution(
         self,
         area_km2: float,
-        target_cells: Optional[int] = None,
+        target_cells: int | None = None,
         analysis_type: str = "general",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Recommend optimal H3 resolution for given area and analysis type.
 
@@ -1068,7 +1068,7 @@ class H3PerformanceOptimizer:
     def _calculate_suitability_score(
         self,
         estimated_cells: float,
-        target_cells: Optional[int],
+        target_cells: int | None,
         analysis_type: str,
         resolution: int,
     ) -> float:

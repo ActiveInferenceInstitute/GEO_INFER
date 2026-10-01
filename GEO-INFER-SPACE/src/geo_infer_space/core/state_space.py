@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 import math
-from typing import Iterable
+from collections.abc import Iterable
 
 import h3
 import numpy as np

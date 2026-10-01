@@ -6,7 +6,8 @@ including posterior helpers, prior builders, and MCMC wrappers.
 """
 
 import numpy as np
-from typing import Optional, Tuple, Dict, Any, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 import logging
 
 from geo_infer_math.utils.rng import resolve_rng
@@ -57,7 +58,7 @@ def posterior_helper(
 
 def prior_builder(
     distribution_type: str = "uniform",
-    parameters: Optional[Dict[str, Any]] = None,
+    parameters: dict[str, Any] | None = None,
     size: int = 100,
 ) -> np.ndarray:
     """
@@ -114,8 +115,8 @@ def mcmc_wrapper(
     n_burnin: int = 100,
     step_size: float = 0.1,
     method: str = "metropolis",
-    rng: Optional[np.random.Generator] = None,
-) -> Tuple[np.ndarray, Dict[str, Any]]:
+    rng: np.random.Generator | None = None,
+) -> tuple[np.ndarray, dict[str, Any]]:
     """
     Wrapper for MCMC sampling.
 
@@ -192,8 +193,8 @@ def bayesian_optimization_helper(
     prior: np.ndarray,
     n_iterations: int = 10,
     acquisition: str = "expected_improvement",
-    rng: Optional[np.random.Generator] = None,
-) -> Tuple[np.ndarray, float, Dict[str, Any]]:
+    rng: np.random.Generator | None = None,
+) -> tuple[np.ndarray, float, dict[str, Any]]:
     """
     Helper for Bayesian optimization.
 
@@ -283,7 +284,7 @@ class BayesianConvenience:
     def __init__(self) -> None:
         """Initialize Bayesian convenience class."""
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self._posterior_cache: Dict[str, np.ndarray] = {}
+        self._posterior_cache: dict[str, np.ndarray] = {}
         self.logger.debug("BayesianConvenience initialized")
 
     def calculate_posterior(
@@ -321,7 +322,7 @@ class BayesianConvenience:
 
     def mcmc_sample(
         self, log_posterior: Callable, initial_state: np.ndarray, **kwargs: Any
-    ) -> Tuple[np.ndarray, Dict[str, Any]]:
+    ) -> tuple[np.ndarray, dict[str, Any]]:
         """
         Perform MCMC sampling.
 
@@ -337,7 +338,7 @@ class BayesianConvenience:
 
     def optimize(
         self, objective: Callable, prior: np.ndarray, **kwargs: Any
-    ) -> Tuple[np.ndarray, float, Dict[str, Any]]:
+    ) -> tuple[np.ndarray, float, dict[str, Any]]:
         """
         Perform Bayesian optimization.
 

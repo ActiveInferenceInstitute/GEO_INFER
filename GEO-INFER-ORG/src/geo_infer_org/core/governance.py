@@ -7,7 +7,7 @@ and consensus models for organizational governance.
 
 import logging
 import math
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -43,8 +43,8 @@ class Vote:
     voter_id: str
     choice: str
     weight: float = 1.0
-    rank: Optional[List[str]] = None  # For ranked choice
-    approvals: Optional[List[str]] = None  # For approval voting
+    rank: list[str] | None = None  # For ranked choice
+    approvals: list[str] | None = None  # For approval voting
     timestamp: float = 0.0
 
 
@@ -56,12 +56,12 @@ class Proposal:
     title: str
     description: str
     proposer_id: str
-    options: List[str]
+    options: list[str]
     status: DecisionStatus = DecisionStatus.PROPOSED
     voting_method: VotingMethod = VotingMethod.SIMPLE_MAJORITY
     quorum_fraction: float = 0.5
     eligible_voters: int = 0
-    votes: List[Vote] = field(default_factory=list)
+    votes: list[Vote] = field(default_factory=list)
 
 
 @dataclass
@@ -69,12 +69,12 @@ class VotingResult:
     """Result of a voting process."""
 
     proposal_id: str
-    winner: Optional[str]
-    vote_counts: Dict[str, float]
+    winner: str | None
+    vote_counts: dict[str, float]
     total_votes: int
     quorum_met: bool
     method: VotingMethod
-    rounds: Optional[List[Dict[str, float]]] = None
+    rounds: list[dict[str, float]] | None = None
 
 
 class VotingEngine:
@@ -86,7 +86,7 @@ class VotingEngine:
     """
 
     def __init__(self) -> None:
-        self._proposals: Dict[str, Proposal] = {}
+        self._proposals: dict[str, Proposal] = {}
 
     def create_proposal(self, proposal: Proposal) -> None:
         """
@@ -192,7 +192,7 @@ class VotingEngine:
         there are no votes, or the top option has zero votes, there is
         no winner.
         """
-        counts: Dict[str, float] = {opt: 0 for opt in proposal.options}
+        counts: dict[str, float] = {opt: 0 for opt in proposal.options}
         for vote in proposal.votes:
             if vote.choice in counts:
                 counts[vote.choice] += 1
@@ -216,7 +216,7 @@ class VotingEngine:
     def _tally_supermajority(
         self, proposal: Proposal, quorum_met: bool, threshold: float = 2.0 / 3.0
     ) -> VotingResult:
-        counts: Dict[str, float] = {opt: 0 for opt in proposal.options}
+        counts: dict[str, float] = {opt: 0 for opt in proposal.options}
         for vote in proposal.votes:
             if vote.choice in counts:
                 counts[vote.choice] += 1
@@ -238,7 +238,7 @@ class VotingEngine:
         )
 
     def _tally_unanimous(self, proposal: Proposal, quorum_met: bool) -> VotingResult:
-        counts: Dict[str, float] = {opt: 0 for opt in proposal.options}
+        counts: dict[str, float] = {opt: 0 for opt in proposal.options}
         for vote in proposal.votes:
             if vote.choice in counts:
                 counts[vote.choice] += 1
@@ -283,11 +283,11 @@ class VotingEngine:
             else:
                 ballots.append([vote.choice])
 
-        rounds: List[Dict[str, float]] = []
+        rounds: list[dict[str, float]] = []
         total = len(ballots)
 
         while len(active_candidates) > 1:
-            round_counts: Dict[str, float] = {c: 0 for c in active_candidates}
+            round_counts: dict[str, float] = {c: 0 for c in active_candidates}
             for ballot in ballots:
                 for choice in ballot:
                     if choice in active_candidates:
@@ -340,7 +340,7 @@ class VotingEngine:
         )
 
     def _tally_weighted(self, proposal: Proposal, quorum_met: bool) -> VotingResult:
-        counts: Dict[str, float] = {opt: 0.0 for opt in proposal.options}
+        counts: dict[str, float] = {opt: 0.0 for opt in proposal.options}
         for vote in proposal.votes:
             if vote.choice in counts:
                 counts[vote.choice] += vote.weight
@@ -362,7 +362,7 @@ class VotingEngine:
         )
 
     def _tally_approval(self, proposal: Proposal, quorum_met: bool) -> VotingResult:
-        counts: Dict[str, float] = {opt: 0 for opt in proposal.options}
+        counts: dict[str, float] = {opt: 0 for opt in proposal.options}
         for vote in proposal.votes:
             approvals = vote.approvals or [vote.choice]
             for choice in approvals:
@@ -405,12 +405,12 @@ class ConsensusModel:
             convergence_threshold: Minimum change between rounds to continue.
         """
         self._convergence_threshold = convergence_threshold
-        self._options: List[str] = []
-        self._ratings: Dict[
-            str, Dict[str, float]
+        self._options: list[str] = []
+        self._ratings: dict[
+            str, dict[str, float]
         ] = {}  # participant -> option -> rating
 
-    def set_options(self, options: List[str]) -> None:
+    def set_options(self, options: list[str]) -> None:
         """
         Set the options to build consensus on.
 
@@ -419,7 +419,7 @@ class ConsensusModel:
         """
         self._options = list(options)
 
-    def submit_rating(self, participant_id: str, ratings: Dict[str, float]) -> None:
+    def submit_rating(self, participant_id: str, ratings: dict[str, float]) -> None:
         """
         Submit participant ratings for each option (scale 0-10).
 
@@ -439,7 +439,7 @@ class ConsensusModel:
 
         self._ratings[participant_id] = ratings
 
-    def compute_consensus(self) -> Dict[str, Any]:
+    def compute_consensus(self) -> dict[str, Any]:
         """
         Compute the current consensus state.
 
@@ -457,8 +457,8 @@ class ConsensusModel:
             raise ValueError("No ratings submitted")
 
         n_participants = len(self._ratings)
-        option_totals: Dict[str, float] = {opt: 0.0 for opt in self._options}
-        option_values: Dict[str, List[float]] = {opt: [] for opt in self._options}
+        option_totals: dict[str, float] = {opt: 0.0 for opt in self._options}
+        option_values: dict[str, list[float]] = {opt: [] for opt in self._options}
 
         for participant_ratings in self._ratings.values():
             for opt, val in participant_ratings.items():
@@ -472,7 +472,7 @@ class ConsensusModel:
         }
 
         # Spread (standard deviation) per option
-        spread: Dict[str, float] = {}
+        spread: dict[str, float] = {}
         for opt, values in option_values.items():
             if len(values) > 1:
                 mean = sum(values) / len(values)
@@ -496,7 +496,7 @@ class ConsensusModel:
             "participant_count": n_participants,
         }
 
-    def check_convergence(self, previous_scores: Dict[str, float]) -> bool:
+    def check_convergence(self, previous_scores: dict[str, float]) -> bool:
         """
         Check if consensus has converged compared to previous scores.
 

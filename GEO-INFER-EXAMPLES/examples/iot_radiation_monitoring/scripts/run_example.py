@@ -11,8 +11,7 @@ import argparse
 import yaml
 import json
 from pathlib import Path
-from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional
+from datetime import datetime, UTC
 
 # Add parent directories to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
@@ -91,7 +90,7 @@ class EnhancedLogger:
     def log(self, level: str, operation: str, data: dict, module: str = "MAIN"):
         """Log a structured message"""
         log_entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "level": level,
             "module": module,
             "operation": operation,
@@ -182,7 +181,7 @@ class QualityController:
 
         return results
 
-    def test_spatial_operations(self, h3_indices: List[str]) -> dict:
+    def test_spatial_operations(self, h3_indices: list[str]) -> dict:
         """Test H3 spatial operations"""
         results = {
             "test_name": "spatial_operations",
@@ -260,7 +259,7 @@ class QualityController:
 def load_config(config_path: str) -> dict:
     """Load configuration from YAML file"""
     try:
-        with open(config_path, "r") as file:
+        with open(config_path) as file:
             config = yaml.safe_load(file)
         return config["radiation_monitoring"]
     except Exception as e:
@@ -305,7 +304,7 @@ def generate_sample_sensor_data(config: dict, logger: EnhancedLogger) -> pd.Data
             "latitude": latitudes,
             "longitude": longitudes,
             "radiation_level": radiation_levels,
-            "timestamp": datetime.now(timezone.utc),
+            "timestamp": datetime.now(UTC),
             "network": np.random.choice(["safecast", "eurdep", "ctbto"], sensor_count),
             "quality_flag": "ok",
         }
@@ -558,7 +557,7 @@ def detect_anomalies(data: pd.DataFrame, config: dict, logger: EnhancedLogger) -
                     "anomaly_score": z_score,
                     "alert_level": alert_level,
                     "detection_method": "statistical",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
             )
 
@@ -653,7 +652,7 @@ def save_results(
         "type": "FeatureCollection",
         "features": features,
         "metadata": {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "h3_resolution": config["spatial"]["h3_resolution"],
             "total_features": len(features),
             "inference_method": config["bayesian_inference"]["inference"]["method"],
@@ -665,7 +664,7 @@ def save_results(
 
     # 2. Save anomaly report
     anomaly_report = {
-        "detection_timestamp": datetime.now(timezone.utc).isoformat(),
+        "detection_timestamp": datetime.now(UTC).isoformat(),
         "total_anomalies": len(anomaly_results["anomalies"]),
         "by_severity": anomaly_results["summary"],
         "anomaly_rate": anomaly_results["anomaly_rate"],
@@ -704,7 +703,7 @@ def save_results(
 
     # 4. Save processing performance metrics
     performance_metrics = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "processing_times": {
             "spatial_indexing": spatial_results["processing_time"],
             "bayesian_inference": inference_results["processing_time"],
@@ -773,7 +772,7 @@ def run_tests(
 
     test_results["summary"] = {
         "all_tests_passed": all_tests_passed,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "test_count": len(test_results) - 1,  # Exclude summary itself
     }
 
@@ -878,7 +877,7 @@ def main():
         # Final summary
         total_time = time.time() - logger.start_time
         print(f"\n🎉 Example completed successfully in {total_time:.2f} seconds!")
-        print(f"📊 Key Results:")
+        print("📊 Key Results:")
         print(
             f"   • Processed {len(sensor_data)} sensors across {spatial_results['cell_count']} H3 cells"
         )
@@ -889,7 +888,7 @@ def main():
         print(
             f"   • All quality tests passed: {test_results['summary']['all_tests_passed']}"
         )
-        print(f"📁 Outputs saved to: output/")
+        print("📁 Outputs saved to: output/")
         print(f"📝 Logs saved to: {logger.log_file}")
 
         logger.info(

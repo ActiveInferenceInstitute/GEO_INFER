@@ -27,7 +27,7 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -276,7 +276,7 @@ def run_command(
     if completed.returncode == PYTEST_NO_TESTS_EXIT_CODE:
         if allow_empty:
             print(
-                "PASS in %.2fs (no tests collected — allowed for this lane)" % duration
+                f"PASS in {duration:.2f}s (no tests collected — allowed for this lane)"
             )
             return CommandResult(
                 name=name,
@@ -678,7 +678,7 @@ def category_budget_lines(report: SuiteReport) -> list[str]:
 def write_summary(report: SuiteReport, show_failures: bool = False) -> None:
     ensure_results_dir()
     summary = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "success": report.success,
         "results": [
             {

@@ -745,7 +745,7 @@ class TestCSVRoundTrip:
         writer = self._Writer()
         writer.write(sample_points, str(fpath))
 
-        with open(fpath, "r") as f:
+        with open(fpath) as f:
             first_line = f.readline().strip()
 
         assert "x" in first_line.lower()

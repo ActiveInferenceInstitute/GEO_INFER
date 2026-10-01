@@ -1,6 +1,6 @@
 import requests
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 # Assume the FastAPI application is running at this base URL
 BASE_URL = "http://localhost:8000/api/v1"  # The CLI server (geo-infer-health serve) mounts the API here
@@ -25,7 +25,7 @@ def submit_sample_env_readings():
             "value": 12.5,
             "unit": "µg/m³",
             "location": {"latitude": 34.0522, "longitude": -118.2437},
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
         {
             "data_id": "reading002",
@@ -33,7 +33,7 @@ def submit_sample_env_readings():
             "value": 15.2,
             "unit": "µg/m³",
             "location": {"latitude": 34.0530, "longitude": -118.2445},
-            "timestamp": (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(),
+            "timestamp": (datetime.now(UTC) - timedelta(hours=1)).isoformat(),
         },
         {
             "data_id": "reading003",
@@ -41,7 +41,7 @@ def submit_sample_env_readings():
             "value": 40.0,
             "unit": "ppb",
             "location": {"latitude": 34.0522, "longitude": -118.2437},
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
         {
             "data_id": "reading004",
@@ -49,7 +49,7 @@ def submit_sample_env_readings():
             "value": 10.1,
             "unit": "µg/m³",
             "location": {"latitude": 34.0500, "longitude": -118.2400},
-            "timestamp": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(),
+            "timestamp": (datetime.now(UTC) - timedelta(days=1)).isoformat(),
         },
     ]
     for reading in readings_data:
@@ -71,8 +71,8 @@ def get_readings_near_loc_example():
         "longitude": -118.2440,
         "radius_km": 0.5,
         "parameter_name": "PM2.5",
-        "start_time_iso": (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),
-        "end_time_iso": datetime.now(timezone.utc).isoformat(),
+        "start_time_iso": (datetime.now(UTC) - timedelta(hours=2)).isoformat(),
+        "end_time_iso": datetime.now(UTC).isoformat(),
     }
     response = requests.post(f"{ENVIRONMENT_URL}/readings/near_location", params=params)
     print_response(response)

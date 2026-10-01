@@ -12,7 +12,7 @@ This module provides sophisticated pricing capabilities including:
 
 import logging
 import time
-from typing import Dict, List, Optional, Any, cast
+from typing import Any, cast
 from datetime import datetime
 from dataclasses import dataclass, field
 from enum import Enum
@@ -48,19 +48,19 @@ class PremiumCalculation:
 
     total_premium: float
     base_premium: float
-    component_breakdown: Dict[PremiumComponent, float] = field(default_factory=dict)
+    component_breakdown: dict[PremiumComponent, float] = field(default_factory=dict)
     calculation_method: PricingMethod = PricingMethod.TECHNICAL
     confidence_level: float = 0.95
     calculation_timestamp: datetime = field(default_factory=datetime.now)
 
     # Coverage breakdown
-    coverage_breakdown: Dict[str, float] = field(default_factory=dict)
+    coverage_breakdown: dict[str, float] = field(default_factory=dict)
 
     # Risk factors
-    risk_factors: Dict[str, float] = field(default_factory=dict)
+    risk_factors: dict[str, float] = field(default_factory=dict)
 
     # Metadata
-    calculation_parameters: Dict[str, Any] = field(default_factory=dict)
+    calculation_parameters: dict[str, Any] = field(default_factory=dict)
 
     def get_component_percentage(self, component: PremiumComponent) -> float:
         """Get percentage of total premium for a component."""
@@ -68,7 +68,7 @@ class PremiumCalculation:
             return self.component_breakdown.get(component, 0.0) / self.total_premium
         return 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert calculation to dictionary."""
         return {
             "total_premium": self.total_premium,
@@ -98,7 +98,7 @@ class PricingEngine:
     - Regulatory compliance and rate filing support
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the pricing engine.
 
@@ -128,7 +128,7 @@ class PricingEngine:
         self.market_rates = self._load_market_rates()
 
         # Performance tracking
-        self.pricing_metrics: Dict[str, Any] = {
+        self.pricing_metrics: dict[str, Any] = {
             "total_calculations": 0,
             "average_premium": 0.0,
             "premium_distribution": {},
@@ -139,9 +139,9 @@ class PricingEngine:
 
     def calculate_premium(
         self,
-        application_data: Dict[str, Any],
-        risk_assessment: Dict[str, Any],
-        rule_evaluation: Dict[str, Any],
+        application_data: dict[str, Any],
+        risk_assessment: dict[str, Any],
+        rule_evaluation: dict[str, Any],
     ) -> PremiumCalculation:
         """
         Calculate comprehensive insurance premium.
@@ -214,7 +214,7 @@ class PricingEngine:
             raise RuntimeError("Premium calculation failed") from e
 
     def _calculate_base_premium(
-        self, property_info: Dict[str, Any], risk_assessment: Dict[str, Any]
+        self, property_info: dict[str, Any], risk_assessment: dict[str, Any]
     ) -> float:
         """Calculate base premium using technical pricing."""
         property_value = float(property_info.get("value", 200000))
@@ -233,8 +233,8 @@ class PricingEngine:
         return float(base_premium)
 
     def _calculate_component_breakdown(
-        self, base_premium: float, risk_assessment: Dict[str, Any]
-    ) -> Dict[PremiumComponent, float]:
+        self, base_premium: float, risk_assessment: dict[str, Any]
+    ) -> dict[PremiumComponent, float]:
         """Calculate premium component breakdown."""
         components = {}
 
@@ -261,8 +261,8 @@ class PricingEngine:
         return components
 
     def _calculate_coverage_breakdown(
-        self, coverage_requests: List[Dict[str, Any]], base_premium: float
-    ) -> Dict[str, float]:
+        self, coverage_requests: list[dict[str, Any]], base_premium: float
+    ) -> dict[str, float]:
         """Calculate premium breakdown by coverage type."""
         breakdown = {}
 
@@ -286,7 +286,7 @@ class PricingEngine:
         return breakdown
 
     def _apply_rule_adjustments(
-        self, base_premium: float, rule_evaluation: Dict[str, Any]
+        self, base_premium: float, rule_evaluation: dict[str, Any]
     ) -> float:
         """Apply rule-based premium adjustments."""
         adjustments = 0.0
@@ -306,8 +306,8 @@ class PricingEngine:
         return adjustments
 
     def _extract_risk_factors(
-        self, risk_assessment: Dict[str, Any]
-    ) -> Dict[str, float]:
+        self, risk_assessment: dict[str, Any]
+    ) -> dict[str, float]:
         """Extract key risk factors for premium calculation."""
         return {
             "location_risk": risk_assessment.get("location_risk", 0.5),
@@ -316,7 +316,7 @@ class PricingEngine:
             "catastrophe_risk": risk_assessment.get("catastrophe_risk", 0.1),
         }
 
-    def _load_base_rates(self) -> Dict[str, float]:
+    def _load_base_rates(self) -> dict[str, float]:
         """Load base insurance rates by property type."""
         return {
             "residential": 0.005,  # 0.5% of value
@@ -326,7 +326,7 @@ class PricingEngine:
             "institutional": 0.007,  # 0.7% of value
         }
 
-    def _load_territory_factors(self) -> Dict[str, float]:
+    def _load_territory_factors(self) -> dict[str, float]:
         """Load territory risk factors."""
         return {
             "low_risk": 0.8,
@@ -337,7 +337,7 @@ class PricingEngine:
             "wildfire_prone": 1.6,
         }
 
-    def _load_construction_factors(self) -> Dict[str, float]:
+    def _load_construction_factors(self) -> dict[str, float]:
         """Load construction type factors."""
         return {
             "frame": 1.2,
@@ -347,7 +347,7 @@ class PricingEngine:
             "fire_resistive": 0.7,
         }
 
-    def _load_protection_factors(self) -> Dict[str, float]:
+    def _load_protection_factors(self) -> dict[str, float]:
         """Load protection system factors."""
         return {
             "sprinkler_system": 0.85,
@@ -356,7 +356,7 @@ class PricingEngine:
             "fire_extinguishers": 0.98,
         }
 
-    def _load_market_rates(self) -> Dict[str, float]:
+    def _load_market_rates(self) -> dict[str, float]:
         """Load market rate data for competitive pricing."""
         return {
             "residential": 0.006,  # Market average
@@ -365,7 +365,7 @@ class PricingEngine:
         }
 
     def calculate_market_adjusted_premium(
-        self, technical_premium: float, market_data: Dict[str, Any]
+        self, technical_premium: float, market_data: dict[str, Any]
     ) -> float:
         """
         Calculate market-adjusted premium based on competitive analysis.
@@ -399,7 +399,7 @@ class PricingEngine:
             return technical_premium
 
     def calculate_risk_loaded_premium(
-        self, base_premium: float, risk_assessment: Dict[str, Any]
+        self, base_premium: float, risk_assessment: dict[str, Any]
     ) -> float:
         """
         Calculate risk-loaded premium with uncertainty consideration.
@@ -429,7 +429,7 @@ class PricingEngine:
             return base_premium * 1.2  # Default 20% loading
 
     def calculate_catastrophe_premium(
-        self, base_premium: float, catastrophe_assessment: Dict[str, Any]
+        self, base_premium: float, catastrophe_assessment: dict[str, Any]
     ) -> float:
         """
         Calculate catastrophe-loaded premium.
@@ -456,8 +456,8 @@ class PricingEngine:
             return base_premium * 0.1  # Default 10% catastrophe loading
 
     def optimize_premium_structure(
-        self, target_premium: float, constraints: Dict[str, Any]
-    ) -> Dict[str, float]:
+        self, target_premium: float, constraints: dict[str, Any]
+    ) -> dict[str, float]:
         """
         Optimize premium structure to meet business objectives.
 
@@ -504,7 +504,7 @@ class PricingEngine:
                 PremiumComponent.PROFIT_LOADING.value: target_premium * 0.15,
             }
 
-    def validate_premium(self, calculation: PremiumCalculation) -> Dict[str, Any]:
+    def validate_premium(self, calculation: PremiumCalculation) -> dict[str, Any]:
         """
         Validate premium calculation for compliance and reasonableness.
 
@@ -514,7 +514,7 @@ class PricingEngine:
         Returns:
             Validation results
         """
-        validation_result: Dict[str, Any] = {
+        validation_result: dict[str, Any] = {
             "is_valid": True,
             "warnings": [],
             "errors": [],
@@ -607,7 +607,7 @@ class PricingEngine:
         else:
             return "over_10000"
 
-    def get_pricing_metrics(self) -> Dict[str, Any]:
+    def get_pricing_metrics(self) -> dict[str, Any]:
         """Get pricing engine performance metrics."""
         return {
             "total_calculations": self.pricing_metrics["total_calculations"],
@@ -618,7 +618,7 @@ class PricingEngine:
             ],  # Last 10 calculations
         }
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform health check on pricing engine."""
         return {
             "status": "operational",
@@ -635,7 +635,7 @@ class PricingEngine:
 class PremiumCalculator:
     """Advanced premium calculation with multiple methodologies."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the premium calculator.
 
@@ -653,7 +653,7 @@ class PremiumCalculator:
         self.logger.info("Premium calculator initialized")
 
     def calculate_experience_rated_premium(
-        self, policy_history: Dict[str, Any], base_premium: float
+        self, policy_history: dict[str, Any], base_premium: float
     ) -> float:
         """
         Calculate experience-rated premium based on claims history.
@@ -687,7 +687,7 @@ class PremiumCalculator:
             return base_premium
 
     def _calculate_experience_factor(
-        self, claims_history: List[Dict[str, Any]], loss_history: List[float]
+        self, claims_history: list[dict[str, Any]], loss_history: list[float]
     ) -> float:
         """Calculate experience modification factor."""
         if not claims_history and not loss_history:
@@ -710,8 +710,8 @@ class PremiumCalculator:
         return min(2.0, max(0.5, experience_factor))
 
     def calculate_layered_premium(
-        self, coverage_structure: Dict[str, Any]
-    ) -> Dict[str, float]:
+        self, coverage_structure: dict[str, Any]
+    ) -> dict[str, float]:
         """
         Calculate premium for layered coverage structures.
 
@@ -733,7 +733,7 @@ class PremiumCalculator:
 
         return layer_premiums
 
-    def _load_rate_tables(self) -> Dict[str, Any]:
+    def _load_rate_tables(self) -> dict[str, Any]:
         """Load comprehensive rate tables."""
         return {
             "base_rates": {
@@ -764,11 +764,11 @@ class PremiumCalculator:
             },
         }
 
-    def get_rate_table(self, table_name: str) -> Dict[str, float]:
+    def get_rate_table(self, table_name: str) -> dict[str, float]:
         """Get specific rate table."""
-        return cast(Dict[str, float], self.rate_tables.get(table_name, {}))
+        return cast(dict[str, float], self.rate_tables.get(table_name, {}))
 
-    def update_rate_table(self, table_name: str, rates: Dict[str, float]) -> None:
+    def update_rate_table(self, table_name: str, rates: dict[str, float]) -> None:
         """Update rate table with new rates."""
         if table_name in self.rate_tables:
             self.rate_tables[table_name].update(rates)
@@ -776,6 +776,6 @@ class PremiumCalculator:
 
 
 # Convenience functions
-def create_pricing_engine(config: Optional[Dict[str, Any]] = None) -> PricingEngine:
+def create_pricing_engine(config: dict[str, Any] | None = None) -> PricingEngine:
     """Create a new pricing engine."""
     return PricingEngine(config)

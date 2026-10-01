@@ -4,7 +4,8 @@ CulturalMap module for creating maps that integrate cultural and historical cont
 
 import logging
 import os
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any
+from collections.abc import Callable
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -45,8 +46,8 @@ class CulturalMap:
 
     def __init__(
         self,
-        data: Optional[gpd.GeoDataFrame] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        data: gpd.GeoDataFrame | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """
         Initialize a CulturalMap object.
@@ -61,9 +62,9 @@ class CulturalMap:
             else data
         )
         self.metadata = metadata or {}
-        self.image: Optional[np.ndarray] = None
+        self.image: np.ndarray | None = None
         self._figure = None
-        self._cultural_elements: List[Dict[str, Any]] = []
+        self._cultural_elements: list[dict[str, Any]] = []
 
     @classmethod
     def from_region(
@@ -505,7 +506,7 @@ class CulturalMap:
         lon_range = max_lon - min_lon
         lat_range = max_lat - min_lat
 
-        def coord_to_pixel(lon: float, lat: float) -> Tuple[int, int]:
+        def coord_to_pixel(lon: float, lat: float) -> tuple[int, int]:
             """Convert geographic coordinates to pixel coordinates."""
             x = int((lon - min_lon) / lon_range * width)
             # Flip y-axis (latitude increases northward, but pixel coordinates increase downward)
@@ -516,11 +517,11 @@ class CulturalMap:
         draw = ImageDraw.Draw(base_img)
 
         # Try to get a font
-        font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
+        font: ImageFont.FreeTypeFont | ImageFont.ImageFont
         try:
             # Try to load a nice font
             font = ImageFont.truetype("Arial", 16)
-        except IOError:
+        except OSError:
             # Fallback to default font
             font = ImageFont.load_default()
 
@@ -692,11 +693,11 @@ class CulturalMap:
         draw = ImageDraw.Draw(img)
 
         # Try to get a font
-        font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
+        font: ImageFont.FreeTypeFont | ImageFont.ImageFont
         try:
             # Try to load a nice font
             font = ImageFont.truetype("Arial", 14)
-        except IOError:
+        except OSError:
             # Fallback to default font
             font = ImageFont.load_default()
 
@@ -705,8 +706,8 @@ class CulturalMap:
 
         # Simple text wrapping
         words = narrative.split()
-        lines: List[str] = []
-        current_line: List[str] = []
+        lines: list[str] = []
+        current_line: list[str] = []
 
         for word in words:
             # Check if adding this word exceeds the max width
@@ -864,7 +865,7 @@ class CulturalMap:
             return
         plt.show()
 
-    def add_interactive_storytelling(self, story_elements: List[Dict]) -> "CulturalMap":
+    def add_interactive_storytelling(self, story_elements: list[dict]) -> "CulturalMap":
         """
         Add interactive storytelling elements to the cultural map.
 
@@ -892,10 +893,10 @@ class CulturalMap:
         img = Image.fromarray(self.image)
         draw = ImageDraw.Draw(img)
 
-        font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
+        font: ImageFont.FreeTypeFont | ImageFont.ImageFont
         try:
             font = ImageFont.truetype("Arial", 14)
-        except IOError:
+        except OSError:
             font = ImageFont.load_default()
 
         for element in story_elements:
@@ -941,7 +942,7 @@ class CulturalMap:
         self.image = np.array(img)
         return self
 
-    def create_timeline_view(self, time_periods: List[str]) -> List["CulturalMap"]:
+    def create_timeline_view(self, time_periods: list[str]) -> list["CulturalMap"]:
         """
         Create a series of maps showing cultural evolution over time periods.
 
@@ -974,7 +975,7 @@ class CulturalMap:
 
         return maps
 
-    def _filter_cultural_data_by_period(self, period: str) -> List[Dict]:
+    def _filter_cultural_data_by_period(self, period: str) -> list[dict]:
         """
         Filter cultural data by time period.
 
@@ -1011,7 +1012,7 @@ class CulturalMap:
         return filtered_data or cultural_data  # Return original if no matches
 
     def add_legend(
-        self, legend_items: Optional[List[Dict[str, Any]]] = None
+        self, legend_items: list[dict[str, Any]] | None = None
     ) -> "CulturalMap":
         """
         Add a comprehensive legend to the cultural map.
@@ -1034,12 +1035,12 @@ class CulturalMap:
         draw = ImageDraw.Draw(img)
         width, height = img.size
 
-        font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
-        title_font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
+        font: ImageFont.FreeTypeFont | ImageFont.ImageFont
+        title_font: ImageFont.FreeTypeFont | ImageFont.ImageFont
         try:
             font = ImageFont.truetype("Arial", 12)
             title_font = ImageFont.truetype("Arial", 14)
-        except IOError:
+        except OSError:
             font = ImageFont.load_default()
             title_font = ImageFont.load_default()
 
@@ -1111,8 +1112,8 @@ class CulturalMap:
         return self
 
     def export_with_layers(
-        self, output_dir: str, layer_types: Optional[List[str]] = None
-    ) -> List[str]:
+        self, output_dir: str, layer_types: list[str] | None = None
+    ) -> list[str]:
         """
         Export the cultural map with separate layers for different elements.
 

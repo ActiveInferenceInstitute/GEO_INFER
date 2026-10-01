@@ -3,7 +3,7 @@
 import logging
 import csv
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import Any
 from datetime import datetime
 from ..models.hr_models import (
     Employee,
@@ -24,21 +24,21 @@ class BaseHRImporter(ABC):
 
     @abstractmethod
     def fetch_employees(
-        self, last_sync_date: Optional[datetime] = None
-    ) -> List[Dict[str, Any]]:
+        self, last_sync_date: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Fetch raw employee data from the HR source."""
         raise RuntimeError("HR importer subclasses must implement fetch_employees()")
 
     @abstractmethod
-    def transform_employees(self, raw_data: List[Dict[str, Any]]) -> List[Employee]:
+    def transform_employees(self, raw_data: list[dict[str, Any]]) -> list[Employee]:
         """Transform raw employee data into Employee Pydantic models."""
         raise RuntimeError(
             "HR importer subclasses must implement transform_employees()"
         )
 
     def import_employees(
-        self, last_sync_date: Optional[datetime] = None, **kwargs: Any
-    ) -> List[Employee]:
+        self, last_sync_date: datetime | None = None, **kwargs: Any
+    ) -> list[Employee]:
         """Orchestrates the import process: connect, fetch, transform for employees."""
         self.connect(**kwargs)
         raw_data = self.fetch_employees(last_sync_date=last_sync_date)
@@ -55,13 +55,13 @@ class CSVHRImporter(BaseHRImporter):
 
     def __init__(self, file_path: str):
         self.file_path = file_path
-        self.connection: Optional[str] = None
+        self.connection: str | None = None
         logger.info(f"CSV HR Importer initialized for file: {self.file_path}")
 
     def connect(self, **kwargs: Any) -> None:
         try:
             # Check accessibility
-            with open(self.file_path, "r", encoding="utf-8") as f:
+            with open(self.file_path, encoding="utf-8") as f:
                 f.read(0)
             self.connection = "connected"
             logger.info(f"Successfully connected to HR CSV file: {self.file_path}")
@@ -73,14 +73,14 @@ class CSVHRImporter(BaseHRImporter):
             raise
 
     def fetch_employees(
-        self, last_sync_date: Optional[datetime] = None
-    ) -> List[Dict[str, Any]]:
+        self, last_sync_date: datetime | None = None
+    ) -> list[dict[str, Any]]:
         if not self.connection:
             raise ConnectionError("Not connected to HR CSV file. Call connect() first.")
 
-        records: List[Dict[str, Any]] = []
+        records: list[dict[str, Any]] = []
         try:
-            with open(self.file_path, mode="r", encoding="utf-8") as csvfile:
+            with open(self.file_path, encoding="utf-8") as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
                     # Add date filtering if last_sync_date and relevant date column in CSV
@@ -93,8 +93,8 @@ class CSVHRImporter(BaseHRImporter):
             logger.error(f"Error fetching employee data from CSV {self.file_path}: {e}")
             return []
 
-    def transform_employees(self, raw_data: List[Dict[str, Any]]) -> List[Employee]:
-        employees: List[Employee] = []
+    def transform_employees(self, raw_data: list[dict[str, Any]]) -> list[Employee]:
+        employees: list[Employee] = []
         for record in raw_data:
             try:
                 # Basic date parsing, assuming YYYY-MM-DD format
@@ -112,7 +112,7 @@ class CSVHRImporter(BaseHRImporter):
                 status_raw = (record.get("status") or "").strip()
                 gender_raw = (record.get("gender") or "").strip()
 
-                employee_data: Dict[str, Any] = {
+                employee_data: dict[str, Any] = {
                     "employee_id": record.get("employee_id"),
                     "first_name": record.get("first_name"),
                     "last_name": record.get("last_name"),
@@ -129,7 +129,7 @@ class CSVHRImporter(BaseHRImporter):
                     # Add other fields as necessary from your CSV
                 }
                 # Filter out None values for fields that are optional and not provided
-                employee_data_cleaned: Dict[str, Any] = {
+                employee_data_cleaned: dict[str, Any] = {
                     k: v
                     for k, v in employee_data.items()
                     if v is not None or k in ["hire_date"]

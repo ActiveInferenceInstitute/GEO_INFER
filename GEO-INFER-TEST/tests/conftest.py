@@ -14,7 +14,7 @@ import pandas as pd
 import geopandas as gpd
 from pathlib import Path
 from unittest.mock import patch
-from typing import Dict, Any
+from typing import Any
 import h3
 import shapely.geometry as sgeom
 from datetime import datetime, timedelta
@@ -69,7 +69,7 @@ class PerformanceMonitor:
             "timestamp": datetime.now().isoformat(),
         }
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get all recorded metrics."""
         return self.metrics.copy()
 

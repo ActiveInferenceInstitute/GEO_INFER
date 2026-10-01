@@ -230,7 +230,7 @@ def main():
     print(
         f"  - Resources deployed: {deployment['metrics']['resources_allocated']} units"
     )
-    print(f"  - Population to evacuate: 25,000")
+    print("  - Population to evacuate: 25,000")
     print(f"  - SAR search radius: {sar_plan['search_radius_km']} km")
 
 

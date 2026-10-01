@@ -5,7 +5,7 @@ This module defines the generic interface for spatial indexing operations
 that can be implemented by different backends (H3, SRAI, etc.).
 """
 
-from typing import Dict, Any, List, Optional, cast
+from typing import Any, cast
 import math
 import logging
 
@@ -20,7 +20,7 @@ class SpatialIndexingInterface:
     to different backends based on configuration.
     """
 
-    def __init__(self, backend: Optional[str] = None) -> None:
+    def __init__(self, backend: str | None = None) -> None:
         from .dispatcher import get_backend_dispatcher
 
         self.dispatcher = get_backend_dispatcher()
@@ -67,7 +67,7 @@ class SpatialIndexingInterface:
         position: tuple[float, float],
         radius: float,
         resolution: int = 9,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Get neighboring spatial cells within a radius.
 
@@ -100,7 +100,7 @@ class SpatialIndexingInterface:
             raise ValueError("backend returned an invalid average cell edge length")
         ring_distance = max(1, math.ceil(radius / edge_m))
         return cast(
-            List[str],
+            list[str],
             self.dispatcher.dispatch_indexing_operation(
                 "get_cells_within_radius",
                 cell,
@@ -109,7 +109,7 @@ class SpatialIndexingInterface:
             ),
         )
 
-    def get_cell_neighbors(self, cell: str, k: int = 1) -> List[str]:
+    def get_cell_neighbors(self, cell: str, k: int = 1) -> list[str]:
         """
         Get neighboring cells around a given cell.
 
@@ -122,13 +122,13 @@ class SpatialIndexingInterface:
         """
         logger.debug(f"Getting k={k} neighbors for cell {cell}")
         return cast(
-            List[str],
+            list[str],
             self.dispatcher.dispatch_indexing_operation(
                 "get_neighbors", cell, k, backend=self.backend
             ),
         )
 
-    def polygon_to_cells(self, polygon: Dict[str, Any], resolution: int) -> List[str]:
+    def polygon_to_cells(self, polygon: dict[str, Any], resolution: int) -> list[str]:
         """
         Convert a polygon geometry to a list of spatial index cells.
 
@@ -141,7 +141,7 @@ class SpatialIndexingInterface:
         """
         logger.debug(f"Converting polygon to cells at resolution {resolution}")
         return cast(
-            List[str],
+            list[str],
             self.dispatcher.dispatch_indexing_operation(
                 "polygon_to_cells", polygon, resolution, backend=self.backend
             ),
@@ -165,7 +165,7 @@ class SpatialIndexingInterface:
             ),
         )
 
-    def compact_cells(self, cells: List[str]) -> List[str]:
+    def compact_cells(self, cells: list[str]) -> list[str]:
         """
         Compact a list of cells into a more efficient representation.
 
@@ -176,13 +176,13 @@ class SpatialIndexingInterface:
             Compacted list of cell identifiers
         """
         return cast(
-            List[str],
+            list[str],
             self.dispatcher.dispatch_indexing_operation(
                 "compact_cells", cells, backend=self.backend
             ),
         )
 
-    def uncompact_cells(self, compacted_cells: List[str], resolution: int) -> List[str]:
+    def uncompact_cells(self, compacted_cells: list[str], resolution: int) -> list[str]:
         """
         Uncompact cells back to individual cell identifiers.
 
@@ -194,7 +194,7 @@ class SpatialIndexingInterface:
             List of individual cell identifiers
         """
         return cast(
-            List[str],
+            list[str],
             self.dispatcher.dispatch_indexing_operation(
                 "uncompact_cells",
                 compacted_cells,
@@ -221,7 +221,7 @@ class SpatialIndexingInterface:
             ),
         )
 
-    def get_cell_children(self, cell: str, resolution: int) -> List[str]:
+    def get_cell_children(self, cell: str, resolution: int) -> list[str]:
         """
         Get children of a cell at a finer resolution.
 
@@ -233,13 +233,13 @@ class SpatialIndexingInterface:
             List of child cell identifiers
         """
         return cast(
-            List[str],
+            list[str],
             self.dispatcher.dispatch_indexing_operation(
                 "get_cell_children", cell, resolution, backend=self.backend
             ),
         )
 
-    def get_cell_path(self, start_cell: str, end_cell: str) -> List[str]:
+    def get_cell_path(self, start_cell: str, end_cell: str) -> list[str]:
         """
         Get the path of cells between two cells.
 
@@ -251,13 +251,13 @@ class SpatialIndexingInterface:
             List of cell identifiers in the path
         """
         return cast(
-            List[str],
+            list[str],
             self.dispatcher.dispatch_indexing_operation(
                 "get_cell_path", start_cell, end_cell, backend=self.backend
             ),
         )
 
-    def get_cell_ring(self, cell: str, k: int) -> List[str]:
+    def get_cell_ring(self, cell: str, k: int) -> list[str]:
         """
         Get the ring of cells at distance k.
 
@@ -269,7 +269,7 @@ class SpatialIndexingInterface:
             List of cell identifiers in the ring
         """
         return cast(
-            List[str],
+            list[str],
             self.dispatcher.dispatch_indexing_operation(
                 "get_cell_ring", cell, k, backend=self.backend
             ),
@@ -284,10 +284,10 @@ class SpatialIndexingInterface:
             ),
         )
 
-    def get_cell_boundary(self, cell: str) -> List[tuple[float, float]]:
+    def get_cell_boundary(self, cell: str) -> list[tuple[float, float]]:
         """Get boundary coordinates of a cell."""
         return cast(
-            List[tuple[float, float]],
+            list[tuple[float, float]],
             self.dispatcher.dispatch_indexing_operation(
                 "get_cell_boundary", cell, backend=self.backend
             ),
@@ -302,10 +302,10 @@ class SpatialIndexingInterface:
             ),
         )
 
-    def cells_to_multipolygon(self, cells: List[str]) -> Dict[str, Any]:
+    def cells_to_multipolygon(self, cells: list[str]) -> dict[str, Any]:
         """Convert cells to multipolygon boundary."""
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.dispatcher.dispatch_indexing_operation(
                 "cells_to_multipolygon", cells, backend=self.backend
             ),
@@ -314,22 +314,22 @@ class SpatialIndexingInterface:
 
 # Convenience functions that use the default backend
 def latlng_to_cell(
-    lat: float, lng: float, resolution: int, backend: Optional[str] = None
+    lat: float, lng: float, resolution: int, backend: str | None = None
 ) -> str:
     """Convert lat/lng to cell using specified or default backend."""
     indexer = SpatialIndexingInterface(backend)
     return indexer.latlng_to_cell(lat, lng, resolution)
 
 
-def cell_to_latlng(cell: str, backend: Optional[str] = None) -> tuple[float, float]:
+def cell_to_latlng(cell: str, backend: str | None = None) -> tuple[float, float]:
     """Convert cell to lat/lng using specified or default backend."""
     indexer = SpatialIndexingInterface(backend)
     return indexer.cell_to_latlng(cell)
 
 
 def polygon_to_cells(
-    polygon: Dict[str, Any], resolution: int, backend: Optional[str] = None
-) -> List[str]:
+    polygon: dict[str, Any], resolution: int, backend: str | None = None
+) -> list[str]:
     """Convert polygon to cells using specified or default backend."""
     indexer = SpatialIndexingInterface(backend)
     return indexer.polygon_to_cells(polygon, resolution)

@@ -7,7 +7,7 @@ and other spatially-aware regression techniques.
 """
 
 import numpy as np
-from typing import List, Dict, Optional, Any
+from typing import Any
 from dataclasses import dataclass
 from scipy.optimize import minimize
 import logging
@@ -35,8 +35,8 @@ class OrdinaryLeastSquares:
 
     def __init__(self) -> None:
         """Initialize OLS regression."""
-        self.coefficients: Optional[np.ndarray] = None
-        self.intercept: Optional[float] = None
+        self.coefficients: np.ndarray | None = None
+        self.intercept: float | None = None
         self.is_fitted = False
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "OrdinaryLeastSquares":
@@ -117,8 +117,8 @@ class SpatialLagModel:
         """
         self.weights_matrix = weights_matrix
         self.method = method
-        self.rho: Optional[float] = None  # Spatial autoregressive parameter
-        self.beta: Optional[np.ndarray] = None  # Regression coefficients
+        self.rho: float | None = None  # Spatial autoregressive parameter
+        self.beta: np.ndarray | None = None  # Regression coefficients
         self.is_fitted = False
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "SpatialLagModel":
@@ -224,7 +224,7 @@ class SpatialLagModel:
 class GeographicallyWeightedRegression:
     """Geographically Weighted Regression (GWR)."""
 
-    def __init__(self, bandwidth: Optional[float] = None, kernel: str = "gaussian"):
+    def __init__(self, bandwidth: float | None = None, kernel: str = "gaussian"):
         """
         Initialize GWR model.
 
@@ -234,7 +234,7 @@ class GeographicallyWeightedRegression:
         """
         self.bandwidth = bandwidth
         self.kernel = kernel
-        self.coordinates: Optional[np.ndarray] = None
+        self.coordinates: np.ndarray | None = None
         self.is_fitted = False
 
     def fit(
@@ -268,7 +268,7 @@ class GeographicallyWeightedRegression:
         """Estimate optimal bandwidth using cross-validation."""
 
         def cv_score(bandwidth: float) -> float:
-            scores: List[float] = []
+            scores: list[float] = []
             for i in range(len(X)):
                 # Leave-one-out cross-validation
                 mask = np.arange(len(X)) != i
@@ -377,8 +377,8 @@ class SpatialErrorModel:
             weights_matrix: Spatial weights matrix
         """
         self.weights_matrix = weights_matrix
-        self.lambda_param: Optional[float] = None  # Spatial error parameter
-        self.beta: Optional[np.ndarray] = None  # Regression coefficients
+        self.lambda_param: float | None = None  # Spatial error parameter
+        self.beta: np.ndarray | None = None  # Regression coefficients
         self.is_fitted = False
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "SpatialErrorModel":
@@ -463,9 +463,9 @@ class SpatialDurbinModel:
             weights_matrix: Spatial weights matrix
         """
         self.weights_matrix = weights_matrix
-        self.rho: Optional[float] = None  # Spatial lag parameter
-        self.beta: Optional[np.ndarray] = None  # Direct effects
-        self.theta: Optional[np.ndarray] = None  # Indirect effects
+        self.rho: float | None = None  # Spatial lag parameter
+        self.beta: np.ndarray | None = None  # Direct effects
+        self.theta: np.ndarray | None = None  # Indirect effects
         self.is_fitted = False
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "SpatialDurbinModel":
@@ -554,7 +554,7 @@ class SpatialDurbinModel:
 
 def spatial_regression_analysis(
     X: np.ndarray, y: np.ndarray, coordinates: np.ndarray, model_type: str = "ols"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Perform spatial regression analysis.
 
@@ -567,7 +567,7 @@ def spatial_regression_analysis(
     Returns:
         Dictionary containing analysis results
     """
-    results: Dict[str, Any] = {}
+    results: dict[str, Any] = {}
 
     if model_type == "ols":
         ols_model = OrdinaryLeastSquares()

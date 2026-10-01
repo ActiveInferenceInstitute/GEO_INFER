@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence
+from typing import Any
+from collections.abc import Iterable, Sequence
 
 
 SCENARIO_NAMES: tuple[str, ...] = (
@@ -18,7 +19,7 @@ SCENARIO_NAMES: tuple[str, ...] = (
     "debug",
 )
 
-SCENARIO_ALIASES: Dict[str, str] = {
+SCENARIO_ALIASES: dict[str, str] = {
     "all": "all",
     "simple_model": "simple",
     "modern_active_inference": "modern",
@@ -40,16 +41,16 @@ class RunConfig:
     """Configuration for one scenario runner invocation."""
 
     scenario: str = "simple"
-    output_dir: Optional[Path] = None
+    output_dir: Path | None = None
     seed: int = 42
     deterministic: bool = True
     timesteps: int = 8
     visualizations: bool = True
     h3_resolution: int = 8
     h3_ring_size: int = 1
-    h3_cells: Optional[List[str]] = None
-    output_formats: List[str] = field(default_factory=lambda: ["json", "csv", "png"])
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    h3_cells: list[str] | None = None
+    output_formats: list[str] = field(default_factory=lambda: ["json", "csv", "png"])
+    parameters: dict[str, Any] = field(default_factory=dict)
     schema_version: str = "geo-infer-act-run-config/v1"
 
     def __post_init__(self) -> None:
@@ -65,7 +66,7 @@ class RunConfig:
         if self.h3_ring_size < 0:
             raise ValueError("h3_ring_size must be nonnegative")
 
-    def to_manifest_dict(self) -> Dict[str, Any]:
+    def to_manifest_dict(self) -> dict[str, Any]:
         """Return a JSON-compatible configuration snapshot."""
         return {
             "schema_version": self.schema_version,
@@ -89,9 +90,9 @@ class ScenarioRunResult:
     scenario: str
     output_dir: Path
     manifest_path: Path
-    manifest: Dict[str, Any]
-    metrics: Dict[str, Any]
-    generated_files: List[Path]
+    manifest: dict[str, Any]
+    metrics: dict[str, Any]
+    generated_files: list[Path]
 
 
 @dataclass
@@ -100,8 +101,8 @@ class SuiteRunResult:
 
     output_dir: Path
     manifest_path: Path
-    manifest: Dict[str, Any]
-    scenario_results: List[ScenarioRunResult]
+    manifest: dict[str, Any]
+    scenario_results: list[ScenarioRunResult]
 
 
 def normalize_scenario_name(name: str) -> str:
@@ -114,7 +115,7 @@ def normalize_scenario_name(name: str) -> str:
     return normalized
 
 
-def normalize_scenario_list(names: Optional[Iterable[str]]) -> Sequence[str]:
+def normalize_scenario_list(names: Iterable[str] | None) -> Sequence[str]:
     """Normalize an optional scenario list."""
     if names is None:
         return SCENARIO_NAMES

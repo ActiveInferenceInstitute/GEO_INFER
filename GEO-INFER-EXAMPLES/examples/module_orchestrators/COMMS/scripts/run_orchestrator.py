@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 _ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
 if str(_ORCHESTRATORS_DIR) not in sys.path:
@@ -22,7 +22,7 @@ if str(_ORCHESTRATORS_DIR) not in sys.path:
 from _lib import run_module_orchestrator  # noqa: E402
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     from geo_infer_comms import (
         GeospatialMetadata,
         GeospatialPoint,
@@ -37,7 +37,7 @@ def _operation() -> Dict[str, Any]:
     broker = MessageBroker(max_queue_size=1000, enable_persistence=False)
 
     # Synthetic subscribers: field crews that count deliveries.
-    delivered: Dict[str, List[str]] = {"crew-north": [], "crew-south": []}
+    delivered: dict[str, list[str]] = {"crew-north": [], "crew-south": []}
     broker.subscribe(
         "crew-north", lambda msg: delivered["crew-north"].append(msg.message_id)
     )
@@ -57,7 +57,7 @@ def _operation() -> Dict[str, Any]:
             MessagePriority.NORMAL,
             MessagePriority.HIGH,
         ]
-        sent: List[MessageResponse] = []
+        sent: list[MessageResponse] = []
         for i, priority in enumerate(priorities):
             geo = GeospatialMetadata(
                 location=GeospatialPoint(

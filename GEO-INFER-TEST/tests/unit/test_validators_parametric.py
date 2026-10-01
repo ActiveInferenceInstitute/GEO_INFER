@@ -10,7 +10,7 @@ and QualityController validators.
 import pytest
 import numpy as np
 import pandas as pd
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, UTC
 
 from geo_infer_test.core.validators import (
     DataQualityValidator,
@@ -29,7 +29,7 @@ from geo_infer_test.core.validators import (
 
 def _ts(delta_hours: float = 0) -> str:
     """ISO timestamp shifted by *delta_hours* from now."""
-    return (datetime.now(timezone.utc) - timedelta(hours=delta_hours)).isoformat()
+    return (datetime.now(UTC) - timedelta(hours=delta_hours)).isoformat()
 
 
 # ---- DataQualityValidator scenarios ----------------------------------------

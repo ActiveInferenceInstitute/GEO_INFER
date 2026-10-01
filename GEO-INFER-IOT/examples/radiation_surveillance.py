@@ -15,8 +15,8 @@ public radiation API is contacted.
 import asyncio
 import logging
 import math
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List
+from datetime import datetime, timedelta, UTC
+from typing import Any
 
 from geo_infer_iot import RadiationMonitoringSystem
 
@@ -34,7 +34,7 @@ NOISE_LEVEL = 0.02
 CENTER_LAT, CENTER_LON = 37.7749, -122.4194  # San Francisco Bay Area
 
 
-def build_config() -> Dict[str, Any]:
+def build_config() -> dict[str, Any]:
     """Configuration for the radiation surveillance system."""
     return {
         "spatial": {"h3_resolution": 6},
@@ -71,14 +71,14 @@ def build_config() -> Dict[str, Any]:
     }
 
 
-def simulate_measurements(num_sensors: int = 12) -> List[Dict[str, Any]]:
+def simulate_measurements(num_sensors: int = 12) -> list[dict[str, Any]]:
     """Deterministic simulated gamma dose-rate readings around the bay area.
 
     Most sensors sit near the background level; a handful are elevated so
     the anomaly detector has something to flag.
     """
-    now = datetime.now(timezone.utc)
-    measurements: List[Dict[str, Any]] = []
+    now = datetime.now(UTC)
+    measurements: list[dict[str, Any]] = []
     for i in range(num_sensors):
         lat = CENTER_LAT + 0.02 * math.cos(i)
         lon = CENTER_LON + 0.02 * math.sin(i)

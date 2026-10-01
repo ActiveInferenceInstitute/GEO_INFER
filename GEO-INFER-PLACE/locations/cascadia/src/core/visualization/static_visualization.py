@@ -6,13 +6,12 @@ Provides simple, lightweight plots without heavy dependencies.
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
 import pandas as pd
 
 logger = logging.getLogger(__name__)
 
 
-def create_static_plots(backend, output_dir: Path) -> Dict[str, str]:
+def create_static_plots(backend, output_dir: Path) -> dict[str, str]:
     """
     Create simple static plots for Cascadia data.
 
@@ -65,7 +64,7 @@ def create_static_plots(backend, output_dir: Path) -> Dict[str, str]:
     return results
 
 
-def create_summary_statistics(unified_data: Dict, redevelopment_scores: Dict) -> Dict:
+def create_summary_statistics(unified_data: dict, redevelopment_scores: dict) -> dict:
     """
     Create summary statistics for visualization.
 
@@ -178,7 +177,7 @@ def create_summary_statistics(unified_data: Dict, redevelopment_scores: Dict) ->
     return stats
 
 
-def create_data_export(unified_data: Dict, redevelopment_scores: Dict) -> Dict:
+def create_data_export(unified_data: dict, redevelopment_scores: dict) -> dict:
     """
     Create data export for external visualization tools.
 

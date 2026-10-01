@@ -8,7 +8,8 @@ dependencies, and manages named test suites.
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any
+from collections.abc import Callable
 
 
 @dataclass
@@ -17,9 +18,9 @@ class TestSuiteDefinition:
 
     name: str
     description: str
-    test_patterns: List[str] = field(default_factory=list)
-    modules: List[str] = field(default_factory=list)
-    markers: List[str] = field(default_factory=list)
+    test_patterns: list[str] = field(default_factory=list)
+    modules: list[str] = field(default_factory=list)
+    markers: list[str] = field(default_factory=list)
     timeout_seconds: int = 300
 
 
@@ -58,19 +59,19 @@ class TestSuiteManager:
         ),
     }
 
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: logging.Logger | None = None):
         self.logger = logger or logging.getLogger(__name__)
-        self._suites: Dict[str, TestSuiteDefinition] = dict(self._BUILTIN_SUITES)
+        self._suites: dict[str, TestSuiteDefinition] = dict(self._BUILTIN_SUITES)
 
     def register_suite(self, suite: TestSuiteDefinition) -> None:
         """Register or overwrite a named test suite."""
         self._suites[suite.name] = suite
         self.logger.info("Registered suite: %s", suite.name)
 
-    def get_suite(self, name: str) -> Optional[TestSuiteDefinition]:
+    def get_suite(self, name: str) -> TestSuiteDefinition | None:
         return self._suites.get(name)
 
-    def list_suites(self) -> List[Dict[str, Any]]:
+    def list_suites(self) -> list[dict[str, Any]]:
         return [
             {
                 "name": s.name,
@@ -83,11 +84,11 @@ class TestSuiteManager:
             for s in self._suites.values()
         ]
 
-    def combine_suites(self, names: List[str]) -> TestSuiteDefinition:
+    def combine_suites(self, names: list[str]) -> TestSuiteDefinition:
         """Create a combined suite from multiple named suites."""
-        patterns: List[str] = []
-        modules_set: Set[str] = set()
-        markers: List[str] = []
+        patterns: list[str] = []
+        modules_set: set[str] = set()
+        markers: list[str] = []
         max_timeout = 300
 
         for name in names:
@@ -117,7 +118,7 @@ class TestOrchestrator:
     """
 
     # Default dependency graph (module → list of modules it depends on)
-    DEFAULT_DEPENDENCIES: Dict[str, List[str]] = {
+    DEFAULT_DEPENDENCIES: dict[str, list[str]] = {
         "TEST": [],
         "LOG": [],
         "MATH": [],
@@ -144,22 +145,22 @@ class TestOrchestrator:
 
     def __init__(
         self,
-        suite_manager: Optional[TestSuiteManager] = None,
-        dependencies: Optional[Dict[str, List[str]]] = None,
-        logger: Optional[logging.Logger] = None,
+        suite_manager: TestSuiteManager | None = None,
+        dependencies: dict[str, list[str]] | None = None,
+        logger: logging.Logger | None = None,
     ):
         self.suite_manager = suite_manager or TestSuiteManager()
         self.dependencies = dependencies or dict(self.DEFAULT_DEPENDENCIES)
         self.logger = logger or logging.getLogger(__name__)
-        self._execution_log: List[Dict[str, Any]] = []
+        self._execution_log: list[dict[str, Any]] = []
 
-    def resolve_execution_order(self, modules: List[str]) -> List[str]:
+    def resolve_execution_order(self, modules: list[str]) -> list[str]:
         """
         Topological sort of *modules* respecting their dependency graph.
         Modules not in the graph are appended at the end.
         """
-        visited: Set[str] = set()
-        order: List[str] = []
+        visited: set[str] = set()
+        order: list[str] = []
         modules_set = set(modules)
 
         def _visit(m: str) -> None:
@@ -179,8 +180,8 @@ class TestOrchestrator:
     def plan_execution(
         self,
         suite_name: str = "unit",
-        modules: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        modules: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Build an execution plan: ordered modules, suite config, and
         estimated duration.
@@ -192,7 +193,7 @@ class TestOrchestrator:
         target_modules = modules or suite.modules or list(self.dependencies.keys())
         ordered = self.resolve_execution_order(target_modules)
 
-        plan: Dict[str, Any] = {
+        plan: dict[str, Any] = {
             "suite": suite.name,
             "description": suite.description,
             "execution_order": ordered,
@@ -208,14 +209,14 @@ class TestOrchestrator:
 
     def execute_plan(
         self,
-        plan: Dict[str, Any],
-        runner_fn: Optional[Callable[[str], Dict[str, Any]]] = None,
-    ) -> Dict[str, Any]:
+        plan: dict[str, Any],
+        runner_fn: Callable[[str], dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         """
         Execute a plan by calling *runner_fn(module)* for each module
         in order.  Falls back to a no-op if no runner is supplied.
         """
-        results: Dict[str, Dict[str, Any]] = {}
+        results: dict[str, dict[str, Any]] = {}
         start = time.time()
 
         for module in plan["execution_order"]:
@@ -255,5 +256,5 @@ class TestOrchestrator:
         self._execution_log.append(execution_report)
         return execution_report
 
-    def get_execution_history(self) -> List[Dict[str, Any]]:
+    def get_execution_history(self) -> list[dict[str, Any]]:
         return list(self._execution_log)

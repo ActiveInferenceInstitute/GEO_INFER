@@ -2,8 +2,6 @@
 Main application entry point for GEO-INFER-API.
 """
 
-from typing import List
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -19,7 +17,7 @@ from geo_infer_api.endpoints import (
 )
 
 
-def cors_allow_credentials(origins: List[str]) -> bool:
+def cors_allow_credentials(origins: list[str]) -> bool:
     """Decide whether CORS may send credentials.
 
     Credentialed CORS is only safe for an explicit, finite origin list.
@@ -68,7 +66,7 @@ def __getattr__(name: str):
     if name == "main_app":
         module = __import__(__name__)
         app = create_app()
-        setattr(module, "main_app", app)
+        module.main_app = app
         return app
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 

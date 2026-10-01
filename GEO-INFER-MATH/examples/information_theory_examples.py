@@ -6,11 +6,7 @@ Examples demonstrating information theory capabilities for spatial data.
 
 import numpy as np
 from geo_infer_math.core.information_theory import (
-    shannon_entropy,
     spatial_entropy,
-    mutual_information,
-    kl_divergence,
-    EntropyCalculator,
 )
 
 

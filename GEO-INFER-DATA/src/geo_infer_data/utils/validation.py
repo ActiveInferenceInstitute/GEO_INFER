@@ -6,10 +6,11 @@ including format validation, schema validation, and data integrity checks.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 import geopandas as gpd
 import numpy as np
@@ -46,7 +47,7 @@ def _coerce_for_series(value: datetime, series: pd.Series) -> pd.Timestamp:
     return timestamp
 
 
-def scan_geometry_validity(geometries: Any) -> List[Tuple[Any, str, Any]]:
+def scan_geometry_validity(geometries: Any) -> list[tuple[Any, str, Any]]:
     """Scan geometry values for validity.
 
     Shared primitive used by both :class:`GeospatialValidator` implementations
@@ -57,7 +58,7 @@ def scan_geometry_validity(geometries: Any) -> List[Tuple[Any, str, Any]]:
         List of ``(index, reason, geometry)`` tuples, one per input geometry,
         where reason is ``"null"``, ``"invalid"``, or ``"ok"``.
     """
-    issues: List[Tuple[Any, str, Any]] = []
+    issues: list[tuple[Any, str, Any]] = []
     for idx, geom in geometries:
         if geom is None:
             issues.append((idx, "null", geom))
@@ -68,10 +69,10 @@ def scan_geometry_validity(geometries: Any) -> List[Tuple[Any, str, Any]]:
     return issues
 
 
-def wgs84_bounds_issues(bounds: Sequence[float]) -> List[str]:
+def wgs84_bounds_issues(bounds: Sequence[float]) -> list[str]:
     """Return the WGS84 bound-check types violated by ``[lon, lat, lon, lat]`` bounds."""
     min_lon, min_lat, max_lon, max_lat = bounds[:4]
-    issues: List[str] = []
+    issues: list[str] = []
     if not (-180 <= min_lon <= 180) or not (-180 <= max_lon <= 180):
         issues.append("invalid_longitude_bounds")
     if not (-90 <= min_lat <= 90) or not (-90 <= max_lat <= 90):
@@ -94,7 +95,7 @@ def has_mixed_types(series: pd.Series) -> bool:
     return len(series.dropna().apply(type).unique()) > 1
 
 
-class ValidationRule(str, Enum):
+class ValidationRule(StrEnum):
     """Available validation rules."""
 
     COMPLETENESS = "completeness"
@@ -111,11 +112,11 @@ class ValidationRule(str, Enum):
 class ValidationConfig:
     """Configuration for data validation."""
 
-    validation_rules: Optional[List[str]] = field(default=None)
+    validation_rules: list[str] | None = field(default=None)
     quality_threshold: float = 0.8
     strict_mode: bool = False
     real_time_monitoring: bool = True
-    custom_rules: Optional[Dict[str, Any]] = field(default=None)
+    custom_rules: dict[str, Any] | None = field(default=None)
 
     def __post_init__(self) -> None:
         if self.validation_rules is None:
@@ -142,7 +143,7 @@ class GeospatialValidator:
         >>> print(f"Geometry validation: {geometry_check.status}")
     """
 
-    def __init__(self, config: Optional[ValidationConfig] = None) -> None:
+    def __init__(self, config: ValidationConfig | None = None) -> None:
         self.config = config if config is not None else ValidationConfig()
         self.validation_rules = {
             "geometry": self._validate_geometry,
@@ -208,7 +209,7 @@ class GeospatialValidator:
 
         return QualityCheck(score=max(0.0, score), status=status, issues=issues)
 
-    async def _validate_geometry(self, data: Any) -> Dict[str, Any]:
+    async def _validate_geometry(self, data: Any) -> dict[str, Any]:
         """Validate geometry data."""
         issues = []
         penalty = 0.0
@@ -244,7 +245,7 @@ class GeospatialValidator:
 
         return {"valid": penalty < 0.1, "issues": issues, "penalty": penalty}
 
-    async def _validate_coordinates(self, data: Any) -> Dict[str, Any]:
+    async def _validate_coordinates(self, data: Any) -> dict[str, Any]:
         """Validate coordinate data."""
         issues = []
         penalty = 0.0
@@ -297,7 +298,7 @@ class GeospatialValidator:
 
         return {"valid": penalty < 0.1, "issues": issues, "penalty": penalty}
 
-    async def _validate_attributes(self, data: Any) -> Dict[str, Any]:
+    async def _validate_attributes(self, data: Any) -> dict[str, Any]:
         """Validate data attributes."""
         issues = []
         penalty = 0.0
@@ -328,12 +329,12 @@ class GeospatialValidator:
 
         return {"valid": penalty < 0.1, "issues": issues, "penalty": penalty}
 
-    async def _validate_metadata(self, data: Any) -> Dict[str, Any]:
+    async def _validate_metadata(self, data: Any) -> dict[str, Any]:
         """Validate metadata consistency."""
         # Metadata validation logic
         return {"valid": True, "issues": [], "penalty": 0.0}
 
-    async def _validate_temporal(self, data: Any) -> Dict[str, Any]:
+    async def _validate_temporal(self, data: Any) -> dict[str, Any]:
         """Validate temporal data."""
         issues = []
         penalty = 0.0
@@ -372,7 +373,7 @@ class GeospatialValidator:
 
         return {"valid": penalty < 0.1, "issues": issues, "penalty": penalty}
 
-    async def _validate_spatial_reference(self, data: Any) -> Dict[str, Any]:
+    async def _validate_spatial_reference(self, data: Any) -> dict[str, Any]:
         """Validate spatial reference system."""
         issues = []
         penalty = 0.0
@@ -507,7 +508,7 @@ class GeospatialValidator:
         return QualityCheck(score=max(0.0, score), status=status, issues=issues)
 
     def validate_coordinates(
-        self, data: Union[pd.DataFrame, gpd.GeoDataFrame]
+        self, data: pd.DataFrame | gpd.GeoDataFrame
     ) -> QualityCheck:
         """
         Validate coordinate data.
@@ -608,7 +609,7 @@ class GeospatialValidator:
         return QualityCheck(score=max(0.0, score), status=status, issues=issues)
 
     def validate_temporal_data(
-        self, data: Union[pd.DataFrame, gpd.GeoDataFrame]
+        self, data: pd.DataFrame | gpd.GeoDataFrame
     ) -> QualityCheck:
         """
         Validate temporal data.
@@ -665,7 +666,7 @@ class GeospatialValidator:
         return QualityCheck(score=max(0.0, score), status=status, issues=issues)
 
     async def build_quality_report(
-        self, data: Any, metadata: Optional[DatasetMetadata] = None
+        self, data: Any, metadata: DatasetMetadata | None = None
     ) -> DataQualityReport:
         """
         Validate geospatial data comprehensively and build a quality report.
@@ -685,7 +686,7 @@ class GeospatialValidator:
 
         # Run all configured validation checks
         configured_rules = self.config.validation_rules
-        rules: List[str] = (
+        rules: list[str] = (
             configured_rules
             if configured_rules is not None
             else [rule.value for rule in ValidationRule]
@@ -741,7 +742,7 @@ class GeospatialValidator:
         return quality_report
 
     async def _check_completeness(
-        self, data: Any, metadata: Optional[DatasetMetadata]
+        self, data: Any, metadata: DatasetMetadata | None
     ) -> QualityCheck:
         """Check data completeness."""
         issues = []
@@ -809,7 +810,7 @@ class GeospatialValidator:
         return QualityCheck(score=max(0.0, score), status=status, issues=issues)
 
     async def _check_accuracy(
-        self, data: Any, metadata: Optional[DatasetMetadata]
+        self, data: Any, metadata: DatasetMetadata | None
     ) -> QualityCheck:
         """Check data accuracy."""
         issues = []
@@ -878,7 +879,7 @@ class GeospatialValidator:
         return QualityCheck(score=max(0.0, score), status=status, issues=issues)
 
     async def _check_consistency(
-        self, data: Any, metadata: Optional[DatasetMetadata]
+        self, data: Any, metadata: DatasetMetadata | None
     ) -> QualityCheck:
         """Check data consistency."""
         issues = []
@@ -943,7 +944,7 @@ class GeospatialValidator:
         return QualityCheck(score=max(0.0, score), status=status, issues=issues)
 
     async def _check_validity(
-        self, data: Any, metadata: Optional[DatasetMetadata]
+        self, data: Any, metadata: DatasetMetadata | None
     ) -> QualityCheck:
         """Check data validity."""
         issues = []
@@ -1015,7 +1016,7 @@ class GeospatialValidator:
         return QualityCheck(score=max(0.0, score), status=status, issues=issues)
 
     async def _check_temporal(
-        self, data: Any, metadata: Optional[DatasetMetadata]
+        self, data: Any, metadata: DatasetMetadata | None
     ) -> QualityCheck:
         """Check temporal validity."""
         issues = []
@@ -1089,7 +1090,7 @@ class GeospatialValidator:
         return QualityCheck(score=max(0.0, score), status=status, issues=issues)
 
     async def _check_spatial(
-        self, data: Any, metadata: Optional[DatasetMetadata]
+        self, data: Any, metadata: DatasetMetadata | None
     ) -> QualityCheck:
         """Check spatial validity."""
         issues = []
@@ -1212,7 +1213,7 @@ class GeospatialValidator:
         return QualityCheck(score=max(0.0, score), status=status, issues=issues)
 
     async def _check_format(
-        self, data: Any, metadata: Optional[DatasetMetadata]
+        self, data: Any, metadata: DatasetMetadata | None
     ) -> QualityCheck:
         """Check data format validity."""
         issues = []
@@ -1246,10 +1247,10 @@ class GeospatialValidator:
         return QualityCheck(score=max(0.0, score), status=status, issues=issues)
 
     async def _check_schema(
-        self, data: Any, metadata: Optional[DatasetMetadata]
+        self, data: Any, metadata: DatasetMetadata | None
     ) -> QualityCheck:
         """Check schema validity."""
-        issues: List[Dict[str, Any]] = []
+        issues: list[dict[str, Any]] = []
         score = 1.0
 
         # Schema validation logic
@@ -1266,8 +1267,8 @@ class GeospatialValidator:
         return QualityCheck(score=max(0.0, score), status=status, issues=issues)
 
     def _generate_recommendations(
-        self, checks: Dict[str, QualityCheck], overall_score: float
-    ) -> List[str]:
+        self, checks: dict[str, QualityCheck], overall_score: float
+    ) -> list[str]:
         """Generate improvement recommendations."""
         recommendations = []
 

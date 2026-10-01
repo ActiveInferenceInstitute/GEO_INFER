@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
+from typing import Any
+from collections.abc import Iterable, Mapping, Sequence
 
 import numpy as np
 
@@ -13,7 +14,7 @@ RESEARCH_STATISTICS_SCHEMA_VERSION = "geo-infer-act-spatial-research-statistics/
 
 def apply_h3_research_profile(
     model: Any,
-    active_model: Optional[Any] = None,
+    active_model: Any | None = None,
     *,
     action_count: int = 4,
 ) -> None:
@@ -113,8 +114,8 @@ def build_spatial_research_statistics(
     cell_rows: Sequence[Mapping[str, Any]],
     edge_rows: Sequence[Mapping[str, Any]],
     level_rows: Sequence[Mapping[str, Any]],
-    parent_child_rows: Optional[Sequence[Mapping[str, Any]]] = None,
-) -> Dict[str, Any]:
+    parent_child_rows: Sequence[Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
     """Return JSON-safe run statistics for spatial H3 trace diagnostics."""
     parent_child_rows = list(parent_child_rows or [])
     leaf_rows: Sequence[Mapping[str, Any]] = [
@@ -196,9 +197,9 @@ def build_spatial_research_statistics(
     }
 
 
-def statistics_summary_rows(statistics: Mapping[str, Any]) -> List[Dict[str, Any]]:
+def statistics_summary_rows(statistics: Mapping[str, Any]) -> list[dict[str, Any]]:
     """Flatten research statistics into compact report table rows."""
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     for metric, summary in statistics.get("metric_summaries", {}).items():
         rows.append(
             {
@@ -264,7 +265,7 @@ def statistics_summary_rows(statistics: Mapping[str, Any]) -> List[Dict[str, Any
 
 def _graph_statistics(
     leaf_rows: Sequence[Mapping[str, Any]], edge_rows: Sequence[Mapping[str, Any]]
-) -> Dict[str, float]:
+) -> dict[str, float]:
     entropy_by_cell_time = {
         (str(row.get("cell")), _int(row.get("timestep"))): _float(row.get("entropy"))
         for row in leaf_rows
@@ -307,10 +308,10 @@ def _nested_statistics(
     parent_child_rows: Sequence[Mapping[str, Any]],
     parent_rows: Sequence[Mapping[str, Any]],
     level_rows: Sequence[Mapping[str, Any]],
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     residuals = _numeric_values(parent_child_rows, "cross_level_residual")
     consistency = _numeric_values(parent_child_rows, "cross_level_consistency")
-    level_summary: Dict[str, Dict[str, float]] = {}
+    level_summary: dict[str, dict[str, float]] = {}
     for row in level_rows:
         resolution = str(row.get("resolution"))
         bucket = level_summary.setdefault(
@@ -352,7 +353,7 @@ def _moran_proxy(
     edge_rows: Sequence[Mapping[str, Any]],
     metric: str,
 ) -> float:
-    by_time: Dict[int, Dict[str, float]] = defaultdict(dict)
+    by_time: dict[int, dict[str, float]] = defaultdict(dict)
     for row in rows:
         by_time[_int(row.get("timestep"))][str(row.get("cell"))] = _float(
             row.get(metric)
@@ -383,7 +384,7 @@ def _moran_proxy(
 
 
 def _policy_switch_count(rows: Sequence[Mapping[str, Any]]) -> int:
-    by_cell: Dict[str, List[Mapping[str, Any]]] = defaultdict(list)
+    by_cell: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
     for row in rows:
         by_cell[str(row.get("cell"))].append(row)
     switches = 0
@@ -400,7 +401,7 @@ def _policy_switch_count(rows: Sequence[Mapping[str, Any]]) -> int:
 
 
 def _temporal_slope(rows: Sequence[Mapping[str, Any]], metric: str) -> float:
-    by_time: Dict[int, List[float]] = defaultdict(list)
+    by_time: dict[int, list[float]] = defaultdict(list)
     for row in rows:
         value = _maybe_float(row.get(metric))
         if value is not None:
@@ -417,7 +418,7 @@ def _temporal_slope(rows: Sequence[Mapping[str, Any]], metric: str) -> float:
     return float(np.polyfit(x, y, 1)[0])
 
 
-def _numeric_values(rows: Iterable[Mapping[str, Any]], key: str) -> List[float]:
+def _numeric_values(rows: Iterable[Mapping[str, Any]], key: str) -> list[float]:
     values = []
     for row in rows:
         value = _maybe_float(row.get(key))
@@ -426,7 +427,7 @@ def _numeric_values(rows: Iterable[Mapping[str, Any]], key: str) -> List[float]:
     return values
 
 
-def _summary(values: List[float]) -> Dict[str, float]:
+def _summary(values: list[float]) -> dict[str, float]:
     if not values:
         return {"mean": 0.0, "std": 0.0, "min": 0.0, "max": 0.0}
     array = np.asarray(values, dtype=float)
@@ -459,7 +460,7 @@ def _mean(values: Iterable[float]) -> float:
     return float(np.mean(finite)) if finite else 0.0
 
 
-def _maybe_float(value: Any) -> Optional[float]:
+def _maybe_float(value: Any) -> float | None:
     try:
         numeric = float(value)
     except (TypeError, ValueError):

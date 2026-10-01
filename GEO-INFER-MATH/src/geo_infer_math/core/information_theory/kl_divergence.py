@@ -6,7 +6,7 @@ divergence measures for comparing spatial distributions.
 """
 
 import numpy as np
-from typing import Union, Optional, Tuple, Any
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -118,7 +118,7 @@ def spatial_kl_divergence(
     values_p: np.ndarray,
     coordinates_q: np.ndarray,
     values_q: np.ndarray,
-    bins: Optional[Union[int, Tuple[int, int]]] = None,
+    bins: int | tuple[int, int] | None = None,
     base: float = 2.0,
     method: str = "histogram",
 ) -> float:

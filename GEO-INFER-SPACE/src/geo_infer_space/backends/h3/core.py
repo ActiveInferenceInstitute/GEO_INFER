@@ -8,14 +8,10 @@ grid management, cell representation, analytics, and validation using H3 v4 API.
 import logging
 from typing import (
     Any,
-    Dict,
-    Iterator,
-    List,
     Optional,
-    Set,
-    Tuple,
     cast,
 )
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import datetime
 import json
@@ -48,8 +44,8 @@ class H3Cell:
     latitude: float = field(default=0.0)
     longitude: float = field(default=0.0)
     area_km2: float = field(default=0.0)
-    boundary: List[Tuple[float, float]] = field(default_factory=list)
-    properties: Dict[str, Any] = field(default_factory=dict)
+    boundary: list[tuple[float, float]] = field(default_factory=list)
+    properties: dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.now)
 
     def __post_init__(self) -> None:
@@ -104,7 +100,7 @@ class H3Cell:
             properties=properties,
         )
 
-    def neighbors(self, k: int = 1) -> List["H3Cell"]:
+    def neighbors(self, k: int = 1) -> list["H3Cell"]:
         """
         Get neighboring cells within k distance.
 
@@ -132,7 +128,7 @@ class H3Cell:
             logger.error(f"Failed to get neighbors for {self.index}: {e}")
             return []
 
-    def parent(self, parent_resolution: Optional[int] = None) -> Optional["H3Cell"]:
+    def parent(self, parent_resolution: int | None = None) -> Optional["H3Cell"]:
         """
         Get parent cell at coarser resolution.
 
@@ -161,7 +157,7 @@ class H3Cell:
             logger.error(f"Failed to get parent for {self.index}: {e}")
             return None
 
-    def children(self, child_resolution: Optional[int] = None) -> List["H3Cell"]:
+    def children(self, child_resolution: int | None = None) -> list["H3Cell"]:
         """
         Get child cells at finer resolution.
 
@@ -242,7 +238,7 @@ class H3Cell:
             logger.error(f"Failed to check neighbor relationship: {e}")
             return False
 
-    def to_geojson(self) -> Dict[str, Any]:
+    def to_geojson(self) -> dict[str, Any]:
         """
         Convert cell to GeoJSON feature.
 
@@ -288,7 +284,7 @@ class H3Grid:
 
     def __init__(
         self,
-        cells: Optional[List[H3Cell]] = None,
+        cells: list[H3Cell] | None = None,
         name: str = "H3Grid",
     ) -> None:
         """
@@ -298,10 +294,10 @@ class H3Grid:
             cells: List of H3Cell instances
             name: Grid name for identification
         """
-        self.cells: List[H3Cell] = cells or []
+        self.cells: list[H3Cell] = cells or []
         self.name = name
         self.created_at = datetime.now()
-        self._cell_index: Dict[str, H3Cell] = {}
+        self._cell_index: dict[str, H3Cell] = {}
         self._build_index()
 
     def _build_index(self) -> None:
@@ -331,7 +327,7 @@ class H3Grid:
             return True
         return False
 
-    def get_cell(self, cell_index: str) -> Optional[H3Cell]:
+    def get_cell(self, cell_index: str) -> H3Cell | None:
         """Get cell by index."""
         return self._cell_index.get(cell_index)
 
@@ -342,7 +338,7 @@ class H3Grid:
     @classmethod
     def from_polygon(
         cls,
-        polygon_coords: List[Tuple[float, float]],
+        polygon_coords: list[tuple[float, float]],
         resolution: int,
         name: str = "PolygonGrid",
     ) -> "H3Grid":
@@ -486,7 +482,7 @@ class H3Grid:
         """
         return sum(cell.area_km2 for cell in self.cells)
 
-    def bounds(self) -> Tuple[float, float, float, float]:
+    def bounds(self) -> tuple[float, float, float, float]:
         """
         Get bounding box of all cells.
 
@@ -501,7 +497,7 @@ class H3Grid:
 
         return (min(lats), min(lngs), max(lats), max(lngs))
 
-    def center(self) -> Tuple[float, float]:
+    def center(self) -> tuple[float, float]:
         """
         Get center coordinates of the grid.
 
@@ -516,7 +512,7 @@ class H3Grid:
 
         return (sum(lats) / len(lats), sum(lngs) / len(lngs))
 
-    def resolutions(self) -> Set[int]:
+    def resolutions(self) -> set[int]:
         """Get set of all resolutions in the grid."""
         return {cell.resolution for cell in self.cells}
 
@@ -533,7 +529,7 @@ class H3Grid:
         filtered_cells = [cell for cell in self.cells if cell.resolution == resolution]
         return H3Grid(cells=filtered_cells, name=f"{self.name}_res{resolution}")
 
-    def to_geojson(self) -> Dict[str, Any]:
+    def to_geojson(self) -> dict[str, Any]:
         """
         Convert grid to GeoJSON FeatureCollection.
 
@@ -608,9 +604,9 @@ class H3Analytics:
             grid: H3Grid instance to analyze
         """
         self.grid = grid
-        self.stats_cache: Dict[str, Any] = {}
+        self.stats_cache: dict[str, Any] = {}
 
-    def basic_statistics(self) -> Dict[str, Any]:
+    def basic_statistics(self) -> dict[str, Any]:
         """
         Calculate basic grid statistics.
 
@@ -618,7 +614,7 @@ class H3Analytics:
             Dictionary with basic statistics
         """
         if "basic_stats" in self.stats_cache:
-            return cast(Dict[str, Any], self.stats_cache["basic_stats"])
+            return cast(dict[str, Any], self.stats_cache["basic_stats"])
 
         if not self.grid.cells:
             return {}
@@ -644,7 +640,7 @@ class H3Analytics:
         self.stats_cache["basic_stats"] = stats
         return stats
 
-    def connectivity_analysis(self) -> Dict[str, Any]:
+    def connectivity_analysis(self) -> dict[str, Any]:
         """
         Analyze connectivity between cells.
 
@@ -697,8 +693,8 @@ class H3Analytics:
         }
 
     def density_analysis(
-        self, reference_area_km2: Optional[float] = None
-    ) -> Dict[str, Any]:
+        self, reference_area_km2: float | None = None
+    ) -> dict[str, Any]:
         """
         Analyze cell density patterns.
 
@@ -744,7 +740,7 @@ class H3Analytics:
             ),
         }
 
-    def resolution_analysis(self) -> Dict[str, Any]:
+    def resolution_analysis(self) -> dict[str, Any]:
         """
         Analyze resolution distribution and patterns.
 
@@ -755,8 +751,8 @@ class H3Analytics:
             return {}
 
         resolutions = [cell.resolution for cell in self.grid.cells]
-        resolution_counts: Dict[int, int] = {}
-        resolution_areas: Dict[int, float] = {}
+        resolution_counts: dict[int, int] = {}
+        resolution_areas: dict[int, float] = {}
 
         for cell in self.grid.cells:
             res = cell.resolution
@@ -775,7 +771,7 @@ class H3Analytics:
             "resolution_diversity": len(set(resolutions)),
         }
 
-    def spatial_distribution(self) -> Dict[str, Any]:
+    def spatial_distribution(self) -> dict[str, Any]:
         """
         Analyze spatial distribution patterns.
 
@@ -810,7 +806,7 @@ class H3Analytics:
             * (self.grid.bounds()[3] - self.grid.bounds()[1]),
         }
 
-    def generate_report(self) -> Dict[str, Any]:
+    def generate_report(self) -> dict[str, Any]:
         """
         Generate comprehensive analytics report.
 
@@ -945,7 +941,7 @@ class H3Validator:
     """
 
     @staticmethod
-    def validate_h3_index(h3_index: str) -> Dict[str, Any]:
+    def validate_h3_index(h3_index: str) -> dict[str, Any]:
         """
         Validate H3 index format and properties.
 
@@ -955,7 +951,7 @@ class H3Validator:
         Returns:
             Validation result dictionary
         """
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "valid": False,
             "index": h3_index,
             "errors": [],
@@ -1002,7 +998,7 @@ class H3Validator:
         return result
 
     @staticmethod
-    def validate_coordinates(lat: float, lng: float) -> Dict[str, Any]:
+    def validate_coordinates(lat: float, lng: float) -> dict[str, Any]:
         """
         Validate latitude/longitude coordinates.
 
@@ -1013,7 +1009,7 @@ class H3Validator:
         Returns:
             Validation result dictionary
         """
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "valid": True,
             "latitude": lat,
             "longitude": lng,
@@ -1038,7 +1034,7 @@ class H3Validator:
         return result
 
     @staticmethod
-    def validate_resolution(resolution: int) -> Dict[str, Any]:
+    def validate_resolution(resolution: int) -> dict[str, Any]:
         """
         Validate H3 resolution parameter.
 
@@ -1048,7 +1044,7 @@ class H3Validator:
         Returns:
             Validation result dictionary
         """
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "valid": True,
             "resolution": resolution,
             "errors": [],
@@ -1075,7 +1071,7 @@ class H3Validator:
         return result
 
     @classmethod
-    def validate_grid(cls, grid: H3Grid) -> Dict[str, Any]:
+    def validate_grid(cls, grid: H3Grid) -> dict[str, Any]:
         """
         Validate entire H3Grid for consistency and integrity.
 
@@ -1085,7 +1081,7 @@ class H3Validator:
         Returns:
             Comprehensive validation report
         """
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "valid": True,
             "grid_name": grid.name,
             "cell_count": len(grid.cells),

@@ -10,7 +10,8 @@ import logging
 import uuid
 from datetime import datetime
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 from enum import Enum
 from collections import defaultdict
 
@@ -61,15 +62,15 @@ class SplittingRule:
 
     # Rule parameters
     threshold: float = 1.0
-    min_threshold: Optional[float] = None
-    max_threshold: Optional[float] = None
+    min_threshold: float | None = None
+    max_threshold: float | None = None
 
     # Target properties
-    target_resolution: Optional[int] = None
+    target_resolution: int | None = None
     max_children: int = 7  # H3 cells have 7 children
 
     # Evaluation function
-    evaluation_function: Optional[Callable] = None
+    evaluation_function: Callable | None = None
 
     # Metadata
     weight: float = 1.0
@@ -78,7 +79,7 @@ class SplittingRule:
     def should_split(
         self,
         cell: Any,
-        context: Optional[Dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> bool:
         """
         Determine if a cell should be split based on this rule.
@@ -126,13 +127,13 @@ class SplittingResult:
     strategy: SplittingStrategy
 
     # Input cells
-    input_cells: List[str] = field(default_factory=list)
+    input_cells: list[str] = field(default_factory=list)
 
     # Output cells (parent -> children mapping)
-    split_cells: Dict[str, List[str]] = field(default_factory=dict)
+    split_cells: dict[str, list[str]] = field(default_factory=dict)
 
     # Cell properties
-    cell_properties: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    cell_properties: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     # Quality metrics
     quality_score: float = 0.0
@@ -177,13 +178,13 @@ class H3SplittingEngine:
         self.name = name
 
         # Splitting rules
-        self.rules: Dict[str, SplittingRule] = {}
+        self.rules: dict[str, SplittingRule] = {}
 
         # Results storage
-        self.splitting_results: Dict[str, SplittingResult] = {}
+        self.splitting_results: dict[str, SplittingResult] = {}
 
         # Statistics
-        self.operation_stats: Dict[str, int] = defaultdict(int)
+        self.operation_stats: dict[str, int] = defaultdict(int)
 
         # Metadata
         self.created_at = datetime.now()
@@ -223,7 +224,7 @@ class H3SplittingEngine:
         self,
         nested_grid: Any,
         strategy: SplittingStrategy = SplittingStrategy.RESOLUTION_REFINEMENT,
-        system_id: Optional[str] = None,
+        system_id: str | None = None,
         **kwargs: Any,
     ) -> SplittingResult:
         """
@@ -299,8 +300,8 @@ class H3SplittingEngine:
         return result
 
     def _split_by_resolution(
-        self, cells: List[Any], **kwargs: Any
-    ) -> Dict[str, List[str]]:
+        self, cells: list[Any], **kwargs: Any
+    ) -> dict[str, list[str]]:
         """Split cells by increasing resolution."""
         target_resolution = kwargs.get("target_resolution")
 
@@ -334,8 +335,8 @@ class H3SplittingEngine:
         return split_cells
 
     def _split_by_load_balancing(
-        self, cells: List[Any], **kwargs: Any
-    ) -> Dict[str, List[str]]:
+        self, cells: list[Any], **kwargs: Any
+    ) -> dict[str, list[str]]:
         """Split cells based on load balancing."""
         load_threshold = kwargs.get("load_threshold", 1.0)
         target_load = kwargs.get("target_load", 0.5)
@@ -371,7 +372,7 @@ class H3SplittingEngine:
 
         return split_cells
 
-    def _split_adaptive(self, cells: List[Any], **kwargs: Any) -> Dict[str, List[str]]:
+    def _split_adaptive(self, cells: list[Any], **kwargs: Any) -> dict[str, list[str]]:
         """Split cells using adaptive subdivision."""
         adaptation_field = kwargs.get("adaptation_field", "gradient")
         adaptation_threshold = kwargs.get("adaptation_threshold", 0.5)
@@ -408,8 +409,8 @@ class H3SplittingEngine:
         return split_cells
 
     def _split_by_gradient(
-        self, cells: List[Any], **kwargs: Any
-    ) -> Dict[str, List[str]]:
+        self, cells: list[Any], **kwargs: Any
+    ) -> dict[str, list[str]]:
         """Split cells based on gradient analysis."""
         gradient_field = kwargs.get("gradient_field", "value")
         gradient_threshold = kwargs.get("gradient_threshold", 0.3)
@@ -467,8 +468,8 @@ class H3SplittingEngine:
         return split_cells
 
     def _split_by_threshold(
-        self, cells: List[Any], **kwargs: Any
-    ) -> Dict[str, List[str]]:
+        self, cells: list[Any], **kwargs: Any
+    ) -> dict[str, list[str]]:
         """Split cells based on threshold criteria."""
         threshold_field = kwargs.get("threshold_field", "value")
         threshold_value = kwargs.get("threshold_value", 1.0)
@@ -501,7 +502,7 @@ class H3SplittingEngine:
 
         return split_cells
 
-    def _split_uniform(self, cells: List[Any], **kwargs: Any) -> Dict[str, List[str]]:
+    def _split_uniform(self, cells: list[Any], **kwargs: Any) -> dict[str, list[str]]:
         """Split all cells uniformly."""
         target_resolution = kwargs.get("target_resolution")
 
@@ -531,7 +532,7 @@ class H3SplittingEngine:
         return split_cells
 
     def _calculate_quality_score(
-        self, cells: List, split_cells: Dict[str, List[str]]
+        self, cells: list, split_cells: dict[str, list[str]]
     ) -> float:
         """Calculate overall quality score for splitting result."""
         if not split_cells:
@@ -546,7 +547,7 @@ class H3SplittingEngine:
 
         return successful_splits / total_cells
 
-    def _calculate_balance_score(self, split_cells: Dict[str, List[str]]) -> float:
+    def _calculate_balance_score(self, split_cells: dict[str, list[str]]) -> float:
         """Calculate balance score for split results."""
         if not split_cells:
             return 0.0
@@ -569,7 +570,7 @@ class H3SplittingEngine:
         return min(1.0, max(0.0, balance))
 
     def _calculate_refinement_score(
-        self, cells: List, split_cells: Dict[str, List[str]]
+        self, cells: list, split_cells: dict[str, list[str]]
     ) -> float:
         """Calculate refinement score for split results."""
         if not split_cells or not H3_AVAILABLE:
@@ -603,7 +604,7 @@ class H3SplittingEngine:
             else 0.0
         )
 
-    def get_splitting_statistics(self) -> Dict[str, Any]:
+    def get_splitting_statistics(self) -> dict[str, Any]:
         """Get splitting engine statistics."""
         total_operations = sum(self.operation_stats.values())
 

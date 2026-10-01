@@ -8,7 +8,8 @@ data inputs, and model parameters using JSON Schema validation and custom valida
 import json
 import os
 import logging
-from typing import Dict, Any, Optional, List, Callable, Union, cast
+from typing import Any, cast
+from collections.abc import Callable
 from pathlib import Path
 from importlib.resources import as_file, files as resource_files
 
@@ -24,15 +25,15 @@ class ValidationResult:
     """Result of validation operation."""
 
     is_valid: bool
-    errors: List[str]
-    warnings: List[str]
-    validated_data: Dict[str, Any]
+    errors: list[str]
+    warnings: list[str]
+    validated_data: dict[str, Any]
 
 
 class ConfigurationValidator:
     """Comprehensive configuration validator for GEO-INFER-RISK."""
 
-    def __init__(self, schema_path: Optional[str] = None):
+    def __init__(self, schema_path: str | None = None):
         """
         Initialize configuration validator.
 
@@ -43,7 +44,7 @@ class ConfigurationValidator:
         self.schema = self._load_schema()
         self.custom_validators = self._initialize_custom_validators()
 
-    def _get_default_schema_path(self) -> Union[str, Path]:
+    def _get_default_schema_path(self) -> str | Path:
         """Get default schema path (packaged resource or explicit override)."""
         override = os.environ.get("GEO_INFER_RISK_SCHEMA_PATH")
         if override:
@@ -52,7 +53,7 @@ class ConfigurationValidator:
             Path, resource_files("geo_infer_risk").joinpath("config/schema.json")
         )
 
-    def _load_schema(self) -> Dict[str, Any]:
+    def _load_schema(self) -> dict[str, Any]:
         """Load JSON schema for validation."""
         schema_source = (
             Path(self.schema_path)
@@ -61,8 +62,8 @@ class ConfigurationValidator:
         )
         try:
             with as_file(schema_source) as path:
-                with open(path, "r") as f:
-                    return cast(Dict[str, Any], json.load(f))
+                with open(path) as f:
+                    return cast(dict[str, Any], json.load(f))
         except FileNotFoundError:
             logger.warning(
                 f"Schema file not found at {self.schema_path}. Using basic validation."
@@ -72,7 +73,7 @@ class ConfigurationValidator:
             logger.error(f"Invalid JSON schema: {e}")
             return {}
 
-    def _initialize_custom_validators(self) -> Dict[str, Callable[..., Any]]:
+    def _initialize_custom_validators(self) -> dict[str, Callable[..., Any]]:
         """Initialize custom validation functions."""
         return {
             "validate_return_periods": self._validate_return_periods,
@@ -85,7 +86,7 @@ class ConfigurationValidator:
         }
 
     def validate_config(
-        self, config: Dict[str, Any], strict: bool = True
+        self, config: dict[str, Any], strict: bool = True
     ) -> ValidationResult:
         """
         Validate configuration against schema and custom rules.
@@ -97,8 +98,8 @@ class ConfigurationValidator:
         Returns:
             ValidationResult with validation status and details
         """
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
         validated_config = config.copy()
 
         try:
@@ -133,7 +134,7 @@ class ConfigurationValidator:
         )
 
     def _validate_general_config(
-        self, config: Dict[str, Any], errors: List[str], warnings: List[str]
+        self, config: dict[str, Any], errors: list[str], warnings: list[str]
     ) -> None:
         """Validate general configuration section."""
         general = config.get("general", {})
@@ -159,7 +160,7 @@ class ConfigurationValidator:
             warnings.append(f"num_workers ({num_workers}) outside recommended range")
 
     def _validate_risk_model_config(
-        self, config: Dict[str, Any], errors: List[str], warnings: List[str]
+        self, config: dict[str, Any], errors: list[str], warnings: list[str]
     ) -> None:
         """Validate risk model configuration section."""
         risk_model = config.get("risk_model", {})
@@ -191,7 +192,7 @@ class ConfigurationValidator:
             errors.append(f"Spatial resolution must be positive, got {resolution}")
 
     def _validate_hazards_config(
-        self, config: Dict[str, Any], errors: List[str], warnings: List[str]
+        self, config: dict[str, Any], errors: list[str], warnings: list[str]
     ) -> None:
         """Validate hazards configuration section."""
         hazards = config.get("hazards", {})
@@ -214,7 +215,7 @@ class ConfigurationValidator:
             )
 
     def _validate_vulnerability_config(
-        self, config: Dict[str, Any], errors: List[str], warnings: List[str]
+        self, config: dict[str, Any], errors: list[str], warnings: list[str]
     ) -> None:
         """Validate vulnerability configuration section."""
         vulnerability = config.get("vulnerability", {})
@@ -228,7 +229,7 @@ class ConfigurationValidator:
             self._validate_vulnerability_schemes([scheme], errors, vuln_name)
 
     def _validate_exposure_config(
-        self, config: Dict[str, Any], errors: List[str], warnings: List[str]
+        self, config: dict[str, Any], errors: list[str], warnings: list[str]
     ) -> None:
         """Validate exposure configuration section."""
         exposure = config.get("exposure", {})
@@ -250,7 +251,7 @@ class ConfigurationValidator:
                     self._validate_file_paths([source], errors, exp_name)
 
     def _validate_output_config(
-        self, config: Dict[str, Any], errors: List[str], warnings: List[str]
+        self, config: dict[str, Any], errors: list[str], warnings: list[str]
     ) -> None:
         """Validate output configuration section."""
         output = config.get("output", {})
@@ -278,7 +279,7 @@ class ConfigurationValidator:
             )
 
     def _validate_integrations_config(
-        self, config: Dict[str, Any], errors: List[str], warnings: List[str]
+        self, config: dict[str, Any], errors: list[str], warnings: list[str]
     ) -> None:
         """Validate integrations configuration section."""
         integrations = config.get("integrations", {})
@@ -293,9 +294,9 @@ class ConfigurationValidator:
     def _validate_hazard_specific_config(
         self,
         hazard_name: str,
-        hazard_config: Dict[str, Any],
-        errors: List[str],
-        warnings: List[str],
+        hazard_config: dict[str, Any],
+        errors: list[str],
+        warnings: list[str],
     ) -> None:
         """Validate hazard-specific configuration parameters."""
         hazard_type = hazard_config.get("type", "")
@@ -310,7 +311,7 @@ class ConfigurationValidator:
             self._validate_wildfire_config(hazard_config, errors, warnings)
 
     def _validate_earthquake_config(
-        self, config: Dict[str, Any], errors: List[str], warnings: List[str]
+        self, config: dict[str, Any], errors: list[str], warnings: list[str]
     ) -> None:
         """Validate earthquake-specific configuration."""
         eq_type = config.get("type", "probabilistic")
@@ -325,7 +326,7 @@ class ConfigurationValidator:
                 )
 
     def _validate_flood_config(
-        self, config: Dict[str, Any], errors: List[str], warnings: List[str]
+        self, config: dict[str, Any], errors: list[str], warnings: list[str]
     ) -> None:
         """Validate flood-specific configuration."""
         flood_type = config.get("type", "riverine")
@@ -335,7 +336,7 @@ class ConfigurationValidator:
             )
 
     def _validate_hurricane_config(
-        self, config: Dict[str, Any], errors: List[str], warnings: List[str]
+        self, config: dict[str, Any], errors: list[str], warnings: list[str]
     ) -> None:
         """Validate hurricane-specific configuration."""
         components = config.get("include_components", ["wind"])
@@ -343,7 +344,7 @@ class ConfigurationValidator:
             warnings.append("Storm surge modeling requires bathymetry data")
 
     def _validate_wildfire_config(
-        self, config: Dict[str, Any], errors: List[str], warnings: List[str]
+        self, config: dict[str, Any], errors: list[str], warnings: list[str]
     ) -> None:
         """Validate wildfire-specific configuration."""
         fuel_model = config.get("fuel_model", "standard")
@@ -353,9 +354,9 @@ class ConfigurationValidator:
     def _validate_module_integration(
         self,
         module_name: str,
-        module_config: Dict[str, Any],
-        errors: List[str],
-        warnings: List[str],
+        module_config: dict[str, Any],
+        errors: list[str],
+        warnings: list[str],
     ) -> None:
         """Validate integration with other GEO-INFER modules."""
         if module_name == "geo_infer_space":
@@ -368,7 +369,7 @@ class ConfigurationValidator:
             self._validate_math_integration(module_config, errors, warnings)
 
     def _validate_space_integration(
-        self, config: Dict[str, Any], errors: List[str], warnings: List[str]
+        self, config: dict[str, Any], errors: list[str], warnings: list[str]
     ) -> None:
         """Validate GEO-INFER-SPACE integration."""
         indexing = config.get("spatial_indexing", "h3")
@@ -381,7 +382,7 @@ class ConfigurationValidator:
             errors.append(f"Invalid spatial resolution: {resolution}")
 
     def _validate_time_integration(
-        self, config: Dict[str, Any], errors: List[str], warnings: List[str]
+        self, config: dict[str, Any], errors: list[str], warnings: list[str]
     ) -> None:
         """Validate GEO-INFER-TIME integration."""
         temporal_resolution = config.get("temporal_resolution", "yearly")
@@ -390,7 +391,7 @@ class ConfigurationValidator:
             errors.append(f"Invalid temporal resolution: {temporal_resolution}")
 
     def _validate_ai_integration(
-        self, config: Dict[str, Any], errors: List[str], warnings: List[str]
+        self, config: dict[str, Any], errors: list[str], warnings: list[str]
     ) -> None:
         """Validate GEO-INFER-AI integration."""
         models = config.get("models", [])
@@ -403,7 +404,7 @@ class ConfigurationValidator:
             errors.append(f"Invalid AI backend: {backend}")
 
     def _validate_math_integration(
-        self, config: Dict[str, Any], errors: List[str], warnings: List[str]
+        self, config: dict[str, Any], errors: list[str], warnings: list[str]
     ) -> None:
         """Validate GEO-INFER-MATH integration."""
         methods = config.get("statistical_methods", [])
@@ -416,7 +417,7 @@ class ConfigurationValidator:
             errors.append(f"Invalid numerical precision: {precision}")
 
     def _validate_return_periods(
-        self, return_periods: List[int], errors: List[str], context: str = ""
+        self, return_periods: list[int], errors: list[str], context: str = ""
     ) -> None:
         """Validate return periods array."""
         if not return_periods:
@@ -443,7 +444,7 @@ class ConfigurationValidator:
             )
 
     def _validate_probabilities(
-        self, probabilities: List[float], errors: List[str], context: str = ""
+        self, probabilities: list[float], errors: list[str], context: str = ""
     ) -> None:
         """Validate probability arrays."""
         if not probabilities:
@@ -457,7 +458,7 @@ class ConfigurationValidator:
             errors.append(f"Duplicate probabilities found for {context}")
 
     def _validate_coordinates(
-        self, coordinates: List[List[float]], errors: List[str], context: str = ""
+        self, coordinates: list[list[float]], errors: list[str], context: str = ""
     ) -> None:
         """Validate coordinate arrays."""
         for i, coord in enumerate(coordinates):
@@ -475,7 +476,7 @@ class ConfigurationValidator:
                 errors.append(f"Longitude {lon} out of range [-180, 180] for {context}")
 
     def _validate_file_paths(
-        self, file_paths: List[str], errors: List[str], context: str = ""
+        self, file_paths: list[str], errors: list[str], context: str = ""
     ) -> None:
         """Validate file paths."""
         for path in file_paths:
@@ -483,7 +484,7 @@ class ConfigurationValidator:
                 errors.append(f"File not found: {path} for {context}")
 
     def _validate_currency_codes(
-        self, currency_codes: List[str], errors: List[str], context: str = ""
+        self, currency_codes: list[str], errors: list[str], context: str = ""
     ) -> None:
         """Validate currency codes."""
         valid_currencies = [
@@ -502,7 +503,7 @@ class ConfigurationValidator:
                 errors.append(f"Invalid currency code: {code} for {context}")
 
     def _validate_hazard_types(
-        self, hazard_types: List[str], errors: List[str], context: str = ""
+        self, hazard_types: list[str], errors: list[str], context: str = ""
     ) -> None:
         """Validate hazard types."""
         valid_hazards = [
@@ -528,7 +529,7 @@ class ConfigurationValidator:
                 errors.append(f"Invalid hazard type: {hazard} for {context}")
 
     def _validate_vulnerability_schemes(
-        self, schemes: List[str], errors: List[str], context: str = ""
+        self, schemes: list[str], errors: list[str], context: str = ""
     ) -> None:
         """Validate vulnerability classification schemes."""
         valid_schemes = ["hazus", "european", "custom", "gem", "fema", "iso"]
@@ -544,7 +545,7 @@ class ConfigurationValidator:
         except (OSError, PermissionError):
             return False
 
-    def _apply_defaults_and_normalize(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def _apply_defaults_and_normalize(self, config: dict[str, Any]) -> dict[str, Any]:
         """Apply default values and normalize configuration."""
         # Apply defaults for missing sections
         defaults = {
@@ -580,7 +581,7 @@ class ConfigurationValidator:
 
         return config
 
-    def _normalize_numeric_values(self, config: Dict[str, Any]) -> None:
+    def _normalize_numeric_values(self, config: dict[str, Any]) -> None:
         """Normalize numeric values in configuration."""
         # Ensure return periods are integers
         for hazard_config in config.get("hazards", {}).values():
@@ -598,7 +599,7 @@ class ConfigurationValidator:
 
 
 def validate_config(
-    config: Dict[str, Any], schema_path: Optional[str] = None, strict: bool = True
+    config: dict[str, Any], schema_path: str | None = None, strict: bool = True
 ) -> ValidationResult:
     """
     Validate configuration against schema and custom rules.
@@ -659,8 +660,8 @@ def validate_data_file(file_path: str, data_type: str = "auto") -> ValidationRes
 
 def validate_csv_file(file_path: str) -> ValidationResult:
     """Validate CSV file format and content."""
-    errors: List[str] = []
-    warnings: List[str] = []
+    errors: list[str] = []
+    warnings: list[str] = []
 
     try:
         df = pd.read_csv(file_path)
@@ -708,11 +709,11 @@ def validate_csv_file(file_path: str) -> ValidationResult:
 
 def validate_json_file(file_path: str) -> ValidationResult:
     """Validate JSON file format and content."""
-    errors: List[str] = []
-    warnings: List[str] = []
+    errors: list[str] = []
+    warnings: list[str] = []
 
     try:
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             data = json.load(f)
 
         # Check if it's a valid JSON structure
@@ -733,8 +734,8 @@ def validate_json_file(file_path: str) -> ValidationResult:
 
 def validate_shapefile(file_path: str) -> ValidationResult:
     """Validate shapefile format and content."""
-    errors: List[str] = []
-    warnings: List[str] = []
+    errors: list[str] = []
+    warnings: list[str] = []
 
     try:
         import geopandas as gpd
@@ -788,7 +789,7 @@ def validate_shapefile(file_path: str) -> ValidationResult:
 
 
 def validate_model_parameters(
-    model_type: str, parameters: Dict[str, Any]
+    model_type: str, parameters: dict[str, Any]
 ) -> ValidationResult:
     """
     Validate model parameters for specific model types.
@@ -814,10 +815,10 @@ def validate_model_parameters(
         )
 
 
-def validate_hazard_parameters(parameters: Dict[str, Any]) -> ValidationResult:
+def validate_hazard_parameters(parameters: dict[str, Any]) -> ValidationResult:
     """Validate hazard model parameters."""
-    errors: List[str] = []
-    warnings: List[str] = []
+    errors: list[str] = []
+    warnings: list[str] = []
 
     required_params = ["hazard_type", "return_periods"]
     for param in required_params:
@@ -850,10 +851,10 @@ def validate_hazard_parameters(parameters: Dict[str, Any]) -> ValidationResult:
     return ValidationResult(len(errors) == 0, errors, warnings, parameters)
 
 
-def validate_vulnerability_parameters(parameters: Dict[str, Any]) -> ValidationResult:
+def validate_vulnerability_parameters(parameters: dict[str, Any]) -> ValidationResult:
     """Validate vulnerability model parameters."""
-    errors: List[str] = []
-    warnings: List[str] = []
+    errors: list[str] = []
+    warnings: list[str] = []
 
     required_params = ["vulnerability_type", "classification_scheme"]
     for param in required_params:
@@ -869,10 +870,10 @@ def validate_vulnerability_parameters(parameters: Dict[str, Any]) -> ValidationR
     return ValidationResult(len(errors) == 0, errors, warnings, parameters)
 
 
-def validate_exposure_parameters(parameters: Dict[str, Any]) -> ValidationResult:
+def validate_exposure_parameters(parameters: dict[str, Any]) -> ValidationResult:
     """Validate exposure model parameters."""
-    errors: List[str] = []
-    warnings: List[str] = []
+    errors: list[str] = []
+    warnings: list[str] = []
 
     required_params = ["exposure_type", "data_sources", "value_type"]
     for param in required_params:
@@ -897,10 +898,10 @@ def validate_exposure_parameters(parameters: Dict[str, Any]) -> ValidationResult
     return ValidationResult(len(errors) == 0, errors, warnings, parameters)
 
 
-def validate_insurance_parameters(parameters: Dict[str, Any]) -> ValidationResult:
+def validate_insurance_parameters(parameters: dict[str, Any]) -> ValidationResult:
     """Validate insurance model parameters."""
-    errors: List[str] = []
-    warnings: List[str] = []
+    errors: list[str] = []
+    warnings: list[str] = []
 
     # Validate currency
     currency = parameters.get("currency", "USD")

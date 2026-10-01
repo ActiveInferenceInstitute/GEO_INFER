@@ -6,7 +6,7 @@ seasonality analysis, decomposition, and statistical analysis.
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any
 from dataclasses import dataclass
 from enum import Enum
 import pandas as pd
@@ -55,7 +55,7 @@ class TemporalAnalyzer:
 
     def detect_trend(
         self, timeseries: TimeSeries, method: str = "linear"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect trend in time series.
 
@@ -105,7 +105,7 @@ class TemporalAnalyzer:
 
     def detect_seasonality(
         self, timeseries: TimeSeries, max_periods: int = 12
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect seasonality in time series.
 
@@ -143,7 +143,7 @@ class TemporalAnalyzer:
         }
 
     @staticmethod
-    def _infer_seasonal_period(frequency: Optional[str]) -> int:
+    def _infer_seasonal_period(frequency: str | None) -> int:
         """
         Infer a seasonal period in samples from a pandas frequency alias.
 
@@ -197,8 +197,8 @@ class TemporalAnalyzer:
         self,
         timeseries: TimeSeries,
         model: str = "additive",
-        period: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        period: int | None = None,
+    ) -> dict[str, Any]:
         """
         Decompose time series into trend, seasonal, and residual components.
 
@@ -241,7 +241,7 @@ class TemporalAnalyzer:
             "period": period,
         }
 
-    def test_stationarity(self, timeseries: TimeSeries) -> Dict[str, Any]:
+    def test_stationarity(self, timeseries: TimeSeries) -> dict[str, Any]:
         """
         Test time series stationarity using Augmented Dickey-Fuller test.
 
@@ -275,8 +275,8 @@ class TemporalAnalyzer:
         timeseries: TimeSeries,
         method: str = "zscore",
         threshold: float = 3.0,
-        window_size: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        window_size: int | None = None,
+    ) -> dict[str, Any]:
         """
         Detect anomalies in time series.
 
@@ -385,7 +385,7 @@ class TemporalAnalyzer:
         timeseries: TimeSeries,
         method: str = "cusum",
         min_segment_length: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect change points (structural breaks) in time series.
 
@@ -401,7 +401,7 @@ class TemporalAnalyzer:
         values = data.iloc[:, 0].values
         n = len(values)
 
-        change_points: List[Dict[str, Any]] = []
+        change_points: list[dict[str, Any]] = []
 
         if method == "cusum":
             # CUSUM-based change point detection
@@ -445,7 +445,7 @@ class TemporalAnalyzer:
 
         elif method == "binary_segmentation":
             # Simplified binary segmentation
-            def find_change_point(start: int, end: int) -> Optional[Dict[str, Any]]:
+            def find_change_point(start: int, end: int) -> dict[str, Any] | None:
                 if end - start < 2 * min_segment_length:
                     return None
 
@@ -504,7 +504,7 @@ class TemporalAnalyzer:
 
     def calculate_cross_correlation(
         self, timeseries1: TimeSeries, timeseries2: TimeSeries, max_lag: int = 20
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate cross-correlation between two time series.
 
@@ -563,10 +563,10 @@ class TemporalAnalyzer:
 
     def validate_forecast(
         self,
-        actual: List[float],
-        predicted: List[float],
-        confidence_intervals: Optional[List[Tuple[float, float]]] = None,
-    ) -> Dict[str, Any]:
+        actual: list[float],
+        predicted: list[float],
+        confidence_intervals: list[tuple[float, float]] | None = None,
+    ) -> dict[str, Any]:
         """
         Validate forecast accuracy with multiple metrics.
 
@@ -667,7 +667,7 @@ class TemporalAnalyzer:
 
     def calculate_autocorrelation(
         self, timeseries: TimeSeries, max_lag: int = 40
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate autocorrelation function.
 
@@ -722,8 +722,8 @@ class TemporalAnalyzer:
         self,
         timeseries: TimeSeries,
         window: int = 10,
-        statistics: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        statistics: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Calculate rolling statistics over a time series.
 
@@ -789,7 +789,7 @@ class TemporalAnalyzer:
 
     def detect_periodicity(
         self, timeseries: TimeSeries, max_period: int = 60
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect periodicity in time series using FFT-based spectral analysis.
 
@@ -880,7 +880,7 @@ class TemporalAnalyzer:
 
     def calculate_granger_causality(
         self, timeseries1: TimeSeries, timeseries2: TimeSeries, max_lag: int = 5
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Test for Granger causality between two time series.
 
@@ -904,10 +904,10 @@ class TemporalAnalyzer:
         data1 = data1[:min_len]
         data2 = data2[:min_len]
 
-        tests: Dict[str, Any] = {}
+        tests: dict[str, Any] = {}
         results = {"series_length": min_len, "max_lag": max_lag, "tests": tests}
 
-        def test_granger(y: np.ndarray, x: np.ndarray, lag: int) -> Dict[str, Any]:
+        def test_granger(y: np.ndarray, x: np.ndarray, lag: int) -> dict[str, Any]:
             """Simple F-test for Granger causality."""
             if len(y) <= lag + 1:
                 return {"error": "Insufficient data for lag"}
@@ -992,7 +992,7 @@ class TemporalAnalyzer:
 
     def compute_temporal_entropy(
         self, timeseries: TimeSeries, bins: int = 10, method: str = "shannon"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compute entropy measures for a time series.
 

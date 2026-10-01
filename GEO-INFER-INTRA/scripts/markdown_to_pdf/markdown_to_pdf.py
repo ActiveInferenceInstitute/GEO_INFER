@@ -21,12 +21,10 @@ License: MIT
 import argparse
 import json
 import logging
-import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 
 class MarkdownToPDFConverter:
@@ -115,7 +113,7 @@ class MarkdownToPDFConverter:
         self.logger.info("All dependencies are ready!")
         return True
 
-    def get_default_config(self) -> Dict:
+    def get_default_config(self) -> dict:
         """Get default configuration for PDF generation."""
         return {
             "stylesheet": [
@@ -158,17 +156,17 @@ class MarkdownToPDFConverter:
             "launch_options": {"args": ["--no-sandbox", "--disable-setuid-sandbox"]},
         }
 
-    def load_custom_config(self, config_path: Path) -> Dict[str, Any]:
+    def load_custom_config(self, config_path: Path) -> dict[str, Any]:
         """Load custom configuration from file."""
         try:
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 data = json.load(f)
                 return data if isinstance(data, dict) else {}
         except Exception as e:
             self.logger.warning(f"Failed to load config from {config_path}: {e}")
             return {}
 
-    def create_config_file(self, config: Dict, output_path: Path) -> Path:
+    def create_config_file(self, config: dict, output_path: Path) -> Path:
         """Create a temporary config file for md-to-pdf."""
         config_file = output_path.parent / f".md-to-pdf-config-{output_path.stem}.json"
         try:
@@ -182,8 +180,8 @@ class MarkdownToPDFConverter:
     def convert_file(
         self,
         input_path: Path,
-        output_path: Optional[Path] = None,
-        config: Optional[Dict] = None,
+        output_path: Path | None = None,
+        config: dict | None = None,
     ) -> bool:
         """Convert a single markdown file to PDF."""
         if not input_path.exists():
@@ -242,12 +240,12 @@ class MarkdownToPDFConverter:
 
     def convert_multiple(
         self,
-        input_patterns: List[str],
-        output_dir: Optional[Path] = None,
-        config: Optional[Dict] = None,
-    ) -> Dict[str, bool]:
+        input_patterns: list[str],
+        output_dir: Path | None = None,
+        config: dict | None = None,
+    ) -> dict[str, bool]:
         """Convert multiple markdown files to PDF."""
-        results: Dict[str, bool] = {}
+        results: dict[str, bool] = {}
 
         # Collect all matching files
         input_files = []

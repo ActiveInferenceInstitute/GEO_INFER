@@ -7,8 +7,6 @@ This example demonstrates:
 - Delivery planning
 """
 
-from typing import List, Tuple
-
 from geo_infer_log import (
     FleetManager,
     RouteOptimizer,
@@ -18,7 +16,7 @@ from geo_infer_log import (
 )
 
 
-def create_sample_vehicles() -> List[Vehicle]:
+def create_sample_vehicles() -> list[Vehicle]:
     """Create sample vehicle fleet."""
     return [
         Vehicle(
@@ -44,7 +42,7 @@ def create_sample_vehicles() -> List[Vehicle]:
     ]
 
 
-def create_sample_destinations() -> List[Tuple[float, float]]:
+def create_sample_destinations() -> list[tuple[float, float]]:
     """Create sample delivery destinations."""
     # San Francisco area locations
     return [

@@ -6,9 +6,7 @@ This script demonstrates how to interact with the GEO-INFER-API
 for working with GeoJSON polygon features.
 """
 
-import json
 import uuid
-from typing import Dict, List, Tuple
 
 import requests
 

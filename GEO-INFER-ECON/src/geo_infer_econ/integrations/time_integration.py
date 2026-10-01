@@ -4,7 +4,7 @@ GEO-INFER-TIME Integration Adapter
 Provides temporal analysis wrapper for economic time series.
 """
 
-from typing import Dict, List, Optional, Any, cast
+from typing import Any, cast
 import numpy as np
 import pandas as pd
 import logging
@@ -35,7 +35,7 @@ class TimeIntegration:
     - Temporal alignment and synchronization
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize time integration.
 
@@ -67,7 +67,7 @@ class TimeIntegration:
 
     def detect_trend(
         self, time_series: pd.Series, method: str = "linear"
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Detect trends in economic time series.
 
@@ -106,7 +106,7 @@ class TimeIntegration:
 
         try:
             return cast(
-                Dict[str, Any],
+                dict[str, Any],
                 self.analyzer.detect_trend(
                     self._as_timeseries(time_series), method=method
                 ),
@@ -116,8 +116,8 @@ class TimeIntegration:
             return None
 
     def analyze_seasonality(
-        self, time_series: pd.Series, period: Optional[int] = None
-    ) -> Optional[Dict[str, Any]]:
+        self, time_series: pd.Series, period: int | None = None
+    ) -> dict[str, Any] | None:
         """
         Analyze seasonality in economic time series.
 
@@ -134,7 +134,7 @@ class TimeIntegration:
         try:
             timeseries = self._as_timeseries(time_series)
             return cast(
-                Dict[str, Any],
+                dict[str, Any],
                 self.analyzer.detect_seasonality(timeseries, max_periods=period or 12),
             )
         except Exception as e:
@@ -143,7 +143,7 @@ class TimeIntegration:
 
     def decompose_time_series(
         self, time_series: pd.Series, model: str = "additive"
-    ) -> Optional[Dict[str, pd.Series]]:
+    ) -> dict[str, pd.Series] | None:
         """
         Decompose time series into trend, seasonal, and residual components.
 
@@ -179,7 +179,7 @@ class TimeIntegration:
             result = self.analyzer.decompose(
                 self._as_timeseries(time_series), model=model
             )
-            converted: Dict[str, pd.Series] = {}
+            converted: dict[str, pd.Series] = {}
             for name, values in result.items():
                 if name in {"trend", "seasonal", "residual"}:
                     converted[name] = pd.Series(values).reindex(range(len(time_series)))
@@ -190,7 +190,7 @@ class TimeIntegration:
 
     def forecast(
         self, time_series: pd.Series, horizon: int, method: str = "arima", **kwargs: Any
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Forecast economic time series.
 
@@ -217,15 +217,15 @@ class TimeIntegration:
             if method not in methods:
                 raise ValueError(f"Unsupported forecasting method: {method}")
             return cast(
-                Dict[str, Any], methods[method](timeseries, horizon=horizon, **kwargs)
+                dict[str, Any], methods[method](timeseries, horizon=horizon, **kwargs)
             )
         except Exception as e:
             logger.error(f"Failed to forecast: {e}")
             return None
 
     def align_time_series(
-        self, time_series_list: List[pd.Series], method: str = "interpolate"
-    ) -> Optional[List[pd.Series]]:
+        self, time_series_list: list[pd.Series], method: str = "interpolate"
+    ) -> list[pd.Series] | None:
         """
         Align multiple time series to common time index.
 

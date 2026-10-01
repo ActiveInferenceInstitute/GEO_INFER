@@ -1,7 +1,6 @@
 """HR Data Visualization functions."""
 
 import logging
-from typing import List, Optional
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
@@ -16,8 +15,8 @@ DEFAULT_HR_VISUALS_DIR = Path("visualizations_output/hr")
 
 
 def plot_headcount_by_department(
-    employees: List[Employee], output_dir: Path = DEFAULT_HR_VISUALS_DIR
-) -> Optional[str]:
+    employees: list[Employee], output_dir: Path = DEFAULT_HR_VISUALS_DIR
+) -> str | None:
     """
     Generates a bar chart of active employee headcount by department.
     Saves the plot and returns its path.
@@ -61,8 +60,8 @@ def plot_headcount_by_department(
 
 
 def plot_gender_distribution(
-    employees: List[Employee], output_dir: Path = DEFAULT_HR_VISUALS_DIR
-) -> Optional[str]:
+    employees: list[Employee], output_dir: Path = DEFAULT_HR_VISUALS_DIR
+) -> str | None:
     """
     Generates a pie chart for gender distribution of active employees.
     (Consider ethical implications and alternatives for diversity visualization).

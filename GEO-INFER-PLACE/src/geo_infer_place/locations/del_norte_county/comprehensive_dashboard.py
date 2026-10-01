@@ -15,7 +15,7 @@ import h3
 import yaml
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Optional, Any, List, Tuple, cast
+from typing import Any, cast
 from folium.plugins import MarkerCluster
 
 # Import GEO-INFER modules (optional)
@@ -71,10 +71,10 @@ class _DefaultLocationBounds:
     east: float = -123.536
     west: float = -124.408
 
-    def to_bbox(self) -> Tuple[float, float, float, float]:
+    def to_bbox(self) -> tuple[float, float, float, float]:
         return (self.west, self.south, self.east, self.north)
 
-    def center(self) -> Tuple[float, float]:
+    def center(self) -> tuple[float, float]:
         return ((self.north + self.south) / 2.0, (self.east + self.west) / 2.0)
 
 
@@ -105,10 +105,10 @@ class DelNorteComprehensiveDashboard:
 
     def __init__(
         self,
-        config_path: Optional[str] = None,
-        api_keys: Optional[Dict[str, str]] = None,
+        config_path: str | None = None,
+        api_keys: dict[str, str] | None = None,
         h3_resolution: int = 8,
-        output_dir: Optional[str] = None,
+        output_dir: str | None = None,
     ):
         """
         Initialize Del Norte County comprehensive dashboard.
@@ -141,8 +141,8 @@ class DelNorteComprehensiveDashboard:
         # Configuration and data storage
         self.config: Any = None
         self.location_bounds: Any = None
-        self.real_data: Dict[str, Any] = {}
-        self.analysis_results: Dict[str, Any] = {}
+        self.real_data: dict[str, Any] = {}
+        self.analysis_results: dict[str, Any] = {}
 
         # Initialize specialized analyzers
         self.forest_analyzer: Any = None
@@ -154,7 +154,7 @@ class DelNorteComprehensiveDashboard:
 
         logger.info("DelNorteComprehensiveDashboard initialized")
 
-    def load_configuration(self) -> Dict[str, Any]:
+    def load_configuration(self) -> dict[str, Any]:
         """
         Load Del Norte County configuration and initialize analyzers.
 
@@ -166,7 +166,7 @@ class DelNorteComprehensiveDashboard:
         # Load location configuration
         if self.config_path:
             # User-supplied custom config file takes precedence.
-            with open(self.config_path, "r") as fh:
+            with open(self.config_path) as fh:
                 self.config = yaml.safe_load(fh) or {}
         else:
             try:
@@ -176,7 +176,7 @@ class DelNorteComprehensiveDashboard:
             except Exception as exc:
                 logger.warning("Location config load failed, using defaults: %s", exc)
                 self._init_analyzers_with_defaults()
-                return cast(Dict[str, Any], self.config or {})
+                return cast(dict[str, Any], self.config or {})
 
         # Guarantee the del-norte location bounds are present so the
         # visualization engine and analyzers can construct H3 grids. The SPACE
@@ -197,7 +197,7 @@ class DelNorteComprehensiveDashboard:
         from geo_infer_place.utils.integration import DelNorteDataIntegrator
 
         integrator = DelNorteDataIntegrator()
-        self.processed_data: Dict[str, Any] = {}
+        self.processed_data: dict[str, Any] = {}
         self.forest_analyzer = ForestHealthMonitor(
             config=self.config,
             data_integrator=integrator,
@@ -220,7 +220,7 @@ class DelNorteComprehensiveDashboard:
         )
 
         logger.info("Configuration loaded and analyzers initialized")
-        return cast(Dict[str, Any], self.config)
+        return cast(dict[str, Any], self.config)
 
     def _ensure_default_bounds(self) -> None:
         """Merge Del Norte bounds into the loaded config if they are absent.
@@ -230,13 +230,13 @@ class DelNorteComprehensiveDashboard:
         engine and analyzers require to build H3 grids. Fill them from the
         canonical Del Norte extent when missing so the pipeline runs offline.
         """
-        bounds: Dict[str, Any] = {
+        bounds: dict[str, Any] = {
             "west": -124.408,
             "south": 41.458,
             "east": -123.536,
             "north": 42.006,
         }
-        location: Dict[str, Any] = {}
+        location: dict[str, Any] = {}
         config_location = self.config.get("location")
         if isinstance(config_location, dict):
             location = config_location
@@ -249,7 +249,7 @@ class DelNorteComprehensiveDashboard:
         self.config.setdefault("location", location)
         self.config["location"] = location
 
-    def fetch_real_data(self) -> Dict[str, Any]:
+    def fetch_real_data(self) -> dict[str, Any]:
         """
         Fetch real data from California and federal APIs.
 
@@ -287,7 +287,7 @@ class DelNorteComprehensiveDashboard:
 
         return self.real_data
 
-    def run_comprehensive_analysis(self) -> Dict[str, Any]:
+    def run_comprehensive_analysis(self) -> dict[str, Any]:
         """
         Run comprehensive analysis across all domains.
 
@@ -348,7 +348,7 @@ class DelNorteComprehensiveDashboard:
         logger.info("Comprehensive analysis completed")
         return self.analysis_results
 
-    def _analyze_cross_domain_interactions(self) -> Dict[str, Any]:
+    def _analyze_cross_domain_interactions(self) -> dict[str, Any]:
         """Analyze interactions between different analysis domains."""
         integration_results = {
             "fire_forest_interaction": self._analyze_fire_forest_interaction(),
@@ -359,7 +359,7 @@ class DelNorteComprehensiveDashboard:
 
         return integration_results
 
-    def _analyze_crescent_city_intel(self) -> Dict[str, Any]:
+    def _analyze_crescent_city_intel(self) -> dict[str, Any]:
         """Map the crescent-city-intel civic contract onto the Del Norte canvas.
 
         Loads the machine-readable crescent-city-intel contract (schema
@@ -384,7 +384,7 @@ class DelNorteComprehensiveDashboard:
             }
 
         h3_cells = mapper.generate_h3_cells()
-        base_result: Dict[str, Any] = {
+        base_result: dict[str, Any] = {
             "status": "ok",
             "schema": "crescent-city-geo-intel/v1",
             "domainCount": len(mapper.domains()),
@@ -416,7 +416,7 @@ class DelNorteComprehensiveDashboard:
             str(value).strip().casefold().replace("_", " ").replace("-", " ").split()
         )
 
-    def _import_civic_intel_module(self, dotted_name: str) -> Optional[Any]:
+    def _import_civic_intel_module(self, dotted_name: str) -> Any | None:
         """Import a sibling civic-intel helper module, or None when absent.
 
         The sibling packages (RISK / BAYES / ACT) are not hard dependencies of
@@ -434,10 +434,10 @@ class DelNorteComprehensiveDashboard:
 
     def enrich_civic_intel_with_module_results(
         self,
-        result: Dict[str, Any],
+        result: dict[str, Any],
         *,
-        contract: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        contract: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Add RISK/BAYES/ACT computed results to a civic-intel surface dict.
 
         Each civic-intel consumer (``geo_infer_risk.civic_intel``,
@@ -468,7 +468,7 @@ class DelNorteComprehensiveDashboard:
                 logger.warning("Civic-intel contract resolve failed: %s", exc)
                 contract = None
 
-        sources: Dict[str, str] = {}
+        sources: dict[str, str] = {}
         result["riskWeights"] = self._risk_results_from_contract(contract, sources)
         result["bayesPriors"] = self._bayes_results_from_contract(contract, sources)
         result["actPolicy"] = self._act_results_from_contract(contract, sources)
@@ -480,8 +480,8 @@ class DelNorteComprehensiveDashboard:
         return result
 
     def _risk_results_from_contract(
-        self, contract: Optional[Dict[str, Any]], sources: Dict[str, str]
-    ) -> Dict[str, Any]:
+        self, contract: dict[str, Any] | None, sources: dict[str, str]
+    ) -> dict[str, Any]:
         """RISK hazard-weight surface from the shared contract (best-effort)."""
         risk_mod = self._import_civic_intel_module("geo_infer_risk.civic_intel")
         if risk_mod is None:
@@ -517,8 +517,8 @@ class DelNorteComprehensiveDashboard:
             return {"status": "unavailable", "error": str(exc)}
 
     def _bayes_results_from_contract(
-        self, contract: Optional[Dict[str, Any]], sources: Dict[str, str]
-    ) -> Dict[str, Any]:
+        self, contract: dict[str, Any] | None, sources: dict[str, str]
+    ) -> dict[str, Any]:
         """BAYES categorical-prior table from the shared contract (best-effort)."""
         bayes_mod = self._import_civic_intel_module("geo_infer_bayes.civic_intel")
         if bayes_mod is None:
@@ -546,8 +546,8 @@ class DelNorteComprehensiveDashboard:
             return {"status": "unavailable", "error": str(exc)}
 
     def _act_results_from_contract(
-        self, contract: Optional[Dict[str, Any]], sources: Dict[str, str]
-    ) -> Dict[str, Any]:
+        self, contract: dict[str, Any] | None, sources: dict[str, str]
+    ) -> dict[str, Any]:
         """ACT policy-preference surface from the shared contract (best-effort)."""
         act_mod = self._import_civic_intel_module("geo_infer_act.core.civic_intel")
         if act_mod is None:
@@ -584,7 +584,7 @@ class DelNorteComprehensiveDashboard:
             return {"status": "unavailable", "error": str(exc)}
 
     @staticmethod
-    def _select_act_action(prior: Dict[str, Any]) -> Dict[str, Any]:
+    def _select_act_action(prior: dict[str, Any]) -> dict[str, Any]:
         """Deterministically select the ACT policy that best matches the prior.
 
         Runs ``PolicySelector(selection_mode=\"deterministic\")`` over one
@@ -623,8 +623,8 @@ class DelNorteComprehensiveDashboard:
         }
 
     def _consolidate_module_weights(
-        self, result: Dict[str, Any], contract: Optional[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, result: dict[str, Any], contract: dict[str, Any] | None
+    ) -> list[dict[str, Any]]:
         """Reconcile RISK / BAYES / ACT module outputs onto per-tag rows.
 
         Rows are keyed by the canonical display hazard tag and carry the
@@ -648,7 +648,7 @@ class DelNorteComprehensiveDashboard:
             act_prefs = {}
             dominant = ""
 
-        domain_tags: Dict[str, List[str]] = {}
+        domain_tags: dict[str, list[str]] = {}
         if isinstance(contract, dict):
             for domain in contract.get("hazard", {}).get("relevantDomains") or []:
                 did = domain.get("id")
@@ -659,7 +659,7 @@ class DelNorteComprehensiveDashboard:
                 if did:
                     domain_tags[str(did)] = tags
 
-        rows: List[Dict[str, Any]] = []
+        rows: list[dict[str, Any]] = []
         if isinstance(risk, dict) and risk.get("status") != "unavailable":
             for tag in sorted(risk):
                 try:
@@ -713,7 +713,7 @@ class DelNorteComprehensiveDashboard:
             return "#d9ef8b"  # low-medium
         return "#4575b4"  # low
 
-    def _add_crescent_city_intel_layer(self, m: folium.Map, layer_groups: Dict) -> None:
+    def _add_crescent_city_intel_layer(self, m: folium.Map, layer_groups: dict) -> None:
         """Add the civic-intel H3 surface + hazard-domain markers to the map.
 
         Rendering reads the per-cell ``hazard_density`` (colour ramp),
@@ -736,7 +736,7 @@ class DelNorteComprehensiveDashboard:
             module_rows = []
         # Index hazard domains so a cell can show names + municipal-code section
         # counts for the policies that apply to it.
-        domain_by_id: Dict[str, Any] = {}
+        domain_by_id: dict[str, Any] = {}
         for d in surface:
             dom_id = d.get("id")
             if not dom_id:
@@ -839,7 +839,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
         self._bind_civic_intel_panel_visibility(m, layer_groups["crescent_city_intel"])
 
     @staticmethod
-    def _module_rows_popup_html(module_rows: List[Dict[str, Any]]) -> str:
+    def _module_rows_popup_html(module_rows: list[dict[str, Any]]) -> str:
         """Build the RISK/BAYES/ACT module-results block for a cell popup.
 
         Invariant across every cell in the layer, so the caller builds it once
@@ -849,7 +849,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
         """
         if not module_rows:
             return ""
-        module_sections: List[str] = []
+        module_sections: list[str] = []
         for row in module_rows[:4]:
             tag = _html(row.get("tag", ""))
             risk = float(row.get("riskWeight", 0.0))
@@ -881,9 +881,9 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
         self,
         cell_id: str,
         density: float,
-        applying: List[str],
-        domain_by_id: Dict[str, Any],
-        hazard_tags: List[str],
+        applying: list[str],
+        domain_by_id: dict[str, Any],
+        hazard_tags: list[str],
         module_rows_block: str = "",
     ) -> str:
         """Build a clean, information-dense popup for a civic-intel cell.
@@ -897,7 +897,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
         if not applying:
             domain_rows = '<tr><td colspan="2" style="color:#999;padding:2px 6px;">no policy applies</td></tr>'
         else:
-            rows: List[str] = []
+            rows: list[str] = []
             for did in applying:
                 meta = domain_by_id.get(did) or {}
                 name = _html(meta.get("name", did))
@@ -947,7 +947,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
         m_root.html.add_child(folium.Element(legend_html))
 
     def _add_civic_intel_summary_panel(
-        self, m: folium.Map, result: Dict[str, Any], surface: List[Dict[str, Any]]
+        self, m: folium.Map, result: dict[str, Any], surface: list[dict[str, Any]]
     ) -> None:
         """Render a summary panel of the top hazard-relevant civic domains."""
         if not surface:
@@ -980,7 +980,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
         m_root.html.add_child(folium.Element(panel))
 
     def _add_module_hazard_weights_panel(
-        self, m: folium.Map, result: Dict[str, Any]
+        self, m: folium.Map, result: dict[str, Any]
     ) -> None:
         """Render the RISK / BAYES / ACT computed module-results panel.
 
@@ -1077,9 +1077,9 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
         m_root: Any = m.get_root()
         m_root.script.add_child(folium.Element(script))
 
-    def _generate_h3_spatial_analysis(self) -> Dict[str, Any]:
+    def _generate_h3_spatial_analysis(self) -> dict[str, Any]:
         """Aggregate H3 cells emitted by the domain analyses."""
-        h3_cells: Dict[str, Any] = {}
+        h3_cells: dict[str, Any] = {}
         for domain_name, domain_result in self.analysis_results.items():
             if not isinstance(domain_result, dict):
                 continue
@@ -1197,7 +1197,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
         logger.info(f"Comprehensive dashboard generated: {dashboard_path}")
         return str(dashboard_path)
 
-    def _create_advanced_layer_groups(self) -> Dict[str, folium.FeatureGroup]:
+    def _create_advanced_layer_groups(self) -> dict[str, folium.FeatureGroup]:
         """Create advanced layer groups for the dashboard."""
         return {
             "h3_analysis": folium.FeatureGroup(
@@ -1218,7 +1218,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
             "infrastructure": folium.FeatureGroup(name="🏗️ Infrastructure", show=False),
         }
 
-    def _add_h3_analysis_layer(self, m: folium.Map, layer_groups: Dict) -> None:
+    def _add_h3_analysis_layer(self, m: folium.Map, layer_groups: dict) -> None:
         """Add H3 spatial analysis visualization layer."""
         if "h3_aggregation" not in self.analysis_results:
             return
@@ -1272,7 +1272,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
             except Exception as e:
                 logger.warning(f"Error adding H3 cell {h3_cell}: {e}")
 
-    def _add_forest_health_layers(self, m: folium.Map, layer_groups: Dict) -> None:
+    def _add_forest_health_layers(self, m: folium.Map, layer_groups: dict) -> None:
         """Add forest health monitoring layers."""
         forest_result = self.analysis_results.get("forest_health", {})
         sites = forest_result.get("forest_plots", forest_result.get("sites", []))
@@ -1322,7 +1322,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
 
         forest_cluster.add_to(layer_groups["forest_health"])
 
-    def _add_coastal_resilience_layers(self, m: folium.Map, layer_groups: Dict) -> None:
+    def _add_coastal_resilience_layers(self, m: folium.Map, layer_groups: dict) -> None:
         """Add coastal resilience analysis layers."""
         # Add tide gauge data if available
         if "tide_data" in self.processed_data:
@@ -1345,7 +1345,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
             ).add_to(layer_groups["coastal_resilience"])
 
         # Add coastal vulnerability zones
-        coastal_zones: List[Dict[str, Any]] = [
+        coastal_zones: list[dict[str, Any]] = [
             {
                 "name": "Crescent City Harbor",
                 "lat": 41.745,
@@ -1388,7 +1388,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
                 fillOpacity=0.7,
             ).add_to(layer_groups["coastal_resilience"])
 
-    def _add_fire_risk_layers(self, m: folium.Map, layer_groups: Dict) -> None:
+    def _add_fire_risk_layers(self, m: folium.Map, layer_groups: dict) -> None:
         """Add fire risk assessment layers."""
         station_data = self.processed_data.get("weather_stations", [])
         if isinstance(station_data, dict):
@@ -1418,10 +1418,10 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
                 },
             ).add_to(layer_groups["fire_risk"])
 
-    def _add_real_data_layers(self, m: folium.Map, layer_groups: Dict) -> None:
+    def _add_real_data_layers(self, m: folium.Map, layer_groups: dict) -> None:
         """Add layers showing real-time data integration."""
         # Data source indicators
-        data_sources: List[Dict[str, Any]] = [
+        data_sources: list[dict[str, Any]] = [
             {
                 "name": "CAL FIRE API",
                 "status": "Connected",
@@ -1457,10 +1457,10 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
                 icon=folium.Icon(color=color, icon="database", prefix="fa"),
             ).add_to(layer_groups["real_data"])
 
-    def _add_integration_layers(self, m: folium.Map, layer_groups: Dict) -> None:
+    def _add_integration_layers(self, m: folium.Map, layer_groups: dict) -> None:
         """Add cross-domain integration visualization layers."""
         # Integration hotspots - areas where multiple risks converge
-        integration_hotspots: List[Dict[str, Any]] = [
+        integration_hotspots: list[dict[str, Any]] = [
             {
                 "name": "Crescent City WUI",
                 "lat": 41.756,
@@ -1649,7 +1649,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
         m_root.html.add_child(folium.Element(header_html))
 
     # Baseline methods for cross-domain analysis
-    def _analyze_fire_forest_interaction(self) -> Dict[str, Any]:
+    def _analyze_fire_forest_interaction(self) -> dict[str, Any]:
         """Analyze fire-forest interaction patterns."""
         return {
             "fire_prone_forest_areas": 0.35,
@@ -1657,7 +1657,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
             "fuel_load_assessment": "Moderate",
         }
 
-    def _analyze_coastal_development_risk(self) -> Dict[str, Any]:
+    def _analyze_coastal_development_risk(self) -> dict[str, Any]:
         """Analyze coastal development vulnerability."""
         return {
             "infrastructure_at_risk": 0.42,
@@ -1723,7 +1723,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
         logger.info(f"Analysis results exported to: {results_path}")
         return str(results_path)
 
-    def run_analysis(self) -> Dict[str, Any]:
+    def run_analysis(self) -> dict[str, Any]:
         """Convenience wrapper: init analyzers, run all domains, generate HTML dashboard.
 
         Handles configuration and data-fetch failures gracefully so tests can run
@@ -1746,7 +1746,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
                 logger.warning("Data fetch failed (using empty): %s", exc)
                 self.processed_data = {}
 
-        results: Dict[str, Any] = {}
+        results: dict[str, Any] = {}
 
         # Forest health
         try:
@@ -1821,7 +1821,7 @@ by natural-hazard intent (from the crescent-city-intel contract).</p>
         """Initialize analyzers with default Del Norte County config on load failure."""
         from geo_infer_place.utils.integration import DelNorteDataIntegrator
 
-        default_config: Dict[str, Any] = {
+        default_config: dict[str, Any] = {
             "location": {
                 "bounds": {
                     "west": -124.408,

@@ -6,7 +6,6 @@ to sensitive geospatial information, including spatial and attribute-based
 permissions.
 """
 
-from typing import Dict, List, Optional, Union
 import geopandas as gpd
 from shapely.geometry import Polygon, MultiPolygon, shape
 import jwt
@@ -20,11 +19,11 @@ class SpatialPermission:
     def __init__(
         self,
         name: str,
-        geometry: Union[Polygon, MultiPolygon, None] = None,
-        wkt: Optional[str] = None,
-        geojson: Optional[Dict] = None,
-        attributes: Optional[List[str]] = None,
-        max_resolution: Optional[int] = None,
+        geometry: Polygon | MultiPolygon | None = None,
+        wkt: str | None = None,
+        geojson: dict | None = None,
+        attributes: list[str] | None = None,
+        max_resolution: int | None = None,
     ):
         """
         Initialize a spatial permission.
@@ -89,9 +88,7 @@ class SpatialPermission:
 class Role:
     """Represents a security role with associated permissions."""
 
-    def __init__(
-        self, name: str, permissions: Optional[List[SpatialPermission]] = None
-    ):
+    def __init__(self, name: str, permissions: list[SpatialPermission] | None = None):
         """
         Initialize a role with permissions.
 
@@ -110,7 +107,7 @@ class Role:
         """Check if the role has a specific permission."""
         return any(p.name == permission_name for p in self.permissions)
 
-    def get_accessible_area(self) -> Optional[Union[Polygon, MultiPolygon]]:
+    def get_accessible_area(self) -> Polygon | MultiPolygon | None:
         """Get the combined area of all spatial permissions."""
         from shapely.ops import unary_union
 
@@ -136,8 +133,8 @@ class GeospatialAccessManager:
         """
         self.secret_key = secret_key
         self._jwt_secret = hashlib.sha256(secret_key.encode("utf-8")).digest()
-        self.roles: Dict[str, Role] = {}
-        self.user_roles: Dict[str, List[str]] = {}
+        self.roles: dict[str, Role] = {}
+        self.user_roles: dict[str, list[str]] = {}
 
     def add_role(self, role: Role) -> None:
         """Add a role to the manager."""
@@ -165,7 +162,7 @@ class GeospatialAccessManager:
 
         return True
 
-    def get_user_roles(self, user_id: str) -> List[Role]:
+    def get_user_roles(self, user_id: str) -> list[Role]:
         """Get all roles assigned to a user."""
         role_names = self.user_roles.get(user_id, [])
         return [self.roles[name] for name in role_names if name in self.roles]
@@ -186,13 +183,13 @@ class GeospatialAccessManager:
         payload = {
             "user_id": user_id,
             "roles": role_names,
-            "exp": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+            "exp": datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
             + datetime.timedelta(hours=expiration_hours),
         }
 
         return jwt.encode(payload, self._jwt_secret, algorithm="HS256")
 
-    def validate_token(self, token: str) -> Optional[Dict]:
+    def validate_token(self, token: str) -> dict | None:
         """
         Validate a JWT token.
 

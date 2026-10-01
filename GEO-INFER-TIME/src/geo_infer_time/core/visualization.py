@@ -6,7 +6,7 @@ for decomposition, forecasts, anomalies, and diagnostics.
 """
 
 import logging
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -32,7 +32,7 @@ class TemporalVisualization:
     """
 
     def __init__(
-        self, style: str = "seaborn-v0_8-whitegrid", figsize: Tuple[int, int] = (12, 6)
+        self, style: str = "seaborn-v0_8-whitegrid", figsize: tuple[int, int] = (12, 6)
     ):
         """
         Initialize visualization engine.
@@ -60,7 +60,7 @@ class TemporalVisualization:
                 return plt.subplots(*args, **kwargs)
 
     @staticmethod
-    def _series(values: List[float], name: str) -> np.ndarray:
+    def _series(values: list[float], name: str) -> np.ndarray:
         """Validate a non-empty finite numeric series."""
         array = np.asarray(values, dtype=float).reshape(-1)
         if array.size == 0:
@@ -71,7 +71,7 @@ class TemporalVisualization:
 
     @staticmethod
     def _x_values(
-        timestamps: Optional[List], length: int, name: str = "timestamps"
+        timestamps: list | None, length: int, name: str = "timestamps"
     ) -> Any:
         """Validate optional timestamps and return a plotting x-axis."""
         if timestamps is None:
@@ -81,7 +81,7 @@ class TemporalVisualization:
         return timestamps
 
     @staticmethod
-    def _save(fig: Any, save_path: Optional[Path]) -> None:
+    def _save(fig: Any, save_path: Path | None) -> None:
         """Persist a figure and create its parent directory when needed."""
         if save_path:
             path = Path(save_path)
@@ -91,15 +91,15 @@ class TemporalVisualization:
 
     def plot_timeseries(
         self,
-        values: List[float],
-        timestamps: Optional[List] = None,
+        values: list[float],
+        timestamps: list | None = None,
         title: str = "Time Series",
         ylabel: str = "Value",
         xlabel: str = "Time",
         color: str = "#2E86AB",
         show_grid: bool = True,
-        save_path: Optional[Path] = None,
-    ) -> Optional[Any]:
+        save_path: Path | None = None,
+    ) -> Any | None:
         """
         Create a basic time series plot.
 
@@ -142,14 +142,14 @@ class TemporalVisualization:
 
     def plot_decomposition(
         self,
-        trend: List[float],
-        seasonal: List[float],
-        residual: List[float],
-        original: Optional[List[float]] = None,
-        timestamps: Optional[List] = None,
+        trend: list[float],
+        seasonal: list[float],
+        residual: list[float],
+        original: list[float] | None = None,
+        timestamps: list | None = None,
         title: str = "Time Series Decomposition",
-        save_path: Optional[Path] = None,
-    ) -> Optional[Any]:
+        save_path: Path | None = None,
+    ) -> Any | None:
         """
         Create a decomposition plot with trend, seasonal, and residual panels.
 
@@ -187,7 +187,7 @@ class TemporalVisualization:
         )
         axes = np.atleast_1d(axes)
 
-        components: List[np.ndarray] = []
+        components: list[np.ndarray] = []
         labels = []
         colors = []
 
@@ -215,15 +215,15 @@ class TemporalVisualization:
 
     def plot_forecast(
         self,
-        historical: List[float],
-        forecast: List[float],
-        confidence_lower: Optional[List[float]] = None,
-        confidence_upper: Optional[List[float]] = None,
-        timestamps_historical: Optional[List] = None,
-        timestamps_forecast: Optional[List] = None,
+        historical: list[float],
+        forecast: list[float],
+        confidence_lower: list[float] | None = None,
+        confidence_upper: list[float] | None = None,
+        timestamps_historical: list | None = None,
+        timestamps_forecast: list | None = None,
         title: str = "Time Series Forecast",
-        save_path: Optional[Path] = None,
-    ) -> Optional[Any]:
+        save_path: Path | None = None,
+    ) -> Any | None:
         """
         Create a forecast plot with confidence intervals.
 
@@ -307,12 +307,12 @@ class TemporalVisualization:
 
     def plot_acf_pacf(
         self,
-        acf_values: List[float],
-        pacf_values: Optional[List[float]] = None,
+        acf_values: list[float],
+        pacf_values: list[float] | None = None,
         confidence_bound: float = 0.0,
         title: str = "Autocorrelation Analysis",
-        save_path: Optional[Path] = None,
-    ) -> Optional[Any]:
+        save_path: Path | None = None,
+    ) -> Any | None:
         """
         Create ACF and PACF plots.
 
@@ -377,12 +377,12 @@ class TemporalVisualization:
 
     def plot_anomalies(
         self,
-        values: List[float],
-        anomaly_indices: List[int],
-        timestamps: Optional[List] = None,
+        values: list[float],
+        anomaly_indices: list[int],
+        timestamps: list | None = None,
         title: str = "Anomaly Detection",
-        save_path: Optional[Path] = None,
-    ) -> Optional[Any]:
+        save_path: Path | None = None,
+    ) -> Any | None:
         """
         Create a plot highlighting anomalies.
 
@@ -440,14 +440,14 @@ class TemporalVisualization:
 
     def plot_rolling_statistics(
         self,
-        values: List[float],
-        rolling_mean: List[float],
-        rolling_std: Optional[List[float]] = None,
-        timestamps: Optional[List] = None,
+        values: list[float],
+        rolling_mean: list[float],
+        rolling_std: list[float] | None = None,
+        timestamps: list | None = None,
         window: int = 0,
         title: str = "Rolling Statistics",
-        save_path: Optional[Path] = None,
-    ) -> Optional[Any]:
+        save_path: Path | None = None,
+    ) -> Any | None:
         """
         Create a plot with rolling mean and standard deviation bands.
 
@@ -524,12 +524,12 @@ class TemporalVisualization:
 
     def plot_seasonality(
         self,
-        values: List[float],
+        values: list[float],
         period: int,
-        timestamps: Optional[List] = None,
+        timestamps: list | None = None,
         title: str = "Seasonal Subseries",
-        save_path: Optional[Path] = None,
-    ) -> Optional[Any]:
+        save_path: Path | None = None,
+    ) -> Any | None:
         """
         Create seasonal subseries plot.
 
@@ -581,14 +581,14 @@ class TemporalVisualization:
 
     def create_dashboard(
         self,
-        values: List[float],
-        timestamps: Optional[List] = None,
-        decomposition: Optional[Dict[str, List[float]]] = None,
-        forecast: Optional[Dict[str, Any]] = None,
-        anomalies: Optional[List[int]] = None,
+        values: list[float],
+        timestamps: list | None = None,
+        decomposition: dict[str, list[float]] | None = None,
+        forecast: dict[str, Any] | None = None,
+        anomalies: list[int] | None = None,
         title: str = "Time Series Dashboard",
-        save_path: Optional[Path] = None,
-    ) -> Optional[Any]:
+        save_path: Path | None = None,
+    ) -> Any | None:
         """
         Create a comprehensive multi-panel dashboard.
 

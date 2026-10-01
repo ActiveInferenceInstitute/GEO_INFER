@@ -24,12 +24,12 @@ from datetime import datetime
 from functools import lru_cache
 from importlib.resources import files
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
 
-def _load_presets() -> Dict[str, Any]:
+def _load_presets() -> dict[str, Any]:
     """Load location presets from the tracked YAML configuration."""
     _cfg = files("geo_infer_place.config").joinpath("location_presets.yaml")
     if not _cfg.is_file():
@@ -45,7 +45,7 @@ def _load_presets() -> Dict[str, Any]:
 
 
 @lru_cache(maxsize=1)
-def _location_presets() -> Dict[str, Any]:
+def _location_presets() -> dict[str, Any]:
     """Load (and cache) the location presets from the tracked YAML configuration."""
     return _load_presets()
 
@@ -77,9 +77,9 @@ class PlaceInterface:
     def __init__(
         self,
         location: str = "del_norte",
-        config: Optional[Dict[str, Any]] = None,
-        output_dir: Optional[str] = None,
-        counties: Optional[List[str]] = None,
+        config: dict[str, Any] | None = None,
+        output_dir: str | None = None,
+        counties: list[str] | None = None,
     ) -> None:
         presets = _location_presets()
         if location not in presets:
@@ -108,10 +108,10 @@ class PlaceInterface:
         self.counties = counties
 
         # Lazy-initialised components
-        self._integrator: Optional[Any] = None
-        self._data_manager: Optional[Any] = None
-        self._temporal: Optional[Any] = None
-        self._analyzers: Dict[str, Any] = {}
+        self._integrator: Any | None = None
+        self._data_manager: Any | None = None
+        self._temporal: Any | None = None
+        self._analyzers: dict[str, Any] = {}
 
     # ------------------------------------------------------------------
     # Component accessors (lazy init)
@@ -221,9 +221,9 @@ class PlaceInterface:
 
     def run_full_analysis(
         self,
-        analyzers: Optional[List[str]] = None,
+        analyzers: list[str] | None = None,
         include_temporal: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run all configured analyzers and return unified results.
 
         Args:
@@ -243,7 +243,7 @@ class PlaceInterface:
             analyzer_names,
         )
 
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "location": self.location_name,
             "timestamp": datetime.now().isoformat(),
             "config": {
@@ -315,7 +315,7 @@ class PlaceInterface:
     # Temporal analysis integration
     # ------------------------------------------------------------------
 
-    def _run_temporal_analysis(self, analyses: Dict[str, Any]) -> Dict[str, Any]:
+    def _run_temporal_analysis(self, analyses: dict[str, Any]) -> dict[str, Any]:
         """Run temporal analysis on applicable datasets."""
         temporal_results = {}
 
@@ -358,28 +358,28 @@ class PlaceInterface:
     # Convenience methods
     # ------------------------------------------------------------------
 
-    def get_earthquakes(self, bbox: Optional[tuple] = None) -> Dict[str, Any]:
+    def get_earthquakes(self, bbox: tuple | None = None) -> dict[str, Any]:
         """Fetch recent earthquakes for the location."""
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.integrator.usgs_client.get_earthquakes(bbox=bbox),
         )
 
-    def get_cascadia_seismicity(self, days: int = 30) -> Dict[str, Any]:
+    def get_cascadia_seismicity(self, days: int = 30) -> dict[str, Any]:
         """Fetch Cascadia-wide seismicity data."""
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.integrator.usgs_client.get_cascadia_seismicity(days=days),
         )
 
     def get_tide_data(
         self,
-        stations: Optional[List[str]] = None,
-        time_range: Optional[tuple] = None,
-    ) -> Dict[str, Any]:
+        stations: list[str] | None = None,
+        time_range: tuple | None = None,
+    ) -> dict[str, Any]:
         """Fetch tide gauge data."""
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.integrator.noaa_client.get_tide_gauge_data(
                 stations=stations, time_range=time_range
             ),
@@ -387,25 +387,25 @@ class PlaceInterface:
 
     def get_fire_perimeters(
         self,
-        bbox: Optional[tuple] = None,
-        start_year: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        bbox: tuple | None = None,
+        start_year: int | None = None,
+    ) -> dict[str, Any]:
         """Fetch fire perimeter data."""
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.integrator.calfire_client.get_fire_perimeters(
                 bbox=bbox, start_year=start_year
             ),
         )
 
-    def get_weather(self, station_id: str = "KCEC") -> Dict[str, Any]:
+    def get_weather(self, station_id: str = "KCEC") -> dict[str, Any]:
         """Fetch current weather observations."""
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.integrator.noaa_client.get_weather_data(station_id=station_id),
         )
 
-    def status(self) -> Dict[str, Any]:
+    def status(self) -> dict[str, Any]:
         """Return status of all components."""
         return {
             "location": self.location,

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Repository cloning functionality for GEO-INFER-GIT.
@@ -13,7 +12,7 @@ import os
 import logging
 import shutil
 import threading
-from typing import Dict, Any, List, Optional, Tuple, cast
+from typing import Any, cast
 from concurrent.futures import ThreadPoolExecutor, as_completed, Executor
 import time
 from pathlib import Path
@@ -63,7 +62,7 @@ class CloneProgress:
             return 0.0
         return (self.completed_repos / self.total_repos) * 100.0
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get current statistics."""
         return {
             "total": self.total_repos,
@@ -109,7 +108,7 @@ class RepoCloner:
             self.git_env["GIT_TOKEN"] = config.github_token
 
     def clone_repository(
-        self, owner: str, repo: str, branch: Optional[str] = None
+        self, owner: str, repo: str, branch: str | None = None
     ) -> bool:
         """
         Clone a single repository.
@@ -142,7 +141,7 @@ class RepoCloner:
             logger.info(f"Cloning {owner}/{repo} to {repo_path}")
 
             # Prepare clone options
-            clone_kwargs: Dict[str, Any] = {
+            clone_kwargs: dict[str, Any] = {
                 "branch": branch or self.config.default_branch,
                 "depth": self.config.clone_depth,
                 "recursive": False,  # We'll handle submodules separately if needed
@@ -181,8 +180,8 @@ class RepoCloner:
             return False
 
     def clone_repositories_for_user(
-        self, username: str, repositories: List[GitHubRepository]
-    ) -> Tuple[int, int]:
+        self, username: str, repositories: list[GitHubRepository]
+    ) -> tuple[int, int]:
         """
         Clone repositories for a specific user.
 
@@ -252,8 +251,8 @@ class RepoCloner:
             logger.warning(f"Error setting up LFS: {e}")
 
     def clone_multiple_repositories(
-        self, repositories: List[Tuple[str, str, str]]
-    ) -> Dict[str, bool]:
+        self, repositories: list[tuple[str, str, str]]
+    ) -> dict[str, bool]:
         """
         Clone multiple repositories in parallel.
 
@@ -297,7 +296,7 @@ class RepoCloner:
 
         return results
 
-    def get_disk_usage(self) -> Dict[str, Any]:
+    def get_disk_usage(self) -> dict[str, Any]:
         """
         Get disk usage information for the output directory.
 
@@ -355,7 +354,7 @@ class RepoCloner:
 
         return cleaned_count
 
-    def get_clone_stats(self) -> Dict[str, Any]:
+    def get_clone_stats(self) -> dict[str, Any]:
         """
         Get cloning statistics and progress.
 
@@ -374,11 +373,11 @@ class RepoCloner:
         executor: Any = getattr(self, "_executor", None)
         if executor is not None:
             cast(Executor, executor).shutdown(wait=False)
-            setattr(self, "_executor", None)
+            self._executor = None
 
     def estimate_clone_time(
         self, repo_count: int, avg_repo_size: int = 50000
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Estimate cloning time based on repository count and average size.
 

@@ -5,7 +5,7 @@ Provides org structure graph construction, role hierarchy analysis,
 and resource allocation optimization.
 """
 
-from typing import Dict, List, Optional, Tuple, Set, Any
+from typing import Any
 from dataclasses import dataclass, field
 from enum import Enum
 import logging
@@ -39,12 +39,12 @@ class OrgUnit:
 
     unit_id: str
     name: str
-    parent_id: Optional[str] = None
-    head_role: Optional[str] = None
+    parent_id: str | None = None
+    head_role: str | None = None
     member_count: int = 0
     budget: float = 0.0
-    location: Optional[Tuple[float, float]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    location: tuple[float, float] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -55,9 +55,9 @@ class Role:
     title: str
     level: RoleLevel
     unit_id: str
-    reports_to: Optional[str] = None
-    responsibilities: List[str] = field(default_factory=list)
-    required_skills: List[str] = field(default_factory=list)
+    reports_to: str | None = None
+    responsibilities: list[str] = field(default_factory=list)
+    required_skills: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -68,7 +68,7 @@ class Resource:
     name: str
     capacity: float
     unit_cost: float
-    assigned_to: Optional[str] = None
+    assigned_to: str | None = None
     resource_type: str = "general"
 
 
@@ -102,9 +102,9 @@ class OrganizationModel:
             structure_type: The type of organizational structure.
         """
         self._structure_type = structure_type
-        self._units: Dict[str, OrgUnit] = {}
-        self._roles: Dict[str, Role] = {}
-        self._adjacency: Dict[str, List[str]] = {}  # parent -> children
+        self._units: dict[str, OrgUnit] = {}
+        self._roles: dict[str, Role] = {}
+        self._adjacency: dict[str, list[str]] = {}  # parent -> children
 
     def add_unit(self, unit: OrgUnit) -> None:
         """
@@ -162,7 +162,7 @@ class OrganizationModel:
             raise KeyError(f"Unit {unit_id} not found")
         return self._units[unit_id]
 
-    def get_children(self, unit_id: str) -> List[OrgUnit]:
+    def get_children(self, unit_id: str) -> list[OrgUnit]:
         """
         Get direct child units of a given unit.
 
@@ -175,7 +175,7 @@ class OrganizationModel:
         child_ids = self._adjacency.get(unit_id, [])
         return [self._units[cid] for cid in child_ids]
 
-    def get_descendants(self, unit_id: str) -> List[OrgUnit]:
+    def get_descendants(self, unit_id: str) -> list[OrgUnit]:
         """
         Get all descendant units (recursive children) of a unit.
 
@@ -193,7 +193,7 @@ class OrganizationModel:
             stack.extend(self._adjacency.get(current, []))
         return descendants
 
-    def get_ancestors(self, unit_id: str) -> List[OrgUnit]:
+    def get_ancestors(self, unit_id: str) -> list[OrgUnit]:
         """
         Get the chain of ancestors from a unit up to the root.
 
@@ -203,7 +203,7 @@ class OrganizationModel:
         Returns:
             List of ancestor OrgUnit objects, from parent to root.
         """
-        ancestors: List[OrgUnit] = []
+        ancestors: list[OrgUnit] = []
         current = self._units.get(unit_id)
         if current is None:
             return ancestors
@@ -281,7 +281,7 @@ class OrganizationModel:
             hierarchy_ratio=round(hierarchy_ratio, 4),
         )
 
-    def find_reporting_chain(self, role_id: str) -> List[Role]:
+    def find_reporting_chain(self, role_id: str) -> list[Role]:
         """
         Find the complete reporting chain for a role.
 
@@ -299,7 +299,7 @@ class OrganizationModel:
 
         chain = []
         current = self._roles[role_id]
-        visited: Set[str] = {role_id}
+        visited: set[str] = {role_id}
         while current.reports_to and current.reports_to not in visited:
             supervisor = self._roles.get(current.reports_to)
             if supervisor is None:
@@ -313,7 +313,7 @@ class OrganizationModel:
         self,
         total_budget: float,
         strategy: str = "proportional",
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Allocate budget across organizational units.
 
@@ -371,7 +371,7 @@ class OrganizationModel:
         )
         return result
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Serialize the org model to a dictionary.
 

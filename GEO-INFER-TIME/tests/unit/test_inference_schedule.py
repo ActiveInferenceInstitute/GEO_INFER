@@ -1,6 +1,6 @@
 """Explicit event-time contracts at the active inference boundary."""
 
-from datetime import timezone
+from datetime import UTC
 import pytest
 from geo_infer_time.core.inference_schedule import inference_schedule
 
@@ -10,7 +10,7 @@ def test_epoch_and_equivalent_offsets():
         ["1970-01-01T00:00:00Z", "1969-12-31T16:01:00-08:00"], step_seconds=60
     )
     assert result[0].timestamp() == 0
-    assert all(t.tzinfo == timezone.utc for t in result)
+    assert all(t.tzinfo == UTC for t in result)
     assert result[1].timestamp() == 60
 
 

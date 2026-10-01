@@ -344,7 +344,7 @@ class PrecisionFarmingSystem:
         ai_data = self.results["ai_predictions"]
         sim_data = self.results["simulation"]
 
-        print(f"\n📊 System Overview:")
+        print("\n📊 System Overview:")
         print(f"├─ Farm Area: {iot_data['farm_metadata']['area_hectares']} hectares")
         print(f"├─ Active Sensors: {len(iot_data['sensors'])}")
         print(f"├─ Management Zones: {len(spatial_data['management_zones'])}")
@@ -352,7 +352,7 @@ class PrecisionFarmingSystem:
         print(f"└─ System Performance: {execution_time:.2f} seconds")
 
         # Key Insights
-        print(f"\n💡 Key Agricultural Insights:")
+        print("\n💡 Key Agricultural Insights:")
         print(
             f"1. Predicted yield: {ai_data['yield_prediction']['estimated_yield']:.1f} tons/hectare"
         )
@@ -365,34 +365,34 @@ class PrecisionFarmingSystem:
         )
 
         # Recommendations
-        print(f"\n🎯 Management Recommendations:")
+        print("\n🎯 Management Recommendations:")
         recommendations = sim_data["recommended_scenario"]["actions"]
         for i, rec in enumerate(recommendations[:3], 1):
             print(f"{i}. {rec['action']} (Priority: {rec['priority']})")
 
         # Economic Impact
         economic = sim_data["economic_analysis"]
-        print(f"\n💰 Economic Impact:")
+        print("\n💰 Economic Impact:")
         print(f"├─ Projected Revenue: ${economic['projected_revenue']:,.2f}")
         print(f"├─ Estimated Costs: ${economic['estimated_costs']:,.2f}")
         print(f"├─ Expected Profit: ${economic['expected_profit']:,.2f}")
         print(f"└─ ROI: {economic['roi']:.1%}")
 
         # Technology Integration
-        print(f"\n🔧 Technology Integration:")
+        print("\n🔧 Technology Integration:")
         modules_used = ["IOT", "DATA", "SPACE", "AG", "AI", "SIM", "API"]
         print(f"├─ Modules: {', '.join(modules_used)}")
-        print(f"├─ Integration Pattern: IoT-Driven Pipeline")
+        print("├─ Integration Pattern: IoT-Driven Pipeline")
         print(
             f"├─ Data Quality: {self.results['processed_data']['quality_metrics']['overall_score']:.1%}"
         )
         print(f"└─ Prediction Confidence: {ai_data['model_confidence']:.1%}")
 
-        print(f"\n🚀 Next Steps:")
-        print(f"1. Deploy automated irrigation system")
-        print(f"2. Implement variable-rate fertilizer application")
-        print(f"3. Set up real-time monitoring dashboard")
-        print(f"4. Integrate with farm equipment automation")
+        print("\n🚀 Next Steps:")
+        print("1. Deploy automated irrigation system")
+        print("2. Implement variable-rate fertilizer application")
+        print("3. Set up real-time monitoring dashboard")
+        print("4. Integrate with farm equipment automation")
 
         print("\n" + "=" * 80)
 
@@ -653,8 +653,8 @@ def main():
         farming_system = PrecisionFarmingSystem()
         results = farming_system.run_farming_system()
 
-        print(f"\n🎉 Precision farming system completed successfully!")
-        print(f"This example demonstrates IoT-driven agricultural optimization.")
+        print("\n🎉 Precision farming system completed successfully!")
+        print("This example demonstrates IoT-driven agricultural optimization.")
 
         return 0
 

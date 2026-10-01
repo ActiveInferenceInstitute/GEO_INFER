@@ -5,7 +5,7 @@ This module defines the generic interface for geometric operations
 that can be implemented by different backends (H3, SRAI, etc.).
 """
 
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, cast
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class GeometricOperationsInterface:
     to different backends based on configuration.
     """
 
-    def __init__(self, backend: Optional[str] = None) -> None:
+    def __init__(self, backend: str | None = None) -> None:
         from .dispatcher import get_backend_dispatcher
 
         self.dispatcher = get_backend_dispatcher()
@@ -27,10 +27,10 @@ class GeometricOperationsInterface:
 
     def buffer_geometry(
         self,
-        geometry: Dict[str, Any],
+        geometry: dict[str, Any],
         distance: float,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a buffer around a geometry.
 
@@ -43,7 +43,7 @@ class GeometricOperationsInterface:
             Buffered geometry
         """
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.dispatcher.dispatch_geometric_operation(
                 "buffer_geometry",
                 geometry,
@@ -53,7 +53,7 @@ class GeometricOperationsInterface:
             ),
         )
 
-    def calculate_area(self, geometry: Dict[str, Any]) -> float:
+    def calculate_area(self, geometry: dict[str, Any]) -> float:
         """
         Calculate the area of a geometry.
 
@@ -70,7 +70,7 @@ class GeometricOperationsInterface:
             ),
         )
 
-    def calculate_perimeter(self, geometry: Dict[str, Any]) -> float:
+    def calculate_perimeter(self, geometry: dict[str, Any]) -> float:
         """
         Calculate the perimeter of a geometry.
 
@@ -87,7 +87,7 @@ class GeometricOperationsInterface:
             ),
         )
 
-    def calculate_centroid(self, geometry: Dict[str, Any]) -> Tuple[float, float]:
+    def calculate_centroid(self, geometry: dict[str, Any]) -> tuple[float, float]:
         """
         Calculate the centroid of a geometry.
 
@@ -98,13 +98,13 @@ class GeometricOperationsInterface:
             Centroid coordinates as (lat, lng)
         """
         return cast(
-            Tuple[float, float],
+            tuple[float, float],
             self.dispatcher.dispatch_geometric_operation(
                 "calculate_centroid", geometry, backend=self.backend
             ),
         )
 
-    def calculate_distance(self, geom1: Dict[str, Any], geom2: Dict[str, Any]) -> float:
+    def calculate_distance(self, geom1: dict[str, Any], geom2: dict[str, Any]) -> float:
         """
         Calculate distance between two geometries.
 
@@ -122,7 +122,7 @@ class GeometricOperationsInterface:
             ),
         )
 
-    def union_geometries(self, geometries: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def union_geometries(self, geometries: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Union multiple geometries.
 
@@ -133,15 +133,15 @@ class GeometricOperationsInterface:
             Union of all input geometries
         """
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.dispatcher.dispatch_geometric_operation(
                 "union_geometries", geometries, backend=self.backend
             ),
         )
 
     def intersection_geometries(
-        self, geom1: Dict[str, Any], geom2: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, geom1: dict[str, Any], geom2: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Calculate intersection of two geometries.
 
@@ -153,15 +153,15 @@ class GeometricOperationsInterface:
             Intersection of the two geometries
         """
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.dispatcher.dispatch_geometric_operation(
                 "intersection_geometries", geom1, geom2, backend=self.backend
             ),
         )
 
     def difference_geometries(
-        self, geom1: Dict[str, Any], geom2: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, geom1: dict[str, Any], geom2: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Calculate difference of two geometries.
 
@@ -173,14 +173,14 @@ class GeometricOperationsInterface:
             Difference of the two geometries
         """
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.dispatcher.dispatch_geometric_operation(
                 "difference_geometries", geom1, geom2, backend=self.backend
             ),
         )
 
     def contains_geometry(
-        self, container: Dict[str, Any], contained: Dict[str, Any]
+        self, container: dict[str, Any], contained: dict[str, Any]
     ) -> bool:
         """
         Check if one geometry contains another.
@@ -199,7 +199,7 @@ class GeometricOperationsInterface:
             ),
         )
 
-    def intersects_geometry(self, geom1: Dict[str, Any], geom2: Dict[str, Any]) -> bool:
+    def intersects_geometry(self, geom1: dict[str, Any], geom2: dict[str, Any]) -> bool:
         """
         Check if two geometries intersect.
 
@@ -218,8 +218,8 @@ class GeometricOperationsInterface:
         )
 
     def transform_geometry(
-        self, geometry: Dict[str, Any], from_crs: str, to_crs: str
-    ) -> Dict[str, Any]:
+        self, geometry: dict[str, Any], from_crs: str, to_crs: str
+    ) -> dict[str, Any]:
         """
         Transform geometry from one coordinate reference system to another.
 
@@ -232,7 +232,7 @@ class GeometricOperationsInterface:
             Transformed geometry
         """
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.dispatcher.dispatch_indexing_operation(
                 "transform_geometry",
                 geometry,

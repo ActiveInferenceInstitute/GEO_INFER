@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 from geo_infer_act.runners.cli import build_parser, config_from_args
 from geo_infer_act.runners.scenarios import run_all_scenarios, run_scenario
@@ -13,8 +13,8 @@ from geo_infer_act.runners.scenarios import run_all_scenarios, run_scenario
 
 def run_scenario_entrypoint(
     default_scenario: str,
-    argv: Optional[Iterable[str]] = None,
-    program: Optional[str] = None,
+    argv: Iterable[str] | None = None,
+    program: str | None = None,
 ) -> int:
     """Run a package-owned scenario implementation from an entrypoint."""
     args_list = list(argv) if argv is not None else sys.argv[1:]

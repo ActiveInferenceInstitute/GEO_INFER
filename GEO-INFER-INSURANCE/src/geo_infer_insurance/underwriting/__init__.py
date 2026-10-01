@@ -100,7 +100,7 @@ from .utils.compliance import ComplianceFramework
 
 # Convenience functions
 def underwrite_policy(
-    application_data: Dict[str, Any], config: Optional[UnderwritingConfig] = None
+    application_data: dict[str, Any], config: UnderwritingConfig | None = None
 ) -> UnderwritingCase:
     """Convenience function to underwrite a policy."""
     engine = create_underwriting_engine(config)
@@ -108,7 +108,7 @@ def underwrite_policy(
 
 
 def process_claim(
-    claim_data: Dict[str, Any], config: Optional[Dict[str, Any]] = None
+    claim_data: dict[str, Any], config: dict[str, Any] | None = None
 ) -> Claim:
     """Convenience function to process a claim.
 
@@ -120,24 +120,24 @@ def process_claim(
 
 
 def assess_risk(
-    entity_data: Dict[str, Any], assessment_type: str = "comprehensive"
-) -> Dict[str, Any]:
+    entity_data: dict[str, Any], assessment_type: str = "comprehensive"
+) -> dict[str, Any]:
     """Convenience function to assess risk."""
     engine = create_risk_assessment()
     return engine.assess_risk(entity_data, assessment_type)
 
 
 def calculate_premium(
-    policy_data: Dict[str, Any],
-    risk_assessment: Dict[str, Any],
-    rule_evaluation: Dict[str, Any],
+    policy_data: dict[str, Any],
+    risk_assessment: dict[str, Any],
+    rule_evaluation: dict[str, Any],
 ) -> PremiumCalculation:
     """Convenience function to calculate premium."""
     engine = create_pricing_engine()
     return engine.calculate_premium(policy_data, risk_assessment, rule_evaluation)
 
 
-def create_pricing_engine(config: Optional[Dict[str, Any]] = None) -> PricingEngine:
+def create_pricing_engine(config: dict[str, Any] | None = None) -> PricingEngine:
     """Create a pricing engine for premium calculations."""
     from .core.pricing_engine import PricingEngine
 
@@ -145,7 +145,7 @@ def create_pricing_engine(config: Optional[Dict[str, Any]] = None) -> PricingEng
 
 
 def create_underwriting_engine(
-    config: Optional[UnderwritingConfig] = None,
+    config: UnderwritingConfig | None = None,
 ) -> UnderwritingEngine:
     """Create a new underwriting engine."""
     from .core.underwriting_engine import UnderwritingEngine
@@ -154,7 +154,7 @@ def create_underwriting_engine(
 
 
 def create_risk_assessment(
-    config: Optional[RiskAssessmentConfig] = None,
+    config: RiskAssessmentConfig | None = None,
 ) -> RiskAssessmentEngine:
     """Create a risk assessment engine."""
     from .core.risk_assessment import RiskAssessmentEngine
@@ -162,7 +162,7 @@ def create_risk_assessment(
     return RiskAssessmentEngine(config)
 
 
-def create_policy_manager(config: Optional[Dict[str, Any]] = None) -> PolicyManager:
+def create_policy_manager(config: dict[str, Any] | None = None) -> PolicyManager:
     """Create a policy manager."""
     from .core.policy_management import PolicyManager
 
@@ -170,7 +170,7 @@ def create_policy_manager(config: Optional[Dict[str, Any]] = None) -> PolicyMana
 
 
 def create_claims_processor(
-    config: Optional[Union[Dict[str, Any], ClaimsProcessingConfig]] = None,
+    config: dict[str, Any] | ClaimsProcessingConfig | None = None,
 ) -> ClaimsProcessor:
     """Create a claims processor.
 

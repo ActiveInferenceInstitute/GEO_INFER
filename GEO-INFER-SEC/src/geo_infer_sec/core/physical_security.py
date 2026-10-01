@@ -15,7 +15,8 @@ import threading
 import time
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, Any, Union, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -75,11 +76,11 @@ class AccessControlDevice:
     location: Point
     zone_id: str
     is_active: bool = True
-    last_heartbeat: Optional[datetime] = None
+    last_heartbeat: datetime | None = None
     security_level: int = 1
     backup_power: bool = False
     tamper_detection: bool = False
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -91,13 +92,13 @@ class SurveillanceDevice:
     device_type: SurveillanceType
     location: Point
     zone_id: str
-    coverage_area: Optional[Polygon] = None
+    coverage_area: Polygon | None = None
     is_active: bool = True
     recording_active: bool = False
     detection_sensitivity: float = 0.5
-    field_of_view: Optional[float] = None
-    range_meters: Optional[float] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    field_of_view: float | None = None
+    range_meters: float | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -107,15 +108,15 @@ class SecurityZone:
     zone_id: str
     name: str
     zone_type: SecurityZoneType
-    boundary: Union[Polygon, MultiPolygon]
+    boundary: Polygon | MultiPolygon
     required_clearance_level: int
-    access_hours: Optional[Dict[str, Any]] = (
+    access_hours: dict[str, Any] | None = (
         None  # {"start": "08:00", "end": "18:00", "days": ["mon", "tue", ...]}
     )
     escort_required: bool = False
     two_person_rule: bool = False
     emergency_evacuation: bool = True
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -130,28 +131,28 @@ class PhysicalThreat:
     detection_method: str
     description: str
     status: str = "active"  # active, investigating, resolved
-    assigned_to: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    assigned_to: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class PhysicalSecurityManager:
     """Comprehensive physical security management system."""
 
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, config_path: str | None = None):
         """Initialize the physical security manager."""
         self.logger = logging.getLogger(__name__)
         self.config = self._load_config(config_path)
 
         # Initialize security components
-        self.access_devices: Dict[str, AccessControlDevice] = {}
-        self.surveillance_devices: Dict[str, SurveillanceDevice] = {}
-        self.security_zones: Dict[str, SecurityZone] = {}
-        self.active_threats: Dict[str, PhysicalThreat] = {}
+        self.access_devices: dict[str, AccessControlDevice] = {}
+        self.surveillance_devices: dict[str, SurveillanceDevice] = {}
+        self.security_zones: dict[str, SecurityZone] = {}
+        self.active_threats: dict[str, PhysicalThreat] = {}
 
         # Initialize monitoring
         self.monitoring_active = False
-        self.monitoring_thread: Optional[threading.Thread] = None
-        self.alert_callbacks: List[Callable[[PhysicalThreat], None]] = []
+        self.monitoring_thread: threading.Thread | None = None
+        self.alert_callbacks: list[Callable[[PhysicalThreat], None]] = []
 
         # Initialize utilities
         self.geo_utils = GeoSpatialUtils()
@@ -161,11 +162,11 @@ class PhysicalSecurityManager:
         self._initialize_security_zones()
         self._initialize_devices()
 
-    def _load_config(self, config_path: Optional[str]) -> Dict[str, Any]:
+    def _load_config(self, config_path: str | None) -> dict[str, Any]:
         """Load configuration from file."""
         if config_path and Path(config_path).exists():
-            with open(config_path, "r") as f:
-                return cast(Dict[str, Any], yaml.safe_load(f))
+            with open(config_path) as f:
+                return cast(dict[str, Any], yaml.safe_load(f))
         return {
             "monitoring_interval": 5,
             "alert_threshold": 0.7,
@@ -213,11 +214,11 @@ class PhysicalSecurityManager:
             self.logger.error(f"Error adding security zone: {e}")
             return False
 
-    def get_security_zone(self, zone_id: str) -> Optional[SecurityZone]:
+    def get_security_zone(self, zone_id: str) -> SecurityZone | None:
         """Get a security zone by ID."""
         return self.security_zones.get(zone_id)
 
-    def get_zones_for_location(self, location: Point) -> List[SecurityZone]:
+    def get_zones_for_location(self, location: Point) -> list[SecurityZone]:
         """Get all security zones that contain a given location."""
         zones = []
         for zone in self.security_zones.values():
@@ -226,7 +227,7 @@ class PhysicalSecurityManager:
         return zones
 
     def update_zone_boundary(
-        self, zone_id: str, new_boundary: Union[Polygon, MultiPolygon]
+        self, zone_id: str, new_boundary: Polygon | MultiPolygon
     ) -> bool:
         """Update the boundary of a security zone."""
         if zone_id in self.security_zones:
@@ -248,7 +249,7 @@ class PhysicalSecurityManager:
 
     def verify_access_permission(
         self, user_id: str, device_id: str, clearance_level: int
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """Verify if a user has permission to access a device."""
         device = self.access_devices.get(device_id)
         if not device:
@@ -278,7 +279,7 @@ class PhysicalSecurityManager:
         return True, "Access granted"
 
     def _is_within_access_hours(
-        self, current_time: datetime, access_hours: Dict[str, Any]
+        self, current_time: datetime, access_hours: dict[str, Any]
     ) -> bool:
         """Check if current time is within permitted access hours."""
         # Implementation for time-based access control
@@ -320,7 +321,7 @@ class PhysicalSecurityManager:
             self.logger.error(f"Error adding surveillance device: {e}")
             return False
 
-    def get_surveillance_coverage(self, location: Point) -> List[SurveillanceDevice]:
+    def get_surveillance_coverage(self, location: Point) -> list[SurveillanceDevice]:
         """Get all surveillance devices that cover a specific location."""
         covering_devices = []
         for device in self.surveillance_devices.values():
@@ -357,7 +358,7 @@ class PhysicalSecurityManager:
     # Threat Detection and Response
     def detect_intrusion(
         self, location: Point, detection_method: str, confidence: float = 1.0
-    ) -> Optional[PhysicalThreat]:
+    ) -> PhysicalThreat | None:
         """Detect and register a potential intrusion."""
         threat_id = f"intrusion_{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
@@ -392,7 +393,7 @@ class PhysicalSecurityManager:
 
     def detect_unauthorized_access(
         self, device_id: str, user_id: str, attempted_at: datetime
-    ) -> Optional[PhysicalThreat]:
+    ) -> PhysicalThreat | None:
         """Detect unauthorized access attempts."""
         device = self.access_devices.get(device_id)
         if not device:
@@ -519,7 +520,7 @@ class PhysicalSecurityManager:
     # Reporting and Analytics
     def generate_security_report(
         self, start_date: datetime, end_date: datetime
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate a comprehensive security report."""
         report = {
             "report_period": {
@@ -560,7 +561,7 @@ class PhysicalSecurityManager:
 
     def _analyze_threats(
         self, start_date: datetime, end_date: datetime
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze threats within a date range."""
         relevant_threats = [
             threat
@@ -568,8 +569,8 @@ class PhysicalSecurityManager:
             if start_date <= threat.detected_at <= end_date
         ]
 
-        threat_types: Dict[str, int] = {}
-        severity_counts: Dict[str, int] = {}
+        threat_types: dict[str, int] = {}
+        severity_counts: dict[str, int] = {}
 
         for threat in relevant_threats:
             threat_types[threat.threat_type] = (
@@ -586,7 +587,7 @@ class PhysicalSecurityManager:
             "resolution_rate": self._calculate_resolution_rate(relevant_threats),
         }
 
-    def _calculate_resolution_rate(self, threats: List[PhysicalThreat]) -> float:
+    def _calculate_resolution_rate(self, threats: list[PhysicalThreat]) -> float:
         """Calculate threat resolution rate."""
         if not threats:
             return 0.0
@@ -594,7 +595,7 @@ class PhysicalSecurityManager:
         resolved_count = len([t for t in threats if t.status == "resolved"])
         return (resolved_count / len(threats)) * 100
 
-    def _get_device_status_summary(self) -> Dict[str, Any]:
+    def _get_device_status_summary(self) -> dict[str, Any]:
         """Get summary of device status."""
         access_devices = len(self.access_devices)
         active_access = len([d for d in self.access_devices.values() if d.is_active])
@@ -617,7 +618,7 @@ class PhysicalSecurityManager:
             },
         }
 
-    def _analyze_zones(self) -> Dict[str, Any]:
+    def _analyze_zones(self) -> dict[str, Any]:
         """Analyze security zones."""
         zone_analysis = {}
 
@@ -646,7 +647,7 @@ class PhysicalSecurityManager:
 
         return zone_analysis
 
-    def _generate_recommendations(self) -> List[str]:
+    def _generate_recommendations(self) -> list[str]:
         """Generate security recommendations based on current state."""
         recommendations = []
 
@@ -678,7 +679,7 @@ class PhysicalSecurityManager:
 
         return recommendations
 
-    def get_active_threats(self) -> List[PhysicalThreat]:
+    def get_active_threats(self) -> list[PhysicalThreat]:
         """Get all active threats."""
         return [
             threat

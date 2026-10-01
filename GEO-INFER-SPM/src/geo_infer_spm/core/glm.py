@@ -26,7 +26,7 @@ where:
 
 import numpy as np
 import logging
-from typing import Dict, Optional, Tuple, Any, cast
+from typing import Any, cast
 from scipy import linalg
 from scipy.stats import t, f
 
@@ -59,17 +59,17 @@ class GeneralLinearModel:
             design_matrix: Design matrix specification
         """
         self.design_matrix = design_matrix
-        self.beta: Optional[np.ndarray] = None
-        self.residuals: Optional[np.ndarray] = None
-        self.sigma2: Optional[float] = None
-        self.cov_beta: Optional[np.ndarray] = None
-        self.diagnostics: Dict[str, Any] = {}
+        self.beta: np.ndarray | None = None
+        self.residuals: np.ndarray | None = None
+        self.sigma2: float | None = None
+        self.cov_beta: np.ndarray | None = None
+        self.diagnostics: dict[str, Any] = {}
 
     def fit(
         self,
         data: SPMData,
         method: str = "OLS",
-        spatial_regularization: Optional[Dict[str, Any]] = None,
+        spatial_regularization: dict[str, Any] | None = None,
     ) -> SPMResult:
         """
         Fit the GLM to geospatial data.
@@ -155,7 +155,7 @@ class GeneralLinearModel:
             return y.reshape(-1)
         return y
 
-    def _fit_ols(self, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _fit_ols(self, y: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Fit GLM using Ordinary Least Squares.
 
@@ -192,7 +192,7 @@ class GeneralLinearModel:
 
         return beta, residuals, cov_beta
 
-    def _fit_robust(self, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _fit_robust(self, y: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Fit GLM using robust estimation methods.
 
@@ -246,8 +246,8 @@ class GeneralLinearModel:
         return beta, residuals, cov_beta
 
     def _fit_spatial(
-        self, y: np.ndarray, regularization_params: Dict[str, Any]
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        self, y: np.ndarray, regularization_params: dict[str, Any]
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Fit GLM with spatial regularization.
 
@@ -349,8 +349,8 @@ class GeneralLinearModel:
 
     def predict(
         self,
-        new_data: Optional[SPMData] = None,
-        new_design: Optional[np.ndarray] = None,
+        new_data: SPMData | None = None,
+        new_design: np.ndarray | None = None,
     ) -> np.ndarray:
         """
         Make predictions using the fitted GLM.
@@ -379,7 +379,7 @@ class GeneralLinearModel:
         assert self.beta is not None
         return cast(np.ndarray, X_pred @ self.beta)
 
-    def get_coefficient_test(self, coefficient_idx: int) -> Dict[str, Any]:
+    def get_coefficient_test(self, coefficient_idx: int) -> dict[str, Any]:
         """
         Test significance of a specific coefficient.
 

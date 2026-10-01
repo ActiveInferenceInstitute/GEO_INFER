@@ -6,7 +6,7 @@ principles. Agents allocate resources across locations, balancing exploitation
 of known high-value sites with exploration of uncertain areas.
 """
 
-from typing import Dict, Any, Optional, Tuple, List
+from typing import Any
 import numpy as np
 import logging
 
@@ -39,8 +39,8 @@ class ResourceModel(BaseActiveInferenceModel):
         planning_horizon: int = 10,
         replenishment_rate: float = 0.05,
         depletion_rate: float = 0.1,
-        config: Optional[Dict[str, Any]] = None,
-        random_seed: Optional[int] = None,
+        config: dict[str, Any] | None = None,
+        random_seed: int | None = None,
     ):
         """Initialize the Resource Model.
 
@@ -78,7 +78,7 @@ class ResourceModel(BaseActiveInferenceModel):
         self._initial_location_demand = self.location_demand.copy()
 
         # History tracking
-        self.history: List[Dict[str, Any]] = []
+        self.history: list[dict[str, Any]] = []
 
         logger.info(
             f"ResourceModel initialized: {n_resources} resources × {n_locations} locations, "
@@ -96,7 +96,7 @@ class ResourceModel(BaseActiveInferenceModel):
         conn = conn / np.where(row_sums > 0, row_sums, 1.0)
         return np.asarray(conn)
 
-    def step(self, actions: Optional[Any] = None) -> Tuple[Dict[str, Any], bool]:
+    def step(self, actions: Any | None = None) -> tuple[dict[str, Any], bool]:
         """Advance the resource model by one step.
 
         Args:
@@ -188,7 +188,7 @@ class ResourceModel(BaseActiveInferenceModel):
 
         return state, done
 
-    def reset(self) -> Dict[str, Any]:
+    def reset(self) -> dict[str, Any]:
         """Reset the resource model to initial random state.
 
         Returns:

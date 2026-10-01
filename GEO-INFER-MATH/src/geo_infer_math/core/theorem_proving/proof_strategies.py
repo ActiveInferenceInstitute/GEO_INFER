@@ -5,7 +5,7 @@ This module provides automated proof strategies for common
 spatial mathematics proof patterns.
 """
 
-from typing import Optional, List, Any
+from typing import Any
 import logging
 from abc import ABC, abstractmethod
 
@@ -30,7 +30,7 @@ class ProofStrategy(ABC):
     theorems in spatial mathematics.
     """
 
-    def __init__(self, prover: Optional[TheoremProver] = None):
+    def __init__(self, prover: TheoremProver | None = None):
         """
         Initialize proof strategy.
 
@@ -41,7 +41,7 @@ class ProofStrategy(ABC):
 
     @abstractmethod
     def prove(
-        self, theorem: str, assumptions: Optional[List[str]] = None, **kwargs: Any
+        self, theorem: str, assumptions: list[str] | None = None, **kwargs: Any
     ) -> ProofResult:
         """
         Attempt to prove a theorem using this strategy.
@@ -79,7 +79,7 @@ class GeometricProofStrategy(ProofStrategy):
     """
 
     def prove(
-        self, theorem: str, assumptions: Optional[List[str]] = None, **kwargs: Any
+        self, theorem: str, assumptions: list[str] | None = None, **kwargs: Any
     ) -> ProofResult:
         """Prove geometric theorem."""
         assumptions = assumptions or []
@@ -103,7 +103,7 @@ class GeometricProofStrategy(ProofStrategy):
         return result
 
     def _try_triangle_inequality(
-        self, theorem: str, assumptions: List[str]
+        self, theorem: str, assumptions: list[str]
     ) -> ProofResult:
         """Verify the triangle inequality empirically on sampled point triples.
 
@@ -176,7 +176,7 @@ class StatisticalProofStrategy(ProofStrategy):
     """
 
     def prove(
-        self, theorem: str, assumptions: Optional[List[str]] = None, **kwargs: Any
+        self, theorem: str, assumptions: list[str] | None = None, **kwargs: Any
     ) -> ProofResult:
         """Prove statistical theorem."""
         assumptions = assumptions or []
@@ -199,7 +199,7 @@ class StatisticalProofStrategy(ProofStrategy):
         return result
 
     def _try_expectation_properties(
-        self, theorem: str, assumptions: List[str]
+        self, theorem: str, assumptions: list[str]
     ) -> ProofResult:
         """Verify linearity of expectation empirically on sampled variables.
 
@@ -263,7 +263,7 @@ class DirectProofStrategy(ProofStrategy):
     """
 
     def prove(
-        self, theorem: str, assumptions: Optional[List[str]] = None, **kwargs: Any
+        self, theorem: str, assumptions: list[str] | None = None, **kwargs: Any
     ) -> ProofResult:
         """Attempt direct proof."""
         return self.prover.prove(theorem, assumptions, **kwargs)
@@ -277,7 +277,7 @@ class ContradictionProofStrategy(ProofStrategy):
     """
 
     def prove(
-        self, theorem: str, assumptions: Optional[List[str]] = None, **kwargs: Any
+        self, theorem: str, assumptions: list[str] | None = None, **kwargs: Any
     ) -> ProofResult:
         """Prove by contradiction."""
         assumptions = assumptions or []
@@ -308,7 +308,7 @@ class InductionProofStrategy(ProofStrategy):
     """
 
     def prove(
-        self, theorem: str, assumptions: Optional[List[str]] = None, **kwargs: Any
+        self, theorem: str, assumptions: list[str] | None = None, **kwargs: Any
     ) -> ProofResult:
         """Prove by induction."""
         # Induction requires base case and inductive step
@@ -344,7 +344,7 @@ class ProofStrategySelector:
         ]
 
     def select_strategy(
-        self, theorem: str, theorem_type: Optional[str] = None
+        self, theorem: str, theorem_type: str | None = None
     ) -> ProofStrategy:
         """
         Select best strategy for a theorem.
@@ -365,8 +365,8 @@ class ProofStrategySelector:
         return DirectProofStrategy()
 
     def try_all_strategies(
-        self, theorem: str, assumptions: Optional[List[str]] = None
-    ) -> List[ProofResult]:
+        self, theorem: str, assumptions: list[str] | None = None
+    ) -> list[ProofResult]:
         """
         Try all applicable strategies.
 

@@ -8,7 +8,7 @@ and progress visualization for educational systems.
 import hashlib
 import json
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -26,7 +26,7 @@ class CompetencyLevel(Enum):
     EXEMPLARY = "exemplary"
 
 
-_COMPETENCY_LEVEL_ORDER: Dict[CompetencyLevel, int] = {
+_COMPETENCY_LEVEL_ORDER: dict[CompetencyLevel, int] = {
     CompetencyLevel.NOT_STARTED: 0,
     CompetencyLevel.EMERGING: 1,
     CompetencyLevel.DEVELOPING: 2,
@@ -44,9 +44,9 @@ class LearnerActivity:
     activity_type: str  # exercise, reading, video, assessment
     topic: str
     start_time: datetime
-    end_time: Optional[datetime] = None
+    end_time: datetime | None = None
     completion_status: str = "in_progress"  # in_progress, completed, abandoned
-    score: Optional[float] = None
+    score: float | None = None
     time_spent_minutes: float = 0
     attempts: int = 1
 
@@ -58,8 +58,8 @@ class CompetencyRecord:
     competency_id: str
     competency_name: str
     level: CompetencyLevel
-    evidence: List[str] = field(default_factory=list)
-    last_assessed: Optional[datetime] = None
+    evidence: list[str] = field(default_factory=list)
+    last_assessed: datetime | None = None
     confidence: float = 0.0  # 0 to 1
 
 
@@ -68,12 +68,12 @@ class LearnerProgress:
     """Complete learning progress for a learner."""
 
     learner_id: str
-    activities: List[LearnerActivity] = field(default_factory=list)
-    competencies: Dict[str, CompetencyRecord] = field(default_factory=dict)
+    activities: list[LearnerActivity] = field(default_factory=list)
+    competencies: dict[str, CompetencyRecord] = field(default_factory=dict)
     total_time_hours: float = 0
     completion_rate: float = 0
     current_streak_days: int = 0
-    last_activity_date: Optional[datetime] = None
+    last_activity_date: datetime | None = None
 
 
 class ProgressTracker:
@@ -106,13 +106,13 @@ class ProgressTracker:
         self.competency_framework = competency_framework
         self.analytics_level = analytics_level
         self.privacy_compliance = privacy_compliance
-        self._learner_data: Dict[str, LearnerProgress] = {}
+        self._learner_data: dict[str, LearnerProgress] = {}
         self._competency_definitions = self._load_competency_definitions()
         logger.info(
             f"Initialized ProgressTracker with {competency_framework} framework"
         )
 
-    def _load_competency_definitions(self) -> Dict[str, Dict]:
+    def _load_competency_definitions(self) -> dict[str, dict]:
         """Load competency definitions from framework."""
         # Geospatial Body of Knowledge competencies
         return {
@@ -160,8 +160,8 @@ class ProgressTracker:
     def track_progress(
         self,
         learner_id: str,
-        activity_log: List[Dict[str, Any]],
-        assessments: Optional[List[Dict[str, Any]]] = None,
+        activity_log: list[dict[str, Any]],
+        assessments: list[dict[str, Any]] | None = None,
     ) -> LearnerProgress:
         """
         Track learning progress for a learner.
@@ -223,7 +223,7 @@ class ProgressTracker:
         return progress
 
     def _update_competencies(
-        self, progress: LearnerProgress, assessment: Dict[str, Any]
+        self, progress: LearnerProgress, assessment: dict[str, Any]
     ) -> None:
         """Update competency records based on assessment results."""
         competency_id = assessment.get("competency", "general")
@@ -267,9 +267,9 @@ class ProgressTracker:
     def generate_competency_report(
         self,
         learner_id: str,
-        competencies: Optional[List[str]] = None,
+        competencies: list[str] | None = None,
         visualization: str = "radar_chart",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate competency achievement report.
 
@@ -287,14 +287,14 @@ class ProgressTracker:
         progress = self._learner_data[learner_id]
         target_competencies = competencies or list(self._competency_definitions.keys())
 
-        summary_out: Dict[str, int] = {
+        summary_out: dict[str, int] = {
             "total_competencies": len(target_competencies),
             "proficient_or_above": 0,
             "developing": 0,
             "not_started": 0,
         }
-        competencies_out: List[Dict[str, Any]] = []
-        report: Dict[str, Any] = {
+        competencies_out: list[dict[str, Any]] = []
+        report: dict[str, Any] = {
             "learner_id": learner_id,
             "generated_at": datetime.now().isoformat(),
             "competencies": competencies_out,
@@ -310,7 +310,7 @@ class ProgressTracker:
         for comp_id in target_competencies:
             if comp_id in progress.competencies:
                 record = progress.competencies[comp_id]
-                comp_data: Dict[str, Any] = {
+                comp_data: dict[str, Any] = {
                     "id": comp_id,
                     "name": record.competency_name,
                     "level": record.level.value,
@@ -396,7 +396,7 @@ class ProgressTracker:
             export_id = learner_id
             identifier_note = "identifier_included"
 
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "learner_id": export_id,
             "identifier_handling": identifier_note,
             "privacy_compliance": self.privacy_compliance,
@@ -428,9 +428,9 @@ class ProgressTracker:
     def identify_gaps(
         self,
         learner_progress: LearnerProgress,
-        required_competencies: List[str],
+        required_competencies: list[str],
         recommendations: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Identify knowledge gaps between current skills and requirements.
 
@@ -442,14 +442,14 @@ class ProgressTracker:
         Returns:
             Gap analysis with optional recommendations
         """
-        gaps_out: List[Dict[str, Any]] = []
-        gap_summary_out: Dict[str, int] = {
+        gaps_out: list[dict[str, Any]] = []
+        gap_summary_out: dict[str, int] = {
             "total_required": len(required_competencies),
             "met": 0,
             "partially_met": 0,
             "not_met": 0,
         }
-        gaps: Dict[str, Any] = {
+        gaps: dict[str, Any] = {
             "learner_id": learner_progress.learner_id,
             "gaps": gaps_out,
             "gap_summary": gap_summary_out,
@@ -500,7 +500,7 @@ class ProgressTracker:
 
         # Generate recommendations
         if recommendations:
-            recs_out: List[Dict[str, Any]] = []
+            recs_out: list[dict[str, Any]] = []
             gaps["recommendations"] = recs_out
             for gap in gaps_out:
                 recs_out.append(
@@ -521,11 +521,11 @@ class ProgressTracker:
 
     def generate_analytics(
         self,
-        cohort: List[str],
-        metrics: List[str],
+        cohort: list[str],
+        metrics: list[str],
         aggregation: str = "weekly",
         visualization: str = "dashboard",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate learning analytics for a cohort.
 
@@ -538,8 +538,8 @@ class ProgressTracker:
         Returns:
             Analytics dashboard data
         """
-        metrics_out: Dict[str, Any] = {}
-        analytics: Dict[str, Any] = {
+        metrics_out: dict[str, Any] = {}
+        analytics: dict[str, Any] = {
             "cohort_size": len(cohort),
             "aggregation": aggregation,
             "metrics": metrics_out,
@@ -594,10 +594,10 @@ class ProgressTracker:
 
     def identify_at_risk(
         self,
-        cohort: List[str],
-        risk_indicators: List[str],
+        cohort: list[str],
+        risk_indicators: list[str],
         intervention_recommendations: bool = True,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Identify learners at risk of failure.
 
@@ -609,14 +609,14 @@ class ProgressTracker:
         Returns:
             List of at-risk learners with risk factors
         """
-        at_risk: List[Dict[str, Any]] = []
+        at_risk: list[dict[str, Any]] = []
 
         for learner_id in cohort:
             if learner_id not in self._learner_data:
                 continue
 
             progress = self._learner_data[learner_id]
-            risk_factors: List[str] = []
+            risk_factors: list[str] = []
             risk_score = 0
 
             for indicator in risk_indicators:
@@ -644,7 +644,7 @@ class ProgressTracker:
                         risk_score += 35
 
             if risk_factors:
-                at_risk_entry: Dict[str, Any] = {
+                at_risk_entry: dict[str, Any] = {
                     "learner_id": learner_id,
                     "risk_score": min(100, risk_score),
                     "risk_factors": risk_factors,
@@ -664,11 +664,11 @@ class ProgressTracker:
         logger.info(f"Identified {len(at_risk)} at-risk learners")
         return at_risk
 
-    def _recommend_interventions(self, risk_factors: List[str]) -> List[Dict[str, Any]]:
+    def _recommend_interventions(self, risk_factors: list[str]) -> list[dict[str, Any]]:
         """Generate intervention recommendations for risk factors."""
-        interventions: List[Dict[str, Any]] = []
+        interventions: list[dict[str, Any]] = []
 
-        intervention_map: Dict[str, Dict[str, str]] = {
+        intervention_map: dict[str, dict[str, str]] = {
             "low_engagement": {
                 "type": "outreach",
                 "action": "Schedule one-on-one meeting to discuss challenges",

@@ -49,7 +49,7 @@ class REQOrchestrator:
         try:
             import yaml
 
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 return yaml.safe_load(f)
         except FileNotFoundError:
             self.logger.warning(f"Config file not found: {config_path}, using defaults")
@@ -175,30 +175,30 @@ class REQOrchestrator:
     def _display_summary(self, results, execution_time):
         """Display results summary."""
         print("\n" + "=" * 70)
-        print(f"🎯 REQ MODULE ORCHESTRATOR RESULTS (Thin)")
+        print("🎯 REQ MODULE ORCHESTRATOR RESULTS (Thin)")
         print("=" * 70)
 
-        print(f"\n📊 Operations Orchestrated:")
+        print("\n📊 Operations Orchestrated:")
         for op_name, op_data in results["operations"].items():
             print(f"  ✅ {op_name}: orchestrated")
 
-        print(f"\n⚡ Performance:")
+        print("\n⚡ Performance:")
         print(f"  ├─ Execution Time: {execution_time:.2f} seconds")
-        print(f"  ├─ Module: GEO-INFER-REQ")
-        print(f"  ├─ Orchestrator Type: Thin (orchestration patterns)")
+        print("  ├─ Module: GEO-INFER-REQ")
+        print("  ├─ Orchestrator Type: Thin (orchestration patterns)")
         print(f"  └─ Status: {results['execution_metadata']['status']}")
 
-        print(f"\n💡 Orchestration Patterns Demonstrated:")
-        print(f"  ├─ Module Initialization Pattern")
-        print(f"  ├─ Core Operations Pattern")
-        print(f"  ├─ Dependency Integration Pattern")
-        print(f"  ├─ Error Handling Pattern")
-        print(f"  └─ Complete Workflow Pattern")
+        print("\n💡 Orchestration Patterns Demonstrated:")
+        print("  ├─ Module Initialization Pattern")
+        print("  ├─ Core Operations Pattern")
+        print("  ├─ Dependency Integration Pattern")
+        print("  ├─ Error Handling Pattern")
+        print("  └─ Complete Workflow Pattern")
 
         if self.dependencies:
             print(f"\n🔗 Dependencies: {', '.join(self.dependencies)}")
 
-        print(f"\n✨ REQ thin orchestrator demonstration complete!")
+        print("\n✨ REQ thin orchestrator demonstration complete!")
         print("📝 Note: This is a thin orchestrator focusing on orchestration patterns")
         print("🚀 For detailed implementations, see module-specific examples")
         print("=" * 70)
@@ -219,8 +219,8 @@ class REQOrchestrator:
 
 def main():
     """Main function."""
-    print(f"🌟 GEO-INFER-REQ Module Orchestrator (Thin)")
-    print(f"Demonstrating: Requirements")
+    print("🌟 GEO-INFER-REQ Module Orchestrator (Thin)")
+    print("Demonstrating: Requirements")
     print("Orchestrator Type: Thin (focuses on orchestration patterns)")
 
     try:

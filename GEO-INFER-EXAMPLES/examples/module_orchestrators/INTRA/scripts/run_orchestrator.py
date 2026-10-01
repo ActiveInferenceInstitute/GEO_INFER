@@ -15,7 +15,7 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 _ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
 if str(_ORCHESTRATORS_DIR) not in sys.path:
@@ -24,13 +24,13 @@ if str(_ORCHESTRATORS_DIR) not in sys.path:
 from _lib import run_module_orchestrator  # noqa: E402
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     from geo_infer_intra import MODULE_PROFILES, generate_module_preview_suite
 
     target_modules = ["SPACE", "CIV", "ORG", "INTRA"]
     output_dir = Path(tempfile.mkdtemp(prefix="geo-infer-intra-previews-"))
     try:
-        bundles: Dict[str, Dict[str, Any]] = {}
+        bundles: dict[str, dict[str, Any]] = {}
         for module_id in target_modules:
             artifacts = generate_module_preview_suite(module_id, output_dir)
 
@@ -41,7 +41,7 @@ def _operation() -> Dict[str, Any]:
                 artifacts.png_path: artifacts.png_bytes,
                 artifacts.manifest_path: 0,  # existence only; size varies
             }
-            sizes: Dict[str, int] = {}
+            sizes: dict[str, int] = {}
             for path in expected:
                 if not path.is_file():
                     raise RuntimeError(f"missing preview artifact: {path.name}")

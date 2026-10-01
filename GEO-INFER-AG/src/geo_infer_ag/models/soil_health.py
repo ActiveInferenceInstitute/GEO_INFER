@@ -3,7 +3,7 @@ Soil health modeling and assessment functionality.
 """
 
 import io
-from typing import Dict, List, Optional, Any
+from typing import Any
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
@@ -31,9 +31,9 @@ class SoilHealthModel(AgricultureModel):
 
     def __init__(
         self,
-        soil_indicators: Optional[List[str]] = None,
+        soil_indicators: list[str] | None = None,
         model_type: str = "index_based",
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ):
         """
         Initialize the soil health model.
@@ -61,7 +61,7 @@ class SoilHealthModel(AgricultureModel):
             self.soil_indicators = soil_indicators
 
         self.model_type = model_type
-        self.predictors: Dict[str, Dict[str, Any]] = {}
+        self.predictors: dict[str, dict[str, Any]] = {}
         self.fitted = False
 
         # Define required inputs based on model type
@@ -109,9 +109,9 @@ class SoilHealthModel(AgricultureModel):
 
     def fit(
         self,
-        training_data: Dict[str, Any],
-        target_columns: Optional[Dict[str, str]] = None,
-        feature_columns: Optional[List[str]] = None,
+        training_data: dict[str, Any],
+        target_columns: dict[str, str] | None = None,
+        feature_columns: list[str] | None = None,
     ) -> None:
         """
         Train the soil health prediction model using historical data.
@@ -185,7 +185,7 @@ class SoilHealthModel(AgricultureModel):
 
         self.fitted = True
 
-    def predict(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def predict(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Predict soil health indicators using the model.
 
@@ -331,8 +331,8 @@ class SoilHealthModel(AgricultureModel):
                     soil_health_index += indicator_scores[indicator] * weight
 
             # Add predictions to results
-            spatial_results: Dict[str, Any] = {"soil_health_index": soil_health_index}
-            result: Dict[str, Any] = {
+            spatial_results: dict[str, Any] = {"soil_health_index": soil_health_index}
+            result: dict[str, Any] = {
                 "soil_health_index": soil_health_index,
                 "indicator_scores": indicator_scores,
                 "spatial_results": spatial_results,
@@ -403,7 +403,7 @@ class SoilHealthModel(AgricultureModel):
                 soil_health_index = soil_health_index * (1.0 / weight_sum)
 
             # Add predictions to results
-            ml_spatial: Dict[str, Any] = {"soil_health_index": soil_health_index}
+            ml_spatial: dict[str, Any] = {"soil_health_index": soil_health_index}
             result = {
                 "soil_health_index": soil_health_index,
                 "indicator_predictions": indicator_predictions,
@@ -522,7 +522,7 @@ class SoilHealthModel(AgricultureModel):
                 soil_health_index /= total_w
 
             # Add predictions to results
-            pb_spatial: Dict[str, Any] = {"soil_health_index": soil_health_index}
+            pb_spatial: dict[str, Any] = {"soil_health_index": soil_health_index}
             result = {
                 "soil_health_index": soil_health_index,
                 "indicator_scores": indicator_scores,
@@ -548,7 +548,7 @@ class SoilHealthModel(AgricultureModel):
 
         return result
 
-    def get_limiting_factors(self, result: Dict[str, Any]) -> Dict[str, List[str]]:
+    def get_limiting_factors(self, result: dict[str, Any]) -> dict[str, list[str]]:
         """
         Identify limiting soil health factors for each field.
 

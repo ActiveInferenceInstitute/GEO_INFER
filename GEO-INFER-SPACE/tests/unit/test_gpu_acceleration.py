@@ -6,7 +6,6 @@ hardware correctness. Actual detected GPUs are compared with the CPU reference.
 
 from __future__ import annotations
 
-from typing import List
 
 import numpy as np
 import pytest
@@ -29,14 +28,14 @@ from geo_infer_space.backends.gpu.gpu_acceleration import (
 from geo_infer_space.backends.gpu import gpu_acceleration as gpu_mod
 
 
-def _make_cells(resolution: int = 9, n: int = 10) -> List[str]:
+def _make_cells(resolution: int = 9, n: int = 10) -> list[str]:
     return [
         h3.latlng_to_cell(37.0 + i * 0.01, -122.0 + i * 0.01, resolution)
         for i in range(n)
     ]
 
 
-def _make_parents(resolution: int = 7, n: int = 5) -> List[str]:
+def _make_parents(resolution: int = 7, n: int = 5) -> list[str]:
     return [
         h3.latlng_to_cell(37.0 + i * 0.1, -122.0 + i * 0.1, resolution)
         for i in range(n)

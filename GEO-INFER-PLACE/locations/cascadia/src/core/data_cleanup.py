@@ -13,7 +13,6 @@ import shutil
 import json
 import logging
 from pathlib import Path
-from typing import Optional
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -269,7 +268,7 @@ class DataCleanupManager:
 
         logger.info(f"✅ Updated data manager configuration: {config_path}")
 
-    def _extract_timestamp(self, filename: str) -> Optional[str]:
+    def _extract_timestamp(self, filename: str) -> str | None:
         """Extract timestamp from filename."""
         import re
 

@@ -6,7 +6,7 @@ point pattern analysis, and clustering statistics.
 """
 
 import logging
-from typing import Dict, Any, List, Optional, TYPE_CHECKING, cast
+from typing import Any, TYPE_CHECKING, cast
 import numpy as np
 
 if TYPE_CHECKING:
@@ -23,10 +23,10 @@ class SpatialStatistics:
     indices, and pattern detection statistics.
     """
 
-    def __init__(self, backend: Optional[str] = None) -> None:
+    def __init__(self, backend: str | None = None) -> None:
         """Initialize spatial statistics with optional backend."""
         self.backend = backend
-        self._dispatcher: Optional["SpatialBackendDispatcher"] = None
+        self._dispatcher: SpatialBackendDispatcher | None = None
 
     @property
     def dispatcher(self) -> "SpatialBackendDispatcher":
@@ -38,8 +38,8 @@ class SpatialStatistics:
         return self._dispatcher
 
     def moran_i(
-        self, cells: List[str], values: List[float], weight_type: str = "queen"
-    ) -> Dict[str, Any]:
+        self, cells: list[str], values: list[float], weight_type: str = "queen"
+    ) -> dict[str, Any]:
         """
         Calculate Moran's I spatial autocorrelation coefficient.
 
@@ -161,7 +161,7 @@ class SpatialStatistics:
             "weight_type": weight_type,
         }
 
-    def _build_weight_matrix(self, cells: List[str], weight_type: str) -> np.ndarray:
+    def _build_weight_matrix(self, cells: list[str], weight_type: str) -> np.ndarray:
         """Build spatial weight matrix based on cell adjacency.
 
         Raises:
@@ -207,8 +207,8 @@ class SpatialStatistics:
         return cast(np.ndarray, weights)
 
     def getis_ord_g(
-        self, cells: List[str], values: List[float], distance: int = 1
-    ) -> Dict[str, Any]:
+        self, cells: list[str], values: list[float], distance: int = 1
+    ) -> dict[str, Any]:
         """
         Calculate Getis-Ord G* statistic for hot/cold spot analysis.
 
@@ -313,7 +313,7 @@ class SpatialStatistics:
             "global_std": float(std),
         }
 
-    def nearest_neighbor_index(self, cells: List[str]) -> Dict[str, Any]:
+    def nearest_neighbor_index(self, cells: list[str]) -> dict[str, Any]:
         """
         Calculate Nearest Neighbor Index for point pattern analysis.
 
@@ -405,7 +405,7 @@ class SpatialStatistics:
             logger.error(f"NNI calculation failed: {e}")
             return {"error": str(e)}
 
-    def calculate_summary_statistics(self, values: List[float]) -> Dict[str, Any]:
+    def calculate_summary_statistics(self, values: list[float]) -> dict[str, Any]:
         """
         Calculate comprehensive summary statistics for spatial data.
 
@@ -466,7 +466,7 @@ class SpatialStatistics:
             "iqr": float(iqr),
         }
 
-    def variance_mean_ratio(self, values: List[float]) -> Dict[str, Any]:
+    def variance_mean_ratio(self, values: list[float]) -> dict[str, Any]:
         """
         Calculate Variance-to-Mean Ratio (Index of Dispersion).
 
@@ -524,10 +524,10 @@ class SpatialStatistics:
 
     def quadrat_count(
         self,
-        cells: List[str],
-        values: Optional[List[float]] = None,
+        cells: list[str],
+        values: list[float] | None = None,
         quadrat_size: int = 2,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform quadrat count analysis.
 
@@ -557,7 +557,7 @@ class SpatialStatistics:
             backend: Any = self.dispatcher.get_backend(backend_name)
 
             # Get parent cells as quadrats
-            quadrat_counts: Dict[str, float] = {}
+            quadrat_counts: dict[str, float] = {}
 
             for cell, value in zip(cells, values):
                 try:

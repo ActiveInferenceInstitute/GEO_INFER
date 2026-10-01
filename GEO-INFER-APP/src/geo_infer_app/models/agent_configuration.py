@@ -6,7 +6,7 @@ This module includes schema definitions, validation, and UI components
 for configuring different types of agents.
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Any
 import logging
 import math
 from enum import Enum
@@ -40,13 +40,13 @@ class ConfigField:
     name: str
     field_type: ConfigFieldType
     label: str
-    description: Optional[str] = None
+    description: str | None = None
     default_value: Any = None
     required: bool = False
-    options: Optional[List[Dict[str, Any]]] = None
-    validation: Optional[Dict[str, Any]] = None
-    dependencies: Optional[List[str]] = None
-    group: Optional[str] = None
+    options: list[dict[str, Any]] | None = None
+    validation: dict[str, Any] | None = None
+    dependencies: list[str] | None = None
+    group: str | None = None
     order: int = 0
     advanced: bool = False
 
@@ -59,8 +59,8 @@ class AgentConfigSchema:
     title: str
     description: str
     version: str
-    fields: List[ConfigField] = field(default_factory=list)
-    groups: Optional[List[Dict[str, Any]]] = field(default_factory=list)
+    fields: list[ConfigField] = field(default_factory=list)
+    groups: list[dict[str, Any]] | None = field(default_factory=list)
 
 
 class AgentConfiguration:
@@ -75,7 +75,7 @@ class AgentConfiguration:
     """
 
     # Dictionary mapping agent types to configuration schemas
-    _schemas: Dict[AgentType, AgentConfigSchema] = {}
+    _schemas: dict[AgentType, AgentConfigSchema] = {}
 
     @classmethod
     def register_schema(cls, schema: AgentConfigSchema) -> None:
@@ -115,8 +115,8 @@ class AgentConfiguration:
 
     @classmethod
     def validate_config(
-        cls, agent_type: AgentType, config: Dict[str, Any]
-    ) -> List[str]:
+        cls, agent_type: AgentType, config: dict[str, Any]
+    ) -> list[str]:
         """
         Validate a configuration against the schema for the specified agent type.
 
@@ -252,7 +252,7 @@ class AgentConfiguration:
         return -90 <= lat <= 90 and -180 <= lng <= 180
 
     @classmethod
-    def get_default_config(cls, agent_type: AgentType) -> Dict[str, Any]:
+    def get_default_config(cls, agent_type: AgentType) -> dict[str, Any]:
         """
         Get a default configuration for the specified agent type.
 

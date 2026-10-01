@@ -277,9 +277,7 @@ def test_concrete_pass_contract_allows_abstract_methods_and_except_handlers(
     assert report.errors == []
 
 
-def test_python_tool_targets_reject_ruff_target_below_python_311(
-    tmp_path, monkeypatch
-):
+def test_python_tool_targets_reject_ruff_target_below_python_311(tmp_path, monkeypatch):
     contracts = load_contracts_module()
     monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
     (tmp_path / "pyproject.toml").write_text('[tool.ruff]\ntarget-version = "py310"\n')
@@ -290,9 +288,7 @@ def test_python_tool_targets_reject_ruff_target_below_python_311(
     assert any("py310" in error for error in report.errors)
 
 
-def test_python_tool_targets_reject_retired_formatter_sections(
-    tmp_path, monkeypatch
-):
+def test_python_tool_targets_reject_retired_formatter_sections(tmp_path, monkeypatch):
     contracts = load_contracts_module()
     monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
     (tmp_path / "pyproject.toml").write_text(

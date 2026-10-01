@@ -12,7 +12,7 @@ This module provides comprehensive spatial econometric analysis tools including:
 
 import logging
 import warnings
-from typing import cast, Dict, Any, Optional
+from typing import cast, Any
 
 import numpy as np
 import geopandas as gpd
@@ -30,9 +30,9 @@ class SpatialWeightsConfig:
     """Configuration for spatial weights matrix construction."""
 
     method: str  # 'contiguity', 'distance', 'knn', 'kernel', 'adaptive'
-    parameters: Dict[str, Any]
+    parameters: dict[str, Any]
     standardization: str = "row"  # 'row', 'col', 'none'
-    threshold: Optional[float] = None  # Minimum weight threshold
+    threshold: float | None = None  # Minimum weight threshold
 
 
 @dataclass
@@ -44,14 +44,14 @@ class EconometricResults:
     t_statistics: np.ndarray
     p_values: np.ndarray
     r_squared: float
-    log_likelihood: Optional[float] = None
-    aic: Optional[float] = None
-    bic: Optional[float] = None
-    spatial_diagnostics: Optional[Dict[str, float]] = None
+    log_likelihood: float | None = None
+    aic: float | None = None
+    bic: float | None = None
+    spatial_diagnostics: dict[str, float] | None = None
     model_type: str = ""
-    residuals: Optional[np.ndarray] = None
-    fitted_values: Optional[np.ndarray] = None
-    convergence_info: Optional[Dict[str, Any]] = None
+    residuals: np.ndarray | None = None
+    fitted_values: np.ndarray | None = None
+    convergence_info: dict[str, Any] | None = None
 
 
 class SpatialEconometricsEngine(BaseEstimator, RegressorMixin):
@@ -68,7 +68,7 @@ class SpatialEconometricsEngine(BaseEstimator, RegressorMixin):
     - Cross-validation and model selection
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the Spatial Econometrics Engine.
 
@@ -81,8 +81,8 @@ class SpatialEconometricsEngine(BaseEstimator, RegressorMixin):
         """
         self.logger = logging.getLogger(__name__)
         self.config = config or {}
-        self.spatial_weights_cache: Dict[str, Any] = {}
-        self.fitted_models: Dict[str, Any] = {}
+        self.spatial_weights_cache: dict[str, Any] = {}
+        self.fitted_models: dict[str, Any] = {}
 
         # Optimization settings
         self.max_iter = self.config.get("max_iter", 1000)
@@ -91,7 +91,7 @@ class SpatialEconometricsEngine(BaseEstimator, RegressorMixin):
         self.verbose = self.config.get("verbose", 0)
 
         # Model settings
-        self.model_type: Optional[str] = None
+        self.model_type: str | None = None
         self.is_fitted = False
 
     def construct_spatial_weights(
@@ -308,7 +308,7 @@ class SpatialEconometricsEngine(BaseEstimator, RegressorMixin):
         self,
         X: np.ndarray,
         y: np.ndarray,
-        W: Optional[np.ndarray] = None,
+        W: np.ndarray | None = None,
         model_type: str = "sar",
     ) -> "SpatialEconometricsEngine":
         """
@@ -352,7 +352,7 @@ class SpatialEconometricsEngine(BaseEstimator, RegressorMixin):
 
         return self
 
-    def predict(self, X: np.ndarray, W: Optional[np.ndarray] = None) -> np.ndarray:
+    def predict(self, X: np.ndarray, W: np.ndarray | None = None) -> np.ndarray:
         """
         Make predictions using fitted spatial model (sklearn-compatible).
 
@@ -801,13 +801,13 @@ class SpatialEconometricsEngine(BaseEstimator, RegressorMixin):
         return float(lm_error)
 
     def score(
-        self, X: np.ndarray, y: np.ndarray, sample_weight: Optional[np.ndarray] = None
+        self, X: np.ndarray, y: np.ndarray, sample_weight: np.ndarray | None = None
     ) -> float:
         """Return the coefficient of determination R^2 of the prediction (sklearn-compatible)."""
         y_pred = self.predict(X)
         return float(r2_score(y, y_pred, sample_weight=sample_weight))
 
-    def get_params(self, deep: bool = True) -> Dict[str, Any]:
+    def get_params(self, deep: bool = True) -> dict[str, Any]:
         """Get parameters for this estimator (sklearn-compatible)."""
         return {
             "config": self.config,
@@ -833,8 +833,8 @@ class SpatialEconometricsEngine(BaseEstimator, RegressorMixin):
         y: np.ndarray,
         X: np.ndarray,
         coordinates: np.ndarray,
-        bandwidth: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        bandwidth: float | None = None,
+    ) -> dict[str, Any]:
         """
         Perform Geographically Weighted Regression (GWR).
 
@@ -937,7 +937,7 @@ class SpatialEconometricsEngine(BaseEstimator, RegressorMixin):
 
     def spatial_diagnostics(
         self, residuals: np.ndarray, W: np.ndarray
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Comprehensive spatial diagnostic tests.
 
@@ -1022,8 +1022,8 @@ class SpatialEconometricsEngine(BaseEstimator, RegressorMixin):
         W: np.ndarray,
         cv_folds: int = 5,
         model_type: str = "sar",
-        rng: Optional[np.random.Generator] = None,
-    ) -> Dict[str, Any]:
+        rng: np.random.Generator | None = None,
+    ) -> dict[str, Any]:
         """
         Perform cross-validation for spatial models.
 

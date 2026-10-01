@@ -185,7 +185,7 @@ from geo_infer_place.core.api_clients import CaliforniaAPIManager
 def load_api_keys(api_keys_file: str) -> dict:
     """Load API keys from JSON file."""
     try:
-        with open(api_keys_file, "r") as f:
+        with open(api_keys_file) as f:
             api_keys = json.load(f)
         logger.info(f"Loaded API keys from {api_keys_file}")
         return api_keys

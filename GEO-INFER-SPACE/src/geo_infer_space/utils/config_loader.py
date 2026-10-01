@@ -13,7 +13,7 @@ import logging
 import os
 import yaml
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any
 from dataclasses import dataclass
 
 CONFIG_DIR_ENV_VAR = "GEO_INFER_SPACE_CONFIG"
@@ -48,7 +48,7 @@ class LocationConfigLoader:
     multiple sources including YAML, JSON, and defaults.
     """
 
-    def __init__(self, config_dir: Optional[Path] = None) -> None:
+    def __init__(self, config_dir: Path | None = None) -> None:
         """
         Initialize config loader.
 
@@ -59,7 +59,7 @@ class LocationConfigLoader:
             Path(config_dir) if config_dir else self._resolve_default_config_dir()
         )
         self.default_config = self._load_default_config()
-        self.loaded_config: Dict[str, Dict[str, Any]] = {}
+        self.loaded_config: dict[str, dict[str, Any]] = {}
         logger.info(f"Config loader initialized with directory: {self.config_dir}")
 
     @staticmethod
@@ -77,7 +77,7 @@ class LocationConfigLoader:
         with importlib.resources.as_file(packaged) as config_path:
             return config_path
 
-    def load_location_config(self, location: str) -> Dict[str, Any]:
+    def load_location_config(self, location: str) -> dict[str, Any]:
         """
         Load configuration for a specific location.
 
@@ -93,14 +93,14 @@ class LocationConfigLoader:
         # Load base config
         base_config_path = self.config_dir / "base.yaml"
         if base_config_path.exists():
-            with open(base_config_path, "r") as f:
+            with open(base_config_path) as f:
                 base_config = yaml.safe_load(f)
             config = self._merge_configs(config, base_config)
 
         # Load location-specific config
         location_config_path = self.config_dir / f"{location}.yaml"
         if location_config_path.exists():
-            with open(location_config_path, "r") as f:
+            with open(location_config_path) as f:
                 location_config = yaml.safe_load(f)
             config = self._merge_configs(config, location_config)
         else:
@@ -111,7 +111,7 @@ class LocationConfigLoader:
 
         return config
 
-    def get_location_bounds(self, config: Dict[str, Any]) -> LocationBounds:
+    def get_location_bounds(self, config: dict[str, Any]) -> LocationBounds:
         """Extract location bounds from config."""
         bounds = config.get("location", {}).get("bounds", {})
         return LocationBounds(
@@ -121,7 +121,7 @@ class LocationConfigLoader:
             west=bounds.get("west", -180.0),
         )
 
-    def _load_default_config(self) -> Dict[str, Any]:
+    def _load_default_config(self) -> dict[str, Any]:
         """Load default configuration values."""
         defaults = {
             "location": {
@@ -156,7 +156,7 @@ class LocationConfigLoader:
 
         return defaults
 
-    def _merge_configs(self, base: Dict, update: Dict) -> Dict:
+    def _merge_configs(self, base: dict, update: dict) -> dict:
         """Recursively merge two configuration dictionaries."""
         for key, value in update.items():
             if isinstance(value, dict) and key in base:
@@ -165,7 +165,7 @@ class LocationConfigLoader:
                 base[key] = value
         return base
 
-    def _validate_config(self, config: Dict[str, Any]) -> None:
+    def _validate_config(self, config: dict[str, Any]) -> None:
         """Validate configuration parameters."""
         # Validate location bounds
         if "location" in config and "bounds" in config["location"]:

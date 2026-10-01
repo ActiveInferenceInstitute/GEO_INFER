@@ -38,7 +38,7 @@ _CONFIG_PATH = os.path.normpath(
 
 def _load_config() -> dict:
     """Load the real analysis_config.yaml."""
-    with open(_CONFIG_PATH, "r") as fh:
+    with open(_CONFIG_PATH) as fh:
         return yaml.safe_load(fh) or {}
 
 

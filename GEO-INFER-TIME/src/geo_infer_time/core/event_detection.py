@@ -7,7 +7,7 @@ anomalies, changepoints, and significant events in time series data.
 
 import logging
 import math
-from typing import Dict, Any
+from typing import Any
 import numpy as np
 
 from ..models.timeseries import TimeSeries
@@ -51,7 +51,7 @@ class EventDetector:
 
     def detect_anomalies(
         self, timeseries: TimeSeries, method: str = "z_score"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect anomalies in time series.
 
@@ -142,7 +142,7 @@ class EventDetector:
 
     def detect_changepoints(
         self, timeseries: TimeSeries, sensitivity: float = 0.5
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect changepoints in time series.
 

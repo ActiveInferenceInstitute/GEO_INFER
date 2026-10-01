@@ -9,7 +9,8 @@ delivery routers and pins the delivery coverage endpoint's fail-loud
 behavior on malformed service-area geometry (no fabricated zero coverage).
 """
 
-from typing import Any, Callable, Dict, List
+from typing import Any
+from collections.abc import Callable
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -30,7 +31,7 @@ class _FailingPlanner:
     def __init__(self, exc: Exception) -> None:
         self._exc = exc
 
-    def plan_route(self, **kwargs: Any) -> Dict[str, Any]:
+    def plan_route(self, **kwargs: Any) -> dict[str, Any]:
         raise self._exc
 
 
@@ -42,7 +43,7 @@ def _client(planner: Any) -> TestClient:
     return TestClient(app)
 
 
-def _route_payload() -> Dict[str, Any]:
+def _route_payload() -> dict[str, Any]:
     return {
         "origin": [13.404954, 52.520008],
         "destination": [13.36, 52.49],
@@ -109,7 +110,7 @@ class _FailingOptimizer:
     def __init__(self, exc: Exception) -> None:
         self._exc = exc
 
-    def optimize_route(self, **kwargs: Any) -> Dict[str, Any]:
+    def optimize_route(self, **kwargs: Any) -> dict[str, Any]:
         raise self._exc
 
 
@@ -119,7 +120,7 @@ class _FailingSupplyChainModel:
     def __init__(self, exc: Exception) -> None:
         self._exc = exc
 
-    def optimize_flow(self, **kwargs: Any) -> Dict[str, Any]:
+    def optimize_flow(self, **kwargs: Any) -> dict[str, Any]:
         raise self._exc
 
 
@@ -129,17 +130,17 @@ class _FailingLastMileRouter:
     def __init__(self, exc: Exception) -> None:
         self._exc = exc
 
-    def optimize_deliveries(self, **kwargs: Any) -> List[Dict[str, Any]]:
+    def optimize_deliveries(self, **kwargs: Any) -> list[dict[str, Any]]:
         raise self._exc
 
 
-_ROUTE_PAYLOAD: Dict[str, Any] = {
+_ROUTE_PAYLOAD: dict[str, Any] = {
     "origin": [13.404954, 52.520008],
     "destination": [13.36, 52.49],
     "parameters": None,
 }
 
-_FLOW_PAYLOAD: Dict[str, Any] = {
+_FLOW_PAYLOAD: dict[str, Any] = {
     "network_id": "network-001",
     "demand_points": [
         {"id": "dp-001", "location": [8.6821, 50.1109], "demand": 200, "priority": 1},
@@ -155,7 +156,7 @@ _FLOW_PAYLOAD: Dict[str, Any] = {
     "objective": "cost",
 }
 
-_DELIVERY_PAYLOAD: Dict[str, Any] = {
+_DELIVERY_PAYLOAD: dict[str, Any] = {
     "depot": {
         "name": "Berlin Warehouse",
         "coordinates": [13.404954, 52.520008],

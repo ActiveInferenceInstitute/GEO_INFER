@@ -8,15 +8,10 @@ import threading
 import time
 from typing import (
     TYPE_CHECKING,
-    Dict,
-    List,
-    Optional,
-    Tuple,
     Union,
-    Callable,
     Any,
-    Iterator,
 )
+from collections.abc import Callable, Iterator
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -76,9 +71,9 @@ class GeoArt:
 
     def __init__(
         self,
-        data: Optional[Union[gpd.GeoDataFrame, np.ndarray]] = None,
-        metadata: Optional[Dict] = None,
-        crs: Optional[str] = "EPSG:4326",
+        data: gpd.GeoDataFrame | np.ndarray | None = None,
+        metadata: dict | None = None,
+        crs: str | None = "EPSG:4326",
     ):
         """
         Initialize a GeoArt object.
@@ -91,8 +86,8 @@ class GeoArt:
         self.data = data
         self.metadata = metadata or {}
         self.crs = crs
-        self._figure: Optional[Figure] = None
-        self._ax: Optional[Axes] = None
+        self._figure: Figure | None = None
+        self._ax: Axes | None = None
 
     @classmethod
     def load_geojson(cls, file_path: str) -> "GeoArt":
@@ -159,13 +154,13 @@ class GeoArt:
     def apply_style(
         self,
         style: str = "default",
-        color_palette: Optional[Union[str, ColorPalette]] = None,
+        color_palette: str | ColorPalette | None = None,
         line_width: float = 1.0,
         alpha: float = 0.8,
         background_color: str = "white",
-        map_style: Optional[Union[str, "MapStyle"]] = None,
+        map_style: Union[str, "MapStyle"] | None = None,
         legend: bool = False,
-        title: Optional[str] = None,
+        title: str | None = None,
     ) -> "GeoArt":
         """
         Apply an artistic style to the geospatial data.
@@ -331,7 +326,7 @@ class GeoArt:
     def create_animation(
         self,
         output_path: str,
-        style_sequence: List[str],
+        style_sequence: list[str],
         duration: float = 5.0,
         fps: int = 24,
         **kwargs: Any,
@@ -364,7 +359,7 @@ class GeoArt:
             raise ValueError("fps must be a positive integer")
 
         # Create frames for each style
-        frames: List[Any] = []
+        frames: list[Any] = []
         for style in style_sequence:
             # Apply style and capture the figure
             self.apply_style(style=style, **kwargs)
@@ -505,7 +500,7 @@ class GeoArt:
         self.metadata["projection"] = projection
         return self
 
-    def add_annotations(self, annotations: List[Dict]) -> "GeoArt":
+    def add_annotations(self, annotations: list[dict]) -> "GeoArt":
         """
         Add text or graphical annotations to the visualization.
 
@@ -591,11 +586,11 @@ class GeoArt:
 
     def create_realtime_visualization(
         self,
-        data_callback: Callable[[], Union[gpd.GeoDataFrame, np.ndarray]],
+        data_callback: Callable[[], gpd.GeoDataFrame | np.ndarray],
         update_interval: float = 1.0,
         style: str = "default",
-        max_updates: Optional[int] = None,
-        output_file: Optional[str] = None,
+        max_updates: int | None = None,
+        output_file: str | None = None,
         **kwargs: Any,
     ) -> "RealtimeVisualization":
         """
@@ -634,8 +629,8 @@ class GeoArt:
 
     def create_3d_visualization(
         self,
-        elevation_data: Optional[np.ndarray] = None,
-        z_column: Optional[str] = None,
+        elevation_data: np.ndarray | None = None,
+        z_column: str | None = None,
         **kwargs: Any,
     ) -> "GeoArt3D":
         """
@@ -844,8 +839,8 @@ class GeoArt:
 
     def optimize_for_performance(
         self,
-        target_resolution: Optional[Tuple[int, int]] = None,
-        simplify_tolerance: Optional[float] = None,
+        target_resolution: tuple[int, int] | None = None,
+        simplify_tolerance: float | None = None,
         cache_data: bool = True,
     ) -> "GeoArt":
         """
@@ -899,8 +894,8 @@ class GeoArt:
         return optimized
 
     def create_multi_scale_visualization(
-        self, scales: Optional[List[str]] = None, **kwargs: Any
-    ) -> Dict[str, "GeoArt"]:
+        self, scales: list[str] | None = None, **kwargs: Any
+    ) -> dict[str, "GeoArt"]:
         """
         Create visualizations at multiple scales.
 
@@ -1037,11 +1032,11 @@ class RealtimeVisualization:
     def __init__(
         self,
         geo_art: GeoArt,
-        data_callback: Callable[[], Union[gpd.GeoDataFrame, np.ndarray]],
+        data_callback: Callable[[], gpd.GeoDataFrame | np.ndarray],
         update_interval: float = 1.0,
         style: str = "default",
-        max_updates: Optional[int] = None,
-        output_file: Optional[str] = None,
+        max_updates: int | None = None,
+        output_file: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -1065,9 +1060,9 @@ class RealtimeVisualization:
         self.kwargs = kwargs
 
         self.is_running = False
-        self.current_data: Optional[Union[gpd.GeoDataFrame, np.ndarray]] = None
+        self.current_data: gpd.GeoDataFrame | np.ndarray | None = None
         self.update_count = 0
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
         self._animation = None
 
     def start(self, use_threading: bool = True) -> None:
@@ -1142,7 +1137,7 @@ class RealtimeVisualization:
         else:
             self.geo_art.apply_style(self.style, **self.kwargs)
 
-    def save_snapshot(self, filename: Optional[str] = None) -> str:
+    def save_snapshot(self, filename: str | None = None) -> str:
         """
         Save a snapshot of the current visualization.
 
@@ -1176,8 +1171,8 @@ class GeoArt3D:
     def __init__(
         self,
         geo_art: GeoArt,
-        elevation_data: Optional[np.ndarray] = None,
-        z_column: Optional[str] = None,
+        elevation_data: np.ndarray | None = None,
+        z_column: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -1196,9 +1191,7 @@ class GeoArt3D:
 
         self.figure_3d = None
 
-    def create_3d_surface(
-        self, output_file: Optional[str] = None, **kwargs: Any
-    ) -> Any:
+    def create_3d_surface(self, output_file: str | None = None, **kwargs: Any) -> Any:
         """
         Create a 3D surface visualization.
 
@@ -1223,9 +1216,7 @@ class GeoArt3D:
         elif MAYAVI_AVAILABLE:
             return self._create_mayavi_3d_surface(output_file, **kwargs)
 
-    def _create_plotly_3d_surface(
-        self, output_file: Optional[str], **kwargs: Any
-    ) -> Any:
+    def _create_plotly_3d_surface(self, output_file: str | None, **kwargs: Any) -> Any:
         """Create 3D surface using Plotly."""
         assert self.geo_art.data is not None
         if isinstance(self.geo_art.data, gpd.GeoDataFrame):
@@ -1278,9 +1269,7 @@ class GeoArt3D:
 
         return fig
 
-    def _create_mayavi_3d_surface(
-        self, output_file: Optional[str], **kwargs: Any
-    ) -> Any:
+    def _create_mayavi_3d_surface(self, output_file: str | None, **kwargs: Any) -> Any:
         """Create 3D surface using Mayavi."""
         # Implementation for Mayavi 3D visualization
         # This would create a 3D surface plot using mayavi.mlab

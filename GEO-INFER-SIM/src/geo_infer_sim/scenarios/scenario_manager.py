@@ -6,9 +6,9 @@ capabilities for simulation experiments.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 import uuid
 import numpy as np
 
@@ -22,13 +22,13 @@ class Scenario:
     scenario_id: str
     name: str
     description: str = ""
-    parameters: Dict[str, Any] = field(default_factory=dict)
-    initial_conditions: Dict[str, Any] = field(default_factory=dict)
-    interventions: List[Dict[str, Any]] = field(default_factory=list)
+    parameters: dict[str, Any] = field(default_factory=dict)
+    initial_conditions: dict[str, Any] = field(default_factory=dict)
+    interventions: list[dict[str, Any]] = field(default_factory=list)
     created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None)
     )
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class ScenarioManager:
@@ -41,18 +41,18 @@ class ScenarioManager:
 
     def __init__(self) -> None:
         """Initialize the scenario manager."""
-        self.scenarios: Dict[str, Scenario] = {}
-        self.scenario_results: Dict[str, Dict[str, Any]] = {}
+        self.scenarios: dict[str, Scenario] = {}
+        self.scenario_results: dict[str, dict[str, Any]] = {}
 
     def create_scenario(
         self,
         name: str,
         description: str = "",
-        parameters: Optional[Dict[str, Any]] = None,
-        initial_conditions: Optional[Dict[str, Any]] = None,
-        interventions: Optional[List[Dict[str, Any]]] = None,
-        scenario_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        parameters: dict[str, Any] | None = None,
+        initial_conditions: dict[str, Any] | None = None,
+        interventions: list[dict[str, Any]] | None = None,
+        scenario_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> Scenario:
         """
         Create a new simulation scenario.
@@ -86,7 +86,7 @@ class ScenarioManager:
 
         return scenario
 
-    def get_scenario(self, scenario_id: str) -> Optional[Scenario]:
+    def get_scenario(self, scenario_id: str) -> Scenario | None:
         """
         Get a scenario by ID.
 
@@ -98,7 +98,7 @@ class ScenarioManager:
         """
         return self.scenarios.get(scenario_id)
 
-    def list_scenarios(self) -> List[Scenario]:
+    def list_scenarios(self) -> list[Scenario]:
         """
         List all scenarios.
 
@@ -110,11 +110,11 @@ class ScenarioManager:
     def update_scenario(
         self,
         scenario_id: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        parameters: Optional[Dict[str, Any]] = None,
-        initial_conditions: Optional[Dict[str, Any]] = None,
-        interventions: Optional[List[Dict[str, Any]]] = None,
+        name: str | None = None,
+        description: str | None = None,
+        parameters: dict[str, Any] | None = None,
+        initial_conditions: dict[str, Any] | None = None,
+        interventions: list[dict[str, Any]] | None = None,
     ) -> bool:
         """
         Update an existing scenario.
@@ -170,7 +170,7 @@ class ScenarioManager:
         logger.info(f"Deleted scenario: {scenario_id}")
         return True
 
-    def save_scenario_result(self, scenario_id: str, result: Dict[str, Any]) -> None:
+    def save_scenario_result(self, scenario_id: str, result: dict[str, Any]) -> None:
         """
         Save results for a scenario.
 
@@ -181,7 +181,7 @@ class ScenarioManager:
         self.scenario_results[scenario_id] = result
         logger.info(f"Saved results for scenario: {scenario_id}")
 
-    def get_scenario_result(self, scenario_id: str) -> Optional[Dict[str, Any]]:
+    def get_scenario_result(self, scenario_id: str) -> dict[str, Any] | None:
         """
         Get results for a scenario.
 
@@ -194,8 +194,8 @@ class ScenarioManager:
         return self.scenario_results.get(scenario_id)
 
     def compare_scenarios(
-        self, scenario_ids: List[str], metrics: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        self, scenario_ids: list[str], metrics: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         Compare multiple scenarios.
 
@@ -206,7 +206,7 @@ class ScenarioManager:
         Returns:
             Comparison results dictionary
         """
-        comparison: Dict[str, Any] = {
+        comparison: dict[str, Any] = {
             "scenarios": [],
             "metrics": {},
             "summary": {},
@@ -219,7 +219,7 @@ class ScenarioManager:
             scenario = self.scenarios[scenario_id]
             result = self.scenario_results.get(scenario_id, {})
 
-            scenarios_list: List[Dict[str, Any]] = comparison["scenarios"]
+            scenarios_list: list[dict[str, Any]] = comparison["scenarios"]
             scenarios_list.append(
                 {
                     "scenario_id": scenario_id,
@@ -232,7 +232,7 @@ class ScenarioManager:
             # Extract metrics if results available
             if result and metrics:
                 for metric in metrics:
-                    metrics_dict: Dict[str, List[Dict[str, Any]]] = comparison[
+                    metrics_dict: dict[str, list[dict[str, Any]]] = comparison[
                         "metrics"
                     ]
                     if metric not in metrics_dict:
@@ -248,7 +248,7 @@ class ScenarioManager:
 
         # Calculate summary statistics
         if comparison["metrics"]:
-            summary: Dict[str, Dict[str, Any]] = comparison["summary"]
+            summary: dict[str, dict[str, Any]] = comparison["summary"]
             for metric_name, metric_values in comparison["metrics"].items():
                 values = [m["value"] for m in metric_values if m["value"] is not None]
                 if values:
@@ -264,10 +264,10 @@ class ScenarioManager:
 
     def run_scenarios(
         self,
-        scenario_ids: List[str],
+        scenario_ids: list[str],
         simulation_func: Any,
         parallel: bool = False,
-    ) -> Dict[str, Dict[str, Any]]:
+    ) -> dict[str, dict[str, Any]]:
         """
         Run multiple scenarios using a simulation function.
 
@@ -320,9 +320,7 @@ class ScenarioManager:
 
         return results
 
-    def analyze_results(
-        self, scenario_ids: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+    def analyze_results(self, scenario_ids: list[str] | None = None) -> dict[str, Any]:
         """
         Analyze results across scenarios.
 
@@ -335,7 +333,7 @@ class ScenarioManager:
         if scenario_ids is None:
             scenario_ids = list(self.scenario_results.keys())
 
-        analysis: Dict[str, Any] = {
+        analysis: dict[str, Any] = {
             "scenarios_analyzed": len(scenario_ids),
             "successful_runs": 0,
             "failed_runs": 0,
@@ -366,7 +364,7 @@ class ScenarioManager:
                     metric_scenarios.append(scenario_id)
 
             if metric_values:
-                metrics_summary: Dict[str, Dict[str, Any]] = analysis["metrics_summary"]
+                metrics_summary: dict[str, dict[str, Any]] = analysis["metrics_summary"]
                 metrics_summary[metric_name] = {
                     "mean": float(np.mean(metric_values)),
                     "std": float(np.std(metric_values)),
@@ -380,7 +378,7 @@ class ScenarioManager:
                 if best_idx is not None:
                     best_scenario_id = metric_scenarios[best_idx]
                     best_scenario = self.scenarios.get(best_scenario_id)
-                    best_scenarios: Dict[str, Dict[str, Any]] = analysis[
+                    best_scenarios: dict[str, dict[str, Any]] = analysis[
                         "best_scenarios"
                     ]
                     best_scenarios[metric_name] = {

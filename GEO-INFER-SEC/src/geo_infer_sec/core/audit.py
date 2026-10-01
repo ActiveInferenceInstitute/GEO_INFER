@@ -7,16 +7,16 @@ access attempts, data operations, and compliance tracking.
 
 import logging
 import json
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timezone
+from typing import Any
+from datetime import datetime, UTC
 from dataclasses import dataclass, field, asdict
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 
-class AuditEventType(str, Enum):
+class AuditEventType(StrEnum):
     """Types of audit events."""
 
     AUTHENTICATION = "authentication"
@@ -29,7 +29,7 @@ class AuditEventType(str, Enum):
     SYSTEM_EVENT = "system_event"
 
 
-class AuditEventSeverity(str, Enum):
+class AuditEventSeverity(StrEnum):
     """Severity levels for audit events."""
 
     LOW = "low"
@@ -45,18 +45,18 @@ class AuditEvent:
     event_id: str
     event_type: AuditEventType
     timestamp: datetime
-    user_id: Optional[str] = None
-    username: Optional[str] = None
-    resource: Optional[str] = None
-    action: Optional[str] = None
+    user_id: str | None = None
+    username: str | None = None
+    resource: str | None = None
+    action: str | None = None
     result: str = "success"  # success, failure, denied
     severity: AuditEventSeverity = AuditEventSeverity.MEDIUM
-    ip_address: Optional[str] = None
-    user_agent: Optional[str] = None
-    details: Dict[str, Any] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    ip_address: str | None = None
+    user_agent: str | None = None
+    details: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert audit event to dictionary."""
         data = asdict(self)
         data["timestamp"] = self.timestamp.isoformat()
@@ -79,7 +79,7 @@ class AuditLogger:
 
     def __init__(
         self,
-        log_file: Optional[Path] = None,
+        log_file: Path | None = None,
         enable_console: bool = True,
         enable_file: bool = True,
         retention_days: int = 90,
@@ -103,21 +103,21 @@ class AuditLogger:
             self.log_file.parent.mkdir(parents=True, exist_ok=True)
 
         # Event storage (in production, use a database)
-        self.events: List[AuditEvent] = []
+        self.events: list[AuditEvent] = []
 
     def log_event(
         self,
         event_type: AuditEventType,
-        user_id: Optional[str] = None,
-        username: Optional[str] = None,
-        resource: Optional[str] = None,
-        action: Optional[str] = None,
+        user_id: str | None = None,
+        username: str | None = None,
+        resource: str | None = None,
+        action: str | None = None,
         result: str = "success",
         severity: AuditEventSeverity = AuditEventSeverity.MEDIUM,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        details: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> AuditEvent:
         """
         Log an audit event.
@@ -143,7 +143,7 @@ class AuditLogger:
         event = AuditEvent(
             event_id=str(uuid.uuid4()),
             event_type=event_type,
-            timestamp=datetime.now(timezone.utc).replace(tzinfo=None),
+            timestamp=datetime.now(UTC).replace(tzinfo=None),
             user_id=user_id,
             username=username,
             resource=resource,
@@ -191,11 +191,11 @@ class AuditLogger:
     def log_authentication(
         self,
         username: str,
-        user_id: Optional[str] = None,
+        user_id: str | None = None,
         result: str = "success",
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        details: dict[str, Any] | None = None,
     ) -> AuditEvent:
         """
         Log an authentication event.
@@ -232,12 +232,12 @@ class AuditLogger:
     def log_authorization(
         self,
         user_id: str,
-        username: Optional[str] = None,
+        username: str | None = None,
         resource: str = "",
         action: str = "",
         result: str = "success",
-        ip_address: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
+        ip_address: str | None = None,
+        details: dict[str, Any] | None = None,
     ) -> AuditEvent:
         """
         Log an authorization event.
@@ -273,12 +273,12 @@ class AuditLogger:
     def log_data_access(
         self,
         user_id: str,
-        username: Optional[str] = None,
+        username: str | None = None,
         resource: str = "",
         action: str = "read",
         result: str = "success",
-        ip_address: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
+        ip_address: str | None = None,
+        details: dict[str, Any] | None = None,
     ) -> AuditEvent:
         """
         Log a data access event.
@@ -315,13 +315,13 @@ class AuditLogger:
 
     def get_events(
         self,
-        event_type: Optional[AuditEventType] = None,
-        user_id: Optional[str] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        severity: Optional[AuditEventSeverity] = None,
+        event_type: AuditEventType | None = None,
+        user_id: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        severity: AuditEventSeverity | None = None,
         limit: int = 1000,
-    ) -> List[AuditEvent]:
+    ) -> list[AuditEvent]:
         """
         Retrieve audit events with filtering.
 
@@ -362,7 +362,7 @@ class AuditLogger:
         start_time: datetime,
         end_time: datetime,
         report_type: str = "summary",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate a compliance report from audit logs.
 
@@ -377,19 +377,19 @@ class AuditLogger:
         events = self.get_events(start_time=start_time, end_time=end_time)
 
         # Count events by type
-        event_counts: Dict[str, int] = {}
+        event_counts: dict[str, int] = {}
         for event in events:
             event_type = event.event_type.value
             event_counts[event_type] = event_counts.get(event_type, 0) + 1
 
         # Count events by result
-        result_counts: Dict[str, int] = {}
+        result_counts: dict[str, int] = {}
         for event in events:
             result = event.result
             result_counts[result] = result_counts.get(result, 0) + 1
 
         # Count events by severity
-        severity_counts: Dict[str, int] = {}
+        severity_counts: dict[str, int] = {}
         for event in events:
             severity = event.severity.value
             severity_counts[severity] = severity_counts.get(severity, 0) + 1
@@ -408,7 +408,7 @@ class AuditLogger:
             "result_counts": result_counts,
             "severity_counts": severity_counts,
             "critical_events_count": len(critical_events),
-            "generated_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
+            "generated_at": datetime.now(UTC).replace(tzinfo=None).isoformat(),
         }
 
         if report_type == "detailed":

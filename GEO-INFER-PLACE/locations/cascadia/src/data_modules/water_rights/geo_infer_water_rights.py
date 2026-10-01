@@ -6,9 +6,8 @@ and integrating real data from multiple state-level sources.
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 from pathlib import Path
-import numpy as np
 import geopandas as gpd
 from shapely.geometry import Polygon
 import pandas as pd
@@ -64,7 +63,7 @@ class GeoInferWaterRights:
                 return name
         return None
 
-    def run_analysis(self, target_hexagons: List[str]) -> Dict[str, Dict[str, Any]]:
+    def run_analysis(self, target_hexagons: list[str]) -> dict[str, dict[str, Any]]:
         """
         Spatially joins real water rights data with H3 hexagons and aggregates metrics.
         This is the main entry point for the module.

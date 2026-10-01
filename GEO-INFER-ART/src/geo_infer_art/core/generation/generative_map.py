@@ -5,7 +5,7 @@ GenerativeMap module for creating generative art from geospatial data.
 import hashlib
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,8 +33,8 @@ class GenerativeMap:
 
     def __init__(
         self,
-        data: Optional[np.ndarray] = None,
-        metadata: Optional[Dict] = None,
+        data: np.ndarray | None = None,
+        metadata: dict | None = None,
     ):
         """
         Initialize a GenerativeMap object.
@@ -45,15 +45,15 @@ class GenerativeMap:
         """
         self.data = data
         self.metadata = metadata or {}
-        self.image: Optional[Image.Image] = None
-        self._figure: Optional[Figure] = None
-        self._ax: Optional[Axes] = None
-        self._output_resolution: Optional[int] = None
+        self.image: Image.Image | None = None
+        self._figure: Figure | None = None
+        self._ax: Axes | None = None
+        self._output_resolution: int | None = None
 
     @classmethod
     def from_elevation(
         cls,
-        region: Union[str, np.ndarray, Tuple[float, float, float, float]],
+        region: str | np.ndarray | tuple[float, float, float, float],
         resolution: int = 512,
         abstraction_level: float = 0.5,
         style: str = "contour",
@@ -204,7 +204,7 @@ class GenerativeMap:
 
     @staticmethod
     def _generate_bbox_terrain(
-        bbox: Tuple[float, float, float, float], resolution: int = 512
+        bbox: tuple[float, float, float, float], resolution: int = 512
     ) -> np.ndarray:
         """
         Generate a procedural terrain field for a bounding box.
@@ -631,7 +631,7 @@ class GenerativeMap:
         self,
         output_path: str,
         parameter_sweep: str,
-        values: List[Union[float, str]],
+        values: list[float | str],
         duration: float = 5.0,
         fps: int = 24,
     ) -> str:
@@ -667,7 +667,7 @@ class GenerativeMap:
             raise ValueError("fps must be a positive integer")
 
         # Create frames for each parameter value
-        frames: List[Any] = []
+        frames: list[Any] = []
         for value in values:
             if parameter_sweep == "abstraction_level":
                 abstraction = float(value)
@@ -843,7 +843,7 @@ class GenerativeMap:
 
         return blended_map
 
-    def add_effects(self, effects: List[str], **kwargs: Any) -> "GenerativeMap":
+    def add_effects(self, effects: list[str], **kwargs: Any) -> "GenerativeMap":
         """
         Apply visual effects to the generated map.
 
@@ -908,8 +908,8 @@ class GenerativeMap:
         return self
 
     def export_multi_format(
-        self, base_path: str, formats: Optional[List[str]] = None
-    ) -> List[str]:
+        self, base_path: str, formats: list[str] | None = None
+    ) -> list[str]:
         """
         Export the map in multiple formats.
 
@@ -923,7 +923,7 @@ class GenerativeMap:
         if formats is None:
             formats = ["png", "jpg", "svg"]
 
-        exported_paths: List[str] = []
+        exported_paths: list[str] = []
 
         for fmt in formats:
             if fmt.lower() == "svg":

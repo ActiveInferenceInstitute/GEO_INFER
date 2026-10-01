@@ -16,8 +16,9 @@ import asyncio
 from abc import ABC, abstractmethod
 import json
 import math
-from datetime import datetime, timezone
-from typing import Any, AsyncIterator, Iterable
+from datetime import datetime, UTC
+from typing import Any
+from collections.abc import AsyncIterator, Iterable
 from urllib.parse import urlsplit
 
 
@@ -28,8 +29,8 @@ def normalize_timestamp(value: datetime) -> datetime:
     if value != value:  # Reject pandas NaT, a datetime subclass.
         raise ValueError("timestamp must not be NaT")
     if value.utcoffset() is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 def _integer(value: Any, name: str, minimum: int = 0) -> int:
@@ -125,7 +126,7 @@ class StreamIngestAdapter(ABC):
             if not math.isfinite(raw_ts):
                 raise ValueError("timestamp must be finite")
             timestamp = datetime.fromtimestamp(
-                raw_ts / 1000 if abs(raw_ts) > 1e11 else raw_ts, tz=timezone.utc
+                raw_ts / 1000 if abs(raw_ts) > 1e11 else raw_ts, tz=UTC
             )
         elif isinstance(raw_ts, str):
             timestamp = datetime.fromisoformat(raw_ts)
@@ -444,7 +445,7 @@ class KafkaIngestAdapter(_NetworkAdapter):
                     ):
                         # Kafka timestamps are always milliseconds, including epoch zero.
                         record["timestamp"] = datetime.fromtimestamp(
-                            broker_time / 1000, tz=timezone.utc
+                            broker_time / 1000, tz=UTC
                         )
                 record.setdefault("topic", message.topic)
                 record = self.normalize_record(record)

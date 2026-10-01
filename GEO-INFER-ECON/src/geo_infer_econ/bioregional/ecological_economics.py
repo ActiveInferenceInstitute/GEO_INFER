@@ -7,7 +7,7 @@ systems and ecological systems.
 """
 
 import numpy as np
-from typing import cast, Dict, List, Optional, Any
+from typing import cast, Any
 from dataclasses import dataclass, field
 import logging
 
@@ -26,12 +26,12 @@ class EcologicalEconomicsConfig:
     currency: str = "USD"
 
     # Ecological parameters
-    ecosystem_services: List[str] = field(
+    ecosystem_services: list[str] = field(
         default_factory=lambda: ["provisioning", "regulating", "cultural", "supporting"]
     )
 
     # Valuation parameters
-    valuation_methods: List[str] = field(
+    valuation_methods: list[str] = field(
         default_factory=lambda: [
             "market_price",
             "replacement_cost",
@@ -57,8 +57,8 @@ class BiophysicalEquilibriumModels:
 
     def __init__(
         self,
-        config: Optional[EcologicalEconomicsConfig] = None,
-        rng: Optional[np.random.Generator] = None,
+        config: EcologicalEconomicsConfig | None = None,
+        rng: np.random.Generator | None = None,
     ):
         """
         Initialize biophysical equilibrium models.
@@ -70,7 +70,7 @@ class BiophysicalEquilibriumModels:
                 deterministic by default.
         """
         self.config = config or EcologicalEconomicsConfig()
-        self.models: Dict[str, Any] = {}
+        self.models: dict[str, Any] = {}
         self._rng = resolve_rng(rng)
         self._initialize_models()
 
@@ -85,8 +85,8 @@ class BiophysicalEquilibriumModels:
         logger.info("Initialized biophysical equilibrium models")
 
     def analyze_equilibrium(
-        self, model_type: str, parameters: Dict[str, Any], time_steps: int = 100
-    ) -> Dict[str, Any]:
+        self, model_type: str, parameters: dict[str, Any], time_steps: int = 100
+    ) -> dict[str, Any]:
         """
         Analyze equilibrium for a specific model type.
 
@@ -102,11 +102,11 @@ class BiophysicalEquilibriumModels:
             raise ValueError(f"Unknown model type: {model_type}")
 
         model_func = self.models[model_type]
-        return cast(Dict[str, Any], model_func(parameters, time_steps))
+        return cast(dict[str, Any], model_func(parameters, time_steps))
 
     def _lotka_volterra_model(
-        self, parameters: Dict[str, Any], time_steps: int
-    ) -> Dict[str, Any]:
+        self, parameters: dict[str, Any], time_steps: int
+    ) -> dict[str, Any]:
         """Lotka-Volterra predator-prey model."""
         # Extract parameters
         r = parameters.get("growth_rate", 0.5)
@@ -152,8 +152,8 @@ class BiophysicalEquilibriumModels:
         }
 
     def _predator_prey_model(
-        self, parameters: Dict[str, Any], time_steps: int
-    ) -> Dict[str, Any]:
+        self, parameters: dict[str, Any], time_steps: int
+    ) -> dict[str, Any]:
         """Enhanced predator-prey model with carrying capacity."""
         # Extract parameters
         r = parameters.get("growth_rate", 0.5)
@@ -200,8 +200,8 @@ class BiophysicalEquilibriumModels:
         }
 
     def _resource_competition_model(
-        self, parameters: Dict[str, Any], time_steps: int
-    ) -> Dict[str, Any]:
+        self, parameters: dict[str, Any], time_steps: int
+    ) -> dict[str, Any]:
         """Resource competition model for multiple species."""
         # Extract parameters
         n_species = parameters.get("n_species", 2)
@@ -257,8 +257,8 @@ class BiophysicalEquilibriumModels:
         }
 
     def _ecosystem_services_model(
-        self, parameters: Dict[str, Any], time_steps: int
-    ) -> Dict[str, Any]:
+        self, parameters: dict[str, Any], time_steps: int
+    ) -> dict[str, Any]:
         """Advanced ecosystem services valuation model with spatial dynamics."""
         # Extract parameters
         service_types = parameters.get(
@@ -334,8 +334,8 @@ class BiophysicalEquilibriumModels:
 
     def _check_equilibrium(
         self,
-        population1: List[float],
-        population2: List[float],
+        population1: list[float],
+        population2: list[float],
         tolerance: float = 0.01,
     ) -> bool:
         """Check if populations have reached equilibrium."""
@@ -359,7 +359,7 @@ class BiophysicalEquilibriumModels:
         return bool(cv1 < tolerance and cv2 < tolerance)
 
     def _check_equilibrium_multi(
-        self, population_history: List[List[float]], tolerance: float = 0.01
+        self, population_history: list[list[float]], tolerance: float = 0.01
     ) -> bool:
         """Check if multiple populations have reached equilibrium."""
         if len(population_history) < 10:
@@ -382,7 +382,7 @@ class BiophysicalEquilibriumModels:
         return True
 
     def calculate_ecosystem_value(
-        self, service_values: List[float], valuation_method: str = "market_price"
+        self, service_values: list[float], valuation_method: str = "market_price"
     ) -> float:
         """
         Calculate total ecosystem value.
@@ -425,10 +425,10 @@ class ThermoeconomicModels:
     transformations across ecological-economic systems.
     """
 
-    def __init__(self, config: Optional[EcologicalEconomicsConfig] = None):
+    def __init__(self, config: EcologicalEconomicsConfig | None = None):
         self.config = config or EcologicalEconomicsConfig()
         # Solar emjoules per joule for common energy forms
-        self._transformities: Dict[str, float] = {
+        self._transformities: dict[str, float] = {
             "sunlight": 1.0,
             "wind": 1_496.0,
             "rain_chemical": 18_199.0,
@@ -439,7 +439,7 @@ class ThermoeconomicModels:
         }
         logger.info("ThermoeconomicModels initialized")
 
-    def emergy_analysis(self, flows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def emergy_analysis(self, flows: list[dict[str, Any]]) -> dict[str, Any]:
         """Compute total emergy (solar emjoules) for a set of energy flows.
 
         Args:
@@ -489,7 +489,7 @@ class ThermoeconomicModels:
         energy_input: float,
         useful_work: float,
         waste_heat: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Compute exergy (second-law) efficiency.
 
         Args:
@@ -530,7 +530,7 @@ class EcologicalFootprintAnalysis:
     ]
 
     # Default global-average yield factors (gha / ha)
-    _DEFAULT_YIELD_FACTORS: Dict[str, float] = {
+    _DEFAULT_YIELD_FACTORS: dict[str, float] = {
         "cropland": 2.51,
         "grazing": 0.46,
         "forest": 1.26,
@@ -540,7 +540,7 @@ class EcologicalFootprintAnalysis:
     }
 
     # Equivalence factors (global hectares per bioproductive hectare)
-    _DEFAULT_EQ_FACTORS: Dict[str, float] = {
+    _DEFAULT_EQ_FACTORS: dict[str, float] = {
         "cropland": 2.51,
         "grazing": 0.46,
         "forest": 1.26,
@@ -549,17 +549,17 @@ class EcologicalFootprintAnalysis:
         "carbon": 1.26,
     }
 
-    def __init__(self, config: Optional[EcologicalEconomicsConfig] = None):
+    def __init__(self, config: EcologicalEconomicsConfig | None = None):
         self.config = config or EcologicalEconomicsConfig()
         logger.info("EcologicalFootprintAnalysis initialized")
 
     def compute_footprint(
         self,
-        consumption: Dict[str, float],
+        consumption: dict[str, float],
         population: float = 1.0,
-        yield_factors: Optional[Dict[str, float]] = None,
-        equivalence_factors: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, Any]:
+        yield_factors: dict[str, float] | None = None,
+        equivalence_factors: dict[str, float] | None = None,
+    ) -> dict[str, Any]:
         """Compute ecological footprint in global hectares.
 
         Args:
@@ -574,7 +574,7 @@ class EcologicalFootprintAnalysis:
         yf = yield_factors or self._DEFAULT_YIELD_FACTORS
         ef = equivalence_factors or self._DEFAULT_EQ_FACTORS
 
-        breakdown: Dict[str, float] = {}
+        breakdown: dict[str, float] = {}
         for lut in self.LAND_USE_TYPES:
             area = float(consumption.get(lut, 0))
             gha = area * yf.get(lut, 1.0) * ef.get(lut, 1.0)
@@ -592,10 +592,10 @@ class EcologicalFootprintAnalysis:
 
     def compute_biocapacity(
         self,
-        areas: Dict[str, float],
-        yield_factors: Optional[Dict[str, float]] = None,
-        equivalence_factors: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, Any]:
+        areas: dict[str, float],
+        yield_factors: dict[str, float] | None = None,
+        equivalence_factors: dict[str, float] | None = None,
+    ) -> dict[str, Any]:
         """Compute biocapacity in global hectares.
 
         Args:
@@ -609,7 +609,7 @@ class EcologicalFootprintAnalysis:
         yf = yield_factors or self._DEFAULT_YIELD_FACTORS
         ef = equivalence_factors or self._DEFAULT_EQ_FACTORS
 
-        breakdown: Dict[str, float] = {}
+        breakdown: dict[str, float] = {}
         for lut in self.LAND_USE_TYPES:
             area = float(areas.get(lut, 0))
             gha = area * yf.get(lut, 1.0) * ef.get(lut, 1.0)
@@ -624,7 +624,7 @@ class EcologicalFootprintAnalysis:
         self,
         footprint_gha: float,
         biocapacity_gha: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Determine ecological overshoot or reserve.
 
         Args:
@@ -653,16 +653,16 @@ class CarryingCapacityModels:
     sustainable population or throughput for a bioregion.
     """
 
-    def __init__(self, config: Optional[EcologicalEconomicsConfig] = None):
+    def __init__(self, config: EcologicalEconomicsConfig | None = None):
         self.config = config or EcologicalEconomicsConfig()
         logger.info("CarryingCapacityModels initialized")
 
     def estimate_carrying_capacity(
         self,
-        resources: List[Dict[str, Any]],
+        resources: list[dict[str, Any]],
         current_population: float,
         safety_margin: float = 0.2,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Estimate carrying capacity from multiple resource constraints.
 
         Args:
@@ -674,7 +674,7 @@ class CarryingCapacityModels:
         Returns:
             Dict with per-resource capacity, binding constraint, and status.
         """
-        capacities: Dict[str, float] = {}
+        capacities: dict[str, float] = {}
         for r in resources:
             name = r.get("name", "unknown")
             available = float(r.get("available", 0))
@@ -702,8 +702,8 @@ class CarryingCapacityModels:
         initial_population: float,
         carrying_capacity: float,
         growth_rate: float = 0.03,
-        time_horizon: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        time_horizon: int | None = None,
+    ) -> dict[str, Any]:
         """Simulate logistic population growth toward carrying capacity.
 
         Args:
@@ -720,7 +720,7 @@ class CarryingCapacityModels:
         K = float(carrying_capacity)
         series = [round(pop, 2)]
 
-        half_k_year: Optional[int] = None
+        half_k_year: int | None = None
 
         for year in range(1, T + 1):
             dpop = growth_rate * pop * (1 - pop / K)
@@ -752,8 +752,8 @@ class EcologicalEconomicsEngine:
 
     def __init__(
         self,
-        config: Optional[EcologicalEconomicsConfig] = None,
-        rng: Optional[np.random.Generator] = None,
+        config: EcologicalEconomicsConfig | None = None,
+        rng: np.random.Generator | None = None,
     ):
         """
         Initialize the ecological economics engine.
@@ -771,7 +771,7 @@ class EcologicalEconomicsEngine:
         self.carrying_capacity = CarryingCapacityModels(self.config)
         logger.info("EcologicalEconomicsEngine initialized")
 
-    def run_analysis(self, analysis_type: str, data: Dict[str, Any]) -> Dict[str, Any]:
+    def run_analysis(self, analysis_type: str, data: dict[str, Any]) -> dict[str, Any]:
         """Run an ecological economics analysis by type.
 
         Args:
@@ -785,7 +785,7 @@ class EcologicalEconomicsEngine:
         Raises:
             ValueError: If *analysis_type* is unknown.
         """
-        dispatch: Dict[str, Any] = {
+        dispatch: dict[str, Any] = {
             "equilibrium": self._run_equilibrium,
             "emergy": self._run_emergy,
             "footprint": self._run_footprint,
@@ -797,22 +797,22 @@ class EcologicalEconomicsEngine:
                 f"Choose from: {list(dispatch.keys())}"
             )
         logger.info("Running ecological economics analysis: %s", analysis_type)
-        return cast(Dict[str, Any], dispatch[analysis_type](data))
+        return cast(dict[str, Any], dispatch[analysis_type](data))
 
     # ------------------------------------------------------------------
     # Private dispatch targets
     # ------------------------------------------------------------------
 
-    def _run_equilibrium(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _run_equilibrium(self, data: dict[str, Any]) -> dict[str, Any]:
         model_type = data.pop("model_type", "lotka_volterra")
         time_steps = data.pop("time_steps", 100)
         return self.biophysical.analyze_equilibrium(model_type, data, time_steps)
 
-    def _run_emergy(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _run_emergy(self, data: dict[str, Any]) -> dict[str, Any]:
         flows = data.get("flows", [])
         return self.thermodynamics.emergy_analysis(flows)
 
-    def _run_footprint(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _run_footprint(self, data: dict[str, Any]) -> dict[str, Any]:
         consumption = data.get("consumption", {})
         population = data.get("population", 1.0)
         fp = self.footprint.compute_footprint(consumption, population)
@@ -828,7 +828,7 @@ class EcologicalEconomicsEngine:
 
         return fp
 
-    def _run_carrying_capacity(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _run_carrying_capacity(self, data: dict[str, Any]) -> dict[str, Any]:
         resources = data.get("resources", [])
         current_pop = data.get("current_population", 0)
         safety = data.get("safety_margin", 0.2)

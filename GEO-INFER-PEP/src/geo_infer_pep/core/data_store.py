@@ -7,7 +7,7 @@ so the two layers always observe identical data. ``PEPDataManager`` instances
 created directly remain instance-scoped for isolated use (e.g. tests).
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 from datetime import datetime
 import logging
 
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def _validate_filter_keys(
-    model: Any, filters: Dict[str, Any], alias_keys: Optional[set] = None
+    model: Any, filters: dict[str, Any], alias_keys: set | None = None
 ) -> None:
     """Raise ``ValueError`` for filter keys that do not exist on the model.
 
@@ -50,87 +50,87 @@ class PEPDataManager:
     """
 
     def __init__(self) -> None:
-        self._employees: List[Employee] = []
-        self._customers: List[Customer] = []
-        self._candidates: List[Candidate] = []
-        self._requisitions: List[JobRequisition] = []
-        self._learning_courses: List[LearningCourse] = []
-        self._enrollments: List[LearningEnrollment] = []
-        self._conflict_cases: List[ConflictCase] = []
-        self._surveys: List[Survey] = []
-        self._survey_responses: List[SurveyResponse] = []
+        self._employees: list[Employee] = []
+        self._customers: list[Customer] = []
+        self._candidates: list[Candidate] = []
+        self._requisitions: list[JobRequisition] = []
+        self._learning_courses: list[LearningCourse] = []
+        self._enrollments: list[LearningEnrollment] = []
+        self._conflict_cases: list[ConflictCase] = []
+        self._surveys: list[Survey] = []
+        self._survey_responses: list[SurveyResponse] = []
         self._last_updated = datetime.now()
 
     @property
-    def employees(self) -> List[Employee]:
+    def employees(self) -> list[Employee]:
         """Live employee list (shared with any code holding this manager)."""
         return self._employees
 
     @property
-    def customers(self) -> List[Customer]:
+    def customers(self) -> list[Customer]:
         """Live customer list (shared with any code holding this manager)."""
         return self._customers
 
     @property
-    def candidates(self) -> List[Candidate]:
+    def candidates(self) -> list[Candidate]:
         """Live candidate list (shared with any code holding this manager)."""
         return self._candidates
 
     @property
-    def requisitions(self) -> List[JobRequisition]:
+    def requisitions(self) -> list[JobRequisition]:
         """Live requisition list (shared with any code holding this manager)."""
         return self._requisitions
 
     @property
-    def learning_courses(self) -> List[LearningCourse]:
+    def learning_courses(self) -> list[LearningCourse]:
         """Live learning-course list (shared with any code holding this manager)."""
         return self._learning_courses
 
     @property
-    def enrollments(self) -> List[LearningEnrollment]:
+    def enrollments(self) -> list[LearningEnrollment]:
         """Live enrollment list (shared with any code holding this manager)."""
         return self._enrollments
 
     @property
-    def conflict_cases(self) -> List[ConflictCase]:
+    def conflict_cases(self) -> list[ConflictCase]:
         """Live conflict-case list (shared with any code holding this manager)."""
         return self._conflict_cases
 
     @property
-    def surveys(self) -> List[Survey]:
+    def surveys(self) -> list[Survey]:
         """Live survey list (shared with any code holding this manager)."""
         return self._surveys
 
     @property
-    def survey_responses(self) -> List[SurveyResponse]:
+    def survey_responses(self) -> list[SurveyResponse]:
         """Live survey-response list (shared with any code holding this manager)."""
         return self._survey_responses
 
-    def add_employees(self, employees: List[Employee]) -> int:
+    def add_employees(self, employees: list[Employee]) -> int:
         """Add employees to the data store."""
         self._employees.extend(employees)
         self._last_updated = datetime.now()
         return len(employees)
 
-    def add_customers(self, customers: List[Customer]) -> int:
+    def add_customers(self, customers: list[Customer]) -> int:
         """Add customers to the data store."""
         self._customers.extend(customers)
         self._last_updated = datetime.now()
         return len(customers)
 
-    def add_candidates(self, candidates: List[Candidate]) -> int:
+    def add_candidates(self, candidates: list[Candidate]) -> int:
         """Add candidates to the data store."""
         self._candidates.extend(candidates)
         self._last_updated = datetime.now()
         return len(candidates)
 
-    def add_requisitions(self, requisitions: List[JobRequisition]) -> int:
+    def add_requisitions(self, requisitions: list[JobRequisition]) -> int:
         """Add job requisitions to the data store."""
         self._requisitions.extend(requisitions)
         self._last_updated = datetime.now()
         return len(requisitions)
 
-    def get_employees(self, filters: Optional[Dict[str, Any]] = None) -> List[Employee]:
+    def get_employees(self, filters: dict[str, Any] | None = None) -> list[Employee]:
         """Get employees with optional filtering.
 
         Supported filter keys are the ``Employee`` model fields plus the
@@ -160,7 +160,7 @@ class PEPDataManager:
 
         return employees
 
-    def get_customers(self, filters: Optional[Dict[str, Any]] = None) -> List[Customer]:
+    def get_customers(self, filters: dict[str, Any] | None = None) -> list[Customer]:
         """Get customers with optional filtering."""
         customers = self._customers.copy()
 
@@ -171,9 +171,7 @@ class PEPDataManager:
 
         return customers
 
-    def get_candidates(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> List[Candidate]:
+    def get_candidates(self, filters: dict[str, Any] | None = None) -> list[Candidate]:
         """Get candidates with optional filtering.
 
         The ``"status"`` alias compares against ``CandidateStatus`` values.
@@ -195,8 +193,8 @@ class PEPDataManager:
         return candidates
 
     def get_requisitions(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> List[JobRequisition]:
+        self, filters: dict[str, Any] | None = None
+    ) -> list[JobRequisition]:
         """Get requisitions with optional filtering.
 
         The ``"status"`` key compares against ``JobRequisitionStatus`` values.
@@ -217,39 +215,39 @@ class PEPDataManager:
 
         return requisitions
 
-    def add_learning_courses(self, courses: List[LearningCourse]) -> int:
+    def add_learning_courses(self, courses: list[LearningCourse]) -> int:
         """Add learning courses to the data store."""
         self._learning_courses.extend(courses)
         self._last_updated = datetime.now()
         return len(courses)
 
-    def add_enrollments(self, enrollments: List[LearningEnrollment]) -> int:
+    def add_enrollments(self, enrollments: list[LearningEnrollment]) -> int:
         """Add learning enrollments to the data store."""
         self._enrollments.extend(enrollments)
         self._last_updated = datetime.now()
         return len(enrollments)
 
-    def add_conflict_cases(self, cases: List[ConflictCase]) -> int:
+    def add_conflict_cases(self, cases: list[ConflictCase]) -> int:
         """Add conflict-resolution cases to the data store."""
         self._conflict_cases.extend(cases)
         self._last_updated = datetime.now()
         return len(cases)
 
-    def add_surveys(self, surveys: List[Survey]) -> int:
+    def add_surveys(self, surveys: list[Survey]) -> int:
         """Add surveys to the data store."""
         self._surveys.extend(surveys)
         self._last_updated = datetime.now()
         return len(surveys)
 
-    def add_survey_responses(self, responses: List[SurveyResponse]) -> int:
+    def add_survey_responses(self, responses: list[SurveyResponse]) -> int:
         """Add survey responses to the data store."""
         self._survey_responses.extend(responses)
         self._last_updated = datetime.now()
         return len(responses)
 
     def get_learning_courses(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> List[LearningCourse]:
+        self, filters: dict[str, Any] | None = None
+    ) -> list[LearningCourse]:
         """Get learning courses with optional filtering."""
         courses = self._learning_courses.copy()
         if filters:
@@ -261,8 +259,8 @@ class PEPDataManager:
         return courses
 
     def get_enrollments(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> List[LearningEnrollment]:
+        self, filters: dict[str, Any] | None = None
+    ) -> list[LearningEnrollment]:
         """Get learning enrollments with optional filtering."""
         enrollments = self._enrollments.copy()
         if filters:
@@ -276,8 +274,8 @@ class PEPDataManager:
         return enrollments
 
     def get_conflict_cases(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> List[ConflictCase]:
+        self, filters: dict[str, Any] | None = None
+    ) -> list[ConflictCase]:
         """Get conflict-resolution cases with optional filtering."""
         cases = self._conflict_cases.copy()
         if filters:
@@ -286,7 +284,7 @@ class PEPDataManager:
                 cases = [case for case in cases if getattr(case, key) == value]
         return cases
 
-    def get_surveys(self, filters: Optional[Dict[str, Any]] = None) -> List[Survey]:
+    def get_surveys(self, filters: dict[str, Any] | None = None) -> list[Survey]:
         """Get surveys with optional filtering."""
         surveys = self._surveys.copy()
         if filters:
@@ -298,8 +296,8 @@ class PEPDataManager:
         return surveys
 
     def get_survey_responses(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> List[SurveyResponse]:
+        self, filters: dict[str, Any] | None = None
+    ) -> list[SurveyResponse]:
         """Get survey responses with optional filtering."""
         responses = self._survey_responses.copy()
         if filters:
@@ -312,7 +310,7 @@ class PEPDataManager:
                 ]
         return responses
 
-    def get_data_summary(self) -> Dict[str, Any]:
+    def get_data_summary(self) -> dict[str, Any]:
         """Get a summary of all data in the store."""
         return {
             "employees": {

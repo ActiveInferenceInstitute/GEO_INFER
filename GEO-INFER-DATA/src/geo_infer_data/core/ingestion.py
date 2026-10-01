@@ -8,8 +8,8 @@ crowdsourced data, and various APIs.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, List, Any, cast
-from datetime import datetime, timezone
+from typing import Any, cast
+from datetime import datetime, UTC
 from importlib.util import find_spec
 import asyncio
 from dataclasses import dataclass
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 class IngestionConfig:
     """Configuration for data ingestion."""
 
-    data_sources: List[str]
+    data_sources: list[str]
     format_detection: str = "automatic"
     validation_enabled: bool = True
     quality_threshold: float = 0.8
@@ -75,7 +75,7 @@ class DataSourceConnector(ABC):
         ...         return {'data': 'local_fixture_data'}
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """
         Initialize data source connector.
 
@@ -106,7 +106,7 @@ class DataSourceConnector(ABC):
         raise RuntimeError("Data ingestion subclasses must implement connect()")
 
     @abstractmethod
-    async def fetch_data(self, query: Dict[str, Any]) -> Any:
+    async def fetch_data(self, query: dict[str, Any]) -> Any:
         """
         Fetch data from source.
 
@@ -161,7 +161,7 @@ class DataSourceConnector(ABC):
 class SatelliteDataConnector(DataSourceConnector):
     """Connector for satellite imagery data sources."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         super().__init__(config)
         self.api_key = config.get("api_key")
         self.base_url = config.get("base_url", "https://api.satellite-imagery.com")
@@ -181,7 +181,7 @@ class SatelliteDataConnector(DataSourceConnector):
             logger.error(f"Failed to connect to satellite API: {e}")
             return False
 
-    async def fetch_data(self, query: Dict[str, Any]) -> Dict[str, Any]:
+    async def fetch_data(self, query: dict[str, Any]) -> dict[str, Any]:
         """Fetch satellite imagery data."""
         if not self.api_key:
             raise RuntimeError("Satellite API credentials are required")
@@ -203,7 +203,7 @@ class SatelliteDataConnector(DataSourceConnector):
 class SensorDataConnector(DataSourceConnector):
     """Connector for IoT sensor data."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         super().__init__(config)
         self.host = config.get("host")
         self.port = config.get("port", 1883)  # MQTT default
@@ -213,7 +213,7 @@ class SensorDataConnector(DataSourceConnector):
         """Connect to sensor network."""
         return bool(self.host and self.port and self.topic)
 
-    async def fetch_data(self, query: Dict[str, Any]) -> Dict[str, Any]:
+    async def fetch_data(self, query: dict[str, Any]) -> dict[str, Any]:
         """Fetch sensor data."""
         endpoint = self.config.get("data_url")
         if not endpoint:
@@ -232,7 +232,7 @@ class SensorDataConnector(DataSourceConnector):
 class CrowdsourcedDataConnector(DataSourceConnector):
     """Connector for crowdsourced data."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         super().__init__(config)
         self.api_endpoint = config.get("api_endpoint")
         self.api_key = config.get("api_key")
@@ -252,7 +252,7 @@ class CrowdsourcedDataConnector(DataSourceConnector):
             logger.error(f"Failed to connect to crowdsourcing API: {e}")
             return False
 
-    async def fetch_data(self, query: Dict[str, Any]) -> Dict[str, Any]:
+    async def fetch_data(self, query: dict[str, Any]) -> dict[str, Any]:
         """Fetch crowdsourced data."""
         if not self.api_endpoint or not self.api_key:
             raise RuntimeError("Crowdsourced API endpoint and credentials are required")
@@ -273,7 +273,7 @@ class CrowdsourcedDataConnector(DataSourceConnector):
 class GenericDataSourceConnector(DataSourceConnector):
     """Generic connector for data sources without a dedicated connector class."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         super().__init__(config)
         self.base_url = config.get("base_url") or config.get("api_endpoint")
         self.api_key = config.get("api_key")
@@ -293,7 +293,7 @@ class GenericDataSourceConnector(DataSourceConnector):
             logger.warning("Generic data source connection failed: %s", exc)
             return False
 
-    async def fetch_data(self, query: Dict[str, Any]) -> Any:
+    async def fetch_data(self, query: dict[str, Any]) -> Any:
         """Fetch a JSON payload from the configured generic HTTP endpoint."""
         if not self.base_url:
             raise RuntimeError("A generic data source requires an endpoint")
@@ -309,7 +309,7 @@ class GenericDataSourceConnector(DataSourceConnector):
             raise ValueError("Generic data source returned an empty payload")
         return payload
 
-    def _headers(self) -> Dict[str, str]:
+    def _headers(self) -> dict[str, str]:
         """Build request headers from configured credentials."""
         if self.api_key:
             return {"Authorization": f"Bearer {self.api_key}"}
@@ -386,7 +386,7 @@ class MultiSourceDataIngestion:
 
     def __init__(
         self,
-        data_sources: List[str],
+        data_sources: list[str],
         format_detection: str = "automatic",
         validation_enabled: bool = True,
         quality_threshold: float = 0.8,
@@ -402,7 +402,7 @@ class MultiSourceDataIngestion:
             max_workers=max_workers,
         )
 
-        self.connectors: Dict[str, Any] = {}
+        self.connectors: dict[str, Any] = {}
         self.format_detector = FormatDetector()
         self.validator = GeospatialValidator()
         self._initialize_connectors()
@@ -417,7 +417,7 @@ class MultiSourceDataIngestion:
 
     def _initialize_connectors(self) -> None:
         """Initialize data source connectors."""
-        connector_configs: Dict[str, Dict[str, Any]] = {
+        connector_configs: dict[str, dict[str, Any]] = {
             "satellite": {
                 "api_key": "your_api_key",
                 "base_url": "https://api.example.com",
@@ -458,7 +458,7 @@ class MultiSourceDataIngestion:
                         connector_configs[source]
                     )
 
-    async def ingest_multi_source(self, **data_sources: Any) -> Dict[str, Any]:
+    async def ingest_multi_source(self, **data_sources: Any) -> dict[str, Any]:
         """
         Ingest data from multiple sources simultaneously.
 
@@ -575,7 +575,7 @@ class MultiSourceDataIngestion:
                     results.append({"error": str(e)})
 
         # Process results
-        ingested_data: Dict[str, Any] = {}
+        ingested_data: dict[str, Any] = {}
         quality_reports = {}
 
         for source_name, ing_result in zip(data_sources.keys(), results):
@@ -603,7 +603,7 @@ class MultiSourceDataIngestion:
             "ingested_data": ingested_data,
             "quality_reports": quality_reports,
             "ingestion_metadata": {
-                "timestamp": datetime.now(timezone.utc),
+                "timestamp": datetime.now(UTC),
                 "sources_processed": len(data_sources),
                 "validation_enabled": self.config.validation_enabled,
                 "parallel_processing": self.config.parallel_processing,
@@ -614,8 +614,8 @@ class MultiSourceDataIngestion:
         return ingestion_report
 
     async def _connect_all_sources(
-        self, source_names: List[str] | None = None
-    ) -> Dict[str, bool]:
+        self, source_names: list[str] | None = None
+    ) -> dict[str, bool]:
         """Connect to the configured sources selected for one operation."""
         source_names = list(source_names or self.connectors)
         results = {}
@@ -643,7 +643,7 @@ class MultiSourceDataIngestion:
 
     async def _ingest_single_source(
         self, source_name: str, source_data: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Ingest data from a single source."""
         connector = self.connectors[source_name]
 
@@ -663,7 +663,7 @@ class MultiSourceDataIngestion:
                 validation_result = await connector.validate_data(data)
                 data["validation"] = validation_result
 
-            return cast(Dict[str, Any], data)
+            return cast(dict[str, Any], data)
 
         except Exception as e:
             logger.error(f"Failed to ingest from {source_name}: {e}")
@@ -683,7 +683,7 @@ class MultiSourceDataIngestion:
                 issues=[{"type": "validation_error", "message": str(e)}],
             )
 
-    async def validate_and_clean(self, ingested_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def validate_and_clean(self, ingested_data: dict[str, Any]) -> dict[str, Any]:
         """
         Validate and clean ingested data.
 
@@ -776,14 +776,14 @@ class MultiSourceDataIngestion:
             "cleaned_data": cleaned_data,
             "validation_summary": validation_summary,
             "cleaning_metadata": {
-                "timestamp": datetime.now(timezone.utc),
+                "timestamp": datetime.now(UTC),
                 "sources_cleaned": len(
                     [d for d in cleaned_data.values() if "error" not in d]
                 ),
             },
         }
 
-    async def _clean_data(self, data: Any, issues: List[Dict[str, Any]]) -> Any:
+    async def _clean_data(self, data: Any, issues: list[dict[str, Any]]) -> Any:
         """Clean data based on validation issues."""
         # Implementation of data cleaning logic
         # This would handle common data quality issues like:
@@ -842,7 +842,7 @@ class MultiSourceDataIngestion:
 
         return cleaned_data
 
-    def generate_quality_report(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def generate_quality_report(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Generate comprehensive quality report for ingested data.
 
@@ -938,7 +938,7 @@ class MultiSourceDataIngestion:
             "validation_enabled": self.config.validation_enabled,
             "issues": overall_issues,
             "recommendations": self._generate_recommendations(quality_scores),
-            "generated_at": datetime.now(timezone.utc),
+            "generated_at": datetime.now(UTC),
         }
 
     def _calculate_completeness(self, data: Any) -> float:
@@ -1006,7 +1006,7 @@ class MultiSourceDataIngestion:
         if not dataframes:
             return 1.0
 
-        scores: List[float] = []
+        scores: list[float] = []
         for df in dataframes:
             if len(df) == 0:
                 scores.append(1.0)
@@ -1030,9 +1030,9 @@ class MultiSourceDataIngestion:
         return float(np.mean(scores)) if scores else 1.0
 
     @staticmethod
-    def _extract_dataframes(data: Any) -> List[pd.DataFrame]:
+    def _extract_dataframes(data: Any) -> list[pd.DataFrame]:
         """Extract DataFrames from various data structures."""
-        frames: List[pd.DataFrame] = []
+        frames: list[pd.DataFrame] = []
         if isinstance(data, pd.DataFrame):
             frames.append(data)
         elif isinstance(data, dict):
@@ -1041,7 +1041,7 @@ class MultiSourceDataIngestion:
                     frames.append(val)
         return frames
 
-    def _generate_recommendations(self, quality_scores: Dict[str, float]) -> List[str]:
+    def _generate_recommendations(self, quality_scores: dict[str, float]) -> list[str]:
         """Generate quality improvement recommendations."""
         recommendations = []
 

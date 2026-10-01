@@ -1,6 +1,6 @@
 import requests
 import json
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 # Assume the FastAPI application is running at this base URL
 BASE_URL = "http://localhost:8000/api/v1"  # The CLI server (geo-infer-health serve) mounts the API here
@@ -28,7 +28,7 @@ def submit_sample_disease_reports():
                 "longitude": -118.2437,
                 "crs": "EPSG:4326",
             },
-            "report_date": datetime.now(timezone.utc).isoformat(),
+            "report_date": datetime.now(UTC).isoformat(),
             "case_count": 5,
             "source": "Hospital A",
         },
@@ -40,7 +40,7 @@ def submit_sample_disease_reports():
                 "longitude": -118.2440,
                 "crs": "EPSG:4326",
             },
-            "report_date": datetime.now(timezone.utc).isoformat(),
+            "report_date": datetime.now(UTC).isoformat(),
             "case_count": 3,
             "source": "Clinic B",
         },
@@ -52,7 +52,7 @@ def submit_sample_disease_reports():
                 "longitude": -118.2500,
                 "crs": "EPSG:4326",
             },
-            "report_date": datetime.now(timezone.utc).isoformat(),
+            "report_date": datetime.now(UTC).isoformat(),
             "case_count": 10,
             "source": "Hospital A",
         },
@@ -64,7 +64,7 @@ def submit_sample_disease_reports():
                 "longitude": -118.2430,
                 "crs": "EPSG:4326",
             },
-            "report_date": datetime.now(timezone.utc).isoformat(),
+            "report_date": datetime.now(UTC).isoformat(),
             "case_count": 2,
             "source": "Community Testing",
         },

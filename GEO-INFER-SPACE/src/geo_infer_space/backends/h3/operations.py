@@ -7,7 +7,7 @@ error handling, and real-world spatial analysis capabilities.
 
 import logging
 import math
-from typing import List, Dict, Any, Optional, Tuple, Set, cast
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
@@ -16,11 +16,11 @@ try:
 
     MIN_H3_VERSION = (4, 5, 0)
 
-    def _version_tuple(version: str) -> Tuple[int, int, int] | None:
+    def _version_tuple(version: str) -> tuple[int, int, int] | None:
         try:
             parts = version.lstrip("v").split(".")
             return cast(
-                Tuple[int, int, int],
+                tuple[int, int, int],
                 tuple(int(part.split("+")[0].split("-")[0]) for part in parts[:3])
                 + (0,) * max(0, 3 - len(parts)),
             )
@@ -44,7 +44,7 @@ except ImportError:
 # Additional utility functions for comprehensive H3 operations
 
 
-def get_resolution_info(resolution: int) -> Dict[str, Any]:
+def get_resolution_info(resolution: int) -> dict[str, Any]:
     """
     Get detailed information about an H3 resolution level.
 
@@ -83,8 +83,8 @@ def get_resolution_info(resolution: int) -> Dict[str, Any]:
 
 
 def find_optimal_resolution(
-    area_km2: float, target_cells: Optional[int] = None
-) -> Dict[str, Any]:
+    area_km2: float, target_cells: int | None = None
+) -> dict[str, Any]:
     """
     Find the optimal H3 resolution for a given area or target number of cells.
 
@@ -155,7 +155,7 @@ def find_optimal_resolution(
 
 def create_h3_grid_for_bounds(
     min_lat: float, max_lat: float, min_lng: float, max_lng: float, resolution: int
-) -> List[str]:
+) -> list[str]:
     """
     Create an H3 grid covering the specified bounding box.
 
@@ -244,7 +244,7 @@ def coordinate_to_cell(lat: float, lng: float, resolution: int) -> str:
         raise
 
 
-def cell_to_coordinates(h3_index: str) -> Tuple[float, float]:
+def cell_to_coordinates(h3_index: str) -> tuple[float, float]:
     """
     Convert H3 cell index to latitude/longitude coordinates.
 
@@ -266,7 +266,7 @@ def cell_to_coordinates(h3_index: str) -> Tuple[float, float]:
         raise ImportError("h3-py package required. Install with 'uv pip install h3'")
 
     try:
-        return cast(Tuple[float, float], h3.cell_to_latlng(h3_index))
+        return cast(tuple[float, float], h3.cell_to_latlng(h3_index))
     except Exception as e:
         logger.error(f"Failed to convert H3 index {h3_index} to coordinates: {e}")
         raise ValueError(f"Invalid H3 index: {h3_index}")
@@ -274,7 +274,7 @@ def cell_to_coordinates(h3_index: str) -> Tuple[float, float]:
 
 def cell_to_boundary(
     h3_index: str, geo_json: bool = False
-) -> List[Tuple[float, float]]:
+) -> list[tuple[float, float]]:
     """
     Get the boundary coordinates of an H3 cell.
 
@@ -309,8 +309,8 @@ def cell_to_boundary(
 
 
 def cells_to_geojson(
-    h3_indices: List[str], properties: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+    h3_indices: list[str], properties: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """
     Convert H3 cell indices to GeoJSON FeatureCollection.
 
@@ -346,7 +346,7 @@ def cells_to_geojson(
             coordinates = [ring]
 
             # Create feature
-            feature: Dict[str, Any] = {
+            feature: dict[str, Any] = {
                 "type": "Feature",
                 "properties": {
                     "h3_index": h3_index,
@@ -370,7 +370,7 @@ def cells_to_geojson(
 # Grid Operations
 
 
-def grid_disk(h3_index: str, k: int) -> List[str]:
+def grid_disk(h3_index: str, k: int) -> list[str]:
     """
     Get all H3 cells within grid distance k of the given cell.
 
@@ -403,7 +403,7 @@ def grid_disk(h3_index: str, k: int) -> List[str]:
         raise
 
 
-def grid_ring(h3_index: str, k: int) -> List[str]:
+def grid_ring(h3_index: str, k: int) -> list[str]:
     """
     Get H3 cells at exactly grid distance k from the given cell.
 
@@ -463,7 +463,7 @@ def grid_distance(h3_index1: str, h3_index2: str) -> int:
         raise
 
 
-def grid_path(h3_index1: str, h3_index2: str) -> List[str]:
+def grid_path(h3_index1: str, h3_index2: str) -> list[str]:
     """
     Find a path between two H3 cells.
 
@@ -482,7 +482,7 @@ def grid_path(h3_index1: str, h3_index2: str) -> List[str]:
         raise ImportError("h3-py package required. Install with 'uv pip install h3'")
 
     try:
-        return cast(List[str], h3.grid_path_cells(h3_index1, h3_index2))
+        return cast(list[str], h3.grid_path_cells(h3_index1, h3_index2))
     except Exception as e:
         logger.error(
             f"Failed to find grid path between {h3_index1} and {h3_index2}: {e}"
@@ -526,7 +526,7 @@ def cell_to_parent(h3_index: str, parent_resolution: int) -> str:
         raise
 
 
-def cell_to_children(h3_index: str, child_resolution: int) -> List[str]:
+def cell_to_children(h3_index: str, child_resolution: int) -> list[str]:
     """
     Get the children cells at a finer resolution.
 
@@ -559,7 +559,7 @@ def cell_to_children(h3_index: str, child_resolution: int) -> List[str]:
         raise
 
 
-def compact_cells(h3_indices: Set[str]) -> List[str]:
+def compact_cells(h3_indices: set[str]) -> list[str]:
     """
     Compact a set of H3 cells by replacing clusters with their parents.
 
@@ -584,7 +584,7 @@ def compact_cells(h3_indices: Set[str]) -> List[str]:
         raise
 
 
-def uncompact_cells(h3_indices: Set[str], target_resolution: int) -> List[str]:
+def uncompact_cells(h3_indices: set[str], target_resolution: int) -> list[str]:
     """
     Uncompact a set of H3 cells to a target resolution.
 
@@ -616,8 +616,8 @@ def uncompact_cells(h3_indices: Set[str], target_resolution: int) -> List[str]:
 
 
 def polygon_to_cells(
-    polygon_coords: List[Tuple[float, float]], resolution: int
-) -> List[str]:
+    polygon_coords: list[tuple[float, float]], resolution: int
+) -> list[str]:
     """
     Get H3 cells that cover a polygon.
 
@@ -655,7 +655,7 @@ def polygon_to_cells(
         raise
 
 
-def cells_to_polygon(h3_indices: Set[str]) -> List[Tuple[float, float]]:
+def cells_to_polygon(h3_indices: set[str]) -> list[tuple[float, float]]:
     """
     Create a polygon boundary from a set of H3 cells.
 
@@ -710,7 +710,7 @@ def cell_area(h3_index: str, unit: str = "km^2") -> float:
     return _canonical_cell_area(h3_index, unit)
 
 
-def cells_area(h3_indices: Set[str], unit: str = "km^2") -> float:
+def cells_area(h3_indices: set[str], unit: str = "km^2") -> float:
     """
     Calculate the total area of a set of H3 cells.
 
@@ -742,7 +742,7 @@ def cells_area(h3_indices: Set[str], unit: str = "km^2") -> float:
 # Analysis Operations
 
 
-def neighbor_cells(h3_index: str) -> List[str]:
+def neighbor_cells(h3_index: str) -> list[str]:
     """
     Get the immediate neighbors of an H3 cell.
 
@@ -853,7 +853,7 @@ def are_neighbor_cells(h3_index1: str, h3_index2: str) -> bool:
 # Advanced Operations
 
 
-def cells_intersection(cells1: Set[str], cells2: Set[str]) -> List[str]:
+def cells_intersection(cells1: set[str], cells2: set[str]) -> list[str]:
     """
     Find the intersection of two sets of H3 cells.
 
@@ -873,7 +873,7 @@ def cells_intersection(cells1: Set[str], cells2: Set[str]) -> List[str]:
     return sorted(cells1.intersection(cells2))
 
 
-def cells_union(cells1: Set[str], cells2: Set[str]) -> List[str]:
+def cells_union(cells1: set[str], cells2: set[str]) -> list[str]:
     """
     Find the union of two sets of H3 cells.
 
@@ -893,7 +893,7 @@ def cells_union(cells1: Set[str], cells2: Set[str]) -> List[str]:
     return sorted(cells1.union(cells2))
 
 
-def cells_difference(cells1: Set[str], cells2: Set[str]) -> List[str]:
+def cells_difference(cells1: set[str], cells2: set[str]) -> list[str]:
     """
     Find the difference between two sets of H3 cells.
 
@@ -913,7 +913,7 @@ def cells_difference(cells1: Set[str], cells2: Set[str]) -> List[str]:
     return sorted(cells1.difference(cells2))
 
 
-def grid_statistics(h3_indices: Set[str]) -> Dict[str, Any]:
+def grid_statistics(h3_indices: set[str]) -> dict[str, Any]:
     """
     Calculate comprehensive statistics for a set of H3 cells.
 

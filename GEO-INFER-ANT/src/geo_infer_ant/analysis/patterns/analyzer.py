@@ -17,7 +17,7 @@ Key Features:
 
 import numpy as np
 import logging
-from typing import Dict, List, Any, Optional, Union, cast
+from typing import Any, cast
 from datetime import datetime
 from collections import defaultdict
 
@@ -54,9 +54,9 @@ class SwarmPatternAnalyzer:
 
     def __init__(
         self,
-        analysis_types: Optional[List[str]] = None,
-        statistical_methods: Optional[List[str]] = None,
-        visualization_tools: Optional[List[str]] = None,
+        analysis_types: list[str] | None = None,
+        statistical_methods: list[str] | None = None,
+        visualization_tools: list[str] | None = None,
         spatial_backend: str = "h3",
         **kwargs: Any,
     ):
@@ -80,13 +80,13 @@ class SwarmPatternAnalyzer:
         )
 
         # Analysis state
-        self.analysis_history: List[Dict[str, Any]] = []
-        self.pattern_cache: Dict[str, Any] = {}
+        self.analysis_history: list[dict[str, Any]] = []
+        self.pattern_cache: dict[str, Any] = {}
 
         # Integration components
-        self.spatial_indexer: Optional[Any] = None
-        self.spatial_analytics: Optional[Any] = None
-        self.spatial_statistics: Optional[Any] = None
+        self.spatial_indexer: Any | None = None
+        self.spatial_analytics: Any | None = None
+        self.spatial_statistics: Any | None = None
 
         # Initialize integrations
         self._initialize_integrations(spatial_backend)
@@ -120,11 +120,11 @@ class SwarmPatternAnalyzer:
 
     def analyze_spatial_patterns(
         self,
-        agent_trajectories: Union[List[np.ndarray], np.ndarray],
-        pattern_types: Optional[List[str]] = None,
-        spatial_scale: Optional[float] = None,
-        temporal_window: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        agent_trajectories: list[np.ndarray] | np.ndarray,
+        pattern_types: list[str] | None = None,
+        spatial_scale: float | None = None,
+        temporal_window: float | None = None,
+    ) -> dict[str, Any]:
         """
         Analyze spatial patterns in agent trajectories.
 
@@ -141,7 +141,7 @@ class SwarmPatternAnalyzer:
             f"Analyzing spatial patterns in {len(agent_trajectories)} trajectories"
         )
 
-        analysis_results: Dict[str, Any] = {
+        analysis_results: dict[str, Any] = {
             "analysis_type": "spatial_patterns",
             "analysis_time": datetime.now(),
             "patterns_detected": {},
@@ -203,7 +203,7 @@ class SwarmPatternAnalyzer:
         )
         return analysis_results
 
-    def _analyze_clustering_patterns(self, trajectories: np.ndarray) -> Dict[str, Any]:
+    def _analyze_clustering_patterns(self, trajectories: np.ndarray) -> dict[str, Any]:
         """Analyze spatial clustering patterns in trajectories."""
         try:
             if self.spatial_analytics:
@@ -230,7 +230,7 @@ class SwarmPatternAnalyzer:
             logger.warning(f"Clustering analysis failed: {e}")
             return self._distance_clustering_analysis(trajectories)
 
-    def _distance_clustering_analysis(self, trajectories: np.ndarray) -> Dict[str, Any]:
+    def _distance_clustering_analysis(self, trajectories: np.ndarray) -> dict[str, Any]:
         """Cluster trajectories using pairwise distance when indexing is unavailable."""
         # Simple distance-based clustering
         n_agents, n_steps, n_dims = trajectories.shape
@@ -268,7 +268,7 @@ class SwarmPatternAnalyzer:
             "distance_threshold": distance_threshold,
         }
 
-    def _analyze_flocking_patterns(self, trajectories: np.ndarray) -> Dict[str, Any]:
+    def _analyze_flocking_patterns(self, trajectories: np.ndarray) -> dict[str, Any]:
         """Analyze flocking behavior patterns."""
         try:
             # Calculate velocity vectors
@@ -337,7 +337,7 @@ class SwarmPatternAnalyzer:
             return {"status": "flocking_analysis_failed", "error": str(e)}
 
     def _detect_flocking_behavior(
-        self, alignment: List[float], cohesion: List[float], separation: List[float]
+        self, alignment: list[float], cohesion: list[float], separation: list[float]
     ) -> bool:
         """Detect if flocking behavior is present."""
         if not alignment or not cohesion or not separation:
@@ -355,7 +355,7 @@ class SwarmPatternAnalyzer:
 
         return bool(alignment_ok and cohesion_ok and separation_ok)
 
-    def _analyze_migration_patterns(self, trajectories: np.ndarray) -> Dict[str, Any]:
+    def _analyze_migration_patterns(self, trajectories: np.ndarray) -> dict[str, Any]:
         """Analyze migration and movement patterns."""
         try:
             # Calculate displacement over time
@@ -414,7 +414,7 @@ class SwarmPatternAnalyzer:
             logger.warning(f"Migration analysis failed: {e}")
             return {"status": "migration_analysis_failed", "error": str(e)}
 
-    def _analyze_dispersion_patterns(self, trajectories: np.ndarray) -> Dict[str, Any]:
+    def _analyze_dispersion_patterns(self, trajectories: np.ndarray) -> dict[str, Any]:
         """Analyze dispersion and spreading patterns."""
         try:
             # Calculate spatial spread over time
@@ -479,9 +479,9 @@ class SwarmPatternAnalyzer:
             logger.warning(f"Dispersion analysis failed: {e}")
             return {"status": "dispersion_analysis_failed", "error": str(e)}
 
-    def _calculate_spatial_statistics(self, trajectories: np.ndarray) -> Dict[str, Any]:
+    def _calculate_spatial_statistics(self, trajectories: np.ndarray) -> dict[str, Any]:
         """Calculate comprehensive spatial statistics."""
-        stats: Dict[str, Any] = {}
+        stats: dict[str, Any] = {}
 
         try:
             # Basic spatial statistics
@@ -545,8 +545,8 @@ class SwarmPatternAnalyzer:
         return stats
 
     def _interpret_spatial_patterns(
-        self, analysis_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, analysis_results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate interpretation of spatial patterns."""
         interpretation = {
             "pattern_summary": "",
@@ -650,11 +650,11 @@ class SwarmPatternAnalyzer:
 
     def analyze_interactions(
         self,
-        communication_data: Optional[List[Dict[str, Any]]] = None,
-        proximity_data: Optional[np.ndarray] = None,
-        influence_measures: Optional[Dict[str, Any]] = None,
-        network_metrics: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        communication_data: list[dict[str, Any]] | None = None,
+        proximity_data: np.ndarray | None = None,
+        influence_measures: dict[str, Any] | None = None,
+        network_metrics: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Analyze interaction networks and social dynamics.
 
@@ -724,10 +724,10 @@ class SwarmPatternAnalyzer:
         return analysis_results
 
     def _analyze_communication_patterns(
-        self, communication_data: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, communication_data: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Analyze patterns in agent communication."""
-        patterns: Dict[str, Any] = {
+        patterns: dict[str, Any] = {
             "communication_frequency": defaultdict(int),
             "communication_types": defaultdict(int),
             "temporal_patterns": defaultdict(list),
@@ -778,7 +778,7 @@ class SwarmPatternAnalyzer:
 
         return patterns
 
-    def _analyze_proximity_networks(self, proximity_data: np.ndarray) -> Dict[str, Any]:
+    def _analyze_proximity_networks(self, proximity_data: np.ndarray) -> dict[str, Any]:
         """Analyze networks based on agent proximity."""
         try:
             # proximity_data shape: (time_steps, agents, agents) or (agents, agents)
@@ -844,11 +844,11 @@ class SwarmPatternAnalyzer:
             return {"status": "proximity_analysis_failed", "error": str(e)}
 
     def _analyze_influence_dynamics(
-        self, influence_measures: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, influence_measures: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze influence and leadership dynamics."""
         try:
-            analysis: Dict[str, Any] = {
+            analysis: dict[str, Any] = {
                 "influence_ranking": [],
                 "leadership_structure": {},
                 "influence_network": {},
@@ -881,10 +881,10 @@ class SwarmPatternAnalyzer:
             return {"status": "influence_analysis_failed", "error": str(e)}
 
     def _compute_network_metrics(
-        self, analysis_results: Dict[str, Any], metrics: List[str]
-    ) -> Dict[str, Any]:
+        self, analysis_results: dict[str, Any], metrics: list[str]
+    ) -> dict[str, Any]:
         """Compute specified network metrics."""
-        metrics_results: Dict[str, Any] = {}
+        metrics_results: dict[str, Any] = {}
 
         try:
             network_structure = analysis_results.get("network_structure", {})
@@ -919,8 +919,8 @@ class SwarmPatternAnalyzer:
         return metrics_results
 
     def _compute_centrality_measures(
-        self, network_structure: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, network_structure: dict[str, Any]
+    ) -> dict[str, Any]:
         """Compute centrality measures for the network."""
         try:
             adjacency = np.array(network_structure.get("adjacency_matrix", []))
@@ -955,8 +955,8 @@ class SwarmPatternAnalyzer:
             return {"status": "centrality_computation_failed", "error": str(e)}
 
     def _compute_clustering_measures(
-        self, network_structure: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, network_structure: dict[str, Any]
+    ) -> dict[str, Any]:
         """Compute clustering measures for the network."""
         adjacency = np.asarray(
             network_structure.get("adjacency_matrix", []), dtype=float
@@ -977,7 +977,7 @@ class SwarmPatternAnalyzer:
             "method": "networkx.average_clustering",
         }
 
-    def _compute_modularity(self, network_structure: Dict[str, Any]) -> Dict[str, Any]:
+    def _compute_modularity(self, network_structure: dict[str, Any]) -> dict[str, Any]:
         """Compute network modularity."""
         adjacency = np.asarray(
             network_structure.get("adjacency_matrix", []), dtype=float
@@ -1010,10 +1010,10 @@ class SwarmPatternAnalyzer:
         }
 
     def _analyze_social_dynamics(
-        self, analysis_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, analysis_results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze social dynamics and group behavior."""
-        dynamics: Dict[str, Any] = {
+        dynamics: dict[str, Any] = {
             "group_formation": {},
             "leadership_emergence": {},
             "information_flow": {},
@@ -1076,11 +1076,11 @@ class SwarmPatternAnalyzer:
 
     def detect_emergence(
         self,
-        individual_behaviors: List[Dict[str, Any]],
-        collective_outcomes: Dict[str, Any],
-        information_measures: Optional[List[str]] = None,
-        complexity_measures: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        individual_behaviors: list[dict[str, Any]],
+        collective_outcomes: dict[str, Any],
+        information_measures: list[str] | None = None,
+        complexity_measures: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Detect emergent phenomena in swarm behavior.
 
@@ -1095,7 +1095,7 @@ class SwarmPatternAnalyzer:
         """
         logger.info("Detecting emergent phenomena")
 
-        emergence_results: Dict[str, Any] = {
+        emergence_results: dict[str, Any] = {
             "analysis_type": "emergent_phenomena",
             "analysis_time": datetime.now(),
             "emergence_detected": False,
@@ -1169,13 +1169,13 @@ class SwarmPatternAnalyzer:
 
     def _calculate_mutual_information(
         self,
-        individual_behaviors: List[Dict[str, Any]],
-        collective_outcomes: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        individual_behaviors: list[dict[str, Any]],
+        collective_outcomes: dict[str, Any],
+    ) -> dict[str, Any]:
         """Calculate mutual information between individual and collective behaviors."""
         try:
             # Extract behavior patterns as numerical values
-            individual_values: List[float] = []
+            individual_values: list[float] = []
             for behavior in individual_behaviors:
                 # Extract numerical features from behavior
                 if "action_type" in behavior:
@@ -1314,9 +1314,9 @@ class SwarmPatternAnalyzer:
 
     def _calculate_transfer_entropy(
         self,
-        individual_behaviors: List[Dict[str, Any]],
-        collective_outcomes: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        individual_behaviors: list[dict[str, Any]],
+        collective_outcomes: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Calculate transfer entropy between behaviors and outcomes.
 
@@ -1464,7 +1464,7 @@ class SwarmPatternAnalyzer:
 
         # Discretize for discrete entropy calculation
         # Use unique combinations
-        unique_combinations: Dict[Any, List[Any]] = {}
+        unique_combinations: dict[Any, list[Any]] = {}
         for i in range(len(y)):
             x_key = tuple(x_reshaped[i]) if x_reshaped.ndim > 1 else (x_reshaped[i],)
             if x_key not in unique_combinations:
@@ -1481,8 +1481,8 @@ class SwarmPatternAnalyzer:
         return conditional_entropy
 
     def _calculate_fractal_dimension(
-        self, individual_behaviors: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, individual_behaviors: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Calculate fractal dimension of behavior patterns using box-counting method.
 
@@ -1513,8 +1513,8 @@ class SwarmPatternAnalyzer:
                 return {"fractal_dimension": 0.0, "interpretation": "degenerate"}
 
             # Box sizes (powers of 2)
-            box_sizes: List[float] = []
-            box_counts: List[int] = []
+            box_sizes: list[float] = []
+            box_counts: list[int] = []
 
             max_box_size = range_size
             min_box_size = range_size / 100.0  # At least 100 boxes
@@ -1577,8 +1577,8 @@ class SwarmPatternAnalyzer:
             return {"status": "calculation_failed", "error": str(e)}
 
     def _calculate_lyapunov_exponents(
-        self, individual_behaviors: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, individual_behaviors: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Calculate Lyapunov exponents for chaos analysis.
 
@@ -1704,7 +1704,7 @@ class SwarmPatternAnalyzer:
             logger.warning(f"Lyapunov exponent calculation failed: {e}")
             return {"status": "calculation_failed", "error": str(e)}
 
-    def _assess_emergence(self, emergence_results: Dict[str, Any]) -> bool:
+    def _assess_emergence(self, emergence_results: dict[str, Any]) -> bool:
         """Assess whether emergence has been detected."""
         try:
             # Check information theory measures
@@ -1737,9 +1737,9 @@ class SwarmPatternAnalyzer:
             logger.warning(f"Emergence assessment failed: {e}")
             return False
 
-    def _interpret_emergence(self, emergence_results: Dict[str, Any]) -> Dict[str, Any]:
+    def _interpret_emergence(self, emergence_results: dict[str, Any]) -> dict[str, Any]:
         """Generate interpretation of emergence detection results."""
-        interpretation: Dict[str, Any] = {
+        interpretation: dict[str, Any] = {
             "emergence_level": "none",
             "key_characteristics": [],
             "system_complexity": "unknown",
@@ -1813,7 +1813,7 @@ class SwarmPatternAnalyzer:
 
         return interpretation
 
-    def get_analysis_summary(self) -> Dict[str, Any]:
+    def get_analysis_summary(self) -> dict[str, Any]:
         """Get summary of all analysis results."""
         summary = {
             "total_analyses": len(self.analysis_history),

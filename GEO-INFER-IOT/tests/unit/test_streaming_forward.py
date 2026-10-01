@@ -5,7 +5,7 @@ the shared IoTDataIngestion instance never reached subscribed sockets.
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 import h3
 from fastapi.testclient import TestClient
@@ -17,7 +17,7 @@ from geo_infer_iot.core.ingestion import SensorMeasurement
 def _measurement(sensor_id: str = "s1", value: float = 21.5) -> SensorMeasurement:
     return SensorMeasurement(
         sensor_id=sensor_id,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         variable="temperature",
         value=value,
         unit="C",

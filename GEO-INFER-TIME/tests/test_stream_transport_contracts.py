@@ -2,7 +2,7 @@
 
 import asyncio
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 import pytest
 
@@ -11,7 +11,7 @@ from geo_infer_time import ReplayIngestAdapter, StreamIngestAdapter, StreamProce
 
 def test_epoch_zero_is_preserved():
     timestamp, _, _ = ReplayIngestAdapter([]).parse_record({"timestamp": 0, "value": 1})
-    assert timestamp == datetime(1970, 1, 1, tzinfo=timezone.utc)
+    assert timestamp == datetime(1970, 1, 1, tzinfo=UTC)
 
 
 def test_offsets_and_naive_records_normalize_to_utc():
@@ -22,7 +22,7 @@ def test_offsets_and_naive_records_normalize_to_utc():
     second, _, _ = adapter.parse_record(
         {"timestamp": "2024-01-01T00:00:00", "value": 1}
     )
-    assert first == second == datetime(2024, 1, 1, tzinfo=timezone.utc)
+    assert first == second == datetime(2024, 1, 1, tzinfo=UTC)
 
 
 def test_missing_timestamp_is_rejected():
@@ -34,7 +34,7 @@ def test_out_of_order_retention_and_bounds():
     processor = StreamProcessor(
         timedelta(seconds=10), watermark_delay=timedelta(seconds=10)
     )
-    base = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2024, 1, 1, tzinfo=UTC)
     for seconds in [10, 5, 18]:
         processor.add_data_point(base + timedelta(seconds=seconds), seconds)
     assert [p["value"] for p in processor.buffer] == [10, 18]
@@ -93,7 +93,7 @@ def test_nonfinite_values_rejected(value):
 
 def test_buffer_capacity_does_not_partially_accept_record():
     processor = StreamProcessor(timedelta(seconds=10), max_buffer_points=2)
-    base = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2024, 1, 1, tzinfo=UTC)
     processor.add_data_point(base, 1)
     processor.add_data_point(base, 2)
     with pytest.raises(BufferError):
@@ -106,7 +106,7 @@ def test_buffer_capacity_does_not_partially_accept_record():
 
 def test_late_buffer_is_bounded_and_watermark_never_regresses():
     processor = StreamProcessor(timedelta(seconds=10), max_buffer_points=1)
-    base = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2024, 1, 1, tzinfo=UTC)
     processor.add_data_point(base + timedelta(seconds=5), 1)
     processor.add_data_point(base, 2)
     with pytest.raises(BufferError):
@@ -119,7 +119,7 @@ def test_late_buffer_is_bounded_and_watermark_never_regresses():
 
 def test_history_capacity_and_session_gap_equality():
     processor = StreamProcessor(timedelta(seconds=60), max_history_windows=2)
-    base = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2024, 1, 1, tzinfo=UTC)
     for seconds in (0, 5, 10, 16):
         processor.add_data_point(base + timedelta(seconds=seconds), 1)
         processor.process_window()

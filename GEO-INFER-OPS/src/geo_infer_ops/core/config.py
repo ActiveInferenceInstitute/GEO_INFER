@@ -1,7 +1,7 @@
 """Configuration management module."""
 
 import os
-from typing import Optional, Dict, Any
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -13,7 +13,7 @@ class LoggingConfig(BaseModel):
     format: str = Field(
         default="json", description="Log format (console, json, or text)"
     )
-    file: Optional[str] = Field(default=None, description="Log file path")
+    file: str | None = Field(default=None, description="Log file path")
 
     @field_validator("level")
     @classmethod
@@ -82,8 +82,8 @@ class DockerConfig(BaseModel):
 
     registry: str = Field(default="localhost", description="Docker registry URL")
     tag: str = Field(default="latest", description="Docker image tag")
-    username: Optional[str] = Field(default=None, description="Registry username")
-    password: Optional[str] = Field(default=None, description="Registry password")
+    username: str | None = Field(default=None, description="Registry username")
+    password: str | None = Field(default=None, description="Registry password")
     timeout: int = Field(default=300, description="Docker operation timeout in seconds")
     build_timeout: int = Field(
         default=1800, description="Docker build subprocess timeout in seconds"
@@ -123,11 +123,11 @@ class DeploymentConfig(BaseModel):
     """Deployment configuration."""
 
     replicas: int = Field(default=1, description="Number of replicas")
-    resource_limits: Dict[str, str] = Field(
+    resource_limits: dict[str, str] = Field(
         default_factory=lambda: {"cpu": "500m", "memory": "512Mi"},
         description="Resource limits",
     )
-    resource_requests: Dict[str, str] = Field(
+    resource_requests: dict[str, str] = Field(
         default_factory=lambda: {"cpu": "250m", "memory": "256Mi"},
         description="Resource requests",
     )
@@ -160,9 +160,9 @@ class TLSConfig(BaseModel):
     """TLS configuration."""
 
     enabled: bool = Field(default=True, description="Enable TLS")
-    cert_file: Optional[str] = Field(default=None, description="Certificate file path")
-    key_file: Optional[str] = Field(default=None, description="Private key file path")
-    ca_file: Optional[str] = Field(default=None, description="CA certificate file path")
+    cert_file: str | None = Field(default=None, description="Certificate file path")
+    key_file: str | None = Field(default=None, description="Private key file path")
+    ca_file: str | None = Field(default=None, description="CA certificate file path")
 
     @field_validator("cert_file", "key_file", "ca_file")
     @classmethod
@@ -175,7 +175,7 @@ class AuthConfig(BaseModel):
     """Authentication configuration."""
 
     enabled: bool = Field(default=True, description="Enable authentication")
-    jwt_secret: Optional[str] = Field(default=None, description="JWT secret key")
+    jwt_secret: str | None = Field(default=None, description="JWT secret key")
     jwt_algorithm: str = Field(default="HS256", description="JWT signing algorithm")
     token_expiry: int = Field(default=3600, description="Token expiry in seconds")
 
@@ -204,7 +204,7 @@ class RedisConfig(BaseModel):
     host: str = Field(default="localhost", description="Redis host")
     port: int = Field(default=6379, description="Redis port")
     db: int = Field(default=0, description="Redis database index")
-    password: Optional[str] = Field(default=None, description="Redis password")
+    password: str | None = Field(default=None, description="Redis password")
 
     @field_validator("port")
     @classmethod
@@ -277,14 +277,14 @@ class Config(BaseModel):
 
 
 # Global configuration instance
-_config: Optional[Config] = None
+_config: Config | None = None
 
 # Backward-compatible nested aliases used by older callers and tests.
 DeploymentConfig.DockerConfig = DockerConfig  # type: ignore[attr-defined]
 DeploymentConfig.KubernetesConfig = KubernetesConfig  # type: ignore[attr-defined]
 
 
-def load_config(config_file: Optional[str] = None) -> Config:
+def load_config(config_file: str | None = None) -> Config:
     """Load configuration from file or environment variables."""
     global _config
 
@@ -302,11 +302,11 @@ def load_config(config_file: Optional[str] = None) -> Config:
             env_config[env_key] = value
 
     # Load from file if provided
-    file_config: Dict[str, Any] = {}
+    file_config: dict[str, Any] = {}
     if config_file and os.path.exists(config_file):
         import yaml
 
-        with open(config_file, "r") as f:
+        with open(config_file) as f:
             file_config = yaml.safe_load(f) or {}
 
     # Merge configurations
@@ -324,7 +324,7 @@ def get_config() -> Config:
     return _config
 
 
-def update_config(config_dict: Dict[str, Any]) -> Config:
+def update_config(config_dict: dict[str, Any]) -> Config:
     """Update configuration with new values.
 
     Args:

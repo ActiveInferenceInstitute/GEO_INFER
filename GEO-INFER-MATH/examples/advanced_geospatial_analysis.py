@@ -14,7 +14,6 @@ by performing a complete spatial analysis workflow including:
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
 import logging
 
 # Import GEO-INFER-MATH modules
@@ -24,7 +23,7 @@ from geo_infer_math.core.spatial_statistics import (
     local_indicators_spatial_association,
 )
 from geo_infer_math.core.interpolation import SpatialInterpolator
-from geo_infer_math.core.geometry import haversine_distance, Point
+from geo_infer_math.core.geometry import haversine_distance
 from geo_infer_math.core.transforms import (
     geographic_to_projected,
     CoordinateTransformer,
@@ -33,7 +32,6 @@ from geo_infer_math.models.regression import GeographicallyWeightedRegression
 from geo_infer_math.models.clustering import SpatialKMeans
 from geo_infer_math.utils.validation import validate_coordinates, validate_values_array
 from geo_infer_math.utils.parallel import parallel_compute
-from geo_infer_math.utils.constants import EARTH_RADIUS_MEAN
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -130,7 +128,7 @@ def spatial_statistics_analysis(coordinates, values):
     moran = MoranI(weights_matrix)
     moran_result = moran.compute(values)
 
-    logger.info(f"Computed global Moran's I metrics")
+    logger.info("Computed global Moran's I metrics")
 
     # Local Indicators of Spatial Association (LISA)
     lisa_result = local_indicators_spatial_association(values, weights_matrix)
@@ -222,7 +220,6 @@ def parallel_processing_example(coordinates, values):
         return distances
 
     # Use parallel processing to compute distance matrices
-    from geo_infer_math.utils.parallel import parallel_compute
 
     # Select subset of points for demonstration
     query_points = coordinates[:10]

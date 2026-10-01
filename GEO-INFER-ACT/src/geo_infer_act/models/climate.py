@@ -5,7 +5,7 @@ This module implements a concrete Active Inference model for climate adaptation,
 defining the specific state space, observations, and dynamics (A, B, C, D matrices).
 """
 
-from typing import Dict, Any, Optional
+from typing import Any
 import numpy as np
 import logging
 
@@ -54,8 +54,8 @@ class ClimateModel(ActiveInferenceModel):
 
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
-        random_seed: Optional[int] = None,
+        config: dict[str, Any] | None = None,
+        random_seed: int | None = None,
     ):
         """
         Initialize the Climate Model.
@@ -84,7 +84,7 @@ class ClimateModel(ActiveInferenceModel):
         D = self._build_prior_D()
 
         # Define parameters for the generic engine
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "state_dim": self.num_states,  # This might need adaptation in core if it expects int
             "obs_dim": self.num_obs,  # This might need adaptation
             "action_dim": self.num_controls,

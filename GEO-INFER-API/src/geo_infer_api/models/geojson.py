@@ -5,14 +5,14 @@ These models follow the GeoJSON specification (RFC 7946)
 https://tools.ietf.org/html/rfc7946
 """
 
-from enum import Enum
+from enum import StrEnum
 import math
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
-class GeoJSONType(str, Enum):
+class GeoJSONType(StrEnum):
     """Valid GeoJSON types."""
 
     POINT = "Point"
@@ -26,7 +26,7 @@ class GeoJSONType(str, Enum):
     FEATURE_COLLECTION = "FeatureCollection"
 
 
-def _validate_position(position: Tuple[float, float]) -> Tuple[float, float]:
+def _validate_position(position: tuple[float, float]) -> tuple[float, float]:
     """Validate a GeoJSON longitude/latitude position."""
     if len(position) != 2:
         raise ValueError("Positions must be [longitude, latitude]")
@@ -54,11 +54,11 @@ class Point(GeometryBase):
     """GeoJSON Point geometry."""
 
     type: Literal[GeoJSONType.POINT] = GeoJSONType.POINT
-    coordinates: Tuple[float, float] = Field(..., description="[longitude, latitude]")
+    coordinates: tuple[float, float] = Field(..., description="[longitude, latitude]")
 
     @field_validator("coordinates")
     @classmethod
-    def validate_coordinates(cls, v: Tuple[float, float]) -> Tuple[float, float]:
+    def validate_coordinates(cls, v: tuple[float, float]) -> tuple[float, float]:
         """Validate point coordinates."""
         return _validate_position(v)
 
@@ -67,15 +67,15 @@ class LineString(GeometryBase):
     """GeoJSON LineString geometry."""
 
     type: Literal[GeoJSONType.LINE_STRING] = GeoJSONType.LINE_STRING
-    coordinates: List[Tuple[float, float]] = Field(
+    coordinates: list[tuple[float, float]] = Field(
         ..., description="Array of [longitude, latitude] positions"
     )
 
     @field_validator("coordinates")
     @classmethod
     def validate_coordinates(
-        cls, v: List[Tuple[float, float]]
-    ) -> List[Tuple[float, float]]:
+        cls, v: list[tuple[float, float]]
+    ) -> list[tuple[float, float]]:
         """Validate LineString has at least 2 points."""
         if len(v) < 2:
             raise ValueError("LineString must have at least 2 points")
@@ -92,15 +92,15 @@ class Polygon(GeometryBase):
     """
 
     type: Literal[GeoJSONType.POLYGON] = GeoJSONType.POLYGON
-    coordinates: List[List[Tuple[float, float]]] = Field(
+    coordinates: list[list[tuple[float, float]]] = Field(
         ..., description="Array of linear rings"
     )
 
     @field_validator("coordinates")
     @classmethod
     def validate_coordinates(
-        cls, v: List[List[Tuple[float, float]]]
-    ) -> List[List[Tuple[float, float]]]:
+        cls, v: list[list[tuple[float, float]]]
+    ) -> list[list[tuple[float, float]]]:
         """Validate Polygon rings."""
         if not v or len(v) < 1:
             raise ValueError("Polygon must have at least one linear ring")
@@ -125,15 +125,15 @@ class MultiPoint(GeometryBase):
     """GeoJSON MultiPoint geometry."""
 
     type: Literal[GeoJSONType.MULTI_POINT] = GeoJSONType.MULTI_POINT
-    coordinates: List[Tuple[float, float]] = Field(
+    coordinates: list[tuple[float, float]] = Field(
         ..., description="Array of positions"
     )
 
     @field_validator("coordinates")
     @classmethod
     def validate_coordinates(
-        cls, v: List[Tuple[float, float]]
-    ) -> List[Tuple[float, float]]:
+        cls, v: list[tuple[float, float]]
+    ) -> list[tuple[float, float]]:
         """Validate every point in the collection."""
         for position in v:
             _validate_position(position)
@@ -144,15 +144,15 @@ class MultiLineString(GeometryBase):
     """GeoJSON MultiLineString geometry."""
 
     type: Literal[GeoJSONType.MULTI_LINE_STRING] = GeoJSONType.MULTI_LINE_STRING
-    coordinates: List[List[Tuple[float, float]]] = Field(
+    coordinates: list[list[tuple[float, float]]] = Field(
         ..., description="Array of line strings"
     )
 
     @field_validator("coordinates")
     @classmethod
     def validate_coordinates(
-        cls, v: List[List[Tuple[float, float]]]
-    ) -> List[List[Tuple[float, float]]]:
+        cls, v: list[list[tuple[float, float]]]
+    ) -> list[list[tuple[float, float]]]:
         """Validate every line position in the collection."""
         for line in v:
             if len(line) < 2:
@@ -166,15 +166,15 @@ class MultiPolygon(GeometryBase):
     """GeoJSON MultiPolygon geometry."""
 
     type: Literal[GeoJSONType.MULTI_POLYGON] = GeoJSONType.MULTI_POLYGON
-    coordinates: List[List[List[Tuple[float, float]]]] = Field(
+    coordinates: list[list[list[tuple[float, float]]]] = Field(
         ..., description="Array of polygons"
     )
 
     @field_validator("coordinates")
     @classmethod
     def validate_coordinates(
-        cls, v: List[List[List[Tuple[float, float]]]]
-    ) -> List[List[List[Tuple[float, float]]]]:
+        cls, v: list[list[list[tuple[float, float]]]]
+    ) -> list[list[list[tuple[float, float]]]]:
         """Validate every ring and position in the collection."""
         for polygon in v:
             for ring in polygon:
@@ -197,9 +197,9 @@ class Feature(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     type: Literal[GeoJSONType.FEATURE] = GeoJSONType.FEATURE
-    geometry: Optional[Dict[str, Any]] = None
-    properties: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    id: Optional[Union[str, int]] = None
+    geometry: dict[str, Any] | None = None
+    properties: dict[str, Any] | None = Field(default_factory=dict)
+    id: str | int | None = None
 
 
 class FeatureCollection(BaseModel):
@@ -208,7 +208,7 @@ class FeatureCollection(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     type: Literal[GeoJSONType.FEATURE_COLLECTION] = GeoJSONType.FEATURE_COLLECTION
-    features: List[Feature] = Field(..., description="Array of features")
+    features: list[Feature] = Field(..., description="Array of features")
 
 
 # Specialized models for specific API operations
@@ -233,4 +233,4 @@ class PolygonFeature(Feature):
 class PolygonFeatureCollection(FeatureCollection):
     """A GeoJSON FeatureCollection containing only Polygon features."""
 
-    features: List[PolygonFeature]  # type: ignore[assignment]
+    features: list[PolygonFeature]  # type: ignore[assignment]

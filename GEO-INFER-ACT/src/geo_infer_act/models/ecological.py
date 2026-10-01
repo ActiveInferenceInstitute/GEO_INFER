@@ -2,7 +2,7 @@
 Ecological model for active inference.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any
 import numpy as np
 
 from geo_infer_act.core.active_inference import ActiveInferenceModel
@@ -20,7 +20,7 @@ class EcologicalModel(ActiveInferenceModel):
 
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
         random_seed: int | None = None,
     ):
         """
@@ -70,9 +70,9 @@ class EcologicalModel(ActiveInferenceModel):
         )
         self.set_generative_model(gen_model)
 
-    def _build_A_matrix(self) -> List[np.ndarray]:
+    def _build_A_matrix(self) -> list[np.ndarray]:
         """Build Likelihood Matrix A: P(o|s)."""
-        A: List[np.ndarray]
+        A: list[np.ndarray]
         A = obj_array_zeros([self.num_obs, self.num_states])
 
         # --- Modality 0: Food Signal (mapping from Resource Level) ---
@@ -118,7 +118,7 @@ class EcologicalModel(ActiveInferenceModel):
 
         return A
 
-    def _build_B_matrix(self) -> List[np.ndarray]:
+    def _build_B_matrix(self) -> list[np.ndarray]:
         """Build Transition Matrix B: P(s'|s,u)."""
         # Initialize B as list of arrays for independent factors
         # Factor 0: Resource (3 states)
@@ -183,9 +183,9 @@ class EcologicalModel(ActiveInferenceModel):
 
         return B
 
-    def _build_C_matrix(self) -> List[np.ndarray]:
+    def _build_C_matrix(self) -> list[np.ndarray]:
         """Build Preference Matrix C: P(o)."""
-        C: List[np.ndarray]
+        C: list[np.ndarray]
         C = obj_array_zeros(self.num_obs)
 
         # Prefer Abundant Food (Modality 0, Index 2)
@@ -200,9 +200,9 @@ class EcologicalModel(ActiveInferenceModel):
 
         return C
 
-    def _build_D_matrix(self) -> List[np.ndarray]:
+    def _build_D_matrix(self) -> list[np.ndarray]:
         """Build Prior Matrix D: P(s)."""
-        D: List[np.ndarray]
+        D: list[np.ndarray]
         D = obj_array_zeros(self.num_states)
 
         # Start expecting High Resources

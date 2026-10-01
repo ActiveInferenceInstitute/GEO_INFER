@@ -12,7 +12,6 @@ runoff plus infiltration equals rainfall at every step.
 """
 
 import math
-from typing import Dict, Optional
 
 import numpy as np
 
@@ -26,7 +25,7 @@ class InfiltrationModeler:
     convenience.
     """
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         """Initialize infiltration modeler.
 
         Args:
@@ -42,7 +41,7 @@ class InfiltrationModeler:
         saturated_water_content: float = 0.45,
         initial_water_content: float = 0.15,
         time_step_hr: float = 1.0,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Simulate infiltration with the Green-Ampt method.
 
         Time-stepped Green-Ampt infiltration under rainfall supply

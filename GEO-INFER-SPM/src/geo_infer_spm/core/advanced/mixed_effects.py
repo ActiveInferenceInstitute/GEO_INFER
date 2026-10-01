@@ -24,7 +24,7 @@ where:
 
 import logging
 import numpy as np
-from typing import Dict, Optional, Tuple, Any, cast
+from typing import Any, cast
 from scipy import linalg, stats
 from scipy.optimize import minimize
 
@@ -50,8 +50,8 @@ class MixedEffectsSPM:
     def __init__(
         self,
         fixed_design: DesignMatrix,
-        random_groups: Dict[str, np.ndarray],
-        random_effects: Optional[Dict[str, Any]] = None,
+        random_groups: dict[str, np.ndarray],
+        random_effects: dict[str, Any] | None = None,
     ):
         """
         Initialize mixed effects SPM.
@@ -64,7 +64,7 @@ class MixedEffectsSPM:
         self.fixed_design = fixed_design
         self.random_groups = random_groups
         self.random_effects = random_effects or {}
-        self.fitted_model: Optional[Dict[str, Any]] = None
+        self.fitted_model: dict[str, Any] | None = None
 
         # Validate inputs
         self._validate_inputs()
@@ -153,7 +153,7 @@ class MixedEffectsSPM:
 
     def _setup_matrices(
         self, y: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, Dict[str, Any]]:
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
         """
         Set up design matrices for mixed effects model.
 
@@ -194,8 +194,8 @@ class MixedEffectsSPM:
         return X, Z, group_info
 
     def _fit_reml(
-        self, X: np.ndarray, Z: np.ndarray, y: np.ndarray, group_info: Dict[str, Any]
-    ) -> Tuple[np.ndarray, Dict[str, float], float]:
+        self, X: np.ndarray, Z: np.ndarray, y: np.ndarray, group_info: dict[str, Any]
+    ) -> tuple[np.ndarray, dict[str, float], float]:
         """
         Fit mixed effects model using Restricted Maximum Likelihood (REML).
 
@@ -274,8 +274,8 @@ class MixedEffectsSPM:
             return np.linalg.pinv(X) @ y, {"residual_variance": np.var(y)}, -np.inf
 
     def _fit_ml(
-        self, X: np.ndarray, Z: np.ndarray, y: np.ndarray, group_info: Dict[str, Any]
-    ) -> Tuple[np.ndarray, Dict[str, float], float]:
+        self, X: np.ndarray, Z: np.ndarray, y: np.ndarray, group_info: dict[str, Any]
+    ) -> tuple[np.ndarray, dict[str, float], float]:
         """
         Fit mixed effects model using Maximum Likelihood (ML).
         """
@@ -363,7 +363,7 @@ class MixedEffectsSPM:
 
         return cast(np.ndarray, X_pred @ beta)
 
-    def get_random_effects(self) -> Dict[str, np.ndarray]:
+    def get_random_effects(self) -> dict[str, np.ndarray]:
         """
         Extract estimated random effects.
 
@@ -376,10 +376,10 @@ class MixedEffectsSPM:
         # Baseline - full implementation would extract random effects
         # from the fitted model
         return cast(
-            Dict[str, np.ndarray], {"random_effects": np.array([]), "group_effects": {}}
+            dict[str, np.ndarray], {"random_effects": np.array([]), "group_effects": {}}
         )
 
-    def anova(self, other_model: "MixedEffectsSPM") -> Dict[str, Any]:
+    def anova(self, other_model: "MixedEffectsSPM") -> dict[str, Any]:
         """
         Perform likelihood ratio test comparing two nested models.
 
@@ -420,7 +420,7 @@ class MixedEffectsSPM:
 def fit_mixed_effects(
     data: SPMData,
     fixed_design: DesignMatrix,
-    random_groups: Dict[str, np.ndarray],
+    random_groups: dict[str, np.ndarray],
     **kwargs: Any,
 ) -> SPMResult:
     """

@@ -30,7 +30,7 @@ import os
 import pickle
 import stat
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import pytest
 
@@ -51,7 +51,7 @@ OTHER_KEY = b"a-completely-different-master-key"
 # Hostile payload used to prove deserialization never happens on rejection.
 # --------------------------------------------------------------------------- #
 
-EXECUTED: List[str] = []
+EXECUTED: list[str] = []
 
 
 def _mark_executed(tag: str) -> str:
@@ -102,8 +102,8 @@ class FakeRedis:
     """Minimal in-memory Redis stand-in covering the cache call surface."""
 
     def __init__(self) -> None:
-        self.store: Dict[str, Any] = {}
-        self.ttls: Dict[str, int] = {}
+        self.store: dict[str, Any] = {}
+        self.ttls: dict[str, int] = {}
 
     def ping(self) -> bool:
         return True
@@ -176,7 +176,7 @@ class FakeRedisPipeline:
 
     def __init__(self, client: "FakeRedis") -> None:
         self.client = client
-        self.queued: List[tuple] = []
+        self.queued: list[tuple] = []
 
     def __enter__(self) -> "FakeRedisPipeline":
         return self
@@ -192,7 +192,7 @@ class FakeRedisPipeline:
         self.queued.append(("setex", (key, seconds, value), {}))
         return self
 
-    def execute(self) -> List[Any]:
+    def execute(self) -> list[Any]:
         results = []
         for name, args, kwargs in self.queued:
             results.append(getattr(self.client, name)(*args, **kwargs))
@@ -225,15 +225,15 @@ class FakeMinioObject:
 class FakeMinio:
     """Minimal MinIO client stand-in backed by a dict."""
 
-    instances: List["FakeMinio"] = []
+    instances: list["FakeMinio"] = []
 
     def __init__(self, endpoint, access_key=None, secret_key=None, secure=False):
         self.endpoint = endpoint
         self.buckets: set = set()
-        self.objects: Dict[str, bytes] = FakeMinio.shared_objects
+        self.objects: dict[str, bytes] = FakeMinio.shared_objects
         FakeMinio.instances.append(self)
 
-    shared_objects: Dict[str, bytes] = {}
+    shared_objects: dict[str, bytes] = {}
 
     def bucket_exists(self, bucket) -> bool:
         return bucket in self.buckets
@@ -957,7 +957,7 @@ class TestGitDiskCache:
         )
 
     @staticmethod
-    def cache_files(tmp_path: Path) -> List[Path]:
+    def cache_files(tmp_path: Path) -> list[Path]:
         return sorted(tmp_path.glob("*.cache"))
 
     @pytest.mark.parametrize("compression", [True, False])

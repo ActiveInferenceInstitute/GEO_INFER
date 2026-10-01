@@ -6,7 +6,7 @@ Integrates with FastAPI for high-performance web services.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Query
 import h3
@@ -34,13 +34,13 @@ class SensorAPI:
     - Sensor network status monitoring
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config = config or {}
         self.app = FastAPI(title="GEO-INFER-IOT Sensor API", version="1.0.0")
 
         # Initialize core components if available
-        self.registry: Optional[Any] = None
-        self.ingestion: Optional[Any] = None
+        self.registry: Any | None = None
+        self.ingestion: Any | None = None
         if HAS_CORE_MODULES:
             self.registry = SensorRegistry(config)
             self.ingestion = IoTDataIngestion(self.registry, config)
@@ -57,7 +57,7 @@ class SensorAPI:
         """Setup API routes and endpoints."""
 
         @self.app.get("/")
-        async def root() -> Dict[str, Any]:
+        async def root() -> dict[str, Any]:
             """API root endpoint with service information."""
             return {
                 "service": "GEO-INFER-IOT Sensor API",
@@ -69,14 +69,12 @@ class SensorAPI:
 
         @self.app.get("/sensors")
         async def list_sensors(
-            sensor_type: Optional[str] = Query(
-                None, description="Filter by sensor type"
-            ),
-            network_id: Optional[str] = Query(None, description="Filter by network ID"),
-            h3_index: Optional[str] = Query(None, description="Filter by H3 index"),
+            sensor_type: str | None = Query(None, description="Filter by sensor type"),
+            network_id: str | None = Query(None, description="Filter by network ID"),
+            h3_index: str | None = Query(None, description="Filter by H3 index"),
             limit: int = Query(100, description="Maximum number of sensors to return"),
             offset: int = Query(0, description="Offset for pagination"),
-        ) -> Dict[str, Any]:
+        ) -> dict[str, Any]:
             """List sensors with optional filtering."""
             if self.registry is None:
                 raise HTTPException(
@@ -137,7 +135,7 @@ class SensorAPI:
                 )
 
         @self.app.get("/sensors/{sensor_id}")
-        async def get_sensor(sensor_id: str) -> Dict[str, Any]:
+        async def get_sensor(sensor_id: str) -> dict[str, Any]:
             """Get detailed information about a specific sensor."""
             if self.registry is None:
                 raise HTTPException(
@@ -166,7 +164,7 @@ class SensorAPI:
             }
 
         @self.app.post("/sensors")
-        async def register_sensor(sensor_data: Dict) -> Dict[str, Any]:
+        async def register_sensor(sensor_data: dict) -> dict[str, Any]:
             """Register a new sensor."""
             if self.registry is None:
                 raise HTTPException(
@@ -188,24 +186,20 @@ class SensorAPI:
 
         @self.app.get("/measurements")
         async def query_measurements(
-            sensor_id: Optional[str] = Query(None, description="Filter by sensor ID"),
-            variable: Optional[str] = Query(
-                None, description="Filter by variable type"
-            ),
-            start_time: Optional[datetime] = Query(
+            sensor_id: str | None = Query(None, description="Filter by sensor ID"),
+            variable: str | None = Query(None, description="Filter by variable type"),
+            start_time: datetime | None = Query(
                 None, description="Start time for query"
             ),
-            end_time: Optional[datetime] = Query(
-                None, description="End time for query"
-            ),
-            h3_index: Optional[str] = Query(
+            end_time: datetime | None = Query(None, description="End time for query"),
+            h3_index: str | None = Query(
                 None, description="H3 cell to filter measurements by location"
             ),
             h3_resolution: int = Query(
                 8, description="H3 resolution used to match measurements to h3_index"
             ),
             limit: int = Query(1000, description="Maximum measurements to return"),
-        ) -> Dict[str, Any]:
+        ) -> dict[str, Any]:
             """Query sensor measurements with temporal and spatial filtering."""
             if self.ingestion is None:
                 raise HTTPException(
@@ -293,7 +287,7 @@ class SensorAPI:
                 )
 
         @self.app.post("/measurements")
-        async def submit_measurements(measurements: List[Dict]) -> Dict[str, Any]:
+        async def submit_measurements(measurements: list[dict]) -> dict[str, Any]:
             """Submit new sensor measurements."""
             if self.ingestion is None:
                 raise HTTPException(
@@ -325,7 +319,7 @@ class SensorAPI:
                 )
 
         @self.app.get("/networks")
-        async def list_networks() -> Dict[str, Any]:
+        async def list_networks() -> dict[str, Any]:
             """List all sensor networks."""
             if self.registry is None:
                 raise HTTPException(
@@ -349,9 +343,9 @@ class SensorAPI:
             return {"networks": networks, "total_networks": len(networks)}
 
         @self.app.get("/health")
-        async def health_check() -> Dict[str, Any]:
+        async def health_check() -> dict[str, Any]:
             """Health check endpoint."""
-            health_status: Dict[str, Any] = {
+            health_status: dict[str, Any] = {
                 "status": "healthy",
                 "timestamp": datetime.now().isoformat(),
                 "services": {},
@@ -374,7 +368,7 @@ class SensorAPI:
             return health_status
 
         @self.app.get("/spatial/{h3_index}/sensors")
-        async def get_sensors_in_h3_cell(h3_index: str) -> Dict[str, Any]:
+        async def get_sensors_in_h3_cell(h3_index: str) -> dict[str, Any]:
             """Get all sensors in a specific H3 cell."""
             if self.registry is None:
                 raise HTTPException(

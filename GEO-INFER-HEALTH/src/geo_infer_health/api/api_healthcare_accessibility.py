@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Body, Query
-from typing import List, Optional, Dict, Tuple, Any
+from typing import Optional, Any
 
 from geo_infer_health.models import HealthFacility, Location, PopulationData
 from geo_infer_health.core.healthcare_accessibility import (
@@ -12,8 +12,8 @@ router = APIRouter(
 )
 
 # In-memory store backing the demo API
-_FACILITIES_DB: List[HealthFacility] = []
-_POPULATION_DATA_DB_ACC: List[
+_FACILITIES_DB: list[HealthFacility] = []
+_POPULATION_DATA_DB_ACC: list[
     PopulationData
 ] = []  # Using a different name to avoid conflict if run in same context as surveillance
 
@@ -31,27 +31,27 @@ async def add_health_facility(facility: HealthFacility = Body(...)) -> HealthFac
     return facility
 
 
-@router.get("/facilities/", response_model=List[HealthFacility])
+@router.get("/facilities/", response_model=list[HealthFacility])
 async def get_all_health_facilities(
     limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0)
-) -> List[HealthFacility]:
+) -> list[HealthFacility]:
     """Retrieve all health facilities with pagination."""
     return _FACILITIES_DB[offset : offset + limit]
 
 
-@router.post("/facilities/nearby", response_model=List[HealthFacility])
+@router.post("/facilities/nearby", response_model=list[HealthFacility])
 async def find_nearby_facilities(
     latitude: float = Query(..., description="Latitude of the search center."),
     longitude: float = Query(..., description="Longitude of the search center."),
     radius_km: float = Query(..., gt=0, description="Search radius in kilometers."),
-    facility_type: Optional[str] = Query(
+    facility_type: str | None = Query(
         None,
         description="Optional filter by facility type (e.g., 'hospital', 'clinic').",
     ),
-    required_services: Optional[List[str]] = Query(
+    required_services: list[str] | None = Query(
         None, description="Optional list of required services."
     ),
-) -> List[HealthFacility]:
+) -> list[HealthFacility]:
     """Finds health facilities within a radius, with optional filters."""
     if not _FACILITIES_DB:
         raise HTTPException(status_code=404, detail="No health facilities available.")
@@ -71,18 +71,18 @@ async def find_nearby_facilities(
 
 
 @router.post(
-    "/facilities/nearest", response_model=Optional[Dict[str, Any]]
+    "/facilities/nearest", response_model=Optional[dict[str, Any]]
 )  # HealthFacility and distance
 async def get_nearest_facility_endpoint(
     latitude: float = Query(..., description="Latitude of the origin point."),
     longitude: float = Query(..., description="Longitude of the origin point."),
-    facility_type: Optional[str] = Query(
+    facility_type: str | None = Query(
         None, description="Optional filter by facility type."
     ),
-    required_services: Optional[List[str]] = Query(
+    required_services: list[str] | None = Query(
         None, description="Optional list of required services."
     ),
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Finds the nearest health facility to a given location."""
     if not _FACILITIES_DB:
         raise HTTPException(status_code=404, detail="No health facilities available.")
@@ -91,7 +91,7 @@ async def get_nearest_facility_endpoint(
     analyzer = HealthcareAccessibilityAnalyzer(
         facilities=_FACILITIES_DB, population_data=_POPULATION_DATA_DB_ACC
     )
-    result: Optional[Tuple[HealthFacility, float]] = analyzer.get_nearest_facility(
+    result: tuple[HealthFacility, float] | None = analyzer.get_nearest_facility(
         loc=loc, facility_type=facility_type, required_services=required_services
     )
     if not result:
@@ -101,14 +101,14 @@ async def get_nearest_facility_endpoint(
 
 
 @router.get(
-    "/facility_population_ratio/{area_id}", response_model=Optional[Dict[str, Any]]
+    "/facility_population_ratio/{area_id}", response_model=Optional[dict[str, Any]]
 )
 async def get_facility_population_ratio(
     area_id: str,
-    facility_type: Optional[str] = Query(
+    facility_type: str | None = Query(
         None, description="Optional filter by facility type for ratio calculation."
     ),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Calculates the facility-to-population ratio for a given area ID."""
     if not _FACILITIES_DB and not _POPULATION_DATA_DB_ACC:  # Basic check
         raise HTTPException(
@@ -141,9 +141,9 @@ async def add_accessibility_population_data(
     return data
 
 
-@router.get("/population_data/", response_model=List[PopulationData])
+@router.get("/population_data/", response_model=list[PopulationData])
 async def get_accessibility_population_data(
     limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0)
-) -> List[PopulationData]:
+) -> list[PopulationData]:
     """Retrieve population data used in accessibility context."""
     return _POPULATION_DATA_DB_ACC[offset : offset + limit]

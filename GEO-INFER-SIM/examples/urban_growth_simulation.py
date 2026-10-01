@@ -8,7 +8,7 @@ with population dynamics, land use change, and policy analysis.
 
 import numpy as np
 
-from geo_infer_sim import SimulationEngine, Agent, Environment, ABMModel
+from geo_infer_sim import SimulationEngine, Agent, Environment
 
 
 def main():
@@ -186,7 +186,7 @@ def main():
     final_developed = history[-1]["developed"]
     growth_rate = (final_developed - initial_developed) / years
 
-    print(f"\n   Growth Statistics:")
+    print("\n   Growth Statistics:")
     print(f"   - Total growth: {final_developed - initial_developed} cells")
     print(f"   - Annual growth rate: {growth_rate:.1f} cells/year")
     print(f"   - Population housed: ~{int(history[-1]['residential'] * 50)}")

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Body, Query
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 from geo_infer_health.models import DiseaseReport, Location, PopulationData
 from geo_infer_health.core.disease_surveillance import DiseaseHotspotAnalyzer
@@ -13,8 +13,8 @@ router = APIRouter(
 # The store is module-level and shared across requests.
 # This is the in-memory store backing the demo API.
 # Global in-memory stores are NOT suitable for production.
-_DISEASE_REPORTS_DB: List[DiseaseReport] = []
-_POPULATION_DATA_DB: List[PopulationData] = []
+_DISEASE_REPORTS_DB: list[DiseaseReport] = []
+_POPULATION_DATA_DB: list[PopulationData] = []
 
 
 def reset_stores() -> None:
@@ -31,15 +31,15 @@ async def submit_disease_report(report: DiseaseReport = Body(...)) -> DiseaseRep
     return report
 
 
-@router.get("/reports/", response_model=List[DiseaseReport])
+@router.get("/reports/", response_model=list[DiseaseReport])
 async def get_all_disease_reports(
     limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0)
-) -> List[DiseaseReport]:
+) -> list[DiseaseReport]:
     """Retrieve all submitted disease reports with pagination."""
     return _DISEASE_REPORTS_DB[offset : offset + limit]
 
 
-@router.post("/hotspots/identify", response_model=List[Dict])
+@router.post("/hotspots/identify", response_model=list[dict])
 async def identify_disease_hotspots(
     threshold_case_count: int = Query(
         5,
@@ -51,12 +51,12 @@ async def identify_disease_hotspots(
         gt=0,
         description="Scan radius in kilometers around each report to count cases.",
     ),
-    min_density_cases_per_sq_km: Optional[float] = Query(
+    min_density_cases_per_sq_km: float | None = Query(
         None,
         gt=0,
         description="Optional minimum case density (cases/km^2) to define a hotspot.",
     ),
-) -> List[Dict]:
+) -> list[dict]:
     """Identifies disease hotspots based on current reports."""
     if not _DISEASE_REPORTS_DB:
         raise HTTPException(
@@ -74,19 +74,19 @@ async def identify_disease_hotspots(
     return hotspots
 
 
-@router.post("/incidence_rate/local", response_model=Dict)
+@router.post("/incidence_rate/local", response_model=dict)
 async def get_local_incidence_rate(
     latitude: float = Query(..., description="Latitude of the center point."),
     longitude: float = Query(..., description="Longitude of the center point."),
     radius_km: float = Query(
         ..., gt=0, description="Radius in kilometers to calculate incidence rate."
     ),
-    time_window_days: Optional[int] = Query(
+    time_window_days: int | None = Query(
         None,
         ge=1,
         description="Optional time window in days to consider recent reports.",
     ),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Calculates the local incidence rate for a given area and time window."""
     if not _DISEASE_REPORTS_DB:
         raise HTTPException(
@@ -123,9 +123,9 @@ async def add_population_data_area(data: PopulationData = Body(...)) -> Populati
     return data
 
 
-@router.get("/population_data/", response_model=List[PopulationData])
+@router.get("/population_data/", response_model=list[PopulationData])
 async def get_all_population_data(
     limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0)
-) -> List[PopulationData]:
+) -> list[PopulationData]:
     """Retrieve all population data entries."""
     return _POPULATION_DATA_DB[offset : offset + limit]

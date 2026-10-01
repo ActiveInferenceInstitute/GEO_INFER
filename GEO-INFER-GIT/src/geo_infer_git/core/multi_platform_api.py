@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Multi-platform Git API client for GEO-INFER-GIT.
@@ -11,7 +10,7 @@ Git platforms including GitHub, GitLab, Bitbucket, and local repositories.
 import os
 import time
 import logging
-from typing import Dict, List, Any, Optional, Protocol, cast
+from typing import Any, Protocol, cast
 from dataclasses import dataclass
 from pathlib import Path
 import requests
@@ -43,10 +42,10 @@ class GitLabRepository:
     updated_at: str
     last_activity_at: str
     archived: bool
-    topics: List[str]
+    topics: list[str]
 
     @classmethod
-    def from_api_response(cls, data: Dict[str, Any]) -> "GitLabRepository":
+    def from_api_response(cls, data: dict[str, Any]) -> "GitLabRepository":
         """Create repository object from GitLab API response."""
         return cls(
             id=data.get("id", 0),
@@ -89,10 +88,10 @@ class BitbucketRepository:
     created_at: str
     updated_at: str
     is_private: bool
-    topics: List[str]
+    topics: list[str]
 
     @classmethod
-    def from_api_response(cls, data: Dict[str, Any]) -> "BitbucketRepository":
+    def from_api_response(cls, data: dict[str, Any]) -> "BitbucketRepository":
         """Create repository object from Bitbucket API response."""
         return cls(
             name=data.get("name", ""),
@@ -124,7 +123,7 @@ class LocalRepository:
     path: str
     description: str
     default_branch: str
-    remote_urls: List[str]
+    remote_urls: list[str]
     size: int
     last_modified: str
 
@@ -149,7 +148,7 @@ class LocalRepository:
                 readme_path = path / readme
                 if readme_path.exists():
                     try:
-                        with open(readme_path, "r", encoding="utf-8") as f:
+                        with open(readme_path, encoding="utf-8") as f:
                             content = f.read()
                             # Extract first non-empty line as description
                             lines = [
@@ -193,7 +192,7 @@ class LocalRepository:
 class PlatformAPI(Protocol):
     """Protocol for Git platform API clients."""
 
-    def get_user_repositories(self, username: str, **kwargs: Any) -> List[Any]:
+    def get_user_repositories(self, username: str, **kwargs: Any) -> list[Any]:
         """Get repositories for a user."""
         ...
 
@@ -218,7 +217,7 @@ class GitLabAPI:
 
     def __init__(
         self,
-        token: Optional[str] = None,
+        token: str | None = None,
         api_url: str = "https://gitlab.com/api/v4",
         wait_on_rate_limit: bool = True,
         max_retries: int = 3,
@@ -290,12 +289,12 @@ class GitLabAPI:
     def get_user_repositories(
         self,
         username: str,
-        include_repos: Optional[List[str]] = None,
-        exclude_repos: Optional[List[str]] = None,
+        include_repos: list[str] | None = None,
+        exclude_repos: list[str] | None = None,
         max_repos: int = 100,
-    ) -> List[GitLabRepository]:
+    ) -> list[GitLabRepository]:
         """Get repositories for a GitLab user."""
-        repositories: List[GitLabRepository] = []
+        repositories: list[GitLabRepository] = []
         page = 1
         per_page = min(100, max_repos)
 
@@ -385,8 +384,8 @@ class BitbucketAPI:
 
     def __init__(
         self,
-        username: Optional[str] = None,
-        app_password: Optional[str] = None,
+        username: str | None = None,
+        app_password: str | None = None,
         api_url: str = "https://api.bitbucket.org/2.0",
         wait_on_rate_limit: bool = True,
         max_retries: int = 3,
@@ -452,12 +451,12 @@ class BitbucketAPI:
     def get_user_repositories(
         self,
         username: str,
-        include_repos: Optional[List[str]] = None,
-        exclude_repos: Optional[List[str]] = None,
+        include_repos: list[str] | None = None,
+        exclude_repos: list[str] | None = None,
         max_repos: int = 100,
-    ) -> List[BitbucketRepository]:
+    ) -> list[BitbucketRepository]:
         """Get repositories for a Bitbucket user."""
-        repositories: List[BitbucketRepository] = []
+        repositories: list[BitbucketRepository] = []
         page = 1
         per_page = min(100, max_repos)
 
@@ -526,17 +525,17 @@ class LocalGitAPI:
     - Managing local repository operations
     """
 
-    def __init__(self, base_paths: Optional[List[str]] = None) -> None:
+    def __init__(self, base_paths: list[str] | None = None) -> None:
         """
         Initialize local Git API client.
 
         Args:
             base_paths: List of base directories to search for repositories
         """
-        raw_paths: List[str] = base_paths or ["."]
-        self.base_paths: List[Path] = [Path(p).resolve() for p in raw_paths]
+        raw_paths: list[str] = base_paths or ["."]
+        self.base_paths: list[Path] = [Path(p).resolve() for p in raw_paths]
 
-    def discover_repositories(self, max_depth: int = 3) -> List[LocalRepository]:
+    def discover_repositories(self, max_depth: int = 3) -> list[LocalRepository]:
         """
         Discover Git repositories in base paths.
 
@@ -591,7 +590,7 @@ class MultiPlatformAPI:
     """
 
     def __init__(
-        self, platform_configs: Optional[Dict[str, Dict[str, Any]]] = None
+        self, platform_configs: dict[str, dict[str, Any]] | None = None
     ) -> None:
         """
         Initialize multi-platform API client.
@@ -600,7 +599,7 @@ class MultiPlatformAPI:
             platform_configs: Configuration for each platform
         """
         self.platform_configs = platform_configs or {}
-        self.clients: Dict[str, Any] = {}
+        self.clients: dict[str, Any] = {}
 
         # Initialize platform clients
         self._initialize_clients()
@@ -629,7 +628,7 @@ class MultiPlatformAPI:
 
     def get_user_repositories(
         self, platform: str, username: str, **kwargs: Any
-    ) -> List[Any]:
+    ) -> list[Any]:
         """
         Get repositories for a user across platforms.
 
@@ -655,7 +654,7 @@ class MultiPlatformAPI:
         elif platform == "local":
             # For local, username is ignored, just discover repositories
             local_client: Any = self.clients[platform]
-            return cast(List[Any], local_client.discover_repositories(**kwargs))
+            return cast(list[Any], local_client.discover_repositories(**kwargs))
         else:
             raise ValueError(f"Unsupported platform: {platform}")
 
@@ -706,12 +705,12 @@ class MultiPlatformAPI:
         else:
             return False
 
-    def get_supported_platforms(self) -> List[str]:
+    def get_supported_platforms(self) -> list[str]:
         """Get list of supported platforms."""
         return list(self.clients.keys())
 
 
-def create_platform_api(config: Dict[str, Any]) -> MultiPlatformAPI:
+def create_platform_api(config: dict[str, Any]) -> MultiPlatformAPI:
     """
     Create a multi-platform API client from configuration.
 

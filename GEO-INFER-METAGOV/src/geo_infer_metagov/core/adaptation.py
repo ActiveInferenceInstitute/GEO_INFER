@@ -1,7 +1,7 @@
 """Adaptive governance systems with learning and evolution."""
 
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import Any
 import hashlib
 import logging
 import random
@@ -28,10 +28,10 @@ class AdaptiveManagementCycle:
     cycle_id: str
     governance_domain: str
     decision_frequency: str
-    learning_mechanisms: List[str]
+    learning_mechanisms: list[str]
     stakeholder_participation: str
-    monitoring_plan: Dict[str, Any]
-    evaluation_schedule: Dict[str, Any]
+    monitoring_plan: dict[str, Any]
+    evaluation_schedule: dict[str, Any]
 
 
 class AdaptiveGovernanceSystem:
@@ -46,13 +46,13 @@ class AdaptiveGovernanceSystem:
         self.learning_approach = learning_approach
         self.timeframe = timeframe
         self.feedback_mechanisms = feedback_mechanisms
-        self.adaptive_cycles: Dict[str, AdaptiveManagementCycle] = {}
+        self.adaptive_cycles: dict[str, AdaptiveManagementCycle] = {}
 
     def establish_adaptive_cycle(
         self,
         governance_domain: str,
         decision_frequency: str,
-        learning_mechanisms: List[str],
+        learning_mechanisms: list[str],
         stakeholder_participation: str,
     ) -> AdaptiveManagementCycle:
         """Establish adaptive management cycle."""
@@ -72,7 +72,7 @@ class AdaptiveGovernanceSystem:
         logger.info(f"Adaptive cycle established: {cycle_id}")
         return cycle
 
-    def _design_monitoring_plan(self, governance_domain: str) -> Dict[str, Any]:
+    def _design_monitoring_plan(self, governance_domain: str) -> dict[str, Any]:
         """Design monitoring plan."""
         return {
             "domain": governance_domain,
@@ -81,7 +81,7 @@ class AdaptiveGovernanceSystem:
             "data_sources": ["administrative", "stakeholder_feedback", "scientific"],
         }
 
-    def _design_evaluation_schedule(self, decision_frequency: str) -> Dict[str, Any]:
+    def _design_evaluation_schedule(self, decision_frequency: str) -> dict[str, Any]:
         """Design evaluation schedule."""
         return {
             "frequency": decision_frequency,
@@ -91,10 +91,10 @@ class AdaptiveGovernanceSystem:
 
     def monitor_performance(
         self,
-        governance_indicators: List[str],
-        data_sources: List[str],
+        governance_indicators: list[str],
+        data_sources: list[str],
         evaluation_periods: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Monitor governance performance using simulated indicator data.
 
@@ -205,11 +205,11 @@ class AdaptiveGovernanceSystem:
 
     def adapt_governance(
         self,
-        performance_results: Dict[str, Any],
-        learning_outcomes: Dict[str, Any],
-        scenario_changes: List[Dict[str, Any]],
-        adaptation_pathways: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        performance_results: dict[str, Any],
+        learning_outcomes: dict[str, Any],
+        scenario_changes: list[dict[str, Any]],
+        adaptation_pathways: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Adapt governance based on learning and performance analysis.
 

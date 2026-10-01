@@ -6,7 +6,8 @@ including free energy calculations and variational inference helpers.
 """
 
 import numpy as np
-from typing import Optional, Tuple, Dict, Any, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 def free_energy_calculation(
     observations: np.ndarray,
     beliefs: np.ndarray,
-    generative_model: Optional[Callable] = None,
+    generative_model: Callable | None = None,
     precision: float = 1.0,
 ) -> float:
     """
@@ -68,10 +69,10 @@ def free_energy_calculation(
 def variational_inference_helper(
     observations: np.ndarray,
     prior: np.ndarray,
-    likelihood: Optional[Callable] = None,
+    likelihood: Callable | None = None,
     max_iterations: int = 100,
     tolerance: float = 1e-6,
-) -> Tuple[np.ndarray, Dict[str, Any]]:
+) -> tuple[np.ndarray, dict[str, Any]]:
     """
     Helper for variational inference in Active Inference.
 
@@ -222,7 +223,7 @@ class ActiveInferenceConvenience:
 
     def variational_inference(
         self, observations: np.ndarray, prior: np.ndarray, **kwargs: Any
-    ) -> Tuple[np.ndarray, Dict[str, Any]]:
+    ) -> tuple[np.ndarray, dict[str, Any]]:
         """
         Perform variational inference.
 

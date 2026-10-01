@@ -9,9 +9,8 @@ data validation, and export operations.
 import logging
 import json
 import time
-from typing import Dict, Any, List
+from typing import Any
 from pathlib import Path
-from datetime import datetime
 
 # Import the necessary components
 try:
@@ -40,12 +39,12 @@ except ImportError as e:
                 return float(obj)
             elif isinstance(obj, np.ndarray):
                 return obj.tolist()
-            return super(NumpyEncoder, self).default(obj)
+            return super().default(obj)
 
 
 def initialize_modules(
-    active_modules: List[str], shared_backend, osc_repo_path: str
-) -> Dict[str, Any]:
+    active_modules: list[str], shared_backend, osc_repo_path: str
+) -> dict[str, Any]:
     """Initialize all available modules using the shared backend"""
     logger = logging.getLogger(__name__)
     modules = {}
@@ -145,7 +144,7 @@ def initialize_modules(
 
 
 def create_shared_backend(
-    resolution: int, target_counties: Dict, output_dir: Path, osc_repo_path: str
+    resolution: int, target_counties: dict, output_dir: Path, osc_repo_path: str
 ) -> CascadianAgriculturalH3Backend:
     """Create a single shared backend for all modules"""
     logger = logging.getLogger(__name__)
@@ -171,13 +170,13 @@ def create_shared_backend(
 
 def export_results(
     backend,
-    redevelopment_scores: Dict,
-    summary: Dict,
+    redevelopment_scores: dict,
+    summary: dict,
     output_dir: Path,
     timestamp: str,
     bioregion_lower: str,
     export_format: str = "geojson",
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     Export analysis results with enhanced visualization options.
 
@@ -271,7 +270,7 @@ def export_results(
     return export_paths
 
 
-def validate_data_acquisition(modules: Dict) -> Dict[str, int]:
+def validate_data_acquisition(modules: dict) -> dict[str, int]:
     """Validate data acquisition for each module"""
     logger = logging.getLogger(__name__)
     data_acquisition_summary = {}

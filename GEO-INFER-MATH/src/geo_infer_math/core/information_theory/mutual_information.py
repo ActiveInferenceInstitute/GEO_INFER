@@ -6,7 +6,7 @@ dependencies and relationships in spatial data.
 """
 
 import numpy as np
-from typing import Union, Optional, Tuple, Any
+from typing import Any
 import logging
 
 from geo_infer_math.core.information_theory.entropy import (
@@ -107,9 +107,9 @@ def spatial_mutual_information(
     values_x: np.ndarray,
     coordinates_y: np.ndarray,
     values_y: np.ndarray,
-    bins: Optional[Union[int, Tuple[int, int]]] = None,
+    bins: int | tuple[int, int] | None = None,
     base: float = 2.0,
-    distance_threshold: Optional[float] = None,
+    distance_threshold: float | None = None,
 ) -> float:
     """
     Calculate mutual information between two spatial datasets.

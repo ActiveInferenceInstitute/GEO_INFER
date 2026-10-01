@@ -7,7 +7,7 @@ and operates on standard data structures.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -25,16 +25,16 @@ class TemporalAnalyzer:
 
     def __init__(self) -> None:
         """Initialize the TemporalAnalyzer."""
-        self.analysis_history: List[Dict[str, Any]] = []
+        self.analysis_history: list[dict[str, Any]] = []
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
     def analyze_temporal_patterns(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         timestamp_column: str,
         value_column: str,
         temporal_resolution: str = "hour",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze temporal patterns in data.
 
@@ -91,7 +91,7 @@ class TemporalAnalyzer:
             "method": "Temporal Pattern Analysis",
         }
 
-    def _parse_timestamp(self, ts: Any) -> Optional[datetime]:
+    def _parse_timestamp(self, ts: Any) -> datetime | None:
         """Parse timestamp from various formats."""
         if isinstance(ts, datetime):
             return ts
@@ -118,10 +118,10 @@ class TemporalAnalyzer:
             return None
 
     def _aggregate_by_temporal_resolution(
-        self, temporal_data: List[Dict], resolution: str
-    ) -> Dict[int, Dict[str, float]]:
+        self, temporal_data: list[dict], resolution: str
+    ) -> dict[int, dict[str, float]]:
         """Aggregate data by temporal resolution."""
-        aggregated: Dict[int, List[float]] = {}
+        aggregated: dict[int, list[float]] = {}
 
         for item in temporal_data:
             ts = item["timestamp"]
@@ -143,7 +143,7 @@ class TemporalAnalyzer:
             aggregated[key].append(val)
 
         # Calculate stats for each bucket
-        result: Dict[int, Dict[str, float]] = {}
+        result: dict[int, dict[str, float]] = {}
         for key, values in aggregated.items():
             stats = {
                 "mean": float(np.mean(values)),
@@ -156,8 +156,8 @@ class TemporalAnalyzer:
         return result
 
     def _analyze_patterns(
-        self, aggregated_data: Dict, resolution: str
-    ) -> Dict[str, Any]:
+        self, aggregated_data: dict, resolution: str
+    ) -> dict[str, Any]:
         """Analyze temporal patterns in aggregated data."""
         if not aggregated_data:
             return {}
@@ -175,7 +175,7 @@ class TemporalAnalyzer:
 
         return {"peak_periods": peak_periods, "total_periods": len(aggregated_data)}
 
-    def _calculate_temporal_stats(self, aggregated_data: Dict) -> Dict[str, Any]:
+    def _calculate_temporal_stats(self, aggregated_data: dict) -> dict[str, Any]:
         """Calculate overall statistics."""
         if not aggregated_data:
             return {}

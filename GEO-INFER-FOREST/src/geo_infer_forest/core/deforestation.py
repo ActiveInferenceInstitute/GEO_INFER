@@ -5,7 +5,6 @@ including BFAST-style breakpoint detection and magnitude-based thresholding.
 """
 
 import logging
-from typing import Dict, Optional
 
 import numpy as np
 import xarray as xr
@@ -20,7 +19,7 @@ class DeforestationDetector:
     statistically significant vegetation loss between observation periods.
     """
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         """Initialize deforestation detector.
 
         Args:
@@ -34,7 +33,7 @@ class DeforestationDetector:
         self,
         before: xr.DataArray,
         after: xr.DataArray,
-        threshold: Optional[float] = None,
+        threshold: float | None = None,
     ) -> xr.Dataset:
         """Detect deforestation using two-date change detection.
 
@@ -140,7 +139,7 @@ class DeforestationDetector:
     def calculate_annual_deforestation_rate(
         self,
         forest_cover_series: xr.DataArray,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate annual deforestation rate from forest cover time series.
 
         Uses the compound rate formula:
@@ -183,7 +182,7 @@ class DeforestationDetector:
     def calculate_fragmentation_index(
         self,
         forest_mask: xr.DataArray,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate forest fragmentation indices.
 
         Computes edge density and core-to-edge ratio as indicators

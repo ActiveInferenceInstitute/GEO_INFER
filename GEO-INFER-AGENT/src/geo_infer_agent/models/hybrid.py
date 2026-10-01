@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Hybrid Agent Architecture.
@@ -12,7 +11,7 @@ the strengths of each approach within a unified framework.
 import os
 import logging
 import asyncio
-from typing import Dict, List, Any, Optional, cast
+from typing import Any, cast
 from datetime import datetime
 import json
 
@@ -41,7 +40,7 @@ class SubAgentWrapper:
         agent_type: str,
         agent: BaseAgent,
         priority: int = 0,
-        activation_conditions: Optional[Dict[str, Any]] = None,
+        activation_conditions: dict[str, Any] | None = None,
         description: str = "",
     ):
         """
@@ -66,11 +65,11 @@ class SubAgentWrapper:
         # Performance statistics
         self.decision_count = 0
         self.successful_decision_count = 0
-        self.last_activated: Optional[datetime] = None
+        self.last_activated: datetime | None = None
         self.last_reward = 0.0
         self.total_reward = 0.0
 
-    def check_activation(self, context: Dict[str, Any]) -> bool:
+    def check_activation(self, context: dict[str, Any]) -> bool:
         """
         Check if this sub-agent should be activated.
 
@@ -101,7 +100,7 @@ class SubAgentWrapper:
 
         return True
 
-    def _nested_dict_matches(self, expected: Dict, actual: Dict) -> bool:
+    def _nested_dict_matches(self, expected: dict, actual: dict) -> bool:
         """
         Check if nested dictionary matches.
 
@@ -143,7 +142,7 @@ class SubAgentWrapper:
         self.last_reward = reward
         self.total_reward += reward
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "agent_type": self.agent_type,
@@ -177,19 +176,19 @@ class HybridState(AgentState):
         super().__init__()
 
         # Shared context (observations, facts, beliefs, etc.)
-        self.context: Dict[str, Any] = {}
+        self.context: dict[str, Any] = {}
 
         # Sub-agent wrappers
-        self.sub_agents: Dict[str, SubAgentWrapper] = {}
+        self.sub_agents: dict[str, SubAgentWrapper] = {}
 
         # Most recent decisions and actions
-        self.last_perception: Dict[str, Any] = {}
-        self.last_decision: Dict[str, Any] = {}
-        self.last_action: Dict[str, Any] = {}
-        self.last_result: Dict[str, Any] = {}
+        self.last_perception: dict[str, Any] = {}
+        self.last_decision: dict[str, Any] = {}
+        self.last_action: dict[str, Any] = {}
+        self.last_result: dict[str, Any] = {}
 
         # Decision history
-        self.decision_history: List[Dict[str, Any]] = []
+        self.decision_history: list[dict[str, Any]] = []
         self.max_history_size = 100
 
         # Performance metrics
@@ -222,7 +221,7 @@ class HybridState(AgentState):
             return True
         return False
 
-    def get_active_agents(self) -> List[SubAgentWrapper]:
+    def get_active_agents(self) -> list[SubAgentWrapper]:
         """
         Get all active sub-agents based on current context.
 
@@ -261,7 +260,7 @@ class HybridState(AgentState):
         """
         return self.context.get(key, default)
 
-    def record_decision(self, agent_id: str, decision: Dict[str, Any]) -> None:
+    def record_decision(self, agent_id: str, decision: dict[str, Any]) -> None:
         """
         Record a decision made by a sub-agent.
 
@@ -283,7 +282,7 @@ class HybridState(AgentState):
             self.decision_history.pop(0)
 
     def record_result(
-        self, result: Dict[str, Any], success: bool, reward: float = 0.0
+        self, result: dict[str, Any], success: bool, reward: float = 0.0
     ) -> None:
         """
         Record the result of an action.
@@ -314,7 +313,7 @@ class HybridState(AgentState):
             if agent_id in self.sub_agents:
                 self.sub_agents[agent_id].record_decision(success, reward)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "context": self.context,
@@ -348,7 +347,7 @@ class HybridAgent(BaseAgent):
 
     state: HybridState
 
-    def __init__(self, agent_id: Optional[str] = None, config: Optional[Dict] = None):
+    def __init__(self, agent_id: str | None = None, config: dict | None = None):
         """
         Initialize hybrid agent.
 
@@ -374,7 +373,7 @@ class HybridAgent(BaseAgent):
         self._register_default_perception_handlers()
 
         # Sub-agent registry (agent_type -> agent_class)
-        self._agent_registry: Dict[str, Any] = {
+        self._agent_registry: dict[str, Any] = {
             "bdi": BDIAgent,
             "active_inference": ActiveInferenceAgent,
             "rl": RLAgent,
@@ -454,7 +453,7 @@ class HybridAgent(BaseAgent):
             self.state.update_context(key, value)
             logger.debug(f"Set initial context: {key} = {value}")
 
-    async def perceive(self) -> Dict[str, Any]:
+    async def perceive(self) -> dict[str, Any]:
         """
         Perceive the environment.
 
@@ -480,12 +479,12 @@ class HybridAgent(BaseAgent):
 
         return perceptions
 
-    def update_beliefs(self, perception: Dict[str, Any]) -> None:
+    def update_beliefs(self, perception: dict[str, Any]) -> None:
         """Update the shared context from a perception dict (mirrors perceive())."""
         if perception:
             self._update_context_from_perceptions(perception)
 
-    def _update_context_from_perceptions(self, perceptions: Dict[str, Any]) -> None:
+    def _update_context_from_perceptions(self, perceptions: dict[str, Any]) -> None:
         """
         Update context based on perceptions.
 
@@ -505,7 +504,7 @@ class HybridAgent(BaseAgent):
         self.state.update_context("_last_perception_time", datetime.now().isoformat())
 
     async def _forward_perceptions_to_sub_agents(
-        self, perceptions: Dict[str, Any]
+        self, perceptions: dict[str, Any]
     ) -> None:
         """
         Forward perceptions to all sub-agents.
@@ -532,8 +531,8 @@ class HybridAgent(BaseAgent):
                 )
 
     def _customize_perceptions_for_agent(
-        self, agent_type: str, perceptions: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent_type: str, perceptions: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Customize perceptions for specific agent types.
 
@@ -556,7 +555,7 @@ class HybridAgent(BaseAgent):
 
         return agent_perceptions
 
-    async def decide(self) -> Optional[Dict[str, Any]]:
+    async def decide(self) -> dict[str, Any] | None:
         """
         Decide on the next action.
 
@@ -578,7 +577,7 @@ class HybridAgent(BaseAgent):
             default_action = self.config.get("default_action")
             if default_action:
                 logger.debug("Using default action")
-                return cast(Dict[str, Any], default_action.copy())
+                return cast(dict[str, Any], default_action.copy())
 
             return None
 
@@ -624,13 +623,13 @@ class HybridAgent(BaseAgent):
                 "agent_type": selected_decision["agent_type"],
             }
 
-            return cast(Dict[str, Any], decision)
+            return cast(dict[str, Any], decision)
 
         return None
 
     async def _select_decision(
-        self, agent_decisions: List[Dict[str, Any]]
-    ) -> Optional[Dict[str, Any]]:
+        self, agent_decisions: list[dict[str, Any]]
+    ) -> dict[str, Any] | None:
         """
         Select the best decision from multiple agent decisions.
 
@@ -651,7 +650,7 @@ class HybridAgent(BaseAgent):
 
         elif policy == "voting":
             # Implement a simple voting mechanism
-            action_votes: Dict[str, Dict[str, Any]] = {}
+            action_votes: dict[str, dict[str, Any]] = {}
 
             for decision in agent_decisions:
                 # Extract action signature
@@ -679,7 +678,7 @@ class HybridAgent(BaseAgent):
             if selected_signature:
                 selected_decisions = action_votes[selected_signature]["decisions"]
                 selected_decisions.sort(key=lambda d: d["priority"], reverse=True)
-                return cast(Dict[str, Any], selected_decisions[0])
+                return cast(dict[str, Any], selected_decisions[0])
 
         elif policy == "negotiation":
             # More complex negotiation logic could be implemented here
@@ -689,7 +688,7 @@ class HybridAgent(BaseAgent):
 
         return None
 
-    async def act(self, action: Dict[str, Any]) -> Dict[str, Any]:
+    async def act(self, action: dict[str, Any]) -> dict[str, Any]:
         """
         Execute an action.
 
@@ -763,8 +762,8 @@ class HybridAgent(BaseAgent):
         self.register_perception_handler("sensor_data", self._handle_sensor_perceptions)
 
     async def _handle_wait_action(
-        self, agent: "HybridAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "HybridAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle a wait action.
 
@@ -789,8 +788,8 @@ class HybridAgent(BaseAgent):
         }
 
     async def _handle_update_context(
-        self, agent: "HybridAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "HybridAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle updating context.
 
@@ -825,8 +824,8 @@ class HybridAgent(BaseAgent):
         }
 
     async def _handle_query_agents(
-        self, agent: "HybridAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "HybridAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle querying agent information.
 
@@ -921,8 +920,8 @@ class HybridAgent(BaseAgent):
             }
 
     async def _handle_enable_agent(
-        self, agent: "HybridAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "HybridAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle enabling a sub-agent.
 
@@ -964,8 +963,8 @@ class HybridAgent(BaseAgent):
             }
 
     async def _handle_disable_agent(
-        self, agent: "HybridAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "HybridAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle disabling a sub-agent.
 
@@ -1007,7 +1006,7 @@ class HybridAgent(BaseAgent):
             }
 
     def _handle_sensor_perceptions(
-        self, agent: "HybridAgent", perception: Dict[str, Any]
+        self, agent: "HybridAgent", perception: dict[str, Any]
     ) -> None:
         """
         Process sensor perceptions.
@@ -1047,7 +1046,7 @@ class HybridAgent(BaseAgent):
             path: Path to load state from
         """
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 state_data = json.load(f)
 
             # Only load certain parts of the state

@@ -1,7 +1,7 @@
 """Tests for IoT data ingestion engine."""
 
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from geo_infer_iot.core.ingestion import IoTDataIngestion, SensorMeasurement
 from geo_infer_iot.core.registry import SensorRegistry
@@ -25,7 +25,7 @@ class TestIoTDataIngestion:
     def test_dict_to_measurement(self, ingestion):
         data = {
             "sensor_id": "s-001",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "variable": "temperature",
             "value": 22.5,
             "unit": "celsius",
@@ -39,7 +39,7 @@ class TestIoTDataIngestion:
     def test_validate_measurement_valid(self, ingestion):
         m = SensorMeasurement(
             sensor_id="s-001",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="temperature",
             value=22.5,
             unit="celsius",
@@ -51,7 +51,7 @@ class TestIoTDataIngestion:
     def test_validate_measurement_invalid_latitude(self, ingestion):
         m = SensorMeasurement(
             sensor_id="s-001",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="temperature",
             value=22.5,
             unit="celsius",
@@ -63,7 +63,7 @@ class TestIoTDataIngestion:
     def test_validate_measurement_invalid_longitude(self, ingestion):
         m = SensorMeasurement(
             sensor_id="s-001",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="temperature",
             value=22.5,
             unit="celsius",
@@ -75,7 +75,7 @@ class TestIoTDataIngestion:
     def test_validate_measurement_empty_sensor_id(self, ingestion):
         m = SensorMeasurement(
             sensor_id="",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="temperature",
             value=22.5,
             unit="celsius",
@@ -88,7 +88,7 @@ class TestIoTDataIngestion:
     async def test_ingest_measurement(self, ingestion):
         m = SensorMeasurement(
             sensor_id="s-001",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="temperature",
             value=22.5,
             unit="celsius",

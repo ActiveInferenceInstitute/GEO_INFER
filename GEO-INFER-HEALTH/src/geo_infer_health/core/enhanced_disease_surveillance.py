@@ -6,7 +6,7 @@ principles for probabilistic reasoning, uncertainty quantification, and
 adaptive belief updating.
 """
 
-from typing import List, Dict, Optional, Any, cast
+from typing import Any, cast
 from collections import defaultdict
 import math
 from datetime import timedelta
@@ -36,8 +36,8 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
 
     def __init__(
         self,
-        reports: List[DiseaseReport],
-        population_data: Optional[List[PopulationData]] = None,
+        reports: list[DiseaseReport],
+        population_data: list[PopulationData] | None = None,
     ):
         # Input validation
         if not isinstance(reports, list):
@@ -55,8 +55,8 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
         self.free_energy_threshold = 0.1  # Threshold for belief updating
 
         # Performance optimization: cache for spatial computations
-        self._spatial_cache: Dict[Any, Any] = {}
-        self._distance_cache: Dict[Any, Any] = {}
+        self._spatial_cache: dict[Any, Any] = {}
+        self._distance_cache: dict[Any, Any] = {}
 
         # Pre-compute spatial statistics with error handling
         self._spatial_stats = None
@@ -96,9 +96,9 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
         }
 
         # Historical observations for learning
-        self.observation_history: List[Dict[str, float]] = []
+        self.observation_history: list[dict[str, float]] = []
 
-    def _calculate_free_energy(self, observations: Dict[str, float]) -> float:
+    def _calculate_free_energy(self, observations: dict[str, float]) -> float:
         """
         Calculate variational free energy for Active Inference.
 
@@ -123,7 +123,7 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
 
         return free_energy
 
-    def _update_beliefs(self, observations: Dict[str, float]) -> None:
+    def _update_beliefs(self, observations: dict[str, float]) -> None:
         """
         Update belief states using Active Inference.
 
@@ -155,8 +155,8 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
                     )
 
     def _extract_observations(
-        self, reports_subset: List[DiseaseReport]
-    ) -> Dict[str, float]:
+        self, reports_subset: list[DiseaseReport]
+    ) -> dict[str, float]:
         """
         Extract observational features from disease reports for belief updating.
 
@@ -208,13 +208,13 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
             "population_risk": self._calculate_population_risk(reports_subset),
         }
 
-    def _calculate_seasonal_pattern(self, reports: List[DiseaseReport]) -> float:
+    def _calculate_seasonal_pattern(self, reports: list[DiseaseReport]) -> float:
         """Calculate seasonal pattern strength."""
         if len(reports) < 10:
             return 0.0
 
         # Simple seasonal analysis based on month distribution
-        monthly_counts: Dict[int, int] = defaultdict(int)
+        monthly_counts: dict[int, int] = defaultdict(int)
         for report in reports:
             month = report.report_date.month
             monthly_counts[month] += report.case_count
@@ -233,7 +233,7 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
 
         return seasonal_strength
 
-    def _calculate_population_risk(self, reports: List[DiseaseReport]) -> float:
+    def _calculate_population_risk(self, reports: list[DiseaseReport]) -> float:
         """Calculate population-level risk indicators."""
         if not self.population_data or not reports:
             return 0.0
@@ -253,8 +253,8 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
         return risk_level
 
     def analyze_with_active_inference(
-        self, time_window_days: Optional[int] = None
-    ) -> Dict[str, Any]:
+        self, time_window_days: int | None = None
+    ) -> dict[str, Any]:
         """
         Perform comprehensive disease analysis using Active Inference.
 
@@ -294,7 +294,7 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
 
                 # Stage-failure ledger: appended by each guarded stage below
                 # so callers can distinguish degraded output from real values.
-                failed_stages: List[str] = []
+                failed_stages: list[str] = []
 
                 # Extract observations with error handling
                 try:
@@ -313,7 +313,7 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
                         failed_stages.append("update_beliefs")
 
                 # Perform analyses with error handling
-                results: Dict[str, Any] = {
+                results: dict[str, Any] = {
                     "belief_states": self.belief_states.copy(),
                     "belief_precisions": self.belief_precisions.copy(),
                     "observations": observations,
@@ -401,7 +401,7 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
                     "degraded": True,
                 }
 
-    def _traditional_hotspot_analysis(self, reports: List[DiseaseReport]) -> List[Dict]:
+    def _traditional_hotspot_analysis(self, reports: list[DiseaseReport]) -> list[dict]:
         """Perform traditional hotspot analysis."""
         if not reports:
             return []
@@ -410,11 +410,11 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
         case_counts = [r.case_count for r in reports]
 
         return cast(
-            List[Dict[str, Any]],
+            list[dict[str, Any]],
             calculate_hotspot_statistics(locations, case_counts)["hotspots"],
         )
 
-    def _enhanced_hotspot_analysis(self, reports: List[DiseaseReport]) -> List[Dict]:
+    def _enhanced_hotspot_analysis(self, reports: list[DiseaseReport]) -> list[dict]:
         """Perform enhanced hotspot analysis with Active Inference."""
         if not reports:
             return []
@@ -459,7 +459,7 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
 
         return hotspots
 
-    def _generate_predictions(self, reports: List[DiseaseReport]) -> Dict[str, Any]:
+    def _generate_predictions(self, reports: list[DiseaseReport]) -> dict[str, Any]:
         """Generate predictions using Active Inference."""
         if len(reports) < 5:
             return {"short_term_risk": 0.5, "trend": "insufficient_data"}
@@ -496,8 +496,8 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
         }
 
     def _calculate_confidence_intervals(
-        self, reports: List[DiseaseReport]
-    ) -> Dict[str, Any]:
+        self, reports: list[DiseaseReport]
+    ) -> dict[str, Any]:
         """Calculate confidence intervals for estimates."""
         if not reports:
             return {"incidence_rate": {"lower": 0, "upper": 0, "confidence": 0}}
@@ -536,7 +536,7 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
             "standard_error": std_error,
         }
 
-    def _assess_overall_risk(self, reports: List[DiseaseReport]) -> Dict[str, Any]:
+    def _assess_overall_risk(self, reports: list[DiseaseReport]) -> dict[str, Any]:
         """Assess overall disease risk."""
         if not reports:
             return {"risk_level": "low", "score": 0.0}
@@ -569,7 +569,7 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
             },
         }
 
-    def _generate_recommendations(self) -> List[str]:
+    def _generate_recommendations(self) -> list[str]:
         """Generate recommendations based on belief states."""
         recommendations = []
 

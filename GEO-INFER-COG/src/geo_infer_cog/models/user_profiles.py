@@ -22,7 +22,7 @@ Mathematical Foundations:
 
 import numpy as np
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -66,25 +66,25 @@ class UserCognitiveProfile:
     cognitive_load_preference: str = "moderate"  # 'low', 'moderate', 'high'
 
     # Behavioral patterns
-    navigation_preferences: Dict[str, Any] = field(default_factory=dict)
-    visualization_preferences: Dict[str, Any] = field(default_factory=dict)
-    interaction_patterns: Dict[str, Any] = field(default_factory=dict)
+    navigation_preferences: dict[str, Any] = field(default_factory=dict)
+    visualization_preferences: dict[str, Any] = field(default_factory=dict)
+    interaction_patterns: dict[str, Any] = field(default_factory=dict)
 
     # Performance metrics
-    task_performance_history: List[Dict[str, Any]] = field(default_factory=list)
-    adaptation_metrics: Dict[str, float] = field(default_factory=dict)
+    task_performance_history: list[dict[str, Any]] = field(default_factory=list)
+    adaptation_metrics: dict[str, float] = field(default_factory=dict)
 
     # Demographic and contextual information
     age_group: str = "adult"  # 'child', 'teen', 'adult', 'senior'
     experience_level: str = (
         "intermediate"  # 'beginner', 'intermediate', 'advanced', 'expert'
     )
-    domain_experience: Dict[str, float] = field(
+    domain_experience: dict[str, float] = field(
         default_factory=dict
     )  # Domain-specific expertise
 
     def update_from_interaction(
-        self, interaction_data: Dict[str, Any], outcome: Dict[str, Any]
+        self, interaction_data: dict[str, Any], outcome: dict[str, Any]
     ) -> None:
         """
         Update profile based on user interaction and outcome.
@@ -136,7 +136,7 @@ class UserCognitiveProfile:
 
         logger.info(f"User profile updated for {self.user_id}")
 
-    def calculate_task_suitability(self, task_requirements: Dict[str, Any]) -> float:
+    def calculate_task_suitability(self, task_requirements: dict[str, Any]) -> float:
         """
         Calculate how suitable this user is for a given spatial task.
 
@@ -146,7 +146,7 @@ class UserCognitiveProfile:
         Returns:
             Suitability score (0-1)
         """
-        suitability_factors: List[float] = []
+        suitability_factors: list[float] = []
 
         # Spatial expertise match
         required_expertise = task_requirements.get("required_expertise", 0.5)
@@ -171,8 +171,8 @@ class UserCognitiveProfile:
         return preference_scores.get(self.cognitive_load_preference, 0.5)
 
     def get_personalized_recommendations(
-        self, context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, context: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Generate personalized recommendations for spatial interface use.
 
@@ -182,7 +182,7 @@ class UserCognitiveProfile:
         Returns:
             Dictionary of personalized recommendations
         """
-        recommendations: Dict[str, Any] = {
+        recommendations: dict[str, Any] = {
             "visualization_suggestions": [],
             "navigation_aids": [],
             "complexity_adjustments": [],
@@ -269,14 +269,14 @@ class UserCognitiveProfile:
         ]
         return float(np.mean(performance_scores))
 
-    def adapt_to_performance_trends(self) -> Dict[str, Any]:
+    def adapt_to_performance_trends(self) -> dict[str, Any]:
         """
         Adapt profile based on performance trends and patterns.
 
         Returns:
             Dictionary of adaptation recommendations
         """
-        adaptations: Dict[str, Any] = {
+        adaptations: dict[str, Any] = {
             "expertise_adjustments": [],
             "style_modifications": [],
             "load_optimizations": [],
@@ -332,7 +332,7 @@ class UserCognitiveProfile:
 
         return adaptations
 
-    def _analyze_style_performance(self) -> Dict[str, float]:
+    def _analyze_style_performance(self) -> dict[str, float]:
         """Analyze performance across different cognitive styles."""
         style_performance = {"visual_performance": 0.5, "verbal_performance": 0.5}
 
@@ -345,7 +345,7 @@ class UserCognitiveProfile:
         # For now, return balanced performance
         return style_performance
 
-    def _analyze_load_patterns(self) -> Dict[str, float]:
+    def _analyze_load_patterns(self) -> dict[str, float]:
         """Analyze cognitive load patterns in recent interactions."""
         load_patterns = {"optimal_load": 0.5, "load_sensitivity": 0.5}
 
@@ -371,7 +371,7 @@ class UserCognitiveProfile:
 
         return load_patterns
 
-    def get_profile_summary(self) -> Dict[str, Any]:
+    def get_profile_summary(self) -> dict[str, Any]:
         """Get comprehensive profile summary."""
         return {
             "user_id": self.user_id,
@@ -402,7 +402,7 @@ class UserCognitiveProfile:
             "last_updated": self.last_updated.isoformat(),
         }
 
-    def export_profile(self) -> Dict[str, Any]:
+    def export_profile(self) -> dict[str, Any]:
         """Export profile as dictionary for serialization."""
         return {
             "user_id": self.user_id,
@@ -427,7 +427,7 @@ class UserCognitiveProfile:
         }
 
     @classmethod
-    def import_profile(cls, profile_data: Dict[str, Any]) -> "UserCognitiveProfile":
+    def import_profile(cls, profile_data: dict[str, Any]) -> "UserCognitiveProfile":
         """Import profile from dictionary data."""
         # Create instance with basic fields
         profile = cls(user_id=profile_data["user_id"])
@@ -456,7 +456,7 @@ class ProfileManager:
     - Multi-user profile management
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize profile manager.
 
@@ -464,7 +464,7 @@ class ProfileManager:
             config: Configuration parameters for profile management
         """
         self.config = config or {}
-        self.profiles: Dict[
+        self.profiles: dict[
             str, UserCognitiveProfile
         ] = {}  # user_id -> UserCognitiveProfile
         self.profile_learning_enabled = self.config.get("learning_enabled", True)
@@ -480,7 +480,7 @@ class ProfileManager:
         logger.info("Profile Manager initialized")
 
     def create_profile(
-        self, user_id: str, initial_assessment: Optional[Dict[str, Any]] = None
+        self, user_id: str, initial_assessment: dict[str, Any] | None = None
     ) -> UserCognitiveProfile:
         """
         Create a new user cognitive profile.
@@ -505,7 +505,7 @@ class ProfileManager:
         return profile
 
     def _apply_initial_assessment(
-        self, profile: UserCognitiveProfile, assessment: Dict[str, Any]
+        self, profile: UserCognitiveProfile, assessment: dict[str, Any]
     ) -> None:
         """Apply initial assessment data to profile."""
         # Update profile based on assessment results
@@ -526,12 +526,12 @@ class ProfileManager:
         # Store assessment metadata
         profile.navigation_preferences["initial_assessment"] = assessment
 
-    def get_profile(self, user_id: str) -> Optional[UserCognitiveProfile]:
+    def get_profile(self, user_id: str) -> UserCognitiveProfile | None:
         """Retrieve user profile by ID."""
         return self.profiles.get(user_id)
 
     def update_profile_from_interaction(
-        self, user_id: str, interaction_data: Dict[str, Any], outcome: Dict[str, Any]
+        self, user_id: str, interaction_data: dict[str, Any], outcome: dict[str, Any]
     ) -> None:
         """
         Update user profile based on interaction and outcome.
@@ -560,8 +560,8 @@ class ProfileManager:
     def _apply_learning(
         self,
         profile: UserCognitiveProfile,
-        interaction_data: Dict[str, Any],
-        outcome: Dict[str, Any],
+        interaction_data: dict[str, Any],
+        outcome: dict[str, Any],
     ) -> None:
         """Apply learning algorithms to update profile."""
         # Expertise learning based on performance feedback
@@ -617,8 +617,8 @@ class ProfileManager:
                 profile.cognitive_load_preference = "moderate"
 
     def get_user_recommendations(
-        self, user_id: str, context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, user_id: str, context: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Get personalized recommendations for a user.
 
@@ -637,7 +637,7 @@ class ProfileManager:
 
         return profile.get_personalized_recommendations(context)
 
-    def export_all_profiles(self) -> Dict[str, Any]:
+    def export_all_profiles(self) -> dict[str, Any]:
         """Export all profiles for backup or analysis."""
         return {
             "export_time": datetime.now().isoformat(),
@@ -648,7 +648,7 @@ class ProfileManager:
             },
         }
 
-    def import_profiles(self, profiles_data: Dict[str, Any]) -> int:
+    def import_profiles(self, profiles_data: dict[str, Any]) -> int:
         """Import profiles from exported data."""
         imported_count = 0
 

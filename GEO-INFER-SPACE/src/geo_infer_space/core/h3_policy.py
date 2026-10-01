@@ -15,10 +15,10 @@ it stays importable in any environment.
 
 from __future__ import annotations
 
-from typing import List, TypedDict
+from typing import TypedDict
 
 # Official average hexagonal cell area (km^2) at each H3 resolution 0..15.
-H3_AVG_AREA_KM2: List[float] = [
+H3_AVG_AREA_KM2: list[float] = [
     4_357_449.416078381,
     609_788.441794133,
     86_801.780398997,

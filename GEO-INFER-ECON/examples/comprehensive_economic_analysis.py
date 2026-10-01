@@ -10,11 +10,7 @@ The example models a regional economy with:
 3. Bioregional ecosystem services and natural capital
 """
 
-import numpy as np
-import pandas as pd
 import geopandas as gpd
-from datetime import datetime
-from typing import Dict, List, Any
 
 
 def create_sample_bioregion():
@@ -238,7 +234,7 @@ def analyze_ecosystem_services():
 
     carbon_stock_value = total_carbon_stock * carbon_price
 
-    print(f"\n=== Total Bioregional Values ===")
+    print("\n=== Total Bioregional Values ===")
     print(f"Total annual ecosystem services: ${total_annual_value:,.0f}")
     print(f"Total carbon stock value: ${carbon_stock_value:,.0f}")
 

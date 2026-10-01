@@ -9,7 +9,6 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import List
 
 import geopandas as gpd
 import requests
@@ -180,7 +179,7 @@ class CascadianOwnershipDataSources:
             logger.error(f"Ownership: Overpass API error: {e}")
             return gpd.GeoDataFrame()
 
-    def fetch_all_parcel_data(self, target_hexagons: List[str]) -> gpd.GeoDataFrame:
+    def fetch_all_parcel_data(self, target_hexagons: list[str]) -> gpd.GeoDataFrame:
         """
         Fetches all available parcel data from configured ArcGIS services or OSM.
         """

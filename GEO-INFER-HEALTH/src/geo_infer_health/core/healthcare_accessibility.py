@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any, Tuple
+from typing import Any
 from geo_infer_health.models import Location, HealthFacility, PopulationData
 from geo_infer_health.utils.geospatial_utils import haversine_distance
 
@@ -8,8 +8,8 @@ class HealthcareAccessibilityAnalyzer:
 
     def __init__(
         self,
-        facilities: List[HealthFacility],
-        population_data: Optional[List[PopulationData]] = None,
+        facilities: list[HealthFacility],
+        population_data: list[PopulationData] | None = None,
     ):
         self.facilities = facilities
         self.population_data = population_data if population_data else []
@@ -23,9 +23,9 @@ class HealthcareAccessibilityAnalyzer:
         self,
         center_loc: Location,
         radius_km: float,
-        facility_type: Optional[str] = None,
-        required_services: Optional[List[str]] = None,
-    ) -> List[HealthFacility]:
+        facility_type: str | None = None,
+        required_services: list[str] | None = None,
+    ) -> list[HealthFacility]:
         """Finds health facilities within a given radius, optionally filtering by type and services."""
         nearby_facilities = []
         for facility in self.facilities:
@@ -50,9 +50,9 @@ class HealthcareAccessibilityAnalyzer:
     def get_nearest_facility(
         self,
         loc: Location,
-        facility_type: Optional[str] = None,
-        required_services: Optional[List[str]] = None,
-    ) -> Optional[Tuple[HealthFacility, float]]:  # Returns (Facility, distance_km)
+        facility_type: str | None = None,
+        required_services: list[str] | None = None,
+    ) -> tuple[HealthFacility, float] | None:  # Returns (Facility, distance_km)
         """Finds the nearest health facility to a given location, with optional filters."""
         closest_facility = None
         min_distance = float("inf")
@@ -85,9 +85,9 @@ class HealthcareAccessibilityAnalyzer:
     def calculate_facility_to_population_ratio(
         self,
         area_id: str,  # Assuming population data is per area_id
-        facility_type: Optional[str] = None,
+        facility_type: str | None = None,
         # More complex: consider facilities within/near the area_id's geometry
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Calculates a simple ratio of facilities to population for a given area.
         This is a naive implementation if area geometries are not used.
         """

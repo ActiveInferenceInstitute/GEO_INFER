@@ -6,7 +6,7 @@ in the context of legal and regulatory frameworks.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from typing import Any
 import datetime
 from shapely.geometry import Point, Polygon, MultiPolygon
 import uuid
@@ -24,11 +24,11 @@ class LegalEntity:
     id: str
     name: str
     entity_type: str  # e.g., 'organization', 'facility', 'parcel'
-    jurisdiction_ids: List[str] = field(default_factory=list)
-    attributes: Dict[str, Any] = field(default_factory=dict)
-    parent_id: Optional[str] = None
-    geometry: Optional[Polygon] = None
-    point_location: Optional[Point] = None
+    jurisdiction_ids: list[str] = field(default_factory=list)
+    attributes: dict[str, Any] = field(default_factory=dict)
+    parent_id: str | None = None
+    geometry: Polygon | None = None
+    point_location: Point | None = None
     created_at: datetime.datetime = field(default_factory=datetime.datetime.now)
     updated_at: datetime.datetime = field(default_factory=datetime.datetime.now)
 
@@ -37,11 +37,11 @@ class LegalEntity:
         cls,
         name: str,
         entity_type: str,
-        jurisdiction_ids: Optional[List[str]] = None,
-        attributes: Optional[Dict[str, Any]] = None,
-        parent_id: Optional[str] = None,
-        geometry: Optional[Polygon] = None,
-        point_location: Optional[Point] = None,
+        jurisdiction_ids: list[str] | None = None,
+        attributes: dict[str, Any] | None = None,
+        parent_id: str | None = None,
+        geometry: Polygon | None = None,
+        point_location: Point | None = None,
     ) -> "LegalEntity":
         """
         Create a new LegalEntity with a generated UUID.
@@ -140,23 +140,23 @@ class Jurisdiction:
     id: str
     name: str
     level: str  # e.g., 'federal', 'state', 'county', 'city'
-    code: Optional[str] = None
-    parent_id: Optional[str] = None
-    attributes: Dict[str, Any] = field(default_factory=dict)
-    geometry: Optional[MultiPolygon] = None
+    code: str | None = None
+    parent_id: str | None = None
+    attributes: dict[str, Any] = field(default_factory=dict)
+    geometry: MultiPolygon | None = None
     created_at: datetime.datetime = field(default_factory=datetime.datetime.now)
     updated_at: datetime.datetime = field(default_factory=datetime.datetime.now)
-    description: Optional[str] = None
+    description: str | None = None
 
     @classmethod
     def create(
         cls,
         name: str,
         level: str,
-        code: Optional[str] = None,
-        parent_id: Optional[str] = None,
-        attributes: Optional[Dict[str, Any]] = None,
-        geometry: Optional[MultiPolygon] = None,
+        code: str | None = None,
+        parent_id: str | None = None,
+        attributes: dict[str, Any] | None = None,
+        geometry: MultiPolygon | None = None,
     ) -> "Jurisdiction":
         """
         Create a new Jurisdiction with a generated UUID.

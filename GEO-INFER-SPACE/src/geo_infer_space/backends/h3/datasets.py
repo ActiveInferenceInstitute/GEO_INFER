@@ -1,7 +1,7 @@
 """H3 dataset loading, validation, and export utilities."""
 
 import logging
-from typing import Dict, Any, Optional, Set, Union
+from typing import Any
 from datetime import datetime
 import json
 
@@ -18,7 +18,7 @@ class H3Dataset:
     validation, and export capabilities.
     """
 
-    def __init__(self, grid: H3Grid, metadata: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, grid: H3Grid, metadata: dict[str, Any] | None = None) -> None:
         """
         Initialize H3Dataset with grid and metadata.
 
@@ -38,14 +38,14 @@ class H3Dataset:
         """Get metadata entry."""
         return self.metadata.get(key, default)
 
-    def validate(self) -> Dict[str, Any]:
+    def validate(self) -> dict[str, Any]:
         """
         Validate dataset integrity.
 
         Returns:
             Validation report dictionary
         """
-        report: Dict[str, Any] = {
+        report: dict[str, Any] = {
             "valid": True,
             "errors": [],
             "warnings": [],
@@ -59,7 +59,7 @@ class H3Dataset:
             return report
 
         # Check data consistency
-        property_keys: Set[str] = set()
+        property_keys: set[str] = set()
         for cell in self.grid.cells:
             property_keys.update(cell.properties.keys())
 
@@ -115,7 +115,7 @@ class H3DataLoader:
             H3Dataset instance
         """
         try:
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 geojson_data = json.load(f)
 
             # Extract cells from GeoJSON features
@@ -173,7 +173,7 @@ class H3DataLoader:
         try:
             # Simple CSV parsing without pandas
             cells = []
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 lines = f.readlines()
 
                 if not lines:
@@ -212,7 +212,7 @@ class H3DataLoader:
                             h3_column,
                             resolution_column,
                         ]:
-                            value: Union[float, str]
+                            value: float | str
                             try:
                                 # Try to convert to number
                                 value = float(values[i])
@@ -258,7 +258,7 @@ class H3DataExporter:
         """
         try:
             # Collect all property keys
-            all_keys: Set[str] = set()
+            all_keys: set[str] = set()
             for cell in dataset.grid.cells:
                 all_keys.update(cell.properties.keys())
 

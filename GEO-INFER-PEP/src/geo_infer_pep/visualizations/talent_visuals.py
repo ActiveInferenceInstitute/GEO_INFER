@@ -1,7 +1,6 @@
 """Talent Acquisition Data Visualization functions."""
 
 import logging
-from typing import List, Optional
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
@@ -16,8 +15,8 @@ DEFAULT_TALENT_VISUALS_DIR = Path("visualizations_output/talent")
 
 
 def plot_candidate_pipeline_by_status(
-    candidates: List[Candidate], output_dir: Path = DEFAULT_TALENT_VISUALS_DIR
-) -> Optional[str]:
+    candidates: list[Candidate], output_dir: Path = DEFAULT_TALENT_VISUALS_DIR
+) -> str | None:
     """
     Generates a bar chart of candidates by their current status in the pipeline.
     """
@@ -60,9 +59,9 @@ def plot_candidate_pipeline_by_status(
 
 
 def plot_time_to_hire_distribution(
-    hired_candidates_with_tth_days: List[int],
+    hired_candidates_with_tth_days: list[int],
     output_dir: Path = DEFAULT_TALENT_VISUALS_DIR,
-) -> Optional[str]:
+) -> str | None:
     """
     Generates a histogram for Time to Hire distribution.
     Expects a list of integers representing TTH in days.

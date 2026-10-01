@@ -2,7 +2,7 @@
 Urban planning model using active inference.
 """
 
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any
 import numpy as np
 
 from geo_infer_act.models.base import BaseActiveInferenceModel
@@ -20,12 +20,12 @@ class UrbanModel(BaseActiveInferenceModel):
 
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
         n_agents: int = 3,
         n_resources: int = 3,  # Reduced to 3 for 'Low', 'Med', 'High' levels of amenity
         n_locations: int = 5,
         planning_horizon: int = 5,
-        random_seed: Optional[int] = None,
+        random_seed: int | None = None,
     ):
         """
         Initialize the urban planning model.
@@ -60,7 +60,7 @@ class UrbanModel(BaseActiveInferenceModel):
             self.connectivity[i, (i - 1) % n_locations] = 1
 
         # Agents
-        self.agents: List[Dict[str, Any]] = []
+        self.agents: list[dict[str, Any]] = []
         self._initialize_agents()
         self._initial_resource_levels = self.resource_levels.copy()
         self._initial_agent_locations = [agent["location"] for agent in self.agents]
@@ -163,7 +163,7 @@ class UrbanModel(BaseActiveInferenceModel):
                 {"id": agent_id, "model": agent, "location": start_loc, "history": []}
             )
 
-    def step(self, input_actions: Optional[Any] = None) -> Tuple[Dict[str, Any], bool]:
+    def step(self, input_actions: Any | None = None) -> tuple[dict[str, Any], bool]:
         """Advance one simulation step."""
         states = []
 
@@ -216,7 +216,7 @@ class UrbanModel(BaseActiveInferenceModel):
 
         return {"states": states, "resource_map": self.resource_levels.tolist()}, False
 
-    def run_simulation(self, n_steps: int = 10) -> List[Dict[str, Any]]:
+    def run_simulation(self, n_steps: int = 10) -> list[dict[str, Any]]:
         """Run repeated urban planning steps and return the state history."""
         history = []
         for _ in range(n_steps):
@@ -224,7 +224,7 @@ class UrbanModel(BaseActiveInferenceModel):
             history.append(state)
         return history
 
-    def reset(self) -> Dict[str, Any]:
+    def reset(self) -> dict[str, Any]:
         """Restore the seeded environment and every agent's initial location."""
         self.resource_levels = self._initial_resource_levels.copy()
         for agent_data, initial_location in zip(

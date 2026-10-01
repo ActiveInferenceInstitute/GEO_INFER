@@ -11,11 +11,8 @@ This test validates:
 """
 
 import sys
-import os
-import json
 import logging
 from pathlib import Path
-from typing import Dict, Any, List
 import tempfile
 import shutil
 
@@ -423,7 +420,7 @@ class EnhancedH3FusionTestSuite:
             self.logger.error(f"❌ Data quality assessment test failed: {e}")
             return False
 
-    def run_all_tests(self) -> Dict[str, bool]:
+    def run_all_tests(self) -> dict[str, bool]:
         """
         Run all enhanced H3 fusion tests.
 

@@ -5,12 +5,10 @@ Provides efficient rendering of large geospatial datasets.
 
 import datashader as ds
 import pandas as pd
-import numpy as np
 import colorcet
 import holoviews as hv
 from pathlib import Path
 import logging
-from typing import Dict, List, Optional, Tuple
 import json
 
 logger = logging.getLogger(__name__)
@@ -26,7 +24,7 @@ class CascadiaDatashaderVisualizer:
         self.output_dir = output_dir
         self.output_dir.mkdir(exist_ok=True)
 
-    def prepare_h3_dataframe(self, unified_data: Dict, redevelopment_scores: Dict) -> pd.DataFrame:
+    def prepare_h3_dataframe(self, unified_data: dict, redevelopment_scores: dict) -> pd.DataFrame:
         """
         Convert H3 unified data to pandas DataFrame for Datashader processing.
 
@@ -164,7 +162,7 @@ class CascadiaDatashaderVisualizer:
         logger.info(f"{module_name} coverage plot created successfully")
         return hv_img
 
-    def create_comprehensive_dashboard(self, unified_data: Dict, redevelopment_scores: Dict) -> str:
+    def create_comprehensive_dashboard(self, unified_data: dict, redevelopment_scores: dict) -> str:
         """
         Create a comprehensive Datashader-based dashboard.
 
@@ -202,7 +200,7 @@ class CascadiaDatashaderVisualizer:
         logger.info(f"Datashader dashboard saved to: {output_path}")
         return str(output_path)
 
-    def create_lightweight_json_export(self, unified_data: Dict, redevelopment_scores: Dict) -> str:
+    def create_lightweight_json_export(self, unified_data: dict, redevelopment_scores: dict) -> str:
         """
         Create a lightweight JSON export for web-based visualization.
 
@@ -256,7 +254,7 @@ class CascadiaDatashaderVisualizer:
         return str(output_path)
 
 
-def create_datashader_visualization(backend, output_dir: Path) -> Dict[str, str]:
+def create_datashader_visualization(backend, output_dir: Path) -> dict[str, str]:
     """
     Create efficient Datashader visualizations for Cascadia data.
 

@@ -12,7 +12,7 @@ This module provides sophisticated rule evaluation capabilities including:
 import logging
 import re
 import time
-from typing import Dict, List, Optional, Any
+from typing import Any
 from datetime import datetime
 from dataclasses import dataclass, field
 from enum import Enum
@@ -57,7 +57,7 @@ class RuleCondition:
     value: Any
     weight: float = 1.0
 
-    def evaluate(self, data: Dict[str, Any]) -> bool:
+    def evaluate(self, data: dict[str, Any]) -> bool:
         """Evaluate condition against data."""
         try:
             field_value = self._get_field_value(data, self.field)
@@ -103,7 +103,7 @@ class RuleCondition:
             logger.warning(f"Condition evaluation failed for field {self.field}: {e}")
             return False
 
-    def _get_field_value(self, data: Dict[str, Any], field: str) -> Any:
+    def _get_field_value(self, data: dict[str, Any], field: str) -> Any:
         """Get field value from nested data structure."""
         keys = field.split(".")
         value: Any = data
@@ -127,23 +127,23 @@ class UnderwritingRule:
     name: str
     description: str
     rule_type: RuleType
-    conditions: List[RuleCondition] = field(default_factory=list)
+    conditions: list[RuleCondition] = field(default_factory=list)
 
     # Rule behavior
     action: str = "approve"  # approve, decline, refer, modify
-    action_parameters: Dict[str, Any] = field(default_factory=dict)
+    action_parameters: dict[str, Any] = field(default_factory=dict)
 
     # Rule metadata
     priority: int = 1
     is_active: bool = True
     effective_date: datetime = field(default_factory=datetime.now)
-    expiration_date: Optional[datetime] = None
+    expiration_date: datetime | None = None
 
     # Applicability
-    applicable_products: List[str] = field(default_factory=list)
-    applicable_regions: List[str] = field(default_factory=list)
+    applicable_products: list[str] = field(default_factory=list)
+    applicable_regions: list[str] = field(default_factory=list)
 
-    def evaluate(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def evaluate(self, data: dict[str, Any]) -> dict[str, Any]:
         """Evaluate rule against data."""
         if not self.is_active or not self.is_effective():
             return {
@@ -181,7 +181,7 @@ class UnderwritingRule:
             "priority": self.priority,
         }
 
-    def is_applicable(self, data: Dict[str, Any]) -> bool:
+    def is_applicable(self, data: dict[str, Any]) -> bool:
         """Check if rule is applicable to the data."""
         # Check product applicability
         if self.applicable_products:
@@ -206,7 +206,7 @@ class UnderwritingRule:
             and (self.expiration_date is None or self.expiration_date >= now)
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert rule to dictionary."""
         return {
             "rule_id": self.rule_id,
@@ -248,7 +248,7 @@ class UnderwritingRulesEngine:
     - Performance monitoring and optimization
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the rules engine.
 
@@ -259,11 +259,11 @@ class UnderwritingRulesEngine:
         self.logger = logging.getLogger("geo_infer_insurance.underwriting.rules_engine")
 
         # Rule storage and management
-        self.rules: Dict[str, UnderwritingRule] = {}
-        self.rule_index: Dict[str, List[str]] = {}  # Index by type, product, etc.
+        self.rules: dict[str, UnderwritingRule] = {}
+        self.rule_index: dict[str, list[str]] = {}  # Index by type, product, etc.
 
         # Performance tracking
-        self.evaluation_metrics: Dict[str, Any] = {
+        self.evaluation_metrics: dict[str, Any] = {
             "total_evaluations": 0,
             "average_evaluation_time": 0.0,
             "rule_hits": {},
@@ -297,7 +297,7 @@ class UnderwritingRulesEngine:
         self.logger.info(f"Rule removed: {rule_id}")
         return True
 
-    def update_rule(self, rule_id: str, updates: Dict[str, Any]) -> bool:
+    def update_rule(self, rule_id: str, updates: dict[str, Any]) -> bool:
         """Update existing rule."""
         if rule_id not in self.rules:
             return False
@@ -322,8 +322,8 @@ class UnderwritingRulesEngine:
             return False
 
     def evaluate_rules(
-        self, data: Dict[str, Any], risk_assessment: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, data: dict[str, Any], risk_assessment: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Evaluate all applicable rules against data.
 
@@ -377,7 +377,7 @@ class UnderwritingRulesEngine:
             "evaluation_time_seconds": evaluation_time,
         }
 
-    def _find_applicable_rules(self, data: Dict[str, Any]) -> List[str]:
+    def _find_applicable_rules(self, data: dict[str, Any]) -> list[str]:
         """Find rules applicable to the data."""
         applicable_rules = []
 
@@ -391,8 +391,8 @@ class UnderwritingRulesEngine:
         return applicable_rules
 
     def _resolve_rule_conflicts(
-        self, rule_results: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, rule_results: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Resolve conflicts between rule results."""
         if not rule_results:
             return {"action": "approve", "reason": "No rules applicable"}
@@ -558,7 +558,7 @@ class UnderwritingRulesEngine:
 
     def create_rule_from_expression(
         self, expression: str, rule_type: RuleType, name: str, description: str = ""
-    ) -> Optional[UnderwritingRule]:
+    ) -> UnderwritingRule | None:
         """
         Create rule from expression string.
 
@@ -631,19 +631,19 @@ class UnderwritingRulesEngine:
 
         return None
 
-    def get_rules_by_type(self, rule_type: RuleType) -> List[UnderwritingRule]:
+    def get_rules_by_type(self, rule_type: RuleType) -> list[UnderwritingRule]:
         """Get rules by type."""
         rule_ids = self.rule_index.get(rule_type.value, [])
         return [self.rules[rid] for rid in rule_ids if rid in self.rules]
 
-    def get_rules_by_product(self, product: str) -> List[UnderwritingRule]:
+    def get_rules_by_product(self, product: str) -> list[UnderwritingRule]:
         """Get rules applicable to product."""
         rule_ids = self.rule_index.get(product, [])
         return [self.rules[rid] for rid in rule_ids if rid in self.rules]
 
-    def validate_rule_set(self) -> Dict[str, Any]:
+    def validate_rule_set(self) -> dict[str, Any]:
         """Validate the current rule set for conflicts and issues."""
-        validation_result: Dict[str, Any] = {
+        validation_result: dict[str, Any] = {
             "is_valid": True,
             "conflicts": [],
             "warnings": [],
@@ -710,7 +710,7 @@ class UnderwritingRulesEngine:
 
         return ""
 
-    def get_evaluation_metrics(self) -> Dict[str, Any]:
+    def get_evaluation_metrics(self) -> dict[str, Any]:
         """Get rule evaluation performance metrics."""
         return {
             "total_evaluations": self.evaluation_metrics["total_evaluations"],
@@ -721,7 +721,7 @@ class UnderwritingRulesEngine:
             "conflicts_resolved": self.evaluation_metrics["rule_conflicts"],
         }
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform health check on rules engine."""
         return {
             "status": "operational",
@@ -743,7 +743,7 @@ class RuleEvaluator:
             "geo_infer_insurance.underwriting.rule_evaluator"
         )
 
-    def evaluate_complex_rule(self, rule_expression: str, data: Dict[str, Any]) -> bool:
+    def evaluate_complex_rule(self, rule_expression: str, data: dict[str, Any]) -> bool:
         """
         Evaluate complex rule expressions.
 
@@ -783,7 +783,7 @@ class RuleEvaluator:
             return False
 
     def _evaluate_simple_expression(
-        self, expression: str, data: Dict[str, Any]
+        self, expression: str, data: dict[str, Any]
     ) -> bool:
         """Evaluate simple rule expression."""
         # Simple pattern matching for common expressions
@@ -813,7 +813,7 @@ class RuleEvaluator:
 
         return False
 
-    def _get_nested_value(self, data: Dict[str, Any], field_path: str) -> Any:
+    def _get_nested_value(self, data: dict[str, Any], field_path: str) -> Any:
         """Get value from nested data structure."""
         keys = field_path.split(".")
         value = data
@@ -829,7 +829,7 @@ class RuleEvaluator:
 
 # Convenience functions
 def create_rules_engine(
-    config: Optional[Dict[str, Any]] = None,
+    config: dict[str, Any] | None = None,
 ) -> UnderwritingRulesEngine:
     """Create a new underwriting rules engine."""
     return UnderwritingRulesEngine(config)

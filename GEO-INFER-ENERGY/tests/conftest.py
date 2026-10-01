@@ -11,11 +11,11 @@ import geopandas as gpd
 import h3
 from shapely.geometry import Point
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -102,7 +102,7 @@ def wind_speed_grid() -> gpd.GeoDataFrame:
 
 
 @pytest.fixture
-def energy_config() -> Dict[str, Any]:
+def energy_config() -> dict[str, Any]:
     """Configuration dict for renewable energy analysis.
 
     Specifies panel/turbine parameters, grid connection constraints,

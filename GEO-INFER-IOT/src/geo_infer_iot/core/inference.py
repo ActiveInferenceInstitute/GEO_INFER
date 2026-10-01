@@ -8,7 +8,7 @@ modeling when that workspace module is available.
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 from scipy.stats import norm
@@ -30,7 +30,7 @@ class BayesianSpatialInference:
         variable: str,
         spatial_resolution: int,
         temporal_window: str,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ) -> None:
         self.variable = variable
         self.spatial_resolution = spatial_resolution
@@ -38,8 +38,8 @@ class BayesianSpatialInference:
         self.config = config or {}
 
         # Integration with GEO-INFER-BAYES
-        self.gp_model: Optional[Any] = None
-        self.posterior_cache: Dict[str, Any] = {}
+        self.gp_model: Any | None = None
+        self.posterior_cache: dict[str, Any] = {}
 
         # Setup Bayesian inference if available
         self._setup_bayesian_inference()
@@ -83,10 +83,10 @@ class BayesianSpatialInference:
 
     def infer_spatial_distribution(
         self,
-        sensor_data: List[Dict[str, Any]],
-        priors: Optional[Any] = None,
+        sensor_data: list[dict[str, Any]],
+        priors: Any | None = None,
         update_interval: str = "15min",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform Bayesian spatial inference on sensor data.
 
@@ -158,8 +158,8 @@ class BayesianSpatialInference:
             return {"error": f"Spatial inference failed: {str(e)}"}
 
     def get_posterior_map(
-        self, confidence_intervals: Optional[List[float]] = None
-    ) -> Dict[str, Any]:
+        self, confidence_intervals: list[float] | None = None
+    ) -> dict[str, Any]:
         """
         Get current posterior spatial distribution map.
 

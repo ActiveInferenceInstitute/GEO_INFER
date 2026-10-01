@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -71,8 +71,8 @@ class PlaceDataManager:
         mgr.log_provenance("calfire_perimeters", metadata)
     """
 
-    def __init__(self, config_path: Optional[str] = None) -> None:
-        self._provenance: List[Dict[str, Any]] = []
+    def __init__(self, config_path: str | None = None) -> None:
+        self._provenance: list[dict[str, Any]] = []
         self._ingestion = None
         self._quality = None
 
@@ -90,7 +90,7 @@ class PlaceDataManager:
 
     # -- Quality validation -------------------------------------------------
 
-    def validate_dataset(self, data: Any, name: str = "unnamed") -> Dict[str, Any]:
+    def validate_dataset(self, data: Any, name: str = "unnamed") -> dict[str, Any]:
         """Validate a dataset and return a quality report.
 
         Args:
@@ -149,7 +149,7 @@ class PlaceDataManager:
     def log_provenance(
         self,
         source_name: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Record data provenance for audit trails.
 
@@ -165,7 +165,7 @@ class PlaceDataManager:
         self._provenance.append(entry)
         logger.debug("Provenance logged for %s", source_name)
 
-    def get_provenance(self) -> List[Dict[str, Any]]:
+    def get_provenance(self) -> list[dict[str, Any]]:
         """Return the full provenance log."""
         return list(self._provenance)
 
@@ -214,10 +214,10 @@ class PlaceTemporalAnalyzer:
 
     def detect_trend(
         self,
-        values: List[float],
-        timestamps: Optional[List[str]] = None,
+        values: list[float],
+        timestamps: list[str] | None = None,
         label: str = "series",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Detect linear trend in a time series.
 
         Args:
@@ -300,10 +300,10 @@ class PlaceTemporalAnalyzer:
 
     def detect_anomalies(
         self,
-        values: List[float],
+        values: list[float],
         sigma_threshold: float = 2.0,
         label: str = "series",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Detect anomalous values in a time series.
 
         Args:
@@ -359,10 +359,10 @@ class PlaceTemporalAnalyzer:
 
     def forecast(
         self,
-        values: List[float],
+        values: list[float],
         horizon: int = 12,
         label: str = "series",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Produce a simple forecast for a time series.
 
         Args:
@@ -410,7 +410,7 @@ class PlaceTemporalAnalyzer:
 
     # -- Convenience: analyze tide data -------------------------------------
 
-    def analyze_tide_trends(self, tide_data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_tide_trends(self, tide_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze tide gauge data for trends, anomalies, and forecasts.
 
         Args:
@@ -419,7 +419,7 @@ class PlaceTemporalAnalyzer:
         Returns:
             Per-station trend analysis results.
         """
-        results: Dict[str, Any] = {}
+        results: dict[str, Any] = {}
         series = tide_data.get("series", {})
         for station_id, station_data in series.items():
             measurements = station_data.get("measurements", [])
@@ -456,7 +456,7 @@ class PlaceTemporalAnalyzer:
 
     # -- Convenience: analyze seismic rates ---------------------------------
 
-    def analyze_seismic_rates(self, csz_data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_seismic_rates(self, csz_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze Cascadia seismicity rate changes over time.
 
         Args:

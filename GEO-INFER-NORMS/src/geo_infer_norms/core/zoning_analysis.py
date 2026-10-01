@@ -6,7 +6,7 @@ land use classifications, and their spatial implications.
 """
 
 import geopandas as gpd
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Any
 import pandas as pd
 import numpy as np
 from shapely.geometry import Point, MultiPolygon, LineString
@@ -30,8 +30,8 @@ class ZoningAnalyzer:
 
     def __init__(
         self,
-        zoning_districts: Optional[List[ZoningDistrict]] = None,
-        zoning_codes: Optional[List[ZoningCode]] = None,
+        zoning_districts: list[ZoningDistrict] | None = None,
+        zoning_codes: list[ZoningCode] | None = None,
     ):
         """
         Initialize a ZoningAnalyzer instance.
@@ -48,14 +48,14 @@ class ZoningAnalyzer:
         # Create compatibility matrix between zoning types
         self._compatibility_matrix = self._build_compatibility_matrix()
 
-    def _build_compatibility_matrix(self) -> Dict[str, Dict[str, float]]:
+    def _build_compatibility_matrix(self) -> dict[str, dict[str, float]]:
         """
         Build a compatibility matrix between different zoning codes.
 
         Returns:
             A nested dictionary mapping zoning code pairs to compatibility scores (0-1)
         """
-        matrix: Dict[str, Dict[str, float]] = {}
+        matrix: dict[str, dict[str, float]] = {}
 
         for code1 in self.zoning_codes:
             matrix[code1.code] = {}
@@ -110,7 +110,7 @@ class ZoningAnalyzer:
         # Rebuild compatibility matrix
         self._compatibility_matrix = self._build_compatibility_matrix()
 
-    def get_district_by_id(self, district_id: str) -> Optional[ZoningDistrict]:
+    def get_district_by_id(self, district_id: str) -> ZoningDistrict | None:
         """
         Get a zoning district by its ID.
 
@@ -122,7 +122,7 @@ class ZoningAnalyzer:
         """
         return self._district_index.get(district_id)
 
-    def get_code_by_id(self, code_id: str) -> Optional[ZoningCode]:
+    def get_code_by_id(self, code_id: str) -> ZoningCode | None:
         """
         Get a zoning code by its ID.
 
@@ -134,7 +134,7 @@ class ZoningAnalyzer:
         """
         return self._code_index.get(code_id)
 
-    def get_zoning_at_point(self, point: Point) -> List[ZoningDistrict]:
+    def get_zoning_at_point(self, point: Point) -> list[ZoningDistrict]:
         """
         Get all zoning districts that contain a specific point.
 
@@ -174,7 +174,7 @@ class ZoningAnalyzer:
 
         return self._compatibility_matrix[code1][code2]
 
-    def analyze_zoning_boundaries(self) -> Dict[str, Any]:
+    def analyze_zoning_boundaries(self) -> dict[str, Any]:
         """
         Analyze zoning district boundaries for potential conflicts.
 
@@ -259,7 +259,7 @@ class ZoningAnalyzer:
             "adjacency_details": adjacency,
         }
 
-    def evaluate_zoning_change(self, district_id: str, new_code: str) -> Dict[str, Any]:
+    def evaluate_zoning_change(self, district_id: str, new_code: str) -> dict[str, Any]:
         """
         Evaluate the impact of changing a district's zoning code.
 
@@ -368,10 +368,10 @@ class ZoningAnalyzer:
 
     def visualize_zoning(
         self,
-        figsize: Tuple[int, int] = (12, 8),
-        highlight_district: Optional[str] = None,
+        figsize: tuple[int, int] = (12, 8),
+        highlight_district: str | None = None,
         highlight_color: str = "red",
-        save_path: Optional[str] = None,
+        save_path: str | None = None,
     ) -> plt.Figure:
         """
         Create a visualization of zoning districts.
@@ -469,7 +469,7 @@ class ZoningAnalyzer:
 
         return gpd.GeoDataFrame(data, crs="EPSG:4326")
 
-    def get_zoning_statistics(self) -> Dict[str, Any]:
+    def get_zoning_statistics(self) -> dict[str, Any]:
         """
         Calculate comprehensive statistics about the zoning districts.
 
@@ -527,7 +527,7 @@ class ZoningAnalyzer:
 
         return stats
 
-    def find_zoning_conflicts(self, threshold: float = 0.3) -> List[Dict[str, Any]]:
+    def find_zoning_conflicts(self, threshold: float = 0.3) -> list[dict[str, Any]]:
         """
         Identify zoning districts with potential conflicts based on compatibility.
 
@@ -571,7 +571,7 @@ class ZoningAnalyzer:
 
     def optimize_zoning_layout(
         self, target_compatibility: float = 0.7
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Suggest zoning layout optimizations to improve compatibility.
 
@@ -587,7 +587,7 @@ class ZoningAnalyzer:
 
         for conflict in conflicts:
             if conflict["compatibility_score"] < target_compatibility:
-                suggestion: Dict[str, Any] = {"conflict": conflict, "suggestions": []}
+                suggestion: dict[str, Any] = {"conflict": conflict, "suggestions": []}
 
                 # Suggest alternative zoning codes
                 current_code = self.get_code_by_id(conflict["district2_code"])
@@ -634,7 +634,7 @@ class ZoningAnalyzer:
 
         return float(np.mean(compatibilities)) if compatibilities else 0.0
 
-    def generate_zoning_report(self, output_path: Optional[str] = None) -> str:
+    def generate_zoning_report(self, output_path: str | None = None) -> str:
         """
         Generate a comprehensive zoning analysis report.
 
@@ -735,7 +735,7 @@ class ZoningAnalyzer:
 
         return final_report
 
-    def calculate_development_potential(self, district_id: str) -> Dict[str, Any]:
+    def calculate_development_potential(self, district_id: str) -> dict[str, Any]:
         """
         Calculate development potential for a specific zoning district.
 
@@ -753,7 +753,7 @@ class ZoningAnalyzer:
         if not zoning_code:
             return {"error": f"Zoning code {district.zoning_code} not found"}
 
-        potential: Dict[str, Any] = {
+        potential: dict[str, Any] = {
             "district_id": district_id,
             "district_name": district.name,
             "zoning_code": district.zoning_code,
@@ -799,8 +799,8 @@ class ZoningAnalyzer:
         return potential
 
     def compare_zoning_scenarios(
-        self, scenarios: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, scenarios: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Compare different zoning scenarios.
 
@@ -810,7 +810,7 @@ class ZoningAnalyzer:
         Returns:
             Comparison results including compatibility improvements
         """
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "scenarios": [],
             "baseline_compatibility": self._calculate_average_compatibility(),
             "comparison": {},
@@ -873,8 +873,8 @@ class LandUseClassifier:
 
     def __init__(
         self,
-        land_use_types: Optional[List[LandUseType]] = None,
-        compatibility_thresholds: Optional[Dict[str, Dict[str, float]]] = None,
+        land_use_types: list[LandUseType] | None = None,
+        compatibility_thresholds: dict[str, dict[str, float]] | None = None,
     ):
         """
         Initialize a LandUseClassifier instance.
@@ -963,7 +963,7 @@ class LandUseClassifier:
         self.land_use_types.append(land_use_type)
         self._type_index[land_use_type.id] = land_use_type
 
-    def get_land_use_type_by_id(self, type_id: str) -> Optional[LandUseType]:
+    def get_land_use_type_by_id(self, type_id: str) -> LandUseType | None:
         """
         Get a land use type by its ID.
 
@@ -1002,7 +1002,7 @@ class LandUseClassifier:
 
     def analyze_land_use_pattern(
         self, land_use_gdf: gpd.GeoDataFrame, category_column: str = "category"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze the pattern of land use in a given area.
 
@@ -1013,7 +1013,7 @@ class LandUseClassifier:
         Returns:
             A dictionary containing analysis results
         """
-        results: Dict[str, Any] = {}
+        results: dict[str, Any] = {}
         if land_use_gdf.empty:
             results["status"] = "error"
             results["message"] = "Empty GeoDataFrame provided"
@@ -1060,7 +1060,7 @@ class LandUseClassifier:
         results["category_count"] = land_use_gdf[category_column].nunique()
 
         # Analyze adjacency and compatibility
-        adjacency_matrix: Dict[str, Dict[str, int]] = {}
+        adjacency_matrix: dict[str, dict[str, int]] = {}
         compatibility_scores = []
 
         # Create a spatial index for more efficient computation
@@ -1132,7 +1132,7 @@ class LandUseClassifier:
         return results
 
     def classify_land_use(
-        self, features_gdf: gpd.GeoDataFrame, feature_columns: List[str]
+        self, features_gdf: gpd.GeoDataFrame, feature_columns: list[str]
     ) -> gpd.GeoDataFrame:
         """
         Classify land use based on feature characteristics.
@@ -1290,9 +1290,9 @@ class LandUseClassifier:
         self,
         land_use_gdf: gpd.GeoDataFrame,
         category_column: str = "land_use_category",
-        figsize: Tuple[int, int] = (12, 8),
-        cmap: Optional[Union[str, ListedColormap]] = None,
-        save_path: Optional[str] = None,
+        figsize: tuple[int, int] = (12, 8),
+        cmap: str | ListedColormap | None = None,
+        save_path: str | None = None,
     ) -> plt.Figure:
         """
         Create a visualization of land use patterns.

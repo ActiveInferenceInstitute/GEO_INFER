@@ -6,7 +6,7 @@ geospatial data formats including vector, raster, and tabular data.
 """
 
 import logging
-from typing import Dict, List, Union, Any
+from typing import Any
 from pathlib import Path
 import json
 import zipfile
@@ -57,7 +57,7 @@ class FormatDetector:
 
         logger.info("Initialized FormatDetector")
 
-    def detect_from_path(self, file_path: Union[str, Path]) -> DataFormat:
+    def detect_from_path(self, file_path: str | Path) -> DataFormat:
         """
         Detect format from file path.
 
@@ -117,7 +117,7 @@ class FormatDetector:
                             f"Shapefile missing associated files: {missing_files}"
                         )
                 elif detected_format == DataFormat.GEOJSON:
-                    with open(file_path, "r") as f:
+                    with open(file_path) as f:
                         data = json.load(f)
                         if not self._is_geojson_structure(data):
                             raise ValueError(
@@ -136,7 +136,7 @@ class FormatDetector:
         # Fall back to content-based detection
         return self.detect_from_content(file_path)
 
-    def detect_from_content(self, file_path: Union[str, Path]) -> DataFormat:
+    def detect_from_content(self, file_path: str | Path) -> DataFormat:
         """
         Detect format from file content.
 
@@ -192,7 +192,7 @@ class FormatDetector:
     def _detect_geojson(self, file_path: Path) -> bool:
         """Detect GeoJSON format."""
         try:
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 data = json.load(f)
                 return self._is_geojson_structure(data)
         except (json.JSONDecodeError, UnicodeDecodeError):
@@ -279,7 +279,7 @@ class FormatDetector:
     def _detect_wkt(self, file_path: Path) -> bool:
         """Detect WKT format."""
         try:
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 content = f.read()
                 # Simple WKT detection
                 return (
@@ -299,7 +299,7 @@ class FormatDetector:
         except Exception:
             return False
 
-    def _is_geojson_structure(self, data: Dict[str, Any]) -> bool:
+    def _is_geojson_structure(self, data: dict[str, Any]) -> bool:
         """Check if dictionary has GeoJSON structure."""
         # Check for GeoJSON required fields
         if "type" not in data:
@@ -322,12 +322,12 @@ class FormatDetector:
 
         return False
 
-    def get_supported_formats(self) -> List[DataFormat]:
+    def get_supported_formats(self) -> list[DataFormat]:
         """Get list of supported formats."""
         return list(self.format_signatures.keys())
 
     def validate_format(
-        self, file_path: Union[str, Path], expected_format: DataFormat
+        self, file_path: str | Path, expected_format: DataFormat
     ) -> bool:
         """
         Validate that file matches expected format.

@@ -21,7 +21,7 @@ Integration Points:
 """
 
 import logging
-from typing import Dict, Optional, Any, List, cast
+from typing import Any, cast
 from datetime import datetime
 import traceback
 
@@ -53,7 +53,7 @@ from ..utils.validation import (
 logger = logging.getLogger(__name__)
 
 
-def create_cog_api_app(config: Optional[Dict[str, Any]] = None) -> Optional[Flask]:
+def create_cog_api_app(config: dict[str, Any] | None = None) -> Flask | None:
     """
     Create and configure the GEO-INFER-COG REST API application.
 
@@ -136,7 +136,7 @@ def create_cog_api_app(config: Optional[Dict[str, Any]] = None) -> Optional[Flas
             }
         )
 
-    return cast(Optional[Flask], app)
+    return cast(Flask | None, app)
 
 
 def register_api_routes(app: Any) -> None:
@@ -381,7 +381,7 @@ def register_api_routes(app: Any) -> None:
                 app.decision_support = SpatialDecisionSupport()
 
             # No stakeholder profiles are inferred without submitted evidence.
-            stakeholder_profiles: List[UserCognitiveProfile] = []
+            stakeholder_profiles: list[UserCognitiveProfile] = []
             if not app.profile_manager:
                 app.profile_manager = ProfileManager()
 
@@ -633,7 +633,7 @@ def register_api_routes(app: Any) -> None:
     def get_system_metrics() -> Any:
         """Get system performance metrics."""
         try:
-            metrics: Dict[str, Any] = {
+            metrics: dict[str, Any] = {
                 "timestamp": datetime.now().isoformat(),
                 "uptime_seconds": 0,  # Would be calculated from start time
                 "requests_processed": 0,  # Would be tracked

@@ -9,7 +9,7 @@ Preprocessing steps ensure data quality and compatibility with SPM statistical m
 """
 
 import numpy as np
-from typing import List, Optional, Any, cast
+from typing import Any, cast
 from scipy import stats
 import warnings
 
@@ -18,7 +18,7 @@ from .validation import validate_spm_data
 
 
 def preprocess_data(
-    data: SPMData, steps: Optional[List[str]] = None, **kwargs: Any
+    data: SPMData, steps: list[str] | None = None, **kwargs: Any
 ) -> SPMData:
     """
     Apply preprocessing pipeline to SPM data.
@@ -202,7 +202,7 @@ def _spatial_interpolate_missing(
 
 
 def normalize_data(
-    data: SPMData, method: str = "zscore", axis: Optional[int] = None
+    data: SPMData, method: str = "zscore", axis: int | None = None
 ) -> SPMData:
     """
     Normalize data values for SPM analysis.

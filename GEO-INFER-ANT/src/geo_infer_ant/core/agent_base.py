@@ -8,7 +8,7 @@ management (AGENT) modules to create sophisticated collective intelligence syste
 
 import numpy as np
 import logging
-from typing import Dict, List, Any, Optional, cast
+from typing import Any, cast
 from datetime import datetime
 from dataclasses import dataclass, field
 
@@ -51,18 +51,18 @@ class SensoryInput:
     for comprehensive agent perception.
     """
 
-    spatial_context: Dict[str, Any] = field(default_factory=dict)
-    environmental_signals: Dict[str, Any] = field(default_factory=dict)
-    social_signals: Dict[str, Any] = field(default_factory=dict)
-    stigmergic_signals: Dict[str, Any] = field(default_factory=dict)
-    temporal_context: Dict[str, Any] = field(default_factory=dict)
+    spatial_context: dict[str, Any] = field(default_factory=dict)
+    environmental_signals: dict[str, Any] = field(default_factory=dict)
+    social_signals: dict[str, Any] = field(default_factory=dict)
+    stigmergic_signals: dict[str, Any] = field(default_factory=dict)
+    temporal_context: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate and process sensory input after initialization."""
         self.timestamp = datetime.now()
         self.processed = False
 
-    def process(self) -> Dict[str, Any]:
+    def process(self) -> dict[str, Any]:
         """Process and integrate all sensory inputs."""
         if self.processed:
             return self.to_dict()
@@ -93,7 +93,7 @@ class SensoryInput:
         self.processed_data = processed
         return processed
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "spatial_context": self.spatial_context,
@@ -117,10 +117,10 @@ class ActionDecision:
     """
 
     action_type: str
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
     confidence: float = 0.0
-    expected_outcome: Dict[str, Any] = field(default_factory=dict)
-    alternative_actions: List[Dict[str, Any]] = field(default_factory=list)
+    expected_outcome: dict[str, Any] = field(default_factory=dict)
+    alternative_actions: list[dict[str, Any]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """Validate action decision after initialization."""
@@ -143,7 +143,7 @@ class ActionDecision:
         multiplier = urgency_multipliers.get(self.action_type, 1.0)
         return base_priority * multiplier
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "action_type": self.action_type,
@@ -217,7 +217,7 @@ class SwarmAgent(_SwarmAgentBase):
             # attributes SwarmAgent itself relies on. AGENT framework
             # features (run loop, save_state, belief state) are simply absent.
             self.agent_id = agent_id
-            self.config: Dict[str, Any] = dict(kwargs)
+            self.config: dict[str, Any] = dict(kwargs)
 
         # Swarm-specific attributes
         self.position = position_arr
@@ -238,12 +238,12 @@ class SwarmAgent(_SwarmAgentBase):
             {"min_lat": -90.0, "max_lat": 90.0, "min_lng": -180.0, "max_lng": 180.0},
         )
         self.pheromone_system = kwargs.get("pheromone_system")
-        self.task_memory: List[Dict[str, Any]] = []
-        self.social_signals: Dict[str, Any] = {}
+        self.task_memory: list[dict[str, Any]] = []
+        self.social_signals: dict[str, Any] = {}
 
         # Performance tracking
-        self.performance_history: List[Dict[str, Any]] = []
-        self.interaction_history: List[Dict[str, Any]] = []
+        self.performance_history: list[dict[str, Any]] = []
+        self.interaction_history: list[dict[str, Any]] = []
 
         # Initialize integrations
         self._initialize_integrations(spatial_backend)
@@ -299,11 +299,11 @@ class SwarmAgent(_SwarmAgentBase):
 
     async def perceive_environment(
         self,
-        spatial_context: Optional[Dict[str, Any]] = None,
-        environmental_signals: Optional[Dict[str, Any]] = None,
-        social_signals: Optional[Dict[str, Any]] = None,
-        stigmergic_signals: Optional[Dict[str, Any]] = None,
-        temporal_context: Optional[Dict[str, Any]] = None,
+        spatial_context: dict[str, Any] | None = None,
+        environmental_signals: dict[str, Any] | None = None,
+        social_signals: dict[str, Any] | None = None,
+        stigmergic_signals: dict[str, Any] | None = None,
+        temporal_context: dict[str, Any] | None = None,
     ) -> SensoryInput:
         """
         Perceive and integrate environmental information.
@@ -374,7 +374,7 @@ class SwarmAgent(_SwarmAgentBase):
         logger.debug(f"Agent {self.agent_id} processed sensory input")
         return sensory_input
 
-    def _update_active_inference(self, observations: Dict[str, Any]) -> Optional[Any]:
+    def _update_active_inference(self, observations: dict[str, Any]) -> Any | None:
         """Store observations and update beliefs when a model is configured.
 
         GEO-INFER-ACT exposes ``update_observations`` for structured context and
@@ -404,9 +404,9 @@ class SwarmAgent(_SwarmAgentBase):
         return None
 
     @staticmethod
-    def _numeric_observation_vector(observations: Dict[str, Any]) -> np.ndarray:
+    def _numeric_observation_vector(observations: dict[str, Any]) -> np.ndarray:
         """Flatten finite numeric observations for configured ACT models."""
-        values: List[float] = []
+        values: list[float] = []
         for value in observations.values():
             try:
                 array = np.asarray(value, dtype=float).reshape(-1)
@@ -415,7 +415,7 @@ class SwarmAgent(_SwarmAgentBase):
             values.extend(array[np.isfinite(array)].tolist())
         return np.asarray(values, dtype=float)
 
-    def _extract_observations(self, processed_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_observations(self, processed_data: dict[str, Any]) -> dict[str, Any]:
         """Extract observations for Active Inference model."""
         observations = {}
 
@@ -438,8 +438,8 @@ class SwarmAgent(_SwarmAgentBase):
     def make_decision(
         self,
         sensory_input: SensoryInput,
-        internal_motivations: Optional[Dict[str, float]] = None,
-        behavioral_rules: Optional[Dict[str, Any]] = None,
+        internal_motivations: dict[str, float] | None = None,
+        behavioral_rules: dict[str, Any] | None = None,
     ) -> ActionDecision:
         """
         Make behavioral decision based on sensory input and internal state.
@@ -509,8 +509,8 @@ class SwarmAgent(_SwarmAgentBase):
         return decision
 
     def _generate_action_space(
-        self, processed_data: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        self, processed_data: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Generate possible actions based on current context."""
         actions = []
 
@@ -597,9 +597,9 @@ class SwarmAgent(_SwarmAgentBase):
 
     def _rule_based_decision_making(
         self,
-        processed_data: Dict[str, Any],
-        internal_motivations: Dict[str, float],
-        behavioral_rules: Optional[Dict[str, Any]] = None,
+        processed_data: dict[str, Any],
+        internal_motivations: dict[str, float],
+        behavioral_rules: dict[str, Any] | None = None,
     ) -> ActionDecision:
         """Select an action with the configured rule-based policy."""
         # Simple priority-based decision making
@@ -650,7 +650,7 @@ class SwarmAgent(_SwarmAgentBase):
             expected_outcome={"information_gain": 0.2},
         )
 
-    async def execute_action(self, decision: ActionDecision) -> Dict[str, Any]:
+    async def execute_action(self, decision: ActionDecision) -> dict[str, Any]:
         """
         Execute the chosen action and return results.
 
@@ -662,7 +662,7 @@ class SwarmAgent(_SwarmAgentBase):
         """
         logger.info(f"Agent {self.agent_id} executing action: {decision.action_type}")
 
-        execution_result: Dict[str, Any] = {
+        execution_result: dict[str, Any] = {
             "action_type": decision.action_type,
             "start_time": datetime.now(),
             "success": False,
@@ -738,7 +738,7 @@ class SwarmAgent(_SwarmAgentBase):
 
     async def _execute_movement_action(
         self, decision: ActionDecision
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute movement-related actions."""
         params = decision.parameters
         target = params.get("target", "default")
@@ -788,7 +788,7 @@ class SwarmAgent(_SwarmAgentBase):
 
     async def _execute_stigmergic_action(
         self, decision: ActionDecision
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute stigmergic (pheromone) actions."""
         params = decision.parameters
         pheromone_type = params.get("pheromone_type", "trail")
@@ -823,7 +823,7 @@ class SwarmAgent(_SwarmAgentBase):
 
     async def _execute_follow_pheromone_action(
         self, decision: ActionDecision
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Move along the strongest local pheromone gradient."""
         if self.pheromone_system is None:
             return {
@@ -860,7 +860,7 @@ class SwarmAgent(_SwarmAgentBase):
 
     async def _execute_communication_action(
         self, decision: ActionDecision
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute communication actions."""
         params = decision.parameters
         message_type = params.get("message_type", "status")
@@ -886,7 +886,7 @@ class SwarmAgent(_SwarmAgentBase):
 
     async def _execute_foraging_action(
         self, decision: ActionDecision
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute foraging actions."""
         params = decision.parameters
         target_type = params.get("target_type", "food")
@@ -907,7 +907,7 @@ class SwarmAgent(_SwarmAgentBase):
             "actual_outcome": {"foraging_completed": success},
         }
 
-    async def _execute_rest_action(self, decision: ActionDecision) -> Dict[str, Any]:
+    async def _execute_rest_action(self, decision: ActionDecision) -> dict[str, Any]:
         """Execute rest/recovery actions."""
         params = decision.parameters
         duration = params.get("duration", 10)
@@ -927,7 +927,7 @@ class SwarmAgent(_SwarmAgentBase):
 
     async def _execute_monitoring_action(
         self, decision: ActionDecision
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute environmental monitoring actions."""
         params = decision.parameters
         sensor_types = params.get("sensor_types", ["general"])
@@ -950,7 +950,7 @@ class SwarmAgent(_SwarmAgentBase):
             "actual_outcome": {"monitoring_completed": True},
         }
 
-    async def _execute_generic_action(self, decision: ActionDecision) -> Dict[str, Any]:
+    async def _execute_generic_action(self, decision: ActionDecision) -> dict[str, Any]:
         """Reject actions without a registered handler."""
         return {
             "action_type": decision.action_type,
@@ -962,7 +962,7 @@ class SwarmAgent(_SwarmAgentBase):
         }
 
     def _update_agent_state(
-        self, decision: ActionDecision, result: Dict[str, Any]
+        self, decision: ActionDecision, result: dict[str, Any]
     ) -> None:
         """Update agent internal state based on action execution."""
         # Update energy level
@@ -996,7 +996,7 @@ class SwarmAgent(_SwarmAgentBase):
         if hasattr(self, "state"):
             self.state.update_belief("status", "initialized")
 
-    async def perceive(self) -> Dict[str, Any]:
+    async def perceive(self) -> dict[str, Any]:
         """Default perception method."""
         return {
             "position": self.position,
@@ -1004,17 +1004,17 @@ class SwarmAgent(_SwarmAgentBase):
             "timestamp": datetime.now(),
         }
 
-    def update_beliefs(self, perception: Dict[str, Any]) -> None:
+    def update_beliefs(self, perception: dict[str, Any]) -> None:
         """Update beliefs based on perception."""
         for key, value in perception.items():
             if hasattr(self, "state"):
                 self.state.update_belief(key, value)
 
-    async def decide(self) -> Optional[Dict[str, Any]]:
+    async def decide(self) -> dict[str, Any] | None:
         """Default decision method."""
         return {"type": "monitor", "parameters": {}}
 
-    async def act(self, action: Dict[str, Any]) -> Dict[str, Any]:
+    async def act(self, action: dict[str, Any]) -> dict[str, Any]:
         """Default action method."""
         return {"status": "completed"}
 
@@ -1022,7 +1022,7 @@ class SwarmAgent(_SwarmAgentBase):
         """Clean up resources."""
         logger.info(f"SwarmAgent {self.agent_id} shutting down")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert agent to dictionary representation."""
         return {
             "agent_id": self.agent_id,

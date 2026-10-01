@@ -2,14 +2,13 @@
 
 import logging
 from datetime import date
-from typing import List, Optional
 import pandas as pd
 from ..models.hr_models import Employee
 
 logger = logging.getLogger(__name__)
 
 
-def clean_employee_data(employees: List[Employee]) -> List[Employee]:
+def clean_employee_data(employees: list[Employee]) -> list[Employee]:
     """
     Performs comprehensive cleaning operations on a list of Employee objects.
 
@@ -92,8 +91,8 @@ def clean_employee_data(employees: List[Employee]) -> List[Employee]:
 
 
 def enrich_employee_data(
-    employees: List[Employee], org_data: Optional[dict] = None
-) -> List[Employee]:
+    employees: list[Employee], org_data: dict | None = None
+) -> list[Employee]:
     """
     Enriches employee data with calculated fields and organizational context.
 
@@ -211,7 +210,7 @@ def enrich_employee_data(
     return enriched_employees
 
 
-def convert_employees_to_dataframe(employees: List[Employee]) -> pd.DataFrame:
+def convert_employees_to_dataframe(employees: list[Employee]) -> pd.DataFrame:
     """
     Converts a list of Employee Pydantic models to a Pandas DataFrame.
     """

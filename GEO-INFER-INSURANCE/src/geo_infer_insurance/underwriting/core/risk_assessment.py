@@ -12,7 +12,7 @@ This module provides sophisticated risk assessment capabilities including:
 
 import logging
 import time
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any
 from datetime import datetime
 import json
 
@@ -55,7 +55,7 @@ class RiskAssessmentConfig:
             "spatial"  # independent, spatial, temporal, copula
         )
         self.uncertainty_method: str = "parametric"  # parametric, bootstrap, bayesian
-        self.external_data_sources: List[str] = ["usgs", "noaa", "fema"]
+        self.external_data_sources: list[str] = ["usgs", "noaa", "fema"]
         self.validation_threshold: float = 0.8
 
 
@@ -65,29 +65,29 @@ class RiskMetrics:
     def __init__(self) -> None:
         # Core risk metrics
         self.average_annual_loss: float = 0.0
-        self.probable_maximum_loss: Dict[str, float] = {}
-        self.value_at_risk: Dict[str, float] = {}
-        self.tail_value_at_risk: Dict[str, float] = {}
-        self.loss_exceedance_curve: Dict[str, List[float]] = {}
+        self.probable_maximum_loss: dict[str, float] = {}
+        self.value_at_risk: dict[str, float] = {}
+        self.tail_value_at_risk: dict[str, float] = {}
+        self.loss_exceedance_curve: dict[str, list[float]] = {}
 
         # Hazard-specific metrics
-        self.hazard_breakdown: Dict[str, Dict[str, float]] = {}
-        self.correlation_matrix: List[List[float]] = []
+        self.hazard_breakdown: dict[str, dict[str, float]] = {}
+        self.correlation_matrix: list[list[float]] = []
 
         # Uncertainty metrics
-        self.confidence_intervals: Dict[str, Tuple[float, float]] = {}
-        self.sensitivity_analysis: Dict[str, float] = {}
+        self.confidence_intervals: dict[str, tuple[float, float]] = {}
+        self.sensitivity_analysis: dict[str, float] = {}
 
         # Spatial metrics
         self.risk_concentration: float = 0.0
         self.spatial_correlation: float = 0.0
-        self.hotspot_analysis: Dict[str, Any] = {}
+        self.hotspot_analysis: dict[str, Any] = {}
 
         # Temporal metrics
-        self.seasonal_patterns: Dict[str, float] = {}
-        self.trend_analysis: Dict[str, float] = {}
+        self.seasonal_patterns: dict[str, float] = {}
+        self.trend_analysis: dict[str, float] = {}
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert risk metrics to dictionary for serialization."""
         return {
             "average_annual_loss": self.average_annual_loss,
@@ -120,7 +120,7 @@ class RiskAssessmentEngine:
     - Real-time risk monitoring capabilities
     """
 
-    def __init__(self, config: Optional[RiskAssessmentConfig] = None):
+    def __init__(self, config: RiskAssessmentConfig | None = None):
         """
         Initialize the risk assessment engine.
 
@@ -153,14 +153,14 @@ class RiskAssessmentEngine:
                 self.logger.warning(f"Failed to initialize spatial interfaces: {e}")
 
         # Cache for risk assessments
-        self.assessment_cache: Dict[str, Dict[str, Any]] = {}
-        self.cache_timestamps: Dict[str, datetime] = {}
+        self.assessment_cache: dict[str, dict[str, Any]] = {}
+        self.cache_timestamps: dict[str, datetime] = {}
 
         self.logger.info("Risk assessment engine initialized")
 
     def assess_risk(
-        self, application_data: Dict[str, Any], assessment_type: str = "comprehensive"
-    ) -> Dict[str, Any]:
+        self, application_data: dict[str, Any], assessment_type: str = "comprehensive"
+    ) -> dict[str, Any]:
         """
         Perform comprehensive risk assessment for underwriting application.
 
@@ -188,7 +188,7 @@ class RiskAssessmentEngine:
         try:
             # Extract property information
             property_info = application_data.get("property", {})
-            location: Dict[str, Any] = {
+            location: dict[str, Any] = {
                 key: property_info[key]
                 for key in (
                     "latitude",
@@ -237,7 +237,7 @@ class RiskAssessmentEngine:
             raise RuntimeError("Risk assessment failed") from e
 
     def _generate_cache_key(
-        self, application_data: Dict[str, Any], assessment_type: str
+        self, application_data: dict[str, Any], assessment_type: str
     ) -> str:
         """Generate cache key for risk assessment."""
         # Create a hashable representation of key application data
@@ -251,8 +251,8 @@ class RiskAssessmentEngine:
         return json.dumps(key_data, sort_keys=True)
 
     def _basic_risk_assessment(
-        self, application_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, application_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Perform basic risk assessment."""
         property_info = application_data.get("property", {})
 
@@ -272,8 +272,8 @@ class RiskAssessmentEngine:
         }
 
     def _comprehensive_risk_assessment(
-        self, application_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, application_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Perform comprehensive risk assessment using all available data."""
         # Use risk engine if available
         if self.risk_engine:
@@ -306,8 +306,8 @@ class RiskAssessmentEngine:
         )
 
     def _advanced_risk_assessment(
-        self, application_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, application_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Perform advanced risk assessment with all enhancements."""
         # Start with comprehensive assessment
         basic_results = self._comprehensive_risk_assessment(application_data)
@@ -330,8 +330,8 @@ class RiskAssessmentEngine:
         return basic_results
 
     def _prepare_risk_engine_input(
-        self, application_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, application_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Prepare input data for the risk engine."""
         property_info = application_data.get("property", {})
 
@@ -353,7 +353,7 @@ class RiskAssessmentEngine:
             },
         }
 
-    def _extract_risk_score_from_results(self, risk_results: Dict[str, Any]) -> float:
+    def _extract_risk_score_from_results(self, risk_results: dict[str, Any]) -> float:
         """Extract overall risk score from risk engine results."""
         try:
             # Use AAL as primary risk indicator
@@ -369,7 +369,7 @@ class RiskAssessmentEngine:
         except Exception:
             raise RuntimeError("Risk engine results did not contain a valid risk score")
 
-    def _calculate_basic_risk_score(self, property_info: Dict[str, Any]) -> float:
+    def _calculate_basic_risk_score(self, property_info: dict[str, Any]) -> float:
         """Calculate basic risk score from property information."""
         risk_score = 0.5  # Base score
 
@@ -398,7 +398,7 @@ class RiskAssessmentEngine:
         else:
             return "critical"
 
-    def _calculate_risk_factors(self, risk_results: Dict[str, Any]) -> Dict[str, float]:
+    def _calculate_risk_factors(self, risk_results: dict[str, Any]) -> dict[str, float]:
         """Calculate risk factor contributions."""
         factors = {
             "location_risk": 0.4,
@@ -417,7 +417,7 @@ class RiskAssessmentEngine:
 
         return factors
 
-    def _analyze_location_risk(self, location: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_location_risk(self, location: dict[str, Any]) -> dict[str, Any]:
         """Analyze location-specific risk factors.
 
         Flood risk is computed from an ``elevation_m`` input and coastal risk
@@ -425,7 +425,7 @@ class RiskAssessmentEngine:
         corresponding factor is reported as ``unavailable`` with a reason
         instead of being guessed from hard-coded anchors.
         """
-        location_risk: Dict[str, Any] = {"risk_factors": {}, "reasons": {}}
+        location_risk: dict[str, Any] = {"risk_factors": {}, "reasons": {}}
         if "latitude" in location and "longitude" in location:
             location_risk["coordinates"] = {
                 "latitude": location["latitude"],
@@ -462,7 +462,7 @@ class RiskAssessmentEngine:
 
         return location_risk
 
-    def _analyze_uncertainty(self, risk_results: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_uncertainty(self, risk_results: dict[str, Any]) -> dict[str, Any]:
         """Analyze uncertainty in risk assessment."""
         uncertainty_analysis = {
             "overall_uncertainty": 0.2,  # 20% uncertainty
@@ -483,8 +483,8 @@ class RiskAssessmentEngine:
         return uncertainty_analysis
 
     def _analyze_sensitivity(
-        self, application_data: Dict[str, Any], risk_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, application_data: dict[str, Any], risk_results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze sensitivity of risk results to input parameters."""
 
         sensitivity_analysis = {
@@ -497,8 +497,8 @@ class RiskAssessmentEngine:
         return sensitivity_analysis
 
     def _advanced_spatial_analysis(
-        self, application_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, application_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Perform advanced spatial risk analysis."""
         if not self.spatial_interface or not self.spatial_analytics:
             return {"error": "Spatial interfaces not available"}
@@ -529,8 +529,8 @@ class RiskAssessmentEngine:
             return {"error": str(e)}
 
     def _advanced_temporal_analysis(
-        self, application_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, application_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Perform advanced temporal risk analysis."""
         # Analyze seasonal and temporal patterns
         temporal_analysis = {
@@ -548,8 +548,8 @@ class RiskAssessmentEngine:
         return temporal_analysis
 
     def _advanced_correlation_analysis(
-        self, application_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, application_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Perform advanced correlation analysis between hazards."""
         # Analyze correlation between different hazard types
         correlation_matrix = [
@@ -572,7 +572,7 @@ class RiskAssessmentEngine:
 
         return correlation_analysis
 
-    def get_risk_score_explanation(self, risk_results: Dict[str, Any]) -> str:
+    def get_risk_score_explanation(self, risk_results: dict[str, Any]) -> str:
         """Generate human-readable explanation of risk score."""
         risk_score = risk_results.get("risk_score", 0.5)
         risk_level = risk_results.get("risk_level", "medium")
@@ -599,9 +599,9 @@ class RiskAssessmentEngine:
 
         return explanation.strip()
 
-    def validate_risk_assessment(self, risk_results: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_risk_assessment(self, risk_results: dict[str, Any]) -> dict[str, Any]:
         """Validate risk assessment results."""
-        validation_result: Dict[str, Any] = {
+        validation_result: dict[str, Any] = {
             "is_valid": True,
             "validation_score": 0.0,
             "issues": [],
@@ -652,7 +652,7 @@ class RiskAssessmentEngine:
         self.cache_timestamps.clear()
         self.logger.info("Risk assessment cache cleared")
 
-    def get_cache_info(self) -> Dict[str, Any]:
+    def get_cache_info(self) -> dict[str, Any]:
         """Get information about cached risk assessments."""
         return {
             "cache_size": len(self.assessment_cache),
@@ -668,9 +668,9 @@ class RiskAssessmentEngine:
             ),
         }
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform health check on risk assessment engine."""
-        health_status: Dict[str, Any] = {
+        health_status: dict[str, Any] = {
             "status": "healthy",
             "timestamp": datetime.now().isoformat(),
             "components": {},
@@ -711,15 +711,15 @@ class RiskAssessmentEngine:
 
 # Convenience functions
 def create_risk_assessment_engine(
-    config: Optional[RiskAssessmentConfig] = None,
+    config: RiskAssessmentConfig | None = None,
 ) -> RiskAssessmentEngine:
     """Create a new risk assessment engine."""
     return RiskAssessmentEngine(config)
 
 
 def assess_property_risk(
-    property_data: Dict[str, Any], assessment_method: str = "comprehensive"
-) -> Dict[str, Any]:
+    property_data: dict[str, Any], assessment_method: str = "comprehensive"
+) -> dict[str, Any]:
     """
     Convenience function to assess risk for a single property.
 

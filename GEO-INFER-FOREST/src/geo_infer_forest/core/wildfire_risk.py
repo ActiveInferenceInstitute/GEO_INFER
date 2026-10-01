@@ -1,7 +1,7 @@
 """Wildfire risk assessment module."""
 
 import logging
-from typing import Dict, Optional, List, Tuple, Any
+from typing import Any
 from dataclasses import dataclass
 from enum import Enum
 import numpy as np
@@ -50,16 +50,16 @@ class FireWeatherObservation:
     """Fire weather observation data."""
 
     observation_id: str
-    location: Tuple[float, float]
+    location: tuple[float, float]
     timestamp: str
     temperature_c: float
     relative_humidity: float  # Percentage
     wind_speed_kmh: float
     wind_direction_deg: float
     precipitation_mm: float
-    fuel_moisture_1hr: Optional[float] = None
-    fuel_moisture_10hr: Optional[float] = None
-    fuel_moisture_100hr: Optional[float] = None
+    fuel_moisture_1hr: float | None = None
+    fuel_moisture_10hr: float | None = None
+    fuel_moisture_100hr: float | None = None
 
 
 @dataclass
@@ -68,11 +68,11 @@ class FireIncident:
 
     incident_id: str
     name: str
-    location: Tuple[float, float]
+    location: tuple[float, float]
     start_time: str
     area_hectares: float
     containment_pct: float = 0.0
-    cause: Optional[str] = None
+    cause: str | None = None
     fuel_type: FuelType = FuelType.TIMBER_UNDERSTORY
 
 
@@ -88,7 +88,7 @@ class WildfireRiskAnalyzer:
     - Post-fire damage assessment
     """
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize wildfire risk analyzer."""
         self.config = config or {}
 
@@ -111,14 +111,14 @@ class WildfireRiskAnalyzer:
         }
 
         # Incident registry
-        self.active_incidents: Dict[str, FireIncident] = {}
+        self.active_incidents: dict[str, FireIncident] = {}
 
     def assess_wildfire_risk(
         self,
         temperature: xr.DataArray,
         precipitation: xr.DataArray,
-        fuel_load: Optional[xr.DataArray] = None,
-        wind_speed: Optional[xr.DataArray] = None,
+        fuel_load: xr.DataArray | None = None,
+        wind_speed: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """
         Assess wildfire risk.
@@ -167,7 +167,7 @@ class WildfireRiskAnalyzer:
 
     def calculate_fire_weather_index(
         self, observation: FireWeatherObservation
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate Fire Weather Index (FWI) components.
 
@@ -246,7 +246,7 @@ class WildfireRiskAnalyzer:
         self,
         ignition_points: xr.DataArray,
         fuel_load: xr.DataArray,
-        wind_direction: Optional[xr.DataArray] = None,
+        wind_direction: xr.DataArray | None = None,
         spread_boost: float = 0.5,
     ) -> xr.Dataset:
         """
@@ -323,13 +323,13 @@ class WildfireRiskAnalyzer:
 
     def model_fire_perimeter(
         self,
-        ignition_point: Tuple[float, float],
+        ignition_point: tuple[float, float],
         fuel_type: FuelType,
         wind_speed_kmh: float,
         wind_direction_deg: float,
         slope_pct: float,
         time_hours: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Model fire perimeter growth using elliptical model.
 
@@ -418,8 +418,8 @@ class WildfireRiskAnalyzer:
         fire_size_ha: float,
         danger_rating: FireDangerRating,
         terrain_difficulty: str = "moderate",
-        resources_available: Optional[Dict[str, int]] = None,
-    ) -> Dict[str, Any]:
+        resources_available: dict[str, int] | None = None,
+    ) -> dict[str, Any]:
         """
         Plan suppression resources based on fire characteristics.
 
@@ -497,7 +497,7 @@ class WildfireRiskAnalyzer:
         self,
         pre_fire_ndvi: xr.DataArray,
         post_fire_ndvi: xr.DataArray,
-        land_cover: Optional[xr.DataArray] = None,
+        land_cover: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """
         Assess post-fire damage using vegetation indices.
@@ -544,11 +544,11 @@ class WildfireRiskAnalyzer:
 
     def calculate_evacuation_zones(
         self,
-        fire_location: Tuple[float, float],
+        fire_location: tuple[float, float],
         predicted_spread_km: float,
         wind_direction_deg: float,
-        population_density: Optional[xr.DataArray] = None,
-    ) -> Dict[str, Any]:
+        population_density: xr.DataArray | None = None,
+    ) -> dict[str, Any]:
         """
         Calculate evacuation zones based on fire threat.
 
@@ -605,6 +605,6 @@ class WildfireRiskAnalyzer:
         logger.info(f"Registered fire incident: {incident.name}")
         return incident.incident_id
 
-    def get_active_incidents(self) -> List[FireIncident]:
+    def get_active_incidents(self) -> list[FireIncident]:
         """Get list of active incidents."""
         return list(self.active_incidents.values())

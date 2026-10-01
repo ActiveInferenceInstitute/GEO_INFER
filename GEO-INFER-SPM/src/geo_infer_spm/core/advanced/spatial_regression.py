@@ -14,7 +14,7 @@ Implemented Methods:
 """
 
 import numpy as np
-from typing import Dict, Optional, Any, cast
+from typing import Any, cast
 from scipy import linalg, sparse
 from scipy.optimize import minimize
 import warnings
@@ -35,7 +35,7 @@ class SpatialRegression:
         fitted_model: Fitted model parameters
     """
 
-    def __init__(self, model_type: str = "sar", spatial_weights: Optional[Any] = None):
+    def __init__(self, model_type: str = "sar", spatial_weights: Any | None = None):
         """
         Initialize spatial regression model.
 
@@ -45,7 +45,7 @@ class SpatialRegression:
         """
         self.model_type = model_type.lower()
         self.spatial_weights = spatial_weights
-        self.fitted_model: Optional[Dict[str, Any]] = None
+        self.fitted_model: dict[str, Any] | None = None
 
         self._validate_model_type()
 
@@ -587,7 +587,7 @@ class SpatialRegression:
             )
         return cast(np.ndarray, values @ self._fitted_coefficients)
 
-    def get_spatial_effects(self) -> Dict[str, Any]:
+    def get_spatial_effects(self) -> dict[str, Any]:
         """
         Extract spatial effects from fitted model.
 

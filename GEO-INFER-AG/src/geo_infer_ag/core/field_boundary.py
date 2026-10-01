@@ -2,7 +2,7 @@
 Field boundary management functionality for agricultural applications.
 """
 
-from typing import Dict, Optional, Union, Any
+from typing import Any
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -28,9 +28,7 @@ class FieldBoundaryManager:
         crs: Coordinate reference system for spatial data
     """
 
-    def __init__(
-        self, fields: Optional[gpd.GeoDataFrame] = None, crs: str = "EPSG:4326"
-    ):
+    def __init__(self, fields: gpd.GeoDataFrame | None = None, crs: str = "EPSG:4326"):
         """
         Initialize the field boundary manager.
 
@@ -63,11 +61,11 @@ class FieldBoundaryManager:
 
     def add_field(
         self,
-        geometry: Union[Polygon, MultiPolygon],
-        field_id: Optional[str] = None,
-        name: Optional[str] = None,
-        crop_type: Optional[str] = None,
-        attributes: Optional[Dict[str, Any]] = None,
+        geometry: Polygon | MultiPolygon,
+        field_id: str | None = None,
+        name: str | None = None,
+        crop_type: str | None = None,
+        attributes: dict[str, Any] | None = None,
     ) -> str:
         """
         Add a new field boundary.
@@ -138,10 +136,10 @@ class FieldBoundaryManager:
     def update_field(
         self,
         field_id: str,
-        geometry: Optional[Union[Polygon, MultiPolygon]] = None,
-        name: Optional[str] = None,
-        crop_type: Optional[str] = None,
-        attributes: Optional[Dict[str, Any]] = None,
+        geometry: Polygon | MultiPolygon | None = None,
+        name: str | None = None,
+        crop_type: str | None = None,
+        attributes: dict[str, Any] | None = None,
     ) -> bool:
         """
         Update a field's properties.
@@ -190,7 +188,7 @@ class FieldBoundaryManager:
 
         return True
 
-    def get_field(self, field_id: str) -> Optional[gpd.GeoSeries]:
+    def get_field(self, field_id: str) -> gpd.GeoSeries | None:
         """
         Get a field by its ID.
 
@@ -269,9 +267,9 @@ class FieldBoundaryManager:
     def extract_fields_from_raster(
         self,
         raster_path: str,
-        value_field: Optional[str] = None,
+        value_field: str | None = None,
         min_area: float = 0.1,
-        simplify_tolerance: Optional[float] = None,
+        simplify_tolerance: float | None = None,
     ) -> int:
         """
         Extract field boundaries from a classified raster image.

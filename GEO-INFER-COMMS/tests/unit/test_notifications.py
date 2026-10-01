@@ -1,7 +1,7 @@
 """Tests for notification scheduling, delivery, and alert cooldown."""
 
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 from geo_infer_comms.core.notifications import (
     AlertRule,
@@ -30,7 +30,7 @@ class TestScheduledNotifications:
         manager = NotificationManager(max_notifications=100, enable_persistence=False)
         manager.start()
         try:
-            future = datetime.now(timezone.utc) + timedelta(seconds=5)
+            future = datetime.now(UTC) + timedelta(seconds=5)
             notification_id = manager.schedule_notification(
                 _request(["user@example.com"]), future
             )
@@ -45,7 +45,7 @@ class TestScheduledNotifications:
         manager = NotificationManager(max_notifications=100, enable_persistence=False)
         manager.start()
         try:
-            future = datetime.now(timezone.utc) + timedelta(seconds=5)
+            future = datetime.now(UTC) + timedelta(seconds=5)
             notification_id = manager.schedule_notification(
                 _request(["user@example.com"]), future
             )

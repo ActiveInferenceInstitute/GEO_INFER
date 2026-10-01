@@ -5,7 +5,7 @@ result carries ``degraded: True`` when any stage failed, so callers can
 distinguish degraded placeholder output from real analysis values.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 import pytest
 
@@ -37,10 +37,10 @@ def _report(
 
 
 def _analyzer() -> ActiveInferenceDiseaseAnalyzer:
-    base = datetime(2024, 3, 1, tzinfo=timezone.utc)
+    base = datetime(2024, 3, 1, tzinfo=UTC)
     reports = [
-        _report(f"c0-a", 34.05, -118.24, 8, base),
-        _report(f"c1-a", 34.05, -118.24, 9, base),
+        _report("c0-a", 34.05, -118.24, 8, base),
+        _report("c1-a", 34.05, -118.24, 9, base),
     ]
     return ActiveInferenceDiseaseAnalyzer(reports=reports)
 

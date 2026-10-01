@@ -7,7 +7,7 @@ behavior with various input data and configurations.
 
 import unittest
 import asyncio
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, UTC
 import numpy as np
 import h3
 
@@ -30,7 +30,7 @@ from geo_infer_iot.models.sensor import Location, Sensor, SensorCapabilities
 
 def build_radiation_measurements(count: int) -> list[dict]:
     """Build deterministic measurements representing an external sensor feed."""
-    timestamp = datetime.now(timezone.utc).isoformat()
+    timestamp = datetime.now(UTC).isoformat()
     return [
         {
             "sensor_id": f"sensor-{index:03d}",
@@ -52,7 +52,7 @@ class TestSensorMeasurement(unittest.TestCase):
         """Test creating a measurement with latitude/longitude."""
         measurement = SensorMeasurement(
             sensor_id="test_sensor_001",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="temperature",
             value=25.5,
             unit="celsius",
@@ -71,7 +71,7 @@ class TestSensorMeasurement(unittest.TestCase):
         """Test creating a measurement with zero coordinates (null island)."""
         measurement = SensorMeasurement(
             sensor_id="test_sensor_002",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="humidity",
             value=65.0,
             unit="percent",
@@ -89,7 +89,7 @@ class TestSensorMeasurement(unittest.TestCase):
         # Valid measurement
         valid_measurement = SensorMeasurement(
             sensor_id="valid_sensor",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="temperature",
             value=25.5,
             unit="celsius",
@@ -179,7 +179,7 @@ class TestIoTDataIngestion(unittest.TestCase):
         """Test conversion from dictionary to SensorMeasurement."""
         measurement_dict = {
             "sensor_id": "test_sensor",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "variable": "temperature",
             "value": 25.5,
             "unit": "celsius",
@@ -205,7 +205,7 @@ class TestIoTDataIngestion(unittest.TestCase):
         # Valid measurement
         valid_measurement = SensorMeasurement(
             sensor_id="valid_sensor",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="temperature",
             value=25.5,
             unit="celsius",
@@ -218,7 +218,7 @@ class TestIoTDataIngestion(unittest.TestCase):
         # Invalid coordinate
         invalid_measurement = SensorMeasurement(
             sensor_id="invalid_sensor",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="temperature",
             value=25.5,
             unit="celsius",
@@ -232,7 +232,7 @@ class TestIoTDataIngestion(unittest.TestCase):
         """Test measurement ingestion."""
         measurement = SensorMeasurement(
             sensor_id="test_sensor",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="temperature",
             value=25.5,
             unit="celsius",
@@ -256,7 +256,7 @@ class TestIoTDataIngestion(unittest.TestCase):
         """Test H3 spatial indexing."""
         measurement = SensorMeasurement(
             sensor_id="test_sensor",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="temperature",
             value=25.5,
             unit="celsius",
@@ -277,7 +277,7 @@ class TestIoTDataIngestion(unittest.TestCase):
         for i in range(5):
             measurement = SensorMeasurement(
                 sensor_id=f"sensor_{i}",
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 variable="temperature",
                 value=20.0 + i,
                 unit="celsius",
@@ -298,7 +298,7 @@ class TestIoTDataIngestion(unittest.TestCase):
     def test_recent_measurements_filtering(self):
         """Test filtering of recent measurements."""
         # Add measurements with different timestamps using timedelta offsets
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         # One recent (10 min ago), one older (3 hours ago), one very old (10 hours ago)
         offsets_minutes = [10, 180, 600]
@@ -321,7 +321,7 @@ class TestIoTDataIngestion(unittest.TestCase):
         self.assertGreater(len(recent), 0)
         for measurement in recent:
             time_diff = (
-                base_time - measurement.timestamp.replace(tzinfo=timezone.utc)
+                base_time - measurement.timestamp.replace(tzinfo=UTC)
             ).total_seconds()
             self.assertLess(time_diff, 7200)  # 2 hours in seconds
 
@@ -388,7 +388,7 @@ class TestRadiationMonitoringSystem(unittest.TestCase):
         """Test quality control functionality."""
         measurement = {
             "sensor_id": "test_sensor",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "variable": "gamma_radiation",
             "value": 0.15,  # Normal value
             "unit": "μSv/h",
@@ -414,7 +414,7 @@ class TestRadiationMonitoringSystem(unittest.TestCase):
         # Normal measurement
         normal_measurement = {
             "sensor_id": "test_sensor",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "variable": "gamma_radiation",
             "value": 0.1,  # Normal background level
             "unit": "μSv/h",
@@ -432,7 +432,7 @@ class TestRadiationMonitoringSystem(unittest.TestCase):
         # High radiation measurement (anomaly)
         anomaly_measurement = {
             "sensor_id": "test_sensor",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "variable": "gamma_radiation",
             "value": 5.0,  # Very high level
             "unit": "μSv/h",

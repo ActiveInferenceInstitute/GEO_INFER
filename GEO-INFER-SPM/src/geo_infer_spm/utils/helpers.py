@@ -5,7 +5,7 @@ This module provides utility functions for creating design matrices,
 generating coordinates, and other common SPM analysis tasks.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 from scipy import stats
@@ -30,9 +30,9 @@ def _randint(rng: Any, *args: Any, **kwargs: Any) -> Any:
 
 def create_design_matrix(
     data: SPMData,
-    formula: Optional[str] = None,
-    factors: Optional[Dict[str, List[str]]] = None,
-    covariates: Optional[List[str]] = None,
+    formula: str | None = None,
+    factors: dict[str, list[str]] | None = None,
+    covariates: list[str] | None = None,
     intercept: bool = True,
 ) -> DesignMatrix:
     """
@@ -103,7 +103,7 @@ def create_design_matrix(
 
 def _parse_formula(
     formula: str, data: SPMData, intercept: bool
-) -> Tuple[np.ndarray, List[str]]:
+) -> tuple[np.ndarray, list[str]]:
     """Parse formula string to create design matrix (see register: "Formula parser")."""
     # Deferred: see docs/deferred_statistical_methods.md ("Formula parser").
     if "~" not in formula:
@@ -144,7 +144,7 @@ def _parse_formula(
     return np.column_stack(design_components), names
 
 
-def _create_dummy_variables(values: np.ndarray, levels: List[str]) -> np.ndarray:
+def _create_dummy_variables(values: np.ndarray, levels: list[str]) -> np.ndarray:
     """Create dummy variables for categorical factor."""
     n_points = len(values)
     n_levels = len(levels)
@@ -167,8 +167,8 @@ def _create_dummy_variables(values: np.ndarray, levels: List[str]) -> np.ndarray
 def generate_coordinates(
     grid_type: str = "regular",
     n_points: int = 100,
-    bounds: Optional[Tuple[float, float, float, float]] = None,
-    random_seed: Optional[int] = None,
+    bounds: tuple[float, float, float, float] | None = None,
+    random_seed: int | None = None,
     **kwargs: Any,
 ) -> np.ndarray:
     """
@@ -263,11 +263,11 @@ def generate_coordinates(
 
 def generate_synthetic_data(
     coordinates: np.ndarray,
-    effects: Optional[Dict[str, Any]] = None,
+    effects: dict[str, Any] | None = None,
     noise_level: float = 0.1,
     temporal: bool = False,
     n_timepoints: int = 10,
-    random_seed: Optional[int] = None,
+    random_seed: int | None = None,
 ) -> SPMData:
     """
     Generate synthetic SPM data for testing and examples.
@@ -401,7 +401,7 @@ def create_spatial_basis_functions(
     coordinates: np.ndarray,
     n_basis: int = 10,
     method: str = "gaussian",
-    random_seed: Optional[int] = None,
+    random_seed: int | None = None,
 ) -> np.ndarray:
     """
     Create spatial basis functions for modeling spatial variation.
@@ -500,8 +500,8 @@ def compute_power_analysis(
     n_points: int,
     alpha: float = 0.05,
     n_simulations: int = 1000,
-    random_seed: Optional[int] = None,
-) -> Dict[str, Any]:
+    random_seed: int | None = None,
+) -> dict[str, Any]:
     """
     Perform power analysis for SPM statistical tests.
 

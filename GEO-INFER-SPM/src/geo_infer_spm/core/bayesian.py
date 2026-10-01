@@ -24,7 +24,7 @@ P(θ) is prior, and P(D) is marginal likelihood.
 """
 
 import numpy as np
-from typing import Dict, List, Optional, Any, cast
+from typing import Any, cast
 from scipy import stats
 from scipy.optimize import minimize
 import logging
@@ -125,18 +125,18 @@ class BayesianSPM:
             model_type: Type of Bayesian model ('hierarchical_glm', 'spatial_hierarchical')
         """
         self.model_type = model_type
-        self.model_spec: Optional[Dict[str, Any]] = None
-        self.priors: Dict[str, Any] = {}
+        self.model_spec: dict[str, Any] | None = None
+        self.priors: dict[str, Any] = {}
         if not PYMC_AVAILABLE and self.model_type != "empirical_bayes":
             logger.info("Using empirical Bayes approximation for %s", model_type)
-        self.posterior_samples: Optional[Dict[str, Any]] = None
-        self.diagnostics: Dict[str, Any] = {}
+        self.posterior_samples: dict[str, Any] | None = None
+        self.diagnostics: dict[str, Any] = {}
 
     def fit_bayesian_glm(
         self,
         data: SPMData,
         design_matrix: np.ndarray,
-        priors: Optional[Dict[str, Any]] = None,
+        priors: dict[str, Any] | None = None,
         n_samples: int = 1000,
         n_tune: int = 1000,
         random_seed: int = 42,
@@ -166,7 +166,7 @@ class BayesianSPM:
             data, design_matrix, priors, random_seed=random_seed
         )
 
-    def _default_priors(self, n_regressors: int) -> Dict[str, Any]:
+    def _default_priors(self, n_regressors: int) -> dict[str, Any]:
         """Set default prior distributions."""
         priors = {
             "beta": {"type": "normal", "mu": 0, "sigma": 1},
@@ -182,7 +182,7 @@ class BayesianSPM:
         self,
         data: SPMData,
         design_matrix: np.ndarray,
-        priors: Dict[str, Any],
+        priors: dict[str, Any],
         n_samples: int,
         n_tune: int,
         random_seed: int = 42,
@@ -272,8 +272,8 @@ class BayesianSPM:
         self,
         data: SPMData,
         design_matrix: np.ndarray,
-        priors: Dict[str, Any],
-        random_seed: Optional[int] = None,
+        priors: dict[str, Any],
+        random_seed: int | None = None,
     ) -> SPMResult:
         """Fit GLM using empirical Bayes approximation.
 
@@ -389,8 +389,8 @@ class BayesianSPM:
         return cast(np.ndarray, posterior_prob)
 
     def bayesian_model_comparison(
-        self, models: List[SPMResult], method: str = "bayes_factor"
-    ) -> Dict[str, Any]:
+        self, models: list[SPMResult], method: str = "bayes_factor"
+    ) -> dict[str, Any]:
         """
         Compare Bayesian models using Bayes factors or information criteria.
 
@@ -410,7 +410,7 @@ class BayesianSPM:
         else:
             raise ValueError(f"Unknown comparison method: {method}")
 
-    def _compute_bayes_factors(self, models: List[SPMResult]) -> Dict[str, Any]:
+    def _compute_bayes_factors(self, models: list[SPMResult]) -> dict[str, Any]:
         """Compute Bayes factors for model comparison."""
         # Deferred: see docs/deferred_statistical_methods.md
         # ("Bayes factors via marginal likelihoods").
@@ -440,7 +440,7 @@ class BayesianSPM:
             "best_model_index": np.argmin(bic_values),
         }
 
-    def _compute_dic(self, models: List[SPMResult]) -> Dict[str, Any]:
+    def _compute_dic(self, models: list[SPMResult]) -> dict[str, Any]:
         """Compute Deviance Information Criterion."""
         dic_values = []
 
@@ -463,7 +463,7 @@ class BayesianSPM:
             "best_model_index": np.argmin(dic_values),
         }
 
-    def _compute_waic(self, models: List[SPMResult]) -> Dict[str, Any]:
+    def _compute_waic(self, models: list[SPMResult]) -> dict[str, Any]:
         """Compute Widely Applicable Information Criterion (WAIC).
 
         WAIC = -2 * (ELPD - p_WAIC) where:
@@ -525,8 +525,8 @@ class BayesianSPM:
         self,
         data: SPMData,
         design_matrix: np.ndarray,
-        spatial_structure: Dict[str, Any],
-        random_seed: Optional[int] = None,
+        spatial_structure: dict[str, Any],
+        random_seed: int | None = None,
     ) -> SPMResult:
         """
         Fit spatial hierarchical Bayesian model.
@@ -572,8 +572,8 @@ class BayesianSPM:
     def _create_spatial_basis(
         self,
         coordinates: np.ndarray,
-        spatial_structure: Dict[str, Any],
-        random_seed: Optional[int] = None,
+        spatial_structure: dict[str, Any],
+        random_seed: int | None = None,
     ) -> np.ndarray:
         """Create spatial basis functions for hierarchical model.
 
@@ -600,7 +600,7 @@ class BayesianSPM:
         return basis
 
     @staticmethod
-    def _posterior_dim_sizes(posterior: Any) -> Dict[str, int]:
+    def _posterior_dim_sizes(posterior: Any) -> dict[str, int]:
         """Return posterior dimension sizes (xarray renamed ``.dims`` to ``.sizes``)."""
         sizes = getattr(posterior, "sizes", None)
         return sizes if sizes is not None else posterior.dims

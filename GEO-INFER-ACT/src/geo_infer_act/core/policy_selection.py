@@ -19,7 +19,7 @@ no verification relationship between this numerical implementation and the
 Lean proofs.
 """
 
-from typing import Dict, List, Any, Optional, Union
+from typing import Any, Union
 import logging
 
 import numpy as np
@@ -37,10 +37,10 @@ EPSILON = 1e-12
 # Preferences may be a plain vector or the structured dict shape produced by
 # helpers such as ``hazard_policy_prior``; ``_preferences_to_vector`` lowers
 # both into a belief-aligned vector before use.
-PreferenceInput = Union[np.ndarray, Dict[str, Any]]
+PreferenceInput = Union[np.ndarray, dict[str, Any]]
 
 
-def _normalize_vector(values: Any, target_length: Optional[int] = None) -> np.ndarray:
+def _normalize_vector(values: Any, target_length: int | None = None) -> np.ndarray:
     """Normalize a finite belief/preference vector (raises on empty input)."""
     vector = np.asarray(values, dtype=float).reshape(-1)
     if vector.size == 0:
@@ -48,7 +48,7 @@ def _normalize_vector(values: Any, target_length: Optional[int] = None) -> np.nd
     return _coerce_probability_vector(vector, target_length)
 
 
-def _policy_to_dict(policy: Any) -> Dict[str, Any]:
+def _policy_to_dict(policy: Any) -> dict[str, Any]:
     """Represent arbitrary action/policy inputs as policy dictionaries."""
     if isinstance(policy, dict):
         return policy
@@ -73,7 +73,7 @@ class PolicySelector:
         self,
         temperature: float = 1.0,
         selection_mode: str = "sample",
-        random_seed: Optional[int] = None,
+        random_seed: int | None = None,
     ):
         """
         Initialize the policy selector.
@@ -95,9 +95,9 @@ class PolicySelector:
     def select_policy(
         self,
         beliefs: np.ndarray,
-        policies: List[Dict[str, Any]],
-        preferences: Optional[PreferenceInput] = None,
-    ) -> Dict[str, Any]:
+        policies: list[dict[str, Any]],
+        preferences: PreferenceInput | None = None,
+    ) -> dict[str, Any]:
         """
         Select a policy based on expected free energy.
 
@@ -132,7 +132,7 @@ class PolicySelector:
             "evaluations": evaluation["evaluations"],
         }
 
-    def _create_default_policies(self, n_states: int) -> List[Dict[str, Any]]:
+    def _create_default_policies(self, n_states: int) -> list[dict[str, Any]]:
         """
         Create default policies for exploration.
 
@@ -160,10 +160,10 @@ class PolicySelector:
     def compute_expected_free_energy(
         self,
         beliefs: np.ndarray,
-        policy: Dict[str, Any],
-        preferences: Optional[PreferenceInput] = None,
+        policy: dict[str, Any],
+        preferences: PreferenceInput | None = None,
         return_breakdown: bool = False,
-    ) -> Union[float, FreeEnergyBreakdown]:
+    ) -> float | FreeEnergyBreakdown:
         """
         Compute expected free energy for a policy.
 
@@ -225,10 +225,10 @@ class PolicySelector:
     def compose_policy_posterior(
         self,
         expected_free_energies: np.ndarray,
-        precision: Optional[float] = None,
-        prior: Optional[np.ndarray] = None,
+        precision: float | None = None,
+        prior: np.ndarray | None = None,
         prior_temperature: float = 1.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compose the policy posterior q(pi) = softmax(-gamma * G)` from raw EFE
         scores, with an optional E-based habit prior (softmax-normalised).
@@ -277,9 +277,9 @@ class PolicySelector:
     def decompose_efe(
         self,
         beliefs: np.ndarray,
-        policies: List[Dict[str, Any]],
-        preferences: Optional[PreferenceInput] = None,
-    ) -> Dict[str, Any]:
+        policies: list[dict[str, Any]],
+        preferences: PreferenceInput | None = None,
+    ) -> dict[str, Any]:
         """
         Decompose a policy set into its epistemic (information-gain) and
         pragmatic (preference-alignment) contributions and report which term
@@ -303,10 +303,10 @@ class PolicySelector:
         belief_vector = _normalize_vector(beliefs)
         if not policies:
             policies = self._create_default_policies(len(belief_vector))
-        epistemic_values: List[float] = []
-        pragmatic_values: List[float] = []
-        efe_scores: List[float] = []
-        dominance: List[str] = []
+        epistemic_values: list[float] = []
+        pragmatic_values: list[float] = []
+        efe_scores: list[float] = []
+        dominance: list[str] = []
         for policy in policies:
             breakdown = self.compute_expected_free_energy(
                 belief_vector, policy, preferences, return_breakdown=True
@@ -338,9 +338,9 @@ class PolicySelector:
     def evaluate_policy_set(
         self,
         beliefs: np.ndarray,
-        policies: List[Dict[str, Any]],
-        preferences: Optional[PreferenceInput] = None,
-    ) -> Dict[str, Any]:
+        policies: list[dict[str, Any]],
+        preferences: PreferenceInput | None = None,
+    ) -> dict[str, Any]:
         """
         Evaluate a set of policies without selection.
 
@@ -405,7 +405,7 @@ class PolicySelector:
     def select_action(
         self,
         beliefs: np.ndarray,
-        available_actions: List[Any],
+        available_actions: list[Any],
         generative_model: Any = None,
     ) -> Any:
         """

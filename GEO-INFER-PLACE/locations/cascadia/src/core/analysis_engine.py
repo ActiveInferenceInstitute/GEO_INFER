@@ -7,12 +7,8 @@ data processing, and result generation.
 """
 
 import logging
-import time
-from typing import Dict, Any, List, Tuple
-from pathlib import Path
-from datetime import datetime
+from typing import Any
 import numpy as np
-from tqdm import tqdm
 
 # Import the necessary components
 try:
@@ -41,7 +37,7 @@ except ImportError:
 
 def perform_enhanced_spatial_analysis(
     backend, spatial_processor: SpatialProcessor
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Perform enhanced spatial analysis using SPACE capabilities"""
     logger = logging.getLogger(__name__)
     logger.info("🔍 Performing enhanced spatial analysis with SPACE integration...")
@@ -131,7 +127,7 @@ def perform_enhanced_spatial_analysis(
         return {}
 
 
-def run_comprehensive_analysis(backend, modules: Dict, args) -> Tuple[Dict, Dict]:
+def run_comprehensive_analysis(backend, modules: dict, args) -> tuple[dict, dict]:
     """
     Run comprehensive analysis with real data tracking and enhanced reporting.
 

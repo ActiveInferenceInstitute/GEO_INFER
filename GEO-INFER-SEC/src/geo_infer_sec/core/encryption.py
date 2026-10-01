@@ -8,7 +8,7 @@ geospatial data both at rest and in transit.
 import base64
 import os
 import json
-from typing import Dict, List, Any, Optional, Tuple, cast
+from typing import Any, cast
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
@@ -33,7 +33,7 @@ from shapely.geometry import Point
 class GeospatialEncryption:
     """Provides encryption methods for geospatial data."""
 
-    def __init__(self, key: Optional[bytes] = None):
+    def __init__(self, key: bytes | None = None):
         """
         Initialize the encryptor with a key.
 
@@ -46,11 +46,11 @@ class GeospatialEncryption:
             self.key = key
 
         self.cipher = Fernet(self.key)
-        self.salt: Optional[bytes] = None
+        self.salt: bytes | None = None
 
     @classmethod
     def from_password(
-        cls, password: str, salt: Optional[bytes] = None
+        cls, password: str, salt: bytes | None = None
     ) -> "GeospatialEncryption":
         """
         Create an encryptor using a password-derived key.
@@ -103,7 +103,7 @@ class GeospatialEncryption:
         """
         return self.cipher.decrypt(encrypted_data).decode()
 
-    def encrypt_json(self, data: Dict) -> bytes:
+    def encrypt_json(self, data: dict) -> bytes:
         """
         Encrypt a dictionary as JSON.
 
@@ -116,7 +116,7 @@ class GeospatialEncryption:
         json_str = json.dumps(data)
         return self.encrypt_text(json_str)
 
-    def decrypt_json(self, encrypted_data: bytes) -> Dict:
+    def decrypt_json(self, encrypted_data: bytes) -> dict:
         """
         Decrypt JSON data.
 
@@ -127,7 +127,7 @@ class GeospatialEncryption:
             Decrypted dictionary
         """
         json_str = self.decrypt_text(encrypted_data)
-        return cast(Dict[Any, Any], json.loads(json_str))
+        return cast(dict[Any, Any], json.loads(json_str))
 
     def encrypt_coordinates(self, lat: float, lon: float) -> str:
         """
@@ -144,7 +144,7 @@ class GeospatialEncryption:
         encrypted = self.encrypt_text(coord_str)
         return base64.urlsafe_b64encode(encrypted).decode()
 
-    def decrypt_coordinates(self, encrypted_coords: str) -> Tuple[float, float]:
+    def decrypt_coordinates(self, encrypted_coords: str) -> tuple[float, float]:
         """
         Decrypt coordinates.
 
@@ -162,7 +162,7 @@ class GeospatialEncryption:
     def encrypt_geodataframe(
         self,
         gdf: gpd.GeoDataFrame,
-        sensitive_columns: Optional[List[str]] = None,
+        sensitive_columns: list[str] | None = None,
         encrypt_coordinates: bool = False,
     ) -> gpd.GeoDataFrame:
         """
@@ -209,7 +209,7 @@ class GeospatialEncryption:
     def decrypt_geodataframe(
         self,
         gdf: gpd.GeoDataFrame,
-        encrypted_columns: List[str],
+        encrypted_columns: list[str],
         geometry_col: str = "encrypted_geometry",
     ) -> gpd.GeoDataFrame:
         """
@@ -240,7 +240,7 @@ class GeospatialEncryption:
         # silently discarded: each failure is logged and its row index is
         # collected into ``result.attrs["decryption_failures"]`` so callers
         # can detect and handle the data loss explicitly.
-        decryption_failures: List[int] = []
+        decryption_failures: list[int] = []
         if geometry_col in result.columns:
             for idx, row in result.iterrows():
                 if pd.notna(row[geometry_col]):
@@ -264,8 +264,8 @@ class AsymmetricEncryption:
 
     def __init__(
         self,
-        private_key: Optional[rsa.RSAPrivateKey] = None,
-        public_key: Optional[rsa.RSAPublicKey] = None,
+        private_key: rsa.RSAPrivateKey | None = None,
+        public_key: rsa.RSAPublicKey | None = None,
     ):
         """
         Initialize with optional existing keys.
@@ -326,8 +326,8 @@ class AsymmetricEncryption:
     @classmethod
     def from_pem(
         cls,
-        private_key_pem: Optional[bytes] = None,
-        public_key_pem: Optional[bytes] = None,
+        private_key_pem: bytes | None = None,
+        public_key_pem: bytes | None = None,
     ) -> "AsymmetricEncryption":
         """
         Create an instance from PEM encoded keys.
@@ -446,7 +446,7 @@ class AsymmetricEncryption:
         """
         return self.decrypt(encrypted_data).decode()
 
-    def encrypt_json(self, data: Dict) -> bytes:
+    def encrypt_json(self, data: dict) -> bytes:
         """
         Encrypt a dictionary as JSON.
 
@@ -458,7 +458,7 @@ class AsymmetricEncryption:
         """
         return self.encrypt_text(json.dumps(data))
 
-    def decrypt_json(self, encrypted_data: bytes) -> Dict:
+    def decrypt_json(self, encrypted_data: bytes) -> dict:
         """
         Decrypt JSON data.
 
@@ -468,4 +468,4 @@ class AsymmetricEncryption:
         Returns:
             Decrypted dictionary
         """
-        return cast(Dict[Any, Any], json.loads(self.decrypt_text(encrypted_data)))
+        return cast(dict[Any, Any], json.loads(self.decrypt_text(encrypted_data)))

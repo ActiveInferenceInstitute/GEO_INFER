@@ -2,7 +2,7 @@
 Sustainability assessment functionality for agricultural applications.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 import pandas as pd
 import numpy as np
 import geopandas as gpd
@@ -28,8 +28,8 @@ class SustainabilityAssessment:
 
     def __init__(
         self,
-        field_data: Optional[gpd.GeoDataFrame] = None,
-        config: Optional[Dict[str, Any]] = None,
+        field_data: gpd.GeoDataFrame | None = None,
+        config: dict[str, Any] | None = None,
     ):
         """
         Initialize the sustainability assessment.
@@ -40,16 +40,16 @@ class SustainabilityAssessment:
         """
         self.field_data = field_data
         self.config = config or {}
-        self.metrics: Dict[str, Any] = {}
+        self.metrics: dict[str, Any] = {}
 
     def assess_carbon_sequestration(
         self,
-        field_data: Optional[gpd.GeoDataFrame] = None,
+        field_data: gpd.GeoDataFrame | None = None,
         crop_type_column: str = "crop_type",
-        soil_carbon_column: Optional[str] = None,
-        biomass_column: Optional[str] = None,
-        management_practices: Optional[Dict[str, List[str]]] = None,
-    ) -> Dict[str, Any]:
+        soil_carbon_column: str | None = None,
+        biomass_column: str | None = None,
+        management_practices: dict[str, list[str]] | None = None,
+    ) -> dict[str, Any]:
         """
         Assess carbon sequestration potential of agricultural fields.
 
@@ -163,14 +163,14 @@ class SustainabilityAssessment:
 
     def assess_water_usage(
         self,
-        field_data: Optional[gpd.GeoDataFrame] = None,
-        water_data: Optional[pd.DataFrame] = None,
+        field_data: gpd.GeoDataFrame | None = None,
+        water_data: pd.DataFrame | None = None,
         crop_type_column: str = "crop_type",
-        precipitation_column: Optional[str] = None,
-        irrigation_column: Optional[str] = None,
-        evapotranspiration_column: Optional[str] = None,
-        reference_period: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        precipitation_column: str | None = None,
+        irrigation_column: str | None = None,
+        evapotranspiration_column: str | None = None,
+        reference_period: str | None = None,
+    ) -> dict[str, Any]:
         """
         Assess water usage and efficiency of agricultural fields.
 
@@ -286,13 +286,13 @@ class SustainabilityAssessment:
 
     def assess_soil_health(
         self,
-        field_data: Optional[gpd.GeoDataFrame] = None,
-        soil_data: Optional[gpd.GeoDataFrame] = None,
-        organic_matter_column: Optional[str] = None,
-        ph_column: Optional[str] = None,
-        erosion_column: Optional[str] = None,
-        management_practices: Optional[Dict[str, List[str]]] = None,
-    ) -> Dict[str, Any]:
+        field_data: gpd.GeoDataFrame | None = None,
+        soil_data: gpd.GeoDataFrame | None = None,
+        organic_matter_column: str | None = None,
+        ph_column: str | None = None,
+        erosion_column: str | None = None,
+        management_practices: dict[str, list[str]] | None = None,
+    ) -> dict[str, Any]:
         """
         Assess soil health of agricultural fields.
 
@@ -492,12 +492,12 @@ class SustainabilityAssessment:
 
     def assess_biodiversity(
         self,
-        field_data: Optional[gpd.GeoDataFrame] = None,
-        biodiversity_data: Optional[gpd.GeoDataFrame] = None,
+        field_data: gpd.GeoDataFrame | None = None,
+        biodiversity_data: gpd.GeoDataFrame | None = None,
         edge_habitat_buffer: float = 10.0,
-        protected_areas: Optional[gpd.GeoDataFrame] = None,
-        management_practices: Optional[Dict[str, List[str]]] = None,
-    ) -> Dict[str, Any]:
+        protected_areas: gpd.GeoDataFrame | None = None,
+        management_practices: dict[str, list[str]] | None = None,
+    ) -> dict[str, Any]:
         """
         Assess biodiversity impact of agricultural fields.
 
@@ -650,8 +650,8 @@ class SustainabilityAssessment:
         return metrics
 
     def calculate_sustainability_index(
-        self, weights: Optional[Dict[str, float]] = None
-    ) -> Dict[str, Any]:
+        self, weights: dict[str, float] | None = None
+    ) -> dict[str, Any]:
         """
         Calculate overall sustainability index from individual metrics.
 

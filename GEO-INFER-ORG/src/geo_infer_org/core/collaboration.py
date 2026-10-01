@@ -6,7 +6,7 @@ and coordination scoring for organizational collaboration.
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple, Set, Any
+from typing import Any
 from dataclasses import dataclass
 from enum import Enum
 
@@ -42,10 +42,10 @@ class TeamMember:
 
     member_id: str
     name: str
-    skills: List[str]
+    skills: list[str]
     capacity: float = 1.0
-    unit_id: Optional[str] = None
-    location: Optional[Tuple[float, float]] = None
+    unit_id: str | None = None
+    location: tuple[float, float] | None = None
 
 
 @dataclass
@@ -58,14 +58,14 @@ class NetworkMetrics:
     avg_degree: float
     clustering_coefficient: float
     connected_components: int
-    most_central_nodes: List[str]
+    most_central_nodes: list[str]
 
 
 @dataclass
 class TeamFormationResult:
     """Result of a team formation optimization."""
 
-    team_members: List[str]
+    team_members: list[str]
     skill_coverage: float
     team_diversity: float
     coordination_cost: float
@@ -81,9 +81,9 @@ class CollaborationNetwork:
     """
 
     def __init__(self) -> None:
-        self._nodes: Set[str] = set()
-        self._edges: List[CollaborationEdge] = []
-        self._adjacency: Dict[str, Dict[str, float]] = {}
+        self._nodes: set[str] = set()
+        self._edges: list[CollaborationEdge] = []
+        self._adjacency: dict[str, dict[str, float]] = {}
 
     def add_node(self, node_id: str) -> None:
         """
@@ -146,8 +146,8 @@ class CollaborationNetwork:
         density = e / max_edges
 
         # Degree (undirected view)
-        degree: Dict[str, int] = {node: 0 for node in self._nodes}
-        neighbors: Dict[str, Set[str]] = {node: set() for node in self._nodes}
+        degree: dict[str, int] = {node: 0 for node in self._nodes}
+        neighbors: dict[str, set[str]] = {node: set() for node in self._nodes}
         for edge in self._edges:
             degree[edge.source_id] += 1
             degree[edge.target_id] += 1
@@ -183,7 +183,7 @@ class CollaborationNetwork:
         )
 
         # Connected components (undirected)
-        visited: Set[str] = set()
+        visited: set[str] = set()
         components = 0
         for node in self._nodes:
             if node not in visited:
@@ -209,7 +209,7 @@ class CollaborationNetwork:
             most_central_nodes=top_central,
         )
 
-    def compute_betweenness_centrality(self) -> Dict[str, float]:
+    def compute_betweenness_centrality(self) -> dict[str, float]:
         """
         Compute betweenness centrality for each node.
 
@@ -225,22 +225,22 @@ class CollaborationNetwork:
         Returns:
             Mapping of node_id to betweenness centrality score.
         """
-        centrality: Dict[str, float] = {node: 0.0 for node in self._nodes}
+        centrality: dict[str, float] = {node: 0.0 for node in self._nodes}
         nodes_list = list(self._nodes)
 
         # Build undirected neighbor map
-        neighbors: Dict[str, Set[str]] = {node: set() for node in self._nodes}
+        neighbors: dict[str, set[str]] = {node: set() for node in self._nodes}
         for edge in self._edges:
             neighbors[edge.source_id].add(edge.target_id)
             neighbors[edge.target_id].add(edge.source_id)
 
         for source in nodes_list:
             # BFS from source
-            stack: List[str] = []
-            predecessors: Dict[str, List[str]] = {node: [] for node in self._nodes}
-            sigma: Dict[str, int] = {node: 0 for node in self._nodes}
+            stack: list[str] = []
+            predecessors: dict[str, list[str]] = {node: [] for node in self._nodes}
+            sigma: dict[str, int] = {node: 0 for node in self._nodes}
             sigma[source] = 1
-            dist: Dict[str, int] = {node: -1 for node in self._nodes}
+            dist: dict[str, int] = {node: -1 for node in self._nodes}
             dist[source] = 0
 
             queue = [source]
@@ -256,7 +256,7 @@ class CollaborationNetwork:
                         predecessors[neighbor].append(current)
 
             # Accumulate dependencies
-            delta: Dict[str, float] = {node: 0.0 for node in self._nodes}
+            delta: dict[str, float] = {node: 0.0 for node in self._nodes}
             while stack:
                 w = stack.pop()
                 for v in predecessors[w]:
@@ -275,7 +275,7 @@ class CollaborationNetwork:
         norm = (n - 1) * (n - 2) if n > 2 else 1
         return {node: round(val / norm, 6) for node, val in centrality.items()}
 
-    def get_knowledge_flow(self) -> Dict[str, Dict[str, float]]:
+    def get_knowledge_flow(self) -> dict[str, dict[str, float]]:
         """
         Analyze knowledge flow patterns in the network.
 
@@ -286,8 +286,8 @@ class CollaborationNetwork:
             Dictionary with "sources" (outbound knowledge) and
             "sinks" (inbound knowledge) scores.
         """
-        outbound: Dict[str, float] = {}
-        inbound: Dict[str, float] = {}
+        outbound: dict[str, float] = {}
+        inbound: dict[str, float] = {}
 
         for edge in self._edges:
             if edge.collaboration_type == CollaborationType.KNOWLEDGE_SHARE:
@@ -319,7 +319,7 @@ class TeamFormation:
     """
 
     def __init__(self) -> None:
-        self._members: Dict[str, TeamMember] = {}
+        self._members: dict[str, TeamMember] = {}
 
     def add_member(self, member: TeamMember) -> None:
         """
@@ -330,7 +330,7 @@ class TeamFormation:
         """
         self._members[member.member_id] = member
 
-    def add_members(self, members: List[TeamMember]) -> None:
+    def add_members(self, members: list[TeamMember]) -> None:
         """
         Add multiple candidate members.
 
@@ -342,7 +342,7 @@ class TeamFormation:
 
     def form_team(
         self,
-        required_skills: List[str],
+        required_skills: list[str],
         max_size: int = 10,
         prefer_diverse_units: bool = True,
     ) -> TeamFormationResult:
@@ -368,9 +368,9 @@ class TeamFormation:
             raise ValueError("No members available for team formation")
 
         required_set = set(required_skills)
-        covered: Set[str] = set()
-        selected: List[str] = []
-        selected_units: Set[str] = set()
+        covered: set[str] = set()
+        selected: list[str] = []
+        selected_units: set[str] = set()
 
         available = dict(self._members)
 
@@ -450,7 +450,7 @@ class TeamFormation:
             overall_score=round(overall, 4),
         )
 
-    def compute_skill_gap(self, required_skills: List[str]) -> Dict[str, Any]:
+    def compute_skill_gap(self, required_skills: list[str]) -> dict[str, Any]:
         """
         Identify skill gaps in the available member pool.
 
@@ -460,7 +460,7 @@ class TeamFormation:
         Returns:
             Dictionary with covered skills, missing skills, and coverage ratio.
         """
-        all_skills: Set[str] = set()
+        all_skills: set[str] = set()
         for member in self._members.values():
             all_skills.update(member.skills)
 
@@ -469,7 +469,7 @@ class TeamFormation:
         missing = required_set - all_skills
 
         # Skill frequency
-        skill_freq: Dict[str, int] = {}
+        skill_freq: dict[str, int] = {}
         for member in self._members.values():
             for skill in member.skills:
                 if skill in required_set:

@@ -1,7 +1,7 @@
 """Forest health monitoring."""
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 import numpy as np
 import xarray as xr
 
@@ -11,15 +11,15 @@ logger = logging.getLogger(__name__)
 class ForestHealthMonitor:
     """Monitor forest health."""
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize forest health monitor."""
         self.config = config or {}
 
     def assess_forest_health(
         self,
         ndvi: xr.DataArray,
-        temperature: Optional[xr.DataArray] = None,
-        precipitation: Optional[xr.DataArray] = None,
+        temperature: xr.DataArray | None = None,
+        precipitation: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """
         Assess forest health using NDVI and climate data.
@@ -35,7 +35,7 @@ class ForestHealthMonitor:
         # NDVI-based health (0-1 scale, higher is better)
         health_index = (ndvi - ndvi.min()) / (ndvi.max() - ndvi.min() + 1e-10)
 
-        results: Dict[str, Any] = {"health_index": health_index, "ndvi": ndvi}
+        results: dict[str, Any] = {"health_index": health_index, "ndvi": ndvi}
 
         if temperature is not None:
             # Temperature stress

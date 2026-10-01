@@ -5,7 +5,7 @@ This module provides a library of spatial mathematics theorems
 including geometric, statistical, and topological theorems.
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Any
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
@@ -30,10 +30,10 @@ class SpatialTheorem:
     name: str
     statement: str
     theorem_type: TheoremType
-    proof: Optional[str] = None
-    assumptions: List[str] = field(default_factory=list)
-    corollaries: List[str] = field(default_factory=list)
-    applications: List[str] = field(default_factory=list)
+    proof: str | None = None
+    assumptions: list[str] = field(default_factory=list)
+    corollaries: list[str] = field(default_factory=list)
+    applications: list[str] = field(default_factory=list)
 
 
 class GeometricTheorem(SpatialTheorem):
@@ -81,7 +81,7 @@ class TheoremDatabase:
 
     def __init__(self) -> None:
         """Initialize theorem database."""
-        self._theorems: Dict[str, SpatialTheorem] = {}
+        self._theorems: dict[str, SpatialTheorem] = {}
         self._initialize_standard_theorems()
 
     def _initialize_standard_theorems(self) -> None:
@@ -147,7 +147,7 @@ class TheoremDatabase:
         self._theorems[theorem.name] = theorem
         logger.debug(f"Added theorem: {theorem.name}")
 
-    def get_theorem(self, name: str) -> Optional[SpatialTheorem]:
+    def get_theorem(self, name: str) -> SpatialTheorem | None:
         """
         Retrieve a theorem by name.
 
@@ -160,8 +160,8 @@ class TheoremDatabase:
         return self._theorems.get(name)
 
     def search_theorems(
-        self, theorem_type: Optional[TheoremType] = None, keyword: Optional[str] = None
-    ) -> List[SpatialTheorem]:
+        self, theorem_type: TheoremType | None = None, keyword: str | None = None
+    ) -> list[SpatialTheorem]:
         """
         Search theorems by type or keyword.
 
@@ -192,7 +192,7 @@ class TheoremDatabase:
 
         return results
 
-    def list_theorems(self) -> List[str]:
+    def list_theorems(self) -> list[str]:
         """
         List all theorem names.
 
@@ -201,7 +201,7 @@ class TheoremDatabase:
         """
         return list(self._theorems.keys())
 
-    def get_theorems_by_type(self, theorem_type: TheoremType) -> List[SpatialTheorem]:
+    def get_theorems_by_type(self, theorem_type: TheoremType) -> list[SpatialTheorem]:
         """
         Get all theorems of a specific type.
 

@@ -43,7 +43,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Sequence
+from collections.abc import Sequence
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 GENERATOR = REPO_ROOT / "manuscript" / "generate_research_artifacts.py"

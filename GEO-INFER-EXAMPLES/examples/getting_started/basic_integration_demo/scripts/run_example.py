@@ -20,13 +20,13 @@ from __future__ import annotations
 
 import json
 import sys
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
 
-def _build_spatial_canvas() -> Dict[str, Any]:
+def _build_spatial_canvas() -> dict[str, Any]:
     """SPACE step: build the H3 canvas for a synthetic study region."""
     from geo_infer_space import SpatialIndexingInterface, polygon_to_cells
 
@@ -53,15 +53,15 @@ def _build_spatial_canvas() -> Dict[str, Any]:
 
 
 def _analyze_temporal_dynamics(
-    cells: List[str], centers: Dict[str, Any]
-) -> Dict[str, Any]:
+    cells: list[str], centers: dict[str, Any]
+) -> dict[str, Any]:
     """TIME step: rolling-window statistics for synthetic per-cell series."""
     from geo_infer_time import TemporalStatistics, TimeSeries
 
     rng = np.random.default_rng(42)
     timestamps = pd.date_range("2026-01-01", periods=90, freq="D")
     stats_engine = TemporalStatistics()
-    series_results: Dict[str, Any] = {}
+    series_results: dict[str, Any] = {}
 
     for cell in cells[:6]:
         lat, lng = centers[cell]
@@ -104,8 +104,8 @@ def _analyze_temporal_dynamics(
 
 
 def _compute_spatial_autocorrelation(
-    cells: List[str], centers: Dict[str, Any], per_cell_means: np.ndarray
-) -> Dict[str, Any]:
+    cells: list[str], centers: dict[str, Any], per_cell_means: np.ndarray
+) -> dict[str, Any]:
     """MATH step: global spatial autocorrelation of per-cell mean values."""
     from geo_infer_math.core.spatial_statistics import GearysC, MoranI
 
@@ -125,7 +125,7 @@ def _compute_spatial_autocorrelation(
     }
 
 
-def run_demo() -> Dict[str, Any]:
+def run_demo() -> dict[str, Any]:
     """Run the full SPACE → TIME → MATH cross-module demonstration."""
     spatial = _build_spatial_canvas()
     temporal = _analyze_temporal_dynamics(spatial["cells"], spatial["centers"])

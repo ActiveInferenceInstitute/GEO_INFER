@@ -7,7 +7,7 @@ All models are designed to work with real geospatial data and support
 the Active Inference framework's requirements for uncertainty quantification.
 """
 
-from typing import Dict, List, Optional, Tuple, Union, Any, cast
+from typing import Any, cast
 from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
@@ -33,11 +33,11 @@ class SPMData:
         crs: Coordinate reference system string (e.g., 'EPSG:4326')
     """
 
-    data: Union[np.ndarray, pd.DataFrame, gpd.GeoDataFrame]
+    data: np.ndarray | pd.DataFrame | gpd.GeoDataFrame
     coordinates: np.ndarray  # Shape: (n_points, 2) for (x, y) or (lon, lat)
-    time: Optional[np.ndarray] = None
-    covariates: Optional[Dict[str, np.ndarray]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    time: np.ndarray | None = None
+    covariates: dict[str, np.ndarray] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
     crs: str = "EPSG:4326"
 
     def __post_init__(self) -> None:
@@ -103,9 +103,9 @@ class SPMData:
         return self.time is not None
 
     @property
-    def spatial_dims(self) -> Tuple[int, int]:
+    def spatial_dims(self) -> tuple[int, int]:
         """Spatial dimensions of the data."""
-        return cast(Tuple[int, int], self.coordinates.shape)
+        return cast(tuple[int, int], self.coordinates.shape)
 
     def copy(self) -> "SPMData":
         """Create a shallow copy of this SPMData instance."""
@@ -144,11 +144,11 @@ class DesignMatrix:
     """
 
     matrix: np.ndarray
-    names: Optional[List[str]] = None
-    factors: Optional[Dict[str, List[str]]] = None
-    covariates: Optional[List[str]] = None
-    temporal_basis: Optional[np.ndarray] = None
-    spatial_basis: Optional[np.ndarray] = None
+    names: list[str] | None = None
+    factors: dict[str, list[str]] | None = None
+    covariates: list[str] | None = None
+    temporal_basis: np.ndarray | None = None
+    spatial_basis: np.ndarray | None = None
 
     def __post_init__(self) -> None:
         """Initialize design matrix structure."""
@@ -192,8 +192,8 @@ class ContrastResult:
     effect_size: np.ndarray
     standard_error: np.ndarray
     p_values: np.ndarray
-    corrected_p_values: Optional[np.ndarray] = None
-    significance_mask: Optional[np.ndarray] = None
+    corrected_p_values: np.ndarray | None = None
+    significance_mask: np.ndarray | None = None
     threshold: float = 0.05
     correction_method: str = "uncorrected"
 
@@ -230,13 +230,13 @@ class SPMResult:
     design_matrix: DesignMatrix
     beta_coefficients: np.ndarray
     residuals: np.ndarray
-    cov_beta: Optional[np.ndarray] = None
-    contrasts: List[ContrastResult] = field(default_factory=list)
-    statistical_maps: Dict[str, np.ndarray] = field(default_factory=dict)
-    rft_parameters: Optional[Dict[str, Any]] = None
-    cluster_analysis: Optional[Dict[str, Any]] = None
-    model_diagnostics: Dict[str, Any] = field(default_factory=dict)
-    processing_metadata: Dict[str, Any] = field(default_factory=dict)
+    cov_beta: np.ndarray | None = None
+    contrasts: list[ContrastResult] = field(default_factory=list)
+    statistical_maps: dict[str, np.ndarray] = field(default_factory=dict)
+    rft_parameters: dict[str, Any] | None = None
+    cluster_analysis: dict[str, Any] | None = None
+    model_diagnostics: dict[str, Any] = field(default_factory=dict)
+    processing_metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Initialize processing metadata."""
@@ -276,13 +276,11 @@ class SPMResult:
         """Add a computed contrast to the results."""
         self.contrasts.append(contrast)
 
-    def get_significant_clusters(
-        self, contrast_idx: int = 0
-    ) -> Optional[Dict[str, Any]]:
+    def get_significant_clusters(self, contrast_idx: int = 0) -> dict[str, Any] | None:
         """Get cluster analysis for a specific contrast."""
         cluster_analysis = self.cluster_analysis
         if cluster_analysis is not None and contrast_idx < len(cluster_analysis):
             return cast(
-                Dict[str, Any], cast(Dict[Any, Any], cluster_analysis)[contrast_idx]
+                dict[str, Any], cast(dict[Any, Any], cluster_analysis)[contrast_idx]
             )
         return None

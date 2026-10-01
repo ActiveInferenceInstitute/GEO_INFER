@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Any, Tuple
+from typing import Any
 from pathlib import Path
 import geopandas as gpd
 from shapely.geometry import Polygon
@@ -50,11 +50,11 @@ class GeoInferGroundWater:
             wells.to_file(raw_out, driver="GeoJSON")
         return raw_out
 
-    def run_final_analysis(self, h3_data: Dict[str, Any]) -> Dict[str, Any]:
+    def run_final_analysis(self, h3_data: dict[str, Any]) -> dict[str, Any]:
         """Pass-through for groundwater presence when features already summarized upstream."""
         return {hex_id: v for hex_id, v in h3_data.items() if isinstance(v, dict)}
 
-    def run_analysis(self, target_hexagons: List[str]) -> Dict[str, Dict[str, Any]]:
+    def run_analysis(self, target_hexagons: list[str]) -> dict[str, dict[str, Any]]:
         """
         Performs groundwater analysis by querying the USGS NWIS for wells within
         the target hexagons.

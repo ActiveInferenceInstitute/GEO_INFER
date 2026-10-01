@@ -11,7 +11,8 @@ import logging
 import os
 from pathlib import Path
 import sys
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any
+from collections.abc import Iterable
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +74,7 @@ class H3Adapter:
             return (float(res[0]), float(res[1]))
         raise RuntimeError("H3 backend unavailable")
 
-    def cell_to_boundary(self, cell: str) -> List[tuple[float, float]]:
+    def cell_to_boundary(self, cell: str) -> list[tuple[float, float]]:
         """Return the H3 cell boundary as latitude/longitude pairs."""
         if self.h3 is not None:
             return [(lat, lng) for lat, lng in self.h3.cell_to_boundary(cell)]
@@ -84,7 +85,7 @@ class H3Adapter:
         lat, lng = self.cell_to_latlng(cell)
         return [(lat, lng)]
 
-    def polygon_to_cells(self, polygon: Dict[str, Any], resolution: int) -> List[str]:
+    def polygon_to_cells(self, polygon: dict[str, Any], resolution: int) -> list[str]:
         """Convert a GeoJSON-like polygon to H3 cells."""
         if self.space_indexer is not None:
             try:
@@ -117,7 +118,7 @@ class H3Adapter:
             raise ValueError("polygon must contain a Polygon or MultiPolygon")
         return sorted(self.h3.geo_to_cells(geometry, resolution))
 
-    def grid_disk(self, cell: str, k: int = 1) -> List[str]:
+    def grid_disk(self, cell: str, k: int = 1) -> list[str]:
         """Return H3 cells within k grid steps of a cell."""
         if self.h3 is not None:
             return list(self.h3.grid_disk(cell, k))
@@ -128,7 +129,7 @@ class H3Adapter:
             return list(cells)
         return []
 
-    def grid_ring(self, cell: str, k: int = 1) -> List[str]:
+    def grid_ring(self, cell: str, k: int = 1) -> list[str]:
         """Return H3 cells exactly k grid steps from a cell."""
         if not isinstance(k, int) or k < 1:
             raise ValueError("k must be a positive integer")
@@ -156,7 +157,7 @@ class H3Adapter:
             return str(self.h3.cell_to_parent(cell, resolution))
         raise RuntimeError("H3 backend unavailable")
 
-    def cell_to_children(self, cell: str, resolution: int) -> List[str]:
+    def cell_to_children(self, cell: str, resolution: int) -> list[str]:
         """Return child cells at a finer resolution."""
         if self.space_indexer is not None:
             return [
@@ -187,7 +188,7 @@ class H3Adapter:
             logger.debug("Unexpected error validating H3 cell %r", cell, exc_info=True)
             return False
 
-    def validate_cells(self, cells: Iterable[str]) -> List[str]:
+    def validate_cells(self, cells: Iterable[str]) -> list[str]:
         """Validate and normalize H3 cell identifiers."""
         normalized = [str(cell) for cell in cells]
         invalid = [cell for cell in normalized if not self.is_valid_cell(cell)]
@@ -256,7 +257,7 @@ def normalize_belief_vector(values: Any) -> Any:
     return array / total
 
 
-def edge_count_from_graph(graph: Optional[Dict[str, Iterable[str]]]) -> int:
+def edge_count_from_graph(graph: dict[str, Iterable[str]] | None) -> int:
     """Count undirected edges in a cell-neighbor graph."""
     if not graph:
         return 0

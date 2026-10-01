@@ -77,7 +77,7 @@ def main() -> None:
     print("\nTraining predictor...")
     results = trainer.train_regressor(predictor, X_train, y_train)
 
-    print(f"\nTraining Results:")
+    print("\nTraining Results:")
     print(f"  Validation R²: {results['r2']:.4f}")
     print(f"  Validation RMSE: {results['rmse']:.4f}")
 
@@ -87,7 +87,7 @@ def main() -> None:
         results["model"], X_test, y_test, task_type="regression"
     )
 
-    print(f"\nTest Results:")
+    print("\nTest Results:")
     print(f"  Test R²: {test_results['r2']:.4f}")
     print(f"  Test RMSE: {test_results['rmse']:.4f}")
     print(f"  Test MAE: {test_results['mae']:.4f}")

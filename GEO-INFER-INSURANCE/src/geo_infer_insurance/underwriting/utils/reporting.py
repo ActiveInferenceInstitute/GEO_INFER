@@ -10,7 +10,7 @@ This module provides reporting capabilities including:
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 import json
@@ -26,7 +26,7 @@ class ReportConfig:
     """Configuration for reporting operations."""
 
     report_type: str = "summary"
-    date_range: Optional[Tuple[datetime, datetime]] = None
+    date_range: tuple[datetime, datetime] | None = None
     include_charts: bool = True
     include_details: bool = False
     output_format: str = "json"
@@ -36,7 +36,7 @@ class ReportConfig:
 class UnderwritingReporter:
     """Comprehensive reporting for underwriting operations."""
 
-    def __init__(self, underwriting_engine: Optional[Any] = None):
+    def __init__(self, underwriting_engine: Any | None = None):
         """
         Initialize the underwriting reporter.
 
@@ -49,7 +49,7 @@ class UnderwritingReporter:
         # Report templates and configurations
         self.report_templates = self._load_report_templates()
 
-    def _load_report_templates(self) -> Dict[str, Dict[str, Any]]:
+    def _load_report_templates(self) -> dict[str, dict[str, Any]]:
         """Load report templates and configurations."""
         return {
             "underwriting_summary": {
@@ -121,8 +121,8 @@ class UnderwritingReporter:
         }
 
     def generate_report(
-        self, report_type: str, config: Optional[ReportConfig] = None
-    ) -> Dict[str, Any]:
+        self, report_type: str, config: ReportConfig | None = None
+    ) -> dict[str, Any]:
         """
         Generate comprehensive underwriting report.
 
@@ -156,7 +156,7 @@ class UnderwritingReporter:
                 "timestamp": datetime.now().isoformat(),
             }
 
-    def _generate_underwriting_summary(self, config: ReportConfig) -> Dict[str, Any]:
+    def _generate_underwriting_summary(self, config: ReportConfig) -> dict[str, Any]:
         """Generate underwriting summary report."""
         if not self.underwriting_engine:
             return {"error": "Underwriting engine not available"}
@@ -206,7 +206,7 @@ class UnderwritingReporter:
             "case_details": case_details,
         }
 
-    def _generate_portfolio_analysis(self, config: ReportConfig) -> Dict[str, Any]:
+    def _generate_portfolio_analysis(self, config: ReportConfig) -> dict[str, Any]:
         """Generate portfolio analysis report."""
         if not self.underwriting_engine:
             return {"error": "Underwriting engine not available"}
@@ -242,7 +242,7 @@ class UnderwritingReporter:
             "performance": performance,
         }
 
-    def _generate_claims_analysis(self, config: ReportConfig) -> Dict[str, Any]:
+    def _generate_claims_analysis(self, config: ReportConfig) -> dict[str, Any]:
         """Generate claims analysis report."""
         if not self.underwriting_engine:
             return {"error": "Underwriting engine not available"}
@@ -278,7 +278,7 @@ class UnderwritingReporter:
             "fraud_analysis": fraud_analysis,
         }
 
-    def _generate_compliance_report(self, config: ReportConfig) -> Dict[str, Any]:
+    def _generate_compliance_report(self, config: ReportConfig) -> dict[str, Any]:
         """Generate compliance report."""
         if not self.underwriting_engine:
             return {"error": "Underwriting engine not available"}
@@ -310,10 +310,10 @@ class UnderwritingReporter:
         }
 
     def _analyze_underwriting_performance(
-        self, metrics: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, metrics: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze underwriting performance metrics."""
-        performance: Dict[str, Any] = {
+        performance: dict[str, Any] = {
             "efficiency_score": 0.0,
             "quality_score": 0.0,
             "productivity_score": 0.0,
@@ -356,7 +356,7 @@ class UnderwritingReporter:
 
         return performance
 
-    def _analyze_underwriting_trends(self) -> Dict[str, Any]:
+    def _analyze_underwriting_trends(self) -> dict[str, Any]:
         """Analyze underwriting trends."""
         # Baseline for trend analysis
         return {
@@ -368,8 +368,8 @@ class UnderwritingReporter:
         }
 
     def _generate_underwriting_recommendations(
-        self, metrics: Dict[str, Any], performance: Dict[str, Any]
-    ) -> List[str]:
+        self, metrics: dict[str, Any], performance: dict[str, Any]
+    ) -> list[str]:
         """Generate underwriting recommendations."""
         recommendations = []
 
@@ -402,20 +402,20 @@ class UnderwritingReporter:
         return recommendations
 
     def _analyze_portfolio_composition(
-        self, policies: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, policies: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Analyze portfolio composition."""
         if not policies:
             return {"error": "No policy data available"}
 
         # Analyze by risk tier
-        risk_tiers: Dict[str, int] = {}
+        risk_tiers: dict[str, int] = {}
         for policy in policies:
             tier = policy.get("risk_tier", "standard")
             risk_tiers[tier] = risk_tiers.get(tier, 0) + 1
 
         # Analyze by coverage type
-        coverage_types: Dict[str, int] = {}
+        coverage_types: dict[str, int] = {}
         for policy in policies:
             for coverage in policy.get("coverages", []):
                 coverage_type = coverage.get("coverage_type", "unknown")
@@ -436,8 +436,8 @@ class UnderwritingReporter:
         }
 
     def _analyze_risk_distribution(
-        self, policies: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, policies: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Analyze risk distribution in portfolio."""
         if not policies:
             return {"error": "No policy data available"}
@@ -459,10 +459,10 @@ class UnderwritingReporter:
         return risk_distribution
 
     def _analyze_portfolio_performance(
-        self, portfolio_summary: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, portfolio_summary: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze portfolio performance."""
-        performance: Dict[str, Any] = {
+        performance: dict[str, Any] = {
             "profitability_score": 0.0,
             "risk_adjusted_return": 0.0,
             "capital_efficiency": 0.0,
@@ -481,13 +481,13 @@ class UnderwritingReporter:
 
         return performance
 
-    def _analyze_claims_trends(self, claims: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_claims_trends(self, claims: list[dict[str, Any]]) -> dict[str, Any]:
         """Analyze claims trends."""
         if not claims:
             return {"error": "No claims data available"}
 
         # Analyze claim frequency over time
-        claims_by_month: Dict[str, int] = {}
+        claims_by_month: dict[str, int] = {}
         for claim in claims:
             claim_date = datetime.fromisoformat(
                 claim["reported_date"].replace("Z", "+00:00")
@@ -516,19 +516,19 @@ class UnderwritingReporter:
             "total_claims_analyzed": len(claims),
         }
 
-    def _analyze_claims_patterns(self, claims: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_claims_patterns(self, claims: list[dict[str, Any]]) -> dict[str, Any]:
         """Analyze claims patterns."""
         if not claims:
             return {"error": "No claims data available"}
 
         # Analyze by claim type
-        claim_types: Dict[str, int] = {}
+        claim_types: dict[str, int] = {}
         for claim in claims:
             claim_type = claim.get("claim_type", "unknown")
             claim_types[claim_type] = claim_types.get(claim_type, 0) + 1
 
         # Analyze by cause of loss
-        causes: Dict[str, int] = {}
+        causes: dict[str, int] = {}
         for claim in claims:
             cause = claim.get("cause_of_loss", "unknown")
             causes[cause] = causes.get(cause, 0) + 1
@@ -549,7 +549,7 @@ class UnderwritingReporter:
             "total_claims_analyzed": len(claims),
         }
 
-    def _analyze_fraud_patterns(self, claims: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_fraud_patterns(self, claims: list[dict[str, Any]]) -> dict[str, Any]:
         """Analyze fraud patterns in claims."""
         # Baseline for fraud analysis
         return {
@@ -563,7 +563,7 @@ class UnderwritingReporter:
             ],
         }
 
-    def _analyze_compliance_framework(self) -> Dict[str, Any]:
+    def _analyze_compliance_framework(self) -> dict[str, Any]:
         """Analyze compliance framework status."""
         # Baseline for compliance analysis
         return {
@@ -573,7 +573,7 @@ class UnderwritingReporter:
             "next_audit_date": (datetime.now() + timedelta(days=90)).isoformat(),
         }
 
-    def _analyze_audit_findings(self) -> Dict[str, Any]:
+    def _analyze_audit_findings(self) -> dict[str, Any]:
         """Analyze audit findings."""
         # Baseline for audit analysis
         return {
@@ -584,7 +584,7 @@ class UnderwritingReporter:
             "improvement_areas": ["training", "automation", "quality_control"],
         }
 
-    def _generate_remediation_recommendations(self) -> List[str]:
+    def _generate_remediation_recommendations(self) -> list[str]:
         """Generate remediation recommendations."""
         return [
             "Implement additional training for underwriting staff",
@@ -596,9 +596,9 @@ class UnderwritingReporter:
 
     def export_report(
         self,
-        report_data: Dict[str, Any],
+        report_data: dict[str, Any],
         format: str = "json",
-        filename: Optional[str] = None,
+        filename: str | None = None,
     ) -> str:
         """
         Export report to file.
@@ -632,7 +632,7 @@ class UnderwritingReporter:
 class ReportingEngine:
     """Advanced reporting engine with automation capabilities."""
 
-    def __init__(self, underwriting_engine: Optional[Any] = None):
+    def __init__(self, underwriting_engine: Any | None = None):
         """
         Initialize the reporting engine.
 
@@ -642,9 +642,9 @@ class ReportingEngine:
         self.underwriting_engine = underwriting_engine
         self.reporter = UnderwritingReporter(underwriting_engine)
 
-    def generate_dashboard_data(self) -> Dict[str, Any]:
+    def generate_dashboard_data(self) -> dict[str, Any]:
         """Generate data for underwriting dashboard."""
-        dashboard_data: Dict[str, Any] = {
+        dashboard_data: dict[str, Any] = {
             "timestamp": datetime.now().isoformat(),
             "kpis": {},
             "charts": {},
@@ -675,9 +675,9 @@ class ReportingEngine:
 
         return dashboard_data
 
-    def schedule_reports(self, report_configs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def schedule_reports(self, report_configs: list[dict[str, Any]]) -> dict[str, Any]:
         """Schedule automated report generation."""
-        schedule_results: Dict[str, Any] = {
+        schedule_results: dict[str, Any] = {
             "scheduled_reports": [],
             "errors": [],
             "timestamp": datetime.now().isoformat(),
@@ -726,25 +726,25 @@ class ReportingEngine:
 
 # Convenience functions
 def create_underwriting_reporter(
-    underwriting_engine: Optional[Any] = None,
+    underwriting_engine: Any | None = None,
 ) -> UnderwritingReporter:
     """Create a new underwriting reporter."""
     return UnderwritingReporter(underwriting_engine)
 
 
-def generate_underwriting_summary(underwriting_engine: Any) -> Dict[str, Any]:
+def generate_underwriting_summary(underwriting_engine: Any) -> dict[str, Any]:
     """Generate underwriting summary report."""
     reporter = UnderwritingReporter(underwriting_engine)
     return reporter.generate_report("underwriting_summary")
 
 
-def generate_portfolio_report(underwriting_engine: Any) -> Dict[str, Any]:
+def generate_portfolio_report(underwriting_engine: Any) -> dict[str, Any]:
     """Generate portfolio analysis report."""
     reporter = UnderwritingReporter(underwriting_engine)
     return reporter.generate_report("portfolio_analysis")
 
 
-def generate_claims_report(underwriting_engine: Any) -> Dict[str, Any]:
+def generate_claims_report(underwriting_engine: Any) -> dict[str, Any]:
     """Generate claims analysis report."""
     reporter = UnderwritingReporter(underwriting_engine)
     return reporter.generate_report("claims_analysis")

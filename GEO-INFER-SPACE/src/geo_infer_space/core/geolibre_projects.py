@@ -20,10 +20,11 @@ from __future__ import annotations
 import copy
 import json
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional, Sequence
+from typing import Any
+from collections.abc import Mapping, Sequence
 
 # Mirrors GeoLibre's DEFAULT_PROJECT_PREFERENCES (packages/core/src/types.ts).
-DEFAULT_PROJECT_PREFERENCES: Dict[str, Any] = {
+DEFAULT_PROJECT_PREFERENCES: dict[str, Any] = {
     "map": {
         "restrictBounds": False,
         "bounds": [-180, -85, 180, 85],
@@ -36,7 +37,7 @@ DEFAULT_PROJECT_PREFERENCES: Dict[str, Any] = {
 }
 
 # Mirrors GeoLibre's DEFAULT_LAYER_STYLE (packages/core/src/types.ts).
-DEFAULT_LAYER_STYLE: Dict[str, Any] = {
+DEFAULT_LAYER_STYLE: dict[str, Any] = {
     "minZoom": 0,
     "maxZoom": 24,
     "fillColor": "#3b82f6",
@@ -88,9 +89,9 @@ DEFAULT_BASEMAP_STYLE_URL: str = (
 
 
 def default_map_view(
-    center: Optional[Sequence[float]] = None,
-    zoom: Optional[float] = None,
-) -> Dict[str, Any]:
+    center: Sequence[float] | None = None,
+    zoom: float | None = None,
+) -> dict[str, Any]:
     """Return the app's default camera, optionally overridden.
 
     Args:
@@ -103,7 +104,7 @@ def default_map_view(
     Raises:
         ValueError: If ``center`` does not have exactly 2 elements.
     """
-    map_view: Dict[str, Any] = {
+    map_view: dict[str, Any] = {
         "center": [-100, 40],
         "zoom": 2,
         "bearing": 0,
@@ -122,7 +123,7 @@ def default_map_view(
 
 def _layer_base(
     name: str, layer_type: str, layer_id: str, **style: Any
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build the shared layer skeleton with a merged style dict.
 
     The default layer style is deep-copied so nested values are never shared
@@ -144,11 +145,11 @@ def geojson_layer(
     name: str,
     data: Mapping[str, Any],
     *,
-    layer_id: Optional[str] = None,
+    layer_id: str | None = None,
     index: int = 0,
-    source_url: Optional[str] = None,
+    source_url: str | None = None,
     **style: Any,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build a GeoJSON layer with an inlined FeatureCollection.
 
     Args:
@@ -163,7 +164,7 @@ def geojson_layer(
         A layer dict for the project's ``layers`` array.
     """
     layer = _layer_base(name, "geojson", layer_id or f"layer-{index}", **style)
-    source: Dict[str, Any] = {"type": "geojson"}
+    source: dict[str, Any] = {"type": "geojson"}
     if source_url:
         source["url"] = source_url
         layer["sourcePath"] = source_url
@@ -176,12 +177,12 @@ def tile_layer(
     name: str,
     url: str,
     *,
-    layer_id: Optional[str] = None,
+    layer_id: str | None = None,
     index: int = 0,
     tile_size: int = 256,
-    attribution: Optional[str] = None,
+    attribution: str | None = None,
     **style: Any,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build a raster XYZ tile layer (``{z}/{x}/{y}`` template).
 
     Args:
@@ -197,7 +198,7 @@ def tile_layer(
         A layer dict for the project's ``layers`` array.
     """
     layer = _layer_base(name, "xyz", layer_id or f"layer-{index}", **style)
-    source: Dict[str, Any] = {
+    source: dict[str, Any] = {
         "type": "raster",
         "tiles": [url],
         "tileSize": tile_size,
@@ -214,12 +215,12 @@ def build_project(
     name: str,
     layers: Sequence[Mapping[str, Any]],
     *,
-    map_view: Optional[Mapping[str, Any]] = None,
-    center: Optional[Sequence[float]] = None,
-    zoom: Optional[float] = None,
+    map_view: Mapping[str, Any] | None = None,
+    center: Sequence[float] | None = None,
+    zoom: float | None = None,
     basemap_style_url: str = DEFAULT_BASEMAP_STYLE_URL,
-    metadata: Optional[Mapping[str, Any]] = None,
-) -> Dict[str, Any]:
+    metadata: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     """Build a GeoLibre project dict from layers.
 
     Args:
@@ -238,7 +239,7 @@ def build_project(
     """
     if map_view is None:
         map_view = default_map_view(center=center, zoom=zoom)
-    project: Dict[str, Any] = {
+    project: dict[str, Any] = {
         "version": GEOLIBRE_PROJECT_VERSION,
         "name": name,
         "mapView": copy.deepcopy(dict(map_view)),
@@ -285,13 +286,13 @@ def build_h3_grid_project(
     name: str,
     grid_geojson: Mapping[str, Any],
     *,
-    center: Optional[Sequence[float]] = None,
-    zoom: Optional[float] = None,
+    center: Sequence[float] | None = None,
+    zoom: float | None = None,
     fill_color: str = "#3b82f6",
     stroke_color: str = "#1e40af",
     fill_opacity: float = 0.4,
-    metadata: Optional[Mapping[str, Any]] = None,
-) -> Dict[str, Any]:
+    metadata: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     """Build a GeoLibre project from an H3 grid GeoJSON FeatureCollection.
 
     Convenience wrapper for the common GEO-INFER case of visualising an H3

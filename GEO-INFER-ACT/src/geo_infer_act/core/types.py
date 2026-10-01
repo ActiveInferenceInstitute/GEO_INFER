@@ -7,7 +7,7 @@ need mathematical diagnostics without breaking the older float/dict APIs.
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 
@@ -45,9 +45,9 @@ class FreeEnergyBreakdown:
     epistemic_value: float = 0.0
     risk: float = 0.0
     ambiguity: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a JSON-safe free-energy breakdown."""
         return {
             "free_energy": float(self.free_energy),
@@ -74,9 +74,9 @@ class PolicyEvaluation:
     pragmatic_value: float = 0.0
     risk: float = 0.0
     ambiguity: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a JSON-safe policy evaluation."""
         return {
             "policy": _to_jsonable(self.policy),
@@ -98,12 +98,12 @@ class ActiveInferenceStepResult:
     beliefs: Any
     action: Any
     free_energy: float
-    expected_free_energy: Optional[float] = None
-    policy_evaluation: Optional[PolicyEvaluation] = None
-    observation: Optional[Any] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    expected_free_energy: float | None = None
+    policy_evaluation: PolicyEvaluation | None = None
+    observation: Any | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a JSON-safe step result."""
         return {
             "beliefs": _to_jsonable(self.beliefs),
@@ -128,9 +128,9 @@ class H3SpatialConsistency:
     neighbor_correlations: float
     cell_count: int = 0
     edge_count: int = 0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return the serialized spatial consistency record."""
         return {
             "global_coherence": self.global_coherence,
@@ -145,13 +145,13 @@ class H3SpatialConsistency:
 class H3BeliefUpdateResult:
     """Typed result for H3-indexed belief updates."""
 
-    h3_beliefs: Dict[str, Any]
+    h3_beliefs: dict[str, Any]
     average: Any
     spatial_consistency: H3SpatialConsistency
     aggregate_free_energy: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return the serialized belief-update record."""
         return {
             "h3_beliefs": self.h3_beliefs,
@@ -166,12 +166,12 @@ class H3BeliefUpdateResult:
 class H3GridInferenceResult:
     """Typed result for active inference over an H3 observation grid."""
 
-    cell_results: Dict[str, ActiveInferenceStepResult]
+    cell_results: dict[str, ActiveInferenceStepResult]
     aggregate_free_energy: float
     spatial_consistency: H3SpatialConsistency
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a JSON-like dictionary containing typed cell diagnostics."""
         return {
             "cell_results": _to_jsonable(self.cell_results),
@@ -188,15 +188,15 @@ class H3CellDiagnostics:
     cell: str
     timestep: int
     resolution: int
-    belief: List[float]
+    belief: list[float]
     entropy: float
     free_energy: float
     expected_free_energy: float
     selected_action: Any
     selected_action_index: int
     selected_action_probability: float
-    action_posterior: List[float]
-    negative_expected_free_energy: List[float]
+    action_posterior: list[float]
+    negative_expected_free_energy: list[float]
     selected_negative_expected_free_energy: float
     policy_entropy: float
     neighbor_count: int
@@ -205,10 +205,10 @@ class H3CellDiagnostics:
     belief_flux_in: float
     belief_flux_out: float
     belief_flux_divergence: float
-    parent_cell: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    parent_cell: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return JSON-safe per-cell diagnostics."""
         return {
             "cell": self.cell,
@@ -252,9 +252,9 @@ class H3EdgeDiagnostics:
     coherence: float
     source_entropy: float
     target_entropy: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return JSON-safe per-edge diagnostics."""
         return {
             "source": self.source,
@@ -284,9 +284,9 @@ class H3LevelDiagnostics:
     mean_local_coherence: float
     mean_belief_flux: float
     cross_level_consistency: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return JSON-safe per-level diagnostics."""
         return {
             "resolution": int(self.resolution),
@@ -309,15 +309,15 @@ class SpatialInferenceTrace:
     """Run-level trace for spatial active inference diagnostics."""
 
     scenario: str
-    timesteps: List[int]
-    cell_diagnostics: List[H3CellDiagnostics]
-    edge_diagnostics: List[H3EdgeDiagnostics]
-    level_diagnostics: List[H3LevelDiagnostics]
-    hierarchy_metadata: Dict[str, Any] = field(default_factory=dict)
-    backend_metadata: Dict[str, Any] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    timesteps: list[int]
+    cell_diagnostics: list[H3CellDiagnostics]
+    edge_diagnostics: list[H3EdgeDiagnostics]
+    level_diagnostics: list[H3LevelDiagnostics]
+    hierarchy_metadata: dict[str, Any] = field(default_factory=dict)
+    backend_metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return JSON-safe spatial trace data."""
         return {
             "scenario": self.scenario,
@@ -341,9 +341,9 @@ class NestedH3LevelSummary:
     mean_free_energy: float
     mean_entropy: float
     coherence: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a JSON-like level summary."""
         return {
             "resolution": self.resolution,
@@ -360,16 +360,16 @@ class NestedH3LevelSummary:
 class NestedH3BeliefUpdateResult:
     """Typed result for nested H3 belief updates."""
 
-    fine_beliefs: Dict[str, Any]
-    parent_beliefs: Dict[str, Any]
-    level_summaries: List[NestedH3LevelSummary]
-    parent_child_map: Dict[str, List[str]]
-    child_parent_map: Dict[str, str]
+    fine_beliefs: dict[str, Any]
+    parent_beliefs: dict[str, Any]
+    level_summaries: list[NestedH3LevelSummary]
+    parent_child_map: dict[str, list[str]]
+    child_parent_map: dict[str, str]
     spatial_consistency: H3SpatialConsistency
     aggregate_free_energy: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a JSON-like nested belief update result."""
         return {
             "fine_beliefs": _to_jsonable(self.fine_beliefs),
@@ -387,13 +387,13 @@ class NestedH3BeliefUpdateResult:
 class NestedH3GridInferenceResult:
     """Typed result for active inference over a nested H3 hierarchy."""
 
-    cell_results: Dict[str, ActiveInferenceStepResult]
+    cell_results: dict[str, ActiveInferenceStepResult]
     nested_belief_update: NestedH3BeliefUpdateResult
     aggregate_free_energy: float
     spatial_consistency: H3SpatialConsistency
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a JSON-like nested grid inference result."""
         return {
             "cell_results": _to_jsonable(self.cell_results),

@@ -6,7 +6,8 @@ mathematical operations.
 """
 
 import functools
-from typing import Any, Callable, Optional, Tuple
+from typing import Any
+from collections.abc import Callable
 
 import numpy as np
 import logging
@@ -114,7 +115,7 @@ def validate_numerical(value: Any) -> Any:
     return wrapper
 
 
-def validate_shape(expected_shape: Tuple[int, ...], axis: int = 0) -> Callable:
+def validate_shape(expected_shape: tuple[int, ...], axis: int = 0) -> Callable:
     """
     Decorator to validate array shapes.
 
@@ -234,7 +235,7 @@ def validate_interpolation_params(points: Any, values: Any) -> bool:
     return True
 
 
-def validate_clustering_params(data: Any, n_clusters: Optional[int] = None) -> bool:
+def validate_clustering_params(data: Any, n_clusters: int | None = None) -> bool:
     """Validate clustering data and an optional requested cluster count."""
     values = np.asarray(data, dtype=float)
     if values.ndim != 2 or values.shape[0] == 0 or values.shape[1] == 0:
@@ -246,7 +247,7 @@ def validate_clustering_params(data: Any, n_clusters: Optional[int] = None) -> b
     return True
 
 
-def validate_tensor_data(data: Any, expected_ndim: Optional[int] = None) -> bool:
+def validate_tensor_data(data: Any, expected_ndim: int | None = None) -> bool:
     """Validate finite tensor-like numeric data."""
     values = np.asarray(data)
     if values.size == 0 or not np.issubdtype(values.dtype, np.number):

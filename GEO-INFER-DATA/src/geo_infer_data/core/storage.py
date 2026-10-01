@@ -24,10 +24,10 @@ retrieved payload safe to load.
 
 import logging
 import os
-from typing import Dict, List, Optional, Any, Tuple, cast
-from datetime import datetime, timezone
+from typing import Any, cast
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 import asyncio
 import json
 import pickle
@@ -68,7 +68,7 @@ async def _maybe_await(value: Any) -> Any:
     return value
 
 
-class OptimizationStrategy(str, Enum):
+class OptimizationStrategy(StrEnum):
     """Storage optimization strategies."""
 
     ACCESS_PATTERN_BASED = "access_pattern_based"
@@ -77,7 +77,7 @@ class OptimizationStrategy(str, Enum):
     BALANCED = "balanced"
 
 
-class IndexingStrategy(str, Enum):
+class IndexingStrategy(StrEnum):
     """Spatial indexing strategies."""
 
     H3 = "h3"
@@ -90,14 +90,14 @@ class IndexingStrategy(str, Enum):
 class StorageConfig:
     """Storage system configuration."""
 
-    storage_backends: List[str]
+    storage_backends: list[str]
     optimization_strategy: OptimizationStrategy = OptimizationStrategy.BALANCED
     compression_enabled: bool = True
     indexing_strategy: IndexingStrategy = IndexingStrategy.H3
     caching_enabled: bool = True
     replication_factor: int = 1
     max_file_size: int = 1024 * 1024 * 1024  # 1GB
-    retention_policy: Optional[Dict[str, Any]] = None
+    retention_policy: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.optimization_strategy, OptimizationStrategy):
@@ -114,20 +114,20 @@ class StorageConfig:
 class AccessPattern:
     """Data access pattern analysis."""
 
-    query_frequency: Dict[str, int] = field(default_factory=dict)
-    spatial_bounds: List[List[float]] = field(default_factory=list)
-    temporal_ranges: List[Tuple[datetime, datetime]] = field(default_factory=list)
-    data_types: List[str] = field(default_factory=list)
-    peak_hours: List[int] = field(default_factory=list)
-    batch_size_distribution: Dict[str, int] = field(default_factory=dict)
+    query_frequency: dict[str, int] = field(default_factory=dict)
+    spatial_bounds: list[list[float]] = field(default_factory=list)
+    temporal_ranges: list[tuple[datetime, datetime]] = field(default_factory=list)
+    data_types: list[str] = field(default_factory=list)
+    peak_hours: list[int] = field(default_factory=list)
+    batch_size_distribution: dict[str, int] = field(default_factory=dict)
 
 
 class StorageBackendManager:
     """Manager for different storage backends."""
 
-    def __init__(self, backend_configs: Dict[str, Dict[str, Any]]):
+    def __init__(self, backend_configs: dict[str, dict[str, Any]]):
         self.backend_configs = backend_configs
-        self.backends: Dict[str, Any] = {}
+        self.backends: dict[str, Any] = {}
         self._initialize_backends()
 
     def _initialize_backends(self) -> None:
@@ -157,7 +157,7 @@ class StorageBackendManager:
         return cast(str, await backend_instance.store(data, metadata))
 
     async def retrieve_data(
-        self, data_id: str, query: Dict[str, Any], backend: str = "default"
+        self, data_id: str, query: dict[str, Any], backend: str = "default"
     ) -> Any:
         """Retrieve data from specified backend."""
         if backend not in self.backends:
@@ -178,7 +178,7 @@ class StorageBackendManager:
 class PostgreSQLBackend:
     """PostgreSQL/PostGIS storage backend."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.connection_string = self._build_connection_string()
         self.spatial_indexer = SpatialIndexer()
@@ -194,7 +194,7 @@ class PostgreSQLBackend:
     async def store(self, data: Any, metadata: DatasetMetadata) -> str:
         """Store data in PostgreSQL."""
         # Implementation for PostgreSQL storage
-        data_id = f"pg_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+        data_id = f"pg_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
 
         if isinstance(data, (gpd.GeoDataFrame, pd.DataFrame)):
             # Store tabular data
@@ -226,7 +226,7 @@ class PostgreSQLBackend:
             )
 
     async def _retrieve_dataframe(
-        self, data_id: str, query: Dict[str, Any]
+        self, data_id: str, query: dict[str, Any]
     ) -> pd.DataFrame:
         """Retrieve a stored table from PostgreSQL/PostGIS."""
         from sqlalchemy import create_engine, inspect as sqlalchemy_inspect, text
@@ -354,7 +354,7 @@ class PostgreSQLBackend:
                 f"Generic payload is neither JSON nor a GISP1 envelope: {exc}"
             ) from exc
 
-    async def retrieve(self, data_id: str, query: Dict[str, Any]) -> Any:
+    async def retrieve(self, data_id: str, query: dict[str, Any]) -> Any:
         """Retrieve data from PostgreSQL."""
         return await _maybe_await(self._retrieve_dataframe(data_id, query))
 
@@ -377,7 +377,7 @@ class PostgreSQLBackend:
 class MinIOBackend:
     """MinIO/S3 object storage backend."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.endpoint = config.get("endpoint")
         self.access_key = config.get("access_key")
@@ -388,7 +388,7 @@ class MinIOBackend:
 
     async def store(self, data: Any, metadata: DatasetMetadata) -> str:
         """Store data in MinIO."""
-        data_id = f"minio_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S_%f')}_{uuid.uuid4().hex[:8]}"
+        data_id = f"minio_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S_%f')}_{uuid.uuid4().hex[:8]}"
 
         stored_id = await _maybe_await(self._store_to_minio(data, data_id, metadata))
         return stored_id if isinstance(stored_id, str) else data_id
@@ -439,7 +439,7 @@ class MinIOBackend:
 
         return data_id
 
-    async def retrieve(self, data_id: str, query: Dict[str, Any]) -> Any:
+    async def retrieve(self, data_id: str, query: dict[str, Any]) -> Any:
         """Retrieve data from MinIO."""
         if not all((self.endpoint, self.access_key, self.secret_key, self.bucket)):
             raise ValueError(
@@ -499,7 +499,7 @@ class MinIOBackend:
 class RedisBackend:
     """Redis caching and storage backend."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.host = config.get("host", "localhost")
         self.port = config.get("port", 6379)
@@ -511,7 +511,7 @@ class RedisBackend:
 
     async def store(self, data: Any, metadata: DatasetMetadata) -> str:
         """Store data in Redis."""
-        data_id = f"redis_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S_%f')}_{uuid.uuid4().hex[:8]}"
+        data_id = f"redis_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S_%f')}_{uuid.uuid4().hex[:8]}"
         payload = dumps_signed(
             {"data": data, "metadata": metadata.model_dump()},
             context=CONTEXT_STORAGE_REDIS,
@@ -521,7 +521,7 @@ class RedisBackend:
         await asyncio.to_thread(self.client.set, data_id, payload)
         return data_id
 
-    async def retrieve(self, data_id: str, query: Dict[str, Any]) -> Any:
+    async def retrieve(self, data_id: str, query: dict[str, Any]) -> Any:
         """Retrieve data from Redis."""
         payload = await asyncio.to_thread(self.client.get, data_id)
         if payload is None:
@@ -543,7 +543,7 @@ class RedisBackend:
 class LocalFileBackend:
     """Local file system storage backend."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.base_path = Path(config.get("base_path", "/tmp/geo_infer_data"))
         self.compressor = DataCompressor()
@@ -554,7 +554,7 @@ class LocalFileBackend:
 
     async def store(self, data: Any, metadata: DatasetMetadata) -> str:
         """Store data in local file system."""
-        data_id = f"local_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S_%f')}_{uuid.uuid4().hex[:8]}"
+        data_id = f"local_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S_%f')}_{uuid.uuid4().hex[:8]}"
 
         # Determine file format and path
         file_path = self._get_file_path(data_id, metadata)
@@ -587,7 +587,7 @@ class LocalFileBackend:
             if getattr(metadata, "spatial", None) is not None
             else "tabular"
         )
-        date_str = datetime.now(timezone.utc).strftime("%Y/%m/%d")
+        date_str = datetime.now(UTC).strftime("%Y/%m/%d")
 
         file_path = self.base_path / data_type / date_str / f"{data_id}.parquet"
         file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -610,7 +610,7 @@ class LocalFileBackend:
             )
         )
 
-    async def retrieve(self, data_id: str, query: Dict[str, Any]) -> Any:
+    async def retrieve(self, data_id: str, query: dict[str, Any]) -> Any:
         """Retrieve data from local file system."""
         # Find data file
         data_file = self._find_data_file(data_id)
@@ -634,7 +634,7 @@ class LocalFileBackend:
                 serializer="pickle",
             )
 
-    def _find_data_file(self, data_id: str) -> Optional[Path]:
+    def _find_data_file(self, data_id: str) -> Path | None:
         """Find data file by ID."""
         # Reject glob metacharacters and path separators so data_id can never
         # widen the search (e.g. data_id='*' or '../').
@@ -757,7 +757,7 @@ class AdaptiveDataStorage:
 
     def __init__(
         self,
-        storage_backends: List[str],
+        storage_backends: list[str],
         optimization_strategy: str = "balanced",
         compression_enabled: bool = True,
         indexing_strategy: str = "h3",
@@ -784,15 +784,15 @@ class AdaptiveDataStorage:
         self.cache_manager = CacheManager() if caching_enabled else None
         self.compressor = DataCompressor() if compression_enabled else None
 
-        self.access_patterns: Dict[str, AccessPattern] = {}
-        self.storage_stats: Dict[str, Any] = {}
-        self._stored_data: Dict[str, Any] = {}
+        self.access_patterns: dict[str, AccessPattern] = {}
+        self.storage_stats: dict[str, Any] = {}
+        self._stored_data: dict[str, Any] = {}
 
         logger.info(
             f"Initialized AdaptiveDataStorage with {len(storage_backends)} backends"
         )
 
-    def _get_backend_configs(self) -> Dict[str, Dict[str, Any]]:
+    def _get_backend_configs(self) -> dict[str, dict[str, Any]]:
         """Get backend configurations.
 
         Defaults describe local development services. Credentials are sourced
@@ -805,7 +805,7 @@ class AdaptiveDataStorage:
           ``GEO_INFER_MINIO_SECRET_KEY`` (default ``minioadmin`` for a local
           MinIO dev server).
         """
-        configs: Dict[str, Dict[str, Any]] = {
+        configs: dict[str, dict[str, Any]] = {
             "postgresql": {
                 "type": "postgresql",
                 "host": "localhost",
@@ -850,7 +850,7 @@ class AdaptiveDataStorage:
             return True
         return normalized.endswith(".localhost")
 
-    def _audit_dev_credentials(self, configs: Dict[str, Dict[str, Any]]) -> None:
+    def _audit_dev_credentials(self, configs: dict[str, dict[str, Any]]) -> None:
         """Warn or fail closed when built-in development credentials are in use.
 
         A missing environment variable means the built-in development default
@@ -883,7 +883,7 @@ class AdaptiveDataStorage:
         self,
         spatial_data: Any,
         metadata: DatasetMetadata,
-        access_patterns: Optional[Dict[str, Any]] = None,
+        access_patterns: dict[str, Any] | None = None,
     ) -> str:
         """
         Store geospatial data with automatic optimization.
@@ -994,8 +994,8 @@ class AdaptiveDataStorage:
     async def retrieve_geospatial_data(
         self,
         data_id: str,
-        spatial_bounds: Optional[List[float]] = None,
-        temporal_range: Optional[Tuple[datetime, datetime]] = None,
+        spatial_bounds: list[float] | None = None,
+        temporal_range: tuple[datetime, datetime] | None = None,
     ) -> Any:
         """Retrieve one stored dataset by its identifier.
 
@@ -1008,7 +1008,7 @@ class AdaptiveDataStorage:
                 self._stored_data[data_id], spatial_bounds, temporal_range
             )
 
-        query: Dict[str, Any] = {}
+        query: dict[str, Any] = {}
         if spatial_bounds:
             query["spatial"] = spatial_bounds
         if temporal_range:
@@ -1022,8 +1022,8 @@ class AdaptiveDataStorage:
     @staticmethod
     def _filter_stored_data(
         data: Any,
-        spatial_bounds: Optional[List[float]] = None,
-        temporal_range: Optional[Tuple[datetime, datetime]] = None,
+        spatial_bounds: list[float] | None = None,
+        temporal_range: tuple[datetime, datetime] | None = None,
     ) -> Any:
         """Apply spatial and temporal filters to one stored dataset.
 
@@ -1043,9 +1043,9 @@ class AdaptiveDataStorage:
 
     async def adaptive_query(
         self,
-        spatial_bounds: Optional[List[float]] = None,
-        temporal_range: Optional[Tuple[datetime, datetime]] = None,
-        optimization_hints: Optional[Dict[str, Any]] = None,
+        spatial_bounds: list[float] | None = None,
+        temporal_range: tuple[datetime, datetime] | None = None,
+        optimization_hints: dict[str, Any] | None = None,
     ) -> Any:
         """
         Execute adaptive query with automatic optimization.
@@ -1138,7 +1138,7 @@ class AdaptiveDataStorage:
         # Cross-backend search by shape is not supported by the backends
         # (they retrieve by concrete data_id); use retrieve_geospatial_data
         # for backend-resident datasets.
-        filtered: List[Any] = [
+        filtered: list[Any] = [
             self._filter_stored_data(data, spatial_bounds, temporal_range)
             for data in self._stored_data.values()
         ]
@@ -1161,7 +1161,7 @@ class AdaptiveDataStorage:
         return results
 
     def _analyze_access_patterns(
-        self, dataset_id: str, patterns: Dict[str, Any]
+        self, dataset_id: str, patterns: dict[str, Any]
     ) -> None:
         """Analyze access patterns for optimization."""
         access_pattern = AccessPattern()
@@ -1195,7 +1195,7 @@ class AdaptiveDataStorage:
         self,
         data: Any,
         metadata: DatasetMetadata,
-        access_patterns: Optional[Dict[str, Any]],
+        access_patterns: dict[str, Any] | None,
     ) -> str:
         """Select optimal storage backend."""
         if "local" in self.backend_manager.backends:
@@ -1217,7 +1217,7 @@ class AdaptiveDataStorage:
         return next(iter(self.backend_manager.backends))
 
     def _select_backend_for_query(
-        self, query: Dict[str, Any], hints: Optional[Dict[str, Any]]
+        self, query: dict[str, Any], hints: dict[str, Any] | None
     ) -> str:
         """Select optimal backend for query execution."""
         # Query optimization logic
@@ -1236,8 +1236,8 @@ class AdaptiveDataStorage:
 
     def _generate_cache_key(
         self,
-        spatial_bounds: Optional[List[float]],
-        temporal_range: Optional[Tuple[datetime, datetime]],
+        spatial_bounds: list[float] | None,
+        temporal_range: tuple[datetime, datetime] | None,
     ) -> str:
         """Generate cache key for query."""
         spatial_str = (
@@ -1258,7 +1258,7 @@ class AdaptiveDataStorage:
         """Update storage statistics."""
         if data_id not in self.storage_stats:
             self.storage_stats[data_id] = {
-                "created_at": datetime.now(timezone.utc),
+                "created_at": datetime.now(UTC),
                 "operations": [],
                 "size": metadata.file_size or 0,
             }
@@ -1266,14 +1266,14 @@ class AdaptiveDataStorage:
         self.storage_stats[data_id]["operations"].append(
             {
                 "operation": operation,
-                "timestamp": datetime.now(timezone.utc),
+                "timestamp": datetime.now(UTC),
                 "size": metadata.file_size or 0,
             }
         )
 
     def optimize_for_patterns(
-        self, patterns: Dict[str, Any], time_window: str = "30d"
-    ) -> Dict[str, Any]:
+        self, patterns: dict[str, Any], time_window: str = "30d"
+    ) -> dict[str, Any]:
         """
         Optimize storage based on access patterns.
 
@@ -1287,7 +1287,7 @@ class AdaptiveDataStorage:
         logger.info("Optimizing storage for access patterns")
 
         actions = []
-        optimizations: Dict[str, Any] = {}
+        optimizations: dict[str, Any] = {}
 
         for dataset_id, pattern in patterns.items():
             # Analyze pattern and determine optimizations
@@ -1304,17 +1304,17 @@ class AdaptiveDataStorage:
         return {
             "actions": actions,
             "optimizations": optimizations,
-            "timestamp": datetime.now(timezone.utc),
+            "timestamp": datetime.now(UTC),
             "time_window": time_window,
         }
 
     async def optimize_storage_for_patterns(
-        self, patterns: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, patterns: dict[str, Any]
+    ) -> dict[str, Any]:
         """Apply storage optimizations based on patterns."""
         return self.optimize_for_patterns(patterns)
 
-    def get_storage_stats(self) -> Dict[str, Any]:
+    def get_storage_stats(self) -> dict[str, Any]:
         """Get storage statistics."""
         return {
             "backends": list(self.backend_manager.backends.keys()),

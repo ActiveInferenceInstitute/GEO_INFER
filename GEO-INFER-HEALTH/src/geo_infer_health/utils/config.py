@@ -9,7 +9,7 @@ import json
 import importlib.resources
 import re
 from pathlib import Path
-from typing import Dict, Any, Optional, Union, cast
+from typing import Any, cast
 from functools import lru_cache
 
 import logging
@@ -23,46 +23,46 @@ class HealthConfig(BaseModel):
     """Pydantic model for health configuration validation."""
 
     # Module metadata
-    module: Dict[str, Any] = Field(default_factory=dict)
+    module: dict[str, Any] = Field(default_factory=dict)
 
     # API configuration
-    api: Dict[str, Any] = Field(default_factory=dict)
+    api: dict[str, Any] = Field(default_factory=dict)
 
     # Database configuration
-    database: Dict[str, Any] = Field(default_factory=dict)
+    database: dict[str, Any] = Field(default_factory=dict)
 
     # Logging configuration
-    logging: Dict[str, Any] = Field(default_factory=dict)
+    logging: dict[str, Any] = Field(default_factory=dict)
 
     # Analysis configuration
-    analysis: Dict[str, Any] = Field(default_factory=dict)
+    analysis: dict[str, Any] = Field(default_factory=dict)
 
     # Data configuration
-    data: Dict[str, Any] = Field(default_factory=dict)
+    data: dict[str, Any] = Field(default_factory=dict)
 
     # Performance configuration
-    performance: Dict[str, Any] = Field(default_factory=dict)
+    performance: dict[str, Any] = Field(default_factory=dict)
 
     # Privacy configuration
-    privacy: Dict[str, Any] = Field(default_factory=dict)
+    privacy: dict[str, Any] = Field(default_factory=dict)
 
     # Integration configuration
-    integration: Dict[str, Any] = Field(default_factory=dict)
+    integration: dict[str, Any] = Field(default_factory=dict)
 
     # Monitoring configuration
-    monitoring: Dict[str, Any] = Field(default_factory=dict)
+    monitoring: dict[str, Any] = Field(default_factory=dict)
 
     # Development configuration
-    development: Dict[str, Any] = Field(default_factory=dict)
+    development: dict[str, Any] = Field(default_factory=dict)
 
     # Advanced configuration
-    advanced: Dict[str, Any] = Field(default_factory=dict)
+    advanced: dict[str, Any] = Field(default_factory=dict)
 
     # Custom configuration
-    custom: Dict[str, Any] = Field(default_factory=dict)
+    custom: dict[str, Any] = Field(default_factory=dict)
 
 
-def load_yaml_config(file_path: Union[str, Path]) -> Dict[str, Any]:
+def load_yaml_config(file_path: str | Path) -> dict[str, Any]:
     """
     Load configuration from YAML file.
 
@@ -82,7 +82,7 @@ def load_yaml_config(file_path: Union[str, Path]) -> Dict[str, Any]:
         raise FileNotFoundError(f"Configuration file not found: {file_path}")
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             config = yaml.safe_load(f)
 
         if config is None:
@@ -90,7 +90,7 @@ def load_yaml_config(file_path: Union[str, Path]) -> Dict[str, Any]:
             return {}
 
         logger.info(f"Loaded configuration from {file_path}")
-        return cast(Dict[str, Any], config)
+        return cast(dict[str, Any], config)
 
     except yaml.YAMLError as e:
         logger.error(f"Error parsing YAML configuration file {file_path}: {e}")
@@ -100,7 +100,7 @@ def load_yaml_config(file_path: Union[str, Path]) -> Dict[str, Any]:
         raise
 
 
-def load_json_config(file_path: Union[str, Path]) -> Dict[str, Any]:
+def load_json_config(file_path: str | Path) -> dict[str, Any]:
     """
     Load configuration from JSON file.
 
@@ -120,11 +120,11 @@ def load_json_config(file_path: Union[str, Path]) -> Dict[str, Any]:
         raise FileNotFoundError(f"Configuration file not found: {file_path}")
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             config = json.load(f)
 
         logger.info(f"Loaded configuration from {file_path}")
-        return cast(Dict[str, Any], config)
+        return cast(dict[str, Any], config)
 
     except json.JSONDecodeError as e:
         logger.error(f"Error parsing JSON configuration file {file_path}: {e}")
@@ -134,7 +134,7 @@ def load_json_config(file_path: Union[str, Path]) -> Dict[str, Any]:
         raise
 
 
-def validate_config(config: Dict[str, Any]) -> HealthConfig:
+def validate_config(config: dict[str, Any]) -> HealthConfig:
     """
     Validate configuration data against the HealthConfig model.
 
@@ -171,8 +171,8 @@ def validate_config(config: Dict[str, Any]) -> HealthConfig:
 
 
 def merge_configs(
-    base_config: Dict[str, Any], override_config: Dict[str, Any]
-) -> Dict[str, Any]:
+    base_config: dict[str, Any], override_config: dict[str, Any]
+) -> dict[str, Any]:
     """
     Merge two configuration dictionaries, with override_config taking precedence.
 
@@ -194,7 +194,7 @@ def merge_configs(
     return merged
 
 
-def resolve_environment_variables(config: Dict[str, Any]) -> Dict[str, Any]:
+def resolve_environment_variables(config: dict[str, Any]) -> dict[str, Any]:
     """
     Resolve environment variables in configuration values.
 
@@ -235,7 +235,7 @@ def resolve_environment_variables(config: Dict[str, Any]) -> Dict[str, Any]:
         else:
             return value
 
-    return cast(Dict[str, Any], resolve_value(config))
+    return cast(dict[str, Any], resolve_value(config))
 
 
 @lru_cache(maxsize=1)
@@ -267,7 +267,7 @@ def get_default_config_path() -> Path:
     return Path.cwd() / "config" / "health_config.yaml"
 
 
-def load_config(config_path: Optional[Union[str, Path]] = None) -> HealthConfig:
+def load_config(config_path: str | Path | None = None) -> HealthConfig:
     """
     Load and validate configuration from file.
 
@@ -303,9 +303,7 @@ def load_config(config_path: Optional[Union[str, Path]] = None) -> HealthConfig:
     return validated_config
 
 
-def save_config(
-    config: Union[HealthConfig, Dict[str, Any]], file_path: Union[str, Path]
-) -> None:
+def save_config(config: HealthConfig | dict[str, Any], file_path: str | Path) -> None:
     """
     Save configuration to file.
 
@@ -360,7 +358,7 @@ def get_config_value(config: HealthConfig, key_path: str, default: Any = None) -
         return default
 
 
-def create_default_config(output_path: Union[str, Path]) -> None:
+def create_default_config(output_path: str | Path) -> None:
     """
     Create a default configuration file.
 
@@ -393,7 +391,7 @@ def create_default_config(output_path: Union[str, Path]) -> None:
 
 
 # Global configuration cache
-_config_cache: Optional[HealthConfig] = None
+_config_cache: HealthConfig | None = None
 
 
 def get_global_config(force_reload: bool = False) -> HealthConfig:

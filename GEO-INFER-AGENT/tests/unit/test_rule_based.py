@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Tests for the rule-based agent: Rule matching, RuleSet, RuleBasedState.

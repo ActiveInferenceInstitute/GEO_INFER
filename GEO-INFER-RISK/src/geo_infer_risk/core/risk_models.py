@@ -10,7 +10,7 @@ import geopandas as gpd
 import logging
 import inspect
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 from dataclasses import dataclass
 
 from ..utils.rng import SeedLike, resolve_rng
@@ -52,7 +52,7 @@ class RiskParameters:
 class RiskModel:
     """Base class for all geospatial risk models."""
 
-    def __init__(self, parameters: Optional[RiskParameters] = None):
+    def __init__(self, parameters: RiskParameters | None = None):
         """Initialize a risk model with configurable parameters.
 
         Args:
@@ -61,9 +61,9 @@ class RiskModel:
         self.parameters = parameters or RiskParameters()
         self.rng = resolve_rng(self.parameters.random_seed)
         # Components are attached by the set_* methods before assess() runs.
-        self.hazard: Optional["HazardModel"] = None
-        self.vulnerability: Optional["VulnerabilityModel"] = None
-        self.exposure: Optional["ExposureModel"] = None
+        self.hazard: HazardModel | None = None
+        self.vulnerability: VulnerabilityModel | None = None
+        self.exposure: ExposureModel | None = None
         logger.info(
             "RiskModel initialized with %d-year horizon", self.parameters.time_horizon
         )
@@ -96,7 +96,7 @@ class RiskModel:
         logger.info("Exposure model set: %s", type(exposure_model).__name__)
 
     def calculate_risk(
-        self, geometry: Union[gpd.GeoDataFrame, gpd.GeoSeries]
+        self, geometry: gpd.GeoDataFrame | gpd.GeoSeries
     ) -> gpd.GeoDataFrame:
         """Calculate risk for the given geographic area.
 
@@ -162,7 +162,7 @@ class RiskModel:
         logger.info("Risk calculated: mean=%.4f", risk_data["risk_score"].mean())
         return risk_data
 
-    def run_monte_carlo(self, geometry: gpd.GeoDataFrame) -> Dict:
+    def run_monte_carlo(self, geometry: gpd.GeoDataFrame) -> dict:
         """Run Monte Carlo simulations for risk assessment.
 
         Args:
@@ -217,7 +217,7 @@ class RiskModel:
     @staticmethod
     def _component_values(
         frame: gpd.GeoDataFrame,
-        geometry: Union[gpd.GeoDataFrame, gpd.GeoSeries],
+        geometry: gpd.GeoDataFrame | gpd.GeoSeries,
         column: str,
         label: str,
     ) -> np.ndarray:
@@ -345,7 +345,7 @@ class HazardModel(ABC):
 class VulnerabilityModel(ABC):
     """Base class for modeling vulnerability of assets or populations."""
 
-    def __init__(self, vulnerability_factors: List[str]):
+    def __init__(self, vulnerability_factors: list[str]):
         """Initialize a vulnerability model.
 
         Args:
@@ -522,7 +522,7 @@ class BuildingVulnerabilityModel(VulnerabilityModel):
         "informal": 0.9,
     }
 
-    def __init__(self, factors: Optional[List[str]] = None):
+    def __init__(self, factors: list[str] | None = None):
         """Initialize building vulnerability model.
 
         Args:

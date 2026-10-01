@@ -12,7 +12,6 @@ import pandas as pd
 import geopandas as gpd
 import networkx as nx
 import pulp
-from typing import Dict, List, Optional, Tuple
 from shapely.geometry import LineString
 
 from geo_infer_log.models.schemas import SupplyChainNetwork
@@ -24,14 +23,14 @@ logger = logging.getLogger(__name__)
 class SupplyChainModel:
     """Base class for supply chain network modeling."""
 
-    def __init__(self, network: Optional[SupplyChainNetwork] = None):
+    def __init__(self, network: SupplyChainNetwork | None = None):
         """Initialize a supply chain model.
 
         Args:
             network: Supply chain network to model
         """
         self.network = network
-        self.graph: Optional[nx.DiGraph] = None
+        self.graph: nx.DiGraph | None = None
 
     def load_network(self, network: SupplyChainNetwork) -> None:
         """Load a supply chain network.
@@ -73,10 +72,10 @@ class SupplyChainModel:
 
     def optimize_flow(
         self,
-        demand_points: List[Dict],
-        supply_points: List[Dict],
+        demand_points: list[dict],
+        supply_points: list[dict],
         objective: str = "cost",
-    ) -> Dict:
+    ) -> dict:
         """Optimize flow in the supply chain network.
 
         Args:
@@ -221,7 +220,7 @@ class ResilienceAnalyzer:
         """
         self.supply_chain_model = supply_chain_model
 
-    def identify_critical_nodes(self) -> List[str]:
+    def identify_critical_nodes(self) -> list[str]:
         """Identify critical nodes in the supply chain.
 
         Returns:
@@ -238,8 +237,8 @@ class ResilienceAnalyzer:
         return [node for node, score in critical_nodes[:5]]
 
     def simulate_disruption(
-        self, disrupted_nodes: List[str], disrupted_edges: List[Tuple[str, str]]
-    ) -> Dict:
+        self, disrupted_nodes: list[str], disrupted_edges: list[tuple[str, str]]
+    ) -> dict:
         """Simulate a disruption in the supply chain.
 
         Args:
@@ -279,7 +278,7 @@ class ResilienceAnalyzer:
 
         return impact
 
-    def suggest_improvements(self) -> List[Dict]:
+    def suggest_improvements(self) -> list[dict]:
         """Suggest improvements to increase supply chain resilience.
 
         Returns:
@@ -289,7 +288,7 @@ class ResilienceAnalyzer:
             raise ValueError("Supply chain model must have a graph")
 
         g = self.supply_chain_model.graph
-        suggestions: List[Dict] = []
+        suggestions: list[dict] = []
 
         # 1. Identify articulation points (single-point-of-failure nodes)
         undirected = g.to_undirected()
@@ -343,7 +342,7 @@ class ResilienceAnalyzer:
 class NetworkOptimizer:
     """Optimizes supply chain network design."""
 
-    def __init__(self, supply_chain_model: Optional[SupplyChainModel] = None):
+    def __init__(self, supply_chain_model: SupplyChainModel | None = None):
         """Initialize a network optimizer.
 
         Args:
@@ -352,8 +351,8 @@ class NetworkOptimizer:
         self.supply_chain_model = supply_chain_model
 
     def optimize_network(
-        self, locations: List[Dict], demand_points: List[Dict], constraints: Dict
-    ) -> Dict:
+        self, locations: list[dict], demand_points: list[dict], constraints: dict
+    ) -> dict:
         """Optimize the supply chain network design.
 
         Args:
@@ -446,7 +445,7 @@ class NetworkOptimizer:
             "service_level": service_level,
         }
 
-    def evaluate_design(self, network: SupplyChainNetwork) -> Dict:
+    def evaluate_design(self, network: SupplyChainNetwork) -> dict:
         """Evaluate a supply chain network design.
 
         Args:
@@ -494,16 +493,16 @@ class FacilityLocator:
 
     def __init__(self) -> None:
         """Initialize a facility locator."""
-        self.selected_facilities: List[Dict] = []
-        self.coverage_results: Dict = {}
+        self.selected_facilities: list[dict] = []
+        self.coverage_results: dict = {}
 
     def locate_facilities(
         self,
-        candidates: List[Dict],
-        demand_points: List[Dict],
+        candidates: list[dict],
+        demand_points: list[dict],
         num_facilities: int,
-        max_distance: Optional[float] = None,
-    ) -> List[Dict]:
+        max_distance: float | None = None,
+    ) -> list[dict]:
         """Determine optimal facility locations.
 
         Args:
@@ -578,8 +577,8 @@ class FacilityLocator:
         return self.selected_facilities
 
     def analyze_coverage(
-        self, facilities: List[Dict], demand_points: List[Dict], max_distance: float
-    ) -> Dict:
+        self, facilities: list[dict], demand_points: list[dict], max_distance: float
+    ) -> dict:
         """Analyze coverage of demand points by facilities.
 
         Args:
@@ -622,16 +621,16 @@ class InventoryManager:
 
     def __init__(self) -> None:
         """Initialize an inventory manager."""
-        self.inventory_levels: Dict = {}
-        self.reorder_points: Dict = {}
+        self.inventory_levels: dict = {}
+        self.reorder_points: dict = {}
 
     def optimize_inventory(
         self,
-        facilities: List[Dict],
-        demand_data: Dict,
-        lead_times: Dict,
+        facilities: list[dict],
+        demand_data: dict,
+        lead_times: dict,
         service_level: float = 0.95,
-    ) -> Dict:
+    ) -> dict:
         """Optimize inventory levels across facilities.
 
         Args:
@@ -699,8 +698,8 @@ class InventoryManager:
         }
 
     def simulate_inventory_policy(
-        self, policy: Dict, demand_data: Dict, lead_times: Dict, simulation_period: int
-    ) -> Dict:
+        self, policy: dict, demand_data: dict, lead_times: dict, simulation_period: int
+    ) -> dict:
         """Simulate an inventory policy.
 
         Args:

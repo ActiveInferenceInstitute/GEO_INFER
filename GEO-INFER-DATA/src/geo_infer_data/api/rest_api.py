@@ -6,8 +6,8 @@ and processing operations.
 """
 
 import logging
-from typing import Dict, List, Optional, Any, cast
-from datetime import datetime, timezone
+from typing import Any, cast
+from datetime import datetime, UTC
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Query, Path as PathParam
@@ -52,7 +52,7 @@ class DataAPI:
 
     def __init__(
         self,
-        config_path: Optional[Path] = None,
+        config_path: Path | None = None,
         host: str = "0.0.0.0",
         port: int = 8001,
         enable_cors: bool = True,
@@ -109,13 +109,13 @@ class DataAPI:
         """Setup API routes."""
 
         @self.app.get("/")
-        async def root() -> Dict[str, Any]:
+        async def root() -> dict[str, Any]:
             """Root endpoint."""
             return {
                 "name": "GEO-INFER-DATA API",
                 "version": __version__,
                 "status": "running",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
         @self.app.get("/health")
@@ -124,18 +124,18 @@ class DataAPI:
             return HealthStatus(
                 status="healthy",
                 message="Data API is running",
-                checked_at=datetime.now(timezone.utc),
+                checked_at=datetime.now(UTC),
             )
 
-        @self.app.get("/datasets", response_model=List[DatasetSummary])
+        @self.app.get("/datasets", response_model=list[DatasetSummary])
         async def list_datasets(
             page: int = Query(1, ge=1),
             limit: int = Query(50, ge=1, le=1000),
-            data_type: Optional[str] = None,
-            bbox: Optional[str] = Query(None),
-        ) -> List[DatasetSummary]:
+            data_type: str | None = None,
+            bbox: str | None = Query(None),
+        ) -> list[DatasetSummary]:
             """List available datasets."""
-            filters: Dict[str, Any] = {}
+            filters: dict[str, Any] = {}
             if data_type:
                 filters["type"] = data_type
             if bbox:
@@ -180,8 +180,8 @@ class DataAPI:
         async def get_dataset_data(
             dataset_id: str = PathParam(...),
             format: str = Query("geojson", enum=["geojson", "csv"]),
-            bbox: Optional[List[float]] = Query(None),
-        ) -> Dict[str, Any]:
+            bbox: list[float] | None = Query(None),
+        ) -> dict[str, Any]:
             """Get dataset data."""
             if dataset_id not in self.data_service.datasets:
                 raise HTTPException(status_code=404, detail="Dataset not found")
@@ -219,7 +219,7 @@ class DataAPI:
             return dataset.metadata
 
         @self.app.post("/data/ingest/multi-source")
-        async def ingest_multi_source(request: Dict[str, Any]) -> Any:
+        async def ingest_multi_source(request: dict[str, Any]) -> Any:
             """Ingest data from multiple sources."""
             try:
                 result = await self.ingestion_service.ingest_multi_source(**request)
@@ -228,7 +228,7 @@ class DataAPI:
                 raise HTTPException(status_code=400, detail=str(e)) from e
 
         @self.app.post("/data/etl/execute")
-        async def execute_etl(request: Dict[str, Any]) -> Any:
+        async def execute_etl(request: dict[str, Any]) -> Any:
             """Execute ETL pipeline."""
             try:
                 result = await self.pipeline_service.execute_workflow(
@@ -243,7 +243,7 @@ class DataAPI:
         @self.app.post("/quality/validate/{dataset_id}")
         async def validate_dataset_quality(
             dataset_id: str = PathParam(...),
-            checks: List[str] = Query(["completeness", "accuracy", "consistency"]),
+            checks: list[str] = Query(["completeness", "accuracy", "consistency"]),
         ) -> Any:
             """Validate dataset quality."""
             try:
@@ -259,12 +259,12 @@ class DataAPI:
 
         @self.app.get("/search")
         async def search_datasets(
-            q: Optional[str] = None,
-            bbox: Optional[str] = Query(None),
-            temporal: Optional[str] = None,
-            data_type: Optional[str] = None,
-            tags: List[str] = Query([]),
-        ) -> Dict[str, Any]:
+            q: str | None = None,
+            bbox: str | None = Query(None),
+            temporal: str | None = None,
+            data_type: str | None = None,
+            tags: list[str] = Query([]),
+        ) -> dict[str, Any]:
             """Search datasets."""
             records = await self.data_service.list_datasets(limit=1000)
             if q:
@@ -289,13 +289,13 @@ class DataAPI:
             }
 
         @self.app.get("/storage/backends")
-        async def list_storage_backends() -> List[Any]:
+        async def list_storage_backends() -> list[Any]:
             """List storage backends."""
             stats = self.storage_service.get_storage_stats()
-            return cast(List[Any], stats.get("backends", []))
+            return cast(list[Any], stats.get("backends", []))
 
         @self.app.get("/metrics")
-        async def get_metrics() -> Dict[str, Any]:
+        async def get_metrics() -> dict[str, Any]:
             """Get API metrics."""
             stats = self.storage_service.get_storage_stats()
             return {"storage": stats, "datasets": len(self.data_service.datasets)}

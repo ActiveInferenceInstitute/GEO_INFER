@@ -5,7 +5,6 @@ This module provides implementation of various anonymization techniques
 for geospatial data to protect privacy while maintaining utility.
 """
 
-from typing import List, Optional
 import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point
@@ -18,7 +17,7 @@ class GeospatialAnonymizer:
     Provides methods for anonymizing geospatial data while preserving utility.
     """
 
-    def __init__(self, seed: Optional[int] = None):
+    def __init__(self, seed: int | None = None):
         """
         Initialize the anonymizer.
 
@@ -158,8 +157,8 @@ class GeospatialAnonymizer:
     def geographic_masking(
         self,
         gdf: gpd.GeoDataFrame,
-        attribute_cols: Optional[List[str]] = None,
-        admin_boundaries: Optional[gpd.GeoDataFrame] = None,
+        attribute_cols: list[str] | None = None,
+        admin_boundaries: gpd.GeoDataFrame | None = None,
         admin_id_col: str = "admin_id",
         geometry_col: str = "geometry",
     ) -> gpd.GeoDataFrame:

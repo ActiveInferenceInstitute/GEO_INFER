@@ -56,7 +56,7 @@ def main() -> None:
     print("\nTraining classifier...")
     results = trainer.train_classifier(classifier, X_train, y_train)
 
-    print(f"\nTraining Results:")
+    print("\nTraining Results:")
     print(f"  Validation Accuracy: {results['accuracy']:.4f}")
 
     # Evaluate on test set
@@ -65,7 +65,7 @@ def main() -> None:
         results["model"], X_test, y_test, task_type="classification"
     )
 
-    print(f"\nTest Results:")
+    print("\nTest Results:")
     print(f"  Test Accuracy: {test_results['accuracy']:.4f}")
 
     # Show classification report

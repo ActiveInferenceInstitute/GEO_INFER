@@ -10,8 +10,8 @@ unexpected internal exceptions propagate and are distinguishable.
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from datetime import datetime, UTC
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -22,7 +22,7 @@ from geo_infer_iot.performance import PerformanceMetrics, PerformanceMonitor
 
 class _Registry:
     def __init__(self) -> None:
-        self.sensors: Dict[str, Any] = {}
+        self.sensors: dict[str, Any] = {}
 
 
 def _make_ingestion() -> IoTDataIngestion:
@@ -34,7 +34,7 @@ def _measurement(value: float = 25.5):
 
     return SensorMeasurement(
         sensor_id="test_sensor",
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         variable="temperature",
         value=value,
         unit="celsius",
@@ -92,14 +92,14 @@ class _StubIoTSystem:
     def __init__(self, latency_ms: float) -> None:
         self.ingestion = _StubIngestion(latency_ms)
 
-    def get_system_status(self) -> Dict[str, Any]:
+    def get_system_status(self) -> dict[str, Any]:
         return {"measurements": 10, "error_count": 1}
 
 
 class _StubIngestion:
     def __init__(self, latency_ms: float) -> None:
-        self.measurements: List[Any] = [object() for _ in range(10)]
-        self.processing_tasks: List[Any] = [object(), object()]
+        self.measurements: list[Any] = [object() for _ in range(10)]
+        self.processing_tasks: list[Any] = [object(), object()]
         self.last_ingest_latency_ms = latency_ms
 
 

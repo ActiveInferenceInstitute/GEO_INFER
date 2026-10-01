@@ -6,7 +6,7 @@ GraphQL endpoints, and various web services that provide geospatial data.
 """
 
 import logging
-from typing import Dict, List, Optional, Any, cast
+from typing import Any, cast
 from datetime import datetime
 import time
 
@@ -60,8 +60,8 @@ class APIConnector:
     def __init__(
         self,
         base_url: str,
-        authentication: Optional[Dict[str, Any]] = None,
-        rate_limiting: Optional[Dict[str, Any]] = None,
+        authentication: dict[str, Any] | None = None,
+        rate_limiting: dict[str, Any] | None = None,
         timeout: int = 30,
         retries: int = 3,
     ):
@@ -141,10 +141,10 @@ class APIConnector:
         self,
         endpoint: str,
         method: str = "GET",
-        params: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        params: dict[str, Any] | None = None,
+        data: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Query API endpoint with automatic retry and rate limiting.
 
@@ -179,7 +179,7 @@ class APIConnector:
             content_type = response.headers.get("content-type", "")
 
             if "application/json" in content_type:
-                return cast(Dict[str, Any], response.json())
+                return cast(dict[str, Any], response.json())
             elif "text/" in content_type:
                 return {"text": response.text}
             else:
@@ -192,11 +192,11 @@ class APIConnector:
     async def query_geospatial(
         self,
         endpoint: str,
-        spatial_filter: Optional[Dict[str, Any]] = None,
-        temporal_filter: Optional[Dict[str, Any]] = None,
-        pagination: Optional[Dict[str, Any]] = None,
+        spatial_filter: dict[str, Any] | None = None,
+        temporal_filter: dict[str, Any] | None = None,
+        pagination: dict[str, Any] | None = None,
         **kwargs: Any,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Query geospatial data from API with spatial and temporal filters.
 
@@ -287,7 +287,7 @@ class APIConnector:
         return all_results
 
     async def download_file(
-        self, endpoint: str, local_path: str, params: Optional[Dict[str, Any]] = None
+        self, endpoint: str, local_path: str, params: dict[str, Any] | None = None
     ) -> str:
         """
         Download file from API endpoint.
@@ -340,7 +340,7 @@ class GraphQLConnector:
     def __init__(
         self,
         endpoint: str,
-        authentication: Optional[Dict[str, Any]] = None,
+        authentication: dict[str, Any] | None = None,
         timeout: int = 30,
     ):
         self.endpoint = endpoint
@@ -368,8 +368,8 @@ class GraphQLConnector:
                     self.session.headers.update({"X-API-Key": api_key})
 
     async def execute_query(
-        self, query: str, variables: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, query: str, variables: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Execute GraphQL query.
 
@@ -394,7 +394,7 @@ class GraphQLConnector:
                 logger.error(f"GraphQL errors: {result['errors']}")
                 raise ValueError(f"GraphQL query failed: {result['errors']}")
 
-            return cast(Dict[str, Any], result.get("data", {}))
+            return cast(dict[str, Any], result.get("data", {}))
 
         except Exception as e:
             logger.error(f"GraphQL query failed: {e}")
@@ -403,11 +403,11 @@ class GraphQLConnector:
     async def query_geospatial_features(
         self,
         feature_type: str,
-        spatial_filter: Optional[Dict[str, Any]] = None,
-        temporal_filter: Optional[Dict[str, Any]] = None,
-        fields: Optional[List[str]] = None,
-        limit: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+        spatial_filter: dict[str, Any] | None = None,
+        temporal_filter: dict[str, Any] | None = None,
+        fields: list[str] | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Query geospatial features using GraphQL.
 
@@ -435,7 +435,7 @@ class GraphQLConnector:
         features = result.get(feature_type, [])
         logger.info(f"Retrieved {len(features)} {feature_type} features")
 
-        return cast(List[Dict[str, Any]], features)
+        return cast(list[dict[str, Any]], features)
 
     @staticmethod
     def _coerce_iso_date(value: Any, label: str) -> str:
@@ -463,10 +463,10 @@ class GraphQLConnector:
     @staticmethod
     def _build_features_query(
         feature_type: str,
-        spatial_filter: Optional[Dict[str, Any]] = None,
-        temporal_filter: Optional[Dict[str, Any]] = None,
-        fields: Optional[List[str]] = None,
-        limit: Optional[int] = None,
+        spatial_filter: dict[str, Any] | None = None,
+        temporal_filter: dict[str, Any] | None = None,
+        fields: list[str] | None = None,
+        limit: int | None = None,
     ) -> str:
         """Build a GraphQL features query with validated names and coerced values.
 
@@ -482,7 +482,7 @@ class GraphQLConnector:
             validate_sql_identifier(field) for field in selected_fields
         )
 
-        where_parts: List[str] = []
+        where_parts: list[str] = []
         if spatial_filter and "bbox" in spatial_filter:
             bbox = spatial_filter["bbox"]
             min_lon, min_lat, max_lon, max_lat = (float(v) for v in bbox[:4])
@@ -503,7 +503,7 @@ class GraphQLConnector:
                 )
                 where_parts.append(f'createdBefore: "{end}"')
 
-        args: List[str] = []
+        args: list[str] = []
         if where_parts:
             args.append(f"where: {{ {', '.join(where_parts)} }}")
         if limit:
@@ -536,7 +536,7 @@ class STACConnector:
     def __init__(
         self,
         stac_url: str,
-        authentication: Optional[Dict[str, Any]] = None,
+        authentication: dict[str, Any] | None = None,
         timeout: int = 60,
     ):
         self.stac_url = stac_url.rstrip("/")
@@ -551,12 +551,12 @@ class STACConnector:
 
     async def search_items(
         self,
-        collections: Optional[List[str]] = None,
-        bbox: Optional[List[float]] = None,
-        datetime_range: Optional[str] = None,
-        properties: Optional[Dict[str, Any]] = None,
+        collections: list[str] | None = None,
+        bbox: list[float] | None = None,
+        datetime_range: str | None = None,
+        properties: dict[str, Any] | None = None,
         limit: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Search STAC items with spatial and temporal filters.
 
@@ -572,7 +572,7 @@ class STACConnector:
         """
         endpoint = "/search"
 
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
 
         if collections:
             params["collections"] = collections
@@ -602,7 +602,7 @@ class STACConnector:
             logger.error(f"STAC search failed: {e}")
             raise
 
-    async def get_collection(self, collection_id: str) -> Dict[str, Any]:
+    async def get_collection(self, collection_id: str) -> dict[str, Any]:
         """
         Get STAC collection metadata.
 
@@ -621,7 +621,7 @@ class STACConnector:
             logger.error(f"Failed to get collection {collection_id}: {e}")
             raise
 
-    async def list_collections(self) -> List[Dict[str, Any]]:
+    async def list_collections(self) -> list[dict[str, Any]]:
         """
         List available STAC collections.
 
@@ -639,7 +639,7 @@ class STACConnector:
                 collections = response.get("data", [])
 
             logger.info(f"Found {len(collections)} STAC collections")
-            return cast(List[Dict[str, Any]], collections)
+            return cast(list[dict[str, Any]], collections)
 
         except Exception as e:
             logger.error(f"Failed to list collections: {e}")
@@ -647,10 +647,10 @@ class STACConnector:
 
     async def download_item_assets(
         self,
-        item: Dict[str, Any],
-        asset_keys: Optional[List[str]] = None,
+        item: dict[str, Any],
+        asset_keys: list[str] | None = None,
         download_dir: str = "./downloads",
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Download assets from STAC item.
 

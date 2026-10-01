@@ -6,7 +6,7 @@ The separate kafka_service_check.py executes the actual broker round trip.
 import asyncio
 import json
 from collections import deque
-from datetime import timedelta
+from datetime import timedelta, UTC
 from types import SimpleNamespace
 
 import pytest
@@ -212,7 +212,7 @@ def test_delivery_controls_cannot_be_overridden(options):
 def test_broker_timestamp_is_explicit_milliseconds_and_normalized(
     kafka_client, broker_time, seconds
 ):
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     msg = message()
     msg.value = b'{"value":"7"}'
@@ -225,8 +225,7 @@ def test_broker_timestamp_is_explicit_milliseconds_and_normalized(
         try:
             record = await anext(records)
             assert (
-                record["timestamp"]
-                == datetime.fromtimestamp(seconds, timezone.utc).isoformat()
+                record["timestamp"] == datetime.fromtimestamp(seconds, UTC).isoformat()
             )
             assert record["value"] == 7.0
             assert record["topic"] == "events"

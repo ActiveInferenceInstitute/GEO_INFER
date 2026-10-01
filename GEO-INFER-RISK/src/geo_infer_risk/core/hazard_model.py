@@ -13,7 +13,7 @@ This module provides sophisticated hazard modeling capabilities with:
 
 import logging
 import math
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Any
 from datetime import datetime, timedelta
 import json
 
@@ -68,7 +68,7 @@ class EnhancedHazardModel:
     - Integration with external data sources
     """
 
-    def __init__(self, hazard_type: str, params: Dict[str, Any]):
+    def __init__(self, hazard_type: str, params: dict[str, Any]):
         """
         Initialize the enhanced hazard model.
 
@@ -150,15 +150,15 @@ class EnhancedHazardModel:
 
         # Model state
         self.is_fitted = False
-        self.historical_data: Optional[pd.DataFrame] = None
-        self.model_parameters: Dict[str, Any] = {}
-        self.climate_factors: Dict[str, Any] = {}
-        self.uncertainty_parameters: Dict[str, Any] = {}
+        self.historical_data: pd.DataFrame | None = None
+        self.model_parameters: dict[str, Any] = {}
+        self.climate_factors: dict[str, Any] = {}
+        self.uncertainty_parameters: dict[str, Any] = {}
 
         # Hazard-specific attributes
         self.intensity_measure_type = self._get_intensity_measure_type()
         self.intensity_measure_units = self._get_intensity_measure_units()
-        self.hazard_specific_params: Dict[str, Any] = {}
+        self.hazard_specific_params: dict[str, Any] = {}
 
         # Load and validate data
         self._load_and_validate_data()
@@ -249,7 +249,7 @@ class EnhancedHazardModel:
             if file_path.endswith(".csv"):
                 return pd.read_csv(file_path)
             elif file_path.endswith(".json"):
-                with open(file_path, "r") as f:
+                with open(file_path) as f:
                     data = json.load(f)
                 return pd.DataFrame(data)
         elif data_source.startswith("api://"):
@@ -437,9 +437,9 @@ class EnhancedHazardModel:
     def generate_events(
         self,
         num_events: int,
-        region: Optional[Dict] = None,
-        time_period: Optional[Tuple[datetime, datetime]] = None,
-    ) -> List[Dict[str, Any]]:
+        region: dict | None = None,
+        time_period: tuple[datetime, datetime] | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Generate stochastic hazard events with advanced features.
 
@@ -500,10 +500,10 @@ class EnhancedHazardModel:
     def _generate_event_batch(
         self,
         batch_size: int,
-        region: Optional[Dict] = None,
-        time_period: Optional[Tuple[datetime, datetime]] = None,
+        region: dict | None = None,
+        time_period: tuple[datetime, datetime] | None = None,
         climate_multiplier: float = 1.0,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Generate a batch of hazard events."""
         events = []
 
@@ -515,10 +515,10 @@ class EnhancedHazardModel:
 
     def _generate_single_event(
         self,
-        region: Optional[Dict] = None,
-        time_period: Optional[Tuple[datetime, datetime]] = None,
+        region: dict | None = None,
+        time_period: tuple[datetime, datetime] | None = None,
         climate_multiplier: float = 1.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate a single hazard event."""
         # Generate basic event properties
         event_id = f"{self.hazard_type}_{self.rng.integers(1000000)}"
@@ -566,7 +566,7 @@ class EnhancedHazardModel:
 
         return event
 
-    def _generate_event_location(self, region: Optional[Dict] = None) -> Dict[str, Any]:
+    def _generate_event_location(self, region: dict | None = None) -> dict[str, Any]:
         """Generate event location within specified region."""
         if region:
             # Generate within specified bounds
@@ -634,7 +634,7 @@ class EnhancedHazardModel:
             intensity = self.rng.normal(mean_intensity, std_intensity)
             return float(max(0, intensity) * climate_multiplier)
 
-    def _generate_earthquake_magnitude(self, params: Dict[str, Any]) -> float:
+    def _generate_earthquake_magnitude(self, params: dict[str, Any]) -> float:
         """Generate earthquake magnitude using fitted parameters."""
         # Use inverse transform sampling for Gutenberg-Richter distribution
         b_value = params.get("b_value", 1.0)
@@ -668,8 +668,8 @@ class EnhancedHazardModel:
             return 0.5
 
     def _get_hazard_specific_properties(
-        self, intensity: float, location: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, intensity: float, location: dict[str, Any]
+    ) -> dict[str, Any]:
         """Get hazard-specific properties for the event."""
         properties = {}
 
@@ -740,8 +740,8 @@ class EnhancedHazardModel:
             return 5
 
     def _apply_spatial_correlation(
-        self, events: List[Dict[str, Any]], region: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        self, events: list[dict[str, Any]], region: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Apply spatial correlation to generated events using proximity-based clustering.
 
         Events that occur within a threshold distance of each other (cluster
@@ -812,8 +812,8 @@ class EnhancedHazardModel:
             return events
 
     def _apply_temporal_patterns(
-        self, events: List[Dict[str, Any]], time_period: Tuple[datetime, datetime]
-    ) -> List[Dict[str, Any]]:
+        self, events: list[dict[str, Any]], time_period: tuple[datetime, datetime]
+    ) -> list[dict[str, Any]]:
         """Apply temporal patterns and seasonality to events."""
         if not self.temporal_interface:
             return events
@@ -831,8 +831,8 @@ class EnhancedHazardModel:
             return events
 
     def _apply_seasonality(
-        self, events: List[Dict[str, Any]], time_period: Tuple[datetime, datetime]
-    ) -> List[Dict[str, Any]]:
+        self, events: list[dict[str, Any]], time_period: tuple[datetime, datetime]
+    ) -> list[dict[str, Any]]:
         """Apply seasonal patterns to events."""
         # Simple seasonality implementation
         seasonal_multipliers = self._get_seasonal_multipliers()
@@ -848,7 +848,7 @@ class EnhancedHazardModel:
 
         return events
 
-    def _get_seasonal_multipliers(self) -> Dict[int, float]:
+    def _get_seasonal_multipliers(self) -> dict[int, float]:
         """Get seasonal multipliers for the hazard type."""
         # Default seasonal patterns - can be overridden by subclasses
         base_patterns = {
@@ -900,7 +900,7 @@ class EnhancedHazardModel:
         return base_patterns.get(self.hazard_type, {m: 1.0 for m in range(1, 13)})
 
     def get_intensity_at_location(
-        self, event: Dict[str, Any], latitude: float, longitude: float
+        self, event: dict[str, Any], latitude: float, longitude: float
     ) -> float:
         """
         Calculate hazard intensity at a specific location for a given event.
@@ -1014,8 +1014,8 @@ class EnhancedHazardModel:
         return intensity * site_variation
 
     def get_return_period_map(
-        self, return_period: float, region: Optional[Dict] = None
-    ) -> Dict[str, Any]:
+        self, return_period: float, region: dict | None = None
+    ) -> dict[str, Any]:
         """
         Generate hazard map for a specific return period.
 
@@ -1129,7 +1129,7 @@ class EnhancedHazardModel:
 
         return float(location + scale * gumbel_quantile)
 
-    def get_model_status(self) -> Dict[str, Any]:
+    def get_model_status(self) -> dict[str, Any]:
         """Get comprehensive model status information."""
         return {
             "hazard_type": self.hazard_type,
@@ -1174,7 +1174,7 @@ class EnhancedHazardModel:
 
     def load_model(self, filepath: str) -> None:
         """Load trained model from file."""
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             model_state = json.load(f)
 
         self.hazard_type = model_state["hazard_type"]
@@ -1193,7 +1193,7 @@ class EnhancedHazardModel:
 class EnhancedFloodModel(EnhancedHazardModel):
     """Enhanced flood hazard model with advanced hydrological modeling."""
 
-    def __init__(self, params: Dict[str, Any]):
+    def __init__(self, params: dict[str, Any]):
         super().__init__("flood", params)
         self.flood_type = params.get("type", "riverine")
         self.dem_resolution = params.get("dem_resolution", 30)
@@ -1224,7 +1224,7 @@ class EnhancedFloodModel(EnhancedHazardModel):
         ):
             self._fit_spatial_correlation_parameters()
 
-    def _fit_extreme_value_parameters(self, depths: np.ndarray) -> Dict[str, float]:
+    def _fit_extreme_value_parameters(self, depths: np.ndarray) -> dict[str, float]:
         """Fit extreme value distribution parameters."""
         # Use Generalized Extreme Value (GEV) distribution
         try:
@@ -1269,8 +1269,8 @@ class EnhancedFloodModel(EnhancedHazardModel):
         return float(max(0, depth) * climate_multiplier)
 
     def _get_hazard_specific_properties(
-        self, intensity: float, location: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, intensity: float, location: dict[str, Any]
+    ) -> dict[str, Any]:
         """Get flood-specific properties."""
         return {
             "water_depth": intensity,
@@ -1284,7 +1284,7 @@ class EnhancedFloodModel(EnhancedHazardModel):
 class EnhancedEarthquakeModel(EnhancedHazardModel):
     """Enhanced earthquake hazard model with tectonic considerations."""
 
-    def __init__(self, params: Dict[str, Any]):
+    def __init__(self, params: dict[str, Any]):
         super().__init__("earthquake", params)
         self.eq_type = params.get("type", "probabilistic")
         self.include_secondary_perils = params.get("include_secondary_perils", True)
@@ -1322,7 +1322,7 @@ class EnhancedEarthquakeModel(EnhancedHazardModel):
                 {"mean_depth": np.mean(depths), "depth_distribution": "exponential"}
             )
 
-    def _generate_earthquake_magnitude(self, params: Dict[str, Any]) -> float:
+    def _generate_earthquake_magnitude(self, params: dict[str, Any]) -> float:
         """Generate earthquake magnitude using Gutenberg-Richter distribution."""
         b_value = params.get("b_value", 1.0)
         min_mag = params.get("min_magnitude", 4.0)
@@ -1342,8 +1342,8 @@ class EnhancedEarthquakeModel(EnhancedHazardModel):
         return float(max(min_mag, min(8.5, magnitude)))
 
     def _get_hazard_specific_properties(
-        self, intensity: float, location: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, intensity: float, location: dict[str, Any]
+    ) -> dict[str, Any]:
         """Get earthquake-specific properties."""
         magnitude = self._intensity_to_magnitude(intensity)
 
@@ -1375,7 +1375,7 @@ class EnhancedEarthquakeModel(EnhancedHazardModel):
         return properties
 
     def _calculate_liquefaction_probability(
-        self, magnitude: float, location: Dict[str, Any]
+        self, magnitude: float, location: dict[str, Any]
     ) -> float:
         """Calculate liquefaction probability (simplified)."""
         # Simplified magnitude-band table, soil-independent — see SKILL.md
@@ -1390,7 +1390,7 @@ class EnhancedEarthquakeModel(EnhancedHazardModel):
             return 0.8
 
     def _calculate_landslide_probability(
-        self, magnitude: float, location: Dict[str, Any]
+        self, magnitude: float, location: dict[str, Any]
     ) -> float:
         """Calculate landslide probability (simplified)."""
         # Simplified magnitude-band table, slope-independent — see SKILL.md
@@ -1408,7 +1408,7 @@ class EnhancedEarthquakeModel(EnhancedHazardModel):
 class EnhancedHurricaneModel(EnhancedHazardModel):
     """Enhanced hurricane model with storm track and intensity modeling."""
 
-    def __init__(self, params: Dict[str, Any]):
+    def __init__(self, params: dict[str, Any]):
         super().__init__("hurricane", params)
         self.include_components = params.get(
             "include_components", ["wind", "storm_surge", "rainfall"]
@@ -1455,10 +1455,10 @@ class EnhancedHurricaneModel(EnhancedHazardModel):
         )  # Minimum tropical storm strength
 
     def _get_hazard_specific_properties(
-        self, intensity: float, location: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, intensity: float, location: dict[str, Any]
+    ) -> dict[str, Any]:
         """Get hurricane-specific properties."""
-        properties: Dict[str, Any] = {
+        properties: dict[str, Any] = {
             "wind_speed": intensity,
             "category": self._get_hurricane_category(intensity),
             "central_pressure": self._calculate_central_pressure(intensity),
@@ -1479,7 +1479,7 @@ class EnhancedHurricaneModel(EnhancedHazardModel):
         return 1013.0 - (wind_speed - 30) * 1.5  # hPa
 
     def _calculate_storm_surge(
-        self, wind_speed: float, location: Dict[str, Any]
+        self, wind_speed: float, location: dict[str, Any]
     ) -> float:
         """Calculate storm surge height."""
         # Simplified wind-linear stand-in, no bathymetry or track integration —
@@ -1494,8 +1494,8 @@ class EnhancedHurricaneModel(EnhancedHazardModel):
         return float(max(0, base_surge * tidal_factor))
 
     def _generate_storm_track(
-        self, start_location: Dict[str, Any], intensity: float
-    ) -> List[Dict[str, Any]]:
+        self, start_location: dict[str, Any], intensity: float
+    ) -> list[dict[str, Any]]:
         """Generate simplified storm track."""
         track_length = self.rng.integers(5, 20)  # Number of track points
         track = []
@@ -1539,7 +1539,7 @@ class EnhancedHurricaneModel(EnhancedHazardModel):
 class EnhancedWildfireModel(EnhancedHazardModel):
     """Enhanced wildfire model with fuel and weather considerations."""
 
-    def __init__(self, params: Dict[str, Any]):
+    def __init__(self, params: dict[str, Any]):
         super().__init__("wildfire", params)
         self.fuel_model = params.get("fuel_model", "standard")
         self.include_weather_effects = params.get("include_weather_effects", True)
@@ -1580,8 +1580,8 @@ class EnhancedWildfireModel(EnhancedHazardModel):
         return float(max(100, intensity) * climate_multiplier)
 
     def _get_hazard_specific_properties(
-        self, intensity: float, location: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, intensity: float, location: dict[str, Any]
+    ) -> dict[str, Any]:
         """Get wildfire-specific properties."""
         return {
             "fireline_intensity": intensity,
@@ -1598,21 +1598,21 @@ class EnhancedWildfireModel(EnhancedHazardModel):
 
 
 # Factory functions for creating enhanced hazard models
-def create_enhanced_flood_model(params: Dict[str, Any]) -> EnhancedFloodModel:
+def create_enhanced_flood_model(params: dict[str, Any]) -> EnhancedFloodModel:
     """Create an enhanced flood hazard model."""
     return EnhancedFloodModel(params)
 
 
-def create_enhanced_earthquake_model(params: Dict[str, Any]) -> EnhancedEarthquakeModel:
+def create_enhanced_earthquake_model(params: dict[str, Any]) -> EnhancedEarthquakeModel:
     """Create an enhanced earthquake hazard model."""
     return EnhancedEarthquakeModel(params)
 
 
-def create_enhanced_hurricane_model(params: Dict[str, Any]) -> EnhancedHurricaneModel:
+def create_enhanced_hurricane_model(params: dict[str, Any]) -> EnhancedHurricaneModel:
     """Create an enhanced hurricane hazard model."""
     return EnhancedHurricaneModel(params)
 
 
-def create_enhanced_wildfire_model(params: Dict[str, Any]) -> EnhancedWildfireModel:
+def create_enhanced_wildfire_model(params: dict[str, Any]) -> EnhancedWildfireModel:
     """Create an enhanced wildfire hazard model."""
     return EnhancedWildfireModel(params)

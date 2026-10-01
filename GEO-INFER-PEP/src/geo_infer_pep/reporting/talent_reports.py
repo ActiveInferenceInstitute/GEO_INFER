@@ -1,7 +1,7 @@
 """Talent Acquisition Reporting functions."""
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 from ..models.talent_models import (
     Candidate,
@@ -18,8 +18,8 @@ from ..talent.transformer import (
 
 
 def generate_candidate_pipeline_report(
-    candidates: List[Candidate], requisitions: Optional[List[JobRequisition]] = None
-) -> Dict[str, Any]:
+    candidates: list[Candidate], requisitions: list[JobRequisition] | None = None
+) -> dict[str, Any]:
     """
     Generates a report on the current candidate pipeline status.
     """
@@ -61,7 +61,7 @@ def generate_candidate_pipeline_report(
     return report
 
 
-def calculate_time_to_hire(hired_candidates: List[Candidate]) -> Dict[str, Any]:
+def calculate_time_to_hire(hired_candidates: list[Candidate]) -> dict[str, Any]:
     """
     Calculates average, min, max time to hire for candidates who reached 'HIRED' status.
     Assumes 'applied_at' and 'offer.accepted_at' or a 'hired_at' field exists and is populated.
@@ -99,8 +99,8 @@ def calculate_time_to_hire(hired_candidates: List[Candidate]) -> Dict[str, Any]:
 
 
 def get_quarterly_metrics(
-    quarter: str, year: int, candidates: Optional[List[Candidate]] = None
-) -> Dict[str, Any]:
+    quarter: str, year: int, candidates: list[Candidate] | None = None
+) -> dict[str, Any]:
     """Calculate talent metrics from candidate records."""
     if not candidates:
         return {

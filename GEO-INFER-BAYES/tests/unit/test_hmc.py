@@ -1,6 +1,6 @@
 """Regression tests for the Hamiltonian and NUTS samplers."""
 
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 
@@ -14,10 +14,10 @@ class _GaussianHMCModel(BayesianModel):
             "mu": {"prior": "normal", "hyperparams": {"mu": 0.0, "sigma": 5.0}}
         }
 
-    def log_likelihood(self, theta: Dict[str, Any], data: Any) -> float:
+    def log_likelihood(self, theta: dict[str, Any], data: Any) -> float:
         return float(-0.5 * np.sum((np.asarray(data) - theta["mu"]) ** 2))
 
-    def log_prior(self, theta: Dict[str, Any]) -> float:
+    def log_prior(self, theta: dict[str, Any]) -> float:
         return float(-0.5 * (theta["mu"] / 5.0) ** 2)
 
     def predict(self, X_new, posterior=None, samples=100, return_std=False):
@@ -39,12 +39,12 @@ class _VectorGaussianHMCModel(BayesianModel):
             }
         }
 
-    def log_likelihood(self, theta: Dict[str, Any], data: Any) -> float:
+    def log_likelihood(self, theta: dict[str, Any], data: Any) -> float:
         weights = np.asarray(theta["weights"], dtype=float)
         observations = np.asarray(data, dtype=float)
         return float(-0.5 * np.sum((observations - weights) ** 2))
 
-    def log_prior(self, theta: Dict[str, Any]) -> float:
+    def log_prior(self, theta: dict[str, Any]) -> float:
         weights = np.asarray(theta["weights"], dtype=float)
         return float(-0.5 * np.sum((weights / 5.0) ** 2))
 

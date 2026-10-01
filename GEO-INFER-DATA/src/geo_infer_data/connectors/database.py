@@ -7,8 +7,8 @@ geospatial databases.
 """
 
 import logging
-from typing import Dict, List, Optional, Union, Any
-from datetime import datetime, timezone
+from typing import Any
+from datetime import datetime, UTC
 
 import geopandas as gpd
 import pandas as pd
@@ -131,10 +131,10 @@ class DatabaseConnector:
     async def query_geospatial(
         self,
         table_name: str,
-        columns: Optional[List[str]] = None,
-        spatial_filter: Optional[Dict[str, Any]] = None,
-        temporal_filter: Optional[Dict[str, Any]] = None,
-        limit: Optional[int] = None,
+        columns: list[str] | None = None,
+        spatial_filter: dict[str, Any] | None = None,
+        temporal_filter: dict[str, Any] | None = None,
+        limit: int | None = None,
     ) -> gpd.GeoDataFrame:
         """
         Query geospatial data with spatial and temporal filters.
@@ -197,12 +197,12 @@ class DatabaseConnector:
     @staticmethod
     def _build_select_query(
         table_name: str,
-        columns: Optional[List[str]],
-        spatial_filter: Optional[Dict[str, Any]],
-        temporal_filter: Optional[Dict[str, Any]],
-        limit: Optional[int],
+        columns: list[str] | None,
+        spatial_filter: dict[str, Any] | None,
+        temporal_filter: dict[str, Any] | None,
+        limit: int | None,
         enable_geospatial: bool,
-    ) -> tuple[str, Dict[str, Any]]:
+    ) -> tuple[str, dict[str, Any]]:
         """Build a SELECT statement with every interpolated identifier validated.
 
         All identifiers (table, columns, time column) pass through
@@ -223,8 +223,8 @@ class DatabaseConnector:
         )
         query = f"SELECT {select_clause} FROM {safe_table}"
 
-        conditions: List[str] = []
-        params: Dict[str, Any] = {}
+        conditions: list[str] = []
+        params: dict[str, Any] = {}
 
         if spatial_filter and enable_geospatial and "bbox" in spatial_filter:
             bbox = spatial_filter["bbox"]
@@ -264,9 +264,9 @@ class DatabaseConnector:
 
     async def insert_geospatial_data(
         self,
-        data: Union[pd.DataFrame, gpd.GeoDataFrame],
+        data: pd.DataFrame | gpd.GeoDataFrame,
         metadata: DatasetMetadata,
-        table_name: Optional[str] = None,
+        table_name: str | None = None,
         if_exists: str = "replace",
     ) -> bool:
         """
@@ -462,7 +462,7 @@ class DatabaseConnector:
         except Exception as e:
             logger.warning(f"Failed to create spatial index: {e}")
 
-    async def get_table_schema(self, table_name: str) -> Dict[str, Any]:
+    async def get_table_schema(self, table_name: str) -> dict[str, Any]:
         """
         Get table schema information.
 
@@ -536,7 +536,7 @@ class DatabaseConnector:
             logger.error(f"Failed to get table schema: {e}")
             return {"table_name": table_name, "columns": [], "error": str(e)}
 
-    async def list_tables(self, schema: str = "public") -> List[str]:
+    async def list_tables(self, schema: str = "public") -> list[str]:
         """
         List available tables in database.
 
@@ -663,7 +663,7 @@ class MongoDBConnector:
             raise
 
     async def insert_geospatial_document(
-        self, collection_name: str, document: Dict[str, Any]
+        self, collection_name: str, document: dict[str, Any]
     ) -> str:
         """
         Insert geospatial document into MongoDB collection.
@@ -680,7 +680,7 @@ class MongoDBConnector:
 
             # Add timestamp if not present
             if "created_at" not in document:
-                document["created_at"] = datetime.now(timezone.utc)
+                document["created_at"] = datetime.now(UTC)
 
             result = collection.insert_one(document)
             return str(result.inserted_id)
@@ -692,10 +692,10 @@ class MongoDBConnector:
     async def query_geospatial_collection(
         self,
         collection_name: str,
-        spatial_filter: Optional[Dict[str, Any]] = None,
-        query_filter: Optional[Dict[str, Any]] = None,
-        limit: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+        spatial_filter: dict[str, Any] | None = None,
+        query_filter: dict[str, Any] | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Query geospatial collection with spatial filters.
 

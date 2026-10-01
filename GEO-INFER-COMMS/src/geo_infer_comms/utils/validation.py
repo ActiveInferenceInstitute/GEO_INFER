@@ -7,9 +7,9 @@ and system reliability.
 """
 
 from __future__ import annotations
-from typing import Dict, List, Any, Final
+from typing import Any, Final
 import re
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 
 def validate_coordinates(longitude: Any, latitude: Any) -> bool:
@@ -42,7 +42,7 @@ def validate_coordinates(longitude: Any, latitude: Any) -> bool:
         return False
 
 
-SUPPORTED_CRS: Final[Dict[str, str]] = {
+SUPPORTED_CRS: Final[dict[str, str]] = {
     "WGS84": "EPSG:4326",  # World Geodetic System 1984
     "UTM": "UTM",  # Universal Transverse Mercator
     "WEB_MERCATOR": "EPSG:3857",  # Web Mercator (used by most web maps)
@@ -411,7 +411,7 @@ def validate_timestamp(timestamp: Any) -> bool:
             datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
         elif isinstance(timestamp, datetime):
             # Check if not too far in future or past
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             if abs((timestamp - now).total_seconds()) > 31536000:  # 1 year
                 return False
         else:
@@ -647,7 +647,7 @@ def sanitize_message_content(content: Any) -> str:
     return sanitized.strip()
 
 
-def validate_and_sanitize_inputs(**kwargs: Any) -> Dict[str, Any]:
+def validate_and_sanitize_inputs(**kwargs: Any) -> dict[str, Any]:
     """
     Validate and sanitize multiple input parameters.
 
@@ -683,7 +683,7 @@ def validate_and_sanitize_inputs(**kwargs: Any) -> Dict[str, Any]:
     return results
 
 
-def validate_configuration(config: Any, required_keys: List[str]) -> bool:
+def validate_configuration(config: Any, required_keys: list[str]) -> bool:
     """
     Validate configuration dictionary against required keys.
 

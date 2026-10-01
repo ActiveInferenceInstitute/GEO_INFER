@@ -15,7 +15,7 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 _ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
 if str(_ORCHESTRATORS_DIR) not in sys.path:
@@ -63,7 +63,7 @@ def _build_synthetic_repo(root: Path) -> None:
     )
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     from geo_infer_git.core.repo_analyzer import RepositoryAnalyzer
 
     tmp_root = Path(tempfile.mkdtemp(prefix="geo_infer_git_synthetic_"))

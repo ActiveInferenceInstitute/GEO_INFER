@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Advanced Git operations for GEO-INFER-GIT.
@@ -13,7 +12,7 @@ This module provides sophisticated Git functionality including:
 """
 
 import re
-from typing import Dict, List, Any, Optional, Union
+from typing import Any
 from pathlib import Path
 from dataclasses import dataclass, field
 import git
@@ -75,7 +74,7 @@ class CherryPickOperation:
     commit_sha: str
     status: str = "pending"  # pending, applied, skipped, failed
     message: str = ""
-    conflicts: List[MergeConflict] = field(default_factory=list)
+    conflicts: list[MergeConflict] = field(default_factory=list)
 
 
 @dataclass
@@ -88,7 +87,7 @@ class RebaseOperation:
     message: str = ""
     current_step: int = 0
     total_steps: int = 0
-    conflicts: List[MergeConflict] = field(default_factory=list)
+    conflicts: list[MergeConflict] = field(default_factory=list)
 
 
 class SubmoduleManager:
@@ -102,7 +101,7 @@ class SubmoduleManager:
     - Submodule dependency resolution
     """
 
-    def __init__(self, repo_path: Union[str, Path]):
+    def __init__(self, repo_path: str | Path):
         """
         Initialize submodule manager.
 
@@ -111,7 +110,7 @@ class SubmoduleManager:
         """
         self.repo_path = Path(repo_path)
         self.repo = git.Repo(repo_path)
-        self.submodules: Dict[str, SubmoduleInfo] = {}
+        self.submodules: dict[str, SubmoduleInfo] = {}
 
         # Load existing submodules
         self._load_submodules()
@@ -142,7 +141,7 @@ class SubmoduleManager:
         except Exception as e:
             logger.warning(f"Error loading submodules: {e}")
 
-    def initialize_submodules(self, recursive: bool = False) -> Dict[str, bool]:
+    def initialize_submodules(self, recursive: bool = False) -> dict[str, bool]:
         """
         Initialize all submodules in the repository.
 
@@ -182,7 +181,7 @@ class SubmoduleManager:
 
         return results
 
-    def update_submodules(self, recursive: bool = False) -> Dict[str, bool]:
+    def update_submodules(self, recursive: bool = False) -> dict[str, bool]:
         """
         Update all submodules to their latest commits.
 
@@ -227,7 +226,7 @@ class SubmoduleManager:
 
         return results
 
-    def sync_submodules(self, recursive: bool = False) -> Dict[str, bool]:
+    def sync_submodules(self, recursive: bool = False) -> dict[str, bool]:
         """
         Synchronize submodules with their remote repositories.
 
@@ -268,7 +267,7 @@ class SubmoduleManager:
 
         return results
 
-    def get_submodule_status(self) -> Dict[str, Dict[str, Any]]:
+    def get_submodule_status(self) -> dict[str, dict[str, Any]]:
         """
         Get detailed status of all submodules.
 
@@ -312,7 +311,7 @@ class SubmoduleManager:
 
         return status_info
 
-    def _get_ahead_behind(self, repo: git.Repo) -> Dict[str, int]:
+    def _get_ahead_behind(self, repo: git.Repo) -> dict[str, int]:
         """Get ahead/behind information for a repository."""
         try:
             if repo.remotes and getattr(repo.head, "is_tracking", False):
@@ -330,13 +329,13 @@ class SubmoduleManager:
 
         return {"ahead": 0, "behind": 0}
 
-    def _get_submodule_dependencies(self, submodule_path: Path) -> List[str]:
+    def _get_submodule_dependencies(self, submodule_path: Path) -> list[str]:
         """Get dependencies of a submodule by scanning its .gitmodules file.
 
         Returns the list of nested submodule paths declared in
         ``<submodule_path>/.gitmodules``.
         """
-        dependencies: List[str] = []
+        dependencies: list[str] = []
         gitmodules = submodule_path / ".gitmodules"
         if not gitmodules.exists():
             return dependencies
@@ -368,7 +367,7 @@ class CherryPickManager:
     - Conflict resolution strategies
     """
 
-    def __init__(self, repo_path: Union[str, Path]):
+    def __init__(self, repo_path: str | Path):
         """
         Initialize cherry-pick manager.
 
@@ -377,7 +376,7 @@ class CherryPickManager:
         """
         self.repo_path = Path(repo_path)
         self.repo = git.Repo(repo_path)
-        self.operations: List[CherryPickOperation] = []
+        self.operations: list[CherryPickOperation] = []
 
     def cherry_pick_commit(
         self, commit_sha: str, strategy: str = "recursive"
@@ -424,7 +423,7 @@ class CherryPickManager:
 
     def cherry_pick_range(
         self, start_sha: str, end_sha: str, stop_on_conflict: bool = True
-    ) -> List[CherryPickOperation]:
+    ) -> list[CherryPickOperation]:
         """
         Cherry-pick a range of commits.
 
@@ -538,7 +537,7 @@ class CherryPickManager:
             self.repo, self.repo_path, "CHERRY_PICK_HEAD"
         ) or _git_path_exists(self.repo, self.repo_path, "sequencer")
 
-    def _detect_conflicts(self) -> List[MergeConflict]:
+    def _detect_conflicts(self) -> list[MergeConflict]:
         """Detect current merge conflicts in the repository."""
         conflicts = []
 
@@ -567,13 +566,13 @@ class CherryPickManager:
 
     def _analyze_conflict(
         self, file_path: str, status_code: str
-    ) -> Optional[MergeConflict]:
+    ) -> MergeConflict | None:
         """Analyze a specific conflict in detail."""
         try:
             conflict_file = self.repo_path / file_path
 
             # Read conflict markers
-            with open(conflict_file, "r") as f:
+            with open(conflict_file) as f:
                 content = f.read()
 
             # Parse conflict markers
@@ -611,7 +610,7 @@ class RebaseManager:
     - History cleanup and optimization
     """
 
-    def __init__(self, repo_path: Union[str, Path]):
+    def __init__(self, repo_path: str | Path):
         """
         Initialize rebase manager.
 
@@ -620,10 +619,10 @@ class RebaseManager:
         """
         self.repo_path = Path(repo_path)
         self.repo = git.Repo(repo_path)
-        self.current_rebase: Optional[RebaseOperation] = None
+        self.current_rebase: RebaseOperation | None = None
 
     def start_interactive_rebase(
-        self, base_commit: str, target_branch: Optional[str] = None
+        self, base_commit: str, target_branch: str | None = None
     ) -> RebaseOperation:
         """
         Start an interactive rebase operation.
@@ -736,7 +735,7 @@ class RebaseManager:
             logger.error(f"Failed to abort rebase: {e}")
             return False
 
-    def _detect_rebase_conflicts(self) -> List[MergeConflict]:
+    def _detect_rebase_conflicts(self) -> list[MergeConflict]:
         """Detect conflicts during rebase by parsing git status --porcelain output."""
         conflicts = []
         try:
@@ -797,7 +796,7 @@ class AdvancedGitOperations:
     into a unified interface for complex Git workflows.
     """
 
-    def __init__(self, repo_path: Union[str, Path]):
+    def __init__(self, repo_path: str | Path):
         """
         Initialize advanced Git operations manager.
 
@@ -813,9 +812,9 @@ class AdvancedGitOperations:
         self.rebase = RebaseManager(repo_path)
 
         # Track operations
-        self.operation_history: List[Any] = []
+        self.operation_history: list[Any] = []
 
-    def execute_workflow(self, workflow_config: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_workflow(self, workflow_config: dict[str, Any]) -> dict[str, Any]:
         """
         Execute a complex Git workflow.
 
@@ -852,10 +851,10 @@ class AdvancedGitOperations:
 
         return results
 
-    def _execute_workflow_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    def _execute_workflow_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """Execute a single workflow step."""
         step_type = step.get("type")
-        step_result: Dict[str, Any] = {
+        step_result: dict[str, Any] = {
             "step_type": step_type,
             "success": False,
             "message": "",
@@ -911,14 +910,14 @@ class AdvancedGitOperations:
 
         return step_result
 
-    def get_repository_health(self) -> Dict[str, Any]:
+    def get_repository_health(self) -> dict[str, Any]:
         """
         Get comprehensive repository health information.
 
         Returns:
             Dictionary with repository health metrics
         """
-        health_info: Dict[str, Any] = {
+        health_info: dict[str, Any] = {
             "submodules": self.submodules.get_submodule_status(),
             "recent_operations": self.operation_history[-10:],  # Last 10 operations
             "repository_stats": {
@@ -942,7 +941,7 @@ class AdvancedGitOperations:
         except git.GitCommandError:
             return 0
 
-    def _calculate_health_score(self, health_info: Dict[str, Any]) -> float:
+    def _calculate_health_score(self, health_info: dict[str, Any]) -> float:
         """Calculate overall repository health score (0-100)."""
         score = 100.0
 
@@ -963,7 +962,7 @@ class AdvancedGitOperations:
 
 
 def create_advanced_git_operations(
-    repo_path: Union[str, Path],
+    repo_path: str | Path,
 ) -> AdvancedGitOperations:
     """
     Create an AdvancedGitOperations instance for a repository.

@@ -1,6 +1,6 @@
 """Unit tests for advanced spatial routing: routers, balancers, queues, optimizers."""
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 import pytest
 
@@ -430,9 +430,7 @@ class TestGeospatialMessageQueue:
     def test_priority_score_ages_messages_forward(self) -> None:
         queue = GeospatialMessageQueue()
         message = _message()
-        message.timestamp = datetime.now(timezone.utc).replace(
-            year=2020, month=1, day=1
-        )
+        message.timestamp = datetime.now(UTC).replace(year=2020, month=1, day=1)
 
         score = queue._calculate_priority_score(message)
         base = queue._calculate_priority_score(_message())

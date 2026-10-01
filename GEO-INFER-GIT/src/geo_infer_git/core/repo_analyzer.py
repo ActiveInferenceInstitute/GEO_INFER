@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Intelligent repository analysis for GEO-INFER-GIT.
@@ -16,10 +15,10 @@ This module provides comprehensive repository analysis capabilities including:
 import re
 import ast
 import json
-from typing import Dict, List, Any, Union
+from typing import Any
 from pathlib import Path
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from ..utils.logging_utils import get_logger
 from ..utils.error_handler import ValidationError
@@ -53,7 +52,7 @@ class DependencyInfo:
     type: str = "runtime"  # runtime, development, optional
     source: str = "requirements.txt"  # requirements.txt, setup.py, package.json, etc.
     license: str = ""
-    vulnerabilities: List[Dict[str, Any]] = field(default_factory=list)
+    vulnerabilities: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -65,9 +64,9 @@ class GeospatialContent:
     has_mapping_apis: bool = False
     has_coordinate_systems: bool = False
     has_spatial_analysis: bool = False
-    geospatial_file_formats: List[str] = field(default_factory=list)
-    geospatial_apis: List[str] = field(default_factory=list)
-    coordinate_systems: List[str] = field(default_factory=list)
+    geospatial_file_formats: list[str] = field(default_factory=list)
+    geospatial_apis: list[str] = field(default_factory=list)
+    coordinate_systems: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -78,9 +77,9 @@ class SecurityAnalysis:
     high_severity_vulnerabilities: int = 0
     medium_severity_vulnerabilities: int = 0
     low_severity_vulnerabilities: int = 0
-    secrets_detected: List[str] = field(default_factory=list)
-    insecure_patterns: List[str] = field(default_factory=list)
-    dependency_vulnerabilities: List[Dict[str, Any]] = field(default_factory=list)
+    secrets_detected: list[str] = field(default_factory=list)
+    insecure_patterns: list[str] = field(default_factory=list)
+    dependency_vulnerabilities: list[dict[str, Any]] = field(default_factory=list)
     security_score: float = 100.0
 
 
@@ -91,13 +90,13 @@ class RepositoryAnalysis:
     repository_path: str
     analysis_timestamp: datetime
     code_quality: CodeQualityMetrics
-    dependencies: List[DependencyInfo]
+    dependencies: list[DependencyInfo]
     geospatial_content: GeospatialContent
     security_analysis: SecurityAnalysis
     documentation_quality: float = 0.0
-    performance_metrics: Dict[str, Any] = field(default_factory=dict)
+    performance_metrics: dict[str, Any] = field(default_factory=dict)
     overall_score: float = 0.0
-    recommendations: List[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
 
 
 class CodeAnalyzer:
@@ -111,7 +110,7 @@ class CodeAnalyzer:
     - Documentation quality assessment
     """
 
-    def __init__(self, repo_path: Union[str, Path]):
+    def __init__(self, repo_path: str | Path):
         """
         Initialize code analyzer.
 
@@ -145,7 +144,7 @@ class CodeAnalyzer:
         for py_file in self.repo_path.rglob("*.py"):
             if py_file.is_file():
                 try:
-                    with open(py_file, "r", encoding="utf-8") as f:
+                    with open(py_file, encoding="utf-8") as f:
                         lines = f.readlines()
 
                     total_lines += len(lines)
@@ -180,7 +179,7 @@ class CodeAnalyzer:
                 for py_file in self.repo_path.rglob("*.py"):
                     if py_file.is_file():
                         try:
-                            with open(py_file, "r", encoding="utf-8") as f:
+                            with open(py_file, encoding="utf-8") as f:
                                 code = f.read()
 
                             # Analyze complexity
@@ -227,7 +226,7 @@ class CodeAnalyzer:
         for py_file in self.repo_path.rglob("*.py"):
             if py_file.is_file():
                 try:
-                    with open(py_file, "r", encoding="utf-8") as f:
+                    with open(py_file, encoding="utf-8") as f:
                         content = f.read()
 
                     complexity = 1  # Base complexity
@@ -252,7 +251,7 @@ class CodeAnalyzer:
         for py_file in self.repo_path.rglob("*.py"):
             if py_file.is_file():
                 try:
-                    with open(py_file, "r", encoding="utf-8") as f:
+                    with open(py_file, encoding="utf-8") as f:
                         content = f.read()
 
                     # Parse AST to find functions and docstrings
@@ -292,7 +291,7 @@ class DependencyAnalyzer:
     - Dependency graph analysis
     """
 
-    def __init__(self, repo_path: Union[str, Path]):
+    def __init__(self, repo_path: str | Path):
         """
         Initialize dependency analyzer.
 
@@ -300,9 +299,9 @@ class DependencyAnalyzer:
             repo_path: Path to the repository to analyze
         """
         self.repo_path = Path(repo_path)
-        self.dependencies: List[DependencyInfo] = []
+        self.dependencies: list[DependencyInfo] = []
 
-    def analyze_dependencies(self) -> List[DependencyInfo]:
+    def analyze_dependencies(self) -> list[DependencyInfo]:
         """
         Analyze repository dependencies.
 
@@ -321,7 +320,7 @@ class DependencyAnalyzer:
         setup_py = self.repo_path / "setup.py"
         if setup_py.exists():
             try:
-                with open(setup_py, "r", encoding="utf-8") as f:
+                with open(setup_py, encoding="utf-8") as f:
                     content = f.read()
 
                 # Extract install_requires
@@ -352,7 +351,7 @@ class DependencyAnalyzer:
         # Check requirements.txt files
         for req_file in self.repo_path.rglob("requirements*.txt"):
             try:
-                with open(req_file, "r", encoding="utf-8") as f:
+                with open(req_file, encoding="utf-8") as f:
                     for line in f:
                         line = line.strip()
                         if line and not line.startswith("#"):
@@ -386,7 +385,7 @@ class DependencyAnalyzer:
         package_json = self.repo_path / "package.json"
         if package_json.exists():
             try:
-                with open(package_json, "r", encoding="utf-8") as f:
+                with open(package_json, encoding="utf-8") as f:
                     data = json.load(f)
 
                 # Extract dependencies
@@ -441,8 +440,8 @@ class DependencyAnalyzer:
                 logger.warning(f"Error analyzing {req_file}: {e}")
 
     def check_vulnerabilities(
-        self, dependencies: List[DependencyInfo]
-    ) -> List[DependencyInfo]:
+        self, dependencies: list[DependencyInfo]
+    ) -> list[DependencyInfo]:
         """
         Check dependencies for known vulnerabilities.
 
@@ -487,7 +486,7 @@ class GeospatialAnalyzer:
     - Spatial analysis capability assessment
     """
 
-    def __init__(self, repo_path: Union[str, Path]):
+    def __init__(self, repo_path: str | Path):
         """
         Initialize geospatial analyzer.
 
@@ -579,7 +578,7 @@ class GeospatialAnalyzer:
                 ".jl",
             ]:
                 try:
-                    with open(file_path, "r", encoding="utf-8") as f:
+                    with open(file_path, encoding="utf-8") as f:
                         content = f.read().lower()
 
                     for software, indicators in gis_software.items():
@@ -609,7 +608,7 @@ class GeospatialAnalyzer:
         for file_path in self.repo_path.rglob("*"):
             if file_path.is_file():
                 try:
-                    with open(file_path, "r", encoding="utf-8") as f:
+                    with open(file_path, encoding="utf-8") as f:
                         content = f.read().lower()
 
                     for api in mapping_apis:
@@ -641,7 +640,7 @@ class GeospatialAnalyzer:
         for file_path in self.repo_path.rglob("*"):
             if file_path.is_file():
                 try:
-                    with open(file_path, "r", encoding="utf-8") as f:
+                    with open(file_path, encoding="utf-8") as f:
                         content = f.read()
 
                     for pattern in crs_patterns:
@@ -688,7 +687,7 @@ class GeospatialAnalyzer:
         for file_path in self.repo_path.rglob("*"):
             if file_path.is_file():
                 try:
-                    with open(file_path, "r", encoding="utf-8") as f:
+                    with open(file_path, encoding="utf-8") as f:
                         content = f.read().lower()
 
                     for term in spatial_analysis_terms:
@@ -714,7 +713,7 @@ class SecurityAnalyzer:
     - Security score calculation
     """
 
-    def __init__(self, repo_path: Union[str, Path]):
+    def __init__(self, repo_path: str | Path):
         """
         Initialize security analyzer.
 
@@ -815,7 +814,7 @@ class SecurityAnalyzer:
                 ".env",
             ]:
                 try:
-                    with open(file_path, "r", encoding="utf-8") as f:
+                    with open(file_path, encoding="utf-8") as f:
                         content = f.read()
 
                     for pattern in secret_patterns:
@@ -850,7 +849,7 @@ class SecurityAnalyzer:
         for file_path in self.repo_path.rglob("*.py"):
             if file_path.is_file():
                 try:
-                    with open(file_path, "r", encoding="utf-8") as f:
+                    with open(file_path, encoding="utf-8") as f:
                         content = f.read()
 
                     for pattern in insecure_patterns:
@@ -892,7 +891,7 @@ class RepositoryAnalyzer:
     into a unified analysis framework.
     """
 
-    def __init__(self, repo_path: Union[str, Path]):
+    def __init__(self, repo_path: str | Path):
         """
         Initialize repository analyzer.
 
@@ -902,7 +901,7 @@ class RepositoryAnalyzer:
         self.repo_path = Path(repo_path)
         self.analysis = RepositoryAnalysis(
             repository_path=str(repo_path),
-            analysis_timestamp=datetime.now(timezone.utc),
+            analysis_timestamp=datetime.now(UTC),
             code_quality=CodeQualityMetrics(),
             dependencies=[],
             geospatial_content=GeospatialContent(),
@@ -1023,7 +1022,7 @@ class RepositoryAnalyzer:
 
         return min(100.0, overall_score)
 
-    def _generate_recommendations(self) -> List[str]:
+    def _generate_recommendations(self) -> list[str]:
         """Generate improvement recommendations based on analysis."""
         recommendations = []
 
@@ -1068,7 +1067,7 @@ class RepositoryAnalyzer:
 
         return recommendations
 
-    def export_analysis(self, output_path: Union[str, Path]) -> None:
+    def export_analysis(self, output_path: str | Path) -> None:
         """
         Export analysis results to JSON file.
 
@@ -1130,7 +1129,7 @@ class RepositoryAnalyzer:
         logger.info(f"Analysis results exported to {output_path}")
 
 
-def create_repository_analyzer(repo_path: Union[str, Path]) -> RepositoryAnalyzer:
+def create_repository_analyzer(repo_path: str | Path) -> RepositoryAnalyzer:
     """
     Create a RepositoryAnalyzer instance for a repository.
 

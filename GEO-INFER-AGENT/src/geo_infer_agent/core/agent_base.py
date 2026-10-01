@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Base Agent for GEO-INFER-AGENT
@@ -15,7 +14,8 @@ import asyncio
 import inspect
 from datetime import datetime
 from abc import ABC, abstractmethod
-from typing import Dict, List, Any, Optional, Callable
+from typing import Any
+from collections.abc import Callable
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -39,10 +39,10 @@ class AgentState:
         Args:
             capacity: Maximum number of memory items to store
         """
-        self.beliefs: Dict[str, Any] = {}  # Current world model
-        self.desires: List[Dict[str, Any]] = []  # Goals
-        self.intentions: List[Dict[str, Any]] = []  # Planned actions
-        self.memory: List[Dict[str, Any]] = []  # Past observations and actions
+        self.beliefs: dict[str, Any] = {}  # Current world model
+        self.desires: list[dict[str, Any]] = []  # Goals
+        self.intentions: list[dict[str, Any]] = []  # Planned actions
+        self.memory: list[dict[str, Any]] = []  # Past observations and actions
         self.memory_capacity = capacity
         self.creation_time = datetime.now()
         self.last_update = self.creation_time
@@ -95,7 +95,7 @@ class AgentState:
         except (AttributeError, TypeError, ValueError):
             return False
 
-    def add_desire(self, desire: Dict[str, Any]) -> None:
+    def add_desire(self, desire: dict[str, Any]) -> None:
         """
         Add a new goal/desire for the agent.
 
@@ -120,7 +120,7 @@ class AgentState:
             }
         )
 
-    def set_intention(self, intention: Dict[str, Any]) -> None:
+    def set_intention(self, intention: dict[str, Any]) -> None:
         """
         Set current intention/plan.
 
@@ -144,7 +144,7 @@ class AgentState:
             }
         )
 
-    def add_to_memory(self, item: Dict[str, Any]) -> None:
+    def add_to_memory(self, item: dict[str, Any]) -> None:
         """
         Add an item to agent's memory.
 
@@ -160,7 +160,7 @@ class AgentState:
         if len(self.memory) > self.memory_capacity:
             self.memory.pop(0)
 
-    def get_top_desire(self) -> Optional[Dict[str, Any]]:
+    def get_top_desire(self) -> dict[str, Any] | None:
         """
         Get the highest priority desire.
 
@@ -169,7 +169,7 @@ class AgentState:
         """
         return self.desires[0] if self.desires else None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert state to dictionary for serialization.
 
@@ -186,7 +186,7 @@ class AgentState:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AgentState":
+    def from_dict(cls, data: dict[str, Any]) -> "AgentState":
         """
         Create state from dictionary.
 
@@ -222,7 +222,7 @@ class BaseAgent(ABC):
     - Persistence mechanisms
     """
 
-    def __init__(self, agent_id: Optional[str] = None, config: Optional[Dict] = None):
+    def __init__(self, agent_id: str | None = None, config: dict | None = None):
         """
         Initialize the agent.
 
@@ -233,18 +233,18 @@ class BaseAgent(ABC):
         self.agent_id = agent_id or str(uuid.uuid4())
         self.config = config or {}
         self.state = AgentState(capacity=self.config.get("memory_capacity", 1000))
-        self.action_handlers: Dict[str, Callable[..., Any]] = {}
-        self.perception_handlers: Dict[str, Callable[..., Any]] = {}
+        self.action_handlers: dict[str, Callable[..., Any]] = {}
+        self.perception_handlers: dict[str, Callable[..., Any]] = {}
         self.running = False
-        self.loop: Optional[asyncio.AbstractEventLoop] = None
-        self.start_time: Optional[datetime] = None
-        self.stop_time: Optional[datetime] = None
-        self.last_perception: Dict[str, Any] = {}
-        self.last_action: Dict[str, Any] = {}
+        self.loop: asyncio.AbstractEventLoop | None = None
+        self.start_time: datetime | None = None
+        self.stop_time: datetime | None = None
+        self.last_perception: dict[str, Any] = {}
+        self.last_action: dict[str, Any] = {}
         # Exception raised inside run(), if any.  run() logs and stores crash
         # details here so callers can distinguish a crash from a clean stop
         # without changing run()'s fire-and-forget contract.
-        self.last_error: Optional[BaseException] = None
+        self.last_error: BaseException | None = None
         # Initialize communication channels
         self.message_queue: asyncio.Queue = asyncio.Queue()
 
@@ -266,7 +266,7 @@ class BaseAgent(ABC):
             raise ValueError("perception_type and callable handler are required")
         self.perception_handlers[perception_type] = handler
 
-    def _configured_perceptions(self) -> Dict[str, Any]:
+    def _configured_perceptions(self) -> dict[str, Any]:
         """Return explicitly configured sensor readings for this agent."""
         readings = self.config.get("sensor_readings", {})
         if readings is None:
@@ -275,7 +275,7 @@ class BaseAgent(ABC):
             raise TypeError("sensor_readings must be a mapping")
         return dict(readings)
 
-    async def _dispatch_action(self, action: Dict[str, Any]) -> Dict[str, Any]:
+    async def _dispatch_action(self, action: dict[str, Any]) -> dict[str, Any]:
         """Dispatch an action through the registered handler for its type."""
         action_type = action.get("action_type")
         if not action_type:
@@ -405,7 +405,7 @@ class BaseAgent(ABC):
         """
 
     @abstractmethod
-    async def perceive(self) -> Dict[str, Any]:
+    async def perceive(self) -> dict[str, Any]:
         """
         Collect information from the environment.
 
@@ -414,7 +414,7 @@ class BaseAgent(ABC):
         """
 
     @abstractmethod
-    def update_beliefs(self, perception: Dict[str, Any]) -> None:
+    def update_beliefs(self, perception: dict[str, Any]) -> None:
         """
         Update agent's beliefs based on perception.
 
@@ -423,7 +423,7 @@ class BaseAgent(ABC):
         """
 
     @abstractmethod
-    async def decide(self) -> Optional[Dict[str, Any]]:
+    async def decide(self) -> dict[str, Any] | None:
         """
         Decide on next action based on beliefs and goals.
 
@@ -432,7 +432,7 @@ class BaseAgent(ABC):
         """
 
     @abstractmethod
-    async def act(self, action: Dict[str, Any]) -> Dict[str, Any]:
+    async def act(self, action: dict[str, Any]) -> dict[str, Any]:
         """
         Execute a selected action.
 
@@ -451,7 +451,7 @@ class BaseAgent(ABC):
         Subclasses must implement this to release agent-specific resources.
         """
 
-    async def send_message(self, to_agent_id: str, content: Dict[str, Any]) -> bool:
+    async def send_message(self, to_agent_id: str, content: dict[str, Any]) -> bool:
         """
         Send a message to another registered agent.
 
@@ -513,7 +513,7 @@ class BaseAgent(ABC):
         await recipient.receive_message(message)
         return True
 
-    async def receive_message(self, message: Dict[str, Any]) -> None:
+    async def receive_message(self, message: dict[str, Any]) -> None:
         """
         Receive a message from another agent.
 
@@ -535,7 +535,7 @@ class BaseAgent(ABC):
             except asyncio.QueueEmpty:
                 break
 
-    async def _handle_message(self, message: Dict[str, Any]) -> None:
+    async def _handle_message(self, message: dict[str, Any]) -> None:
         """
         Handle a single message.
 
@@ -555,7 +555,7 @@ class BaseAgent(ABC):
         # Subclasses should override for specific behavior
         logger.info(f"Agent {self.agent_id} handling message: {message}")
 
-    def save_state(self, filepath: Optional[str] = None) -> str:
+    def save_state(self, filepath: str | None = None) -> str:
         """
         Save agent state to file.
 
@@ -584,7 +584,7 @@ class BaseAgent(ABC):
             raise
 
     @classmethod
-    def load_state(cls, filepath: str, config: Optional[Dict] = None) -> "BaseAgent":
+    def load_state(cls, filepath: str, config: dict | None = None) -> "BaseAgent":
         """
         Create agent from saved state.
 
@@ -596,7 +596,7 @@ class BaseAgent(ABC):
             Instantiated agent with loaded state
         """
         try:
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 state_dict = json.load(f)
 
             agent_id = state_dict.get("agent_id")
@@ -626,14 +626,14 @@ class ExampleAgent(BaseAgent):
             {"description": "Explore environment", "priority": 10, "completed": False}
         )
 
-    async def perceive(self) -> Dict[str, Any]:
+    async def perceive(self) -> dict[str, Any]:
         """Simple perception that just returns current time."""
         return {
             "current_time": datetime.now().isoformat(),
             "random_observation": uuid.uuid4().hex[:8],
         }
 
-    def update_beliefs(self, perception: Dict[str, Any]) -> None:
+    def update_beliefs(self, perception: dict[str, Any]) -> None:
         """Update beliefs based on perception."""
         # Just store the entire perception as beliefs
         for key, value in perception.items():
@@ -643,7 +643,7 @@ class ExampleAgent(BaseAgent):
         if len(self.state.memory) > 5:
             self.state.update_belief("environment_known", True)
 
-    async def decide(self) -> Optional[Dict[str, Any]]:
+    async def decide(self) -> dict[str, Any] | None:
         """Simple decision making."""
         # Get top desire
         desire = self.state.get_top_desire()
@@ -662,7 +662,7 @@ class ExampleAgent(BaseAgent):
             # No action needed
             return None
 
-    async def act(self, action: Dict[str, Any]) -> Dict[str, Any]:
+    async def act(self, action: dict[str, Any]) -> dict[str, Any]:
         """Execute action."""
         if action["type"] == "explore":
             logger.info(f"Agent {self.agent_id} exploring {action['target']}")

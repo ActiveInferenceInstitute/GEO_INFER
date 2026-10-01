@@ -7,7 +7,7 @@ implementation-specific Spatial methods are available through a single interface
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import geopandas as gpd
 
@@ -28,7 +28,7 @@ class GISManager:
     and `SpatialUtils` instances.
     """
 
-    def __init__(self, h3_backend: Optional[Any] = None) -> None:
+    def __init__(self, h3_backend: Any | None = None) -> None:
         """
         Initialize the GISManager and its underlying spatial components.
 
@@ -62,7 +62,7 @@ class GISManager:
 
     def proximity_analysis(
         self, gdf1: "gpd.GeoDataFrame", gdf2: "gpd.GeoDataFrame"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate proximity between two sets of features.
 
@@ -76,7 +76,7 @@ class GISManager:
         return self.processor.proximity_analysis(gdf1, gdf2)
 
     def perform_multi_overlay(
-        self, spatial_datasets: Dict[str, "gpd.GeoDataFrame"]
+        self, spatial_datasets: dict[str, "gpd.GeoDataFrame"]
     ) -> "gpd.GeoDataFrame":
         """
         Perform multi-layer spatial overlay on multiple GeoDataFrames.
@@ -91,10 +91,10 @@ class GISManager:
 
     def transform_coordinates(
         self,
-        coords: Union[Tuple[float, float], List[Tuple[float, float]]],
+        coords: tuple[float, float] | list[tuple[float, float]],
         from_crs: str = "EPSG:4326",
         to_crs: str = "EPSG:3857",
-    ) -> Union[Tuple[float, float], List[Tuple[float, float]]]:
+    ) -> tuple[float, float] | list[tuple[float, float]]:
         """
         Transform coordinates between coordinate reference systems.
 
@@ -110,8 +110,8 @@ class GISManager:
 
     def calculate_distance(
         self,
-        point1: Tuple[float, float],
-        point2: Tuple[float, float],
+        point1: tuple[float, float],
+        point2: tuple[float, float],
         method: str = "haversine",
     ) -> float:
         """
@@ -132,8 +132,8 @@ class GISManager:
     # =========================================================================
 
     def cell_buffer_analysis(
-        self, cells: List[str], buffer_rings: int = 1, include_center: bool = True
-    ) -> Dict[str, Any]:
+        self, cells: list[str], buffer_rings: int = 1, include_center: bool = True
+    ) -> dict[str, Any]:
         """
         Create buffer zones around H3 cells.
 
@@ -148,8 +148,8 @@ class GISManager:
         return self.methods.buffer_analysis(cells, buffer_rings, include_center)
 
     def overlay_cells(
-        self, cells_a: List[str], cells_b: List[str], operation: str = "intersection"
-    ) -> Dict[str, Any]:
+        self, cells_a: list[str], cells_b: list[str], operation: str = "intersection"
+    ) -> dict[str, Any]:
         """
         Perform overlay operations between two cell sets.
 
@@ -165,11 +165,11 @@ class GISManager:
 
     def aggregate_to_region(
         self,
-        cells: List[str],
-        values: List[float],
+        cells: list[str],
+        values: list[float],
         target_resolution: int,
         aggregation: str = "mean",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Aggregate cell values to a coarser resolution.
 
@@ -188,11 +188,11 @@ class GISManager:
 
     def disaggregate_to_cells(
         self,
-        parent_cells: List[str],
-        values: List[float],
+        parent_cells: list[str],
+        values: list[float],
         target_resolution: int,
         method: str = "equal",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Disaggregate values to finer resolution cells.
 
@@ -210,8 +210,8 @@ class GISManager:
         )
 
     def calculate_coverage(
-        self, cells: List[str], region_cells: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        self, cells: list[str], region_cells: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         Calculate coverage statistics for cell sets.
 
@@ -230,13 +230,13 @@ class GISManager:
 
     def spatial_filter(
         self,
-        cells: List[str],
-        values: List[float],
+        cells: list[str],
+        values: list[float],
         filter_type: str = "threshold",
-        threshold: Optional[float] = None,
-        percentile: Optional[float] = None,
-        top_n: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        threshold: float | None = None,
+        percentile: float | None = None,
+        top_n: int | None = None,
+    ) -> dict[str, Any]:
         """
         Filter cells based on spatial criteria.
 
@@ -256,8 +256,8 @@ class GISManager:
         )
 
     def find_spatial_outliers(
-        self, cells: List[str], values: List[float], k: int = 1
-    ) -> Dict[str, Any]:
+        self, cells: list[str], values: list[float], k: int = 1
+    ) -> dict[str, Any]:
         """
         Find spatial outliers using Local Moran's I.
 
@@ -273,7 +273,7 @@ class GISManager:
 
     def calculate_spatial_correlation(
         self, gdf: "gpd.GeoDataFrame"
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate spatial correlation metrics for a GeoDataFrame.
 
@@ -286,8 +286,8 @@ class GISManager:
         return self.processor.calculate_spatial_correlation(gdf)
 
     def calculate_spatial_weights(
-        self, cells: List[str], weight_type: str = "queen", k: int = 1
-    ) -> Dict[str, Any]:
+        self, cells: list[str], weight_type: str = "queen", k: int = 1
+    ) -> dict[str, Any]:
         """
         Calculate spatial weights matrix for cells.
 
@@ -307,10 +307,10 @@ class GISManager:
 
     def compute_accessibility(
         self,
-        origin_cells: List[str],
-        destination_cells: List[str],
+        origin_cells: list[str],
+        destination_cells: list[str],
         max_distance: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compute grid-based accessibility from origins to destinations.
 
@@ -327,8 +327,8 @@ class GISManager:
         )
 
     def find_nearest_point(
-        self, target: Tuple[float, float], candidates: List[Tuple[float, float]]
-    ) -> Tuple[int, float]:
+        self, target: tuple[float, float], candidates: list[tuple[float, float]]
+    ) -> tuple[int, float]:
         """
         Find the nearest point from a list of candidates.
 

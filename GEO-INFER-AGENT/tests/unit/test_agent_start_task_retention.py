@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Unit tests for AgentInterface.start_agent task retention (GS-260).

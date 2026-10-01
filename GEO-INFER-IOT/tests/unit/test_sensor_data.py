@@ -1,6 +1,6 @@
 """Tests for IoT sensor data models and measurements."""
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from geo_infer_iot.core.ingestion import SensorMeasurement, SpatialInferenceConfig
 
@@ -9,7 +9,7 @@ class TestSensorMeasurement:
     def test_create_measurement(self):
         m = SensorMeasurement(
             sensor_id="s-001",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="temperature",
             value=22.5,
             unit="celsius",
@@ -23,7 +23,7 @@ class TestSensorMeasurement:
     def test_h3_index_auto_generated(self):
         m = SensorMeasurement(
             sensor_id="s-002",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="humidity",
             value=65.0,
             unit="percent",
@@ -35,7 +35,7 @@ class TestSensorMeasurement:
     def test_custom_h3_resolution(self):
         m = SensorMeasurement(
             sensor_id="s-003",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="pressure",
             value=1013.25,
             unit="hPa",
@@ -48,7 +48,7 @@ class TestSensorMeasurement:
     def test_quality_flags(self):
         m = SensorMeasurement(
             sensor_id="s-004",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="radiation",
             value=0.12,
             unit="uSv/h",
@@ -62,7 +62,7 @@ class TestSensorMeasurement:
     def test_metadata(self):
         m = SensorMeasurement(
             sensor_id="s-005",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="wind_speed",
             value=15.3,
             unit="m/s",

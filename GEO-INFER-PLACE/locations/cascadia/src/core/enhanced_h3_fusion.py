@@ -14,13 +14,9 @@ import logging
 import json
 import hashlib
 from pathlib import Path
-import numpy as np
-import pandas as pd
-from typing import Dict, Any, List, Optional, Tuple, Union
+from typing import Any
 from datetime import datetime
-import geopandas as gpd
-from shapely.geometry import Polygon, Point, MultiPolygon
-from shapely.ops import unary_union
+from shapely.geometry import Polygon
 import h3
 
 # Import H3 utilities from consolidated geo_infer_place module
@@ -80,7 +76,7 @@ class EnhancedH3Fusion:
         self,
         h3_resolution: int = 8,
         enable_spatial_analysis: bool = True,
-        cache_dir: Optional[Path] = None,
+        cache_dir: Path | None = None,
         fusion_mode: str = "geom_intersect",
     ):
         """
@@ -119,8 +115,8 @@ class EnhancedH3Fusion:
                 logger.warning(f"Could not create fusion cache directory {self.cache_dir}: {e}")
 
     def fuse_geospatial_data(
-        self, data_sources: Dict[str, Any], target_hexagons: List[str]
-    ) -> Dict[str, Any]:
+        self, data_sources: dict[str, Any], target_hexagons: list[str]
+    ) -> dict[str, Any]:
         """
         Fuse multiple geospatial data sources into unified H3-indexed format.
 
@@ -140,7 +136,7 @@ class EnhancedH3Fusion:
             return {}
 
         # Initialize fused data structure
-        fused_data: Dict[str, Any] = {}
+        fused_data: dict[str, Any] = {}
 
         if self.fusion_mode == "key_join":
             target_set = set(target_hexagons)
@@ -223,7 +219,7 @@ class EnhancedH3Fusion:
 
     # -------------------- Caching Utilities --------------------
     def _compute_fusion_signature(
-        self, data_sources: Dict[str, Any], target_hexagons: List[str]
+        self, data_sources: dict[str, Any], target_hexagons: list[str]
     ) -> str:
         """Compute a deterministic cache key for fusion inputs.
 
@@ -231,7 +227,7 @@ class EnhancedH3Fusion:
         target set size, resolution, and spatial analysis flag.
         """
         try:
-            signature_obj: Dict[str, Any] = {
+            signature_obj: dict[str, Any] = {
                 "h3_resolution": int(self.h3_resolution),
                 "spatial": bool(self.enable_spatial_analysis),
                 "fusion_mode": str(self.fusion_mode),
@@ -261,14 +257,14 @@ class EnhancedH3Fusion:
             logger.warning(f"Failed to compute fusion signature, using fallback: {e}")
             return f"res{self.h3_resolution}_fallback"
 
-    def _get_cache_file(self, cache_key: str) -> Optional[Path]:
+    def _get_cache_file(self, cache_key: str) -> Path | None:
         if not self.cache_dir:
             return None
         return self.cache_dir / f"fused_res{self.h3_resolution}_{cache_key}.json"
 
     def load_fusion_cache(
-        self, data_sources: Dict[str, Any], target_hexagons: List[str]
-    ) -> Optional[Dict[str, Any]]:
+        self, data_sources: dict[str, Any], target_hexagons: list[str]
+    ) -> dict[str, Any] | None:
         """Attempt to load fused data from cache based on inputs."""
         if not self.cache_dir:
             return None
@@ -277,7 +273,7 @@ class EnhancedH3Fusion:
         if not cache_file or not cache_file.exists():
             return None
         try:
-            with open(cache_file, "r") as f:
+            with open(cache_file) as f:
                 payload = json.load(f)
             fused_data = payload.get("fused_data", {})
             logger.info(f"Loaded fusion cache: {cache_file} ({len(fused_data)} hexes)")
@@ -288,11 +284,11 @@ class EnhancedH3Fusion:
 
     def save_fusion_cache(
         self,
-        data_sources: Dict[str, Any],
-        target_hexagons: List[str],
-        fused_data: Dict[str, Any],
-        report: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Path]:
+        data_sources: dict[str, Any],
+        target_hexagons: list[str],
+        fused_data: dict[str, Any],
+        report: dict[str, Any] | None = None,
+    ) -> Path | None:
         """Persist fused data and report to cache."""
         if not self.cache_dir:
             return None
@@ -322,8 +318,8 @@ class EnhancedH3Fusion:
             return None
 
     def _validate_fusion_inputs(
-        self, data_sources: Dict[str, Any], target_hexagons: List[str]
-    ) -> Dict[str, Any]:
+        self, data_sources: dict[str, Any], target_hexagons: list[str]
+    ) -> dict[str, Any]:
         """
         Validate fusion inputs for consistency and quality.
 
@@ -370,8 +366,8 @@ class EnhancedH3Fusion:
         return validation_result
 
     def _validate_source_data(
-        self, source_data: Dict[str, Any], source_name: str
-    ) -> Dict[str, Any]:
+        self, source_data: dict[str, Any], source_name: str
+    ) -> dict[str, Any]:
         """
         Validate individual source data.
 
@@ -407,8 +403,8 @@ class EnhancedH3Fusion:
         return validation_result
 
     def _fuse_source_to_target_hexagons(
-        self, source_data: Dict[str, Any], target_hexagons: List[str], source_name: str
-    ) -> Dict[str, Any]:
+        self, source_data: dict[str, Any], target_hexagons: list[str], source_name: str
+    ) -> dict[str, Any]:
         """
         Fuse source data to target hexagons using optimized H3 spatial operations.
 
@@ -489,8 +485,8 @@ class EnhancedH3Fusion:
         return fused_data
 
     def _fuse_source_batch(
-        self, source_name: str, source_data: Dict[str, Any], target_hexagons: List[str]
-    ) -> Dict[str, Any]:
+        self, source_name: str, source_data: dict[str, Any], target_hexagons: list[str]
+    ) -> dict[str, Any]:
         """
         Batch fusion method for parallel processing.
 
@@ -520,7 +516,7 @@ class EnhancedH3Fusion:
 
     def _find_intersecting_hexagons_optimized(
         self, source_hex_id: str, target_hex_set: set, source_name: str
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Find target hexagons that intersect with a source hexagon using optimized methods.
 
@@ -591,7 +587,7 @@ class EnhancedH3Fusion:
 
     def _find_intersecting_hexagons(
         self, source_hex_id: str, target_hex_set: set, source_name: str
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Find target hexagons that intersect with a source hexagon.
 
@@ -639,8 +635,8 @@ class EnhancedH3Fusion:
             return []
 
     def _perform_spatial_analysis(
-        self, fused_data: Dict[str, Any], target_hexagons: List[str]
-    ) -> Dict[str, Any]:
+        self, fused_data: dict[str, Any], target_hexagons: list[str]
+    ) -> dict[str, Any]:
         """
         Perform enhanced spatial analysis on fused data.
 
@@ -677,8 +673,8 @@ class EnhancedH3Fusion:
         return fused_data
 
     def _calculate_spatial_statistics(
-        self, fused_data: Dict[str, Any], target_hexagons: List[str]
-    ) -> Dict[str, Any]:
+        self, fused_data: dict[str, Any], target_hexagons: list[str]
+    ) -> dict[str, Any]:
         """
         Calculate spatial statistics for each hexagon.
 
@@ -734,7 +730,7 @@ class EnhancedH3Fusion:
 
         return spatial_stats
 
-    def _analyze_spatial_correlations(self, fused_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_spatial_correlations(self, fused_data: dict[str, Any]) -> dict[str, Any]:
         """
         Analyze spatial correlations between data sources.
 
@@ -774,8 +770,8 @@ class EnhancedH3Fusion:
         return correlation_analysis
 
     def _identify_spatial_clusters(
-        self, fused_data: Dict[str, Any], target_hexagons: List[str]
-    ) -> Dict[str, Any]:
+        self, fused_data: dict[str, Any], target_hexagons: list[str]
+    ) -> dict[str, Any]:
         """
         Identify spatial clusters in the data.
 
@@ -819,8 +815,8 @@ class EnhancedH3Fusion:
         return cluster_analysis
 
     def _generate_fusion_report(
-        self, fused_data: Dict[str, Any], data_sources: Dict[str, Any], target_hexagons: List[str]
-    ) -> Dict[str, Any]:
+        self, fused_data: dict[str, Any], data_sources: dict[str, Any], target_hexagons: list[str]
+    ) -> dict[str, Any]:
         """
         Generate comprehensive fusion report.
 
@@ -868,7 +864,7 @@ class EnhancedH3Fusion:
 
         return report
 
-    def validate_h3_operations(self) -> Dict[str, Any]:
+    def validate_h3_operations(self) -> dict[str, Any]:
         """
         Validate H3 operations and API usage.
 
@@ -940,7 +936,7 @@ class EnhancedH3Fusion:
 def create_enhanced_h3_fusion(
     h3_resolution: int = 8,
     enable_spatial_analysis: bool = True,
-    cache_dir: Optional[Path] = None,
+    cache_dir: Path | None = None,
     fusion_mode: str = "geom_intersect",
 ) -> EnhancedH3Fusion:
     """

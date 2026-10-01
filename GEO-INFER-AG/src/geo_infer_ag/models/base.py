@@ -5,7 +5,7 @@ Base model class for agricultural analysis and prediction.
 import abc
 import pickle
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Union
+from typing import Any
 
 from geo_infer_ag.models.secure_serialization import (
     CONTEXT_MODEL_SAVE,
@@ -14,7 +14,7 @@ from geo_infer_ag.models.secure_serialization import (
 )
 
 
-def write_signed_payload(path: Union[str, Path], payload: bytes) -> None:
+def write_signed_payload(path: str | Path, payload: bytes) -> None:
     """Write serialized model bytes as an authenticated GISP1 envelope.
 
     Shared save-side helper for ``AgricultureModel`` and the joblib-backed
@@ -27,7 +27,7 @@ def write_signed_payload(path: Union[str, Path], payload: bytes) -> None:
         file_obj.write(sign_payload(payload, context=CONTEXT_MODEL_SAVE))
 
 
-def read_verified_payload(path: Union[str, Path]) -> bytes:
+def read_verified_payload(path: str | Path) -> bytes:
     """Read a model file, verifying its envelope before deserialization.
 
     Trust boundary: unsigned, truncated, cross-context, or tampered files
@@ -52,7 +52,7 @@ class AgricultureModel(abc.ABC):
     """
 
     def __init__(
-        self, name: str, version: str = "0.1.0", config: Optional[Dict[str, Any]] = None
+        self, name: str, version: str = "0.1.0", config: dict[str, Any] | None = None
     ) -> None:
         """
         Initialize the agricultural model.
@@ -65,15 +65,15 @@ class AgricultureModel(abc.ABC):
         self.name = name
         self.version = version
         self.config = config or {}
-        self.metadata: Dict[str, Any] = {
+        self.metadata: dict[str, Any] = {
             "name": name,
             "version": version,
             "type": self.__class__.__name__,
         }
-        self.required_inputs: List[str] = []
+        self.required_inputs: list[str] = []
 
     @abc.abstractmethod
-    def predict(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def predict(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Generate predictions using the model.
 
@@ -88,7 +88,7 @@ class AgricultureModel(abc.ABC):
         """
         raise RuntimeError("Subclasses must implement predict()")
 
-    def validate_inputs(self, data: Dict[str, Any]) -> bool:
+    def validate_inputs(self, data: dict[str, Any]) -> bool:
         """
         Validate that all required inputs are present.
 
@@ -107,7 +107,7 @@ class AgricultureModel(abc.ABC):
         return True
 
     @property
-    def info(self) -> Dict[str, Any]:
+    def info(self) -> dict[str, Any]:
         """
         Get information about the model.
 

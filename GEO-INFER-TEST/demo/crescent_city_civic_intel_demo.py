@@ -45,7 +45,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Mapping
+from collections.abc import Mapping
 
 import numpy as np
 

@@ -7,7 +7,7 @@ including clustering, density analysis, network analysis, and temporal analysis.
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, cast
 import math
 from .core import H3Grid, H3Cell
 
@@ -23,7 +23,7 @@ except ImportError:
     H3_AVAILABLE = False
 else:
     try:
-        _h3_version: Optional[Tuple[int, ...]] = tuple(
+        _h3_version: tuple[int, ...] | None = tuple(
             int(part.split("+")[0].split("-")[0])
             for part in h3.__version__.lstrip("v").split(".")[:3]
         )
@@ -56,7 +56,7 @@ class H3SpatialAnalyzer:
         """
         self.grid = grid
 
-    def analyze_spatial_autocorrelation(self, value_column: str) -> Dict[str, Any]:
+    def analyze_spatial_autocorrelation(self, value_column: str) -> dict[str, Any]:
         """
         Analyze spatial autocorrelation using Moran's I statistic.
 
@@ -110,7 +110,7 @@ class H3SpatialAnalyzer:
             "reference": "https://medium.com/aimonks/harnessing-the-power-of-h3-py-a-practitioners-guide-to-hexagonal-spatial-indexing-108ded50fb3b",
         }
 
-    def _create_spatial_weights_matrix(self) -> Dict[str, List[str]]:
+    def _create_spatial_weights_matrix(self) -> dict[str, list[str]]:
         """
         Create spatial weights matrix based on H3 neighbor relationships.
 
@@ -135,9 +135,9 @@ class H3SpatialAnalyzer:
 
     def _calculate_morans_i(
         self,
-        values: List[float],
-        weights_matrix: Dict[str, List[str]],
-        valid_cells: List,
+        values: list[float],
+        weights_matrix: dict[str, list[str]],
+        valid_cells: list,
     ) -> float:
         """
         Calculate Moran's I statistic.
@@ -200,7 +200,7 @@ class H3SpatialAnalyzer:
 
     def detect_hotspots(
         self, value_column: str, method: str = "getis_ord"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect spatial hotspots and coldspots using local spatial statistics.
 
@@ -243,8 +243,8 @@ class H3SpatialAnalyzer:
             return {"error": f"Unknown method: {method}"}
 
     def _getis_ord_analysis(
-        self, valid_data: List[Dict], value_column: str
-    ) -> Dict[str, Any]:
+        self, valid_data: list[dict], value_column: str
+    ) -> dict[str, Any]:
         """
         Perform Getis-Ord Gi* hotspot analysis.
 
@@ -330,8 +330,8 @@ class H3SpatialAnalyzer:
         }
 
     def _local_morans_analysis(
-        self, valid_data: List[Dict], value_column: str
-    ) -> Dict[str, Any]:
+        self, valid_data: list[dict], value_column: str
+    ) -> dict[str, Any]:
         """
         Perform Local Moran's I analysis for hotspot detection.
 
@@ -421,7 +421,7 @@ class H3SpatialAnalyzer:
 
     def find_hotspots(
         self, value_column: str, threshold_percentile: float = 90
-    ) -> List[H3Cell]:
+    ) -> list[H3Cell]:
         """
         Find hotspot cells based on value threshold.
 
@@ -472,9 +472,9 @@ class H3ClusterAnalyzer:
     def density_based_clustering(
         self,
         value_column: str,
-        min_density: Optional[float] = None,
+        min_density: float | None = None,
         eps_rings: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform density-based clustering using H3 spatial relationships.
 
@@ -535,8 +535,8 @@ class H3ClusterAnalyzer:
         }
 
     def _h3_dbscan(
-        self, valid_cells: List, values: List[float], min_density: float, eps_rings: int
-    ) -> List[Dict[str, Any]]:
+        self, valid_cells: list, values: list[float], min_density: float, eps_rings: int
+    ) -> list[dict[str, Any]]:
         """
         H3-adapted DBSCAN clustering algorithm.
 
@@ -600,8 +600,8 @@ class H3ClusterAnalyzer:
         return clusters
 
     def _get_h3_neighbors(
-        self, cell_index: str, rings: int, cell_value_map: Dict[str, float]
-    ) -> List[str]:
+        self, cell_index: str, rings: int, cell_value_map: dict[str, float]
+    ) -> list[str]:
         """
         Get H3 neighbors within specified number of rings.
 
@@ -632,12 +632,12 @@ class H3ClusterAnalyzer:
     def _expand_cluster(
         self,
         core_index: str,
-        neighbors: List[str],
+        neighbors: list[str],
         min_density: float,
         eps_rings: int,
-        cell_value_map: Dict[str, float],
+        cell_value_map: dict[str, float],
         visited: set,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Expand cluster from core point.
 
@@ -684,8 +684,8 @@ class H3ClusterAnalyzer:
         return cluster_points
 
     def _calculate_cluster_stats(
-        self, clusters: List[Dict], values: List[float]
-    ) -> Dict[str, Any]:
+        self, clusters: list[dict], values: list[float]
+    ) -> dict[str, Any]:
         """
         Calculate statistics for each cluster.
 
@@ -699,7 +699,7 @@ class H3ClusterAnalyzer:
         stats = {}
 
         # Group by cluster ID
-        cluster_groups: Dict[Any, List[Dict[str, Any]]] = {}
+        cluster_groups: dict[Any, list[dict[str, Any]]] = {}
         for cluster in clusters:
             cid = cluster["cluster_id"]
             if cid not in cluster_groups:
@@ -731,7 +731,7 @@ class H3ClusterAnalyzer:
 
     def hierarchical_clustering(
         self, value_column: str, linkage_method: str = "ward"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform hierarchical clustering on H3 grid cells.
 
@@ -779,8 +779,8 @@ class H3ClusterAnalyzer:
         }
 
     def _create_spatial_distance_matrix(
-        self, valid_data: List[Dict]
-    ) -> List[List[float]]:
+        self, valid_data: list[dict]
+    ) -> list[list[float]]:
         """
         Create distance matrix incorporating both value and spatial distances.
 
@@ -833,8 +833,8 @@ class H3ClusterAnalyzer:
         return 1.0  # Default distance
 
     def _simple_hierarchical_clustering(
-        self, valid_data: List[Dict], distance_matrix: List[List[float]]
-    ) -> List[Dict]:
+        self, valid_data: list[dict], distance_matrix: list[list[float]]
+    ) -> list[dict]:
         """
         Simple hierarchical clustering implementation.
 
@@ -908,7 +908,7 @@ class H3ClusterAnalyzer:
 
     def simple_clustering(
         self, value_column: str, num_clusters: int = 3
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform simple k-means-style clustering on cell values.
 
@@ -977,10 +977,10 @@ class H3DensityAnalyzer:
 
     def calculate_kernel_density(
         self,
-        point_column: Optional[str] = None,
+        point_column: str | None = None,
         bandwidth_rings: int = 2,
         kernel_type: str = "gaussian",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate kernel density estimation using H3 spatial relationships.
 
@@ -1003,7 +1003,7 @@ class H3DensityAnalyzer:
             return {"error": "No cells in grid"}
 
         # Prepare data
-        cell_data: List[Dict[str, Any]] = []
+        cell_data: list[dict[str, Any]] = []
         for cell in self.grid.cells:
             if point_column and point_column in cell.properties:
                 value = (
@@ -1060,7 +1060,7 @@ class H3DensityAnalyzer:
             "reference": "https://gis.utah.gov/blog/2022-10-26-using-h3-hexes/",
         }
 
-    def _get_neighbors_within_rings(self, cell_index: str, rings: int) -> List[str]:
+    def _get_neighbors_within_rings(self, cell_index: str, rings: int) -> list[str]:
         """
         Get all neighbors within specified number of rings.
 
@@ -1082,8 +1082,8 @@ class H3DensityAnalyzer:
     def _calculate_kernel_value(
         self,
         target_index: str,
-        neighbors: List[str],
-        cell_data: List[Dict],
+        neighbors: list[str],
+        cell_data: list[dict],
         bandwidth_rings: int,
         kernel_type: str,
     ) -> float:
@@ -1165,7 +1165,7 @@ class H3DensityAnalyzer:
         else:
             return 1.0  # Default to uniform
 
-    def analyze_density_patterns(self, value_column: str) -> Dict[str, Any]:
+    def analyze_density_patterns(self, value_column: str) -> dict[str, Any]:
         """
         Analyze density patterns and identify clusters, gaps, and gradients.
 
@@ -1183,8 +1183,8 @@ class H3DensityAnalyzer:
             return {"error": "No cells in grid"}
 
         # Extract valid data
-        valid_data: List[Dict[str, Any]] = []
-        values: List[float] = []
+        valid_data: list[dict[str, Any]] = []
+        values: list[float] = []
 
         for cell in self.grid.cells:
             if (
@@ -1256,7 +1256,7 @@ class H3DensityAnalyzer:
             },
         }
 
-    def _calculate_percentile_rank(self, value: float, values: List[float]) -> float:
+    def _calculate_percentile_rank(self, value: float, values: list[float]) -> float:
         """
         Calculate percentile rank of a value.
 
@@ -1272,7 +1272,7 @@ class H3DensityAnalyzer:
         return cast(float, stats.percentileofscore(values, value))
 
     def _calculate_local_gradient(
-        self, cell_index: str, valid_data: List[Dict]
+        self, cell_index: str, valid_data: list[dict]
     ) -> float:
         """
         Calculate local density gradient for a cell.
@@ -1340,7 +1340,7 @@ class H3DensityAnalyzer:
 
     def calculate_density_surface(
         self, value_column: str, radius_cells: int = 2
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate density surface using kernel density estimation.
 
@@ -1357,7 +1357,7 @@ class H3DensityAnalyzer:
         # Kernel-style neighborhood density: each cell's value averaged over
         # its true H3 neighborhood (grid_disk of radius_cells, self included).
         cell_by_index = {cell.index: cell for cell in self.grid.cells}
-        density_results: Dict[str, float] = {}
+        density_results: dict[str, float] = {}
 
         for cell in self.grid.cells:
             neighborhood = h3.grid_disk(cell.index, radius_cells)
@@ -1396,8 +1396,8 @@ class H3NetworkAnalyzer:
         self,
         origin_column: str,
         destination_column: str,
-        flow_volume_column: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        flow_volume_column: str | None = None,
+    ) -> dict[str, Any]:
         """
         Analyze flow patterns between H3 cells.
 
@@ -1465,7 +1465,7 @@ class H3NetworkAnalyzer:
             "method": "H3 Flow Pattern Analysis",
         }
 
-    def _analyze_flows(self, flows: List[Dict]) -> Dict[str, Any]:
+    def _analyze_flows(self, flows: list[dict]) -> dict[str, Any]:
         """
         Analyze flow patterns and identify key characteristics.
 
@@ -1515,8 +1515,8 @@ class H3NetworkAnalyzer:
         }
 
     def _calculate_network_metrics(
-        self, flows: List[Dict], cell_indices: set
-    ) -> Dict[str, Any]:
+        self, flows: list[dict], cell_indices: set
+    ) -> dict[str, Any]:
         """
         Calculate network-based metrics for the H3 grid.
 
@@ -1586,8 +1586,8 @@ class H3NetworkAnalyzer:
         }
 
     def calculate_accessibility(
-        self, impedance_column: Optional[str] = None, max_rings: int = 5
-    ) -> Dict[str, Any]:
+        self, impedance_column: str | None = None, max_rings: int = 5
+    ) -> dict[str, Any]:
         """
         Calculate accessibility measures for each H3 cell.
 
@@ -1608,7 +1608,7 @@ class H3NetworkAnalyzer:
         if not self.grid.cells:
             return {"error": "No cells in grid"}
 
-        accessibility_results: List[Dict[str, Any]] = []
+        accessibility_results: list[dict[str, Any]] = []
 
         for target_cell in self.grid.cells:
             # Calculate accessibility from this cell
@@ -1674,7 +1674,7 @@ class H3NetworkAnalyzer:
 
     def _get_cells_at_ring_distance(
         self, center_index: str, ring_distance: int
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Get cells at exactly the specified ring distance.
 
@@ -1697,7 +1697,7 @@ class H3NetworkAnalyzer:
         except Exception as e:
             raise ValueError(f"Failed to get H3 ring cells: {e}") from e
 
-    def detect_network_communities(self, flow_threshold: float = 0.1) -> Dict[str, Any]:
+    def detect_network_communities(self, flow_threshold: float = 0.1) -> dict[str, Any]:
         """
         Detect communities in the H3 network based on flow patterns.
 
@@ -1718,7 +1718,7 @@ class H3NetworkAnalyzer:
 
         # Build adjacency matrix based on flows
         cell_indices = [cell.index for cell in self.grid.cells]
-        adjacency: Dict[str, Set[str]] = {idx: set() for idx in cell_indices}
+        adjacency: dict[str, set[str]] = {idx: set() for idx in cell_indices}
 
         # Add edges based on flow data (simplified approach)
         for cell in self.grid.cells:
@@ -1739,8 +1739,8 @@ class H3NetworkAnalyzer:
                             continue
 
         # Simple community detection using connected components
-        communities: List[Dict[str, Any]] = []
-        visited: Set[str] = set()
+        communities: list[dict[str, Any]] = []
+        visited: set[str] = set()
 
         for cell_idx in cell_indices:
             if cell_idx not in visited:
@@ -1765,9 +1765,9 @@ class H3NetworkAnalyzer:
     def _find_connected_component(
         self,
         start_cell: str,
-        adjacency: Dict[str, Set[str]],
-        visited: Set[str],
-    ) -> Set[str]:
+        adjacency: dict[str, set[str]],
+        visited: set[str],
+    ) -> set[str]:
         """
         Find connected component starting from a cell.
 
@@ -1811,7 +1811,7 @@ class H3NetworkAnalyzer:
         """
         self.grid = grid
 
-    def analyze_connectivity_patterns(self) -> Dict[str, Any]:
+    def analyze_connectivity_patterns(self) -> dict[str, Any]:
         """
         Analyze connectivity patterns in the grid.
 
@@ -1824,7 +1824,7 @@ class H3NetworkAnalyzer:
         # Exact H3 adjacency: two grid cells are connected when they are
         # direct neighbors on the H3 lattice (grid_disk ring 1).
         grid_indices = {cell.index for cell in self.grid.cells}
-        cell_connections: Dict[str, int] = {}
+        cell_connections: dict[str, int] = {}
         total_connections = 0
 
         for cell in self.grid.cells:
@@ -1867,7 +1867,7 @@ class H3TemporalAnalyzer:
         timestamp_column: str,
         value_column: str,
         temporal_resolution: str = "hour",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze temporal patterns in H3 grid data.
 
@@ -1890,7 +1890,7 @@ class H3TemporalAnalyzer:
             return {"error": "No cells in grid"}
 
         # Extract temporal data
-        temporal_data: List[Dict[str, Any]] = []
+        temporal_data: list[dict[str, Any]] = []
 
         for cell in self.grid.cells:
             if (
@@ -1941,7 +1941,7 @@ class H3TemporalAnalyzer:
             "reference": "https://towardsdatascience.com/exploring-location-data-using-a-hexagon-grid-3509b68b04a2",
         }
 
-    def _parse_timestamp(self, timestamp_str: str) -> Optional[datetime]:
+    def _parse_timestamp(self, timestamp_str: str) -> datetime | None:
         """
         Parse timestamp string into datetime object.
 
@@ -1977,8 +1977,8 @@ class H3TemporalAnalyzer:
             return None
 
     def _aggregate_by_temporal_resolution(
-        self, temporal_data: List[Dict], resolution: str
-    ) -> Dict[int, Any]:
+        self, temporal_data: list[dict], resolution: str
+    ) -> dict[int, Any]:
         """
         Aggregate data by temporal resolution.
 
@@ -1989,7 +1989,7 @@ class H3TemporalAnalyzer:
         Returns:
             Dictionary of aggregated data
         """
-        aggregated: Dict[int, Any] = {}
+        aggregated: dict[int, Any] = {}
 
         for data_point in temporal_data:
             timestamp = data_point["timestamp"]
@@ -2024,8 +2024,8 @@ class H3TemporalAnalyzer:
         return aggregated
 
     def _analyze_patterns(
-        self, aggregated_data: Dict, resolution: str
-    ) -> Dict[str, Any]:
+        self, aggregated_data: dict, resolution: str
+    ) -> dict[str, Any]:
         """
         Analyze temporal patterns in aggregated data.
 
@@ -2120,7 +2120,7 @@ class H3TemporalAnalyzer:
         else:
             return str(period)
 
-    def _identify_pattern_type(self, aggregated_data: Dict, resolution: str) -> str:
+    def _identify_pattern_type(self, aggregated_data: dict, resolution: str) -> str:
         """
         Identify the type of temporal pattern.
 
@@ -2186,7 +2186,7 @@ class H3TemporalAnalyzer:
         else:
             return "Complex temporal pattern"
 
-    def _calculate_temporal_stats(self, aggregated_data: Dict) -> Dict[str, Any]:
+    def _calculate_temporal_stats(self, aggregated_data: dict) -> dict[str, Any]:
         """
         Calculate temporal statistics.
 
@@ -2223,7 +2223,7 @@ class H3TemporalAnalyzer:
         value_column: str,
         method: str = "zscore",
         threshold: float = 2.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect temporal anomalies in H3 grid data.
 
@@ -2244,7 +2244,7 @@ class H3TemporalAnalyzer:
             return {"error": "No cells in grid"}
 
         # Extract temporal data
-        temporal_data: List[Dict[str, Any]] = []
+        temporal_data: list[dict[str, Any]] = []
 
         for cell in self.grid.cells:
             if (
@@ -2293,8 +2293,8 @@ class H3TemporalAnalyzer:
         }
 
     def _detect_zscore_anomalies(
-        self, temporal_data: List[Dict], threshold: float
-    ) -> List[Dict]:
+        self, temporal_data: list[dict], threshold: float
+    ) -> list[dict]:
         """
         Detect anomalies using Z-score method.
 
@@ -2332,8 +2332,8 @@ class H3TemporalAnalyzer:
         return anomalies
 
     def _detect_iqr_anomalies(
-        self, temporal_data: List[Dict], multiplier: float
-    ) -> List[Dict]:
+        self, temporal_data: list[dict], multiplier: float
+    ) -> list[dict]:
         """
         Detect anomalies using IQR method.
 
@@ -2378,7 +2378,7 @@ class H3TemporalAnalyzer:
     in H3 hexagonal grid data over time.
     """
 
-    def __init__(self, grids: List[H3Grid]) -> None:  # type: ignore[no-redef]
+    def __init__(self, grids: list[H3Grid]) -> None:  # type: ignore[no-redef]
         """
         Initialize temporal analyzer for multiple H3Grids.
 
@@ -2388,7 +2388,7 @@ class H3TemporalAnalyzer:
         self.grids = grids
         self.timestamps = [grid.created_at for grid in grids]
 
-    def analyze_temporal_trends(self, value_column: str) -> Dict[str, Any]:
+    def analyze_temporal_trends(self, value_column: str) -> dict[str, Any]:
         """
         Analyze temporal trends in grid values.
 
@@ -2402,7 +2402,7 @@ class H3TemporalAnalyzer:
             return {"error": "No grids for temporal analysis"}
 
         # Track values over time for each cell position
-        temporal_data: Dict[str, List[Dict[str, Any]]] = {}
+        temporal_data: dict[str, list[dict[str, Any]]] = {}
 
         for i, grid in enumerate(self.grids):
             timestamp = self.timestamps[i]
@@ -2454,7 +2454,7 @@ class H3TemporalAnalyzer:
             changes = [analysis["change"] for analysis in trend_analysis.values()]
             avg_change = sum(changes) / len(changes)
 
-            trend_counts: Dict[str, int] = {}
+            trend_counts: dict[str, int] = {}
             for analysis in trend_analysis.values():
                 trend = analysis["trend"]
                 trend_counts[trend] = trend_counts.get(trend, 0) + 1
@@ -2472,7 +2472,7 @@ class H3TemporalAnalyzer:
 
     def detect_anomalies(
         self, value_column: str, threshold_std: float = 2.0
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect temporal anomalies in grid values.
 

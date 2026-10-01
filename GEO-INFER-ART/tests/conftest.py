@@ -13,11 +13,11 @@ import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -69,7 +69,7 @@ def sample_image_array() -> np.ndarray:
 
 
 @pytest.fixture
-def spatial_art_config() -> Dict[str, Any]:
+def spatial_art_config() -> dict[str, Any]:
     """Configuration dict for spatial art generation.
 
     Specifies output resolution, projection, style parameters, and
@@ -90,7 +90,7 @@ def spatial_art_config() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def color_palette() -> List[str]:
+def color_palette() -> list[str]:
     """Hex color palette for generative art tests.
 
     A curated 8-color palette suitable for geospatial data

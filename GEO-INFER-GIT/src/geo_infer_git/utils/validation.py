@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Validation utilities for GEO-INFER-GIT.
@@ -11,7 +10,7 @@ configuration files, repository data, and user inputs.
 import os
 import re
 import json
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any
 from pathlib import Path
 import jsonschema
 from urllib.parse import urlparse
@@ -28,9 +27,9 @@ class ConfigValidator:
     def __init__(self) -> None:
         """Initialize the configuration validator."""
         self.schemas = self._load_default_schemas()
-        self.custom_schemas: Dict[str, Any] = {}
+        self.custom_schemas: dict[str, Any] = {}
 
-    def _load_default_schemas(self) -> Dict[str, Dict[str, Any]]:
+    def _load_default_schemas(self) -> dict[str, dict[str, Any]]:
         """Load default validation schemas."""
         return {
             "clone_config": {
@@ -146,7 +145,7 @@ class ConfigValidator:
             },
         }
 
-    def add_custom_schema(self, name: str, schema: Dict[str, Any]) -> None:
+    def add_custom_schema(self, name: str, schema: dict[str, Any]) -> None:
         """
         Add a custom validation schema.
 
@@ -156,7 +155,7 @@ class ConfigValidator:
         """
         self.custom_schemas[name] = schema
 
-    def validate_config(self, config: Dict[str, Any], schema_name: str) -> List[str]:
+    def validate_config(self, config: dict[str, Any], schema_name: str) -> list[str]:
         """
         Validate configuration against a schema.
 
@@ -185,7 +184,7 @@ class ConfigValidator:
 
         return errors
 
-    def validate_github_url(self, url: str) -> List[str]:
+    def validate_github_url(self, url: str) -> list[str]:
         """
         Validate GitHub repository URL format.
 
@@ -237,7 +236,7 @@ class ConfigValidator:
 
     def validate_directory_path(
         self, path: str, must_exist: bool = False, writable: bool = True
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Validate directory path.
 
@@ -283,7 +282,7 @@ class ConfigValidator:
 
         return errors
 
-    def validate_github_token(self, token: str) -> List[str]:
+    def validate_github_token(self, token: str) -> list[str]:
         """
         Validate GitHub token format.
 
@@ -310,7 +309,7 @@ class ConfigValidator:
 
         return errors
 
-    def validate_branch_name(self, branch: str) -> List[str]:
+    def validate_branch_name(self, branch: str) -> list[str]:
         """
         Validate Git branch name.
 
@@ -352,9 +351,9 @@ class RepositoryValidator:
     def __init__(self) -> None:
         """Initialize the repository validator."""
         self.required_fields = ["name", "url"]
-        self.validation_errors: List[str] = []
+        self.validation_errors: list[str] = []
 
-    def validate_repository_data(self, repo_data: Dict[str, Any]) -> List[str]:
+    def validate_repository_data(self, repo_data: dict[str, Any]) -> list[str]:
         """
         Validate repository data structure.
 
@@ -388,12 +387,12 @@ class RepositoryValidator:
 
         return errors
 
-    def validate_github_url(self, url: str) -> List[str]:
+    def validate_github_url(self, url: str) -> list[str]:
         """Validate GitHub URL format."""
         validator = ConfigValidator()
         return validator.validate_github_url(url)
 
-    def validate_owner_repo_format(self, owner: str, repo: str) -> List[str]:
+    def validate_owner_repo_format(self, owner: str, repo: str) -> list[str]:
         """
         Validate owner and repository name format.
 
@@ -424,9 +423,9 @@ class InputValidator:
 
     def __init__(self) -> None:
         """Initialize the input validator."""
-        self.validation_errors: List[str] = []
+        self.validation_errors: list[str] = []
 
-    def validate_positive_integer(self, value: Any, field_name: str) -> List[str]:
+    def validate_positive_integer(self, value: Any, field_name: str) -> list[str]:
         """
         Validate that a value is a positive integer.
 
@@ -457,8 +456,8 @@ class InputValidator:
         value: Any,
         field_name: str,
         min_length: int = 0,
-        max_length: Optional[int] = None,
-    ) -> List[str]:
+        max_length: int | None = None,
+    ) -> list[str]:
         """
         Validate string length.
 
@@ -490,8 +489,8 @@ class InputValidator:
         return errors
 
     def validate_enum_value(
-        self, value: Any, field_name: str, allowed_values: List[str]
-    ) -> List[str]:
+        self, value: Any, field_name: str, allowed_values: list[str]
+    ) -> list[str]:
         """
         Validate that a value is in a list of allowed values.
 
@@ -515,7 +514,7 @@ class InputValidator:
         return errors
 
 
-def validate_config_file(config_path: str) -> Tuple[bool, List[str]]:
+def validate_config_file(config_path: str) -> tuple[bool, list[str]]:
     """
     Validate a configuration file.
 
@@ -540,12 +539,12 @@ def validate_config_file(config_path: str) -> Tuple[bool, List[str]]:
     try:
         # Load file
         if config_path.endswith(".json"):
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 config = json.load(f)
         else:
             import yaml
 
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 config = yaml.safe_load(f)
 
         if config is None:
@@ -580,10 +579,10 @@ def validate_config_file(config_path: str) -> Tuple[bool, List[str]]:
 
 
 def validate_github_credentials(
-    token: Optional[str] = None,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-) -> List[str]:
+    token: str | None = None,
+    username: str | None = None,
+    password: str | None = None,
+) -> list[str]:
     """
     Validate GitHub authentication credentials.
 

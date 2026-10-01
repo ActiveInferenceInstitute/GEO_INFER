@@ -1,7 +1,6 @@
 """Water infrastructure planning module."""
 
 import logging
-from typing import Dict, Optional
 import xarray as xr
 
 logger = logging.getLogger(__name__)
@@ -10,7 +9,7 @@ logger = logging.getLogger(__name__)
 class WaterInfrastructurePlanner:
     """Plan water infrastructure."""
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize infrastructure planner."""
         self.config = config or {}
 
@@ -18,7 +17,7 @@ class WaterInfrastructurePlanner:
         self,
         water_supply: xr.DataArray,
         water_demand: xr.DataArray,
-        priorities: Optional[xr.DataArray] = None,
+        priorities: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """
         Optimize water allocation.

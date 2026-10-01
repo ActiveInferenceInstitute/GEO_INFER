@@ -6,7 +6,7 @@ integrating with H3 spatial indexing for efficient spatial queries.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime
 import uuid
@@ -28,9 +28,9 @@ class SensorMetadata:
     h3_index: str = ""
     h3_resolution: int = 8
     status: str = "active"
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     registered_at: datetime = field(default_factory=datetime.now)
-    last_seen: Optional[datetime] = None
+    last_seen: datetime | None = None
 
     def __post_init__(self) -> None:
         if not self.h3_index:
@@ -50,8 +50,8 @@ class SensorNetworkRecord:
     network_id: str
     name: str
     protocol: str
-    spatial_bounds: Dict[str, Any]
-    sensor_types: List[str]
+    spatial_bounds: dict[str, Any]
+    sensor_types: list[str]
     sensor_count: int = 0
     created_at: datetime = field(default_factory=datetime.now)
 
@@ -67,11 +67,11 @@ class SensorRegistry:
     - Network topology tracking
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config = config or {}
-        self.networks: Dict[str, SensorNetworkRecord] = {}
-        self.sensors: Dict[str, SensorMetadata] = {}
-        self.h3_spatial_index: Dict[str, Set[str]] = {}  # h3_index -> sensor_ids
+        self.networks: dict[str, SensorNetworkRecord] = {}
+        self.sensors: dict[str, SensorMetadata] = {}
+        self.h3_spatial_index: dict[str, set[str]] = {}  # h3_index -> sensor_ids
 
         logger.info("Sensor Registry initialized")
 
@@ -91,7 +91,7 @@ class SensorRegistry:
         logger.info(f"Registered sensor network: {network.name}")
         return network
 
-    def register_sensor(self, sensor_info: Dict) -> SensorMetadata:
+    def register_sensor(self, sensor_info: dict) -> SensorMetadata:
         """Register an individual sensor."""
         sensor = SensorMetadata(**sensor_info)
 
@@ -109,18 +109,18 @@ class SensorRegistry:
         logger.info(f"Registered sensor: {sensor.sensor_id}")
         return sensor
 
-    def get_sensors_in_h3_cell(self, h3_index: str) -> List[SensorMetadata]:
+    def get_sensors_in_h3_cell(self, h3_index: str) -> list[SensorMetadata]:
         """Get all sensors in a specific H3 cell."""
         sensor_ids = self.h3_spatial_index.get(h3_index, set())
         return [self.sensors[sid] for sid in sensor_ids if sid in self.sensors]
 
-    def get_sensors_by_type(self, sensor_type: str) -> List[SensorMetadata]:
+    def get_sensors_by_type(self, sensor_type: str) -> list[SensorMetadata]:
         """Get all sensors of a specific type."""
         return [s for s in self.sensors.values() if s.sensor_type == sensor_type]
 
     def get_sensors_in_area(
-        self, bounds: Dict, h3_resolution: int = 8
-    ) -> List[SensorMetadata]:
+        self, bounds: dict, h3_resolution: int = 8
+    ) -> list[SensorMetadata]:
         """Get sensors within geographic bounds using H3 spatial indexing.
 
         Builds a polygon from the bounding box, maps it to the H3 cells
@@ -170,12 +170,12 @@ class SensorRegistry:
             ],
         }
         cells = h3.geo_to_cells(polygon, h3_resolution)
-        candidate_cells: Set[str] = set()
+        candidate_cells: set[str] = set()
         for cell in cells:
             candidate_cells.update(h3.grid_disk(cell, 1))
 
-        matched: List[SensorMetadata] = []
-        seen: Set[str] = set()
+        matched: list[SensorMetadata] = []
+        seen: set[str] = set()
         for cell in candidate_cells:
             for sensor_id in self.h3_spatial_index.get(cell, ()):
                 if sensor_id in seen or sensor_id not in self.sensors:

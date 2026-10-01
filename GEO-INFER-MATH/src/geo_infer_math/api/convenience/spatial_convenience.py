@@ -5,7 +5,7 @@ This module provides enhanced convenience methods for spatial analysis.
 """
 
 import numpy as np
-from typing import Optional, List, Dict, Any
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -27,8 +27,8 @@ def _load_spatial_analysis_api() -> Any:
 def enhanced_spatial_analysis(
     coordinates: np.ndarray,
     values: np.ndarray,
-    analysis_types: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    analysis_types: list[str] | None = None,
+) -> dict[str, Any]:
     """
     Enhanced spatial analysis combining multiple methods.
 
@@ -88,7 +88,7 @@ class SpatialConvenience:
 
     def comprehensive_analysis(
         self, coordinates: np.ndarray, values: np.ndarray, **kwargs: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform comprehensive spatial analysis.
 

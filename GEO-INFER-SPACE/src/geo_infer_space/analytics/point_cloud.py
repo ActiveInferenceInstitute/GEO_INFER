@@ -10,7 +10,7 @@ import logging
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-from typing import Union, Dict, Any, Optional, Tuple, cast
+from typing import Any, cast
 from shapely.geometry import Point, Polygon
 from scipy.spatial import ConvexHull, Delaunay
 from sklearn.cluster import DBSCAN
@@ -42,10 +42,10 @@ class PointCloud:
     def __init__(
         self,
         points: np.ndarray,
-        colors: Optional[np.ndarray] = None,
-        intensities: Optional[np.ndarray] = None,
-        classifications: Optional[np.ndarray] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        colors: np.ndarray | None = None,
+        intensities: np.ndarray | None = None,
+        classifications: np.ndarray | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """
         Initialize point cloud.
@@ -72,7 +72,7 @@ class PointCloud:
         return len(self.points)
 
     @property
-    def bounds(self) -> Tuple[float, float, float, float, float, float]:
+    def bounds(self) -> tuple[float, float, float, float, float, float]:
         """Bounding box as (minx, miny, minz, maxx, maxy, maxz)."""
         mins = np.min(self.points, axis=0)
         maxs = np.max(self.points, axis=0)
@@ -227,7 +227,7 @@ def surface_generation(
     method: str = "triangulation",
     grid_resolution: float = 1.0,
     **kwargs: Any,
-) -> Union[gpd.GeoDataFrame, np.ndarray]:
+) -> gpd.GeoDataFrame | np.ndarray:
     """
     Generate surfaces from point cloud data.
 
@@ -458,7 +458,7 @@ def _filter_point_cloud(point_cloud: PointCloud, mask: np.ndarray) -> PointCloud
 
 def _calculate_point_features(
     neighbor_points: np.ndarray, distances: np.ndarray
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Calculate geometric features for a point neighborhood."""
     if len(neighbor_points) < 3:
         return {}

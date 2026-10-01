@@ -18,7 +18,7 @@ Key Features:
 
 import numpy as np
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from collections import defaultdict
@@ -45,14 +45,14 @@ class DigitalTrace:
     trace_id: str
     agent_id: str
     information_type: str
-    content: Dict[str, Any]
-    location: Optional[np.ndarray] = None  # [lat, lng] if spatial
+    content: dict[str, Any]
+    location: np.ndarray | None = None  # [lat, lng] if spatial
     timestamp: datetime = field(default_factory=datetime.now)
     visibility_scope: str = "public"  # 'public', 'private', 'neighborhood', 'network'
     persistence_duration: float = 3600.0  # seconds
     credibility_score: float = 1.0
     access_count: int = 0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate trace after initialization."""
@@ -73,7 +73,7 @@ class DigitalTrace:
         time_decay = max(0.1, 1.0 - (age_hours / 24.0))  # 24-hour half-life
         return self.credibility_score * time_decay
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert trace to dictionary representation."""
         return {
             "trace_id": self.trace_id,
@@ -97,14 +97,14 @@ class InformationQuery:
     query_id: str
     agent_id: str
     query_type: str  # 'resource_location', 'hazard_warning', 'traffic_info', etc.
-    spatial_bounds: Optional[Dict[str, float]] = None
-    temporal_window: Optional[str] = "recent"  # 'recent', 'hour', 'day', 'week', 'all'
-    information_types: List[str] = field(default_factory=list)
+    spatial_bounds: dict[str, float] | None = None
+    temporal_window: str | None = "recent"  # 'recent', 'hour', 'day', 'week', 'all'
+    information_types: list[str] = field(default_factory=list)
     credibility_threshold: float = 0.5
     max_results: int = 10
     timestamp: datetime = field(default_factory=datetime.now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert query to dictionary representation."""
         return {
             "query_id": self.query_id,
@@ -140,7 +140,7 @@ class DigitalStigmergy:
     def __init__(
         self,
         communication_medium: str = "iot_network",
-        information_types: Optional[List[str]] = None,
+        information_types: list[str] | None = None,
         persistence_model: str = "temporal_decay",
         access_control: str = "public",
         spatial_backend: str = "h3",
@@ -166,18 +166,18 @@ class DigitalStigmergy:
         self.spatial_resolution = parse_h3_resolution("h3_r8")
 
         # Information storage
-        self.digital_traces: Dict[str, DigitalTrace] = {}  # trace_id -> trace
-        self.trace_index: Dict[str, List[str]] = defaultdict(list)  # type -> trace_ids
-        self.spatial_index: Dict[str, List[str]] = defaultdict(
+        self.digital_traces: dict[str, DigitalTrace] = {}  # trace_id -> trace
+        self.trace_index: dict[str, list[str]] = defaultdict(list)  # type -> trace_ids
+        self.spatial_index: dict[str, list[str]] = defaultdict(
             list
         )  # spatial_cell -> trace_ids
-        self.agent_traces: Dict[str, List[str]] = defaultdict(
+        self.agent_traces: dict[str, list[str]] = defaultdict(
             list
         )  # agent_id -> trace_ids
 
         # Query history and analytics
-        self.query_history: List[InformationQuery] = []
-        self.access_patterns: Dict[str, int] = defaultdict(int)
+        self.query_history: list[InformationQuery] = []
+        self.access_patterns: dict[str, int] = defaultdict(int)
 
         # Integration components
         self.spatial_indexer: Any = None
@@ -216,12 +216,12 @@ class DigitalStigmergy:
         self,
         agent_id: str,
         information_type: str,
-        content: Dict[str, Any],
-        location: Optional[np.ndarray] = None,
+        content: dict[str, Any],
+        location: np.ndarray | None = None,
         visibility_scope: str = "public",
         persistence_duration: float = 3600.0,
-        credibility_score: Optional[float] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        credibility_score: float | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> str:
         """
         Contribute information to the digital stigmergy system.
@@ -298,7 +298,7 @@ class DigitalStigmergy:
             return ""
 
     def _calculate_credibility_score(
-        self, agent_id: str, information_type: str, content: Dict[str, Any]
+        self, agent_id: str, information_type: str, content: dict[str, Any]
     ) -> float:
         """Calculate credibility score for information contribution."""
         base_credibility = 1.0
@@ -339,12 +339,12 @@ class DigitalStigmergy:
         self,
         agent_id: str,
         query_type: str,
-        spatial_bounds: Optional[Dict[str, float]] = None,
+        spatial_bounds: dict[str, float] | None = None,
         temporal_window: str = "recent",
-        information_types: Optional[List[str]] = None,
+        information_types: list[str] | None = None,
         credibility_threshold: float = 0.5,
         max_results: int = 10,
-    ) -> List[DigitalTrace]:
+    ) -> list[DigitalTrace]:
         """
         Query digital stigmergic information.
 
@@ -407,7 +407,7 @@ class DigitalStigmergy:
             logger.error(f"Failed to query stigmergy: {e}")
             return []
 
-    def _filter_traces(self, query: InformationQuery) -> List[DigitalTrace]:
+    def _filter_traces(self, query: InformationQuery) -> list[DigitalTrace]:
         """Filter traces based on query criteria."""
         filtered_traces = []
 
@@ -477,7 +477,7 @@ class DigitalStigmergy:
 
         return filtered_traces
 
-    def _get_spatial_cells(self, bounds: Dict[str, float]) -> List[str]:
+    def _get_spatial_cells(self, bounds: dict[str, float]) -> list[str]:
         """Convert spatial bounds to H3 cells."""
         if not self.spatial_indexer:
             return []
@@ -514,7 +514,7 @@ class DigitalStigmergy:
             logger.warning(f"Failed to get spatial cells: {e}")
             return []
 
-    def _get_temporal_cutoff(self, temporal_window: Optional[str]) -> datetime:
+    def _get_temporal_cutoff(self, temporal_window: str | None) -> datetime:
         """Get temporal cutoff based on window specification."""
         now = datetime.now()
 
@@ -535,7 +535,7 @@ class DigitalStigmergy:
 
     @staticmethod
     def _location_in_bounds(
-        trace: Optional[DigitalTrace], bounds: Dict[str, float]
+        trace: DigitalTrace | None, bounds: dict[str, float]
     ) -> bool:
         if trace is None or trace.location is None:
             return False
@@ -549,7 +549,7 @@ class DigitalStigmergy:
         self,
         agent_id: str,
         trace: DigitalTrace,
-        spatial_bounds: Optional[Dict[str, float]] = None,
+        spatial_bounds: dict[str, float] | None = None,
     ) -> bool:
         """Check if agent has access to trace based on visibility scope."""
         if trace.visibility_scope == "public":
@@ -598,10 +598,10 @@ class DigitalStigmergy:
 
     async def extract_patterns(
         self,
-        information_contributions: Optional[List[DigitalTrace]] = None,
-        pattern_types: Optional[List[str]] = None,
+        information_contributions: list[DigitalTrace] | None = None,
+        pattern_types: list[str] | None = None,
         temporal_analysis: str = "recent",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Extract emergent patterns from digital stigmergy contributions.
 
@@ -628,7 +628,7 @@ class DigitalStigmergy:
                 "anomalies",
                 "trends",
             ]
-            patterns: Dict[str, Any] = {}
+            patterns: dict[str, Any] = {}
 
             # Spatial clustering analysis
             if "clusters" in pattern_types and self.spatial_analytics:
@@ -675,8 +675,8 @@ class DigitalStigmergy:
             return {"error": str(e)}
 
     def _analyze_spatial_clusters(
-        self, contributions: List[DigitalTrace]
-    ) -> Dict[str, Any]:
+        self, contributions: list[DigitalTrace]
+    ) -> dict[str, Any]:
         """Analyze spatial clustering of information contributions."""
         if not self.spatial_analytics:
             return {"status": "spatial_analytics_unavailable"}
@@ -727,10 +727,10 @@ class DigitalStigmergy:
             return {"status": "clustering_failed"}
 
     def _analyze_information_flows(
-        self, contributions: List[DigitalTrace]
-    ) -> Dict[str, Any]:
+        self, contributions: list[DigitalTrace]
+    ) -> dict[str, Any]:
         """Analyze information flows and sharing patterns."""
-        flows: Dict[str, Any] = {
+        flows: dict[str, Any] = {
             "information_type_flows": defaultdict(list),
             "agent_contribution_patterns": defaultdict(list),
             "temporal_flows": defaultdict(list),
@@ -770,9 +770,9 @@ class DigitalStigmergy:
 
         return dict(flows)
 
-    def _detect_anomalies(self, contributions: List[DigitalTrace]) -> Dict[str, Any]:
+    def _detect_anomalies(self, contributions: list[DigitalTrace]) -> dict[str, Any]:
         """Detect anomalous patterns in information contributions."""
-        anomalies: Dict[str, Any] = {
+        anomalies: dict[str, Any] = {
             "unusual_activity_spikes": [],
             "low_credibility_clusters": [],
             "spatial_anomalies": [],
@@ -852,10 +852,10 @@ class DigitalStigmergy:
         return anomalies
 
     def _analyze_temporal_trends(
-        self, contributions: List[DigitalTrace], temporal_scope: str
-    ) -> Dict[str, Any]:
+        self, contributions: list[DigitalTrace], temporal_scope: str
+    ) -> dict[str, Any]:
         """Analyze temporal trends in information contributions."""
-        trends: Dict[str, Any] = {
+        trends: dict[str, Any] = {
             "information_type_trends": defaultdict(list),
             "activity_trends": defaultdict(int),
             "credibility_trends": defaultdict(list),
@@ -881,8 +881,8 @@ class DigitalStigmergy:
         return dict(trends)
 
     def _group_by_time_period(
-        self, contributions: List[DigitalTrace], scope: str
-    ) -> Dict[str, List[DigitalTrace]]:
+        self, contributions: list[DigitalTrace], scope: str
+    ) -> dict[str, list[DigitalTrace]]:
         """Group contributions by time period."""
         groups = defaultdict(list)
 
@@ -971,7 +971,7 @@ class DigitalStigmergy:
         if expired_traces:
             logger.debug(f"Cleaned up {len(expired_traces)} expired traces")
 
-    def get_system_statistics(self) -> Dict[str, Any]:
+    def get_system_statistics(self) -> dict[str, Any]:
         """Get comprehensive system statistics."""
         stats = {
             "total_traces": len(self.digital_traces),
@@ -1035,7 +1035,7 @@ class DigitalStigmergy:
         try:
             import json
 
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 data = json.load(f)
 
             # Restore traces

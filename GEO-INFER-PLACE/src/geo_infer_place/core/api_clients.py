@@ -11,7 +11,7 @@ extending the general BaseAPIManager from GEO-INFER-SPACE with:
 
 import logging
 import time
-from typing import Any, Dict, Optional, cast
+from typing import Any, cast
 
 import requests
 
@@ -39,10 +39,10 @@ BACKOFF_MAX = 30.0
 def _fetch_with_retry(
     session: requests.Session,
     url: str,
-    params: Optional[Dict[str, Any]] = None,
+    params: dict[str, Any] | None = None,
     max_retries: int = MAX_RETRIES,
     timeout: int = 30,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Fetch JSON data with exponential backoff retry.
 
     Retries on transient network errors and 5xx server errors.
@@ -75,7 +75,7 @@ def _fetch_with_retry(
                 }
 
             response.raise_for_status()
-            return cast(Dict[str, Any], response.json())
+            return cast(dict[str, Any], response.json())
 
         except requests.exceptions.Timeout as exc:
             last_exc = exc
@@ -144,8 +144,8 @@ class CALFIREClient(BaseAPIManager):
         return data
 
     def fetch_perimeters(
-        self, year: Optional[int] = None, county: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, year: int | None = None, county: str | None = None
+    ) -> dict[str, Any]:
         """Fetch fire perimeters data with retry and validation.
 
         Args:
@@ -188,7 +188,7 @@ class NOAAClient(BaseAPIManager):
         super().__init__("https://api.tidesandcurrents.noaa.gov/api/prod/datagetter")
         self.weather_url = "https://api.weather.gov/stations"
 
-    def fetch_weather_observations(self, station_id: str) -> Dict[str, Any]:
+    def fetch_weather_observations(self, station_id: str) -> dict[str, Any]:
         """Fetch latest weather observations with retry.
 
         Args:
@@ -203,7 +203,7 @@ class NOAAClient(BaseAPIManager):
         begin_date: str,
         end_date: str,
         product: str = "water_level",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Fetch tide gauge data with retry.
 
         Args:
@@ -238,7 +238,7 @@ class USGSClient(BaseAPIManager):
         start: str,
         end: str,
         parameter_cd: str = "00060,00065",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Fetch water data from USGS with retry.
 
         Args:
@@ -263,7 +263,7 @@ class USGSEarthquakeClient(BaseAPIManager):
     def __init__(self) -> None:
         super().__init__("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary")
 
-    def fetch_earthquakes(self, feed: str = "all_day.geojson") -> Dict[str, Any]:
+    def fetch_earthquakes(self, feed: str = "all_day.geojson") -> dict[str, Any]:
         """Fetch earthquake data feed with retry.
 
         Args:
@@ -292,7 +292,7 @@ class CDECClient(BaseAPIManager):
         sensor_num: str,
         start_date: str,
         end_date: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Fetch sensor data from CDEC with retry.
 
         Args:

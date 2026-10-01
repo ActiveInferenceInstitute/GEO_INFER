@@ -6,7 +6,7 @@ geospatial AI model predictions.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 from sklearn.inspection import permutation_importance
@@ -24,7 +24,7 @@ class ModelExplainer:
     spatial interpretability for geospatial models.
     """
 
-    def __init__(self, model: Any, config: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, model: Any, config: dict[str, Any] | None = None) -> None:
         """
         Initialize model explainer.
 
@@ -39,9 +39,9 @@ class ModelExplainer:
         self,
         X: np.ndarray,
         y: np.ndarray,
-        feature_names: Optional[List[str]] = None,
+        feature_names: list[str] | None = None,
         method: str = "permutation",
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate feature importance.
 
@@ -80,8 +80,8 @@ class ModelExplainer:
         self,
         X: np.ndarray,
         prediction: float,
-        feature_names: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        feature_names: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Explain a single prediction.
 
@@ -115,9 +115,9 @@ class ModelExplainer:
         self,
         X: np.ndarray,
         n_samples: int = 100,
-        feature_names: Optional[List[str]] = None,
-        rng: Optional[np.random.Generator] = None,
-    ) -> Dict[str, Any]:
+        feature_names: list[str] | None = None,
+        rng: np.random.Generator | None = None,
+    ) -> dict[str, Any]:
         """
         Compute SHAP-like marginal contribution values using a kernel-based
         approximation. For each feature, estimates its contribution to the
@@ -196,8 +196,8 @@ class ModelExplainer:
         X: np.ndarray,
         feature_index: int,
         grid_resolution: int = 50,
-        feature_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        feature_name: str | None = None,
+    ) -> dict[str, Any]:
         """
         Compute partial dependence of the model prediction on a single feature.
 
@@ -247,8 +247,8 @@ class ModelExplainer:
         self,
         spatial_features: np.ndarray,
         predictions: np.ndarray,
-        coordinates: Optional[np.ndarray] = None,
-    ) -> Dict[str, Any]:
+        coordinates: np.ndarray | None = None,
+    ) -> dict[str, Any]:
         """
         Generate spatial explanation for geospatial predictions.
 

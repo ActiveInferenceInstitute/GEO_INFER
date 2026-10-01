@@ -111,7 +111,7 @@ def test_export_functionality():
 
         # Validate export
         assert json_path.exists()
-        with open(json_path, "r") as f:
+        with open(json_path) as f:
             exported_data = json.load(f)
             assert len(exported_data["h3_cells"]) == 2
             assert len(exported_data["scores"]) == 2

@@ -2,7 +2,6 @@
 Data validation utilities for GEO-INFER-BIO.
 """
 
-from typing import Dict, List, Union, Optional
 import pandas as pd
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
@@ -24,7 +23,7 @@ class DataValidator:
         }
 
     def validate_sequence(
-        self, sequence: Union[str, Seq], sequence_type: str = "DNA"
+        self, sequence: str | Seq, sequence_type: str = "DNA"
     ) -> bool:
         """
         Validate a biological sequence.
@@ -76,7 +75,7 @@ class DataValidator:
         return lat_valid and lon_valid
 
     def validate_spatial_dataframe(
-        self, df: pd.DataFrame, required_columns: Optional[List[str]] = None
+        self, df: pd.DataFrame, required_columns: list[str] | None = None
     ) -> bool:
         """
         Validate spatial data DataFrame.
@@ -104,7 +103,7 @@ class DataValidator:
 
     def validate_sequence_record(
         self, record: SeqRecord, check_spatial: bool = True
-    ) -> Dict[str, bool]:
+    ) -> dict[str, bool]:
         """
         Validate a sequence record.
 
@@ -117,7 +116,7 @@ class DataValidator:
         """
         results = {
             "sequence_valid": self.validate_sequence(
-                cast(Union[str, Seq], record.seq) if record.seq is not None else ""
+                cast(str | Seq, record.seq) if record.seq is not None else ""
             ),
             "id_valid": bool(record.id),
             "description_valid": bool(record.description),
@@ -131,7 +130,7 @@ class DataValidator:
 
         return results
 
-    def validate_alignment(self, alignment: MultipleSeqAlignment) -> Dict[str, bool]:
+    def validate_alignment(self, alignment: MultipleSeqAlignment) -> dict[str, bool]:
         """
         Validate a multiple sequence alignment.
 

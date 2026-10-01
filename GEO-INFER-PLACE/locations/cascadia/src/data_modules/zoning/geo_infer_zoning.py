@@ -6,7 +6,7 @@ intelligently classifying and standardizing data from multiple state sources.
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any
 from pathlib import Path
 import geopandas as gpd
 from shapely.geometry import Polygon
@@ -78,7 +78,7 @@ class GeoInferZoning(BaseAnalysisModule):
             return raw_data_path
         raise FileNotFoundError(f"No empirical zoning dataset is available: {raw_data_path}")
 
-    def run_final_analysis(self, h3_data: Dict[str, Any]) -> Dict[str, Any]:
+    def run_final_analysis(self, h3_data: dict[str, Any]) -> dict[str, Any]:
         """
         Performs real comprehensive, multi-source zoning analysis on H3-indexed data using OSC H3 v4 methods.
 
@@ -148,7 +148,7 @@ class GeoInferZoning(BaseAnalysisModule):
 
     def _calculate_real_zoning_statistics(
         self, features: gpd.GeoDataFrame, hex_polygon: Polygon
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate real zoning statistics for a hexagon using actual spatial analysis.
         """
@@ -244,7 +244,7 @@ class GeoInferZoning(BaseAnalysisModule):
 
         return "OTHER"
 
-    def _determine_primary_zoning(self, zoning_stats: Dict[str, Any]) -> Dict[str, Any]:
+    def _determine_primary_zoning(self, zoning_stats: dict[str, Any]) -> dict[str, Any]:
         """
         Determine the primary zoning classification using real analysis.
         """
@@ -278,7 +278,7 @@ class GeoInferZoning(BaseAnalysisModule):
         }
 
     def _calculate_real_redevelopment_potential(
-        self, zoning_stats: Dict[str, Any], primary_zone: Dict[str, Any]
+        self, zoning_stats: dict[str, Any], primary_zone: dict[str, Any]
     ) -> float:
         """
         Calculate real redevelopment potential score based on actual zoning data.
@@ -313,14 +313,14 @@ class GeoInferZoning(BaseAnalysisModule):
 
         return round(min(1.0, max(0.0, final_score)), 3)
 
-    def _find_col_value(self, props: Dict, potential_names: list) -> str:
+    def _find_col_value(self, props: dict, potential_names: list) -> str:
         """Finds the first matching value from a dictionary of properties."""
         for name in potential_names:
             if name in props and props[name] is not None:
                 return str(props[name])
         return ""
 
-    def _classify_zoning(self, props: Dict[str, Any]) -> str:
+    def _classify_zoning(self, props: dict[str, Any]) -> str:
         """Applies the correct classification function based on the data source."""
         source = props.get("source", "UNKNOWN").upper()
 

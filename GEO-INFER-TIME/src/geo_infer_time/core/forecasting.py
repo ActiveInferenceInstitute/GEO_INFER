@@ -9,7 +9,7 @@ with AdvancedForecastingEngine via ``fit_arima_forecast`` and
 """
 
 import logging
-from typing import Dict, Optional, Any, Tuple
+from typing import Any
 import pandas as pd
 import numpy as np
 
@@ -40,7 +40,7 @@ class ForecastingEngine:
 
     def forecast_linear(
         self, timeseries: TimeSeries, horizon: int = 10
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Forecast using linear regression.
 
@@ -83,8 +83,8 @@ class ForecastingEngine:
         self,
         timeseries: TimeSeries,
         horizon: int = 10,
-        order: Tuple[int, int, int] = (1, 1, 1),
-    ) -> Dict[str, Any]:
+        order: tuple[int, int, int] = (1, 1, 1),
+    ) -> dict[str, Any]:
         """
         Forecast using ARIMA model.
 
@@ -123,7 +123,7 @@ class ForecastingEngine:
 
     def forecast_moving_average(
         self, timeseries: TimeSeries, horizon: int = 10, window: int = 5
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Forecast using moving average.
 
@@ -162,10 +162,10 @@ class ForecastingEngine:
         timeseries: Any,
         horizon: int = 10,
         alpha: float = 0.3,
-        trend: Optional[str] = None,
-        seasonal: Optional[str] = None,
-        seasonal_periods: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        trend: str | None = None,
+        seasonal: str | None = None,
+        seasonal_periods: int | None = None,
+    ) -> dict[str, Any]:
         """
         Forecast using exponential smoothing (Holt-Winters).
 
@@ -218,9 +218,9 @@ class ForecastingEngine:
     def validate_forecast(
         self,
         timeseries: Any,
-        forecast_result: Dict[str, Any],
+        forecast_result: dict[str, Any],
         validation_split: float = 0.2,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Validate forecast accuracy using time series cross-validation.
 

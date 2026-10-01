@@ -6,7 +6,7 @@ temporal analysis of geospatial data.
 """
 
 import numpy as np
-from typing import Dict, Optional, Tuple, Union, Any
+from typing import Any
 from .base import BayesianModel
 from ._model_utils import (
     features_from,
@@ -39,7 +39,7 @@ class BayesianTimeSeriesModel(BayesianModel):
             "noise": {"prior": "half_normal", "hyperparams": {"sigma": 1.0}},
         }
 
-    def log_likelihood(self, theta: Dict[str, Any], data: Any) -> float:
+    def log_likelihood(self, theta: dict[str, Any], data: Any) -> float:
         """Compute the log-likelihood for the time series model."""
         observations = observations_from(data)
         if isinstance(data, dict) and "time" in data:
@@ -61,7 +61,7 @@ class BayesianTimeSeriesModel(BayesianModel):
         prediction = trend * time + seasonal * np.sin(2.0 * np.pi * time / period)
         return gaussian_log_likelihood(observations, prediction, noise)
 
-    def log_prior(self, theta: Dict[str, Any]) -> float:
+    def log_prior(self, theta: dict[str, Any]) -> float:
         """Compute the log-prior for the time series model parameters."""
         return log_prior_from_parameters(self.parameters, theta)
 
@@ -71,7 +71,7 @@ class BayesianTimeSeriesModel(BayesianModel):
         posterior: Any = None,
         samples: int = 100,
         return_std: bool = False,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """Make predictions at new locations."""
         time = features_from(X_new)[:, 0]
         trend_samples = posterior_vector(posterior, "trend", samples)
@@ -102,7 +102,7 @@ class BayesianTimeSeriesModel(BayesianModel):
         return mean_prediction
 
     def posterior_predictive(
-        self, posterior: Any, X: Optional[np.ndarray] = None, samples: int = 100
+        self, posterior: Any, X: np.ndarray | None = None, samples: int = 100
     ) -> np.ndarray:
         """Generate posterior predictive samples."""
         if X is None:

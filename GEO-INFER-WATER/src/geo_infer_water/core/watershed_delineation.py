@@ -5,7 +5,7 @@ for extracting drainage basins from digital elevation models.
 """
 
 import logging
-from typing import Dict, Optional, Tuple, cast
+from typing import cast
 
 import numpy as np
 import xarray as xr
@@ -13,7 +13,7 @@ import xarray as xr
 logger = logging.getLogger(__name__)
 
 # D8 direction encoding: 1=E, 2=SE, 4=S, 8=SW, 16=W, 32=NW, 64=N, 128=NE
-D8_DIRECTIONS: Dict[int, Tuple[int, int]] = {
+D8_DIRECTIONS: dict[int, tuple[int, int]] = {
     1: (0, 1),
     2: (1, 1),
     4: (1, 0),
@@ -36,7 +36,7 @@ class WatershedDelineator:
     basin extraction from raster DEMs.
     """
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         """Initialize watershed delineator.
 
         Args:
@@ -159,7 +159,7 @@ class WatershedDelineator:
         basin = np.zeros((rows, cols), dtype=int)
         basin[outlet_row, outlet_col] = 1
 
-        reverse_map: Dict[Tuple[int, int], list] = {}
+        reverse_map: dict[tuple[int, int], list] = {}
         for i in range(rows):
             for j in range(cols):
                 if flow_dir[i, j] == 0:
@@ -226,7 +226,7 @@ class WatershedDelineator:
     def full_delineation(
         self,
         dem: xr.DataArray,
-        outlet: Tuple[int, int],
+        outlet: tuple[int, int],
         stream_threshold: float = 100.0,
         cell_size: float = 30.0,
     ) -> xr.Dataset:

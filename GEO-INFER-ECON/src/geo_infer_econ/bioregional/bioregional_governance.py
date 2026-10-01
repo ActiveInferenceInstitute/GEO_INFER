@@ -6,10 +6,10 @@ management, adaptive management systems, stakeholder engagement, and
 cooperative economics capabilities.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 import numpy as np
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class BioregionalGovernanceModels:
         "equity": 0.10,
     }
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize bioregional governance models."""
         self.config = config or {}
         self.dimensions = self.config.get("dimensions", self.DEFAULT_DIMENSIONS)
@@ -41,7 +41,7 @@ class BioregionalGovernanceModels:
             len(self.dimensions),
         )
 
-    def model_governance(self, governance_data: Dict[str, Any]) -> Dict[str, Any]:
+    def model_governance(self, governance_data: dict[str, Any]) -> dict[str, Any]:
         """Model bioregional governance systems.
 
         Args:
@@ -108,7 +108,7 @@ class BioregionalGovernanceModels:
             "weak_dimensions": weak_dims,
             "recommendations": recommendations,
             "density_ratio": round(population / max(area_km2, 1), 2),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         logger.info(
@@ -135,12 +135,12 @@ class BioregionalGovernanceModels:
 class CommunityResourceManagement:
     """Community resource management using common-pool resource theory (Ostrom)."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.sustainability_threshold = self.config.get("sustainability_threshold", 0.7)
         logger.info("CommunityResourceManagement initialized")
 
-    def manage_resources(self, resource_data: Dict[str, Any]) -> Dict[str, Any]:
+    def manage_resources(self, resource_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze and recommend community resource management strategies.
 
         Args:
@@ -207,7 +207,7 @@ class CommunityResourceManagement:
             ),
         }
 
-    def _evaluate_ostrom_principles(self, rules: List[str]) -> Dict[str, bool]:
+    def _evaluate_ostrom_principles(self, rules: list[str]) -> dict[str, bool]:
         """Evaluate against Ostrom's 8 design principles for commons governance."""
         principles = {
             "clearly_defined_boundaries": any(
@@ -249,8 +249,8 @@ class CommunityResourceManagement:
 
     @staticmethod
     def _generate_crm_recommendations(
-        at_risk: List[str], ostrom: Dict[str, bool]
-    ) -> List[str]:
+        at_risk: list[str], ostrom: dict[str, bool]
+    ) -> list[str]:
         recs = []
         if at_risk:
             recs.append(f"Reduce extraction rates for: {', '.join(at_risk)}")
@@ -263,7 +263,7 @@ class CommunityResourceManagement:
 class AdaptiveManagementSystems:
     """Adaptive management systems using plan-do-check-act cycles."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.cycle_length_months = self.config.get("cycle_length_months", 6)
         logger.info(
@@ -271,7 +271,7 @@ class AdaptiveManagementSystems:
             self.cycle_length_months,
         )
 
-    def design_adaptive_system(self, system_params: Dict[str, Any]) -> Dict[str, Any]:
+    def design_adaptive_system(self, system_params: dict[str, Any]) -> dict[str, Any]:
         """Design an adaptive management system.
 
         Args:
@@ -370,11 +370,11 @@ class AdaptiveManagementSystems:
 class StakeholderEngagement:
     """Stakeholder engagement analysis using power-interest matrix."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         logger.info("StakeholderEngagement initialized")
 
-    def engage_stakeholders(self, stakeholder_data: Dict[str, Any]) -> Dict[str, Any]:
+    def engage_stakeholders(self, stakeholder_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze stakeholders and recommend engagement strategies.
 
         Args:
@@ -450,7 +450,7 @@ class StakeholderEngagement:
         }
 
     @staticmethod
-    def _design_phases(timeline: int, counts: Dict[str, int]) -> List[Dict[str, Any]]:
+    def _design_phases(timeline: int, counts: dict[str, int]) -> list[dict[str, Any]]:
         phase_len = max(1, timeline // 3)
         return [
             {
@@ -474,11 +474,11 @@ class StakeholderEngagement:
 class CooperativeEconomics:
     """Cooperative economics models for mutual-aid and solidarity economy."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         logger.info("CooperativeEconomics initialized")
 
-    def model_cooperative(self, cooperative_data: Dict[str, Any]) -> Dict[str, Any]:
+    def model_cooperative(self, cooperative_data: dict[str, Any]) -> dict[str, Any]:
         """Model cooperative economic systems.
 
         Args:
@@ -565,7 +565,7 @@ class CooperativeEconomics:
         }
 
     @staticmethod
-    def _gini_coefficient(values: List[float]) -> float:
+    def _gini_coefficient(values: list[float]) -> float:
         """Compute Gini coefficient of a distribution."""
         if not values or len(values) < 2:
             return 0.0

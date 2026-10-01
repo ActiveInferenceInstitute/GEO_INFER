@@ -5,7 +5,7 @@ Base class for Bayesian models in the GEO-INFER-BAYES framework.
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
-from typing import Dict, Any, Optional, Union, Tuple
+from typing import Any
 from abc import ABC, abstractmethod
 
 
@@ -26,8 +26,8 @@ class BayesianModel(ABC):
 
     def __init__(self, name: str, **kwargs: Any):
         self.name = name
-        self.parameters: Dict[str, Any] = {}
-        self.priors: Dict[str, Any] = {}
+        self.parameters: dict[str, Any] = {}
+        self.priors: dict[str, Any] = {}
         self._setup_model(**kwargs)
 
     @abstractmethod
@@ -46,7 +46,7 @@ class BayesianModel(ABC):
         raise RuntimeError("Bayesian model subclasses must define _setup_model()")
 
     @abstractmethod
-    def log_likelihood(self, theta: Dict[str, Any], data: Any) -> float:
+    def log_likelihood(self, theta: dict[str, Any], data: Any) -> float:
         """
         Compute the log-likelihood for the model.
 
@@ -65,7 +65,7 @@ class BayesianModel(ABC):
         raise RuntimeError("Bayesian model subclasses must define log_likelihood()")
 
     @abstractmethod
-    def log_prior(self, theta: Dict[str, Any]) -> float:
+    def log_prior(self, theta: dict[str, Any]) -> float:
         """
         Compute the log-prior for the model parameters.
 
@@ -81,7 +81,7 @@ class BayesianModel(ABC):
         """
         raise RuntimeError("Bayesian model subclasses must define log_prior()")
 
-    def log_posterior(self, theta: Dict[str, Any], data: Any) -> float:
+    def log_posterior(self, theta: dict[str, Any], data: Any) -> float:
         """
         Compute the log-posterior for the model.
 
@@ -99,7 +99,7 @@ class BayesianModel(ABC):
         """
         return self.log_likelihood(theta, data) + self.log_prior(theta)
 
-    def prepare_data(self, data: Union[np.ndarray, xr.Dataset, Dict[str, Any]]) -> Any:
+    def prepare_data(self, data: np.ndarray | xr.Dataset | dict[str, Any]) -> Any:
         """
         Prepare data for inference.
 
@@ -117,7 +117,7 @@ class BayesianModel(ABC):
         return data
 
     def bind_training_data(
-        self, data: Union[np.ndarray, xr.Dataset, Dict[str, Any]]
+        self, data: np.ndarray | xr.Dataset | dict[str, Any]
     ) -> None:
         """Retain the data the model was conditioned on.
 
@@ -146,7 +146,7 @@ class BayesianModel(ABC):
         posterior: Any = None,
         samples: int = 100,
         return_std: bool = False,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """
         Make predictions at new locations.
 
@@ -172,7 +172,7 @@ class BayesianModel(ABC):
 
     @abstractmethod
     def posterior_predictive(
-        self, posterior: Any, X: Optional[np.ndarray] = None, samples: int = 100
+        self, posterior: Any, X: np.ndarray | None = None, samples: int = 100
     ) -> np.ndarray:
         """
         Generate posterior predictive samples.
@@ -198,10 +198,10 @@ class BayesianModel(ABC):
     def plot_prediction(
         self,
         posterior: Any,
-        grid: Optional[np.ndarray] = None,
+        grid: np.ndarray | None = None,
         uncertainty: bool = True,
         **kwargs: Any,
-    ) -> Tuple[plt.Figure, plt.Axes]:
+    ) -> tuple[plt.Figure, plt.Axes]:
         """
         Plot model predictions from the posterior.
 

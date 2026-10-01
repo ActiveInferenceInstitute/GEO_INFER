@@ -747,7 +747,7 @@ if __name__ == "__main__":
 
     # Print summary
     print(f"\n{'=' * 60}")
-    print(f"GEOSPATIAL AI TEST SUMMARY")
+    print("GEOSPATIAL AI TEST SUMMARY")
     print(f"{'=' * 60}")
     print(f"Tests run: {result.testsRun}")
     print(f"Failures: {len(result.failures)}")
@@ -757,11 +757,11 @@ if __name__ == "__main__":
     )
 
     if result.failures:
-        print(f"\nFailures:")
+        print("\nFailures:")
         for test, traceback in result.failures:
             print(f"  - {test}: {traceback.split('AssertionError:')[-1].strip()}")
 
     if result.errors:
-        print(f"\nErrors:")
+        print("\nErrors:")
         for test, traceback in result.errors:
             print(f"  - {test}: {traceback.split('Exception:')[-1].strip()}")

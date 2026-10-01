@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Unified interface for external systems to interact with agents.
@@ -11,7 +10,7 @@ external systems to interact with the GEO-INFER-AGENT system.
 
 import logging
 import asyncio
-from typing import Dict, List, Any, Optional
+from typing import Any
 
 from geo_infer_agent.api.agent_endpoints import agent_registry
 from geo_infer_agent.api.messaging import messaging_service, Message
@@ -71,9 +70,9 @@ class AgentInterface:
     async def create_agent(
         self,
         agent_type: str,
-        config: Dict[str, Any],
-        agent_id: Optional[str] = None,
-        region: Optional[str] = None,
+        config: dict[str, Any],
+        agent_id: str | None = None,
+        region: str | None = None,
     ) -> str:
         """
         Create a new agent.
@@ -173,7 +172,7 @@ class AgentInterface:
             logger.error(f"Failed to delete agent {agent_id}: {str(e)}")
             return False
 
-    def list_agents(self) -> List[Dict[str, Any]]:
+    def list_agents(self) -> list[dict[str, Any]]:
         """
         List all registered agents.
 
@@ -182,7 +181,7 @@ class AgentInterface:
         """
         return agent_registry.list_agents()
 
-    def get_agent_info(self, agent_id: str) -> Dict[str, Any]:
+    def get_agent_info(self, agent_id: str) -> dict[str, Any]:
         """
         Get information about an agent.
 
@@ -197,7 +196,7 @@ class AgentInterface:
         """
         return agent_registry.get_agent_info(agent_id)
 
-    async def get_agent_state(self, agent_id: str) -> Dict[str, Any]:
+    async def get_agent_state(self, agent_id: str) -> dict[str, Any]:
         """
         Get the current state of an agent.
 
@@ -213,8 +212,8 @@ class AgentInterface:
         return await agent_registry.get_agent_state(agent_id)
 
     async def perform_action(
-        self, agent_id: str, action: str, parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent_id: str, action: str, parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Perform an action on an agent.
 
@@ -238,7 +237,7 @@ class AgentInterface:
         self,
         from_agent_id: str,
         to_agent_id: str,
-        content: Dict[str, Any],
+        content: dict[str, Any],
         priority: int = 1,
     ) -> bool:
         """
@@ -276,7 +275,7 @@ class AgentInterface:
     async def broadcast_message(
         self,
         from_agent_id: str,
-        content: Dict[str, Any],
+        content: dict[str, Any],
         channel: str,
         priority: int = 1,
     ) -> int:
@@ -315,7 +314,7 @@ class AgentInterface:
         messaging_service.subscribe(agent_id, channel)
         logger.debug(f"Agent {agent_id} subscribed to channel {channel}")
 
-    def get_agent_metrics(self, agent_id: str) -> Dict[str, Dict[str, Any]]:
+    def get_agent_metrics(self, agent_id: str) -> dict[str, dict[str, Any]]:
         """
         Get metrics for an agent.
 
@@ -327,7 +326,7 @@ class AgentInterface:
         """
         return telemetry_service.get_metrics(agent_id)
 
-    def get_agent_health(self, agent_id: str) -> Dict[str, Any]:
+    def get_agent_health(self, agent_id: str) -> dict[str, Any]:
         """
         Get health status for an agent.
 

@@ -13,15 +13,16 @@ import logging
 from abc import ABC, abstractmethod
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from enum import Enum
-from typing import Any, Dict, List, NoReturn, Optional, Callable, cast
+from enum import StrEnum
+from typing import Any, NoReturn, cast
+from collections.abc import Callable
 
 import requests
 
 from geo_infer_comms.models.spatial import GeospatialMetadata
 
 
-class EmailErrorCategory(str, Enum):
+class EmailErrorCategory(StrEnum):
     """Stable caller-facing categories for email delivery failures."""
 
     INVALID_RECIPIENT = "invalid_recipient"
@@ -40,7 +41,7 @@ class EmailDeliveryError(RuntimeError):
         category: EmailErrorCategory,
         safe_detail: str,
         *,
-        cause_type: Optional[str] = None,
+        cause_type: str | None = None,
     ) -> None:
         self.provider = provider
         self.category = category
@@ -60,7 +61,7 @@ class EmailProvider(ABC):
     context support and comprehensive error handling.
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.provider_name = config.get("provider", "generic")
         self.api_key = config.get("api_key")
@@ -75,7 +76,7 @@ class EmailProvider(ABC):
         # Performance tracking
         self.emails_sent = 0
         self.emails_failed = 0
-        self.last_send_time: Optional[float] = None
+        self.last_send_time: float | None = None
 
         self.logger = logging.getLogger(__name__)
 
@@ -85,8 +86,8 @@ class EmailProvider(ABC):
         to_email: str,
         subject: str,
         body: str,
-        geospatial_context: Optional[GeospatialMetadata] = None,
-        attachments: Optional[List[Dict[str, Any]]] = None,
+        geospatial_context: GeospatialMetadata | None = None,
+        attachments: list[dict[str, Any]] | None = None,
     ) -> bool:
         """
         Send an email with optional geospatial context.
@@ -111,7 +112,7 @@ class EmailProvider(ABC):
         self,
         category: EmailErrorCategory,
         safe_detail: str,
-        cause: Optional[BaseException] = None,
+        cause: BaseException | None = None,
     ) -> NoReturn:
         """Record and raise a redacted provider failure."""
         self.emails_failed += 1
@@ -134,8 +135,8 @@ class EmailProvider(ABC):
         self,
         subject: str,
         body: str,
-        geospatial_context: Optional[GeospatialMetadata] = None,
-    ) -> Dict[str, str]:
+        geospatial_context: GeospatialMetadata | None = None,
+    ) -> dict[str, str]:
         """
         Format email content with geospatial context information.
 
@@ -175,7 +176,7 @@ Geospatial Context:
         return bool(re.match(pattern, email))
 
     def create_mime_message(
-        self, to_email: str, subject: str, body: str, html_body: Optional[str] = None
+        self, to_email: str, subject: str, body: str, html_body: str | None = None
     ) -> MIMEMultipart:
         """Create MIME message for email."""
         msg = MIMEMultipart("alternative")
@@ -196,7 +197,7 @@ Geospatial Context:
 
         return msg
 
-    def get_provider_stats(self) -> Dict[str, Any]:
+    def get_provider_stats(self) -> dict[str, Any]:
         """Get provider-specific statistics."""
         return {
             "provider": self.provider_name,
@@ -211,7 +212,7 @@ Geospatial Context:
 class SendGridProvider(EmailProvider):
     """SendGrid email provider integration."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         super().__init__(config)
         self.provider_name = "sendgrid"
         self.api_url = "https://api.sendgrid.com/v3/mail/send"
@@ -225,8 +226,8 @@ class SendGridProvider(EmailProvider):
         to_email: str,
         subject: str,
         body: str,
-        geospatial_context: Optional[GeospatialMetadata] = None,
-        attachments: Optional[List[Dict[str, Any]]] = None,
+        geospatial_context: GeospatialMetadata | None = None,
+        attachments: list[dict[str, Any]] | None = None,
     ) -> bool:
         """Send email via SendGrid API."""
         if not self.validate_email_address(to_email):
@@ -289,7 +290,7 @@ class SendGridProvider(EmailProvider):
 class SESProvider(EmailProvider):
     """Amazon SES email provider integration."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         super().__init__(config)
         self.provider_name = "ses"
         self.aws_region = config.get("aws_region", "us-east-1")
@@ -301,8 +302,8 @@ class SESProvider(EmailProvider):
         to_email: str,
         subject: str,
         body: str,
-        geospatial_context: Optional[GeospatialMetadata] = None,
-        attachments: Optional[List[Dict[str, Any]]] = None,
+        geospatial_context: GeospatialMetadata | None = None,
+        attachments: list[dict[str, Any]] | None = None,
     ) -> bool:
         """Send email via Amazon SES."""
         if not self.validate_email_address(to_email):
@@ -363,7 +364,7 @@ class SESProvider(EmailProvider):
 class MailgunProvider(EmailProvider):
     """Mailgun email provider integration."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         super().__init__(config)
         self.provider_name = "mailgun"
         self.api_url = f"https://api.mailgun.net/v3/{config.get('domain', 'geo-infer.org')}/messages"
@@ -374,8 +375,8 @@ class MailgunProvider(EmailProvider):
         to_email: str,
         subject: str,
         body: str,
-        geospatial_context: Optional[GeospatialMetadata] = None,
-        attachments: Optional[List[Dict[str, Any]]] = None,
+        geospatial_context: GeospatialMetadata | None = None,
+        attachments: list[dict[str, Any]] | None = None,
     ) -> bool:
         """Send email via Mailgun API."""
         if not self.validate_email_address(to_email):
@@ -435,7 +436,7 @@ class EmailProviderFactory:
     """Factory for creating email provider instances."""
 
     @staticmethod
-    def create_provider(provider_type: str, config: Dict[str, Any]) -> EmailProvider:
+    def create_provider(provider_type: str, config: dict[str, Any]) -> EmailProvider:
         """
         Create an email provider instance.
 
@@ -459,9 +460,9 @@ class EmailProviderFactory:
         if not provider_class:
             raise ValueError(f"Unsupported email provider: {provider_type}")
 
-        return cast(Callable[[Dict[str, Any]], EmailProvider], provider_class)(config)
+        return cast(Callable[[dict[str, Any]], EmailProvider], provider_class)(config)
 
     @staticmethod
-    def get_available_providers() -> List[str]:
+    def get_available_providers() -> list[str]:
         """Get list of available email provider types."""
         return ["sendgrid", "ses", "mailgun"]

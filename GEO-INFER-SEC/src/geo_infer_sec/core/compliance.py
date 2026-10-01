@@ -5,7 +5,8 @@ This module provides tools for ensuring compliance with various
 regulatory requirements for geospatial data handling.
 """
 
-from typing import Dict, List, Optional, Union, Any, Callable
+from typing import Any
+from collections.abc import Callable
 from enum import Enum
 import datetime
 import json
@@ -82,8 +83,8 @@ class ComplianceViolation:
         self,
         rule: ComplianceRule,
         data_reference: str,
-        timestamp: Optional[datetime.datetime] = None,
-        details: Optional[str] = None,
+        timestamp: datetime.datetime | None = None,
+        details: str | None = None,
     ):
         """
         Initialize a compliance violation.
@@ -96,16 +97,16 @@ class ComplianceViolation:
         """
         self.rule = rule
         self.data_reference = data_reference
-        self.timestamp = timestamp or datetime.datetime.now(
-            datetime.timezone.utc
-        ).replace(tzinfo=None)
+        self.timestamp = timestamp or datetime.datetime.now(datetime.UTC).replace(
+            tzinfo=None
+        )
         self.details = details
 
     def __repr__(self) -> str:
         """Return string representation of the violation."""
         return f"ComplianceViolation({self.rule.name}, {self.data_reference}, {self.timestamp})"
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert the violation to a dictionary."""
         return {
             "rule_name": self.rule.name,
@@ -121,8 +122,8 @@ class ComplianceFramework:
 
     def __init__(self) -> None:
         """Initialize the compliance framework."""
-        self.rules: Dict[str, ComplianceRule] = {}
-        self.violations: List[ComplianceViolation] = []
+        self.rules: dict[str, ComplianceRule] = {}
+        self.violations: list[ComplianceViolation] = []
 
     def add_rule(self, rule: ComplianceRule) -> None:
         """
@@ -133,7 +134,7 @@ class ComplianceFramework:
         """
         self.rules[rule.name] = rule
 
-    def get_rules_by_regime(self, regime: ComplianceRegime) -> List[ComplianceRule]:
+    def get_rules_by_regime(self, regime: ComplianceRegime) -> list[ComplianceRule]:
         """
         Get all rules for a specific compliance regime.
 
@@ -149,8 +150,8 @@ class ComplianceFramework:
         self,
         data: Any,
         data_reference: str,
-        regimes: Optional[List[ComplianceRegime]] = None,
-    ) -> List[ComplianceViolation]:
+        regimes: list[ComplianceRegime] | None = None,
+    ) -> list[ComplianceViolation]:
         """
         Check compliance of data against rules.
 
@@ -190,8 +191,8 @@ class ComplianceFramework:
         self,
         gdf: gpd.GeoDataFrame,
         data_reference: str,
-        regimes: Optional[List[ComplianceRegime]] = None,
-    ) -> List[ComplianceViolation]:
+        regimes: list[ComplianceRegime] | None = None,
+    ) -> list[ComplianceViolation]:
         """
         Check compliance of a GeoDataFrame.
 
@@ -206,8 +207,8 @@ class ComplianceFramework:
         return self.check_compliance(gdf, data_reference, regimes)
 
     def generate_compliance_report(
-        self, output_format: str = "json", output_file: Optional[str] = None
-    ) -> Union[str, Dict]:
+        self, output_format: str = "json", output_file: str | None = None
+    ) -> str | dict:
         """
         Generate a compliance report.
 
@@ -218,8 +219,8 @@ class ComplianceFramework:
         Returns:
             Report as a string or dictionary
         """
-        report: Dict[str, Any] = {
-            "timestamp": datetime.datetime.now(datetime.timezone.utc)
+        report: dict[str, Any] = {
+            "timestamp": datetime.datetime.now(datetime.UTC)
             .replace(tzinfo=None)
             .isoformat(),
             "total_rules": len(self.rules),
@@ -305,7 +306,7 @@ class ComplianceFramework:
 
 
 # Predefined compliance validators
-def create_gdpr_validators() -> Dict[str, ComplianceRule]:
+def create_gdpr_validators() -> dict[str, ComplianceRule]:
     """
     Create GDPR compliance validators.
 

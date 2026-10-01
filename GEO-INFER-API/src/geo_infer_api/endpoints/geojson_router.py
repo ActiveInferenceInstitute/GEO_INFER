@@ -5,7 +5,7 @@ Implements OGC API Features compatible endpoints for working with GeoJSON polygo
 """
 
 import math
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Path, status
 from pydantic import BaseModel
@@ -37,7 +37,7 @@ router = APIRouter()
 
 # In-memory storage for demo purposes
 # In a production application, replace with a persistent database backend.
-POLYGON_FEATURES: Dict[str, PolygonFeature] = {}
+POLYGON_FEATURES: dict[str, PolygonFeature] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -48,7 +48,7 @@ POLYGON_FEATURES: Dict[str, PolygonFeature] = {}
 class MultiPolygonRequest(BaseModel):
     """Request body containing multiple polygon features for set operations."""
 
-    polygons: List[PolygonFeature]
+    polygons: list[PolygonFeature]
 
 
 class DistanceRequest(BaseModel):
@@ -66,7 +66,7 @@ class DistanceRequest(BaseModel):
 @router.get("/collections", summary="List available feature collections")
 async def list_collections(
     settings: Settings = Depends(get_settings),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     List available feature collections.
 
@@ -108,7 +108,7 @@ async def list_collections(
 @router.get("/collections/polygons", summary="Get polygon collection metadata")
 async def get_polygon_collection(
     settings: Settings = Depends(get_settings),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get metadata about the polygon collection.
 
@@ -146,7 +146,7 @@ async def get_polygon_collection(
     summary="List polygon features",
 )
 async def list_polygon_features(
-    bbox: Optional[str] = Query(
+    bbox: str | None = Query(
         None,
         description="Bounding box (minLon,minLat,maxLon,maxLat)",
     ),
@@ -297,7 +297,7 @@ async def delete_polygon_feature(
 
 
 @router.post("/operations/polygon/area", summary="Calculate polygon area")
-async def calculate_area(feature: PolygonFeature) -> Dict[str, Any]:
+async def calculate_area(feature: PolygonFeature) -> dict[str, Any]:
     """
     Calculate the approximate area of a polygon in square kilometers.
 
@@ -343,7 +343,7 @@ async def check_polygon_contains_point(
     feature: PolygonFeature,
     lon: float = Query(..., ge=-180, le=180, description="Longitude of the point"),
     lat: float = Query(..., ge=-90, le=90, description="Latitude of the point"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Check if a polygon contains a point using the ray casting algorithm."""
     contains = polygon_contains_point(feature.geometry, (lon, lat))
     return {
@@ -450,7 +450,7 @@ async def calculate_union_endpoint(request: MultiPolygonRequest) -> PolygonFeatu
     "/operations/polygon/distance",
     summary="Calculate centroid distance between two polygons",
 )
-async def calculate_distance_endpoint(request: DistanceRequest) -> Dict[str, Any]:
+async def calculate_distance_endpoint(request: DistanceRequest) -> dict[str, Any]:
     """
     Calculate the centroid-to-centroid distance between two polygon features.
     """

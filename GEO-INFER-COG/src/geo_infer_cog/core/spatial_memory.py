@@ -26,7 +26,7 @@ import logging
 import math
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Any
 
 import numpy as np
 from ..utils.rng import resolve_rng
@@ -36,7 +36,7 @@ from ..utils.rng import resolve_rng
 _ITEM_ID_SEQUENCE: "itertools.count[int]" = itertools.count(1)
 
 
-def _extract_bbox(spatial: Dict[str, Any]) -> Optional[tuple]:
+def _extract_bbox(spatial: dict[str, Any]) -> tuple | None:
     """Extract an axis-aligned bbox as (min_x, min_y, max_x, max_y) if present.
 
     Returns None when no valid 4-number bbox is available.
@@ -66,15 +66,15 @@ class SpatialMemoryItem:
     """Represents an item stored in spatial memory."""
 
     item_id: str
-    content: Dict[str, Any]
+    content: dict[str, Any]
     memory_type: str  # 'working', 'episodic', 'semantic', 'procedural'
     importance: float = 1.0
     confidence: float = 1.0
     access_count: int = 0
     creation_time: datetime = field(default_factory=datetime.now)
-    last_access_time: Optional[datetime] = None
+    last_access_time: datetime | None = None
     decay_rate: float = 0.1  # Items decay over time
-    spatial_context: Dict[str, Any] = field(default_factory=dict)
+    spatial_context: dict[str, Any] = field(default_factory=dict)
 
     def calculate_retrieval_probability(self) -> float:
         """Calculate probability of successful retrieval."""
@@ -136,11 +136,11 @@ class MemoryConsolidation:
         """
         self.consolidation_threshold = consolidation_threshold
         self.consolidation_delay = consolidation_delay
-        self.pending_consolidation: List[SpatialMemoryItem] = []
+        self.pending_consolidation: list[SpatialMemoryItem] = []
 
     def check_for_consolidation(
-        self, working_memory_items: List[SpatialMemoryItem]
-    ) -> List[SpatialMemoryItem]:
+        self, working_memory_items: list[SpatialMemoryItem]
+    ) -> list[SpatialMemoryItem]:
         """Check which working memory items are ready for consolidation."""
         ready_for_consolidation = []
 
@@ -183,10 +183,10 @@ class SpatialMemoryModel:
 
     def __init__(
         self,
-        memory_types: Optional[List[str]] = None,
+        memory_types: list[str] | None = None,
         consolidation_strategy: str = "adaptive",
-        config: Optional[Dict[str, Any]] = None,
-        rng: Optional[np.random.Generator] = None,
+        config: dict[str, Any] | None = None,
+        rng: np.random.Generator | None = None,
     ):
         """
         Initialize spatial memory model.
@@ -215,7 +215,7 @@ class SpatialMemoryModel:
         self._rng_supplied = rng is not None
 
         # Memory storage systems
-        self.memory_storage: Dict[str, Dict[str, SpatialMemoryItem]] = {
+        self.memory_storage: dict[str, dict[str, SpatialMemoryItem]] = {
             mem_type: {} for mem_type in self.memory_types
         }
 
@@ -264,23 +264,23 @@ class SpatialMemoryModel:
         }
 
         # Memory organization and indexing
-        self.spatial_index: Dict[str, List[str]] = {}  # For spatial memory organization
-        self.temporal_index: Dict[
-            str, List[str]
+        self.spatial_index: dict[str, list[str]] = {}  # For spatial memory organization
+        self.temporal_index: dict[
+            str, list[str]
         ] = {}  # For temporal memory organization
-        self.conceptual_index: Dict[
-            str, List[str]
+        self.conceptual_index: dict[
+            str, list[str]
         ] = {}  # For semantic memory organization
 
         logger.info(f"Spatial Memory Model initialized with types: {self.memory_types}")
 
     def store_spatial_memory(
         self,
-        content: Dict[str, Any],
+        content: dict[str, Any],
         memory_type: str = "working",
         importance: float = 1.0,
-        spatial_context: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        spatial_context: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> str:
         """
         Store spatial information in memory.
@@ -331,8 +331,8 @@ class SpatialMemoryModel:
         return item_id
 
     def retrieve_spatial_memory(
-        self, item_id: str, context: Optional[Dict[str, Any]] = None
-    ) -> Optional[Dict[str, Any]]:
+        self, item_id: str, context: dict[str, Any] | None = None
+    ) -> dict[str, Any] | None:
         """
         Retrieve spatial information from memory.
 
@@ -380,10 +380,10 @@ class SpatialMemoryModel:
 
     def update_memory(
         self,
-        perception_result: Dict[str, Any],
-        reasoning_result: Dict[str, Any],
+        perception_result: dict[str, Any],
+        reasoning_result: dict[str, Any],
         cognitive_state: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Update memory based on perception and reasoning results.
 
@@ -452,7 +452,7 @@ class SpatialMemoryModel:
 
         return update_results
 
-    def _perform_memory_consolidation(self) -> List[SpatialMemoryItem]:
+    def _perform_memory_consolidation(self) -> list[SpatialMemoryItem]:
         """Perform memory consolidation from working to long-term memory."""
         consolidated_items = []
 
@@ -470,9 +470,9 @@ class SpatialMemoryModel:
 
         return consolidated_items
 
-    def _perform_memory_cleanup(self) -> Dict[str, Any]:
+    def _perform_memory_cleanup(self) -> dict[str, Any]:
         """Perform memory cleanup including decay and forgetting."""
-        cleanup_results: Dict[str, Any] = {
+        cleanup_results: dict[str, Any] = {
             "items_decayed": 0,
             "items_removed": 0,
             "memory_types_affected": [],
@@ -549,7 +549,7 @@ class SpatialMemoryModel:
             self.conceptual_index[content_type] = []
         self.conceptual_index[content_type].append(memory_item.item_id)
 
-    def _generate_spatial_key(self, memory_item: SpatialMemoryItem) -> Optional[str]:
+    def _generate_spatial_key(self, memory_item: SpatialMemoryItem) -> str | None:
         """Generate spatial index key for a memory item."""
         spatial_context = memory_item.spatial_context
 
@@ -561,10 +561,10 @@ class SpatialMemoryModel:
 
     def search_memory(
         self,
-        query: Dict[str, Any],
-        memory_types: Optional[List[str]] = None,
+        query: dict[str, Any],
+        memory_types: list[str] | None = None,
         limit: int = 10,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search memory using spatial, temporal, or conceptual criteria.
 
@@ -585,7 +585,7 @@ class SpatialMemoryModel:
             List of matching memory items
         """
         search_types = memory_types or self.memory_types
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
 
         for memory_type in search_types:
             if memory_type not in self.memory_storage:
@@ -610,7 +610,7 @@ class SpatialMemoryModel:
         return results[:limit]
 
     def _item_matches_query(
-        self, item: SpatialMemoryItem, query: Dict[str, Any]
+        self, item: SpatialMemoryItem, query: dict[str, Any]
     ) -> bool:
         """Check if memory item matches search query."""
         # Spatial criteria
@@ -644,7 +644,7 @@ class SpatialMemoryModel:
         return True
 
     def _spatial_overlap(
-        self, item_spatial: Dict[str, Any], query_bounds: Dict[str, Any]
+        self, item_spatial: dict[str, Any], query_bounds: dict[str, Any]
     ) -> bool:
         """Check if item spatial context overlaps with query bounds.
 
@@ -666,9 +666,9 @@ class SpatialMemoryModel:
 
         return False
 
-    def get_memory_statistics(self) -> Dict[str, Any]:
+    def get_memory_statistics(self) -> dict[str, Any]:
         """Get comprehensive memory system statistics."""
-        stats: Dict[str, Any] = {
+        stats: dict[str, Any] = {
             "memory_utilization": {},
             "access_patterns": {},
             "consolidation_status": {},
@@ -735,9 +735,9 @@ class SpatialMemoryModel:
 
         return stats
 
-    def export_memory_knowledge_graph(self) -> Dict[str, Any]:
+    def export_memory_knowledge_graph(self) -> dict[str, Any]:
         """Export memory contents as a knowledge graph for analysis."""
-        knowledge_graph: Dict[str, Any] = {
+        knowledge_graph: dict[str, Any] = {
             "nodes": [],
             "edges": [],
             "metadata": {
@@ -791,8 +791,8 @@ class SpatialMemoryModel:
         return knowledge_graph
 
     def update_model(
-        self, training_data: Dict[str, Any], learning_rate: float = 0.01
-    ) -> Dict[str, Any]:
+        self, training_data: dict[str, Any], learning_rate: float = 0.01
+    ) -> dict[str, Any]:
         """Update memory model based on training data."""
         update_results = {
             "decay_rates_updated": False,
@@ -824,7 +824,7 @@ class SpatialMemoryModel:
 
         return update_results
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current status of the memory model."""
         return {
             "model_type": "spatial_memory",

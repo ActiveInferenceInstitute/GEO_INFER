@@ -12,7 +12,6 @@ import geopandas as gpd
 import numpy as np
 import requests
 import zipfile
-from typing import Tuple
 
 try:
     from geo_infer_space.utils.h3_utils import (
@@ -200,7 +199,7 @@ class CascadianImprovementsDataSources:
         return gdf.drop(columns=["area_sqm"])
 
     def _query_osm_overpass_buildings(
-        self, bbox: Tuple[float, float, float, float]
+        self, bbox: tuple[float, float, float, float]
     ) -> gpd.GeoDataFrame:
         """Query OSM Overpass for building footprints."""
         min_lon, min_lat, max_lon, max_lat = bbox

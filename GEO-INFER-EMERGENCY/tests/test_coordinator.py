@@ -200,7 +200,7 @@ class TestEmergencyCoordinator:
         )
 
         expected = ["Alpha", "Bravo", "Charlie", "Delta"][
-            zlib.crc32("agency_fire".encode("utf-8")) % 4
+            zlib.crc32(b"agency_fire") % 4
         ]
         assert coordinator._assign_sector("agency_fire", incident) == expected
         assert coordinator._assign_sector(

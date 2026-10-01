@@ -32,7 +32,7 @@ computing anything, so a silent shape mistake surfaces as a loud error.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import numpy as np
 from scipy import stats
@@ -95,7 +95,7 @@ def _check_level(level: float, name: str = "level") -> float:
 
 def _gaussian_parameters(
     observations: np.ndarray, mean: Any, std: Any
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     mu = np.broadcast_to(np.asarray(mean, dtype=float).reshape(-1), observations.shape)
     sg = np.broadcast_to(np.asarray(std, dtype=float).reshape(-1), observations.shape)
     if np.any(sg <= 0) or not np.all(np.isfinite(sg)) or not np.all(np.isfinite(mu)):
@@ -219,7 +219,7 @@ def pinball_loss(
 
 def _aligned_interval(
     observations: Any, lower: Any, upper: Any
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     obs = _as_observations(observations)
     lo = np.broadcast_to(np.asarray(lower, dtype=float).reshape(-1), obs.shape)
     hi = np.broadcast_to(np.asarray(upper, dtype=float).reshape(-1), obs.shape)
@@ -430,7 +430,7 @@ def evaluate_predictive(
     observations: Any,
     predictive_samples: Any,
     level: float = 0.95,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """One-call distributional evaluation from predictive draws.
 
     Parameters
@@ -477,7 +477,7 @@ def evaluate_predictive(
 
 def evaluate_gaussian(
     observations: Any, mean: Any, std: Any, level: float = 0.95
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Evaluate a Gaussian predictive ``(mean, std)`` against observations."""
     interval_level = _check_level(level, "level")
     if not 0.0 < interval_level < 1.0:

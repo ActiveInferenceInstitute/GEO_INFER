@@ -7,7 +7,7 @@ seasonal-aware, and gap-aware interpolation strategies.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 
 import pandas as pd
 import numpy as np
@@ -28,13 +28,13 @@ class TemporalInterpolator:
 
     def __init__(self) -> None:
         """Initialize the temporal interpolator."""
-        self._interpolation_log: List[Dict[str, Any]] = []
+        self._interpolation_log: list[dict[str, Any]] = []
 
     def interpolate(
         self,
         timeseries: TimeSeries,
         method: str = "linear",
-        limit: Optional[int] = None,
+        limit: int | None = None,
     ) -> TimeSeries:
         """
         Interpolate missing values in time series.
@@ -154,7 +154,7 @@ class TemporalInterpolator:
         self,
         timeseries: TimeSeries,
         period: int,
-        limit: Optional[int] = None,
+        limit: int | None = None,
     ) -> TimeSeries:
         """
         Interpolate missing values using seasonal patterns.
@@ -372,7 +372,7 @@ class TemporalInterpolator:
         self,
         original: TimeSeries,
         interpolated: TimeSeries,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Assess interpolation quality by comparing statistics.
 
@@ -391,7 +391,7 @@ class TemporalInterpolator:
         orig_df = original.to_dataframe()
         interp_df = interpolated.to_dataframe()
 
-        metrics: Dict[str, Any] = {
+        metrics: dict[str, Any] = {
             "columns": {},
             "overall_quality": 0.0,
         }
@@ -465,7 +465,7 @@ class TemporalInterpolator:
 
         return metrics
 
-    def get_interpolation_log(self) -> List[Dict[str, Any]]:
+    def get_interpolation_log(self) -> list[dict[str, Any]]:
         """
         Get the log of all interpolation operations performed.
 

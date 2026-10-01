@@ -1,7 +1,6 @@
 """Flood and drought analysis module."""
 
 import logging
-from typing import Dict, Optional
 import xarray as xr
 
 logger = logging.getLogger(__name__)
@@ -10,7 +9,7 @@ logger = logging.getLogger(__name__)
 class FloodDroughtAnalyzer:
     """Analyze flood and drought risks."""
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize flood/drought analyzer."""
         self.config = config or {}
 
@@ -18,7 +17,7 @@ class FloodDroughtAnalyzer:
         self,
         precipitation: xr.DataArray,
         elevation: xr.DataArray,
-        soil_saturation: Optional[xr.DataArray] = None,
+        soil_saturation: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """
         Assess flood risk.
@@ -74,8 +73,8 @@ class FloodDroughtAnalyzer:
     def assess_drought_risk(
         self,
         precipitation: xr.DataArray,
-        evapotranspiration: Optional[xr.DataArray] = None,
-        soil_moisture: Optional[xr.DataArray] = None,
+        evapotranspiration: xr.DataArray | None = None,
+        soil_moisture: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """
         Assess drought risk.

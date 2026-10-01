@@ -7,7 +7,7 @@ queries including H3 and R-tree indexing strategies.
 
 import logging
 import math
-from typing import Dict, List, Union, Any, Tuple, cast
+from typing import Any, cast
 
 import geopandas as gpd
 import pandas as pd
@@ -62,7 +62,7 @@ class SpatialIndexer:
     """
 
     def __init__(self) -> None:
-        self.indexes: Dict[str, Any] = {}
+        self.indexes: dict[str, Any] = {}
         logger.info("Initialized SpatialIndexer")
 
     def create_spatial_index(self, data: gpd.GeoDataFrame, strategy: str = "h3") -> str:
@@ -90,7 +90,7 @@ class SpatialIndexer:
         logger.info(f"Created spatial index: {index_id}")
         return index_id
 
-    def _create_h3_index(self, data: gpd.GeoDataFrame) -> Dict[str, Any]:
+    def _create_h3_index(self, data: gpd.GeoDataFrame) -> dict[str, Any]:
         """Create H3 spatial index."""
         h3 = _require_h3()
 
@@ -148,7 +148,7 @@ class SpatialIndexer:
             "data": data,
         }
 
-    def _create_rtree_index(self, data: gpd.GeoDataFrame) -> Dict[str, Any]:
+    def _create_rtree_index(self, data: gpd.GeoDataFrame) -> dict[str, Any]:
         """Create R-tree spatial index."""
         try:
             from rtree import index
@@ -169,7 +169,7 @@ class SpatialIndexer:
 
         return {"type": "rtree", "index": idx, "data": data}
 
-    def query_by_bounds(self, index_id: str, bbox: List[float]) -> gpd.GeoDataFrame:
+    def query_by_bounds(self, index_id: str, bbox: list[float]) -> gpd.GeoDataFrame:
         """
         Query spatial index by bounding box.
 
@@ -197,7 +197,7 @@ class SpatialIndexer:
             raise ValueError(f"Unsupported spatial index type: {index_type}")
 
     def _query_h3_bounds(
-        self, index_data: Dict[str, Any], bbox: List[float]
+        self, index_data: dict[str, Any], bbox: list[float]
     ) -> gpd.GeoDataFrame:
         """Query H3 index by bounds."""
         h3 = _require_h3()
@@ -228,7 +228,7 @@ class SpatialIndexer:
             return gpd.GeoDataFrame()
 
     def _query_rtree_bounds(
-        self, index_data: Dict[str, Any], bbox: List[float]
+        self, index_data: dict[str, Any], bbox: list[float]
     ) -> gpd.GeoDataFrame:
         """Query R-tree index by bounds.
 
@@ -243,7 +243,7 @@ class SpatialIndexer:
 
     @staticmethod
     def _query_bbox_filter(
-        data: gpd.GeoDataFrame, bbox: List[float]
+        data: gpd.GeoDataFrame, bbox: list[float]
     ) -> gpd.GeoDataFrame:
         """Filter a GeoDataFrame to geometries within the given bounding box."""
         return data[data.geometry.within(Polygon.from_bounds(*bbox))]
@@ -262,7 +262,7 @@ class SpatialIndexer:
         """
         return cast(str, _require_h3().latlng_to_cell(lat, lng, resolution))
 
-    def cell_to_latlng(self, cell: str) -> Tuple[float, float]:
+    def cell_to_latlng(self, cell: str) -> tuple[float, float]:
         """
         Convert H3 cell to latitude/longitude.
 
@@ -272,7 +272,7 @@ class SpatialIndexer:
         Returns:
             Tuple of (latitude, longitude)
         """
-        return cast(Tuple[float, float], _require_h3().cell_to_latlng(cell))
+        return cast(tuple[float, float], _require_h3().cell_to_latlng(cell))
 
 
 class TemporalIndexer:
@@ -293,11 +293,11 @@ class TemporalIndexer:
     """
 
     def __init__(self) -> None:
-        self.indexes: Dict[str, Any] = {}
+        self.indexes: dict[str, Any] = {}
         logger.info("Initialized TemporalIndexer")
 
     def create_temporal_index(
-        self, data: Union[pd.DataFrame, gpd.GeoDataFrame], time_column: str
+        self, data: pd.DataFrame | gpd.GeoDataFrame, time_column: str
     ) -> str:
         """
         Create temporal index for time-based queries.
@@ -333,9 +333,9 @@ class TemporalIndexer:
     def query_by_time_range(
         self,
         index_id: str,
-        start_time: Union[str, pd.Timestamp],
-        end_time: Union[str, pd.Timestamp],
-    ) -> Union[pd.DataFrame, gpd.GeoDataFrame]:
+        start_time: str | pd.Timestamp,
+        end_time: str | pd.Timestamp,
+    ) -> pd.DataFrame | gpd.GeoDataFrame:
         """
         Query temporal index by time range.
 
@@ -359,8 +359,8 @@ class TemporalIndexer:
         return data[mask]
 
     def query_by_time_point(
-        self, index_id: str, time_point: Union[str, pd.Timestamp]
-    ) -> Union[pd.DataFrame, gpd.GeoDataFrame]:
+        self, index_id: str, time_point: str | pd.Timestamp
+    ) -> pd.DataFrame | gpd.GeoDataFrame:
         """
         Query temporal index by time point.
 

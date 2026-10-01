@@ -149,7 +149,7 @@ class BaseAnalysisModule(ABC):
             logger.info(
                 f"[{self.module_name}] Found cached H3 data. Loading from {self.h3_cache_path}"
             )
-            with open(self.h3_cache_path, "r") as f:
+            with open(self.h3_cache_path) as f:
                 h3_data = json.load(f)
         else:
             logger.info(

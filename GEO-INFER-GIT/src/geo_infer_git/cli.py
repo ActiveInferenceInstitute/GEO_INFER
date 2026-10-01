@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Command-line interface for GEO-INFER-GIT
@@ -13,7 +12,7 @@ import sys
 import argparse
 import logging
 import yaml
-from typing import Dict, List, Any
+from typing import Any
 import json
 
 from geo_infer_git.core.repo_manager import RepoManager
@@ -43,7 +42,7 @@ def setup_logging(verbose: bool = False) -> None:
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 
-def load_repo_list(file_path: str) -> List[Dict[str, Any]]:
+def load_repo_list(file_path: str) -> list[dict[str, Any]]:
     """
     Load repository list from file.
 
@@ -58,7 +57,7 @@ def load_repo_list(file_path: str) -> List[Dict[str, Any]]:
         sys.exit(1)
 
     try:
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             if file_path.endswith(".yaml") or file_path.endswith(".yml"):
                 repos = yaml.safe_load(f)
             elif file_path.endswith(".json"):

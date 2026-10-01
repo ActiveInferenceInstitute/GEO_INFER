@@ -3,7 +3,6 @@ Configuration for the Del Norte Dashboard.
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -15,8 +14,8 @@ class LayerConfig:
     enabled: bool = True
     color: str = "blue"
     opacity: float = 0.7
-    data_source: Optional[str] = None
-    update_frequency: Optional[str] = None
+    data_source: str | None = None
+    update_frequency: str | None = None
 
 
 # Default bounds for Del Norte County

@@ -643,7 +643,7 @@ class ComprehensiveAreaStudy:
         print(
             f"├─ Area Size: {study_design['study_area']['total_area_hectares']} hectares"
         )
-        print(f"└─ Analysis Type: Multi-disciplinary integration")
+        print("└─ Analysis Type: Multi-disciplinary integration")
 
         # Key Findings
         impact = self.results["impact_assessment"]["overall_impact"]
@@ -686,7 +686,7 @@ class ComprehensiveAreaStudy:
         print("\n🔧 Integration Performance:")
         modules_used = ["SPACE", "DATA", "PLACE", "PEP", "IOT", "BIO", "HEALTH", "API"]
         print(f"├─ Modules Integrated: {len(modules_used)}")
-        print(f"├─ Integration Pattern: Multi-source spatial fusion")
+        print("├─ Integration Pattern: Multi-source spatial fusion")
         print(f"├─ System Performance: {execution_time:.2f} seconds")
         print(
             f"└─ Analysis Resolution: H3 Level {study_design['study_area']['h3_resolution']}"

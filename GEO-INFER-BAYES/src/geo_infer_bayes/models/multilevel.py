@@ -6,7 +6,7 @@ complex hierarchical spatial data structures.
 """
 
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Any
 from .base import BayesianModel
 from ._model_utils import posterior_draw_indices
 from ..utils.rng import SeedLike, resolve_rng
@@ -20,7 +20,7 @@ class MultilevelModel(BayesianModel):
     more complex multi-level data structures.
     """
 
-    def __init__(self, levels: Optional[List[str]] = None, **kwargs: Any):
+    def __init__(self, levels: list[str] | None = None, **kwargs: Any):
         """Initialize the multi-level model.
 
         Args:
@@ -43,7 +43,7 @@ class MultilevelModel(BayesianModel):
         # Set before super().__init__, which calls _setup_model and needs these
         # to declare the per-level variance parameters.
         self.levels = resolved
-        self.level_structure: Dict[str, Any] = {}
+        self.level_structure: dict[str, Any] = {}
         super().__init__(name="MultilevelModel", **kwargs)
 
     def _setup_model(self, **kwargs: Any) -> None:
@@ -65,7 +65,7 @@ class MultilevelModel(BayesianModel):
                 "hyperparams": {"sigma": 1.0},
             }
 
-    def log_likelihood(self, theta: Dict[str, Any], data: Any) -> float:
+    def log_likelihood(self, theta: dict[str, Any], data: Any) -> float:
         """Compute the log-likelihood for the multi-level model.
 
         Uses a Gaussian likelihood with global mean pooling and level-specific
@@ -95,7 +95,7 @@ class MultilevelModel(BayesianModel):
         )
         return float(log_likelihood)
 
-    def log_prior(self, theta: Dict[str, Any]) -> float:
+    def log_prior(self, theta: dict[str, Any]) -> float:
         """Compute the log-prior for the multi-level model parameters."""
         log_prior = 0.0
 
@@ -141,8 +141,8 @@ class MultilevelModel(BayesianModel):
         posterior: Any = None,
         samples: int = 100,
         return_std: bool = False,
-        level_indices: Optional[Dict[str, np.ndarray]] = None,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+        level_indices: dict[str, np.ndarray] | None = None,
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """Make predictions incorporating partial pooled level effects."""
         n_obs = len(X_new)
 
@@ -184,7 +184,7 @@ class MultilevelModel(BayesianModel):
     def posterior_predictive(
         self,
         posterior: Any,
-        X: Optional[np.ndarray] = None,
+        X: np.ndarray | None = None,
         samples: int = 100,
         random_seed: SeedLike = None,
     ) -> np.ndarray:

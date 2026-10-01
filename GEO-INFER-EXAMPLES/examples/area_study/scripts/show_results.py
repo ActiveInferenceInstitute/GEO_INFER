@@ -10,7 +10,6 @@ import sys
 import json
 import logging
 from pathlib import Path
-from datetime import datetime
 
 
 def setup_logging():
@@ -34,7 +33,7 @@ class AreaStudyConsoleViewer:
         json_files = list(output_dir.glob("*area_study_results*.json"))
         if json_files:
             latest_file = max(json_files, key=lambda f: f.stat().st_mtime)
-            with open(latest_file, "r") as f:
+            with open(latest_file) as f:
                 raw_data = json.load(f)
                 # Extract the actual study results from the wrapper
                 self.data = raw_data.get("area_study_results", raw_data)
@@ -89,7 +88,7 @@ class AreaStudyConsoleViewer:
         # Study Overview
         study_design = self.data.get("study_design", {})
         study_area = study_design.get("study_area", {})
-        print(f"\n📊 Study Overview:")
+        print("\n📊 Study Overview:")
         print(f"   Area: {study_area.get('name', 'Unknown')}")
         print(f"   Population: {study_area.get('population_estimate', 0):,}")
         print(f"   Area Size: {study_area.get('total_area_hectares', 0):.1f} ha")

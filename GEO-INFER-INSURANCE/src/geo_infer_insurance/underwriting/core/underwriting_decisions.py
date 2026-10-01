@@ -11,7 +11,7 @@ This module provides sophisticated decision-making capabilities including:
 
 import logging
 import time
-from typing import Dict, List, Optional, Any
+from typing import Any
 from datetime import datetime
 from dataclasses import dataclass, field
 from enum import Enum
@@ -53,7 +53,7 @@ class DecisionCriteria:
     weight: float = 1.0
     threshold: float = 0.7
     operator: str = "greater_equal"  # greater_equal, less_equal, equals, between
-    threshold_values: List[float] = field(default_factory=list)
+    threshold_values: list[float] = field(default_factory=list)
 
     def evaluate(self, value: float) -> bool:
         """Evaluate criteria against value."""
@@ -83,7 +83,7 @@ class DecisionFramework:
     """Decision framework configuration."""
 
     framework_name: str
-    decision_criteria: List[DecisionCriteria] = field(default_factory=list)
+    decision_criteria: list[DecisionCriteria] = field(default_factory=list)
     auto_decision_threshold: float = 0.8
     manual_review_threshold: float = 0.6
     risk_tolerance: str = "moderate"  # conservative, moderate, aggressive
@@ -94,8 +94,8 @@ class DecisionFramework:
     minimum_premium_adequacy: float = 1.0
 
     def evaluate_decision_criteria(
-        self, assessment_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, assessment_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Evaluate all decision criteria."""
         criteria_results = {}
 
@@ -111,7 +111,7 @@ class DecisionFramework:
         return criteria_results
 
     def _get_criteria_value(
-        self, data: Dict[str, Any], criteria_type: DecisionCriterion
+        self, data: dict[str, Any], criteria_type: DecisionCriterion
     ) -> float:
         """Get value for specific criteria."""
         if criteria_type == DecisionCriterion.RISK_SCORE:
@@ -131,7 +131,7 @@ class DecisionFramework:
         else:
             return 0.5  # type: ignore[unreachable]
 
-    def calculate_overall_score(self, criteria_results: Dict[str, Any]) -> float:
+    def calculate_overall_score(self, criteria_results: dict[str, Any]) -> float:
         """Calculate overall decision score."""
         total_weight = float(
             sum(result["weight"] for result in criteria_results.values())
@@ -158,7 +158,7 @@ class UnderwritingDecisionEngine:
     - Continuous learning and improvement
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the decision engine.
 
@@ -171,11 +171,11 @@ class UnderwritingDecisionEngine:
         )
 
         # Decision frameworks
-        self.decision_frameworks: Dict[str, DecisionFramework] = {}
+        self.decision_frameworks: dict[str, DecisionFramework] = {}
         self.active_framework: str = "standard"
 
         # Decision history and learning
-        self.decision_history: List[Dict[str, Any]] = []
+        self.decision_history: list[dict[str, Any]] = []
         self.decision_accuracy = 0.0
 
         # Initialize default frameworks
@@ -184,8 +184,8 @@ class UnderwritingDecisionEngine:
         self.logger.info("Underwriting decision engine initialized")
 
     def make_decision(
-        self, assessment_data: Dict[str, Any], framework_name: str = "standard"
-    ) -> Dict[str, Any]:
+        self, assessment_data: dict[str, Any], framework_name: str = "standard"
+    ) -> dict[str, Any]:
         """
         Make underwriting decision based on assessment data.
 
@@ -262,7 +262,7 @@ class UnderwritingDecisionEngine:
 
     def _generate_decision_explanation(
         self,
-        criteria_results: Dict[str, Any],
+        criteria_results: dict[str, Any],
         overall_score: float,
         framework: DecisionFramework,
         decision: str,
@@ -367,12 +367,12 @@ class UnderwritingDecisionEngine:
             self.logger.error(f"Failed to add framework: {e}")
             return False
 
-    def get_framework(self, framework_name: str) -> Optional[DecisionFramework]:
+    def get_framework(self, framework_name: str) -> DecisionFramework | None:
         """Get decision framework by name."""
         return self.decision_frameworks.get(framework_name.lower())
 
     def _store_decision(
-        self, assessment_data: Dict[str, Any], decision_result: Dict[str, Any]
+        self, assessment_data: dict[str, Any], decision_result: dict[str, Any]
     ) -> None:
         """Store decision for learning and analysis."""
         decision_record = {
@@ -387,7 +387,7 @@ class UnderwritingDecisionEngine:
         if len(self.decision_history) > 1000:
             self.decision_history = self.decision_history[-1000:]
 
-    def get_decision_analytics(self) -> Dict[str, Any]:
+    def get_decision_analytics(self) -> dict[str, Any]:
         """Get decision analytics and performance metrics."""
         if not self.decision_history:
             return {"total_decisions": 0, "accuracy": 0.0}
@@ -395,8 +395,8 @@ class UnderwritingDecisionEngine:
         total_decisions = len(self.decision_history)
 
         # Calculate decision distribution
-        decision_types: Dict[str, int] = {}
-        decisions: Dict[str, int] = {}
+        decision_types: dict[str, int] = {}
+        decisions: dict[str, int] = {}
 
         for record in self.decision_history:
             decision_result = record["decision_result"]
@@ -424,9 +424,9 @@ class UnderwritingDecisionEngine:
             "last_updated": datetime.now().isoformat(),
         }
 
-    def _get_framework_usage(self) -> Dict[str, int]:
+    def _get_framework_usage(self) -> dict[str, int]:
         """Get framework usage statistics."""
-        framework_usage: Dict[str, int] = {}
+        framework_usage: dict[str, int] = {}
 
         for record in self.decision_history:
             framework = record["decision_result"].get("framework_used", "unknown")
@@ -435,7 +435,7 @@ class UnderwritingDecisionEngine:
         return framework_usage
 
     def export_decision_history(
-        self, format: str = "json", filename: Optional[str] = None
+        self, format: str = "json", filename: str | None = None
     ) -> str:
         """Export decision history to file."""
         if filename is None:
@@ -454,7 +454,7 @@ class UnderwritingDecisionEngine:
         self.logger.info(f"Decision history exported to {filename}")
         return filename
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform health check on decision engine."""
         return {
             "status": "operational",
@@ -467,7 +467,7 @@ class UnderwritingDecisionEngine:
 
 # Convenience functions
 def create_decision_engine(
-    config: Optional[Dict[str, Any]] = None,
+    config: dict[str, Any] | None = None,
 ) -> UnderwritingDecisionEngine:
     """Create a new underwriting decision engine."""
     return UnderwritingDecisionEngine(config)

@@ -6,7 +6,7 @@ Backends implementing these interfaces can be registered with the dispatcher for
 unified spatial operations across different spatial indexing systems.
 """
 
-from typing import Dict, Any, List, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -31,7 +31,7 @@ class SpatialBackendProtocol(Protocol):
         """Check if the backend is available and functional."""
         ...
 
-    def get_capabilities(self) -> Dict[str, Any]:
+    def get_capabilities(self) -> dict[str, Any]:
         """
         Return the backend's capabilities as a structured dictionary.
 
@@ -85,7 +85,7 @@ class IndexingBackendProtocol(SpatialBackendProtocol, Protocol):
         """
         ...
 
-    def polygon_to_cells(self, polygon: Dict[str, Any], resolution: int) -> List[str]:
+    def polygon_to_cells(self, polygon: dict[str, Any], resolution: int) -> list[str]:
         """
         Convert a polygon geometry to a list of spatial index cells.
 
@@ -102,7 +102,7 @@ class IndexingBackendProtocol(SpatialBackendProtocol, Protocol):
         """
         ...
 
-    def get_cell_neighbors(self, cell: str, k: int = 1) -> List[str]:
+    def get_cell_neighbors(self, cell: str, k: int = 1) -> list[str]:
         """
         Get neighboring cells around a given cell.
 
@@ -119,7 +119,7 @@ class IndexingBackendProtocol(SpatialBackendProtocol, Protocol):
         """
         ...
 
-    def get_cells_within_radius(self, cell: str, k: int = 1) -> List[str]:
+    def get_cells_within_radius(self, cell: str, k: int = 1) -> list[str]:
         """Return all cells within ``k`` grid rings, excluding the center."""
         ...
 
@@ -140,7 +140,7 @@ class IndexingBackendProtocol(SpatialBackendProtocol, Protocol):
         """
         ...
 
-    def compact_cells(self, cells: List[str]) -> List[str]:
+    def compact_cells(self, cells: list[str]) -> list[str]:
         """
         Compact a list of cells into a more efficient representation.
 
@@ -152,7 +152,7 @@ class IndexingBackendProtocol(SpatialBackendProtocol, Protocol):
         """
         ...
 
-    def uncompact_cells(self, compacted_cells: List[str], resolution: int) -> List[str]:
+    def uncompact_cells(self, compacted_cells: list[str], resolution: int) -> list[str]:
         """
         Uncompact cells back to individual cell identifiers at target resolution.
 
@@ -181,7 +181,7 @@ class IndexingBackendProtocol(SpatialBackendProtocol, Protocol):
         """
         ...
 
-    def get_cell_boundary(self, cell: str) -> List[tuple[float, float]]:
+    def get_cell_boundary(self, cell: str) -> list[tuple[float, float]]:
         """
         Get the boundary coordinates of a spatial index cell.
 
@@ -213,7 +213,7 @@ class IndexingBackendProtocol(SpatialBackendProtocol, Protocol):
         """
         ...
 
-    def cells_to_multipolygon(self, cells: List[str]) -> Dict[str, Any]:
+    def cells_to_multipolygon(self, cells: list[str]) -> dict[str, Any]:
         """
         Convert a list of cells to a GeoJSON MultiPolygon geometry.
 
@@ -246,7 +246,7 @@ class IndexingBackendProtocol(SpatialBackendProtocol, Protocol):
         """
         ...
 
-    def get_cell_children(self, cell: str, resolution: int) -> List[str]:
+    def get_cell_children(self, cell: str, resolution: int) -> list[str]:
         """
         Get children of a cell at a finer resolution.
 
@@ -263,7 +263,7 @@ class IndexingBackendProtocol(SpatialBackendProtocol, Protocol):
         """
         ...
 
-    def get_cell_path(self, start_cell: str, end_cell: str) -> List[str]:
+    def get_cell_path(self, start_cell: str, end_cell: str) -> list[str]:
         """
         Get the path of cells between two cells.
 
@@ -280,7 +280,7 @@ class IndexingBackendProtocol(SpatialBackendProtocol, Protocol):
         """
         ...
 
-    def get_cell_ring(self, cell: str, k: int) -> List[str]:
+    def get_cell_ring(self, cell: str, k: int) -> list[str]:
         """
         Get the ring of cells at distance k.
 
@@ -307,7 +307,7 @@ class AnalyticsBackendProtocol(SpatialBackendProtocol, Protocol):
     proximity analysis, clustering, and spatial interpolation.
     """
 
-    def analyze_hotspots(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_hotspots(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Analyze spatial hotspots in the data.
 
@@ -325,7 +325,7 @@ class AnalyticsBackendProtocol(SpatialBackendProtocol, Protocol):
         """
         ...
 
-    def compute_proximity(self, points: List[tuple[float, float]]) -> Dict[str, Any]:
+    def compute_proximity(self, points: list[tuple[float, float]]) -> dict[str, Any]:
         """
         Compute proximity analysis between points.
 
@@ -344,11 +344,11 @@ class AnalyticsBackendProtocol(SpatialBackendProtocol, Protocol):
 
     def find_clusters(
         self,
-        cells: List[str],
-        values: List[float],
+        cells: list[str],
+        values: list[float],
         min_cluster_size: int = 3,
         distance_threshold: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Find spatial clusters of cells based on values and proximity.
 
@@ -371,8 +371,8 @@ class AnalyticsBackendProtocol(SpatialBackendProtocol, Protocol):
         ...
 
     def calculate_density(
-        self, cells: List[str], values: List[float], kernel_radius: int = 1
-    ) -> Dict[str, Any]:
+        self, cells: list[str], values: list[float], kernel_radius: int = 1
+    ) -> dict[str, Any]:
         """
         Calculate density values across cells using kernel smoothing.
 
@@ -393,8 +393,8 @@ class AnalyticsBackendProtocol(SpatialBackendProtocol, Protocol):
         ...
 
     def spatial_join(
-        self, cells_a: List[str], cells_b: List[str], join_type: str = "intersects"
-    ) -> Dict[str, Any]:
+        self, cells_a: list[str], cells_b: list[str], join_type: str = "intersects"
+    ) -> dict[str, Any]:
         """
         Join two sets of cells based on spatial relationships.
 
@@ -417,11 +417,11 @@ class AnalyticsBackendProtocol(SpatialBackendProtocol, Protocol):
 
     def interpolate_values(
         self,
-        cells: List[str],
-        values: List[float],
-        target_cells: List[str],
+        cells: list[str],
+        values: list[float],
+        target_cells: list[str],
         method: str = "idw",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Interpolate values at target cell locations.
 
@@ -480,7 +480,7 @@ class BackendNotAvailableError(RuntimeError):
     Raised when a requested backend is not available.
     """
 
-    def __init__(self, backend_name: str, available_backends: List[str]) -> None:
+    def __init__(self, backend_name: str, available_backends: list[str]) -> None:
         available_str = ", ".join(available_backends) if available_backends else "none"
         super().__init__(
             f"Backend '{backend_name}' is not available. "

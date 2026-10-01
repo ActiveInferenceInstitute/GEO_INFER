@@ -13,7 +13,7 @@ import folium
 import h3
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any, cast
+from typing import Any, cast
 from folium.plugins import MarkerCluster
 import numpy as np
 
@@ -44,7 +44,7 @@ class InteractiveVisualizationEngine:
     """
 
     def __init__(
-        self, location_config: Dict[str, Any], output_dir: Path, h3_resolution: int = 8
+        self, location_config: dict[str, Any], output_dir: Path, h3_resolution: int = 8
     ):
         """
         Initialize visualization engine.
@@ -94,7 +94,7 @@ class InteractiveVisualizationEngine:
         logger.info(f"H3 resolution: {self.h3_resolution}")
 
     def create_comprehensive_dashboard(
-        self, analysis_results: Dict[str, Any], dashboard_config: Optional[Dict] = None
+        self, analysis_results: dict[str, Any], dashboard_config: dict | None = None
     ) -> str:
         """
         Create comprehensive interactive dashboard with all analysis results.
@@ -214,7 +214,7 @@ class InteractiveVisualizationEngine:
         logger.info(f"✅ Comprehensive dashboard saved to: {dashboard_path}")
         return str(dashboard_path)
 
-    def _create_dashboard_title(self, generated_at: Optional[str] = None) -> str:
+    def _create_dashboard_title(self, generated_at: str | None = None) -> str:
         """Create professional dashboard title."""
         location_name = self.location_config.get("location", {}).get("name", "Location")
         rendered_at = generated_at or datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -238,7 +238,7 @@ class InteractiveVisualizationEngine:
         """
         return title_html
 
-    def _create_layer_groups(self) -> Dict[str, folium.FeatureGroup]:
+    def _create_layer_groups(self) -> dict[str, folium.FeatureGroup]:
         """Create layer groups for different analysis domains."""
         layer_groups = {
             "h3_grid": folium.FeatureGroup(name="🔷 H3 Spatial Grid", show=True),
@@ -257,7 +257,7 @@ class InteractiveVisualizationEngine:
         return layer_groups
 
     def _add_forest_health_layers(
-        self, m: folium.Map, layer_groups: Dict, forest_data: Dict[str, Any]
+        self, m: folium.Map, layer_groups: dict, forest_data: dict[str, Any]
     ) -> None:
         """Add forest health visualization layers."""
         logger.info("Adding forest health visualization layers...")
@@ -304,7 +304,7 @@ class InteractiveVisualizationEngine:
         forest_cluster.add_to(layer_groups["forest_health"])
 
     def _add_coastal_resilience_layers(
-        self, m: folium.Map, layer_groups: Dict, coastal_data: Dict[str, Any]
+        self, m: folium.Map, layer_groups: dict, coastal_data: dict[str, Any]
     ) -> None:
         """Add coastal resilience visualization layers."""
         logger.info("Adding coastal resilience visualization layers...")
@@ -350,7 +350,7 @@ class InteractiveVisualizationEngine:
         coastal_cluster.add_to(layer_groups["coastal_resilience"])
 
     def _add_fire_risk_layers(
-        self, m: folium.Map, layer_groups: Dict, fire_data: Dict[str, Any]
+        self, m: folium.Map, layer_groups: dict, fire_data: dict[str, Any]
     ) -> None:
         """Add fire risk visualization layers."""
         logger.info("Adding fire risk visualization layers...")
@@ -396,7 +396,7 @@ class InteractiveVisualizationEngine:
         fire_cluster.add_to(layer_groups["fire_risk"])
 
     def _add_community_development_layers(
-        self, m: folium.Map, layer_groups: Dict, community_data: Dict[str, Any]
+        self, m: folium.Map, layer_groups: dict, community_data: dict[str, Any]
     ) -> None:
         """Add community development visualization layers."""
         logger.info("Adding community development visualization layers...")
@@ -448,7 +448,7 @@ class InteractiveVisualizationEngine:
         community_cluster.add_to(layer_groups["community_development"])
 
     def _add_integration_layers(
-        self, m: folium.Map, layer_groups: Dict, integration_data: Dict[str, Any]
+        self, m: folium.Map, layer_groups: dict, integration_data: dict[str, Any]
     ) -> None:
         """Add cross-domain integration visualization layers."""
         logger.info("Adding cross-domain integration layers...")
@@ -495,8 +495,8 @@ class InteractiveVisualizationEngine:
             ).add_to(layer_groups["integration"])
 
     def _generate_forest_monitoring_sites(
-        self, forest_data: Optional[Dict[str, Any]] = None
-    ) -> List[Dict]:
+        self, forest_data: dict[str, Any] | None = None
+    ) -> list[dict]:
         """Extract forest monitoring sites from analysis data.
 
         Uses real plot data from forest health analysis when available.
@@ -546,8 +546,8 @@ class InteractiveVisualizationEngine:
         return []
 
     def _generate_coastal_monitoring_sites(
-        self, coastal_data: Optional[Dict[str, Any]] = None
-    ) -> List[Dict]:
+        self, coastal_data: dict[str, Any] | None = None
+    ) -> list[dict]:
         """Extract coastal monitoring sites from analysis data.
 
         Uses real coastal analysis data (tide stations, infrastructure) when
@@ -587,8 +587,8 @@ class InteractiveVisualizationEngine:
         return []
 
     def _generate_fire_monitoring_sites(
-        self, fire_data: Optional[Dict[str, Any]] = None
-    ) -> List[Dict]:
+        self, fire_data: dict[str, Any] | None = None
+    ) -> list[dict]:
         """Extract fire monitoring sites from analysis data.
 
         Uses real fire risk analysis data (weather stations, fuel moisture
@@ -605,7 +605,7 @@ class InteractiveVisualizationEngine:
             )
             if weather_records:
                 # Aggregate by station and build site entries
-                station_map: Dict[str, List[Dict]] = {}
+                station_map: dict[str, list[dict]] = {}
                 for rec in weather_records:
                     sid = rec.get("station_id", "UNK")
                     station_map.setdefault(sid, []).append(rec)
@@ -637,8 +637,8 @@ class InteractiveVisualizationEngine:
         return []
 
     def _generate_community_facilities(
-        self, community_data: Optional[Dict[str, Any]] = None
-    ) -> List[Dict]:
+        self, community_data: dict[str, Any] | None = None
+    ) -> list[dict]:
         """Return real Del Norte County community facilities.
 
         Coordinates are from verified public records.  If *community_data*
@@ -650,7 +650,7 @@ class InteractiveVisualizationEngine:
                 logger.info(
                     f"Using {len(custom)} community facilities from analysis data"
                 )
-                return cast(List[Dict[Any, Any]], custom)
+                return cast(list[dict[Any, Any]], custom)
 
         # Verified Del Norte County facilities (public record coordinates)
         return [
@@ -729,8 +729,8 @@ class InteractiveVisualizationEngine:
         ]
 
     def _generate_h3_integration_grid(
-        self, integration_data: Dict[str, Any]
-    ) -> Dict[str, Dict]:
+        self, integration_data: dict[str, Any]
+    ) -> dict[str, dict]:
         """Build H3 integration grid from real analysis results.
 
         Aggregates domain scores from *integration_data* into H3 cells.  If
@@ -749,14 +749,14 @@ class InteractiveVisualizationEngine:
                 and isinstance(cell_data, dict)
             }
 
-        h3_cells: Dict[str, Dict] = {}
+        h3_cells: dict[str, dict] = {}
 
         # Collect H3 cells from each domain's spatial data
         domain_datasets = integration_data.get("domain_spatial", {})
         if not isinstance(domain_datasets, dict):
             return h3_cells
-        cell_domains: Dict[str, set] = {}
-        cell_scores: Dict[str, List[float]] = {}
+        cell_domains: dict[str, set] = {}
+        cell_scores: dict[str, list[float]] = {}
 
         for domain_name, domain_spatial in domain_datasets.items():
             if not isinstance(domain_spatial, dict):

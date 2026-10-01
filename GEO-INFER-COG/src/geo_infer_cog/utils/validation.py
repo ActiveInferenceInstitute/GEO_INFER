@@ -19,13 +19,13 @@ Mathematical Foundations:
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 import math
 
 logger = logging.getLogger(__name__)
 
 
-def validate_spatial_data(spatial_data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_spatial_data(spatial_data: dict[str, Any]) -> dict[str, Any]:
     """
     Validate spatial data for geometric consistency and completeness.
 
@@ -35,7 +35,7 @@ def validate_spatial_data(spatial_data: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Validation results with errors and warnings
     """
-    validation_result: Dict[str, Any] = {
+    validation_result: dict[str, Any] = {
         "valid": True,
         "errors": [],
         "warnings": [],
@@ -73,7 +73,7 @@ def validate_spatial_data(spatial_data: Dict[str, Any]) -> Dict[str, Any]:
     return validation_result
 
 
-def validate_geometry(geometry: Dict[str, Any]) -> Dict[str, Any]:
+def validate_geometry(geometry: dict[str, Any]) -> dict[str, Any]:
     """
     Validate geometry for topological consistency and coordinate validity.
 
@@ -83,7 +83,7 @@ def validate_geometry(geometry: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Validation results for the geometry
     """
-    validation_result: Dict[str, Any] = {
+    validation_result: dict[str, Any] = {
         "valid": True,
         "errors": [],
         "warnings": [],
@@ -147,9 +147,9 @@ def validate_geometry(geometry: Dict[str, Any]) -> Dict[str, Any]:
     return validation_result
 
 
-def validate_point_coordinates(coords: List[float]) -> Dict[str, Any]:
+def validate_point_coordinates(coords: list[float]) -> dict[str, Any]:
     """Validate Point coordinates."""
-    validation: Dict[str, Any] = {
+    validation: dict[str, Any] = {
         "valid": True,
         "errors": [],
         "warnings": [],
@@ -186,9 +186,9 @@ def validate_point_coordinates(coords: List[float]) -> Dict[str, Any]:
     return validation
 
 
-def validate_linestring_coordinates(coords: List[List[float]]) -> Dict[str, Any]:
+def validate_linestring_coordinates(coords: list[list[float]]) -> dict[str, Any]:
     """Validate LineString coordinates."""
-    validation: Dict[str, Any] = {
+    validation: dict[str, Any] = {
         "valid": True,
         "errors": [],
         "warnings": [],
@@ -229,9 +229,9 @@ def validate_linestring_coordinates(coords: List[List[float]]) -> Dict[str, Any]
     return validation
 
 
-def validate_polygon_coordinates(coords: List[List[List[float]]]) -> Dict[str, Any]:
+def validate_polygon_coordinates(coords: list[list[list[float]]]) -> dict[str, Any]:
     """Validate Polygon coordinates."""
-    validation: Dict[str, Any] = {
+    validation: dict[str, Any] = {
         "valid": True,
         "errors": [],
         "warnings": [],
@@ -287,9 +287,9 @@ def validate_polygon_coordinates(coords: List[List[List[float]]]) -> Dict[str, A
     return validation
 
 
-def validate_multipoint_coordinates(coords: List[List[float]]) -> Dict[str, Any]:
+def validate_multipoint_coordinates(coords: list[list[float]]) -> dict[str, Any]:
     """Validate MultiPoint coordinates."""
-    validation: Dict[str, Any] = {
+    validation: dict[str, Any] = {
         "valid": True,
         "errors": [],
         "warnings": [],
@@ -308,10 +308,10 @@ def validate_multipoint_coordinates(coords: List[List[float]]) -> Dict[str, Any]
 
 
 def validate_multilinestring_coordinates(
-    coords: List[List[List[float]]],
-) -> Dict[str, Any]:
+    coords: list[list[list[float]]],
+) -> dict[str, Any]:
     """Validate MultiLineString coordinates."""
-    validation: Dict[str, Any] = {
+    validation: dict[str, Any] = {
         "valid": True,
         "errors": [],
         "warnings": [],
@@ -337,10 +337,10 @@ def validate_multilinestring_coordinates(
 
 
 def validate_multipolygon_coordinates(
-    coords: List[List[List[List[float]]]],
-) -> Dict[str, Any]:
+    coords: list[list[list[list[float]]]],
+) -> dict[str, Any]:
     """Validate MultiPolygon coordinates."""
-    validation: Dict[str, Any] = {
+    validation: dict[str, Any] = {
         "valid": True,
         "errors": [],
         "warnings": [],
@@ -365,9 +365,9 @@ def validate_multipolygon_coordinates(
     return validation
 
 
-def check_topological_validity(geometry: Dict[str, Any]) -> Dict[str, Any]:
+def check_topological_validity(geometry: dict[str, Any]) -> dict[str, Any]:
     """Check topological validity of geometry."""
-    validation: Dict[str, Any] = {
+    validation: dict[str, Any] = {
         "valid": True,
         "errors": [],
         "warnings": [],
@@ -403,12 +403,12 @@ def check_topological_validity(geometry: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def do_edges_intersect(
-    p1: List[float], p2: List[float], p3: List[float], p4: List[float]
+    p1: list[float], p2: list[float], p3: list[float], p4: list[float]
 ) -> bool:
     """Check if two line segments intersect."""
 
     # Simple line segment intersection algorithm
-    def ccw(A: List[float], B: List[float], C: List[float]) -> bool:
+    def ccw(A: list[float], B: list[float], C: list[float]) -> bool:
         return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
 
     A, B, C, D = p1, p2, p3, p4
@@ -416,9 +416,9 @@ def do_edges_intersect(
     return (ccw(A, C, D) != ccw(B, C, D)) and (ccw(A, B, C) != ccw(A, B, D))
 
 
-def check_data_completeness(spatial_data: Dict[str, Any]) -> Dict[str, Any]:
+def check_data_completeness(spatial_data: dict[str, Any]) -> dict[str, Any]:
     """Check completeness of spatial data."""
-    completeness: Dict[str, Any] = {
+    completeness: dict[str, Any] = {
         "completeness_score": 0.0,
         "missing_fields": [],
         "optional_fields_present": [],
@@ -498,8 +498,8 @@ def check_data_completeness(spatial_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def validate_cognitive_model(
-    model_config: Dict[str, Any], model_type: str = "general"
-) -> Dict[str, Any]:
+    model_config: dict[str, Any], model_type: str = "general"
+) -> dict[str, Any]:
     """
     Validate cognitive model configuration and parameters.
 
@@ -510,7 +510,7 @@ def validate_cognitive_model(
     Returns:
         Validation results for the model configuration
     """
-    validation_result: Dict[str, Any] = {
+    validation_result: dict[str, Any] = {
         "valid": True,
         "errors": [],
         "warnings": [],
@@ -569,9 +569,9 @@ def validate_cognitive_model(
     return validation_result
 
 
-def validate_perception_model(config: Dict[str, Any]) -> Dict[str, Any]:
+def validate_perception_model(config: dict[str, Any]) -> dict[str, Any]:
     """Validate perception model configuration."""
-    validation: Dict[str, Any] = {"valid": True, "errors": [], "warnings": []}
+    validation: dict[str, Any] = {"valid": True, "errors": [], "warnings": []}
 
     # Check attention model parameters
     if "attention_capacity" in config and "focus_radius" in config:
@@ -595,9 +595,9 @@ def validate_perception_model(config: Dict[str, Any]) -> Dict[str, Any]:
     return validation
 
 
-def validate_reasoning_model(config: Dict[str, Any]) -> Dict[str, Any]:
+def validate_reasoning_model(config: dict[str, Any]) -> dict[str, Any]:
     """Validate reasoning model configuration."""
-    validation: Dict[str, Any] = {"valid": True, "errors": [], "warnings": []}
+    validation: dict[str, Any] = {"valid": True, "errors": [], "warnings": []}
 
     # Check reasoning type validity
     valid_reasoning_types = [
@@ -623,9 +623,9 @@ def validate_reasoning_model(config: Dict[str, Any]) -> Dict[str, Any]:
     return validation
 
 
-def validate_memory_model(config: Dict[str, Any]) -> Dict[str, Any]:
+def validate_memory_model(config: dict[str, Any]) -> dict[str, Any]:
     """Validate memory model configuration."""
-    validation: Dict[str, Any] = {"valid": True, "errors": [], "warnings": []}
+    validation: dict[str, Any] = {"valid": True, "errors": [], "warnings": []}
 
     # Check memory type validity
     valid_memory_types = ["working", "long_term", "episodic", "semantic", "procedural"]
@@ -663,9 +663,9 @@ def validate_memory_model(config: Dict[str, Any]) -> Dict[str, Any]:
     return validation
 
 
-def check_model_consistency(config: Dict[str, Any], model_type: str) -> Dict[str, Any]:
+def check_model_consistency(config: dict[str, Any], model_type: str) -> dict[str, Any]:
     """Check consistency of model configuration."""
-    consistency: Dict[str, Any] = {"consistent": True, "issues": []}
+    consistency: dict[str, Any] = {"consistent": True, "issues": []}
 
     # Framework-specific consistency checks
     if model_type == "perception":
@@ -691,7 +691,7 @@ def check_model_consistency(config: Dict[str, Any], model_type: str) -> Dict[str
     return consistency
 
 
-def validate_user_profile(profile_data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_user_profile(profile_data: dict[str, Any]) -> dict[str, Any]:
     """
     Validate user cognitive profile data.
 
@@ -701,7 +701,7 @@ def validate_user_profile(profile_data: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Validation results for the profile
     """
-    validation_result: Dict[str, Any] = {
+    validation_result: dict[str, Any] = {
         "valid": True,
         "errors": [],
         "warnings": [],
@@ -768,8 +768,8 @@ def validate_user_profile(profile_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def validate_configuration(
-    config: Dict[str, Any], module_name: str = "cog"
-) -> Dict[str, Any]:
+    config: dict[str, Any], module_name: str = "cog"
+) -> dict[str, Any]:
     """
     Validate module configuration for consistency and completeness.
 
@@ -780,7 +780,7 @@ def validate_configuration(
     Returns:
         Validation results for the configuration
     """
-    validation_result: Dict[str, Any] = {
+    validation_result: dict[str, Any] = {
         "valid": True,
         "errors": [],
         "warnings": [],
@@ -819,9 +819,9 @@ def validate_configuration(
     return validation_result
 
 
-def validate_core_config(core_config: Dict[str, Any]) -> Dict[str, Any]:
+def validate_core_config(core_config: dict[str, Any]) -> dict[str, Any]:
     """Validate core module configuration."""
-    validation: Dict[str, Any] = {"valid": True, "errors": [], "warnings": []}
+    validation: dict[str, Any] = {"valid": True, "errors": [], "warnings": []}
 
     # Check cognitive framework
     valid_frameworks = ["bayesian_attention", "act_r", "soar", "gestalt"]
@@ -842,7 +842,7 @@ def validate_core_config(core_config: Dict[str, Any]) -> Dict[str, Any]:
     return validation
 
 
-def generate_default_config(module_name: str) -> Dict[str, Any]:
+def generate_default_config(module_name: str) -> dict[str, Any]:
     """Generate default configuration for a module."""
     if module_name == "cog":
         return {

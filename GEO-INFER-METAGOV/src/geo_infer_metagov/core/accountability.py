@@ -1,7 +1,7 @@
 """Accountability and transparency frameworks for governance."""
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Any
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -12,13 +12,13 @@ class AccountabilityMechanisms:
     """Accountability mechanisms for governance."""
 
     mechanism_id: str
-    governing_bodies: List[Dict[str, Any]]
-    stakeholder_groups: List[Dict[str, Any]]
-    accountability_directions: List[str]
+    governing_bodies: list[dict[str, Any]]
+    stakeholder_groups: list[dict[str, Any]]
+    accountability_directions: list[str]
     enforcement_capacity: str
-    audit_mechanisms: List[str]
-    audit_trail_structure: Dict[str, Any] = field(default_factory=dict)
-    compliance_framework: Dict[str, Any] = field(default_factory=dict)
+    audit_mechanisms: list[str]
+    audit_trail_structure: dict[str, Any] = field(default_factory=dict)
+    compliance_framework: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -26,11 +26,11 @@ class TransparencySystem:
     """Governance transparency system."""
 
     system_id: str
-    information_types: List[str]
+    information_types: list[str]
     disclosure_frequency: str
-    accessibility_requirements: List[str]
+    accessibility_requirements: list[str]
     documentation_standards: str
-    public_access_mechanisms: List[str]
+    public_access_mechanisms: list[str]
     transparency_score: float = 0.0
     disclosure_coverage: float = 0.0
     accessibility_score: float = 0.0
@@ -48,14 +48,14 @@ class AccountabilityFramework:
         self.accountability_model = accountability_model
         self.transparency_level = transparency_level
         self.public_participation = public_participation
-        self.accountability_systems: Dict[str, AccountabilityMechanisms] = {}
-        self.transparency_systems: Dict[str, TransparencySystem] = {}
+        self.accountability_systems: dict[str, AccountabilityMechanisms] = {}
+        self.transparency_systems: dict[str, TransparencySystem] = {}
 
     def establish_accountability(
         self,
-        governing_bodies: List[Dict[str, Any]],
-        stakeholder_groups: List[Dict[str, Any]],
-        accountability_directions: List[str],
+        governing_bodies: list[dict[str, Any]],
+        stakeholder_groups: list[dict[str, Any]],
+        accountability_directions: list[str],
         enforcement_capacity: str,
     ) -> AccountabilityMechanisms:
         """
@@ -106,8 +106,8 @@ class AccountabilityFramework:
         return mechanisms
 
     def _design_audit_mechanisms(
-        self, accountability_directions: List[str], enforcement_capacity: str
-    ) -> List[str]:
+        self, accountability_directions: list[str], enforcement_capacity: str
+    ) -> list[str]:
         """Design audit mechanisms based on accountability directions and enforcement capacity."""
         mechanisms = []
 
@@ -142,10 +142,10 @@ class AccountabilityFramework:
 
     def _generate_audit_trail_structure(
         self,
-        governing_bodies: List[Dict[str, Any]],
-        stakeholder_groups: List[Dict[str, Any]],
-        accountability_directions: List[str],
-    ) -> Dict[str, Any]:
+        governing_bodies: list[dict[str, Any]],
+        stakeholder_groups: list[dict[str, Any]],
+        accountability_directions: list[str],
+    ) -> dict[str, Any]:
         """Generate audit trail structure for tracking governance decisions and actions."""
         return {
             "decision_tracking": {
@@ -191,8 +191,8 @@ class AccountabilityFramework:
         }
 
     def _create_compliance_framework(
-        self, governing_bodies: List[Dict[str, Any]], enforcement_capacity: str
-    ) -> Dict[str, Any]:
+        self, governing_bodies: list[dict[str, Any]], enforcement_capacity: str
+    ) -> dict[str, Any]:
         """Create compliance checking framework."""
         capacity_weights = {
             "weak": 0.3,
@@ -236,9 +236,9 @@ class AccountabilityFramework:
 
     def implement_transparency(
         self,
-        information_types: List[str],
+        information_types: list[str],
         disclosure_frequency: str,
-        accessibility_requirements: List[str],
+        accessibility_requirements: list[str],
         documentation_standards: str,
     ) -> TransparencySystem:
         """
@@ -293,9 +293,9 @@ class AccountabilityFramework:
 
     def _calculate_transparency_score(
         self,
-        information_types: List[str],
+        information_types: list[str],
         disclosure_frequency: str,
-        accessibility_requirements: List[str],
+        accessibility_requirements: list[str],
         documentation_standards: str,
     ) -> float:
         """Calculate overall transparency score."""
@@ -348,8 +348,8 @@ class AccountabilityFramework:
         return min(1.0, transparency_score)
 
     def _design_access_mechanisms(
-        self, accessibility_requirements: List[str]
-    ) -> List[str]:
+        self, accessibility_requirements: list[str]
+    ) -> list[str]:
         """Design public access mechanisms based on requirements."""
         mechanisms = ["public_register", "open_data_portal", "public_meetings"]
 
@@ -376,10 +376,10 @@ class AccountabilityFramework:
 
     def enable_participation(
         self,
-        participation_forms: List[str],
-        barriers_to_remove: List[str],
+        participation_forms: list[str],
+        barriers_to_remove: list[str],
         capacity_building: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Enable public participation in governance."""
         return {
             "participation_forms": participation_forms,

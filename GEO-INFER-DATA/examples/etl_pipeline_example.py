@@ -18,7 +18,6 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-import geopandas as gpd
 import pandas as pd
 import numpy as np
 
@@ -28,7 +27,6 @@ from geo_infer_data.models.schemas import (
     DataDestination,
     Transformation,
     ETLPipeline,
-    ExecutionStatus,
 )
 
 

@@ -9,7 +9,7 @@ References:
 """
 
 import numpy as np
-from typing import Dict, Any
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -34,9 +34,9 @@ class GenerativeModels:
     def create_generative_model(
         self,
         model_type: str,
-        parameters: Dict[str, Any],
+        parameters: dict[str, Any],
         **kwargs: Any,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Create a POMDP generative model.
 
         Args:
@@ -58,7 +58,7 @@ class GenerativeModels:
         else:
             raise ValueError(f"Unknown model_type: {model_type}")
 
-    def _build_categorical(self, params: Dict[str, Any]) -> Dict[str, np.ndarray]:
+    def _build_categorical(self, params: dict[str, Any]) -> dict[str, np.ndarray]:
         """Build categorical POMDP with uniform initialisation."""
         n_states = params.get("n_states", 4)
         n_obs = params.get("n_obs", 4)
@@ -98,7 +98,7 @@ class GenerativeModels:
         )
         return {"A": A, "B": B, "C": C, "D": D}
 
-    def _build_grid_world(self, params: Dict[str, Any]) -> Dict[str, np.ndarray]:
+    def _build_grid_world(self, params: dict[str, Any]) -> dict[str, np.ndarray]:
         """Build 2-D grid-world POMDP."""
         grid_size = params.get("grid_size", 3)
         n_states = grid_size * grid_size
@@ -133,7 +133,7 @@ class GenerativeModels:
         )
         return {"A": A, "B": B, "C": C, "D": D}
 
-    def _validate_custom(self, params: Dict[str, Any]) -> Dict[str, np.ndarray]:
+    def _validate_custom(self, params: dict[str, Any]) -> dict[str, np.ndarray]:
         """Validate and return custom A/B/C/D matrices."""
         A = np.asarray(params["A"], dtype=np.float64)
         B = np.asarray(params["B"], dtype=np.float64)

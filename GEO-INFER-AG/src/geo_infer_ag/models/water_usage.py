@@ -3,7 +3,7 @@ Agricultural water usage modeling functionality.
 """
 
 import io
-from typing import Dict, List, Optional, Union, Any
+from typing import Any
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -31,10 +31,10 @@ class WaterUsageModel(AgricultureModel):
 
     def __init__(
         self,
-        crop_type: Optional[str] = None,
+        crop_type: str | None = None,
         model_type: str = "reference_et",
-        water_balance_components: Optional[List[str]] = None,
-        config: Optional[Dict[str, Any]] = None,
+        water_balance_components: list[str] | None = None,
+        config: dict[str, Any] | None = None,
     ):
         """
         Initialize the water usage model.
@@ -53,9 +53,9 @@ class WaterUsageModel(AgricultureModel):
 
         self.crop_type = crop_type
         self.model_type = model_type
-        self.predictor: Optional[RandomForestRegressor] = None
+        self.predictor: RandomForestRegressor | None = None
         self.fitted = False
-        self.feature_columns: Optional[List[str]] = None
+        self.feature_columns: list[str] | None = None
 
         # Default water balance components if not provided
         if water_balance_components is None:
@@ -94,7 +94,7 @@ class WaterUsageModel(AgricultureModel):
         )
 
         # Initialize crop coefficients for ET-based methods
-        self.crop_coefficients: Dict[str, Dict[str, Any]] = {
+        self.crop_coefficients: dict[str, dict[str, Any]] = {
             "corn": {
                 "initial": 0.3,
                 "mid": 1.2,
@@ -141,9 +141,9 @@ class WaterUsageModel(AgricultureModel):
 
     def fit(
         self,
-        training_data: Dict[str, Any],
+        training_data: dict[str, Any],
         target_column: str = "water_usage",
-        feature_columns: Optional[List[str]] = None,
+        feature_columns: list[str] | None = None,
     ) -> None:
         """
         Train the water usage prediction model using historical data.
@@ -201,7 +201,7 @@ class WaterUsageModel(AgricultureModel):
 
         self.fitted = True
 
-    def predict(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def predict(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Predict water usage metrics using the model.
 
@@ -595,7 +595,7 @@ class WaterUsageModel(AgricultureModel):
 
     def _calculate_reference_et(
         self, weather_data: pd.DataFrame
-    ) -> Union[float, np.ndarray, pd.Series]:
+    ) -> float | np.ndarray | pd.Series:
         """
         Calculate reference evapotranspiration using simplified Penman-Monteith.
 
@@ -630,8 +630,8 @@ class WaterUsageModel(AgricultureModel):
         return reference_et
 
     def calculate_water_footprint(
-        self, result: Dict[str, Any], yield_data: Optional[pd.Series] = None
-    ) -> Dict[str, Union[float, np.ndarray, pd.Series]]:
+        self, result: dict[str, Any], yield_data: pd.Series | None = None
+    ) -> dict[str, float | np.ndarray | pd.Series]:
         """
         Calculate water footprint metrics from water usage results.
 

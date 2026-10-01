@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Integration example: GEO-INFER-GIT with GEO-INFER-AI
@@ -12,7 +11,6 @@ Requires network access to the GitHub API. Set GITHUB_TOKEN to raise rate
 limits (optional).
 """
 
-import os
 import logging
 from pathlib import Path
 
@@ -164,7 +162,7 @@ def analyze_model_compatibility(
 
             for indicator_file in repo_path.rglob("*.py"):
                 try:
-                    with open(indicator_file, "r", encoding="utf-8") as f:
+                    with open(indicator_file, encoding="utf-8") as f:
                         content = f.read().lower()
 
                         # Check for geospatial indicators

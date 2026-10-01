@@ -12,9 +12,10 @@ import time
 import traceback
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Iterator
+from typing import Any
+from collections.abc import Iterator
 
 
 # Check if GEO-INFER-LOG is available
@@ -37,9 +38,9 @@ class TestLogEntry:
     status: str  # PASS, FAIL, ERROR, SKIP
     duration: float
     message: str
-    details: Dict[str, Any] = field(default_factory=dict)
-    error_info: Optional[Dict[str, Any]] = None
-    performance_metrics: Optional[Dict[str, Any]] = None
+    details: dict[str, Any] = field(default_factory=dict)
+    error_info: dict[str, Any] | None = None
+    performance_metrics: dict[str, Any] | None = None
 
 
 @dataclass
@@ -63,10 +64,10 @@ class LogIntegration:
     Works with or without the GEO-INFER-LOG module.
     """
 
-    def __init__(self, log_config: Optional[Dict[str, Any]] = None):
+    def __init__(self, log_config: dict[str, Any] | None = None):
         self.log_config = log_config or {}
-        self.test_entries: List[TestLogEntry] = []
-        self.module_summaries: Dict[str, ModuleTestSummary] = {}
+        self.test_entries: list[TestLogEntry] = []
+        self.module_summaries: dict[str, ModuleTestSummary] = {}
         self.log_available: bool = LOG_MODULE_AVAILABLE
 
         # Set up a standard Python logger
@@ -99,7 +100,7 @@ class LogIntegration:
         """
         start = time.time()
         entry = TestLogEntry(
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             test_id=test_id,
             module=module,
             test_name=test_name,
@@ -197,7 +198,7 @@ class LoggingTestReporter:
         self.log_integration = log_integration
         self.logger = log_integration.logger
 
-    def generate_test_report(self, output_dir: Optional[Path] = None) -> Dict[str, Any]:
+    def generate_test_report(self, output_dir: Path | None = None) -> dict[str, Any]:
         """
         Build a comprehensive report dict and, when *output_dir* is given,
         persist it as ``test_report_<timestamp>.json``.
@@ -207,8 +208,8 @@ class LoggingTestReporter:
         passed = sum(1 for e in entries if e.status == "PASS")
         failed = sum(1 for e in entries if e.status in ("FAIL", "ERROR"))
 
-        report_data: Dict[str, Any] = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+        report_data: dict[str, Any] = {
+            "timestamp": datetime.now(UTC).isoformat(),
             "summary": {
                 "total_tests": total,
                 "passed": passed,
@@ -248,7 +249,7 @@ class LoggingTestReporter:
             output_dir = Path(output_dir)
             output_dir.mkdir(parents=True, exist_ok=True)
 
-            ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            ts = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
             json_path = output_dir / f"test_report_{ts}.json"
             json_path.write_text(json.dumps(report_data, indent=2, default=str))
 
@@ -269,10 +270,10 @@ class _TestLoggerImpl:
     def __init__(self, log_integration: LogIntegration):
         self.log_integration = log_integration
         self.logger = log_integration.logger
-        self._health_log: Dict[str, Dict[str, Any]] = {}
-        self._interactions: List[Dict[str, Any]] = []
+        self._health_log: dict[str, dict[str, Any]] = {}
+        self._interactions: list[dict[str, Any]] = []
 
-    def log_performance_metrics(self, test_id: str, metrics: Dict[str, Any]) -> None:
+    def log_performance_metrics(self, test_id: str, metrics: dict[str, Any]) -> None:
         """Attach performance metrics to an existing test entry."""
         for entry in self.log_integration.test_entries:
             if entry.test_id == test_id:
@@ -283,10 +284,10 @@ class _TestLoggerImpl:
                 return
         self.logger.warning("Test entry %s not found for metrics", test_id)
 
-    def log_module_health(self, module: str, health_data: Dict[str, Any]) -> None:
+    def log_module_health(self, module: str, health_data: dict[str, Any]) -> None:
         """Record module health snapshot."""
         self._health_log[module] = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             **health_data,
         }
         self.logger.info(
@@ -302,7 +303,7 @@ class _TestLoggerImpl:
     ) -> None:
         """Record a cross-module interaction event."""
         record = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "source": source_module,
             "target": target_module,
             "type": interaction_type,
@@ -328,17 +329,17 @@ class LogAnalyzer:
         self.log_integration = log_integration
         self.logger = log_integration.logger
 
-    def analyze_test_patterns(self) -> Dict[str, Any]:
+    def analyze_test_patterns(self) -> dict[str, Any]:
         """
         Compute per-module reliability (success rate) and overall stats.
         """
         entries = self.log_integration.test_entries
 
-        module_groups: Dict[str, List[TestLogEntry]] = {}
+        module_groups: dict[str, list[TestLogEntry]] = {}
         for entry in entries:
             module_groups.setdefault(entry.module, []).append(entry)
 
-        module_reliability: Dict[str, Dict[str, Any]] = {}
+        module_reliability: dict[str, dict[str, Any]] = {}
         for module, mod_entries in module_groups.items():
             total = len(mod_entries)
             passed = sum(1 for e in mod_entries if e.status == "PASS")
@@ -362,7 +363,7 @@ class LogAnalyzer:
 
     def identify_performance_bottlenecks(
         self, *, threshold_factor: float = 2.0
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Find tests whose duration is *threshold_factor* × the mean,
         sorted by slowness factor descending.
@@ -377,7 +378,7 @@ class LogAnalyzer:
         if mean_dur == 0:
             return []
 
-        bottlenecks: List[Dict[str, Any]] = []
+        bottlenecks: list[dict[str, Any]] = []
         for entry in entries:
             factor = entry.duration / mean_dur
             if factor >= threshold_factor:

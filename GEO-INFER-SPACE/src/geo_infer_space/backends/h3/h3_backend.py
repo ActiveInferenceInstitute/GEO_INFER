@@ -8,7 +8,8 @@ require the H3 library to be installed - no simulated implementations.
 
 import logging
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
+from collections.abc import Callable
 
 from ...core.interfaces import H3UnavailableError
 
@@ -22,12 +23,12 @@ MAX_H3_MAJOR = 5
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def _version_tuple(version: str) -> Tuple[int, int, int] | None:
+def _version_tuple(version: str) -> tuple[int, int, int] | None:
     """Parse a semantic H3 version without accepting a legacy major release."""
     try:
         parts = version.lstrip("v").split(".")
         return cast(
-            Tuple[int, int, int],
+            tuple[int, int, int],
             tuple(int(part.split("+")[0].split("-")[0]) for part in parts[:3])
             + (0,) * max(0, 3 - len(parts)),
         )
@@ -70,7 +71,7 @@ class H3Backend:
     def _init_accelerator(self) -> None:
         """Initialize compatibility state without loading optional GPU libraries."""
         self.accelerator = False
-        self.accelerator_backends: List[str] = []
+        self.accelerator_backends: list[str] = []
 
     def _prepare_accelerator(self) -> None:
         """Explicitly refresh cached GPU capability diagnostics."""
@@ -134,7 +135,7 @@ class H3Backend:
         """Check if the backend is available and functional."""
         return self._available
 
-    def get_capabilities(self) -> Dict[str, Any]:
+    def get_capabilities(self) -> dict[str, Any]:
         """Return the backend's capabilities."""
         return {
             "indexing": {
@@ -218,10 +219,10 @@ class H3Backend:
             ValueError: If cell identifier is invalid
         """
         logger.debug(f"Converting H3 cell {cell} to coordinates")
-        return cast(Tuple[float, float], self.h3.cell_to_latlng(cell))
+        return cast(tuple[float, float], self.h3.cell_to_latlng(cell))
 
     @_require_h3("polygon_to_cells")
-    def polygon_to_cells(self, polygon: Dict[str, Any], resolution: int) -> List[str]:
+    def polygon_to_cells(self, polygon: dict[str, Any], resolution: int) -> list[str]:
         """
         Convert polygon to list of H3 cells.
 
@@ -283,7 +284,7 @@ class H3Backend:
             raise ValueError(f"H3 polygon conversion failed: {e}") from e
 
     @_require_h3("get_cell_neighbors")
-    def get_cell_neighbors(self, cell: str, k: int = 1) -> List[str]:
+    def get_cell_neighbors(self, cell: str, k: int = 1) -> list[str]:
         """
         Get neighboring cells around a given cell.
 
@@ -308,7 +309,7 @@ class H3Backend:
         return sorted(disk - inner_disk)
 
     @_require_h3("get_cells_within_radius")
-    def get_cells_within_radius(self, cell: str, k: int = 1) -> List[str]:
+    def get_cells_within_radius(self, cell: str, k: int = 1) -> list[str]:
         """Return every cell within ``k`` H3 grid rings, excluding ``cell``."""
         if not isinstance(k, int) or k < 0:
             raise ValueError("k must be a non-negative integer")
@@ -336,10 +337,10 @@ class H3Backend:
     @_require_h3("compute_distance_matrix")
     def compute_distance_matrix(
         self,
-        cells_a: List[str],
-        cells_b: List[str],
+        cells_a: list[str],
+        cells_b: list[str],
         use_gpu: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Return host H3 int64 grid distances; incomparable pairs are -1.
 
         use_gpu is retained for compatibility. Exact H3 topology always runs
@@ -360,13 +361,13 @@ class H3Backend:
     @_require_h3("geodesic_distance_matrix")
     def geodesic_distance_matrix(
         self,
-        cells_a: List[str],
-        cells_b: List[str],
+        cells_a: list[str],
+        cells_b: list[str],
         use_gpu: bool = True,
         *,
         backend: str | None = None,
         chunk_size: int = 1024,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Return float64 centroid great-circle distances in km and diagnostics.
 
         Invalid cells raise; they are never replaced by an unrelated location.
@@ -376,7 +377,7 @@ class H3Backend:
 
         pts_a = [self.h3.cell_to_latlng(cell) for cell in cells_a]
         pts_b = [self.h3.cell_to_latlng(cell) for cell in cells_b]
-        diagnostics: Dict[str, Any] = {}
+        diagnostics: dict[str, Any] = {}
         matrix = pairwise_haversine_kernel(
             pts_a,
             pts_b,
@@ -400,14 +401,14 @@ class H3Backend:
     @_require_h3("geodesic_spatial_join")
     def geodesic_spatial_join(
         self,
-        points_a: List[Tuple[float, float]],
-        points_b: List[Tuple[float, float]],
+        points_a: list[tuple[float, float]],
+        points_b: list[tuple[float, float]],
         max_distance_km: float,
         use_gpu: bool = True,
         *,
         backend: str | None = None,
         chunk_size: int = 1024,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Join finite geographic points within a positive distance using tiles.
 
         Intermediate distance storage is bounded by chunk_size squared. Result
@@ -415,7 +416,7 @@ class H3Backend:
         """
         from ..gpu.gpu_acceleration import gpu_spatial_join_by_distance
 
-        diagnostics: Dict[str, Any] = {}
+        diagnostics: dict[str, Any] = {}
         pairs, unmatched_a, unmatched_b = gpu_spatial_join_by_distance(
             points_a,
             points_b,
@@ -437,7 +438,7 @@ class H3Backend:
         }
 
     @_require_h3("compact_cells")
-    def compact_cells(self, cells: List[str]) -> List[str]:
+    def compact_cells(self, cells: list[str]) -> list[str]:
         """
         Compact a list of cells into a more efficient representation.
 
@@ -456,7 +457,7 @@ class H3Backend:
         return result
 
     @_require_h3("uncompact_cells")
-    def uncompact_cells(self, compacted_cells: List[str], resolution: int) -> List[str]:
+    def uncompact_cells(self, compacted_cells: list[str], resolution: int) -> list[str]:
         """
         Uncompact cells back to individual cell identifiers.
 
@@ -500,7 +501,7 @@ class H3Backend:
             raise ValueError(f"Failed to get parent: {e}") from e
 
     @_require_h3("get_cell_children")
-    def get_cell_children(self, cell: str, resolution: int) -> List[str]:
+    def get_cell_children(self, cell: str, resolution: int) -> list[str]:
         """
         Get children of a cell at a finer resolution.
 
@@ -522,7 +523,7 @@ class H3Backend:
             raise ValueError(f"Failed to get children: {e}") from e
 
     @_require_h3("get_cell_path")
-    def get_cell_path(self, start_cell: str, end_cell: str) -> List[str]:
+    def get_cell_path(self, start_cell: str, end_cell: str) -> list[str]:
         """
         Get the path of cells between two cells.
 
@@ -545,7 +546,7 @@ class H3Backend:
             raise ValueError(f"Failed to calculate path: {e}") from e
 
     @_require_h3("get_cell_ring")
-    def get_cell_ring(self, cell: str, k: int) -> List[str]:
+    def get_cell_ring(self, cell: str, k: int) -> list[str]:
         """
         Get the ring of cells at distance k.
 
@@ -568,7 +569,7 @@ class H3Backend:
 
     # SpatialAnalyticsBackend implementation
     @_require_h3("analyze_hotspots")
-    def analyze_hotspots(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_hotspots(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Analyze spatial hotspots in H3-indexed data.
 
@@ -629,7 +630,7 @@ class H3Backend:
         }
 
     @_require_h3("compute_proximity")
-    def compute_proximity(self, points: List[tuple[float, float]]) -> Dict[str, Any]:
+    def compute_proximity(self, points: list[tuple[float, float]]) -> dict[str, Any]:
         """
         Compute proximity analysis between points using H3.
 
@@ -707,7 +708,7 @@ class H3Backend:
             raise ValueError(f"Invalid H3 cell identifier: {cell}") from e
 
     @_require_h3("get_cell_boundary")
-    def get_cell_boundary(self, cell: str) -> List[Tuple[float, float]]:
+    def get_cell_boundary(self, cell: str) -> list[tuple[float, float]]:
         """
         Get the boundary coordinates of an H3 cell.
 
@@ -760,7 +761,7 @@ class H3Backend:
             raise ValueError(f"Invalid H3 cell identifier: {cell}") from e
 
     @_require_h3("cells_to_multipolygon")
-    def cells_to_multipolygon(self, cells: List[str]) -> Dict[str, Any]:
+    def cells_to_multipolygon(self, cells: list[str]) -> dict[str, Any]:
         """
         Convert a list of H3 cells to a GeoJSON MultiPolygon geometry.
 
@@ -817,45 +818,45 @@ class H3Backend:
         return shape(geometry)
 
     @staticmethod
-    def _geojson(geometry: "BaseGeometry") -> Dict[str, Any]:
+    def _geojson(geometry: "BaseGeometry") -> dict[str, Any]:
         from shapely.geometry import mapping
 
         return dict(mapping(geometry))
 
     @_require_h3("buffer_geometry")
     def buffer_geometry(
-        self, geometry: Dict[str, Any], distance: float, **kwargs: Any
-    ) -> Dict[str, Any]:
+        self, geometry: dict[str, Any], distance: float, **kwargs: Any
+    ) -> dict[str, Any]:
         """Buffer a GeoJSON geometry in its coordinate units."""
         if distance <= 0:
             raise ValueError("distance must be positive")
         return self._geojson(self._geometry(geometry).buffer(distance, **kwargs))
 
     @_require_h3("calculate_area")
-    def calculate_area(self, geometry: Dict[str, Any]) -> float:
+    def calculate_area(self, geometry: dict[str, Any]) -> float:
         """Return the planar area of a GeoJSON geometry."""
         return float(self._geometry(geometry).area)
 
     @_require_h3("calculate_perimeter")
-    def calculate_perimeter(self, geometry: Dict[str, Any]) -> float:
+    def calculate_perimeter(self, geometry: dict[str, Any]) -> float:
         """Return the planar perimeter/length of a GeoJSON geometry."""
         return float(self._geometry(geometry).length)
 
     @_require_h3("calculate_centroid")
-    def calculate_centroid(self, geometry: Dict[str, Any]) -> Tuple[float, float]:
+    def calculate_centroid(self, geometry: dict[str, Any]) -> tuple[float, float]:
         """Return the centroid as a ``(latitude, longitude)`` pair."""
         centroid = self._geometry(geometry).centroid
         return float(centroid.y), float(centroid.x)
 
     @_require_h3("calculate_distance")
     def calculate_distance(
-        self, geometry_a: Dict[str, Any], geometry_b: Dict[str, Any]
+        self, geometry_a: dict[str, Any], geometry_b: dict[str, Any]
     ) -> float:
         """Return the planar distance between two GeoJSON geometries."""
         return float(self._geometry(geometry_a).distance(self._geometry(geometry_b)))
 
     @_require_h3("union_geometries")
-    def union_geometries(self, geometries: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def union_geometries(self, geometries: list[dict[str, Any]]) -> dict[str, Any]:
         """Return the unary union of GeoJSON geometries."""
         from shapely.ops import unary_union
 
@@ -865,8 +866,8 @@ class H3Backend:
 
     @_require_h3("intersection_geometries")
     def intersection_geometries(
-        self, geometry_a: Dict[str, Any], geometry_b: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, geometry_a: dict[str, Any], geometry_b: dict[str, Any]
+    ) -> dict[str, Any]:
         """Return the intersection of two GeoJSON geometries."""
         return self._geojson(
             self._geometry(geometry_a).intersection(self._geometry(geometry_b))
@@ -874,8 +875,8 @@ class H3Backend:
 
     @_require_h3("difference_geometries")
     def difference_geometries(
-        self, geometry_a: Dict[str, Any], geometry_b: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, geometry_a: dict[str, Any], geometry_b: dict[str, Any]
+    ) -> dict[str, Any]:
         """Return ``geometry_a - geometry_b`` as GeoJSON."""
         return self._geojson(
             self._geometry(geometry_a).difference(self._geometry(geometry_b))
@@ -883,22 +884,22 @@ class H3Backend:
 
     @_require_h3("contains_geometry")
     def contains_geometry(
-        self, container: Dict[str, Any], contained: Dict[str, Any]
+        self, container: dict[str, Any], contained: dict[str, Any]
     ) -> bool:
         """Return whether one GeoJSON geometry contains another."""
         return bool(self._geometry(container).contains(self._geometry(contained)))
 
     @_require_h3("intersects_geometry")
     def intersects_geometry(
-        self, geometry_a: Dict[str, Any], geometry_b: Dict[str, Any]
+        self, geometry_a: dict[str, Any], geometry_b: dict[str, Any]
     ) -> bool:
         """Return whether two GeoJSON geometries intersect."""
         return bool(self._geometry(geometry_a).intersects(self._geometry(geometry_b)))
 
     @_require_h3("transform_geometry")
     def transform_geometry(
-        self, geometry: Dict[str, Any], from_crs: str, to_crs: str
-    ) -> Dict[str, Any]:
+        self, geometry: dict[str, Any], from_crs: str, to_crs: str
+    ) -> dict[str, Any]:
         """Transform a GeoJSON geometry between CRS definitions."""
         from pyproj import Transformer
         from shapely.ops import transform
@@ -909,11 +910,11 @@ class H3Backend:
     @_require_h3("find_clusters")
     def find_clusters(
         self,
-        cells: List[str],
-        values: List[float],
+        cells: list[str],
+        values: list[float],
         min_cluster_size: int = 3,
         distance_threshold: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Find spatial clusters of cells based on values and proximity.
 
@@ -942,10 +943,10 @@ class H3Backend:
         cell_values = dict(zip(cells, values))
         cell_set = set(cells)
         visited = set()
-        clusters: List[Dict[str, Any]] = []
+        clusters: list[dict[str, Any]] = []
         noise = []
 
-        def get_neighbors_in_set(cell: str) -> List[str]:
+        def get_neighbors_in_set(cell: str) -> list[str]:
             """Get neighbors of a cell that are in our cell set."""
             try:
                 neighbors = list(self.h3.grid_disk(cell, distance_threshold))
@@ -959,7 +960,7 @@ class H3Backend:
                 )
                 return []
 
-        def expand_cluster(cell: str, neighbors: List[str], cluster: List[str]) -> None:
+        def expand_cluster(cell: str, neighbors: list[str], cluster: list[str]) -> None:
             """Expand cluster from seed cell."""
             cluster.append(cell)
             i = 0
@@ -986,7 +987,7 @@ class H3Backend:
             if len(neighbors) < min_cluster_size - 1:
                 noise.append(cell)
             else:
-                cluster: List[str] = []
+                cluster: list[str] = []
                 expand_cluster(cell, neighbors, cluster)
                 if len(cluster) >= min_cluster_size:
                     cluster_values = [cell_values[c] for c in cluster]
@@ -1020,13 +1021,13 @@ class H3Backend:
     @_require_h3("cluster_points")
     def cluster_points(
         self,
-        points: List[Tuple[float, float]],
-        values: List[float] | None = None,
+        points: list[tuple[float, float]],
+        values: list[float] | None = None,
         method: str = "dbscan",
         resolution: int = 9,
         min_cluster_size: int = 3,
         distance_threshold: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Cluster coordinate points after indexing them with native H3."""
         if method != "dbscan":
             raise ValueError("H3 point clustering supports method='dbscan' only")
@@ -1036,7 +1037,7 @@ class H3Backend:
             raise ValueError("values must have the same length as points")
         values = values or [1.0] * len(points)
 
-        grouped: Dict[str, List[float]] = {}
+        grouped: dict[str, list[float]] = {}
         for (lat, lng), value in zip(points, values):
             cell = self.h3.latlng_to_cell(float(lat), float(lng), resolution)
             grouped.setdefault(cell, []).append(float(value))
@@ -1051,8 +1052,8 @@ class H3Backend:
 
     @_require_h3("calculate_density")
     def calculate_density(
-        self, cells: List[str], values: List[float], kernel_radius: int = 1
-    ) -> Dict[str, Any]:
+        self, cells: list[str], values: list[float], kernel_radius: int = 1
+    ) -> dict[str, Any]:
         """
         Calculate density values across cells using kernel smoothing.
 
@@ -1121,11 +1122,11 @@ class H3Backend:
     @_require_h3("spatial_join")
     def spatial_join(
         self,
-        cells_a: List[str],
-        cells_b: List[str],
+        cells_a: list[str],
+        cells_b: list[str],
         join_type: str = "intersects",
         use_gpu: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Join exact H3 host topology with deterministic input ordering.
 
         Intersects means identical or adjacent cells; contains/within mean
@@ -1153,11 +1154,11 @@ class H3Backend:
     @_require_h3("interpolate_values")
     def interpolate_values(
         self,
-        cells: List[str],
-        values: List[float],
-        target_cells: List[str],
+        cells: list[str],
+        values: list[float],
+        target_cells: list[str],
         method: str = "idw",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Interpolate values at target cell locations using source cells.
 
@@ -1272,7 +1273,7 @@ class H3Backend:
             logger.debug("Unexpected error validating H3 cell %r", cell, exc_info=True)
             return False
 
-    def validate_resolution(self, resolution: int) -> Dict[str, Any]:
+    def validate_resolution(self, resolution: int) -> dict[str, Any]:
         """
         Validate that a resolution is within the valid H3 range.
 
@@ -1295,7 +1296,7 @@ class H3Backend:
             ),
         }
 
-    def validate_coordinates(self, lat: float, lng: float) -> Dict[str, Any]:
+    def validate_coordinates(self, lat: float, lng: float) -> dict[str, Any]:
         """
         Validate lat/lng coordinates are within valid ranges.
 
@@ -1411,7 +1412,7 @@ class H3Backend:
         return cast(int, self.h3.get_base_cell_number(cell))
 
     @_require_h3("get_icosahedron_faces")
-    def get_icosahedron_faces(self, cell: str) -> List[int]:
+    def get_icosahedron_faces(self, cell: str) -> list[int]:
         """
         Get the icosahedron faces a cell intersects.
 
@@ -1426,7 +1427,7 @@ class H3Backend:
         return list(self.h3.get_icosahedron_faces(cell))
 
     @_require_h3("get_pentagons")
-    def get_pentagons(self, resolution: int) -> List[str]:
+    def get_pentagons(self, resolution: int) -> list[str]:
         """
         Get all 12 pentagon cells at a given resolution.
 
@@ -1443,8 +1444,8 @@ class H3Backend:
 
     @_require_h3("get_cells_at_resolution")
     def get_cells_at_resolution(
-        self, cells: List[str], target_resolution: int
-    ) -> List[str]:
+        self, cells: list[str], target_resolution: int
+    ) -> list[str]:
         """
         Convert a mixed-resolution set of cells to a uniform resolution.
 
@@ -1499,7 +1500,7 @@ class H3Backend:
         return cast(str, self.h3.cells_to_directed_edge(origin, destination))
 
     @_require_h3("edge_to_cells")
-    def edge_to_cells(self, edge: str) -> Tuple[str, str]:
+    def edge_to_cells(self, edge: str) -> tuple[str, str]:
         """
         Get the origin and destination cells of a directed edge.
 
@@ -1514,7 +1515,7 @@ class H3Backend:
         return (origin, destination)
 
     @_require_h3("get_cell_edges")
-    def get_cell_edges(self, cell: str) -> List[str]:
+    def get_cell_edges(self, cell: str) -> list[str]:
         """
         Get all directed edges originating from a cell.
 
@@ -1529,7 +1530,7 @@ class H3Backend:
         return list(self.h3.origin_to_directed_edges(cell))
 
     @_require_h3("get_edge_boundary")
-    def get_edge_boundary(self, edge: str) -> List[Tuple[float, float]]:
+    def get_edge_boundary(self, edge: str) -> list[tuple[float, float]]:
         """
         Get the geographic boundary of a directed edge.
 
@@ -1546,7 +1547,7 @@ class H3Backend:
     # =========================================================================
 
     @_require_h3("cell_to_local_ij")
-    def cell_to_local_ij(self, origin: str, cell: str) -> Tuple[int, int]:
+    def cell_to_local_ij(self, origin: str, cell: str) -> tuple[int, int]:
         """
         Get the local IJ coordinates of a cell relative to an origin.
 
@@ -1676,7 +1677,7 @@ class H3Backend:
         end_lat: float,
         end_lng: float,
         resolution: int,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Convert a line segment to H3 cells it passes through.
 
@@ -1720,7 +1721,7 @@ class H3Backend:
         return self.great_circle_distance(lat, lng, center[0], center[1], unit="m")
 
     @_require_h3("get_resolution_stats")
-    def get_resolution_stats(self, resolution: int) -> Dict[str, Any]:
+    def get_resolution_stats(self, resolution: int) -> dict[str, Any]:
         """
         Get statistics about a given H3 resolution level.
 
@@ -1750,7 +1751,7 @@ class H3Backend:
     # COMPREHENSIVE VALIDATION
     # =========================================================================
 
-    def validate_cell_set(self, cells: List[str]) -> Dict[str, Any]:
+    def validate_cell_set(self, cells: list[str]) -> dict[str, Any]:
         """
         Validate a set of H3 cells comprehensively.
 

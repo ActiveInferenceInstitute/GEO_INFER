@@ -8,7 +8,7 @@ from the geo_infer_test package — no mocks.
 import pytest
 import numpy as np
 import pandas as pd
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, UTC
 
 # Real imports from the testing library
 from geo_infer_test import (
@@ -34,7 +34,7 @@ from geo_infer_test.core.log_integration import (
 @pytest.fixture
 def sensor_dataframe():
     """Real IoT sensor dataframe with timestamps, IDs, and radiation readings."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     records = []
     for i in range(20):
         records.append(

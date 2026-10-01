@@ -8,17 +8,18 @@ modules, services, and dependencies.
 import logging
 import asyncio
 import time
-from typing import Dict, List, Optional, Any, Callable
-from datetime import datetime, timezone
+from typing import Any
+from collections.abc import Callable
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 import psutil
 
 logger = logging.getLogger(__name__)
 
 
-class HealthStatus(str, Enum):
+class HealthStatus(StrEnum):
     """Health status levels."""
 
     HEALTHY = "healthy"
@@ -34,13 +35,13 @@ class HealthCheck:
     name: str
     status: HealthStatus
     message: str = ""
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
     timestamp: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None)
     )
     duration_ms: float = 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert health check to dictionary."""
         return {
             "name": self.name,
@@ -78,8 +79,8 @@ class HealthChecker:
         self.timeout_seconds = timeout_seconds
         self.enable_system_checks = enable_system_checks
 
-        self.custom_checks: Dict[str, Dict[str, Any]] = {}
-        self.health_history: List[Dict[str, Any]] = []
+        self.custom_checks: dict[str, dict[str, Any]] = {}
+        self.health_history: list[dict[str, Any]] = []
 
     def register_check(
         self, name: str, check_func: Callable, async_check: bool = False
@@ -166,7 +167,7 @@ class HealthChecker:
             )
 
     async def check_service(
-        self, name: str, check_func: Optional[Callable] = None
+        self, name: str, check_func: Callable | None = None
     ) -> HealthCheck:
         """
         Check health of a service.
@@ -220,7 +221,7 @@ class HealthChecker:
                     duration_ms=duration_ms,
                 )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             duration_ms = (time.time() - start_time) * 1000
             return HealthCheck(
                 name=f"service_{name}",
@@ -238,7 +239,7 @@ class HealthChecker:
                 duration_ms=duration_ms,
             )
 
-    async def run_all_checks(self) -> Dict[str, Any]:
+    async def run_all_checks(self) -> dict[str, Any]:
         """
         Run all registered health checks.
 
@@ -247,7 +248,7 @@ class HealthChecker:
         """
         logger.info("Running health checks")
 
-        checks: List[HealthCheck] = []
+        checks: list[HealthCheck] = []
 
         # System resource checks
         if self.enable_system_checks:
@@ -311,9 +312,9 @@ class HealthChecker:
         else:
             overall_status = HealthStatus.UNKNOWN
 
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "status": overall_status.value,
-            "timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
+            "timestamp": datetime.now(UTC).replace(tzinfo=None).isoformat(),
             "checks": [check.to_dict() for check in checks],
             "summary": {
                 "total": len(checks),
@@ -335,7 +336,7 @@ class HealthChecker:
 
         return results
 
-    def get_health_status(self) -> Dict[str, Any]:
+    def get_health_status(self) -> dict[str, Any]:
         """
         Get current health status (synchronous wrapper).
 
@@ -345,8 +346,8 @@ class HealthChecker:
         return asyncio.run(self.run_all_checks())
 
     def get_health_history(
-        self, limit: int = 100, since: Optional[datetime] = None
-    ) -> List[Dict[str, Any]]:
+        self, limit: int = 100, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get health check history.
 

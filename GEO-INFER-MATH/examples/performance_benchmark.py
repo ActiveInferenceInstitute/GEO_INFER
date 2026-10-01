@@ -10,14 +10,12 @@ techniques for large-scale geospatial data analysis.
 import numpy as np
 import time
 import logging
-from typing import List, Tuple
 
 # Import GEO-INFER-MATH modules
 from geo_infer_math.core.spatial_statistics import MoranI
 from geo_infer_math.core.interpolation import SpatialInterpolator
 from geo_infer_math.core.geometry import haversine_distance, great_circle_distance
 from geo_infer_math.utils.parallel import parallel_compute, parallel_distance_matrix
-from geo_infer_math.utils.constants import EARTH_RADIUS_MEAN
 
 # Set up logging
 logging.basicConfig(
@@ -28,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 def generate_large_dataset(
     n_points: int = 10000, seed: int = 42
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Generate a large synthetic geospatial dataset."""
     logger.info(f"Generating dataset with {n_points} points...")
 

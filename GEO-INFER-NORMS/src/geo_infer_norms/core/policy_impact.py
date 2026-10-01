@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Core functionalities for analyzing the spatial and social impacts of policies and regulations.
 
@@ -14,7 +13,7 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import base
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 logger = logging.getLogger(__name__)
@@ -37,8 +36,8 @@ class PolicyImpactAnalyzer:
     def __init__(
         self,
         policy: Any,
-        context_data: Dict[str, Any],
-        spatial_extent: Optional[base.BaseGeometry] = None,
+        context_data: dict[str, Any],
+        spatial_extent: base.BaseGeometry | None = None,
     ):
         """Initializes the PolicyImpactAnalyzer.
 
@@ -681,7 +680,7 @@ class PolicyImpactAnalyzer:
 
         return gpd.GeoDataFrame(results)
 
-    def generate_impact_report(self) -> Dict[str, Any]:
+    def generate_impact_report(self) -> dict[str, Any]:
         """Compiles a comprehensive report of all analyzed impacts.
 
         Returns:
@@ -769,7 +768,7 @@ class RegulatoryImpactAssessment:
         self,
         regulation: Any,
         affected_entities: gpd.GeoDataFrame,
-        baseline_data: Dict[str, Any],
+        baseline_data: dict[str, Any],
     ):
         """Initializes the RegulatoryImpactAssessment.
 
@@ -820,7 +819,7 @@ class RegulatoryImpactAssessment:
 
         return pd.DataFrame(rows)
 
-    def assess_administrative_burden(self) -> Dict[str, Any]:
+    def assess_administrative_burden(self) -> dict[str, Any]:
         """Evaluates the administrative effort required by the regulation.
 
         Considers reporting requirements, permitting processes, monitoring, etc.
@@ -958,7 +957,7 @@ class RegulatoryImpactAssessment:
 
         return pd.DataFrame(results)
 
-    def evaluate_goal_achievement(self) -> Dict[str, Any]:
+    def evaluate_goal_achievement(self) -> dict[str, Any]:
         """Assesses the extent to which the regulation achieves its stated goals.
 
         Compares outcomes against the regulation's objectives using relevant metrics.

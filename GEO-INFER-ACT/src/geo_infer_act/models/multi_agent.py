@@ -2,7 +2,8 @@
 Multi-agent model for active inference.
 """
 
-from typing import Dict, Any, List, Optional, Tuple, Callable
+from typing import Any
+from collections.abc import Callable
 import numpy as np
 import logging
 
@@ -25,9 +26,9 @@ class MultiAgentModel(BaseActiveInferenceModel):
         n_resources: int = 4,
         n_locations: int = 5,
         planning_horizon: int = 10,
-        config: Optional[Dict[str, Any]] = None,
-        environmental_engine: Optional[Any] = None,
-        random_seed: Optional[int] = None,
+        config: dict[str, Any] | None = None,
+        environmental_engine: Any | None = None,
+        random_seed: int | None = None,
     ):
         super().__init__(config)
         if random_seed is None and config:
@@ -72,14 +73,14 @@ class MultiAgentModel(BaseActiveInferenceModel):
         self._initial_agent_preferences = self.agent_preferences.copy()
         self.agent_locations = np.zeros(self.n_agents, dtype=int)
         self.step_count = 0
-        self.history: List[Dict[str, Any]] = []
+        self.history: list[dict[str, Any]] = []
 
         # H3 spatial properties
         self.spatial_mode = False
-        self.h3_cells: List[str] = []
+        self.h3_cells: list[str] = []
         self.h3_resolution = 8
-        self.spatial_graph: Dict[int, List[int]] = {}
-        self.agent_location_map: Dict[str, int] = {}
+        self.spatial_graph: dict[int, list[int]] = {}
+        self.agent_location_map: dict[str, int] = {}
 
     def reset(self) -> None:
         """Restore deterministic initial resource and preference state."""
@@ -131,8 +132,8 @@ class MultiAgentModel(BaseActiveInferenceModel):
         return transition_model
 
     def step(
-        self, actions: Optional[List[Dict[str, Any]]] = None
-    ) -> Tuple[Dict[str, Any], bool]:
+        self, actions: list[dict[str, Any]] | None = None
+    ) -> tuple[dict[str, Any], bool]:
         """Run one multi-agent perception, action, and resource step.
 
         Action dictionaries may contain ``agent_id``, ``location`` (or
@@ -144,7 +145,7 @@ class MultiAgentModel(BaseActiveInferenceModel):
         """
         if actions is not None and not isinstance(actions, (list, tuple)):
             raise ValueError("actions must be a sequence of action mappings")
-        action_by_agent: Dict[int, Dict[str, Any]] = {}
+        action_by_agent: dict[int, dict[str, Any]] = {}
         for position, action in enumerate(actions or []):
             if not isinstance(action, dict):
                 raise ValueError("each multi-agent action must be a mapping")
@@ -236,7 +237,7 @@ class MultiAgentModel(BaseActiveInferenceModel):
         )
         return np.asarray(normalize_belief_vector(observation), dtype=float)
 
-    def enable_h3_spatial(self, resolution: int, boundary: Dict[str, Any]) -> None:
+    def enable_h3_spatial(self, resolution: int, boundary: dict[str, Any]) -> None:
         """
         Enable H3 spatial modeling for multi-agent active inference.
 
@@ -331,11 +332,11 @@ class MultiAgentModel(BaseActiveInferenceModel):
 
     def enable_nested_h3_spatial(
         self,
-        resolutions: List[int],
-        boundary: Optional[Dict[str, Any]] = None,
-        cells: Optional[List[str]] = None,
+        resolutions: list[int],
+        boundary: dict[str, Any] | None = None,
+        cells: list[str] | None = None,
         top_down_weight: float = 0.15,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Enable nested H3 multi-agent modeling over finest-resolution leaf cells.
 
@@ -418,7 +419,7 @@ class MultiAgentModel(BaseActiveInferenceModel):
 
     def simulate_h3_lattice(
         self, timesteps: int, obs_gen: Callable[[str], np.ndarray]
-    ) -> List[Dict[str, Dict]]:
+    ) -> list[dict[str, dict]]:
         """
         Simulate active inference on H3 lattice with proper perception-action loops.
 
@@ -507,8 +508,8 @@ class MultiAgentModel(BaseActiveInferenceModel):
         self,
         timesteps: int,
         obs_gen: Callable[[str], np.ndarray],
-        top_down_weight: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        top_down_weight: float | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate H3 leaf agents and return nested parent summaries per timestep.
         """
@@ -548,14 +549,14 @@ class MultiAgentModel(BaseActiveInferenceModel):
 
     def _aggregate_nested_agent_beliefs(
         self,
-        leaf_beliefs: Dict[str, np.ndarray],
-        top_down_weight: Optional[float] = None,
-    ) -> Dict[str, np.ndarray]:
+        leaf_beliefs: dict[str, np.ndarray],
+        top_down_weight: float | None = None,
+    ) -> dict[str, np.ndarray]:
         """Aggregate leaf-agent beliefs to every configured parent resolution."""
         adapter = get_h3_adapter()
-        parent_beliefs: Dict[str, np.ndarray] = {}
+        parent_beliefs: dict[str, np.ndarray] = {}
         for target_resolution in reversed(self.nested_h3_resolutions[:-1]):
-            grouped: Dict[str, List[np.ndarray]] = {}
+            grouped: dict[str, list[np.ndarray]] = {}
             for child, belief in leaf_beliefs.items():
                 parent = adapter.cell_to_parent(child, target_resolution)
                 grouped.setdefault(parent, []).append(normalize_belief_vector(belief))
@@ -582,12 +583,12 @@ class MultiAgentModel(BaseActiveInferenceModel):
 
     def _nested_agent_level_summaries(
         self,
-        leaf_beliefs: Dict[str, np.ndarray],
-        parent_beliefs: Dict[str, np.ndarray],
-    ) -> List[Dict[str, Any]]:
+        leaf_beliefs: dict[str, np.ndarray],
+        parent_beliefs: dict[str, np.ndarray],
+    ) -> list[dict[str, Any]]:
         """Return per-resolution nested multi-agent belief summaries."""
         adapter = get_h3_adapter()
-        by_level: Dict[int, Dict[str, np.ndarray]] = {}
+        by_level: dict[int, dict[str, np.ndarray]] = {}
         for cell, belief in parent_beliefs.items():
             by_level.setdefault(adapter.get_resolution(cell), {})[cell] = belief
         for cell, belief in leaf_beliefs.items():
@@ -616,7 +617,7 @@ class MultiAgentModel(BaseActiveInferenceModel):
             )
         return summaries
 
-    def _spatial_belief_coordination(self, step_data: Dict[str, Dict]) -> None:
+    def _spatial_belief_coordination(self, step_data: dict[str, dict]) -> None:
         """Coordinate agents through environmental updates or spatial belief sharing."""
         if not self.spatial_graph:
             return
@@ -678,7 +679,7 @@ class MultiAgentModel(BaseActiveInferenceModel):
                 if agent_idx < len(self.agent_models):
                     self.agent_models[agent_idx].beliefs = new_beliefs
 
-    def _apply_stigmergy(self, step_data: Dict[str, Dict]) -> None:
+    def _apply_stigmergy(self, step_data: dict[str, dict]) -> None:
         """Apply stigmergic pheromone modification to the environmental engine."""
         if self.environmental_engine is None:
             return
@@ -714,7 +715,7 @@ class MultiAgentModel(BaseActiveInferenceModel):
         if observations_to_push:
             engine.observe_environment(observations_to_push, timestamp=current_time)
 
-    def coordinate_agents(self) -> Dict[str, Any]:
+    def coordinate_agents(self) -> dict[str, Any]:
         """
         Coordinate agents through message passing and shared information.
 
@@ -775,8 +776,8 @@ class MultiAgentModel(BaseActiveInferenceModel):
         }
 
     def score_spatial_information_gain(
-        self, target_resolution: Optional[int] = None
-    ) -> Dict[str, Any]:
+        self, target_resolution: int | None = None
+    ) -> dict[str, Any]:
         """
         Score the H3 spatial grid by expected information gain for active
         sensing, aggregating agent belief uncertainty across H3 resolutions.
@@ -807,7 +808,7 @@ class MultiAgentModel(BaseActiveInferenceModel):
         adapter = get_h3_adapter()
         state_dim = 4
         max_entropy = float(np.log(state_dim))
-        per_cell: Dict[str, float] = {}
+        per_cell: dict[str, float] = {}
         for cell, agent in zip(self.h3_cells, self.agent_models):
             vec = normalize_belief_vector(np.asarray(agent.beliefs, dtype=float))
             if vec.size != state_dim:
@@ -819,7 +820,7 @@ class MultiAgentModel(BaseActiveInferenceModel):
         scores = per_cell
         if target_resolution is not None:
             try:
-                grouped: Dict[str, List[float]] = {}
+                grouped: dict[str, list[float]] = {}
                 for cell, score in per_cell.items():
                     cell_res = adapter.get_resolution(cell)
                     parent = (
@@ -856,7 +857,7 @@ class MultiAgentModel(BaseActiveInferenceModel):
             ),
         }
 
-    def get_agent_messages(self, agent_id: int) -> Dict[str, Any]:
+    def get_agent_messages(self, agent_id: int) -> dict[str, Any]:
         """Get messages for inter-agent communication from the specified agent.
 
         Returns a snapshot of the agent's current beliefs, position, and
@@ -876,7 +877,7 @@ class MultiAgentModel(BaseActiveInferenceModel):
             return {}
 
         agent = self.agent_models[agent_id]
-        message: Dict[str, Any] = {
+        message: dict[str, Any] = {
             "agent_id": agent_id,
             "beliefs": (
                 agent.beliefs.tolist()

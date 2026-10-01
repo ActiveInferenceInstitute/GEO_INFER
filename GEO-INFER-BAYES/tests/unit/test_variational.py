@@ -7,7 +7,7 @@ computation, and that the approximate posterior is sensible.
 
 import numpy as np
 import pytest
-from typing import Any, Dict
+from typing import Any
 
 import os
 import sys
@@ -26,12 +26,12 @@ class _SimpleVIModel(BayesianModel):
             "mu": {"prior": "normal", "hyperparams": {"mu": 0.0, "sigma": 5.0}},
         }
 
-    def log_likelihood(self, theta: Dict[str, Any], data: Any) -> float:
+    def log_likelihood(self, theta: dict[str, Any], data: Any) -> float:
         obs = np.asarray(data)
         mu = theta["mu"]
         return float(-0.5 * np.sum((obs - mu) ** 2))
 
-    def log_prior(self, theta: Dict[str, Any]) -> float:
+    def log_prior(self, theta: dict[str, Any]) -> float:
         mu = theta["mu"]
         return float(-0.5 * (mu / 5.0) ** 2)
 
@@ -54,12 +54,12 @@ class _VectorVIModel(BayesianModel):
             }
         }
 
-    def log_likelihood(self, theta: Dict[str, Any], data: Any) -> float:
+    def log_likelihood(self, theta: dict[str, Any], data: Any) -> float:
         weights = np.asarray(theta["weights"], dtype=float)
         observations = np.asarray(data, dtype=float)
         return float(-0.5 * np.sum((observations - weights) ** 2))
 
-    def log_prior(self, theta: Dict[str, Any]) -> float:
+    def log_prior(self, theta: dict[str, Any]) -> float:
         weights = np.asarray(theta["weights"], dtype=float)
         return float(-0.5 * np.sum((weights / 5.0) ** 2))
 

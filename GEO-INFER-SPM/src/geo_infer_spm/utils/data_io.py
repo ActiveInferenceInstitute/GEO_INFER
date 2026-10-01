@@ -17,7 +17,8 @@ All functions return standardized SPMData objects for consistent processing.
 
 import numpy as np
 import pandas as pd
-from typing import Dict, Optional, Any, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 import json
 
 try:
@@ -92,7 +93,7 @@ def load_data(file_path: str, **kwargs: Any) -> SPMData:
 
 
 def load_geotiff(
-    file_path: str, band: Optional[int] = None, nodata_value: Optional[float] = None
+    file_path: str, band: int | None = None, nodata_value: float | None = None
 ) -> SPMData:
     """
     Load GeoTIFF raster data.
@@ -155,8 +156,8 @@ def load_geotiff(
 
 def load_netcdf(
     file_path: str,
-    variable: Optional[str] = None,
-    time_dim: Optional[str] = None,
+    variable: str | None = None,
+    time_dim: str | None = None,
     lat_dim: str = "lat",
     lon_dim: str = "lon",
 ) -> SPMData:
@@ -243,7 +244,7 @@ def load_netcdf(
     )
 
 
-def load_geojson(file_path: str, value_column: Optional[str] = None) -> SPMData:
+def load_geojson(file_path: str, value_column: str | None = None) -> SPMData:
     """
     Load GeoJSON vector data.
 
@@ -289,7 +290,7 @@ def load_geojson(file_path: str, value_column: Optional[str] = None) -> SPMData:
 
 
 def load_geopackage(
-    file_path: str, layer: Optional[str] = None, value_column: Optional[str] = None
+    file_path: str, layer: str | None = None, value_column: str | None = None
 ) -> SPMData:
     """
     Load GeoPackage vector data.
@@ -316,7 +317,7 @@ def load_csv_with_coords(
     file_path: str,
     x_column: str = "longitude",
     y_column: str = "latitude",
-    value_column: Optional[str] = None,
+    value_column: str | None = None,
     **kwargs: Any,
 ) -> SPMData:
     """
@@ -389,7 +390,7 @@ def load_csv_with_coords(
 def load_hdf5(
     file_path: str,
     dataset_path: str = "/",
-    coordinate_datasets: Optional[Dict[str, str]] = None,
+    coordinate_datasets: dict[str, str] | None = None,
 ) -> SPMData:
     """
     Load HDF5 data.
@@ -483,7 +484,7 @@ def load_json_data(
     Returns:
         SPMData object with JSON data
     """
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         json_data = json.load(f)
 
     # Extract data and coordinates

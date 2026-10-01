@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 GEO-INFER-APP Agent Integration Example
@@ -11,8 +10,6 @@ the GEO-INFER-APP for building intelligent geospatial applications.
 import os
 import asyncio
 import logging
-import json
-from datetime import datetime
 
 # Configure logging
 logging.basicConfig(

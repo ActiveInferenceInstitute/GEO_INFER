@@ -96,7 +96,7 @@ def main():
         es_forecast = forecaster.forecast_exponential_smoothing(
             timeseries, horizon=30, trend="add", seasonal="add", seasonal_periods=12
         )
-        print(f"   ✅ Exponential smoothing forecast generated")
+        print("   ✅ Exponential smoothing forecast generated")
         print(f"   Forecast mean: {np.mean(es_forecast['forecast']):.2f}")
     except Exception as e:
         print(f"   ⚠️  Exponential smoothing: {e}")

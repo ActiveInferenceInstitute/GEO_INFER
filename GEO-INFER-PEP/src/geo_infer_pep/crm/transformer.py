@@ -1,14 +1,13 @@
 """CRM Data Transformers."""
 
 import logging
-from typing import List, Optional
 import pandas as pd
 from ..models.crm_models import Customer
 
 logger = logging.getLogger(__name__)
 
 
-def clean_customer_data(customers: List[Customer]) -> List[Customer]:
+def clean_customer_data(customers: list[Customer]) -> list[Customer]:
     """
     Performs comprehensive cleaning operations on a list of Customer objects.
 
@@ -113,8 +112,8 @@ def clean_customer_data(customers: List[Customer]) -> List[Customer]:
 
 
 def enrich_customer_data(
-    customers: List[Customer], external_data_sources: Optional[dict] = None
-) -> List[Customer]:
+    customers: list[Customer], external_data_sources: dict | None = None
+) -> list[Customer]:
     """
     Enriches customer data with calculated fields and organizational context.
 
@@ -287,7 +286,7 @@ def enrich_customer_data(
     return enriched_customers
 
 
-def convert_customers_to_dataframe(customers: List[Customer]) -> pd.DataFrame:
+def convert_customers_to_dataframe(customers: list[Customer]) -> pd.DataFrame:
     """
     Converts a list of Customer Pydantic models to a Pandas DataFrame
     for easier analysis and bulk operations.

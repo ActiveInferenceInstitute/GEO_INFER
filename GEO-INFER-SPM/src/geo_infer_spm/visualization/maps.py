@@ -6,7 +6,7 @@ and visualizing SPM analysis results as spatial plots and maps.
 """
 
 import numpy as np
-from typing import Dict, Optional, Any
+from typing import Any
 import warnings
 from scipy import stats
 
@@ -24,10 +24,10 @@ from ..models.data_models import SPMResult
 def create_statistical_map(
     spm_result: SPMResult,
     contrast_idx: int = 0,
-    threshold: Optional[float] = None,
+    threshold: float | None = None,
     colormap: str = "RdBu_r",
-    title: Optional[str] = None,
-) -> Dict[str, Any]:
+    title: str | None = None,
+) -> dict[str, Any]:
     """
     Create statistical parametric map visualization.
 
@@ -181,7 +181,7 @@ def create_statistical_map(
 
 def plot_spm_results(
     spm_result: SPMResult, plot_type: str = "stat_map", **kwargs: Any
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Create comprehensive SPM results visualization.
 
@@ -215,7 +215,7 @@ def plot_spm_results(
         raise ValueError(f"Unknown plot type: {plot_type}")
 
 
-def _plot_beta_coefficients(spm_result: SPMResult, **kwargs: Any) -> Dict[str, Any]:
+def _plot_beta_coefficients(spm_result: SPMResult, **kwargs: Any) -> dict[str, Any]:
     """Plot regression coefficient maps."""
     beta = spm_result.beta_coefficients
     coordinates = spm_result.spm_data.coordinates
@@ -273,7 +273,7 @@ def _plot_beta_coefficients(spm_result: SPMResult, **kwargs: Any) -> Dict[str, A
     return {"plot_type": "beta_coefficients", "matplotlib_figure": fig}
 
 
-def _plot_residuals(spm_result: SPMResult, **kwargs: Any) -> Dict[str, Any]:
+def _plot_residuals(spm_result: SPMResult, **kwargs: Any) -> dict[str, Any]:
     """Plot model residuals."""
     residuals = spm_result.residuals
     coordinates = spm_result.spm_data.coordinates
@@ -323,7 +323,7 @@ def _plot_residuals(spm_result: SPMResult, **kwargs: Any) -> Dict[str, Any]:
     }
 
 
-def _plot_model_diagnostics(spm_result: SPMResult, **kwargs: Any) -> Dict[str, Any]:
+def _plot_model_diagnostics(spm_result: SPMResult, **kwargs: Any) -> dict[str, Any]:
     """Create model diagnostic plots."""
     diagnostics = spm_result.model_diagnostics
 

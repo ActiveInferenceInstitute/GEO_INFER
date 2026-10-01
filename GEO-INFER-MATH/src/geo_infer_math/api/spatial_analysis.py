@@ -12,7 +12,7 @@ match the specifications in the API schema.
 import logging
 
 import numpy as np
-from typing import List, Dict, Optional, Any, cast
+from typing import Any, cast
 from dataclasses import dataclass, asdict
 from scipy.stats import norm
 
@@ -59,23 +59,23 @@ logger = logging.getLogger(__name__)
 class DescriptiveStatsRequest:
     """Request model for descriptive statistics."""
 
-    data: Dict[str, Any]
-    variables: Optional[List[str]] = None
-    statistics: Optional[List[str]] = None
+    data: dict[str, Any]
+    variables: list[str] | None = None
+    statistics: list[str] | None = None
 
 
 @dataclass
 class DescriptiveStatsResponse:
     """Response model for descriptive statistics."""
 
-    statistics: Dict[str, Dict[str, float]]
+    statistics: dict[str, dict[str, float]]
 
 
 @dataclass
 class AutocorrelationRequest:
     """Request model for autocorrelation analysis."""
 
-    data: Dict[str, Any]
+    data: dict[str, Any]
     weights_matrix: str
     variable: str
     method: str = "morans_i"
@@ -97,7 +97,7 @@ class AutocorrelationResponse:
 class HotspotAnalysisRequest:
     """Request model for hot spot analysis."""
 
-    data: Dict[str, Any]
+    data: dict[str, Any]
     weights_matrix: str
     variable: str
     method: str = "getis_ord_gi_star"
@@ -108,54 +108,54 @@ class HotspotAnalysisRequest:
 class HotspotAnalysisResponse:
     """Response model for hot spot analysis."""
 
-    features: Dict[str, Any]
-    summary: Dict[str, int]
+    features: dict[str, Any]
+    summary: dict[str, int]
 
 
 @dataclass
 class ClusteringRequest:
     """Request model for clustering analysis."""
 
-    data: Dict[str, Any]
+    data: dict[str, Any]
     algorithm: str
-    parameters: Optional[Dict[str, Any]] = None
-    variables: Optional[List[str]] = None
+    parameters: dict[str, Any] | None = None
+    variables: list[str] | None = None
 
 
 @dataclass
 class ClusteringResponse:
     """Response model for clustering analysis."""
 
-    features: Dict[str, Any]
-    cluster_info: Dict[str, Any]
+    features: dict[str, Any]
+    cluster_info: dict[str, Any]
 
 
 @dataclass
 class InterpolationRequest:
     """Request model for spatial interpolation."""
 
-    data_points: Dict[str, Any]
-    prediction_grid: Dict[str, Any]
+    data_points: dict[str, Any]
+    prediction_grid: dict[str, Any]
     variable: str
     method: str = "idw"
-    parameters: Optional[Dict[str, Any]] = None
+    parameters: dict[str, Any] | None = None
 
 
 @dataclass
 class InterpolationResponse:
     """Response model for spatial interpolation."""
 
-    predictions: Dict[str, Any]
-    validation_metrics: Optional[Dict[str, float]] = None
-    uncertainty: Optional[Dict[str, Any]] = None
+    predictions: dict[str, Any]
+    validation_metrics: dict[str, float] | None = None
+    uncertainty: dict[str, Any] | None = None
 
 
 @dataclass
 class SpatialDataset:
     """Model for spatial dataset."""
 
-    features: Dict[str, Any]
-    metadata: Optional[Dict[str, Any]] = None
+    features: dict[str, Any]
+    metadata: dict[str, Any] | None = None
 
 
 class SpatialAnalysisAPI:
@@ -179,7 +179,7 @@ class SpatialAnalysisAPI:
         coordinates: np.ndarray,
         method: str = "moran",
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform spatial autocorrelation analysis using the specified method.
 
@@ -202,7 +202,7 @@ class SpatialAnalysisAPI:
             # Perform Moran's I analysis
             moran = MoranI(weights_matrix)
             results = cast(
-                Dict[str, Any],
+                dict[str, Any],
                 moran.compute(values, coordinates if weights_matrix is None else None),
             )
 
@@ -221,7 +221,7 @@ class SpatialAnalysisAPI:
             # Ensure we have a weights matrix
             if weights_matrix is None:
                 moran = MoranI()
-                weights_matrix = getattr(moran, "_generate_weights")(coordinates)
+                weights_matrix = moran._generate_weights(coordinates)
 
             # Perform Getis-Ord G* analysis
             results = getis_ord_g(values, weights_matrix)
@@ -236,11 +236,11 @@ class SpatialAnalysisAPI:
             # Ensure we have a weights matrix
             if weights_matrix is None:
                 moran = MoranI()
-                weights_matrix = getattr(moran, "_generate_weights")(coordinates)
+                weights_matrix = moran._generate_weights(coordinates)
 
             # Perform LISA analysis
             results = cast(
-                Dict[str, Any],
+                dict[str, Any],
                 local_indicators_spatial_association(values, weights_matrix),
             )
 
@@ -259,7 +259,7 @@ class SpatialAnalysisAPI:
 
     def point_pattern_analysis(
         self, points: np.ndarray, method: str = "ripley", **kwargs: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform point pattern analysis using the specified method.
 
@@ -296,7 +296,7 @@ class SpatialAnalysisAPI:
 
             # Perform Ripley's K analysis
             results = cast(
-                Dict[str, Any],
+                dict[str, Any],
                 ripley_k(
                     points,
                     distances,
@@ -488,7 +488,7 @@ class SpatialAnalysisAPI:
     def distance_matrix(
         self,
         points1: np.ndarray,
-        points2: Optional[np.ndarray] = None,
+        points2: np.ndarray | None = None,
         method: str = "euclidean",
         **kwargs: Any,
     ) -> np.ndarray:
@@ -549,8 +549,8 @@ class SpatialAnalysisAPI:
             )
 
     def descriptive_statistics(
-        self, values: np.ndarray, coordinates: Optional[np.ndarray] = None
-    ) -> Dict[str, Any]:
+        self, values: np.ndarray, coordinates: np.ndarray | None = None
+    ) -> dict[str, Any]:
         """
         Calculate descriptive statistics for spatial data.
 
@@ -597,8 +597,8 @@ class SpatialAnalysisAPI:
             }
 
     def calculate_descriptive_stats(
-        self, request_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, request_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Calculate descriptive spatial statistics (API endpoint)."""
         try:
             req = DescriptiveStatsRequest(**request_data)
@@ -628,7 +628,7 @@ class SpatialAnalysisAPI:
             logger.error(f"Error calculating descriptive statistics: {e}")
             raise BadRequest(f"Invalid request: {str(e)}")
 
-    def calculate_autocorrelation(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+    def calculate_autocorrelation(self, request_data: dict[str, Any]) -> dict[str, Any]:
         """Calculate spatial autocorrelation (API endpoint)."""
         try:
             req = AutocorrelationRequest(**request_data)
@@ -721,7 +721,7 @@ class SpatialAnalysisAPI:
             logger.error(f"Error calculating autocorrelation: {e}")
             raise BadRequest(f"Invalid request: {str(e)}")
 
-    def analyze_hotspots(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_hotspots(self, request_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze hot spots (API endpoint)."""
         try:
             req = HotspotAnalysisRequest(**request_data)
@@ -767,7 +767,7 @@ class SpatialAnalysisAPI:
 
             # Perform hot spot analysis
             if req.method == "getis_ord_gi_star":
-                g_result: Dict[str, Any] = getis_ord_g(values, weights)
+                g_result: dict[str, Any] = getis_ord_g(values, weights)
 
                 # Count hot and cold spots
                 hot_spots = np.sum(g_result["z_scores"] > 1.96)
@@ -816,7 +816,7 @@ class SpatialAnalysisAPI:
             logger.error(f"Error analyzing hotspots: {e}")
             raise BadRequest(f"Invalid request: {str(e)}")
 
-    def perform_clustering(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+    def perform_clustering(self, request_data: dict[str, Any]) -> dict[str, Any]:
         """Perform spatial clustering (API endpoint)."""
         try:
             req = ClusteringRequest(**request_data)

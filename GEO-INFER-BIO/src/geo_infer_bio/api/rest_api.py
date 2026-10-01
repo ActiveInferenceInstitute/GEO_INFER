@@ -2,7 +2,7 @@
 REST API for GEO-INFER-BIO.
 """
 
-from typing import List, Optional, Dict, Any, cast
+from typing import Any, cast
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
 import pandas as pd
@@ -30,7 +30,7 @@ class SequenceData(BaseModel):
 
     id: str
     sequence: str
-    spatial_data: Optional[SpatialData] = None
+    spatial_data: SpatialData | None = None
 
 
 class AnalysisResult(BaseModel):
@@ -40,7 +40,7 @@ class AnalysisResult(BaseModel):
     gc_content: float
     motif_count: int
     coding_regions: int
-    spatial_data: Optional[SpatialData] = None
+    spatial_data: SpatialData | None = None
 
 
 app = FastAPI(
@@ -51,7 +51,7 @@ app = FastAPI(
 
 
 @app.get("/")
-async def root() -> Dict[str, Any]:
+async def root() -> dict[str, Any]:
     """Root endpoint."""
     return {
         "name": "GEO-INFER-BIO API",
@@ -86,17 +86,13 @@ async def analyze_sequence(sequence_data: SequenceData) -> AnalysisResult:
 
     # Add spatial data if provided
     if sequence_data.spatial_data:
-        setattr(
-            record,
-            "spatial_data",
-            pd.DataFrame(
-                [
-                    {
-                        "latitude": sequence_data.spatial_data.latitude,
-                        "longitude": sequence_data.spatial_data.longitude,
-                    }
-                ]
-            ),
+        record.spatial_data = pd.DataFrame(
+            [
+                {
+                    "latitude": sequence_data.spatial_data.latitude,
+                    "longitude": sequence_data.spatial_data.longitude,
+                }
+            ]
         )
 
     # Perform analysis
@@ -117,8 +113,8 @@ async def analyze_sequence(sequence_data: SequenceData) -> AnalysisResult:
 @app.post("/analyze/file")
 async def analyze_file(
     file: UploadFile = File(...),
-    spatial_data: Optional[UploadFile] = File(None),
-) -> List[Dict[str, Any]]:
+    spatial_data: UploadFile | None = File(None),
+) -> list[dict[str, Any]]:
     """
     Analyze sequences from a file.
 
@@ -137,7 +133,7 @@ async def analyze_file(
         fasta_temp.write(await file.read())
         fasta_path = fasta_temp.name
     spatial_df = None
-    spatial_path: Optional[str] = None
+    spatial_path: str | None = None
     if spatial_data:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as spatial_temp:
             spatial_temp.write(await spatial_data.read())
@@ -145,19 +141,19 @@ async def analyze_file(
 
     try:
         # Read after the temp-file handle is closed so written bytes are flushed
-        spatial_df: Optional[pd.DataFrame] = None
+        spatial_df: pd.DataFrame | None = None
         if spatial_path is not None:
             spatial_df = pd.read_csv(spatial_path)
 
         # Load and validate sequences
         loaded = analyzer.load_sequence(fasta_path)
-        sequences: List[SeqRecord] = loaded if isinstance(loaded, list) else [loaded]
-        results: List[Dict[str, Any]] = []
+        sequences: list[SeqRecord] = loaded if isinstance(loaded, list) else [loaded]
+        results: list[dict[str, Any]] = []
 
         for i, record in enumerate(sequences):
             # Add spatial data if available
             if spatial_df is not None and i < len(spatial_df):
-                setattr(record, "spatial_data", spatial_df.iloc[[i]])
+                record.spatial_data = spatial_df.iloc[[i]]
 
             # Validate sequence
             validation = validator.validate_sequence_record(record)
@@ -170,7 +166,7 @@ async def analyze_file(
             motifs = analyzer.find_motifs(seq_value)
             coding_regions = analyzer.predict_coding_regions(seq_value)
 
-            result: Dict[str, Any] = {
+            result: dict[str, Any] = {
                 "sequence_id": record.id,
                 "gc_content": gc_content,
                 "motif_count": len(motifs),
@@ -196,8 +192,8 @@ async def analyze_file(
 
 @app.post("/visualize/spatial")
 async def visualize_spatial(
-    analysis_results: List[AnalysisResult],
-) -> Dict[str, str]:
+    analysis_results: list[AnalysisResult],
+) -> dict[str, str]:
     """
     Generate spatial visualizations of analysis results.
 
@@ -254,7 +250,7 @@ async def visualize_spatial(
         visualizer.plot_coding_potential(df, output_path=str(coding_plot))
 
         # Read visualization files and encode as base64 for JSON transport
-        visualizations: Dict[str, str] = {}
+        visualizations: dict[str, str] = {}
         for plot_file in [gc_plot, motif_plot, coding_plot]:
             with open(plot_file, "rb") as f:
                 visualizations[plot_file.stem] = base64.b64encode(f.read()).decode(
@@ -265,6 +261,6 @@ async def visualize_spatial(
 
 
 @app.get("/health")
-async def health_check() -> Dict[str, Any]:
+async def health_check() -> dict[str, Any]:
     """Health check endpoint."""
     return {"status": "healthy"}

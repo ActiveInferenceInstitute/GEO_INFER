@@ -9,7 +9,8 @@ import logging
 import uuid
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Set, Callable
+from typing import Any
+from collections.abc import Callable
 from enum import Enum
 from collections import defaultdict
 
@@ -96,14 +97,14 @@ class Pattern:
     detection_method: DetectionMethod
 
     # Spatial properties
-    affected_cells: Set[str] = field(default_factory=set)
-    center_cell: Optional[str] = None
+    affected_cells: set[str] = field(default_factory=set)
+    center_cell: str | None = None
     spatial_extent: float = 0.0
 
     # Temporal properties
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
-    duration: Optional[timedelta] = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+    duration: timedelta | None = None
 
     # Pattern properties
     strength: float = 0.0
@@ -111,19 +112,19 @@ class Pattern:
     significance: float = 0.0
 
     # Pattern parameters
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
 
     # Statistical properties
-    mean_value: Optional[float] = None
-    std_value: Optional[float] = None
-    min_value: Optional[float] = None
-    max_value: Optional[float] = None
+    mean_value: float | None = None
+    std_value: float | None = None
+    min_value: float | None = None
+    max_value: float | None = None
 
     # Metadata
     detected_at: datetime = field(default_factory=datetime.now)
-    detection_context: Dict[str, Any] = field(default_factory=dict)
+    detection_context: dict[str, Any] = field(default_factory=dict)
 
-    def get_pattern_summary(self) -> Dict[str, Any]:
+    def get_pattern_summary(self) -> dict[str, Any]:
         """Get summary of pattern properties."""
         return {
             "pattern_id": self.pattern_id,
@@ -146,10 +147,10 @@ class PatternDetectionResult:
     """
 
     analysis_id: str
-    detected_patterns: List[Pattern] = field(default_factory=list)
+    detected_patterns: list[Pattern] = field(default_factory=list)
 
     # Summary statistics
-    pattern_counts: Dict[PatternType, int] = field(default_factory=dict)
+    pattern_counts: dict[PatternType, int] = field(default_factory=dict)
     detection_coverage: float = 0.0
 
     # Quality metrics
@@ -157,7 +158,7 @@ class PatternDetectionResult:
     detection_reliability: float = 0.0
 
     # Method performance
-    method_performance: Dict[DetectionMethod, Dict[str, float]] = field(
+    method_performance: dict[DetectionMethod, dict[str, float]] = field(
         default_factory=dict
     )
 
@@ -188,11 +189,11 @@ class H3PatternDetector:
         self.name = name
 
         # Detection results
-        self.detection_results: Dict[str, PatternDetectionResult] = {}
-        self.pattern_history: Dict[str, List[Pattern]] = defaultdict(list)
+        self.detection_results: dict[str, PatternDetectionResult] = {}
+        self.pattern_history: dict[str, list[Pattern]] = defaultdict(list)
 
         # Detection configuration
-        self.detection_config: Dict[str, Any] = {
+        self.detection_config: dict[str, Any] = {
             "min_pattern_strength": 0.3,
             "min_confidence": 0.5,
             "significance_threshold": 0.05,
@@ -203,10 +204,10 @@ class H3PatternDetector:
         }
 
         # Custom detection functions
-        self.custom_detectors: Dict[str, Callable] = {}
+        self.custom_detectors: dict[str, Callable] = {}
 
         # Statistics
-        self.detection_stats: Dict[str, int] = defaultdict(int)
+        self.detection_stats: dict[str, int] = defaultdict(int)
 
         # Metadata
         self.created_at = datetime.now()
@@ -226,9 +227,9 @@ class H3PatternDetector:
     def detect_patterns(
         self,
         nested_grid: Any,
-        system_id: Optional[str] = None,
-        pattern_types: Optional[List[PatternType]] = None,
-        methods: Optional[List[DetectionMethod]] = None,
+        system_id: str | None = None,
+        pattern_types: list[PatternType] | None = None,
+        methods: list[DetectionMethod] | None = None,
         **kwargs: Any,
     ) -> PatternDetectionResult:
         """
@@ -274,7 +275,7 @@ class H3PatternDetector:
             methods = [DetectionMethod.STATISTICAL, DetectionMethod.CLUSTERING]
 
         # Detect patterns using different methods
-        all_patterns: List[Pattern] = []
+        all_patterns: list[Pattern] = []
 
         for method in methods:
             try:
@@ -317,7 +318,7 @@ class H3PatternDetector:
         validated_patterns = self._validate_patterns(all_patterns)
 
         # Calculate summary statistics
-        pattern_counts: Dict[PatternType, int] = defaultdict(int)
+        pattern_counts: dict[PatternType, int] = defaultdict(int)
         for pattern in validated_patterns:
             pattern_counts[pattern.pattern_type] += 1
 
@@ -359,12 +360,12 @@ class H3PatternDetector:
 
     def _detect_statistical_patterns(
         self,
-        cells: List[Any],
-        pattern_types: List[PatternType],
+        cells: list[Any],
+        pattern_types: list[PatternType],
         **kwargs: Any,
-    ) -> List[Pattern]:
+    ) -> list[Pattern]:
         """Detect patterns using statistical methods."""
-        patterns: List[Pattern] = []
+        patterns: list[Pattern] = []
 
         # Extract values for analysis
         values = []
@@ -411,11 +412,11 @@ class H3PatternDetector:
     def _detect_statistical_anomalies(
         self,
         values: np.ndarray,
-        cell_indices: List[str],
+        cell_indices: list[str],
         **kwargs: Any,
-    ) -> List[Pattern]:
+    ) -> list[Pattern]:
         """Detect anomalies using statistical methods."""
-        patterns: List[Pattern] = []
+        patterns: list[Pattern] = []
 
         if len(values) < 3:
             return patterns
@@ -451,12 +452,12 @@ class H3PatternDetector:
     def _detect_hotcold_spots(
         self,
         values: np.ndarray,
-        cell_indices: List[str],
-        pattern_types: List[PatternType],
+        cell_indices: list[str],
+        pattern_types: list[PatternType],
         **kwargs: Any,
-    ) -> List[Pattern]:
+    ) -> list[Pattern]:
         """Detect hotspots and coldspots."""
-        patterns: List[Pattern] = []
+        patterns: list[Pattern] = []
 
         if len(values) < 3:
             return patterns
@@ -510,12 +511,12 @@ class H3PatternDetector:
     def _detect_statistical_gradients(
         self,
         values: np.ndarray,
-        cell_indices: List[str],
-        cells: List[Any],
+        cell_indices: list[str],
+        cells: list[Any],
         **kwargs: Any,
-    ) -> List[Pattern]:
+    ) -> list[Pattern]:
         """Detect gradients using statistical methods."""
-        patterns: List[Pattern] = []
+        patterns: list[Pattern] = []
 
         if not H3_AVAILABLE or len(values) < 5:
             return patterns
@@ -572,12 +573,12 @@ class H3PatternDetector:
 
     def _detect_clustering_patterns(
         self,
-        cells: List[Any],
-        pattern_types: List[PatternType],
+        cells: list[Any],
+        pattern_types: list[PatternType],
         **kwargs: Any,
-    ) -> List[Pattern]:
+    ) -> list[Pattern]:
         """Detect patterns using clustering methods."""
-        patterns: List[Pattern] = []
+        patterns: list[Pattern] = []
 
         if not SKLEARN_AVAILABLE or PatternType.SPATIAL_CLUSTER not in pattern_types:
             return patterns
@@ -649,12 +650,12 @@ class H3PatternDetector:
 
     def _detect_signal_patterns(
         self,
-        cells: List[Any],
-        pattern_types: List[PatternType],
+        cells: list[Any],
+        pattern_types: list[PatternType],
         **kwargs: Any,
-    ) -> List[Pattern]:
+    ) -> list[Pattern]:
         """Detect patterns using signal processing methods."""
-        patterns: List[Pattern] = []
+        patterns: list[Pattern] = []
 
         if not SCIPY_AVAILABLE:
             return patterns
@@ -665,12 +666,12 @@ class H3PatternDetector:
 
     def _detect_ml_patterns(
         self,
-        cells: List[Any],
-        pattern_types: List[PatternType],
+        cells: list[Any],
+        pattern_types: list[PatternType],
         **kwargs: Any,
-    ) -> List[Pattern]:
+    ) -> list[Pattern]:
         """Detect patterns using machine learning methods."""
-        patterns: List[Pattern] = []
+        patterns: list[Pattern] = []
 
         if not SKLEARN_AVAILABLE:
             return patterns
@@ -681,12 +682,12 @@ class H3PatternDetector:
 
     def _detect_spatial_patterns(
         self,
-        cells: List[Any],
-        pattern_types: List[PatternType],
+        cells: list[Any],
+        pattern_types: list[PatternType],
         **kwargs: Any,
-    ) -> List[Pattern]:
+    ) -> list[Pattern]:
         """Detect spatial patterns."""
-        patterns: List[Pattern] = []
+        patterns: list[Pattern] = []
 
         if not H3_AVAILABLE:
             return patterns
@@ -697,12 +698,12 @@ class H3PatternDetector:
 
     def _detect_temporal_patterns(
         self,
-        cells: List[Any],
-        pattern_types: List[PatternType],
+        cells: list[Any],
+        pattern_types: list[PatternType],
         **kwargs: Any,
-    ) -> List[Pattern]:
+    ) -> list[Pattern]:
         """Detect temporal patterns."""
-        patterns: List[Pattern] = []
+        patterns: list[Pattern] = []
 
         # This would implement temporal analysis-based pattern detection
         # For now, return empty list
@@ -710,12 +711,12 @@ class H3PatternDetector:
 
     def _detect_custom_patterns(
         self,
-        cells: List[Any],
-        pattern_types: List[PatternType],
+        cells: list[Any],
+        pattern_types: list[PatternType],
         **kwargs: Any,
-    ) -> List[Pattern]:
+    ) -> list[Pattern]:
         """Detect patterns using custom detectors."""
-        patterns: List[Pattern] = []
+        patterns: list[Pattern] = []
 
         for detector_name, detector_func in self.custom_detectors.items():
             try:
@@ -728,7 +729,7 @@ class H3PatternDetector:
 
         return patterns
 
-    def _validate_patterns(self, patterns: List[Pattern]) -> List[Pattern]:
+    def _validate_patterns(self, patterns: list[Pattern]) -> list[Pattern]:
         """Validate and filter detected patterns."""
         validated = []
 
@@ -745,7 +746,7 @@ class H3PatternDetector:
 
         return validated
 
-    def get_pattern_statistics(self) -> Dict[str, Any]:
+    def get_pattern_statistics(self) -> dict[str, Any]:
         """Get pattern detector statistics."""
         total_patterns = sum(
             len(patterns) for patterns in self.pattern_history.values()

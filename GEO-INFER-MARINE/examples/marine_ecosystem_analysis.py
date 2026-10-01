@@ -10,10 +10,7 @@ from geo_infer_marine import (
     MarineEcosystemModeler,
     MarineHabitatType,
     SpeciesData,
-    CoastalAnalyzer,
-    MarineSpatialPlanner,
 )
-import numpy as np
 import xarray as xr
 
 
@@ -247,7 +244,7 @@ def main():
     avg_suitability = float(distribution["suitability"].mean())
     avg_probability = float(distribution["occurrence_probability"].mean())
 
-    print(f"   Clownfish Distribution Analysis:")
+    print("   Clownfish Distribution Analysis:")
     print(f"   - Average suitability: {avg_suitability:.3f}")
     print(f"   - Average occurrence probability: {avg_probability:.3f}")
 

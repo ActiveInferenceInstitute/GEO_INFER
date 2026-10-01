@@ -6,7 +6,6 @@ Thin orchestrators focus on orchestration patterns, not detailed implementations
 
 import os
 from pathlib import Path
-from typing import Dict
 
 # Module metadata
 MODULES = {
@@ -66,7 +65,7 @@ MODULES = {
 }
 
 
-def create_thin_orchestrator_script(module_name: str, module_info: Dict):
+def create_thin_orchestrator_script(module_name: str, module_info: dict):
     """Create thin orchestrator script for a module."""
     deps_str = ", ".join(
         [f"'{d}'" for d in module_info["dependencies"] if d != "All modules"]

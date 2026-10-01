@@ -6,7 +6,7 @@ and career skill analysis for GIS professionals.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
@@ -21,9 +21,9 @@ class ProfessionalProfile:
     name: str
     current_role: str
     years_experience: int
-    certifications: List[str] = field(default_factory=list)
-    skills: List[str] = field(default_factory=list)
-    education: List[Dict[str, str]] = field(default_factory=list)
+    certifications: list[str] = field(default_factory=list)
+    skills: list[str] = field(default_factory=list)
+    education: list[dict[str, str]] = field(default_factory=list)
     continuing_education_credits: float = 0
 
 
@@ -38,7 +38,7 @@ class ContinuingEducationActivity:
     date_completed: datetime
     credits_earned: float
     category: str  # technical, management, ethics, general
-    verification: Optional[str] = None
+    verification: str | None = None
 
 
 @dataclass
@@ -47,10 +47,10 @@ class CertificationPathway:
 
     pathway_id: str
     target_certification: str
-    requirements: Dict[str, Any]
-    current_progress: Dict[str, float]
-    estimated_completion: Optional[datetime] = None
-    next_steps: List[str] = field(default_factory=list)
+    requirements: dict[str, Any]
+    current_progress: dict[str, float]
+    estimated_completion: datetime | None = None
+    next_steps: list[str] = field(default_factory=list)
 
 
 class ProfessionalDevelopment:
@@ -80,7 +80,7 @@ class ProfessionalDevelopment:
 
     def __init__(
         self,
-        certification_bodies: Optional[List[str]] = None,
+        certification_bodies: list[str] | None = None,
         credit_tracking: bool = True,
         competency_framework: str = "professional",
     ):
@@ -95,14 +95,14 @@ class ProfessionalDevelopment:
         self.certification_bodies = certification_bodies or ["gisp", "esri", "osgeo"]
         self.credit_tracking = credit_tracking
         self.competency_framework = competency_framework
-        self._professionals: Dict[str, ProfessionalProfile] = {}
-        self._ce_records: Dict[str, List[ContinuingEducationActivity]] = {}
+        self._professionals: dict[str, ProfessionalProfile] = {}
+        self._ce_records: dict[str, list[ContinuingEducationActivity]] = {}
         logger.info(
             f"Initialized ProfessionalDevelopment with {self.certification_bodies}"
         )
 
     def register_professional(
-        self, profile_data: Dict[str, Any]
+        self, profile_data: dict[str, Any]
     ) -> ProfessionalProfile:
         """Register a professional in the system."""
         profile = ProfessionalProfile(
@@ -122,9 +122,9 @@ class ProfessionalDevelopment:
     def track_continuing_education(
         self,
         professional_id: str,
-        activities: List[Dict[str, Any]],
-        credits_earned: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        activities: list[dict[str, Any]],
+        credits_earned: float | None = None,
+    ) -> dict[str, Any]:
         """
         Track continuing education activities.
 
@@ -159,7 +159,7 @@ class ProfessionalDevelopment:
 
         profile.continuing_education_credits += credits_earned or total_new_credits
 
-        summary: Dict[str, Any] = {
+        summary: dict[str, Any] = {
             "professional_id": professional_id,
             "activities_tracked": len(activities),
             "credits_added": total_new_credits,
@@ -171,10 +171,10 @@ class ProfessionalDevelopment:
         return summary
 
     def _summarize_by_category(
-        self, records: List[ContinuingEducationActivity]
-    ) -> Dict[str, float]:
+        self, records: list[ContinuingEducationActivity]
+    ) -> dict[str, float]:
         """Summarize credits by category."""
-        summary: Dict[str, float] = {}
+        summary: dict[str, float] = {}
         for record in records:
             category = record.category
             summary[category] = summary.get(category, 0) + record.credits_earned
@@ -183,7 +183,7 @@ class ProfessionalDevelopment:
     def create_certification_pathway(
         self,
         target_certification: str,
-        current_qualifications: Dict[str, Any],
+        current_qualifications: dict[str, Any],
         timeline: str = "12_months",
     ) -> CertificationPathway:
         """
@@ -257,11 +257,11 @@ class ProfessionalDevelopment:
 
     def analyze_career_skills(
         self,
-        current_skills: List[str],
+        current_skills: list[str],
         target_role: str,
-        job_market_data: Optional[Dict[str, Any]] = None,
+        job_market_data: dict[str, Any] | None = None,
         recommendations: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze skills for career advancement.
 
@@ -329,7 +329,7 @@ class ProfessionalDevelopment:
         skill_gaps = list(required_skills - current_skill_set)
         matching_skills = list(required_skills.intersection(current_skill_set))
 
-        analysis: Dict[str, Any] = {
+        analysis: dict[str, Any] = {
             "target_role": target_role,
             "current_skills": current_skills,
             "required_skills": list(required_skills),
@@ -342,7 +342,7 @@ class ProfessionalDevelopment:
         }
 
         if recommendations:
-            recommendations_out: List[Dict[str, Any]] = []
+            recommendations_out: list[dict[str, Any]] = []
             analysis["recommendations"] = recommendations_out
 
             # Prioritize skill gaps
@@ -369,10 +369,10 @@ class ProfessionalDevelopment:
 
     def develop_portfolio(
         self,
-        projects: List[Dict[str, Any]],
-        competencies_demonstrated: Dict[str, List[str]],
+        projects: list[dict[str, Any]],
+        competencies_demonstrated: dict[str, list[str]],
         format: str = "professional_portfolio",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Develop professional portfolio.
 
@@ -384,9 +384,9 @@ class ProfessionalDevelopment:
         Returns:
             Professional portfolio structure
         """
-        portfolio_sections: List[Dict[str, Any]] = []
-        competency_summary_out: Dict[str, Any] = {}
-        portfolio: Dict[str, Any] = {
+        portfolio_sections: list[dict[str, Any]] = []
+        competency_summary_out: dict[str, Any] = {}
+        portfolio: dict[str, Any] = {
             "format": format,
             "generated_at": datetime.now().isoformat(),
             "sections": portfolio_sections,
@@ -419,9 +419,9 @@ class ProfessionalDevelopment:
         )
 
         # Project showcase section
-        project_entries: List[Dict[str, Any]] = []
+        project_entries: list[dict[str, Any]] = []
         for project in projects:
-            entry: Dict[str, Any] = {
+            entry: dict[str, Any] = {
                 "title": project.get("title", "Project"),
                 "description": project.get("description", ""),
                 "technologies": project.get("technologies", []),
@@ -456,7 +456,7 @@ class ProfessionalDevelopment:
 
     def get_recertification_status(
         self, professional_id: str, certification: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Check recertification status.
 
@@ -473,7 +473,7 @@ class ProfessionalDevelopment:
         records = self._ce_records.get(professional_id, [])
 
         cert_key = certification.lower().replace(" ", "_")
-        req_mapping: Dict[str, Any] = self.CERTIFICATION_REQUIREMENTS.get(cert_key, {})
+        req_mapping: dict[str, Any] = self.CERTIFICATION_REQUIREMENTS.get(cert_key, {})
         requirements: Any = req_mapping
 
         required_credits = float(requirements.get("recertification_credits", 60))
@@ -485,7 +485,7 @@ class ProfessionalDevelopment:
             sum(r.credits_earned for r in records if r.date_completed >= period_start)
         )
 
-        status: Dict[str, Any] = {
+        status: dict[str, Any] = {
             "certification": certification,
             "required_credits": required_credits,
             "earned_credits": period_credits,

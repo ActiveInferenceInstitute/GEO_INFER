@@ -7,7 +7,8 @@ file formats including vector, raster, and tabular data formats.
 
 import logging
 import importlib.util
-from typing import Dict, List, Optional, Union, Any, Iterator, AsyncGenerator, cast
+from typing import Any, cast
+from collections.abc import Iterator, AsyncGenerator
 from pathlib import Path
 import zipfile
 import tarfile
@@ -89,7 +90,7 @@ class FileConnector:
     """
 
     def __init__(
-        self, base_path: str = ".", format_detector: Optional[FormatDetector] = None
+        self, base_path: str = ".", format_detector: FormatDetector | None = None
     ):
         self.base_path = Path(base_path)
         self.format_detector = format_detector or FormatDetector()
@@ -101,10 +102,10 @@ class FileConnector:
 
     async def read_geospatial(
         self,
-        file_path: Union[str, Path],
-        layer: Optional[str] = None,
+        file_path: str | Path,
+        layer: str | None = None,
         **kwargs: Any,
-    ) -> Union[pd.DataFrame, gpd.GeoDataFrame, np.ndarray]:
+    ) -> pd.DataFrame | gpd.GeoDataFrame | np.ndarray:
         """
         Read geospatial data from file.
 
@@ -148,7 +149,7 @@ class FileConnector:
         self,
         file_path: Path,
         format_type: Any,
-        layer: Optional[str],
+        layer: str | None,
         **kwargs: Any,
     ) -> gpd.GeoDataFrame:
         """Read vector geospatial file."""
@@ -210,9 +211,9 @@ class FileConnector:
 
     async def write_geospatial(
         self,
-        data: Union[pd.DataFrame, gpd.GeoDataFrame, np.ndarray],
-        file_path: Union[str, Path],
-        metadata: Optional[DatasetMetadata] = None,
+        data: pd.DataFrame | gpd.GeoDataFrame | np.ndarray,
+        file_path: str | Path,
+        metadata: DatasetMetadata | None = None,
         **kwargs: Any,
     ) -> str:
         """
@@ -272,7 +273,7 @@ class FileConnector:
 
     def _write_geojson(
         self,
-        data: Union[pd.DataFrame, gpd.GeoDataFrame],
+        data: pd.DataFrame | gpd.GeoDataFrame,
         file_path: Path,
         **kwargs: Any,
     ) -> None:
@@ -294,7 +295,7 @@ class FileConnector:
 
     def _write_geopackage(
         self,
-        data: Union[pd.DataFrame, gpd.GeoDataFrame],
+        data: pd.DataFrame | gpd.GeoDataFrame,
         file_path: Path,
         **kwargs: Any,
     ) -> None:
@@ -314,7 +315,7 @@ class FileConnector:
 
     def _write_parquet(
         self,
-        data: Union[pd.DataFrame, gpd.GeoDataFrame],
+        data: pd.DataFrame | gpd.GeoDataFrame,
         file_path: Path,
         **kwargs: Any,
     ) -> None:
@@ -326,7 +327,7 @@ class FileConnector:
 
     def _write_csv(
         self,
-        data: Union[pd.DataFrame, gpd.GeoDataFrame],
+        data: pd.DataFrame | gpd.GeoDataFrame,
         file_path: Path,
         **kwargs: Any,
     ) -> None:
@@ -366,8 +367,8 @@ class FileConnector:
         self,
         pattern: str = "*",
         recursive: bool = False,
-        file_types: Optional[List[str]] = None,
-    ) -> List[Path]:
+        file_types: list[str] | None = None,
+    ) -> list[Path]:
         """
         List files matching pattern.
 
@@ -393,8 +394,8 @@ class FileConnector:
         return files
 
     async def scan_directory(
-        self, directory: Optional[Union[str, Path]] = None, recursive: bool = True
-    ) -> Dict[str, Any]:
+        self, directory: str | Path | None = None, recursive: bool = True
+    ) -> dict[str, Any]:
         """
         Scan directory for geospatial files.
 
@@ -412,7 +413,7 @@ class FileConnector:
 
         logger.info(f"Scanning directory: {scan_path}")
 
-        file_stats: Dict[str, Any] = {
+        file_stats: dict[str, Any] = {
             "total_files": 0,
             "geospatial_files": 0,
             "by_format": {},
@@ -476,8 +477,8 @@ class FileConnector:
 
     async def compress_files(
         self,
-        file_paths: List[Union[str, Path]],
-        archive_path: Union[str, Path],
+        file_paths: list[str | Path],
+        archive_path: str | Path,
         compression: str = "zip",
     ) -> str:
         """
@@ -524,9 +525,9 @@ class FileConnector:
 
     async def extract_archive(
         self,
-        archive_path: Union[str, Path],
-        extract_to: Optional[Union[str, Path]] = None,
-    ) -> List[str]:
+        archive_path: str | Path,
+        extract_to: str | Path | None = None,
+    ) -> list[str]:
         """
         Extract files from archive.
 
@@ -591,7 +592,7 @@ class StreamingFileConnector:
         logger.info(f"Initialized StreamingFileConnector with chunk_size={chunk_size}")
 
     async def read_csv_streaming(
-        self, file_path: Union[str, Path], **kwargs: Any
+        self, file_path: str | Path, **kwargs: Any
     ) -> AsyncGenerator[pd.DataFrame, None]:
         """
         Read CSV file in streaming mode.
@@ -614,7 +615,7 @@ class StreamingFileConnector:
             raise
 
     async def read_parquet_streaming(
-        self, file_path: Union[str, Path], **kwargs: Any
+        self, file_path: str | Path, **kwargs: Any
     ) -> AsyncGenerator[pd.DataFrame, None]:
         """
         Read Parquet file in streaming mode.
@@ -643,7 +644,7 @@ class StreamingFileConnector:
     async def write_csv_streaming(
         self,
         data_generator: Iterator[pd.DataFrame],
-        file_path: Union[str, Path],
+        file_path: str | Path,
         **kwargs: Any,
     ) -> str:
         """

@@ -1,7 +1,6 @@
 """Energy demand forecasting module."""
 
 import logging
-from typing import Dict, Optional
 import numpy as np
 import xarray as xr
 
@@ -11,7 +10,7 @@ logger = logging.getLogger(__name__)
 class EnergyDemandForecaster:
     """Forecast energy demand."""
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize demand forecaster.
 
         Documented contract: ``config`` is accepted and stored for API
@@ -23,8 +22,8 @@ class EnergyDemandForecaster:
     def forecast_demand(
         self,
         historical_demand: xr.DataArray,
-        temperature: Optional[xr.DataArray] = None,
-        population: Optional[xr.DataArray] = None,
+        temperature: xr.DataArray | None = None,
+        population: xr.DataArray | None = None,
         forecast_years: int = 10,
     ) -> xr.Dataset:
         """
@@ -65,7 +64,7 @@ class EnergyDemandForecaster:
 
         # Population growth rate derived from the passed population data
         # (CAGR over the observed period) instead of a hard-coded assumption.
-        annual_pop_growth: Optional[float] = None
+        annual_pop_growth: float | None = None
         if population is not None:
             pvals = np.asarray(population.values, dtype=float).flatten()
             pvals = pvals[pvals > 0]

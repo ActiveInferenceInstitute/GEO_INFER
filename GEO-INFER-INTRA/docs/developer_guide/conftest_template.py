@@ -24,13 +24,13 @@ Example:
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point
 
 
 # =============================================================================
@@ -39,7 +39,7 @@ from shapely.geometry import Point, Polygon
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """
     List of (lat, lng) tuples covering diverse geographic locations.
 
@@ -65,7 +65,7 @@ def sample_coordinates() -> List[Tuple[float, float]]:
 
 
 @pytest.fixture(scope="session")
-def sample_h3_cells() -> List[str]:
+def sample_h3_cells() -> list[str]:
     """
     Resolution 8 H3 cells for testing spatial operations.
 
@@ -154,7 +154,7 @@ def sample_time_series() -> pd.Series:
 
 
 @pytest.fixture(scope="session")
-def sample_raster() -> Dict[str, Any]:
+def sample_raster() -> dict[str, Any]:
     """
     Numpy array with CRS metadata for raster tests.
 
@@ -189,7 +189,7 @@ def sample_raster() -> Dict[str, Any]:
 
 
 @pytest.fixture(scope="function")
-def active_inference_state() -> Dict[str, Any]:
+def active_inference_state() -> dict[str, Any]:
     """
     Generative model state dict for Active Inference tests.
 

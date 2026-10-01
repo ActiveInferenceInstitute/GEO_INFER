@@ -20,7 +20,7 @@ search-volume FWE probability follows from a Poisson maximum-cluster model.
 from __future__ import annotations
 
 from itertools import combinations
-from typing import Optional, Tuple, Union
+from typing import Union
 
 import numpy as np
 from scipy import ndimage
@@ -54,10 +54,10 @@ class RandomFieldTheory:
 
     def __init__(
         self,
-        field_shape: Tuple[int, ...],
-        smoothness: Optional[np.ndarray] = None,
-        search_volume: Optional[float] = None,
-        df: Optional[int] = None,
+        field_shape: tuple[int, ...],
+        smoothness: np.ndarray | None = None,
+        search_volume: float | None = None,
+        df: int | None = None,
     ):
         self.field_shape = tuple(field_shape)
         self.ndim = len(self.field_shape)
@@ -66,7 +66,7 @@ class RandomFieldTheory:
         )
         self.search_volume = None if search_volume is None else float(search_volume)
         self.df = df
-        self.resel_counts: Optional[np.ndarray] = None
+        self.resel_counts: np.ndarray | None = None
         self._voxel_sizes = np.ones(self.ndim, dtype=float)
 
         # Kept as a compatibility attribute for callers that inspected the old
@@ -115,7 +115,7 @@ class RandomFieldTheory:
         return normalised
 
     def estimate_smoothness(
-        self, residuals: np.ndarray, mask: Optional[np.ndarray] = None
+        self, residuals: np.ndarray, mask: np.ndarray | None = None
     ) -> np.ndarray:
         """Estimate axis-wise FWHM from finite differences of residuals.
 
@@ -178,9 +178,7 @@ class RandomFieldTheory:
             )
         return counts
 
-    def compute_resel_counts(
-        self, voxel_sizes: Optional[np.ndarray] = None
-    ) -> np.ndarray:
+    def compute_resel_counts(self, voxel_sizes: np.ndarray | None = None) -> np.ndarray:
         """Compute all zero- through D-dimensional resel counts.
 
         A rectangular field with FWHM-normalised side lengths ``q_i`` has resel
@@ -210,7 +208,7 @@ class RandomFieldTheory:
         self.search_volume = float(counts[-1])
         return counts.copy()
 
-    def compute_search_volume(self, voxel_sizes: Optional[np.ndarray] = None) -> float:
+    def compute_search_volume(self, voxel_sizes: np.ndarray | None = None) -> float:
         """Compute and store the top-dimensional search volume in resels."""
         return float(self.compute_resel_counts(voxel_sizes)[-1])
 
@@ -536,10 +534,10 @@ class RandomFieldTheory:
         stat_type: str = "t",
         method: str = "cluster",
         *,
-        cluster_forming_threshold: Optional[float] = None,
+        cluster_forming_threshold: float | None = None,
         cluster_forming_alpha: float = 0.001,
         connectivity: int = 1,
-        two_sided: Optional[bool] = None,
+        two_sided: bool | None = None,
     ) -> np.ndarray:
         """Apply peak-height or topological cluster-extent RFT correction.
 

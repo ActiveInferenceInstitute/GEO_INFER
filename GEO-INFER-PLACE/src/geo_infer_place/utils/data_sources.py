@@ -9,7 +9,7 @@ integration protocols for real California data.
 
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any
 from dataclasses import dataclass
 import requests
 
@@ -24,11 +24,11 @@ class DataSource:
     description: str
     base_url: str
     api_key_required: bool
-    data_types: List[str]
+    data_types: list[str]
     spatial_coverage: str
     temporal_coverage: str
     update_frequency: str
-    format_types: List[str]
+    format_types: list[str]
     access_method: str  # 'api', 'download', 'ftp', 'wms'
     documentation_url: str
     license_type: str
@@ -68,7 +68,7 @@ class CaliforniaDataSources:
             f"CaliforniaDataSources initialized with {len(self.sources)} data sources"
         )
 
-    def _initialize_data_sources(self) -> Dict[str, DataSource]:
+    def _initialize_data_sources(self) -> dict[str, DataSource]:
         """Initialize comprehensive catalog of California data sources."""
         sources = {}
 
@@ -356,9 +356,9 @@ class CaliforniaDataSources:
 
         return sources
 
-    def _categorize_sources(self) -> Dict[str, List[str]]:
+    def _categorize_sources(self) -> dict[str, list[str]]:
         """Organize data sources by category."""
-        categories: Dict[str, List[str]] = {
+        categories: dict[str, list[str]] = {
             "fire": [],
             "forestry": [],
             "coastal": [],
@@ -410,7 +410,7 @@ class CaliforniaDataSources:
 
         return categories
 
-    def get_sources_by_category(self, category: str) -> List[DataSource]:
+    def get_sources_by_category(self, category: str) -> list[DataSource]:
         """
         Get all data sources in a specific category.
 
@@ -423,7 +423,7 @@ class CaliforniaDataSources:
         source_ids = self.source_categories.get(category, [])
         return [self.sources[source_id] for source_id in source_ids]
 
-    def get_source_config(self, source_id: str) -> Optional[DataSource]:
+    def get_source_config(self, source_id: str) -> DataSource | None:
         """
         Get configuration for a specific data source.
 
@@ -444,9 +444,9 @@ class CaliforniaDataSources:
     def search_sources(
         self,
         query: str,
-        categories: Optional[List[str]] = None,
-        data_types: Optional[List[str]] = None,
-    ) -> List[DataSource]:
+        categories: list[str] | None = None,
+        data_types: list[str] | None = None,
+    ) -> list[DataSource]:
         """
         Search data sources by query and filters.
 
@@ -491,9 +491,9 @@ class CaliforniaDataSources:
 
     def get_sources_for_location(
         self,
-        location_bounds: Tuple[float, float, float, float],
-        location_name: Optional[str] = None,
-    ) -> Dict[str, List[DataSource]]:
+        location_bounds: tuple[float, float, float, float],
+        location_name: str | None = None,
+    ) -> dict[str, list[DataSource]]:
         """
         Get relevant data sources for a specific location.
 
@@ -520,7 +520,7 @@ class CaliforniaDataSources:
         # Determine if location is coastal (within 50km of coast)
         is_coastal = west <= -117.0  # Rough coastal boundary for California
 
-        relevant_sources: Dict[str, List[DataSource]] = {
+        relevant_sources: dict[str, list[DataSource]] = {
             "high_priority": [],
             "medium_priority": [],
             "low_priority": [],
@@ -568,8 +568,8 @@ class CaliforniaDataSources:
         return relevant_sources
 
     def validate_source_access(
-        self, source_id: str, api_key: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, source_id: str, api_key: str | None = None
+    ) -> dict[str, Any]:
         """
         Validate access to a data source.
 
@@ -660,14 +660,14 @@ class CaliforniaDataSources:
         )
         return result
 
-    def get_update_schedule(self) -> Dict[str, List[str]]:
+    def get_update_schedule(self) -> dict[str, list[str]]:
         """
         Get data sources organized by their update frequency.
 
         Returns:
             Dictionary with update frequencies as keys and source lists as values
         """
-        schedule: Dict[str, List[str]] = {}
+        schedule: dict[str, list[str]] = {}
 
         for source_id, source in self.sources.items():
             frequency = source.update_frequency
@@ -690,7 +690,7 @@ class CaliforniaDataSources:
             "varies by dataset",
         ]
 
-        ordered_schedule: Dict[str, List[str]] = {}
+        ordered_schedule: dict[str, list[str]] = {}
         for freq in frequency_order:
             if freq in schedule:
                 ordered_schedule[freq] = schedule[freq]
@@ -702,7 +702,7 @@ class CaliforniaDataSources:
 
         return ordered_schedule
 
-    def get_source_summary(self) -> Dict[str, Any]:
+    def get_source_summary(self) -> dict[str, Any]:
         """
         Get a summary of all available data sources.
 
@@ -712,7 +712,7 @@ class CaliforniaDataSources:
         total_sources = len(self.sources)
 
         # Count by access method
-        access_methods: Dict[str, int] = {}
+        access_methods: dict[str, int] = {}
         for source in self.sources.values():
             method = source.access_method
             access_methods[method] = access_methods.get(method, 0) + 1
@@ -723,7 +723,7 @@ class CaliforniaDataSources:
         )
 
         # Count by license type
-        license_types: Dict[str, int] = {}
+        license_types: dict[str, int] = {}
         for source in self.sources.values():
             license_type = source.license_type
             license_types[license_type] = license_types.get(license_type, 0) + 1

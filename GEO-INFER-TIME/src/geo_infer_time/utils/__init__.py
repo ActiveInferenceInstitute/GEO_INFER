@@ -24,7 +24,7 @@ __all__ = [
 ]
 
 
-def validate_timeseries(ts: TimeSeries) -> Dict[str, Any]:
+def validate_timeseries(ts: TimeSeries) -> dict[str, Any]:
     """Validate a TimeSeries for completeness, gaps, and data quality.
 
     Checks performed:
@@ -56,8 +56,8 @@ def validate_timeseries(ts: TimeSeries) -> Dict[str, Any]:
                 "gaps": [{"start": ..., "end": ..., "size": ...}, ...],
             }
     """
-    errors: List[str] = []
-    warnings: List[str] = []
+    errors: list[str] = []
+    warnings: list[str] = []
     df = ts.to_dataframe()
     index = ts.timestamps
 
@@ -93,8 +93,8 @@ def validate_timeseries(ts: TimeSeries) -> Dict[str, Any]:
         warnings.append(f"Found {dup_count} duplicate timestamp(s).")
 
     # Missing values
-    missing_values: Dict[str, int] = {}
-    missing_pct: Dict[str, float] = {}
+    missing_values: dict[str, int] = {}
+    missing_pct: dict[str, float] = {}
     for col in df.columns:
         n_missing = int(df[col].isna().sum())
         missing_values[col] = n_missing
@@ -109,7 +109,7 @@ def validate_timeseries(ts: TimeSeries) -> Dict[str, Any]:
     detected_freq = detect_frequency(ts)
 
     # Gap detection
-    gaps: List[Dict[str, Any]] = []
+    gaps: list[dict[str, Any]] = []
     if row_count > 1 and is_monotonic:
         diffs = pd.Series(index[1:] - index[:-1])
         positive_diffs = diffs[diffs > pd.Timedelta(0)]
@@ -154,7 +154,7 @@ def validate_timeseries(ts: TimeSeries) -> Dict[str, Any]:
     return result
 
 
-def detect_frequency(ts: TimeSeries) -> Optional[str]:
+def detect_frequency(ts: TimeSeries) -> str | None:
     """Detect the frequency of a TimeSeries.
 
     Uses ``pandas.infer_freq`` on the DatetimeIndex. If that fails (e.g.
@@ -199,7 +199,7 @@ def detect_frequency(ts: TimeSeries) -> Optional[str]:
         (31536000, "YE"),  # ~365 days
     ]
 
-    best_alias: Optional[str] = None
+    best_alias: str | None = None
     best_ratio = float("inf")
     for seconds, alias in frequency_map:
         ratio = max(median_seconds / seconds, seconds / median_seconds)
@@ -223,10 +223,10 @@ def detect_frequency(ts: TimeSeries) -> Optional[str]:
 
 
 def align_timeseries(
-    ts_list: List[TimeSeries],
+    ts_list: list[TimeSeries],
     method: str = "outer",
-    fill_method: Optional[str] = "ffill",
-) -> List[TimeSeries]:
+    fill_method: str | None = "ffill",
+) -> list[TimeSeries]:
     """Align multiple TimeSeries to a common time index.
 
     Computes the union (outer) or intersection (inner) of all timestamp
@@ -265,7 +265,7 @@ def align_timeseries(
 
     common_index = common_index.sort_values()
 
-    aligned: List[TimeSeries] = []
+    aligned: list[TimeSeries] = []
     for ts in ts_list:
         df = ts.to_dataframe().reindex(common_index)
 
@@ -290,12 +290,12 @@ def align_timeseries(
 
 
 def create_timeseries(
-    values: Union[List[float], np.ndarray, Dict[str, List[float]]],
-    start: Union[str, datetime],
+    values: list[float] | np.ndarray | dict[str, list[float]],
+    start: str | datetime,
     freq: str,
-    name: Optional[str] = None,
-    metadata: Optional[Dict[str, Any]] = None,
-    spatial_location: Optional[Dict[str, float]] = None,
+    name: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    spatial_location: dict[str, float] | None = None,
     **kwargs: Any,
 ) -> TimeSeries:
     """Create a TimeSeries from raw values and a start time / frequency.
@@ -346,8 +346,8 @@ def create_timeseries(
 def fill_gaps(
     ts: TimeSeries,
     method: str = "linear",
-    freq: Optional[str] = None,
-    limit: Optional[int] = None,
+    freq: str | None = None,
+    limit: int | None = None,
 ) -> TimeSeries:
     """Fill temporal gaps in a TimeSeries.
 

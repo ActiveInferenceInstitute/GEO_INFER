@@ -5,7 +5,7 @@ This module analyzes agricultural improvement data within an H3 grid.
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 from pathlib import Path
 import geopandas as gpd
 
@@ -82,7 +82,7 @@ class GeoInferImprovements(BaseAnalysisModule):
         except Exception as e:
             raise RuntimeError(f"[{self.module_name}] Improvements acquisition failed") from e
 
-    def run_final_analysis(self, h3_data: Dict[str, Any]) -> Dict[str, Any]:
+    def run_final_analysis(self, h3_data: dict[str, Any]) -> dict[str, Any]:
         """
         Perform improvements analysis on H3-indexed data.
 
@@ -130,7 +130,7 @@ class GeoInferImprovements(BaseAnalysisModule):
         logger.info(f"Completed improvements analysis for {len(analysis_results)} cells")
         return analysis_results
 
-    def _analyze_improvements(self, improvements_gdf: gpd.GeoDataFrame) -> Dict[str, Any]:
+    def _analyze_improvements(self, improvements_gdf: gpd.GeoDataFrame) -> dict[str, Any]:
         """
         Analyze improvements and building patterns.
 
@@ -207,7 +207,7 @@ class GeoInferImprovements(BaseAnalysisModule):
             "redevelopment_score": redevelopment_score,
         }
 
-    def _find_column(self, gdf: gpd.GeoDataFrame, potential_names: List[str]) -> str:
+    def _find_column(self, gdf: gpd.GeoDataFrame, potential_names: list[str]) -> str:
         """Find the first matching column name in the GeoDataFrame."""
         for name in potential_names:
             if name in gdf.columns:

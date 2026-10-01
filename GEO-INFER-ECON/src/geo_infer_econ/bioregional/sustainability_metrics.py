@@ -5,11 +5,11 @@ Provides sustainability indicators, resilience metrics, regenerative metrics,
 wellbeing indicators, and planetary boundaries assessment.
 """
 
-from typing import Dict, Optional, Any
+from typing import Any
 import numpy as np
 import pandas as pd
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,7 @@ class SustainabilityIndicators:
         ],
     }
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize sustainability indicators."""
         self.config = config or {}
         self.weights = self.config.get(
@@ -113,7 +113,7 @@ class SustainabilityIndicators:
         )
         logger.info("SustainabilityIndicators initialized")
 
-    def calculate_indicators(self, data: Dict[str, Any]) -> pd.DataFrame:
+    def calculate_indicators(self, data: dict[str, Any]) -> pd.DataFrame:
         """Calculate sustainability indicators.
 
         Args:
@@ -180,11 +180,11 @@ class SustainabilityIndicators:
 class ResilienceMetrics:
     """Ecological and social resilience metrics."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         logger.info("ResilienceMetrics initialized")
 
-    def calculate_resilience(self, resilience_data: Dict[str, Any]) -> Dict[str, Any]:
+    def calculate_resilience(self, resilience_data: dict[str, Any]) -> dict[str, Any]:
         """Calculate resilience metrics for a system.
 
         Args:
@@ -223,7 +223,7 @@ class ResilienceMetrics:
             historical_resilience = float(np.mean(recovery_efficiencies))
 
         # Composite resilience (weighted geometric mean)
-        components: Dict[str, Any] = {
+        components: dict[str, Any] = {
             "diversity": diversity_norm,
             "connectivity": connectivity,
             "redundancy": redundancy,
@@ -238,7 +238,7 @@ class ResilienceMetrics:
             np.exp(sum(w * np.log(max(v, 1e-6)) for w, v in zip(weights, values)))
         )
 
-        result: Dict[str, Any] = {**{k: round(v, 4) for k, v in components.items()}}
+        result: dict[str, Any] = {**{k: round(v, 4) for k, v in components.items()}}
         result["composite_resilience"] = round(composite, 4)
         result["resilience_grade"] = (
             "high" if composite > 0.7 else "medium" if composite > 0.4 else "low"
@@ -253,11 +253,11 @@ class ResilienceMetrics:
 class RegenerativeMetrics:
     """Metrics for regenerative capacity of ecosystems."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         logger.info("RegenerativeMetrics initialized")
 
-    def calculate_regenerative(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def calculate_regenerative(self, data: dict[str, Any]) -> dict[str, Any]:
         """Calculate regenerative capacity metrics.
 
         Args:
@@ -289,7 +289,7 @@ class RegenerativeMetrics:
         biodiv_score = min(species / max(baseline_species, 1), 1.0)
 
         # Composite regenerative index
-        components: Dict[str, Any] = {
+        components: dict[str, Any] = {
             "soil_health": round(soc_score, 4),
             "vegetation_integrity": round(veg_score, 4),
             "hydrological_function": round(water_score, 4),
@@ -317,11 +317,11 @@ class RegenerativeMetrics:
 class WellbeingIndicators:
     """Wellbeing indicators beyond GDP (GPI, HPI, genuine savings)."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         logger.info("WellbeingIndicators initialized")
 
-    def calculate_wellbeing(self, wellbeing_data: Dict[str, Any]) -> Dict[str, Any]:
+    def calculate_wellbeing(self, wellbeing_data: dict[str, Any]) -> dict[str, Any]:
         """Calculate wellbeing indicators.
 
         Args:
@@ -382,7 +382,7 @@ class WellbeingIndicators:
             )
         )
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "gdp_per_capita": gdp_pc,
             "gpi_per_capita": round(gpi_per_capita, 2),
             "happy_planet_index": round(hpi, 2),
@@ -413,14 +413,14 @@ class WellbeingIndicators:
 class PlanetaryBoundaries:
     """Planetary boundaries assessment (Rockström/Steffen framework)."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.boundaries = self.config.get("boundaries", PLANETARY_BOUNDARIES)
         logger.info(
             "PlanetaryBoundaries initialized with %d boundaries", len(self.boundaries)
         )
 
-    def assess_boundaries(self, boundary_data: Dict[str, Any]) -> Dict[str, Any]:
+    def assess_boundaries(self, boundary_data: dict[str, Any]) -> dict[str, Any]:
         """Assess regional or global status relative to planetary boundaries.
 
         Args:
@@ -493,7 +493,7 @@ class PlanetaryBoundaries:
             "overall_status": (
                 "within_safe_space" if not transgressed else "boundaries_transgressed"
             ),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         logger.info(

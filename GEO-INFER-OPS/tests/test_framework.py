@@ -97,4 +97,4 @@ def test_all_module_packages_have_init() -> None:
             init = pkg / "__init__.py"
             if not init.exists():
                 missing.append(str(pkg))
-    assert not missing, f"Packages missing __init__.py:\n" + "\n".join(missing)
+    assert not missing, "Packages missing __init__.py:\n" + "\n".join(missing)

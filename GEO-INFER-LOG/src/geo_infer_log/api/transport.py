@@ -9,7 +9,7 @@ import pickle
 from functools import lru_cache
 
 from fastapi import APIRouter, HTTPException, Depends, Query
-from typing import Any, List, Dict, Optional, Tuple
+from typing import Any
 from pydantic import ConfigDict, Field
 from geo_infer_log.models.base import BaseModel
 
@@ -32,14 +32,14 @@ router = APIRouter(
 class RouteRequest(BaseModel):
     """Request model for multimodal route planning."""
 
-    origin: Tuple[float, float] = Field(..., description="(lon, lat) of origin")
-    destination: Tuple[float, float] = Field(
+    origin: tuple[float, float] = Field(..., description="(lon, lat) of origin")
+    destination: tuple[float, float] = Field(
         ..., description="(lon, lat) of destination"
     )
-    allowed_modes: List[str] = Field(
+    allowed_modes: list[str] = Field(
         ..., description="List of allowed transportation modes"
     )
-    preferences: Optional[Dict] = None
+    preferences: dict | None = None
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -61,11 +61,11 @@ class RouteRequest(BaseModel):
 class CompareRoutesRequest(BaseModel):
     """Request model for route comparison."""
 
-    origin: Tuple[float, float] = Field(..., description="(lon, lat) of origin")
-    destination: Tuple[float, float] = Field(
+    origin: tuple[float, float] = Field(..., description="(lon, lat) of origin")
+    destination: tuple[float, float] = Field(
         ..., description="(lon, lat) of destination"
     )
-    mode_combinations: List[List[str]] = Field(
+    mode_combinations: list[list[str]] = Field(
         ..., description="List of mode combinations to compare"
     )
 
@@ -93,7 +93,7 @@ class NetworkLoadRequest(BaseModel):
 class TimePeriodsRequest(BaseModel):
     """Request model for setting traffic-simulation time periods."""
 
-    periods: List[str] = Field(..., description="Time-period labels")
+    periods: list[str] = Field(..., description="Time-period labels")
 
     model_config = ConfigDict(
         json_schema_extra={"example": {"periods": ["morning_peak", "evening_peak"]}}
@@ -160,8 +160,8 @@ class EmissionsCalculationRequest(BaseModel):
 class EmissionsComparisonRequest(BaseModel):
     """Request model for emissions comparison."""
 
-    route: Dict
-    vehicle_options: List[Vehicle]
+    route: dict
+    vehicle_options: list[Vehicle]
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -226,10 +226,10 @@ def get_emissions_calculator() -> EmissionsCalculator:
     return EmissionsCalculator()
 
 
-@router.post("/route", response_model=Dict)
+@router.post("/route", response_model=dict)
 async def plan_route(
     request: RouteRequest, planner: MultiModalPlanner = Depends(get_multimodal_planner)
-) -> Dict:
+) -> dict:
     """Plan a multimodal route between origin and destination."""
     try:
         route = planner.plan_route(
@@ -243,11 +243,11 @@ async def plan_route(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/compare-routes", response_model=Dict)
+@router.post("/compare-routes", response_model=dict)
 async def compare_routes(
     request: CompareRoutesRequest,
     planner: MultiModalPlanner = Depends(get_multimodal_planner),
-) -> Dict:
+) -> dict:
     """Compare different multimodal routes between origin and destination."""
     try:
         df = planner.compare_routes(
@@ -262,11 +262,11 @@ async def compare_routes(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/network/load", response_model=Dict)
+@router.post("/network/load", response_model=dict)
 async def load_network(
     request: NetworkLoadRequest,
     analyzer: TransportationNetworkAnalyzer = Depends(get_network_analyzer),
-) -> Dict:
+) -> dict:
     """Load a transportation network for metrics and critical-link analysis.
 
     Must be called before POST ``/network/metrics`` or
@@ -286,11 +286,11 @@ async def load_network(
     }
 
 
-@router.post("/network/metrics", response_model=Dict)
+@router.post("/network/metrics", response_model=dict)
 async def get_network_metrics(
     request: NetworkMetricsRequest,
     analyzer: TransportationNetworkAnalyzer = Depends(get_network_analyzer),
-) -> Dict:
+) -> dict:
     """Calculate metrics for a transportation network."""
     try:
         metrics = analyzer.calculate_network_metrics()
@@ -299,12 +299,12 @@ async def get_network_metrics(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/network/critical-links", response_model=List[List[str]])
+@router.post("/network/critical-links", response_model=list[list[str]])
 async def identify_critical_links(
     request: NetworkMetricsRequest,
     analyzer: TransportationNetworkAnalyzer = Depends(get_network_analyzer),
     top_n: int = Query(10, description="Number of critical links to identify"),
-) -> List[Any]:
+) -> list[Any]:
     """Identify critical links in a transportation network."""
     try:
         links = analyzer.identify_critical_links(top_n=top_n)
@@ -313,11 +313,11 @@ async def identify_critical_links(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/traffic/load", response_model=Dict)
+@router.post("/traffic/load", response_model=dict)
 async def load_traffic_network(
     request: NetworkLoadRequest,
     simulator: TrafficSimulator = Depends(get_traffic_simulator),
-) -> Dict:
+) -> dict:
     """Load a transportation network for traffic simulation.
 
     Must be called before POST ``/traffic/simulate`` or
@@ -336,11 +336,11 @@ async def load_traffic_network(
     }
 
 
-@router.post("/traffic/time-periods", response_model=Dict)
+@router.post("/traffic/time-periods", response_model=dict)
 async def set_time_periods(
     request: TimePeriodsRequest,
     simulator: TrafficSimulator = Depends(get_traffic_simulator),
-) -> Dict:
+) -> dict:
     """Set the time periods available for traffic simulation.
 
     POST ``/traffic/simulate`` only accepts departure times among these
@@ -353,11 +353,11 @@ async def set_time_periods(
     return {"time_periods": list(simulator.time_periods)}
 
 
-@router.post("/traffic/simulate", response_model=Dict)
+@router.post("/traffic/simulate", response_model=dict)
 async def simulate_traffic(
     request: TrafficSimulationRequest,
     simulator: TrafficSimulator = Depends(get_traffic_simulator),
-) -> Dict:
+) -> dict:
     """Simulate traffic for a route."""
     try:
         result = simulator.simulate_traffic(
@@ -370,12 +370,12 @@ async def simulate_traffic(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/traffic/congestion", response_model=Dict)
+@router.post("/traffic/congestion", response_model=dict)
 async def analyze_congestion(
     simulator: TrafficSimulator = Depends(get_traffic_simulator),
-    time_period: Optional[str] = Query(None, description="Time period to analyze"),
+    time_period: str | None = Query(None, description="Time period to analyze"),
     congestion_threshold: float = Query(0.7, description="Congestion threshold"),
-) -> Dict:
+) -> dict:
     """Analyze network congestion."""
     try:
         result = simulator.analyze_congestion(
@@ -404,11 +404,11 @@ async def calculate_emissions(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/emissions/compare", response_model=Dict)
+@router.post("/emissions/compare", response_model=dict)
 async def compare_vehicle_emissions(
     request: EmissionsComparisonRequest,
     calculator: EmissionsCalculator = Depends(get_emissions_calculator),
-) -> Dict:
+) -> dict:
     """Compare emissions for different vehicle options on a route."""
     try:
         df = calculator.compare_emissions(
@@ -421,12 +421,12 @@ async def compare_vehicle_emissions(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/emissions/fleet", response_model=Dict)
+@router.post("/emissions/fleet", response_model=dict)
 async def calculate_fleet_emissions(
-    fleet: List[Vehicle],
-    routes: List[Route],
+    fleet: list[Vehicle],
+    routes: list[Route],
     calculator: EmissionsCalculator = Depends(get_emissions_calculator),
-) -> Dict:
+) -> dict:
     """Calculate total emissions for a fleet of vehicles."""
     try:
         result = calculator.calculate_fleet_emissions(fleet=fleet, routes=routes)

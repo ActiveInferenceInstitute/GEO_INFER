@@ -6,7 +6,7 @@ across geographic areas and jurisdictions.
 """
 
 import geopandas as gpd
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
 import logging
 import matplotlib.pyplot as plt
 import datetime
@@ -31,8 +31,8 @@ class ComplianceTracker:
         self,
         name: str,
         description: str = "",
-        compliance_statuses: Optional[List[ComplianceStatus]] = None,
-        compliance_metrics: Optional[List[ComplianceMetric]] = None,
+        compliance_statuses: list[ComplianceStatus] | None = None,
+        compliance_metrics: list[ComplianceMetric] | None = None,
     ):
         """
         Initialize a ComplianceTracker instance.
@@ -47,7 +47,7 @@ class ComplianceTracker:
         self.description = description
         self.compliance_statuses = compliance_statuses or []
         self.compliance_metrics = compliance_metrics or []
-        self._status_index: Dict[Tuple[str, str], List[ComplianceStatus]] = {}
+        self._status_index: dict[tuple[str, str], list[ComplianceStatus]] = {}
         self._metric_index = {m.id: m for m in self.compliance_metrics}
 
         # Build index for faster lookups
@@ -97,8 +97,8 @@ class ComplianceTracker:
         logger.info(f"Added compliance metric: {metric.name}")
 
     def get_entity_compliance(
-        self, entity_id: str, as_of_date: Optional[datetime.datetime] = None
-    ) -> Dict[str, Any]:
+        self, entity_id: str, as_of_date: datetime.datetime | None = None
+    ) -> dict[str, Any]:
         """
         Get compliance status for all regulations for a specific entity.
 
@@ -130,7 +130,7 @@ class ComplianceTracker:
             }
 
         # Filter to most recent status for each regulation as of the given date
-        regulation_latest: Dict[str, ComplianceStatus] = {}
+        regulation_latest: dict[str, ComplianceStatus] = {}
 
         for status in entity_statuses:
             if status.timestamp > as_of_date:
@@ -174,8 +174,8 @@ class ComplianceTracker:
         }
 
     def get_regulation_compliance(
-        self, regulation_id: str, as_of_date: Optional[datetime.datetime] = None
-    ) -> Dict[str, Any]:
+        self, regulation_id: str, as_of_date: datetime.datetime | None = None
+    ) -> dict[str, Any]:
         """
         Get compliance status for all entities for a specific regulation.
 
@@ -208,7 +208,7 @@ class ComplianceTracker:
             }
 
         # Filter to most recent status for each entity as of the given date
-        entity_latest: Dict[str, ComplianceStatus] = {}
+        entity_latest: dict[str, ComplianceStatus] = {}
 
         for status in regulation_statuses:
             if status.timestamp > as_of_date:
@@ -253,7 +253,7 @@ class ComplianceTracker:
         self,
         entity: LegalEntity,
         regulation: Regulation,
-        evaluation_data: Dict[str, Any],
+        evaluation_data: dict[str, Any],
     ) -> ComplianceStatus:
         """
         Evaluate compliance of an entity with a regulation based on data.
@@ -286,7 +286,7 @@ class ComplianceTracker:
             )
 
         # Evaluate each metric
-        metric_results: List[Dict[str, Any]] = []
+        metric_results: list[dict[str, Any]] = []
         for metric in applicable_metrics:
             # A missing primary field is treated as missing data: no verdict is possible.
             if metric.primary_field not in evaluation_data:
@@ -454,9 +454,9 @@ class ComplianceTracker:
 
     def export_compliance_to_geodataframe(
         self,
-        entities: List[LegalEntity],
-        regulation_id: Optional[str] = None,
-        as_of_date: Optional[datetime.datetime] = None,
+        entities: list[LegalEntity],
+        regulation_id: str | None = None,
+        as_of_date: datetime.datetime | None = None,
     ) -> gpd.GeoDataFrame:
         """
         Export compliance status to a GeoDataFrame for spatial analysis.
@@ -537,9 +537,9 @@ class ComplianceTracker:
         self,
         compliance_gdf: gpd.GeoDataFrame,
         column: str = "compliance_level",
-        figsize: Tuple[int, int] = (12, 8),
+        figsize: tuple[int, int] = (12, 8),
         cmap: str = "RdYlGn",
-        save_path: Optional[str] = None,
+        save_path: str | None = None,
     ) -> plt.Figure:
         """
         Create a visualization of compliance data.
@@ -669,8 +669,8 @@ class ComplianceReport:
         self.generated_at = datetime.datetime.now()
 
     def generate_summary_report(
-        self, as_of_date: Optional[datetime.datetime] = None
-    ) -> Dict[str, Any]:
+        self, as_of_date: datetime.datetime | None = None
+    ) -> dict[str, Any]:
         """
         Generate a summary compliance report.
 
@@ -713,7 +713,7 @@ class ComplianceReport:
             }
 
         # Get the most recent status for each entity-regulation pair
-        latest_statuses: Dict[Tuple[str, str], ComplianceStatus] = {}
+        latest_statuses: dict[tuple[str, str], ComplianceStatus] = {}
 
         for status in recent_statuses:
             key = (status.entity_id, status.regulation_id)
@@ -756,8 +756,8 @@ class ComplianceReport:
         }
 
     def generate_entity_report(
-        self, entity_id: str, as_of_date: Optional[datetime.datetime] = None
-    ) -> Dict[str, Any]:
+        self, entity_id: str, as_of_date: datetime.datetime | None = None
+    ) -> dict[str, Any]:
         """
         Generate a detailed compliance report for a specific entity.
 
@@ -803,8 +803,8 @@ class ComplianceReport:
         }
 
     def generate_regulation_report(
-        self, regulation_id: str, as_of_date: Optional[datetime.datetime] = None
-    ) -> Dict[str, Any]:
+        self, regulation_id: str, as_of_date: datetime.datetime | None = None
+    ) -> dict[str, Any]:
         """
         Generate a detailed compliance report for a specific regulation.
 
@@ -851,7 +851,7 @@ class ComplianceReport:
 
     def _calculate_entity_trends(
         self, entity_id: str, end_date: datetime.datetime, months_back: int = 12
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate compliance trends for an entity over time.
 
@@ -916,7 +916,7 @@ class ComplianceReport:
 
     def _calculate_regulation_trends(
         self, regulation_id: str, end_date: datetime.datetime, months_back: int = 12
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate compliance trends for a regulation over time.
 

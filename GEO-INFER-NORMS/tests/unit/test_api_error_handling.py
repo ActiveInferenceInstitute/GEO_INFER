@@ -8,7 +8,7 @@ GEO-INFER-LOG/tests/unit/test_api_error_handling.py (GS-223).
 """
 
 from types import SimpleNamespace
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 import pytest
 from fastapi import APIRouter, FastAPI
@@ -130,8 +130,8 @@ class TestNormativeRouterErrorMapping:
         class _FailingDiffusion:
             """Stub diffusion engine whose simulate raises a server fault."""
 
-            entities: Dict[str, Any] = {}
-            adoption_state: Dict[str, Dict[str, Any]] = {}
+            entities: dict[str, Any] = {}
+            adoption_state: dict[str, dict[str, Any]] = {}
 
             def add_entity(self, *args: Any, **kwargs: Any) -> None:
                 return None
@@ -142,10 +142,10 @@ class TestNormativeRouterErrorMapping:
             def simulate(self, time_steps: int) -> Any:
                 raise RuntimeError("boom")
 
-            def get_adoption_history(self) -> Dict[str, Any]:
+            def get_adoption_history(self) -> dict[str, Any]:
                 return {}
 
-            def get_adoption_summary(self) -> Dict[str, Any]:
+            def get_adoption_summary(self) -> dict[str, Any]:
                 return {}
 
         api = NormativeAPI(

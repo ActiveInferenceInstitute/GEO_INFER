@@ -15,7 +15,8 @@ import sys
 import time
 import traceback
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 import numpy as np
 

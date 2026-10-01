@@ -6,7 +6,7 @@ and stored in a manner that protects individual privacy, organizational
 security, and complies with relevant regulations.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 import logging
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
@@ -53,9 +53,9 @@ class SecurityFramework:
     processing and analysis workflows.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
-        self.config: Dict[str, Any] = config or {}
-        self.audit_log: List[Dict[str, Any]] = []
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
+        self.config: dict[str, Any] = config or {}
+        self.audit_log: list[dict[str, Any]] = []
         from .core.cognitive_security import CognitiveSecurityManager
 
         self.cognitive = CognitiveSecurityManager()
@@ -87,13 +87,13 @@ class SecurityFramework:
         )
         return protected
 
-    def audit_access(self, user_id: str, data_access: Any) -> Dict[str, Any]:
+    def audit_access(self, user_id: str, data_access: Any) -> dict[str, Any]:
         """Audit data access for security compliance."""
         event = {
             "user_id": user_id,
             "data_access": data_access,
             "status": "recorded",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self.audit_log.append(event)
         logger.info(

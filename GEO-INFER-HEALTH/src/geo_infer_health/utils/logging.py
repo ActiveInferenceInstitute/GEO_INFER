@@ -6,7 +6,8 @@ Provides centralized logging configuration and utilities.
 
 import sys
 from pathlib import Path
-from typing import Optional, Dict, Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from loguru import logger
 
@@ -15,8 +16,8 @@ from .config import get_global_config
 
 def setup_logging(
     level: str = "INFO",
-    format: Optional[str] = None,
-    file_path: Optional[str] = None,
+    format: str | None = None,
+    file_path: str | None = None,
     max_bytes: int = 10485760,  # 10MB
     backup_count: int = 5,
     verbose: bool = False,
@@ -127,7 +128,7 @@ class PerformanceLogger:
         """
         self.operation_name = operation_name
         self.log_threshold = log_threshold
-        self.start_time: Optional[float] = None
+        self.start_time: float | None = None
 
     def __enter__(self) -> "PerformanceLogger":
         import time
@@ -160,7 +161,7 @@ class PerformanceLogger:
 
 
 def log_function_call(
-    func_name: Optional[str] = None, log_args: bool = False, log_result: bool = False
+    func_name: str | None = None, log_args: bool = False, log_result: bool = False
 ) -> Callable[..., Any]:
     """
     Decorator to log function calls.
@@ -200,7 +201,7 @@ def log_function_call(
 
 
 def log_performance(
-    operation_name: str, duration: float, metadata: Optional[Dict[str, Any]] = None
+    operation_name: str, duration: float, metadata: dict[str, Any] | None = None
 ) -> None:
     """
     Log performance metrics.
@@ -217,7 +218,7 @@ def log_performance(
     logger.info(f"Performance: {operation_name} took {duration:.3f}s{metadata_str}")
 
 
-def create_log_context(context_info: Dict[str, Any]) -> Any:
+def create_log_context(context_info: dict[str, Any]) -> Any:
     """
     Create a logging context with additional information.
 
@@ -234,7 +235,7 @@ def setup_structured_logging(
     service_name: str = "geo-infer-health",
     version: str = "1.0.0",
     environment: str = "development",
-    file_path: Optional[str] = None,
+    file_path: str | None = None,
     level: str = "INFO",
 ) -> None:
     """

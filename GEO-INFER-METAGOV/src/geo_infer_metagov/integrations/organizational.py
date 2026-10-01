@@ -1,6 +1,6 @@
 """Organizational integration for governance-organization alignment."""
 
-from typing import List, Dict, Any
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -42,9 +42,9 @@ class OrganizationalGovernanceIntegration:
 
     def map_governance_to_organizational_structure(
         self,
-        governance_entities: List[Dict[str, Any]],
-        organizational_structure: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        governance_entities: list[dict[str, Any]],
+        organizational_structure: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Map governance entities to organizational roles and structure.
 
@@ -60,8 +60,8 @@ class OrganizationalGovernanceIntegration:
         Dict[str, Any]
             Mapping between governance and organizational structures
         """
-        entity_role_mapping_out: Dict[str, Dict[str, Any]] = {}
-        mapping: Dict[str, Any] = {
+        entity_role_mapping_out: dict[str, dict[str, Any]] = {}
+        mapping: dict[str, Any] = {
             "mapped": True,
             "entity_role_mapping": entity_role_mapping_out,
             "coverage": 0.0,
@@ -124,9 +124,9 @@ class OrganizationalGovernanceIntegration:
 
     def assess_organizational_capacity(
         self,
-        governance_entities: List[Dict[str, Any]],
-        organizational_capacity_data: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        governance_entities: list[dict[str, Any]],
+        organizational_capacity_data: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Assess organizational capacity for governance functions.
 
@@ -142,9 +142,9 @@ class OrganizationalGovernanceIntegration:
         Dict[str, Any]
             Capacity assessment results
         """
-        entity_capacity_out: Dict[str, Any] = {}
-        capacity_gaps_out: List[Dict[str, Any]] = []
-        assessment: Dict[str, Any] = {
+        entity_capacity_out: dict[str, Any] = {}
+        capacity_gaps_out: list[dict[str, Any]] = []
+        assessment: dict[str, Any] = {
             "capacity_assessed": True,
             "entity_capacity": entity_capacity_out,
             "overall_capacity": 0.0,
@@ -200,9 +200,9 @@ class OrganizationalGovernanceIntegration:
 
     def check_governance_organization_alignment(
         self,
-        governance_structure: Dict[str, Any],
-        organizational_structure: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        governance_structure: dict[str, Any],
+        organizational_structure: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Check alignment between governance structure and organizational structure.
 
@@ -218,9 +218,9 @@ class OrganizationalGovernanceIntegration:
         Dict[str, Any]
             Alignment assessment
         """
-        alignment_factors_out: Dict[str, float] = {}
-        misalignments_out: List[Dict[str, Any]] = []
-        alignment: Dict[str, Any] = {
+        alignment_factors_out: dict[str, float] = {}
+        misalignments_out: list[dict[str, Any]] = []
+        alignment: dict[str, Any] = {
             "alignment_checked": True,
             "overall_alignment": 0.0,
             "alignment_factors": alignment_factors_out,

@@ -8,10 +8,10 @@ monitoring capabilities.
 
 import logging
 import asyncio
-from typing import Dict, List, Optional, Union, Any
-from datetime import datetime, timedelta, timezone
+from typing import Any
+from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 import json
 import yaml
 from pathlib import Path
@@ -34,7 +34,7 @@ from ..utils.performance import PerformanceMonitor
 logger = logging.getLogger(__name__)
 
 
-class PipelineStatus(str, Enum):
+class PipelineStatus(StrEnum):
     """Pipeline execution status."""
 
     IDLE = "idle"
@@ -45,7 +45,7 @@ class PipelineStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-class ErrorRecoveryStrategy(str, Enum):
+class ErrorRecoveryStrategy(StrEnum):
     """Error recovery strategies."""
 
     FAIL_FAST = "fail_fast"
@@ -61,14 +61,14 @@ class PipelineMetrics:
 
     execution_id: str
     start_time: datetime
-    end_time: Optional[datetime] = None
-    duration: Optional[float] = None
+    end_time: datetime | None = None
+    duration: float | None = None
     records_processed: int = 0
     errors_count: int = 0
     warnings_count: int = 0
     throughput: float = 0.0
-    memory_usage: Dict[str, float] = field(default_factory=dict)
-    cpu_usage: Dict[str, float] = field(default_factory=dict)
+    memory_usage: dict[str, float] = field(default_factory=dict)
+    cpu_usage: dict[str, float] = field(default_factory=dict)
 
 
 class TransformationEngine:
@@ -89,7 +89,7 @@ class TransformationEngine:
         }
 
     async def execute_transformation(
-        self, transformation: Transformation, data: Any, context: Dict[str, Any]
+        self, transformation: Transformation, data: Any, context: dict[str, Any]
     ) -> Any:
         """Execute a single transformation."""
         transform_type = transformation.type
@@ -109,7 +109,7 @@ class TransformationEngine:
             raise
 
     async def _filter_data(
-        self, data: Any, parameters: Dict[str, Any], context: Dict[str, Any]
+        self, data: Any, parameters: dict[str, Any], context: dict[str, Any]
     ) -> Any:
         """Apply filtering transformation."""
         filter_conditions = parameters.get("conditions", {})
@@ -136,7 +136,7 @@ class TransformationEngine:
             return data
 
     async def _transform_data(
-        self, data: Any, parameters: Dict[str, Any], context: Dict[str, Any]
+        self, data: Any, parameters: dict[str, Any], context: dict[str, Any]
     ) -> Any:
         """Apply data transformation."""
         transformations = parameters.get("transformations", {})
@@ -163,7 +163,7 @@ class TransformationEngine:
             return data
 
     async def _aggregate_data(
-        self, data: Any, parameters: Dict[str, Any], context: Dict[str, Any]
+        self, data: Any, parameters: dict[str, Any], context: dict[str, Any]
     ) -> Any:
         """Apply data aggregation."""
         group_by = parameters.get("group_by", [])
@@ -176,7 +176,7 @@ class TransformationEngine:
             return data
 
     async def _validate_data(
-        self, data: Any, parameters: Dict[str, Any], context: Dict[str, Any]
+        self, data: Any, parameters: dict[str, Any], context: dict[str, Any]
     ) -> Any:
         """Validate data."""
         validator = GeospatialValidator()
@@ -188,7 +188,7 @@ class TransformationEngine:
         return data
 
     async def _clean_data(
-        self, data: Any, parameters: Dict[str, Any], context: Dict[str, Any]
+        self, data: Any, parameters: dict[str, Any], context: dict[str, Any]
     ) -> Any:
         """Clean tabular data using explicit, configurable operations."""
         if not isinstance(data, pd.DataFrame):
@@ -227,7 +227,7 @@ class TransformationEngine:
         return cleaned.reset_index(drop=True)
 
     async def _spatial_join(
-        self, data: Any, parameters: Dict[str, Any], context: Dict[str, Any]
+        self, data: Any, parameters: dict[str, Any], context: dict[str, Any]
     ) -> Any:
         """Join a GeoDataFrame with a configured or contextual spatial layer."""
         try:
@@ -261,7 +261,7 @@ class TransformationEngine:
         return gpd.sjoin(data, right, **join_kwargs)
 
     async def _temporal_aggregate(
-        self, data: Any, parameters: Dict[str, Any], context: Dict[str, Any]
+        self, data: Any, parameters: dict[str, Any], context: dict[str, Any]
     ) -> Any:
         """Aggregate records over a configured pandas time frequency."""
         if not isinstance(data, pd.DataFrame):
@@ -288,7 +288,7 @@ class TransformationEngine:
         return grouped.resample(frequency).agg(aggregation).reset_index()
 
     async def _geocode_data(
-        self, data: Any, parameters: Dict[str, Any], context: Dict[str, Any]
+        self, data: Any, parameters: dict[str, Any], context: dict[str, Any]
     ) -> Any:
         """Create point geometries from configured latitude/longitude columns."""
         if not isinstance(data, pd.DataFrame):
@@ -321,7 +321,7 @@ class TransformationEngine:
         )
 
     async def _reproject_data(
-        self, data: Any, parameters: Dict[str, Any], context: Dict[str, Any]
+        self, data: Any, parameters: dict[str, Any], context: dict[str, Any]
     ) -> Any:
         """Reproject a GeoDataFrame to the requested CRS."""
         try:
@@ -336,7 +336,7 @@ class TransformationEngine:
         return data.to_crs(target_crs)
 
     async def _clip_data(
-        self, data: Any, parameters: Dict[str, Any], context: Dict[str, Any]
+        self, data: Any, parameters: dict[str, Any], context: dict[str, Any]
     ) -> Any:
         """Clip a GeoDataFrame to a configured geometry or bounding box."""
         try:
@@ -475,7 +475,7 @@ class IntelligentETLPipeline:
 
     def __init__(
         self,
-        workflow_config: Optional[Union[str, Dict[str, Any]]] = None,
+        workflow_config: str | dict[str, Any] | None = None,
         dependency_resolution: str = "automatic",
         error_recovery: str = "intelligent_retry",
         monitoring_enabled: bool = True,
@@ -516,9 +516,9 @@ class IntelligentETLPipeline:
         self.monitoring_enabled = monitoring_enabled
         self.parallel_execution = parallel_execution
 
-        self.pipeline: Optional[ETLPipeline] = None
-        self.execution_history: List[ExecutionStatus] = []
-        self.current_execution: Optional[ExecutionStatus] = None
+        self.pipeline: ETLPipeline | None = None
+        self.execution_history: list[ExecutionStatus] = []
+        self.current_execution: ExecutionStatus | None = None
         self.transformation_engine = TransformationEngine()
         self.performance_monitor = PerformanceMonitor() if monitoring_enabled else None
 
@@ -533,7 +533,7 @@ class IntelligentETLPipeline:
         if isinstance(self.workflow_config, str):
             config_path = Path(self.workflow_config)
             if config_path.exists():
-                with open(config_path, "r") as f:
+                with open(config_path) as f:
                     if config_path.suffix in [".yaml", ".yml"]:
                         config = yaml.safe_load(f)
                     else:
@@ -547,8 +547,8 @@ class IntelligentETLPipeline:
         self,
         source_data: Any,
         target_storage: Any,
-        transformation_rules: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        transformation_rules: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Execute the complete ETL workflow with monitoring and error recovery.
 
@@ -645,7 +645,7 @@ class IntelligentETLPipeline:
             in (ErrorRecoveryStrategy.RETRY, ErrorRecoveryStrategy.INTELLIGENT_RETRY)
             else 1
         )
-        last_error: Optional[Exception] = None
+        last_error: Exception | None = None
 
         for attempt in range(max_attempts):
             if attempt > 0:
@@ -660,14 +660,12 @@ class IntelligentETLPipeline:
                     await asyncio.sleep(delay)
 
             # Create execution status for this attempt
-            execution_id = (
-                f"exec_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
-            )
+            execution_id = f"exec_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
             self.current_execution = ExecutionStatus(
                 id=execution_id,
                 pipeline_id=self.pipeline.id if self.pipeline else "unknown",
                 status=ExecutionState.RUNNING,
-                started_at=datetime.now(timezone.utc),
+                started_at=datetime.now(UTC),
             )
 
             try:
@@ -684,7 +682,7 @@ class IntelligentETLPipeline:
 
                 # Update execution status
                 self.current_execution.status = ExecutionState.COMPLETED
-                self.current_execution.completed_at = datetime.now(timezone.utc)
+                self.current_execution.completed_at = datetime.now(UTC)
                 self.current_execution.progress = 100.0
 
                 # Record execution
@@ -728,7 +726,7 @@ class IntelligentETLPipeline:
 
                 # Update execution status and record the failed attempt
                 self.current_execution.status = ExecutionState.FAILED
-                self.current_execution.completed_at = datetime.now(timezone.utc)
+                self.current_execution.completed_at = datetime.now(UTC)
                 self.current_execution.message = str(e)
                 self.execution_history.append(self.current_execution)
                 last_error = e
@@ -783,7 +781,7 @@ class IntelligentETLPipeline:
             return source_data
 
     async def _extract_from_files(
-        self, config: Dict[str, Any], source_data: Any
+        self, config: dict[str, Any], source_data: Any
     ) -> Any:
         """Read a configured file, using the supplied source data as an override."""
         path = (
@@ -812,7 +810,7 @@ class IntelligentETLPipeline:
         raise ValueError(f"Unsupported file format: {fmt}")
 
     async def _extract_from_database(
-        self, config: Dict[str, Any], source_data: Any
+        self, config: dict[str, Any], source_data: Any
     ) -> Any:
         """Read a configured database query with SQLAlchemy."""
         if source_data is not None and not isinstance(source_data, (str, Path, dict)):
@@ -838,7 +836,7 @@ class IntelligentETLPipeline:
         finally:
             engine.dispose()
 
-    async def _extract_from_api(self, config: Dict[str, Any], source_data: Any) -> Any:
+    async def _extract_from_api(self, config: dict[str, Any], source_data: Any) -> Any:
         """Fetch JSON data from a configured HTTP API."""
         if source_data is not None and not isinstance(source_data, (str, Path, dict)):
             return source_data
@@ -866,7 +864,7 @@ class IntelligentETLPipeline:
         )
 
     async def _transform_data(
-        self, extracted_data: Any, transformation_rules: Optional[Dict[str, Any]] = None
+        self, extracted_data: Any, transformation_rules: dict[str, Any] | None = None
     ) -> Any:
         """Transform extracted data."""
         logger.debug("Starting data transformation")
@@ -881,7 +879,7 @@ class IntelligentETLPipeline:
             "execution_id": (
                 self.current_execution.id if self.current_execution else None
             ),
-            "start_time": datetime.now(timezone.utc),
+            "start_time": datetime.now(UTC),
         }
 
         # Execute transformations in order
@@ -1071,14 +1069,14 @@ class IntelligentETLPipeline:
         # Log error details
         if self.current_execution:
             log_entry = {
-                "timestamp": datetime.now(timezone.utc),
+                "timestamp": datetime.now(UTC),
                 "level": "error",
                 "transformation": transformation.type,
                 "message": str(error),
             }
             self.current_execution.logs.append(log_entry)
 
-    def _recovery_delay(self, error: Optional[Exception], retry_index: int) -> float:
+    def _recovery_delay(self, error: Exception | None, retry_index: int) -> float:
         """Return the backoff delay (seconds) before retry ``retry_index``.
 
         The delay grows exponentially with the retry index. For the
@@ -1098,14 +1096,14 @@ class IntelligentETLPipeline:
             base_delay = self.retry_delay
         return base_delay * (2**retry_index)
 
-    def get_performance_metrics(self) -> Dict[str, Any]:
+    def get_performance_metrics(self) -> dict[str, Any]:
         """Get pipeline performance metrics."""
         if not self.performance_monitor:
             return {"monitoring_disabled": True}
 
         return self.performance_monitor.get_metrics()
 
-    def _get_performance_metrics(self) -> Dict[str, Any]:
+    def _get_performance_metrics(self) -> dict[str, Any]:
         """Get current execution performance metrics."""
         if not self.current_execution or not self.performance_monitor:
             return {}
@@ -1126,7 +1124,7 @@ class IntelligentETLPipeline:
             "logs_count": len(self.current_execution.logs),
         }
 
-    def identify_bottlenecks(self, metrics: Dict[str, Any]) -> List[str]:
+    def identify_bottlenecks(self, metrics: dict[str, Any]) -> list[str]:
         """Identify performance bottlenecks."""
         bottlenecks = []
 

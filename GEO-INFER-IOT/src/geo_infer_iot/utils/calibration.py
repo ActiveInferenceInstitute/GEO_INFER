@@ -6,7 +6,7 @@ and calibration management for IoT sensor networks.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from datetime import datetime, timedelta
 import numpy as np
 from dataclasses import dataclass
@@ -28,7 +28,7 @@ class CalibrationResult:
     """Result of a calibration operation."""
 
     success: bool
-    calibration_parameters: Dict[str, Any]
+    calibration_parameters: dict[str, Any]
     calibration_error: float
     timestamp: datetime
     method: str
@@ -46,10 +46,10 @@ class SensorCalibration:
     - Multi-point calibration procedures
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
-        self.calibration_history: List[Dict[str, Any]] = []
-        self.drift_models: Dict[str, Any] = {}
+        self.calibration_history: list[dict[str, Any]] = []
+        self.drift_models: dict[str, Any] = {}
 
         # Default calibration parameters
         self.default_params = {
@@ -64,7 +64,7 @@ class SensorCalibration:
     def calibrate_sensor(
         self,
         sensor_id: str,
-        reference_data: List[Dict],
+        reference_data: list[dict],
         calibration_method: str = "linear",
     ) -> CalibrationResult:
         """
@@ -151,8 +151,8 @@ class SensorCalibration:
             )
 
     def _linear_calibration(
-        self, sensor_values: List[float], reference_values: List[float]
-    ) -> Dict:
+        self, sensor_values: list[float], reference_values: list[float]
+    ) -> dict:
         """Perform linear calibration: reference = slope * sensor + offset."""
         if len(sensor_values) < 2:
             return {"slope": 1.0, "offset": 0.0}
@@ -177,8 +177,8 @@ class SensorCalibration:
         }
 
     def _polynomial_calibration(
-        self, sensor_values: List[float], reference_values: List[float]
-    ) -> Dict:
+        self, sensor_values: list[float], reference_values: list[float]
+    ) -> dict:
         """Perform polynomial calibration (2nd order)."""
         if not HAS_SCIPY or len(sensor_values) < 3:
             # Fall back to linear
@@ -205,8 +205,8 @@ class SensorCalibration:
             return self._linear_calibration(sensor_values, reference_values)
 
     def _apply_calibration(
-        self, sensor_values: List[float], params: Dict, method: str
-    ) -> List[float]:
+        self, sensor_values: list[float], params: dict, method: str
+    ) -> list[float]:
         """Apply calibration parameters to sensor values."""
         if method == "linear":
             slope = params.get("slope", 1.0)
@@ -219,8 +219,8 @@ class SensorCalibration:
             return sensor_values  # No calibration
 
     def detect_drift(
-        self, sensor_id: str, recent_measurements: List[Dict], reference_baseline: Dict
-    ) -> Dict:
+        self, sensor_id: str, recent_measurements: list[dict], reference_baseline: dict
+    ) -> dict:
         """
         Detect sensor drift using recent measurements and baseline.
 
@@ -300,7 +300,7 @@ class SensorCalibration:
                 "error": str(e),
             }
 
-    def generate_calibration_schedule(self, sensor_inventory: List[Dict]) -> List[Dict]:
+    def generate_calibration_schedule(self, sensor_inventory: list[dict]) -> list[dict]:
         """
         Generate calibration schedule for sensor inventory.
 
@@ -377,7 +377,7 @@ class SensorCalibration:
         else:
             return "low"
 
-    def validate_calibration_data(self, calibration_data: List[Dict]) -> Dict:
+    def validate_calibration_data(self, calibration_data: list[dict]) -> dict:
         """
         Validate calibration data quality and completeness.
 
@@ -433,8 +433,8 @@ class SensorCalibration:
         }
 
     def get_calibration_report(
-        self, sensor_id: Optional[str] = None, time_window_days: int = 30
-    ) -> Dict:
+        self, sensor_id: str | None = None, time_window_days: int = 30
+    ) -> dict:
         """
         Generate calibration report for sensor(s).
 

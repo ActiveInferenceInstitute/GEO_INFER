@@ -13,7 +13,7 @@ from __future__ import annotations
 import asyncio
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 
@@ -24,7 +24,7 @@ if str(_ORCHESTRATORS_DIR) not in sys.path:
 from _lib import run_module_orchestrator  # noqa: E402
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     from geo_infer_ops import HealthChecker, HealthCheck, HealthStatus
     from geo_infer_ops import Orchestrator, TaskStatus
 
@@ -63,13 +63,13 @@ def _operation() -> Dict[str, Any]:
     ingest_rows = int(rng.integers(50, 100))
     values = np.round(rng.normal(50.0, 10.0, ingest_rows), 3)
 
-    def _ingest() -> Dict[str, Any]:
+    def _ingest() -> dict[str, Any]:
         return {"rows": ingest_rows, "mean": float(np.mean(values))}
 
     def _validate() -> bool:
         return bool(np.all(np.isfinite(values)))
 
-    def _summarize() -> Dict[str, Any]:
+    def _summarize() -> dict[str, Any]:
         return {
             "rows": ingest_rows,
             "mean": float(np.round(np.mean(values), 3)),

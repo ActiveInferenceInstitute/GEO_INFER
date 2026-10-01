@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Agent Registry for GEO-INFER-AGENT.
@@ -12,7 +11,7 @@ import uuid
 import logging
 import asyncio
 import importlib
-from typing import Dict, List, Any, Optional, Set, cast
+from typing import Any, Optional, cast
 
 from geo_infer_agent.core.agent_base import BaseAgent
 
@@ -21,7 +20,7 @@ logger = logging.getLogger("geo_infer_agent.core.agent_registry")
 # Single source of truth for the agent-type -> class mapping and its
 # human-readable descriptions.  AgentRegistry and the CLI both derive from
 # these constants; adding an agent type means editing only this block.
-AGENT_TYPES: Dict[str, str] = {
+AGENT_TYPES: dict[str, str] = {
     "default": "geo_infer_agent.core.agent_base.ExampleAgent",
     "data_collector": "geo_infer_agent.agents.data_collector.DataCollectorAgent",
     "bdi": "geo_infer_agent.models.bdi.BDIAgent",
@@ -31,7 +30,7 @@ AGENT_TYPES: Dict[str, str] = {
     "hybrid": "geo_infer_agent.models.hybrid.HybridAgent",
 }
 
-AGENT_DESCRIPTIONS: Dict[str, str] = {
+AGENT_DESCRIPTIONS: dict[str, str] = {
     "default": "Basic example agent for testing",
     "data_collector": "Collects data from configured sources",
     "bdi": "Belief-Desire-Intention cognitive architecture",
@@ -58,7 +57,7 @@ class AgentRegistry:
     def __new__(cls) -> "AgentRegistry":
         """Singleton pattern to ensure a single registry instance."""
         if cls._instance is None:
-            cls._instance = super(AgentRegistry, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance._initialized = False
         return cls._instance
 
@@ -68,16 +67,16 @@ class AgentRegistry:
             return
 
         # Dictionary of agent instances keyed by ID
-        self.agents: Dict[str, BaseAgent] = {}
+        self.agents: dict[str, BaseAgent] = {}
 
         # Set of running agent IDs
-        self.running_agents: Set[str] = set()
+        self.running_agents: set[str] = set()
 
         # Map of agent types to class paths (from the module-level constants)
         self.agent_types = dict(AGENT_TYPES)
 
         # Running tasks for agents
-        self.agent_tasks: Dict[str, asyncio.Task] = {}
+        self.agent_tasks: dict[str, asyncio.Task] = {}
 
         self._initialized = True
         logger.info("Agent registry initialized")
@@ -119,9 +118,9 @@ class AgentRegistry:
     async def create_agent(
         self,
         agent_type: str,
-        config: Dict[str, Any],
-        agent_id: Optional[str] = None,
-        region: Optional[str] = None,
+        config: dict[str, Any],
+        agent_id: str | None = None,
+        region: str | None = None,
     ) -> str:
         """
         Create a new agent instance.
@@ -275,7 +274,7 @@ class AgentRegistry:
 
         return self.agents[agent_id]
 
-    def get_agent_info(self, agent_id: str) -> Dict[str, Any]:
+    def get_agent_info(self, agent_id: str) -> dict[str, Any]:
         """
         Get information about an agent.
 
@@ -301,7 +300,7 @@ class AgentRegistry:
             "config": agent.config,
         }
 
-    async def get_agent_state(self, agent_id: str) -> Dict[str, Any]:
+    async def get_agent_state(self, agent_id: str) -> dict[str, Any]:
         """
         Get the current state of an agent.
 
@@ -350,7 +349,7 @@ class AgentRegistry:
 
         return agent_id in self.running_agents
 
-    def list_agents(self) -> List[Dict[str, Any]]:
+    def list_agents(self) -> list[dict[str, Any]]:
         """
         List all registered agents.
 
@@ -359,7 +358,7 @@ class AgentRegistry:
         """
         return [self.get_agent_info(agent_id) for agent_id in self.agents]
 
-    def list_agent_types(self) -> Dict[str, str]:
+    def list_agent_types(self) -> dict[str, str]:
         """
         List all available agent types.
 
@@ -369,8 +368,8 @@ class AgentRegistry:
         return self.agent_types.copy()
 
     async def agent_action(
-        self, agent_id: str, action: str, parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent_id: str, action: str, parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Perform an action on an agent.
 
@@ -401,10 +400,10 @@ class AgentRegistry:
         result = await method(**parameters)
 
         logger.debug(f"Performed action '{action}' on agent {agent_id}")
-        return cast(Dict[str, Any], result)
+        return cast(dict[str, Any], result)
 
     async def send_message(
-        self, from_agent_id: str, to_agent_id: str, content: Dict[str, Any]
+        self, from_agent_id: str, to_agent_id: str, content: dict[str, Any]
     ) -> bool:
         """
         Send a message from one agent to another.

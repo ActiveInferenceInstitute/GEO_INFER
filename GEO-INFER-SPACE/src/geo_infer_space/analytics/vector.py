@@ -9,7 +9,7 @@ computations using GeoPandas and Shapely.
 import logging
 import numpy as np
 import geopandas as gpd
-from typing import Union, Optional, Any
+from typing import Any
 from shapely.ops import unary_union
 from shapely.ops import transform as shapely_transform
 from pyproj import Transformer
@@ -32,7 +32,7 @@ def _reproject(frame: gpd.GeoDataFrame, target_crs: Any) -> gpd.GeoDataFrame:
 def buffer_and_intersect(
     points_gdf: gpd.GeoDataFrame,
     polygons_gdf: gpd.GeoDataFrame,
-    buffer_distance_meters: Union[int, float],
+    buffer_distance_meters: int | float,
 ) -> gpd.GeoDataFrame:
     """Buffer points and intersect with polygons.
 
@@ -111,7 +111,7 @@ def overlay_analysis(
 
 
 def proximity_analysis(
-    gdf1: gpd.GeoDataFrame, gdf2: gpd.GeoDataFrame, max_distance: Optional[float] = None
+    gdf1: gpd.GeoDataFrame, gdf2: gpd.GeoDataFrame, max_distance: float | None = None
 ) -> gpd.GeoDataFrame:
     """
     Calculate proximity metrics between two sets of geometries.

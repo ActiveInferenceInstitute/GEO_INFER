@@ -5,7 +5,7 @@ This module provides the main theorem prover interface supporting
 multiple backends (Z3, Isabelle, Lean) for spatial mathematics.
 """
 
-from typing import Optional, List, Any
+from typing import Any
 import logging
 from dataclasses import dataclass
 from enum import Enum
@@ -30,11 +30,11 @@ class ProofResult:
 
     status: ProofStatus
     theorem: str
-    proof: Optional[str] = None
-    counterexample: Optional[Any] = None
+    proof: str | None = None
+    counterexample: Any | None = None
     time_taken: float = 0.0
     backend: str = "unknown"
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 class TheoremProver:
@@ -44,7 +44,7 @@ class TheoremProver:
     Supports multiple backends including Z3, Isabelle, and Lean.
     """
 
-    def __init__(self, backend: Optional[str] = None, timeout: float = 10.0) -> None:
+    def __init__(self, backend: str | None = None, timeout: float = 10.0) -> None:
         """
         Initialize theorem prover.
 
@@ -97,7 +97,7 @@ class TheoremProver:
             raise ValueError(f"Unsupported theorem prover backend: {self.backend}")
 
     def prove(
-        self, theorem: str, assumptions: Optional[List[str]] = None, **kwargs: Any
+        self, theorem: str, assumptions: list[str] | None = None, **kwargs: Any
     ) -> ProofResult:
         """
         Attempt to prove a theorem.
@@ -138,7 +138,7 @@ class TheoremProver:
             )
 
     def _prove_z3(
-        self, theorem: str, assumptions: List[str], **kwargs: Any
+        self, theorem: str, assumptions: list[str], **kwargs: Any
     ) -> ProofResult:
         """Prove using Z3 backend."""
         try:
@@ -225,7 +225,7 @@ class TheoremProver:
             )
 
     def _prove_numpy(
-        self, theorem: str, assumptions: List[str], **kwargs: Any
+        self, theorem: str, assumptions: list[str], **kwargs: Any
     ) -> ProofResult:
         """Prove using numpy backend (limited capabilities)."""
         # Numpy backend can only verify numerical properties
@@ -280,7 +280,7 @@ class TheoremProver:
             return False
 
     def disprove(
-        self, theorem: str, assumptions: Optional[List[str]] = None, **kwargs: Any
+        self, theorem: str, assumptions: list[str] | None = None, **kwargs: Any
     ) -> ProofResult:
         """
         Attempt to find a counterexample (disprove).
@@ -305,7 +305,7 @@ class TheoremProver:
             )
 
 
-def create_prover(backend: Optional[str] = None, **kwargs: Any) -> TheoremProver:
+def create_prover(backend: str | None = None, **kwargs: Any) -> TheoremProver:
     """
     Create a theorem prover instance.
 

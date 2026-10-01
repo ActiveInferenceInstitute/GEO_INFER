@@ -12,7 +12,7 @@ This module provides comprehensive data management with:
 import logging
 import json
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any
 from datetime import datetime
 import geopandas as gpd
 import h3
@@ -116,7 +116,7 @@ class EnhancedDataManager:
         logger.info(f"Enhanced Data Manager initialized with H3 resolution {h3_resolution}")
         logger.info(f"SPACE H3 utilities available: {SPACE_H3_AVAILABLE}")
 
-    def get_comprehensive_data_quality_report(self, module_name: str) -> Dict[str, Any]:
+    def get_comprehensive_data_quality_report(self, module_name: str) -> dict[str, Any]:
         """
         Generate comprehensive data quality report for a module.
 
@@ -194,7 +194,7 @@ class EnhancedDataManager:
             cache_path = data_paths["h3_cache"]
             if cache_path.exists():
                 try:
-                    with open(cache_path, "r") as f:
+                    with open(cache_path) as f:
                         cache_data = json.load(f)
                     report["data_sources"]["h3_cache"] = {
                         "exists": True,
@@ -256,7 +256,7 @@ class EnhancedDataManager:
 
         return report
 
-    def benchmark_performance(self, module_name: str) -> Dict[str, Any]:
+    def benchmark_performance(self, module_name: str) -> dict[str, Any]:
         """
         Benchmark performance for a module's data processing operations.
 
@@ -328,7 +328,7 @@ class EnhancedDataManager:
                     start_time = time.time()
                     start_memory = psutil.Process().memory_info().rss / 1024 / 1024
 
-                    with open(cache_path, "r") as f:
+                    with open(cache_path) as f:
                         cache_data = json.load(f)
 
                     end_time = time.time()
@@ -363,7 +363,7 @@ class EnhancedDataManager:
 
         return benchmark_results
 
-    def _get_system_info(self) -> Dict[str, Any]:
+    def _get_system_info(self) -> dict[str, Any]:
         """Get system information for benchmarking context."""
         try:
             return {
@@ -401,7 +401,7 @@ class EnhancedDataManager:
         # Weighted average
         return time_score * 0.4 + memory_score * 0.3 + throughput_score * 0.3
 
-    def _generate_performance_recommendations(self, benchmark_results: Dict[str, Any]):
+    def _generate_performance_recommendations(self, benchmark_results: dict[str, Any]):
         """Generate performance optimization recommendations."""
         recommendations = []
 
@@ -447,7 +447,7 @@ class EnhancedDataManager:
 
         benchmark_results["recommendations"] = recommendations
 
-    def get_data_structure(self, module_name: str) -> Dict[str, Path]:
+    def get_data_structure(self, module_name: str) -> dict[str, Path]:
         """
         Get the standardized data structure for a module.
 
@@ -570,7 +570,7 @@ class EnhancedDataManager:
             raise RuntimeError(f"Data acquisition failed for {module_name}") from e
 
     def _validate_and_store_data(
-        self, raw_data_path: Path, module_name: str, data_paths: Dict[str, Path]
+        self, raw_data_path: Path, module_name: str, data_paths: dict[str, Path]
     ) -> Path:
         """
         Validate data and store in appropriate location.
@@ -680,7 +680,7 @@ class EnhancedDataManager:
         except Exception as e:
             raise RuntimeError(f"Data validation failed for {module_name}") from e
 
-    def _validate_geodataframe(self, gdf: gpd.GeoDataFrame, module_name: str) -> Dict[str, Any]:
+    def _validate_geodataframe(self, gdf: gpd.GeoDataFrame, module_name: str) -> dict[str, Any]:
         """
         Validate a GeoDataFrame for quality and consistency.
 
@@ -943,8 +943,8 @@ class EnhancedDataManager:
         return final_score >= 0.6  # Require 60% of indicators to be positive
 
     def process_to_h3_with_caching(
-        self, data_path: Path, module_name: str, target_hexagons: List[str]
-    ) -> Dict[str, Any]:
+        self, data_path: Path, module_name: str, target_hexagons: list[str]
+    ) -> dict[str, Any]:
         """
         Process data to H3 format with intelligent caching.
 
@@ -972,7 +972,7 @@ class EnhancedDataManager:
         # Check for existing cache
         if cache_path.exists():
             try:
-                with open(cache_path, "r") as f:
+                with open(cache_path) as f:
                     cached_data = json.load(f)
                 # Accept both normalized and prior cache formats
                 cached_hex_map = cached_data.get(
@@ -1064,8 +1064,8 @@ class EnhancedDataManager:
             raise RuntimeError(f"H3 processing failed for {module_name}") from e
 
     def _process_geodataframe_to_h3(
-        self, gdf: gpd.GeoDataFrame, target_hexagons: List[str], module_name: str
-    ) -> Dict[str, Any]:
+        self, gdf: gpd.GeoDataFrame, target_hexagons: list[str], module_name: str
+    ) -> dict[str, Any]:
         """
         Process GeoDataFrame to H3 format using SPACE utilities.
 
@@ -1077,7 +1077,7 @@ class EnhancedDataManager:
         Returns:
             Dictionary of H3-indexed data
         """
-        h3_data: Dict[str, Any] = {}
+        h3_data: dict[str, Any] = {}
 
         # Convert target hexagons to set for efficient lookup
         target_hex_set = set(target_hexagons)
@@ -1147,7 +1147,7 @@ class EnhancedDataManager:
         return h3_data
 
     def _validate_h3_cache(
-        self, cached_hex_map: Dict[str, Any], target_hexagons: List[str]
+        self, cached_hex_map: dict[str, Any], target_hexagons: list[str]
     ) -> bool:
         """
         Validate cached H3 data against target hexagons.
@@ -1171,7 +1171,7 @@ class EnhancedDataManager:
 
         return coverage >= 0.6
 
-    def get_data_quality_report(self, module_name: str) -> Dict[str, Any]:
+    def get_data_quality_report(self, module_name: str) -> dict[str, Any]:
         """
         Generate comprehensive data quality report.
 
@@ -1207,7 +1207,7 @@ class EnhancedDataManager:
         # Check H3 processing
         if data_paths["h3_cache"].exists():
             try:
-                with open(data_paths["h3_cache"], "r") as f:
+                with open(data_paths["h3_cache"]) as f:
                     h3_data = json.load(f)
                 report["h3_processing"] = {
                     "cached_hexagons": len(h3_data),
@@ -1219,7 +1219,7 @@ class EnhancedDataManager:
         # Check validation report
         if data_paths["validation_report"].exists():
             try:
-                with open(data_paths["validation_report"], "r") as f:
+                with open(data_paths["validation_report"]) as f:
                     validation = json.load(f)
                 report["quality_metrics"] = validation
             except Exception as e:

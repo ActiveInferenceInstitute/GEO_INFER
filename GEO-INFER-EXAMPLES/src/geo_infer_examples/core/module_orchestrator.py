@@ -28,7 +28,7 @@ import logging
 import operator
 import os
 import time
-from typing import Dict, List, Any, Optional
+from typing import Any
 from dataclasses import dataclass, field
 from enum import Enum
 import yaml
@@ -44,10 +44,10 @@ from ..models.integration_models import (
 class ConfigManager:
     """Small local configuration reader for the self-contained examples package."""
 
-    def __init__(self, config_path: Optional[str] = None):
-        self._config: Dict[str, Any] = {}
+    def __init__(self, config_path: str | None = None):
+        self._config: dict[str, Any] = {}
         if config_path:
-            with open(config_path, "r", encoding="utf-8") as handle:
+            with open(config_path, encoding="utf-8") as handle:
                 self._config = yaml.safe_load(handle) or {}
 
     def get_config(self, key: str, default: Any = None) -> Any:
@@ -80,10 +80,10 @@ class PerformanceMonitor:
     """Track wall-clock durations for workflow executions and steps."""
 
     def __init__(self) -> None:
-        self._workflow_starts: Dict[str, float] = {}
-        self._workflow_totals: Dict[str, float] = {}
-        self._step_starts: Dict[str, float] = {}
-        self._step_totals: Dict[str, Dict[str, float]] = {}
+        self._workflow_starts: dict[str, float] = {}
+        self._workflow_totals: dict[str, float] = {}
+        self._step_starts: dict[str, float] = {}
+        self._step_totals: dict[str, dict[str, float]] = {}
 
     def start_workflow_tracking(self, execution_id: str) -> None:
         self._workflow_starts[execution_id] = time.time()
@@ -103,7 +103,7 @@ class PerformanceMonitor:
         elapsed = time.time() - started
         self._step_totals.setdefault(execution_id, {})[step_name] = elapsed
 
-    def get_workflow_metrics(self, execution_id: str) -> Dict[str, Any]:
+    def get_workflow_metrics(self, execution_id: str) -> dict[str, Any]:
         return {
             "total_seconds": self._workflow_totals.get(execution_id),
             "step_seconds": dict(self._step_totals.get(execution_id, {})),
@@ -159,7 +159,7 @@ class _SafeConditionEvaluator(ast.NodeVisitor):
         ast.IsNot: operator.is_not,
     }
 
-    def __init__(self, data: Dict[str, Any]):
+    def __init__(self, data: dict[str, Any]):
         self.data = data
 
     def evaluate(self, condition: str) -> bool:
@@ -247,11 +247,11 @@ class WorkflowExecution:
     execution_id: str
     status: str
     start_time: float
-    end_time: Optional[float] = None
-    results: Dict[str, Any] = field(default_factory=dict)
-    errors: List[str] = field(default_factory=list)
-    module_statuses: Dict[str, ModuleStatus] = field(default_factory=dict)
-    performance_metrics: Dict[str, Any] = field(default_factory=dict)
+    end_time: float | None = None
+    results: dict[str, Any] = field(default_factory=dict)
+    errors: list[str] = field(default_factory=list)
+    module_statuses: dict[str, ModuleStatus] = field(default_factory=dict)
+    performance_metrics: dict[str, Any] = field(default_factory=dict)
 
 
 class ModuleOrchestrator:
@@ -268,7 +268,7 @@ class ModuleOrchestrator:
 
     def __init__(
         self,
-        config_path: Optional[str] = None,
+        config_path: str | None = None,
         monitoring_enabled: bool = True,
         resilience_enabled: bool = True,
     ):
@@ -285,10 +285,10 @@ class ModuleOrchestrator:
         self.api_connector = APIConnector()
 
         # Core components
-        self.modules: Dict[str, Any] = {}
-        self.module_health: Dict[str, ModuleStatus] = {}
-        self.workflows: Dict[str, WorkflowDefinition] = {}
-        self.active_executions: Dict[str, WorkflowExecution] = {}
+        self.modules: dict[str, Any] = {}
+        self.module_health: dict[str, ModuleStatus] = {}
+        self.workflows: dict[str, WorkflowDefinition] = {}
+        self.active_executions: dict[str, WorkflowExecution] = {}
 
         # Monitoring and optimization
         self.monitoring_enabled = monitoring_enabled
@@ -325,7 +325,7 @@ class ModuleOrchestrator:
             self.logger.error(f"Error loading configuration: {e}")
             raise
 
-    def _workflow_definition_files(self) -> List[Any]:
+    def _workflow_definition_files(self) -> list[Any]:
         """Return workflow-definition YAML files from the packaged directory.
 
         Discovery uses ``importlib.resources`` against
@@ -379,7 +379,7 @@ class ModuleOrchestrator:
             f"Registered {len(SAMPLE_WORKFLOWS)} sample workflow definitions"
         )
 
-    def _initialize_module(self, module_name: str, config: Dict[str, Any]) -> None:
+    def _initialize_module(self, module_name: str, config: dict[str, Any]) -> None:
         """Initialize a specific module and check its health."""
         self.logger.info(f"Initializing module: {module_name}")
         self.module_health[module_name] = ModuleStatus.INITIALIZING
@@ -457,8 +457,8 @@ class ModuleOrchestrator:
     async def execute_workflow(
         self,
         workflow_id: str,
-        input_data: Dict[str, Any],
-        execution_context: Optional[ExecutionContext] = None,
+        input_data: dict[str, Any],
+        execution_context: ExecutionContext | None = None,
     ) -> IntegrationResult:
         """
         Execute a registered workflow with given input data.
@@ -554,7 +554,7 @@ class ModuleOrchestrator:
     async def _execute_sequential(
         self,
         workflow: WorkflowDefinition,
-        input_data: Dict[str, Any],
+        input_data: dict[str, Any],
         execution: WorkflowExecution,
     ) -> IntegrationResult:
         """Execute workflow steps sequentially."""
@@ -603,7 +603,7 @@ class ModuleOrchestrator:
     async def _execute_parallel(
         self,
         workflow: WorkflowDefinition,
-        input_data: Dict[str, Any],
+        input_data: dict[str, Any],
         execution: WorkflowExecution,
     ) -> IntegrationResult:
         """Execute independent workflow steps in parallel."""
@@ -655,7 +655,7 @@ class ModuleOrchestrator:
     async def _execute_conditional(
         self,
         workflow: WorkflowDefinition,
-        input_data: Dict[str, Any],
+        input_data: dict[str, Any],
         execution: WorkflowExecution,
     ) -> IntegrationResult:
         """Execute workflow with conditional step execution."""
@@ -706,13 +706,13 @@ class ModuleOrchestrator:
     async def _execute_event_driven(
         self,
         workflow: WorkflowDefinition,
-        input_data: Dict[str, Any],
+        input_data: dict[str, Any],
         execution: WorkflowExecution,
     ) -> IntegrationResult:
         """Execute workflow using event-driven pattern."""
         # Initialize event bus for this execution
-        execution_events: Dict[str, List[Any]] = {}
-        results: Dict[str, Any] = {}
+        execution_events: dict[str, list[Any]] = {}
+        results: dict[str, Any] = {}
         current_data = input_data.copy()
 
         # Set up event listeners
@@ -763,7 +763,7 @@ class ModuleOrchestrator:
     async def _execute_feedback_loop(
         self,
         workflow: WorkflowDefinition,
-        input_data: Dict[str, Any],
+        input_data: dict[str, Any],
         execution: WorkflowExecution,
     ) -> IntegrationResult:
         """Execute workflow with feedback loops (Active Inference pattern)."""
@@ -817,8 +817,8 @@ class ModuleOrchestrator:
         )
 
     async def _execute_step(
-        self, step: Any, input_data: Dict[str, Any], execution: WorkflowExecution
-    ) -> Dict[str, Any]:
+        self, step: Any, input_data: dict[str, Any], execution: WorkflowExecution
+    ) -> dict[str, Any]:
         """Execute a single workflow step."""
         module_name = step.module
 
@@ -858,7 +858,7 @@ class ModuleOrchestrator:
                     execution.execution_id, step.name
                 )
 
-    def _group_by_dependencies(self, steps: List[Any]) -> List[List[Any]]:
+    def _group_by_dependencies(self, steps: list[Any]) -> list[list[Any]]:
         """Group workflow steps by their dependency relationships."""
         groups = []
         remaining_steps = steps.copy()
@@ -882,7 +882,7 @@ class ModuleOrchestrator:
 
         return groups
 
-    def _evaluate_condition(self, condition: str, data: Dict[str, Any]) -> bool:
+    def _evaluate_condition(self, condition: str, data: dict[str, Any]) -> bool:
         """Evaluate a conditional expression against current data.
 
         A malformed guard expression (``ValueError``/``SyntaxError`` from the
@@ -901,11 +901,11 @@ class ModuleOrchestrator:
     async def _trigger_event(
         self,
         event_name: str,
-        event_data: Dict[str, Any],
-        execution_events: Dict[str, List[Any]],
-        current_data: Dict[str, Any],
+        event_data: dict[str, Any],
+        execution_events: dict[str, list[Any]],
+        current_data: dict[str, Any],
         execution: WorkflowExecution,
-        results: Dict[str, Any],
+        results: dict[str, Any],
     ) -> None:
         """Trigger an event and execute associated steps."""
         if event_name in execution_events:
@@ -934,7 +934,7 @@ class ModuleOrchestrator:
                             raise
                         results[step.name] = {"error": str(e), "status": "failed"}
 
-    def _check_convergence(self, results: Dict[str, Any], threshold: float) -> bool:
+    def _check_convergence(self, results: dict[str, Any], threshold: float) -> bool:
         """Check if feedback loop has converged by comparing last two iterations.
 
         Fewer than two iterations or no shared numeric leaves mean "not
@@ -951,8 +951,8 @@ class ModuleOrchestrator:
             prev_iter = results[iterations[-2]]
 
             # Collect all numeric leaf values from both iterations
-            def _extract_nums(d: Any, prefix: str = "") -> Dict[str, float]:
-                vals: Dict[str, float] = {}
+            def _extract_nums(d: Any, prefix: str = "") -> dict[str, float]:
+                vals: dict[str, float] = {}
                 if isinstance(d, dict):
                     for k, v in d.items():
                         vals.update(_extract_nums(v, f"{prefix}.{k}"))
@@ -983,10 +983,10 @@ class ModuleOrchestrator:
     async def _attempt_recovery(
         self,
         workflow: WorkflowDefinition,
-        input_data: Dict[str, Any],
+        input_data: dict[str, Any],
         execution: WorkflowExecution,
         error: Exception,
-    ) -> Optional[IntegrationResult]:
+    ) -> IntegrationResult | None:
         """Attempt to recover from workflow execution failure."""
         self.logger.info(f"Attempting recovery for execution {execution.execution_id}")
 
@@ -1025,26 +1025,26 @@ class ModuleOrchestrator:
 
         return resilient_workflow
 
-    def get_workflow_status(self, execution_id: str) -> Optional[WorkflowExecution]:
+    def get_workflow_status(self, execution_id: str) -> WorkflowExecution | None:
         """Get the status of a workflow execution."""
         return self.active_executions.get(execution_id)
 
-    def get_module_health(self) -> Dict[str, ModuleStatus]:
+    def get_module_health(self) -> dict[str, ModuleStatus]:
         """Get current health status of all modules."""
         return self.module_health.copy()
 
-    def list_workflows(self) -> List[str]:
+    def list_workflows(self) -> list[str]:
         """List all registered workflow IDs."""
         return list(self.workflows.keys())
 
-    def get_workflow_definition(self, workflow_id: str) -> Optional[WorkflowDefinition]:
+    def get_workflow_definition(self, workflow_id: str) -> WorkflowDefinition | None:
         """Get workflow definition by ID."""
         return self.workflows.get(workflow_id)
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform comprehensive health check of orchestrator and modules."""
-        modules_status: Dict[str, str] = {}
-        health_status: Dict[str, Any] = {
+        modules_status: dict[str, str] = {}
+        health_status: dict[str, Any] = {
             "orchestrator": "healthy",
             "modules": modules_status,
             "active_executions": len(self.active_executions),

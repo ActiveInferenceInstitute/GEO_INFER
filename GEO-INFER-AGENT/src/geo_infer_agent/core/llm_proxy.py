@@ -17,12 +17,12 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Sequence, Tuple
+from collections.abc import Sequence
 
 # Buckets backing LLMProxyPolicy.rate_limit_per_minute, keyed by the policy's
 # canonical value tuple so repeated enforcement against the same policy shares
 # one window. Explicitly-passed TokenBuckets bypass this registry.
-_policy_rate_buckets: Dict[Tuple, TokenBucket] = {}
+_policy_rate_buckets: dict[tuple, TokenBucket] = {}
 
 
 class LLMProxyPolicyError(ValueError):
@@ -46,7 +46,7 @@ class LLMProxyPolicy:
     allowed_models: Sequence[str] = ()
     max_request_chars: int = 1_000_000
     max_output_tokens: int = 4096
-    rate_limit_per_minute: Optional[int] = None
+    rate_limit_per_minute: int | None = None
 
 
 @dataclass
@@ -60,7 +60,7 @@ class TokenBucket:
 
     limit: int
     window_seconds: float = 60.0
-    _counter: Dict[str, int] = field(default_factory=dict)
+    _counter: dict[str, int] = field(default_factory=dict)
     _window_start: float = field(default_factory=time.monotonic)
 
     def allow(self, client_id: str) -> bool:
@@ -107,11 +107,11 @@ def enforce_llm_proxy_policy(
     policy: LLMProxyPolicy,
     *,
     model: str,
-    request_payload: Optional[str] = None,
-    payload_chars: Optional[int] = None,
+    request_payload: str | None = None,
+    payload_chars: int | None = None,
     requested_output_tokens: int = 0,
-    client_id: Optional[str] = None,
-    rate_limiter: Optional[TokenBucket] = None,
+    client_id: str | None = None,
+    rate_limiter: TokenBucket | None = None,
 ) -> None:
     """Apply the full policy guard to one request.
 

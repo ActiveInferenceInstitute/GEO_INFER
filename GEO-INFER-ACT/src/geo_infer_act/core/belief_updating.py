@@ -14,7 +14,6 @@ no verification relationship between this numerical implementation and the
 Lean proofs.
 """
 
-from typing import Dict
 import numpy as np
 
 from geo_infer_act.core.free_energy import validate_spd_precision
@@ -73,7 +72,7 @@ class BayesianBeliefUpdate:
         observation: np.ndarray,
         observation_matrix: np.ndarray,
         observation_precision: np.ndarray,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """
         Update Gaussian beliefs using Kalman filter equations.
 

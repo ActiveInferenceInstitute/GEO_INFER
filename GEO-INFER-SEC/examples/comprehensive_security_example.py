@@ -15,13 +15,10 @@ Scenario: Corporate facility with integrated security systems
 import asyncio
 import logging
 import sys
-import time
-from datetime import datetime, timedelta
-from pathlib import Path
+from datetime import datetime
 
 from geo_infer_sec.core.integrated_security import IntegratedSecurityManager
 from geo_infer_sec.core.physical_security import (
-    PhysicalSecurityManager,
     AccessControlDevice,
     SurveillanceDevice,
     SecurityZone,
@@ -30,12 +27,8 @@ from geo_infer_sec.core.physical_security import (
     SecurityZoneType,
 )
 from geo_infer_sec.core.digital_security import (
-    DigitalSecurityManager,
-    NetworkConnection,
     SecurityEventType,
 )
-from geo_infer_sec.core.cognitive_security import CognitiveSecurityManager
-from geo_infer_sec.models.security_models import SecurityEvent, ThreatLevel
 from shapely.geometry import Point, Polygon
 
 

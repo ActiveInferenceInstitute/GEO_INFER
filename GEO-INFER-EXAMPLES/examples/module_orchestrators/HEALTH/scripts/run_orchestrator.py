@@ -13,7 +13,7 @@ from __future__ import annotations
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 _ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
 if str(_ORCHESTRATORS_DIR) not in sys.path:
@@ -22,7 +22,7 @@ if str(_ORCHESTRATORS_DIR) not in sys.path:
 from _lib import run_module_orchestrator  # noqa: E402
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     from geo_infer_health import (
         DiseaseHotspotAnalyzer,
         DiseaseReport,
@@ -32,7 +32,7 @@ def _operation() -> Dict[str, Any]:
 
     # Synthetic surveillance set: a dense harbor-district cluster and a
     # sparse inland cluster, reported over June 2026 with fixed offsets.
-    cluster_harbor: List[Tuple[float, float, int, int]] = [
+    cluster_harbor: list[tuple[float, float, int, int]] = [
         (41.7542, -124.2010, 4, 1),
         (41.7551, -124.1994, 3, 2),
         (41.7533, -124.2022, 5, 4),
@@ -41,13 +41,13 @@ def _operation() -> Dict[str, Any]:
         (41.7547, -124.2031, 4, 11),
         (41.7555, -124.1979, 2, 13),
     ]
-    cluster_inland: List[Tuple[float, float, int, int]] = [
+    cluster_inland: list[tuple[float, float, int, int]] = [
         (41.7731, -124.1655, 1, 3),
         (41.7748, -124.1621, 1, 9),
         (41.7712, -124.1689, 2, 15),
     ]
 
-    reports: List[DiseaseReport] = []
+    reports: list[DiseaseReport] = []
     for report_id, (lat, lng, case_count, day) in enumerate(
         cluster_harbor + cluster_inland, start=1
     ):

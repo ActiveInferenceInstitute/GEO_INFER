@@ -2,7 +2,7 @@
 Unit tests for disease surveillance functionality.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 import pytest
 from geo_infer_health.core.disease_surveillance import DiseaseHotspotAnalyzer
@@ -321,7 +321,7 @@ class TestHotspotAnalysisIntegration:
                 report_id=f"cluster_report_{i}",
                 disease_code="TEST",
                 location=base_location,
-                report_date=datetime.now(timezone.utc),
+                report_date=datetime.now(UTC),
                 case_count=2,
             )
             clustered_reports.append(report)
@@ -347,7 +347,7 @@ class TestScaleBehavior:
         locations = []
         reports = []
 
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         for i in range(100):  # 100 locations
             lat = 30 + (i % 10) * 0.5
@@ -401,7 +401,7 @@ class TestEdgeCases:
             report_id="single_report",
             disease_code="TEST",
             location=location,
-            report_date=datetime.now(timezone.utc),
+            report_date=datetime.now(UTC),
             case_count=1,
         )
 
@@ -419,7 +419,7 @@ class TestEdgeCases:
     def test_reports_with_different_timestamps(self):
         """Test handling reports with different timestamps."""
         location = Location(latitude=34.0522, longitude=-118.2437)
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         reports = []
         for i in range(10):

@@ -71,7 +71,7 @@ class TestFullSPMPipeline:
             save_spm(spm_result, temp_path, format="json")
 
             # Verify save worked
-            with open(temp_path, "r") as f:
+            with open(temp_path) as f:
                 saved_data = json.load(f)
             assert "beta_coefficients" in saved_data
 

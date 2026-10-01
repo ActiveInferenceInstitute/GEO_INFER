@@ -5,7 +5,8 @@ Provides the core interfaces for integrating GEO-INFER-AGENT models with the GEO
 This module serves as the bridge between agent implementations and UI components.
 """
 
-from typing import Dict, List, Any, Optional, Callable
+from typing import Any
+from collections.abc import Callable
 from enum import Enum
 from dataclasses import dataclass
 import logging
@@ -32,12 +33,12 @@ class AgentState:
     agent_id: str
     agent_type: AgentType
     status: str
-    location: Optional[Dict[str, float]] = None  # e.g., {"lat": 40.7, "lng": -74.0}
-    tasks: Optional[List[Dict[str, Any]]] = None
-    beliefs: Optional[Dict[str, Any]] = None
-    goals: Optional[List[str]] = None
-    last_updated: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    location: dict[str, float] | None = None  # e.g., {"lat": 40.7, "lng": -74.0}
+    tasks: list[dict[str, Any]] | None = None
+    beliefs: dict[str, Any] | None = None
+    goals: list[str] | None = None
+    last_updated: str | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class AgentInterface(ABC):
@@ -63,8 +64,8 @@ class AgentInterface(ABC):
 
     @abstractmethod
     def list_agents(
-        self, filter_params: Optional[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
+        self, filter_params: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
         """
         List all available agents, with optional filtering.
 
@@ -78,8 +79,8 @@ class AgentInterface(ABC):
 
     @abstractmethod
     def send_command(
-        self, agent_id: str, command: str, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent_id: str, command: str, params: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Send a command to an agent.
 
@@ -95,7 +96,7 @@ class AgentInterface(ABC):
 
     @abstractmethod
     def register_event_handler(
-        self, event_type: str, callback: Callable[[Dict[str, Any]], None]
+        self, event_type: str, callback: Callable[[dict[str, Any]], None]
     ) -> None:
         """
         Register a callback function to handle agent events.
@@ -107,7 +108,7 @@ class AgentInterface(ABC):
         ...
 
     @abstractmethod
-    def create_agent(self, agent_type: AgentType, config: Dict[str, Any]) -> str:
+    def create_agent(self, agent_type: AgentType, config: dict[str, Any]) -> str:
         """
         Create a new agent instance.
 

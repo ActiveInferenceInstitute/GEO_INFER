@@ -6,7 +6,8 @@ import logging
 import os
 import time
 import functools
-from typing import Dict, List, Optional, Callable, Any, cast
+from typing import Any, cast
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
@@ -33,9 +34,9 @@ class PerformanceOptimizer:
         """
         self.cache_dir = cache_dir
         self.max_cache_size = max_cache_size
-        self.cache: Dict[str, Any] = {}
-        self.cache_timestamps: Dict[str, float] = {}
-        self.cache_sizes: Dict[str, int] = {}
+        self.cache: dict[str, Any] = {}
+        self.cache_timestamps: dict[str, float] = {}
+        self.cache_sizes: dict[str, int] = {}
 
         # Create cache directory if it doesn't exist
         if not os.path.exists(cache_dir):
@@ -52,7 +53,7 @@ class PerformanceOptimizer:
             try:
                 import json
 
-                with open(metadata_file, "r") as f:
+                with open(metadata_file) as f:
                     metadata = json.load(f)
 
                 self.cache = metadata.get("cache", {})
@@ -133,8 +134,8 @@ class PerformanceOptimizer:
         self,
         func: Callable,
         args: tuple = (),
-        kwargs: Optional[dict] = None,
-        cache_key: Optional[str] = None,
+        kwargs: dict | None = None,
+        cache_key: str | None = None,
     ) -> Any:
         """
         Execute a function with caching.
@@ -213,10 +214,10 @@ class PerformanceOptimizer:
     def parallel_execution(
         self,
         func: Callable,
-        parameter_sets: List[Dict],
-        max_workers: Optional[int] = None,
-        progress_callback: Optional[Callable] = None,
-    ) -> List[Any]:
+        parameter_sets: list[dict],
+        max_workers: int | None = None,
+        progress_callback: Callable | None = None,
+    ) -> list[Any]:
         """
         Execute a function in parallel with different parameter sets.
 
@@ -261,9 +262,9 @@ class PerformanceOptimizer:
         self,
         func: Callable,
         args: tuple = (),
-        kwargs: Optional[dict] = None,
+        kwargs: dict | None = None,
         iterations: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Benchmark a function's performance.
 
@@ -307,9 +308,9 @@ class PerformanceOptimizer:
         target_time: float = 1.0,
         min_resolution: int = 100,
         max_resolution: int = 2000,
-        test_function: Optional[Callable] = None,
+        test_function: Callable | None = None,
         test_args: tuple = (),
-        test_kwargs: Optional[dict] = None,
+        test_kwargs: dict | None = None,
     ) -> int:
         """
         Find optimal resolution for target execution time.
@@ -362,7 +363,7 @@ class PerformanceOptimizer:
         self,
         data: np.ndarray,
         chunk_size: int = 1000,
-        process_function: Optional[Callable] = None,
+        process_function: Callable | None = None,
     ) -> np.ndarray:
         """
         Process large arrays in chunks to manage memory usage.
@@ -410,7 +411,7 @@ class PerformanceOptimizer:
             # For other dimensions, process as-is
             return cast(np.ndarray, process_function(data))
 
-    def create_performance_report(self) -> Dict[str, Any]:
+    def create_performance_report(self) -> dict[str, Any]:
         """
         Create a comprehensive performance report.
 
@@ -442,7 +443,7 @@ class PerformanceOptimizer:
             # Fallback for systems without psutil
             return 0
 
-    def _generate_recommendations(self) -> List[str]:
+    def _generate_recommendations(self) -> list[str]:
         """Generate performance optimization recommendations."""
         recommendations = []
 
@@ -488,8 +489,8 @@ def cache_result(cache_optimizer: PerformanceOptimizer) -> Callable:
 
 
 def parallel_map(
-    func: Callable, items: List[Any], max_workers: Optional[int] = None
-) -> List[Any]:
+    func: Callable, items: list[Any], max_workers: int | None = None
+) -> list[Any]:
     """
     Apply a function to a list of items in parallel.
 

@@ -5,7 +5,7 @@ Provides components and utilities for visualizing agents and their states
 in geospatial contexts within the GEO-INFER-APP.
 """
 
-from typing import Dict, Any, Optional
+from typing import Any
 import json
 import logging
 import math
@@ -33,12 +33,12 @@ class VisualizationConfig:
 
     vis_type: VisualizationType
     title: str
-    description: Optional[str] = None
-    icon: Optional[str] = None  # Icon identifier or URL
-    color: Optional[str] = None  # CSS color value
+    description: str | None = None
+    icon: str | None = None  # Icon identifier or URL
+    color: str | None = None  # CSS color value
     scale: float = 1.0
     show_label: bool = True
-    custom_props: Optional[Dict[str, Any]] = None
+    custom_props: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         """Validate frontend-facing visual configuration."""
@@ -62,7 +62,7 @@ class AgentVisualization:
     """
 
     @staticmethod
-    def get_default_config(agent_type: AgentType) -> Dict[str, VisualizationConfig]:
+    def get_default_config(agent_type: AgentType) -> dict[str, VisualizationConfig]:
         """
         Get default visualization configurations for the specified agent type.
 
@@ -115,7 +115,7 @@ class AgentVisualization:
         return configs
 
     @staticmethod
-    def state_to_map_feature(agent_state: AgentState) -> Dict[str, Any]:
+    def state_to_map_feature(agent_state: AgentState) -> dict[str, Any]:
         """
         Convert an agent state to a map feature representation.
 
@@ -171,7 +171,7 @@ class AgentVisualization:
         return feature
 
     @staticmethod
-    def state_to_dashboard_data(agent_state: AgentState) -> Dict[str, Any]:
+    def state_to_dashboard_data(agent_state: AgentState) -> dict[str, Any]:
         """
         Convert an agent state to dashboard data.
 
@@ -186,8 +186,8 @@ class AgentVisualization:
         custom_props = dash_config.custom_props or {}
         widgets_list = custom_props.get("widgets", [])
 
-        widgets_data: Dict[str, Any] = {}
-        dashboard_data: Dict[str, Any] = {
+        widgets_data: dict[str, Any] = {}
+        dashboard_data: dict[str, Any] = {
             "id": agent_state.agent_id,
             "type": agent_state.agent_type.value,
             "title": dash_config.title,

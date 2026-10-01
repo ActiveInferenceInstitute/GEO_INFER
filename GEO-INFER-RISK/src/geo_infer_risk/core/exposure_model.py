@@ -12,7 +12,8 @@ This module provides sophisticated exposure modeling capabilities with:
 - Portfolio-level exposure aggregation
 """
 
-from typing import Dict, List, Any, Optional, Sequence
+from typing import Any
+from collections.abc import Sequence
 from datetime import datetime
 import logging
 import json
@@ -63,9 +64,9 @@ class EnhancedExposureModel:
 
     # Runtime-integration singleton; typed Optional[Any] so mypy does not
     # collapse it to None (populated at runtime if modules present).
-    spatial_interface: Optional[Any] = None
+    spatial_interface: Any | None = None
 
-    def __init__(self, exposure_type: str, params: Dict[str, Any]):
+    def __init__(self, exposure_type: str, params: dict[str, Any]):
         """Initialize the enhanced exposure model.
 
         Args:
@@ -102,7 +103,7 @@ class EnhancedExposureModel:
         self.update_frequency = params.get("update_frequency", "daily")
 
         # Initialize interfaces
-        self.spatial_interface: Optional[Any] = None
+        self.spatial_interface: Any | None = None
         self.data_manager = None
 
         if SPACE_AVAILABLE:
@@ -121,11 +122,11 @@ class EnhancedExposureModel:
 
         # Model state
         self.is_initialized = False
-        self.exposure_data: Optional[pd.DataFrame] = None
-        self.spatial_index: Optional[str] = None
-        self.spatial_tree: Optional[Any] = None
-        self.temporal_profiles: Dict[str, Any] = {}
-        self.economic_factors: Dict[str, Any] = {}
+        self.exposure_data: pd.DataFrame | None = None
+        self.spatial_index: str | None = None
+        self.spatial_tree: Any | None = None
+        self.temporal_profiles: dict[str, Any] = {}
+        self.economic_factors: dict[str, Any] = {}
         self.last_update = None
 
         # Load comprehensive exposure data
@@ -191,7 +192,7 @@ class EnhancedExposureModel:
             self.logger.error(f"Failed to initialize exposure data from I/O: {e}")
             self.exposure_data = None
 
-    def _load_data_from_source(self, source: str) -> Optional[pd.DataFrame]:
+    def _load_data_from_source(self, source: str) -> pd.DataFrame | None:
         """Load exposure data from a specific source."""
         try:
             if source.startswith("file://"):
@@ -208,7 +209,7 @@ class EnhancedExposureModel:
             self.logger.error(f"Failed to load data from source {source}: {e}")
             return None
 
-    def _load_from_file(self, file_path: str) -> Optional[pd.DataFrame]:
+    def _load_from_file(self, file_path: str) -> pd.DataFrame | None:
         """Load exposure data from file."""
         file_path = file_path.replace("file://", "")
 
@@ -216,7 +217,7 @@ class EnhancedExposureModel:
             if file_path.endswith(".csv"):
                 return pd.read_csv(file_path)
             elif file_path.endswith(".json"):
-                with open(file_path, "r") as f:
+                with open(file_path) as f:
                     data = json.load(f)
                 return pd.DataFrame(data)
             elif file_path.endswith(".parquet"):
@@ -561,8 +562,8 @@ class EnhancedExposureModel:
         latitude: float,
         longitude: float,
         radius: float = 1.0,
-        time_scenario: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        time_scenario: str | None = None,
+    ) -> dict[str, Any]:
         """
         Get exposure within a radius of a specific location with temporal variation.
 
@@ -596,8 +597,8 @@ class EnhancedExposureModel:
         latitude: float,
         longitude: float,
         radius: float,
-        time_scenario: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        time_scenario: str | None = None,
+    ) -> dict[str, Any]:
         """Get exposure using H3 spatial indexing."""
         assert self.spatial_interface is not None
         assert self.exposure_data is not None
@@ -622,8 +623,8 @@ class EnhancedExposureModel:
         latitude: float,
         longitude: float,
         radius: float,
-        time_scenario: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        time_scenario: str | None = None,
+    ) -> dict[str, Any]:
         """Get exposure using KDTree spatial indexing."""
         assert self.spatial_tree is not None
         assert self.exposure_data is not None
@@ -645,8 +646,8 @@ class EnhancedExposureModel:
         latitude: float,
         longitude: float,
         radius: float,
-        time_scenario: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        time_scenario: str | None = None,
+    ) -> dict[str, Any]:
         """Get exposure using brute force calculation."""
         assert self.exposure_data is not None
         # Calculate distances from target point
@@ -665,8 +666,8 @@ class EnhancedExposureModel:
         return self._calculate_exposure_summary(filtered_data, time_scenario)
 
     def _calculate_exposure_summary(
-        self, filtered_data: pd.DataFrame, time_scenario: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, filtered_data: pd.DataFrame, time_scenario: str | None = None
+    ) -> dict[str, Any]:
         """Calculate exposure summary for filtered data."""
         if filtered_data.empty:
             return {"total_value": 0, "count": 0, "assets": []}
@@ -705,7 +706,7 @@ class EnhancedExposureModel:
 
     def _exposure_value_column(
         self, candidates: Sequence[str] = ("value", "replacement_cost", "market_value")
-    ) -> Optional[str]:
+    ) -> str | None:
         """Return the first present value column, or ``None``."""
         if self.exposure_data is None:
             return None
@@ -718,8 +719,8 @@ class EnhancedExposureModel:
         self,
         method: str = "bootstrap",
         num_samples: int = 1000,
-        random_seed: Optional[Any] = None,
-    ) -> Dict[str, Any]:
+        random_seed: Any | None = None,
+    ) -> dict[str, Any]:
         """Return a distributional estimate of total insurable exposure.
 
         Parameters
@@ -796,7 +797,7 @@ class EnhancedExposureModel:
             "samples": samples.tolist(),
         }
 
-    def get_exposure_for_event(self, event: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def get_exposure_for_event(self, event: dict[str, Any]) -> list[dict[str, Any]]:
         """
         Get the exposure affected by a hazard event with enhanced features.
 
@@ -854,7 +855,7 @@ class EnhancedExposureModel:
         return []
 
     def _calculate_intensity_at_location(
-        self, event: Dict[str, Any], latitude: float, longitude: float
+        self, event: dict[str, Any], latitude: float, longitude: float
     ) -> float:
         """Calculate hazard intensity at a specific location for an event."""
         # Enhanced version with better interpolation
@@ -903,12 +904,12 @@ class EnhancedExposureModel:
 
     def _bilinear_interpolation(
         self,
-        grid: List[List[float]],
+        grid: list[list[float]],
         x_idx: int,
         y_idx: int,
         x: float,
         y: float,
-        bounds: Dict[str, float],
+        bounds: dict[str, float],
     ) -> float:
         """Perform bilinear interpolation on grid data."""
         grid_size = len(grid)
@@ -960,9 +961,9 @@ class EnhancedExposureModel:
 
     def calculate_total_exposure(
         self,
-        bounds: Optional[Dict[str, float]] = None,
-        time_scenario: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        bounds: dict[str, float] | None = None,
+        time_scenario: str | None = None,
+    ) -> dict[str, Any]:
         assert self.exposure_data is not None
         """
         Calculate the total exposure within optional geographic bounds with temporal variation.
@@ -1104,7 +1105,7 @@ class EnhancedExposureModel:
             f"Exposure data loaded from {input_file}: {len(self.exposure_data)} records"
         )
 
-    def get_model_status(self) -> Dict[str, Any]:
+    def get_model_status(self) -> dict[str, Any]:
         """Get comprehensive model status information."""
         return {
             "exposure_type": self.exposure_type,
@@ -1132,7 +1133,7 @@ class EnhancedExposureModel:
 class EnhancedPropertyExposureModel(EnhancedExposureModel):
     """Enhanced property exposure model with detailed building characteristics."""
 
-    def __init__(self, params: Dict[str, Any]):
+    def __init__(self, params: dict[str, Any]):
         super().__init__("property", params)
         self.include_contents = params.get("include_contents", True)
         self.contents_value_factor = params.get("contents_value_factor", 0.5)
@@ -1171,7 +1172,7 @@ class EnhancedPropertyExposureModel(EnhancedExposureModel):
                     self.exposure_data["value"] / self.exposure_data["area"]
                 )
 
-    def get_exposure_for_event(self, event: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def get_exposure_for_event(self, event: dict[str, Any]) -> list[dict[str, Any]]:
         """Get property exposure affected by a hazard event."""
         exposed_assets = super().get_exposure_for_event(event)
 
@@ -1189,7 +1190,7 @@ class EnhancedPropertyExposureModel(EnhancedExposureModel):
 class EnhancedPopulationExposureModel(EnhancedExposureModel):
     """Enhanced population exposure model with demographic analysis."""
 
-    def __init__(self, params: Dict[str, Any]):
+    def __init__(self, params: dict[str, Any]):
         super().__init__("population", params)
         self.demographic_factors = params.get(
             "demographic_factors", ["age", "income", "mobility"]
@@ -1255,7 +1256,7 @@ class EnhancedPopulationExposureModel(EnhancedExposureModel):
         if svi_components:
             self.exposure_data["social_vulnerability"] = np.mean(svi_components, axis=0)
 
-    def get_exposure_for_event(self, event: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def get_exposure_for_event(self, event: dict[str, Any]) -> list[dict[str, Any]]:
         """Get population exposure affected by a hazard event."""
         exposed_assets = super().get_exposure_for_event(event)
 
@@ -1276,7 +1277,7 @@ class EnhancedPopulationExposureModel(EnhancedExposureModel):
 class EnhancedInfrastructureExposureModel(EnhancedExposureModel):
     """Enhanced infrastructure exposure model with network considerations."""
 
-    def __init__(self, params: Dict[str, Any]):
+    def __init__(self, params: dict[str, Any]):
         super().__init__("infrastructure", params)
         self.infrastructure_types = params.get(
             "types", ["roads", "bridges", "power_lines", "water_supply"]
@@ -1324,7 +1325,7 @@ class EnhancedInfrastructureExposureModel(EnhancedExposureModel):
                 self.exposure_data["type"].map(service_areas).fillna(5.0)
             )
 
-    def get_exposure_for_event(self, event: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def get_exposure_for_event(self, event: dict[str, Any]) -> list[dict[str, Any]]:
         """Get infrastructure exposure affected by a hazard event."""
         exposed_assets = super().get_exposure_for_event(event)
 
@@ -1353,21 +1354,21 @@ class EnhancedInfrastructureExposureModel(EnhancedExposureModel):
 
 # Factory functions for creating enhanced exposure models
 def create_enhanced_property_exposure_model(
-    params: Dict[str, Any],
+    params: dict[str, Any],
 ) -> EnhancedPropertyExposureModel:
     """Create an enhanced property exposure model."""
     return EnhancedPropertyExposureModel(params)
 
 
 def create_enhanced_population_exposure_model(
-    params: Dict[str, Any],
+    params: dict[str, Any],
 ) -> EnhancedPopulationExposureModel:
     """Create an enhanced population exposure model."""
     return EnhancedPopulationExposureModel(params)
 
 
 def create_enhanced_infrastructure_exposure_model(
-    params: Dict[str, Any],
+    params: dict[str, Any],
 ) -> EnhancedInfrastructureExposureModel:
     """Create an enhanced infrastructure exposure model."""
     return EnhancedInfrastructureExposureModel(params)

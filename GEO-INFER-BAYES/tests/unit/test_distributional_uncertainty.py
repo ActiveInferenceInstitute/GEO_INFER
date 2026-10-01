@@ -10,7 +10,7 @@ trajectory of a run auditable (ELBO history for VI, acceptance for MCMC/HMC).
 
 import numpy as np
 import pytest
-from typing import Any, Dict
+from typing import Any
 
 import sys
 import os
@@ -262,10 +262,10 @@ class _FakeBayesianModel(BayesianModel):
             "mu": {"prior": "normal", "hyperparams": {"mu": 0.0, "sigma": 10.0}},
         }
 
-    def log_likelihood(self, theta: Dict[str, Any], data: Any) -> float:
+    def log_likelihood(self, theta: dict[str, Any], data: Any) -> float:
         return float(-0.5 * np.sum((np.asarray(data) - theta["mu"]) ** 2))
 
-    def log_prior(self, theta: Dict[str, Any]) -> float:
+    def log_prior(self, theta: dict[str, Any]) -> float:
         return float(-0.5 * (theta["mu"] / 10.0) ** 2)
 
     def predict(self, X_new, posterior=None, samples=100, return_std=False):

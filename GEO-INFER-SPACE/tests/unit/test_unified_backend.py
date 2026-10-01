@@ -102,7 +102,7 @@ class TestUnifiedH3Backend(unittest.TestCase):
         temp_file = Path(tempfile.NamedTemporaryFile(suffix=".json", delete=False).name)
         self.backend.export_unified_data(str(temp_file), "json")
         self.assertTrue(temp_file.exists())
-        with open(temp_file, "r") as f:
+        with open(temp_file) as f:
             data = json.load(f)
         self.assertGreater(len(data), 0)
         temp_file.unlink()

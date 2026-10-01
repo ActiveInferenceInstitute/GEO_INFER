@@ -7,7 +7,7 @@ and trend analysis using backend-agnostic data structures.
 
 import pytest
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import Any
 
 from geo_infer_space.analytics.temporal import TemporalAnalyzer
 
@@ -16,7 +16,7 @@ SF_LAT, SF_LNG = 37.7749, -122.4194
 
 
 @pytest.fixture
-def temporal_data() -> List[Dict[str, Any]]:
+def temporal_data() -> list[dict[str, Any]]:
     """Create sample temporal data for testing."""
     data = []
     base_time = datetime(2023, 1, 1, 8, 0, 0)  # 8 AM

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Unit tests for configuration loader utilities.
@@ -248,7 +247,7 @@ test:
             config_file = Path(temp_dir) / "test.json"
             assert config_file.exists()
 
-            with open(config_file, "r") as f:
+            with open(config_file) as f:
                 saved_config = json.load(f)
                 assert saved_config == test_config
 

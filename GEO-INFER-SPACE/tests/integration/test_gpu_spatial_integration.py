@@ -6,7 +6,6 @@ numeric backends, while exact H3 grid and ancestry operations always use CPU.
 
 from __future__ import annotations
 
-from typing import List
 
 import numpy as np
 import pytest
@@ -23,7 +22,7 @@ def backend() -> H3Backend:
     return b
 
 
-def _cells(n: int = 8, resolution: int = 9) -> List[str]:
+def _cells(n: int = 8, resolution: int = 9) -> list[str]:
     return [
         h3.latlng_to_cell(37.0 + i * 0.01, -122.0 + i * 0.01, resolution)
         for i in range(n)

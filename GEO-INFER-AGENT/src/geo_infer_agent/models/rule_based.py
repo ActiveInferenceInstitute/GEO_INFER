@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Rule-based Agent.
@@ -14,7 +13,8 @@ import os
 import logging
 import asyncio
 import re
-from typing import Dict, List, Any, Optional, Callable, Union, cast
+from typing import Any, cast
+from collections.abc import Callable
 from datetime import datetime
 import json
 
@@ -36,8 +36,8 @@ class Rule:
     def __init__(
         self,
         rule_id: str,
-        condition: Union[Dict[str, Any], Callable, str],
-        action: Dict[str, Any],
+        condition: dict[str, Any] | Callable | str,
+        action: dict[str, Any],
         priority: int = 0,
         description: str = "",
         enabled: bool = True,
@@ -70,9 +70,9 @@ class Rule:
 
         # Stats
         self.match_count = 0
-        self.last_matched: Optional[datetime] = None
+        self.last_matched: datetime | None = None
 
-    def matches(self, state: Dict[str, Any]) -> bool:
+    def matches(self, state: dict[str, Any]) -> bool:
         """
         Check if rule condition matches the current state.
 
@@ -113,7 +113,7 @@ class Rule:
 
         return matched
 
-    def _dict_condition_matches(self, state: Dict[str, Any]) -> bool:
+    def _dict_condition_matches(self, state: dict[str, Any]) -> bool:
         """
         Check if dictionary condition matches state.
 
@@ -123,7 +123,7 @@ class Rule:
         Returns:
             True if all condition key-value pairs match state
         """
-        cond: Dict[str, Any] = cast(Dict[str, Any], self.condition)
+        cond: dict[str, Any] = cast(dict[str, Any], self.condition)
         for key, expected_value in cond.items():
             # Check if key exists in state
             if key not in state:
@@ -141,7 +141,7 @@ class Rule:
 
         return True
 
-    def _nested_dict_matches(self, expected: Dict, actual: Dict) -> bool:
+    def _nested_dict_matches(self, expected: dict, actual: dict) -> bool:
         """
         Check if nested dictionary matches.
 
@@ -167,7 +167,7 @@ class Rule:
 
         return True
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert rule to dictionary representation."""
         # Handle condition serialization
         if callable(self.condition):
@@ -195,7 +195,7 @@ class Rule:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Rule":
+    def from_dict(cls, data: dict[str, Any]) -> "Rule":
         """Create rule from dictionary representation."""
         # Handle condition deserialization
         condition = data["condition"]
@@ -236,7 +236,7 @@ class RuleSet:
 
     def __init__(self) -> None:
         """Initialize an empty rule set."""
-        self.rules: Dict[str, Rule] = {}  # rule_id -> Rule
+        self.rules: dict[str, Rule] = {}  # rule_id -> Rule
 
     def add_rule(self, rule: Rule) -> None:
         """
@@ -262,7 +262,7 @@ class RuleSet:
             return True
         return False
 
-    def get_rule(self, rule_id: str) -> Optional[Rule]:
+    def get_rule(self, rule_id: str) -> Rule | None:
         """
         Get a rule by ID.
 
@@ -306,7 +306,7 @@ class RuleSet:
             return True
         return False
 
-    def find_matching_rules(self, state: Dict[str, Any]) -> List[Rule]:
+    def find_matching_rules(self, state: dict[str, Any]) -> list[Rule]:
         """
         Find all rules that match the current state.
 
@@ -325,14 +325,14 @@ class RuleSet:
         # Sort by priority (highest first)
         return sorted(matching_rules, key=lambda r: r.priority, reverse=True)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert rule set to dictionary representation."""
         return {
             "rules": {rule_id: rule.to_dict() for rule_id, rule in self.rules.items()}
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RuleSet":
+    def from_dict(cls, data: dict[str, Any]) -> "RuleSet":
         """Create rule set from dictionary representation."""
         rule_set = cls()
 
@@ -358,10 +358,10 @@ class RuleBasedState(AgentState):
         self.rule_set = RuleSet()
 
         # Facts (current state knowledge)
-        self.facts: Dict[str, Any] = {}
+        self.facts: dict[str, Any] = {}
 
         # Execution history
-        self.execution_history: List[Dict[str, Any]] = []
+        self.execution_history: list[dict[str, Any]] = []
         self.max_history_size = 100
 
     def add_rule(self, rule: Rule) -> None:
@@ -424,7 +424,7 @@ class RuleBasedState(AgentState):
         return False
 
     def record_execution(
-        self, rule_id: str, action: Dict[str, Any], result: Dict[str, Any]
+        self, rule_id: str, action: dict[str, Any], result: dict[str, Any]
     ) -> None:
         """
         Record rule execution in history.
@@ -447,7 +447,7 @@ class RuleBasedState(AgentState):
         while len(self.execution_history) > self.max_history_size:
             self.execution_history.pop(0)
 
-    def find_matching_rules(self) -> List[Rule]:
+    def find_matching_rules(self) -> list[Rule]:
         """
         Find all rules that match the current facts.
 
@@ -456,7 +456,7 @@ class RuleBasedState(AgentState):
         """
         return self.rule_set.find_matching_rules(self.facts)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert state to dictionary representation."""
         return {
             "rule_set": self.rule_set.to_dict(),
@@ -466,7 +466,7 @@ class RuleBasedState(AgentState):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RuleBasedState":
+    def from_dict(cls, data: dict[str, Any]) -> "RuleBasedState":
         """Create state from dictionary representation."""
         state = cls()
 
@@ -490,7 +490,7 @@ class RuleBasedAgent(BaseAgent):
 
     state: RuleBasedState
 
-    def __init__(self, agent_id: Optional[str] = None, config: Optional[Dict] = None):
+    def __init__(self, agent_id: str | None = None, config: dict | None = None):
         """
         Initialize rule-based agent.
 
@@ -567,7 +567,7 @@ class RuleBasedAgent(BaseAgent):
             self.state.update_fact(key, value)
             logger.debug(f"Set initial fact: {key} = {value}")
 
-    async def perceive(self) -> Dict[str, Any]:
+    async def perceive(self) -> dict[str, Any]:
         """
         Perceive the environment.
 
@@ -582,12 +582,12 @@ class RuleBasedAgent(BaseAgent):
 
         return perceptions
 
-    def update_beliefs(self, perception: Dict[str, Any]) -> None:
+    def update_beliefs(self, perception: dict[str, Any]) -> None:
         """Update facts from a perception dict (mirrors perceive())."""
         if perception:
             self._update_facts_from_perceptions(perception)
 
-    def _update_facts_from_perceptions(self, perceptions: Dict[str, Any]) -> None:
+    def _update_facts_from_perceptions(self, perceptions: dict[str, Any]) -> None:
         """
         Update facts based on perceptions.
 
@@ -606,7 +606,7 @@ class RuleBasedAgent(BaseAgent):
         # Add timestamp
         self.state.update_fact("_last_perception_time", datetime.now().isoformat())
 
-    async def decide(self) -> Optional[Dict[str, Any]]:
+    async def decide(self) -> dict[str, Any] | None:
         """
         Decide on the next action.
 
@@ -623,7 +623,7 @@ class RuleBasedAgent(BaseAgent):
             default_action = self.config.get("default_action")
             if default_action:
                 logger.debug("Using default action")
-                return cast(Dict[str, Any], default_action.copy())
+                return cast(dict[str, Any], default_action.copy())
 
             return None
 
@@ -637,7 +637,7 @@ class RuleBasedAgent(BaseAgent):
 
         return action
 
-    async def act(self, action: Dict[str, Any]) -> Dict[str, Any]:
+    async def act(self, action: dict[str, Any]) -> dict[str, Any]:
         """
         Execute an action.
 
@@ -686,8 +686,8 @@ class RuleBasedAgent(BaseAgent):
         self.register_perception_handler("sensor_data", self._handle_sensor_perceptions)
 
     async def _handle_wait_action(
-        self, agent: "RuleBasedAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "RuleBasedAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle a wait action.
 
@@ -711,8 +711,8 @@ class RuleBasedAgent(BaseAgent):
         }
 
     async def _handle_update_fact(
-        self, agent: "RuleBasedAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "RuleBasedAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle updating a fact.
 
@@ -746,8 +746,8 @@ class RuleBasedAgent(BaseAgent):
         }
 
     async def _handle_remove_fact(
-        self, agent: "RuleBasedAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "RuleBasedAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle removing a fact.
 
@@ -786,8 +786,8 @@ class RuleBasedAgent(BaseAgent):
             }
 
     async def _handle_add_rule(
-        self, agent: "RuleBasedAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "RuleBasedAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle adding a rule.
 
@@ -836,8 +836,8 @@ class RuleBasedAgent(BaseAgent):
             }
 
     async def _handle_remove_rule(
-        self, agent: "RuleBasedAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "RuleBasedAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle removing a rule.
 
@@ -876,8 +876,8 @@ class RuleBasedAgent(BaseAgent):
             }
 
     async def _handle_enable_rule(
-        self, agent: "RuleBasedAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "RuleBasedAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle enabling a rule.
 
@@ -916,8 +916,8 @@ class RuleBasedAgent(BaseAgent):
             }
 
     async def _handle_disable_rule(
-        self, agent: "RuleBasedAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "RuleBasedAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle disabling a rule.
 
@@ -956,8 +956,8 @@ class RuleBasedAgent(BaseAgent):
             }
 
     async def _handle_query_facts(
-        self, agent: "RuleBasedAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "RuleBasedAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle querying facts.
 
@@ -995,7 +995,7 @@ class RuleBasedAgent(BaseAgent):
             }
 
     def _handle_sensor_perceptions(
-        self, agent: "RuleBasedAgent", perception: Dict[str, Any]
+        self, agent: "RuleBasedAgent", perception: dict[str, Any]
     ) -> None:
         """
         Process sensor perceptions.
@@ -1035,7 +1035,7 @@ class RuleBasedAgent(BaseAgent):
             path: Path to load state from
         """
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 state_data = json.load(f)
 
             self.state = RuleBasedState.from_dict(state_data)

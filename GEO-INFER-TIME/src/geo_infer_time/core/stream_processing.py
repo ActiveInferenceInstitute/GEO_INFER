@@ -13,7 +13,8 @@ from bisect import bisect_right
 from collections import deque
 from contextlib import aclosing
 from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any
+from collections.abc import Callable
 
 import numpy as np
 from geo_infer_time.core.stream_ingest import (
@@ -39,9 +40,9 @@ class StreamProcessor:
     def __init__(
         self,
         window_size: timedelta,
-        slide_interval: Optional[timedelta] = None,
-        aggregation_func: Optional[Callable[[List[float]], float]] = None,
-        watermark_delay: Optional[timedelta] = None,
+        slide_interval: timedelta | None = None,
+        aggregation_func: Callable[[list[float]], float] | None = None,
+        watermark_delay: timedelta | None = None,
         max_buffer_points: int = 10000,
         max_history_windows: int = 1000,
     ) -> None:
@@ -92,14 +93,14 @@ class StreamProcessor:
         )
         self.watermark_delay = watermark_delay
 
-        self.buffer: deque[Dict[str, Any]] = deque()
-        self.windows: List[Dict[str, Any]] = []
-        self._max_timestamp: Optional[datetime] = None
-        self._watermark: Optional[datetime] = None
-        self._late_data: List[Dict[str, Any]] = []
-        self._event_handlers: Dict[str, Callable[[Dict[str, Any]], None]] = {}
-        self._anomaly_alert_handlers: List[Callable[[Dict[str, Any]], None]] = []
-        self._stats: Dict[str, int] = {
+        self.buffer: deque[dict[str, Any]] = deque()
+        self.windows: list[dict[str, Any]] = []
+        self._max_timestamp: datetime | None = None
+        self._watermark: datetime | None = None
+        self._late_data: list[dict[str, Any]] = []
+        self._event_handlers: dict[str, Callable[[dict[str, Any]], None]] = {}
+        self._anomaly_alert_handlers: list[Callable[[dict[str, Any]], None]] = []
+        self._stats: dict[str, int] = {
             "total_points": 0,
             "total_windows": 0,
             "late_arrivals": 0,
@@ -111,7 +112,7 @@ class StreamProcessor:
         self,
         timestamp: datetime,
         value: float,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """
         Add a data point to the stream.
@@ -191,7 +192,7 @@ class StreamProcessor:
     async def ingest_adapter_stream(
         self,
         adapter: StreamIngestAdapter,
-        max_messages: Optional[int] = None,
+        max_messages: int | None = None,
         auto_process_windows: bool = False,
         **stream_kwargs: Any,
     ) -> int:
@@ -235,8 +236,8 @@ class StreamProcessor:
     async def ingest_websocket_stream(
         self,
         url: str = "ws://localhost:8765",
-        max_messages: Optional[int] = None,
-        adapter: Optional[WebSocketIngestAdapter] = None,
+        max_messages: int | None = None,
+        adapter: WebSocketIngestAdapter | None = None,
         **kwargs: Any,
     ) -> int:
         """Ingest a real WebSocket source, optionally using a configured adapter.
@@ -251,9 +252,9 @@ class StreamProcessor:
     async def ingest_kafka_stream(
         self,
         topic: str = "geo_infer_temporal_events",
-        bootstrap_servers: Optional[Union[str, List[str]]] = None,
-        max_messages: Optional[int] = None,
-        adapter: Optional[KafkaIngestAdapter] = None,
+        bootstrap_servers: str | list[str] | None = None,
+        max_messages: int | None = None,
+        adapter: KafkaIngestAdapter | None = None,
         **kwargs: Any,
     ) -> int:
         """Ingest and acknowledge Kafka records after successful processing.
@@ -262,13 +263,13 @@ class StreamProcessor:
         This method owns iteration cleanup.
         """
         if adapter is None:
-            config: Dict[str, Any] = {"topic": topic, **kwargs}
+            config: dict[str, Any] = {"topic": topic, **kwargs}
             if bootstrap_servers is not None:
                 config["bootstrap_servers"] = bootstrap_servers
             adapter = KafkaIngestAdapter(config)
         return await self.ingest_adapter_stream(adapter, max_messages=max_messages)
 
-    def process_window(self) -> Optional[Dict[str, Any]]:
+    def process_window(self) -> dict[str, Any] | None:
         """
         Process the current window and return aggregated result.
 
@@ -297,7 +298,7 @@ class StreamProcessor:
         self._stats["total_windows"] += 1
         return result
 
-    def get_recent_windows(self, count: int = 10) -> List[Dict[str, Any]]:
+    def get_recent_windows(self, count: int = 10) -> list[dict[str, Any]]:
         """
         Get recent processing windows.
 
@@ -315,7 +316,7 @@ class StreamProcessor:
             return []
         return self.windows[-count:]
 
-    def process_tumbling_windows(self) -> List[Dict[str, Any]]:
+    def process_tumbling_windows(self) -> list[dict[str, Any]]:
         """
         Process data using non-overlapping tumbling windows.
 
@@ -333,8 +334,8 @@ class StreamProcessor:
             return []
 
         window_start = all_points[0]["timestamp"]
-        results: List[Dict[str, Any]] = []
-        current_window: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
+        current_window: list[dict[str, Any]] = []
 
         for point in all_points:
             if point["timestamp"] >= window_start + self.window_size:
@@ -353,7 +354,7 @@ class StreamProcessor:
 
         return results
 
-    def process_sliding_windows(self) -> List[Dict[str, Any]]:
+    def process_sliding_windows(self) -> list[dict[str, Any]]:
         """
         Process data using overlapping sliding windows.
 
@@ -370,7 +371,7 @@ class StreamProcessor:
         if not all_points:
             return []
 
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
         window_start = all_points[0]["timestamp"]
         stream_end = all_points[-1]["timestamp"]
 
@@ -390,7 +391,7 @@ class StreamProcessor:
     def process_session_windows(
         self,
         session_gap: timedelta,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Process data using session windows.
 
@@ -416,8 +417,8 @@ class StreamProcessor:
         if not all_points:
             return []
 
-        results: List[Dict[str, Any]] = []
-        current_session: List[Dict[str, Any]] = [all_points[0]]
+        results: list[dict[str, Any]] = []
+        current_session: list[dict[str, Any]] = [all_points[0]]
 
         for i in range(1, len(all_points)):
             gap = all_points[i]["timestamp"] - all_points[i - 1]["timestamp"]
@@ -444,7 +445,7 @@ class StreamProcessor:
     def register_event_handler(
         self,
         event_type: str,
-        handler: Callable[[Dict[str, Any]], None],
+        handler: Callable[[dict[str, Any]], None],
     ) -> None:
         """
         Register a handler for a specific event type.
@@ -464,7 +465,7 @@ class StreamProcessor:
 
     def register_anomaly_alert_handler(
         self,
-        handler: Callable[[Dict[str, Any]], None],
+        handler: Callable[[dict[str, Any]], None],
     ) -> None:
         """
         Register an automated anomaly alert handler.
@@ -483,7 +484,7 @@ class StreamProcessor:
         z_threshold: float = 3.0,
         min_window_points: int = 3,
         auto_notify: bool = True,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Slide across buffered windows and compute automated anomaly alerts.
 
@@ -517,7 +518,7 @@ class StreamProcessor:
         all_points = sorted(self.buffer, key=lambda p: p["timestamp"])
         window_start = all_points[0]["timestamp"]
         stream_end = all_points[-1]["timestamp"]
-        alerts: List[Dict[str, Any]] = []
+        alerts: list[dict[str, Any]] = []
 
         while window_start <= stream_end:
             window_end = window_start + self.window_size
@@ -568,9 +569,9 @@ class StreamProcessor:
 
     def detect_threshold_events(
         self,
-        upper_threshold: Optional[float] = None,
-        lower_threshold: Optional[float] = None,
-    ) -> List[Dict[str, Any]]:
+        upper_threshold: float | None = None,
+        lower_threshold: float | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Detect threshold breach events in the current buffer.
 
@@ -605,7 +606,7 @@ class StreamProcessor:
         ):
             raise ValueError("lower_threshold cannot exceed upper_threshold")
 
-        events: List[Dict[str, Any]] = []
+        events: list[dict[str, Any]] = []
 
         for point in self.buffer:
             value = point["value"]
@@ -644,7 +645,7 @@ class StreamProcessor:
     def detect_anomalies_zscore(
         self,
         z_threshold: float = 3.0,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Detect anomalous data points using z-score on the current buffer.
 
@@ -669,7 +670,7 @@ class StreamProcessor:
         if std < 1e-10:
             return []
 
-        anomalies: List[Dict[str, Any]] = []
+        anomalies: list[dict[str, Any]] = []
 
         for point in self.buffer:
             z_score = abs(point["value"] - mean) / std
@@ -691,7 +692,7 @@ class StreamProcessor:
 
         return anomalies
 
-    def get_watermark(self) -> Optional[datetime]:
+    def get_watermark(self) -> datetime | None:
         """
         Get the current watermark timestamp.
 
@@ -703,7 +704,7 @@ class StreamProcessor:
         """
         return self._watermark
 
-    def get_late_data(self) -> List[Dict[str, Any]]:
+    def get_late_data(self) -> list[dict[str, Any]]:
         """
         Get all late-arriving data points.
 
@@ -712,7 +713,7 @@ class StreamProcessor:
         """
         return list(self._late_data)
 
-    def flush_late_data(self) -> List[Dict[str, Any]]:
+    def flush_late_data(self) -> list[dict[str, Any]]:
         """
         Flush late data and return it, clearing the late buffer.
 
@@ -723,7 +724,7 @@ class StreamProcessor:
         self._late_data.clear()
         return flushed
 
-    def get_buffer_summary(self) -> Dict[str, Any]:
+    def get_buffer_summary(self) -> dict[str, Any]:
         """
         Get a summary of the current buffer state.
 
@@ -756,7 +757,7 @@ class StreamProcessor:
             "late_data_count": len(self._late_data),
         }
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """
         Get stream processing statistics.
 
@@ -783,8 +784,8 @@ class StreamProcessor:
 
     def _aggregate_points(
         self,
-        points: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        points: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Aggregate a list of data points into a window result.
 

@@ -16,10 +16,10 @@ deterministic exit codes so shell pipelines and CI can rely on them:
 from __future__ import annotations
 
 import json
-import sys
 import time
 import traceback
-from typing import Any, Callable, Dict
+from typing import Any
+from collections.abc import Callable
 
 #: Exit code used when a module's dependencies are not installed.
 EXIT_DEPENDENCY_MISSING = 2
@@ -32,7 +32,7 @@ EXIT_OPERATION_FAILED = 1
 #: against each ``GEO-INFER-<MODULE>/pyproject.toml``
 #: ``[project.optional-dependencies]`` table; modules without any
 #: optional group map to ``None`` (plain package install).
-MODULE_EXTRAS: Dict[str, "str | None"] = {
+MODULE_EXTRAS: dict[str, str | None] = {
     "ACT": "dev",
     "AG": "dev",
     "AGENT": "dev",
@@ -81,8 +81,8 @@ MODULE_EXTRAS: Dict[str, "str | None"] = {
 
 def run_module_orchestrator(
     module_name: str,
-    operation: Callable[[], Dict[str, Any]],
-    requires_extra: "str | None" = None,
+    operation: Callable[[], dict[str, Any]],
+    requires_extra: str | None = None,
 ) -> int:
     """Execute one module operation and report it as structured JSON.
 

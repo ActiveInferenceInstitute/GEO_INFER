@@ -10,11 +10,11 @@ import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -97,7 +97,7 @@ def population_density_gdf() -> gpd.GeoDataFrame:
 
 
 @pytest.fixture
-def education_config() -> Dict[str, Any]:
+def education_config() -> dict[str, Any]:
     """Configuration dict for education accessibility analysis.
 
     Specifies travel time thresholds, catchment parameters, and

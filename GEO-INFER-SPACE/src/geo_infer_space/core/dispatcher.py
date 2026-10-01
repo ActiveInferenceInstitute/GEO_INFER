@@ -6,7 +6,7 @@ to the appropriate backend (H3, SRAI, etc.) based on configuration and operation
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Any
 
 from .interfaces import (
     SpatialBackendProtocol,
@@ -24,9 +24,9 @@ class SpatialBackendDispatcher:
     """
 
     def __init__(self) -> None:
-        self.backends: Dict[str, SpatialBackendProtocol] = {}
-        self.default_backends: Dict[str, str] = {}
-        self.backend_capabilities: Dict[str, Dict[str, Any]] = {}
+        self.backends: dict[str, SpatialBackendProtocol] = {}
+        self.default_backends: dict[str, str] = {}
+        self.backend_capabilities: dict[str, dict[str, Any]] = {}
         self._load_backends()
 
     _STANDARD_OPERATION_TYPES = ("indexing", "geometric", "analytics")
@@ -53,7 +53,7 @@ class SpatialBackendDispatcher:
         except Exception as e:
             logger.warning(f"Failed to load SRAI backend: {e}")
 
-    def _load_h3_backend(self) -> Optional[SpatialBackendProtocol]:
+    def _load_h3_backend(self) -> SpatialBackendProtocol | None:
         """Load H3 backend implementation."""
         try:
             from ..backends.h3 import H3Backend
@@ -62,7 +62,7 @@ class SpatialBackendDispatcher:
         except ImportError:
             return None
 
-    def _load_srai_backend(self) -> Optional[SpatialBackendProtocol]:
+    def _load_srai_backend(self) -> SpatialBackendProtocol | None:
         """Load SRAI backend implementation."""
         try:
             from ..backends.srai import SraiBackend
@@ -77,7 +77,7 @@ class SpatialBackendDispatcher:
         self.backend_capabilities[name] = backend.get_capabilities()
         logger.info(f"Registered spatial backend: {name}")
 
-    def get_backend(self, name: str) -> Optional[SpatialBackendProtocol]:
+    def get_backend(self, name: str) -> SpatialBackendProtocol | None:
         """Get a specific backend by name."""
         return self.backends.get(name)
 
@@ -93,7 +93,7 @@ class SpatialBackendDispatcher:
             raise ValueError(f"Backend '{backend_name}' is not registered")
         self.default_backends[operation_type] = backend_name
 
-    def get_default_backend(self, operation_type: str) -> Optional[str]:
+    def get_default_backend(self, operation_type: str) -> str | None:
         """Get the registered default backend for an operation type.
 
         Returns the backend name previously registered through
@@ -105,7 +105,7 @@ class SpatialBackendDispatcher:
         """
         return self.default_backends.get(operation_type)
 
-    def _resolve_backend_name(self, operation_type: str, backend: Optional[str]) -> str:
+    def _resolve_backend_name(self, operation_type: str, backend: str | None) -> str:
         """Resolve the backend for a dispatch call or raise a precise error.
 
         Raises:
@@ -132,7 +132,7 @@ class SpatialBackendDispatcher:
         self,
         operation: str,
         *args: Any,
-        backend: Optional[str] = None,
+        backend: str | None = None,
         **kwargs: Any,
     ) -> Any:
         """Dispatch a spatial indexing operation to the appropriate backend."""
@@ -183,7 +183,7 @@ class SpatialBackendDispatcher:
         self,
         operation: str,
         *args: Any,
-        backend: Optional[str] = None,
+        backend: str | None = None,
         **kwargs: Any,
     ) -> Any:
         """Dispatch a geometry operation to a backend that implements it."""
@@ -218,7 +218,7 @@ class SpatialBackendDispatcher:
         self,
         operation: str,
         *args: Any,
-        backend: Optional[str] = None,
+        backend: str | None = None,
         **kwargs: Any,
     ) -> Any:
         """Dispatch a spatial analytics operation to the appropriate backend."""
@@ -251,7 +251,7 @@ class SpatialBackendDispatcher:
 
         return method(*args, **kwargs)
 
-    def get_backend_info(self) -> Dict[str, Any]:
+    def get_backend_info(self) -> dict[str, Any]:
         """Get information about all registered backends."""
         return {
             name: {
@@ -264,7 +264,7 @@ class SpatialBackendDispatcher:
 
 
 # Global dispatcher instance
-_dispatcher: Optional[SpatialBackendDispatcher] = None
+_dispatcher: SpatialBackendDispatcher | None = None
 
 
 def get_backend_dispatcher() -> SpatialBackendDispatcher:
@@ -275,7 +275,7 @@ def get_backend_dispatcher() -> SpatialBackendDispatcher:
     return _dispatcher
 
 
-def configure_backends(config: Dict[str, Any]) -> None:
+def configure_backends(config: dict[str, Any]) -> None:
     """Configure backend defaults from configuration."""
     dispatcher = get_backend_dispatcher()
 

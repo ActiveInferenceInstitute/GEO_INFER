@@ -13,7 +13,7 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
 
 
 @pytest.fixture(autouse=True)
@@ -34,7 +34,7 @@ def ensure_event_loop():
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -116,7 +116,7 @@ def sample_geojson_path(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def data_source_config() -> Dict[str, Any]:
+def data_source_config() -> dict[str, Any]:
     """Configuration dict for a data source connection.
 
     Specifies connection parameters for a local file-based data source

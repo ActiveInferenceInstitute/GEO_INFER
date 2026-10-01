@@ -58,7 +58,7 @@ class TestPlaceAnalyzer(unittest.TestCase):
             self.fail("Del Norte County config file not found")
         import yaml
 
-        with open(del_norte_config, "r") as f:
+        with open(del_norte_config) as f:
             config = yaml.safe_load(f)
         self.assertIn("location", config)
         self.assertIn("analyses", config)
@@ -83,7 +83,7 @@ class TestLocationConfigurations(unittest.TestCase):
             try:
                 import yaml
 
-                with open(config_path, "r") as f:
+                with open(config_path) as f:
                     config = yaml.safe_load(f)
 
                 # Test required configuration sections

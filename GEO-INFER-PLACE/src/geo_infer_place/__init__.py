@@ -140,7 +140,7 @@ __all__ = [
 ]
 
 
-def get_supported_locations() -> List[str]:
+def get_supported_locations() -> list[str]:
     """Get list of supported analysis locations."""
     from .core.place_interface import LOCATION_PRESETS
 
@@ -148,7 +148,7 @@ def get_supported_locations() -> List[str]:
 
 
 def create_analyzer(
-    location_code: str, config_path: Optional[str] = None
+    location_code: str, config_path: str | None = None
 ) -> "PlaceInterface":
     """Create a PlaceInterface for a specific location.
 
@@ -172,7 +172,7 @@ def create_analyzer(
 
 def create_place_interface(
     location: str = "del_norte",
-    output_dir: Optional[str] = None,
+    output_dir: str | None = None,
 ) -> PlaceInterface:
     """Convenience factory for PlaceInterface.
 

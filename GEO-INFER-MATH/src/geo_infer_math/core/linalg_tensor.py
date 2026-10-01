@@ -6,7 +6,7 @@ operations and multi-dimensional geospatial data (tensors) for spatial analysis.
 """
 
 import numpy as np
-from typing import List, Tuple, Dict, Optional, Any, cast
+from typing import Any, cast
 from dataclasses import dataclass, field
 import logging
 
@@ -21,9 +21,9 @@ class TensorData:
     """Container for multi-dimensional geospatial data."""
 
     data: np.ndarray
-    coordinates: Optional[np.ndarray] = None
-    dimensions: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    coordinates: np.ndarray | None = None
+    dimensions: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.dimensions:
@@ -100,7 +100,7 @@ class MatrixOperations:
         points: np.ndarray,
         method: str = "inverse_distance",
         k: int = 5,
-        threshold: Optional[float] = None,
+        threshold: float | None = None,
     ) -> np.ndarray:
         """
         Create spatial weights matrix from point coordinates.
@@ -166,7 +166,7 @@ class MatrixOperations:
     @staticmethod
     def moran_i_matrix(
         values: np.ndarray, weights_matrix: np.ndarray
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate Moran's I statistic using matrix operations.
 
@@ -213,9 +213,9 @@ class TensorOperations:
 
     @staticmethod
     def create_spatiotemporal_tensor(
-        spatial_data: List[np.ndarray],
-        temporal_indices: List[float],
-        spatial_coords: Optional[np.ndarray] = None,
+        spatial_data: list[np.ndarray],
+        temporal_indices: list[float],
+        spatial_coords: np.ndarray | None = None,
     ) -> TensorData:
         """
         Create a spatiotemporal tensor from spatial data over time.
@@ -248,7 +248,7 @@ class TensorOperations:
     @staticmethod
     def tensor_unfold(
         tensor: TensorData, mode: int
-    ) -> Tuple[np.ndarray, Dict[str, Any]]:
+    ) -> tuple[np.ndarray, dict[str, Any]]:
         """
         Unfold tensor along a specific mode (MATRICIZATION).
 
@@ -285,7 +285,7 @@ class TensorOperations:
 
     @staticmethod
     def tensor_fold(
-        unfolded_matrix: np.ndarray, shape_info: Dict[str, Any]
+        unfolded_matrix: np.ndarray, shape_info: dict[str, Any]
     ) -> np.ndarray:
         """
         Fold unfolded matrix back into tensor.
@@ -315,8 +315,8 @@ class TensorOperations:
 
     @staticmethod
     def principal_component_analysis(
-        tensor: TensorData, n_components: Optional[int] = None
-    ) -> Dict[str, Any]:
+        tensor: TensorData, n_components: int | None = None
+    ) -> dict[str, Any]:
         """
         Perform PCA on tensor data.
 
@@ -364,8 +364,8 @@ class TensorOperations:
 
     @staticmethod
     def tensor_decomposition(
-        tensor: TensorData, rank: int, method: str = "cp", rng: Optional[Any] = None
-    ) -> Dict[str, Any]:
+        tensor: TensorData, rank: int, method: str = "cp", rng: Any | None = None
+    ) -> dict[str, Any]:
         """
         Perform tensor decomposition (CP or Tucker).
 
@@ -400,10 +400,10 @@ class TensorOperations:
     def _cp_decomposition(
         tensor: TensorData,
         rank: int,
-        rng: Optional[Any] = None,
+        rng: Any | None = None,
         tol: float = 1e-8,
         max_iter: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """CP (CANDECOMP/PARAFAC) decomposition via alternating least squares.
 
         Factor matrices are initialized deterministically from uniform draws
@@ -430,7 +430,7 @@ class TensorOperations:
         unfolded_1 = np.moveaxis(data, 1, 0).reshape(n1, -1)
         unfolded_2 = np.moveaxis(data, 2, 0).reshape(n2, -1)
 
-        errors: List[float] = []
+        errors: list[float] = []
         n_iter = 0
         for n_iter in range(1, max_iter + 1):
             kr_BC = TensorOperations._khatri_rao(B, C)  # rows (i1, i2)
@@ -464,7 +464,7 @@ class TensorOperations:
         }
 
     @staticmethod
-    def _tucker_decomposition(tensor: TensorData, rank: int) -> Dict[str, Any]:
+    def _tucker_decomposition(tensor: TensorData, rank: int) -> dict[str, Any]:
         """Tucker decomposition via HOSVD (higher-order SVD).
 
         Each mode-k unfolding is decomposed with a real SVD; the leading
@@ -476,7 +476,7 @@ class TensorOperations:
             raise ValueError("Tucker decomposition requires a 3-dimensional tensor")
         n0, n1, n2 = data.shape
 
-        factor_matrices: List[np.ndarray] = []
+        factor_matrices: list[np.ndarray] = []
         for mode, dim in enumerate((n0, n1, n2)):
             if mode == 0:
                 unfolded = data.reshape(dim, -1)
@@ -508,8 +508,8 @@ class SpatialLinearAlgebra:
 
     @staticmethod
     def solve_spatial_regression(
-        X: np.ndarray, y: np.ndarray, weights_matrix: Optional[np.ndarray] = None
-    ) -> Dict[str, Any]:
+        X: np.ndarray, y: np.ndarray, weights_matrix: np.ndarray | None = None
+    ) -> dict[str, Any]:
         """
         Solve spatial regression with optional spatial weights.
 
@@ -649,7 +649,7 @@ class SpatialLinearAlgebra:
     @staticmethod
     def spatial_eigen_analysis(
         weights_matrix: np.ndarray, n_eigenvectors: int = 10
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform eigen analysis of spatial weights matrix.
 

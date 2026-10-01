@@ -20,7 +20,8 @@ y_t = φ₁y_{t-1} + ... + φ_py_{t-p} + ε_t - θ₁ε_{t-1} - ... - θ_qε_{t-
 """
 
 import numpy as np
-from typing import Dict, Optional, Tuple, Any, Callable
+from typing import Any
+from collections.abc import Callable
 from scipy import signal
 from scipy.stats import linregress
 
@@ -50,9 +51,7 @@ class TemporalAnalyzer:
         temporal_model: Fitted temporal model parameters
     """
 
-    def __init__(
-        self, time_points: np.ndarray, time_series: Optional[np.ndarray] = None
-    ):
+    def __init__(self, time_points: np.ndarray, time_series: np.ndarray | None = None):
         """
         Initialize temporal analyzer.
 
@@ -73,7 +72,7 @@ class TemporalAnalyzer:
 
     def detect_trends(
         self, data: np.ndarray, method: str = "linear", alpha: float = 0.05
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect temporal trends in SPM data.
 
@@ -116,7 +115,7 @@ class TemporalAnalyzer:
 
     def _linear_trend_test(
         self, x: np.ndarray, y: np.ndarray, alpha: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Test for linear trend using ordinary least squares."""
         if len(x) < 2 or np.unique(x).size < 2:
             return {
@@ -145,7 +144,7 @@ class TemporalAnalyzer:
             "direction": "increasing" if slope > 0 else "decreasing",
         }
 
-    def _mann_kendall_test(self, y: np.ndarray, alpha: float) -> Dict[str, Any]:
+    def _mann_kendall_test(self, y: np.ndarray, alpha: float) -> dict[str, Any]:
         """Mann-Kendall test for monotonic trends."""
         n = len(y)
         s = 0
@@ -187,7 +186,7 @@ class TemporalAnalyzer:
             "direction": "increasing" if sen_slope > 0 else "decreasing",
         }
 
-    def _theil_sen_trend(self, y: np.ndarray, alpha: float) -> Dict[str, Any]:
+    def _theil_sen_trend(self, y: np.ndarray, alpha: float) -> dict[str, Any]:
         """Theil-Sen estimator for robust trend detection."""
         n = len(y)
         slopes = []
@@ -220,8 +219,8 @@ class TemporalAnalyzer:
         }
 
     def seasonal_decomposition(
-        self, data: np.ndarray, period: Optional[int] = None, model: str = "additive"
-    ) -> Dict[str, Any]:
+        self, data: np.ndarray, period: int | None = None, model: str = "additive"
+    ) -> dict[str, Any]:
         """
         Decompose time series into trend, seasonal, and residual components.
 
@@ -309,7 +308,7 @@ class TemporalAnalyzer:
 
     def _simple_seasonal_decomposition(
         self, y: np.ndarray, period: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Simple seasonal decomposition as fallback."""
         n = len(y)
 
@@ -342,9 +341,9 @@ class TemporalAnalyzer:
     def fit_arima_model(
         self,
         data: np.ndarray,
-        order: Tuple[int, int, int] = (1, 0, 1),
-        seasonal_order: Optional[Tuple[int, int, int, int]] = None,
-    ) -> Dict[str, Any]:
+        order: tuple[int, int, int] = (1, 0, 1),
+        seasonal_order: tuple[int, int, int, int] | None = None,
+    ) -> dict[str, Any]:
         """
         Fit ARIMA model to time series data.
 
@@ -380,9 +379,9 @@ class TemporalAnalyzer:
     def _fit_single_arima(
         self,
         y: np.ndarray,
-        order: Tuple[int, int, int],
-        seasonal_order: Optional[Tuple[int, int, int, int]],
-    ) -> Dict[str, Any]:
+        order: tuple[int, int, int],
+        seasonal_order: tuple[int, int, int, int] | None,
+    ) -> dict[str, Any]:
         """Fit ARIMA model to single time series."""
         try:
             if seasonal_order is not None:
@@ -425,8 +424,8 @@ class TemporalAnalyzer:
         data: np.ndarray,
         window_size: int,
         step_size: int = 1,
-        analysis_func: Optional[Callable[..., Any]] = None,
-    ) -> Dict[str, Any]:
+        analysis_func: Callable[..., Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Perform sliding window analysis for dynamic temporal patterns.
 
@@ -447,7 +446,7 @@ class TemporalAnalyzer:
 
         if analysis_func is None:
             # Default: compute mean and variance for each window
-            def analysis_func(x: np.ndarray) -> Dict[str, Any]:
+            def analysis_func(x: np.ndarray) -> dict[str, Any]:
                 return {"mean": np.mean(x, axis=0), "var": np.var(x, axis=0)}
 
         window_results = []
@@ -478,7 +477,7 @@ class TemporalAnalyzer:
 
     def change_point_detection(
         self, data: np.ndarray, method: str = "pelt", penalty: float = 10
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect change points in time series data.
 

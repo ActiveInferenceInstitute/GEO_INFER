@@ -1,7 +1,7 @@
 """Institutional design and analysis using IAD framework and Ostrom's principles."""
 
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import Any
 from enum import Enum
 import logging
 
@@ -25,7 +25,7 @@ class Institution:
         str  # boundary, position, choice, information, aggregation, payoff, scope
     )
     description: str
-    affected_stakeholders: List[str]
+    affected_stakeholders: list[str]
     enforcement_mechanism: str
     effectiveness_rating: float = 0.5
 
@@ -36,10 +36,10 @@ class InstitutionalAnalysis:
 
     governance_domain: str
     analysis_framework: InstitutionalFramework
-    existing_institutions: List[Institution]
-    institutional_effectiveness: Dict[str, float]
-    design_principles_assessment: Dict[str, float]
-    recommendations: List[str]
+    existing_institutions: list[Institution]
+    institutional_effectiveness: dict[str, float]
+    design_principles_assessment: dict[str, float]
+    recommendations: list[str]
 
 
 class InstitutionalDesigner:
@@ -71,14 +71,14 @@ class InstitutionalDesigner:
         """
         self.framework = InstitutionalFramework(framework)
         self.context_type = context_type
-        self.institutional_analyses: Dict[str, InstitutionalAnalysis] = {}
+        self.institutional_analyses: dict[str, InstitutionalAnalysis] = {}
 
     def analyze_institutions(
         self,
-        current_institutions: List[Dict[str, Any]],
-        stakeholder_groups: List[Dict[str, Any]],
-        resource_system: Dict[str, Any],
-        decision_outcomes: List[Dict[str, Any]],
+        current_institutions: list[dict[str, Any]],
+        stakeholder_groups: list[dict[str, Any]],
+        resource_system: dict[str, Any],
+        decision_outcomes: list[dict[str, Any]],
     ) -> InstitutionalAnalysis:
         """
         Analyze existing institutions using IAD framework.
@@ -147,8 +147,8 @@ class InstitutionalDesigner:
         return analysis
 
     def _assess_effectiveness(
-        self, institutions: List[Institution], outcomes: List[Dict[str, Any]]
-    ) -> Dict[str, float]:
+        self, institutions: list[Institution], outcomes: list[dict[str, Any]]
+    ) -> dict[str, float]:
         """
         Assess effectiveness of institutions using outcome-based analysis.
 
@@ -269,8 +269,8 @@ class InstitutionalDesigner:
         return effectiveness
 
     def _assess_design_principles(
-        self, institutions: List[Institution], resource_system: Dict[str, Any]
-    ) -> Dict[str, float]:
+        self, institutions: list[Institution], resource_system: dict[str, Any]
+    ) -> dict[str, float]:
         """
         Assess Ostrom's design principles quantitatively based on institutional characteristics.
 
@@ -494,8 +494,8 @@ class InstitutionalDesigner:
         return principles
 
     def _generate_recommendations(
-        self, effectiveness: Dict[str, float], principles_assessment: Dict[str, float]
-    ) -> List[str]:
+        self, effectiveness: dict[str, float], principles_assessment: dict[str, float]
+    ) -> list[str]:
         """Generate recommendations for institutional improvement."""
         recommendations = []
 
@@ -515,10 +515,10 @@ class InstitutionalDesigner:
 
     def apply_ostrom_principles(
         self,
-        principle_set: List[str],
-        resource_system: Dict[str, Any],
-        governance_context: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        principle_set: list[str],
+        resource_system: dict[str, Any],
+        governance_context: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Apply Ostrom's design principles for sustainable institutions.
 
@@ -570,9 +570,9 @@ class InstitutionalDesigner:
     def _design_principle_implementation(
         self,
         principle: str,
-        resource_system: Dict[str, Any],
-        governance_context: Dict[str, Any],
-    ) -> List[str]:
+        resource_system: dict[str, Any],
+        governance_context: dict[str, Any],
+    ) -> list[str]:
         """Design implementation strategy for a principle."""
         strategies = {
             "clear_boundaries": [
@@ -621,7 +621,7 @@ class InstitutionalDesigner:
             principle, ["Develop implementation strategy for " + principle]
         )
 
-    def _predict_principle_outcomes(self, principle: str) -> Dict[str, Any]:
+    def _predict_principle_outcomes(self, principle: str) -> dict[str, Any]:
         """Predict outcomes from implementing a principle."""
         return {
             "sustainability_impact": 0.7
@@ -636,7 +636,7 @@ class InstitutionalDesigner:
             "implementation_difficulty": 0.6,
         }
 
-    def _assess_design_coherence(self, designed_institutions: Dict[str, Any]) -> float:
+    def _assess_design_coherence(self, designed_institutions: dict[str, Any]) -> float:
         """
         Assess how well principles work together (synergy analysis).
 
@@ -695,8 +695,8 @@ class InstitutionalDesigner:
         return final_coherence
 
     def check_institutional_compatibility(
-        self, institutions: List[Institution], resource_system: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, institutions: list[Institution], resource_system: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Check compatibility between institutions and resource system.
 
@@ -817,14 +817,14 @@ class InstitutionalDesigner:
         return compatibility
 
     def _detect_rule_conflicts(
-        self, institutions: List[Institution]
-    ) -> List[Dict[str, Any]]:
+        self, institutions: list[Institution]
+    ) -> list[dict[str, Any]]:
         """Detect conflicts between institutional rules."""
         # Detect conflicts between institutional rules
-        conflicts: List[Dict[str, Any]] = []
+        conflicts: list[dict[str, Any]] = []
 
         # Check for contradictory rules of the same type
-        rule_groups: Dict[str, List[Institution]] = {}
+        rule_groups: dict[str, list[Institution]] = {}
         for inst in institutions:
             if inst.rule_type not in rule_groups:
                 rule_groups[inst.rule_type] = []
@@ -853,7 +853,7 @@ class InstitutionalDesigner:
         choice_rules = rule_groups.get("choice", [])
         if len(choice_rules) > 1:
             # Check for contradictory decision-making processes
-            decision_methods: Dict[str, Any] = {}
+            decision_methods: dict[str, Any] = {}
             for rule in choice_rules:
                 method = None
                 if "consensus" in rule.description.lower():

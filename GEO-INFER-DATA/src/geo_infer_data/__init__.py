@@ -43,9 +43,9 @@ __all__ = [
 
 
 def initialize_data_system(
-    storage_backends: Optional[List[str]] = None,
+    storage_backends: list[str] | None = None,
     enable_validation: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Initialize all GEO-INFER-DATA components and return them in a dict.
 
@@ -107,8 +107,8 @@ def initialize_data_system(
 
 
 async def validate_data_integrity(
-    datasets: List[str], quality_threshold: float = 0.8
-) -> Dict[str, Any]:
+    datasets: list[str], quality_threshold: float = 0.8
+) -> dict[str, Any]:
     """
     Validate data integrity across a list of dataset identifiers.
 
@@ -130,7 +130,7 @@ async def validate_data_integrity(
         validation_rules="comprehensive", quality_threshold=quality_threshold
     )
 
-    validation_results: Dict[str, Any] = {}
+    validation_results: dict[str, Any] = {}
     overall_scores = []
 
     for dataset_id in datasets:
@@ -154,8 +154,8 @@ async def validate_data_integrity(
 
 
 def optimize_storage_performance(
-    access_patterns: Dict[str, Any], time_window: str = "30d"
-) -> Dict[str, Any]:
+    access_patterns: dict[str, Any], time_window: str = "30d"
+) -> dict[str, Any]:
     """
     Optimize storage performance based on per-dataset access patterns.
 

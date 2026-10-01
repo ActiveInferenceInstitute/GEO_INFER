@@ -5,14 +5,13 @@ This module defines the data structures used across the logistics and
 supply chain optimization components.
 """
 
-from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from enum import StrEnum
 from datetime import datetime
 from pydantic import ConfigDict, Field
 from geo_infer_log.models.base import BaseModel
 
 
-class VehicleType(str, Enum):
+class VehicleType(StrEnum):
     """Types of vehicles for routing and fleet management."""
 
     TRUCK = "truck"
@@ -25,7 +24,7 @@ class VehicleType(str, Enum):
     AIRPLANE = "airplane"
 
 
-class FuelType(str, Enum):
+class FuelType(StrEnum):
     """Types of fuel/energy for vehicles."""
 
     DIESEL = "diesel"
@@ -38,7 +37,7 @@ class FuelType(str, Enum):
     JET_FUEL = "jet_fuel"
 
 
-class DeliveryStatus(str, Enum):
+class DeliveryStatus(StrEnum):
     """Status values for delivery tracking."""
 
     PENDING = "pending"
@@ -59,15 +58,15 @@ class Vehicle(BaseModel):
     speed: float = Field(..., description="Average speed in km/h")
     cost_per_km: float = Field(..., description="Operating cost per kilometer")
     emissions_per_km: float = Field(..., description="Emissions in kg CO2e per km")
-    location: Tuple[float, float] = Field(
+    location: tuple[float, float] = Field(
         ..., description="Current (lon, lat) coordinates"
     )
     fuel_type: FuelType = Field(default=FuelType.DIESEL)
-    fuel_capacity: Optional[float] = Field(
+    fuel_capacity: float | None = Field(
         default=None, description="Fuel capacity in liters or kWh"
     )
-    fuel_level: Optional[float] = Field(default=None, description="Current fuel level")
-    maintenance_status: Optional[str] = Field(default=None)
+    fuel_level: float | None = Field(default=None, description="Current fuel level")
+    maintenance_status: str | None = Field(default=None)
     available: bool = Field(
         default=True, description="Whether vehicle is available for assignments"
     )
@@ -97,19 +96,19 @@ class Location(BaseModel):
     """Model representing a geographic location with metadata."""
 
     name: str
-    coordinates: Tuple[float, float] = Field(..., description="(lon, lat) coordinates")
-    address: Optional[str] = None
+    coordinates: tuple[float, float] = Field(..., description="(lon, lat) coordinates")
+    address: str | None = None
     type: str = Field(
         ..., description="Type of location (e.g., depot, customer, supplier)"
     )
-    time_windows: Optional[List[Tuple[datetime, datetime]]] = Field(
+    time_windows: list[tuple[datetime, datetime]] | None = Field(
         default=None, description="Time windows when location is accessible"
     )
-    service_time: Optional[int] = Field(
+    service_time: int | None = Field(
         default=None,
         description="Time in minutes required for service at this location",
     )
-    priority: Optional[int] = Field(
+    priority: int | None = Field(
         default=None, description="Priority of this location (lower is higher priority)"
     )
 
@@ -139,11 +138,11 @@ class Shipment(BaseModel):
     destination: Location
     weight: float = Field(..., description="Weight in kg")
     volume: float = Field(..., description="Volume in m³")
-    deadline: Optional[datetime] = None
+    deadline: datetime | None = None
     priority: int = Field(default=3, description="Priority (1=highest, 5=lowest)")
     status: DeliveryStatus = DeliveryStatus.PENDING
-    special_requirements: Optional[List[str]] = None
-    assigned_vehicle: Optional[str] = None
+    special_requirements: list[str] | None = None
+    assigned_vehicle: str | None = None
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -176,14 +175,14 @@ class Route(BaseModel):
 
     id: str
     vehicle_id: str
-    stops: List[Location]
+    stops: list[Location]
     departure_time: datetime
     estimated_arrival_time: datetime
     total_distance: float = Field(..., description="Total distance in km")
     total_time: float = Field(..., description="Total time in minutes")
     total_cost: float
     total_emissions: float = Field(..., description="Total emissions in kg CO2e")
-    geometry: Optional[dict] = Field(
+    geometry: dict | None = Field(
         default=None, description="GeoJSON representation of route geometry"
     )
 
@@ -248,12 +247,12 @@ class RoutingParameters(BaseModel):
         default="best_guess",
         description="Traffic model (best_guess, optimistic, pessimistic)",
     )
-    departure_time: Optional[datetime] = None
-    max_stops_per_route: Optional[int] = None
-    max_route_duration: Optional[int] = Field(
+    departure_time: datetime | None = None
+    max_stops_per_route: int | None = None
+    max_route_duration: int | None = Field(
         default=None, description="Maximum route duration in minutes"
     )
-    max_route_distance: Optional[float] = Field(
+    max_route_distance: float | None = Field(
         default=None, description="Maximum route distance in km"
     )
 
@@ -279,15 +278,15 @@ class FacilityLocation(BaseModel):
 
     id: str
     name: str
-    location: Tuple[float, float] = Field(..., description="(lon, lat) coordinates")
+    location: tuple[float, float] = Field(..., description="(lon, lat) coordinates")
     type: str = Field(
         ..., description="Type of facility (warehouse, distribution center, etc.)"
     )
     capacity: float
     operating_cost: float
-    inbound_capacity: Optional[float] = None
-    outbound_capacity: Optional[float] = None
-    service_area: Optional[dict] = Field(
+    inbound_capacity: float | None = None
+    outbound_capacity: float | None = None
+    service_area: dict | None = Field(
         default=None, description="GeoJSON representation of service area"
     )
 
@@ -324,12 +323,12 @@ class SupplyChainNetwork(BaseModel):
 
     id: str
     name: str
-    facilities: List[FacilityLocation]
-    links: List[Dict] = Field(
+    facilities: list[FacilityLocation]
+    links: list[dict] = Field(
         ..., description="List of links between facilities with transportation costs"
     )
-    demand_points: Optional[List[Dict]] = None
-    supply_points: Optional[List[Dict]] = None
+    demand_points: list[dict] | None = None
+    supply_points: list[dict] | None = None
 
     model_config = ConfigDict(
         json_schema_extra={

@@ -7,7 +7,7 @@ through H3 spatial indexing, enabling general geospatial analysis.
 """
 
 import json
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
 from datetime import datetime
 from pathlib import Path
 import logging
@@ -44,7 +44,7 @@ class NumpyEncoder(json.JSONEncoder):
         # Handle Shapely geometry objects
         elif hasattr(obj, "__geo_interface__"):
             return obj.__geo_interface__
-        return super(NumpyEncoder, self).default(obj)
+        return super().default(obj)
 
 
 class UnifiedH3Backend:
@@ -54,12 +54,12 @@ class UnifiedH3Backend:
 
     def __init__(
         self,
-        modules: Dict[str, "BaseAnalysisModule"],
+        modules: dict[str, "BaseAnalysisModule"],
         resolution: int = 8,
         target_region: str = "Global",
-        target_areas: Optional[Dict[str, List[str]]] = None,
-        base_data_dir: Optional[Path] = None,
-        geojson_path: Optional[Path] = None,
+        target_areas: dict[str, list[str]] | None = None,
+        base_data_dir: Path | None = None,
+        geojson_path: Path | None = None,
     ) -> None:
         """
         Initialize the unified backend with H3 spatial indexing.
@@ -84,8 +84,8 @@ class UnifiedH3Backend:
         self.geojson_path = (
             Path(geojson_path) if geojson_path else Path("config/target_areas.geojson")
         )
-        self.unified_data: Dict[str, Dict] = {}
-        self.analysis_scores: Dict[str, Dict] = {}
+        self.unified_data: dict[str, dict] = {}
+        self.analysis_scores: dict[str, dict] = {}
 
         self.target_hexagons_by_area, self.target_hexagons = self._define_target_region(
             target_areas
@@ -100,8 +100,8 @@ class UnifiedH3Backend:
         )
 
     def _define_target_region(
-        self, target_areas: Optional[Dict[str, List[str]]] = None
-    ) -> Tuple[Dict[str, List[str]], List[str]]:
+        self, target_areas: dict[str, list[str]] | None = None
+    ) -> tuple[dict[str, list[str]], list[str]]:
         """
         Define the target region based on geometries.
 
@@ -119,7 +119,7 @@ class UnifiedH3Backend:
             )
             return {}, []
 
-        hexagons_by_area: Dict[str, set] = {area: set() for area in area_geoms.keys()}
+        hexagons_by_area: dict[str, set] = {area: set() for area in area_geoms.keys()}
 
         for area, geoms in area_geoms.items():
             for geom_name, geom in geoms.items():
@@ -241,8 +241,8 @@ class UnifiedH3Backend:
         return final_hex_by_area, final_all_hexagons
 
     def _get_geometries(
-        self, target_areas: Optional[Dict[str, List[str]]]
-    ) -> Dict[str, Dict[str, Any]]:
+        self, target_areas: dict[str, list[str]] | None
+    ) -> dict[str, dict[str, Any]]:
         """
         Loads geometries for the specified areas from a GeoJSON file.
         """
@@ -302,12 +302,12 @@ class UnifiedH3Backend:
             "Comprehensive analysis complete. All module data has been aggregated."
         )
 
-    def _aggregate_module_results(self, results: Dict[str, Dict]) -> None:
+    def _aggregate_module_results(self, results: dict[str, dict]) -> None:
         """Combine all module results into a unified H3-indexed dataset."""
         logger.info("Aggregating results from all modules...")
 
         for hexagon in self.target_hexagons:
-            hex_data: Dict[str, Any] = {"hex_id": hexagon}
+            hex_data: dict[str, Any] = {"hex_id": hexagon}
 
             # Add geometry and metadata
             try:
@@ -330,7 +330,7 @@ class UnifiedH3Backend:
             f"Aggregated data for {len(self.target_hexagons)} hexagons from {len(results)} modules."
         )
 
-    def calculate_analysis_scores(self) -> Dict[str, Dict]:
+    def calculate_analysis_scores(self) -> dict[str, dict]:
         """
         Calculate analysis scores based on the unified dataset.
 
@@ -343,7 +343,7 @@ class UnifiedH3Backend:
             return {}
 
         for h3_index, hex_data in self.unified_data.items():
-            scores: Dict[str, Any] = {}
+            scores: dict[str, Any] = {}
             module_scores = []
             for module_name, module_data in hex_data.items():
                 if isinstance(module_data, dict) and "score" in module_data:
@@ -361,7 +361,7 @@ class UnifiedH3Backend:
         logger.info(f"Calculated scores for {len(self.analysis_scores)} hexagons.")
         return self.analysis_scores
 
-    def get_comprehensive_summary(self) -> Dict[str, Any]:
+    def get_comprehensive_summary(self) -> dict[str, Any]:
         """
         Generate a comprehensive summary of the analysis results.
 
@@ -373,7 +373,7 @@ class UnifiedH3Backend:
 
         scores = [s["composite_score"] for s in self.analysis_scores.values()]
 
-        summary: Dict[str, Any] = {
+        summary: dict[str, Any] = {
             "target_region": self.target_region,
             "h3_resolution": self.resolution,
             "total_hexagons": len(self.target_hexagons),
@@ -441,7 +441,7 @@ class UnifiedH3Backend:
             return
         logger.info(f"Successfully exported unified data to {output_path}")
 
-    def _export_geojson(self, data_to_export: Dict, output_path: str) -> None:
+    def _export_geojson(self, data_to_export: dict, output_path: str) -> None:
         """Exports the unified dataset to a GeoJSON file."""
         features = []
         for hex_id, properties in data_to_export.items():
@@ -464,7 +464,7 @@ class UnifiedH3Backend:
         with open(output_path, "w") as f:
             json.dump(feature_collection, f, cls=NumpyEncoder)
 
-    def _export_csv(self, data_to_export: Dict, output_path: str) -> None:
+    def _export_csv(self, data_to_export: dict, output_path: str) -> None:
         """Exports the unified dataset to a CSV file."""
         # This will flatten the nested dictionary structure
         flat_data = []

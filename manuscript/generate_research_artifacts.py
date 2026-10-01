@@ -25,10 +25,11 @@ import subprocess
 import sys
 import tomllib
 from dataclasses import asdict, dataclass, replace
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from math import ceil
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
+from collections.abc import Iterable, Mapping, Sequence
 
 TOKEN_RE = re.compile(r"\{\{([A-Z][A-Z0-9_]*)\}\}")
 EXCLUDED_MANUSCRIPT_DOCS = frozenset({"README.md", "AGENTS.md", "SYNTAX.md"})
@@ -322,7 +323,7 @@ class VerificationRecord:
         return defined_command_groups(full_validation=self.full_validation_requested)
 
     @classmethod
-    def unmeasured(cls, *, full_validation: bool = False) -> "VerificationRecord":
+    def unmeasured(cls, *, full_validation: bool = False) -> VerificationRecord:
         """A record holding no executed command and naming no tree.
 
         The stamps are empty rather than borrowed from a build: an unmeasured
@@ -1965,7 +1966,7 @@ def run_verification(
             if name in FULL_VALIDATION_GROUPS
             else VERIFICATION_TIMEOUT_SECONDS
         )
-        started = datetime.now(tz=timezone.utc)
+        started = datetime.now(tz=UTC)
         try:
             completed = subprocess.run(
                 command,
@@ -1977,7 +1978,7 @@ def run_verification(
                 timeout=timeout,
             )
         except subprocess.TimeoutExpired:
-            elapsed = (datetime.now(tz=timezone.utc) - started).total_seconds()
+            elapsed = (datetime.now(tz=UTC) - started).total_seconds()
             results.append(
                 VerificationResult(
                     name=name,
@@ -1989,7 +1990,7 @@ def run_verification(
                 )
             )
             continue
-        elapsed = (datetime.now(tz=timezone.utc) - started).total_seconds()
+        elapsed = (datetime.now(tz=UTC) - started).total_seconds()
         combined = f"{completed.stdout}\n{completed.stderr}".strip()
         results.append(
             VerificationResult(

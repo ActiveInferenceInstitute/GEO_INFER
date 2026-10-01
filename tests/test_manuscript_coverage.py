@@ -9,7 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import Iterator
+from collections.abc import Iterator
 
 import pytest
 

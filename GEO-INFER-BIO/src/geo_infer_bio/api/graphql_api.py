@@ -2,7 +2,7 @@
 GraphQL API for GEO-INFER-BIO.
 """
 
-from typing import List, Optional, cast
+from typing import cast
 import strawberry
 from strawberry.fastapi import GraphQLRouter
 from fastapi import FastAPI
@@ -31,7 +31,7 @@ class SequenceData:
 
     id: str
     sequence: str
-    spatial_data: Optional[SpatialData] = None
+    spatial_data: SpatialData | None = None
 
 
 @strawberry.type
@@ -42,7 +42,7 @@ class AnalysisResult:
     gc_content: float
     motif_count: int
     coding_regions: int
-    spatial_data: Optional[SpatialData] = None
+    spatial_data: SpatialData | None = None
 
 
 @strawberry.type
@@ -68,7 +68,7 @@ class SequenceDataInput:
 
     id: str
     sequence: str
-    spatial_data: Optional[SpatialDataInput] = None
+    spatial_data: SpatialDataInput | None = None
 
 
 @strawberry.input
@@ -79,7 +79,7 @@ class AnalysisResultInput:
     gc_content: float
     motif_count: int
     coding_regions: int
-    spatial_data: Optional[SpatialDataInput] = None
+    spatial_data: SpatialDataInput | None = None
 
 
 @strawberry.type
@@ -112,17 +112,13 @@ class Query:
 
         # Add spatial data if provided
         if sequence_data.spatial_data:
-            setattr(
-                record,
-                "spatial_data",
-                pd.DataFrame(
-                    [
-                        {
-                            "latitude": sequence_data.spatial_data.latitude,
-                            "longitude": sequence_data.spatial_data.longitude,
-                        }
-                    ]
-                ),
+            record.spatial_data = pd.DataFrame(
+                [
+                    {
+                        "latitude": sequence_data.spatial_data.latitude,
+                        "longitude": sequence_data.spatial_data.longitude,
+                    }
+                ]
             )
 
         # Perform analysis
@@ -141,8 +137,8 @@ class Query:
 
     @strawberry.field
     def analyze_file(
-        self, file_path: str, spatial_data_path: Optional[str] = None
-    ) -> List[AnalysisResult]:
+        self, file_path: str, spatial_data_path: str | None = None
+    ) -> list[AnalysisResult]:
         """
         Analyze sequences from a file.
 
@@ -158,18 +154,18 @@ class Query:
 
         # Load sequences
         loaded = analyzer.load_sequence(file_path)
-        sequences: List[SeqRecord] = loaded if isinstance(loaded, list) else [loaded]
+        sequences: list[SeqRecord] = loaded if isinstance(loaded, list) else [loaded]
 
         # Load spatial data if provided
         spatial_df = None
         if spatial_data_path:
             spatial_df = pd.read_csv(spatial_data_path)
 
-        results: List[AnalysisResult] = []
+        results: list[AnalysisResult] = []
         for i, record in enumerate(sequences):
             # Add spatial data if available
             if spatial_df is not None and i < len(spatial_df):
-                setattr(record, "spatial_data", spatial_df.iloc[[i]])
+                record.spatial_data = spatial_df.iloc[[i]]
 
             # Validate sequence
             validation = validator.validate_sequence_record(record)
@@ -202,7 +198,7 @@ class Query:
 
     @strawberry.field
     def visualize_spatial(
-        self, analysis_results: List[AnalysisResultInput]
+        self, analysis_results: list[AnalysisResultInput]
     ) -> VisualizationData:
         """
         Generate spatial visualizations of analysis results.

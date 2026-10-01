@@ -2,7 +2,7 @@
 Economic Modeling Engine - Core orchestration and execution framework.
 """
 
-from typing import Dict, Any, List, Optional, cast
+from typing import Any, cast
 from dataclasses import dataclass
 import logging
 
@@ -12,9 +12,9 @@ class ModelConfiguration:
     """Configuration settings for economic models."""
 
     model_type: str
-    parameters: Dict[str, Any]
-    spatial_config: Optional[Dict[str, Any]] = None
-    temporal_config: Optional[Dict[str, Any]] = None
+    parameters: dict[str, Any]
+    spatial_config: dict[str, Any] | None = None
+    temporal_config: dict[str, Any] | None = None
 
 
 class EconomicModelingEngine:
@@ -25,7 +25,7 @@ class EconomicModelingEngine:
     lifecycles, from initialization through execution to results processing.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the Economic Modeling Engine.
 
@@ -34,8 +34,8 @@ class EconomicModelingEngine:
         """
         self.logger = logging.getLogger(__name__)
         self.config = config or {}
-        self.active_models: Dict[str, Any] = {}
-        self.model_registry: Dict[str, Any] = {}
+        self.active_models: dict[str, Any] = {}
+        self.model_registry: dict[str, Any] = {}
 
     def register_model(self, model_name: str, model_class: type) -> None:
         """
@@ -72,8 +72,8 @@ class EconomicModelingEngine:
         return model_instance
 
     def execute_model(
-        self, model_instance: Any, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, model_instance: Any, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Execute a model with provided data.
 
@@ -95,15 +95,15 @@ class EconomicModelingEngine:
             else:
                 raise AttributeError("Model must implement 'run' or 'execute' method")
 
-            return cast(Dict[str, Any], results)
+            return cast(dict[str, Any], results)
 
         except Exception as e:
             self.logger.error(f"Model execution failed: {str(e)}")
             raise
 
     def batch_execute(
-        self, models: List[tuple], common_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, models: list[tuple], common_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Execute multiple models with common data.
 
@@ -130,7 +130,7 @@ class EconomicModelingEngine:
 
         return results
 
-    def get_model_info(self, model_name: str) -> Dict[str, Any]:
+    def get_model_info(self, model_name: str) -> dict[str, Any]:
         """
         Get information about a registered model.
 
@@ -156,7 +156,7 @@ class EconomicModelingEngine:
 
         return info
 
-    def list_models(self) -> List[str]:
+    def list_models(self) -> list[str]:
         """
         List all registered models.
 

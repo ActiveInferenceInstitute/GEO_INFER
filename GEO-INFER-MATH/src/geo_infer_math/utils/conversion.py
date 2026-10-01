@@ -6,7 +6,7 @@ coordinate systems, and units commonly used in geospatial analysis.
 """
 
 import numpy as np
-from typing import Union, Tuple, Any, cast
+from typing import Any, cast
 import logging
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ CELSIUS_TO_FAHRENHEIT_OFFSET = 32.0
 CELSIUS_TO_FAHRENHEIT_FACTOR = 9.0 / 5.0
 
 
-def degrees_to_radians(degrees: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def degrees_to_radians(degrees: float | np.ndarray) -> float | np.ndarray:
     """
     Convert degrees to radians.
 
@@ -52,7 +52,7 @@ def degrees_to_radians(degrees: Union[float, np.ndarray]) -> Union[float, np.nda
     return np.radians(degrees)
 
 
-def radians_to_degrees(radians: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def radians_to_degrees(radians: float | np.ndarray) -> float | np.ndarray:
     """
     Convert radians to degrees.
 
@@ -66,8 +66,8 @@ def radians_to_degrees(radians: Union[float, np.ndarray]) -> Union[float, np.nda
 
 
 def celsius_to_fahrenheit(
-    celsius: Union[float, np.ndarray],
-) -> Union[float, np.ndarray]:
+    celsius: float | np.ndarray,
+) -> float | np.ndarray:
     """
     Convert Celsius to Fahrenheit.
 
@@ -81,8 +81,8 @@ def celsius_to_fahrenheit(
 
 
 def fahrenheit_to_celsius(
-    fahrenheit: Union[float, np.ndarray],
-) -> Union[float, np.ndarray]:
+    fahrenheit: float | np.ndarray,
+) -> float | np.ndarray:
     """
     Convert Fahrenheit to Celsius.
 
@@ -95,7 +95,7 @@ def fahrenheit_to_celsius(
     return (fahrenheit - CELSIUS_TO_FAHRENHEIT_OFFSET) / CELSIUS_TO_FAHRENHEIT_FACTOR
 
 
-def kelvin_to_celsius(kelvin: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def kelvin_to_celsius(kelvin: float | np.ndarray) -> float | np.ndarray:
     """
     Convert Kelvin to Celsius.
 
@@ -108,7 +108,7 @@ def kelvin_to_celsius(kelvin: Union[float, np.ndarray]) -> Union[float, np.ndarr
     return kelvin - 273.15
 
 
-def celsius_to_kelvin(celsius: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def celsius_to_kelvin(celsius: float | np.ndarray) -> float | np.ndarray:
     """
     Convert Celsius to Kelvin.
 
@@ -121,7 +121,7 @@ def celsius_to_kelvin(celsius: Union[float, np.ndarray]) -> Union[float, np.ndar
     return celsius + 273.15
 
 
-def meters_to_feet(meters: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def meters_to_feet(meters: float | np.ndarray) -> float | np.ndarray:
     """
     Convert meters to feet.
 
@@ -134,7 +134,7 @@ def meters_to_feet(meters: Union[float, np.ndarray]) -> Union[float, np.ndarray]
     return meters * METER_TO_FEET
 
 
-def feet_to_meters(feet: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def feet_to_meters(feet: float | np.ndarray) -> float | np.ndarray:
     """
     Convert feet to meters.
 
@@ -147,7 +147,7 @@ def feet_to_meters(feet: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     return feet * FEET_TO_METER
 
 
-def meters_to_miles(meters: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def meters_to_miles(meters: float | np.ndarray) -> float | np.ndarray:
     """
     Convert meters to miles.
 
@@ -160,7 +160,7 @@ def meters_to_miles(meters: Union[float, np.ndarray]) -> Union[float, np.ndarray
     return meters * METER_TO_MILE
 
 
-def miles_to_meters(miles: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def miles_to_meters(miles: float | np.ndarray) -> float | np.ndarray:
     """
     Convert miles to meters.
 
@@ -173,7 +173,7 @@ def miles_to_meters(miles: Union[float, np.ndarray]) -> Union[float, np.ndarray]
     return miles * MILE_TO_METER
 
 
-def meters_to_kilometers(meters: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def meters_to_kilometers(meters: float | np.ndarray) -> float | np.ndarray:
     """
     Convert meters to kilometers.
 
@@ -187,8 +187,8 @@ def meters_to_kilometers(meters: Union[float, np.ndarray]) -> Union[float, np.nd
 
 
 def kilometers_to_meters(
-    kilometers: Union[float, np.ndarray],
-) -> Union[float, np.ndarray]:
+    kilometers: float | np.ndarray,
+) -> float | np.ndarray:
     """
     Convert kilometers to meters.
 
@@ -202,8 +202,8 @@ def kilometers_to_meters(
 
 
 def square_meters_to_square_feet(
-    sq_meters: Union[float, np.ndarray],
-) -> Union[float, np.ndarray]:
+    sq_meters: float | np.ndarray,
+) -> float | np.ndarray:
     """
     Convert square meters to square feet.
 
@@ -217,8 +217,8 @@ def square_meters_to_square_feet(
 
 
 def square_feet_to_square_meters(
-    sq_feet: Union[float, np.ndarray],
-) -> Union[float, np.ndarray]:
+    sq_feet: float | np.ndarray,
+) -> float | np.ndarray:
     """
     Convert square feet to square meters.
 
@@ -232,8 +232,8 @@ def square_feet_to_square_meters(
 
 
 def square_meters_to_acres(
-    sq_meters: Union[float, np.ndarray],
-) -> Union[float, np.ndarray]:
+    sq_meters: float | np.ndarray,
+) -> float | np.ndarray:
     """
     Convert square meters to acres.
 
@@ -246,7 +246,7 @@ def square_meters_to_acres(
     return sq_meters * SQUARE_METER_TO_ACRE
 
 
-def acres_to_square_meters(acres: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def acres_to_square_meters(acres: float | np.ndarray) -> float | np.ndarray:
     """
     Convert acres to square meters.
 
@@ -260,8 +260,8 @@ def acres_to_square_meters(acres: Union[float, np.ndarray]) -> Union[float, np.n
 
 
 def square_meters_to_hectares(
-    sq_meters: Union[float, np.ndarray],
-) -> Union[float, np.ndarray]:
+    sq_meters: float | np.ndarray,
+) -> float | np.ndarray:
     """
     Convert square meters to hectares.
 
@@ -275,8 +275,8 @@ def square_meters_to_hectares(
 
 
 def hectares_to_square_meters(
-    hectares: Union[float, np.ndarray],
-) -> Union[float, np.ndarray]:
+    hectares: float | np.ndarray,
+) -> float | np.ndarray:
     """
     Convert hectares to square meters.
 
@@ -290,8 +290,8 @@ def hectares_to_square_meters(
 
 
 def cartesian_to_polar(
-    x: Union[float, np.ndarray], y: Union[float, np.ndarray]
-) -> Tuple[Union[float, np.ndarray], Union[float, np.ndarray]]:
+    x: float | np.ndarray, y: float | np.ndarray
+) -> tuple[float | np.ndarray, float | np.ndarray]:
     """
     Convert Cartesian coordinates to polar coordinates.
 
@@ -309,8 +309,8 @@ def cartesian_to_polar(
 
 
 def polar_to_cartesian(
-    radius: Union[float, np.ndarray], angle: Union[float, np.ndarray]
-) -> Tuple[Union[float, np.ndarray], Union[float, np.ndarray]]:
+    radius: float | np.ndarray, angle: float | np.ndarray
+) -> tuple[float | np.ndarray, float | np.ndarray]:
     """
     Convert polar coordinates to Cartesian coordinates.
 
@@ -328,12 +328,10 @@ def polar_to_cartesian(
 
 
 def spherical_to_cartesian(
-    radius: Union[float, np.ndarray],
-    theta: Union[float, np.ndarray],
-    phi: Union[float, np.ndarray],
-) -> Tuple[
-    Union[float, np.ndarray], Union[float, np.ndarray], Union[float, np.ndarray]
-]:
+    radius: float | np.ndarray,
+    theta: float | np.ndarray,
+    phi: float | np.ndarray,
+) -> tuple[float | np.ndarray, float | np.ndarray, float | np.ndarray]:
     """
     Convert spherical coordinates to Cartesian coordinates.
 
@@ -353,12 +351,10 @@ def spherical_to_cartesian(
 
 
 def cartesian_to_spherical(
-    x: Union[float, np.ndarray],
-    y: Union[float, np.ndarray],
-    z: Union[float, np.ndarray],
-) -> Tuple[
-    Union[float, np.ndarray], Union[float, np.ndarray], Union[float, np.ndarray]
-]:
+    x: float | np.ndarray,
+    y: float | np.ndarray,
+    z: float | np.ndarray,
+) -> tuple[float | np.ndarray, float | np.ndarray, float | np.ndarray]:
     """
     Convert Cartesian coordinates to spherical coordinates.
 
@@ -380,7 +376,7 @@ def cartesian_to_spherical(
 def normalize_array(
     array: np.ndarray,
     method: str = "minmax",
-    feature_range: Tuple[float, float] = (0, 1),
+    feature_range: tuple[float, float] = (0, 1),
 ) -> np.ndarray:
     """
     Normalize array using specified method.
@@ -569,7 +565,7 @@ def format_coordinate_string(
         raise ValueError(f"Unknown format type: {format_type}")
 
 
-def parse_coordinate_string(coord_string: str) -> Tuple[float, float]:
+def parse_coordinate_string(coord_string: str) -> tuple[float, float]:
     """
     Parse coordinate string to decimal degrees.
 

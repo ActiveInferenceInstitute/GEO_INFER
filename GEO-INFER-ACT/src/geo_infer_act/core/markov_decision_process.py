@@ -2,7 +2,7 @@
 Markov Decision Process modeling for Active Inference.
 """
 
-from typing import List, Optional, Tuple, Union, cast
+from typing import cast
 import numpy as np
 
 
@@ -19,9 +19,9 @@ class MarkovDecisionProcess:
         n_states: int,
         n_observations: int,
         n_actions: int,
-        transition_prob: Optional[np.ndarray] = None,
-        observation_prob: Optional[np.ndarray] = None,
-        random_seed: Optional[int] = None,
+        transition_prob: np.ndarray | None = None,
+        observation_prob: np.ndarray | None = None,
+        random_seed: int | None = None,
     ):
         """
         Initialize the Markov Decision Process.
@@ -122,7 +122,7 @@ class MarkovDecisionProcess:
                     f"sum to {prob_sum}, expected 1.0"
                 )
 
-    def _initialize_policies(self, horizon: int = 2) -> List[np.ndarray]:
+    def _initialize_policies(self, horizon: int = 2) -> list[np.ndarray]:
         """
         Initialize the set of possible policies.
 
@@ -229,9 +229,9 @@ class MarkovDecisionProcess:
     def simulate(
         self,
         initial_state: int,
-        policy: Union[List[int], np.ndarray],
+        policy: list[int] | np.ndarray,
         stochastic: bool = True,
-    ) -> Tuple[List[int], List[int]]:
+    ) -> tuple[list[int], list[int]]:
         """
         Simulate a trajectory through the MDP following a policy.
 

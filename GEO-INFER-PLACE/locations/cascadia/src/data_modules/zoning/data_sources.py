@@ -12,7 +12,6 @@ import requests
 import pandas as pd
 import geopandas as gpd
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ class CascadianZoningDataSources:
     Manages the acquisition of zoning data from various state and county sources.
     """
 
-    def __init__(self, data_dir: Path, config_path: Optional[Path] = None):
+    def __init__(self, data_dir: Path, config_path: Path | None = None):
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.raw_data_path = self.data_dir / "raw_zoning_data.geojson"
@@ -49,7 +48,7 @@ class CascadianZoningDataSources:
 
     def _query_arcgis_service(
         self, service_url: str, bbox: tuple, max_features: int = 5000
-    ) -> Optional[gpd.GeoDataFrame]:
+    ) -> gpd.GeoDataFrame | None:
         """
         Query an ArcGIS REST service for features within a bounding box.
 
@@ -109,7 +108,7 @@ class CascadianZoningDataSources:
 
         return None
 
-    def _query_osm_overpass(self, bbox: tuple) -> Optional[gpd.GeoDataFrame]:
+    def _query_osm_overpass(self, bbox: tuple) -> gpd.GeoDataFrame | None:
         """
         Query OpenStreetMap Overpass API for land use data.
 

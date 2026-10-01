@@ -6,7 +6,7 @@ communication systems and data transmission.
 """
 
 import numpy as np
-from typing import Optional, Tuple, Any
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 def channel_capacity(
     channel_matrix: np.ndarray,
-    noise_power: Optional[float] = None,
-    power_constraint: Optional[float] = None,
+    noise_power: float | None = None,
+    power_constraint: float | None = None,
     base: float = 2.0,
 ) -> float:
     """
@@ -174,7 +174,7 @@ def awgn_channel_capacity(
 def mimo_channel_capacity(
     channel_matrix: np.ndarray,
     noise_power: float,
-    power_constraint: Optional[float] = None,
+    power_constraint: float | None = None,
     base: float = 2.0,
 ) -> float:
     """
@@ -218,7 +218,7 @@ def mimo_channel_capacity(
 
 def waterfilling_power_allocation(
     channel_gains: np.ndarray, noise_power: float, total_power: float, base: float = 2.0
-) -> Tuple[np.ndarray, float]:
+) -> tuple[np.ndarray, float]:
     """
     Calculate optimal power allocation using waterfilling algorithm.
 
@@ -291,9 +291,9 @@ class ChannelCapacityCalculator:
 
     def calculate(
         self,
-        channel_matrix: Optional[np.ndarray] = None,
-        signal_power: Optional[float] = None,
-        noise_power: Optional[float] = None,
+        channel_matrix: np.ndarray | None = None,
+        signal_power: float | None = None,
+        noise_power: float | None = None,
         method: str = "discrete",
     ) -> float:
         """
@@ -353,7 +353,7 @@ class ChannelCapacityCalculator:
 
     def waterfilling(
         self, channel_gains: np.ndarray, noise_power: float, total_power: float
-    ) -> Tuple[np.ndarray, float]:
+    ) -> tuple[np.ndarray, float]:
         """
         Calculate optimal power allocation using waterfilling.
 

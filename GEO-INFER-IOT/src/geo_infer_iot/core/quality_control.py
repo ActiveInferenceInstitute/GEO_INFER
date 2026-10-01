@@ -7,7 +7,7 @@ spatial consistency validation.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from datetime import datetime, timedelta
 import numpy as np
 from dataclasses import dataclass
@@ -30,9 +30,9 @@ class QualityCheckResult:
     """Result of a quality check operation."""
 
     passed: bool
-    issues: List[str]
+    issues: list[str]
     quality_score: float
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if self.metadata is None:
@@ -54,16 +54,16 @@ class QualityController:
     #: Per-sensor measurements retained for temporal and outlier analysis.
     DEFAULT_HISTORY_SIZE = 500
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
-        self.quality_history: List[Dict[str, Any]] = []
-        self.sensor_baselines: Dict[str, Any] = {}
-        self.outlier_detector: Optional[Any] = None
+        self.quality_history: list[dict[str, Any]] = []
+        self.sensor_baselines: dict[str, Any] = {}
+        self.outlier_detector: Any | None = None
         self.history_size = int(
             self.config.get("history_size", self.DEFAULT_HISTORY_SIZE)
         )
         # Bounded per-sensor rings so a long-lived controller keeps constant memory.
-        self.measurement_history: Dict[str, deque[Dict[str, Any]]] = defaultdict(
+        self.measurement_history: dict[str, deque[dict[str, Any]]] = defaultdict(
             lambda: deque(maxlen=self.history_size)
         )
 
@@ -107,7 +107,7 @@ class QualityController:
             logger.warning(f"Failed to initialize outlier detector: {e}")
             self.outlier_detector = None
 
-    def validate_measurement(self, measurement: Dict) -> QualityCheckResult:
+    def validate_measurement(self, measurement: dict) -> QualityCheckResult:
         """
         Perform comprehensive quality validation on a single measurement.
 
@@ -162,7 +162,7 @@ class QualityController:
             },
         )
 
-    def _validate_range(self, measurement: Dict) -> QualityCheckResult:
+    def _validate_range(self, measurement: dict) -> QualityCheckResult:
         """Validate measurement value against expected ranges."""
         issues = []
         variable = measurement.get("variable", "unknown")
@@ -190,7 +190,7 @@ class QualityController:
             len(issues) == 0, issues, 0.9 if len(issues) == 0 else 0.5
         )
 
-    def _validate_temporal_consistency(self, measurement: Dict) -> QualityCheckResult:
+    def _validate_temporal_consistency(self, measurement: dict) -> QualityCheckResult:
         """Validate temporal consistency of measurements."""
         issues = []
         sensor_id = measurement.get("sensor_id", "unknown")
@@ -232,9 +232,9 @@ class QualityController:
             len(issues) == 0, issues, 0.9 if len(issues) == 0 else 0.6
         )
 
-    def _detect_outliers(self, measurement: Dict) -> QualityCheckResult:
+    def _detect_outliers(self, measurement: dict) -> QualityCheckResult:
         """Detect outliers using statistical methods and machine learning."""
-        issues: List[str] = []
+        issues: list[str] = []
         value = measurement.get("value")
 
         if value is None or self.outlier_detector is None:
@@ -244,7 +244,7 @@ class QualityController:
             sensor_id = measurement.get("sensor_id", "unknown")
 
             # Isolation Forest needs a population; fit it on the retained window.
-            temp_cfg: Dict[str, Any] = self.default_params.get(
+            temp_cfg: dict[str, Any] = self.default_params.get(
                 "temporal_consistency", {}
             )  # type: ignore[assignment]
             default_win = temp_cfg.get("window_minutes", 60)
@@ -283,7 +283,7 @@ class QualityController:
             len(issues) == 0, issues, 0.8 if len(issues) == 0 else 0.4
         )
 
-    def _validate_spatial_consistency(self, measurement: Dict) -> QualityCheckResult:
+    def _validate_spatial_consistency(self, measurement: dict) -> QualityCheckResult:
         """Validate spatial consistency by comparing against nearby sensor baselines.
 
         Uses the in-memory ``sensor_baselines`` registry: the current reading is
@@ -334,7 +334,7 @@ class QualityController:
         return QualityCheckResult(len(issues) == 0, issues, quality_score)
 
     @staticmethod
-    def _parse_timestamp(timestamp: Any) -> Optional[datetime]:
+    def _parse_timestamp(timestamp: Any) -> datetime | None:
         """Coerce a measurement timestamp to a naive datetime, or None.
 
         Args:
@@ -355,7 +355,7 @@ class QualityController:
         # Drop tzinfo so mixed-awareness histories stay comparable.
         return parsed.replace(tzinfo=None)
 
-    def _record_measurement(self, measurement: Dict) -> None:
+    def _record_measurement(self, measurement: dict) -> None:
         """Append a measurement to its sensor's history ring.
 
         Measurements without a usable numeric value or timestamp are not
@@ -377,7 +377,7 @@ class QualityController:
             {"value": float(value), "timestamp": observed_at}
         )
 
-    def _get_recent_measurements(self, sensor_id: str, minutes: int = 60) -> List[Dict]:
+    def _get_recent_measurements(self, sensor_id: str, minutes: int = 60) -> list[dict]:
         """Return this sensor's retained measurements from the last *minutes*.
 
         The window is anchored on the newest retained measurement rather than
@@ -436,7 +436,7 @@ class QualityController:
                 }
             )
 
-    def validate_batch(self, measurements: List[Dict]) -> Dict:
+    def validate_batch(self, measurements: list[dict]) -> dict:
         """
         Validate a batch of measurements.
 
@@ -472,7 +472,7 @@ class QualityController:
             "results": batch_results,
         }
 
-    def get_quality_report(self, time_window_hours: int = 24) -> Dict:
+    def get_quality_report(self, time_window_hours: int = 24) -> dict:
         """
         Generate quality control report for recent measurements.
 

@@ -14,7 +14,6 @@ import sys
 import subprocess
 import argparse
 from pathlib import Path
-from typing import List, Dict, Optional
 import logging
 
 # Configure logging
@@ -31,7 +30,7 @@ class GEOINFERInstaller:
         self.framework_root = framework_root
         self.modules = self._discover_modules()
 
-    def _discover_modules(self) -> Dict[str, Path]:
+    def _discover_modules(self) -> dict[str, Path]:
         """Discover all GEO-INFER modules in the framework root."""
         modules = {}
         for item in self.framework_root.iterdir():
@@ -110,8 +109,8 @@ class GEOINFERInstaller:
             return False
 
     def install_all_modules(
-        self, target_modules: Optional[List[str]] = None
-    ) -> Dict[str, bool]:
+        self, target_modules: list[str] | None = None
+    ) -> dict[str, bool]:
         """Install all modules or specified modules."""
         results = {}
 
@@ -131,7 +130,7 @@ class GEOINFERInstaller:
 
         return results
 
-    def verify_installation(self) -> Dict[str, bool]:
+    def verify_installation(self) -> dict[str, bool]:
         """Verify that all modules can be imported."""
         results = {}
 
@@ -148,7 +147,7 @@ class GEOINFERInstaller:
 
         return results
 
-    def test_cross_module_imports(self) -> Dict[str, bool]:
+    def test_cross_module_imports(self) -> dict[str, bool]:
         """Test cross-module imports that are known to be problematic."""
         cross_import_tests = [
             ("geo_infer_place", "PlaceAnalyzer"),
@@ -215,7 +214,7 @@ def main():
     # Report results
     successful = sum(results.values())
     total = len(results)
-    logger.info(f"\n=== Installation Results ===")
+    logger.info("\n=== Installation Results ===")
     logger.info(f"Successfully installed: {successful}/{total} modules")
 
     if successful < total:

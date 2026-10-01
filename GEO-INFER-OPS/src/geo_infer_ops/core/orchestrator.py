@@ -7,16 +7,17 @@ dependency management for GEO-INFER module operations.
 
 import logging
 import asyncio
-from typing import Dict, List, Optional, Any, Callable, Set
-from datetime import datetime, timezone
+from typing import Any
+from collections.abc import Callable
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 import uuid
 
 logger = logging.getLogger(__name__)
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
     """Task execution status."""
 
     PENDING = "pending"
@@ -34,15 +35,15 @@ class Task:
     task_id: str
     name: str
     func: Callable
-    dependencies: List[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
     status: TaskStatus = TaskStatus.PENDING
-    result: Optional[Any] = None
-    error: Optional[str] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    result: Any | None = None
+    error: str | None = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
     retry_count: int = 0
     max_retries: int = 3
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Initialize task ID if not provided."""
@@ -76,18 +77,18 @@ class Orchestrator:
         self.retry_delay_seconds = retry_delay_seconds
         self.enable_monitoring = enable_monitoring
 
-        self.tasks: Dict[str, Task] = {}
-        self.task_dependencies: Dict[str, Set[str]] = {}
-        self.execution_history: List[Dict[str, Any]] = []
+        self.tasks: dict[str, Task] = {}
+        self.task_dependencies: dict[str, set[str]] = {}
+        self.execution_history: list[dict[str, Any]] = []
 
     def add_task(
         self,
         name: str,
         func: Callable,
-        dependencies: Optional[List[str]] = None,
-        task_id: Optional[str] = None,
+        dependencies: list[str] | None = None,
+        task_id: str | None = None,
         max_retries: int = 3,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> str:
         """
         Add a task to the workflow.
@@ -134,7 +135,7 @@ class Orchestrator:
                     return False
         return True
 
-    def _get_ready_tasks(self) -> List[Task]:
+    def _get_ready_tasks(self) -> list[Task]:
         """
         Get tasks that are ready to execute (dependencies satisfied).
 
@@ -166,7 +167,7 @@ class Orchestrator:
             task: Task to execute
         """
         task.status = TaskStatus.RUNNING
-        task.start_time = datetime.now(timezone.utc).replace(tzinfo=None)
+        task.start_time = datetime.now(UTC).replace(tzinfo=None)
 
         logger.info(f"Executing task: {task.name} (ID: {task.task_id})")
 
@@ -179,7 +180,7 @@ class Orchestrator:
 
             task.result = result
             task.status = TaskStatus.COMPLETED
-            task.end_time = datetime.now(timezone.utc).replace(tzinfo=None)
+            task.end_time = datetime.now(UTC).replace(tzinfo=None)
 
             duration = (task.end_time - task.start_time).total_seconds()
             logger.info(
@@ -188,7 +189,7 @@ class Orchestrator:
 
         except Exception as e:
             task.error = str(e)
-            task.end_time = datetime.now(timezone.utc).replace(tzinfo=None)
+            task.end_time = datetime.now(UTC).replace(tzinfo=None)
 
             if task.retry_count < task.max_retries:
                 task.retry_count += 1
@@ -205,7 +206,7 @@ class Orchestrator:
                     f"{task.name} (ID: {task.task_id}): {e}"
                 )
 
-    async def execute_workflow(self) -> Dict[str, Any]:
+    async def execute_workflow(self) -> dict[str, Any]:
         """
         Execute the complete workflow.
 
@@ -217,7 +218,7 @@ class Orchestrator:
         if not self._validate_dependencies():
             raise ValueError("Invalid task dependencies detected")
 
-        start_time = datetime.now(timezone.utc).replace(tzinfo=None)
+        start_time = datetime.now(UTC).replace(tzinfo=None)
         completed_tasks = 0
         failed_tasks = 0
         counted_tasks: set[str] = set()
@@ -274,7 +275,7 @@ class Orchestrator:
                     failed_tasks += 1
                     counted_tasks.add(task.task_id)
 
-        end_time = datetime.now(timezone.utc).replace(tzinfo=None)
+        end_time = datetime.now(UTC).replace(tzinfo=None)
         duration = (end_time - start_time).total_seconds()
 
         # Generate execution summary
@@ -311,7 +312,7 @@ class Orchestrator:
 
         return results
 
-    def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
+    def get_task_status(self, task_id: str) -> dict[str, Any] | None:
         """
         Get status of a specific task.
 
@@ -336,14 +337,14 @@ class Orchestrator:
             "end_time": task.end_time.isoformat() if task.end_time else None,
         }
 
-    def get_workflow_status(self) -> Dict[str, Any]:
+    def get_workflow_status(self) -> dict[str, Any]:
         """
         Get overall workflow status.
 
         Returns:
             Workflow status dictionary
         """
-        status_counts: Dict[str, int] = {}
+        status_counts: dict[str, int] = {}
         for task in self.tasks.values():
             status = task.status.value
             status_counts[status] = status_counts.get(status, 0) + 1
@@ -372,7 +373,7 @@ class Orchestrator:
         task = self.tasks[task_id]
         if task.status in [TaskStatus.PENDING, TaskStatus.RUNNING]:
             task.status = TaskStatus.CANCELLED
-            task.end_time = datetime.now(timezone.utc).replace(tzinfo=None)
+            task.end_time = datetime.now(UTC).replace(tzinfo=None)
             logger.info(f"Cancelled task: {task.name} (ID: {task_id})")
             return True
 

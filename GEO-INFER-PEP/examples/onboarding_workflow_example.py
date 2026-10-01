@@ -17,8 +17,6 @@ Prerequisites:
 import os
 import tempfile
 import csv
-from datetime import datetime
-from pathlib import Path
 from geo_infer_pep.methods import (
     import_talent_data_from_csv,
     process_employee_onboarding_workflow,
@@ -28,7 +26,7 @@ from geo_infer_pep.methods import (
     get_all_employees,
     get_all_candidates,
 )
-from geo_infer_pep.models.talent_models import CandidateStatus, Offer
+from geo_infer_pep.models.talent_models import CandidateStatus
 
 
 def create_sample_talent_data():
@@ -224,7 +222,7 @@ def main():
     # Step 1: Create and import talent data
     print("\n📊 Step 1: Creating and importing talent data...")
     candidates_csv, requisitions_csv = create_sample_talent_data()
-    print(f"Created sample data files:")
+    print("Created sample data files:")
     print(f"  - Candidates: {candidates_csv}")
     print(f"  - Requisitions: {requisitions_csv}")
 
@@ -322,8 +320,8 @@ def main():
     print("\n🎉 Onboarding Workflow Example Completed!")
     print("=" * 60)
     print("\n📋 Summary:")
-    print(f"  - Sample candidates created: 4")
-    print(f"  - Job requisitions created: 3")
+    print("  - Sample candidates created: 4")
+    print("  - Job requisitions created: 3")
     print(f"  - Successful onboardings: {successful}")
     print(f"  - Failed onboardings: {failed}")
 

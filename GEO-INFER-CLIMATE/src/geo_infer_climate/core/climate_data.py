@@ -7,7 +7,6 @@ CMIP models, reanalysis data, and observational data.
 
 import importlib.util
 import logging
-from typing import Dict, List, Optional, Tuple
 import numpy as np
 import xarray as xr
 
@@ -22,7 +21,7 @@ class ClimateDataProcessor:
     observational climate data.
     """
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """
         Initialize climate data processor.
 
@@ -34,7 +33,7 @@ class ClimateDataProcessor:
         self.supported_datasets = ["cmip6", "era5", "ncep", "observations"]
 
     def load_dataset(
-        self, file_path: str, dataset_type: str, variables: Optional[List[str]] = None
+        self, file_path: str, dataset_type: str, variables: list[str] | None = None
     ) -> xr.Dataset:
         """
         Load climate dataset from file.
@@ -82,7 +81,7 @@ class ClimateDataProcessor:
             logger.error(f"Error loading dataset: {e}")
             raise
 
-    def validate_dataset(self, dataset: xr.Dataset) -> Dict[str, bool]:
+    def validate_dataset(self, dataset: xr.Dataset) -> dict[str, bool]:
         """
         Validate climate dataset structure and data quality.
 
@@ -128,7 +127,7 @@ class ClimateDataProcessor:
         return validation_results
 
     def preprocess_dataset(
-        self, dataset: xr.Dataset, operations: Optional[List[str]] = None
+        self, dataset: xr.Dataset, operations: list[str] | None = None
     ) -> xr.Dataset:
         """
         Preprocess climate dataset with common operations.
@@ -263,8 +262,8 @@ class ClimateDataProcessor:
     def extract_spatial_subset(
         self,
         dataset: xr.Dataset,
-        lat_range: Tuple[float, float],
-        lon_range: Tuple[float, float],
+        lat_range: tuple[float, float],
+        lon_range: tuple[float, float],
     ) -> xr.Dataset:
         """
         Extract spatial subset of dataset.

@@ -10,7 +10,7 @@ This module provides a comprehensive REST API for GEO-INFER-ECON with:
 - Advanced policy analysis and scenario modeling
 """
 
-from typing import Dict, Any, List, Optional, cast
+from typing import Any, cast
 from fastapi import FastAPI, HTTPException, Security, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
@@ -45,10 +45,10 @@ class APIResponse(BaseModel):
     """Standard API response format"""
 
     success: bool
-    data: Optional[Any] = None
-    error: Optional[str] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    execution_time: Optional[float] = None
+    data: Any | None = None
+    error: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    execution_time: float | None = None
 
 
 class HealthResponse(APIResponse):
@@ -63,9 +63,9 @@ class ModelExecutionRequest(BaseModel):
     """Model execution request"""
 
     model_type: str = Field(..., description="Type of economic model")
-    model_configuration: Dict[str, Any] = Field(..., description="Model configuration")
+    model_configuration: dict[str, Any] = Field(..., description="Model configuration")
     data_source: str = Field(..., description="Data source identifier")
-    parameters: Dict[str, Any] = Field(
+    parameters: dict[str, Any] = Field(
         default_factory=dict, description="Model parameters"
     )
 
@@ -75,19 +75,19 @@ class ModelExecutionResponse(APIResponse):
 
     execution_id: str
     model_type: str
-    results: Dict[str, Any]
-    diagnostics: Dict[str, Any]
+    results: dict[str, Any]
+    diagnostics: dict[str, Any]
 
 
 class PolicyAnalysisRequest(BaseModel):
     """Policy analysis request"""
 
-    policy_scenario: Dict[str, Any] = Field(
+    policy_scenario: dict[str, Any] = Field(
         ..., description="Policy scenario definition"
     )
     baseline_data: str = Field(..., description="Baseline economic data")
     analysis_type: str = Field(..., description="Type of policy analysis")
-    regions: List[str] = Field(default_factory=list, description="Regions for analysis")
+    regions: list[str] = Field(default_factory=list, description="Regions for analysis")
 
 
 class SpatialAnalysisRequest(BaseModel):
@@ -95,8 +95,8 @@ class SpatialAnalysisRequest(BaseModel):
 
     analysis_type: str = Field(..., description="Type of spatial analysis")
     data_source: str = Field(..., description="Spatial data source")
-    coordinates: List[List[float]] = Field(..., description="Spatial coordinates")
-    parameters: Dict[str, Any] = Field(
+    coordinates: list[list[float]] = Field(..., description="Spatial coordinates")
+    parameters: dict[str, Any] = Field(
         default_factory=dict, description="Analysis parameters"
     )
 
@@ -104,10 +104,10 @@ class SpatialAnalysisRequest(BaseModel):
 class VisualizationRequest(BaseModel):
     """Visualization request"""
 
-    data: Dict[str, Any] = Field(..., description="Data to visualize")
+    data: dict[str, Any] = Field(..., description="Data to visualize")
     visualization_type: str = Field(..., description="Type of visualization")
     format: str = Field(default="json", description="Output format")
-    parameters: Dict[str, Any] = Field(
+    parameters: dict[str, Any] = Field(
         default_factory=dict, description="Visualization parameters"
     )
 
@@ -125,7 +125,7 @@ class EconomicAnalysisAPI:
     - Caching and performance optimization
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the Economic Analysis API.
 
@@ -155,9 +155,9 @@ class EconomicAnalysisAPI:
         self.visualizer = ResultsVisualizer(self.config.get("visualization", {}))
 
         # API state management
-        self.active_executions: Dict[str, Any] = {}
-        self.execution_history: List[Dict[str, Any]] = []
-        self.api_stats: Dict[str, Any] = {
+        self.active_executions: dict[str, Any] = {}
+        self.execution_history: list[dict[str, Any]] = []
+        self.api_stats: dict[str, Any] = {
             "requests_total": 0,
             "requests_by_endpoint": {},
             "average_response_time": 0.0,
@@ -169,7 +169,7 @@ class EconomicAnalysisAPI:
         self.rate_limits = self.config.get(
             "rate_limits", {"requests_per_minute": 100, "requests_per_hour": 1000}
         )
-        self.request_counts: Dict[str, List[float]] = {}
+        self.request_counts: dict[str, list[float]] = {}
 
         # Setup middleware and security
         self._setup_middleware()
@@ -265,7 +265,7 @@ class EconomicAnalysisAPI:
             "last_update": time.time(),
         }
 
-    def _complete_execution(self, execution_id: str, results: Dict[str, Any]) -> None:
+    def _complete_execution(self, execution_id: str, results: dict[str, Any]) -> None:
         """Mark execution as completed."""
         if execution_id in self.active_executions:
             execution = self.active_executions[execution_id]
@@ -552,7 +552,7 @@ class EconomicAnalysisAPI:
 
         @self.app.post("/api/data/validate")
         async def validate_data(
-            data: Dict[str, Any], source_name: str = "unknown"
+            data: dict[str, Any], source_name: str = "unknown"
         ) -> APIResponse:
             """Validate economic data quality."""
             try:
@@ -576,7 +576,7 @@ class EconomicAnalysisAPI:
 
         @self.app.get("/api/indicators/{indicator_type}")
         async def calculate_indicators(
-            indicator_type: str, data: Dict[str, Any]
+            indicator_type: str, data: dict[str, Any]
         ) -> APIResponse:
             """Calculate economic indicators."""
             try:
@@ -605,7 +605,7 @@ class EconomicAnalysisAPI:
 
     def _execute_sar_model(
         self, data: pd.DataFrame, request: ModelExecutionRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute SAR model."""
         # Extract coordinates for spatial weights
         if "latitude" in data.columns and "longitude" in data.columns:
@@ -630,14 +630,14 @@ class EconomicAnalysisAPI:
 
     def _execute_policy_analysis(
         self, data: pd.DataFrame, request: ModelExecutionRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute policy analysis."""
         # Add baseline data to policy engine
         self.policy_engine.add_baseline_data("gdp", data.to_dict())
 
         # Define policy scenario
-        scenario: Dict[str, Any] = cast(
-            Dict[str, Any], request.model_config.get("policy_scenario", {})
+        scenario: dict[str, Any] = cast(
+            dict[str, Any], request.model_config.get("policy_scenario", {})
         )
 
         # Analyze based on policy type
@@ -648,11 +648,11 @@ class EconomicAnalysisAPI:
         else:
             result = self.policy_engine._generic_policy_assessment(cast(Any, scenario))
 
-        return cast(Dict[str, Any], result)
+        return cast(dict[str, Any], result)
 
     def _execute_bioregional_analysis(
         self, data: pd.DataFrame, request: ModelExecutionRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute bioregional analysis."""
         # Baseline for bioregional analysis
         return {
@@ -663,7 +663,7 @@ class EconomicAnalysisAPI:
 
     def _execute_generic_model(
         self, data: pd.DataFrame, request: ModelExecutionRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute generic economic model."""
         return {
             "analysis_type": request.model_type,
@@ -673,7 +673,7 @@ class EconomicAnalysisAPI:
 
     def _analyze_spatial_autocorrelation(
         self, data: gpd.GeoDataFrame, request: SpatialAnalysisRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze spatial autocorrelation."""
         # Calculate Moran's I
         values = data.iloc[:, 0].values
@@ -696,7 +696,7 @@ class EconomicAnalysisAPI:
 
     def _analyze_spatial_regression(
         self, data: gpd.GeoDataFrame, request: SpatialAnalysisRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform spatial regression analysis."""
         # Extract data
         y = data.iloc[:, 0].values
@@ -722,7 +722,7 @@ class EconomicAnalysisAPI:
 
     def _delineate_geographic_markets(
         self, data: gpd.GeoDataFrame, request: SpatialAnalysisRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Delineate geographic markets."""
         # Simplified market delineation based on price correlations
         # In practice, would use more sophisticated clustering algorithms
@@ -750,7 +750,7 @@ class EconomicAnalysisAPI:
             "market_count": len(markets),
         }
 
-    def _generate_diagnostics(self, results: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_diagnostics(self, results: dict[str, Any]) -> dict[str, Any]:
         """Generate comprehensive model diagnostics."""
         return {
             "model_convergence": True,
@@ -759,7 +759,7 @@ class EconomicAnalysisAPI:
             "residual_analysis": "completed",
         }
 
-    def _calculate_progress(self, execution: Dict[str, Any]) -> float:
+    def _calculate_progress(self, execution: dict[str, Any]) -> float:
         """Calculate execution progress percentage."""
         elapsed = time.time() - execution["start_time"]
         estimated_total = 300  # 5 minutes estimate

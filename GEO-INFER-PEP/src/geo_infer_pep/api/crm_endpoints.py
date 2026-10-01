@@ -1,7 +1,7 @@
 """CRM API Endpoints."""
 
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import Any
 from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 import logging
 
@@ -24,14 +24,14 @@ router = APIRouter(
 )
 
 
-@router.post("/upload/csv", response_model=Dict[str, Any])
+@router.post("/upload/csv", response_model=dict[str, Any])
 async def upload_crm_csv(
     file: UploadFile = File(...),
     clean_data: bool = Query(True, description="Perform data cleaning after import"),
     enrich_data: bool = Query(
         True, description="Perform data enrichment after cleaning"
     ),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Upload a CSV file with CRM data. Data will be imported, (optionally) cleaned and enriched,
     and then appended to the shared in-memory store (non-destructive).
@@ -82,22 +82,22 @@ async def upload_crm_csv(
             temp_file_path.unlink()
 
 
-@router.get("/customers", response_model=List[Customer])
+@router.get("/customers", response_model=list[Customer])
 async def get_all_customers(
     limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0)
-) -> List[Customer]:
+) -> list[Customer]:
     """Retrieve all customers from the in-memory store."""
     return store.customers[offset : offset + limit]
 
 
-@router.get("/customers/count", response_model=Dict[str, int])
-async def get_customers_count() -> Dict[str, int]:
+@router.get("/customers/count", response_model=dict[str, int])
+async def get_customers_count() -> dict[str, int]:
     """Get the total number of customers in the in-memory store."""
     return {"total_customers": len(store.customers)}
 
 
-@router.get("/reports/segmentation", response_model=Dict[str, Any])
-async def get_crm_segmentation_report() -> Dict[str, Any]:
+@router.get("/reports/segmentation", response_model=dict[str, Any])
+async def get_crm_segmentation_report() -> dict[str, Any]:
     """
     Generate and return a customer segmentation report.
     """
@@ -110,8 +110,8 @@ async def get_crm_segmentation_report() -> Dict[str, Any]:
     return report
 
 
-@router.get("/reports/lead-conversion", response_model=Dict[str, Any])
-async def get_crm_lead_conversion_report() -> Dict[str, Any]:
+@router.get("/reports/lead-conversion", response_model=dict[str, Any])
+async def get_crm_lead_conversion_report() -> dict[str, Any]:
     """
     Generate and return a lead conversion report.
     """
@@ -124,8 +124,8 @@ async def get_crm_lead_conversion_report() -> Dict[str, Any]:
     return report
 
 
-@router.get("/visualizations/status-distribution", response_model=Dict[str, str])
-async def get_status_distribution_plot() -> Dict[str, str]:
+@router.get("/visualizations/status-distribution", response_model=dict[str, str])
+async def get_status_distribution_plot() -> dict[str, str]:
     """
     Generate a customer status distribution plot and return its path.
     (In a real app, you might return the image directly or a URL).
@@ -189,8 +189,8 @@ async def update_customer(customer_id: str, updated: Customer) -> Customer:
     )
 
 
-@router.delete("/customers/{customer_id}", response_model=Dict[str, Any])
-async def delete_customer(customer_id: str) -> Dict[str, Any]:
+@router.delete("/customers/{customer_id}", response_model=dict[str, Any])
+async def delete_customer(customer_id: str) -> dict[str, Any]:
     """Delete a customer record by id."""
     for index, existing in enumerate(store.customers):
         if existing.customer_id == customer_id:

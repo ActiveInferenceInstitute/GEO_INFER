@@ -17,7 +17,7 @@ Key Features:
 import numpy as np
 import logging
 import networkx as nx
-from typing import Dict, List, Any, Optional
+from typing import Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from collections import defaultdict
@@ -30,12 +30,12 @@ class UrbanSystem:
     """Configuration for urban system optimization."""
 
     system_type: str  # 'traffic', 'energy', 'waste', 'infrastructure'
-    spatial_bounds: Dict[str, float]
-    optimization_objectives: List[str]
+    spatial_bounds: dict[str, float]
+    optimization_objectives: list[str]
     temporal_resolution: str  # 'real_time', 'hourly', 'daily'
-    stakeholder_objectives: List[str]
-    infrastructure_data: Dict[str, Any]
-    demand_patterns: Dict[str, Any]
+    stakeholder_objectives: list[str]
+    infrastructure_data: dict[str, Any]
+    demand_patterns: dict[str, Any]
 
     def __post_init__(self) -> None:
         """Validate urban system configuration."""
@@ -62,9 +62,9 @@ class UrbanTrafficSwarm:
 
     def __init__(
         self,
-        vehicle_types: Optional[List[str]] = None,
-        traffic_network: Optional[Dict[str, Any]] = None,
-        optimization_objectives: Optional[List[str]] = None,
+        vehicle_types: list[str] | None = None,
+        traffic_network: dict[str, Any] | None = None,
+        optimization_objectives: list[str] | None = None,
         real_time_coordination: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -92,10 +92,10 @@ class UrbanTrafficSwarm:
         self.real_time_coordination = real_time_coordination
 
         # Traffic system state
-        self.active_vehicles: List[Dict[str, Any]] = []
-        self.traffic_conditions: Dict[str, Any] = {}
-        self.optimization_results: Dict[str, Any] = {}
-        self.coordination_state: Dict[str, Any] = {}
+        self.active_vehicles: list[dict[str, Any]] = []
+        self.traffic_conditions: dict[str, Any] = {}
+        self.optimization_results: dict[str, Any] = {}
+        self.coordination_state: dict[str, Any] = {}
 
         # Performance tracking
         self.traffic_efficiency: float = 0.0
@@ -108,11 +108,11 @@ class UrbanTrafficSwarm:
 
     async def optimize_traffic_flow(
         self,
-        current_traffic: Dict[str, Any],
-        predicted_demand: Optional[Dict[str, Any]] = None,
-        incident_reports: Optional[List[Dict[str, Any]]] = None,
-        infrastructure_status: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        current_traffic: dict[str, Any],
+        predicted_demand: dict[str, Any] | None = None,
+        incident_reports: list[dict[str, Any]] | None = None,
+        infrastructure_status: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Optimize traffic flow using swarm intelligence.
 
@@ -127,7 +127,7 @@ class UrbanTrafficSwarm:
         """
         logger.info("Optimizing traffic flow")
 
-        optimization: Dict[str, Any] = {
+        optimization: dict[str, Any] = {
             "optimization_time": datetime.now(),
             "current_conditions": current_traffic,
             "optimization_strategy": "multi_objective_swarm",
@@ -175,12 +175,12 @@ class UrbanTrafficSwarm:
 
     def _optimize_routes(
         self,
-        current_traffic: Dict[str, Any],
-        predicted_demand: Optional[Dict[str, Any]],
-        incident_reports: Optional[List[Dict[str, Any]]],
-    ) -> Dict[str, Any]:
+        current_traffic: dict[str, Any],
+        predicted_demand: dict[str, Any] | None,
+        incident_reports: list[dict[str, Any]] | None,
+    ) -> dict[str, Any]:
         """Optimize vehicle routes based on current conditions."""
-        routes: Dict[str, Any] = {
+        routes: dict[str, Any] = {
             "optimized_routes": {},
             "congestion_reductions": {},
             "travel_time_improvements": {},
@@ -236,7 +236,7 @@ class UrbanTrafficSwarm:
 
         return routes
 
-    def _get_traffic_graph(self, current_traffic: Dict[str, Any]) -> Optional[nx.Graph]:
+    def _get_traffic_graph(self, current_traffic: dict[str, Any]) -> nx.Graph | None:
         """Return a NetworkX graph from supplied traffic or constructor data."""
         candidate = (
             current_traffic.get("graph")
@@ -286,7 +286,7 @@ class UrbanTrafficSwarm:
         return graph if graph.number_of_edges() else None
 
     @staticmethod
-    def _edge_travel_time(data: Dict[str, Any]) -> float:
+    def _edge_travel_time(data: dict[str, Any]) -> float:
         """Extract a finite positive travel-time cost from an edge."""
         for key in ("travel_time", "time", "weight", "distance"):
             value = data.get(key)
@@ -299,14 +299,14 @@ class UrbanTrafficSwarm:
         graph: nx.Graph,
         origin: Any,
         destination: Any,
-        congested_areas: List[str],
-    ) -> Optional[Dict[str, Any]]:
+        congested_areas: list[str],
+    ) -> dict[str, Any] | None:
         """Build a route record from the least-congested feasible graph path."""
         if origin not in graph or destination not in graph:
             return None
         congested = {str(segment) for segment in congested_areas}
 
-        def cost(source: Any, target: Any, data: Dict[str, Any]) -> float:
+        def cost(source: Any, target: Any, data: dict[str, Any]) -> float:
             if graph.is_multigraph():
                 data = min(data.values(), key=self._edge_travel_time)
             segment = data.get("segment_id", f"{source}->{target}")
@@ -350,10 +350,10 @@ class UrbanTrafficSwarm:
     def _generate_primary_routes(
         self,
         vehicle_type: str,
-        congested_areas: List[str],
-        current_traffic: Optional[Dict[str, Any]] = None,
-        graph: Optional[nx.Graph] = None,
-    ) -> List[Dict[str, Any]]:
+        congested_areas: list[str],
+        current_traffic: dict[str, Any] | None = None,
+        graph: nx.Graph | None = None,
+    ) -> list[dict[str, Any]]:
         """Generate primary routes for vehicle type."""
         current_traffic = current_traffic or {}
         od_pairs = current_traffic.get("od_pairs", current_traffic.get("trips", []))
@@ -387,18 +387,18 @@ class UrbanTrafficSwarm:
     def _generate_backup_routes(
         self,
         vehicle_type: str,
-        congested_areas: List[str],
-        current_traffic: Optional[Dict[str, Any]] = None,
-        graph: Optional[nx.Graph] = None,
-    ) -> List[Dict[str, Any]]:
+        congested_areas: list[str],
+        current_traffic: dict[str, Any] | None = None,
+        graph: nx.Graph | None = None,
+    ) -> list[dict[str, Any]]:
         """Generate backup routes for vehicle type."""
         current_traffic = current_traffic or {}
         supplied = current_traffic.get("backup_routes", {}).get(vehicle_type, [])
         return [dict(route) for route in supplied if isinstance(route, dict)]
 
     def _calculate_flow_improvements(
-        self, routes: Dict[str, Any], current_traffic: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, routes: dict[str, Any], current_traffic: dict[str, Any]
+    ) -> dict[str, Any]:
         """Calculate traffic flow improvements from route optimization."""
         improvements = {
             "overall_flow_improvement": 0.0,
@@ -454,8 +454,8 @@ class UrbanTrafficSwarm:
         return improvements
 
     def _assess_emission_impact(
-        self, routes: Dict[str, Any], improvements: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, routes: dict[str, Any], improvements: dict[str, Any]
+    ) -> dict[str, Any]:
         """Assess environmental impact of traffic optimization."""
         impact = {
             "emission_reduction": 0.0,
@@ -482,9 +482,9 @@ class UrbanTrafficSwarm:
 
     def _generate_safety_measures(
         self,
-        incident_reports: Optional[List[Dict[str, Any]]],
-        infrastructure_status: Optional[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
+        incident_reports: list[dict[str, Any]] | None,
+        infrastructure_status: dict[str, Any] | None,
+    ) -> list[dict[str, Any]]:
         """Generate safety measures based on incidents and infrastructure."""
         measures = []
 
@@ -535,8 +535,8 @@ class UrbanTrafficSwarm:
         return measures
 
     def _identify_high_risk_areas(
-        self, incident_reports: List[Dict[str, Any]]
-    ) -> List[str]:
+        self, incident_reports: list[dict[str, Any]]
+    ) -> list[str]:
         """Identify areas with high incident rates."""
         risk_areas = []
 
@@ -558,11 +558,11 @@ class UrbanTrafficSwarm:
 
     async def coordinate_movements(
         self,
-        vehicle_fleet: List[Dict[str, Any]],
-        traffic_optimization: Dict[str, Any],
-        priority_schemes: Optional[Dict[str, Any]] = None,
-        environmental_impact: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        vehicle_fleet: list[dict[str, Any]],
+        traffic_optimization: dict[str, Any],
+        priority_schemes: dict[str, Any] | None = None,
+        environmental_impact: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Coordinate vehicle movements based on optimization results.
 
@@ -621,12 +621,12 @@ class UrbanTrafficSwarm:
 
     def _assign_vehicles_to_routes(
         self,
-        vehicle_fleet: List[Dict[str, Any]],
-        optimization: Dict[str, Any],
-        priority_schemes: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        vehicle_fleet: list[dict[str, Any]],
+        optimization: dict[str, Any],
+        priority_schemes: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         """Assign vehicles to optimized routes."""
-        assignments: Dict[str, Any] = {
+        assignments: dict[str, Any] = {
             "route_assignments": {},
             "priority_handling": {},
             "load_balancing": {},
@@ -679,10 +679,10 @@ class UrbanTrafficSwarm:
         return assignments
 
     def _generate_traffic_control_measures(
-        self, optimization: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, optimization: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate traffic control measures."""
-        measures: Dict[str, Any] = {
+        measures: dict[str, Any] = {
             "signal_timing": {},
             "lane_management": {},
             "speed_limits": {},
@@ -727,7 +727,7 @@ class UrbanTrafficSwarm:
         return measures
 
     def _calculate_coordination_efficiency(
-        self, assignments: Dict[str, Any], control_measures: Dict[str, Any]
+        self, assignments: dict[str, Any], control_measures: dict[str, Any]
     ) -> float:
         """Calculate coordination efficiency."""
         route_assignments = assignments.get("route_assignments", {})
@@ -746,10 +746,10 @@ class UrbanTrafficSwarm:
 
     def _predict_coordination_outcomes(
         self,
-        assignments: Dict[str, Any],
-        optimization: Dict[str, Any],
-        environmental_impact: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        assignments: dict[str, Any],
+        optimization: dict[str, Any],
+        environmental_impact: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         """Predict outcomes of coordination strategy."""
         outcomes = {
             "traffic_flow_improvement": 0.0,
@@ -802,11 +802,11 @@ class UrbanTrafficSwarm:
 
     async def adaptive_management(
         self,
-        traffic_patterns: Dict[str, Any],
-        learning_history: Optional[Dict[str, Any]] = None,
+        traffic_patterns: dict[str, Any],
+        learning_history: dict[str, Any] | None = None,
         predictive_modeling: bool = True,
-        stakeholder_feedback: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        stakeholder_feedback: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Adaptively manage urban traffic system based on patterns and feedback.
 
@@ -821,7 +821,7 @@ class UrbanTrafficSwarm:
         """
         logger.info("Performing adaptive traffic management")
 
-        management: Dict[str, Any] = {
+        management: dict[str, Any] = {
             "management_time": datetime.now(),
             "adaptive_strategies": [],
             "parameter_adjustments": {},
@@ -873,10 +873,10 @@ class UrbanTrafficSwarm:
         return management
 
     def _analyze_traffic_patterns(
-        self, traffic_patterns: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, traffic_patterns: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze traffic patterns for adaptation opportunities."""
-        analysis: Dict[str, Any] = {
+        analysis: dict[str, Any] = {
             "peak_periods": [],
             "congestion_hotspots": [],
             "flow_efficiency": 0.0,
@@ -926,8 +926,8 @@ class UrbanTrafficSwarm:
         return analysis
 
     def _adapt_strategies(
-        self, learning_history: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        self, learning_history: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Adapt optimization strategies based on learning history."""
         strategies = []
 
@@ -975,9 +975,9 @@ class UrbanTrafficSwarm:
 
     def _adjust_system_parameters(
         self,
-        traffic_patterns: Dict[str, Any],
-        learning_history: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        traffic_patterns: dict[str, Any],
+        learning_history: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         """Adjust system parameters based on patterns and history."""
         adjustments = {
             "optimization_frequency": 1.0,
@@ -1014,8 +1014,8 @@ class UrbanTrafficSwarm:
         return adjustments
 
     def _generate_infrastructure_recommendations(
-        self, traffic_patterns: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        self, traffic_patterns: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Generate infrastructure improvement recommendations."""
         recommendations = []
 
@@ -1056,10 +1056,10 @@ class UrbanTrafficSwarm:
         return recommendations
 
     def _update_policies(
-        self, stakeholder_feedback: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        self, stakeholder_feedback: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Update policies based on stakeholder feedback."""
-        policy_updates: List[Dict[str, Any]] = []
+        policy_updates: list[dict[str, Any]] = []
 
         try:
             # Analyze feedback by category
@@ -1106,10 +1106,10 @@ class UrbanTrafficSwarm:
         return policy_updates
 
     def _generate_performance_predictions(
-        self, traffic_patterns: Dict[str, Any], use_prediction: bool
-    ) -> Dict[str, Any]:
+        self, traffic_patterns: dict[str, Any], use_prediction: bool
+    ) -> dict[str, Any]:
         """Generate performance predictions for future periods."""
-        predictions: Dict[str, Any] = {
+        predictions: dict[str, Any] = {
             "prediction_method": (
                 "trend_analysis" if use_prediction else "current_state"
             ),
@@ -1157,7 +1157,7 @@ class UrbanTrafficSwarm:
 
         return predictions
 
-    def get_traffic_status(self) -> Dict[str, Any]:
+    def get_traffic_status(self) -> dict[str, Any]:
         """Get current urban traffic system status."""
         status = {
             "system_active": len(self.active_vehicles) > 0,

@@ -8,7 +8,7 @@ and compatibility with SPM statistical methods.
 
 import numpy as np
 from scipy import stats
-from typing import Dict, Optional, Any
+from typing import Any
 import logging
 
 from ..models.data_models import SPMData, DesignMatrix
@@ -128,7 +128,7 @@ def validate_spm_data(data: SPMData) -> SPMData:
 
 
 def validate_design_matrix(
-    design_matrix: DesignMatrix, n_points: Optional[int] = None
+    design_matrix: DesignMatrix, n_points: int | None = None
 ) -> DesignMatrix:
     """
     Validate design matrix for GLM analysis.
@@ -284,7 +284,7 @@ def validate_contrast(
 
 def validate_spatial_autocorrelation(
     data: SPMData, max_lag: int = 10, alpha: float = 0.05
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Validate and assess spatial autocorrelation in data.
 
@@ -322,7 +322,7 @@ def validate_spatial_autocorrelation(
     return results
 
 
-def _compute_morans_i(data: np.ndarray, distance_matrix: np.ndarray) -> Dict[str, Any]:
+def _compute_morans_i(data: np.ndarray, distance_matrix: np.ndarray) -> dict[str, Any]:
     """Compute Moran's I statistic for spatial autocorrelation."""
     n = len(data)
 
@@ -367,7 +367,7 @@ def _compute_morans_i(data: np.ndarray, distance_matrix: np.ndarray) -> Dict[str
     }
 
 
-def _compute_gearys_c(data: np.ndarray, distance_matrix: np.ndarray) -> Dict[str, Any]:
+def _compute_gearys_c(data: np.ndarray, distance_matrix: np.ndarray) -> dict[str, Any]:
     """Compute Geary's C statistic for spatial autocorrelation."""
     n = len(data)
     weights = 1 / (distance_matrix + np.eye(n) * 1e-10)
@@ -393,7 +393,7 @@ def _compute_gearys_c(data: np.ndarray, distance_matrix: np.ndarray) -> Dict[str
 
 def _compute_variogram(
     data: np.ndarray, distance_matrix: np.ndarray, max_lag: int
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Compute empirical variogram."""
     dist_flat = distance_matrix.flatten()
     diffs = (data[:, np.newaxis] - data[np.newaxis, :]) ** 2
@@ -437,7 +437,7 @@ def _compute_variogram(
 
 
 def _assess_spatial_dependence(
-    moran_results: Dict, geary_results: Dict, alpha: float
+    moran_results: dict, geary_results: dict, alpha: float
 ) -> str:
     """Assess overall spatial dependence."""
     moran_sig = moran_results["p_value"] < alpha

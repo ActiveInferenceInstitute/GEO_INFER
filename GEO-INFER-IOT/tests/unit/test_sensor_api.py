@@ -6,7 +6,7 @@ measurement -> spatially filtered query response shape.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 
 import h3
 from fastapi.testclient import TestClient
@@ -18,7 +18,7 @@ LATITUDE = 40.7
 LONGITUDE = -74.0
 H3_RESOLUTION = 8
 
-SENSOR_DATA: Dict[str, Any] = {
+SENSOR_DATA: dict[str, Any] = {
     "sensor_id": "s-1",
     "network_id": "net-1",
     "sensor_type": "temperature",
@@ -26,7 +26,7 @@ SENSOR_DATA: Dict[str, Any] = {
     "longitude": LONGITUDE,
 }
 
-MEASUREMENT_DATA: Dict[str, Any] = {
+MEASUREMENT_DATA: dict[str, Any] = {
     "sensor_id": "s-1",
     "timestamp": "2026-09-22T00:00:00+00:00",
     "variable": "temperature",
@@ -57,17 +57,17 @@ class StubSensorRecord:
         self.status = "active"
         self.registered_at = datetime.now()
         self.last_seen = None
-        self.metadata: Dict[str, Any] = {}
+        self.metadata: dict[str, Any] = {}
 
 
 class StubRegistry:
     """Registry surface consumed by the SensorAPI routes."""
 
     def __init__(self) -> None:
-        self.sensors: Dict[str, StubSensorRecord] = {}
-        self.networks: Dict[str, Any] = {}
+        self.sensors: dict[str, StubSensorRecord] = {}
+        self.networks: dict[str, Any] = {}
 
-    def register_sensor(self, sensor_info: Dict[str, Any]) -> StubSensorRecord:
+    def register_sensor(self, sensor_info: dict[str, Any]) -> StubSensorRecord:
         record = StubSensorRecord(
             sensor_info["sensor_id"],
             sensor_info["network_id"],
@@ -78,14 +78,14 @@ class StubRegistry:
         self.sensors[record.sensor_id] = record
         return record
 
-    def get_sensors_in_h3_cell(self, h3_index: str) -> List[StubSensorRecord]:
+    def get_sensors_in_h3_cell(self, h3_index: str) -> list[StubSensorRecord]:
         return [s for s in self.sensors.values() if s.h3_index == h3_index]
 
 
 class StubMeasurement:
     """Minimal stand-in for ingestion.SensorMeasurement."""
 
-    def __init__(self, data: Dict[str, Any]) -> None:
+    def __init__(self, data: dict[str, Any]) -> None:
         self.sensor_id = data["sensor_id"]
         self.timestamp = datetime.fromisoformat(data["timestamp"])
         self.variable = data["variable"]
@@ -94,21 +94,21 @@ class StubMeasurement:
         self.latitude = float(data["latitude"])
         self.longitude = float(data["longitude"])
         self.h3_index = h3.latlng_to_cell(self.latitude, self.longitude, 8)
-        self.quality_flags: List[str] = list(data.get("quality_flags", []))
-        self.metadata: Dict[str, Any] = dict(data.get("metadata", {}))
+        self.quality_flags: list[str] = list(data.get("quality_flags", []))
+        self.metadata: dict[str, Any] = dict(data.get("metadata", {}))
 
 
 class StubIngestion:
     """Ingestion stand-in exposing the attribute surface the API reads."""
 
     def __init__(self) -> None:
-        self.measurements: List[StubMeasurement] = []
+        self.measurements: list[StubMeasurement] = []
 
-    async def ingest_measurement(self, data: Dict[str, Any]) -> bool:
+    async def ingest_measurement(self, data: dict[str, Any]) -> bool:
         self.measurements.append(StubMeasurement(data))
         return True
 
-    def get_measurement_statistics(self) -> Dict[str, int]:
+    def get_measurement_statistics(self) -> dict[str, int]:
         return {"total_measurements": len(self.measurements)}
 
 

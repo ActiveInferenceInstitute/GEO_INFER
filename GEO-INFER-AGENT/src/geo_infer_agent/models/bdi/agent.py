@@ -9,7 +9,8 @@ import asyncio
 import logging
 import re
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, cast
+from typing import Any, cast
+from collections.abc import Callable
 
 from geo_infer_agent.core.agent_base import BaseAgent, AgentState
 from geo_infer_agent.models.bdi.belief import Belief
@@ -32,10 +33,10 @@ class BDIState(AgentState):
 
     def __init__(self, capacity: int = 1000) -> None:
         super().__init__(capacity)
-        self.beliefs_dict: Dict[str, Belief] = {}
-        self.desires_dict: Dict[str, Desire] = {}
-        self.intentions: List[Plan] = []  # type: ignore[assignment]
-        self.current_intention: Optional[Plan] = None
+        self.beliefs_dict: dict[str, Belief] = {}
+        self.desires_dict: dict[str, Desire] = {}
+        self.intentions: list[Plan] = []  # type: ignore[assignment]
+        self.current_intention: Plan | None = None
         # Expose beliefs/desires via the parent-class attribute names.
         self.beliefs = self.beliefs_dict
         self.desires = self.desires_dict  # type: ignore[assignment]
@@ -83,8 +84,8 @@ class BDIState(AgentState):
         self,
         name: str,
         value: Any,
-        confidence: Optional[float] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        confidence: float | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Update an existing belief or create it if absent."""
         if name in self.beliefs_dict:
@@ -123,7 +124,7 @@ class BDIState(AgentState):
             )
         self.last_update = datetime.now()
 
-    def get_belief(self, name: str) -> Optional[Belief]:
+    def get_belief(self, name: str) -> Belief | None:
         """Return the named belief, or None if absent."""
         return self.beliefs_dict.get(name)
 
@@ -144,11 +145,11 @@ class BDIState(AgentState):
             }
         )
 
-    def get_desire(self, name: str) -> Optional[Desire]:
+    def get_desire(self, name: str) -> Desire | None:
         """Return the named desire, or None if absent."""
         return self.desires_dict.get(name)
 
-    def get_desires_by_priority(self) -> List[Desire]:
+    def get_desires_by_priority(self) -> list[Desire]:
         """Return all desires ordered by priority (highest first)."""
         return sorted(
             self.desires_dict.values(), key=lambda d: d.priority, reverse=True
@@ -171,7 +172,7 @@ class BDIState(AgentState):
             }
         )
 
-    def set_current_intention(self, plan: Optional[Plan]) -> None:
+    def set_current_intention(self, plan: Plan | None) -> None:
         """Set the currently active intention."""
         self.current_intention = plan
         if plan:
@@ -188,11 +189,11 @@ class BDIState(AgentState):
                 {"type": "intention_cleared", "timestamp": datetime.now().isoformat()}
             )
 
-    def get_current_intention(self) -> Optional[Plan]:
+    def get_current_intention(self) -> Plan | None:
         """Return the currently active intention."""
         return self.current_intention
 
-    def get_intentions_for_desire(self, desire_name: str) -> List[Plan]:
+    def get_intentions_for_desire(self, desire_name: str) -> list[Plan]:
         """Return all non-complete intentions targeting the given desire."""
         return [
             p
@@ -210,7 +211,7 @@ class BDIState(AgentState):
     # Serialization
     # ------------------------------------------------------------------
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         base = super().to_dict()
         base.update(
             {
@@ -225,7 +226,7 @@ class BDIState(AgentState):
         return base
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "BDIState":
+    def from_dict(cls, data: dict[str, Any]) -> "BDIState":
         state = cls()
         if "beliefs" in data:
             for name, bdata in data["beliefs"].items():
@@ -263,7 +264,7 @@ class BDIAgent(BaseAgent):
     state: BDIState
 
     def __init__(
-        self, agent_id: Optional[str] = None, config: Optional[Dict[str, Any]] = None
+        self, agent_id: str | None = None, config: dict[str, Any] | None = None
     ) -> None:
         super().__init__(agent_id, config)
 
@@ -271,9 +272,9 @@ class BDIAgent(BaseAgent):
         self.id = self.agent_id
 
         self.state = BDIState(capacity=self.config.get("memory_capacity", 1000))
-        self.plan_library: Dict[str, Dict[str, Any]] = {}
-        self.action_handlers: Dict[str, Callable[..., Any]] = {}
-        self.perception_handler_list: List[Callable[..., Any]] = []
+        self.plan_library: dict[str, dict[str, Any]] = {}
+        self.action_handlers: dict[str, Callable[..., Any]] = {}
+        self.perception_handler_list: list[Callable[..., Any]] = []
 
         self.deliberation_interval: float = self.config.get("deliberation_interval", 5)
         self.commitment_strategy: str = self.config.get(
@@ -305,7 +306,7 @@ class BDIAgent(BaseAgent):
         self._initialize_desires()
         logger.info("BDI agent %s initialization complete", self.agent_id)
 
-    async def perceive(self) -> Dict[str, Any]:
+    async def perceive(self) -> dict[str, Any]:
         """
         Return a perception dict from the environment.
 
@@ -314,7 +315,7 @@ class BDIAgent(BaseAgent):
         ``sensor_readings`` key in the agent config for deterministic or
         test deployments.
         """
-        perceptions: Dict[str, Any] = {
+        perceptions: dict[str, Any] = {
             "timestamp": datetime.now().isoformat(),
             "agent_id": self.agent_id,
         }
@@ -330,14 +331,14 @@ class BDIAgent(BaseAgent):
         logger.debug("BDI agent %s perceptions: %s", self.agent_id, perceptions)
         return perceptions
 
-    def update_beliefs(self, perception: Dict[str, Any]) -> None:
+    def update_beliefs(self, perception: dict[str, Any]) -> None:
         """Update beliefs from a perception dict by running all perception handlers."""
         for handler in self.perception_handler_list:
             handler(self, perception)
         self.state.update_belief("last_perception_time", datetime.now())
         logger.debug("BDI agent %s beliefs updated from perception", self.agent_id)
 
-    async def decide(self) -> Optional[Dict[str, Any]]:
+    async def decide(self) -> dict[str, Any] | None:
         """
         Select the next action to perform.
 
@@ -371,7 +372,7 @@ class BDIAgent(BaseAgent):
         logger.debug("BDI agent %s found no valid intentions", self.agent_id)
         return None
 
-    async def act(self, action: Dict[str, Any]) -> Dict[str, Any]:
+    async def act(self, action: dict[str, Any]) -> dict[str, Any]:
         """Execute the given action using registered handlers."""
         if not action or ("type" not in action and "action_type" not in action):
             logger.warning(
@@ -409,7 +410,7 @@ class BDIAgent(BaseAgent):
                                 self.agent_id,
                                 desire.name,
                             )
-            return cast(Dict[str, Any], result)
+            return cast(dict[str, Any], result)
         except Exception as exc:
             logger.error(
                 "BDI agent %s error executing action %s: %s",
@@ -437,22 +438,22 @@ class BDIAgent(BaseAgent):
         self.perception_handler_list.append(self._handle_sensor_perceptions)
 
     def _handle_sensor_perceptions(
-        self, agent: "BDIAgent", perception: Dict[str, Any]
+        self, agent: "BDIAgent", perception: dict[str, Any]
     ) -> None:
         if "sensors" in perception:
             for sensor_name, value in perception["sensors"].items():
                 agent.state.update_belief(f"sensor.{sensor_name}", value)
 
     async def _handle_wait_action(
-        self, agent: "BDIAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "BDIAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         duration = action.get("duration", 1)
         await asyncio.sleep(duration)
         return {"success": True, "duration": duration}
 
     async def _handle_update_belief_action(
-        self, agent: "BDIAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "BDIAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         belief_name = action.get("belief_name")
         if not belief_name:
             return {"success": False, "error": "Missing belief name"}
@@ -469,8 +470,8 @@ class BDIAgent(BaseAgent):
         }
 
     async def _handle_query_belief_action(
-        self, agent: "BDIAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "BDIAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         belief_name = action.get("belief_name")
         if not belief_name:
             return {"success": False, "error": "Missing belief name"}
@@ -486,8 +487,8 @@ class BDIAgent(BaseAgent):
         }
 
     async def _handle_log_action(
-        self, agent: "BDIAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "BDIAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         message = action.get("message", "")
         level = action.get("level", "info")
         log_fn = {
@@ -558,7 +559,7 @@ class BDIAgent(BaseAgent):
             self.state.add_desire(desire)
         logger.debug("BDI agent %s initialized desires from config", self.agent_id)
 
-    def _find_plan_for_desire(self, desire_name: str) -> Optional[Plan]:
+    def _find_plan_for_desire(self, desire_name: str) -> Plan | None:
         """Find or create a plan for the given desire."""
         # Reuse an existing non-complete intention.
         for plan in self.state.get_intentions_for_desire(desire_name):
@@ -616,7 +617,7 @@ class BDIAgent(BaseAgent):
             return [self._resolve_placeholders(item) for item in value]
         return value
 
-    def _check_context_conditions(self, conditions: Dict[str, Any]) -> bool:
+    def _check_context_conditions(self, conditions: dict[str, Any]) -> bool:
         """Return True if every condition matches the corresponding belief value."""
         for belief_name, expected in conditions.items():
             belief = self.state.get_belief(belief_name)

@@ -14,7 +14,8 @@ import logging
 import operator
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Callable, Iterator, Sequence
+from typing import Any
+from collections.abc import Callable, Iterator, Sequence
 
 import numpy as np
 import numpy.typing as npt

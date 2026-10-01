@@ -6,7 +6,7 @@ This module handles the instantiation of appropriate agent interfaces based on
 the requested agent type, configuration, and available agent model implementations.
 """
 
-from typing import Dict, Any, Type, Optional
+from typing import Any
 import importlib
 import logging
 from .agent_interface import AgentInterface, AgentType
@@ -26,11 +26,11 @@ class AgentFactory:
     """
 
     # Registry of agent interface implementations
-    _registry: Dict[AgentType, Type[AgentInterface]] = {}
+    _registry: dict[AgentType, type[AgentInterface]] = {}
 
     @classmethod
     def register_interface(
-        cls, agent_type: AgentType, interface_class: Type[AgentInterface]
+        cls, agent_type: AgentType, interface_class: type[AgentInterface]
     ) -> None:
         """
         Register an agent interface implementation for a specific agent type.
@@ -40,7 +40,7 @@ class AgentFactory:
             interface_class: Class implementing the AgentInterface
         """
         if not issubclass(interface_class, AgentInterface):
-            raise TypeError(f"Interface class must be a subclass of AgentInterface")
+            raise TypeError("Interface class must be a subclass of AgentInterface")
 
         cls._registry[agent_type] = interface_class
         logger.info(
@@ -49,7 +49,7 @@ class AgentFactory:
 
     @classmethod
     def create_interface(
-        cls, agent_type: AgentType, config: Optional[Dict[str, Any]] = None
+        cls, agent_type: AgentType, config: dict[str, Any] | None = None
     ) -> AgentInterface:
         """
         Create an agent interface instance for the specified agent type.
@@ -91,7 +91,7 @@ class AgentFactory:
         return interface_class(**config)
 
     @classmethod
-    def get_available_agent_types(cls) -> Dict[str, str]:
+    def get_available_agent_types(cls) -> dict[str, str]:
         """
         Get a dictionary of available agent types.
 

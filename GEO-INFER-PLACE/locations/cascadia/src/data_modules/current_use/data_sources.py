@@ -8,7 +8,7 @@ land use analysis across the Cascadian bioregion (Northern California + Oregon).
 import logging
 import os
 from datetime import datetime
-from typing import Dict, List, Tuple, Optional, NamedTuple, Any
+from typing import NamedTuple, Any
 from pathlib import Path
 import requests
 import zipfile
@@ -80,8 +80,8 @@ class CascadianCurrentUseDataSources:
         logger.info("Initialized CascadianCurrentUseDataSources")
 
     def _calculate_bbox_from_hexagons(
-        self, hexagons: List[str]
-    ) -> Tuple[float, float, float, float]:
+        self, hexagons: list[str]
+    ) -> tuple[float, float, float, float]:
         """Calculates a bounding box from a list of H3 hexagons."""
         boundaries = [
             Polygon([(lng, lat) for lat, lng in cell_to_latlng_boundary(h)]) for h in hexagons
@@ -92,7 +92,7 @@ class CascadianCurrentUseDataSources:
         max_lat = max(b.bounds[3] for b in boundaries)
         return (min_lon, min_lat, max_lon, max_lat)
 
-    def _init_data_sources(self) -> Dict[str, Dict]:
+    def _init_data_sources(self) -> dict[str, dict]:
         """Initialize data sources configuration"""
         return {
             "nass_cdl": {
@@ -130,7 +130,7 @@ class CascadianCurrentUseDataSources:
             },
         }
 
-    def _init_crop_classifications(self) -> Dict[int, CropClassification]:
+    def _init_crop_classifications(self) -> dict[int, CropClassification]:
         """Initialize standardized crop classification system"""
         return {
             1: CropClassification(1, "Corn", "Field Crops", "High", 800.0, "Annual"),
@@ -158,8 +158,8 @@ class CascadianCurrentUseDataSources:
         }
 
     def fetch_nass_cdl_data_for_hexagons(
-        self, year: int, hexagons: List[str]
-    ) -> Dict[str, List[Tuple[int, float]]]:
+        self, year: int, hexagons: list[str]
+    ) -> dict[str, list[tuple[int, float]]]:
         """
         Fetches and processes NASS CDL data for a list of hexagons, chunking requests.
         For each hexagon, it returns the list of crop codes and their percentage coverage.
@@ -210,7 +210,7 @@ class CascadianCurrentUseDataSources:
 
         return hex_results
 
-    def _get_state_for_bbox(self, bbox: Tuple[float, float, float, float]) -> str:
+    def _get_state_for_bbox(self, bbox: tuple[float, float, float, float]) -> str:
         """Determines the state based on the bounding box's center."""
         center_lon = (bbox[0] + bbox[2]) / 2
         # Simple longitude check for CA, OR, WA
@@ -224,7 +224,7 @@ class CascadianCurrentUseDataSources:
                 return "WA"
         return "CONUS"  # Default to conterminous US if not clearly in one state
 
-    def _group_hexagons_by_state(self, hexagons: List[str]) -> Dict[str, List[str]]:
+    def _group_hexagons_by_state(self, hexagons: list[str]) -> dict[str, list[str]]:
         """Groups hexagons by their approximate state location."""
         states = {"CA": [], "OR": [], "WA": [], "Other": []}
         for h in hexagons:
@@ -240,7 +240,7 @@ class CascadianCurrentUseDataSources:
                 states["Other"].append(h)
         return states
 
-    def _download_and_clip_national_cdl(self, year: int, state: str) -> Optional[Path]:
+    def _download_and_clip_national_cdl(self, year: int, state: str) -> Path | None:
         """
         Downloads the national CDL file, unzips it, and clips it to the state boundary.
         Manages local cache to avoid re-downloads and re-processing.
@@ -314,8 +314,8 @@ class CascadianCurrentUseDataSources:
             return None
 
     def _fetch_cdl_raster_for_bbox(
-        self, year: int, bbox: Tuple[float, float, float, float], state: str
-    ) -> Optional[Dict[str, Any]]:
+        self, year: int, bbox: tuple[float, float, float, float], state: str
+    ) -> dict[str, Any] | None:
         """
         Fetches a NASS Cropland Data Layer raster for a given bounding box by
         downloading, caching, and clipping the national dataset.
@@ -372,7 +372,7 @@ class CascadianCurrentUseDataSources:
         """
         raise RuntimeError(f"Land IQ data acquisition is not configured for {county}")
 
-    def get_usda_county_stats(self, county_fips: str, year: int) -> Optional[Dict]:
+    def get_usda_county_stats(self, county_fips: str, year: int) -> dict | None:
         """
         Fetches USDA NASS county-level statistics for validation.
         """
@@ -403,7 +403,7 @@ class CascadianCurrentUseDataSources:
             logger.error(f"Error fetching Oregon EFU reports: {str(e)}")
             return pd.DataFrame()
 
-    def get_crop_classification(self, crop_code: int) -> Optional[CropClassification]:
+    def get_crop_classification(self, crop_code: int) -> CropClassification | None:
         """
         Get crop classification information
         """
@@ -459,7 +459,7 @@ class CascadianCurrentUseDataSources:
             return os.path.exists(local_path)
         return False
 
-    def get_available_years(self, source: str = "nass_cdl") -> List[int]:
+    def get_available_years(self, source: str = "nass_cdl") -> list[int]:
         """
         Get available years for a data source.
         """
@@ -484,7 +484,7 @@ class CascadianCurrentUseDataSources:
             return sorted(years)
         return []
 
-    def get_target_counties(self, state: str = "CA") -> List[str]:
+    def get_target_counties(self, state: str = "CA") -> list[str]:
         """
         Get target counties for analysis.
         """

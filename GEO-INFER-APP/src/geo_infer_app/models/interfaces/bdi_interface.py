@@ -6,7 +6,8 @@ This interface connects the GEO-INFER-APP UI to the BDI agent implementation
 in GEO-INFER-AGENT.
 """
 
-from typing import Dict, List, Any, Optional, Callable
+from typing import Any
+from collections.abc import Callable
 import logging
 import datetime
 import uuid
@@ -25,13 +26,13 @@ except ImportError:
         def __init__(self, **kwargs: Any) -> None:
             self.id = str(uuid.uuid4())
             self.name = kwargs.get("name", f"BDI-Agent-{self.id[:8]}")
-            self.beliefs: Dict[str, Any] = kwargs.get("beliefs", {})
-            self.desires: List[Any] = kwargs.get("desires", [])
-            self.intentions: List[Any] = []
+            self.beliefs: dict[str, Any] = kwargs.get("beliefs", {})
+            self.desires: list[Any] = kwargs.get("desires", [])
+            self.intentions: list[Any] = []
             self.location = kwargs.get("initial_location", {"lat": 0.0, "lng": 0.0})
             self.status = "idle"
 
-        def update_beliefs(self, beliefs: Dict[str, Any]) -> None:
+        def update_beliefs(self, beliefs: dict[str, Any]) -> None:
             self.beliefs.update(beliefs)
 
         def add_desire(self, desire: Any) -> None:
@@ -84,8 +85,8 @@ class BDIAgentInterface(AgentInterface):
         Args:
             **kwargs: Configuration parameters for the agent interface
         """
-        self._agents: Dict[str, BDIAgent] = {}
-        self._event_handlers: Dict[str, List[Callable]] = {}
+        self._agents: dict[str, BDIAgent] = {}
+        self._event_handlers: dict[str, list[Callable]] = {}
         self._config = kwargs
 
         logger.info("Initialized BDI agent interface")
@@ -122,8 +123,8 @@ class BDIAgentInterface(AgentInterface):
         )
 
     def list_agents(
-        self, filter_params: Optional[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
+        self, filter_params: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
         """
         List all available BDI agents, with optional filtering.
 
@@ -171,8 +172,8 @@ class BDIAgentInterface(AgentInterface):
         return agents
 
     def send_command(
-        self, agent_id: str, command: str, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent_id: str, command: str, params: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Send a command to a BDI agent.
 
@@ -228,7 +229,7 @@ class BDIAgentInterface(AgentInterface):
         return response
 
     def register_event_handler(
-        self, event_type: str, callback: Callable[[Dict[str, Any]], None]
+        self, event_type: str, callback: Callable[[dict[str, Any]], None]
     ) -> None:
         """
         Register a callback function to handle agent events.
@@ -243,7 +244,7 @@ class BDIAgentInterface(AgentInterface):
         self._event_handlers[event_type].append(callback)
         logger.info(f"Registered event handler for {event_type}")
 
-    def create_agent(self, agent_type: AgentType, config: Dict[str, Any]) -> str:
+    def create_agent(self, agent_type: AgentType, config: dict[str, Any]) -> str:
         """
         Create a new BDI agent instance.
 
@@ -288,7 +289,7 @@ class BDIAgentInterface(AgentInterface):
         return agent_id
 
     @staticmethod
-    def _to_bdi_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    def _to_bdi_config(config: dict[str, Any]) -> dict[str, Any]:
         """Map UI-oriented BDI config keys to GEO-INFER-AGENT BDI config."""
         beliefs = config.get("beliefs", {})
         desires = config.get("desires", [])
@@ -311,7 +312,7 @@ class BDIAgentInterface(AgentInterface):
 
     @staticmethod
     def _hydrate_interface_state(
-        agent: BDIAgent, agent_id: str, config: Dict[str, Any]
+        agent: BDIAgent, agent_id: str, config: dict[str, Any]
     ) -> None:
         """Attach UI-facing state fields expected by the APP interface."""
         agent.id = agent_id
@@ -322,7 +323,7 @@ class BDIAgentInterface(AgentInterface):
         agent.location = config.get("initial_location", {"lat": 0.0, "lng": 0.0})
         agent.status = "idle"
 
-    def _trigger_event(self, event_type: str, event_data: Dict[str, Any]) -> None:
+    def _trigger_event(self, event_type: str, event_data: dict[str, Any]) -> None:
         """
         Trigger all registered handlers for an event.
 
@@ -339,8 +340,8 @@ class BDIAgentInterface(AgentInterface):
 
     @staticmethod
     def _is_location_in_radius(
-        location: Optional[Dict[str, float]],
-        center: Optional[Dict[str, float]],
+        location: dict[str, float] | None,
+        center: dict[str, float] | None,
         radius: float,
     ) -> bool:
         """

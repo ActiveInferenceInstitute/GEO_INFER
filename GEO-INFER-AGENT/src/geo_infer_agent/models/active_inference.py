@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Active Inference Agent.
@@ -14,7 +13,8 @@ import logging
 import os
 import asyncio
 import numpy as np
-from typing import Dict, List, Any, Optional, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 import json
 
 from geo_infer_agent.core.agent_base import BaseAgent, AgentState
@@ -77,7 +77,7 @@ class GenerativeModel:
         self.current_state_beliefs = self.D.copy()
 
         # History of beliefs and updates
-        self.history: List[Any] = []
+        self.history: list[Any] = []
 
     def update_likelihood(self, observation: np.ndarray, state: np.ndarray) -> None:
         """
@@ -257,7 +257,7 @@ class GenerativeModel:
         # Stochastic:
         return self.rng.choice(self.control_dimensions, p=action_probabilities)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert model to dictionary representation."""
         return {
             "state_dimensions": self.state_dimensions,
@@ -272,7 +272,7 @@ class GenerativeModel:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "GenerativeModel":
+    def from_dict(cls, data: dict[str, Any]) -> "GenerativeModel":
         """Create a generative model from a dictionary."""
         model = cls(
             state_dimensions=data["state_dimensions"],
@@ -321,9 +321,9 @@ class ActiveInferenceState(AgentState):
         )
 
         # History of observations, states, and actions
-        self.observation_history: List[Any] = []
-        self.state_history: List[np.ndarray] = []
-        self.action_history: List[Dict[str, Any]] = []
+        self.observation_history: list[Any] = []
+        self.state_history: list[np.ndarray] = []
+        self.action_history: list[dict[str, Any]] = []
 
         # Current beliefs and states
         self.current_observation = np.zeros(observation_dimensions)
@@ -331,7 +331,7 @@ class ActiveInferenceState(AgentState):
 
         # Performance metrics
         self.total_reward = 0.0
-        self.prediction_errors: List[Any] = []
+        self.prediction_errors: list[Any] = []
 
     @property
     def state_dimensions(self) -> int:
@@ -420,7 +420,7 @@ class ActiveInferenceState(AgentState):
         """
         return self.model.select_action(self.current_state_belief, planning_horizon)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert state to dictionary representation."""
         model_dict = self.model.to_dict()
         obs_history = []
@@ -451,7 +451,7 @@ class ActiveInferenceState(AgentState):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ActiveInferenceState":
+    def from_dict(cls, data: dict[str, Any]) -> "ActiveInferenceState":
         """Create agent state from dictionary."""
         model_data = data.get("generative_model") or data.get("model", {})
 
@@ -503,7 +503,7 @@ class ActiveInferenceAgent(BaseAgent):
 
     state: Any = None
 
-    def __init__(self, agent_id: Optional[str] = None, config: Optional[Dict] = None):
+    def __init__(self, agent_id: str | None = None, config: dict | None = None):
         """
         Initialize the Active Inference agent.
 
@@ -517,8 +517,8 @@ class ActiveInferenceAgent(BaseAgent):
         self.id = self.agent_id
 
         # Action and perception handler registries (underscore prefix for convention)
-        self._action_handlers: Dict[str, Any] = {}
-        self._perception_handlers: Dict[str, Any] = {}
+        self._action_handlers: dict[str, Any] = {}
+        self._perception_handlers: dict[str, Any] = {}
         # Public aliases
         self.action_handlers = self._action_handlers
         self.perception_handlers = self._perception_handlers
@@ -567,7 +567,7 @@ class ActiveInferenceAgent(BaseAgent):
 
         logger.info("Active inference agent %s initialization complete", self.id)
 
-    def update_beliefs(self, perception: Dict[str, Any]) -> None:
+    def update_beliefs(self, perception: dict[str, Any]) -> None:
         """
         Update agent beliefs based on perception data.
 
@@ -583,7 +583,7 @@ class ActiveInferenceAgent(BaseAgent):
             return
 
         # Convert numeric perception values to an observation vector.
-        obs_values: List[float] = []
+        obs_values: list[float] = []
         for key in sorted(perception.keys()):
             val = perception[key]
             if isinstance(val, (int, float)):
@@ -602,7 +602,7 @@ class ActiveInferenceAgent(BaseAgent):
         for key, value in perception.items():
             self.state.update_belief(key, value)
 
-    async def perceive(self) -> Dict[str, Any]:
+    async def perceive(self) -> dict[str, Any]:
         """
         Perceive the environment.
 
@@ -624,7 +624,7 @@ class ActiveInferenceAgent(BaseAgent):
 
         return observations
 
-    def _process_observations(self, observations: Dict[str, Any]) -> None:
+    def _process_observations(self, observations: dict[str, Any]) -> None:
         """
         Process raw observations into the format needed by the model.
 
@@ -666,7 +666,7 @@ class ActiveInferenceAgent(BaseAgent):
         # Update state with the processed observation
         self.state.update_with_observation(obs_vector)
 
-    async def decide(self) -> Optional[Dict[str, Any]]:
+    async def decide(self) -> dict[str, Any] | None:
         """
         Decide on the next action.
 
@@ -684,7 +684,7 @@ class ActiveInferenceAgent(BaseAgent):
 
         return action
 
-    def _convert_action_index_to_action(self, action_idx: int) -> Dict[str, Any]:
+    def _convert_action_index_to_action(self, action_idx: int) -> dict[str, Any]:
         """
         Convert an action index to an action dictionary.
 
@@ -699,7 +699,7 @@ class ActiveInferenceAgent(BaseAgent):
 
         if str(action_idx) in action_mapping:
             # Use predefined mapping
-            return cast(Dict[str, Any], action_mapping[str(action_idx)])
+            return cast(dict[str, Any], action_mapping[str(action_idx)])
         else:
             # Default action format
             return {
@@ -708,7 +708,7 @@ class ActiveInferenceAgent(BaseAgent):
                 "parameters": {"index": action_idx},
             }
 
-    async def act(self, action: Dict[str, Any]) -> Dict[str, Any]:
+    async def act(self, action: dict[str, Any]) -> dict[str, Any]:
         """
         Execute an action.
 
@@ -748,7 +748,7 @@ class ActiveInferenceAgent(BaseAgent):
         if "parameters" in action and "index" in action["parameters"]:
             self.state.record_action(action["parameters"]["index"], reward=reward)
 
-        return cast(Dict[str, Any], result)
+        return cast(dict[str, Any], result)
 
     async def shutdown(self) -> None:
         """Clean up resources when shutting down the agent."""
@@ -783,8 +783,8 @@ class ActiveInferenceAgent(BaseAgent):
         self.register_perception_handler("sensor_data", self._handle_sensor_perceptions)
 
     async def _handle_wait_action(
-        self, agent: "ActiveInferenceAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "ActiveInferenceAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle a wait action.
 
@@ -809,8 +809,8 @@ class ActiveInferenceAgent(BaseAgent):
         }
 
     async def _handle_update_preferences(
-        self, agent: "ActiveInferenceAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "ActiveInferenceAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle updating agent preferences.
 
@@ -849,8 +849,8 @@ class ActiveInferenceAgent(BaseAgent):
         }
 
     async def _handle_query_model(
-        self, agent: "ActiveInferenceAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "ActiveInferenceAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle querying the agent's generative model.
 
@@ -909,7 +909,7 @@ class ActiveInferenceAgent(BaseAgent):
             }
 
     def _handle_sensor_perceptions(
-        self, agent: "ActiveInferenceAgent", perception: Dict[str, Any]
+        self, agent: "ActiveInferenceAgent", perception: dict[str, Any]
     ) -> None:
         """
         Process sensor perceptions.
@@ -964,7 +964,7 @@ class ActiveInferenceAgent(BaseAgent):
             path: File path to load from
         """
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 model_data = json.load(f)
 
             self.state = ActiveInferenceState.from_dict(model_data)

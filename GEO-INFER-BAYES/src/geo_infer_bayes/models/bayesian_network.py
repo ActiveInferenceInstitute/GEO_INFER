@@ -6,7 +6,7 @@ modeling causal relationships in geospatial data.
 """
 
 import numpy as np
-from typing import Dict, Optional, Tuple, Union, Any
+from typing import Any
 from .base import BayesianModel
 from ._model_utils import (
     features_from,
@@ -44,7 +44,7 @@ class BayesianNetwork(BayesianModel):
             },
         }
 
-    def log_likelihood(self, theta: Dict[str, Any], data: Any) -> float:
+    def log_likelihood(self, theta: dict[str, Any], data: Any) -> float:
         """Compute the log-likelihood for the Bayesian network model."""
         if not isinstance(data, dict) or "X" not in data:
             raise ValueError("Bayesian network data must contain X and observations")
@@ -59,7 +59,7 @@ class BayesianNetwork(BayesianModel):
         )
         return gaussian_log_likelihood(observations, prediction, 1.0)
 
-    def log_prior(self, theta: Dict[str, Any]) -> float:
+    def log_prior(self, theta: dict[str, Any]) -> float:
         """Compute the log-prior for the Bayesian network model parameters."""
         return log_prior_from_parameters(self.parameters, theta)
 
@@ -69,7 +69,7 @@ class BayesianNetwork(BayesianModel):
         posterior: Any = None,
         samples: int = 100,
         return_std: bool = False,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """Make predictions at new locations."""
         design = features_from(X_new)
         weights = posterior_vector(posterior, "edge_weights", samples)
@@ -90,7 +90,7 @@ class BayesianNetwork(BayesianModel):
         return mean_prediction
 
     def posterior_predictive(
-        self, posterior: Any, X: Optional[np.ndarray] = None, samples: int = 100
+        self, posterior: Any, X: np.ndarray | None = None, samples: int = 100
     ) -> np.ndarray:
         """Generate posterior predictive samples."""
         if X is None:

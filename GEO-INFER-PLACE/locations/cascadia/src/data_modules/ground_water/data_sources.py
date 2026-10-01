@@ -8,12 +8,10 @@ for the Cascadian bioregion from the USGS National Water Information System (NWI
 import logging
 import requests
 import geopandas as gpd
-from typing import Tuple
 import json
 import pandas as pd
 from shapely.geometry import Point
 import os
-from typing import List, Tuple
 from shapely.geometry import Polygon
 
 # Import H3 utilities from the unified backend's path
@@ -57,8 +55,8 @@ class CascadianGroundWaterDataSources:
         logger.info("Initialized CascadianGroundWaterDataSources")
 
     def _calculate_bbox_from_hexagons(
-        self, hexagons: List[str]
-    ) -> Tuple[float, float, float, float]:
+        self, hexagons: list[str]
+    ) -> tuple[float, float, float, float]:
         """Calculates a bounding box from a list of H3 hexagons."""
         boundaries = [
             Polygon([(lon, lat) for lat, lon in cell_to_latlng_boundary(h)]) for h in hexagons
@@ -69,7 +67,7 @@ class CascadianGroundWaterDataSources:
         max_lat = max(b.bounds[3] for b in boundaries)
         return (min_lon, min_lat, max_lon, max_lat)
 
-    def fetch_groundwater_data(self, hexagons: List[str]) -> gpd.GeoDataFrame:
+    def fetch_groundwater_data(self, hexagons: list[str]) -> gpd.GeoDataFrame:
         """
         Fetches groundwater well data from the USGS NWIS for a list of H3 hexagons,
         breaking the request into smaller chunks to avoid API limits.

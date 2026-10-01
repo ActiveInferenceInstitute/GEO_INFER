@@ -1,7 +1,7 @@
 """Advanced governance analysis and optimization methods."""
 
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any
 from dataclasses import dataclass
 from enum import Enum
 import math
@@ -25,9 +25,9 @@ class ConflictAnalysis:
 
     conflict_type: ConflictType
     severity: float  # 0-1
-    stakeholders_involved: List[str]
-    root_causes: List[str]
-    potential_solutions: List[str]
+    stakeholders_involved: list[str]
+    root_causes: list[str]
+    potential_solutions: list[str]
     escalation_risk: float  # 0-1
 
 
@@ -40,9 +40,9 @@ class AdvancedGovernanceAnalyzer:
 
     def analyze_power_dynamics(
         self,
-        stakeholders: List[Dict[str, Any]],
-        interaction_history: Optional[List[Dict[str, Any]]] = None,
-    ) -> Dict[str, Any]:
+        stakeholders: list[dict[str, Any]],
+        interaction_history: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         """
         Analyze power dynamics among stakeholders.
 
@@ -94,8 +94,8 @@ class AdvancedGovernanceAnalyzer:
         }
 
     def _build_influence_network(
-        self, interaction_history: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, interaction_history: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Build network of stakeholder influences."""
         if not interaction_history:
             return {"nodes": [], "edges": [], "density": 0}
@@ -132,10 +132,10 @@ class AdvancedGovernanceAnalyzer:
 
     def identify_conflicts(
         self,
-        stakeholders: List[Dict[str, Any]],
-        decision_domains: List[str],
-        historical_conflicts: Optional[List[Dict[str, Any]]] = None,
-    ) -> List[ConflictAnalysis]:
+        stakeholders: list[dict[str, Any]],
+        decision_domains: list[str],
+        historical_conflicts: list[dict[str, Any]] | None = None,
+    ) -> list[ConflictAnalysis]:
         """
         Identify potential conflicts in governance system.
 
@@ -178,12 +178,12 @@ class AdvancedGovernanceAnalyzer:
         return conflicts
 
     def _analyze_interest_conflicts(
-        self, stakeholders: List[Dict[str, Any]]
-    ) -> List[ConflictAnalysis]:
+        self, stakeholders: list[dict[str, Any]]
+    ) -> list[ConflictAnalysis]:
         """Analyze conflicts based on stakeholder interests."""
-        conflicts: List[ConflictAnalysis] = []
+        conflicts: list[ConflictAnalysis] = []
 
-        interests_map: Dict[str, List[str]] = {}
+        interests_map: dict[str, list[str]] = {}
         for stakeholder in stakeholders:
             for interest in stakeholder.get("interests", []):
                 if interest not in interests_map:
@@ -213,8 +213,8 @@ class AdvancedGovernanceAnalyzer:
         return conflicts
 
     def _analyze_resource_conflicts(
-        self, stakeholders: List[Dict[str, Any]], decision_domains: List[str]
-    ) -> List[ConflictAnalysis]:
+        self, stakeholders: list[dict[str, Any]], decision_domains: list[str]
+    ) -> list[ConflictAnalysis]:
         """Analyze conflicts over resource control."""
         conflicts = []
 
@@ -251,8 +251,8 @@ class AdvancedGovernanceAnalyzer:
         return conflicts
 
     def _analyze_jurisdictional_conflicts(
-        self, decision_domains: List[str]
-    ) -> List[ConflictAnalysis]:
+        self, decision_domains: list[str]
+    ) -> list[ConflictAnalysis]:
         """Analyze jurisdictional overlaps."""
         conflicts = []
 
@@ -276,9 +276,9 @@ class AdvancedGovernanceAnalyzer:
 
     def _apply_historical_patterns(
         self,
-        conflicts: List[ConflictAnalysis],
-        historical_conflicts: List[Dict[str, Any]],
-    ) -> List[ConflictAnalysis]:
+        conflicts: list[ConflictAnalysis],
+        historical_conflicts: list[dict[str, Any]],
+    ) -> list[ConflictAnalysis]:
         """Adjust conflict assessments based on historical patterns."""
         # Increase severity for recurring conflicts
         recurring_types = set()
@@ -295,10 +295,10 @@ class AdvancedGovernanceAnalyzer:
 
     def suggest_governance_improvements(
         self,
-        current_structure: Dict[str, Any],
-        performance_metrics: Dict[str, float],
-        constraints: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        current_structure: dict[str, Any],
+        performance_metrics: dict[str, float],
+        constraints: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Suggest improvements to governance structure.
 
@@ -316,7 +316,7 @@ class AdvancedGovernanceAnalyzer:
         List[Dict[str, Any]]
             Ranked list of improvement suggestions
         """
-        suggestions: List[Dict[str, Any]] = []
+        suggestions: list[dict[str, Any]] = []
 
         # Analyze efficiency
         if performance_metrics.get("efficiency", 1.0) < 0.7:
@@ -377,8 +377,8 @@ class AdvancedGovernanceAnalyzer:
         return suggestions
 
     def scenario_analysis(
-        self, current_structure: Dict[str, Any], scenarios: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, current_structure: dict[str, Any], scenarios: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Analyze governance structure under different scenarios.
 
@@ -394,9 +394,9 @@ class AdvancedGovernanceAnalyzer:
         Dict[str, Any]
             Scenario analysis results
         """
-        scenarios_out: List[Dict[str, Any]] = []
+        scenarios_out: list[dict[str, Any]] = []
         base_eval = self._evaluate_structure(current_structure)
-        results: Dict[str, Any] = {"base_case": base_eval, "scenarios": scenarios_out}
+        results: dict[str, Any] = {"base_case": base_eval, "scenarios": scenarios_out}
 
         for scenario in scenarios:
             scenario_name = scenario.get("name", "unknown")
@@ -415,7 +415,7 @@ class AdvancedGovernanceAnalyzer:
 
         return results
 
-    def _evaluate_structure(self, structure: Dict[str, Any]) -> Dict[str, float]:
+    def _evaluate_structure(self, structure: dict[str, Any]) -> dict[str, float]:
         """Evaluate governance structure performance."""
         return {
             "efficiency": 0.75,
@@ -426,8 +426,8 @@ class AdvancedGovernanceAnalyzer:
         }
 
     def _apply_scenario(
-        self, structure: Dict[str, Any], scenario: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, structure: dict[str, Any], scenario: dict[str, Any]
+    ) -> dict[str, Any]:
         """Apply scenario modifications to structure."""
         modified = structure.copy()
         # Apply scenario-specific modifications

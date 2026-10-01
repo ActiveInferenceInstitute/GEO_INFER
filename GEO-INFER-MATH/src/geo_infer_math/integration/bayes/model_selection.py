@@ -5,7 +5,7 @@ model comparison for selecting among competing spatial models.
 """
 
 import numpy as np
-from typing import Dict, Any, List
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -24,9 +24,9 @@ class ModelSelection:
 
     def compare_models(
         self,
-        models: List[Dict[str, Any]],
+        models: list[dict[str, Any]],
         method: str = "bic",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Compare multiple models using an information criterion.
 
         Args:
@@ -184,7 +184,7 @@ class ModelSelection:
         self,
         log_evidence_1: float,
         log_evidence_2: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Compute Bayes factor B₁₂ = p(D|M₁) / p(D|M₂).
 
         Args:

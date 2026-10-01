@@ -1,7 +1,7 @@
 """Multi-level governance framework implementation."""
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
+from typing import Any
 from enum import Enum
 import logging
 
@@ -45,11 +45,11 @@ class GovernanceEntity:
     entity_id: str
     name: str
     governance_level: GovernanceLevel
-    jurisdiction: Dict[str, Any]
-    responsibilities: List[str]
+    jurisdiction: dict[str, Any]
+    responsibilities: list[str]
     authority_domain: str
-    stakeholders: List[str] = field(default_factory=list)
-    resources: Dict[str, float] = field(default_factory=dict)
+    stakeholders: list[str] = field(default_factory=list)
+    resources: dict[str, float] = field(default_factory=dict)
     capacity: float = 1.0
 
 
@@ -58,15 +58,15 @@ class GovernanceStructure:
     """Represents a complete governance structure."""
 
     governance_id: str
-    spatial_scope: Dict[str, Any]
-    governance_levels: List[GovernanceLevel]
-    entities: List[GovernanceEntity]
-    coordination_mechanisms: List[CoordinationMechanism]
-    decision_domains: List[str]
-    stakeholder_groups: List[str]
-    reporting_relationships: Dict[str, List[str]] = field(default_factory=dict)
-    information_flows: Dict[str, List[str]] = field(default_factory=dict)
-    decision_escalation_rules: Dict[str, Dict[str, str]] = field(default_factory=dict)
+    spatial_scope: dict[str, Any]
+    governance_levels: list[GovernanceLevel]
+    entities: list[GovernanceEntity]
+    coordination_mechanisms: list[CoordinationMechanism]
+    decision_domains: list[str]
+    stakeholder_groups: list[str]
+    reporting_relationships: dict[str, list[str]] = field(default_factory=dict)
+    information_flows: dict[str, list[str]] = field(default_factory=dict)
+    decision_escalation_rules: dict[str, dict[str, str]] = field(default_factory=dict)
 
 
 class MultiLevelGovernanceFramework:
@@ -85,9 +85,9 @@ class MultiLevelGovernanceFramework:
 
     def __init__(
         self,
-        governance_levels: Optional[List[str]] = None,
-        coordination_mechanisms: Optional[List[str]] = None,
-        domain_coverage: Optional[List[str]] = None,
+        governance_levels: list[str] | None = None,
+        coordination_mechanisms: list[str] | None = None,
+        domain_coverage: list[str] | None = None,
     ):
         """
         Initialize multi-level governance framework.
@@ -105,7 +105,7 @@ class MultiLevelGovernanceFramework:
         default_levels = ["local", "regional", "national"]
         levels_to_use = governance_levels or default_levels
 
-        self.governance_levels: List[GovernanceLevel] = []
+        self.governance_levels: list[GovernanceLevel] = []
         for level in levels_to_use:
             try:
                 self.governance_levels.append(GovernanceLevel(level.lower()))
@@ -127,14 +127,14 @@ class MultiLevelGovernanceFramework:
             "civic",
             "commercial",
         ]
-        self.governance_structures: Dict[str, GovernanceStructure] = {}
+        self.governance_structures: dict[str, GovernanceStructure] = {}
 
     def design_governance_structure(
         self,
-        spatial_scope: Dict[str, Any],
-        stakeholder_groups: List[Dict[str, Any]],
-        decision_domains: List[str],
-        time_horizons: List[int],
+        spatial_scope: dict[str, Any],
+        stakeholder_groups: list[dict[str, Any]],
+        decision_domains: list[str],
+        time_horizons: list[int],
     ) -> GovernanceStructure:
         """
         Design comprehensive multi-level governance structure.
@@ -206,7 +206,7 @@ class MultiLevelGovernanceFramework:
         logger.info(f"Governance structure designed: {governance_id}")
         return structure
 
-    def _validate_spatial_scope(self, spatial_scope: Any) -> Dict[str, Any]:
+    def _validate_spatial_scope(self, spatial_scope: Any) -> dict[str, Any]:
         """
         Validate spatial scope using spatial indexing if available.
 
@@ -216,7 +216,7 @@ class MultiLevelGovernanceFramework:
         - Coordinate systems consistent
         - Area calculations reasonable
         """
-        validation_result: Dict[str, Any] = {
+        validation_result: dict[str, Any] = {
             "valid": True,
             "issues": [],
             "warnings": [],
@@ -295,7 +295,7 @@ class MultiLevelGovernanceFramework:
 
     def calculate_performance_metrics(
         self, governance_structure: GovernanceStructure
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate performance metrics for a governance structure.
 
@@ -311,7 +311,7 @@ class MultiLevelGovernanceFramework:
         Dict[str, Any]
             Performance metrics dictionary
         """
-        metrics: Dict[str, Any] = {}
+        metrics: dict[str, Any] = {}
 
         # 1. Structural efficiency
         num_entities = len(governance_structure.entities)
@@ -414,10 +414,10 @@ class MultiLevelGovernanceFramework:
 
     def _create_governance_entities(
         self,
-        stakeholder_groups: List[Dict[str, Any]],
-        decision_domains: List[str],
-        spatial_scope: Dict[str, Any],
-    ) -> List[GovernanceEntity]:
+        stakeholder_groups: list[dict[str, Any]],
+        decision_domains: list[str],
+        spatial_scope: dict[str, Any],
+    ) -> list[GovernanceEntity]:
         """Create governance entities for each level."""
         entities = []
         level_idx = 0
@@ -458,8 +458,8 @@ class MultiLevelGovernanceFramework:
         return entities
 
     def _establish_reporting_relationships(
-        self, entities: List[GovernanceEntity]
-    ) -> Dict[str, List[str]]:
+        self, entities: list[GovernanceEntity]
+    ) -> dict[str, list[str]]:
         """Establish hierarchical reporting relationships."""
         reporting = {}
 
@@ -473,8 +473,8 @@ class MultiLevelGovernanceFramework:
         return reporting
 
     def _design_information_flows(
-        self, entities: List[GovernanceEntity], decision_domains: List[str]
-    ) -> Dict[str, List[str]]:
+        self, entities: list[GovernanceEntity], decision_domains: list[str]
+    ) -> dict[str, list[str]]:
         """Design information flows between governance levels."""
         flows = {}
 
@@ -489,10 +489,10 @@ class MultiLevelGovernanceFramework:
 
     def _set_decision_escalation_rules(
         self,
-        entities: List[GovernanceEntity],
-        decision_domains: List[str],
-        time_horizons: List[int],
-    ) -> Dict[str, Dict[str, str]]:
+        entities: list[GovernanceEntity],
+        decision_domains: list[str],
+        time_horizons: list[int],
+    ) -> dict[str, dict[str, str]]:
         """Set rules for escalating decisions to higher governance levels."""
         escalation_rules = {}
 
@@ -508,8 +508,8 @@ class MultiLevelGovernanceFramework:
         return escalation_rules
 
     def coordinate_vertical_levels(
-        self, governance_structure: GovernanceStructure, policy_proposal: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, governance_structure: GovernanceStructure, policy_proposal: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Coordinate decision-making across vertical governance levels.
 
@@ -560,9 +560,9 @@ class MultiLevelGovernanceFramework:
     def _evaluate_at_level(
         self,
         entity: GovernanceEntity,
-        policy_proposal: Dict[str, Any],
-        coordination_mechanisms: List[CoordinationMechanism],
-    ) -> Dict[str, Any]:
+        policy_proposal: dict[str, Any],
+        coordination_mechanisms: list[CoordinationMechanism],
+    ) -> dict[str, Any]:
         """
         Evaluate policy proposal at specific governance level using multi-criteria decision analysis.
 
@@ -646,8 +646,8 @@ class MultiLevelGovernanceFramework:
     def _calculate_mechanism_alignment(
         self,
         entity: GovernanceEntity,
-        policy_proposal: Dict[str, Any],
-        coordination_mechanisms: List[CoordinationMechanism],
+        policy_proposal: dict[str, Any],
+        coordination_mechanisms: list[CoordinationMechanism],
     ) -> float:
         """Calculate alignment between coordination mechanisms and policy requirements."""
         if not coordination_mechanisms:
@@ -685,7 +685,7 @@ class MultiLevelGovernanceFramework:
         )
 
     def _calculate_domain_relevance(
-        self, entity: GovernanceEntity, policy_proposal: Dict[str, Any]
+        self, entity: GovernanceEntity, policy_proposal: dict[str, Any]
     ) -> float:
         """Calculate how relevant the policy is to the entity's decision domains."""
         policy_domains = policy_proposal.get("domains", [])
@@ -710,9 +710,9 @@ class MultiLevelGovernanceFramework:
 
     def _identify_conflicts(
         self,
-        level_approvals: Dict[str, Dict[str, Any]],
-        entities: List[GovernanceEntity],
-    ) -> List[Dict[str, Any]]:
+        level_approvals: dict[str, dict[str, Any]],
+        entities: list[GovernanceEntity],
+    ) -> list[dict[str, Any]]:
         """
         Identify conflicts between governance levels using comprehensive conflict analysis.
 
@@ -727,13 +727,13 @@ class MultiLevelGovernanceFramework:
         - Axelrod, R. (1984). The Evolution of Cooperation
         - Ostrom, E. (1990). Governing the Commons
         """
-        conflicts: List[Dict[str, Any]] = []
+        conflicts: list[dict[str, Any]] = []
 
         if not level_approvals or len(level_approvals) < 2:
             return conflicts
 
         # Collect approval data
-        approval_data: List[Dict[str, Any]] = []
+        approval_data: list[dict[str, Any]] = []
         for entity_id, approval in level_approvals.items():
             entity = next((e for e in entities if e.entity_id == entity_id), None)
             if entity:
@@ -854,7 +854,7 @@ class MultiLevelGovernanceFramework:
 
         return conflicts
 
-    def _calculate_variance(self, values: List[float]) -> float:
+    def _calculate_variance(self, values: list[float]) -> float:
         """Calculate variance of a list of values."""
         if not values or len(values) < 2:
             return 0.0
@@ -863,14 +863,14 @@ class MultiLevelGovernanceFramework:
         return variance
 
     def _identify_spatial_conflicts(
-        self, entities: List[GovernanceEntity]
-    ) -> List[Dict[str, Any]]:
+        self, entities: list[GovernanceEntity]
+    ) -> list[dict[str, Any]]:
         """Identify spatial/jurisdictional conflicts using spatial analysis."""
         conflicts = []
 
         try:
             # Extract spatial boundaries from entities
-            entity_boundaries: List[Dict[str, Any]] = []
+            entity_boundaries: list[dict[str, Any]] = []
             for entity in entities:
                 jurisdiction = entity.jurisdiction
                 if isinstance(jurisdiction, dict):
@@ -914,7 +914,7 @@ class MultiLevelGovernanceFramework:
         return conflicts
 
     def _check_boundary_overlap(
-        self, boundary1: Dict[str, Any], boundary2: Dict[str, Any]
+        self, boundary1: dict[str, Any], boundary2: dict[str, Any]
     ) -> bool:
         """Check if two boundaries overlap (simplified implementation)."""
         # This is a simplified check - in production, use proper spatial operations
@@ -936,9 +936,9 @@ class MultiLevelGovernanceFramework:
 
     def _determine_implementation(
         self,
-        level_approvals: Dict[str, Dict[str, Any]],
-        conflicts: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        level_approvals: dict[str, dict[str, Any]],
+        conflicts: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Determine coordinated implementation strategy using conflict analysis.
 
@@ -1043,9 +1043,9 @@ class MultiLevelGovernanceFramework:
 
     def _estimate_timeline(
         self, approach: str, num_conflicts: int, avg_score: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Estimate implementation timeline based on approach and conflicts."""
-        base_timeline: Dict[str, Dict[str, Any]] = {
+        base_timeline: dict[str, dict[str, Any]] = {
             "immediate": {"weeks": 2, "months": 0.5},
             "phased": {"weeks": 8, "months": 2},
             "phased_with_conditions": {"weeks": 12, "months": 3},
@@ -1055,7 +1055,7 @@ class MultiLevelGovernanceFramework:
         }
 
         base = base_timeline.get(approach, {"weeks": 8, "months": 2})
-        timeline: Dict[str, Any] = {"weeks": base["weeks"], "months": base["months"]}
+        timeline: dict[str, Any] = {"weeks": base["weeks"], "months": base["months"]}
 
         # Adjust for conflicts
         conflict_adjustment = num_conflicts * 2  # 2 weeks per conflict
@@ -1071,7 +1071,7 @@ class MultiLevelGovernanceFramework:
 
     def apply_subsidiarity_principle(
         self, governance_structure: GovernanceStructure, decision_domain: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Apply subsidiarity principle to determine appropriate governance level for decision.
 
@@ -1120,8 +1120,8 @@ class MultiLevelGovernanceFramework:
         return result
 
     def _determine_coordination_requirements(
-        self, entities: List[GovernanceEntity]
-    ) -> List[str]:
+        self, entities: list[GovernanceEntity]
+    ) -> list[str]:
         """
         Determine coordination requirements based on entity characteristics.
 

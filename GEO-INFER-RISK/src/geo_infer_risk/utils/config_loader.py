@@ -8,7 +8,7 @@ configuration files for the GEO-INFER-RISK module.
 import json
 import os
 import logging
-from typing import Dict, Any, Optional, Union, cast
+from typing import Any, cast
 from pathlib import Path
 import yaml
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class ConfigurationLoader:
     """Configuration loader with validation and caching."""
 
-    def __init__(self, schema_path: Optional[str] = None):
+    def __init__(self, schema_path: str | None = None):
         """
         Initialize configuration loader.
 
@@ -28,16 +28,16 @@ class ConfigurationLoader:
             schema_path: Path to JSON schema for validation
         """
         self.schema_path = schema_path
-        self._config_cache: Dict[str, Any] = {}
-        self._validation_cache: Dict[str, ValidationResult] = {}
+        self._config_cache: dict[str, Any] = {}
+        self._validation_cache: dict[str, ValidationResult] = {}
 
     def load_config(
         self,
-        config_path: Union[str, Path, Dict[str, Any]],
+        config_path: str | Path | dict[str, Any],
         validate: bool = True,
         strict: bool = False,
         use_cache: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Load configuration from file or dictionary.
 
@@ -69,7 +69,7 @@ class ConfigurationLoader:
 
             # Check cache
             if use_cache and cache_key in self._config_cache:
-                return cast(Dict[str, Any], self._config_cache[cache_key])
+                return cast(dict[str, Any], self._config_cache[cache_key])
 
             # Load from file
             config = self._load_config_file(config_path)
@@ -84,17 +84,17 @@ class ConfigurationLoader:
 
         return config
 
-    def _load_config_file(self, config_path: Path) -> Dict[str, Any]:
+    def _load_config_file(self, config_path: Path) -> dict[str, Any]:
         """Load configuration from file."""
         suffix = config_path.suffix.lower()
 
         try:
             if suffix in [".yaml", ".yml"]:
-                with open(config_path, "r") as f:
-                    return cast(Dict[str, Any], yaml.safe_load(f))
+                with open(config_path) as f:
+                    return cast(dict[str, Any], yaml.safe_load(f))
             elif suffix == ".json":
-                with open(config_path, "r") as f:
-                    return cast(Dict[str, Any], json.load(f))
+                with open(config_path) as f:
+                    return cast(dict[str, Any], json.load(f))
             else:
                 raise ValueError(f"Unsupported configuration file format: {suffix}")
 
@@ -102,8 +102,8 @@ class ConfigurationLoader:
             raise ValueError(f"Error parsing configuration file {config_path}: {e}")
 
     def _validate_and_process_config(
-        self, config: Dict[str, Any], strict: bool = False
-    ) -> Dict[str, Any]:
+        self, config: dict[str, Any], strict: bool = False
+    ) -> dict[str, Any]:
         """Validate and process configuration."""
         # Check validation cache
         config_hash = json.dumps(config, sort_keys=True)
@@ -148,9 +148,9 @@ class ConfigurationLoader:
 
     def load_config_with_defaults(
         self,
-        config_path: Optional[Union[str, Path, Dict[str, Any]]] = None,
+        config_path: str | Path | dict[str, Any] | None = None,
         **overrides: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Load configuration with default values and optional overrides.
 
@@ -175,7 +175,7 @@ class ConfigurationLoader:
         # Validate final configuration
         return self._validate_and_process_config(config, strict=False)
 
-    def get_default_config(self) -> Dict[str, Any]:
+    def get_default_config(self) -> dict[str, Any]:
         """Get default configuration."""
         return {
             "general": {
@@ -342,8 +342,8 @@ class ConfigurationLoader:
         }
 
     def _merge_configs(
-        self, base_config: Dict[str, Any], override_config: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, base_config: dict[str, Any], override_config: dict[str, Any]
+    ) -> dict[str, Any]:
         """Merge two configuration dictionaries recursively."""
         merged = base_config.copy()
 
@@ -361,8 +361,8 @@ class ConfigurationLoader:
 
     def save_config(
         self,
-        config: Dict[str, Any],
-        output_path: Union[str, Path],
+        config: dict[str, Any],
+        output_path: str | Path,
         format: str = "auto",
     ) -> str:
         """
@@ -403,8 +403,8 @@ class ConfigurationLoader:
 
     def create_example_config(
         self,
-        output_path: Union[str, Path],
-        hazard_types: Optional[list] = None,
+        output_path: str | Path,
+        hazard_types: list | None = None,
         include_comments: bool = True,
     ) -> str:
         """
@@ -432,7 +432,7 @@ class ConfigurationLoader:
 
         return self.save_config(config, output_path, "yaml")
 
-    def _add_config_comments(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def _add_config_comments(self, config: dict[str, Any]) -> dict[str, Any]:
         """Add explanatory comments to configuration."""
         # YAML serializers do not preserve comments reliably across mappings;
         # emit explicit comment metadata keys so the generated file remains
@@ -469,10 +469,10 @@ _config_loader = ConfigurationLoader()
 
 
 def load_config(
-    config_path: Union[str, Path, Dict[str, Any]],
+    config_path: str | Path | dict[str, Any],
     validate: bool = True,
     strict: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Load configuration from file or dictionary.
 
@@ -488,8 +488,8 @@ def load_config(
 
 
 def load_config_with_defaults(
-    config_path: Optional[Union[str, Path, Dict[str, Any]]] = None, **overrides: Any
-) -> Dict[str, Any]:
+    config_path: str | Path | dict[str, Any] | None = None, **overrides: Any
+) -> dict[str, Any]:
     """
     Load configuration with default values and optional overrides.
 
@@ -504,7 +504,7 @@ def load_config_with_defaults(
 
 
 def create_example_config(
-    output_path: Union[str, Path], hazard_types: Optional[list] = None
+    output_path: str | Path, hazard_types: list | None = None
 ) -> str:
     """
     Create an example configuration file.
@@ -519,13 +519,13 @@ def create_example_config(
     return _config_loader.create_example_config(output_path, hazard_types)
 
 
-def get_default_config() -> Dict[str, Any]:
+def get_default_config() -> dict[str, Any]:
     """Get default configuration."""
     return _config_loader.get_default_config()
 
 
 def save_config(
-    config: Dict[str, Any], output_path: Union[str, Path], format: str = "auto"
+    config: dict[str, Any], output_path: str | Path, format: str = "auto"
 ) -> str:
     """
     Save configuration to file.

@@ -20,7 +20,8 @@ import sys
 import tempfile
 from datetime import date
 from pathlib import Path
-from typing import Any, Callable, Dict, List
+from typing import Any
+from collections.abc import Callable
 
 os.environ.setdefault("MPLBACKEND", "Agg")
 
@@ -31,9 +32,9 @@ if str(_ORCHESTRATORS_DIR) not in sys.path:
 from _lib import run_module_orchestrator  # noqa: E402
 
 
-def _monthly_dates(start: date, count: int) -> List[str]:
+def _monthly_dates(start: date, count: int) -> list[str]:
     """Return ``count`` ISO date strings spaced one month apart from ``start``."""
-    stamps: List[str] = []
+    stamps: list[str] = []
     year, month = start.year, start.month
     for _ in range(count):
         stamps.append(date(year, month, 1).isoformat())
@@ -61,18 +62,18 @@ class _SyntheticForestIntegrator:
         self,
         bbox: Any = None,
         time_range: Any = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         raise RuntimeError("timber-plan client not configured (synthetic run)")
 
     def get_tree_mortality_data(
         self,
         bbox: Any = None,
         time_range: Any = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         raise RuntimeError("mortality-survey client not configured (synthetic run)")
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     import numpy as np
 
     from geo_infer_place.locations.del_norte_county.forest_health_monitor import (
@@ -88,7 +89,7 @@ def _operation() -> Dict[str, Any]:
     rng = np.random.default_rng(42)
 
     # --- Synthetic H3 canvas over a fictional Del Norte study plot --------
-    study_polygon: Dict[str, Any] = {
+    study_polygon: dict[str, Any] = {
         "type": "Polygon",
         "coordinates": [
             [
@@ -113,7 +114,7 @@ def _operation() -> Dict[str, Any]:
 
     # --- Synthetic NDVI/EVI measurements (4 sites x 14 monthly scenes) ---
     dates = _monthly_dates(date(2024, 1, 1), 14)
-    ndvi_measurements: List[Dict[str, Any]] = []
+    ndvi_measurements: list[dict[str, Any]] = []
     for site_idx, (lat, lon) in enumerate(site_centers[:4]):
         base_ndvi = 0.55 + 0.10 * float(rng.random())
         for step, stamp in enumerate(dates):
@@ -139,7 +140,7 @@ def _operation() -> Dict[str, Any]:
     forest_types = ["Redwood", "Douglas Fir", "Mixed Conifer"]
     health_ratings = ["Good", "Fair", "Poor"]
     age_classes = ["Mature", "Old Growth", "Young"]
-    forest_plots: List[Dict[str, Any]] = []
+    forest_plots: list[dict[str, Any]] = []
     for plot_idx in range(12):
         lat, lon = site_centers[plot_idx % len(site_centers)]
         forest_plots.append(
@@ -160,7 +161,7 @@ def _operation() -> Dict[str, Any]:
 
     # --- Synthetic monthly climate series (36 months) --------------------
     climate_dates = _monthly_dates(date(2022, 1, 1), 36)
-    climate_measurements: List[Dict[str, Any]] = []
+    climate_measurements: list[dict[str, Any]] = []
     for step, stamp in enumerate(climate_dates):
         seasonal_temp = 11.0 + 6.5 * float(np.sin(2.0 * np.pi * (step - 3) / 12.0))
         climate_measurements.append(
@@ -171,13 +172,13 @@ def _operation() -> Dict[str, Any]:
             }
         )
 
-    sources: Dict[str, Callable[[], Dict[str, Any]]] = {
+    sources: dict[str, Callable[[], dict[str, Any]]] = {
         "vegetation_indices": lambda: {"ndvi_measurements": ndvi_measurements},
         "forest_inventory": lambda: {"forest_plots": forest_plots},
         "climate": lambda: {"measurements": climate_measurements},
     }
 
-    config: Dict[str, Any] = {
+    config: dict[str, Any] = {
         "location": {
             "bounds": {
                 "west": -124.25,
@@ -234,7 +235,7 @@ def _operation() -> Dict[str, Any]:
     spatial = results["spatial_data"]
     inventory = results["forest_type_analysis"]
 
-    forest_type_summary: Dict[str, Dict[str, Any]] = {}
+    forest_type_summary: dict[str, dict[str, Any]] = {}
     for ftype, summary in inventory.items():
         if isinstance(summary, dict) and "plot_count" in summary:
             forest_type_summary[ftype] = {

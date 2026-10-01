@@ -9,7 +9,8 @@ import logging
 import uuid
 from datetime import datetime
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 from enum import Enum
 from collections import defaultdict
 
@@ -68,18 +69,18 @@ class LumpingCriterion:
     criterion_type: str  # e.g., "similarity", "proximity", "attribute"
 
     # Criterion parameters
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
 
     # Thresholds
     threshold: float = 0.5
-    min_threshold: Optional[float] = None
-    max_threshold: Optional[float] = None
+    min_threshold: float | None = None
+    max_threshold: float | None = None
 
     # Weights
     weight: float = 1.0
 
     # Validation function
-    validation_function: Optional[Callable] = None
+    validation_function: Callable | None = None
 
     def evaluate(self, cell1: Any, cell2: Any) -> float:
         """
@@ -115,13 +116,13 @@ class LumpingResult:
     strategy: LumpingStrategy
 
     # Input cells
-    input_cells: List[str] = field(default_factory=list)
+    input_cells: list[str] = field(default_factory=list)
 
     # Output lumps
-    lumps: Dict[str, List[str]] = field(default_factory=dict)  # lump_id -> cell_indices
+    lumps: dict[str, list[str]] = field(default_factory=dict)  # lump_id -> cell_indices
 
     # Lump properties
-    lump_properties: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    lump_properties: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     # Quality metrics
     quality_score: float = 0.0
@@ -164,13 +165,13 @@ class H3LumpingEngine:
         self.name = name
 
         # Lumping criteria
-        self.criteria: Dict[str, LumpingCriterion] = {}
+        self.criteria: dict[str, LumpingCriterion] = {}
 
         # Results storage
-        self.lumping_results: Dict[str, LumpingResult] = {}
+        self.lumping_results: dict[str, LumpingResult] = {}
 
         # Statistics
-        self.operation_stats: Dict[str, int] = defaultdict(int)
+        self.operation_stats: dict[str, int] = defaultdict(int)
 
         # Metadata
         self.created_at = datetime.now()
@@ -210,7 +211,7 @@ class H3LumpingEngine:
         self,
         nested_grid: Any,
         strategy: LumpingStrategy = LumpingStrategy.SIMILARITY_BASED,
-        system_id: Optional[str] = None,
+        system_id: str | None = None,
         **kwargs: Any,
     ) -> LumpingResult:
         """
@@ -286,8 +287,8 @@ class H3LumpingEngine:
         return result
 
     def _lump_by_similarity(
-        self, cells: List[Any], **kwargs: Any
-    ) -> Dict[str, List[str]]:
+        self, cells: list[Any], **kwargs: Any
+    ) -> dict[str, list[str]]:
         """Lump cells based on similarity."""
         similarity_threshold = kwargs.get("similarity_threshold", 0.7)
         metric = kwargs.get("metric", SimilarityMetric.EUCLIDEAN)
@@ -347,8 +348,8 @@ class H3LumpingEngine:
         return lumps
 
     def _lump_by_proximity(
-        self, cells: List[Any], **kwargs: Any
-    ) -> Dict[str, List[str]]:
+        self, cells: list[Any], **kwargs: Any
+    ) -> dict[str, list[str]]:
         """Lump cells based on spatial proximity."""
         distance_threshold = kwargs.get("distance_threshold", 2)  # H3 distance
 
@@ -392,8 +393,8 @@ class H3LumpingEngine:
         return lumps
 
     def _lump_hierarchical(
-        self, cells: List[Any], **kwargs: Any
-    ) -> Dict[str, List[str]]:
+        self, cells: list[Any], **kwargs: Any
+    ) -> dict[str, list[str]]:
         """Lump cells using hierarchical clustering."""
         if not SKLEARN_AVAILABLE:
             logger.warning("scikit-learn required for hierarchical lumping")
@@ -446,8 +447,8 @@ class H3LumpingEngine:
             return self._simple_proximity_lumping(cells)
 
     def _lump_by_constraints(
-        self, cells: List[Any], **kwargs: Any
-    ) -> Dict[str, List[str]]:
+        self, cells: list[Any], **kwargs: Any
+    ) -> dict[str, list[str]]:
         """Lump cells based on constraints."""
         max_lump_size = kwargs.get("max_lump_size", 10)
         min_lump_size = kwargs.get("min_lump_size", 2)
@@ -484,7 +485,7 @@ class H3LumpingEngine:
 
         return lumps
 
-    def _lump_by_density(self, cells: List[Any], **kwargs: Any) -> Dict[str, List[str]]:
+    def _lump_by_density(self, cells: list[Any], **kwargs: Any) -> dict[str, list[str]]:
         """Lump cells using density-based clustering."""
         if not SKLEARN_AVAILABLE:
             logger.warning("scikit-learn required for density-based lumping")
@@ -534,8 +535,8 @@ class H3LumpingEngine:
             return self._simple_proximity_lumping(cells)
 
     def _lump_by_attributes(
-        self, cells: List[Any], **kwargs: Any
-    ) -> Dict[str, List[str]]:
+        self, cells: list[Any], **kwargs: Any
+    ) -> dict[str, list[str]]:
         """Lump cells based on attribute values."""
         grouping_field = kwargs.get("grouping_field", "category")
 
@@ -558,7 +559,7 @@ class H3LumpingEngine:
 
         return lumps
 
-    def _simple_proximity_lumping(self, cells: List) -> Dict[str, List[str]]:
+    def _simple_proximity_lumping(self, cells: list) -> dict[str, list[str]]:
         """Simple proximity-based lumping fallback."""
         lumps = {}
 
@@ -605,7 +606,7 @@ class H3LumpingEngine:
         return similarity_matrix
 
     def _calculate_quality_score(
-        self, cells: List, lumps: Dict[str, List[str]]
+        self, cells: list, lumps: dict[str, list[str]]
     ) -> float:
         """Calculate overall quality score for lumping result."""
         if not lumps:
@@ -628,7 +629,7 @@ class H3LumpingEngine:
 
         return min(1.0, max(0.0, quality))
 
-    def _calculate_compactness_score(self, lumps: Dict[str, List[str]]) -> float:
+    def _calculate_compactness_score(self, lumps: dict[str, list[str]]) -> float:
         """Calculate compactness score for lumps."""
         if not lumps or not H3_AVAILABLE:
             return 0.0
@@ -670,7 +671,7 @@ class H3LumpingEngine:
         )
 
     def _calculate_similarity_score(
-        self, cells: List, lumps: Dict[str, List[str]]
+        self, cells: list, lumps: dict[str, list[str]]
     ) -> float:
         """Calculate intra-lump spatial similarity as mean pairwise H3 proximity.
 
@@ -689,13 +690,13 @@ class H3LumpingEngine:
         if not lumps:
             return 0.5
 
-        lump_similarities: List[float] = []
+        lump_similarities: list[float] = []
         for lump_id, cell_ids in lumps.items():
             if len(cell_ids) < 2:
                 lump_similarities.append(1.0)  # A single-cell lump is perfectly similar
                 continue
 
-            distances: List[float] = []
+            distances: list[float] = []
             for i in range(len(cell_ids)):
                 for j in range(i + 1, len(cell_ids)):
                     try:
@@ -714,7 +715,7 @@ class H3LumpingEngine:
             else 0.5
         )
 
-    def get_lumping_statistics(self) -> Dict[str, Any]:
+    def get_lumping_statistics(self) -> dict[str, Any]:
         """Get lumping engine statistics."""
         total_operations = sum(self.operation_stats.values())
 

@@ -66,7 +66,7 @@ DEFAULT_CONFIDENCE_LEVEL = 0.95
 DEFAULT_RETURN_PERIODS = [10, 25, 50, 100, 250, 500, 1000]
 
 
-def create_risk_analysis(config_path: Optional[str] = None, **kwargs: Any) -> Any:
+def create_risk_analysis(config_path: str | None = None, **kwargs: Any) -> Any:
     """
     Create a new risk analysis engine with the specified configuration.
 

@@ -2,7 +2,7 @@
 Custom exceptions for the GEO-INFER-API.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi import HTTPException, status
 
@@ -14,14 +14,14 @@ class APIError(HTTPException):
         self,
         status_code: int,
         detail: str,
-        error_code: Optional[str] = None,
-        additional_info: Optional[Dict[str, Any]] = None,
+        error_code: str | None = None,
+        additional_info: dict[str, Any] | None = None,
     ):
         super().__init__(status_code=status_code, detail=detail)
         self.error_code = error_code or f"API_{status_code}"
         self.additional_info = additional_info or {}
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert exception to dictionary for JSON response."""
         return {
             "error": {
@@ -39,9 +39,9 @@ class ValidationError(APIError):
     def __init__(
         self,
         detail: str,
-        field: Optional[str] = None,
-        value: Optional[Any] = None,
-        additional_info: Optional[Dict[str, Any]] = None,
+        field: str | None = None,
+        value: Any | None = None,
+        additional_info: dict[str, Any] | None = None,
     ):
         error_info = {"field": field, "value": str(value)} if field else {}
         if additional_info:
@@ -61,8 +61,8 @@ class NotFoundError(APIError):
     def __init__(
         self,
         resource: str,
-        identifier: Optional[str] = None,
-        additional_info: Optional[Dict[str, Any]] = None,
+        identifier: str | None = None,
+        additional_info: dict[str, Any] | None = None,
     ):
         detail = f"{resource} not found"
         if identifier:
@@ -89,8 +89,8 @@ class ConflictError(APIError):
         self,
         resource: str,
         conflict_reason: str,
-        identifier: Optional[str] = None,
-        additional_info: Optional[Dict[str, Any]] = None,
+        identifier: str | None = None,
+        additional_info: dict[str, Any] | None = None,
     ):
         detail = f"Conflict for {resource}: {conflict_reason}"
         if identifier:
@@ -116,9 +116,9 @@ class GeometryError(APIError):
     def __init__(
         self,
         detail: str,
-        geometry_type: Optional[str] = None,
-        operation: Optional[str] = None,
-        additional_info: Optional[Dict[str, Any]] = None,
+        geometry_type: str | None = None,
+        operation: str | None = None,
+        additional_info: dict[str, Any] | None = None,
     ):
         error_info = {}
         if geometry_type:
@@ -142,9 +142,9 @@ class ProcessingError(APIError):
     def __init__(
         self,
         detail: str,
-        operation: Optional[str] = None,
-        processing_stage: Optional[str] = None,
-        additional_info: Optional[Dict[str, Any]] = None,
+        operation: str | None = None,
+        processing_stage: str | None = None,
+        additional_info: dict[str, Any] | None = None,
     ):
         error_info = {}
         if operation:
@@ -168,8 +168,8 @@ class BadRequestError(APIError):
     def __init__(
         self,
         detail: str,
-        field: Optional[str] = None,
-        additional_info: Optional[Dict[str, Any]] = None,
+        field: str | None = None,
+        additional_info: dict[str, Any] | None = None,
     ):
         error_info = {"field": field} if field else {}
         if additional_info:

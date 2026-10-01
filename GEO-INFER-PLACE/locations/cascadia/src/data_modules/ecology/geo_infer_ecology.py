@@ -7,7 +7,6 @@ and indigenous territories onto H3 hexagon grids.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import Any
 
 from .data_sources import (

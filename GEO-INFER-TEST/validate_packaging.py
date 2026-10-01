@@ -41,7 +41,6 @@ import re
 from collections import Counter
 from pathlib import Path
 import sys
-from typing import List, Optional
 
 from _validator_common import (
     ContractReport,
@@ -99,7 +98,7 @@ MIGRATED_SOURCE_TRAVERSAL_MODULES = frozenset(
 _PACKAGE_DATA_EXCLUDED_DIRS = ("__pycache__",)
 
 
-def module_dirs() -> List[Path]:
+def module_dirs() -> list[Path]:
     """Return ``GEO-INFER-*`` module directories in stable order."""
     return discover_module_dirs(REPO_ROOT)
 
@@ -123,12 +122,12 @@ def wheel_filename_is_valid(built_name: str, expected_distribution: str) -> bool
     return built_name.startswith(f"{normalized}-")
 
 
-def _package_data_patterns(pyproject: dict) -> List[str] | None:
+def _package_data_patterns(pyproject: dict) -> list[str] | None:
     """Return the union of [tool.setuptools.package-data] globs, or None."""
     table = pyproject.get("tool", {}).get("setuptools", {}).get("package-data")
     if not isinstance(table, dict) or not table:
         return None
-    patterns: List[str] = []
+    patterns: list[str] = []
     for patterns_by_key in table.values():
         if not isinstance(patterns_by_key, list):
             continue
@@ -210,7 +209,7 @@ def _development_status(pyproject: dict) -> str | None:
 
 
 def validate_version_uniformity(
-    inventories: List[tuple[str, dict]], report: ContractReport
+    inventories: list[tuple[str, dict]], report: ContractReport
 ) -> None:
     """Member pyprojects must agree on ``[project].version``."""
     versions = {
@@ -244,7 +243,7 @@ _CITATION_VERSION_RE = re.compile(
 )
 
 
-def citation_cff_version(citation_path: Path) -> Optional[str]:
+def citation_cff_version(citation_path: Path) -> str | None:
     """Return the top-level ``version`` field of a CITATION.cff, or None."""
     if not citation_path.is_file():
         return None
@@ -257,9 +256,9 @@ def citation_cff_version(citation_path: Path) -> Optional[str]:
 
 
 def validate_citation_version(
-    inventories: List[tuple[str, dict]],
+    inventories: list[tuple[str, dict]],
     report: ContractReport,
-    citation_path: Optional[Path] = None,
+    citation_path: Path | None = None,
 ) -> None:
     """CITATION.cff must cite the fleet-majority member version (CI-03).
 
@@ -296,7 +295,7 @@ def validate_citation_version(
 
 
 def validate_classifier_consistency(
-    inventories: List[tuple[str, dict]], report: ContractReport
+    inventories: list[tuple[str, dict]], report: ContractReport
 ) -> None:
     """Warn on module Development Status outliers; root asymmetry is a note."""
     statuses = {
@@ -347,7 +346,7 @@ trove_top_level_categories = {
 
 
 def validate_classifier_validity(
-    inventories: List[tuple[str, dict]], report: ContractReport
+    inventories: list[tuple[str, dict]], report: ContractReport
 ) -> None:
     """Reject trove classifiers PyPI would refuse on upload.
 
@@ -463,7 +462,7 @@ def _handles_import_error(handler: ast.ExceptHandler) -> bool:
     """True when the handler catches ImportError (bare, tuple, or catch-all)."""
     if handler.type is None:
         return True
-    names: List[str] = []
+    names: list[str] = []
     if isinstance(handler.type, ast.Name):
         names = [handler.type.id]
     elif isinstance(handler.type, ast.Tuple):
@@ -578,11 +577,11 @@ def validate_import_parity(
             )
 
 
-def validate_all(target_dirs: Optional[List[Path]] = None) -> ContractReport:
+def validate_all(target_dirs: list[Path] | None = None) -> ContractReport:
     report = ContractReport()
     if target_dirs is None:
         target_dirs = module_dirs()
-    inventories: List[tuple[str, dict]] = []
+    inventories: list[tuple[str, dict]] = []
     for module_dir in target_dirs:
         pyproject = parse_pyproject(module_dir)
         if not pyproject:

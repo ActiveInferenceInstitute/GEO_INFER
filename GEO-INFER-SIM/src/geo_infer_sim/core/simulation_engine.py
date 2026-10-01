@@ -7,10 +7,11 @@ multiple simulation paradigms including ABM, system dynamics, and CA.
 
 import logging
 import threading
-from typing import Dict, List, Optional, Any, Callable
+from typing import Any
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import datetime, UTC
+from enum import StrEnum
 
 import numpy as np
 import pandas as pd
@@ -18,7 +19,7 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
-class SimulationState(str, Enum):
+class SimulationState(StrEnum):
     """Simulation execution states."""
 
     INITIALIZED = "initialized"
@@ -36,9 +37,9 @@ class SimulationConfig:
     time_step: float = 1.0
     max_time: float = 100.0
     output_interval: float = 1.0
-    random_seed: Optional[int] = None
+    random_seed: int | None = None
     save_state_history: bool = True
-    checkpoint_interval: Optional[float] = None
+    checkpoint_interval: float | None = None
 
     def __post_init__(self) -> None:
         """Validate configuration."""
@@ -58,7 +59,7 @@ class SimulationEngine:
     paradigms with state management, event scheduling, and result collection.
     """
 
-    def __init__(self, config: Optional[SimulationConfig] = None) -> None:
+    def __init__(self, config: SimulationConfig | None = None) -> None:
         """
         Initialize the simulation engine.
 
@@ -68,10 +69,10 @@ class SimulationEngine:
         self.config = config or SimulationConfig()
         self.state = SimulationState.INITIALIZED
         self.current_time = 0.0
-        self._current_state: Dict[str, Any] = {}
-        self.state_history: List[Dict[str, Any]] = []
-        self.metrics: Dict[str, List[float]] = {}
-        self.events: List[Dict[str, Any]] = []
+        self._current_state: dict[str, Any] = {}
+        self.state_history: list[dict[str, Any]] = []
+        self.metrics: dict[str, list[float]] = {}
+        self.events: list[dict[str, Any]] = []
 
         # Pause signaling: the run loop honors this event between steps so a
         # pause can never surface as a step error (and thus a FAILED state).
@@ -81,7 +82,7 @@ class SimulationEngine:
         # when config.random_seed is set.
         self.rng: np.random.Generator = np.random.default_rng(self.config.random_seed)
 
-    def initialize(self, initial_state: Dict[str, Any]) -> None:
+    def initialize(self, initial_state: dict[str, Any]) -> None:
         """
         Initialize the simulation with initial state.
 
@@ -109,7 +110,7 @@ class SimulationEngine:
         logger.info("Simulation initialized")
 
     def step(
-        self, step_func: Callable[[float, Dict[str, Any]], Dict[str, Any]]
+        self, step_func: Callable[[float, dict[str, Any]], dict[str, Any]]
     ) -> None:
         """
         Execute a single simulation step.
@@ -159,8 +160,8 @@ class SimulationEngine:
             raise
 
     def run(
-        self, step_func: Callable[[float, Dict[str, Any]], Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, step_func: Callable[[float, dict[str, Any]], dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Run the complete simulation.
 
@@ -174,7 +175,7 @@ class SimulationEngine:
 
         self.state = SimulationState.RUNNING
         self._pause_requested.clear()
-        start_time = datetime.now(timezone.utc).replace(tzinfo=None)
+        start_time = datetime.now(UTC).replace(tzinfo=None)
 
         try:
             while self.current_time < self.config.max_time:
@@ -188,7 +189,7 @@ class SimulationEngine:
 
             if self.state == SimulationState.RUNNING:
                 self.state = SimulationState.COMPLETED
-            end_time = datetime.now(timezone.utc).replace(tzinfo=None)
+            end_time = datetime.now(UTC).replace(tzinfo=None)
             duration = (end_time - start_time).total_seconds()
 
             results = {
@@ -231,7 +232,7 @@ class SimulationEngine:
         self.state = SimulationState.CANCELLED
         logger.info("Simulation cancelled")
 
-    def get_state(self) -> Dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         """
         Get current simulation state.
 
@@ -262,7 +263,7 @@ class SimulationEngine:
         self.metrics[name].append(value)
 
     def record_event(
-        self, event_type: str, time: float, data: Optional[Dict[str, Any]] = None
+        self, event_type: str, time: float, data: dict[str, Any] | None = None
     ) -> None:
         """
         Record a simulation event.
@@ -318,7 +319,7 @@ class SimulationEngine:
         """
         import json
 
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             checkpoint = json.load(f)
 
         self.current_time = checkpoint["current_time"]
@@ -397,7 +398,7 @@ class SimulationEngine:
             "'dict', or 'json'"
         )
 
-    def get_metric_statistics(self, metric_name: str) -> Dict[str, Any]:
+    def get_metric_statistics(self, metric_name: str) -> dict[str, Any]:
         """
         Get statistics for a recorded metric.
 

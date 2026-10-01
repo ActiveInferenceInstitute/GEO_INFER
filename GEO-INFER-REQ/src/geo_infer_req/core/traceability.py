@@ -5,7 +5,6 @@ Provides trace matrix construction, coverage analysis,
 and impact analysis for tracking requirements through implementation.
 """
 
-from typing import Dict, List, Optional, Set
 from dataclasses import dataclass
 from enum import Enum
 
@@ -29,7 +28,7 @@ class TraceLink:
     req_id: str
     artifact_id: str
     artifact_type: ArtifactType
-    description: Optional[str] = None
+    description: str | None = None
     verified: bool = False
     bidirectional: bool = True
 
@@ -39,7 +38,7 @@ class TraceMatrixEntry:
     """An entry in the traceability matrix."""
 
     req_id: str
-    linked_artifacts: Dict[str, List[str]]  # artifact_type -> list of artifact_ids
+    linked_artifacts: dict[str, list[str]]  # artifact_type -> list of artifact_ids
     forward_coverage: float  # % of req traced to artifacts
     backward_coverage: float  # % of artifacts traced to reqs
     verification_status: str
@@ -51,10 +50,10 @@ class CoverageReport:
 
     total_requirements: int
     traced_requirements: int
-    untraced_requirements: List[str]
+    untraced_requirements: list[str]
     coverage_ratio: float
-    coverage_by_type: Dict[str, float]
-    artifact_counts: Dict[str, int]
+    coverage_by_type: dict[str, float]
+    artifact_counts: dict[str, int]
     bidirectional_links: int
     unidirectional_links: int
 
@@ -64,9 +63,9 @@ class ImpactReport:
     """Impact analysis report for requirement changes."""
 
     changed_requirement: str
-    directly_affected_artifacts: List[str]
-    indirectly_affected_requirements: List[str]
-    indirectly_affected_artifacts: List[str]
+    directly_affected_artifacts: list[str]
+    indirectly_affected_requirements: list[str]
+    indirectly_affected_artifacts: list[str]
     impact_severity: float
     affected_count: int
 
@@ -80,14 +79,14 @@ class TraceabilityManager:
     """
 
     def __init__(self) -> None:
-        self._links: List[TraceLink] = []
-        self._req_ids: Set[str] = set()
-        self._artifact_ids: Set[str] = set()
+        self._links: list[TraceLink] = []
+        self._req_ids: set[str] = set()
+        self._artifact_ids: set[str] = set()
         # Dependency map from RequirementsAnalyzer context
-        self._req_dependencies: Dict[str, List[str]] = {}
+        self._req_dependencies: dict[str, list[str]] = {}
 
     def register_requirement(
-        self, req_id: str, dependencies: Optional[List[str]] = None
+        self, req_id: str, dependencies: list[str] | None = None
     ) -> None:
         """
         Register a requirement for traceability tracking.
@@ -100,7 +99,7 @@ class TraceabilityManager:
         if dependencies:
             self._req_dependencies[req_id] = dependencies
 
-    def register_requirements(self, req_ids: List[str]) -> None:
+    def register_requirements(self, req_ids: list[str]) -> None:
         """
         Register multiple requirements.
 
@@ -121,7 +120,7 @@ class TraceabilityManager:
         self._artifact_ids.add(link.artifact_id)
         self._links.append(link)
 
-    def add_trace_links(self, links: List[TraceLink]) -> None:
+    def add_trace_links(self, links: list[TraceLink]) -> None:
         """
         Add multiple trace links.
 
@@ -131,19 +130,19 @@ class TraceabilityManager:
         for link in links:
             self.add_trace_link(link)
 
-    def build_trace_matrix(self) -> Dict[str, TraceMatrixEntry]:
+    def build_trace_matrix(self) -> dict[str, TraceMatrixEntry]:
         """
         Build the complete traceability matrix.
 
         Returns:
             Mapping of req_id to TraceMatrixEntry.
         """
-        matrix: Dict[str, TraceMatrixEntry] = {}
+        matrix: dict[str, TraceMatrixEntry] = {}
 
         for req_id in self._req_ids:
             req_links = [l for l in self._links if l.req_id == req_id]
 
-            linked_artifacts: Dict[str, List[str]] = {}
+            linked_artifacts: dict[str, list[str]] = {}
             verified_count = 0
             for link in req_links:
                 art_type = link.artifact_type.value
@@ -189,7 +188,7 @@ class TraceabilityManager:
             CoverageReport with coverage metrics.
         """
         # Determine which requirements have at least one trace link
-        traced_reqs: Set[str] = set()
+        traced_reqs: set[str] = set()
         for link in self._links:
             traced_reqs.add(link.req_id)
 
@@ -198,8 +197,8 @@ class TraceabilityManager:
         coverage_ratio = len(traced_reqs) / total if total > 0 else 0.0
 
         # Coverage by artifact type
-        type_reqs: Dict[str, Set[str]] = {}
-        artifact_counts: Dict[str, int] = {}
+        type_reqs: dict[str, set[str]] = {}
+        artifact_counts: dict[str, int] = {}
         bidirectional = 0
         unidirectional = 0
 
@@ -257,12 +256,12 @@ class TraceabilityManager:
         ]
 
         # Indirect requirements (those that depend on changed req)
-        indirect_reqs: List[str] = []
-        visited: Set[str] = {changed_req_id}
+        indirect_reqs: list[str] = []
+        visited: set[str] = {changed_req_id}
         queue = [changed_req_id]
 
         # Build reverse dependency map
-        reverse_deps: Dict[str, List[str]] = {}
+        reverse_deps: dict[str, list[str]] = {}
         for rid, deps in self._req_dependencies.items():
             for dep in deps:
                 if dep not in reverse_deps:
@@ -278,7 +277,7 @@ class TraceabilityManager:
                     queue.append(dependent)
 
         # Indirect artifacts
-        indirect_artifacts: List[str] = []
+        indirect_artifacts: list[str] = []
         for rid in indirect_reqs:
             for link in self._links:
                 if link.req_id == rid and link.artifact_id not in direct_artifacts:
@@ -299,7 +298,7 @@ class TraceabilityManager:
             affected_count=total_affected,
         )
 
-    def get_unverified_links(self) -> List[TraceLink]:
+    def get_unverified_links(self) -> list[TraceLink]:
         """
         Get all trace links that have not been verified.
 

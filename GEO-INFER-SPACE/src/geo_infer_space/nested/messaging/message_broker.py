@@ -10,7 +10,8 @@ import uuid
 from types import TracebackType
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Callable, Set, Tuple, Type
+from typing import Any
+from collections.abc import Callable
 from enum import Enum
 from collections import defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor
@@ -65,29 +66,29 @@ class Message:
 
     # Message content
     payload: Any = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     # Routing information
-    source_cell: Optional[str] = None
-    target_cell: Optional[str] = None
-    routing_path: List[str] = field(default_factory=list)
+    source_cell: str | None = None
+    target_cell: str | None = None
+    routing_path: list[str] = field(default_factory=list)
 
     # Delivery properties
     priority: MessagePriority = MessagePriority.NORMAL
-    ttl: Optional[timedelta] = None
+    ttl: timedelta | None = None
     max_retries: int = 3
     retry_count: int = 0
 
     # Status tracking
     status: MessageStatus = MessageStatus.PENDING
     created_at: datetime = field(default_factory=datetime.now)
-    delivered_at: Optional[datetime] = None
-    expires_at: Optional[datetime] = None
+    delivered_at: datetime | None = None
+    expires_at: datetime | None = None
 
     # Response handling
     requires_response: bool = False
-    response_timeout: Optional[timedelta] = None
-    correlation_id: Optional[str] = None
+    response_timeout: timedelta | None = None
+    correlation_id: str | None = None
 
     def __post_init__(self) -> None:
         """Set expiration time if TTL is specified."""
@@ -104,7 +105,7 @@ class Message:
         """Check if message can be retried."""
         return self.retry_count < self.max_retries and not self.is_expired()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert message to dictionary."""
         return {
             "message_id": self.message_id,
@@ -136,8 +137,8 @@ class MessageHandler:
 
     handler_id: str
     handler_function: Callable[[Message], Any]
-    message_types: Set[MessageType] = field(default_factory=set)
-    sender_filters: Set[str] = field(default_factory=set)
+    message_types: set[MessageType] = field(default_factory=set)
+    sender_filters: set[str] = field(default_factory=set)
     is_async: bool = False
 
     def can_handle(self, message: Message) -> bool:
@@ -166,7 +167,7 @@ class H3MessageBroker:
     - Message persistence and history
     """
 
-    def __init__(self, broker_id: Optional[str] = None, max_workers: int = 4) -> None:
+    def __init__(self, broker_id: str | None = None, max_workers: int = 4) -> None:
         """
         Initialize message broker.
 
@@ -178,33 +179,33 @@ class H3MessageBroker:
         self.max_workers = max_workers
 
         # Message storage
-        self.messages: Dict[str, Message] = {}
-        self.message_queues: Dict[str, queue.PriorityQueue] = defaultdict(
+        self.messages: dict[str, Message] = {}
+        self.message_queues: dict[str, queue.PriorityQueue] = defaultdict(
             lambda: queue.PriorityQueue()
         )
 
         # Handlers
-        self.handlers: Dict[str, MessageHandler] = {}
-        self.system_handlers: Dict[str, List[str]] = defaultdict(
+        self.handlers: dict[str, MessageHandler] = {}
+        self.system_handlers: dict[str, list[str]] = defaultdict(
             list
         )  # system_id -> handler_ids
 
         # Routing
-        self.routing_table: Dict[str, str] = {}  # recipient_id -> next_hop
-        self.boundary_routes: Dict[
-            Tuple[str, str], List[str]
+        self.routing_table: dict[str, str] = {}  # recipient_id -> next_hop
+        self.boundary_routes: dict[
+            tuple[str, str], list[str]
         ] = {}  # (source, target) -> path
 
         # Statistics
-        self.message_stats: Dict[str, int] = defaultdict(int)
-        self.delivery_stats: Dict[str, List[float]] = defaultdict(
+        self.message_stats: dict[str, int] = defaultdict(int)
+        self.delivery_stats: dict[str, list[float]] = defaultdict(
             list
         )  # delivery times
 
         # Threading
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.running = False
-        self.worker_threads: List[threading.Thread] = []
+        self.worker_threads: list[threading.Thread] = []
         self._lock = threading.RLock()
 
         # Message history
@@ -251,8 +252,8 @@ class H3MessageBroker:
         self,
         system_id: str,
         handler_function: Callable[[Message], Any],
-        message_types: Optional[Set[MessageType]] = None,
-        sender_filters: Optional[Set[str]] = None,
+        message_types: set[MessageType] | None = None,
+        sender_filters: set[str] | None = None,
         is_async: bool = False,
     ) -> str:
         """
@@ -306,7 +307,7 @@ class H3MessageBroker:
         payload: Any,
         message_type: MessageType = MessageType.DATA,
         priority: MessagePriority = MessagePriority.NORMAL,
-        ttl: Optional[timedelta] = None,
+        ttl: timedelta | None = None,
         requires_response: bool = False,
         **kwargs: Any,
     ) -> str:
@@ -357,9 +358,9 @@ class H3MessageBroker:
         payload: Any,
         message_type: MessageType = MessageType.BROADCAST,
         priority: MessagePriority = MessagePriority.NORMAL,
-        ttl: Optional[timedelta] = None,
+        ttl: timedelta | None = None,
         **kwargs: Any,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Broadcast message to all systems.
 
@@ -400,13 +401,13 @@ class H3MessageBroker:
     def multicast_message(
         self,
         sender_id: str,
-        recipient_ids: List[str],
+        recipient_ids: list[str],
         payload: Any,
         message_type: MessageType = MessageType.MULTICAST,
         priority: MessagePriority = MessagePriority.NORMAL,
-        ttl: Optional[timedelta] = None,
+        ttl: timedelta | None = None,
         **kwargs: Any,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Multicast message to specific recipients.
 
@@ -470,7 +471,7 @@ class H3MessageBroker:
             correlation_id=original_message.message_id,
         )
 
-    def get_message_status(self, message_id: str) -> Optional[MessageStatus]:
+    def get_message_status(self, message_id: str) -> MessageStatus | None:
         """Get status of a message."""
         with self._lock:
             message = self.messages.get(message_id)
@@ -478,10 +479,10 @@ class H3MessageBroker:
 
     def get_message_history(
         self,
-        system_id: Optional[str] = None,
-        message_type: Optional[MessageType] = None,
+        system_id: str | None = None,
+        message_type: MessageType | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get message history.
 
@@ -516,7 +517,7 @@ class H3MessageBroker:
 
         return history
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get broker statistics."""
         with self._lock:
             total_messages = len(self.messages)
@@ -659,9 +660,9 @@ class H3MessageBroker:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         """Context manager exit."""
         self.stop()

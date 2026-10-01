@@ -12,7 +12,7 @@ import json
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Any, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class CoastalResilienceAnalyzer:
 
     def __init__(
         self,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         data_integrator: Any,
         spatial_processor: Any,
         output_dir: Path,
@@ -91,13 +91,13 @@ class CoastalResilienceAnalyzer:
         )
         self.monitoring_sites = self.coastal_config.get("monitoring_sites", {})
 
-        self.last_analysis_time: Optional[datetime] = None
+        self.last_analysis_time: datetime | None = None
 
         logger.info("CoastalResilienceAnalyzer initialized for Del Norte County")
 
     def run_analysis(
-        self, temporal_range: Optional[Tuple[str, str]] = None
-    ) -> Dict[str, Any]:
+        self, temporal_range: tuple[str, str] | None = None
+    ) -> dict[str, Any]:
         """
         Run comprehensive coastal resilience analysis.
 
@@ -202,8 +202,8 @@ class CoastalResilienceAnalyzer:
         return results
 
     def _acquire_coastal_data(
-        self, temporal_range: Optional[Tuple[str, str]]
-    ) -> Dict[str, Any]:
+        self, temporal_range: tuple[str, str] | None
+    ) -> dict[str, Any]:
         """Acquire coastal data from multiple sources."""
         logger.info("Acquiring coastal data from multiple sources...")
 
@@ -216,7 +216,7 @@ class CoastalResilienceAnalyzer:
             bounds.get("north"),
         )
 
-        coastal_data: Dict[str, Any] = {
+        coastal_data: dict[str, Any] = {
             "bbox": bbox,
             "temporal_range": temporal_range,
             "data_sources": {},
@@ -263,7 +263,7 @@ class CoastalResilienceAnalyzer:
 
         return coastal_data
 
-    def _load_coastal_source(self, source_name: str) -> Dict[str, Any]:
+    def _load_coastal_source(self, source_name: str) -> dict[str, Any]:
         """Load a configured coastal dataset without manufacturing observations."""
         sources = self.coastal_config.get("data_sources", {})
         source = sources.get(source_name)
@@ -293,40 +293,40 @@ class CoastalResilienceAnalyzer:
         return payload
 
     def _acquire_coastal_elevation_data(
-        self, bbox: Tuple[float, float, float, float]
-    ) -> Dict[str, Any]:
+        self, bbox: tuple[float, float, float, float]
+    ) -> dict[str, Any]:
         """Acquire coastal elevation and topography data."""
         return self._load_coastal_source("elevation")
 
     def _acquire_shoreline_change_data(
         self,
-        bbox: Tuple[float, float, float, float],
-        temporal_range: Optional[Tuple[str, str]],
-    ) -> Dict[str, Any]:
+        bbox: tuple[float, float, float, float],
+        temporal_range: tuple[str, str] | None,
+    ) -> dict[str, Any]:
         """Acquire shoreline change analysis data."""
         return self._load_coastal_source("shoreline_change")
 
     def _acquire_coastal_infrastructure_data(
-        self, bbox: Tuple[float, float, float, float]
-    ) -> Dict[str, Any]:
+        self, bbox: tuple[float, float, float, float]
+    ) -> dict[str, Any]:
         """Acquire coastal infrastructure inventory data."""
         return self._load_coastal_source("infrastructure")
 
     def _acquire_wave_storm_data(
         self,
-        bbox: Tuple[float, float, float, float],
-        temporal_range: Optional[Tuple[str, str]],
-    ) -> Dict[str, Any]:
+        bbox: tuple[float, float, float, float],
+        temporal_range: tuple[str, str] | None,
+    ) -> dict[str, Any]:
         """Acquire wave height and storm event data."""
         return self._load_coastal_source("waves_storms")
 
-    def _analyze_sea_level_rise(self, coastal_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_sea_level_rise(self, coastal_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze sea level rise impacts."""
         logger.info("Analyzing sea level rise impacts...")
 
         elevation_data = coastal_data["data_sources"].get("elevation", {})
 
-        sea_level_analysis: Dict[str, Any] = {
+        sea_level_analysis: dict[str, Any] = {
             "current_trends": {},
             "scenario_impacts": {},
             "inundation_analysis": {},
@@ -365,14 +365,14 @@ class CoastalResilienceAnalyzer:
 
         return sea_level_analysis
 
-    def _assess_coastal_erosion(self, coastal_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _assess_coastal_erosion(self, coastal_data: dict[str, Any]) -> dict[str, Any]:
         """Assess coastal erosion patterns and trends."""
         logger.info("Assessing coastal erosion patterns...")
 
         shoreline_data = coastal_data["data_sources"].get("shoreline_change", {})
         transects = shoreline_data.get("transects", [])
 
-        erosion_analysis: Dict[str, Any] = {
+        erosion_analysis: dict[str, Any] = {
             "summary_statistics": {},
             "high_risk_areas": [],
             "erosion_hotspots": [],
@@ -412,8 +412,8 @@ class CoastalResilienceAnalyzer:
         return erosion_analysis
 
     def _analyze_storm_surge_vulnerability(
-        self, coastal_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, coastal_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze storm surge vulnerability."""
         logger.info("Analyzing storm surge vulnerability...")
 
@@ -421,7 +421,7 @@ class CoastalResilienceAnalyzer:
         elevation_data = coastal_data["data_sources"].get("elevation", {})
         storm_events = wave_data.get("storm_events", [])
 
-        storm_surge_analysis: Dict[str, Any] = {
+        storm_surge_analysis: dict[str, Any] = {
             "historical_storms": {},
             "surge_heights": {},
             "vulnerability_mapping": {},
@@ -466,15 +466,15 @@ class CoastalResilienceAnalyzer:
         return storm_surge_analysis
 
     def _assess_infrastructure_vulnerability(
-        self, coastal_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, coastal_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Assess coastal infrastructure vulnerability."""
         logger.info("Assessing infrastructure vulnerability...")
 
         infrastructure_data = coastal_data["data_sources"].get("infrastructure", {})
         assets = infrastructure_data.get("infrastructure_assets", [])
 
-        vulnerability_assessment: Dict[str, Any] = {
+        vulnerability_assessment: dict[str, Any] = {
             "asset_vulnerabilities": [],
             "critical_assets_at_risk": [],
             "total_value_at_risk": 0,
@@ -540,12 +540,12 @@ class CoastalResilienceAnalyzer:
         return vulnerability_assessment
 
     def _analyze_habitat_connectivity(
-        self, coastal_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, coastal_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze coastal habitat connectivity."""
         logger.info("Analyzing coastal habitat connectivity...")
 
-        habitat_analysis: Dict[str, Any] = {
+        habitat_analysis: dict[str, Any] = {
             "habitat_types": {},
             "connectivity_corridors": [],
             "migration_pathways": {},
@@ -608,11 +608,11 @@ class CoastalResilienceAnalyzer:
 
         return habitat_analysis
 
-    def _assess_tsunami_risk(self, coastal_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _assess_tsunami_risk(self, coastal_data: dict[str, Any]) -> dict[str, Any]:
         """Assess tsunami risk and preparedness."""
         logger.info("Assessing tsunami risk...")
 
-        tsunami_analysis: Dict[str, Any] = {
+        tsunami_analysis: dict[str, Any] = {
             "risk_assessment": {},
             "evacuation_planning": {},
             "historical_events": {},
@@ -673,8 +673,8 @@ class CoastalResilienceAnalyzer:
         return tsunami_analysis
 
     def _generate_vulnerability_assessment(
-        self, analysis_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, analysis_results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate integrated coastal vulnerability assessment."""
         logger.info("Generating integrated vulnerability assessment...")
 
@@ -765,7 +765,7 @@ class CoastalResilienceAnalyzer:
 
         return vulnerability_assessment
 
-    def _prepare_spatial_data(self, analysis_results: Dict[str, Any]) -> Dict[str, Any]:
+    def _prepare_spatial_data(self, analysis_results: dict[str, Any]) -> dict[str, Any]:
         """Prepare spatial data for cross-domain integration."""
         logger.info("Preparing spatial data for integration...")
 
@@ -791,8 +791,8 @@ class CoastalResilienceAnalyzer:
         return spatial_data
 
     def _generate_adaptation_recommendations(
-        self, analysis_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, analysis_results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate coastal adaptation recommendations."""
         logger.info("Generating adaptation recommendations...")
 
@@ -801,7 +801,7 @@ class CoastalResilienceAnalyzer:
             "infrastructure_vulnerability", {}
         )
 
-        recommendations: Dict[str, Any] = {
+        recommendations: dict[str, Any] = {
             "immediate_actions": [],
             "short_term_strategies": [],
             "long_term_planning": [],
@@ -862,7 +862,7 @@ class CoastalResilienceAnalyzer:
 
         return recommendations
 
-    def _save_analysis_results(self, results: Dict[str, Any]) -> None:
+    def _save_analysis_results(self, results: dict[str, Any]) -> None:
         """Save analysis results to file."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         results_file = self.output_dir / f"coastal_resilience_analysis_{timestamp}.json"
@@ -874,7 +874,7 @@ class CoastalResilienceAnalyzer:
 
         logger.info(f"Coastal resilience analysis results saved to: {results_file}")
 
-    def get_monitoring_status(self) -> Dict[str, Any]:
+    def get_monitoring_status(self) -> dict[str, Any]:
         """Get current monitoring system status."""
         return {
             "monitor_type": "coastal_resilience",

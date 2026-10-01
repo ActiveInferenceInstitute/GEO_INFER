@@ -5,7 +5,8 @@ This module provides comprehensive validation and integrity checking
 for all PEP data types and workflows.
 """
 
-from typing import Dict, List, Any, Optional, Callable
+from typing import Any
+from collections.abc import Callable
 from datetime import datetime, date
 import re
 import logging
@@ -24,8 +25,8 @@ class ValidationResult:
     def __init__(
         self,
         is_valid: bool,
-        errors: Optional[List[str]] = None,
-        warnings: Optional[List[str]] = None,
+        errors: list[str] | None = None,
+        warnings: list[str] | None = None,
     ) -> None:
         self.is_valid = is_valid
         self.errors = errors or []
@@ -41,7 +42,7 @@ class ValidationResult:
         """Add a warning to the result."""
         self.warnings.append(warning)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert result to dictionary."""
         return {
             "is_valid": self.is_valid,
@@ -437,7 +438,7 @@ class PEPValidator:
         return result
 
     def validate_onboarding_workflow(
-        self, candidate_id: str, employees: List[Employee], candidates: List[Candidate]
+        self, candidate_id: str, employees: list[Employee], candidates: list[Candidate]
     ) -> ValidationResult:
         """
         Validate onboarding workflow prerequisites and data integrity.
@@ -494,10 +495,10 @@ class PEPValidator:
 
     def validate_data_integrity(
         self,
-        employees: Optional[List[Employee]] = None,
-        customers: Optional[List[Customer]] = None,
-        candidates: Optional[List[Candidate]] = None,
-    ) -> Dict[str, ValidationResult]:
+        employees: list[Employee] | None = None,
+        customers: list[Customer] | None = None,
+        candidates: list[Candidate] | None = None,
+    ) -> dict[str, ValidationResult]:
         """
         Perform comprehensive data integrity validation across all data types.
 
@@ -535,7 +536,7 @@ class PEPValidator:
         return results
 
     def _validate_collection(
-        self, items: List[Any], validator_func: Callable[[Any], ValidationResult]
+        self, items: list[Any], validator_func: Callable[[Any], ValidationResult]
     ) -> ValidationResult:
         """Validate a collection of items and aggregate results."""
         collection_result = ValidationResult(True)
@@ -568,7 +569,7 @@ class PEPValidator:
         return collection_result
 
     def _validate_cross_references(
-        self, employees: List[Employee], candidates: List[Candidate]
+        self, employees: list[Employee], candidates: list[Candidate]
     ) -> ValidationResult:
         """Validate cross-references between employees and candidates."""
         result = ValidationResult(True)
@@ -593,7 +594,7 @@ class PEPValidator:
 
         return result
 
-    def _validate_email(self, email: str) -> Dict[str, Any]:
+    def _validate_email(self, email: str) -> dict[str, Any]:
         """Validate email address format."""
         if not email or not email.strip():
             return {"valid": False, "error": "Email is empty"}
@@ -604,7 +605,7 @@ class PEPValidator:
         else:
             return {"valid": False, "error": "Invalid email format"}
 
-    def _validate_phone(self, phone: str) -> Dict[str, Any]:
+    def _validate_phone(self, phone: str) -> dict[str, Any]:
         """Validate phone number format."""
         if not phone or not phone.strip():
             return {"valid": False, "error": "Phone is empty"}

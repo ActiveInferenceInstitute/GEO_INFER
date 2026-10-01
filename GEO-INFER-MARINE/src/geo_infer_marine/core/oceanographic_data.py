@@ -5,7 +5,6 @@ Handles processing of oceanographic data including temperature, salinity, curren
 """
 
 import logging
-from typing import Dict, List, Optional
 import numpy as np
 import xarray as xr
 
@@ -19,12 +18,12 @@ class OceanographicDataProcessor:
     Supports 3D oceanographic data (temperature, salinity, currents, depth).
     """
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize oceanographic data processor."""
         self.config = config or {}
 
     def load_oceanographic_data(
-        self, file_path: str, variables: Optional[List[str]] = None
+        self, file_path: str, variables: list[str] | None = None
     ) -> xr.Dataset:
         """
         Load oceanographic dataset.
@@ -55,7 +54,7 @@ class OceanographicDataProcessor:
             raise
 
     def process_3d_ocean_data(
-        self, dataset: xr.Dataset, depth_levels: Optional[List[float]] = None
+        self, dataset: xr.Dataset, depth_levels: list[float] | None = None
     ) -> xr.Dataset:
         """
         Process 3D oceanographic data.

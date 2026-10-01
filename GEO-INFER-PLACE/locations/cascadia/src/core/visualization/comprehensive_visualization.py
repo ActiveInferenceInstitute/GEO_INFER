@@ -17,7 +17,7 @@ import json
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any
 from datetime import datetime
 import os
 
@@ -125,14 +125,14 @@ class ComprehensiveVisualizationEngine:
 
     def create_interactive_h3_map(
         self,
-        h3_data: Dict[str, Any],
-        data_sources: Dict[str, Any],
-        target_hexagons: List[str],
+        h3_data: dict[str, Any],
+        data_sources: dict[str, Any],
+        target_hexagons: list[str],
         output_filename: str = "cascadia_interactive_map.html",
-        initial_visible_layers: Optional[List[str]] = None,
-        include_layers: Optional[List[str]] = None,
-        module_status: Optional[Dict[str, Any]] = None,
-        redevelopment_scores: Optional[Dict[str, float]] = None,
+        initial_visible_layers: list[str] | None = None,
+        include_layers: list[str] | None = None,
+        module_status: dict[str, Any] | None = None,
+        redevelopment_scores: dict[str, float] | None = None,
     ) -> Path:
         """
         Create an interactive H3-based map with multiple layers.
@@ -178,14 +178,14 @@ class ComprehensiveVisualizationEngine:
         # Add layer control (we will add layers first with visibility flags)
 
         # Determine layer inclusion and initial visibility from config and CLI
-        initial_visibility: Dict[str, bool] = {}
-        configured_layers: List[str] = []
+        initial_visibility: dict[str, bool] = {}
+        configured_layers: list[str] = []
         cfg_path = Path(__file__).resolve().parents[1] / "config" / "analysis_config.yaml"
         try:
             if cfg_path.exists():
                 import yaml
 
-                with open(cfg_path, "r") as cf:
+                with open(cfg_path) as cf:
                     cfg = yaml.safe_load(cf) or {}
                 vis_cfg = cfg.get("visualization") or {}
                 initial_layer_vis_cfg = vis_cfg.get("initial_layer_visibility") or {}
@@ -308,10 +308,10 @@ class ComprehensiveVisualizationEngine:
 
     def create_static_visualizations(
         self,
-        h3_data: Dict[str, Any],
-        data_sources: Dict[str, Any],
-        redevelopment_scores: Dict[str, float],
-    ) -> Dict[str, Path]:
+        h3_data: dict[str, Any],
+        data_sources: dict[str, Any],
+        redevelopment_scores: dict[str, float],
+    ) -> dict[str, Path]:
         """
         Create static visualizations for reports and presentations.
 
@@ -379,10 +379,10 @@ class ComprehensiveVisualizationEngine:
 
     def create_dashboard(
         self,
-        h3_data: Dict[str, Any],
-        data_sources: Dict[str, Any],
-        redevelopment_scores: Dict[str, float],
-        summary: Dict[str, Any],
+        h3_data: dict[str, Any],
+        data_sources: dict[str, Any],
+        redevelopment_scores: dict[str, float],
+        summary: dict[str, Any],
     ) -> Path:
         """
         Create a comprehensive dashboard with all visualizations.
@@ -420,10 +420,10 @@ class ComprehensiveVisualizationEngine:
 
     def export_visualization_data(
         self,
-        h3_data: Dict[str, Any],
-        data_sources: Dict[str, Any],
-        redevelopment_scores: Dict[str, float],
-    ) -> Dict[str, Path]:
+        h3_data: dict[str, Any],
+        data_sources: dict[str, Any],
+        redevelopment_scores: dict[str, float],
+    ) -> dict[str, Path]:
         """
         Export visualization data for external tools.
 
@@ -505,7 +505,7 @@ class ComprehensiveVisualizationEngine:
 
         return export_paths
 
-    def _get_hexagons_map(self, obj: Dict[str, Any]) -> Dict[str, Any]:
+    def _get_hexagons_map(self, obj: dict[str, Any]) -> dict[str, Any]:
         """Return a mapping of hex_id -> data from either a flat dict or a dict with 'hexagons'."""
         if isinstance(obj, dict) and "hexagons" in obj and isinstance(obj["hexagons"], dict):
             return obj["hexagons"]
@@ -517,8 +517,8 @@ class ComprehensiveVisualizationEngine:
         self,
         m: folium.Map,
         module_name: str,
-        module_data: Dict[str, Any],
-        h3_data: Dict[str, Any],
+        module_data: dict[str, Any],
+        h3_data: dict[str, Any],
         show: bool = False,
     ):
         """Add a data layer to the map."""
@@ -557,7 +557,7 @@ class ComprehensiveVisualizationEngine:
             logger.error(f"Failed to add {module_name} layer: {e}")
 
     def _add_h3_grid_layer(
-        self, m: folium.Map, target_hexagons: List[str], h3_data: Dict[str, Any]
+        self, m: folium.Map, target_hexagons: list[str], h3_data: dict[str, Any]
     ):
         """Add H3 grid layer for reference."""
         try:
@@ -581,7 +581,7 @@ class ComprehensiveVisualizationEngine:
             logger.error(f"Failed to add H3 grid layer: {e}")
 
     def _add_analysis_layer(
-        self, m: folium.Map, h3_data: Dict[str, Any], data_sources: Dict[str, Any]
+        self, m: folium.Map, h3_data: dict[str, Any], data_sources: dict[str, Any]
     ):
         """Add analysis layer with aggregated data."""
         try:
@@ -618,8 +618,8 @@ class ComprehensiveVisualizationEngine:
     def _add_redevelopment_layer(
         self,
         m: "folium.Map",
-        scores: Dict[str, float],
-        target_hexagons: List[str],
+        scores: dict[str, float],
+        target_hexagons: list[str],
         show: bool = True,
     ) -> None:
         """Add a layer visualizing redevelopment scores across hexagons.
@@ -651,7 +651,7 @@ class ComprehensiveVisualizationEngine:
             logger.error(f"Failed to add redevelopment layer: {e}")
 
     def _add_interactive_features(
-        self, m: folium.Map, h3_data: Dict[str, Any], data_sources: Dict[str, Any]
+        self, m: folium.Map, h3_data: dict[str, Any], data_sources: dict[str, Any]
     ):
         """Add interactive features to the map."""
         try:
@@ -695,7 +695,7 @@ class ComprehensiveVisualizationEngine:
         except Exception as e:
             logger.error(f"Failed to add interactive features: {e}")
 
-    def _get_hexagon_boundary(self, hex_id: str) -> Optional[List[List[float]]]:
+    def _get_hexagon_boundary(self, hex_id: str) -> list[list[float]] | None:
         """Get the boundary coordinates for an H3 hexagon."""
         try:
             import h3
@@ -710,7 +710,7 @@ class ComprehensiveVisualizationEngine:
             return None
 
     def _get_hexagon_color(
-        self, hex_data: Dict[str, Any], color_scheme: Dict[str, str], module_name: str
+        self, hex_data: dict[str, Any], color_scheme: dict[str, str], module_name: str
     ) -> str:
         """Get color for a hexagon based on its data."""
         try:
@@ -768,7 +768,7 @@ class ComprehensiveVisualizationEngine:
         except Exception:
             return "#808080"
 
-    def _create_popup_content(self, hex_id: str, hex_data: Dict[str, Any], module_name: str) -> str:
+    def _create_popup_content(self, hex_id: str, hex_data: dict[str, Any], module_name: str) -> str:
         """Create popup content for a hexagon."""
         try:
             content = f"<b>H3 Hexagon:</b> {hex_id}<br>"
@@ -786,7 +786,7 @@ class ComprehensiveVisualizationEngine:
             logger.error(f"Failed to create popup content: {e}")
             return f"<b>H3:</b> {hex_id}"
 
-    def _summarize_hex_data(self, hex_data: Any, module_name: str) -> Dict[str, Any]:
+    def _summarize_hex_data(self, hex_data: Any, module_name: str) -> dict[str, Any]:
         """Summarize per-hex data. Accepts a dict or list of dicts and returns a representative dict."""
         try:
             if isinstance(hex_data, dict):
@@ -795,7 +795,7 @@ class ComprehensiveVisualizationEngine:
                 return {}
 
             # Helper to pick most common value for a key among items
-            def most_common(key_candidates: List[str]) -> str:
+            def most_common(key_candidates: list[str]) -> str:
                 from collections import Counter
 
                 values = []
@@ -807,7 +807,7 @@ class ComprehensiveVisualizationEngine:
                                 break
                 return Counter(values).most_common(1)[0][0] if values else "Unknown"
 
-            summary: Dict[str, Any] = {}
+            summary: dict[str, Any] = {}
             summary["count"] = len(hex_data)
             if module_name == "zoning":
                 summary["zone_type"] = most_common(["zone_type", "zone", "zone_code"])
@@ -840,10 +840,10 @@ class ComprehensiveVisualizationEngine:
     def _generate_enhanced_html(
         self,
         m: folium.Map,
-        h3_data: Dict[str, Any],
-        data_sources: Dict[str, Any],
-        layer_names: Optional[List[str]] = None,
-        module_status: Optional[Dict[str, Any]] = None,
+        h3_data: dict[str, Any],
+        data_sources: dict[str, Any],
+        layer_names: list[str] | None = None,
+        module_status: dict[str, Any] | None = None,
     ) -> str:
         """Generate enhanced HTML with custom CSS and JavaScript."""
         try:
@@ -1001,7 +1001,7 @@ class ComprehensiveVisualizationEngine:
             logger.error(f"Failed to generate enhanced HTML: {e}")
             return m._repr_html_()
 
-    def _create_coverage_plot(self, data_sources: Dict[str, Any], total_targets: int):
+    def _create_coverage_plot(self, data_sources: dict[str, Any], total_targets: int):
         """Create data coverage visualization based on per-module hexagon counts."""
         fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -1033,7 +1033,7 @@ class ComprehensiveVisualizationEngine:
         plt.tight_layout()
         return fig
 
-    def _create_score_distribution_plot(self, redevelopment_scores: Dict[str, float]):
+    def _create_score_distribution_plot(self, redevelopment_scores: dict[str, float]):
         """Create redevelopment score distribution plot."""
         fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -1060,7 +1060,7 @@ class ComprehensiveVisualizationEngine:
 
         return fig
 
-    def _create_module_comparison_plot(self, data_sources: Dict[str, Any], total_targets: int):
+    def _create_module_comparison_plot(self, data_sources: dict[str, Any], total_targets: int):
         """Create module comparison chart with counts and heuristic quality."""
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
 
@@ -1100,7 +1100,7 @@ class ComprehensiveVisualizationEngine:
         plt.tight_layout()
         return fig
 
-    def _create_quality_heatmap(self, data_sources: Dict[str, Any], total_targets: int):
+    def _create_quality_heatmap(self, data_sources: dict[str, Any], total_targets: int):
         """Create data quality heatmap with computed metrics."""
         fig, ax = plt.subplots(figsize=(10, 6))
         modules = list(data_sources.keys())
@@ -1137,7 +1137,7 @@ class ComprehensiveVisualizationEngine:
         plt.tight_layout()
         return fig
 
-    def _convert_h3_to_geojson(self, h3_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_h3_to_geojson(self, h3_data: dict[str, Any]) -> dict[str, Any]:
         """Convert H3 data to GeoJSON format."""
         features = []
 
@@ -1163,9 +1163,9 @@ class ComprehensiveVisualizationEngine:
 
     def _generate_dashboard_html(
         self,
-        static_viz: Dict[str, Path],
+        static_viz: dict[str, Path],
         interactive_map: Path,
-        summary: Dict[str, Any],
+        summary: dict[str, Any],
         timestamp: str,
     ) -> str:
         """Generate comprehensive dashboard HTML."""

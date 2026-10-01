@@ -6,7 +6,8 @@ based on local rules applied to grid cells.
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Callable, Tuple
+from typing import Any
+from collections.abc import Callable
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -22,10 +23,10 @@ class CellularAutomata:
 
     def __init__(
         self,
-        grid_shape: Tuple[int, int],
-        initial_states: Optional[np.ndarray] = None,
+        grid_shape: tuple[int, int],
+        initial_states: np.ndarray | None = None,
         num_states: int = 2,
-        random_seed: Optional[int] = None,
+        random_seed: int | None = None,
     ) -> None:
         """
         Initialize the cellular automata.
@@ -54,11 +55,11 @@ class CellularAutomata:
             self.grid = self.rng.integers(0, num_states, size=grid_shape)
 
         self.time = 0.0
-        self.history: List[np.ndarray] = []
+        self.history: list[np.ndarray] = []
 
     def get_neighbors(
         self, row: int, col: int, neighborhood: str = "moore"
-    ) -> List[Tuple[int, int]]:
+    ) -> list[tuple[int, int]]:
         """
         Get neighbor cell coordinates.
 
@@ -101,7 +102,7 @@ class CellularAutomata:
 
     def apply_rule(
         self,
-        rule_func: Callable[[int, List[int]], int],
+        rule_func: Callable[[int, list[int]], int],
         neighborhood: str = "moore",
     ) -> None:
         """
@@ -126,7 +127,7 @@ class CellularAutomata:
 
     def step(
         self,
-        rule_func: Optional[Callable[[int, List[int]], int]] = None,
+        rule_func: Callable[[int, list[int]], int] | None = None,
         neighborhood: str = "moore",
     ) -> None:
         """
@@ -140,7 +141,7 @@ class CellularAutomata:
             self.apply_rule(rule_func, neighborhood)
         else:
             # Default: Game of Life rule
-            def game_of_life_rule(current: int, neighbors: List[int]) -> int:
+            def game_of_life_rule(current: int, neighbors: list[int]) -> int:
                 alive_neighbors = sum(1 for n in neighbors if n == 1)
                 if current == 1:
                     return 1 if 2 <= alive_neighbors <= 3 else 0
@@ -155,7 +156,7 @@ class CellularAutomata:
         if int(self.time) % 10 == 0:
             self.history.append(self.grid.copy())
 
-    def get_state(self) -> Dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         """
         Get current model state.
 
@@ -172,7 +173,7 @@ class CellularAutomata:
             },
         }
 
-    def reset(self, initial_states: Optional[np.ndarray] = None) -> None:
+    def reset(self, initial_states: np.ndarray | None = None) -> None:
         """
         Reset the model to initial state.
 

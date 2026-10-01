@@ -3,7 +3,7 @@
 import logging
 import csv
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import Any
 from datetime import datetime
 from ..models.crm_models import (
     Customer,
@@ -24,19 +24,19 @@ class BaseCRMImporter(ABC):
 
     @abstractmethod
     def fetch_data(
-        self, last_sync_date: Optional[datetime] = None
-    ) -> List[Dict[str, Any]]:
+        self, last_sync_date: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Fetch raw data from the CRM."""
         raise RuntimeError("CRM importer subclasses must implement fetch_data()")
 
     @abstractmethod
-    def transform_data(self, raw_data: List[Dict[str, Any]]) -> List[Customer]:
+    def transform_data(self, raw_data: list[dict[str, Any]]) -> list[Customer]:
         """Transform raw data into Customer Pydantic models."""
         raise RuntimeError("CRM importer subclasses must implement transform_data()")
 
     def import_customers(
-        self, last_sync_date: Optional[datetime] = None, **kwargs: Any
-    ) -> List[Customer]:
+        self, last_sync_date: datetime | None = None, **kwargs: Any
+    ) -> list[Customer]:
         """Orchestrates the import process: connect, fetch, transform."""
         self.connect(**kwargs)
         raw_data = self.fetch_data(last_sync_date=last_sync_date)
@@ -52,14 +52,14 @@ class CSVCRMImporter(BaseCRMImporter):
 
     def __init__(self, file_path: str):
         self.file_path = file_path
-        self.connection: Optional[str] = None
+        self.connection: str | None = None
         logger.info(f"CSV CRM Importer initialized for file: {self.file_path}")
 
     def connect(self, **kwargs: Any) -> None:
         """Open and validate access to the CSV file."""
         try:
             # In a real scenario, you might keep the file open or check its existence.
-            with open(self.file_path, "r", encoding="utf-8") as f:
+            with open(self.file_path, encoding="utf-8") as f:
                 f.read(0)
             self.connection = "connected"
             logger.info(f"Successfully connected to CSV file: {self.file_path}")
@@ -71,15 +71,15 @@ class CSVCRMImporter(BaseCRMImporter):
             raise
 
     def fetch_data(
-        self, last_sync_date: Optional[datetime] = None
-    ) -> List[Dict[str, Any]]:
+        self, last_sync_date: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Reads data from the CSV file."""
         if not self.connection:
             raise ConnectionError("Not connected to CSV file. Call connect() first.")
 
-        records: List[Dict[str, Any]] = []
+        records: list[dict[str, Any]] = []
         try:
-            with open(self.file_path, mode="r", encoding="utf-8") as csvfile:
+            with open(self.file_path, encoding="utf-8") as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
                     # Basic filtering by date if applicable
@@ -105,9 +105,9 @@ class CSVCRMImporter(BaseCRMImporter):
             logger.error(f"Error fetching data from CSV file {self.file_path}: {e}")
             return []
 
-    def transform_data(self, raw_data: List[Dict[str, Any]]) -> List[Customer]:
+    def transform_data(self, raw_data: list[dict[str, Any]]) -> list[Customer]:
         """Transforms CSV rows into Customer Pydantic models."""
-        customers: List[Customer] = []
+        customers: list[Customer] = []
         for record in raw_data:
             try:
                 address = Address(

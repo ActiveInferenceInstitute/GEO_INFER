@@ -6,7 +6,7 @@ and service planning capabilities.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -31,10 +31,10 @@ class TransitStop:
 
     stop_id: str
     name: str
-    location: Dict[str, float]
-    routes: List[str] = field(default_factory=list)
+    location: dict[str, float]
+    routes: list[str] = field(default_factory=list)
     boarding_daily: int = 0
-    amenities: List[str] = field(default_factory=list)
+    amenities: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -44,9 +44,9 @@ class TransitRoute:
     route_id: str
     name: str
     mode: TransitMode
-    stops: List[str]
+    stops: list[str]
     headway_minutes: int = 30
-    operating_hours: Dict[str, str] = field(default_factory=dict)
+    operating_hours: dict[str, str] = field(default_factory=dict)
     ridership_daily: int = 0
 
 
@@ -60,9 +60,9 @@ class TransitOptimizer:
 
     def __init__(
         self,
-        transit_network: Optional[Dict[str, Any]] = None,
-        demand_data: Optional[Dict[str, Any]] = None,
-        optimization_objectives: Optional[List[str]] = None,
+        transit_network: dict[str, Any] | None = None,
+        demand_data: dict[str, Any] | None = None,
+        optimization_objectives: list[str] | None = None,
     ):
         """
         Initialize transit optimizer.
@@ -78,17 +78,17 @@ class TransitOptimizer:
             "coverage",
             "ridership",
         ]
-        self._stops: Dict[str, TransitStop] = {}
-        self._routes: Dict[str, TransitRoute] = {}
+        self._stops: dict[str, TransitStop] = {}
+        self._routes: dict[str, TransitRoute] = {}
         logger.info("Initialized TransitOptimizer")
 
     def optimize_frequencies(
         self,
-        routes: List[Dict[str, Any]],
-        demand_patterns: Dict[str, Any],
-        fleet_constraints: Dict[str, int],
+        routes: list[dict[str, Any]],
+        demand_patterns: dict[str, Any],
+        fleet_constraints: dict[str, int],
         optimization_period: str = "peak",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Optimize route frequencies.
 
@@ -101,13 +101,13 @@ class TransitOptimizer:
         Returns:
             Optimized frequency plan
         """
-        routes_out: List[Dict[str, Any]] = []
-        summary_out: Dict[str, Any] = {
+        routes_out: list[dict[str, Any]] = []
+        summary_out: dict[str, Any] = {
             "total_routes": len(routes),
             "total_vehicles_required": 0,
             "estimated_ridership_increase": 0,
         }
-        optimization_result: Dict[str, Any] = {
+        optimization_result: dict[str, Any] = {
             "optimization_period": optimization_period,
             "timestamp": datetime.now().isoformat(),
             "routes": routes_out,
@@ -173,11 +173,11 @@ class TransitOptimizer:
 
     def analyze_coverage(
         self,
-        stops: List[Dict[str, Any]],
-        population_zones: List[Dict[str, Any]],
+        stops: list[dict[str, Any]],
+        population_zones: list[dict[str, Any]],
         walk_radius_m: float = 400,
         equity_focus: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze transit coverage.
 
@@ -194,7 +194,7 @@ class TransitOptimizer:
 
         total_population = sum(z.get("population", 0) for z in population_zones)
         covered_population = 0
-        zone_covered_flags: List[bool] = []
+        zone_covered_flags: list[bool] = []
         covered_zones = []
         uncovered_zones = []
 
@@ -253,13 +253,13 @@ class TransitOptimizer:
             # either a "demographics" mapping (group -> population share) or a
             # single "demographic_group" name. Without demographic data no
             # equity_analysis is reported.
-            group_total: Dict[str, float] = {}
-            group_covered: Dict[str, float] = {}
+            group_total: dict[str, float] = {}
+            group_covered: dict[str, float] = {}
             for zone, is_covered in zip(population_zones, zone_covered_flags):
                 zone_pop = zone.get("population", 0)
                 demographics = zone.get("demographics")
                 if isinstance(demographics, dict):
-                    shares: Dict[str, float] = demographics
+                    shares: dict[str, float] = demographics
                 elif zone.get("demographic_group"):
                     shares = {zone["demographic_group"]: 1.0}
                 else:
@@ -287,11 +287,11 @@ class TransitOptimizer:
 
     def design_network(
         self,
-        demand_zones: List[Dict[str, Any]],
-        constraints: Dict[str, Any],
+        demand_zones: list[dict[str, Any]],
+        constraints: dict[str, Any],
         mode: str = "bus",
         objective: str = "maximize_coverage",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Design a transit network.
 
@@ -304,9 +304,9 @@ class TransitOptimizer:
         Returns:
             Proposed network design
         """
-        proposed_routes_out: List[Dict[str, Any]] = []
-        proposed_stops_out: List[Dict[str, Any]] = []
-        design: Dict[str, Any] = {
+        proposed_routes_out: list[dict[str, Any]] = []
+        proposed_stops_out: list[dict[str, Any]] = []
+        design: dict[str, Any] = {
             "mode": mode,
             "objective": objective,
             "timestamp": datetime.now().isoformat(),
@@ -327,7 +327,7 @@ class TransitOptimizer:
             origin = sorted_zones[i]
             destination = sorted_zones[(i + 1) % len(sorted_zones)]
 
-            route: Dict[str, Any] = {
+            route: dict[str, Any] = {
                 "route_id": f"route_{i + 1}",
                 "name": f"Route {i + 1}",
                 "mode": mode,
@@ -373,10 +373,10 @@ class TransitOptimizer:
 
     def evaluate_scenario(
         self,
-        base_network: Dict[str, Any],
-        proposed_changes: List[Dict[str, Any]],
-        metrics: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        base_network: dict[str, Any],
+        proposed_changes: list[dict[str, Any]],
+        metrics: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Evaluate a network change scenario.
 
@@ -390,18 +390,18 @@ class TransitOptimizer:
         """
         metrics = metrics or ["ridership", "coverage", "cost"]
 
-        impacts: Dict[str, Any] = {}
-        evaluation: Dict[str, Any] = {
+        impacts: dict[str, Any] = {}
+        evaluation: dict[str, Any] = {
             "scenario_id": f"scenario_{datetime.now().strftime('%Y%m%d%H%M%S')}",
             "proposed_changes": proposed_changes,
             "impacts": impacts,
             "recommendation": "",
         }
 
-        per_change_impacts: List[Dict[str, Any]] = []
+        per_change_impacts: list[dict[str, Any]] = []
         for change in proposed_changes:
             change_type = change.get("type")
-            change_impact: Dict[str, Any] = {"type": change_type}
+            change_impact: dict[str, Any] = {"type": change_type}
 
             if change_type == "add_route":
                 change_impact["ridership_change"] = change.get(

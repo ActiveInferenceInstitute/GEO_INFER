@@ -6,9 +6,7 @@ This script demonstrates that the framework is working correctly
 and shows how to use the core modules.
 """
 
-import sys
 import logging
-from pathlib import Path
 
 # Configure logging
 logging.basicConfig(
@@ -75,11 +73,11 @@ def demo_iot_module():
 
         # Create sensor registry
         registry = SensorRegistry()
-        logger.info(f"✓ Created SensorRegistry")
+        logger.info("✓ Created SensorRegistry")
 
         # Create IoT data ingestion
         ingestion = IoTDataIngestion(registry)
-        logger.info(f"✓ Created IoTDataIngestion")
+        logger.info("✓ Created IoTDataIngestion")
 
         return True
     except Exception as e:
@@ -93,8 +91,6 @@ def demo_cross_module_integration():
 
     try:
         # Import from multiple modules
-        from geo_infer_space import PlaceAnalyzer
-        from geo_infer_iot import IoTDataIngestion
         from geo_infer_sec import SecurityFramework
 
         # Create a simple integrated workflow

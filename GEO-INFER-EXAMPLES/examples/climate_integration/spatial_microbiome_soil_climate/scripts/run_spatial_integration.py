@@ -19,15 +19,12 @@ Usage:
 """
 
 import sys
-import os
 import logging
 import argparse
 import json
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Tuple, Optional, Any
-import random
-import webbrowser  # Add webbrowser import for auto-opening
+from typing import Any
 
 # Add parent directories to path for module imports
 current_dir = Path(__file__).parent
@@ -114,15 +111,15 @@ class SpatialMicrobiomeIntegrator:
             self.soil_integrator = None
             self.h3_demo = None
 
-        logger.info(f"🚀 SpatialMicrobiomeIntegrator initialized")
+        logger.info("🚀 SpatialMicrobiomeIntegrator initialized")
         logger.info(f"📁 Output directory: {self.output_dir}")
         logger.info(f"🔷 H3 resolution: {h3_resolution}")
 
     def load_biological_datasets(
         self,
-        region_bbox: Tuple[float, float, float, float] = (-130, 25, -65, 55),
+        region_bbox: tuple[float, float, float, float] = (-130, 25, -65, 55),
         max_samples: int = 1000,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Load all biological datasets for the specified region.
 
@@ -182,12 +179,12 @@ class SpatialMicrobiomeIntegrator:
             "region_bbox": region_bbox,
         }
 
-        logger.info(f"🎉 Successfully loaded all biological datasets")
+        logger.info("🎉 Successfully loaded all biological datasets")
         return datasets
 
     def _generate_demo_datasets(
-        self, region_bbox: Tuple[float, float, float, float], max_samples: int
-    ) -> Dict[str, Any]:
+        self, region_bbox: tuple[float, float, float, float], max_samples: int
+    ) -> dict[str, Any]:
         """Generate demo datasets when GEO-INFER modules are not available."""
         logger.info("🔄 Generating demonstration biological datasets...")
 
@@ -605,8 +602,8 @@ class SpatialMicrobiomeIntegrator:
 
     def create_interactive_h3_visualization(
         self,
-        biological_data: Dict[str, Any],
-        map_center: Tuple[float, float] = (40.0, -97.5),
+        biological_data: dict[str, Any],
+        map_center: tuple[float, float] = (40.0, -97.5),
         output_format: str = "interactive",
     ) -> str:
         """
@@ -1147,10 +1144,10 @@ class SpatialMicrobiomeIntegrator:
 
     def run_complete_analysis(
         self,
-        region_bbox: Tuple[float, float, float, float] = (-130, 25, -65, 55),
+        region_bbox: tuple[float, float, float, float] = (-130, 25, -65, 55),
         max_samples: int = 1000,
         output_format: str = "interactive",
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """
         Run the complete spatial microbiome-climate-soil analysis.
 

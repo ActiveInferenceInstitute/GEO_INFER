@@ -18,7 +18,7 @@ no verification relationship between this numerical implementation and the
 Lean proofs.
 """
 
-from typing import Dict, Any, Optional, Union, cast
+from typing import Any, Union, cast
 import logging
 
 import numpy as np
@@ -33,12 +33,12 @@ EPSILON = 1e-12
 # Preferences may be a plain vector or the structured dict shape produced by
 # helpers such as ``hazard_policy_prior``; ``_preferences_to_vector`` lowers
 # both into a belief-aligned vector before use.
-PreferenceInput = Union[np.ndarray, Dict[str, Any]]
+PreferenceInput = Union[np.ndarray, dict[str, Any]]
 
 
 def _coerce_probability_vector(
-    values: Union[np.ndarray, list, tuple],
-    target_length: Optional[int] = None,
+    values: np.ndarray | list | tuple,
+    target_length: int | None = None,
     *,
     use_softmax: bool = False,
 ) -> np.ndarray:
@@ -101,10 +101,10 @@ def _preferences_to_vector(preferences: Any, target_length: int) -> np.ndarray:
 
 def compute_policy_expected_free_energy(
     beliefs: np.ndarray,
-    policy: Dict[str, Any],
-    preferences: Optional[Union[np.ndarray, Dict[str, Any]]] = None,
+    policy: dict[str, Any],
+    preferences: np.ndarray | dict[str, Any] | None = None,
     return_breakdown: bool = False,
-) -> Union[float, FreeEnergyBreakdown]:
+) -> float | FreeEnergyBreakdown:
     """Compute expected free energy for one policy (single shared implementation).
 
     This is the canonical expected-free-energy (EFE) evaluator for discrete
@@ -272,9 +272,9 @@ class FreeEnergyCalculator:
         self,
         beliefs: np.ndarray,
         observations: np.ndarray,
-        preferences: Optional[np.ndarray] = None,
+        preferences: np.ndarray | None = None,
         return_breakdown: bool = False,
-    ) -> Union[float, FreeEnergyBreakdown]:
+    ) -> float | FreeEnergyBreakdown:
         """
         Compute variational free energy for categorical models.
 
@@ -359,8 +359,8 @@ class FreeEnergyCalculator:
         mean: np.ndarray,
         precision: np.ndarray,
         observations: np.ndarray,
-        prior_mean: Optional[np.ndarray] = None,
-        prior_precision: Optional[np.ndarray] = None,
+        prior_mean: np.ndarray | None = None,
+        prior_precision: np.ndarray | None = None,
     ) -> float:
         """
         Compute free energy for Gaussian models.
@@ -430,10 +430,10 @@ class FreeEnergyCalculator:
     def compute_expected_free_energy(
         self,
         beliefs: np.ndarray,
-        policy: Dict[str, Any],
-        preferences: Optional[PreferenceInput] = None,
+        policy: dict[str, Any],
+        preferences: PreferenceInput | None = None,
         return_breakdown: bool = False,
-    ) -> Union[float, FreeEnergyBreakdown]:
+    ) -> float | FreeEnergyBreakdown:
         """
         Compute expected free energy for policy evaluation.
 
@@ -469,9 +469,9 @@ class FreeEnergyCalculator:
 
     def compute(
         self,
-        beliefs: Union[np.ndarray, Dict],
-        observations: Optional[np.ndarray] = None,
-        preferences: Optional[np.ndarray] = None,
+        beliefs: np.ndarray | dict,
+        observations: np.ndarray | None = None,
+        preferences: np.ndarray | None = None,
         model_type: str = "categorical",
     ) -> float:
         """General free energy compute dispatching."""

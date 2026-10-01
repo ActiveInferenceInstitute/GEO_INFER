@@ -54,9 +54,9 @@ class BenchmarkResult:
     start_time: datetime
     end_time: datetime
     duration_seconds: float
-    metrics: Dict[str, Any]
+    metrics: dict[str, Any]
     success: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 class PerformanceMonitor:
@@ -67,14 +67,14 @@ class PerformanceMonitor:
     and performance benchmarking capabilities.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.is_monitoring: bool = False
-        self.monitoring_thread: Optional[threading.Thread] = None
-        self.metrics_history: Deque[PerformanceMetrics] = deque(
+        self.monitoring_thread: threading.Thread | None = None
+        self.metrics_history: deque[PerformanceMetrics] = deque(
             maxlen=1000
         )  # Keep last 1000 metrics
-        self.benchmark_history: List[BenchmarkResult] = []
+        self.benchmark_history: list[BenchmarkResult] = []
 
         # Monitoring intervals
         self.system_metrics_interval = self.config.get(
@@ -94,7 +94,7 @@ class PerformanceMonitor:
         # IoT system references for metrics collection
         self.iot_system: Any = None
         self.measurement_count: int = 0
-        self.last_measurement_time: Optional[float] = None
+        self.last_measurement_time: float | None = None
 
         logger.info("PerformanceMonitor initialized")
 
@@ -229,7 +229,7 @@ class PerformanceMonitor:
         except Exception as e:
             logger.error(f"Error collecting IoT metrics: {e}")
 
-    def _check_performance_thresholds(self, metrics: PerformanceMetrics) -> List[str]:
+    def _check_performance_thresholds(self, metrics: PerformanceMetrics) -> list[str]:
         """Check if performance metrics exceed thresholds."""
         warnings = []
 
@@ -256,16 +256,16 @@ class PerformanceMonitor:
             logger.warning(f"Performance thresholds exceeded: {', '.join(warnings)}")
         return warnings
 
-    def get_current_metrics(self) -> Optional[PerformanceMetrics]:
+    def get_current_metrics(self) -> PerformanceMetrics | None:
         """Get the most recent performance metrics."""
         return self.metrics_history[-1] if self.metrics_history else None
 
-    def get_metrics_history(self, minutes: int = 60) -> List[PerformanceMetrics]:
+    def get_metrics_history(self, minutes: int = 60) -> list[PerformanceMetrics]:
         """Get performance metrics history for the specified time window."""
         cutoff_time = datetime.now() - timedelta(minutes=minutes)
         return [m for m in self.metrics_history if m.timestamp >= cutoff_time]
 
-    def get_performance_summary(self, minutes: int = 60) -> Dict[str, Any]:
+    def get_performance_summary(self, minutes: int = 60) -> dict[str, Any]:
         """Get performance summary for the specified time window."""
         history = self.get_metrics_history(minutes)
 
@@ -319,8 +319,8 @@ class PerformanceMonitor:
         return summary
 
     def _count_threshold_exceedances(
-        self, history: List[PerformanceMetrics]
-    ) -> Dict[str, int]:
+        self, history: list[PerformanceMetrics]
+    ) -> dict[str, int]:
         """Count how many times each threshold was exceeded."""
         exceedances = {
             "cpu_percent": 0,
@@ -402,7 +402,7 @@ class PerformanceMonitor:
 
     def _benchmark_ingestion_throughput(
         self, duration_seconds: int = 60, batch_size: int = 100
-    ) -> Dict:
+    ) -> dict:
         """Benchmark data ingestion throughput."""
         if self.iot_system is None:
             return {"error": "IoT system not available for benchmarking"}
@@ -450,7 +450,7 @@ class PerformanceMonitor:
 
     def _benchmark_spatial_inference(
         self, num_sensors: int = 50, iterations: int = 10
-    ) -> Dict:
+    ) -> dict:
         """Benchmark spatial inference performance."""
         if self.iot_system is None or self.iot_system.spatial_inference is None:
             return {"error": "Spatial inference not available for benchmarking"}
@@ -501,7 +501,7 @@ class PerformanceMonitor:
 
     def _benchmark_memory_usage(
         self, operation: str = "ingestion", iterations: int = 100
-    ) -> Dict:
+    ) -> dict:
         """Benchmark memory usage for different operations."""
         if psutil is None:
             return {"error": "psutil not available"}
@@ -544,7 +544,7 @@ class PerformanceMonitor:
 
         return {"error": f"Unsupported operation: {operation}"}
 
-    def export_metrics(self, output_path: str, format: str = "json") -> Dict:
+    def export_metrics(self, output_path: str, format: str = "json") -> dict:
         """Export performance metrics to file."""
         try:
             export_data = {
@@ -637,7 +637,7 @@ class PerformanceMonitor:
 
         return total_score / total_weight if total_weight > 0 else 0.0
 
-    def get_performance_report(self, hours: int = 24) -> Dict:
+    def get_performance_report(self, hours: int = 24) -> dict:
         """Generate comprehensive performance report."""
         summary = self.get_performance_summary(hours * 60)  # Convert to minutes
         health_score = self.get_system_health_score()
@@ -706,7 +706,7 @@ def stop_performance_monitoring() -> None:
     monitor.stop_monitoring()
 
 
-def get_current_performance_metrics() -> Optional[PerformanceMetrics]:
+def get_current_performance_metrics() -> PerformanceMetrics | None:
     """Get current performance metrics."""
     monitor = get_performance_monitor()
     return monitor.get_current_metrics()
@@ -718,7 +718,7 @@ def run_performance_benchmark(benchmark_type: str, **kwargs: Any) -> BenchmarkRe
     return monitor.run_benchmark(benchmark_type, **kwargs)
 
 
-def get_performance_report(hours: int = 24) -> Dict[str, Any]:
+def get_performance_report(hours: int = 24) -> dict[str, Any]:
     """Get comprehensive performance report."""
     monitor = get_performance_monitor()
     return monitor.get_performance_report(hours)

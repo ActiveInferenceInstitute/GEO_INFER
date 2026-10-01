@@ -155,7 +155,7 @@ class TestDataSaving:
             _save_spm_json(self.spm_result, temp_path)
 
             # Load and verify
-            with open(temp_path, "r") as f:
+            with open(temp_path) as f:
                 saved_data = json.load(f)
 
             assert "beta_coefficients" in saved_data
@@ -200,7 +200,7 @@ class TestDataSaving:
 
             # Verify file was created and has content
             assert os.path.exists(temp_path)
-            with open(temp_path, "r") as f:
+            with open(temp_path) as f:
                 data = json.load(f)
             assert "beta_coefficients" in data
 

@@ -6,7 +6,7 @@ and accessibility metrics for transportation networks.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime
 import math
@@ -18,12 +18,12 @@ logger = logging.getLogger(__name__)
 class Isochrone:
     """Represents an isochrone (travel time contour)."""
 
-    center: Dict[str, float]
+    center: dict[str, float]
     time_minutes: float
     mode: str
-    geometry: Dict[str, Any]  # GeoJSON polygon
+    geometry: dict[str, Any]  # GeoJSON polygon
     area_sq_km: float
-    reachable_nodes: List[str] = field(default_factory=list)
+    reachable_nodes: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -31,11 +31,11 @@ class ServiceArea:
     """Represents a service area analysis result."""
 
     facility_id: str
-    location: Dict[str, float]
-    break_values: List[float]
-    polygons: List[Dict[str, Any]]
+    location: dict[str, float]
+    break_values: list[float]
+    polygons: list[dict[str, Any]]
     population_covered: int = 0
-    coverage_statistics: Dict[str, Any] = field(default_factory=dict)
+    coverage_statistics: dict[str, Any] = field(default_factory=dict)
 
 
 class AccessibilityAnalyzer:
@@ -50,7 +50,7 @@ class AccessibilityAnalyzer:
         self,
         network: Any = None,
         default_mode: str = "car",
-        population_data: Optional[Dict[str, Any]] = None,
+        population_data: dict[str, Any] | None = None,
     ):
         """
         Initialize accessibility analyzer.
@@ -71,11 +71,11 @@ class AccessibilityAnalyzer:
 
     def calculate_isochrone(
         self,
-        origin: Dict[str, Any],
-        travel_times: List[float],
+        origin: dict[str, Any],
+        travel_times: list[float],
         mode: str = "car",
-        departure_time: Optional[datetime] = None,
-    ) -> List[Isochrone]:
+        departure_time: datetime | None = None,
+    ) -> list[Isochrone]:
         """
         Calculate isochrones from an origin point.
 
@@ -88,7 +88,7 @@ class AccessibilityAnalyzer:
         Returns:
             List of Isochrone objects for each time threshold
         """
-        isochrones: List[Isochrone] = []
+        isochrones: list[Isochrone] = []
         origin_id = origin.get("node_id") or origin.get("id")
         origin_loc = origin.get("location", {"lat": 0, "lon": 0})
 
@@ -140,8 +140,8 @@ class AccessibilityAnalyzer:
         return isochrones
 
     def _generate_isochrone_polygon(
-        self, center: Dict[str, float], radius_km: float, num_points: int = 32
-    ) -> Dict[str, Any]:
+        self, center: dict[str, float], radius_km: float, num_points: int = 32
+    ) -> dict[str, Any]:
         """Generate a circular polygon approximation for isochrone."""
         lat = center.get("lat", 0)
         lon = center.get("lon", 0)
@@ -163,11 +163,11 @@ class AccessibilityAnalyzer:
 
     def generate_service_area(
         self,
-        facilities: List[Dict[str, Any]],
-        breaks: List[float],
+        facilities: list[dict[str, Any]],
+        breaks: list[float],
         mode: str = "car",
         dissolve: bool = True,
-    ) -> List[ServiceArea]:
+    ) -> list[ServiceArea]:
         """
         Generate service areas for facilities.
 
@@ -180,14 +180,14 @@ class AccessibilityAnalyzer:
         Returns:
             List of ServiceArea objects
         """
-        service_areas: List[ServiceArea] = []
+        service_areas: list[ServiceArea] = []
 
         for facility in facilities:
             facility_id = facility.get("id", f"facility_{len(service_areas)}")
             location = facility.get("location", {})
 
             # Generate polygons for each break
-            polygons: List[Dict[str, Any]] = []
+            polygons: list[dict[str, Any]] = []
             for break_value in sorted(breaks):
                 polygon = self._generate_isochrone_polygon(location, break_value)
                 polygons.append({"break_value": break_value, "geometry": polygon})
@@ -213,7 +213,7 @@ class AccessibilityAnalyzer:
         return service_areas
 
     def _estimate_population_coverage(
-        self, center: Dict[str, float], radius_km: float
+        self, center: dict[str, float], radius_km: float
     ) -> int:
         """Estimate population within a radius."""
         # Default population density estimate (people per sq km)
@@ -223,10 +223,10 @@ class AccessibilityAnalyzer:
 
     def analyze_equity(
         self,
-        population_groups: Dict[str, Any],
-        accessibility_scores: Dict[str, float],
-        metrics: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        population_groups: dict[str, Any],
+        accessibility_scores: dict[str, float],
+        metrics: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Analyze accessibility equity across population groups.
 
@@ -241,7 +241,7 @@ class AccessibilityAnalyzer:
         metrics = metrics or ["gini", "mean_difference"]
 
         # Calculate group averages
-        group_scores: Dict[str, Any] = {}
+        group_scores: dict[str, Any] = {}
         for group_id, group_data in population_groups.items():
             areas = group_data.get("areas", [])
             scores = [accessibility_scores.get(a, 0) for a in areas]
@@ -265,8 +265,8 @@ class AccessibilityAnalyzer:
         else:
             gini = 0
 
-        disparities_out: List[Dict[str, Any]] = []
-        result: Dict[str, Any] = {
+        disparities_out: list[dict[str, Any]] = []
+        result: dict[str, Any] = {
             "timestamp": datetime.now().isoformat(),
             "group_analysis": group_scores,
             "equity_metrics": {
@@ -293,11 +293,11 @@ class AccessibilityAnalyzer:
 
     def calculate_accessibility_index(
         self,
-        origin: Dict[str, Any],
-        destinations: List[Dict[str, Any]],
+        origin: dict[str, Any],
+        destinations: list[dict[str, Any]],
         decay_function: str = "exponential",
         beta: float = 0.1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate accessibility index using gravity-based approach.
 
@@ -358,7 +358,7 @@ class AccessibilityAnalyzer:
         return result
 
     def _haversine_distance(
-        self, loc1: Dict[str, float], loc2: Dict[str, float]
+        self, loc1: dict[str, float], loc2: dict[str, float]
     ) -> float:
         """Calculate haversine distance in km."""
         lat1 = math.radians(loc1.get("lat", 0))

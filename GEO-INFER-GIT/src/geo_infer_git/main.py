@@ -9,7 +9,7 @@ target repositories and users.
 import os
 import argparse
 import logging
-from typing import Dict, Any
+from typing import Any
 
 # Import the required modules
 from .utils.config_loader import (
@@ -114,7 +114,7 @@ def create_gitignore_entry(output_dir: str) -> None:
         return
 
     # Check if entry already exists
-    with open(gitignore_path, "r") as f:
+    with open(gitignore_path) as f:
         content = f.read()
 
     # Add entry if not found
@@ -125,7 +125,7 @@ def create_gitignore_entry(output_dir: str) -> None:
 
 
 def generate_report(
-    results: Dict[str, Any], output_dir: str, format: str = "markdown"
+    results: dict[str, Any], output_dir: str, format: str = "markdown"
 ) -> str:
     """Generate a report of cloning results."""
     report_filename = os.path.join(output_dir, "clone_report.md")
@@ -227,7 +227,7 @@ def main() -> None:
     create_gitignore_entry(clone_config.output_dir)
 
     # Collect results for report
-    results: Dict[str, Any] = {
+    results: dict[str, Any] = {
         "total_repos": 0,
         "success_repos": 0,
         "target_repos": [],

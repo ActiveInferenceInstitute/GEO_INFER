@@ -16,7 +16,7 @@ entries with real endpoints via ``add_data_source`` for any production use.
 import logging
 import time
 import os
-from typing import Dict, List, Optional, Any, cast
+from typing import Any, cast
 from datetime import datetime
 from dataclasses import dataclass, field
 import json
@@ -31,8 +31,8 @@ class ExternalDataSource:
     name: str
     source_type: str  # api, database, file, stream
     endpoint: str
-    authentication: Dict[str, Any] = field(default_factory=dict)
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    authentication: dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
     update_frequency: str = "daily"  # real_time, hourly, daily, weekly
     cache_duration: int = 3600  # seconds
     retry_attempts: int = 3
@@ -51,7 +51,7 @@ class DataIntegrationManager:
     network fetch. See the module docstring for the full failure semantics.
     """
 
-    def __init__(self, data_sources: Optional[List[str]] = None):
+    def __init__(self, data_sources: list[str] | None = None):
         """
         Initialize the data integration manager.
 
@@ -63,9 +63,9 @@ class DataIntegrationManager:
         )
 
         # Data source configurations
-        self.data_sources: Dict[str, ExternalDataSource] = {}
-        self.data_cache: Dict[str, Dict[str, Any]] = {}
-        self.cache_timestamps: Dict[str, datetime] = {}
+        self.data_sources: dict[str, ExternalDataSource] = {}
+        self.data_cache: dict[str, dict[str, Any]] = {}
+        self.cache_timestamps: dict[str, datetime] = {}
 
         # Initialize default data sources
         self._initialize_default_sources()
@@ -137,8 +137,8 @@ class DataIntegrationManager:
         return base_config
 
     def get_data(
-        self, source_name: str, query_parameters: Optional[Dict[str, Any]] = None
-    ) -> Optional[Dict[str, Any]]:
+        self, source_name: str, query_parameters: dict[str, Any] | None = None
+    ) -> dict[str, Any] | None:
         """
         Get data from external source.
 
@@ -207,7 +207,7 @@ class DataIntegrationManager:
     def _generate_cache_key(
         self,
         source: ExternalDataSource,
-        query_parameters: Optional[Dict[str, Any]] = None,
+        query_parameters: dict[str, Any] | None = None,
     ) -> str:
         """Generate cache key for data request."""
         base_key = source.get_cache_key()
@@ -236,8 +236,8 @@ class DataIntegrationManager:
     def _fetch_data_from_source(
         self,
         source: ExternalDataSource,
-        query_parameters: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Dict[str, Any]]:
+        query_parameters: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
         """Fetch data from specific source."""
         try:
             if source.source_type == "api":
@@ -259,8 +259,8 @@ class DataIntegrationManager:
     def _fetch_from_api(
         self,
         source: ExternalDataSource,
-        query_parameters: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Dict[str, Any]]:
+        query_parameters: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
         """Fetch data from API endpoint."""
         try:
             import requests
@@ -287,7 +287,7 @@ class DataIntegrationManager:
                     )
 
                     if response.status_code == 200:
-                        return cast(Dict[str, Any], response.json())
+                        return cast(dict[str, Any], response.json())
                     else:
                         self.logger.warning(
                             f"API request failed with status {response.status_code}"
@@ -311,8 +311,8 @@ class DataIntegrationManager:
     def _fetch_from_database(
         self,
         source: ExternalDataSource,
-        query_parameters: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Dict[str, Any]]:
+        query_parameters: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
         """Fetch data from a database using SQLAlchemy or psycopg2."""
         try:
             import sqlalchemy
@@ -344,8 +344,8 @@ class DataIntegrationManager:
     def _fetch_from_file(
         self,
         source: ExternalDataSource,
-        query_parameters: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Dict[str, Any]]:
+        query_parameters: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
         """Fetch data from a local file (JSON, CSV, or GeoJSON)."""
         import pathlib
 
@@ -358,18 +358,18 @@ class DataIntegrationManager:
             if suffix == ".json":
                 import json
 
-                with open(file_path, "r") as f:
+                with open(file_path) as f:
                     data = json.load(f)
             elif suffix == ".csv":
                 import csv
 
-                with open(file_path, "r") as f:
+                with open(file_path) as f:
                     reader = csv.DictReader(f)
                     data = list(reader)
             elif suffix in (".geojson",):
                 import json
 
-                with open(file_path, "r") as f:
+                with open(file_path) as f:
                     data = json.load(f)
             else:
                 self.logger.warning(f"Unsupported file format: {suffix}")
@@ -383,8 +383,8 @@ class DataIntegrationManager:
     def _fetch_from_stream(
         self,
         source: ExternalDataSource,
-        query_parameters: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Dict[str, Any]]:
+        query_parameters: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
         """Fetch data from a streaming source (HTTP SSE or WebSocket snapshot)."""
         try:
             import requests
@@ -420,7 +420,7 @@ class DataIntegrationManager:
             self.logger.error(f"Stream fetch failed for {source.name}: {e}")
             return None
 
-    def _prepare_auth_headers(self, source: ExternalDataSource) -> Dict[str, str]:
+    def _prepare_auth_headers(self, source: ExternalDataSource) -> dict[str, str]:
         """Prepare authentication headers for API requests."""
         headers = {"Content-Type": "application/json"}
 
@@ -454,7 +454,7 @@ class DataIntegrationManager:
             return True
         return False
 
-    def get_data_source_info(self, source_name: str) -> Optional[Dict[str, Any]]:
+    def get_data_source_info(self, source_name: str) -> dict[str, Any] | None:
         """Get information about data source."""
         if source_name not in self.data_sources:
             return None
@@ -469,7 +469,7 @@ class DataIntegrationManager:
             "last_updated": self.cache_timestamps.get(source.get_cache_key()),
         }
 
-    def clear_cache(self, source_name: Optional[str] = None) -> None:
+    def clear_cache(self, source_name: str | None = None) -> None:
         """Clear data cache."""
         if source_name:
             # Clear cache for specific source
@@ -488,7 +488,7 @@ class DataIntegrationManager:
 
         self.logger.info("Data cache cleared")
 
-    def get_cache_info(self) -> Dict[str, Any]:
+    def get_cache_info(self) -> dict[str, Any]:
         """Get cache information."""
         return {
             "total_entries": len(self.data_cache),
@@ -502,7 +502,7 @@ class DataIntegrationManager:
             / (1024 * 1024),
         }
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform health check on data integration."""
         health_status = {
             "status": "operational",
@@ -538,15 +538,15 @@ class DataIntegrationManager:
 
 # Convenience functions
 def create_data_integration_manager(
-    data_sources: Optional[List[str]] = None,
+    data_sources: list[str] | None = None,
 ) -> DataIntegrationManager:
     """Create a new data integration manager."""
     return DataIntegrationManager(data_sources)
 
 
 def get_credit_score(
-    ssn: str, data_manager: Optional[DataIntegrationManager] = None
-) -> Optional[int]:
+    ssn: str, data_manager: DataIntegrationManager | None = None
+) -> int | None:
     """
     Get credit score from external credit bureau.
 
@@ -569,8 +569,8 @@ def get_credit_score(
 
 
 def get_property_history(
-    property_id: str, data_manager: Optional[DataIntegrationManager] = None
-) -> Optional[Dict[str, Any]]:
+    property_id: str, data_manager: DataIntegrationManager | None = None
+) -> dict[str, Any] | None:
     """
     Get property history from external database.
 

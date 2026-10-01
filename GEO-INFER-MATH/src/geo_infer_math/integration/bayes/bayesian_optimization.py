@@ -5,7 +5,8 @@ Gaussian process surrogate model for black-box optimisation.
 """
 
 import numpy as np
-from typing import Optional, Dict, Any, Callable, Tuple, cast
+from typing import Any, cast
+from collections.abc import Callable
 import logging
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ class BayesianOptimization:
 
     def __init__(
         self,
-        bounds: Optional[np.ndarray] = None,
+        bounds: np.ndarray | None = None,
         n_initial: int = 5,
         max_iterations: int = 25,
         length_scale: float = 1.0,
@@ -49,9 +50,9 @@ class BayesianOptimization:
     def optimize(
         self,
         objective: Callable,
-        bounds: Optional[np.ndarray] = None,
+        bounds: np.ndarray | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run Bayesian optimisation loop.
 
         Args:
@@ -131,7 +132,7 @@ class BayesianOptimization:
         Y_train: np.ndarray,
         bounds: np.ndarray,
         n_test: int = 50,
-    ) -> Tuple[Callable, Callable]:
+    ) -> tuple[Callable, Callable]:
         """Fit GP and return prediction functions.
 
         Returns closures (mu_fn, sigma_fn) that predict at arbitrary points.

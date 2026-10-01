@@ -6,7 +6,7 @@ tools for efficient spatial data representation.
 """
 
 import numpy as np
-from typing import Union, Tuple, Dict, Any
+from typing import Any
 import logging
 import zlib
 import gzip
@@ -125,7 +125,7 @@ def spatial_compression(
     values: np.ndarray,
     method: str = "quantization",
     compression_level: float = 0.5,
-) -> Tuple[np.ndarray, Dict[str, Any]]:
+) -> tuple[np.ndarray, dict[str, Any]]:
     """
     Compress spatial data using various methods.
 
@@ -272,7 +272,7 @@ def spatial_compression(
 
 def entropy_coding(
     data: np.ndarray, method: str = "huffman"
-) -> Tuple[bytes, Dict[str, Any]]:
+) -> tuple[bytes, dict[str, Any]]:
     """
     Apply entropy coding to spatial data.
 
@@ -346,7 +346,7 @@ class SpatialCodingCalculator:
     def __init__(self) -> None:
         """Initialize spatial coding calculator."""
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self._codec_registry: Dict[str, Any] = {}
+        self._codec_registry: dict[str, Any] = {}
         self.logger.debug("SpatialCodingCalculator initialized")
 
     def compress(
@@ -355,7 +355,7 @@ class SpatialCodingCalculator:
         values: np.ndarray,
         method: str = "quantization",
         **kwargs: Any,
-    ) -> Tuple[np.ndarray, Dict[str, Any]]:
+    ) -> tuple[np.ndarray, dict[str, Any]]:
         """
         Compress spatial data.
 
@@ -372,7 +372,7 @@ class SpatialCodingCalculator:
 
     def encode(
         self, data: np.ndarray, method: str = "gzip", **kwargs: Any
-    ) -> Tuple[bytes, Dict[str, Any]]:
+    ) -> tuple[bytes, dict[str, Any]]:
         """
         Apply entropy coding.
 
@@ -389,7 +389,7 @@ class SpatialCodingCalculator:
     def efficiency(
         self,
         original_data: np.ndarray,
-        encoded_data: Union[np.ndarray, bytes],
+        encoded_data: np.ndarray | bytes,
         **kwargs: Any,
     ) -> float:
         """

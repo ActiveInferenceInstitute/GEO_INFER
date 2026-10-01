@@ -13,7 +13,7 @@ from __future__ import annotations
 import sys
 from datetime import date
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 _ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
 if str(_ORCHESTRATORS_DIR) not in sys.path:
@@ -22,7 +22,7 @@ if str(_ORCHESTRATORS_DIR) not in sys.path:
 from _lib import run_module_orchestrator  # noqa: E402
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     from geo_infer_pep.hr.transformer import clean_employee_data, enrich_employee_data
     from geo_infer_pep.models.hr_models import (
         Compensation,
@@ -42,7 +42,7 @@ def _operation() -> Dict[str, Any]:
     nationalities = ["US", "CA", "MX", "US"]
     titles = ["Research Scientist", "GIS Analyst", "Engagement Coordinator"]
 
-    employees: List[Employee] = []
+    employees: list[Employee] = []
     for i in range(14):
         employees.append(
             Employee(

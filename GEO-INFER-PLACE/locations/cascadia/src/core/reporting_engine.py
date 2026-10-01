@@ -8,7 +8,7 @@ dashboard generation, and comprehensive analysis reports.
 
 import logging
 import json
-from typing import Dict, Any
+from typing import Any
 from pathlib import Path
 from datetime import datetime
 import numpy as np
@@ -170,7 +170,7 @@ def generate_enhanced_dashboard(backend, output_dir: Path, visualization_engine)
         return ""
 
 
-def generate_analysis_report(summary: Dict[str, Any], output_path: Path) -> None:
+def generate_analysis_report(summary: dict[str, Any], output_path: Path) -> None:
     """
     Generate a comprehensive analysis report in Markdown format with SPACE integration.
 
@@ -329,7 +329,7 @@ def generate_analysis_report(summary: Dict[str, Any], output_path: Path) -> None
         logger.warning(f"Could not write analysis report receipt: {receipt_err}")
 
 
-def export_data_provenance(provenance: Dict[str, Any], output_dir: Path) -> Path:
+def export_data_provenance(provenance: dict[str, Any], output_dir: Path) -> Path:
     """Write a machine-readable data provenance manifest.
 
     The manifest records, per module, whether empirical data was used,

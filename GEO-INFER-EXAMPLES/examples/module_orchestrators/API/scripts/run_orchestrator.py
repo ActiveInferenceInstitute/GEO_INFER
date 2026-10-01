@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 _ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
 if str(_ORCHESTRATORS_DIR) not in sys.path:
@@ -23,7 +23,7 @@ if str(_ORCHESTRATORS_DIR) not in sys.path:
 from _lib import run_module_orchestrator  # noqa: E402
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     import os
 
     # The API's Settings fails closed without a signing key; the orchestrator
@@ -132,7 +132,7 @@ def _operation() -> Dict[str, Any]:
             json=polygon_feature.model_dump(),
         )
 
-    status_codes: Dict[str, int] = {
+    status_codes: dict[str, int] = {
         "health": health.status_code,
         "health_detailed": health_detailed.status_code,
         "create_polygon_1": create_1.status_code,
@@ -145,7 +145,7 @@ def _operation() -> Dict[str, Any]:
     area_sq_km = area_response.json().get("area_sq_km")
     contains_point = contains_response.json().get("contains")
     listed_count = len(listed.json().get("features", []))
-    polygons: List[PolygonFeature] = collection.features
+    polygons: list[PolygonFeature] = collection.features
 
     return {
         "operation": "geojson_model_and_api_validation",

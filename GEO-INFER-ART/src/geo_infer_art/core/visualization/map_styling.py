@@ -3,7 +3,7 @@ Map styling and theming components for advanced cartographic design.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, cast
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
@@ -94,8 +94,8 @@ class MapStyle:
     def __init__(
         self,
         name: str = "default",
-        theme: Optional[str] = None,
-        parameters: Optional[Dict] = None,
+        theme: str | None = None,
+        parameters: dict | None = None,
     ):
         """
         Initialize a MapStyle object.
@@ -107,7 +107,7 @@ class MapStyle:
         """
         self.name = name
         self.theme = theme or name
-        self.parameters: Dict[str, Any] = parameters or {}
+        self.parameters: dict[str, Any] = parameters or {}
 
         # Load style configuration
         if name in self.PREDEFINED_STYLES:
@@ -136,7 +136,7 @@ class MapStyle:
     def create_themed_style(
         cls,
         theme: str,
-        color_palette: Optional[Union[str, ColorPalette]] = None,
+        color_palette: str | ColorPalette | None = None,
         **kwargs: Any,
     ) -> "MapStyle":
         """
@@ -171,7 +171,7 @@ class MapStyle:
 
         return cls(name=theme, theme=theme, parameters=parameters)
 
-    def apply_to_axes(self, ax: plt.Axes, data_bounds: Optional[Tuple] = None) -> None:
+    def apply_to_axes(self, ax: plt.Axes, data_bounds: tuple | None = None) -> None:
         """
         Apply the style to matplotlib axes.
 
@@ -280,7 +280,7 @@ class MapStyle:
         colors = self.parameters.get("colors", ["#1f77b4", "#ff7f0e", "#2ca02c"])
         return LinearSegmentedColormap.from_list(f"{self.name}_cmap", colors)
 
-    def get_color_list(self) -> List[str]:
+    def get_color_list(self) -> list[str]:
         """
         Get the list of colors for this style.
 
@@ -288,7 +288,7 @@ class MapStyle:
             List of color strings
         """
         return cast(
-            List[str], self.parameters.get("colors", ["#1f77b4", "#ff7f0e", "#2ca02c"])
+            list[str], self.parameters.get("colors", ["#1f77b4", "#ff7f0e", "#2ca02c"])
         )
 
     def get_line_width(self) -> float:

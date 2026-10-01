@@ -17,7 +17,8 @@ Key Features:
 import numpy as np
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Dict, List, Any, Optional, Callable
+from typing import TYPE_CHECKING, Any, Optional
+from collections.abc import Callable
 from datetime import datetime
 from dataclasses import dataclass, field
 import json
@@ -49,7 +50,7 @@ class PopulationConfig:
     """Configuration for agent population dynamics."""
 
     population_size: int = 1000
-    agent_types: List[str] = field(
+    agent_types: list[str] = field(
         default_factory=lambda: ["worker", "scout", "soldier"]
     )
     spatial_distribution: str = "random"  # 'random', 'clustered', 'uniform', 'custom'
@@ -58,21 +59,21 @@ class PopulationConfig:
     )
 
     # Spatial configuration
-    spatial_bounds: Optional[Dict[str, float]] = None
-    clustering_centers: Optional[List[np.ndarray]] = None
+    spatial_bounds: dict[str, float] | None = None
+    clustering_centers: list[np.ndarray] | None = None
     clustering_radius: float = 50.0
 
     # Behavioral configuration
-    foraging_rules: Optional[Dict[str, Any]] = None
-    communication_rules: Optional[Dict[str, Any]] = None
-    adaptation_rules: Optional[Dict[str, Any]] = None
+    foraging_rules: dict[str, Any] | None = None
+    communication_rules: dict[str, Any] | None = None
+    adaptation_rules: dict[str, Any] | None = None
 
     # Simulation configuration
     time_step: float = 1.0
-    max_simulation_time: Optional[float] = None
+    max_simulation_time: float | None = None
     parallel_processing: bool = True
     max_workers: int = 4
-    random_seed: Optional[int] = None
+    random_seed: int | None = None
 
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
@@ -103,23 +104,23 @@ class PopulationConfig:
 class EnvironmentalState:
     """Current state of the simulation environment."""
 
-    spatial_bounds: Dict[str, float]
-    resource_distribution: Dict[str, Any] = field(default_factory=dict)
-    obstacle_map: Dict[str, Any] = field(default_factory=dict)
-    pheromone_diffusion: Dict[str, Any] = field(default_factory=dict)
-    environmental_factors: Dict[str, Any] = field(default_factory=dict)
+    spatial_bounds: dict[str, float]
+    resource_distribution: dict[str, Any] = field(default_factory=dict)
+    obstacle_map: dict[str, Any] = field(default_factory=dict)
+    pheromone_diffusion: dict[str, Any] = field(default_factory=dict)
+    environmental_factors: dict[str, Any] = field(default_factory=dict)
 
     # Dynamic environmental state
     current_time: datetime = field(default_factory=datetime.now)
-    weather_conditions: Optional[Dict[str, Any]] = None
-    seasonal_effects: Optional[Dict[str, Any]] = None
+    weather_conditions: dict[str, Any] | None = None
+    seasonal_effects: dict[str, Any] | None = None
 
-    def update_environmental_factors(self, factors: Dict[str, Any]) -> None:
+    def update_environmental_factors(self, factors: dict[str, Any]) -> None:
         """Update environmental factors."""
         self.environmental_factors.update(factors)
         self.current_time = datetime.now()
 
-    def get_resource_at_location(self, location: np.ndarray) -> Dict[str, Any]:
+    def get_resource_at_location(self, location: np.ndarray) -> dict[str, Any]:
         """Get resources available at a specific location."""
         # Evaluate the configured resource fields locally so simulations remain
         # deterministic even when optional spatial analytics are unavailable.
@@ -135,7 +136,7 @@ class EnvironmentalState:
         return resources
 
     def _calculate_resource_density(
-        self, location: np.ndarray, distribution: Dict[str, Any]
+        self, location: np.ndarray, distribution: dict[str, Any]
     ) -> float:
         """Calculate resource density at given location."""
         # Interpolate the configured radial resource field at the query point.
@@ -158,10 +159,10 @@ class EnvironmentalState:
 class SimulationResults:
     """Results from population dynamics simulation."""
 
-    trajectories: List[np.ndarray] = field(default_factory=list)
-    interactions: List[Dict[str, Any]] = field(default_factory=list)
-    emergent_patterns: Dict[str, Any] = field(default_factory=dict)
-    performance_metrics: Dict[str, Any] = field(default_factory=dict)
+    trajectories: list[np.ndarray] = field(default_factory=list)
+    interactions: list[dict[str, Any]] = field(default_factory=list)
+    emergent_patterns: dict[str, Any] = field(default_factory=dict)
+    performance_metrics: dict[str, Any] = field(default_factory=dict)
 
     # Simulation metadata
     simulation_time: float = 0.0
@@ -173,19 +174,19 @@ class SimulationResults:
         self.trajectories.append(positions.copy())
         self.time_steps = step + 1
 
-    def add_interaction(self, interaction: Dict[str, Any]) -> None:
+    def add_interaction(self, interaction: dict[str, Any]) -> None:
         """Add agent interaction data."""
         self.interactions.append(interaction.copy())
 
-    def update_emergent_patterns(self, patterns: Dict[str, Any]) -> None:
+    def update_emergent_patterns(self, patterns: dict[str, Any]) -> None:
         """Update emergent pattern analysis."""
         self.emergent_patterns.update(patterns)
 
-    def update_performance_metrics(self, metrics: Dict[str, Any]) -> None:
+    def update_performance_metrics(self, metrics: dict[str, Any]) -> None:
         """Update performance metrics."""
         self.performance_metrics.update(metrics)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert results to dictionary."""
         return {
             "trajectories": [
@@ -221,10 +222,10 @@ class AgentPopulation:
     def __init__(
         self,
         population_size: int = 1000,
-        agent_types: Optional[List[str]] = None,
+        agent_types: list[str] | None = None,
         spatial_distribution: str = "random",
         behavioral_heterogeneity: str = "stochastic",
-        spatial_bounds: Optional[Dict[str, float]] = None,
+        spatial_bounds: dict[str, float] | None = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -271,8 +272,8 @@ class AgentPopulation:
         self.population_size = population_size
 
         # Population state
-        self.agents: List["SwarmAgent"] = []
-        self.environment: Optional[EnvironmentalState] = None
+        self.agents: list[SwarmAgent] = []
+        self.environment: EnvironmentalState | None = None
         self.simulation_results = SimulationResults()
 
         # Integration components
@@ -283,12 +284,12 @@ class AgentPopulation:
         self.pheromone_system = kwargs.get("pheromone_system")
 
         # Behavioral rules
-        self.foraging_rules: Dict[str, Any] = {}
-        self.communication_rules: Dict[str, Any] = {}
-        self.adaptation_rules: Dict[str, Any] = {}
+        self.foraging_rules: dict[str, Any] = {}
+        self.communication_rules: dict[str, Any] = {}
+        self.adaptation_rules: dict[str, Any] = {}
 
         # Performance tracking
-        self.performance_history: List[Dict[str, Any]] = []
+        self.performance_history: list[dict[str, Any]] = []
 
         # Initialize integrations
         self._initialize_integrations()
@@ -326,9 +327,9 @@ class AgentPopulation:
 
     def set_behavioral_rules(
         self,
-        foraging_rules: Optional[Dict[str, Any]] = None,
-        communication_rules: Optional[Dict[str, Any]] = None,
-        adaptation_rules: Optional[Dict[str, Any]] = None,
+        foraging_rules: dict[str, Any] | None = None,
+        communication_rules: dict[str, Any] | None = None,
+        adaptation_rules: dict[str, Any] | None = None,
     ) -> None:
         """
         Configure behavioral rules for the population.
@@ -352,11 +353,11 @@ class AgentPopulation:
 
     def initialize_environment(
         self,
-        spatial_bounds: Optional[Dict[str, float]] = None,
-        resource_distribution: Optional[Dict[str, Any]] = None,
-        obstacle_map: Optional[Dict[str, Any]] = None,
-        pheromone_diffusion: Optional[Dict[str, Any]] = None,
-        environmental_factors: Optional[Dict[str, Any]] = None,
+        spatial_bounds: dict[str, float] | None = None,
+        resource_distribution: dict[str, Any] | None = None,
+        obstacle_map: dict[str, Any] | None = None,
+        pheromone_diffusion: dict[str, Any] | None = None,
+        environmental_factors: dict[str, Any] | None = None,
     ) -> EnvironmentalState:
         """
         Initialize the spatial environment for agent simulation.
@@ -405,7 +406,7 @@ class AgentPopulation:
         logger.info(f"Environment initialized with bounds: {bounds}")
         return self.environment
 
-    def _default_resource_distribution(self) -> Dict[str, Any]:
+    def _default_resource_distribution(self) -> dict[str, Any]:
         """Generate default resource distribution."""
         bounds = self.config.spatial_bounds or {
             "min_lat": -10,
@@ -439,7 +440,7 @@ class AgentPopulation:
             },
         }
 
-    def _default_pheromone_diffusion(self) -> Dict[str, Any]:
+    def _default_pheromone_diffusion(self) -> dict[str, Any]:
         """Generate default pheromone diffusion parameters."""
         return {
             "trail": {
@@ -459,7 +460,7 @@ class AgentPopulation:
             },
         }
 
-    def create_agents(self) -> List["SwarmAgent"]:
+    def create_agents(self) -> list["SwarmAgent"]:
         """
         Create and initialize all agents in the population.
 
@@ -504,7 +505,7 @@ class AgentPopulation:
         logger.info(f"Created {len(agents)} agents")
         return agents
 
-    def _distribute_agent_types(self) -> Dict[str, int]:
+    def _distribute_agent_types(self) -> dict[str, int]:
         """Distribute population across agent types."""
         agent_counts = {}
 
@@ -591,9 +592,9 @@ class AgentPopulation:
         else:  # custom or fallback to random
             return self._generate_initial_position("random", index)
 
-    def _get_agent_config(self, agent_type: str) -> Dict[str, Any]:
+    def _get_agent_config(self, agent_type: str) -> dict[str, Any]:
         """Get configuration parameters for specific agent type."""
-        base_config: Dict[str, Any] = {
+        base_config: dict[str, Any] = {
             "sensory_range": 100.0,
             "movement_speed": 1.5,
             "active_inference_enabled": True,
@@ -627,9 +628,9 @@ class AgentPopulation:
     async def run_simulation(
         self,
         time_steps: int = 1000,
-        environmental_changes: Optional[List[Dict[str, Any]]] = None,
-        data_collection: Optional[List[str]] = None,
-        progress_callback: Optional[Callable[[int, Dict[str, Any]], None]] = None,
+        environmental_changes: list[dict[str, Any]] | None = None,
+        data_collection: list[str] | None = None,
+        progress_callback: Callable[[int, dict[str, Any]], None] | None = None,
     ) -> SimulationResults:
         """
         Run population dynamics simulation.
@@ -713,7 +714,7 @@ class AgentPopulation:
         return self.simulation_results
 
     async def _update_environment(
-        self, step: int, environmental_schedule: List[Dict[str, Any]]
+        self, step: int, environmental_schedule: list[dict[str, Any]]
     ) -> None:
         """Update environmental state for current time step."""
         if not self.environment:
@@ -839,7 +840,7 @@ class AgentPopulation:
         except Exception as e:
             logger.error(f"Error updating agent {agent.agent_id}: {e}")
 
-    def _get_environmental_context(self, position: np.ndarray) -> Dict[str, Any]:
+    def _get_environmental_context(self, position: np.ndarray) -> dict[str, Any]:
         """Get environmental context at given position."""
         if not self.environment:
             return {}
@@ -859,9 +860,9 @@ class AgentPopulation:
 
         return context
 
-    def _get_social_context(self, agent: "SwarmAgent") -> Dict[str, Any]:
+    def _get_social_context(self, agent: "SwarmAgent") -> dict[str, Any]:
         """Get social context for agent (nearby agents)."""
-        context: Dict[str, Any] = {
+        context: dict[str, Any] = {
             "nearby_agents": 0,
             "nearby_agent_types": {},
             "social_signals": [],
@@ -894,7 +895,7 @@ class AgentPopulation:
 
     def _get_agent_motivations(
         self, agent: "SwarmAgent", sensory_input: Any
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Get internal motivations for agent based on current state."""
         motivations = {
             "energy_conservation": max(0, 1.0 - agent.energy_level),
@@ -925,9 +926,9 @@ class AgentPopulation:
 
         return motivations
 
-    def _get_behavioral_rules(self, agent: "SwarmAgent") -> Dict[str, Any]:
+    def _get_behavioral_rules(self, agent: "SwarmAgent") -> dict[str, Any]:
         """Get behavioral rules for agent."""
-        rules: Dict[str, Any] = {}
+        rules: dict[str, Any] = {}
 
         # Apply foraging rules
         if self.foraging_rules:
@@ -947,7 +948,7 @@ class AgentPopulation:
 
         return rules
 
-    async def _collect_simulation_data(self, step: int, data_types: List[str]) -> None:
+    async def _collect_simulation_data(self, step: int, data_types: list[str]) -> None:
         """Collect simulation data for current step."""
         # Collect agent positions for trajectory analysis
         if "trajectories" in data_types:
@@ -965,7 +966,7 @@ class AgentPopulation:
                 patterns = self._analyze_emergent_patterns()
                 self.simulation_results.update_emergent_patterns(patterns)
 
-    def _calculate_population_metrics(self) -> Dict[str, Any]:
+    def _calculate_population_metrics(self) -> dict[str, Any]:
         """Calculate population-level performance metrics."""
         if not self.agents:
             return {}
@@ -999,7 +1000,7 @@ class AgentPopulation:
                 metrics["max_inter_agent_distance"] = np.max(distances)
 
         # Agent type distribution
-        agent_types: Dict[str, int] = {}
+        agent_types: dict[str, int] = {}
         for agent in active_agents:
             agent_type = getattr(agent, "agent_type", "unknown")
             agent_types[agent_type] = agent_types.get(agent_type, 0) + 1
@@ -1008,9 +1009,9 @@ class AgentPopulation:
 
         return metrics
 
-    def _analyze_emergent_patterns(self) -> Dict[str, Any]:
+    def _analyze_emergent_patterns(self) -> dict[str, Any]:
         """Analyze emergent patterns in population behavior."""
-        patterns: Dict[str, Any] = {}
+        patterns: dict[str, Any] = {}
 
         if not self.agents:
             return patterns
@@ -1057,8 +1058,8 @@ class AgentPopulation:
         return patterns
 
     def _create_environmental_schedule(
-        self, changes: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, changes: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Create schedule for environmental changes."""
         schedule = []
 
@@ -1090,7 +1091,7 @@ class AgentPopulation:
 
         return False
 
-    async def _finalize_simulation(self, data_types: List[str]) -> None:
+    async def _finalize_simulation(self, data_types: list[str]) -> None:
         """Finalize simulation and perform final analysis."""
         # Calculate final performance metrics
         final_metrics = self._calculate_population_metrics()
@@ -1120,7 +1121,7 @@ class AgentPopulation:
                 return agent
         return None
 
-    def get_agents_by_type(self, agent_type: str) -> List["SwarmAgent"]:
+    def get_agents_by_type(self, agent_type: str) -> list["SwarmAgent"]:
         """Get all agents of specified type."""
         return [
             agent
@@ -1130,7 +1131,7 @@ class AgentPopulation:
 
     def get_agents_in_region(
         self, center: np.ndarray, radius: float
-    ) -> List["SwarmAgent"]:
+    ) -> list["SwarmAgent"]:
         """Get all agents within specified radius of center."""
         agents_in_region = []
 
@@ -1155,7 +1156,7 @@ class AgentPopulation:
     def load_simulation_results(self, filepath: str) -> SimulationResults:
         """Load simulation results from file."""
         try:
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 data = json.load(f)
 
             results = SimulationResults()

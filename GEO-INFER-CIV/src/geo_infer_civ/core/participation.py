@@ -6,7 +6,7 @@ and demographic representation analysis for civic processes.
 """
 
 import math
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
 from dataclasses import dataclass
 from enum import Enum
 
@@ -31,9 +31,9 @@ class ParticipantRecord:
     participant_id: str
     method: ParticipationMethod
     timestamp: float
-    demographic_group: Optional[str] = None
-    location: Optional[Tuple[float, float]] = None
-    sentiment_score: Optional[float] = None
+    demographic_group: str | None = None
+    location: tuple[float, float] | None = None
+    sentiment_score: float | None = None
     weight: float = 1.0
 
 
@@ -42,7 +42,7 @@ class EngagementScore:
     """Computed engagement score with breakdown."""
 
     overall_score: float
-    method_scores: Dict[str, float]
+    method_scores: dict[str, float]
     temporal_consistency: float
     diversity_index: float
     reach_ratio: float
@@ -52,12 +52,12 @@ class EngagementScore:
 class RepresentationReport:
     """Report on demographic representation in participation."""
 
-    group_proportions: Dict[str, float]
-    population_proportions: Dict[str, float]
-    representation_indices: Dict[str, float]
+    group_proportions: dict[str, float]
+    population_proportions: dict[str, float]
+    representation_indices: dict[str, float]
     overall_representation_score: float
-    underrepresented_groups: List[str]
-    overrepresented_groups: List[str]
+    underrepresented_groups: list[str]
+    overrepresented_groups: list[str]
 
 
 class ParticipationAnalyzer:
@@ -69,7 +69,7 @@ class ParticipationAnalyzer:
     """
 
     def __init__(
-        self, method_weights: Optional[Dict[ParticipationMethod, float]] = None
+        self, method_weights: dict[ParticipationMethod, float] | None = None
     ) -> None:
         """
         Initialize the participation analyzer.
@@ -79,7 +79,7 @@ class ParticipationAnalyzer:
                 their relative importance weights. Defaults to equal weighting.
         """
         self._method_weights = method_weights or {m: 1.0 for m in ParticipationMethod}
-        self._records: List[ParticipantRecord] = []
+        self._records: list[ParticipantRecord] = []
 
     def add_record(self, record: ParticipantRecord) -> None:
         """
@@ -90,7 +90,7 @@ class ParticipationAnalyzer:
         """
         self._records.append(record)
 
-    def add_records(self, records: List[ParticipantRecord]) -> None:
+    def add_records(self, records: list[ParticipantRecord]) -> None:
         """
         Add multiple participation records.
 
@@ -106,7 +106,7 @@ class ParticipationAnalyzer:
     def compute_engagement_score(
         self,
         target_population: int,
-        time_window: Optional[Tuple[float, float]] = None,
+        time_window: tuple[float, float] | None = None,
     ) -> EngagementScore:
         """
         Compute an overall engagement score for the participation data.
@@ -204,7 +204,7 @@ class ParticipationAnalyzer:
 
     def analyze_representation(
         self,
-        population_demographics: Dict[str, float],
+        population_demographics: dict[str, float],
     ) -> RepresentationReport:
         """
         Analyze how well participation reflects the target population demographics.
@@ -230,19 +230,19 @@ class ParticipationAnalyzer:
         ]
         total_with_demo = len(records_with_demographics)
 
-        group_counts: Dict[str, int] = {}
+        group_counts: dict[str, int] = {}
         for r in records_with_demographics:
             if r.demographic_group is not None:
                 group_counts[r.demographic_group] = (
                     group_counts.get(r.demographic_group, 0) + 1
                 )
 
-        group_proportions: Dict[str, float] = {}
+        group_proportions: dict[str, float] = {}
         if total_with_demo > 0:
             for group, count in group_counts.items():
                 group_proportions[group] = round(count / total_with_demo, 4)
 
-        representation_indices: Dict[str, float] = {}
+        representation_indices: dict[str, float] = {}
         for group, pop_prop in population_demographics.items():
             if pop_prop > 0:
                 part_prop = group_proportions.get(group, 0.0)
@@ -270,7 +270,7 @@ class ParticipationAnalyzer:
             overrepresented_groups=overrepresented,
         )
 
-    def get_participation_summary(self) -> Dict[str, Any]:
+    def get_participation_summary(self) -> dict[str, Any]:
         """
         Return a summary of all participation data.
 
@@ -278,8 +278,8 @@ class ParticipationAnalyzer:
             Dictionary with counts by method, unique participants,
             total records, and average sentiment.
         """
-        method_counts: Dict[str, int] = {}
-        sentiments: List[float] = []
+        method_counts: dict[str, int] = {}
+        sentiments: list[float] = []
         for r in self._records:
             method_counts[r.method.value] = method_counts.get(r.method.value, 0) + 1
             if r.sentiment_score is not None:
@@ -300,17 +300,17 @@ class ParticipationAnalyzer:
     # ---- private helpers ----
 
     def _filter_by_time(
-        self, time_window: Optional[Tuple[float, float]]
-    ) -> List[ParticipantRecord]:
+        self, time_window: tuple[float, float] | None
+    ) -> list[ParticipantRecord]:
         if time_window is None:
             return list(self._records)
         start, end = time_window
         return [r for r in self._records if start <= r.timestamp <= end]
 
     def _compute_method_scores(
-        self, records: List[ParticipantRecord]
-    ) -> Dict[str, float]:
-        method_counts: Dict[str, int] = {}
+        self, records: list[ParticipantRecord]
+    ) -> dict[str, float]:
+        method_counts: dict[str, int] = {}
         for r in records:
             method_counts[r.method.value] = method_counts.get(r.method.value, 0) + 1
         total = len(records)
@@ -318,8 +318,8 @@ class ParticipationAnalyzer:
 
     def _compute_temporal_consistency(
         self,
-        records: List[ParticipantRecord],
-        time_window: Optional[Tuple[float, float]],
+        records: list[ParticipantRecord],
+        time_window: tuple[float, float] | None,
     ) -> float:
         """Measure how evenly distributed participation is over time."""
         if len(records) < 2:
@@ -352,9 +352,9 @@ class ParticipationAnalyzer:
         consistency = max(0.0, 1.0 - chi_sq / max_chi_sq) if max_chi_sq > 0 else 1.0
         return consistency
 
-    def _compute_method_diversity(self, records: List[ParticipantRecord]) -> float:
+    def _compute_method_diversity(self, records: list[ParticipantRecord]) -> float:
         """Compute Shannon entropy of participation methods, normalized to [0, 1]."""
-        method_counts: Dict[str, int] = {}
+        method_counts: dict[str, int] = {}
         for r in records:
             method_counts[r.method.value] = method_counts.get(r.method.value, 0) + 1
 

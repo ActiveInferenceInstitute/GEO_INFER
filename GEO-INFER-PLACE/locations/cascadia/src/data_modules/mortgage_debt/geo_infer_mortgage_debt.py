@@ -6,15 +6,13 @@ leveraging public Home Mortgage Disclosure Act (HMDA) data.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any
 from pathlib import Path
-import numpy as np
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Polygon
 import requests
 import zipfile
-import io
 import os
 
 from .data_sources import CascadianMortgageDataSources
@@ -133,8 +131,8 @@ class GeoInferMortgageDebt:
         return raw_out
 
     def run_analysis(
-        self, target_hexagons: List[str], year: int = 2022
-    ) -> Dict[str, Dict[str, Any]]:
+        self, target_hexagons: list[str], year: int = 2022
+    ) -> dict[str, dict[str, Any]]:
         """
         Spatially joins HMDA mortgage data with H3 hexagons and calculates debt metrics.
         """
@@ -211,13 +209,13 @@ class GeoInferMortgageDebt:
         logger.info(f"Completed mortgage analysis. Processed {len(h3_mortgage)} hexagons.")
         return h3_mortgage
 
-    def run_final_analysis(self, h3_data: Dict[str, Any]) -> Dict[str, Any]:
+    def run_final_analysis(self, h3_data: dict[str, Any]) -> dict[str, Any]:
         """Summarize H3 mortgage features into per-hex metrics if needed.
 
         If upstream already fused metrics, this acts as a pass-through that
         rescales or validates values.
         """
-        results: Dict[str, Any] = {}
+        results: dict[str, Any] = {}
         for hex_id, items in h3_data.items():
             # items may be a list of dicts with mortgage fields
             try:

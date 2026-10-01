@@ -2,7 +2,7 @@
 Dynamic Causal Modeling for Active Inference.
 """
 
-from typing import Dict, Optional, cast
+from typing import cast
 import numpy as np
 
 
@@ -20,7 +20,7 @@ class DynamicCausalModel:
         input_dim: int,
         output_dim: int,
         dt: float = 0.01,
-        random_seed: Optional[int] = None,
+        random_seed: int | None = None,
     ):
         """
         Initialize the dynamic causal model.
@@ -185,8 +185,8 @@ class DynamicCausalModel:
         observations: np.ndarray,
         inputs: np.ndarray,
         time_points: np.ndarray,
-        initial_state: Optional[np.ndarray] = None,
-    ) -> Dict[str, np.ndarray]:
+        initial_state: np.ndarray | None = None,
+    ) -> dict[str, np.ndarray]:
         """
         Estimate model parameters from data.
 

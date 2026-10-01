@@ -6,7 +6,6 @@ Provides efficient web-based rendering with WebGL acceleration.
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -23,8 +22,8 @@ class CascadiaDeepscatterVisualizer:
         self.output_dir.mkdir(exist_ok=True)
 
     def prepare_deepscatter_data(
-        self, unified_data: Dict, redevelopment_scores: Dict
-    ) -> List[Dict]:
+        self, unified_data: dict, redevelopment_scores: dict
+    ) -> list[dict]:
         """
         Convert H3 data to Deepscatter format.
 
@@ -89,7 +88,7 @@ class CascadiaDeepscatterVisualizer:
         return data_points
 
     def create_deepscatter_html(
-        self, data_points: List[Dict], title: str = "Cascadia Agricultural Analysis"
+        self, data_points: list[dict], title: str = "Cascadia Agricultural Analysis"
     ) -> str:
         """
         Create a complete Deepscatter HTML visualization.
@@ -348,7 +347,7 @@ class CascadiaDeepscatterVisualizer:
         logger.info(f"Deepscatter HTML visualization saved to: {output_path}")
         return str(output_path)
 
-    def create_lightweight_csv_export(self, data_points: List[Dict]) -> str:
+    def create_lightweight_csv_export(self, data_points: list[dict]) -> str:
         """
         Create a lightweight CSV export for external visualization tools.
 
@@ -371,7 +370,7 @@ class CascadiaDeepscatterVisualizer:
         return str(output_path)
 
 
-def create_deepscatter_visualization(backend, output_dir: Path) -> Dict[str, str]:
+def create_deepscatter_visualization(backend, output_dir: Path) -> dict[str, str]:
     """
     Create efficient Deepscatter visualizations for Cascadia data.
 

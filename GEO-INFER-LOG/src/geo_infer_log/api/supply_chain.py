@@ -8,7 +8,6 @@ resilience analysis, network optimization, and facility location.
 from functools import lru_cache
 
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Dict, Optional, Tuple
 from pydantic import ConfigDict, Field
 from geo_infer_log.models.base import BaseModel
 
@@ -77,8 +76,8 @@ class FlowOptimizationRequest(BaseModel):
     """Request model for supply chain flow optimization."""
 
     network_id: str
-    demand_points: List[Dict]
-    supply_points: List[Dict]
+    demand_points: list[dict]
+    supply_points: list[dict]
     objective: str = "cost"
 
     model_config = ConfigDict(
@@ -111,8 +110,8 @@ class DisruptionAnalysisRequest(BaseModel):
     """Request model for supply chain disruption analysis."""
 
     network_id: str
-    disrupted_nodes: List[str] = Field(default_factory=list)
-    disrupted_edges: List[Tuple[str, str]] = Field(default_factory=list)
+    disrupted_nodes: list[str] = Field(default_factory=list)
+    disrupted_edges: list[tuple[str, str]] = Field(default_factory=list)
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -128,10 +127,10 @@ class DisruptionAnalysisRequest(BaseModel):
 class FacilityLocationRequest(BaseModel):
     """Request model for facility location optimization."""
 
-    candidates: List[Dict]
-    demand_points: List[Dict]
+    candidates: list[dict]
+    demand_points: list[dict]
     num_facilities: int
-    max_distance: Optional[float] = None
+    max_distance: float | None = None
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -154,9 +153,9 @@ class FacilityLocationRequest(BaseModel):
 class NetworkOptimizationRequest(BaseModel):
     """Request model for network design optimization."""
 
-    locations: List[Dict]
-    demand_points: List[Dict]
-    constraints: Dict
+    locations: list[dict]
+    demand_points: list[dict]
+    constraints: dict
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -207,10 +206,10 @@ def get_facility_locator() -> FacilityLocator:
     return FacilityLocator()
 
 
-@router.post("/networks", response_model=Dict)
+@router.post("/networks", response_model=dict)
 async def create_network(
     request: NetworkRequest, model: SupplyChainModel = Depends(get_supply_chain_model)
-) -> Dict:
+) -> dict:
     """Create a supply chain network."""
     try:
         model.load_network(request.network)
@@ -219,11 +218,11 @@ async def create_network(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/flow", response_model=Dict)
+@router.post("/flow", response_model=dict)
 async def optimize_flow(
     request: FlowOptimizationRequest,
     model: SupplyChainModel = Depends(get_supply_chain_model),
-) -> Dict:
+) -> dict:
     """Optimize flow in a supply chain network."""
     try:
         result = model.optimize_flow(
@@ -236,11 +235,11 @@ async def optimize_flow(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/resilience/disruption", response_model=Dict)
+@router.post("/resilience/disruption", response_model=dict)
 async def analyze_disruption(
     request: DisruptionAnalysisRequest,
     analyzer: ResilienceAnalyzer = Depends(get_resilience_analyzer),
-) -> Dict:
+) -> dict:
     """Analyze the impact of a disruption in the supply chain."""
     try:
         result = analyzer.simulate_disruption(
@@ -252,10 +251,10 @@ async def analyze_disruption(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/resilience/critical-nodes", response_model=List[str])
+@router.get("/resilience/critical-nodes", response_model=list[str])
 async def get_critical_nodes(
     analyzer: ResilienceAnalyzer = Depends(get_resilience_analyzer),
-) -> List[str]:
+) -> list[str]:
     """Identify critical nodes in the supply chain network."""
     try:
         return analyzer.identify_critical_nodes()
@@ -263,10 +262,10 @@ async def get_critical_nodes(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/resilience/improvements", response_model=List[Dict])
+@router.post("/resilience/improvements", response_model=list[dict])
 async def get_improvement_suggestions(
     analyzer: ResilienceAnalyzer = Depends(get_resilience_analyzer),
-) -> List[Dict]:
+) -> list[dict]:
     """Get improvement suggestions for supply chain resilience."""
     try:
         return analyzer.suggest_improvements()
@@ -274,11 +273,11 @@ async def get_improvement_suggestions(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/facility-location", response_model=List[Dict])
+@router.post("/facility-location", response_model=list[dict])
 async def optimize_facility_locations(
     request: FacilityLocationRequest,
     locator: FacilityLocator = Depends(get_facility_locator),
-) -> List[Dict]:
+) -> list[dict]:
     """Optimize facility locations."""
     try:
         result = locator.locate_facilities(
@@ -292,11 +291,11 @@ async def optimize_facility_locations(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/network-optimization", response_model=Dict)
+@router.post("/network-optimization", response_model=dict)
 async def optimize_network(
     request: NetworkOptimizationRequest,
     optimizer: NetworkOptimizer = Depends(get_network_optimizer),
-) -> Dict:
+) -> dict:
     """Optimize supply chain network design."""
     try:
         result = optimizer.optimize_network(

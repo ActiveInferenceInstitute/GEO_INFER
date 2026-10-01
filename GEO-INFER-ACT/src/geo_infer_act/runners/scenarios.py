@@ -7,19 +7,13 @@ import logging
 import math
 import sys
 import warnings
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
     cast,
 )
+from collections.abc import Callable, Iterable, Mapping, Sequence
 
 import matplotlib
 import numpy as np
@@ -69,7 +63,7 @@ from geo_infer_act.utils.spatial_research import (
 logger = logging.getLogger(__name__)
 
 
-SCENARIO_PARAMETERS: Dict[str, Dict[str, Any]] = {
+SCENARIO_PARAMETERS: dict[str, dict[str, Any]] = {
     "simple": {"phase": 0.0, "amplitude": 0.18, "preference": [0.1, 0.2, 0.3, 0.4]},
     "modern": {"phase": 0.6, "amplitude": 0.24, "preference": [0.2, 0.1, 0.4, 0.3]},
     "spatial": {
@@ -97,11 +91,11 @@ SCENARIO_PARAMETERS: Dict[str, Dict[str, Any]] = {
 
 
 def load_run_config(
-    path: Optional[Path] = None,
-    overrides: Optional[Mapping[str, Any]] = None,
+    path: Path | None = None,
+    overrides: Mapping[str, Any] | None = None,
 ) -> RunConfig:
     """Load a versioned YAML run config and apply explicit overrides."""
-    data: Dict[str, Any] = {}
+    data: dict[str, Any] = {}
     if path is not None:
         with Path(path).open() as handle:
             loaded = yaml.safe_load(handle) or {}
@@ -116,7 +110,7 @@ def load_run_config(
 
 
 def run_scenario(
-    config: RunConfig, command: Optional[List[str]] = None
+    config: RunConfig, command: list[str] | None = None
 ) -> ScenarioRunResult:
     """Run one canonical Active Inference scenario."""
     config = RunConfig(**config.__dict__)
@@ -147,13 +141,13 @@ def run_scenario(
 
 
 def run_all_scenarios(
-    output_dir: Optional[Path] = None,
-    scenarios: Optional[Iterable[str]] = None,
+    output_dir: Path | None = None,
+    scenarios: Iterable[str] | None = None,
     seed: int = 42,
     timesteps: int = 8,
     deterministic: bool = True,
     visualizations: bool = True,
-    command: Optional[List[str]] = None,
+    command: list[str] | None = None,
 ) -> SuiteRunResult:
     """Run a suite of scenarios and write a suite manifest."""
     output_dir = ensure_output_tree(output_dir or _default_output_dir("examples"))
@@ -180,11 +174,11 @@ def run_all_scenarios(
 
 
 def _default_output_dir(scenario: str) -> Path:
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     return Path.cwd() / "output" / f"act_{scenario}_{timestamp}"
 
 
-def _run_vector_scenario(config: RunConfig) -> Dict[str, Any]:
+def _run_vector_scenario(config: RunConfig) -> dict[str, Any]:
     assert config.output_dir is not None
     params = {**SCENARIO_PARAMETERS[config.scenario], **config.parameters}
     rng = np.random.default_rng(config.seed)
@@ -205,7 +199,7 @@ def _run_vector_scenario(config: RunConfig) -> Dict[str, Any]:
     )
     active_model.set_generative_model(model)
 
-    step_rows: List[Dict[str, Any]] = []
+    step_rows: list[dict[str, Any]] = []
     actions = ["observe", "adapt", "coordinate", "conserve"]
     for timestep in range(config.timesteps):
         observation = _scenario_observation(config.scenario, timestep, params, rng)
@@ -251,7 +245,7 @@ def _run_vector_scenario(config: RunConfig) -> Dict[str, Any]:
     return summary
 
 
-def _run_h3_scenario(config: RunConfig) -> Dict[str, Any]:
+def _run_h3_scenario(config: RunConfig) -> dict[str, Any]:
     """Run flat or nested H3 inference and persist diagnostics and summary metrics."""
     assert config.output_dir is not None
     cells = h3_cells_for_config(
@@ -289,12 +283,12 @@ def _run_h3_scenario(config: RunConfig) -> Dict[str, Any]:
         )
     analyzer = ActiveInferenceAnalyzer(str(config.output_dir))
 
-    step_rows: List[Dict[str, Any]] = []
-    diagnostics: List[Dict[str, Any]] = []
-    pymdp_records: List[Dict[str, Any]] = []
-    trace_fragments: List[Any] = []
-    previous_trace_beliefs: Dict[str, Any] = {}
-    last_cell_results: Dict[str, Any] = {}
+    step_rows: list[dict[str, Any]] = []
+    diagnostics: list[dict[str, Any]] = []
+    pymdp_records: list[dict[str, Any]] = []
+    trace_fragments: list[Any] = []
+    previous_trace_beliefs: dict[str, Any] = {}
+    last_cell_results: dict[str, Any] = {}
     for timestep in range(config.timesteps):
         env_obs = generate_realistic_environmental_observations(
             cells,
@@ -457,7 +451,7 @@ def _run_h3_scenario(config: RunConfig) -> Dict[str, Any]:
     return summary
 
 
-def _run_spatial_scenario(config: RunConfig) -> Dict[str, Any]:
+def _run_spatial_scenario(config: RunConfig) -> dict[str, Any]:
     """Run a spatial agent over H3 cells and persist its inference artifacts."""
     assert config.output_dir is not None
     cells = h3_cells_for_config(
@@ -488,12 +482,12 @@ def _run_spatial_scenario(config: RunConfig) -> Dict[str, Any]:
         )
     analyzer = ActiveInferenceAnalyzer(str(config.output_dir))
 
-    step_rows: List[Dict[str, Any]] = []
-    diagnostics: List[Dict[str, Any]] = []
-    pymdp_records: List[Dict[str, Any]] = []
-    trace_fragments: List[Any] = []
-    previous_trace_beliefs: Dict[str, Any] = {}
-    last_cell_results: Dict[str, Any] = {}
+    step_rows: list[dict[str, Any]] = []
+    diagnostics: list[dict[str, Any]] = []
+    pymdp_records: list[dict[str, Any]] = []
+    trace_fragments: list[Any] = []
+    previous_trace_beliefs: dict[str, Any] = {}
+    last_cell_results: dict[str, Any] = {}
     for timestep in range(config.timesteps):
         env_obs = generate_realistic_environmental_observations(
             cells,
@@ -660,7 +654,7 @@ def _run_spatial_scenario(config: RunConfig) -> Dict[str, Any]:
     return summary
 
 
-def _nested_h3_resolutions(config: RunConfig) -> List[int]:
+def _nested_h3_resolutions(config: RunConfig) -> list[int]:
     """Return ordered nested H3 resolutions for a geospatial run."""
     explicit = config.parameters.get("nested_h3_resolutions")
     if explicit:
@@ -677,8 +671,8 @@ def _nested_h3_resolutions(config: RunConfig) -> List[int]:
 
 
 def _write_spatial_trace_outputs(
-    config: RunConfig, traces: List[Any]
-) -> Dict[str, Any]:
+    config: RunConfig, traces: list[Any]
+) -> dict[str, Any]:
     """Write spatial trace tables and lattice data, returning research statistics."""
     assert config.output_dir is not None
     if not traces:
@@ -758,10 +752,10 @@ def _write_spatial_trace_outputs(
     return research_statistics
 
 
-def _trace_cell_rows(traces: List[Any]) -> List[Dict[str, Any]]:
+def _trace_cell_rows(traces: list[Any]) -> list[dict[str, Any]]:
     """Flatten trace cell diagnostics and add H3 centroid coordinates."""
     adapter = get_h3_adapter()
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     for trace in traces:
         observations_by_cell = {
             str(cell): _finite_vector(observation)
@@ -785,11 +779,11 @@ def _trace_cell_rows(traces: List[Any]) -> List[Dict[str, Any]]:
     return rows
 
 
-def _nested_parent_child_rows(cell_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _nested_parent_child_rows(cell_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Build parent-child residual rows from nested trace cell diagnostics."""
     adapter = get_h3_adapter()
     parent_rows = {(row["cell"], int(row["timestep"])): row for row in cell_rows}
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     for row in cell_rows:
         parent = row.get("parent_cell")
         if not parent:
@@ -822,24 +816,24 @@ def _nested_parent_child_rows(cell_rows: List[Dict[str, Any]]) -> List[Dict[str,
 
 def _build_h3_lattice_animation_payload(
     config: RunConfig,
-    traces: List[Any],
-    cell_rows: List[Dict[str, Any]],
-    edge_rows: List[Dict[str, Any]],
-    level_rows: List[Dict[str, Any]],
-    parent_child_rows: List[Dict[str, Any]],
+    traces: list[Any],
+    cell_rows: list[dict[str, Any]],
+    edge_rows: list[dict[str, Any]],
+    level_rows: list[dict[str, Any]],
+    parent_child_rows: list[dict[str, Any]],
     research_statistics: Mapping[str, Any],
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build a JSON-safe animated H3 lattice payload from trace diagnostics."""
     adapter = get_h3_adapter()
     hierarchy_metadata = traces[-1].hierarchy_metadata if traces else {}
     backend_metadata = traces[-1].backend_metadata if traces else {}
     timesteps = sorted({int(row["timestep"]) for row in cell_rows})
-    rows_by_timestep: Dict[int, List[Dict[str, Any]]] = {step: [] for step in timesteps}
+    rows_by_timestep: dict[int, list[dict[str, Any]]] = {step: [] for step in timesteps}
     for row in cell_rows:
         rows_by_timestep.setdefault(int(row["timestep"]), []).append(row)
 
-    children_by_parent: Dict[str, List[str]] = {}
-    parent_by_child: Dict[str, str] = {}
+    children_by_parent: dict[str, list[str]] = {}
+    parent_by_child: dict[str, str] = {}
     for row in parent_child_rows:
         parent = str(row["parent"])
         child = str(row["child"])
@@ -880,13 +874,13 @@ def _build_h3_lattice_animation_payload(
             }
         )
 
-    edge_rows_by_timestep: Dict[int, List[Dict[str, Any]]] = {}
+    edge_rows_by_timestep: dict[int, list[dict[str, Any]]] = {}
     for row in edge_rows:
         edge_rows_by_timestep.setdefault(int(row["timestep"]), []).append(row)
-    parent_child_by_timestep: Dict[int, List[Dict[str, Any]]] = {}
+    parent_child_by_timestep: dict[int, list[dict[str, Any]]] = {}
     for row in parent_child_rows:
         parent_child_by_timestep.setdefault(int(row["timestep"]), []).append(row)
-    level_rows_by_timestep: Dict[int, List[Dict[str, Any]]] = {}
+    level_rows_by_timestep: dict[int, list[dict[str, Any]]] = {}
     for row in level_rows:
         level_rows_by_timestep.setdefault(int(row["timestep"]), []).append(row)
 
@@ -960,7 +954,7 @@ def _build_h3_lattice_animation_payload(
     }
 
 
-def _lattice_cell_state(row: Mapping[str, Any]) -> Dict[str, Any]:
+def _lattice_cell_state(row: Mapping[str, Any]) -> dict[str, Any]:
     """Return one finite per-frame cell state for the lattice animation."""
     belief = _normalized_finite_vector(row.get("belief", []))
     observation = _normalized_finite_vector(row.get("observation", []))
@@ -1016,7 +1010,7 @@ def _lattice_cell_state(row: Mapping[str, Any]) -> Dict[str, Any]:
 
 
 def _fill_parent_lattice_state(
-    parent_state: Dict[str, Any], child_states: List[Dict[str, Any]]
+    parent_state: dict[str, Any], child_states: list[dict[str, Any]]
 ) -> None:
     """Fill parent observation and action fields from child means."""
     if not child_states:
@@ -1041,7 +1035,7 @@ def _fill_parent_lattice_state(
 
 def _lattice_edge_state(
     row: Mapping[str, Any], states_by_cell: Mapping[str, Mapping[str, Any]]
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Return one directed edge state with finite flux direction and weight."""
     source = str(row["source"])
     target = str(row["target"])
@@ -1073,7 +1067,7 @@ def _lattice_edge_state(
     }
 
 
-def _lattice_parent_child_state(row: Mapping[str, Any]) -> Dict[str, Any]:
+def _lattice_parent_child_state(row: Mapping[str, Any]) -> dict[str, Any]:
     """Return one nested parent-child residual link for the lattice animation."""
     return {
         "timestep": int(row["timestep"]),
@@ -1088,7 +1082,7 @@ def _lattice_parent_child_state(row: Mapping[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _mean_vector(vectors: List[List[float]]) -> List[float]:
+def _mean_vector(vectors: list[list[float]]) -> list[float]:
     """Return a normalized finite mean vector for same-length vectors."""
     usable = [np.asarray(vector, dtype=float) for vector in vectors if vector]
     if not usable:
@@ -1102,7 +1096,7 @@ def _mean_vector(vectors: List[List[float]]) -> List[float]:
     return _normalized_finite_vector(np.mean(padded, axis=0))
 
 
-def _dominant_index_value(vector: List[float]) -> tuple[int, float]:
+def _dominant_index_value(vector: list[float]) -> tuple[int, float]:
     """Return the dominant index and value for a finite vector."""
     if not vector:
         return 0, 0.0
@@ -1120,9 +1114,9 @@ def _finite_float(value: Any) -> float:
     return numeric if math.isfinite(numeric) else 0.0
 
 
-def _finite_row(row: Mapping[str, Any]) -> Dict[str, Any]:
+def _finite_row(row: Mapping[str, Any]) -> dict[str, Any]:
     """Return a copy with non-finite numeric values replaced by zero."""
-    cleaned: Dict[str, Any] = {}
+    cleaned: dict[str, Any] = {}
     for key, value in row.items():
         if isinstance(value, float) and not math.isfinite(value):
             cleaned[key] = 0.0
@@ -1139,12 +1133,12 @@ def _finite_row(row: Mapping[str, Any]) -> Dict[str, Any]:
 def _write_nested_h3_outputs(
     config: RunConfig,
     nested_update: Any,
-    diagnostics: List[Dict[str, Any]],
+    diagnostics: list[dict[str, Any]],
 ) -> None:
     """Persist H3 hierarchy diagnostics and optionally render hierarchy maps."""
     assert config.output_dir is not None
     adapter = get_h3_adapter()
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     for parent, children in nested_update.parent_child_map.items():
         parent_resolution = adapter.get_resolution(parent)
         for child in children:
@@ -1168,10 +1162,10 @@ def _write_nested_h3_outputs(
 
 def _pymdp_records_from_grid_result(
     config: RunConfig, timestep: int, grid_result: Any
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Flatten per-cell pymdp metadata from a typed H3 grid result."""
     adapter = get_h3_adapter()
-    records: List[Dict[str, Any]] = []
+    records: list[dict[str, Any]] = []
     for cell, cell_result in getattr(grid_result, "cell_results", {}).items():
         metadata = getattr(cell_result, "metadata", {}) or {}
         pymdp = metadata.get("pymdp") or {}
@@ -1185,7 +1179,7 @@ def _pymdp_records_from_grid_result(
         selected = selected % max(1, len(posterior) or len(neg_efe) or 1)
         lat, lng = adapter.cell_to_latlng(cell)
         beliefs = _belief_vector(cell_result.beliefs)
-        record: Dict[str, Any] = {
+        record: dict[str, Any] = {
             "scenario": config.scenario,
             "timestep": int(timestep),
             "cell": str(cell),
@@ -1214,7 +1208,7 @@ def _pymdp_records_from_grid_result(
     return records
 
 
-def _pymdp_summary_metrics(records: List[Dict[str, Any]]) -> Dict[str, Any]:
+def _pymdp_summary_metrics(records: list[dict[str, Any]]) -> dict[str, Any]:
     """Return compact run-summary metrics for pymdp H3 diagnostics."""
     if not records:
         return {
@@ -1243,7 +1237,7 @@ def _pymdp_summary_metrics(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def _write_pymdp_h3_outputs(config: RunConfig, records: List[Dict[str, Any]]) -> None:
+def _write_pymdp_h3_outputs(config: RunConfig, records: list[dict[str, Any]]) -> None:
     """Write required pymdp H3 diagnostics and optional policy visualizations."""
     assert config.output_dir is not None
     if not records:
@@ -1261,8 +1255,8 @@ def _plotly_or_table(
     row_cells: Callable[[Mapping[str, Any]], Sequence[str]],
     title: str,
     *,
-    page_title: Optional[str] = None,
-    caption: Optional[str] = None,
+    page_title: str | None = None,
+    caption: str | None = None,
 ) -> str:
     """Render a Plotly figure as HTML, degrading to a static table on failure.
 
@@ -1296,7 +1290,7 @@ def _plotly_or_table(
 
 
 def _write_pymdp_policy_free_energy_html(
-    config: RunConfig, records: List[Dict[str, Any]]
+    config: RunConfig, records: list[dict[str, Any]]
 ) -> Path:
     """Write an HTML analysis of pymdp policy posterior and free energy."""
     timesteps = sorted({int(row["timestep"]) for row in records})
@@ -1482,7 +1476,7 @@ def _write_nested_h3_level_map(config: RunConfig, nested_update: Any) -> Path:
 def _write_nested_h3_hierarchy_map(config: RunConfig, nested_update: Any) -> Path:
     """Write an interactive nested H3 parent-child hierarchy map."""
     adapter = get_h3_adapter()
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     for parent, children in nested_update.parent_child_map.items():
         parent_belief = nested_update.parent_beliefs.get(parent)
         parent_entropy = (
@@ -1621,7 +1615,7 @@ def _write_nested_h3_hierarchy_map(config: RunConfig, nested_update: Any) -> Pat
     )
 
 
-def _h3_boundary_trace(cell: str) -> tuple[List[float], List[float]]:
+def _h3_boundary_trace(cell: str) -> tuple[list[float], list[float]]:
     """Return closed latitude and longitude arrays for one H3 cell boundary."""
     adapter = get_h3_adapter()
     boundary = adapter.cell_to_boundary(cell)
@@ -1661,7 +1655,7 @@ def _belief_vector(beliefs: Any) -> np.ndarray:
     return cast(np.ndarray, normalize_belief_vector(beliefs))
 
 
-def _finite_vector(value: Any) -> List[float]:
+def _finite_vector(value: Any) -> list[float]:
     """Return a one-dimensional finite numeric vector for JSON payloads."""
     try:
         array = np.asarray(value, dtype=float).reshape(-1)
@@ -1672,7 +1666,7 @@ def _finite_vector(value: Any) -> List[float]:
     return [float(item) if math.isfinite(float(item)) else 0.0 for item in array]
 
 
-def _normalized_finite_vector(value: Any) -> List[float]:
+def _normalized_finite_vector(value: Any) -> list[float]:
     """Return a normalized finite vector when a positive sum is available."""
     vector = np.asarray(_finite_vector(value), dtype=float)
     if vector.size == 0:
@@ -1700,7 +1694,7 @@ def _finalize_analyzer(analyzer: ActiveInferenceAnalyzer) -> None:
         )
 
 
-def _summary_metrics(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+def _summary_metrics(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     free_energy = [float(row["free_energy"]) for row in rows]
     expected = [
         float(row["expected_free_energy"])
@@ -1718,7 +1712,7 @@ def _summary_metrics(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def _spatial_research_summary_metrics(statistics: Mapping[str, Any]) -> Dict[str, Any]:
+def _spatial_research_summary_metrics(statistics: Mapping[str, Any]) -> dict[str, Any]:
     """Return compact run-summary metrics from spatial research statistics."""
     metrics = statistics.get("metric_summaries", {})
     policy = statistics.get("policy", {})
@@ -1783,7 +1777,7 @@ def _add_provenance_caption(
     )
 
 
-def _average_belief_entropy(beliefs: List[Any]) -> float:
+def _average_belief_entropy(beliefs: list[Any]) -> float:
     """Compute mean entropy for a collection of belief vectors."""
     if not beliefs:
         return 0.0
@@ -1795,8 +1789,8 @@ def _average_belief_entropy(beliefs: List[Any]) -> float:
 
 
 def _cell_metrics_from_results(
-    cells: List[str], cell_results: Mapping[str, Any]
-) -> List[Dict[str, Any]]:
+    cells: list[str], cell_results: Mapping[str, Any]
+) -> list[dict[str, Any]]:
     """Build per-cell metric rows from typed grid inference results."""
     adapter = get_h3_adapter()
     metrics = []
@@ -1842,7 +1836,7 @@ def _cell_metrics_from_results(
 
 
 def _write_geospatial_cell_outputs(
-    config: RunConfig, cells: List[str], cell_metrics: List[Dict[str, Any]]
+    config: RunConfig, cells: list[str], cell_metrics: list[dict[str, Any]]
 ) -> None:
     """Write cell metrics and closed H3 polygon GeoJSON beneath the run directory."""
     assert config.output_dir is not None
@@ -1936,8 +1930,8 @@ def _plot_vector_summary(config: RunConfig, rows: Sequence[Mapping[str, Any]]) -
 def _write_geospatial_visualizations(
     config: RunConfig,
     rows: Sequence[Mapping[str, Any]],
-    cell_metrics: List[Dict[str, Any]],
-    traces: List[Any],
+    cell_metrics: list[dict[str, Any]],
+    traces: list[Any],
     research_statistics: Mapping[str, Any],
 ) -> None:
     """Create the full visualization set required for geospatial scenarios."""
@@ -1975,7 +1969,7 @@ def _write_geospatial_visualizations(
 
 
 def _plot_h3_cell_metric_map(
-    config: RunConfig, cell_metrics: List[Dict[str, Any]]
+    config: RunConfig, cell_metrics: list[dict[str, Any]]
 ) -> Path:
     """Plot H3 cell centroids colored by final free-energy metric."""
     scenario_label = (
@@ -2119,7 +2113,7 @@ def _plot_belief_entropy_coherence(
 
 
 def _write_interactive_h3_map(
-    config: RunConfig, cell_metrics: List[Dict[str, Any]]
+    config: RunConfig, cell_metrics: list[dict[str, Any]]
 ) -> Path:
     """Write an interactive HTML cell map, using Plotly when available."""
     title = f"{config.scenario.upper()} H3 Active Inference Map"
@@ -2213,7 +2207,7 @@ def _write_interactive_h3_map(
 
 
 def _write_h3_belief_flux_map(
-    config: RunConfig, trace_rows: List[Dict[str, Any]]
+    config: RunConfig, trace_rows: list[dict[str, Any]]
 ) -> Path:
     """Write an interactive H3 belief-flux and posterior-delta map."""
     rows = _latest_leaf_trace_rows(trace_rows)
@@ -2282,7 +2276,7 @@ def _write_h3_belief_flux_map(
 
 
 def _write_h3_policy_surface(
-    config: RunConfig, trace_rows: List[Dict[str, Any]]
+    config: RunConfig, trace_rows: list[dict[str, Any]]
 ) -> Path:
     """Write a timestep-by-cell policy confidence surface."""
     rows = _leaf_trace_rows(trace_rows)
@@ -2356,11 +2350,11 @@ def _write_h3_policy_surface(
 
 
 def _write_h3_policy_transitions(
-    config: RunConfig, trace_rows: List[Dict[str, Any]]
+    config: RunConfig, trace_rows: list[dict[str, Any]]
 ) -> Path:
     """Write selected-action transition counts by timestep."""
     rows = _leaf_trace_rows(trace_rows)
-    counts: Dict[tuple[int, str], int] = {}
+    counts: dict[tuple[int, str], int] = {}
     for row in rows:
         key = (int(row["timestep"]), str(row["selected_action_index"]))
         counts[key] = counts.get(key, 0) + 1
@@ -2421,8 +2415,8 @@ def _write_h3_policy_transitions(
 
 def _write_h3_spatial_autocorrelation(
     config: RunConfig,
-    trace_rows: List[Dict[str, Any]],
-    edge_rows: List[Dict[str, Any]],
+    trace_rows: list[dict[str, Any]],
+    edge_rows: list[dict[str, Any]],
 ) -> Path:
     """Write per-timestep graph-aware spatial trace diagnostics."""
     rows = _spatial_autocorrelation_rows(trace_rows, edge_rows)
@@ -2499,7 +2493,7 @@ def _write_h3_spatial_autocorrelation(
 
 
 def _write_h3_entropy_free_energy_phase(
-    config: RunConfig, trace_rows: List[Dict[str, Any]]
+    config: RunConfig, trace_rows: list[dict[str, Any]]
 ) -> Path:
     """Write entropy/free-energy phase-space diagnostics."""
     rows = _leaf_trace_rows(trace_rows)
@@ -3099,7 +3093,7 @@ def _write_h3_active_inference_lattice(
 
 
 def _write_nested_h3_parent_child_residuals(
-    config: RunConfig, parent_child_rows: List[Dict[str, Any]]
+    config: RunConfig, parent_child_rows: list[dict[str, Any]]
 ) -> Path:
     """Write nested parent-child consistency residual diagnostics."""
     title = f"{config.scenario.upper()} Nested H3 Parent-Child Residuals"
@@ -3169,10 +3163,10 @@ def _write_nested_h3_parent_child_residuals(
 def _write_spatial_inference_research_report(
     config: RunConfig,
     rows: Sequence[Mapping[str, Any]],
-    cell_metrics: List[Dict[str, Any]],
-    trace_rows: List[Dict[str, Any]],
+    cell_metrics: list[dict[str, Any]],
+    trace_rows: list[dict[str, Any]],
     research_statistics: Mapping[str, Any],
-    parent_child_rows: List[Dict[str, Any]],
+    parent_child_rows: list[dict[str, Any]],
 ) -> Path:
     """Write a compact HTML research report for spatial active inference runs."""
     _leaf_rows = _leaf_trace_rows(trace_rows)
@@ -3328,7 +3322,7 @@ def _write_spatial_inference_research_report(
     )
 
 
-def _leaf_trace_rows(trace_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _leaf_trace_rows(trace_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Return trace rows for leaf/runtime cells, excluding aggregate parents."""
     return [
         row for row in trace_rows if not bool(row.get("aggregate_parent_cell", False))
@@ -3336,13 +3330,13 @@ def _leaf_trace_rows(trace_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def _spatial_autocorrelation_rows(
-    trace_rows: List[Dict[str, Any]],
-    edge_rows: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
+    trace_rows: list[dict[str, Any]],
+    edge_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     """Return per-timestep H3 adjacency statistics for visualization."""
     rows = _leaf_trace_rows(trace_rows)
     timesteps = sorted({int(row["timestep"]) for row in rows})
-    output: List[Dict[str, Any]] = []
+    output: list[dict[str, Any]] = []
     for timestep in timesteps:
         timestep_rows = [row for row in rows if int(row["timestep"]) == timestep]
         entropy_by_cell = {
@@ -3409,7 +3403,7 @@ def _spatial_autocorrelation_rows(
     return output
 
 
-def _latest_leaf_trace_rows(trace_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _latest_leaf_trace_rows(trace_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Return leaf trace rows for the latest timestep."""
     rows = _leaf_trace_rows(trace_rows)
     if not rows:
@@ -3418,7 +3412,7 @@ def _latest_leaf_trace_rows(trace_rows: List[Dict[str, Any]]) -> List[Dict[str, 
     return [row for row in rows if int(row["timestep"]) == latest]
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     """CLI-compatible main for direct module execution."""
     from geo_infer_act.runners.cli import main as cli_main
 

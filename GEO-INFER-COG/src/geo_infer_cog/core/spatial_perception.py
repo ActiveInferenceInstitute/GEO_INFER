@@ -25,7 +25,7 @@ import logging
 import math
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
 
 import numpy as np
 
@@ -43,7 +43,7 @@ class SpatialPercept:
     """Represents a perceived spatial element with cognitive properties."""
 
     element_id: str
-    geometry: Dict[str, Any]
+    geometry: dict[str, Any]
     visual_saliency: float = 0.0
     attention_weight: float = 0.0
     perceptual_group: str = ""
@@ -83,8 +83,8 @@ class AttentionModel:
         self.current_focus = None
 
     def allocate_attention(
-        self, spatial_elements: List[SpatialPercept], task_priority: str = "balanced"
-    ) -> Dict[str, float]:
+        self, spatial_elements: list[SpatialPercept], task_priority: str = "balanced"
+    ) -> dict[str, float]:
         """
         Allocate attention across spatial elements.
 
@@ -140,8 +140,8 @@ class SpatialPerceptionModel:
         self,
         framework: str = "bayesian_attention",
         resolution: str = "adaptive",
-        config: Optional[Dict[str, Any]] = None,
-        rng: Optional[np.random.Generator] = None,
+        config: dict[str, Any] | None = None,
+        rng: np.random.Generator | None = None,
     ):
         """
         Initialize spatial perception model.
@@ -186,10 +186,10 @@ class SpatialPerceptionModel:
 
     def process_spatial_input(
         self,
-        spatial_data: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None,
-        user_profile: Optional[UserCognitiveProfile] = None,
-    ) -> Dict[str, Any]:
+        spatial_data: dict[str, Any],
+        context: dict[str, Any] | None = None,
+        user_profile: UserCognitiveProfile | None = None,
+    ) -> dict[str, Any]:
         """
         Process spatial input through perceptual modeling pipeline.
 
@@ -254,8 +254,8 @@ class SpatialPerceptionModel:
             raise
 
     def _extract_spatial_elements(
-        self, spatial_data: Dict[str, Any]
-    ) -> List[SpatialPercept]:
+        self, spatial_data: dict[str, Any]
+    ) -> list[SpatialPercept]:
         """Extract spatial elements from input data."""
         elements = []
 
@@ -278,8 +278,8 @@ class SpatialPerceptionModel:
     def _calculate_visual_saliency(
         self,
         element: SpatialPercept,
-        spatial_data: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None,
+        spatial_data: dict[str, Any],
+        context: dict[str, Any] | None = None,
     ) -> float:
         """Calculate visual saliency of a spatial element."""
         saliency_factors = []
@@ -310,7 +310,7 @@ class SpatialPerceptionModel:
 
         return min(1.0, max(0.0, combined_saliency))
 
-    def _calculate_element_area(self, geometry: Dict[str, Any]) -> float:
+    def _calculate_element_area(self, geometry: dict[str, Any]) -> float:
         """Calculate approximate area of a spatial element."""
         geom_type = geometry.get("type", "")
 
@@ -332,7 +332,7 @@ class SpatialPerceptionModel:
         else:
             return 10.0  # Default moderate area
 
-    def _calculate_line_length(self, coordinates: List[List[float]]) -> float:
+    def _calculate_line_length(self, coordinates: list[list[float]]) -> float:
         """Calculate length of a line given its coordinates."""
         if len(coordinates) < 2:
             return 0.0
@@ -347,7 +347,7 @@ class SpatialPerceptionModel:
 
         return total_length
 
-    def _calculate_polygon_area(self, coordinates: List[List[float]]) -> float:
+    def _calculate_polygon_area(self, coordinates: list[list[float]]) -> float:
         """Calculate area of a polygon using the shoelace formula."""
         if len(coordinates) < 3:
             return 0.0
@@ -363,7 +363,7 @@ class SpatialPerceptionModel:
 
         return area
 
-    def _calculate_color_saliency(self, visual_props: Dict[str, Any]) -> float:
+    def _calculate_color_saliency(self, visual_props: dict[str, Any]) -> float:
         """Calculate saliency based on visual properties."""
         # Simple color-based saliency (red/orange colors tend to be more salient)
         salient_colors = ["red", "orange", "yellow", "magenta"]
@@ -375,7 +375,7 @@ class SpatialPerceptionModel:
             return 0.4
 
     def _calculate_context_saliency(
-        self, element: SpatialPercept, context: Optional[Dict[str, Any]] = None
+        self, element: SpatialPercept, context: dict[str, Any] | None = None
     ) -> float:
         """Calculate saliency based on task context."""
         if not context:
@@ -393,7 +393,7 @@ class SpatialPerceptionModel:
         else:
             return 0.5
 
-    def _determine_scale_level(self, geometry: Dict[str, Any]) -> str:
+    def _determine_scale_level(self, geometry: dict[str, Any]) -> str:
         """Determine appropriate scale level for a spatial element."""
         area = self._calculate_element_area(geometry)
 
@@ -404,7 +404,7 @@ class SpatialPerceptionModel:
         else:
             return "large"
 
-    def _calculate_element_uncertainty(self, geometry: Dict[str, Any]) -> float:
+    def _calculate_element_uncertainty(self, geometry: dict[str, Any]) -> float:
         """Calculate uncertainty associated with a spatial element."""
         # Base uncertainty from geometry complexity
         base_uncertainty = min(0.5, len(geometry.get("coordinates", [])) / 100.0)
@@ -417,14 +417,14 @@ class SpatialPerceptionModel:
         return min(1.0, base_uncertainty)
 
     def _apply_perceptual_grouping(
-        self, elements: List[SpatialPercept]
-    ) -> List[SpatialPercept]:
+        self, elements: list[SpatialPercept]
+    ) -> list[SpatialPercept]:
         """Apply Gestalt principles for perceptual grouping."""
         if len(elements) < 2:
             return elements
 
         # Simple proximity-based grouping
-        grouped_elements: List[SpatialPercept] = []
+        grouped_elements: list[SpatialPercept] = []
         used_indices = set()
 
         for i, element in enumerate(elements):
@@ -461,7 +461,7 @@ class SpatialPerceptionModel:
         return grouped_elements
 
     def _calculate_spatial_distance(
-        self, geom1: Dict[str, Any], geom2: Dict[str, Any]
+        self, geom1: dict[str, Any], geom2: dict[str, Any]
     ) -> float:
         """Calculate spatial distance between two geometries."""
         # Simple centroid-based distance calculation
@@ -476,8 +476,8 @@ class SpatialPerceptionModel:
         return float("inf")
 
     def _calculate_centroid(
-        self, geometry: Dict[str, Any]
-    ) -> Optional[Tuple[float, float]]:
+        self, geometry: dict[str, Any]
+    ) -> tuple[float, float] | None:
         """Calculate centroid of a geometry."""
         geom_type = geometry.get("type", "")
 
@@ -508,13 +508,13 @@ class SpatialPerceptionModel:
 
     def _generate_perceptual_insights(
         self,
-        elements: List[SpatialPercept],
-        attention_weights: Dict[str, float],
-        context: Optional[Dict[str, Any]] = None,
-        user_profile: Optional[UserCognitiveProfile] = None,
-    ) -> Dict[str, Any]:
+        elements: list[SpatialPercept],
+        attention_weights: dict[str, float],
+        context: dict[str, Any] | None = None,
+        user_profile: UserCognitiveProfile | None = None,
+    ) -> dict[str, Any]:
         """Generate perceptual insights and recommendations."""
-        insights: Dict[str, Any] = {
+        insights: dict[str, Any] = {
             "attention_patterns": {},
             "perceptual_groups": {},
             "scale_distribution": {},
@@ -536,7 +536,7 @@ class SpatialPerceptionModel:
             }
 
         # Analyze perceptual groups
-        groups: Dict[str, List[str]] = {}
+        groups: dict[str, list[str]] = {}
         for element in elements:
             group_id = element.perceptual_group or element.element_id
             if group_id not in groups:
@@ -549,7 +549,7 @@ class SpatialPerceptionModel:
         }
 
         # Analyze scale distribution
-        scale_counts: Dict[str, int] = {}
+        scale_counts: dict[str, int] = {}
         for element in elements:
             scale = element.scale_level
             scale_counts[scale] = scale_counts.get(scale, 0) + 1
@@ -577,12 +577,12 @@ class SpatialPerceptionModel:
 
     def _generate_user_insights(
         self,
-        elements: List[SpatialPercept],
-        attention_weights: Dict[str, float],
+        elements: list[SpatialPercept],
+        attention_weights: dict[str, float],
         user_profile: UserCognitiveProfile,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate insights tailored to user cognitive profile."""
-        user_insights: Dict[str, Any] = {}
+        user_insights: dict[str, Any] = {}
 
         # Adjust recommendations based on user expertise
         if user_profile.spatial_expertise > 0.7:  # Expert user
@@ -612,8 +612,8 @@ class SpatialPerceptionModel:
         return user_insights
 
     def update_model(
-        self, training_data: Dict[str, Any], learning_rate: float = 0.01
-    ) -> Dict[str, Any]:
+        self, training_data: dict[str, Any], learning_rate: float = 0.01
+    ) -> dict[str, Any]:
         """Update perception model based on training data.
 
         Currently applies only ``perception_feedback.saliency_accuracy``
@@ -622,7 +622,7 @@ class SpatialPerceptionModel:
         ``parameters_updated`` in the result reports exactly which
         parameters changed.
         """
-        update_results: Dict[str, Any] = {
+        update_results: dict[str, Any] = {
             "parameters_updated": [],
             "performance_improvement": 0.0,
             "training_examples": len(training_data.get("examples", [])),
@@ -644,7 +644,7 @@ class SpatialPerceptionModel:
 
         return update_results
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current status of the perception model."""
         return {
             "model_type": "spatial_perception",

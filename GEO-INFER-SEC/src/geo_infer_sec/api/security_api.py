@@ -5,7 +5,8 @@ This module provides API endpoints for security-related operations
 on geospatial data.
 """
 
-from typing import Dict, Optional, Any, Callable
+from typing import Any
+from collections.abc import Callable
 from flask import Flask, request, jsonify, Blueprint, g, current_app
 import json
 import geopandas as gpd
@@ -22,7 +23,7 @@ security_api = Blueprint("security_api", __name__)
 _SECURITY_STATE_KEY = "geo_infer_sec"
 
 
-def _security_state() -> Dict[str, Any]:
+def _security_state() -> dict[str, Any]:
     """Return the app-scoped security components registered by init_security_api.
 
     Raises:
@@ -54,7 +55,7 @@ def init_security_api(
     """
     # Bundle all components in app-scoped state instead of module globals so
     # multiple Flask apps in one process can carry independent configurations.
-    state: Dict[str, Any] = {
+    state: dict[str, Any] = {
         "access_manager": GeospatialAccessManager(secret_key),
         "anonymizer": GeospatialAnonymizer() if enable_anonymization else None,
         "compliance_framework": ComplianceFramework() if enable_compliance else None,
@@ -79,7 +80,7 @@ def token_required(f: Callable[..., Any]) -> Callable[..., Any]:
 
     @functools.wraps(f)
     def decorated(*args: Any, **kwargs: Any) -> Any:
-        token: Optional[str] = None
+        token: str | None = None
 
         # Extract token from Authorization header
         auth_header = request.headers.get("Authorization")
@@ -91,7 +92,7 @@ def token_required(f: Callable[..., Any]) -> Callable[..., Any]:
 
         try:
             # Validate token
-            access_manager: Optional[GeospatialAccessManager] = _security_state()[
+            access_manager: GeospatialAccessManager | None = _security_state()[
                 "access_manager"
             ]
             if access_manager is None:
@@ -127,7 +128,7 @@ def get_token() -> Any:
     expiration_hours = data.get("expiration_hours", 24)
 
     try:
-        access_manager: Optional[GeospatialAccessManager] = _security_state()[
+        access_manager: GeospatialAccessManager | None = _security_state()[
             "access_manager"
         ]
     except RuntimeError as e:
@@ -157,9 +158,7 @@ def get_roles() -> Any:
     user_id = g.user_id
 
     # Get user roles
-    access_manager: Optional[GeospatialAccessManager] = _security_state()[
-        "access_manager"
-    ]
+    access_manager: GeospatialAccessManager | None = _security_state()["access_manager"]
     if access_manager is None:
         return jsonify({"error": "Security service unavailable"}), 503
     roles = access_manager.get_user_roles(user_id)
@@ -182,7 +181,7 @@ def get_roles() -> Any:
 def anonymize_data() -> Any:
     """Anonymize geospatial data."""
     try:
-        anonymizer: Optional[GeospatialAnonymizer] = _security_state()["anonymizer"]
+        anonymizer: GeospatialAnonymizer | None = _security_state()["anonymizer"]
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 503
     if anonymizer is None:
@@ -245,9 +244,7 @@ def check_location_access() -> Any:
     lon = data["longitude"]
 
     # Check access
-    access_manager: Optional[GeospatialAccessManager] = _security_state()[
-        "access_manager"
-    ]
+    access_manager: GeospatialAccessManager | None = _security_state()["access_manager"]
     if access_manager is None:
         return jsonify({"error": "Security service unavailable"}), 503
     has_access = access_manager.can_access_location(user_id, lat, lon)
@@ -262,7 +259,7 @@ def check_location_access() -> Any:
 def check_compliance() -> Any:
     """Check data compliance with regulations."""
     try:
-        compliance_framework: Optional[ComplianceFramework] = _security_state()[
+        compliance_framework: ComplianceFramework | None = _security_state()[
             "compliance_framework"
         ]
     except RuntimeError as e:
@@ -324,7 +321,7 @@ def filter_data() -> Any:
         gdf = gpd.GeoDataFrame.from_features(data["features"])
 
         # Filter data based on user permissions
-        access_manager: Optional[GeospatialAccessManager] = _security_state()[
+        access_manager: GeospatialAccessManager | None = _security_state()[
             "access_manager"
         ]
         if access_manager is None:

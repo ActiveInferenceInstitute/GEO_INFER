@@ -58,7 +58,7 @@ __all__ = [
 ]
 
 
-def create_underwriting_system(config: Optional[Any] = None) -> Any:
+def create_underwriting_system(config: Any | None = None) -> Any:
     """
     Create an underwriting system.
 
@@ -72,7 +72,7 @@ def create_underwriting_system(config: Optional[Any] = None) -> Any:
 
 
 def underwrite_insurance_policy(
-    application_data: Any, config: Optional[Any] = None
+    application_data: Any, config: Any | None = None
 ) -> Any:
     """
     Underwrite an insurance policy application.
@@ -87,7 +87,7 @@ def underwrite_insurance_policy(
     return underwrite_policy(application_data, config)
 
 
-def process_insurance_claim(claim_data: Any, config: Optional[Any] = None) -> Any:
+def process_insurance_claim(claim_data: Any, config: Any | None = None) -> Any:
     """
     Process an insurance claim.
 

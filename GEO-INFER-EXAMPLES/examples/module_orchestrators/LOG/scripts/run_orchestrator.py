@@ -13,7 +13,7 @@ from __future__ import annotations
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any
 
 _ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
 if str(_ORCHESTRATORS_DIR) not in sys.path:
@@ -22,7 +22,7 @@ if str(_ORCHESTRATORS_DIR) not in sys.path:
 from _lib import run_module_orchestrator  # noqa: E402
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     import math
 
     import networkx as nx
@@ -35,7 +35,7 @@ def _operation() -> Dict[str, Any]:
 
     # Tiny synthetic street grid: 3 rows x 4 columns of intersections around
     # a fictional coastal town, with jittered WGS84 positions.
-    node_coords: Dict[str, Tuple[float, float]] = {}
+    node_coords: dict[str, tuple[float, float]] = {}
     for row in range(3):
         for col in range(4):
             name = f"I{row}{col}"

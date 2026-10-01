@@ -4,7 +4,7 @@ import logging
 import csv
 import os
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import Any
 from datetime import datetime, date
 from ..models.talent_models import (
     Candidate,
@@ -27,16 +27,16 @@ class BaseTalentImporter(ABC):
     @abstractmethod
     def fetch_candidates(
         self,
-        last_sync_date: Optional[datetime] = None,
-        requisition_id: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        last_sync_date: datetime | None = None,
+        requisition_id: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Fetch raw candidate data."""
         raise RuntimeError(
             "Talent importer subclasses must implement fetch_candidates()"
         )
 
     @abstractmethod
-    def transform_candidates(self, raw_data: List[Dict[str, Any]]) -> List[Candidate]:
+    def transform_candidates(self, raw_data: list[dict[str, Any]]) -> list[Candidate]:
         """Transform raw data into Candidate Pydantic models."""
         raise RuntimeError(
             "Talent importer subclasses must implement transform_candidates()"
@@ -44,8 +44,8 @@ class BaseTalentImporter(ABC):
 
     @abstractmethod
     def fetch_requisitions(
-        self, last_sync_date: Optional[datetime] = None, status: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, last_sync_date: datetime | None = None, status: str | None = None
+    ) -> list[dict[str, Any]]:
         """Fetch raw job requisition data."""
         raise RuntimeError(
             "Talent importer subclasses must implement fetch_requisitions()"
@@ -53,8 +53,8 @@ class BaseTalentImporter(ABC):
 
     @abstractmethod
     def transform_requisitions(
-        self, raw_data: List[Dict[str, Any]]
-    ) -> List[JobRequisition]:
+        self, raw_data: list[dict[str, Any]]
+    ) -> list[JobRequisition]:
         """Transform raw data into JobRequisition Pydantic models."""
         raise RuntimeError(
             "Talent importer subclasses must implement transform_requisitions()"
@@ -62,10 +62,10 @@ class BaseTalentImporter(ABC):
 
     def import_candidates(
         self,
-        last_sync_date: Optional[datetime] = None,
-        requisition_id: Optional[str] = None,
+        last_sync_date: datetime | None = None,
+        requisition_id: str | None = None,
         **kwargs: Any,
-    ) -> List[Candidate]:
+    ) -> list[Candidate]:
         self.connect(**kwargs)
         raw_data = self.fetch_candidates(
             last_sync_date=last_sync_date, requisition_id=requisition_id
@@ -78,10 +78,10 @@ class BaseTalentImporter(ABC):
 
     def import_requisitions(
         self,
-        last_sync_date: Optional[datetime] = None,
-        status: Optional[str] = None,
+        last_sync_date: datetime | None = None,
+        status: str | None = None,
         **kwargs: Any,
-    ) -> List[JobRequisition]:
+    ) -> list[JobRequisition]:
         self.connect(**kwargs)
         raw_data = self.fetch_requisitions(last_sync_date=last_sync_date, status=status)
         transformed_data = self.transform_requisitions(raw_data)
@@ -97,8 +97,8 @@ class CSVTalentImporter(BaseTalentImporter):
 
     def __init__(
         self,
-        candidate_file_path: Optional[str] = None,
-        requisition_file_path: Optional[str] = None,
+        candidate_file_path: str | None = None,
+        requisition_file_path: str | None = None,
     ):
         self.candidate_file_path = candidate_file_path
         self.requisition_file_path = requisition_file_path
@@ -117,7 +117,7 @@ class CSVTalentImporter(BaseTalentImporter):
                 raise FileNotFoundError(path)
         self.connection = True
 
-    def _read_csv_file(self, file_path: str) -> List[Dict[str, Any]]:
+    def _read_csv_file(self, file_path: str) -> list[dict[str, Any]]:
         if not self.connection:
             # Attempt to connect if not already. This is a soft connect.
             self.connect()
@@ -129,9 +129,9 @@ class CSVTalentImporter(BaseTalentImporter):
         if not file_path:
             return []
 
-        records: List[Dict[str, Any]] = []
+        records: list[dict[str, Any]] = []
         try:
-            with open(file_path, mode="r", encoding="utf-8") as csvfile:
+            with open(file_path, encoding="utf-8") as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
                     records.append(dict(row))
@@ -146,9 +146,9 @@ class CSVTalentImporter(BaseTalentImporter):
 
     def fetch_candidates(
         self,
-        last_sync_date: Optional[datetime] = None,
-        requisition_id: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        last_sync_date: datetime | None = None,
+        requisition_id: str | None = None,
+    ) -> list[dict[str, Any]]:
         if not self.candidate_file_path:
             logger.warning(
                 "Warning: Candidate file path not provided for fetch_candidates."
@@ -157,8 +157,8 @@ class CSVTalentImporter(BaseTalentImporter):
         # Basic filtering could be added here post-fetch if needed, e.g., by date or req_id
         return self._read_csv_file(self.candidate_file_path)
 
-    def transform_candidates(self, raw_data: List[Dict[str, Any]]) -> List[Candidate]:
-        candidates: List[Candidate] = []
+    def transform_candidates(self, raw_data: list[dict[str, Any]]) -> list[Candidate]:
+        candidates: list[Candidate] = []
         for record in raw_data:
             try:
                 applied_at_dt = None
@@ -181,7 +181,7 @@ class CSVTalentImporter(BaseTalentImporter):
 
                 status_raw = (record.get("status") or "").strip()
 
-                candidate_data: Dict[str, Any] = {
+                candidate_data: dict[str, Any] = {
                     "candidate_id": record.get("candidate_id"),
                     "first_name": record.get("first_name"),
                     "last_name": record.get("last_name"),
@@ -209,7 +209,7 @@ class CSVTalentImporter(BaseTalentImporter):
                     ),
                     # Add other fields like linkedin_profile, resume_url etc.
                 }
-                candidate_data_cleaned: Dict[str, Any] = {
+                candidate_data_cleaned: dict[str, Any] = {
                     k: v
                     for k, v in candidate_data.items()
                     if v is not None or k in ["applied_at", "updated_at"]
@@ -223,8 +223,8 @@ class CSVTalentImporter(BaseTalentImporter):
         return candidates
 
     def fetch_requisitions(
-        self, last_sync_date: Optional[datetime] = None, status: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, last_sync_date: datetime | None = None, status: str | None = None
+    ) -> list[dict[str, Any]]:
         if not self.requisition_file_path:
             logger.warning(
                 "Warning: Requisition file path not provided for fetch_requisitions."
@@ -234,9 +234,9 @@ class CSVTalentImporter(BaseTalentImporter):
         return self._read_csv_file(self.requisition_file_path)
 
     def transform_requisitions(
-        self, raw_data: List[Dict[str, Any]]
-    ) -> List[JobRequisition]:
-        requisitions: List[JobRequisition] = []
+        self, raw_data: list[dict[str, Any]]
+    ) -> list[JobRequisition]:
+        requisitions: list[JobRequisition] = []
         for record in raw_data:
             try:
                 opened_at_date = None
@@ -263,7 +263,7 @@ class CSVTalentImporter(BaseTalentImporter):
 
                 status_raw = (record.get("status") or "").strip()
 
-                req_data: Dict[str, Any] = {
+                req_data: dict[str, Any] = {
                     "requisition_id": record.get("requisition_id"),
                     "job_title": record.get("job_title"),
                     "department": record.get("department"),
@@ -278,7 +278,7 @@ class CSVTalentImporter(BaseTalentImporter):
                     "hiring_manager_id": record.get("hiring_manager_id"),
                     # Add other fields like location, description, etc.
                 }
-                req_data_cleaned: Dict[str, Any] = {
+                req_data_cleaned: dict[str, Any] = {
                     k: v
                     for k, v in req_data.items()
                     if v is not None or k == "closed_at"

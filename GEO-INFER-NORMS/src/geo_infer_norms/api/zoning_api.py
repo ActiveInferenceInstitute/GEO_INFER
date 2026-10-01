@@ -5,7 +5,7 @@ This module provides API endpoints for interacting with zoning regulations,
 land use classifications, and zoning district analysis.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 import datetime
 from fastapi import APIRouter, HTTPException, Query, Path
 from pydantic import BaseModel, Field, ConfigDict
@@ -34,31 +34,29 @@ class ZoningCodeCreate(BaseModel):
 
     code: str = Field(..., description="Zoning code identifier")
     name: str = Field(..., description="Name of the zoning code")
-    description: Optional[str] = Field(
-        None, description="Description of the zoning code"
-    )
+    description: str | None = Field(None, description="Description of the zoning code")
     category: str = Field(
         ..., description="Category of zoning (residential, commercial, etc.)"
     )
-    allowed_uses: Optional[List[str]] = Field(
+    allowed_uses: list[str] | None = Field(
         None, description="List of allowed land uses"
     )
-    conditional_uses: Optional[List[str]] = Field(
+    conditional_uses: list[str] | None = Field(
         None, description="List of conditional land uses"
     )
-    prohibited_uses: Optional[List[str]] = Field(
+    prohibited_uses: list[str] | None = Field(
         None, description="List of prohibited land uses"
     )
-    max_height: Optional[float] = Field(
+    max_height: float | None = Field(
         None, description="Maximum building height in meters"
     )
-    max_density: Optional[float] = Field(
+    max_density: float | None = Field(
         None, description="Maximum density (units/hectare)"
     )
-    min_lot_size: Optional[float] = Field(
+    min_lot_size: float | None = Field(
         None, description="Minimum lot size in square meters"
     )
-    max_lot_coverage: Optional[float] = Field(
+    max_lot_coverage: float | None = Field(
         None, description="Maximum lot coverage as percentage"
     )
 
@@ -93,12 +91,12 @@ class ZoningDistrictCreate(BaseModel):
     """Request model for creating a zoning district"""
 
     name: str = Field(..., description="Name of the zoning district")
-    description: Optional[str] = Field(None, description="Description of the district")
+    description: str | None = Field(None, description="Description of the district")
     zoning_code: str = Field(..., description="Zoning code applied to this district")
-    jurisdiction_id: Optional[str] = Field(
+    jurisdiction_id: str | None = Field(
         None, description="ID of jurisdiction this district is in"
     )
-    effective_date: Optional[datetime.datetime] = Field(
+    effective_date: datetime.datetime | None = Field(
         None, description="When the zoning takes effect"
     )
     geometry: GeometryModel = Field(..., description="GeoJSON geometry of the district")
@@ -125,10 +123,10 @@ class LandUseTypeCreate(BaseModel):
 
     name: str = Field(..., description="Name of the land use type")
     category: str = Field(..., description="Category of land use")
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None, description="Description of the land use type"
     )
-    intensity: Optional[float] = Field(
+    intensity: float | None = Field(
         None, ge=0.0, le=1.0, description="Intensity score (0.0 to 1.0)"
     )
 
@@ -167,10 +165,10 @@ class PointLocation(BaseModel):
 class LandClassificationRequest(BaseModel):
     """Request model for land use classification"""
 
-    geojson_features: Dict[str, Any] = Field(
+    geojson_features: dict[str, Any] = Field(
         ..., description="GeoJSON features to classify"
     )
-    feature_columns: List[str] = Field(
+    feature_columns: list[str] = Field(
         ..., description="Feature columns to use for classification"
     )
 
@@ -211,8 +209,8 @@ class ZoningAPI:
 
     def __init__(
         self,
-        zoning_analyzer: Optional[ZoningAnalyzer] = None,
-        land_use_classifier: Optional[LandUseClassifier] = None,
+        zoning_analyzer: ZoningAnalyzer | None = None,
+        land_use_classifier: LandUseClassifier | None = None,
     ):
         """
         Initialize the ZoningAPI.
@@ -229,48 +227,48 @@ class ZoningAPI:
     def _setup_routes(self) -> None:
         """Set up API routes"""
         # Zoning code endpoints
-        self.router.post("/codes", response_model=Dict[str, Any])(
+        self.router.post("/codes", response_model=dict[str, Any])(
             self.create_zoning_code
         )
-        self.router.get("/codes", response_model=List[Dict[str, Any]])(
+        self.router.get("/codes", response_model=list[dict[str, Any]])(
             self.list_zoning_codes
         )
-        self.router.get("/codes/{code_id}", response_model=Dict[str, Any])(
+        self.router.get("/codes/{code_id}", response_model=dict[str, Any])(
             self.get_zoning_code
         )
 
         # Zoning district endpoints
-        self.router.post("/districts", response_model=Dict[str, Any])(
+        self.router.post("/districts", response_model=dict[str, Any])(
             self.create_zoning_district
         )
-        self.router.get("/districts", response_model=List[Dict[str, Any]])(
+        self.router.get("/districts", response_model=list[dict[str, Any]])(
             self.list_zoning_districts
         )
-        self.router.get("/districts/{district_id}", response_model=Dict[str, Any])(
+        self.router.get("/districts/{district_id}", response_model=dict[str, Any])(
             self.get_zoning_district
         )
 
         # Land use type endpoints
-        self.router.post("/land-uses", response_model=Dict[str, Any])(
+        self.router.post("/land-uses", response_model=dict[str, Any])(
             self.create_land_use_type
         )
-        self.router.get("/land-uses", response_model=List[Dict[str, Any]])(
+        self.router.get("/land-uses", response_model=list[dict[str, Any]])(
             self.list_land_use_types
         )
 
         # Analysis endpoints
-        self.router.post("/analyze/boundaries", response_model=Dict[str, Any])(
+        self.router.post("/analyze/boundaries", response_model=dict[str, Any])(
             self.analyze_zoning_boundaries
         )
-        self.router.post("/analyze/zoning-change", response_model=Dict[str, Any])(
+        self.router.post("/analyze/zoning-change", response_model=dict[str, Any])(
             self.evaluate_zoning_change
         )
         self.router.post(
-            "/analyze/districts-at-point", response_model=List[Dict[str, Any]]
+            "/analyze/districts-at-point", response_model=list[dict[str, Any]]
         )(self.get_districts_at_point)
 
         # Land use classification endpoints
-        self.router.post("/classify/land-use", response_model=Dict[str, Any])(
+        self.router.post("/classify/land-use", response_model=dict[str, Any])(
             self.classify_land_use
         )
 
@@ -280,7 +278,7 @@ class ZoningAPI:
         )
 
         # Export endpoints
-        self.router.get("/export/geojson", response_model=Dict[str, Any])(
+        self.router.get("/export/geojson", response_model=dict[str, Any])(
             self.export_to_geojson
         )
 
@@ -306,7 +304,7 @@ class ZoningAPI:
         except Exception as e:
             raise ValueError(f"Invalid geometry: {str(e)}")
 
-    def _zoning_code_to_dict(self, zoning_code: ZoningCode) -> Dict[str, Any]:
+    def _zoning_code_to_dict(self, zoning_code: ZoningCode) -> dict[str, Any]:
         """
         Convert a ZoningCode object to a dictionary for API response.
 
@@ -330,7 +328,7 @@ class ZoningAPI:
             "max_lot_coverage": zoning_code.max_lot_coverage,
         }
 
-    def _zoning_district_to_dict(self, district: ZoningDistrict) -> Dict[str, Any]:
+    def _zoning_district_to_dict(self, district: ZoningDistrict) -> dict[str, Any]:
         """
         Convert a ZoningDistrict object to a dictionary for API response.
 
@@ -358,7 +356,7 @@ class ZoningAPI:
             "geometry": geometry_dict,
         }
 
-    def _land_use_type_to_dict(self, land_use_type: LandUseType) -> Dict[str, Any]:
+    def _land_use_type_to_dict(self, land_use_type: LandUseType) -> dict[str, Any]:
         """
         Convert a LandUseType object to a dictionary for API response.
 
@@ -378,7 +376,7 @@ class ZoningAPI:
 
     # Zoning code endpoints
 
-    async def create_zoning_code(self, code_data: ZoningCodeCreate) -> Dict[str, Any]:
+    async def create_zoning_code(self, code_data: ZoningCodeCreate) -> dict[str, Any]:
         """
         Create a new zoning code.
 
@@ -417,8 +415,8 @@ class ZoningAPI:
             raise HTTPException(status_code=400, detail=str(e))
 
     async def list_zoning_codes(
-        self, category: Optional[str] = Query(None, description="Filter by category")
-    ) -> List[Dict[str, Any]]:
+        self, category: str | None = Query(None, description="Filter by category")
+    ) -> list[dict[str, Any]]:
         """
         List all zoning codes, optionally filtered by category.
 
@@ -440,7 +438,7 @@ class ZoningAPI:
 
     async def get_zoning_code(
         self, code_id: str = Path(..., description="Zoning code identifier")
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get a zoning code by ID.
 
@@ -466,7 +464,7 @@ class ZoningAPI:
 
     async def create_zoning_district(
         self, district_data: ZoningDistrictCreate
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a new zoning district.
 
@@ -504,12 +502,12 @@ class ZoningAPI:
 
     async def list_zoning_districts(
         self,
-        jurisdiction_id: Optional[str] = Query(
+        jurisdiction_id: str | None = Query(
             None, description="Filter by jurisdiction ID"
         ),
-        zoning_code: Optional[str] = Query(None, description="Filter by zoning code"),
+        zoning_code: str | None = Query(None, description="Filter by zoning code"),
         with_geometry: bool = Query(False, description="Include geometry in response"),
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List all zoning districts, optionally filtered.
 
@@ -559,7 +557,7 @@ class ZoningAPI:
 
     async def get_zoning_district(
         self, district_id: str = Path(..., description="ID of the zoning district")
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get a zoning district by ID.
 
@@ -586,7 +584,7 @@ class ZoningAPI:
 
     async def create_land_use_type(
         self, land_use_data: LandUseTypeCreate
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a new land use type.
 
@@ -618,8 +616,8 @@ class ZoningAPI:
             raise HTTPException(status_code=400, detail=str(e))
 
     async def list_land_use_types(
-        self, category: Optional[str] = Query(None, description="Filter by category")
-    ) -> List[Dict[str, Any]]:
+        self, category: str | None = Query(None, description="Filter by category")
+    ) -> list[dict[str, Any]]:
         """
         List all land use types, optionally filtered by category.
 
@@ -643,7 +641,7 @@ class ZoningAPI:
 
     # Analysis endpoints
 
-    async def analyze_zoning_boundaries(self) -> Dict[str, Any]:
+    async def analyze_zoning_boundaries(self) -> dict[str, Any]:
         """
         Analyze zoning district boundaries for potential conflicts.
 
@@ -659,7 +657,7 @@ class ZoningAPI:
 
     async def evaluate_zoning_change(
         self, change_request: ZoningChangeRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Evaluate the impact of changing a district's zoning code.
 
@@ -680,7 +678,7 @@ class ZoningAPI:
 
     async def get_districts_at_point(
         self, point: PointLocation
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get all zoning districts that contain a specific point.
 
@@ -705,7 +703,7 @@ class ZoningAPI:
 
     async def classify_land_use(
         self, classification_request: LandClassificationRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Classify land use based on features.
 
@@ -769,7 +767,7 @@ class ZoningAPI:
         include_codes: bool = Query(
             True, description="Include zoning codes in properties"
         ),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Export zoning districts to GeoJSON.
 

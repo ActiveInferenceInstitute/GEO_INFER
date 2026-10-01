@@ -507,7 +507,7 @@ class DiseaseSurveillancePipeline:
         disease_data = self.results["disease_analysis"]
         risk_data = self.results["risk_assessment"]
 
-        print(f"\n📊 Executive Summary:")
+        print("\n📊 Executive Summary:")
         print(
             f"├─ Total Cases Processed: {health_data['quality_metrics']['total_cases']}"
         )
@@ -520,7 +520,7 @@ class DiseaseSurveillancePipeline:
         print(f"└─ Pipeline Execution Time: {execution_time:.2f} seconds")
 
         # Key Findings
-        print(f"\n🔍 Key Findings:")
+        print("\n🔍 Key Findings:")
         diseases = list(set(case["disease"] for case in health_data["cases"]))
         print(f"1. Monitoring {len(diseases)} diseases: {', '.join(diseases)}")
 
@@ -541,7 +541,7 @@ class DiseaseSurveillancePipeline:
             print(f"3. {len(urgent_outbreaks)} potential outbreaks under investigation")
 
         # Recommendations
-        print(f"\n🎯 Priority Recommendations:")
+        print("\n🎯 Priority Recommendations:")
         interventions = disease_data["intervention_recommendations"]
         for i, intervention in enumerate(interventions[:3], 1):
             print(
@@ -549,10 +549,10 @@ class DiseaseSurveillancePipeline:
             )
 
         # Module Integration Summary
-        print(f"\n🔧 Module Integration Summary:")
+        print("\n🔧 Module Integration Summary:")
         modules_used = ["DATA", "SPACE", "TIME", "HEALTH", "AI", "RISK", "API", "APP"]
         print(f"├─ Modules Integrated: {len(modules_used)} ({', '.join(modules_used)})")
-        print(f"├─ Integration Pattern: Linear Pipeline with Feedback Loops")
+        print("├─ Integration Pattern: Linear Pipeline with Feedback Loops")
         print(
             f"├─ Data Quality Score: {health_data['quality_metrics']['completeness_rate']:.1%}"
         )
@@ -560,11 +560,11 @@ class DiseaseSurveillancePipeline:
             f"└─ System Performance: Excellent ({execution_time:.2f}s for full pipeline)"
         )
 
-        print(f"\n🚀 Next Steps:")
-        print(f"1. Deploy real-time monitoring dashboard")
-        print(f"2. Integrate with public health reporting systems")
-        print(f"3. Implement automated alert mechanisms")
-        print(f"4. Expand to include additional disease categories")
+        print("\n🚀 Next Steps:")
+        print("1. Deploy real-time monitoring dashboard")
+        print("2. Integrate with public health reporting systems")
+        print("3. Implement automated alert mechanisms")
+        print("4. Expand to include additional disease categories")
 
         print("\n" + "=" * 80)
 
@@ -695,9 +695,9 @@ def main():
         pipeline = DiseaseSurveillancePipeline()
         results = pipeline.run_pipeline()
 
-        print(f"\n🎉 Disease surveillance pipeline completed successfully!")
+        print("\n🎉 Disease surveillance pipeline completed successfully!")
         print(
-            f"This example demonstrates advanced multi-module integration for public health applications."
+            "This example demonstrates advanced multi-module integration for public health applications."
         )
 
         return 0

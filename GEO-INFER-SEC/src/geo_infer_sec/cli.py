@@ -11,7 +11,7 @@ import json
 import argparse
 import logging
 import datetime
-from typing import Union, cast
+from typing import cast
 from pathlib import Path
 import pandas as pd
 import geopandas as gpd
@@ -238,9 +238,7 @@ def load_geospatial_data(file_path: str) -> gpd.GeoDataFrame:
         raise
 
 
-def save_geospatial_data(
-    gdf: Union[gpd.GeoDataFrame, pd.DataFrame], file_path: str
-) -> None:
+def save_geospatial_data(gdf: gpd.GeoDataFrame | pd.DataFrame, file_path: str) -> None:
     """
     Save geospatial data to a file.
 
@@ -591,7 +589,7 @@ def command_audit(args: argparse.Namespace) -> bool:
 
     audit_results = {
         "file": args.input_file,
-        "timestamp": datetime.datetime.now(datetime.timezone.utc)
+        "timestamp": datetime.datetime.now(datetime.UTC)
         .replace(tzinfo=None)
         .isoformat(),
         "record_count": len(df),

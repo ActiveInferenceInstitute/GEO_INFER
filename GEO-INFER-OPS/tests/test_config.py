@@ -5,7 +5,7 @@ Tests for configuration management.
 import os
 import pytest
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 from unittest.mock import patch
 
 from geo_infer_ops.core.config import (
@@ -169,7 +169,7 @@ def test_config_defaults():
     assert isinstance(config.security.auth, AuthConfig)
 
 
-def test_config_custom_values(mock_config_dict: Dict[str, Any]):
+def test_config_custom_values(mock_config_dict: dict[str, Any]):
     """Test configuration with custom values."""
     config = Config(**mock_config_dict)
 

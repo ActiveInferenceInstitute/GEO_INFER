@@ -10,7 +10,7 @@ import logging
 import json
 import pandas as pd
 import geopandas as gpd
-from typing import Dict, List, Optional, Any
+from typing import Any
 from datetime import datetime
 from pathlib import Path
 from shapely.geometry import shape
@@ -28,7 +28,7 @@ class WorkspacePlaceAnalyzer:
         self,
         place_name: str,
         base_dir: Path,
-        processor: Optional[SpatialProcessor] = None,
+        processor: SpatialProcessor | None = None,
     ) -> None:
         """
         Initialize the WorkspacePlaceAnalyzer.
@@ -41,7 +41,7 @@ class WorkspacePlaceAnalyzer:
         self.place_name = place_name
         self.base_dir = base_dir
         self.processor = processor or SpatialProcessor()
-        self.analysis_results: Dict[str, Any] = {}
+        self.analysis_results: dict[str, Any] = {}
         self.integrated_data: gpd.GeoDataFrame = gpd.GeoDataFrame()
 
         # Setup directories
@@ -52,7 +52,7 @@ class WorkspacePlaceAnalyzer:
 
         logger.info(f"Initialized WorkspacePlaceAnalyzer for {place_name}")
 
-    def load_place_data(self, data_sources: List[Dict[str, str]]) -> None:
+    def load_place_data(self, data_sources: list[dict[str, str]]) -> None:
         """
         Load and integrate data from multiple sources.
 
@@ -65,7 +65,7 @@ class WorkspacePlaceAnalyzer:
         for source in data_sources:
             try:
                 if source["path"].endswith(".geojson"):
-                    with open(source["path"], "r") as f:
+                    with open(source["path"]) as f:
                         geojson = json.load(f)
                     features = []
                     for feat in geojson["features"]:
@@ -118,7 +118,7 @@ class WorkspacePlaceAnalyzer:
             )
             logger.info(f"Integrated {len(self.integrated_data)} total features")
 
-    def perform_spatial_analysis(self, analysis_types: List[str]) -> None:
+    def perform_spatial_analysis(self, analysis_types: list[str]) -> None:
         """
         Perform specified spatial analyses on integrated data.
 
@@ -174,7 +174,7 @@ class WorkspacePlaceAnalyzer:
         Returns:
             Path to generated report
         """
-        report: Dict[str, Any] = {
+        report: dict[str, Any] = {
             "place": self.place_name,
             "timestamp": datetime.now().isoformat(),
             "data_summary": {
@@ -210,8 +210,8 @@ class WorkspacePlaceAnalyzer:
         return str(output_path)
 
     def run_full_analysis(
-        self, data_sources: List[Dict[str, str]], analysis_types: List[str]
-    ) -> Dict[str, Any]:
+        self, data_sources: list[dict[str, str]], analysis_types: list[str]
+    ) -> dict[str, Any]:
         """
         Run the complete analysis pipeline.
 

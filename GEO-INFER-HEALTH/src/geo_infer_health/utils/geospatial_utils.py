@@ -1,5 +1,4 @@
 import math
-from typing import Tuple
 from geo_infer_health.models import Location
 
 # Earth radius in kilometers
@@ -44,7 +43,7 @@ def haversine_distance(loc1: Location, loc2: Location) -> float:
 
 def create_bounding_box(
     center_loc: Location, distance_km: float
-) -> Tuple[Location, Location]:
+) -> tuple[Location, Location]:
     """Creates a square bounding box around a central point.
 
     Args:

@@ -12,9 +12,10 @@ import time
 import tracemalloc
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
+from collections.abc import Callable
 
 
 @dataclass
@@ -37,10 +38,10 @@ class PerformanceMonitor:
     code sections via a context-manager interface.
     """
 
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: logging.Logger | None = None):
         self.logger = logger or logging.getLogger(__name__)
-        self._records: List[_TimingRecord] = []
-        self._section_stack: List[_TimingRecord] = []
+        self._records: list[_TimingRecord] = []
+        self._section_stack: list[_TimingRecord] = []
         self._trace_depth: int = 0
 
     def start(self, label: str) -> None:
@@ -58,7 +59,7 @@ class PerformanceMonitor:
         )
         self.logger.debug("⏱ Start: %s", label)
 
-    def stop(self) -> Dict[str, Any]:
+    def stop(self) -> dict[str, Any]:
         """Stop timing the active section and return metrics."""
         if not self._section_stack:
             raise RuntimeError("No active timing section")
@@ -86,7 +87,7 @@ class PerformanceMonitor:
         )
         return metrics
 
-    def get_all_records(self) -> List[Dict[str, Any]]:
+    def get_all_records(self) -> list[dict[str, Any]]:
         return [
             {
                 "label": r.label,
@@ -112,7 +113,7 @@ class BenchmarkRunner:
         self,
         iterations: int = 10,
         warmup: int = 2,
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
     ):
         self.iterations = iterations
         self.warmup = warmup
@@ -124,7 +125,7 @@ class BenchmarkRunner:
         *args: Any,
         label: str = "",
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute *func* and return timing statistics."""
         label = label or getattr(func, "__name__", "benchmark")
 
@@ -132,7 +133,7 @@ class BenchmarkRunner:
         for _ in range(self.warmup):
             func(*args, **kwargs)
 
-        durations: List[float] = []
+        durations: list[float] = []
         for _ in range(self.iterations):
             start = time.perf_counter()
             func(*args, **kwargs)
@@ -169,7 +170,7 @@ class LoadTester:
         self,
         concurrency: int = 4,
         total_requests: int = 20,
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
     ):
         self.concurrency = concurrency
         self.total_requests = total_requests
@@ -181,11 +182,11 @@ class LoadTester:
         *args: Any,
         label: str = "",
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute load test and return throughput stats."""
         label = label or getattr(func, "__name__", "load_test")
-        durations: List[float] = []
-        errors: List[str] = []
+        durations: list[float] = []
+        errors: list[str] = []
 
         overall_start = time.perf_counter()
 
@@ -228,7 +229,7 @@ class LoadTester:
     @staticmethod
     def _timed_call(func: Callable, args: tuple, kwargs: dict) -> tuple:
         start = time.perf_counter()
-        error: Optional[str] = None
+        error: str | None = None
         try:
             func(*args, **kwargs)
         except Exception as exc:
@@ -236,7 +237,7 @@ class LoadTester:
         return time.perf_counter() - start, error
 
     @staticmethod
-    def _percentile(data: List[float], pct: float) -> float:
+    def _percentile(data: list[float], pct: float) -> float:
         if not data:
             return 0.0
         sorted_data = sorted(data)
@@ -250,20 +251,20 @@ class MetricsCollector:
     multiple benchmark and load-test runs.
     """
 
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: logging.Logger | None = None):
         self.logger = logger or logging.getLogger(__name__)
-        self._entries: List[Dict[str, Any]] = []
+        self._entries: list[dict[str, Any]] = []
 
-    def add(self, metrics: Dict[str, Any]) -> None:
+    def add(self, metrics: dict[str, Any]) -> None:
         """Record a metrics snapshot with a timestamp."""
         self._entries.append(
             {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 **metrics,
             }
         )
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Aggregate summary across all collected entries."""
         if not self._entries:
             return {"total_entries": 0}
@@ -296,14 +297,14 @@ class PerformanceAnalyzer:
     def __init__(
         self,
         collector: MetricsCollector,
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
     ):
         self.collector = collector
         self.logger = logger or logging.getLogger(__name__)
 
     def detect_regression(
-        self, baseline: Dict[str, float], threshold: float = 1.5
-    ) -> Dict[str, Any]:
+        self, baseline: dict[str, float], threshold: float = 1.5
+    ) -> dict[str, Any]:
         """
         Compare the latest collected metrics against a *baseline*.
         Flag any metric whose value exceeds *threshold* × baseline.
@@ -312,7 +313,7 @@ class PerformanceAnalyzer:
             return {"regressions": [], "status": "no_data"}
 
         latest = self.collector._entries[-1]
-        regressions: List[Dict[str, Any]] = []
+        regressions: list[dict[str, Any]] = []
 
         for key, base_val in baseline.items():
             current_val = latest.get(key)
@@ -333,7 +334,7 @@ class PerformanceAnalyzer:
         self.logger.info("Regression check: %s (%d issues)", status, len(regressions))
         return {"regressions": regressions, "status": status}
 
-    def trend_report(self) -> Dict[str, Any]:
+    def trend_report(self) -> dict[str, Any]:
         """Return a simple trend report from the collected data."""
         entries = self.collector._entries
         if len(entries) < 2:

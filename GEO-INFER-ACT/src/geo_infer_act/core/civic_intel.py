@@ -26,7 +26,8 @@ import math
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Sequence, TypeAlias, Union
+from typing import Any, TypeAlias
+from collections.abc import Mapping, Sequence
 
 import numpy as np
 
@@ -38,7 +39,7 @@ import numpy as np
 # dashboard suite simulates the absence through the real import machinery),
 # so the fallback block below keeps this module's own parse-and-prior surface
 # fully working without BAYES.
-CivicIntelSource: TypeAlias = Union[None, str, Path, Dict[str, Any], Mapping[str, Any]]
+CivicIntelSource: TypeAlias = None | str | Path | dict[str, Any] | Mapping[str, Any]
 
 try:
     from geo_infer_bayes.civic_intel import (
@@ -74,7 +75,7 @@ except ImportError:  # pragma: no cover - sibling-absent degradation path
             " geo-infer-bayes"
         )
 
-    def decode_contract_json(text: str, path_label: str) -> Dict[str, Any]:
+    def decode_contract_json(text: str, path_label: str) -> dict[str, Any]:
         """Degraded-mode decoder matching the BAYES core's contract."""
         try:
             loaded = json.loads(text)
@@ -93,7 +94,7 @@ except ImportError:  # pragma: no cover - sibling-absent degradation path
             raise ValueError(f"{field_name} must be an object")
         return value
 
-    def require_list(value: object, field_name: str) -> List[Any]:
+    def require_list(value: object, field_name: str) -> list[Any]:
         if not isinstance(value, list):
             raise ValueError(f"{field_name} must be an array")
         return value
@@ -106,7 +107,7 @@ except ImportError:  # pragma: no cover - sibling-absent degradation path
             raise ValueError(f"{field_name} must be a finite number")
         return number
 
-    def parse_contract_bounds(value: object) -> Dict[str, Any]:
+    def parse_contract_bounds(value: object) -> dict[str, Any]:
         """Degraded-mode WGS84 bounds validation matching the BAYES core."""
         raw = require_mapping(value, "anchor.bounds")
         bounds = {
@@ -128,7 +129,7 @@ SUPPORTED_SCHEMA = CRESCENT_CITY_INTEL_SCHEMA
 # Municipal hazard tags recognised in the contract and how strongly a policy
 # should avoid the state they mark. A higher value means the state is less
 # desirable, so preference weight = 1 - avoidance.
-HAZARD_AVOIDANCE: Dict[str, float] = {
+HAZARD_AVOIDANCE: dict[str, float] = {
     "tsunami": 0.90,
     "seismic": 0.85,
     "flood": 0.75,
@@ -160,7 +161,7 @@ class CivicIntelBounds:
     east: float
     north: float
 
-    def as_dict(self) -> Dict[str, float]:
+    def as_dict(self) -> dict[str, float]:
         return {
             "west": float(self.west),
             "south": float(self.south),
@@ -182,8 +183,8 @@ class GeoIntelTopic:
     """A hazard-relevant topic within a civic domain."""
 
     name: str
-    tags: List[str] = field(default_factory=list)
-    sections: List[GeoIntelSection] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    sections: list[GeoIntelSection] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -192,11 +193,11 @@ class HazardDomain:
 
     id: str
     name: str
-    hazardTags: List[str]
-    topics: List[GeoIntelTopic] = field(default_factory=list)
+    hazardTags: list[str]
+    topics: list[GeoIntelTopic] = field(default_factory=list)
     icon: str = ""
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "name": self.name,
@@ -229,13 +230,13 @@ class CrescentCityIntel:
     """
 
     city: str
-    hazardDomains: List[HazardDomain]
-    bounds: Optional[CivicIntelBounds]
-    schema: Optional[str] = None
-    anchor: Dict[str, Any] = field(default_factory=dict)
-    generatedAt: Optional[str] = None
+    hazardDomains: list[HazardDomain]
+    bounds: CivicIntelBounds | None
+    schema: str | None = None
+    anchor: dict[str, Any] = field(default_factory=dict)
+    generatedAt: str | None = None
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return {
             "schema": self.schema,
             "city": self.city,
@@ -246,7 +247,7 @@ class CrescentCityIntel:
         }
 
 
-def _coerce_contract(source: Any) -> Optional[Dict[str, Any]]:
+def _coerce_contract(source: Any) -> dict[str, Any] | None:
     """Load a raw contract from a mapping, a path, or a JSON string.
 
     Returns ``None`` when a requested path is absent. Existing but unreadable
@@ -267,7 +268,7 @@ def _coerce_contract(source: Any) -> Optional[Dict[str, Any]]:
     return dict(contract) if contract is not None else None
 
 
-def _base_hazard_tag(tag: str) -> Optional[str]:
+def _base_hazard_tag(tag: str) -> str | None:
     """Resolve a producer tag to a configured base hazard by whole terms."""
     normalized = " ".join(tag.casefold().split())
     for base_tag, pattern in _HAZARD_TERM_PATTERNS.items():
@@ -281,7 +282,7 @@ def _read_topic(
 ) -> GeoIntelTopic:
     raw_tags = require_list(raw.get("tags", []), f"{field_name}.tags")
     raw_sections = require_list(raw.get("sections", []), f"{field_name}.sections")
-    sections: List[GeoIntelSection] = []
+    sections: list[GeoIntelSection] = []
     for index, section_value in enumerate(raw_sections):
         section = require_mapping(section_value, f"{field_name}.sections[{index}]")
         sections.append(
@@ -312,7 +313,7 @@ def _read_hazard_domain(
         raw_hazard_tags = []
 
     raw_topics = require_list(raw.get("topics", []), f"{field_name}.topics")
-    topics: List[GeoIntelTopic] = []
+    topics: list[GeoIntelTopic] = []
     for index, topic_value in enumerate(raw_topics):
         topic = require_mapping(topic_value, f"{field_name}.topics[{index}]")
         topics.append(_read_topic(topic, f"{field_name}.topics[{index}]"))
@@ -329,12 +330,12 @@ def _read_hazard_domain(
 def _has_hazard_signal(raw: Mapping[str, Any]) -> bool:
     """True when a raw domain references any recognised hazard tag."""
     raw_tags = require_list(raw.get("tags", []), "domain.tags")
-    tag_sources: List[str] = [str(item) for item in raw_tags]
+    tag_sources: list[str] = [str(item) for item in raw_tags]
     tag_sources.extend(_read_hazard_domain(raw).hazardTags)
     return any(_base_hazard_tag(tag) is not None for tag in tag_sources)
 
 
-def _extract_hazard_domains(contract: Dict[str, Any]) -> List[HazardDomain]:
+def _extract_hazard_domains(contract: dict[str, Any]) -> list[HazardDomain]:
     """Return hazard-relevant domains from the contract.
 
     Prefers the explicit ``hazard.relevantDomains`` subset; when the contract
@@ -372,15 +373,15 @@ def _extract_hazard_domains(contract: Dict[str, Any]) -> List[HazardDomain]:
     return _dedupe_domains([domain for domain in domains if domain.id])
 
 
-def _read_bounds(anchor: Mapping[str, Any]) -> Optional[CivicIntelBounds]:
+def _read_bounds(anchor: Mapping[str, Any]) -> CivicIntelBounds | None:
     """Parse and validate optional WGS84 municipal bounds."""
     if "bounds" not in anchor:
         return None
     return CivicIntelBounds(**parse_contract_bounds(anchor["bounds"]))
 
 
-def _dedupe_domains(domains: Sequence[HazardDomain]) -> List[HazardDomain]:
-    seen: Dict[str, HazardDomain] = {}
+def _dedupe_domains(domains: Sequence[HazardDomain]) -> list[HazardDomain]:
+    seen: dict[str, HazardDomain] = {}
     for domain in domains:
         if domain.id not in seen:
             seen[domain.id] = domain
@@ -388,9 +389,9 @@ def _dedupe_domains(domains: Sequence[HazardDomain]) -> List[HazardDomain]:
 
 
 def parse_crescent_city_intel(
-    seed: Optional[int] = None,
+    seed: int | None = None,
     source: CivicIntelSource = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Parse the ``crescent-city-geo-intel/v1`` contract into a helper record.
 
     Args:
@@ -448,9 +449,9 @@ def parse_crescent_city_intel(
     return record.as_dict()
 
 
-def _distinct_hazard_tags(parsed: Dict[str, Any]) -> List[str]:
+def _distinct_hazard_tags(parsed: dict[str, Any]) -> list[str]:
     """Collect ordered, de-duplicated hazard tags across the hazard subset."""
-    tags: Dict[str, None] = {}
+    tags: dict[str, None] = {}
     for domain in parsed.get("hazardDomains", []):
         if not isinstance(domain, dict):
             continue
@@ -480,10 +481,10 @@ def _validated_hedge_share(value: float) -> float:
 
 
 def hazard_policy_prior(
-    contract: Dict[str, Any],
-    seed: Optional[int] = None,
+    contract: dict[str, Any],
+    seed: int | None = None,
     hedge_share: float = 0.0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build preference weights from municipal hazard intent for a PolicySelector.
 
     The returned ``preferences`` vector aligns with a state axis whose first
@@ -527,9 +528,9 @@ def hazard_policy_prior(
     tags = _distinct_hazard_tags(parsed)
 
     # Baseline (all-clear) preference plus one entry per discovered hazard tag.
-    weights: List[float] = [_BASELINE_PREFERENCE]
-    tag_preferences: Dict[str, float] = {}
-    tag_avoidance: Dict[str, float] = {}
+    weights: list[float] = [_BASELINE_PREFERENCE]
+    tag_preferences: dict[str, float] = {}
+    tag_avoidance: dict[str, float] = {}
     for tag in tags:
         base_tag = _base_hazard_tag(tag)
         avoidance = float(

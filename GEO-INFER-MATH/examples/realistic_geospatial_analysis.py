@@ -18,8 +18,7 @@ real-world geospatial analysis workflows.
 
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 from pathlib import Path
 
@@ -30,9 +29,7 @@ from geo_infer_math.core.spatial_statistics import (
     spatial_descriptive_statistics,
     local_indicators_spatial_association,
 )
-from geo_infer_math.core.geometry import haversine_distance, Point
 from geo_infer_math.core.interpolation import SpatialInterpolator
-from geo_infer_math.models.regression import spatial_regression_analysis
 from geo_infer_math.models.clustering import spatial_clustering_analysis
 from geo_infer_math.api.spatial_analysis import SpatialAnalysisAPI
 

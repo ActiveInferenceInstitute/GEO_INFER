@@ -8,7 +8,8 @@ silently accepting a different H3 or bounds representation.
 from __future__ import annotations
 
 from numbers import Integral, Real
-from typing import Any, Mapping
+from typing import Any
+from collections.abc import Mapping
 
 
 def parse_h3_resolution(value: Any) -> int:

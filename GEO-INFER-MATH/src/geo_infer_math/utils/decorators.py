@@ -9,7 +9,8 @@ import functools
 import inspect
 import time
 import logging
-from typing import Any, Callable, Dict, Optional, Tuple, Type
+from typing import Any
+from collections.abc import Callable
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ def memoize(func: Callable) -> Callable:
     Returns:
         Memoized function
     """
-    cache: Dict[Any, Any] = {}
+    cache: dict[Any, Any] = {}
 
     @functools.wraps(func)
     def memoized_func(*args: Any, **kwargs: Any) -> Any:
@@ -38,12 +39,8 @@ def memoize(func: Callable) -> Callable:
         return cache[key]
 
     # Add cache clearing method
-    setattr(memoized_func, "clear_cache", lambda: cache.clear())
-    setattr(
-        memoized_func,
-        "cache_info",
-        lambda: {"size": len(cache), "keys": list(cache.keys())},
-    )
+    memoized_func.clear_cache = lambda: cache.clear()
+    memoized_func.cache_info = lambda: {"size": len(cache), "keys": list(cache.keys())}
 
     return memoized_func
 
@@ -60,8 +57,8 @@ def memoize_with_expiry(expiry_seconds: float) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
-        cache: Dict[Any, Any] = {}
-        timestamps: Dict[Any, float] = {}
+        cache: dict[Any, Any] = {}
+        timestamps: dict[Any, float] = {}
 
         @functools.wraps(func)
         def memoized_func(*args: Any, **kwargs: Any) -> Any:
@@ -90,7 +87,7 @@ def memoize_with_expiry(expiry_seconds: float) -> Callable:
             cache.clear()
             timestamps.clear()
 
-        def cache_info() -> Dict[str, Any]:
+        def cache_info() -> dict[str, Any]:
             current_time = time.time()
             valid_entries = sum(
                 1 for t in timestamps.values() if current_time - t < expiry_seconds
@@ -101,8 +98,8 @@ def memoize_with_expiry(expiry_seconds: float) -> Callable:
                 "expired_entries": len(cache) - valid_entries,
             }
 
-        setattr(memoized_func, "clear_cache", clear_cache)
-        setattr(memoized_func, "cache_info", cache_info)
+        memoized_func.clear_cache = clear_cache
+        memoized_func.cache_info = cache_info
 
         return memoized_func
 
@@ -356,7 +353,7 @@ def requires_numpy_arrays(*param_names: str) -> Callable:
     return decorator
 
 
-def cache_results(cache_dict: Optional[Dict[Any, Any]] = None) -> Callable:
+def cache_results(cache_dict: dict[Any, Any] | None = None) -> Callable:
     """
     External cache decorator using a provided dictionary.
 
@@ -366,7 +363,7 @@ def cache_results(cache_dict: Optional[Dict[Any, Any]] = None) -> Callable:
     Returns:
         Caching decorator
     """
-    target_cache: Dict[Any, Any] = cache_dict if cache_dict is not None else {}
+    target_cache: dict[Any, Any] = cache_dict if cache_dict is not None else {}
 
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
@@ -386,8 +383,8 @@ def cache_results(cache_dict: Optional[Dict[Any, Any]] = None) -> Callable:
         def get_cache_size() -> int:
             return len(target_cache)
 
-        setattr(cached_func, "clear_cache", clear_cache)
-        setattr(cached_func, "cache_size", get_cache_size)
+        cached_func.clear_cache = clear_cache
+        cached_func.cache_size = get_cache_size
 
         return cached_func
 
@@ -424,7 +421,7 @@ def validate_output(output_validator: Callable) -> Callable:
 
 def retry_on_failure(
     max_retries: int = 3,
-    exceptions: Tuple[Type[BaseException], ...] = (Exception,),
+    exceptions: tuple[type[BaseException], ...] = (Exception,),
     delay: float = 0.1,
 ) -> Callable:
     """
@@ -442,7 +439,7 @@ def retry_on_failure(
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         def retry_func(*args: Any, **kwargs: Any) -> Any:
-            last_exception: Optional[BaseException] = None
+            last_exception: BaseException | None = None
 
             for attempt in range(max_retries + 1):
                 try:

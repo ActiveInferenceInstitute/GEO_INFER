@@ -6,7 +6,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 from geo_infer_act.runners.contracts import SCENARIO_NAMES, RunConfig
 from geo_infer_act.runners.scenarios import (
@@ -93,7 +93,7 @@ def config_from_args(args: argparse.Namespace) -> RunConfig:
     return config
 
 
-def main(argv: Optional[Iterable[str]] = None) -> int:
+def main(argv: Iterable[str] | None = None) -> int:
     """Run one scenario or a full scenario suite."""
     args = build_parser().parse_args(list(argv) if argv is not None else None)
     config = config_from_args(args)
@@ -119,7 +119,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     return 0
 
 
-def run_all_main(argv: Optional[Iterable[str]] = None) -> int:
+def run_all_main(argv: Iterable[str] | None = None) -> int:
     """Entry point for the full examples suite."""
     args_list = list(argv) if argv is not None else sys.argv[1:]
     if "--scenario" not in args_list:

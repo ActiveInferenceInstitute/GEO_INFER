@@ -6,8 +6,8 @@ for data processing operations.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timezone
+from typing import Any
+from datetime import datetime, UTC
 import time
 import psutil
 import threading
@@ -43,16 +43,16 @@ class PerformanceMonitor:
         self.enable_memory_monitoring = enable_memory_monitoring
         self.enable_cpu_monitoring = enable_cpu_monitoring
 
-        self.metrics: Dict[str, Any] = {
+        self.metrics: dict[str, Any] = {
             "operations": {},
-            "start_time": datetime.now(timezone.utc),
+            "start_time": datetime.now(UTC),
             "memory_usage": {},
             "cpu_usage": {},
         }
 
-        self.active_operations: Dict[str, Any] = {}
-        self.memory_history: List[float] = []
-        self.cpu_history: List[float] = []
+        self.active_operations: dict[str, Any] = {}
+        self.memory_history: list[float] = []
+        self.cpu_history: list[float] = []
 
         # Start background monitoring if enabled
         if self.enable_memory_monitoring or self.enable_cpu_monitoring:
@@ -93,12 +93,11 @@ class PerformanceMonitor:
 
         logger.debug(f"Recorded metric {operation_name}.{metric_name}: {value}")
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get comprehensive performance metrics."""
         # Calculate summary statistics
         summary = {
-            "monitoring_duration": datetime.now(timezone.utc)
-            - self.metrics["start_time"],
+            "monitoring_duration": datetime.now(UTC) - self.metrics["start_time"],
             "total_operations": len(self.metrics["operations"]),
             "operations": {},
         }
@@ -143,7 +142,7 @@ class PerformanceMonitor:
 
         return summary
 
-    def identify_bottlenecks(self) -> List[Dict[str, Any]]:
+    def identify_bottlenecks(self) -> list[dict[str, Any]]:
         """
         Identify performance bottlenecks.
 
@@ -231,9 +230,7 @@ class PerformanceMonitor:
                     if self.enable_memory_monitoring:
                         memory_mb = psutil.Process().memory_info().rss / (1024 * 1024)
                         self.memory_history.append(memory_mb)
-                        self.metrics["memory_usage"][datetime.now(timezone.utc)] = (
-                            memory_mb
-                        )
+                        self.metrics["memory_usage"][datetime.now(UTC)] = memory_mb
 
                         # Keep only last 1000 measurements
                         if len(self.memory_history) > 1000:
@@ -243,9 +240,7 @@ class PerformanceMonitor:
                     if self.enable_cpu_monitoring:
                         cpu_percent = psutil.cpu_percent(interval=1)
                         self.cpu_history.append(cpu_percent)
-                        self.metrics["cpu_usage"][datetime.now(timezone.utc)] = (
-                            cpu_percent
-                        )
+                        self.metrics["cpu_usage"][datetime.now(UTC)] = cpu_percent
 
                         # Keep only last 1000 measurements
                         if len(self.cpu_history) > 1000:
@@ -265,7 +260,7 @@ class PerformanceMonitor:
         """Reset all performance metrics."""
         self.metrics = {
             "operations": {},
-            "start_time": datetime.now(timezone.utc),
+            "start_time": datetime.now(UTC),
             "memory_usage": {},
             "cpu_usage": {},
         }
@@ -282,8 +277,8 @@ class OperationTracker:
     def __init__(self, monitor: PerformanceMonitor, operation_name: str):
         self.monitor = monitor
         self.operation_name = operation_name
-        self.start_time: Optional[float] = None
-        self.start_memory: Optional[float] = None
+        self.start_time: float | None = None
+        self.start_memory: float | None = None
 
     def __enter__(self) -> "OperationTracker":
         """Start tracking operation."""
@@ -364,12 +359,12 @@ class DataProcessingProfiler:
     """
 
     def __init__(self) -> None:
-        self.profile_data: Dict[str, Any] = {
+        self.profile_data: dict[str, Any] = {
             "steps": {},
             "start_time": None,
             "end_time": None,
         }
-        self.current_step: Optional[str] = None
+        self.current_step: str | None = None
 
     def profile_step(self, step_name: str) -> "StepProfiler":
         """Profile a processing step."""
@@ -377,12 +372,12 @@ class DataProcessingProfiler:
 
     def start_profiling(self) -> None:
         """Start profiling session."""
-        self.profile_data["start_time"] = datetime.now(timezone.utc)
+        self.profile_data["start_time"] = datetime.now(UTC)
         logger.info("Started data processing profiling")
 
     def end_profiling(self) -> None:
         """End profiling session."""
-        self.profile_data["end_time"] = datetime.now(timezone.utc)
+        self.profile_data["end_time"] = datetime.now(UTC)
 
         if self.profile_data["start_time"]:
             total_time = (
@@ -394,7 +389,7 @@ class DataProcessingProfiler:
             f"Ended data processing profiling (total: {self.profile_data.get('total_time', 0):.2f}s)"
         )
 
-    def get_profile(self) -> Dict[str, Any]:
+    def get_profile(self) -> dict[str, Any]:
         """Get profiling results."""
         if not self.profile_data["start_time"]:
             return {"error": "Profiling not started"}
@@ -419,7 +414,7 @@ class StepProfiler:
     def __init__(self, profiler: DataProcessingProfiler, step_name: str):
         self.profiler = profiler
         self.step_name = step_name
-        self.start_time: Optional[float] = None
+        self.start_time: float | None = None
 
     def __enter__(self) -> "StepProfiler":
         """Start profiling step."""

@@ -14,7 +14,7 @@ simulations.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass
 import numpy as np
 
@@ -29,10 +29,10 @@ class ModuleSimulationConfig:
 
     time_horizon: float = 100.0
     time_step: float = 1.0
-    random_seed: Optional[int] = None
-    spatial_bounds: Optional[Dict[str, float]] = None
-    initial_conditions: Optional[Dict[str, Any]] = None
-    parameters: Optional[Dict[str, Any]] = None
+    random_seed: int | None = None
+    spatial_bounds: dict[str, float] | None = None
+    initial_conditions: dict[str, Any] | None = None
+    parameters: dict[str, Any] | None = None
 
 
 class ModuleSimulations:
@@ -43,7 +43,7 @@ class ModuleSimulations:
     enabling direct simulation of module-specific behaviors and workflows.
     """
 
-    def __init__(self, config: Optional[ModuleSimulationConfig] = None):
+    def __init__(self, config: ModuleSimulationConfig | None = None):
         """
         Initialize module simulations.
 
@@ -57,8 +57,8 @@ class ModuleSimulations:
     def _run_toy_model(
         self,
         step_func,
-        init_state: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        init_state: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Shared engine runner for the toy module simulations.
 
@@ -82,10 +82,10 @@ class ModuleSimulations:
 
     def simulate_act(
         self,
-        observations: Optional[np.ndarray] = None,
-        beliefs: Optional[Dict[str, Any]] = None,
-        policies: Optional[List[Dict[str, Any]]] = None,
-    ) -> Dict[str, Any]:
+        observations: np.ndarray | None = None,
+        beliefs: dict[str, Any] | None = None,
+        policies: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Active Inference (ACT) module behavior.
 
@@ -135,7 +135,7 @@ class ModuleSimulations:
         belief_history = []
         free_energy_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate belief update
             observation = observations[int(time) % len(observations)]
             belief_update = 0.1 * observation + 0.9 * beliefs["state_belief"]
@@ -174,10 +174,10 @@ class ModuleSimulations:
 
     def simulate_ag(
         self,
-        field_data: Optional[Dict[str, Any]] = None,
-        weather_data: Optional[np.ndarray] = None,
-        crop_parameters: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, Any]:
+        field_data: dict[str, Any] | None = None,
+        weather_data: np.ndarray | None = None,
+        crop_parameters: dict[str, float] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Agriculture (AG) module behavior.
 
@@ -207,7 +207,7 @@ class ModuleSimulations:
         crop_growth_history = []
         yield_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             weather = weather_data[int(time) % len(weather_data)]
             growth = crop_parameters["growth_rate"] * weather[2]  # sunlight
             yield_val = growth * crop_parameters["yield_factor"]
@@ -236,10 +236,10 @@ class ModuleSimulations:
 
     def simulate_ai(
         self,
-        training_data: Optional[np.ndarray] = None,
+        training_data: np.ndarray | None = None,
         model_type: str = "neural_network",
         learning_rate: float = 0.001,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Simulate Artificial Intelligence (AI) module behavior.
 
@@ -262,7 +262,7 @@ class ModuleSimulations:
         loss_history = []
         accuracy_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate training step
             epoch = int(time)
             loss = np.exp(-epoch * learning_rate) + self.rng.normal(0, 0.1)
@@ -295,9 +295,9 @@ class ModuleSimulations:
     def simulate_agent(
         self,
         agent_count: int = 10,
-        spatial_bounds: Optional[Dict[str, float]] = None,
-        behavior_rules: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        spatial_bounds: dict[str, float] | None = None,
+        behavior_rules: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Agent (AGENT) module behavior.
 
@@ -333,7 +333,7 @@ class ModuleSimulations:
 
         position_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate agent movement and interactions
             for i in range(agent_count):
                 # Random walk with some interaction
@@ -372,9 +372,9 @@ class ModuleSimulations:
     def simulate_ant(
         self,
         colony_size: int = 100,
-        food_sources: Optional[np.ndarray] = None,
+        food_sources: np.ndarray | None = None,
         pheromone_decay: float = 0.1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Simulate Ant Colony (ANT) module behavior.
 
@@ -399,7 +399,7 @@ class ModuleSimulations:
 
         trail_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             nonlocal pheromone_trails
             # Simulate ant movement and pheromone deposition
             for i in range(colony_size):
@@ -438,10 +438,10 @@ class ModuleSimulations:
 
     def simulate_api(
         self,
-        endpoints: Optional[List[str]] = None,
+        endpoints: list[str] | None = None,
         request_rate: float = 10.0,
-        response_times: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, Any]:
+        response_times: dict[str, float] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate API module behavior.
 
@@ -467,7 +467,7 @@ class ModuleSimulations:
         request_history = []
         latency_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate API requests
             requests_this_step = int(
                 self.rng.poisson(request_rate * self.config.time_step)
@@ -507,9 +507,9 @@ class ModuleSimulations:
     def simulate_app(
         self,
         user_count: int = 100,
-        interaction_types: Optional[List[str]] = None,
-        ui_components: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        interaction_types: list[str] | None = None,
+        ui_components: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Application (APP) module behavior.
 
@@ -535,7 +535,7 @@ class ModuleSimulations:
         interaction_history = []
         component_usage = {component: 0 for component in ui_components}
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate user interactions
             interactions = self.rng.poisson(user_count * 0.1)
             interaction_types_step = []
@@ -569,10 +569,10 @@ class ModuleSimulations:
 
     def simulate_art(
         self,
-        artistic_parameters: Optional[Dict[str, Any]] = None,
-        color_palette: Optional[np.ndarray] = None,
-        spatial_patterns: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        artistic_parameters: dict[str, Any] | None = None,
+        color_palette: np.ndarray | None = None,
+        spatial_patterns: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Art (ART) module behavior.
 
@@ -605,7 +605,7 @@ class ModuleSimulations:
         aesthetic_scores = []
         pattern_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate artistic generation
             pattern = self.rng.choice(spatial_patterns)
             aesthetic_score = (
@@ -642,10 +642,10 @@ class ModuleSimulations:
 
     def simulate_bayes(
         self,
-        observations: Optional[np.ndarray] = None,
-        prior_params: Optional[Dict[str, float]] = None,
+        observations: np.ndarray | None = None,
+        prior_params: dict[str, float] | None = None,
         likelihood_model: str = "gaussian",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Simulate Bayesian Inference (BAYES) module behavior.
 
@@ -676,7 +676,7 @@ class ModuleSimulations:
         posterior_means = []
         posterior_stds = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate Bayesian updating
             n_obs = min(int(time) + 1, len(observations))
             obs_subset = observations[:n_obs]
@@ -721,10 +721,10 @@ class ModuleSimulations:
 
     def simulate_bio(
         self,
-        species_data: Optional[Dict[str, Any]] = None,
-        environmental_factors: Optional[np.ndarray] = None,
-        spatial_locations: Optional[np.ndarray] = None,
-    ) -> Dict[str, Any]:
+        species_data: dict[str, Any] | None = None,
+        environmental_factors: np.ndarray | None = None,
+        spatial_locations: np.ndarray | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Bioinformatics (BIO) module behavior.
 
@@ -756,7 +756,7 @@ class ModuleSimulations:
         diversity_history = []
         distribution_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate ecological dynamics
             env = environmental_factors[int(time) % len(environmental_factors)]
             diversity = species_data["genetic_diversity"] * env[0]  # temperature effect
@@ -786,10 +786,10 @@ class ModuleSimulations:
 
     def simulate_civ(
         self,
-        community_data: Optional[Dict[str, Any]] = None,
-        stakeholder_groups: Optional[List[str]] = None,
-        participation_rates: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, Any]:
+        community_data: dict[str, Any] | None = None,
+        stakeholder_groups: list[str] | None = None,
+        participation_rates: dict[str, float] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Civic Engagement (CIV) module behavior.
 
@@ -813,11 +813,11 @@ class ModuleSimulations:
             participation_rates = {group: 0.3 for group in stakeholder_groups}
 
         engagement_history = []
-        participation_history: Dict[str, List[int]] = {
+        participation_history: dict[str, list[int]] = {
             group: [] for group in stakeholder_groups
         }
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate engagement events
             total_engagement = 0.0
             group_participation = {}
@@ -853,10 +853,10 @@ class ModuleSimulations:
 
     def simulate_cog(
         self,
-        cognitive_models: Optional[Dict[str, Any]] = None,
-        spatial_perception_data: Optional[np.ndarray] = None,
-        attention_mechanisms: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        cognitive_models: dict[str, Any] | None = None,
+        spatial_perception_data: np.ndarray | None = None,
+        attention_mechanisms: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Cognitive Modeling (COG) module behavior.
 
@@ -889,7 +889,7 @@ class ModuleSimulations:
         attention_scores = []
         memory_usage = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate cognitive processing
             perception = spatial_perception_data[
                 int(time) % len(spatial_perception_data)
@@ -922,10 +922,10 @@ class ModuleSimulations:
 
     def simulate_comms(
         self,
-        communication_channels: Optional[List[str]] = None,
-        message_rates: Optional[Dict[str, float]] = None,
-        stakeholder_groups: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        communication_channels: list[str] | None = None,
+        message_rates: dict[str, float] | None = None,
+        stakeholder_groups: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Communications (COMMS) module behavior.
 
@@ -951,12 +951,12 @@ class ModuleSimulations:
         if stakeholder_groups is None:
             stakeholder_groups = ["developers", "users", "stakeholders"]
 
-        message_history: Dict[str, List[int]] = {
+        message_history: dict[str, list[int]] = {
             channel: [] for channel in communication_channels
         }
         engagement_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate communication flows
             total_messages = 0
             channel_messages = {}
@@ -997,10 +997,10 @@ class ModuleSimulations:
 
     def simulate_data(
         self,
-        data_sources: Optional[List[str]] = None,
-        data_volumes: Optional[Dict[str, float]] = None,
-        processing_pipeline: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        data_sources: list[str] | None = None,
+        data_volumes: dict[str, float] | None = None,
+        processing_pipeline: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Data Management (DATA) module behavior.
 
@@ -1029,7 +1029,7 @@ class ModuleSimulations:
         processing_history = []
         quality_scores = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate data processing
             total_processed = 0.0
             for source in data_sources:
@@ -1065,10 +1065,10 @@ class ModuleSimulations:
 
     def simulate_econ(
         self,
-        economic_indicators: Optional[Dict[str, float]] = None,
-        market_data: Optional[np.ndarray] = None,
-        spatial_boundaries: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, Any]:
+        economic_indicators: dict[str, float] | None = None,
+        market_data: np.ndarray | None = None,
+        spatial_boundaries: dict[str, float] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Economic Modeling (ECON) module behavior.
 
@@ -1098,7 +1098,7 @@ class ModuleSimulations:
         gdp_history = []
         market_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate economic dynamics
             market = market_data[int(time) % len(market_data)]
             gdp = 1000 * (1 + economic_indicators["GDP_growth"]) ** time
@@ -1128,10 +1128,10 @@ class ModuleSimulations:
 
     def simulate_git(
         self,
-        repository_config: Optional[Dict[str, Any]] = None,
-        commit_rates: Optional[Dict[str, float]] = None,
+        repository_config: dict[str, Any] | None = None,
+        commit_rates: dict[str, float] | None = None,
         branch_strategy: str = "gitflow",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Simulate Git Integration (GIT) module behavior.
 
@@ -1156,12 +1156,12 @@ class ModuleSimulations:
                 "release": 0.2,
             }
 
-        commit_history: Dict[str, List[int]] = {
+        commit_history: dict[str, list[int]] = {
             commit_type: [] for commit_type in commit_rates.keys()
         }
         branch_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate git operations
             total_commits = 0
             commits_by_type = {}
@@ -1197,10 +1197,10 @@ class ModuleSimulations:
 
     def simulate_health(
         self,
-        health_data: Optional[Dict[str, Any]] = None,
-        epidemiological_models: Optional[Dict[str, Any]] = None,
-        environmental_factors: Optional[np.ndarray] = None,
-    ) -> Dict[str, Any]:
+        health_data: dict[str, Any] | None = None,
+        epidemiological_models: dict[str, Any] | None = None,
+        environmental_factors: np.ndarray | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Health Applications (HEALTH) module behavior.
 
@@ -1239,7 +1239,7 @@ class ModuleSimulations:
         cases_history = []
         recovery_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Documented contract: aggregate deterministic case-count
             # dynamics, not a compartmental SIR model — transmission scales
             # the current case count by transmission_rate * env[0] (air
@@ -1286,10 +1286,10 @@ class ModuleSimulations:
 
     def simulate_intra(
         self,
-        documentation_needs: Optional[List[str]] = None,
-        workflow_templates: Optional[List[str]] = None,
-        ontology_structures: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        documentation_needs: list[str] | None = None,
+        workflow_templates: list[str] | None = None,
+        ontology_structures: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Internal Documentation (INTRA) module behavior.
 
@@ -1315,7 +1315,7 @@ class ModuleSimulations:
         documentation_history = []
         workflow_usage = {template: 0 for template in workflow_templates}
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate documentation generation
             docs_generated = 0
             for doc_type in documentation_needs:
@@ -1349,10 +1349,10 @@ class ModuleSimulations:
 
     def simulate_iot(
         self,
-        sensor_networks: Optional[List[str]] = None,
-        sensor_rates: Optional[Dict[str, float]] = None,
-        spatial_coordinates: Optional[np.ndarray] = None,
-    ) -> Dict[str, Any]:
+        sensor_networks: list[str] | None = None,
+        sensor_rates: dict[str, float] | None = None,
+        spatial_coordinates: np.ndarray | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate IoT Integration (IOT) module behavior.
 
@@ -1378,12 +1378,12 @@ class ModuleSimulations:
         if spatial_coordinates is None:
             spatial_coordinates = self.rng.random((50, 2)) * 100
 
-        sensor_data_history: Dict[str, List[float]] = {
+        sensor_data_history: dict[str, list[float]] = {
             network: [] for network in sensor_networks
         }
         data_quality_scores = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate sensor data collection
             total_readings = 0
             readings_by_network = {}
@@ -1423,10 +1423,10 @@ class ModuleSimulations:
 
     def simulate_math(
         self,
-        mathematical_problems: Optional[List[str]] = None,
-        optimization_problems: Optional[Dict[str, Any]] = None,
-        statistical_models: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        mathematical_problems: list[str] | None = None,
+        optimization_problems: dict[str, Any] | None = None,
+        statistical_models: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Mathematical Foundations (MATH) module behavior.
 
@@ -1461,7 +1461,7 @@ class ModuleSimulations:
         computation_history = []
         optimization_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate mathematical computations
             problem = self.rng.choice(mathematical_problems)
             computation_time = self.rng.exponential(0.1)
@@ -1494,10 +1494,10 @@ class ModuleSimulations:
 
     def simulate_norms(
         self,
-        regulatory_requirements: Optional[List[str]] = None,
-        compliance_data: Optional[Dict[str, Any]] = None,
-        social_norms: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, Any]:
+        regulatory_requirements: list[str] | None = None,
+        compliance_data: dict[str, Any] | None = None,
+        social_norms: dict[str, float] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Normative Systems (NORMS) module behavior.
 
@@ -1527,7 +1527,7 @@ class ModuleSimulations:
         compliance_history = []
         norm_adherence = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate compliance checking
             compliance_score = 0.0
             for requirement in regulatory_requirements:
@@ -1565,10 +1565,10 @@ class ModuleSimulations:
 
     def simulate_ops(
         self,
-        system_metrics: Optional[Dict[str, float]] = None,
-        infrastructure_config: Optional[Dict[str, Any]] = None,
-        monitoring_targets: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        system_metrics: dict[str, float] | None = None,
+        infrastructure_config: dict[str, Any] | None = None,
+        monitoring_targets: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Operations (OPS) module behavior.
 
@@ -1595,12 +1595,12 @@ class ModuleSimulations:
         if monitoring_targets is None:
             monitoring_targets = ["servers", "databases", "APIs", "storage"]
 
-        metric_history: Dict[str, List[float]] = {
+        metric_history: dict[str, list[float]] = {
             metric: [] for metric in system_metrics.keys()
         }
         health_scores = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate system monitoring
             for metric_name, base_value in system_metrics.items():
                 value = base_value + self.rng.normal(0, 0.1)
@@ -1649,10 +1649,10 @@ class ModuleSimulations:
 
     def simulate_org(
         self,
-        organizational_structure: Optional[Dict[str, Any]] = None,
-        governance_frameworks: Optional[List[str]] = None,
-        dao_parameters: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        organizational_structure: dict[str, Any] | None = None,
+        governance_frameworks: list[str] | None = None,
+        dao_parameters: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Organizations (ORG) module behavior.
 
@@ -1682,7 +1682,7 @@ class ModuleSimulations:
         governance_history = []
         proposal_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate governance processes
             framework = self.rng.choice(governance_frameworks)
             proposals = int(self.rng.poisson(dao_parameters["proposal_rate"] * 10))
@@ -1713,10 +1713,10 @@ class ModuleSimulations:
 
     def simulate_pep(
         self,
-        personnel_data: Optional[Dict[str, Any]] = None,
-        community_relationships: Optional[Dict[str, Any]] = None,
-        skill_requirements: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        personnel_data: dict[str, Any] | None = None,
+        community_relationships: dict[str, Any] | None = None,
+        skill_requirements: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate People Management (PEP) module behavior.
 
@@ -1743,11 +1743,11 @@ class ModuleSimulations:
             skill_requirements = ["technical", "communication", "leadership", "domain"]
 
         satisfaction_history = []
-        skill_coverage: Dict[str, List[float]] = {
+        skill_coverage: dict[str, list[float]] = {
             skill: [] for skill in skill_requirements
         }
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate people management
             satisfaction = personnel_data["satisfaction"] + self.rng.normal(0, 0.05)
             satisfaction = np.clip(satisfaction, 0, 1)
@@ -1784,10 +1784,10 @@ class ModuleSimulations:
 
     def simulate_req(
         self,
-        requirements_specs: Optional[List[str]] = None,
-        stakeholder_needs: Optional[Dict[str, Any]] = None,
-        system_constraints: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        requirements_specs: list[str] | None = None,
+        stakeholder_needs: dict[str, Any] | None = None,
+        system_constraints: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Requirements Engineering (REQ) module behavior.
 
@@ -1818,7 +1818,7 @@ class ModuleSimulations:
         validation_history = []
         compliance_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate requirements validation
             validated = int(self.rng.poisson(5.0 * self.config.time_step))
             compliance_score = 0.9 + self.rng.normal(0, 0.05)
@@ -1851,10 +1851,10 @@ class ModuleSimulations:
 
     def simulate_sec(
         self,
-        security_requirements: Optional[List[str]] = None,
-        privacy_constraints: Optional[Dict[str, Any]] = None,
-        access_control_policies: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        security_requirements: list[str] | None = None,
+        privacy_constraints: dict[str, Any] | None = None,
+        access_control_policies: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Security (SEC) module behavior.
 
@@ -1885,7 +1885,7 @@ class ModuleSimulations:
         security_events = []
         threat_detection = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate security monitoring
             events = int(self.rng.poisson(2.0 * self.config.time_step))
             threats_detected = int(self.rng.poisson(0.1 * self.config.time_step))
@@ -1915,10 +1915,10 @@ class ModuleSimulations:
 
     def simulate_sim(
         self,
-        simulation_models: Optional[List[str]] = None,
-        scenario_definitions: Optional[List[Dict[str, Any]]] = None,
-        simulation_parameters: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        simulation_models: list[str] | None = None,
+        scenario_definitions: list[dict[str, Any]] | None = None,
+        simulation_parameters: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Simulation (SIM) module behavior.
 
@@ -1948,7 +1948,7 @@ class ModuleSimulations:
         simulation_runs = []
         execution_times = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate simulation execution
             model = self.rng.choice(simulation_models)
             execution_time = self.rng.exponential(1.0)
@@ -1978,10 +1978,10 @@ class ModuleSimulations:
 
     def simulate_space(
         self,
-        spatial_data: Optional[np.ndarray] = None,
-        coordinate_systems: Optional[List[str]] = None,
-        spatial_operations: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        spatial_data: np.ndarray | None = None,
+        coordinate_systems: list[str] | None = None,
+        spatial_operations: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Spatial Analysis (SPACE) module behavior.
 
@@ -2010,7 +2010,7 @@ class ModuleSimulations:
         operation_history = []
         spatial_index_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate spatial operations
             operation = self.rng.choice(spatial_operations)
             coord_sys = self.rng.choice(coordinate_systems)
@@ -2044,10 +2044,10 @@ class ModuleSimulations:
 
     def simulate_spm(
         self,
-        spatial_temporal_data: Optional[np.ndarray] = None,
-        statistical_models: Optional[List[str]] = None,
-        field_observations: Optional[np.ndarray] = None,
-    ) -> Dict[str, Any]:
+        spatial_temporal_data: np.ndarray | None = None,
+        statistical_models: list[str] | None = None,
+        field_observations: np.ndarray | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Statistical Parametric Mapping (SPM) module behavior.
 
@@ -2075,7 +2075,7 @@ class ModuleSimulations:
         model_fits = []
         significance_scores = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate statistical analysis
             model = self.rng.choice(statistical_models)
             fit_score = 0.8 + self.rng.normal(0, 0.1)
@@ -2108,10 +2108,10 @@ class ModuleSimulations:
 
     def simulate_time(
         self,
-        time_series_data: Optional[np.ndarray] = None,
-        temporal_patterns: Optional[List[str]] = None,
+        time_series_data: np.ndarray | None = None,
+        temporal_patterns: list[str] | None = None,
         forecast_horizon: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Simulate Temporal Analysis (TIME) module behavior.
 
@@ -2137,7 +2137,7 @@ class ModuleSimulations:
         forecast_history = []
         pattern_detection = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate temporal analysis
             pattern = self.rng.choice(temporal_patterns)
             forecast = time_series_data[
@@ -2167,10 +2167,10 @@ class ModuleSimulations:
 
     def simulate_risk(
         self,
-        risk_factors: Optional[Dict[str, float]] = None,
-        hazard_data: Optional[np.ndarray] = None,
-        vulnerability_assessments: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        risk_factors: dict[str, float] | None = None,
+        hazard_data: np.ndarray | None = None,
+        vulnerability_assessments: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Risk Management (RISK) module behavior.
 
@@ -2200,7 +2200,7 @@ class ModuleSimulations:
         risk_scores = []
         exposure_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate risk assessment
             hazard = hazard_data[int(time) % len(hazard_data)]
             risk_score = (
@@ -2236,10 +2236,10 @@ class ModuleSimulations:
 
     def simulate_log(
         self,
-        transportation_networks: Optional[Dict[str, Any]] = None,
-        supply_chain_data: Optional[Dict[str, Any]] = None,
-        logistics_requirements: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        transportation_networks: dict[str, Any] | None = None,
+        supply_chain_data: dict[str, Any] | None = None,
+        logistics_requirements: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Logistics (LOG) module behavior.
 
@@ -2269,7 +2269,7 @@ class ModuleSimulations:
         route_efficiency = []
         delivery_times = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate logistics operations
             requirement = self.rng.choice(logistics_requirements)
             efficiency = 0.8 + self.rng.normal(0, 0.1)
@@ -2303,10 +2303,10 @@ class ModuleSimulations:
 
     def simulate_place(
         self,
-        location_data: Optional[Dict[str, Any]] = None,
-        regional_datasets: Optional[Dict[str, np.ndarray]] = None,
-        local_context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        location_data: dict[str, Any] | None = None,
+        regional_datasets: dict[str, np.ndarray] | None = None,
+        local_context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Place-Based Analysis (PLACE) module behavior.
 
@@ -2332,15 +2332,15 @@ class ModuleSimulations:
 
         if regional_datasets is None:
             regional_datasets = {
-                "demographics": self.rng.random((10)),
-                "economics": self.rng.random((10)),
-                "environment": self.rng.random((10)),
+                "demographics": self.rng.random(10),
+                "economics": self.rng.random(10),
+                "environment": self.rng.random(10),
             }
 
         place_insights = []
         regional_scores = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate place-based analysis
             insight_score = np.mean(
                 [
@@ -2378,10 +2378,10 @@ class ModuleSimulations:
 
     def simulate_test(
         self,
-        test_requirements: Optional[List[str]] = None,
-        quality_metrics: Optional[Dict[str, float]] = None,
-        integration_needs: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        test_requirements: list[str] | None = None,
+        quality_metrics: dict[str, float] | None = None,
+        integration_needs: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Testing Framework (TEST) module behavior.
 
@@ -2411,7 +2411,7 @@ class ModuleSimulations:
         test_results = []
         coverage_history = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate test execution
             test_type = self.rng.choice(test_requirements)
             passed = self.rng.binomial(100, quality_metrics["pass_rate"])
@@ -2444,10 +2444,10 @@ class ModuleSimulations:
 
     def simulate_examples(
         self,
-        integration_requirements: Optional[List[str]] = None,
-        tutorial_needs: Optional[List[str]] = None,
-        demonstration_scenarios: Optional[List[Dict[str, Any]]] = None,
-    ) -> Dict[str, Any]:
+        integration_requirements: list[str] | None = None,
+        tutorial_needs: list[str] | None = None,
+        demonstration_scenarios: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         """
         Simulate Examples (EXAMPLES) module behavior.
 
@@ -2483,7 +2483,7 @@ class ModuleSimulations:
         example_generation = []
         tutorial_creation = []
 
-        def step_func(time: float, state: Dict[str, Any]) -> Dict[str, Any]:
+        def step_func(time: float, state: dict[str, Any]) -> dict[str, Any]:
             # Simulate example generation
             integration = self.rng.choice(integration_requirements)
             tutorial = self.rng.choice(tutorial_needs)

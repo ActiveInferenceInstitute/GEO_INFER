@@ -6,7 +6,7 @@ measurements to continuous spatial surfaces, with integration to H3 spatial inde
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple, Any, cast
+from typing import Any, cast
 from datetime import datetime
 import numpy as np
 import h3
@@ -34,9 +34,9 @@ class SpatialInterpolation:
     - Cross-validation for interpolation quality assessment
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
-        self.interpolation_cache: Dict[str, Any] = {}
+        self.interpolation_cache: dict[str, Any] = {}
 
         # Default interpolation parameters
         self.default_params = {
@@ -79,10 +79,10 @@ class SpatialInterpolation:
 
     def interpolate_to_grid(
         self,
-        measurements: List[Dict[str, Any]],
-        target_grid: List[Tuple[float, float]],
-        method: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        measurements: list[dict[str, Any]],
+        target_grid: list[tuple[float, float]],
+        method: str | None = None,
+    ) -> dict[str, Any]:
         """
         Interpolate sensor measurements to a target grid.
 
@@ -284,8 +284,8 @@ class SpatialInterpolation:
         return np.clip(uncertainty, 0.01, 1.0)  # Clamp between 0.01 and 1.0
 
     def interpolate_h3_cells(
-        self, measurements: List[Dict], target_h3_indices: List[str]
-    ) -> Dict:
+        self, measurements: list[dict], target_h3_indices: list[str]
+    ) -> dict:
         """
         Interpolate measurements to specific H3 cells.
 
@@ -336,8 +336,8 @@ class SpatialInterpolation:
             return {"error": f"H3 interpolation failed: {str(e)}"}
 
     def create_interpolation_grid(
-        self, bounds: Dict[str, float], resolution_km: float = 1.0
-    ) -> List[Tuple[float, float]]:
+        self, bounds: dict[str, float], resolution_km: float = 1.0
+    ) -> list[tuple[float, float]]:
         """
         Create a regular grid for interpolation within bounds.
 
@@ -382,8 +382,8 @@ class SpatialInterpolation:
             return []
 
     def cross_validate_interpolation(
-        self, measurements: List[Dict], test_fraction: float = 0.2
-    ) -> Dict:
+        self, measurements: list[dict], test_fraction: float = 0.2
+    ) -> dict:
         """
         Cross-validate interpolation quality using hold-out testing.
 
@@ -463,7 +463,7 @@ class SpatialInterpolation:
             logger.error(f"Error in cross-validation: {e}")
             return {"error": f"Cross-validation failed: {str(e)}"}
 
-    def get_interpolation_quality(self, sensor_coords: np.ndarray, method: str) -> Dict:
+    def get_interpolation_quality(self, sensor_coords: np.ndarray, method: str) -> dict:
         """
         Assess interpolation quality based on sensor distribution.
 

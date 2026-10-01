@@ -1,12 +1,13 @@
 """Geospatial test helper utilities for GEO-INFER-INTRA."""
 
-from typing import Dict, Any, List, Union, Callable
+from typing import Any
+from collections.abc import Callable
 import json
 import math
 from pathlib import Path
 
 
-def create_point(lon: float, lat: float) -> Dict[str, Any]:
+def create_point(lon: float, lat: float) -> dict[str, Any]:
     """
     Create a GeoJSON Point.
 
@@ -22,7 +23,7 @@ def create_point(lon: float, lat: float) -> Dict[str, Any]:
 
 def create_bbox(
     min_lon: float, min_lat: float, max_lon: float, max_lat: float
-) -> List[float]:
+) -> list[float]:
     """
     Create a GeoJSON bounding box.
 
@@ -38,7 +39,7 @@ def create_bbox(
     return [min_lon, min_lat, max_lon, max_lat]
 
 
-def create_polygon(coordinates: List[List[float]]) -> Dict[str, Any]:
+def create_polygon(coordinates: list[list[float]]) -> dict[str, Any]:
     """
     Create a GeoJSON Polygon from a list of coordinates.
 
@@ -56,8 +57,8 @@ def create_polygon(coordinates: List[List[float]]) -> Dict[str, Any]:
 
 
 def create_feature(
-    geometry: Dict[str, Any], properties: Dict[str, Any] = None
-) -> Dict[str, Any]:
+    geometry: dict[str, Any], properties: dict[str, Any] = None
+) -> dict[str, Any]:
     """
     Create a GeoJSON Feature.
 
@@ -74,7 +75,7 @@ def create_feature(
     return {"type": "Feature", "geometry": geometry, "properties": properties}
 
 
-def create_feature_collection(features: List[Dict[str, Any]]) -> Dict[str, Any]:
+def create_feature_collection(features: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Create a GeoJSON FeatureCollection.
 
@@ -87,7 +88,7 @@ def create_feature_collection(features: List[Dict[str, Any]]) -> Dict[str, Any]:
     return {"type": "FeatureCollection", "features": features}
 
 
-def is_valid_geojson(geojson_obj: Dict[str, Any]) -> bool:
+def is_valid_geojson(geojson_obj: dict[str, Any]) -> bool:
     """
     Check if a dictionary is valid GeoJSON.
 
@@ -141,7 +142,7 @@ def is_valid_geojson(geojson_obj: Dict[str, Any]) -> bool:
         return False
 
 
-def load_geojson_file(file_path: Union[str, Path]) -> Dict[str, Any]:
+def load_geojson_file(file_path: str | Path) -> dict[str, Any]:
     """
     Load GeoJSON from file.
 
@@ -155,7 +156,7 @@ def load_geojson_file(file_path: Union[str, Path]) -> Dict[str, Any]:
         return json.load(f)
 
 
-def save_geojson_file(geojson_obj: Dict[str, Any], file_path: Union[str, Path]) -> None:
+def save_geojson_file(geojson_obj: dict[str, Any], file_path: str | Path) -> None:
     """
     Save GeoJSON to file.
 
@@ -197,8 +198,8 @@ def haversine_distance(lon1: float, lat1: float, lon2: float, lat2: float) -> fl
 
 
 def create_sample_h3_data(
-    h3_indexes: List[str], value_generator: Callable[[str], Any]
-) -> Dict[str, Any]:
+    h3_indexes: list[str], value_generator: Callable[[str], Any]
+) -> dict[str, Any]:
     """
     Create sample data for H3 indexes.
 

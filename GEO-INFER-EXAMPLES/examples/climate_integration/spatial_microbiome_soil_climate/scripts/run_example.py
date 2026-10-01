@@ -367,7 +367,7 @@ class ClimateAnalysisSystem:
         economic_data = self.results["economic_analysis"]
         risk_data = self.results["risk_assessment"]
 
-        print(f"\n📊 Analysis Overview:")
+        print("\n📊 Analysis Overview:")
         print(f"├─ Weather Stations: {len(climate_data['weather_stations'])}")
         print(f"├─ Climate Zones: {len(spatial_data['climate_zones'])}")
         print(f"├─ Soil Samples: {len(bio_data['soil_samples'])}")
@@ -377,7 +377,7 @@ class ClimateAnalysisSystem:
         print(f"└─ Processing Time: {execution_time:.2f} seconds")
 
         # Key Climate Insights
-        print(f"\n🌡️ Climate Insights:")
+        print("\n🌡️ Climate Insights:")
         trends = self.results["temporal_analysis"]["climate_trends"]
         print(
             f"1. Temperature trend: {trends['temperature']['direction']} ({trends['temperature']['rate']:.2f}°C/decade)"
@@ -390,7 +390,7 @@ class ClimateAnalysisSystem:
         )
 
         # Microbiome Findings
-        print(f"\n🦠 Microbiome Findings:")
+        print("\n🦠 Microbiome Findings:")
         diversity = bio_data["diversity_analysis"]
         print(f"1. Average microbial diversity: {diversity['shannon_diversity']:.2f}")
         print(
@@ -401,7 +401,7 @@ class ClimateAnalysisSystem:
         )
 
         # Economic Impact
-        print(f"\n💰 Economic Impact:")
+        print("\n💰 Economic Impact:")
         economic = economic_data["economic_analysis"]
         print(
             f"├─ Agricultural productivity change: {economic['productivity_change']:+.1%}"
@@ -413,7 +413,7 @@ class ClimateAnalysisSystem:
         print(f"└─ Net economic impact: ${economic['net_impact']:,.0f}/year")
 
         # Risk Assessment
-        print(f"\n⚠️ Risk Assessment:")
+        print("\n⚠️ Risk Assessment:")
         overall_risk = risk_data["overall_risk"]
         print(f"├─ Overall Risk Level: {overall_risk['level'].upper()}")
         print(f"├─ Climate Change Risk: {risk_data['climate_change_risks']['level']}")
@@ -421,18 +421,18 @@ class ClimateAnalysisSystem:
         print(f"└─ Ecosystem Risk: {risk_data['ecosystem_risks']['level']}")
 
         # Technology Integration
-        print(f"\n🔧 Technology Integration:")
+        print("\n🔧 Technology Integration:")
         modules_used = ["DATA", "SPACE", "TIME", "BIO", "ECON", "RISK", "API"]
         print(f"├─ Modules: {', '.join(modules_used)}")
-        print(f"├─ Integration Pattern: Multi-Domain Analysis Pipeline")
-        print(f"├─ Data Sources: Weather stations, satellite data, soil samples")
-        print(f"└─ Analysis Scope: Regional climate-microbiome interactions")
+        print("├─ Integration Pattern: Multi-Domain Analysis Pipeline")
+        print("├─ Data Sources: Weather stations, satellite data, soil samples")
+        print("└─ Analysis Scope: Regional climate-microbiome interactions")
 
-        print(f"\n🚀 Recommendations:")
-        print(f"1. Implement adaptive management strategies for high-risk areas")
-        print(f"2. Enhance soil microbiome monitoring network")
-        print(f"3. Develop climate-resilient agricultural practices")
-        print(f"4. Invest in ecosystem restoration for carbon sequestration")
+        print("\n🚀 Recommendations:")
+        print("1. Implement adaptive management strategies for high-risk areas")
+        print("2. Enhance soil microbiome monitoring network")
+        print("3. Develop climate-resilient agricultural practices")
+        print("4. Invest in ecosystem restoration for carbon sequestration")
 
         print("\n" + "=" * 80)
 
@@ -675,9 +675,9 @@ def main():
         climate_system = ClimateAnalysisSystem()
         results = climate_system.run_climate_analysis()
 
-        print(f"\n🎉 Climate analysis system completed successfully!")
+        print("\n🎉 Climate analysis system completed successfully!")
         print(
-            f"This example demonstrates comprehensive climate-microbiome-economic integration."
+            "This example demonstrates comprehensive climate-microbiome-economic integration."
         )
 
         return 0

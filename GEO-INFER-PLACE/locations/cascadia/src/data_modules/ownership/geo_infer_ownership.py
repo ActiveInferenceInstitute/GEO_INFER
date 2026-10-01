@@ -6,7 +6,7 @@ by fetching real-time data from public GIS services and performing spatial analy
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 from pathlib import Path
 import numpy as np
 import geopandas as gpd
@@ -80,7 +80,7 @@ class GeoInferOwnership(BaseAnalysisModule):
         parcels.to_file(raw_data_path, driver="GeoJSON")
         return raw_data_path
 
-    def run_final_analysis(self, h3_data: Dict[str, Any]) -> Dict[str, Any]:
+    def run_final_analysis(self, h3_data: dict[str, Any]) -> dict[str, Any]:
         """
         Perform real ownership analysis on H3-indexed data using OSC H3 v4 methods.
 
@@ -160,7 +160,7 @@ class GeoInferOwnership(BaseAnalysisModule):
 
     def _analyze_real_ownership_patterns(
         self, features: gpd.GeoDataFrame, hex_polygon: Polygon
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze real ownership patterns using actual spatial analysis.
 
@@ -310,7 +310,7 @@ class GeoInferOwnership(BaseAnalysisModule):
 
         return min(1.0, max(0.0, score))
 
-    def _calculate_owner_diversity(self, owner_areas: Dict[str, float], total_area: float) -> float:
+    def _calculate_owner_diversity(self, owner_areas: dict[str, float], total_area: float) -> float:
         """
         Calculate real owner diversity score based on area distribution.
         """
@@ -343,14 +343,14 @@ class GeoInferOwnership(BaseAnalysisModule):
             # Penalize excessive fragmentation
             return max(0.1, 20 / parcel_count)
 
-    def _find_col(self, gdf: gpd.GeoDataFrame, potential_names: List[str]) -> str:
+    def _find_col(self, gdf: gpd.GeoDataFrame, potential_names: list[str]) -> str:
         """Finds the first matching column name in the GeoDataFrame."""
         for name in potential_names:
             if name in gdf.columns:
                 return name
         return None
 
-    def _analyze_ownership_patterns(self, parcels_gdf: gpd.GeoDataFrame) -> Dict[str, Any]:
+    def _analyze_ownership_patterns(self, parcels_gdf: gpd.GeoDataFrame) -> dict[str, Any]:
         """
         Analyze ownership patterns in a set of parcels.
 

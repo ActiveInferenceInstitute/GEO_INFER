@@ -10,7 +10,7 @@ This module provides validation capabilities for:
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 from datetime import datetime
 from dataclasses import dataclass
 
@@ -22,9 +22,9 @@ class ValidationResult:
     """Validation result structure."""
 
     is_valid: bool
-    errors: List[str]
-    warnings: List[str]
-    validated_data: Dict[str, Any]
+    errors: list[str]
+    warnings: list[str]
+    validated_data: dict[str, Any]
 
 
 class UnderwritingValidator:
@@ -40,11 +40,11 @@ class UnderwritingValidator:
         self.claim_rules = self._load_claim_rules()
 
     def validate_application(
-        self, application_data: Dict[str, Any]
+        self, application_data: dict[str, Any]
     ) -> ValidationResult:
         """Validate underwriting application data."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
         validated_data = application_data.copy()
 
         try:
@@ -93,10 +93,10 @@ class UnderwritingValidator:
             validated_data=validated_data,
         )
 
-    def validate_policy(self, policy_data: Dict[str, Any]) -> ValidationResult:
+    def validate_policy(self, policy_data: dict[str, Any]) -> ValidationResult:
         """Validate policy data."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
         validated_data = policy_data.copy()
 
         try:
@@ -151,10 +151,10 @@ class UnderwritingValidator:
             validated_data=validated_data,
         )
 
-    def validate_claim(self, claim_data: Dict[str, Any]) -> ValidationResult:
+    def validate_claim(self, claim_data: dict[str, Any]) -> ValidationResult:
         """Validate claim data."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
         validated_data = claim_data.copy()
 
         try:
@@ -209,11 +209,11 @@ class UnderwritingValidator:
         )
 
     def _validate_property_data(
-        self, property_data: Dict[str, Any]
-    ) -> Dict[str, List[str]]:
+        self, property_data: dict[str, Any]
+    ) -> dict[str, list[str]]:
         """Validate property information."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         # Validate coordinates
         if "latitude" in property_data:
@@ -246,11 +246,11 @@ class UnderwritingValidator:
         return {"errors": errors, "warnings": warnings}
 
     def _validate_applicant_data(
-        self, applicant_data: Dict[str, Any]
-    ) -> Dict[str, List[str]]:
+        self, applicant_data: dict[str, Any]
+    ) -> dict[str, list[str]]:
         """Validate applicant information."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         # Validate required applicant fields
         required_fields = ["name", "contact_info"]
@@ -269,11 +269,11 @@ class UnderwritingValidator:
         return {"errors": errors, "warnings": warnings}
 
     def _validate_coverage_requests(
-        self, coverage_requests: List[Dict[str, Any]]
-    ) -> Dict[str, List[str]]:
+        self, coverage_requests: list[dict[str, Any]]
+    ) -> dict[str, list[str]]:
         """Validate coverage requests."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         if not coverage_requests:
             errors.append("At least one coverage request is required")
@@ -287,11 +287,11 @@ class UnderwritingValidator:
         return {"errors": errors, "warnings": warnings}
 
     def _validate_single_coverage_request(
-        self, coverage: Dict[str, Any], index: int
-    ) -> Dict[str, List[str]]:
+        self, coverage: dict[str, Any], index: int
+    ) -> dict[str, list[str]]:
         """Validate single coverage request."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         required_fields = ["coverage_type", "limit"]
         for field in required_fields:
@@ -321,11 +321,11 @@ class UnderwritingValidator:
         return {"errors": errors, "warnings": warnings}
 
     def _validate_coverage(
-        self, coverage: Dict[str, Any], index: int
-    ) -> Dict[str, List[str]]:
+        self, coverage: dict[str, Any], index: int
+    ) -> dict[str, list[str]]:
         """Validate coverage configuration."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         # Validate limit
         if "limit" in coverage:
@@ -344,11 +344,11 @@ class UnderwritingValidator:
         return {"errors": errors, "warnings": warnings}
 
     def _validate_business_logic(
-        self, application_data: Dict[str, Any]
-    ) -> Dict[str, List[str]]:
+        self, application_data: dict[str, Any]
+    ) -> dict[str, list[str]]:
         """Validate business logic rules."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         property_data = application_data.get("property", {})
         coverage_requests = application_data.get("coverage_requests", [])
@@ -369,10 +369,10 @@ class UnderwritingValidator:
 
         return {"errors": errors, "warnings": warnings}
 
-    def _validate_date(self, date_str: str, field_name: str) -> Dict[str, List[str]]:
+    def _validate_date(self, date_str: str, field_name: str) -> dict[str, list[str]]:
         """Validate date field."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         try:
             if isinstance(date_str, str):
@@ -387,10 +387,10 @@ class UnderwritingValidator:
 
         return {"errors": errors, "warnings": warnings}
 
-    def _validate_amount(self, amount: float, field_name: str) -> Dict[str, List[str]]:
+    def _validate_amount(self, amount: float, field_name: str) -> dict[str, list[str]]:
         """Validate amount field."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         if not isinstance(amount, (int, float)):
             errors.append(  # type: ignore[unreachable]
@@ -403,10 +403,10 @@ class UnderwritingValidator:
 
         return {"errors": errors, "warnings": warnings}
 
-    def _validate_premium(self, premium: float) -> Dict[str, List[str]]:
+    def _validate_premium(self, premium: float) -> dict[str, list[str]]:
         """Validate premium amount."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         if premium <= 0:
             errors.append("Premium must be positive")
@@ -415,10 +415,10 @@ class UnderwritingValidator:
 
         return {"errors": errors, "warnings": warnings}
 
-    def _validate_description(self, description: str) -> Dict[str, List[str]]:
+    def _validate_description(self, description: str) -> dict[str, list[str]]:
         """Validate description field."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         if not description or len(description.strip()) == 0:
             errors.append("Description is required")
@@ -429,7 +429,7 @@ class UnderwritingValidator:
 
         return {"errors": errors, "warnings": warnings}
 
-    def _load_application_rules(self) -> Dict[str, Any]:
+    def _load_application_rules(self) -> dict[str, Any]:
         """Load application validation rules."""
         return {
             "required_fields": ["property", "applicant", "coverage_requests"],
@@ -438,7 +438,7 @@ class UnderwritingValidator:
             "min_description_length": 10,
         }
 
-    def _load_policy_rules(self) -> Dict[str, Any]:
+    def _load_policy_rules(self) -> dict[str, Any]:
         """Load policy validation rules."""
         return {
             "required_fields": [
@@ -452,7 +452,7 @@ class UnderwritingValidator:
             "min_term_months": 1,
         }
 
-    def _load_claim_rules(self) -> Dict[str, Any]:
+    def _load_claim_rules(self) -> dict[str, Any]:
         """Load claim validation rules."""
         return {
             "required_fields": [
@@ -465,7 +465,7 @@ class UnderwritingValidator:
             "max_description_length": 1000,
         }
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform health check on validator."""
         return {
             "status": "operational",
@@ -488,11 +488,11 @@ class PolicyValidator:
         )
 
     def validate_policy_renewal(
-        self, current_policy: Dict[str, Any], renewal_data: Dict[str, Any]
+        self, current_policy: dict[str, Any], renewal_data: dict[str, Any]
     ) -> ValidationResult:
         """Validate policy renewal."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
         validated_data = renewal_data.copy()
 
         try:
@@ -524,11 +524,11 @@ class PolicyValidator:
         )
 
     def validate_policy_endorsement(
-        self, policy: Dict[str, Any], endorsement: Dict[str, Any]
+        self, policy: dict[str, Any], endorsement: dict[str, Any]
     ) -> ValidationResult:
         """Validate policy endorsement."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
         validated_data = endorsement.copy()
 
         try:
@@ -567,20 +567,20 @@ class PolicyValidator:
 
 # Convenience functions
 def validate_underwriting_application(
-    application_data: Dict[str, Any],
+    application_data: dict[str, Any],
 ) -> ValidationResult:
     """Validate underwriting application data."""
     validator = UnderwritingValidator()
     return validator.validate_application(application_data)
 
 
-def validate_policy_data(policy_data: Dict[str, Any]) -> ValidationResult:
+def validate_policy_data(policy_data: dict[str, Any]) -> ValidationResult:
     """Validate policy data."""
     validator = UnderwritingValidator()
     return validator.validate_policy(policy_data)
 
 
-def validate_claim_data(claim_data: Dict[str, Any]) -> ValidationResult:
+def validate_claim_data(claim_data: dict[str, Any]) -> ValidationResult:
     """Validate claim data."""
     validator = UnderwritingValidator()
     return validator.validate_claim(claim_data)

@@ -17,7 +17,7 @@ Key Features:
 
 import numpy as np
 import logging
-from typing import Dict, List, Any, Optional, cast
+from typing import Any, cast
 from datetime import datetime
 from dataclasses import dataclass, field
 from collections import defaultdict
@@ -50,12 +50,12 @@ class MonitoringObjective:
     """Configuration for environmental monitoring objectives."""
 
     name: str
-    sensor_types: List[str]
+    sensor_types: list[str]
     priority: float = 1.0
     target_accuracy: float = 0.9
     temporal_resolution: str = "continuous"  # 'continuous', 'hourly', 'daily'
     spatial_resolution: str = "high"  # 'low', 'medium', 'high'
-    alert_thresholds: Dict[str, float] = field(default_factory=dict)
+    alert_thresholds: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -68,7 +68,7 @@ class SensorReading:
     location: np.ndarray
     timestamp: datetime
     quality_score: float = 1.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class EnvironmentalMonitoringSwarm:
@@ -91,8 +91,8 @@ class EnvironmentalMonitoringSwarm:
     def __init__(
         self,
         swarm_size: int = 200,
-        monitoring_objectives: Optional[List[str]] = None,
-        spatial_coverage: Optional[Dict[str, float]] = None,
+        monitoring_objectives: list[str] | None = None,
+        spatial_coverage: dict[str, float] | None = None,
         temporal_coverage: str = "continuous",
         adaptive_sampling: bool = True,
         real_time_processing: bool = True,
@@ -136,20 +136,20 @@ class EnvironmentalMonitoringSwarm:
             raise ValueError("sensor_range must be finite and positive")
 
         # Monitoring system state
-        self.monitoring_agents: List[SwarmAgent] = []
-        self.pheromone_system: Optional[PheromoneSystem] = None
-        self.digital_stigmergy: Optional[DigitalStigmergy] = None
-        self.spatial_analytics: Optional[Any] = None
+        self.monitoring_agents: list[SwarmAgent] = []
+        self.pheromone_system: PheromoneSystem | None = None
+        self.digital_stigmergy: DigitalStigmergy | None = None
+        self.spatial_analytics: Any | None = None
 
         # Data collection and analysis
-        self.sensor_data: List[SensorReading] = []
-        self.anomaly_history: List[Dict[str, Any]] = []
-        self.coverage_maps: Dict[str, np.ndarray] = {}
-        self.alerts: List[Dict[str, Any]] = []
+        self.sensor_data: list[SensorReading] = []
+        self.anomaly_history: list[dict[str, Any]] = []
+        self.coverage_maps: dict[str, np.ndarray] = {}
+        self.alerts: list[dict[str, Any]] = []
 
         # Optimization components
-        self.sampling_optimizer: Optional[AntColonyOptimization] = None
-        self.coverage_optimizer: Optional[ParticleSwarmOptimization] = None
+        self.sampling_optimizer: AntColonyOptimization | None = None
+        self.coverage_optimizer: ParticleSwarmOptimization | None = None
 
         # Performance tracking
         self.monitoring_efficiency: float = 0.0
@@ -229,11 +229,11 @@ class EnvironmentalMonitoringSwarm:
 
     async def deploy_agents(
         self,
-        initial_positions: Optional[List[np.ndarray]] = None,
-        environmental_priorities: Optional[Dict[str, float]] = None,
-        logistical_constraints: Optional[Dict[str, Any]] = None,
-        communication_requirements: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        initial_positions: list[np.ndarray] | None = None,
+        environmental_priorities: dict[str, float] | None = None,
+        logistical_constraints: dict[str, Any] | None = None,
+        communication_requirements: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Deploy monitoring agents across the target area.
 
@@ -248,7 +248,7 @@ class EnvironmentalMonitoringSwarm:
         """
         logger.info(f"Deploying {self.swarm_size} monitoring agents")
 
-        deployment_plan: Dict[str, Any] = {
+        deployment_plan: dict[str, Any] = {
             "agents": [],
             "deployment_strategy": "optimized",
             "coverage_achieved": 0.0,
@@ -303,9 +303,9 @@ class EnvironmentalMonitoringSwarm:
 
     async def _optimize_initial_positions(
         self,
-        environmental_priorities: Dict[str, float],
-        logistical_constraints: Dict[str, Any],
-    ) -> List[np.ndarray]:
+        environmental_priorities: dict[str, float],
+        logistical_constraints: dict[str, Any],
+    ) -> list[np.ndarray]:
         """Optimize initial positions for maximum coverage and priority alignment."""
         candidates = self._generate_grid_positions()
         forbidden_regions = logistical_constraints.get("forbidden_regions", [])
@@ -324,7 +324,7 @@ class EnvironmentalMonitoringSwarm:
         # Greedy max-dispersion selection solves the multi-agent placement
         # objective directly: PSO optimizes one point at a time, whereas this
         # application must optimize a set of positions jointly.
-        selected: List[np.ndarray] = []
+        selected: list[np.ndarray] = []
         diagonal = np.hypot(
             self.spatial_coverage["max_lat"] - self.spatial_coverage["min_lat"],
             self.spatial_coverage["max_lng"] - self.spatial_coverage["min_lng"],
@@ -353,7 +353,7 @@ class EnvironmentalMonitoringSwarm:
         return [position.copy() for position in selected]
 
     @staticmethod
-    def _point_in_region(point: np.ndarray, region: Dict[str, Any]) -> bool:
+    def _point_in_region(point: np.ndarray, region: dict[str, Any]) -> bool:
         """Check a point against a rectangular or circular exclusion region."""
         if "center" in region and "radius" in region:
             center = np.asarray(region["center"], dtype=float)
@@ -364,7 +364,7 @@ class EnvironmentalMonitoringSwarm:
             and bounds.get("min_lng", -180) <= point[1] <= bounds.get("max_lng", 180)
         )
 
-    def _generate_grid_positions(self) -> List[np.ndarray]:
+    def _generate_grid_positions(self) -> list[np.ndarray]:
         """Generate grid-based initial positions."""
         positions = []
 
@@ -405,8 +405,8 @@ class EnvironmentalMonitoringSwarm:
         )
 
     def _configure_monitoring_agent(
-        self, agent_id: str, position: np.ndarray, objectives: List[str]
-    ) -> Dict[str, Any]:
+        self, agent_id: str, position: np.ndarray, objectives: list[str]
+    ) -> dict[str, Any]:
         """Configure individual monitoring agent."""
         config = {
             "agent_id": agent_id,
@@ -422,7 +422,7 @@ class EnvironmentalMonitoringSwarm:
 
         return config
 
-    def _get_sensory_capabilities(self, objectives: List[str]) -> List[str]:
+    def _get_sensory_capabilities(self, objectives: list[str]) -> list[str]:
         """Get sensory capabilities based on monitoring objectives."""
         capabilities = []
 
@@ -468,7 +468,7 @@ class EnvironmentalMonitoringSwarm:
         return frequency_map.get(self.temporal_coverage, "1_hour")
 
     def _calculate_position_priority(
-        self, position: np.ndarray, priorities: Dict[str, float]
+        self, position: np.ndarray, priorities: dict[str, float]
     ) -> float:
         """Calculate priority score for a position."""
         if not priorities:
@@ -491,8 +491,8 @@ class EnvironmentalMonitoringSwarm:
                 continue
             weight = max(0.0, min(1.0, float(raw_weight)))
             total_weight += weight
-            features: List[Any] = cast(
-                List[Any], priorities.get(f"{priority_type}_locations", [])
+            features: list[Any] = cast(
+                list[Any], priorities.get(f"{priority_type}_locations", [])
             )
             if not features:
                 score += weight
@@ -519,7 +519,7 @@ class EnvironmentalMonitoringSwarm:
         return float(score / total_weight) if total_weight else 0.0
 
     def _calculate_deployment_coverage(
-        self, deployed_agents: List[Dict[str, Any]]
+        self, deployed_agents: list[dict[str, Any]]
     ) -> float:
         """Calculate expected coverage quality of deployment."""
         if not deployed_agents:
@@ -530,11 +530,11 @@ class EnvironmentalMonitoringSwarm:
 
     async def coordinate_monitoring(
         self,
-        agent_positions: List[np.ndarray],
-        environmental_conditions: Optional[Dict[str, Any]] = None,
-        data_priorities: Optional[Dict[str, float]] = None,
-        energy_constraints: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, Any]:
+        agent_positions: list[np.ndarray],
+        environmental_conditions: dict[str, Any] | None = None,
+        data_priorities: dict[str, float] | None = None,
+        energy_constraints: dict[str, float] | None = None,
+    ) -> dict[str, Any]:
         """
         Coordinate monitoring activities across all agents.
 
@@ -549,7 +549,7 @@ class EnvironmentalMonitoringSwarm:
         """
         logger.info(f"Coordinating monitoring for {len(agent_positions)} agents")
 
-        coordination_plan: Dict[str, Any] = {
+        coordination_plan: dict[str, Any] = {
             "monitoring_instructions": {},
             "sampling_strategy": "adaptive" if self.adaptive_sampling else "uniform",
             "communication_protocol": "pheromone_digital_hybrid",
@@ -593,10 +593,10 @@ class EnvironmentalMonitoringSwarm:
 
     async def _generate_adaptive_sampling_strategy(
         self,
-        agent_positions: List[np.ndarray],
-        environmental_conditions: Optional[Dict[str, Any]] = None,
-        data_priorities: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, Any]:
+        agent_positions: list[np.ndarray],
+        environmental_conditions: dict[str, Any] | None = None,
+        data_priorities: dict[str, float] | None = None,
+    ) -> dict[str, Any]:
         """Generate adaptive sampling strategy based on current conditions."""
         strategy = {
             "strategy_type": "adaptive",
@@ -628,8 +628,8 @@ class EnvironmentalMonitoringSwarm:
         return strategy
 
     def _create_sampling_zones(
-        self, agent_positions: List[np.ndarray], conditions: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent_positions: list[np.ndarray], conditions: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create sampling zones based on environmental variability."""
         custom_zones = conditions.get("sampling_zones", []) if conditions else []
         if custom_zones:
@@ -671,10 +671,10 @@ class EnvironmentalMonitoringSwarm:
         }
 
     def _assign_agents_to_zones(
-        self, agent_positions: List[np.ndarray], zones: Dict[str, Any]
-    ) -> Dict[str, List[str]]:
+        self, agent_positions: list[np.ndarray], zones: dict[str, Any]
+    ) -> dict[str, list[str]]:
         """Assign agents to sampling zones."""
-        assignments: Dict[str, List[Any]] = {
+        assignments: dict[str, list[Any]] = {
             zone_name: [] for zone_name in zones.keys()
         }
 
@@ -691,8 +691,8 @@ class EnvironmentalMonitoringSwarm:
         return assignments
 
     def _calculate_sampling_frequencies(
-        self, data_priorities: Dict[str, float], conditions: Dict[str, Any]
-    ) -> Dict[str, str]:
+        self, data_priorities: dict[str, float], conditions: dict[str, Any]
+    ) -> dict[str, str]:
         """Calculate optimal sampling frequencies."""
         frequencies = {}
 
@@ -709,10 +709,10 @@ class EnvironmentalMonitoringSwarm:
         return frequencies
 
     def _generate_communication_plan(
-        self, agent_positions: List[np.ndarray]
-    ) -> Dict[str, Any]:
+        self, agent_positions: list[np.ndarray]
+    ) -> dict[str, Any]:
         """Generate communication plan for agents."""
-        plan: Dict[str, Any] = {
+        plan: dict[str, Any] = {
             "communication_instructions": {},
             "information_sharing_rules": {},
             "coordination_signals": {},
@@ -745,7 +745,7 @@ class EnvironmentalMonitoringSwarm:
         return plan
 
     def _calculate_monitoring_coverage(
-        self, agent_positions: List[np.ndarray]
+        self, agent_positions: list[np.ndarray]
     ) -> float:
         """Calculate current monitoring coverage quality."""
         if not agent_positions:
@@ -797,8 +797,8 @@ class EnvironmentalMonitoringSwarm:
         return width * height
 
     def _identify_priority_areas(
-        self, data_priorities: Dict[str, float]
-    ) -> List[Dict[str, Any]]:
+        self, data_priorities: dict[str, float]
+    ) -> list[dict[str, Any]]:
         """Identify priority areas for focused monitoring."""
         priority_areas = []
 
@@ -833,11 +833,11 @@ class EnvironmentalMonitoringSwarm:
 
     async def process_collective_intelligence(
         self,
-        individual_measurements: List[SensorReading],
+        individual_measurements: list[SensorReading],
         spatial_interpolation: str = "kriging",
         uncertainty_quantification: str = "bayesian",
         anomaly_detection: str = "statistical",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Process collective environmental intelligence from all agents.
 
@@ -873,7 +873,7 @@ class EnvironmentalMonitoringSwarm:
                 converted.append(m)
         individual_measurements = converted
 
-        assessment: Dict[str, Any] = {
+        assessment: dict[str, Any] = {
             "assessment_time": datetime.now(),
             "data_summary": self._summarize_measurements(individual_measurements),
             "spatial_analysis": {},
@@ -924,13 +924,13 @@ class EnvironmentalMonitoringSwarm:
         return assessment
 
     def _summarize_measurements(
-        self, measurements: List[SensorReading]
-    ) -> Dict[str, Any]:
+        self, measurements: list[SensorReading]
+    ) -> dict[str, Any]:
         """Summarize measurement data."""
         if not measurements:
             return {"total_measurements": 0}
 
-        summary: Dict[str, Any] = {
+        summary: dict[str, Any] = {
             "total_measurements": len(measurements),
             "measurement_types": list(set([m.sensor_type for m in measurements])),
             "time_range": {
@@ -967,8 +967,8 @@ class EnvironmentalMonitoringSwarm:
         return summary
 
     async def _perform_spatial_analysis(
-        self, measurements: List[SensorReading], interpolation_method: str
-    ) -> Dict[str, Any]:
+        self, measurements: list[SensorReading], interpolation_method: str
+    ) -> dict[str, Any]:
         """Perform spatial analysis and interpolation."""
         try:
             # Group measurements by type
@@ -1013,7 +1013,7 @@ class EnvironmentalMonitoringSwarm:
 
     def _simple_kriging_interpolation(
         self, locations: np.ndarray, values: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Estimate the value at the sample centroid with an ordinary kriging system.
 
@@ -1102,7 +1102,7 @@ class EnvironmentalMonitoringSwarm:
 
     def _inverse_distance_weighting(
         self, locations: np.ndarray, values: np.ndarray, power: float = 2.0
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Inverse distance weighting interpolation.
 
@@ -1166,8 +1166,8 @@ class EnvironmentalMonitoringSwarm:
         return float(min(1.0, total_range / max_range))
 
     async def _detect_anomalies(
-        self, measurements: List[SensorReading], detection_method: str
-    ) -> List[Dict[str, Any]]:
+        self, measurements: list[SensorReading], detection_method: str
+    ) -> list[dict[str, Any]]:
         """Detect anomalies in environmental measurements."""
         anomalies = []
 
@@ -1220,7 +1220,7 @@ class EnvironmentalMonitoringSwarm:
 
         return anomalies
 
-    def _statistical_anomaly_detection(self, values: np.ndarray) -> List[int]:
+    def _statistical_anomaly_detection(self, values: np.ndarray) -> list[int]:
         """Statistical outlier detection using IQR method."""
         if len(values) < 4:
             return []
@@ -1237,7 +1237,7 @@ class EnvironmentalMonitoringSwarm:
 
         return anomaly_indices
 
-    def _isolation_forest_anomaly_detection(self, values: np.ndarray) -> List[int]:
+    def _isolation_forest_anomaly_detection(self, values: np.ndarray) -> list[int]:
         """Isolation forest anomaly detection using scikit-learn."""
         try:
             from sklearn.ensemble import IsolationForest
@@ -1273,7 +1273,7 @@ class EnvironmentalMonitoringSwarm:
             )
             return self._statistical_anomaly_detection(values)
 
-    def _zscore_anomaly_detection(self, values: np.ndarray) -> List[int]:
+    def _zscore_anomaly_detection(self, values: np.ndarray) -> list[int]:
         """Z-score based anomaly detection."""
         if len(values) < 3:
             return []
@@ -1295,7 +1295,7 @@ class EnvironmentalMonitoringSwarm:
     def _calculate_anomaly_severity(self, value: float, sensor_type: str) -> str:
         """Calculate severity level of anomaly."""
         # Define severity thresholds by sensor type
-        severity_thresholds: Dict[str, Dict[str, float]] = {
+        severity_thresholds: dict[str, dict[str, float]] = {
             "pm25_sensor": {"low": 25, "medium": 50, "high": 100},
             "no2_sensor": {"low": 0.05, "medium": 0.1, "high": 0.2},
             "ph_sensor": {"low": 1.0, "medium": 2.0, "high": 3.0},
@@ -1320,10 +1320,10 @@ class EnvironmentalMonitoringSwarm:
             return "minimal"
 
     def _quantify_uncertainty(
-        self, measurements: List[SensorReading], method: str
-    ) -> Dict[str, Any]:
+        self, measurements: list[SensorReading], method: str
+    ) -> dict[str, Any]:
         """Quantify uncertainty in measurements."""
-        uncertainty: Dict[str, Any] = {
+        uncertainty: dict[str, Any] = {
             "method": method,
             "overall_uncertainty": 0.0,
             "sensor_uncertainties": {},
@@ -1401,7 +1401,7 @@ class EnvironmentalMonitoringSwarm:
 
         return float(uncertainty)
 
-    def _calculate_temporal_uncertainty(self, timestamps: List[datetime]) -> float:
+    def _calculate_temporal_uncertainty(self, timestamps: list[datetime]) -> float:
         """Calculate temporal uncertainty based on time gaps."""
         if len(timestamps) < 2:
             return 1.0
@@ -1429,8 +1429,8 @@ class EnvironmentalMonitoringSwarm:
         return cast(float, uncertainty)
 
     def _generate_monitoring_recommendations(
-        self, assessment: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        self, assessment: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Generate recommendations for improving monitoring."""
         recommendations = []
 
@@ -1493,7 +1493,7 @@ class EnvironmentalMonitoringSwarm:
         return recommendations
 
     def _update_performance_metrics(
-        self, measurements: List[SensorReading], assessment: Dict[str, Any]
+        self, measurements: list[SensorReading], assessment: dict[str, Any]
     ) -> None:
         """Update system performance metrics."""
         if not measurements:
@@ -1516,7 +1516,7 @@ class EnvironmentalMonitoringSwarm:
             len(anomalies) / max(1, len(measurements)) * 1000
         )  # Per 1000 measurements
 
-    def get_monitoring_status(self) -> Dict[str, Any]:
+    def get_monitoring_status(self) -> dict[str, Any]:
         """Get current monitoring system status."""
         status = {
             "system_status": "operational",

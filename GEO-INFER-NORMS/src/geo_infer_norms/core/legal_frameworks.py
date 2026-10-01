@@ -6,7 +6,6 @@ applying legal frameworks in geospatial contexts.
 """
 
 import geopandas as gpd
-from typing import Dict, List, Optional, Union
 import logging
 from shapely.geometry import Point, Polygon, MultiPolygon
 
@@ -28,8 +27,8 @@ class LegalFramework:
         self,
         name: str,
         description: str = "",
-        jurisdictions: Optional[List[Jurisdiction]] = None,
-        regulations: Optional[List[Regulation]] = None,
+        jurisdictions: list[Jurisdiction] | None = None,
+        regulations: list[Regulation] | None = None,
     ):
         """
         Initialize a LegalFramework instance.
@@ -44,8 +43,8 @@ class LegalFramework:
         self.description = description
         self.jurisdictions = jurisdictions or []
         self.regulations = regulations or []
-        self._jurisdiction_index: Dict[str, Jurisdiction] = {}
-        self._regulation_index: Dict[str, Regulation] = {}
+        self._jurisdiction_index: dict[str, Jurisdiction] = {}
+        self._regulation_index: dict[str, Regulation] = {}
 
         # Initialize indexes
         self._build_indexes()
@@ -80,7 +79,7 @@ class LegalFramework:
         self._regulation_index[regulation.id] = regulation
         logger.info(f"Added regulation {regulation.name} to framework {self.name}")
 
-    def get_regulations_by_jurisdiction(self, jurisdiction_id: str) -> List[Regulation]:
+    def get_regulations_by_jurisdiction(self, jurisdiction_id: str) -> list[Regulation]:
         """
         Get all regulations applicable to a specific jurisdiction.
 
@@ -108,7 +107,7 @@ class LegalFramework:
 
         return applicable_regs
 
-    def get_jurisdictions_by_point(self, point: Point) -> List[Jurisdiction]:
+    def get_jurisdictions_by_point(self, point: Point) -> list[Jurisdiction]:
         """
         Get all jurisdictions that contain a specific geographic point.
 
@@ -128,7 +127,7 @@ class LegalFramework:
 
         return containing_jurisdictions
 
-    def get_regulations_by_point(self, point: Point) -> List[Regulation]:
+    def get_regulations_by_point(self, point: Point) -> list[Regulation]:
         """
         Get all regulations applicable to a specific geographic point.
 
@@ -190,7 +189,7 @@ class JurisdictionHandler:
     hierarchies, and boundary operations.
     """
 
-    def __init__(self, jurisdictions: Optional[List[Jurisdiction]] = None):
+    def __init__(self, jurisdictions: list[Jurisdiction] | None = None):
         """
         Initialize a JurisdictionHandler instance.
 
@@ -199,7 +198,7 @@ class JurisdictionHandler:
         """
         self.jurisdictions = jurisdictions or []
         self._jurisdiction_index = {j.id: j for j in self.jurisdictions}
-        self._hierarchy_cache: Dict[str, List[Jurisdiction]] = {}
+        self._hierarchy_cache: dict[str, list[Jurisdiction]] = {}
 
     def add_jurisdiction(self, jurisdiction: Jurisdiction) -> None:
         """
@@ -213,7 +212,7 @@ class JurisdictionHandler:
         # Clear hierarchy cache when adding new jurisdictions
         self._hierarchy_cache = {}
 
-    def get_jurisdiction_by_id(self, jurisdiction_id: str) -> Optional[Jurisdiction]:
+    def get_jurisdiction_by_id(self, jurisdiction_id: str) -> Jurisdiction | None:
         """
         Get a jurisdiction by its ID.
 
@@ -225,7 +224,7 @@ class JurisdictionHandler:
         """
         return self._jurisdiction_index.get(jurisdiction_id)
 
-    def get_jurisdiction_hierarchy(self, jurisdiction_id: str) -> List[Jurisdiction]:
+    def get_jurisdiction_hierarchy(self, jurisdiction_id: str) -> list[Jurisdiction]:
         """
         Get the hierarchical chain of jurisdictions from the given one up to the root.
 
@@ -241,7 +240,7 @@ class JurisdictionHandler:
 
         hierarchy = []
         visited: set = set()
-        current_id: Optional[str] = jurisdiction_id
+        current_id: str | None = jurisdiction_id
 
         while current_id:
             jurisdiction = self._jurisdiction_index.get(current_id)
@@ -262,7 +261,7 @@ class JurisdictionHandler:
 
     def find_jurisdictions_by_name(
         self, name: str, partial_match: bool = False
-    ) -> List[Jurisdiction]:
+    ) -> list[Jurisdiction]:
         """
         Find jurisdictions by name.
 
@@ -283,7 +282,7 @@ class JurisdictionHandler:
 
         return matches
 
-    def find_jurisdictions_at_level(self, level: str) -> List[Jurisdiction]:
+    def find_jurisdictions_at_level(self, level: str) -> list[Jurisdiction]:
         """
         Find all jurisdictions at a specific level (e.g., 'federal', 'state', 'county', 'city').
 
@@ -296,8 +295,8 @@ class JurisdictionHandler:
         return [j for j in self.jurisdictions if j.level == level]
 
     def get_overlapping_jurisdictions(
-        self, geometry: Union[Point, Polygon, MultiPolygon]
-    ) -> List[Jurisdiction]:
+        self, geometry: Point | Polygon | MultiPolygon
+    ) -> list[Jurisdiction]:
         """
         Find all jurisdictions that overlap with a given geometry.
 
@@ -322,14 +321,14 @@ class JurisdictionHandler:
 
         return overlapping
 
-    def create_jurisdiction_graph(self) -> Dict[str, List[str]]:
+    def create_jurisdiction_graph(self) -> dict[str, list[str]]:
         """
         Create a graph representation of the jurisdictional hierarchy.
 
         Returns:
             A dictionary mapping jurisdiction IDs to lists of child jurisdiction IDs
         """
-        graph: Dict[str, List[str]] = {j.id: [] for j in self.jurisdictions}
+        graph: dict[str, list[str]] = {j.id: [] for j in self.jurisdictions}
 
         for jurisdiction in self.jurisdictions:
             if jurisdiction.parent_id and jurisdiction.parent_id in graph:

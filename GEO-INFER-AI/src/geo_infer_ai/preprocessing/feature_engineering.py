@@ -7,7 +7,6 @@ spatial features, and data augmentation.
 """
 
 import logging
-from typing import Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -40,16 +39,16 @@ class GeospatialFeatureEngineer:
         """
         self.normalize = normalize
         self.handle_spatial_autocorr = handle_spatial_autocorr
-        self.scaler: Optional[StandardScaler] = None
-        self.feature_names_: Optional[List[str]] = None
-        self.spatial_centroid_: Optional[np.ndarray] = None
+        self.scaler: StandardScaler | None = None
+        self.feature_names_: list[str] | None = None
+        self.spatial_centroid_: np.ndarray | None = None
 
     def create_spatial_features(
         self,
         coordinates: np.ndarray,
         include_distances: bool = True,
         include_angles: bool = False,
-        centroid: Optional[np.ndarray] = None,
+        centroid: np.ndarray | None = None,
     ) -> pd.DataFrame:
         """
         Create spatial features from coordinates.
@@ -77,7 +76,7 @@ class GeospatialFeatureEngineer:
             raise ValueError("centroid must contain two finite coordinates")
         centroid_lon, centroid_lat = reference
 
-        features: Dict[str, np.ndarray] = {
+        features: dict[str, np.ndarray] = {
             "longitude": lon,
             "latitude": lat,
         }
@@ -101,7 +100,7 @@ class GeospatialFeatureEngineer:
         return df
 
     def create_temporal_features(
-        self, timestamps: Union[np.ndarray, pd.Series, List]
+        self, timestamps: np.ndarray | pd.Series | list
     ) -> pd.DataFrame:
         """
         Create temporal features from timestamps.
@@ -143,9 +142,9 @@ class GeospatialFeatureEngineer:
 
     def fit_transform(
         self,
-        X: Union[np.ndarray, pd.DataFrame],
-        coordinates: Optional[np.ndarray] = None,
-        timestamps: Optional[Union[np.ndarray, pd.Series, List]] = None,
+        X: np.ndarray | pd.DataFrame,
+        coordinates: np.ndarray | None = None,
+        timestamps: np.ndarray | pd.Series | list | None = None,
     ) -> np.ndarray:
         """
         Fit the feature engineer and transform data.
@@ -217,9 +216,9 @@ class GeospatialFeatureEngineer:
 
     def transform(
         self,
-        X: Union[np.ndarray, pd.DataFrame],
-        coordinates: Optional[np.ndarray] = None,
-        timestamps: Optional[Union[np.ndarray, pd.Series, List]] = None,
+        X: np.ndarray | pd.DataFrame,
+        coordinates: np.ndarray | None = None,
+        timestamps: np.ndarray | pd.Series | list | None = None,
     ) -> np.ndarray:
         """
         Transform data using fitted feature engineer.
@@ -278,7 +277,7 @@ class GeospatialFeatureEngineer:
 
         return np.asarray(X_transformed)
 
-    def get_feature_names(self) -> Optional[List[str]]:
+    def get_feature_names(self) -> list[str] | None:
         """
         Get feature names.
 
@@ -322,7 +321,7 @@ class GeospatialFeatureEngineer:
         diff = coordinates[:, np.newaxis, :] - coordinates[np.newaxis, :, :]
         dist_matrix = np.sqrt(np.sum(diff**2, axis=2))
 
-        lag_features: Dict[str, np.ndarray] = {}
+        lag_features: dict[str, np.ndarray] = {}
 
         for v in range(n_vars):
             var_lags = np.zeros(n_samples)
@@ -356,7 +355,7 @@ class GeospatialFeatureEngineer:
         self,
         coordinates: np.ndarray,
         reference_points: np.ndarray,
-        reference_names: Optional[List[str]] = None,
+        reference_names: list[str] | None = None,
     ) -> pd.DataFrame:
         """
         Create distance features from each sample to a set of reference points.
@@ -377,7 +376,7 @@ class GeospatialFeatureEngineer:
         if reference_names is None:
             reference_names = [f"ref_{i}" for i in range(n_refs)]
 
-        features: Dict[str, np.ndarray] = {}
+        features: dict[str, np.ndarray] = {}
 
         for j in range(n_refs):
             diff = coordinates - reference_points[j]
@@ -391,8 +390,8 @@ class GeospatialFeatureEngineer:
     def create_temporal_aggregation_features(
         self,
         values: np.ndarray,
-        timestamps: Union[np.ndarray, pd.Series, List],
-        window_sizes: Optional[List[int]] = None,
+        timestamps: np.ndarray | pd.Series | list,
+        window_sizes: list[int] | None = None,
     ) -> pd.DataFrame:
         """
         Create rolling window aggregation features from time-series values.
@@ -422,7 +421,7 @@ class GeospatialFeatureEngineer:
         sort_idx = timestamps.argsort()
         sorted_values = values[sort_idx]
 
-        features: Dict[str, np.ndarray] = {}
+        features: dict[str, np.ndarray] = {}
 
         for window in window_sizes:
             series = pd.Series(sorted_values)

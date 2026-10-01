@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 _ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
 if str(_ORCHESTRATORS_DIR) not in sys.path:
@@ -25,7 +25,7 @@ if str(_ORCHESTRATORS_DIR) not in sys.path:
 from _lib import run_module_orchestrator  # noqa: E402
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     from geo_infer_app.models.agent_configuration import AgentConfiguration, AgentType
     from geo_infer_app.models.agent_factory import AgentFactory
     from geo_infer_app.models.agent_visualization import AgentVisualization
@@ -33,7 +33,7 @@ def _operation() -> Dict[str, Any]:
 
     # --- Configuration schema validation on synthetic UI submissions ----
     default_config = AgentConfiguration.get_default_config(AgentType.BDI)
-    valid_submission: Dict[str, Any] = {
+    valid_submission: dict[str, Any] = {
         **default_config,
         "name": "Del Norte Field Survey Fleet",
         "description": "Synthetic UI session for a three-agent BDI survey fleet",
@@ -42,7 +42,7 @@ def _operation() -> Dict[str, Any]:
         AgentType.BDI, valid_submission
     )
 
-    invalid_submission: Dict[str, Any] = {
+    invalid_submission: dict[str, Any] = {
         "description": 123,
         "unexpected_field": True,
     }
@@ -59,7 +59,7 @@ def _operation() -> Dict[str, Any]:
             "expected BDIAgentInterface"
         )
 
-    events: List[Dict[str, Any]] = []
+    events: list[dict[str, Any]] = []
     interface.register_event_handler(
         "agent_created", lambda payload: events.append({"type": "agent_created"})
     )
@@ -67,7 +67,7 @@ def _operation() -> Dict[str, Any]:
         "agent_updated", lambda payload: events.append({"type": "agent_updated"})
     )
 
-    fleet_specs: List[Dict[str, Any]] = [
+    fleet_specs: list[dict[str, Any]] = [
         {
             "agent_id": "ui-agent-001",
             "name": "Scout-Alpha",
@@ -91,13 +91,13 @@ def _operation() -> Dict[str, Any]:
         },
     ]
 
-    created_ids: List[str] = []
+    created_ids: list[str] = []
     for spec in fleet_specs:
         agent_id = interface.create_agent(AgentType.BDI, spec)
         created_ids.append(agent_id)
 
     # --- Drive the full BDI cycle over the synthetic session -------------
-    command_results: Dict[str, Any] = {}
+    command_results: dict[str, Any] = {}
     command_results["add_belief"] = interface.send_command(
         "ui-agent-001",
         "add_belief",
@@ -141,7 +141,7 @@ def _operation() -> Dict[str, Any]:
         interface.get_agent_state("ui-agent-001")
     )
 
-    event_counts: Dict[str, int] = {}
+    event_counts: dict[str, int] = {}
     for event in events:
         event_counts[event["type"]] = event_counts.get(event["type"], 0) + 1
 

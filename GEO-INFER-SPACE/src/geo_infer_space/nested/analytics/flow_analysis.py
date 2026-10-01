@@ -10,7 +10,7 @@ import logging
 import uuid
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, cast
 from enum import Enum
 from collections import defaultdict
 
@@ -77,11 +77,11 @@ class FlowVector:
     velocity: float = 0.0
 
     # Flow data
-    flow_data: Dict[str, Any] = field(default_factory=dict)
+    flow_data: dict[str, Any] = field(default_factory=dict)
 
     # Temporal properties
     timestamp: datetime = field(default_factory=datetime.now)
-    duration: Optional[timedelta] = None
+    duration: timedelta | None = None
 
     # Quality metrics
     confidence: float = 1.0
@@ -104,7 +104,7 @@ class FlowField:
     flow_type: FlowType
 
     # Flow vectors
-    vectors: Dict[Tuple[str, str], FlowVector] = field(default_factory=dict)
+    vectors: dict[tuple[str, str], FlowVector] = field(default_factory=dict)
 
     # Field properties
     total_flow: float = 0.0
@@ -120,8 +120,8 @@ class FlowField:
     last_updated: datetime = field(default_factory=datetime.now)
 
     # Pattern analysis
-    detected_patterns: List[FlowPattern] = field(default_factory=list)
-    pattern_confidence: Dict[FlowPattern, float] = field(default_factory=dict)
+    detected_patterns: list[FlowPattern] = field(default_factory=list)
+    pattern_confidence: dict[FlowPattern, float] = field(default_factory=dict)
 
     def add_vector(self, vector: FlowVector) -> None:
         """Add a flow vector to the field."""
@@ -162,7 +162,7 @@ class FlowAnalysisResult:
     """
 
     analysis_id: str
-    flow_fields: Dict[str, FlowField] = field(default_factory=dict)
+    flow_fields: dict[str, FlowField] = field(default_factory=dict)
 
     # Summary metrics
     total_flows: int = 0
@@ -170,8 +170,8 @@ class FlowAnalysisResult:
     average_flow_rate: float = 0.0
 
     # Pattern analysis
-    dominant_patterns: List[FlowPattern] = field(default_factory=list)
-    pattern_statistics: Dict[FlowPattern, Dict[str, float]] = field(
+    dominant_patterns: list[FlowPattern] = field(default_factory=list)
+    pattern_statistics: dict[FlowPattern, dict[str, float]] = field(
         default_factory=dict
     )
 
@@ -206,14 +206,14 @@ class H3FlowAnalyzer:
         self.name = name
 
         # Flow data storage
-        self.flow_fields: Dict[str, FlowField] = {}
-        self.flow_history: Dict[str, List[FlowVector]] = defaultdict(list)
+        self.flow_fields: dict[str, FlowField] = {}
+        self.flow_history: dict[str, list[FlowVector]] = defaultdict(list)
 
         # Analysis results
-        self.analysis_results: Dict[str, FlowAnalysisResult] = {}
+        self.analysis_results: dict[str, FlowAnalysisResult] = {}
 
         # Configuration
-        self.analysis_config: Dict[str, Any] = {
+        self.analysis_config: dict[str, Any] = {
             "min_flow_magnitude": 0.01,
             "max_flow_age": timedelta(hours=24),
             "pattern_detection_threshold": 0.7,
@@ -221,7 +221,7 @@ class H3FlowAnalyzer:
         }
 
         # Statistics
-        self.analysis_stats: Dict[str, int] = defaultdict(int)
+        self.analysis_stats: dict[str, int] = defaultdict(int)
 
         # Metadata
         self.created_at = datetime.now()
@@ -253,7 +253,7 @@ class H3FlowAnalyzer:
         magnitude: float,
         direction: float = 0.0,
         velocity: float = 0.0,
-        flow_data: Optional[Dict[str, Any]] = None,
+        flow_data: dict[str, Any] | None = None,
     ) -> FlowVector:
         """
         Add a flow vector to a field.
@@ -351,13 +351,13 @@ class H3FlowAnalyzer:
 
     def _detect_flow_patterns(
         self, flow_field: FlowField, **kwargs: Any
-    ) -> List[FlowPattern]:
+    ) -> list[FlowPattern]:
         """Detect flow patterns in a field."""
         threshold = kwargs.get(
             "threshold", self.analysis_config["pattern_detection_threshold"]
         )
 
-        detected_patterns: List[FlowPattern] = []
+        detected_patterns: list[FlowPattern] = []
         pattern_scores = {}
 
         if not flow_field.vectors:
@@ -401,14 +401,14 @@ class H3FlowAnalyzer:
 
         return detected_patterns
 
-    def _analyze_convergence(self, vectors: List[FlowVector]) -> float:
+    def _analyze_convergence(self, vectors: list[FlowVector]) -> float:
         """Analyze convergence patterns."""
         if not vectors:
             return 0.0
 
         # Count flows into each cell
-        inflow_counts: Dict[str, int] = defaultdict(int)
-        outflow_counts: Dict[str, int] = defaultdict(int)
+        inflow_counts: dict[str, int] = defaultdict(int)
+        outflow_counts: dict[str, int] = defaultdict(int)
 
         for vector in vectors:
             inflow_counts[vector.target_cell] += 1
@@ -433,14 +433,14 @@ class H3FlowAnalyzer:
 
         return convergence_cells / total_cells
 
-    def _analyze_divergence(self, vectors: List[FlowVector]) -> float:
+    def _analyze_divergence(self, vectors: list[FlowVector]) -> float:
         """Analyze divergence patterns."""
         if not vectors:
             return 0.0
 
         # Count flows from each cell
-        inflow_counts: Dict[str, int] = defaultdict(int)
-        outflow_counts: Dict[str, int] = defaultdict(int)
+        inflow_counts: dict[str, int] = defaultdict(int)
+        outflow_counts: dict[str, int] = defaultdict(int)
 
         for vector in vectors:
             inflow_counts[vector.target_cell] += 1
@@ -465,7 +465,7 @@ class H3FlowAnalyzer:
 
         return divergence_cells / total_cells
 
-    def _analyze_parallel_flow(self, vectors: List[FlowVector]) -> float:
+    def _analyze_parallel_flow(self, vectors: list[FlowVector]) -> float:
         """Analyze parallel flow patterns."""
         if not vectors:
             return 0.0
@@ -491,7 +491,7 @@ class H3FlowAnalyzer:
 
         return cast(float, parallel_score)
 
-    def _analyze_circular_flow(self, vectors: List[FlowVector]) -> float:
+    def _analyze_circular_flow(self, vectors: list[FlowVector]) -> float:
         """Analyze circular/spiral flow patterns."""
         if not vectors or not H3_AVAILABLE:
             return 0.0
@@ -500,7 +500,7 @@ class H3FlowAnalyzer:
         # For now, return a simple heuristic
         return 0.0
 
-    def _analyze_turbulence(self, vectors: List[FlowVector]) -> float:
+    def _analyze_turbulence(self, vectors: list[FlowVector]) -> float:
         """Analyze turbulent flow patterns."""
         if not vectors:
             return 0.0
@@ -590,7 +590,7 @@ class H3FlowAnalyzer:
 
         return cast(float, (magnitude_stability + direction_stability) / 2.0)
 
-    def get_flow_statistics(self) -> Dict[str, Any]:
+    def get_flow_statistics(self) -> dict[str, Any]:
         """Get flow analyzer statistics."""
         total_fields = len(self.flow_fields)
         total_vectors = sum(len(field.vectors) for field in self.flow_fields.values())

@@ -13,7 +13,7 @@ import networkx as nx
 import geopandas as gpd
 import folium
 from shapely.geometry import LineString
-from typing import List, Dict, Tuple, Optional, Any
+from typing import Any
 
 try:
     import contextily as ctx
@@ -21,7 +21,7 @@ except ImportError:
     ctx = None
 
 
-def _coordinate(point: Tuple[float, float], name: str) -> Tuple[float, float]:
+def _coordinate(point: tuple[float, float], name: str) -> tuple[float, float]:
     """Validate and normalize a ``(longitude, latitude)`` coordinate."""
     if not isinstance(point, (tuple, list)) or len(point) != 2:
         raise ValueError(f"{name} must be a (longitude, latitude) pair")
@@ -37,8 +37,8 @@ def _coordinate(point: Tuple[float, float], name: str) -> Tuple[float, float]:
 
 
 def _route(
-    route: List[Tuple[float, float]], name: str = "route"
-) -> List[Tuple[float, float]]:
+    route: list[tuple[float, float]], name: str = "route"
+) -> list[tuple[float, float]]:
     """Validate a route and require enough points to form a line."""
     if not route or len(route) < 2:
         raise ValueError(f"{name} must contain at least two coordinates")
@@ -46,11 +46,11 @@ def _route(
 
 
 def plot_route(
-    route: List[Tuple[float, float]],
-    points_of_interest: Optional[List[Tuple[float, float]]] = None,
-    labels: Optional[List[str]] = None,
+    route: list[tuple[float, float]],
+    points_of_interest: list[tuple[float, float]] | None = None,
+    labels: list[str] | None = None,
     title: str = "Route Map",
-    figsize: Tuple[int, int] = (12, 8),
+    figsize: tuple[int, int] = (12, 8),
     basemap: bool = True,
 ) -> plt.Figure:
     """
@@ -164,12 +164,12 @@ def plot_route(
 
 def plot_network(
     graph: nx.Graph,
-    node_positions: Optional[Dict[Any, Tuple[float, float]]] = None,
-    node_colors: Optional[Dict[Any, str]] = None,
-    edge_weights: Optional[Dict[Tuple[Any, Any], float]] = None,
-    highlight_path: Optional[List[Any]] = None,
+    node_positions: dict[Any, tuple[float, float]] | None = None,
+    node_colors: dict[Any, str] | None = None,
+    edge_weights: dict[tuple[Any, Any], float] | None = None,
+    highlight_path: list[Any] | None = None,
     title: str = "Network Graph",
-    figsize: Tuple[int, int] = (12, 8),
+    figsize: tuple[int, int] = (12, 8),
 ) -> plt.Figure:
     """
     Plot a network graph.
@@ -265,11 +265,11 @@ def plot_network(
 
 
 def plot_service_area(
-    service_areas: Dict[str, gpd.GeoDataFrame],
-    facilities: Optional[gpd.GeoDataFrame] = None,
-    demand_points: Optional[gpd.GeoDataFrame] = None,
+    service_areas: dict[str, gpd.GeoDataFrame],
+    facilities: gpd.GeoDataFrame | None = None,
+    demand_points: gpd.GeoDataFrame | None = None,
     title: str = "Service Area Map",
-    figsize: Tuple[int, int] = (12, 8),
+    figsize: tuple[int, int] = (12, 8),
     basemap: bool = True,
 ) -> plt.Figure:
     """
@@ -363,11 +363,11 @@ def plot_service_area(
 
 
 def create_interactive_map(
-    routes: Optional[List[List[Tuple[float, float]]]] = None,
-    service_areas: Optional[Dict[str, gpd.GeoDataFrame]] = None,
-    facilities: Optional[gpd.GeoDataFrame] = None,
-    demand_points: Optional[gpd.GeoDataFrame] = None,
-    center: Optional[Tuple[float, float]] = None,
+    routes: list[list[tuple[float, float]]] | None = None,
+    service_areas: dict[str, gpd.GeoDataFrame] | None = None,
+    facilities: gpd.GeoDataFrame | None = None,
+    demand_points: gpd.GeoDataFrame | None = None,
+    center: tuple[float, float] | None = None,
     zoom: int = 10,
 ) -> folium.Map:
     """

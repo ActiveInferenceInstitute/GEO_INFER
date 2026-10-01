@@ -6,7 +6,7 @@ for agricultural redevelopment planning using real OSC H3 v4 methods.
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any
 from pathlib import Path
 import h3
 from shapely.geometry import Polygon
@@ -62,7 +62,7 @@ class GeoInferCurrentUse(BaseAnalysisModule):
             return raw_data_path
         raise FileNotFoundError(f"No empirical current-use dataset is available: {raw_data_path}")
 
-    def run_final_analysis(self, h3_data: Dict[str, Any]) -> Dict[str, Any]:
+    def run_final_analysis(self, h3_data: dict[str, Any]) -> dict[str, Any]:
         """
         Generate H3-indexed current agricultural use classification using real OSC H3 v4 methods.
         This is the main entry point for the module with real data processing.
@@ -149,7 +149,7 @@ class GeoInferCurrentUse(BaseAnalysisModule):
 
     def _calculate_real_crop_statistics(
         self, features: gpd.GeoDataFrame, hex_polygon: Polygon
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate real crop statistics for a hexagon using actual spatial analysis.
         """
@@ -187,7 +187,7 @@ class GeoInferCurrentUse(BaseAnalysisModule):
 
         return crop_stats
 
-    def _determine_primary_crop(self, crop_stats: Dict[str, Any]) -> Dict[str, Any]:
+    def _determine_primary_crop(self, crop_stats: dict[str, Any]) -> dict[str, Any]:
         """
         Determine the primary crop using real analysis of crop statistics.
         """
@@ -227,7 +227,7 @@ class GeoInferCurrentUse(BaseAnalysisModule):
             "coverage": round(coverage, 3),
         }
 
-    def _calculate_real_intensity(self, crop_stats: Dict[str, Any]) -> float:
+    def _calculate_real_intensity(self, crop_stats: dict[str, Any]) -> float:
         """
         Calculate real agricultural intensity score (0-1) based on actual crop data.
         """
@@ -253,7 +253,7 @@ class GeoInferCurrentUse(BaseAnalysisModule):
 
         return round(min(1.0, weighted_intensity), 3)
 
-    def _calculate_real_water_usage(self, crop_stats: Dict[str, Any]) -> str:
+    def _calculate_real_water_usage(self, crop_stats: dict[str, Any]) -> str:
         """
         Calculate real water usage classification based on actual crop data.
         """

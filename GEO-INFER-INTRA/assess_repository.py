@@ -11,8 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any
 
@@ -113,7 +112,7 @@ class RepositoryAssessment:
         ]
         return {
             "schema_version": 2,
-            "assessment_date": datetime.now(timezone.utc).isoformat(),
+            "assessment_date": datetime.now(UTC).isoformat(),
             "repository": str(self.project_root),
             "source_of_truth": [
                 "filesystem discovery",
@@ -184,7 +183,7 @@ class RepositoryAssessment:
     def save_report(
         self, report: dict[str, Any], output: Path | None = None
     ) -> tuple[Path, Path]:
-        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
         output = output or (
             self.project_root
             / "GEO-INFER-INTRA"

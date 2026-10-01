@@ -7,7 +7,7 @@ interpolation results, and real-time monitoring displays.
 
 import logging
 import math
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
 from datetime import datetime
 from pathlib import Path
 import numpy as np
@@ -26,7 +26,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def _coordinate(latitude: Any, longitude: Any, name: str) -> Tuple[float, float]:
+def _coordinate(latitude: Any, longitude: Any, name: str) -> tuple[float, float]:
     """Validate and normalize a latitude/longitude pair."""
     try:
         latitude = float(latitude)
@@ -57,13 +57,13 @@ class IoTVisualization:
     - Network health and status dashboards
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
-        self.maps_cache: Dict[str, Any] = {}
-        self.plot_cache: Dict[str, Any] = {}
+        self.maps_cache: dict[str, Any] = {}
+        self.plot_cache: dict[str, Any] = {}
 
         # Default visualization parameters
-        self.default_params: Dict[str, Any] = {
+        self.default_params: dict[str, Any] = {
             "map_center": [40.7128, -74.0060],  # NYC coordinates
             "map_zoom": 10,
             "color_scheme": "viridis",
@@ -82,10 +82,10 @@ class IoTVisualization:
 
     def create_sensor_map(
         self,
-        sensors: List[Dict],
-        measurements: Optional[List[Dict]] = None,
+        sensors: list[dict],
+        measurements: list[dict] | None = None,
         output_file: str = "sensor_map.html",
-    ) -> Dict:
+    ) -> dict:
         """
         Create an interactive map showing sensor locations and measurements.
 
@@ -124,7 +124,7 @@ class IoTVisualization:
                 if latitudes and longitudes:
                     center_lat = np.mean(latitudes)
                     center_lon = np.mean(longitudes)
-                    map_center: List[Any] = [center_lat, center_lon]
+                    map_center: list[Any] = [center_lat, center_lon]
                 else:
                     map_center = list(self.default_params["map_center"])
             else:
@@ -210,7 +210,7 @@ class IoTVisualization:
             logger.error(f"Error creating sensor map: {e}")
             return {"error": f"Map creation failed: {str(e)}"}
 
-    def _create_sensor_popup(self, sensor: Dict) -> str:
+    def _create_sensor_popup(self, sensor: dict) -> str:
         """Create HTML popup content for a sensor marker."""
         sensor_id = sensor.get("sensor_id", "Unknown")
         sensor_type = sensor.get("sensor_type", "Unknown")
@@ -243,7 +243,7 @@ class IoTVisualization:
         popup_html += "</div>"
         return popup_html
 
-    def _prepare_heatmap_data(self, measurements: List[Dict]) -> List[List]:
+    def _prepare_heatmap_data(self, measurements: list[dict]) -> list[list]:
         """Prepare measurement data for heatmap visualization."""
         heatmap_data = []
 
@@ -268,10 +268,10 @@ class IoTVisualization:
 
     def create_spatial_interpolation_map(
         self,
-        interpolation_data: Dict,
-        sensors: Optional[List[Dict]] = None,
+        interpolation_data: dict,
+        sensors: list[dict] | None = None,
         output_file: str = "interpolation_map.html",
-    ) -> Dict:
+    ) -> dict:
         """
         Create a map showing spatial interpolation results.
 
@@ -327,14 +327,14 @@ class IoTVisualization:
             )
 
             # Create interpolation surface as GeoJSON-like features
-            features: List[Dict[str, Any]] = []
+            features: list[dict[str, Any]] = []
             for i, (lat, lon) in enumerate(target_coordinates):
                 value = interpolated_values[i]
                 unc = uncertainty[i] if uncertainty else 0.5
 
                 # Point geometry marks the sampled location; the covering H3
                 # cell index travels in properties for downstream boundary work
-                feature: Dict[str, Any] = {
+                feature: dict[str, Any] = {
                     "type": "Feature",
                     "geometry": {"type": "Point", "coordinates": [lon, lat]},
                     "properties": {
@@ -417,8 +417,8 @@ class IoTVisualization:
             return {"error": f"Interpolation map creation failed: {str(e)}"}
 
     def create_time_series_plot(
-        self, sensor_data: Dict[str, List], output_file: str = "timeseries.png"
-    ) -> Dict:
+        self, sensor_data: dict[str, list], output_file: str = "timeseries.png"
+    ) -> dict:
         """
         Create time series plots for sensor data.
 
@@ -485,8 +485,8 @@ class IoTVisualization:
             return {"error": f"Time series plot creation failed: {str(e)}"}
 
     def create_network_status_dashboard(
-        self, network_data: Dict, output_file: str = "dashboard.html"
-    ) -> Dict:
+        self, network_data: dict, output_file: str = "dashboard.html"
+    ) -> dict:
         """
         Create a network status dashboard.
 
@@ -541,7 +541,7 @@ class IoTVisualization:
                 assessments = network_data["sensor_assessments"]
 
                 # Count by status
-                status_counts: Dict[str, int] = {}
+                status_counts: dict[str, int] = {}
                 for assessment in assessments.values():
                     status = assessment.get("overall_status", "unknown")
                     status_counts[status] = status_counts.get(status, 0) + 1
@@ -625,10 +625,10 @@ class IoTVisualization:
 
     def create_heatmap_overlay(
         self,
-        measurements: List[Dict],
-        bounds: Dict[str, float],
+        measurements: list[dict],
+        bounds: dict[str, float],
         output_file: str = "heatmap.png",
-    ) -> Dict:
+    ) -> dict:
         """
         Create a heatmap overlay for sensor measurements.
 
@@ -725,7 +725,7 @@ class IoTVisualization:
             logger.error(f"Error creating heatmap: {e}")
             return {"error": f"Heatmap creation failed: {str(e)}"}
 
-    def get_visualization_status(self) -> Dict:
+    def get_visualization_status(self) -> dict:
         """Get status of visualization capabilities."""
         return {
             "visualization_available": HAS_VISUALIZATION,

@@ -386,3 +386,22 @@ members = ["GEO-INFER-*"]
 target-version = "py311"
 line-length = 88
 
+[tool.ruff.lint]
+# Repository-wide lint contract: pyflakes/pycodestyle errors, modern syntax for
+# the Python 3.11 floor (pyupgrade), bugbear correctness checks, and NumPy
+# Generator-only randomness in library code.
+select = ["E4", "E7", "E9", "F", "UP", "B", "NPY"]
+ignore = [
+    "B008",  # FastAPI/Typer dependency injection uses calls in defaults.
+    "B905",  # zip(strict=...) changes runtime semantics; opt in per call site.
+    "UP042", # StrEnum changes str()/format() output of existing enums.
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests, examples and orchestration scripts may seed the global NumPy stream.
+"**/tests/**" = ["NPY002"]
+"**/examples/**" = ["NPY002"]
+"**/scripts/**" = ["NPY002"]
+"GEO-INFER-PLACE/locations/**" = ["NPY002"]
+"manuscript/**" = ["NPY002"]
+"tests/**" = ["NPY002"]

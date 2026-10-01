@@ -11,7 +11,6 @@ import geopandas as gpd
 import requests
 import io
 import json
-from typing import List, Tuple
 from shapely.geometry import Polygon
 
 import pandas as pd
@@ -52,8 +51,8 @@ class CascadianPowerSourceDataSources:
         self.hifld_power_plants_url = self.config.get("hifld_power_plants_url")
 
     def _calculate_bbox_from_hexagons(
-        self, hexagons: List[str]
-    ) -> Tuple[float, float, float, float]:
+        self, hexagons: list[str]
+    ) -> tuple[float, float, float, float]:
         """Calculates a bounding box from a list of H3 hexagons."""
         boundaries = [
             Polygon([(lng, lat) for lat, lng in cell_to_latlng_boundary(h)]) for h in hexagons
@@ -65,7 +64,7 @@ class CascadianPowerSourceDataSources:
         return (min_lon, min_lat, max_lon, max_lat)
 
     def _query_hifld_service(
-        self, service_url: str, layer_name: str, hexagons: List[str]
+        self, service_url: str, layer_name: str, hexagons: list[str]
     ) -> gpd.GeoDataFrame:
         """Generic function to query a HIFLD service layer for a given list of hexagons."""
         if not service_url:
@@ -110,7 +109,7 @@ class CascadianPowerSourceDataSources:
             logger.error(f"Failed to read GeoJSON response from HIFLD {layer_name} service: {e}")
             return gpd.GeoDataFrame([], geometry=[], crs="EPSG:4326")
 
-    def _query_osm_overpass_power(self, bbox: Tuple[float, float, float, float]) -> dict:
+    def _query_osm_overpass_power(self, bbox: tuple[float, float, float, float]) -> dict:
         """Query OSM Overpass for power infrastructure."""
         min_lon, min_lat, max_lon, max_lat = bbox
 
@@ -211,7 +210,7 @@ class CascadianPowerSourceDataSources:
                 "power_plants": gpd.GeoDataFrame(geometry=[], crs="EPSG:4326"),
             }
 
-    def fetch_power_infrastructure_features(self, hexagons: List[str]) -> dict:
+    def fetch_power_infrastructure_features(self, hexagons: list[str]) -> dict:
         """
         Fetches all power infrastructure (transmission lines, power plants)
         for the area covered by the given hexagons.

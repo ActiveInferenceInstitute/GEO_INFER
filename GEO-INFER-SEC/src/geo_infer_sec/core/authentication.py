@@ -10,8 +10,8 @@ import hashlib
 import hmac
 import secrets
 import struct
-from typing import Dict, List, Optional, Any, Tuple
-from datetime import datetime, timedelta, timezone
+from typing import Any
+from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass
 
 import jwt
@@ -28,7 +28,7 @@ _TOTP_DIGITS = 6
 _TOTP_ALLOWED_SKEW = 1  # accept codes from the previous/current/next step
 
 
-def generate_totp(secret: str, at_time: Optional[float] = None) -> str:
+def generate_totp(secret: str, at_time: float | None = None) -> str:
     """Generate an RFC 6238 TOTP code for a base32-encoded secret.
 
     Args:
@@ -40,9 +40,7 @@ def generate_totp(secret: str, at_time: Optional[float] = None) -> str:
         The zero-padded 6-digit TOTP code.
     """
     key = base64.b32decode(secret, casefold=True)
-    counter = int(
-        at_time if at_time is not None else datetime.now(timezone.utc).timestamp()
-    )
+    counter = int(at_time if at_time is not None else datetime.now(UTC).timestamp())
     counter //= _TOTP_STEP_SECONDS
     msg = struct.pack(">Q", counter)
     digest = hmac.new(key, msg, hashlib.sha1).digest()
@@ -56,16 +54,14 @@ def generate_totp(secret: str, at_time: Optional[float] = None) -> str:
     return str(code).zfill(_TOTP_DIGITS)
 
 
-def verify_totp(secret: str, code: str, at_time: Optional[float] = None) -> bool:
+def verify_totp(secret: str, code: str, at_time: float | None = None) -> bool:
     """Verify an RFC 6238 TOTP code against a base32-encoded secret.
 
     Accepts codes from the previous, current, or next time step to tolerate
     clock skew. Comparison is constant-time.
     """
     try:
-        reference = (
-            at_time if at_time is not None else datetime.now(timezone.utc).timestamp()
-        )
+        reference = at_time if at_time is not None else datetime.now(UTC).timestamp()
         for skew in range(-_TOTP_ALLOWED_SKEW, _TOTP_ALLOWED_SKEW + 1):
             expected = generate_totp(secret, reference + skew * _TOTP_STEP_SECONDS)
             if hmac.compare_digest(expected, code.strip()):
@@ -86,14 +82,14 @@ class UserCredentials:
     user_id: str
     username: str
     password_hash: str
-    email: Optional[str] = None
+    email: str | None = None
     enabled: bool = True
     locked: bool = False
     failed_attempts: int = 0
-    last_login: Optional[datetime] = None
+    last_login: datetime | None = None
     mfa_enabled: bool = False
-    mfa_secret: Optional[str] = None
-    password_salt: Optional[str] = None
+    mfa_secret: str | None = None
+    password_salt: str | None = None
 
 
 @dataclass
@@ -103,8 +99,8 @@ class TokenInfo:
     token: str
     token_type: str = "Bearer"
     expires_in: int = 3600
-    refresh_token: Optional[str] = None
-    scope: Optional[List[str]] = None
+    refresh_token: str | None = None
+    scope: list[str] | None = None
 
 
 class AuthenticationManager:
@@ -144,12 +140,12 @@ class AuthenticationManager:
         self.password_min_length = password_min_length
 
         # In-memory user store (in production, use a database)
-        self.users: Dict[str, UserCredentials] = {}
-        self.refresh_tokens: Dict[str, Dict[str, Any]] = {}
+        self.users: dict[str, UserCredentials] = {}
+        self.refresh_tokens: dict[str, dict[str, Any]] = {}
 
     def hash_password(
-        self, password: str, salt: Optional[bytes] = None
-    ) -> Tuple[str, str]:
+        self, password: str, salt: bytes | None = None
+    ) -> tuple[str, str]:
         """
         Hash a password using PBKDF2.
 
@@ -200,8 +196,8 @@ class AuthenticationManager:
         self,
         username: str,
         password: str,
-        email: Optional[str] = None,
-        user_id: Optional[str] = None,
+        email: str | None = None,
+        user_id: str | None = None,
     ) -> UserCredentials:
         """
         Register a new user.
@@ -248,8 +244,8 @@ class AuthenticationManager:
         return user
 
     def authenticate(
-        self, username: str, password: str, mfa_code: Optional[str] = None
-    ) -> Optional[TokenInfo]:
+        self, username: str, password: str, mfa_code: str | None = None
+    ) -> TokenInfo | None:
         """
         Authenticate a user and generate access token.
 
@@ -304,7 +300,7 @@ class AuthenticationManager:
 
         # Reset failed attempts on successful authentication
         user.failed_attempts = 0
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
         user.last_login = now
 
         # Generate tokens
@@ -314,7 +310,7 @@ class AuthenticationManager:
         return token_info
 
     def generate_tokens(
-        self, user_id: str, username: str, scope: Optional[List[str]] = None
+        self, user_id: str, username: str, scope: list[str] | None = None
     ) -> TokenInfo:
         """
         Generate access and refresh tokens.
@@ -327,7 +323,7 @@ class AuthenticationManager:
         Returns:
             TokenInfo with access and refresh tokens
         """
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
         # Generate access token
         access_token_payload = {
             "sub": user_id,
@@ -359,7 +355,7 @@ class AuthenticationManager:
             scope=scope or ["read", "write"],
         )
 
-    def validate_token(self, token: str) -> Optional[Dict[str, Any]]:
+    def validate_token(self, token: str) -> dict[str, Any] | None:
         """
         Validate a JWT access token.
 
@@ -379,7 +375,7 @@ class AuthenticationManager:
             logger.warning(f"Token validation failed: {e}")
             return None
 
-    def refresh_access_token(self, refresh_token: str) -> Optional[TokenInfo]:
+    def refresh_access_token(self, refresh_token: str) -> TokenInfo | None:
         """
         Generate a new access token from a refresh token.
 
@@ -397,7 +393,7 @@ class AuthenticationManager:
 
         # Check expiration
         exp = refresh_payload.get("exp")
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
         if exp and now > (
             exp if isinstance(exp, datetime) else datetime.fromtimestamp(exp)
         ):
@@ -431,7 +427,7 @@ class AuthenticationManager:
             return True
         return False
 
-    def get_user(self, username: str) -> Optional[UserCredentials]:
+    def get_user(self, username: str) -> UserCredentials | None:
         """
         Get user credentials by username.
 

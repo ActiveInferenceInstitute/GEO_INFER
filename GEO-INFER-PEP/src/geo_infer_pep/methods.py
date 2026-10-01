@@ -10,7 +10,7 @@ All data flows through the process-wide shared in-memory store
 Library code logs via :mod:`logging` and never prints directly.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any
 from datetime import datetime
 import logging
 
@@ -80,19 +80,19 @@ def _normalize_quarter_label(quarter: str) -> str:
     return f"Q{normalized}"
 
 
-def _get_employee_by_id(employee_id: str) -> Optional[Employee]:
+def _get_employee_by_id(employee_id: str) -> Employee | None:
     """Helper function to find employee by ID."""
     return next((emp for emp in _employees_db if emp.employee_id == employee_id), None)
 
 
-def _get_candidate_by_id(candidate_id: str) -> Optional[Candidate]:
+def _get_candidate_by_id(candidate_id: str) -> Candidate | None:
     """Helper function to find candidate by ID."""
     return next(
         (cand for cand in _candidates_db if cand.candidate_id == candidate_id), None
     )
 
 
-def _get_customer_by_id(customer_id: str) -> Optional[Customer]:
+def _get_customer_by_id(customer_id: str) -> Customer | None:
     """Helper function to find customer by ID."""
     return next(
         (cust for cust in _customers_db if cust.customer_id == customer_id), None
@@ -242,7 +242,7 @@ def generate_quarterly_people_report(quarter: str, year: int) -> str:
     return report_path
 
 
-def import_hr_data_from_csv(file_path: str) -> List[Employee]:
+def import_hr_data_from_csv(file_path: str) -> list[Employee]:
     """
     Complete HR data pipeline: import, clean, enrich, and store employee data.
 
@@ -279,7 +279,7 @@ def import_hr_data_from_csv(file_path: str) -> List[Employee]:
     return enriched_employees
 
 
-def import_crm_data_from_csv(file_path: str) -> List[Customer]:
+def import_crm_data_from_csv(file_path: str) -> list[Customer]:
     """
     Complete CRM data pipeline: import, clean, enrich, and store customer data.
 
@@ -318,7 +318,7 @@ def import_crm_data_from_csv(file_path: str) -> List[Customer]:
 
 def import_talent_data_from_csv(
     candidates_file: str, requisitions_file: str
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Complete talent data pipeline: import, clean, enrich, and store talent data.
 
@@ -369,7 +369,7 @@ def import_talent_data_from_csv(
     }
 
 
-def generate_comprehensive_hr_dashboard() -> Dict[str, Any]:
+def generate_comprehensive_hr_dashboard() -> dict[str, Any]:
     """
     Generate comprehensive HR dashboard data combining multiple analytics.
 
@@ -397,7 +397,7 @@ def generate_comprehensive_hr_dashboard() -> Dict[str, Any]:
         )
 
         # Department breakdown
-        dept_breakdown: Dict[str, int] = {}
+        dept_breakdown: dict[str, int] = {}
         for emp in _employees_db:
             if emp.employment_status == EmploymentStatus.ACTIVE:
                 dept_breakdown[emp.department] = (
@@ -422,7 +422,7 @@ def generate_comprehensive_hr_dashboard() -> Dict[str, Any]:
         return {"error": str(e), "message": "Failed to generate dashboard"}
 
 
-def generate_comprehensive_crm_dashboard() -> Dict[str, Any]:
+def generate_comprehensive_crm_dashboard() -> dict[str, Any]:
     """
     Generate comprehensive CRM dashboard data combining multiple analytics.
 
@@ -444,7 +444,7 @@ def generate_comprehensive_crm_dashboard() -> Dict[str, Any]:
         active_customers = len([c for c in _customers_db if c.status == "active"])
 
         # Status breakdown
-        status_breakdown: Dict[str, int] = {}
+        status_breakdown: dict[str, int] = {}
         for cust in _customers_db:
             status = cust.status or "unknown"
             status_breakdown[status] = status_breakdown.get(status, 0) + 1
@@ -467,7 +467,7 @@ def generate_comprehensive_crm_dashboard() -> Dict[str, Any]:
         return {"error": str(e), "message": "Failed to generate dashboard"}
 
 
-def generate_comprehensive_talent_dashboard() -> Dict[str, Any]:
+def generate_comprehensive_talent_dashboard() -> dict[str, Any]:
     """
     Generate comprehensive talent dashboard data combining multiple analytics.
 
@@ -490,7 +490,7 @@ def generate_comprehensive_talent_dashboard() -> Dict[str, Any]:
         total_candidates = len(_candidates_db)
 
         # Status breakdown
-        status_breakdown: Dict[str, int] = {}
+        status_breakdown: dict[str, int] = {}
         for cand in _candidates_db:
             status_breakdown[cand.status.value] = (
                 status_breakdown.get(cand.status.value, 0) + 1
@@ -513,17 +513,17 @@ def generate_comprehensive_talent_dashboard() -> Dict[str, Any]:
         return {"error": str(e), "message": "Failed to generate dashboard"}
 
 
-def get_all_employees() -> List[Employee]:
+def get_all_employees() -> list[Employee]:
     """Get all employees from the shared in-memory store."""
     return list(_employees_db)
 
 
-def get_all_candidates() -> List[Candidate]:
+def get_all_candidates() -> list[Candidate]:
     """Get all candidates from the shared in-memory store."""
     return list(_candidates_db)
 
 
-def get_all_customers() -> List[Customer]:
+def get_all_customers() -> list[Customer]:
     """Get all customers from the shared in-memory store."""
     return list(_customers_db)
 

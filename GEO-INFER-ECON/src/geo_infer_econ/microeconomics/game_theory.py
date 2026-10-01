@@ -11,7 +11,8 @@ Implements game theory applications in economics including:
 """
 
 import numpy as np
-from typing import Callable, Dict, List, Optional, Tuple, Any
+from typing import Any
+from collections.abc import Callable
 from dataclasses import dataclass
 from scipy.optimize import fsolve
 import itertools
@@ -21,18 +22,18 @@ import itertools
 class Game:
     """Definition of a strategic form game"""
 
-    players: List[str]
-    actions: Dict[str, List[Any]]
-    payoffs: Dict[Tuple, Dict[str, float]]  # (action_profile) -> {player: payoff}
+    players: list[str]
+    actions: dict[str, list[Any]]
+    payoffs: dict[tuple, dict[str, float]]  # (action_profile) -> {player: payoff}
 
 
 @dataclass
 class ExtensiveFormGame:
     """Definition of an extensive form game"""
 
-    players: List[str]
-    tree: Dict[str, Any]  # Game tree structure
-    payoffs: Dict[str, Dict[str, float]]  # Terminal node payoffs
+    players: list[str]
+    tree: dict[str, Any]  # Game tree structure
+    payoffs: dict[str, dict[str, float]]  # Terminal node payoffs
 
 
 class NashEquilibrium:
@@ -41,9 +42,9 @@ class NashEquilibrium:
     """
 
     def __init__(self) -> None:
-        self.equilibria: List[Any] = []
+        self.equilibria: list[Any] = []
 
-    def find_nash_equilibrium(self, game: Game) -> List[Dict[str, Any]]:
+    def find_nash_equilibrium(self, game: Game) -> list[dict[str, Any]]:
         """
         Find Nash equilibria in strategic form games
 
@@ -97,7 +98,7 @@ class NashEquilibrium:
         self.equilibria = equilibria
         return equilibria
 
-    def compute_mixed_strategy_equilibrium(self, game: Game) -> Dict[str, Any]:
+    def compute_mixed_strategy_equilibrium(self, game: Game) -> dict[str, Any]:
         """
         Compute mixed strategy Nash equilibrium
 
@@ -213,11 +214,11 @@ class AuctionTheory:
     """
 
     def __init__(self) -> None:
-        self.auction_results: Dict[str, Any] = {}
+        self.auction_results: dict[str, Any] = {}
 
     def analyze_first_price_auction(
-        self, values: List[float], n_bidders: int
-    ) -> Dict[str, Any]:
+        self, values: list[float], n_bidders: int
+    ) -> dict[str, Any]:
         """
         Analyze first-price sealed-bid auction
 
@@ -245,7 +246,7 @@ class AuctionTheory:
             "auction_format": "first_price_sealed_bid",
         }
 
-    def analyze_second_price_auction(self, values: List[float]) -> Dict[str, Any]:
+    def analyze_second_price_auction(self, values: list[float]) -> dict[str, Any]:
         """
         Analyze second-price sealed-bid auction (Vickrey auction)
 
@@ -280,14 +281,14 @@ class EvolutionaryGames:
     """
 
     def __init__(self) -> None:
-        self.dynamics_results: Dict[str, Any] = {}
+        self.dynamics_results: dict[str, Any] = {}
 
     def replicator_dynamics(
         self,
         payoff_matrix: np.ndarray,
         initial_frequencies: np.ndarray,
         time_steps: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Simulate replicator dynamics for evolutionary games
 
@@ -366,11 +367,11 @@ class SpatialGames:
     """
 
     def __init__(self) -> None:
-        self.spatial_results: Dict[str, Any] = {}
+        self.spatial_results: dict[str, Any] = {}
 
     def location_game_analysis(
         self, locations: np.ndarray, demand_function: Callable
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze location choice in spatial competition (Hotelling model)
 
@@ -404,10 +405,10 @@ class SpatialGames:
 
     def _calculate_spatial_market_shares(
         self,
-        firm_locations: List[float],
+        firm_locations: list[float],
         consumer_locations: np.ndarray,
         demand_function: Callable,
-    ) -> Dict[int, float]:
+    ) -> dict[int, float]:
         """Calculate market shares in spatial competition"""
         market_shares = {}
 
@@ -442,14 +443,14 @@ class BargainingTheory:
     """
 
     def __init__(self) -> None:
-        self.bargaining_solutions: Dict[str, Any] = {}
+        self.bargaining_solutions: dict[str, Any] = {}
 
     def nash_bargaining_solution(
         self,
         utility_possibilities: np.ndarray,
         disagreement_point: np.ndarray,
         risk_aversion: float = 1.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compute Nash bargaining solution
 
@@ -497,7 +498,7 @@ class GameTheoryModels:
     Main game theory modeling class
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.nash_equilibrium = NashEquilibrium()
         self.auction_theory = AuctionTheory()
@@ -505,7 +506,7 @@ class GameTheoryModels:
         self.spatial_games = SpatialGames()
         self.bargaining_theory = BargainingTheory()
 
-    def analyze_strategic_game(self, game: Game) -> Dict[str, Any]:
+    def analyze_strategic_game(self, game: Game) -> dict[str, Any]:
         """
         Comprehensive analysis of strategic form game
 
@@ -536,9 +537,9 @@ class GameTheoryModels:
     def analyze_auction_game(
         self,
         auction_type: str,
-        valuations: List[float],
-        n_bidders: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        valuations: list[float],
+        n_bidders: int | None = None,
+    ) -> dict[str, Any]:
         """
         Analyze auction game
 
@@ -565,7 +566,7 @@ class GameTheoryModels:
 
     def analyze_evolutionary_game(
         self, payoff_matrix: np.ndarray, initial_frequencies: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze evolutionary game dynamics
 
@@ -582,7 +583,7 @@ class GameTheoryModels:
 
     def analyze_location_game(
         self, locations: np.ndarray, demand_function: Callable
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze spatial location game
 

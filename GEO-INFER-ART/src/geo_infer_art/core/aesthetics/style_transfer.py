@@ -5,7 +5,7 @@ Style transfer module for applying artistic styles to geospatial visualizations.
 import logging
 import os
 from importlib.resources import files
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -59,8 +59,8 @@ class StyleTransfer:
 
     def __init__(
         self,
-        style_image: Optional[Union[str, np.ndarray, Image.Image]] = None,
-        content_image: Optional[Union[str, np.ndarray, Image.Image]] = None,
+        style_image: str | np.ndarray | Image.Image | None = None,
+        content_image: str | np.ndarray | Image.Image | None = None,
     ):
         """
         Initialize a StyleTransfer object.
@@ -78,9 +78,9 @@ class StyleTransfer:
                 "Install it with 'uv pip install tensorflow'."
             )
 
-        self.style_image: Optional[Image.Image] = None
-        self.content_image: Optional[Image.Image] = None
-        self.model: Optional[Any] = None
+        self.style_image: Image.Image | None = None
+        self.content_image: Image.Image | None = None
+        self.model: Any | None = None
         requested_device = os.environ.get("GEO_INFER_ART_TF_DEVICE", "CPU").upper()
         if requested_device not in {"CPU", "GPU"}:
             raise ValueError("GEO_INFER_ART_TF_DEVICE must be CPU or GPU")
@@ -125,9 +125,7 @@ class StyleTransfer:
             f"Predefined style asset is not installed: {style_resource}"
         )
 
-    def load_style_image(
-        self, style_image: Union[str, np.ndarray, Image.Image]
-    ) -> None:
+    def load_style_image(self, style_image: str | np.ndarray | Image.Image) -> None:
         """
         Load the style image to use for transfer.
 
@@ -161,9 +159,7 @@ class StyleTransfer:
                 "Expected string path, numpy array, or PIL Image."
             )
 
-    def load_content_image(
-        self, content_image: Union[str, np.ndarray, Image.Image]
-    ) -> None:
+    def load_content_image(self, content_image: str | np.ndarray | Image.Image) -> None:
         """
         Load the content image to apply the style to.
 
@@ -274,14 +270,14 @@ class StyleTransfer:
 
     @staticmethod
     def apply(
-        geo_data: Union[gpd.GeoDataFrame, np.ndarray],
+        geo_data: gpd.GeoDataFrame | np.ndarray,
         style: str = "watercolor",
-        content_image: Optional[Union[str, np.ndarray, Image.Image]] = None,
-        style_image: Optional[Union[str, np.ndarray, Image.Image]] = None,
+        content_image: str | np.ndarray | Image.Image | None = None,
+        style_image: str | np.ndarray | Image.Image | None = None,
         style_weight: float = 1e-2,
         content_weight: float = 1e4,
         iterations: int = 100,
-        color_palette: Optional[str] = None,
+        color_palette: str | None = None,
     ) -> Image.Image:
         """
         Apply artistic style transfer to geospatial data.
@@ -482,9 +478,9 @@ class StyleTransfer:
     @classmethod
     def blend_styles(
         cls,
-        geo_data: Union[gpd.GeoDataFrame, np.ndarray],
-        styles: List[str],
-        weights: Optional[List[float]] = None,
+        geo_data: gpd.GeoDataFrame | np.ndarray,
+        styles: list[str],
+        weights: list[float] | None = None,
         iterations: int = 100,
         **kwargs: Any,
     ) -> Image.Image:
@@ -544,9 +540,9 @@ class StyleTransfer:
     @classmethod
     def create_style_variation(
         cls,
-        geo_data: Union[gpd.GeoDataFrame, np.ndarray],
+        geo_data: gpd.GeoDataFrame | np.ndarray,
         base_style: str,
-        variation_params: Dict,
+        variation_params: dict,
         **kwargs: Any,
     ) -> Image.Image:
         """
@@ -650,7 +646,7 @@ class StyleTransfer:
         sharpened = np.clip(arr + 0.5 * (arr - blurred_arr), 0, 255).astype(np.uint8)
         self.content_image = Image.fromarray(sharpened)
 
-    def get_style_info(self, style_name: str) -> Dict:
+    def get_style_info(self, style_name: str) -> dict:
         """
         Get detailed information about a style.
 
@@ -694,7 +690,7 @@ class StyleTransfer:
 
         return style_categories.get(style_name, "landscape")
 
-    def _get_recommended_params(self, style_name: str) -> Dict:
+    def _get_recommended_params(self, style_name: str) -> dict:
         """Get recommended parameters for a style."""
         recommendations = {
             "watercolor": {

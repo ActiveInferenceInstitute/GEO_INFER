@@ -6,7 +6,7 @@ coding exercises, problem-based learning scenarios, and assessments.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 from enum import Enum
 import random
@@ -45,14 +45,14 @@ class Exercise:
     description: str
     exercise_type: ExerciseType
     difficulty: DifficultyLevel
-    concepts: List[str]
+    concepts: list[str]
     instructions: str
     expected_duration_minutes: int
-    hints: List[str] = field(default_factory=list)
-    starter_code: Optional[str] = None
-    test_cases: List[Dict[str, Any]] = field(default_factory=list)
-    rubric: Dict[str, Any] = field(default_factory=dict)
-    resources: List[str] = field(default_factory=list)
+    hints: list[str] = field(default_factory=list)
+    starter_code: str | None = None
+    test_cases: list[dict[str, Any]] = field(default_factory=list)
+    rubric: dict[str, Any] = field(default_factory=dict)
+    resources: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -62,10 +62,10 @@ class Assessment:
     id: str
     title: str
     description: str
-    items: List[Exercise]
-    time_limit_minutes: Optional[int] = None
+    items: list[Exercise]
+    time_limit_minutes: int | None = None
     passing_score: float = 0.7
-    rubrics: Dict[str, Dict] = field(default_factory=dict)
+    rubrics: dict[str, dict] = field(default_factory=dict)
 
 
 class ExerciseGenerator:
@@ -78,7 +78,7 @@ class ExerciseGenerator:
 
     def __init__(
         self,
-        exercise_types: Optional[List[str]] = None,
+        exercise_types: list[str] | None = None,
         difficulty_scaling: str = "adaptive",
         feedback_mode: str = "immediate",
     ):
@@ -104,11 +104,11 @@ class ExerciseGenerator:
 
     def create(
         self,
-        concepts: List[str],
+        concepts: list[str],
         format: str = "interactive_map",
         difficulty: str = "progressive",
         include_hints: bool = True,
-    ) -> List[Exercise]:
+    ) -> list[Exercise]:
         """
         Create exercises for specified concepts.
 
@@ -261,7 +261,7 @@ You are tasked with analyzing spatial patterns using {concept_display}.
         }
         return duration_map.get(difficulty, 30)
 
-    def _generate_hints(self, concept: str, difficulty: DifficultyLevel) -> List[str]:
+    def _generate_hints(self, concept: str, difficulty: DifficultyLevel) -> list[str]:
         """Generate hints for an exercise."""
         concept_display = concept.replace("_", " ")
 
@@ -347,7 +347,7 @@ if __name__ == "__main__":
     visualize_results(results)
 '''
 
-    def _generate_test_cases(self, concept: str) -> List[Dict[str, Any]]:
+    def _generate_test_cases(self, concept: str) -> list[dict[str, Any]]:
         """Generate test cases for coding exercises."""
         return [
             {
@@ -377,7 +377,7 @@ if __name__ == "__main__":
         framework: str = "geo_infer",
         test_cases: bool = True,
         starter_code: bool = True,
-    ) -> List[Exercise]:
+    ) -> list[Exercise]:
         """
         Generate coding exercises for a topic.
 
@@ -427,8 +427,8 @@ if __name__ == "__main__":
         self,
         context: str,
         problem: str,
-        data_provided: List[str],
-        expected_deliverables: List[str],
+        data_provided: list[str],
+        expected_deliverables: list[str],
     ) -> Exercise:
         """
         Create a problem-based learning scenario.
@@ -507,9 +507,9 @@ You are expected to produce:
 
     def create_assessment(
         self,
-        learning_objectives: List[Dict[str, str]],
-        item_types: List[str],
-        difficulty_distribution: Dict[str, float],
+        learning_objectives: list[dict[str, str]],
+        item_types: list[str],
+        difficulty_distribution: dict[str, float],
         rubrics: bool = True,
     ) -> Assessment:
         """
@@ -580,7 +580,7 @@ You are expected to produce:
         logger.info(f"Created assessment with {len(items)} items")
         return assessment
 
-    def _generate_assessment_rubrics(self, items: List[Exercise]) -> Dict[str, Dict]:
+    def _generate_assessment_rubrics(self, items: list[Exercise]) -> dict[str, dict]:
         """Generate rubrics for assessment items."""
         rubrics = {}
         for item in items:

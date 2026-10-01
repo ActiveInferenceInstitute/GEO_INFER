@@ -6,7 +6,7 @@ operations for improved performance on large geospatial datasets.
 """
 
 import numpy as np
-from typing import List, Dict, Any, Optional, cast
+from typing import Any, cast
 import logging
 import warnings
 
@@ -79,7 +79,7 @@ class GPUAccelerator:
             logger.debug(f"GPU availability check failed: {e}")
             return False
 
-    def _detect_available_backends(self) -> Dict[str, Any]:
+    def _detect_available_backends(self) -> dict[str, Any]:
         """Detect available GPU backends."""
         backends = {}
 
@@ -107,8 +107,8 @@ class GPUAccelerator:
         return backends
 
     def accelerate_matrix_operations(
-        self, matrices: List[np.ndarray], operation: str = "multiply"
-    ) -> List[np.ndarray]:
+        self, matrices: list[np.ndarray], operation: str = "multiply"
+    ) -> list[np.ndarray]:
         """
         Accelerate matrix operations using GPU.
 
@@ -135,8 +135,8 @@ class GPUAccelerator:
         return self._cpu_matrix_operations(matrices, operation)
 
     def _cupy_matrix_operations(
-        self, matrices: List[np.ndarray], operation: str
-    ) -> List[np.ndarray]:
+        self, matrices: list[np.ndarray], operation: str
+    ) -> list[np.ndarray]:
         """CuPy-based matrix operations."""
         import cupy as cp
 
@@ -175,8 +175,8 @@ class GPUAccelerator:
         return results
 
     def _torch_matrix_operations(
-        self, matrices: List[np.ndarray], operation: str
-    ) -> List[np.ndarray]:
+        self, matrices: list[np.ndarray], operation: str
+    ) -> list[np.ndarray]:
         """PyTorch-based matrix operations."""
         import torch
 
@@ -208,8 +208,8 @@ class GPUAccelerator:
         return results
 
     def _cpu_matrix_operations(
-        self, matrices: List[np.ndarray], operation: str
-    ) -> List[np.ndarray]:
+        self, matrices: list[np.ndarray], operation: str
+    ) -> list[np.ndarray]:
         """CPU-based matrix operations (fallback)."""
         results = []
 
@@ -236,7 +236,7 @@ class GPUAccelerator:
         return results
 
     def accelerate_distance_calculations(
-        self, points1: np.ndarray, points2: Optional[np.ndarray] = None
+        self, points1: np.ndarray, points2: np.ndarray | None = None
     ) -> np.ndarray:
         """
         Accelerate distance matrix calculations using GPU.
@@ -457,7 +457,7 @@ class GPUAccelerator:
         coordinates: np.ndarray,
         method: str = "kmeans",
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Accelerate clustering operations using GPU.
 
@@ -487,7 +487,7 @@ class GPUAccelerator:
 
     def _cupy_clustering(
         self, data: np.ndarray, coordinates: np.ndarray, method: str, **kwargs: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """CuPy-based clustering."""
         # For now, use CPU fallback for clustering
         # CuPy doesn't have built-in clustering algorithms like scikit-learn
@@ -495,7 +495,7 @@ class GPUAccelerator:
 
     def _torch_clustering(
         self, data: np.ndarray, coordinates: np.ndarray, method: str, **kwargs: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """PyTorch-based clustering."""
         # For now, use CPU fallback for clustering
         # Would require implementing custom clustering algorithms
@@ -503,29 +503,29 @@ class GPUAccelerator:
 
     def _cpu_clustering(
         self, data: np.ndarray, coordinates: np.ndarray, method: str, **kwargs: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """CPU-based clustering (fallback)."""
         from geo_infer_math.models.clustering import spatial_clustering_analysis
 
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             spatial_clustering_analysis(data, coordinates, method=method, **kwargs),
         )
 
-    def get_performance_info(self) -> Dict[str, Any]:
+    def get_performance_info(self) -> dict[str, Any]:
         """
         Get information about GPU acceleration performance.
 
         Returns:
             Dictionary with performance information
         """
-        info: Dict[str, Any] = {
+        info: dict[str, Any] = {
             "gpu_available": self.gpu_available,
             "backends": list(self.backends.keys()),
             "memory_info": {},
         }
 
-        mem_dict: Dict[str, Any] = info["memory_info"]
+        mem_dict: dict[str, Any] = info["memory_info"]
         if self.backends.get("cupy") is not None:
             try:
                 import cupy as cp
@@ -549,8 +549,8 @@ class GPUAccelerator:
         return info
 
     def benchmark_acceleration(
-        self, test_data: Dict[str, np.ndarray]
-    ) -> Dict[str, Any]:
+        self, test_data: dict[str, np.ndarray]
+    ) -> dict[str, Any]:
         """
         Benchmark GPU vs CPU performance.
 
@@ -562,7 +562,7 @@ class GPUAccelerator:
         """
         import time
 
-        results: Dict[str, Dict[str, Any]] = {
+        results: dict[str, dict[str, Any]] = {
             "matrix_multiplication": {},
             "distance_calculation": {},
             "spatial_interpolation": {},
@@ -623,12 +623,12 @@ def is_gpu_available() -> bool:
     return gpu_accelerator.gpu_available
 
 
-def get_gpu_info() -> Dict[str, Any]:
+def get_gpu_info() -> dict[str, Any]:
     """Get GPU acceleration information."""
     return gpu_accelerator.get_performance_info()
 
 
-def benchmark_gpu_performance(test_data: Dict[str, np.ndarray]) -> Dict[str, Any]:
+def benchmark_gpu_performance(test_data: dict[str, np.ndarray]) -> dict[str, Any]:
     """Benchmark GPU vs CPU performance."""
     return gpu_accelerator.benchmark_acceleration(test_data)
 
@@ -636,16 +636,16 @@ def benchmark_gpu_performance(test_data: Dict[str, np.ndarray]) -> Dict[str, Any
 # GPU-accelerated versions of common operations
 def gpu_matrix_multiply(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """GPU-accelerated matrix multiplication."""
-    matrices: List[np.ndarray] = [a, b]
+    matrices: list[np.ndarray] = [a, b]
     return gpu_accelerator.accelerate_matrix_operations(matrices, "multiply")[0]
 
 
 def gpu_distance_matrix(
-    points1: np.ndarray, points2: Optional[np.ndarray] = None
+    points1: np.ndarray, points2: np.ndarray | None = None
 ) -> np.ndarray:
     """GPU-accelerated distance matrix calculation."""
     if points2 is not None:
-        points_list: List[np.ndarray] = [points1, points2]
+        points_list: list[np.ndarray] = [points1, points2]
         return gpu_accelerator.accelerate_distance_calculations(
             points_list[0], points_list[1]
         )

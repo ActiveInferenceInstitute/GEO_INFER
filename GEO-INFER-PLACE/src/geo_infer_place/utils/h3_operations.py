@@ -14,7 +14,7 @@ Usage:
 """
 
 import logging
-from typing import List, Tuple, Any, cast
+from typing import Any, cast
 
 import h3
 
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 MIN_H3_VERSION = (4, 5, 0)
 
 
-def _version_tuple(version: str) -> Tuple[int, int, int] | None:
+def _version_tuple(version: str) -> tuple[int, int, int] | None:
     """Parse an H3 semantic version for the supported v4 API surface."""
     try:
         parts = version.lstrip("v").split(".")
@@ -62,7 +62,7 @@ def latlng_to_cell(lat: float, lng: float, resolution: int) -> str:
     return cast(str, h3.latlng_to_cell(lat, lng, resolution))
 
 
-def cell_to_latlng(cell: str) -> Tuple[float, float]:
+def cell_to_latlng(cell: str) -> tuple[float, float]:
     """
     Get the center coordinates of an H3 cell.
 
@@ -72,10 +72,10 @@ def cell_to_latlng(cell: str) -> Tuple[float, float]:
     Returns:
         Tuple of (latitude, longitude)
     """
-    return cast(Tuple[float, float], h3.cell_to_latlng(cell))
+    return cast(tuple[float, float], h3.cell_to_latlng(cell))
 
 
-def cell_to_latlng_boundary(cell: str) -> List[Tuple[float, float]]:
+def cell_to_latlng_boundary(cell: str) -> list[tuple[float, float]]:
     """
     Get the boundary vertices of an H3 cell.
 
@@ -85,10 +85,10 @@ def cell_to_latlng_boundary(cell: str) -> List[Tuple[float, float]]:
     Returns:
         List of (lat, lng) tuples forming the cell boundary
     """
-    return cast(List[Tuple[float, float]], h3.cell_to_boundary(cell))
+    return cast(list[tuple[float, float]], h3.cell_to_boundary(cell))
 
 
-def geo_to_cells(geojson: Any, resolution: int) -> List[str]:
+def geo_to_cells(geojson: Any, resolution: int) -> list[str]:
     """
     Convert a GeoJSON polygon to a set of H3 cells.
 
@@ -115,7 +115,7 @@ def geo_to_cells(geojson: Any, resolution: int) -> List[str]:
     return sorted(h3.geo_to_cells(geojson, resolution))
 
 
-def polygon_to_cells(polygon: Any, resolution: int) -> List[str]:
+def polygon_to_cells(polygon: Any, resolution: int) -> list[str]:
     """
     Convert a Shapely polygon to H3 cells.
 
@@ -141,7 +141,7 @@ def polygon_to_cells(polygon: Any, resolution: int) -> List[str]:
 # ============================================================================
 
 
-def grid_disk(cell: str, k: int = 1) -> List[str]:
+def grid_disk(cell: str, k: int = 1) -> list[str]:
     """
     Get all cells within k grid distance of the origin cell.
 
@@ -169,7 +169,7 @@ def grid_distance(cell1: str, cell2: str) -> int:
     return cast(int, h3.grid_distance(cell1, cell2))
 
 
-def grid_ring(cell: str, k: int) -> List[str]:
+def grid_ring(cell: str, k: int) -> list[str]:
     """
     Get cells at exactly k grid distance from origin.
 
@@ -276,7 +276,7 @@ def cell_to_parent(cell: str, parent_res: int) -> str:
     return cast(str, h3.cell_to_parent(cell, parent_res))
 
 
-def cell_to_children(cell: str, child_res: int) -> List[str]:
+def cell_to_children(cell: str, child_res: int) -> list[str]:
     """
     Get all child cells at a finer resolution.
 
@@ -290,7 +290,7 @@ def cell_to_children(cell: str, child_res: int) -> List[str]:
     return list(h3.cell_to_children(cell, child_res))
 
 
-def compact_cells(cells: List[str]) -> List[str]:
+def compact_cells(cells: list[str]) -> list[str]:
     """
     Compact a set of cells to their most compact representation.
 
@@ -303,7 +303,7 @@ def compact_cells(cells: List[str]) -> List[str]:
     return list(h3.compact_cells(cells))
 
 
-def uncompact_cells(cells: List[str], resolution: int) -> List[str]:
+def uncompact_cells(cells: list[str], resolution: int) -> list[str]:
     """
     Uncompact cells to a specified resolution.
 
@@ -322,7 +322,7 @@ def uncompact_cells(cells: List[str], resolution: int) -> List[str]:
 # ============================================================================
 
 
-def cells_to_geodataframe(cells: List[str]) -> Any:
+def cells_to_geodataframe(cells: list[str]) -> Any:
     """
     Convert a list of H3 cells to a GeoDataFrame with polygon geometries.
 

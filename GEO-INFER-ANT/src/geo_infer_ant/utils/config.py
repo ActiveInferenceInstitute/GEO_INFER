@@ -16,7 +16,7 @@ import os
 import json
 import yaml
 import logging
-from typing import Dict, List, Any, Optional, Union
+from typing import Any
 from pathlib import Path
 from dataclasses import dataclass, field, asdict
 from jsonschema import validate, ValidationError
@@ -144,13 +144,13 @@ class SwarmConfig:
     """Swarm configuration dataclass."""
 
     population_size: int = 1000
-    agent_types: List[str] = field(
+    agent_types: list[str] = field(
         default_factory=lambda: ["worker", "scout", "soldier"]
     )
     spatial_distribution: str = "random"
     behavioral_heterogeneity: str = "stochastic"
-    spatial_bounds: Optional[Dict[str, float]] = None
-    clustering_centers: Optional[List[Any]] = None
+    spatial_bounds: dict[str, float] | None = None
+    clustering_centers: list[Any] | None = None
     clustering_radius: float = 50.0
 
 
@@ -158,9 +158,9 @@ class SwarmConfig:
 class AlgorithmConfig:
     """Algorithm configuration dataclass."""
 
-    aco: Optional[Dict[str, Any]] = None
-    pso: Optional[Dict[str, Any]] = None
-    abc: Optional[Dict[str, Any]] = None
+    aco: dict[str, Any] | None = None
+    pso: dict[str, Any] | None = None
+    abc: dict[str, Any] | None = None
 
 
 @dataclass
@@ -170,7 +170,7 @@ class StigmergyConfig:
     pheromone_evaporation_rate: float = 0.1
     pheromone_deposition_amount: float = 1.0
     diffusion_rate: float = 0.5
-    pheromone_types: List[str] = field(
+    pheromone_types: list[str] = field(
         default_factory=lambda: ["trail", "alarm", "food", "nest"]
     )
 
@@ -179,7 +179,7 @@ class StigmergyConfig:
 class SpatialConfig:
     """Spatial configuration dataclass."""
 
-    bounds: Optional[Dict[str, float]] = None
+    bounds: dict[str, float] | None = None
     resolution: float = 1.0
     coordinate_system: str = "EPSG:4326"
 
@@ -188,11 +188,11 @@ class SpatialConfig:
 class PerformanceConfig:
     """Performance configuration dataclass."""
 
-    evaluation_criteria: List[str] = field(
+    evaluation_criteria: list[str] = field(
         default_factory=lambda: ["efficiency", "robustness", "adaptability"]
     )
-    benchmark_datasets: List[str] = field(default_factory=list)
-    statistical_analysis: List[str] = field(
+    benchmark_datasets: list[str] = field(default_factory=list)
+    statistical_analysis: list[str] = field(
         default_factory=lambda: ["hypothesis_testing", "confidence_intervals"]
     )
 
@@ -203,7 +203,7 @@ class LoggingConfig:
 
     level: str = "INFO"
     format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    file: Optional[str] = None
+    file: str | None = None
     console: bool = True
 
 
@@ -220,8 +220,8 @@ class AntModuleConfig:
 
 
 def load_config(
-    config_path: Optional[Union[str, Path]] = None,
-    config_dict: Optional[Dict[str, Any]] = None,
+    config_path: str | Path | None = None,
+    config_dict: dict[str, Any] | None = None,
     validate_schema: bool = True,
 ) -> AntModuleConfig:
     """
@@ -240,7 +240,7 @@ def load_config(
         ValidationError: If configuration doesn't match schema
         ValueError: If configuration is invalid
     """
-    config_data: Dict[str, Any] = {}
+    config_data: dict[str, Any] = {}
 
     # Load from file if provided
     if config_path:
@@ -248,7 +248,7 @@ def load_config(
         if not config_path.exists():
             raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             if config_path.suffix.lower() in [".yaml", ".yml"]:
                 config_data = yaml.safe_load(f) or {}
             elif config_path.suffix.lower() == ".json":
@@ -286,7 +286,7 @@ def load_config(
     return _dict_to_config(config_data)
 
 
-def validate_config(config: Union[Dict[str, Any], AntModuleConfig]) -> bool:
+def validate_config(config: dict[str, Any] | AntModuleConfig) -> bool:
     """
     Validate configuration against schema.
 
@@ -318,9 +318,9 @@ def validate_config(config: Union[Dict[str, Any], AntModuleConfig]) -> bool:
         )
 
 
-def _load_from_environment() -> Dict[str, Any]:
+def _load_from_environment() -> dict[str, Any]:
     """Load configuration from environment variables."""
-    config: Dict[str, Any] = {}
+    config: dict[str, Any] = {}
 
     # Swarm configuration
     population_size = os.getenv("ANT_POPULATION_SIZE")
@@ -352,7 +352,7 @@ def _load_from_environment() -> Dict[str, Any]:
     return config
 
 
-def _normalize_simulation_config(config: Dict[str, Any]) -> Dict[str, Any]:
+def _normalize_simulation_config(config: dict[str, Any]) -> dict[str, Any]:
     """Normalize the detailed simulation document to ``AntModuleConfig``."""
     agents = config.get("agents", {})
     agent_types = agents.get("agent_types", ["worker", "scout", "soldier"])
@@ -426,7 +426,7 @@ def _normalize_simulation_config(config: Dict[str, Any]) -> Dict[str, Any]:
     return normalized
 
 
-def _merge_with_defaults(config: Dict[str, Any]) -> Dict[str, Any]:
+def _merge_with_defaults(config: dict[str, Any]) -> dict[str, Any]:
     """Merge configuration with default values."""
     defaults = {
         "swarm": {
@@ -478,7 +478,7 @@ def _merge_with_defaults(config: Dict[str, Any]) -> Dict[str, Any]:
     }
 
     # Deep merge
-    merged: Dict[str, Any] = {
+    merged: dict[str, Any] = {
         key: value.copy() if isinstance(value, dict) else value
         for key, value in defaults.items()
     }
@@ -491,7 +491,7 @@ def _merge_with_defaults(config: Dict[str, Any]) -> Dict[str, Any]:
     return merged
 
 
-def _dict_to_config(config_dict: Dict[str, Any]) -> AntModuleConfig:
+def _dict_to_config(config_dict: dict[str, Any]) -> AntModuleConfig:
     """Convert dictionary to AntModuleConfig dataclass."""
     return AntModuleConfig(
         swarm=SwarmConfig(**config_dict.get("swarm", {})),
@@ -503,7 +503,7 @@ def _dict_to_config(config_dict: Dict[str, Any]) -> AntModuleConfig:
     )
 
 
-def config_to_dict(config: AntModuleConfig) -> Dict[str, Any]:
+def config_to_dict(config: AntModuleConfig) -> dict[str, Any]:
     """Convert AntModuleConfig dataclass to dictionary."""
     return {
         "swarm": asdict(config.swarm),
@@ -516,7 +516,7 @@ def config_to_dict(config: AntModuleConfig) -> Dict[str, Any]:
 
 
 def save_config(
-    config: AntModuleConfig, config_path: Union[str, Path], format: str = "yaml"
+    config: AntModuleConfig, config_path: str | Path, format: str = "yaml"
 ) -> None:
     """
     Save configuration to file.
@@ -545,7 +545,7 @@ def get_default_config() -> AntModuleConfig:
     return AntModuleConfig()
 
 
-def update_config(config: AntModuleConfig, updates: Dict[str, Any]) -> AntModuleConfig:
+def update_config(config: AntModuleConfig, updates: dict[str, Any]) -> AntModuleConfig:
     """
     Update configuration with new values.
 

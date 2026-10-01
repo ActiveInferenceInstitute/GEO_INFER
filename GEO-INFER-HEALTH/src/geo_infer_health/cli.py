@@ -10,9 +10,9 @@ import argparse
 import csv
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import uvicorn
 from loguru import logger
@@ -224,7 +224,7 @@ def run_server(args: argparse.Namespace, config: Any) -> None:
     app.include_router(router, prefix="/api/v1")
 
     @app.get("/")
-    async def root() -> Dict[str, str]:
+    async def root() -> dict[str, str]:
         return {"message": "GEO-INFER-HEALTH API", "version": "1.0.0"}
 
     uvicorn.run(
@@ -267,7 +267,7 @@ def run_hotspot_analysis(args: argparse.Namespace, config: Any) -> None:
     if reports_gdf.crs is not None and reports_gdf.crs.to_epsg() != 4326:
         reports_gdf = reports_gdf.to_crs("EPSG:4326")
 
-    reports: List[DiseaseReport] = []
+    reports: list[DiseaseReport] = []
     for _, row in reports_gdf.iterrows():
         geometry = row.geometry
         if geometry is None:
@@ -299,7 +299,7 @@ def run_hotspot_analysis(args: argparse.Namespace, config: Any) -> None:
         reports.append(report)
 
     # Load population data if provided
-    population_data: Optional[List[PopulationData]] = None
+    population_data: list[PopulationData] | None = None
     if args.population:
         pop_gdf = gpd.read_file(args.population)
         from geo_infer_health.models import PopulationData
@@ -342,7 +342,7 @@ def run_accessibility_analysis(args: argparse.Namespace, config: Any) -> None:
     # Convert to internal format
     from geo_infer_health.models import HealthFacility, PopulationData, Location
 
-    facilities: List[HealthFacility] = []
+    facilities: list[HealthFacility] = []
     for _, row in facilities_gdf.iterrows():
         location = Location(latitude=row.geometry.y, longitude=row.geometry.x)
         facility = HealthFacility(
@@ -354,7 +354,7 @@ def run_accessibility_analysis(args: argparse.Namespace, config: Any) -> None:
         )
         facilities.append(facility)
 
-    population_data: List[PopulationData] = []
+    population_data: list[PopulationData] = []
     for _, row in population_gdf.iterrows():
         pop_data = PopulationData(
             area_id=str(row.get("area_id", f"area_{len(population_data)}")),
@@ -385,23 +385,23 @@ def run_accessibility_analysis(args: argparse.Namespace, config: Any) -> None:
 
 def _load_environmental_readings(
     file_path: str, default_parameter: str, default_unit: str
-) -> List[EnvironmentalData]:
+) -> list[EnvironmentalData]:
     """Load environmental readings from a CSV file.
 
     Expected columns: ``latitude``, ``longitude``, ``value`` and optionally
     ``parameter_name``, ``unit``, ``timestamp`` (ISO 8601), ``data_id``.
     """
-    readings: List[EnvironmentalData] = []
+    readings: list[EnvironmentalData] = []
     with open(file_path, newline="", encoding="utf-8") as fh:
         for index, row in enumerate(csv.DictReader(fh)):
             timestamp_raw = row.get("timestamp")
             timestamp = (
                 datetime.fromisoformat(str(timestamp_raw))
                 if timestamp_raw
-                else datetime.now(timezone.utc)
+                else datetime.now(UTC)
             )
             if timestamp.tzinfo is None:
-                timestamp = timestamp.replace(tzinfo=timezone.utc)
+                timestamp = timestamp.replace(tzinfo=UTC)
             readings.append(
                 EnvironmentalData(
                     data_id=row.get("data_id", f"{Path(file_path).stem}_{index}"),
@@ -430,8 +430,8 @@ def run_environment_analysis(args: argparse.Namespace, config: Any) -> None:
     logger.info(f"Loaded {len(population_gdf)} population areas")
 
     # Population area centroids become the exposure target locations.
-    target_locations: List[Location] = []
-    population_data: List[PopulationData] = []
+    target_locations: list[Location] = []
+    population_data: list[PopulationData] = []
     for index, (_, row) in enumerate(population_gdf.iterrows()):
         centroid = row.geometry.centroid
         target_locations.append(Location(latitude=centroid.y, longitude=centroid.x))
@@ -442,7 +442,7 @@ def run_environment_analysis(args: argparse.Namespace, config: Any) -> None:
             )
         )
 
-    results: Dict[str, Any] = {
+    results: dict[str, Any] = {
         "analysis_type": "environmental_health",
         "population_areas": len(population_data),
         "total_population": sum(p.population_count for p in population_data),
@@ -483,7 +483,7 @@ def run_environment_analysis(args: argparse.Namespace, config: Any) -> None:
     logger.info(f"Environmental health analysis completed, saved to {args.output}")
 
 
-def run_batch_processing(args: argparse.Namespace, config: Any) -> List[Dict[str, Any]]:
+def run_batch_processing(args: argparse.Namespace, config: Any) -> list[dict[str, Any]]:
     """Run batch processing of multiple files."""
     logger.info(f"Running batch processing with config: {args.config}")
     jobs = config.get("jobs", config.get("batch", {}).get("jobs", []))

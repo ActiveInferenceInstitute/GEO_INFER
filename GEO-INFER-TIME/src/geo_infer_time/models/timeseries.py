@@ -6,7 +6,7 @@ temporal geospatial data with metadata and analysis capabilities.
 """
 
 import logging
-from typing import Dict, Optional, Any, Union, cast
+from typing import Any, cast
 from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
@@ -24,10 +24,10 @@ class TimeSeries:
 
     def __init__(
         self,
-        data: Union[pd.Series, pd.DataFrame, np.ndarray],
-        timestamps: Optional[pd.DatetimeIndex] = None,
-        spatial_location: Optional[Dict[str, float]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        data: pd.Series | pd.DataFrame | np.ndarray,
+        timestamps: pd.DatetimeIndex | None = None,
+        spatial_location: dict[str, float] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """
         Initialize a TimeSeries object.
@@ -109,7 +109,7 @@ class TimeSeries:
         return self.end_time - self.start_time
 
     @property
-    def frequency(self) -> Optional[str]:
+    def frequency(self) -> str | None:
         """Get inferred frequency."""
         try:
             freq = pd.infer_freq(self.data.index)
@@ -167,7 +167,7 @@ class TimeSeries:
             metadata={**self.metadata, "interpolated": True},
         )
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """
         Get statistical summary of the time series.
 

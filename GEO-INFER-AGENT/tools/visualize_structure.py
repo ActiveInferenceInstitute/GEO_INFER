@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 GEO-INFER-AGENT Structure Visualizer
@@ -10,10 +9,8 @@ as a Markdown file with Mermaid diagrams.
 
 import os
 import re
-import sys
-import json
 from datetime import datetime
-from typing import Dict, List, Any, Optional, Set, Tuple
+from typing import Any
 
 # Configuration
 OUTPUT_FILE = "GEO-INFER-AGENT/docs/module_structure.md"
@@ -36,7 +33,7 @@ def should_exclude(path: str) -> bool:
         )
 
 
-def collect_structure(root_dir: str) -> Dict[str, Any]:
+def collect_structure(root_dir: str) -> dict[str, Any]:
     """Collect the directory structure."""
     result = {"name": os.path.basename(root_dir), "type": "dir", "children": []}
 
@@ -54,7 +51,7 @@ def collect_structure(root_dir: str) -> Dict[str, Any]:
     return result
 
 
-def generate_tree_markdown(structure: Dict[str, Any], indent: int = 0) -> List[str]:
+def generate_tree_markdown(structure: dict[str, Any], indent: int = 0) -> list[str]:
     """Generate a Markdown tree representation."""
     lines = []
     prefix = "  " * indent
@@ -70,12 +67,12 @@ def generate_tree_markdown(structure: Dict[str, Any], indent: int = 0) -> List[s
     return lines
 
 
-def generate_mermaid_flowchart(structure: Dict[str, Any]) -> List[str]:
+def generate_mermaid_flowchart(structure: dict[str, Any]) -> list[str]:
     """Generate a Mermaid flowchart representation."""
     lines = ["```mermaid", "flowchart TD"]
     node_ids = {}
 
-    def process_node(node: Dict[str, Any], parent_id: Optional[str] = None) -> None:
+    def process_node(node: dict[str, Any], parent_id: str | None = None) -> None:
         node_name = node["name"]
         node_id = f"{parent_id}_{node_name}" if parent_id else node_name
         node_id = node_id.replace(".", "_").replace("-", "_").replace(" ", "_")
@@ -98,7 +95,7 @@ def generate_mermaid_flowchart(structure: Dict[str, Any]) -> List[str]:
     return lines
 
 
-def generate_class_diagram(root_dir: str) -> List[str]:
+def generate_class_diagram(root_dir: str) -> list[str]:
     """Generate a Mermaid class diagram for the models."""
     lines = ["```mermaid", "classDiagram"]
 
@@ -150,26 +147,26 @@ def generate_class_diagram(root_dir: str) -> List[str]:
 
         # Add module-specific relationships
         if module == "bdi":
-            lines.append(f"    BDIAgent *-- BDIState")
-            lines.append(f"    BDIState *-- Belief")
-            lines.append(f"    BDIState *-- Desire")
-            lines.append(f"    BDIState *-- Plan")
+            lines.append("    BDIAgent *-- BDIState")
+            lines.append("    BDIState *-- Belief")
+            lines.append("    BDIState *-- Desire")
+            lines.append("    BDIState *-- Plan")
         elif module == "active_inference":
-            lines.append(f"    ActiveInferenceAgent *-- ActiveInferenceState")
-            lines.append(f"    ActiveInferenceState *-- GenerativeModel")
+            lines.append("    ActiveInferenceAgent *-- ActiveInferenceState")
+            lines.append("    ActiveInferenceState *-- GenerativeModel")
         elif module == "rl":
-            lines.append(f"    RLAgent *-- RLState")
-            lines.append(f"    RLState *-- QTable")
-            lines.append(f"    RLState *-- ReplayBuffer")
-            lines.append(f"    ReplayBuffer *-- Experience")
+            lines.append("    RLAgent *-- RLState")
+            lines.append("    RLState *-- QTable")
+            lines.append("    RLState *-- ReplayBuffer")
+            lines.append("    ReplayBuffer *-- Experience")
         elif module == "rule_based":
-            lines.append(f"    RuleBasedAgent *-- RuleBasedState")
-            lines.append(f"    RuleBasedState *-- RuleSet")
-            lines.append(f"    RuleSet *-- Rule")
+            lines.append("    RuleBasedAgent *-- RuleBasedState")
+            lines.append("    RuleBasedState *-- RuleSet")
+            lines.append("    RuleSet *-- Rule")
         elif module == "hybrid":
-            lines.append(f"    HybridAgent *-- HybridState")
-            lines.append(f"    HybridState *-- SubAgentWrapper")
-            lines.append(f"    SubAgentWrapper *-- BaseAgent")
+            lines.append("    HybridAgent *-- HybridState")
+            lines.append("    HybridState *-- SubAgentWrapper")
+            lines.append("    SubAgentWrapper *-- BaseAgent")
 
     lines.append("```")
 

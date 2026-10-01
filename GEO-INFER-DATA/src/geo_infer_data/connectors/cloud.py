@@ -15,7 +15,7 @@ loop.
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import boto3
 
@@ -73,7 +73,7 @@ class CloudConnector:
         """
         raise RuntimeError("Cloud connector subclasses must implement download_file()")
 
-    async def list_files(self, prefix: str = "") -> List[str]:
+    async def list_files(self, prefix: str = "") -> list[str]:
         """
         List files in cloud storage.
 
@@ -145,7 +145,7 @@ class S3Connector(CloudConnector):
         endpoint_url: Custom S3-compatible endpoint (e.g. MinIO).
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.bucket = config.get("bucket", "geo-infer-data")
         self.region = config.get("region", "us-east-1")
@@ -158,7 +158,7 @@ class S3Connector(CloudConnector):
 
     def _create_client(self) -> Any:
         """Create the boto3 S3 client from the connector configuration."""
-        client_kwargs: Dict[str, Any] = {"region_name": self.region}
+        client_kwargs: dict[str, Any] = {"region_name": self.region}
         if self.access_key and self.secret_key:
             client_kwargs["aws_access_key_id"] = self.access_key
             client_kwargs["aws_secret_access_key"] = self.secret_key
@@ -174,10 +174,10 @@ class S3Connector(CloudConnector):
             )
         return self._client
 
-    def _list_keys(self, prefix: str) -> List[str]:
+    def _list_keys(self, prefix: str) -> list[str]:
         """List object keys under ``prefix`` using pagination."""
         paginator = self._client.get_paginator("list_objects_v2")
-        keys: List[str] = []
+        keys: list[str] = []
         for page in paginator.paginate(Bucket=self.bucket, Prefix=prefix):
             keys.extend(obj["Key"] for obj in page.get("Contents", []))
         return keys
@@ -235,7 +235,7 @@ class S3Connector(CloudConnector):
         logger.info(f"Downloaded s3://{self.bucket}/{remote_path} to {local_path}")
         return local_path
 
-    async def list_files(self, prefix: str = "") -> List[str]:
+    async def list_files(self, prefix: str = "") -> list[str]:
         """
         List object keys in the bucket under ``prefix``.
 
@@ -302,7 +302,7 @@ class _UnavailableCloudConnector(CloudConnector):
     async def download_file(self, remote_path: str, local_path: str) -> str:
         raise self._unavailable("download_file()")
 
-    async def list_files(self, prefix: str = "") -> List[str]:
+    async def list_files(self, prefix: str = "") -> list[str]:
         raise self._unavailable("list_files()")
 
     async def delete_file(self, remote_path: str) -> bool:
@@ -321,7 +321,7 @@ class GCSConnector(_UnavailableCloudConnector):
     backend = "Google Cloud Storage"
     dependency = "google-cloud-storage"
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.bucket = config.get("bucket", "geo-infer-data")
         self.project = config.get("project", "default-project")
@@ -341,7 +341,7 @@ class AzureConnector(_UnavailableCloudConnector):
     backend = "Azure Blob Storage"
     dependency = "azure-storage-blob"
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.container = config.get("container", "geo-infer-data")
         self.account_name = config.get("account_name")

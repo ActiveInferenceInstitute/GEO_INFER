@@ -24,7 +24,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, Any, cast
+from typing import Any, cast
 
 import numpy as np
 
@@ -44,15 +44,15 @@ logger = logging.getLogger(__name__)
 class CognitiveState:
     """Represents the current cognitive state of the processing engine."""
 
-    attention_focus: Dict[str, float] = field(default_factory=dict)
-    working_memory: Dict[str, Any] = field(default_factory=dict)
+    attention_focus: dict[str, float] = field(default_factory=dict)
+    working_memory: dict[str, Any] = field(default_factory=dict)
     cognitive_load: float = 0.0
     uncertainty_level: float = 0.0
     decision_confidence: float = 0.0
-    spatial_context: Dict[str, Any] = field(default_factory=dict)
-    temporal_context: Dict[str, Any] = field(default_factory=dict)
+    spatial_context: dict[str, Any] = field(default_factory=dict)
+    temporal_context: dict[str, Any] = field(default_factory=dict)
 
-    def update_attention(self, focus_areas: Dict[str, float]) -> None:
+    def update_attention(self, focus_areas: dict[str, float]) -> None:
         """Update attention focus areas with normalized weights."""
         total_weight = sum(focus_areas.values())
         if total_weight > 0:
@@ -71,7 +71,7 @@ class CognitiveState:
         }
         self._update_cognitive_load()
 
-    def retrieve_from_memory(self, key: str) -> Optional[Any]:
+    def retrieve_from_memory(self, key: str) -> Any | None:
         """Retrieve item from working memory and update access patterns."""
         if key in self.working_memory:
             item = self.working_memory[key]
@@ -86,7 +86,7 @@ class CognitiveState:
         attention_load = len(self.attention_focus) / 5.0  # Normalize to 5 focus areas
         self.cognitive_load = min(1.0, (memory_load + attention_load) / 2.0)
 
-    def get_memory_utilization(self) -> Dict[str, float]:
+    def get_memory_utilization(self) -> dict[str, float]:
         """Get memory utilization statistics."""
         if not self.working_memory:
             return {"utilization": 0.0, "items": 0}
@@ -124,8 +124,8 @@ class CognitiveProcessingEngine:
         spatial_resolution: str = "adaptive",
         temporal_modeling: str = "working_memory",
         uncertainty_handling: str = "probabilistic",
-        config: Optional[Dict[str, Any]] = None,
-        rng: Optional[np.random.Generator] = None,
+        config: dict[str, Any] | None = None,
+        rng: np.random.Generator | None = None,
     ):
         """
         Initialize the cognitive processing engine.
@@ -185,10 +185,10 @@ class CognitiveProcessingEngine:
 
     def process_spatial_input(
         self,
-        spatial_data: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None,
-        user_profile: Optional[UserCognitiveProfile] = None,
-    ) -> Dict[str, Any]:
+        spatial_data: dict[str, Any],
+        context: dict[str, Any] | None = None,
+        user_profile: UserCognitiveProfile | None = None,
+    ) -> dict[str, Any]:
         """
         Process spatial input through the cognitive pipeline.
 
@@ -259,10 +259,10 @@ class CognitiveProcessingEngine:
 
     def _generate_spatial_decisions(
         self,
-        reasoning_result: Dict[str, Any],
-        memory_result: Dict[str, Any],
-        user_profile: Optional[UserCognitiveProfile] = None,
-    ) -> Dict[str, Any]:
+        reasoning_result: dict[str, Any],
+        memory_result: dict[str, Any],
+        user_profile: UserCognitiveProfile | None = None,
+    ) -> dict[str, Any]:
         """
         Generate spatial decisions based on reasoning and memory.
 
@@ -306,8 +306,8 @@ class CognitiveProcessingEngine:
 
     def _calculate_decision_confidence(
         self,
-        alternative: Dict[str, Any],
-        user_profile: Optional[UserCognitiveProfile] = None,
+        alternative: dict[str, Any],
+        user_profile: UserCognitiveProfile | None = None,
     ) -> float:
         """Calculate confidence score for a spatial decision alternative."""
         base_confidence = alternative.get("confidence", 0.5)
@@ -323,7 +323,7 @@ class CognitiveProcessingEngine:
 
         return cast(float, confidence)
 
-    def _estimate_cognitive_load(self, alternative: Dict[str, Any]) -> float:
+    def _estimate_cognitive_load(self, alternative: dict[str, Any]) -> float:
         """Estimate cognitive load impact of a spatial alternative."""
         # Simple heuristic based on spatial complexity
         geometry = alternative.get("geometry", {})
@@ -338,7 +338,7 @@ class CognitiveProcessingEngine:
         return 0.3  # Default moderate load
 
     def _recommend_action(
-        self, alternative: Dict[str, Any], reasoning_result: Dict[str, Any]
+        self, alternative: dict[str, Any], reasoning_result: dict[str, Any]
     ) -> str:
         """Recommend action based on cognitive analysis."""
         confidence = alternative.get("confidence", 0.5)
@@ -354,8 +354,8 @@ class CognitiveProcessingEngine:
             return "requires_further_analysis"
 
     def _analyze_confidence_distribution(
-        self, decisions: List[Dict[str, Any]]
-    ) -> Dict[str, float]:
+        self, decisions: list[dict[str, Any]]
+    ) -> dict[str, float]:
         """Analyze the distribution of confidence scores across decisions."""
         if not decisions:
             return {"mean": 0.0, "std": 0.0, "min": 0.0, "max": 0.0}
@@ -370,10 +370,10 @@ class CognitiveProcessingEngine:
         }
 
     def _extract_cognitive_factors(
-        self, decisions: List[Dict[str, Any]]
-    ) -> Dict[str, List[str]]:
+        self, decisions: list[dict[str, Any]]
+    ) -> dict[str, list[str]]:
         """Extract cognitive factors influencing decisions."""
-        factors: Dict[str, List[str]] = {
+        factors: dict[str, list[str]] = {
             "high_confidence_factors": [],
             "low_confidence_factors": [],
             "cognitive_load_issues": [],
@@ -401,8 +401,8 @@ class CognitiveProcessingEngine:
         return factors
 
     def update_cognitive_models(
-        self, training_data: Dict[str, Any], learning_rate: float = 0.01
-    ) -> Dict[str, Any]:
+        self, training_data: dict[str, Any], learning_rate: float = 0.01
+    ) -> dict[str, Any]:
         """
         Update cognitive models based on new training data.
 
@@ -446,7 +446,7 @@ class CognitiveProcessingEngine:
             logger.error(f"Error updating cognitive models: {str(e)}")
             raise
 
-    def get_performance_summary(self) -> Dict[str, Any]:
+    def get_performance_summary(self) -> dict[str, Any]:
         """Get comprehensive performance summary of the cognitive engine."""
         return {
             "engine_status": "active",
@@ -489,7 +489,7 @@ class CognitiveProcessingEngine:
 
     def load_cognitive_state(self, filepath: str) -> None:
         """Load cognitive state from file."""
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             state_data = json.load(f)
 
         # Restore cognitive state

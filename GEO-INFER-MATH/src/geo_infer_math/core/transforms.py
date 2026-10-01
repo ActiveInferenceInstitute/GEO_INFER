@@ -7,7 +7,8 @@ various geographic and projected coordinate reference systems (CRS).
 
 import numpy as np
 import warnings
-from typing import Union, List, Tuple, Dict, Optional, Callable, Any, cast
+from typing import Any, cast
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from math import pi, sin, cos, tan, sqrt, atan2, degrees, radians
 
@@ -23,9 +24,9 @@ class CRSDefinition:
     """Definition of a Coordinate Reference System."""
 
     name: str
-    epsg_code: Optional[int] = None
-    proj_string: Optional[str] = None
-    parameters: Dict[str, float] = field(default_factory=dict)
+    epsg_code: int | None = None
+    proj_string: str | None = None
+    parameters: dict[str, float] = field(default_factory=dict)
 
 
 class CoordinateTransformer:
@@ -40,8 +41,8 @@ class CoordinateTransformer:
 
     def __init__(
         self,
-        from_crs: Union[str, int, CRSDefinition],
-        to_crs: Union[str, int, CRSDefinition],
+        from_crs: str | int | CRSDefinition,
+        to_crs: str | int | CRSDefinition,
     ):
         """
         Initialize coordinate transformer.
@@ -54,7 +55,7 @@ class CoordinateTransformer:
         self.to_crs = self._parse_crs(to_crs)
         self.transformation_chain = self._build_transformation_chain()
 
-    def _parse_crs(self, crs: Union[str, int, CRSDefinition]) -> CRSDefinition:
+    def _parse_crs(self, crs: str | int | CRSDefinition) -> CRSDefinition:
         """Parse CRS specification into CRSDefinition object."""
         if isinstance(crs, CRSDefinition):
             return crs
@@ -83,11 +84,11 @@ class CoordinateTransformer:
         else:
             raise ValueError(f"Unsupported CRS specification type: {type(crs)}")
 
-    def _build_transformation_chain(self) -> List[Callable[..., Any]]:
+    def _build_transformation_chain(self) -> list[Callable[..., Any]]:
         """Build the transformation chain."""
         # For now, implement basic transformations
         # In a full implementation, this would use PROJ or similar libraries
-        chain: List[Callable[..., Tuple[float, float, Optional[float]]]] = []
+        chain: list[Callable[..., tuple[float, float, float | None]]] = []
 
         # WGS84 to UTM
         if (
@@ -145,8 +146,8 @@ class CoordinateTransformer:
         return chain
 
     def transform_point(
-        self, point: Tuple[float, float, Optional[float]]
-    ) -> Tuple[float, float, Optional[float]]:
+        self, point: tuple[float, float, float | None]
+    ) -> tuple[float, float, float | None]:
         """
         Transform a single point.
 
@@ -188,8 +189,8 @@ class CoordinateTransformer:
         return transformed[:, : points.shape[1]]  # Return same dimensionality as input
 
     def _wgs84_to_utm(
-        self, lon: float, lat: float, z: Optional[float] = None
-    ) -> Tuple[float, float, Optional[float]]:
+        self, lon: float, lat: float, z: float | None = None
+    ) -> tuple[float, float, float | None]:
         """Transform WGS84 geographic coordinates to UTM."""
         # Determine UTM zone
         zone = int((lon + 180) / 6) + 1
@@ -312,8 +313,8 @@ class CoordinateTransformer:
         )
 
     def _utm_to_wgs84(
-        self, easting: float, northing: float, z: Optional[float] = None
-    ) -> Tuple[float, float, Optional[float]]:
+        self, easting: float, northing: float, z: float | None = None
+    ) -> tuple[float, float, float | None]:
         """Transform UTM coordinates to WGS84 geographic."""
         # Remove false easting and northing
         x = easting - 500000
@@ -356,8 +357,8 @@ class CoordinateTransformer:
         return degrees(lon), degrees(lat), z
 
     def _geographic_to_web_mercator(
-        self, lon: float, lat: float, z: Optional[float] = None
-    ) -> Tuple[float, float, Optional[float]]:
+        self, lon: float, lat: float, z: float | None = None
+    ) -> tuple[float, float, float | None]:
         """Transform geographic coordinates to Web Mercator."""
         # Web Mercator projection
         x = lon * 20037508.34 / 180
@@ -366,8 +367,8 @@ class CoordinateTransformer:
         return x, y, z
 
     def _web_mercator_to_geographic(
-        self, x: float, y: float, z: Optional[float] = None
-    ) -> Tuple[float, float, Optional[float]]:
+        self, x: float, y: float, z: float | None = None
+    ) -> tuple[float, float, float | None]:
         """Transform Web Mercator coordinates to geographic."""
         # Inverse Web Mercator projection
         lon = x * 180 / 20037508.34
@@ -376,8 +377,8 @@ class CoordinateTransformer:
         return lon, lat, z
 
     def _generic_transformation(
-        self, x: float, y: float, z: Optional[float] = None
-    ) -> Tuple[float, float, Optional[float]]:
+        self, x: float, y: float, z: float | None = None
+    ) -> tuple[float, float, float | None]:
         """Pass-through fallback for unrecognised CRS pairs."""
         warnings.warn(
             f"Generic transformation from {self.from_crs.name} to {self.to_crs.name} is unsupported. "
@@ -388,7 +389,7 @@ class CoordinateTransformer:
 
 def geographic_to_projected(
     lon: float, lat: float, projection: str = "utm"
-) -> Tuple[float, float]:
+) -> tuple[float, float]:
     """
     Transform geographic coordinates to projected coordinates.
 
@@ -412,7 +413,7 @@ def geographic_to_projected(
 
 def projected_to_geographic(
     x: float, y: float, projection: str = "utm"
-) -> Tuple[float, float]:
+) -> tuple[float, float]:
     """
     Transform projected coordinates to geographic coordinates.
 
@@ -434,7 +435,7 @@ def projected_to_geographic(
         raise ValueError(f"Unsupported projection: {projection}")
 
 
-def utm_zone_from_lon_lat(lon: float, lat: float) -> Tuple[int, str]:
+def utm_zone_from_lon_lat(lon: float, lat: float) -> tuple[int, str]:
     """
     Determine UTM zone from longitude and latitude.
 
@@ -480,7 +481,7 @@ def utm_central_meridian(zone: int) -> float:
 
 def datum_transformation(
     x: float, y: float, z: float, from_datum: str = "WGS84", to_datum: str = "NAD83"
-) -> Tuple[float, float, float]:
+) -> tuple[float, float, float]:
     """
     Transform coordinates between different datums.
 

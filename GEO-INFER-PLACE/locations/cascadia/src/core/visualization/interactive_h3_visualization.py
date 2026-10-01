@@ -15,7 +15,7 @@ Based on modern web mapping technologies and geospatial visualization best pract
 import folium
 import json
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
 from datetime import datetime
 
@@ -126,9 +126,9 @@ class InteractiveH3Visualization:
 
     def create_comprehensive_map(
         self,
-        h3_data: Dict[str, Any],
-        data_sources: Dict[str, Any],
-        target_hexagons: List[str],
+        h3_data: dict[str, Any],
+        data_sources: dict[str, Any],
+        target_hexagons: list[str],
         output_filename: str = "cascadia_comprehensive_map.html",
     ) -> Path:
         """
@@ -216,8 +216,8 @@ class InteractiveH3Visualization:
         self,
         m: folium.Map,
         module_name: str,
-        module_data: Dict[str, Any],
-        h3_data: Dict[str, Any],
+        module_data: dict[str, Any],
+        h3_data: dict[str, Any],
     ):
         """Add a data layer to the map."""
         try:
@@ -258,7 +258,7 @@ class InteractiveH3Visualization:
             logger.error(f"Failed to add {module_name} layer: {e}")
 
     def _add_h3_grid_layer(
-        self, m: folium.Map, target_hexagons: List[str], h3_data: Dict[str, Any]
+        self, m: folium.Map, target_hexagons: list[str], h3_data: dict[str, Any]
     ):
         """Add H3 grid layer for reference."""
         try:
@@ -282,7 +282,7 @@ class InteractiveH3Visualization:
             logger.error(f"Failed to add H3 grid layer: {e}")
 
     def _add_analysis_layer(
-        self, m: folium.Map, h3_data: Dict[str, Any], data_sources: Dict[str, Any]
+        self, m: folium.Map, h3_data: dict[str, Any], data_sources: dict[str, Any]
     ):
         """Add analysis layer with aggregated data."""
         try:
@@ -317,7 +317,7 @@ class InteractiveH3Visualization:
             logger.error(f"Failed to add analysis layer: {e}")
 
     def _add_interactive_features(
-        self, m: folium.Map, h3_data: Dict[str, Any], data_sources: Dict[str, Any]
+        self, m: folium.Map, h3_data: dict[str, Any], data_sources: dict[str, Any]
     ):
         """Add interactive features to the map."""
         try:
@@ -361,7 +361,7 @@ class InteractiveH3Visualization:
         except Exception as e:
             logger.error(f"Failed to add interactive features: {e}")
 
-    def _get_hexagon_boundary(self, hex_id: str) -> Optional[List[List[float]]]:
+    def _get_hexagon_boundary(self, hex_id: str) -> list[list[float]] | None:
         """Get the boundary coordinates for an H3 hexagon."""
         try:
             import h3
@@ -376,7 +376,7 @@ class InteractiveH3Visualization:
             return None
 
     def _get_hexagon_color(
-        self, hex_data: Dict[str, Any], color_scheme: Dict[str, str], module_name: str
+        self, hex_data: dict[str, Any], color_scheme: dict[str, str], module_name: str
     ) -> str:
         """Get color for a hexagon based on its data."""
         try:
@@ -434,7 +434,7 @@ class InteractiveH3Visualization:
         except Exception:
             return "#808080"
 
-    def _create_popup_content(self, hex_id: str, hex_data: Dict[str, Any], module_name: str) -> str:
+    def _create_popup_content(self, hex_id: str, hex_data: dict[str, Any], module_name: str) -> str:
         """Create popup content for a hexagon."""
         try:
             content = f"<b>H3 Hexagon:</b> {hex_id}<br>"
@@ -453,7 +453,7 @@ class InteractiveH3Visualization:
             return f"<b>H3:</b> {hex_id}"
 
     def _generate_enhanced_html(
-        self, m: folium.Map, h3_data: Dict[str, Any], data_sources: Dict[str, Any]
+        self, m: folium.Map, h3_data: dict[str, Any], data_sources: dict[str, Any]
     ) -> str:
         """Generate enhanced HTML with custom CSS and JavaScript."""
         try:
@@ -544,9 +544,9 @@ class InteractiveH3Visualization:
     def create_layer_specific_map(
         self,
         module_name: str,
-        module_data: Dict[str, Any],
-        target_hexagons: List[str],
-        output_filename: Optional[str] = None,
+        module_data: dict[str, Any],
+        target_hexagons: list[str],
+        output_filename: str | None = None,
     ) -> Path:
         """
         Create a map focused on a specific data layer.
@@ -597,8 +597,8 @@ class InteractiveH3Visualization:
         return output_path
 
     def export_map_data(
-        self, h3_data: Dict[str, Any], data_sources: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, h3_data: dict[str, Any], data_sources: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Export map data for external analysis.
 

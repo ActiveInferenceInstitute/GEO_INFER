@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Data Collector Agent for GEO-INFER-AGENT.
@@ -12,7 +11,7 @@ import os
 import json
 import logging
 import asyncio
-from typing import Dict, List, Any, Optional, cast
+from typing import Any, cast
 from datetime import datetime
 import requests
 import pandas as pd
@@ -34,7 +33,7 @@ class DataCollectorAgent(BDIAgent):
     - Monitoring data sources for updates
     """
 
-    def __init__(self, agent_id: Optional[str] = None, config: Optional[Dict] = None):
+    def __init__(self, agent_id: str | None = None, config: dict | None = None):
         """Initialize the data collector agent."""
         # Ensure config has default values
         config = config or {}
@@ -136,8 +135,8 @@ class DataCollectorAgent(BDIAgent):
         os.makedirs(self.storage_path, exist_ok=True)
 
         # Track collected datasets
-        self.datasets: list[Dict[str, Any]] = []
-        self.unprocessed_data: List[Dict[str, Any]] = []
+        self.datasets: list[dict[str, Any]] = []
+        self.unprocessed_data: list[dict[str, Any]] = []
 
         logger.info(f"Data collector agent {self.agent_id} initialized")
 
@@ -194,8 +193,8 @@ class DataCollectorAgent(BDIAgent):
         )
 
     async def _handle_collect_data_action(
-        self, agent: "DataCollectorAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "DataCollectorAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle data collection action.
 
@@ -307,8 +306,8 @@ class DataCollectorAgent(BDIAgent):
         }
 
     async def _handle_check_sources_action(
-        self, agent: "DataCollectorAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "DataCollectorAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle checking data sources action.
 
@@ -377,8 +376,8 @@ class DataCollectorAgent(BDIAgent):
         }
 
     async def _handle_process_data_action(
-        self, agent: "DataCollectorAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "DataCollectorAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle processing collected data action.
 
@@ -405,7 +404,7 @@ class DataCollectorAgent(BDIAgent):
         for dataset_info in list(agent.unprocessed_data):
             try:
                 # Load the data
-                with open(dataset_info["filename"], "r") as f:
+                with open(dataset_info["filename"]) as f:
                     data = json.load(f)
 
                 # Process the data
@@ -483,8 +482,8 @@ class DataCollectorAgent(BDIAgent):
         }
 
     async def _collect_from_source(
-        self, source: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, source: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """
         Collect data from a specific source.
 
@@ -505,9 +504,7 @@ class DataCollectorAgent(BDIAgent):
         else:
             raise ValueError(f"Unsupported data source type: {source_type!r}")
 
-    async def _collect_from_api(
-        self, source: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+    async def _collect_from_api(self, source: dict[str, Any]) -> dict[str, Any] | None:
         """
         Collect data from an API source.
 
@@ -535,9 +532,7 @@ class DataCollectorAgent(BDIAgent):
             raise ValueError("API source must return a JSON object or array")
         return payload
 
-    async def _collect_from_file(
-        self, source: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+    async def _collect_from_file(self, source: dict[str, Any]) -> dict[str, Any] | None:
         """
         Collect data from a file source.
 
@@ -555,7 +550,7 @@ class DataCollectorAgent(BDIAgent):
             raise FileNotFoundError(file_path)
         suffix = os.path.splitext(file_path)[1].lower()
         if suffix in {".json", ".geojson"}:
-            with open(file_path, "r", encoding="utf-8") as handle:
+            with open(file_path, encoding="utf-8") as handle:
                 payload = json.load(handle)
             if not isinstance(payload, dict):
                 raise ValueError("JSON source must contain an object")
@@ -569,8 +564,8 @@ class DataCollectorAgent(BDIAgent):
         raise ValueError(f"Unsupported file source format: {suffix or '<none>'}")
 
     async def _collect_from_sensor(
-        self, source: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, source: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """
         Collect data from a sensor source.
 
@@ -599,7 +594,7 @@ class DataCollectorAgent(BDIAgent):
             raise ValueError("sensor source must return a JSON object")
         return payload
 
-    async def _check_source_availability(self, source: Dict[str, Any]) -> bool:
+    async def _check_source_availability(self, source: dict[str, Any]) -> bool:
         """
         Check if a data source is available.
 
@@ -653,8 +648,8 @@ class DataCollectorAgent(BDIAgent):
             return False
 
     async def _process_dataset(
-        self, data: Dict[str, Any], dataset_info: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, data: dict[str, Any], dataset_info: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """
         Process a collected dataset.
 
@@ -708,8 +703,8 @@ class DataCollectorAgent(BDIAgent):
             return None
 
     async def action_configure_source(
-        self, source_id: str, config: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, source_id: str, config: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Action to configure a data source.
 
@@ -761,8 +756,8 @@ class DataCollectorAgent(BDIAgent):
             return {"success": False, "source_id": source_id, "error": str(e)}
 
     async def action_get_collected_data(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, filters: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Action to get information about collected datasets.
 

@@ -8,7 +8,7 @@ supported by GeoPandas and Fiona.
 
 import logging
 from pathlib import Path
-from typing import Dict, Any, Optional, Union
+from typing import Any
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import shape
@@ -37,7 +37,7 @@ class VectorReader:
     def __init__(self) -> None:
         self.supported_formats = SUPPORTED_VECTOR_FORMATS
 
-    def read(self, file_path: Union[str, Path], **kwargs: Any) -> gpd.GeoDataFrame:
+    def read(self, file_path: str | Path, **kwargs: Any) -> gpd.GeoDataFrame:
         """
         Read vector data from file.
 
@@ -84,7 +84,7 @@ class VectorReader:
     def _read_geojson(self, file_path: Path, **kwargs: Any) -> gpd.GeoDataFrame:
         """Read GeoJSON file with enhanced error handling."""
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 geojson_data = json.load(f)
 
             # Validate GeoJSON structure
@@ -256,7 +256,7 @@ class VectorWriter:
     def write(
         self,
         gdf: gpd.GeoDataFrame,
-        file_path: Union[str, Path],
+        file_path: str | Path,
         **kwargs: Any,
     ) -> None:
         """
@@ -382,7 +382,7 @@ class VectorWriter:
 
 
 # Convenience functions
-def read_vector_file(file_path: Union[str, Path], **kwargs: Any) -> gpd.GeoDataFrame:
+def read_vector_file(file_path: str | Path, **kwargs: Any) -> gpd.GeoDataFrame:
     """
     Read vector data from file using appropriate reader.
 
@@ -399,7 +399,7 @@ def read_vector_file(file_path: Union[str, Path], **kwargs: Any) -> gpd.GeoDataF
 
 def write_vector_file(
     gdf: gpd.GeoDataFrame,
-    file_path: Union[str, Path],
+    file_path: str | Path,
     **kwargs: Any,
 ) -> None:
     """
@@ -414,7 +414,7 @@ def write_vector_file(
     writer.write(gdf, file_path, **kwargs)
 
 
-def supported_vector_formats() -> Dict[str, str]:
+def supported_vector_formats() -> dict[str, str]:
     """
     Get dictionary of supported vector formats.
 
@@ -424,7 +424,7 @@ def supported_vector_formats() -> Dict[str, str]:
     return SUPPORTED_VECTOR_FORMATS.copy()
 
 
-def detect_vector_format(file_path: Union[str, Path]) -> Optional[str]:
+def detect_vector_format(file_path: str | Path) -> str | None:
     """
     Detect vector format from file extension.
 
@@ -438,7 +438,7 @@ def detect_vector_format(file_path: Union[str, Path]) -> Optional[str]:
     return SUPPORTED_VECTOR_FORMATS.get(file_ext)
 
 
-def validate_vector_file(file_path: Union[str, Path]) -> Dict[str, Any]:
+def validate_vector_file(file_path: str | Path) -> dict[str, Any]:
     """
     Validate vector file and return metadata.
 
@@ -450,7 +450,7 @@ def validate_vector_file(file_path: Union[str, Path]) -> Dict[str, Any]:
     """
     file_path = Path(file_path)
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "valid": False,
         "format": None,
         "error": None,

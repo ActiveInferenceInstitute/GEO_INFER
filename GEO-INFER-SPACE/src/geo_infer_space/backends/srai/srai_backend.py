@@ -13,7 +13,8 @@ if SRAI is not installed.
 
 import logging
 from functools import wraps
-from typing import Any, Callable, Dict, List, Tuple, TypeVar, cast
+from typing import Any, TypeVar, cast
+from collections.abc import Callable
 
 from ...core.interfaces import (
     SRAIUnavailableError,
@@ -104,11 +105,11 @@ class SraiBackend:
         """Check if the backend is available and functional."""
         return self._available
 
-    def get_capabilities(self) -> Dict[str, Any]:
+    def get_capabilities(self) -> dict[str, Any]:
         """Return the backend's capabilities."""
         logger.debug("Getting SRAI backend capabilities")
 
-        capabilities: Dict[str, Any] = {
+        capabilities: dict[str, Any] = {
             "indexing": {
                 "latlng_to_cell": self._available,
                 "cell_to_latlng": self._available,
@@ -216,7 +217,7 @@ class SraiBackend:
             )
 
     @_require_srai("polygon_to_cells")
-    def polygon_to_cells(self, polygon: Dict[str, Any], resolution: int) -> List[str]:
+    def polygon_to_cells(self, polygon: dict[str, Any], resolution: int) -> list[str]:
         """
         Convert polygon to list of SRAI region cells.
 
@@ -254,7 +255,7 @@ class SraiBackend:
             )
 
     @_require_srai("get_cell_neighbors")
-    def get_cell_neighbors(self, cell: str, k: int = 1) -> List[str]:
+    def get_cell_neighbors(self, cell: str, k: int = 1) -> list[str]:
         """
         Get neighboring cells around a given cell.
 
@@ -285,7 +286,7 @@ class SraiBackend:
             )
 
     @_require_srai("get_cells_within_radius")
-    def get_cells_within_radius(self, cell: str, k: int = 1) -> List[str]:
+    def get_cells_within_radius(self, cell: str, k: int = 1) -> list[str]:
         """Return all H3 cells within ``k`` rings, excluding the center."""
         if self.default_regionalizer == "h3":
             import h3
@@ -327,7 +328,7 @@ class SraiBackend:
             )
 
     @_require_srai("compact_cells")
-    def compact_cells(self, cells: List[str]) -> List[str]:
+    def compact_cells(self, cells: list[str]) -> list[str]:
         """
         Compact a list of cells into a more efficient representation.
 
@@ -354,7 +355,7 @@ class SraiBackend:
             )
 
     @_require_srai("uncompact_cells")
-    def uncompact_cells(self, compacted_cells: List[str], resolution: int) -> List[str]:
+    def uncompact_cells(self, compacted_cells: list[str], resolution: int) -> list[str]:
         """
         Uncompact cells back to individual cell identifiers.
 
@@ -410,7 +411,7 @@ class SraiBackend:
             )
 
     @_require_srai("get_cell_children")
-    def get_cell_children(self, cell: str, resolution: int) -> List[str]:
+    def get_cell_children(self, cell: str, resolution: int) -> list[str]:
         """
         Get children of a cell at a finer resolution.
 
@@ -436,7 +437,7 @@ class SraiBackend:
             )
 
     @_require_srai("get_cell_path")
-    def get_cell_path(self, start_cell: str, end_cell: str) -> List[str]:
+    def get_cell_path(self, start_cell: str, end_cell: str) -> list[str]:
         """
         Get the path of cells between two cells.
 
@@ -463,7 +464,7 @@ class SraiBackend:
             )
 
     @_require_srai("get_cell_ring")
-    def get_cell_ring(self, cell: str, k: int) -> List[str]:
+    def get_cell_ring(self, cell: str, k: int) -> list[str]:
         """
         Get the ring of cells at distance k.
 
@@ -516,7 +517,7 @@ class SraiBackend:
             )
 
     @_require_srai("get_cell_boundary")
-    def get_cell_boundary(self, cell: str) -> List[Tuple[float, float]]:
+    def get_cell_boundary(self, cell: str) -> list[tuple[float, float]]:
         """
         Get the boundary coordinates of a cell.
 
@@ -583,7 +584,7 @@ class SraiBackend:
         )
 
     @_require_srai("cells_to_multipolygon")
-    def cells_to_multipolygon(self, cells: List[str]) -> Dict[str, Any]:
+    def cells_to_multipolygon(self, cells: list[str]) -> dict[str, Any]:
         """
         Convert a list of cells to a GeoJSON MultiPolygon geometry.
 
@@ -622,7 +623,7 @@ class SraiBackend:
     # ==================== Analytics Methods ====================
 
     @_require_srai("analyze_hotspots")
-    def analyze_hotspots(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_hotspots(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Analyze spatial hotspots using SRAI analytics.
 
@@ -687,7 +688,7 @@ class SraiBackend:
         }
 
     @_require_srai("compute_proximity")
-    def compute_proximity(self, points: List[tuple[float, float]]) -> Dict[str, Any]:
+    def compute_proximity(self, points: list[tuple[float, float]]) -> dict[str, Any]:
         """
         Compute proximity analysis using SRAI.
 

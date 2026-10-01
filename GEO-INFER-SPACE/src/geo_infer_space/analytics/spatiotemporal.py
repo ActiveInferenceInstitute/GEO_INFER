@@ -14,7 +14,7 @@ Features:
 """
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any
 from datetime import datetime
 from collections import defaultdict
 
@@ -31,7 +31,7 @@ class SpatioTemporalAnalyzer:
     that emerge across both space and time.
     """
 
-    def __init__(self, h3_backend: Optional[Any] = None) -> None:
+    def __init__(self, h3_backend: Any | None = None) -> None:
         """
         Initialize the SpatioTemporalAnalyzer.
 
@@ -51,12 +51,12 @@ class SpatioTemporalAnalyzer:
 
     def analyze_spatial_time_series(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         cell_column: str,
         timestamp_column: str,
         value_column: str,
         temporal_resolution: str = "day",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze time series for each spatial cell.
 
@@ -74,7 +74,7 @@ class SpatioTemporalAnalyzer:
             return {"error": "No data provided"}
 
         # Group by cell
-        cell_series: Dict[Any, List[Dict[str, Any]]] = defaultdict(list)
+        cell_series: dict[Any, list[dict[str, Any]]] = defaultdict(list)
         for record in data:
             cell = record.get(cell_column)
             ts = record.get(timestamp_column)
@@ -88,12 +88,12 @@ class SpatioTemporalAnalyzer:
                     )
 
         # Analyze each cell's time series
-        cell_analyses: Dict[Any, Dict[str, Any]] = {}
+        cell_analyses: dict[Any, dict[str, Any]] = {}
         for cell, series in cell_series.items():
             sorted_series = sorted(series, key=lambda x: x["timestamp"])
             values = [s["value"] for s in sorted_series]
 
-            analysis: Dict[str, Any] = {
+            analysis: dict[str, Any] = {
                 "count": len(values),
                 "mean": sum(values) / len(values),
                 "min": min(values),
@@ -135,13 +135,13 @@ class SpatioTemporalAnalyzer:
 
     def detect_spatiotemporal_clusters(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         cell_column: str,
         timestamp_column: str,
         spatial_eps: int = 1,
         temporal_eps_hours: float = 24,
         min_points: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect spatio-temporal clusters using ST-DBSCAN algorithm.
 
@@ -162,7 +162,7 @@ class SpatioTemporalAnalyzer:
             return {"error": "No data or H3 backend not available"}
 
         # Parse data
-        points: List[Dict[str, Any]] = []
+        points: list[dict[str, Any]] = []
         for i, record in enumerate(data):
             cell = record.get(cell_column)
             ts = record.get(timestamp_column)
@@ -183,7 +183,7 @@ class SpatioTemporalAnalyzer:
 
         temporal_eps_seconds = temporal_eps_hours * 3600
 
-        def are_neighbors(p1: Dict[str, Any], p2: Dict[str, Any]) -> bool:
+        def are_neighbors(p1: dict[str, Any], p2: dict[str, Any]) -> bool:
             """Check if two points are ST-neighbors."""
             # Temporal check
             time_diff = abs((p1["timestamp"] - p2["timestamp"]).total_seconds())
@@ -197,7 +197,7 @@ class SpatioTemporalAnalyzer:
             except Exception:
                 return bool(p1["cell"] == p2["cell"])
 
-        def get_neighbors(point_idx: int) -> List[int]:
+        def get_neighbors(point_idx: int) -> list[int]:
             """Get all neighbors of a point."""
             neighbors = []
             for i, p in enumerate(points):
@@ -280,13 +280,13 @@ class SpatioTemporalAnalyzer:
 
     def compute_space_time_cube(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         cell_column: str,
         timestamp_column: str,
         value_column: str,
         temporal_bin_size: str = "day",
         aggregation: str = "mean",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a space-time cube for 3D analysis (x, y, t).
 
@@ -367,13 +367,13 @@ class SpatioTemporalAnalyzer:
 
     def detect_emerging_hotspots(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         cell_column: str,
         timestamp_column: str,
         value_column: str,
         time_steps: int = 5,
         threshold_percentile: float = 90,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect emerging, intensifying, and diminishing hotspots.
 
@@ -429,7 +429,7 @@ class SpatioTemporalAnalyzer:
                 )
 
         # Classify hotspot patterns
-        classifications: Dict[str, List[Dict[str, Any]]] = {
+        classifications: dict[str, list[dict[str, Any]]] = {
             "new": [],  # Not hot before, hot now
             "consecutive": [],  # Hot in all periods
             "intensifying": [],  # Hot and increasing
@@ -488,13 +488,13 @@ class SpatioTemporalAnalyzer:
 
     def compute_spatiotemporal_autocorrelation(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         cell_column: str,
         timestamp_column: str,
         value_column: str,
         spatial_lag: int = 1,
         temporal_lag_hours: float = 24,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compute space-time autocorrelation (space-time Moran's I).
 
@@ -606,11 +606,11 @@ class SpatioTemporalAnalyzer:
 
     def analyze_movement_patterns(
         self,
-        trajectories: List[Dict[str, Any]],
+        trajectories: list[dict[str, Any]],
         id_column: str,
         cell_column: str,
         timestamp_column: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze movement patterns from trajectory data.
 
@@ -647,7 +647,7 @@ class SpatioTemporalAnalyzer:
             entity_tracks[entity_id].sort(key=lambda x: x["timestamp"])
 
         # Analyze flows between cells
-        flows: Dict[tuple[Any, Any], int] = defaultdict(int)
+        flows: dict[tuple[Any, Any], int] = defaultdict(int)
         entity_stats = []
 
         for entity_id, track in entity_tracks.items():
@@ -718,15 +718,15 @@ class SpatioTemporalAnalyzer:
 
     def kriging_spatiotemporal(
         self,
-        known_data: List[Dict[str, Any]],
-        target_cells: List[str],
+        known_data: list[dict[str, Any]],
+        target_cells: list[str],
         target_timestamp: datetime,
         cell_column: str,
         timestamp_column: str,
         value_column: str,
         spatial_range: int = 3,
         temporal_range_hours: float = 48,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Interpolate values using space-time kriging.
 
@@ -837,7 +837,7 @@ class SpatioTemporalAnalyzer:
     # HELPER METHODS
     # =========================================================================
 
-    def _parse_timestamp(self, ts: Any) -> Optional[datetime]:
+    def _parse_timestamp(self, ts: Any) -> datetime | None:
         """Parse timestamp from various formats."""
         if isinstance(ts, datetime):
             return ts
@@ -880,7 +880,7 @@ class SpatioTemporalAnalyzer:
         else:
             return timestamp.strftime("%Y-%m-%d")
 
-    def _detect_trend(self, values: List[float]) -> Dict[str, Any]:
+    def _detect_trend(self, values: list[float]) -> dict[str, Any]:
         """Detect trend in a series of values."""
         n = len(values)
         if n < 2:

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Configuration loader utilities for GEO-INFER-GIT.
@@ -14,7 +13,7 @@ import yaml
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Any, Optional, List, cast
+from typing import Any, cast
 from dataclasses import dataclass, field
 import jsonschema
 
@@ -78,7 +77,7 @@ class TargetRepository:
     owner: str
     repo: str
     branch: str = "main"
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     clone_depth: int = 1
     enabled: bool = True
 
@@ -96,10 +95,10 @@ class TargetUser:
     """Configuration for repositories from a specific user."""
 
     username: str
-    include_repos: List[str] = field(default_factory=list)
-    exclude_repos: List[str] = field(default_factory=list)
+    include_repos: list[str] = field(default_factory=list)
+    exclude_repos: list[str] = field(default_factory=list)
     max_repos: int = 10
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     enabled: bool = True
 
     def __post_init__(self) -> None:
@@ -120,7 +119,7 @@ class ConfigLoader:
     for repository cloning operations.
     """
 
-    def __init__(self, config_dir: Optional[str] = None):
+    def __init__(self, config_dir: str | None = None):
         """
         Initialize the configuration loader.
 
@@ -137,9 +136,9 @@ class ConfigLoader:
             self.config_dir = importlib.resources.files("geo_infer_git") / "config"
 
         self.schemas = self._load_schemas()
-        self.config_cache: Dict[str, Dict[str, Any]] = {}
+        self.config_cache: dict[str, dict[str, Any]] = {}
 
-    def _load_schemas(self) -> Dict[str, Dict]:
+    def _load_schemas(self) -> dict[str, dict]:
         """Load JSON schemas for configuration validation."""
         schemas = {}
 
@@ -238,7 +237,7 @@ class ConfigLoader:
 
         return schemas
 
-    def load_yaml_config(self, filename: str) -> Dict[str, Any]:
+    def load_yaml_config(self, filename: str) -> dict[str, Any]:
         """
         Load a YAML configuration file with validation.
 
@@ -277,7 +276,7 @@ class ConfigLoader:
 
                 self.config_cache[cache_key] = config
                 logger.info(f"Loaded configuration from {config_path}")
-                return cast(Dict[str, Any], config)
+                return cast(dict[str, Any], config)
 
         except yaml.YAMLError as e:
             logger.error(f"Error parsing YAML file {filename}: {e}")
@@ -286,7 +285,7 @@ class ConfigLoader:
             logger.error(f"Configuration validation failed for {filename}: {e}")
             raise
 
-    def load_json_config(self, filename: str) -> Dict[str, Any]:
+    def load_json_config(self, filename: str) -> dict[str, Any]:
         """
         Load a JSON configuration file with validation.
 
@@ -311,13 +310,13 @@ class ConfigLoader:
 
                 self.config_cache[cache_key] = config
                 logger.info(f"Loaded configuration from {config_path}")
-                return cast(Dict[str, Any], config)
+                return cast(dict[str, Any], config)
 
         except json.JSONDecodeError as e:
             logger.error(f"Error parsing JSON file {filename}: {e}")
             raise
 
-    def load_clone_config(self, config_dir: Optional[str] = None) -> CloneConfig:
+    def load_clone_config(self, config_dir: str | None = None) -> CloneConfig:
         """
         Load and merge clone configuration from multiple sources.
 
@@ -388,8 +387,8 @@ class ConfigLoader:
                 self.config_dir = old_dir
 
     def load_target_repos_config(
-        self, config_dir: Optional[str] = None
-    ) -> List[TargetRepository]:
+        self, config_dir: str | None = None
+    ) -> list[TargetRepository]:
         """
         Load target repositories configuration.
 
@@ -426,8 +425,8 @@ class ConfigLoader:
                 self.config_dir = old_dir
 
     def load_target_users_config(
-        self, config_dir: Optional[str] = None
-    ) -> List[TargetUser]:
+        self, config_dir: str | None = None
+    ) -> list[TargetUser]:
         """
         Load target users configuration.
 
@@ -463,7 +462,7 @@ class ConfigLoader:
             if config_dir:
                 self.config_dir = old_dir
 
-    def save_config(self, config: Dict[str, Any], filename: str) -> None:
+    def save_config(self, config: dict[str, Any], filename: str) -> None:
         """
         Save configuration to file.
 
@@ -499,7 +498,7 @@ class ConfigLoader:
             logger.error(f"Error saving configuration to {config_path}: {e}")
             raise
 
-    def validate_config(self, config: Dict[str, Any], schema_name: str) -> List[str]:
+    def validate_config(self, config: dict[str, Any], schema_name: str) -> list[str]:
         """
         Validate configuration against schema.
 
@@ -530,21 +529,21 @@ class ConfigLoader:
 
 
 # Convenience constructors for the public configuration API
-def load_clone_config(config_dir: Optional[str] = None) -> CloneConfig:
+def load_clone_config(config_dir: str | None = None) -> CloneConfig:
     """Load clone configuration."""
     loader = ConfigLoader(config_dir)
     return loader.load_clone_config()
 
 
 def load_target_repos_config(
-    config_dir: Optional[str] = None,
-) -> List[TargetRepository]:
+    config_dir: str | None = None,
+) -> list[TargetRepository]:
     """Load target repositories configuration."""
     loader = ConfigLoader(config_dir)
     return loader.load_target_repos_config()
 
 
-def load_target_users_config(config_dir: Optional[str] = None) -> List[TargetUser]:
+def load_target_users_config(config_dir: str | None = None) -> list[TargetUser]:
     """Load target users configuration."""
     loader = ConfigLoader(config_dir)
     return loader.load_target_users_config()

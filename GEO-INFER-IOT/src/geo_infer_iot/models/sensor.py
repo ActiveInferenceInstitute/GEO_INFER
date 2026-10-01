@@ -7,7 +7,7 @@ and related metadata using Pydantic for validation and type safety.
 
 import logging
 import math
-from typing import Dict, List, Optional, Any
+from typing import Any
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 import h3
@@ -34,9 +34,9 @@ class Location(BaseModel):
     longitude: float = Field(
         ..., ge=-180, le=180, description="Longitude in decimal degrees"
     )
-    h3_index: Optional[str] = Field(None, description="H3 hexagonal index")
+    h3_index: str | None = Field(None, description="H3 hexagonal index")
     h3_resolution: int = Field(8, ge=0, le=15, description="H3 resolution level")
-    elevation_meters: Optional[float] = Field(
+    elevation_meters: float | None = Field(
         None, description="Elevation above sea level"
     )
     coordinate_system: str = Field("WGS84", description="Coordinate reference system")
@@ -54,7 +54,7 @@ class Location(BaseModel):
             )
 
     @field_validator("h3_index")
-    def validate_h3_index(cls, v: Optional[str]) -> Optional[str]:
+    def validate_h3_index(cls, v: str | None) -> str | None:
         """Validate H3 index format."""
         if v and not h3.is_valid_cell(v):
             raise ValueError(f"Invalid H3 index: {v}")
@@ -64,45 +64,37 @@ class Location(BaseModel):
 class SensorCapabilities(BaseModel):
     """Sensor measurement capabilities."""
 
-    measured_variables: List[str] = Field(
+    measured_variables: list[str] = Field(
         ..., description="Variables this sensor can measure"
     )
-    measurement_range: Dict[str, Dict[str, float]] = Field(
+    measurement_range: dict[str, dict[str, float]] = Field(
         default_factory=dict, description="Measurement ranges for each variable"
     )
-    accuracy: Dict[str, float] = Field(
+    accuracy: dict[str, float] = Field(
         default_factory=dict, description="Accuracy specifications"
     )
-    precision: Dict[str, float] = Field(
+    precision: dict[str, float] = Field(
         default_factory=dict, description="Precision specifications"
     )
-    sampling_rate_hz: Optional[float] = Field(
-        None, description="Sampling frequency in Hz"
-    )
-    power_consumption_watts: Optional[float] = Field(
-        None, description="Power consumption"
-    )
-    battery_life_hours: Optional[float] = Field(
-        None, description="Expected battery life"
-    )
+    sampling_rate_hz: float | None = Field(None, description="Sampling frequency in Hz")
+    power_consumption_watts: float | None = Field(None, description="Power consumption")
+    battery_life_hours: float | None = Field(None, description="Expected battery life")
 
 
 class SensorCalibration(BaseModel):
     """Sensor calibration information."""
 
-    last_calibration: Optional[datetime] = Field(
+    last_calibration: datetime | None = Field(
         None, description="Last calibration timestamp"
     )
-    calibration_method: Optional[str] = Field(
-        None, description="Calibration method used"
-    )
-    calibration_parameters: Dict[str, Any] = Field(
+    calibration_method: str | None = Field(None, description="Calibration method used")
+    calibration_parameters: dict[str, Any] = Field(
         default_factory=dict, description="Calibration parameters and coefficients"
     )
-    next_calibration_due: Optional[datetime] = Field(
+    next_calibration_due: datetime | None = Field(
         None, description="Next calibration due date"
     )
-    calibration_certificate: Optional[str] = Field(
+    calibration_certificate: str | None = Field(
         None, description="Calibration certificate ID"
     )
 
@@ -111,16 +103,16 @@ class Sensor(BaseModel):
     """Complete sensor data model."""
 
     sensor_id: str = Field(..., description="Unique sensor identifier")
-    name: Optional[str] = Field(None, description="Human-readable sensor name")
-    description: Optional[str] = Field(None, description="Sensor description")
+    name: str | None = Field(None, description="Human-readable sensor name")
+    description: str | None = Field(None, description="Sensor description")
 
     # Network and type information
     network_id: str = Field(..., description="ID of the sensor network")
     sensor_type: str = Field(
         ..., description="Type of sensor (e.g., temperature, humidity)"
     )
-    manufacturer: Optional[str] = Field(None, description="Sensor manufacturer")
-    model: Optional[str] = Field(None, description="Sensor model")
+    manufacturer: str | None = Field(None, description="Sensor manufacturer")
+    model: str | None = Field(None, description="Sensor model")
 
     # Location information
     location: Location = Field(..., description="Geographic location")
@@ -143,10 +135,10 @@ class Sensor(BaseModel):
     status: str = Field(
         "active", description="Sensor status (active, inactive, maintenance, error)"
     )
-    operational_since: Optional[datetime] = Field(
+    operational_since: datetime | None = Field(
         None, description="When sensor became operational"
     )
-    last_communication: Optional[datetime] = Field(
+    last_communication: datetime | None = Field(
         None, description="Last communication timestamp"
     )
 
@@ -163,10 +155,10 @@ class Sensor(BaseModel):
     )
 
     # Metadata and additional properties
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata"
     )
-    tags: List[str] = Field(
+    tags: list[str] = Field(
         default_factory=list, description="Sensor tags for categorization"
     )
 
@@ -226,7 +218,7 @@ class Sensor(BaseModel):
 
         self.updated_at = datetime.now()
 
-    def update_calibration(self, calibration_data: Dict[str, Any]) -> None:
+    def update_calibration(self, calibration_data: dict[str, Any]) -> None:
         """Update sensor calibration information."""
         if "last_calibration" in calibration_data:
             self.calibration.last_calibration = calibration_data["last_calibration"]
@@ -279,7 +271,7 @@ class SensorNetwork(BaseModel):
 
     network_id: str = Field(..., description="Unique network identifier")
     name: str = Field(..., description="Human-readable network name")
-    description: Optional[str] = Field(None, description="Network description")
+    description: str | None = Field(None, description="Network description")
 
     # Network topology and configuration
     protocol: str = Field(..., description="Communication protocol (MQTT, CoAP, etc.)")
@@ -288,34 +280,34 @@ class SensorNetwork(BaseModel):
     )
 
     # Spatial coverage
-    spatial_bounds: Dict[str, float] = Field(
+    spatial_bounds: dict[str, float] = Field(
         ..., description="Geographic bounds: lat_min, lat_max, lon_min, lon_max"
     )
     h3_resolution: int = Field(8, description="Default H3 resolution for the network")
 
     # Sensor types and capabilities
-    sensor_types: List[str] = Field(..., description="Types of sensors in this network")
-    expected_sensor_count: Optional[int] = Field(
+    sensor_types: list[str] = Field(..., description="Types of sensors in this network")
+    expected_sensor_count: int | None = Field(
         None, description="Expected number of sensors"
     )
 
     # Operational information
     status: str = Field("active", description="Network status")
-    operational_since: Optional[datetime] = Field(
+    operational_since: datetime | None = Field(
         None, description="When network became operational"
     )
-    coordinator_contact: Optional[str] = Field(
+    coordinator_contact: str | None = Field(
         None, description="Network coordinator contact info"
     )
 
     # Configuration and metadata
-    configuration: Dict[str, Any] = Field(
+    configuration: dict[str, Any] = Field(
         default_factory=dict, description="Network configuration"
     )
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata"
     )
-    tags: List[str] = Field(default_factory=list, description="Network tags")
+    tags: list[str] = Field(default_factory=list, description="Network tags")
 
     # Timestamps
     created_at: datetime = Field(default_factory=datetime.now)
@@ -350,7 +342,7 @@ class SensorNetwork(BaseModel):
         return v.lower()
 
     @field_validator("spatial_bounds")
-    def validate_spatial_bounds(cls, v: Dict[str, float]) -> Dict[str, float]:
+    def validate_spatial_bounds(cls, v: dict[str, float]) -> dict[str, float]:
         """Validate spatial bounds."""
         required_keys = ["lat_min", "lat_max", "lon_min", "lon_max"]
         for key in required_keys:
@@ -391,7 +383,7 @@ class SensorNetwork(BaseModel):
             <= self.spatial_bounds["lon_max"]
         )
 
-    def get_h3_cells(self) -> List[str]:
+    def get_h3_cells(self) -> list[str]:
         """Get H3 cells covering the network's spatial bounds."""
         bounds = self.spatial_bounds
         polygon = {
@@ -417,40 +409,40 @@ class SensorDeployment(BaseModel):
 
     # Deployment details
     deployment_date: datetime = Field(..., description="When sensor was deployed")
-    deployed_by: Optional[str] = Field(None, description="Who deployed the sensor")
+    deployed_by: str | None = Field(None, description="Who deployed the sensor")
     deployment_method: str = Field("manual", description="Deployment method")
 
     # Installation location details
-    installation_height_meters: Optional[float] = Field(
+    installation_height_meters: float | None = Field(
         None, description="Installation height"
     )
-    mounting_type: Optional[str] = Field(None, description="How sensor is mounted")
-    environmental_conditions: Dict[str, Any] = Field(
+    mounting_type: str | None = Field(None, description="How sensor is mounted")
+    environmental_conditions: dict[str, Any] = Field(
         default_factory=dict, description="Environmental conditions at deployment site"
     )
 
     # Power and connectivity
     power_source: str = Field("battery", description="Power source type")
     connectivity_method: str = Field("wireless", description="Connectivity method")
-    signal_strength: Optional[float] = Field(
+    signal_strength: float | None = Field(
         None, description="Signal strength at deployment"
     )
 
     # Documentation
-    deployment_notes: Optional[str] = Field(
+    deployment_notes: str | None = Field(
         None, description="Deployment notes and observations"
     )
-    site_photos: List[str] = Field(default_factory=list, description="Site photo URLs")
-    documentation_urls: List[str] = Field(
+    site_photos: list[str] = Field(default_factory=list, description="Site photo URLs")
+    documentation_urls: list[str] = Field(
         default_factory=list, description="Documentation URLs"
     )
 
     # Status and maintenance
     deployment_status: str = Field("active", description="Deployment status")
-    last_maintenance: Optional[datetime] = Field(
+    last_maintenance: datetime | None = Field(
         None, description="Last maintenance visit"
     )
-    next_maintenance_due: Optional[datetime] = Field(
+    next_maintenance_due: datetime | None = Field(
         None, description="Next maintenance due"
     )
 

@@ -10,7 +10,7 @@ import hashlib
 import importlib.util
 import json
 import sys
-from typing import Any, Dict, List
+from typing import Any
 
 import jwt
 
@@ -21,7 +21,7 @@ class FakeWebSocket:
     """Minimal async websocket double recording sent frames."""
 
     def __init__(self) -> None:
-        self.sent: List[str] = []
+        self.sent: list[str] = []
 
     async def send(self, text: str) -> None:
         self.sent.append(text)
@@ -31,14 +31,14 @@ class FakeManager:
     """Minimal manager double; authentication does not touch the manager."""
 
     def __init__(self) -> None:
-        self.subscriptions: Dict[str, Any] = {}
+        self.subscriptions: dict[str, Any] = {}
 
 
 def _connection() -> WebSocketConnection:
     return WebSocketConnection("conn-1", FakeWebSocket(), FakeManager())
 
 
-def _last_message(conn: WebSocketConnection) -> Dict[str, Any]:
+def _last_message(conn: WebSocketConnection) -> dict[str, Any]:
     assert conn.websocket.sent, "expected an outbound frame"
     return json.loads(conn.websocket.sent[-1])
 

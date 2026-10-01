@@ -3,11 +3,11 @@ Configuration utilities for GEO-INFER-ACT.
 """
 
 import os
-from typing import Dict, Any, Optional, cast
+from typing import Any, cast
 import yaml
 
 
-def load_config(path: str) -> Dict[str, Any]:
+def load_config(path: str) -> dict[str, Any]:
     """
     Load configuration from a YAML file.
 
@@ -20,15 +20,15 @@ def load_config(path: str) -> Dict[str, Any]:
     if not os.path.exists(path):
         raise FileNotFoundError(f"Configuration file not found: {path}")
 
-    with open(path, "r") as file:
+    with open(path) as file:
         config = yaml.safe_load(file)
 
     if config is None:
         return {}
-    return cast(Dict[str, Any], config)
+    return cast(dict[str, Any], config)
 
 
-def save_config(config: Dict[str, Any], path: str) -> None:
+def save_config(config: dict[str, Any], path: str) -> None:
     """
     Save configuration to a YAML file.
 
@@ -46,8 +46,8 @@ def save_config(config: Dict[str, Any], path: str) -> None:
 
 
 def merge_configs(
-    base_config: Dict[str, Any], override_config: Dict[str, Any]
-) -> Dict[str, Any]:
+    base_config: dict[str, Any], override_config: dict[str, Any]
+) -> dict[str, Any]:
     """
     Merge two configuration dictionaries, with override taking precedence.
 
@@ -60,7 +60,7 @@ def merge_configs(
     """
     merged = base_config.copy()
 
-    def _merge_dicts(base: Dict[str, Any], override: Dict[str, Any]) -> None:
+    def _merge_dicts(base: dict[str, Any], override: dict[str, Any]) -> None:
         for key, value in override.items():
             if key in base and isinstance(base[key], dict) and isinstance(value, dict):
                 _merge_dicts(base[key], value)
@@ -72,7 +72,7 @@ def merge_configs(
 
 
 def get_config_value(
-    config: Dict[str, Any], path: str, default: Optional[Any] = None
+    config: dict[str, Any], path: str, default: Any | None = None
 ) -> Any:
     """
     Get a configuration value using a dot-notated path.

@@ -16,8 +16,8 @@ Key features:
 import asyncio
 import logging
 import json
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Union, cast
+from datetime import datetime, UTC
+from typing import Any, cast
 from dataclasses import dataclass, field
 from collections import defaultdict
 import time
@@ -98,10 +98,10 @@ class SensorMeasurement:
     unit: str
     latitude: float
     longitude: float
-    h3_index: Optional[str] = None
+    h3_index: str | None = None
     h3_resolution: int = 8
-    quality_flags: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    quality_flags: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Automatically compute H3 index from coordinates."""
@@ -124,7 +124,7 @@ class SpatialInferenceConfig:
     length_scale: float = 1000.0  # meters
     noise_variance: float = 0.01
     update_interval_minutes: int = 15
-    confidence_levels: List[float] = field(default_factory=lambda: [0.68, 0.95])
+    confidence_levels: list[float] = field(default_factory=lambda: [0.68, 0.95])
 
 
 class IoTDataIngestion:
@@ -136,17 +136,17 @@ class IoTDataIngestion:
     converting point measurements to continuous spatial distributions.
     """
 
-    def __init__(self, registry: Any, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, registry: Any, config: dict[str, Any] | None = None):
         self.registry = registry
         self.config = config or {}
 
         # Data storage
-        self.measurements: List[SensorMeasurement] = []
-        self.spatial_index: Dict[str, List[SensorMeasurement]] = defaultdict(list)
+        self.measurements: list[SensorMeasurement] = []
+        self.spatial_index: dict[str, list[SensorMeasurement]] = defaultdict(list)
 
         # Spatial inference configuration
-        self.inference_configs: Dict[str, SpatialInferenceConfig] = {}
-        self.spatial_models: Dict[str, Any] = {}
+        self.inference_configs: dict[str, SpatialInferenceConfig] = {}
+        self.spatial_models: dict[str, Any] = {}
 
         # OSC integration
         if HAS_GEO_SPACE:
@@ -155,16 +155,16 @@ class IoTDataIngestion:
             self.coord_transform = CoordinateTransform()
 
         # Protocol handlers
-        self.protocol_handlers: Dict[str, Any] = {}
+        self.protocol_handlers: dict[str, Any] = {}
         self._setup_protocol_handlers()
 
         # Processing state
         self.is_processing = False
-        self.processing_tasks: List[asyncio.Task[Any]] = []
+        self.processing_tasks: list[asyncio.Task[Any]] = []
         # Observability: last ingest duration (ms) and last error, for
         # performance monitoring and caller-side error discrimination.
         self.last_ingest_latency_ms: float = 0.0
-        self.last_ingest_error: Optional[str] = None
+        self.last_ingest_error: str | None = None
 
         logger.info("IoT Data Ingestion engine initialized")
 
@@ -176,9 +176,7 @@ class IoTDataIngestion:
             self.protocol_handlers["async_mqtt"] = self._handle_async_mqtt
         # Protocol handlers are registered only when their dependencies are available.
 
-    async def ingest_measurement(
-        self, measurement: Union[Dict, SensorMeasurement]
-    ) -> bool:
+    async def ingest_measurement(self, measurement: dict | SensorMeasurement) -> bool:
         """
         Ingest a single sensor measurement.
 
@@ -239,7 +237,7 @@ class IoTDataIngestion:
         finally:
             self.last_ingest_latency_ms = (time.perf_counter() - start) * 1000.0
 
-    def _dict_to_measurement(self, data: Dict) -> SensorMeasurement:
+    def _dict_to_measurement(self, data: dict) -> SensorMeasurement:
         """Convert dictionary to SensorMeasurement object.
 
         Naive timestamps are normalized to UTC here so every downstream
@@ -249,7 +247,7 @@ class IoTDataIngestion:
             data.get("timestamp", datetime.now().isoformat())
         )
         if raw_timestamp.tzinfo is None:
-            raw_timestamp = raw_timestamp.replace(tzinfo=timezone.utc)
+            raw_timestamp = raw_timestamp.replace(tzinfo=UTC)
         return SensorMeasurement(
             sensor_id=data["sensor_id"],
             timestamp=raw_timestamp,
@@ -310,7 +308,7 @@ class IoTDataIngestion:
                 logger.warning(f"Error in enhanced spatial indexing: {e}")
 
     def setup_spatial_inference(
-        self, config: Union[Dict[str, Any], SpatialInferenceConfig, Any]
+        self, config: dict[str, Any] | SpatialInferenceConfig | Any
     ) -> None:
         """
         Setup Bayesian spatial inference for a specific variable.
@@ -394,7 +392,7 @@ class IoTDataIngestion:
             # Prepare spatial coordinates (convert to meters)
             coords_list = []
             values_list = []
-            h3_indices_list: List[str] = []
+            h3_indices_list: list[str] = []
 
             for measurement in recent_data:
                 # Convert lat/lon to local coordinate system
@@ -439,14 +437,14 @@ class IoTDataIngestion:
 
     def _get_recent_measurements(
         self, variable: str, hours: float
-    ) -> List[SensorMeasurement]:
+    ) -> list[SensorMeasurement]:
         """Get recent measurements for a specific variable.
 
         Timestamps are normalized to UTC at ingestion time, so naive
         datetimes are not expected here; measurements constructed directly
         with naive timestamps are still compared as UTC for consistency.
         """
-        cutoff_time = datetime.now(timezone.utc) - pd.Timedelta(hours=hours)
+        cutoff_time = datetime.now(UTC) - pd.Timedelta(hours=hours)
 
         recent = [
             m
@@ -456,7 +454,7 @@ class IoTDataIngestion:
                 and (
                     m.timestamp
                     if m.timestamp.tzinfo is not None
-                    else m.timestamp.replace(tzinfo=timezone.utc)
+                    else m.timestamp.replace(tzinfo=UTC)
                 )
                 > cutoff_time
             )
@@ -465,7 +463,7 @@ class IoTDataIngestion:
         return recent
 
     def _generate_h3_prediction_grid(
-        self, measurement_h3_indices: List[str], resolution: int
+        self, measurement_h3_indices: list[str], resolution: int
     ) -> np.ndarray:
         """Generate H3 grid for spatial predictions."""
         # Get unique H3 cells and their neighbors for prediction
@@ -499,7 +497,7 @@ class IoTDataIngestion:
     def _store_spatial_predictions(
         self,
         variable: str,
-        predictions: Dict,
+        predictions: dict,
         grid_coords: np.ndarray,
         config: SpatialInferenceConfig,
     ) -> None:
@@ -513,7 +511,7 @@ class IoTDataIngestion:
             "predictions": predictions,
             "grid_coords": grid_coords,
             "config": config,
-            "timestamp": datetime.now(timezone.utc),
+            "timestamp": datetime.now(UTC),
         }
 
     async def start_stream_processing(self) -> None:
@@ -707,7 +705,7 @@ class IoTDataIngestion:
 
     def get_spatial_distribution(
         self, variable: str, confidence_level: float = 0.95
-    ) -> Optional[Dict]:
+    ) -> dict | None:
         """
         Get current spatial distribution for a variable.
 
@@ -753,7 +751,7 @@ class IoTDataIngestion:
 
         return result
 
-    def get_measurement_statistics(self) -> Dict:
+    def get_measurement_statistics(self) -> dict:
         """Get statistics about ingested measurements."""
         if not self.measurements:
             return {}
@@ -789,7 +787,7 @@ class RadiationMonitoringSystem:
     comprehensive logging and quality assurance.
     """
 
-    def __init__(self, config: Dict[str, Any], logger: Optional[Any] = None):
+    def __init__(self, config: dict[str, Any], logger: Any | None = None):
         self.config = config
         self.logger = logger or logging.getLogger(__name__)
 
@@ -801,7 +799,7 @@ class RadiationMonitoringSystem:
 
         # Performance tracking
         self.start_time = time.time()
-        self.metrics: Dict[str, Any] = {
+        self.metrics: dict[str, Any] = {
             "measurements_processed": 0,
             "spatial_inferences": 0,
             "anomalies_detected": 0,
@@ -819,7 +817,7 @@ class RadiationMonitoringSystem:
             },
         )
 
-    async def process_measurements(self, measurements: List[Dict]) -> Dict:
+    async def process_measurements(self, measurements: list[dict]) -> dict:
         """Process a batch of measurements with full logging."""
         self.logger.info(
             "Starting measurement processing",
@@ -830,7 +828,7 @@ class RadiationMonitoringSystem:
         )
 
         start_time = time.time()
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "processed": 0,
             "failed": 0,
             "spatial_cells": set(),
@@ -846,7 +844,7 @@ class RadiationMonitoringSystem:
                 # Quality control
                 quality_result = self._quality_control(sensor_measurement)
                 if not quality_result["passed"]:
-                    quality_issues = cast(List[Any], results["quality_issues"])
+                    quality_issues = cast(list[Any], results["quality_issues"])
                     quality_issues.append(
                         {
                             "sensor_id": sensor_measurement.sensor_id,
@@ -856,7 +854,7 @@ class RadiationMonitoringSystem:
 
                 # Anomaly detection
                 if self._is_anomaly(sensor_measurement):
-                    anomalies_list = cast(List[Any], results["anomalies"])
+                    anomalies_list = cast(list[Any], results["anomalies"])
                     anomalies_list.append(
                         {
                             "sensor_id": sensor_measurement.sensor_id,
@@ -912,7 +910,7 @@ class RadiationMonitoringSystem:
 
         return results
 
-    def _quality_control(self, measurement: SensorMeasurement) -> Dict:
+    def _quality_control(self, measurement: SensorMeasurement) -> dict:
         """Perform quality control on a measurement."""
         validation = self.quality_thresholds.get("sensor_validation", {})
 
@@ -933,7 +931,7 @@ class RadiationMonitoringSystem:
             issues.append(f"Invalid longitude: {measurement.longitude}")
 
         # Check timestamp validity
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         time_diff = abs((now - measurement.timestamp).total_seconds())
         if time_diff > 24 * 3600:  # More than 24 hours old
             issues.append(f"Timestamp too old: {time_diff} seconds")
@@ -1008,7 +1006,7 @@ class RadiationMonitoringSystem:
 
     async def perform_spatial_inference(
         self, variable: str = "gamma_radiation"
-    ) -> Dict:
+    ) -> dict:
         """Perform Bayesian spatial inference on collected measurements."""
         self.logger.info(
             "Starting spatial inference",
@@ -1049,7 +1047,7 @@ class RadiationMonitoringSystem:
 
         return results or {}
 
-    def get_system_metrics(self) -> Dict:
+    def get_system_metrics(self) -> dict:
         """Get comprehensive system performance metrics."""
         runtime = time.time() - self.start_time
 
@@ -1067,7 +1065,7 @@ class RadiationMonitoringSystem:
         self.logger.info("System metrics collected", extra=metrics)
         return metrics
 
-    def validate_system_health(self) -> Dict:
+    def validate_system_health(self) -> dict:
         """Validate overall system health for testing purposes."""
         metrics = self.get_system_metrics()
 
@@ -1086,7 +1084,7 @@ class RadiationMonitoringSystem:
             "overall_healthy": overall_health,
             "checks": health_checks,
             "metrics": metrics,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         self.logger.info(
@@ -1104,14 +1102,14 @@ class RadiationMonitoringSystem:
 class GlobalRadiationMonitor:
     """Global-scale radiation monitoring orchestrator over RadiationMonitoringSystem."""
 
-    def __init__(self, config: Dict[str, Any], logger: Optional[Any] = None):
+    def __init__(self, config: dict[str, Any], logger: Any | None = None):
         self.config = config
         self.logger = logger or logging.getLogger(__name__)
         self.radiation_system = RadiationMonitoringSystem(config, logger)
 
     async def run_monitoring_cycle(
-        self, measurements: Optional[List[Dict]] = None
-    ) -> Dict:
+        self, measurements: list[dict] | None = None
+    ) -> dict:
         """Run a complete monitoring cycle."""
         self.logger.info(
             "Starting global monitoring cycle", extra={"operation": "monitoring_cycle"}

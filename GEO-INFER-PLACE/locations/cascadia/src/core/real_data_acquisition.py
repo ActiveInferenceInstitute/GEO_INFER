@@ -19,7 +19,6 @@ Based on web scraping best practices and geospatial data standards.
 import requests
 import geopandas as gpd
 from pathlib import Path
-from typing import List, Optional
 import json
 import time
 import logging
@@ -246,7 +245,7 @@ class RealDataAcquisition:
             logger.warning(f"Failed to initialize web driver: {e}")
             self.driver = None
 
-    def acquire_zoning_data(self) -> Optional[Path]:
+    def acquire_zoning_data(self) -> Path | None:
         """
         Acquire real zoning data from Del Norte County and state sources.
 
@@ -293,7 +292,7 @@ class RealDataAcquisition:
         except Exception as e:
             raise RuntimeError("Zoning data acquisition failed") from e
 
-    def _scrape_del_norte_zoning(self) -> Optional[Path]:
+    def _scrape_del_norte_zoning(self) -> Path | None:
         """Scrape zoning data from Del Norte County website."""
         if self.driver is None:
             return None
@@ -321,7 +320,7 @@ class RealDataAcquisition:
             logger.error(f"Failed to scrape Del Norte zoning data: {e}")
             return None
 
-    def _download_california_zoning(self) -> Optional[Path]:
+    def _download_california_zoning(self) -> Path | None:
         """Download California state zoning data from FMMP."""
         try:
             # Try FMMP data first
@@ -377,7 +376,7 @@ class RealDataAcquisition:
             logger.error(f"Failed to download California zoning data: {e}")
             return None
 
-    def acquire_current_use_data(self) -> Optional[Path]:
+    def acquire_current_use_data(self) -> Path | None:
         """
         Acquire real current land use data from USDA and state sources.
 
@@ -429,7 +428,7 @@ class RealDataAcquisition:
         except Exception as e:
             raise RuntimeError("Current-use data acquisition failed") from e
 
-    def _download_usda_cropland_data(self) -> Optional[Path]:
+    def _download_usda_cropland_data(self) -> Path | None:
         """Download USDA Cropland Data Layer for California."""
         try:
             # Try CDL Web Service API first
@@ -473,7 +472,7 @@ class RealDataAcquisition:
             logger.error(f"Failed to download USDA cropland data: {e}")
             return None
 
-    def _scrape_california_farmland(self) -> Optional[Path]:
+    def _scrape_california_farmland(self) -> Path | None:
         """Scrape farmland data from California Department of Conservation."""
         if self.driver is None:
             return None
@@ -499,7 +498,7 @@ class RealDataAcquisition:
             logger.error(f"Failed to scrape California farmland data: {e}")
             return None
 
-    def _download_file(self, url: str, prefix: str) -> Optional[Path]:
+    def _download_file(self, url: str, prefix: str) -> Path | None:
         """Download a file from URL and return the local path with caching and progress bar.
 
         - If a previously extracted geospatial file exists for the prefix, returns it.
@@ -628,8 +627,8 @@ class RealDataAcquisition:
             return None
 
     def _mount_remote_zip_vector(
-        self, url: str, save_prefix: str, inner_name: Optional[str] = None
-    ) -> Optional[Path]:
+        self, url: str, save_prefix: str, inner_name: str | None = None
+    ) -> Path | None:
         """Attempt to mount and read a remote ZIP vector dataset via GDAL VSI without downloading.
 
         Builds a path like '/vsizip/vsicurl/<url>/<inner_name>.shp' and reads it with GeoPandas.
@@ -701,7 +700,7 @@ class RealDataAcquisition:
             logger.debug(f"VSI mount failed for {url}: {e}")
             return None
 
-    def _vsi_probe_zip_for_vectors(self, url: str) -> List[str]:
+    def _vsi_probe_zip_for_vectors(self, url: str) -> list[str]:
         """Use gdalinfo to list entries inside a remote ZIP and extract candidate vector filenames.
 
         Returns a list of inner paths (e.g., 'tl_2023_us_place.shp') likely to be vectors.
@@ -712,7 +711,7 @@ class RealDataAcquisition:
             proc = subprocess.run(["gdalinfo", vsi], capture_output=True, text=True, timeout=30)
             text = proc.stdout or ""
             # Extract .shp and .geojson entries
-            candidates: List[str] = []
+            candidates: list[str] = []
             for line in text.splitlines():
                 line = line.strip()
                 if line.lower().endswith(".shp") or line.lower().endswith(".geojson"):
@@ -731,7 +730,7 @@ class RealDataAcquisition:
             self.driver.quit()
 
     # --- Additional acquisition helpers using configured source URLs ---
-    def acquire_ownership_data(self) -> Optional[Path]:
+    def acquire_ownership_data(self) -> Path | None:
         """Attempt to acquire ownership data via configured sources; return path or None."""
         try:
             # Try to download Del Norte County parcel data
@@ -786,7 +785,7 @@ class RealDataAcquisition:
             )
             return existing if existing.exists() else None
 
-    def acquire_improvements_data(self) -> Optional[Path]:
+    def acquire_improvements_data(self) -> Path | None:
         """Attempt to acquire improvements data via configured sources; return path or None."""
         try:
             # Try to download Del Norte County building/improvement data

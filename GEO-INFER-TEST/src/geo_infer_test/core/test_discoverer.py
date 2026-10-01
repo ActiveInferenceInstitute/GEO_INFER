@@ -5,7 +5,7 @@ This module provides intelligent test discovery capabilities across all
 GEO-INFER modules, supporting various test types and patterns.
 """
 
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
 from pathlib import Path
 import ast
 import re
@@ -74,13 +74,13 @@ class TestDiscoverer:
     SUPPORTED_TEST_TYPES = ["unit", "integration", "performance", "load", "stress"]
     TEST_FILE_PATTERNS = [r"test_.*\.py$", r".*_test\.py$", r"test.*\.py$"]
 
-    def __init__(self, base_path: Optional[Path] = None):
+    def __init__(self, base_path: Path | None = None):
         """Initialize the test discoverer."""
         self.base_path = base_path or Path.cwd()
-        self.discovered_tests: Dict[str, Dict[str, List[str]]] = {}
-        self.test_metadata: Dict[str, Dict] = {}
+        self.discovered_tests: dict[str, dict[str, list[str]]] = {}
+        self.test_metadata: dict[str, dict] = {}
 
-    def discover_all_tests(self, modules: List[str]) -> Dict[str, Dict[str, List[str]]]:
+    def discover_all_tests(self, modules: list[str]) -> dict[str, dict[str, list[str]]]:
         """
         Discover all tests for the specified modules.
 
@@ -108,7 +108,7 @@ class TestDiscoverer:
         self.discovered_tests = discovered
         return discovered
 
-    def _find_all_modules(self) -> List[str]:
+    def _find_all_modules(self) -> list[str]:
         """Find all available GEO-INFER modules."""
         modules = []
 
@@ -120,9 +120,9 @@ class TestDiscoverer:
 
         return sorted(modules)
 
-    def _discover_module_tests(self, module: str) -> Dict[str, List[str]]:
+    def _discover_module_tests(self, module: str) -> dict[str, list[str]]:
         """Discover tests for a specific module."""
-        module_tests: Dict[str, List[str]] = {}
+        module_tests: dict[str, list[str]] = {}
         module_path = self.base_path / f"GEO-INFER-{module}"
 
         if not module_path.exists():
@@ -151,9 +151,9 @@ class TestDiscoverer:
 
         return module_tests
 
-    def _find_test_files(self, directory: Path, recursive: bool = True) -> List[str]:
+    def _find_test_files(self, directory: Path, recursive: bool = True) -> list[str]:
         """Find test files in a directory, optionally recursive."""
-        test_files: List[str] = []
+        test_files: list[str] = []
 
         if not directory.exists():
             return test_files
@@ -180,12 +180,12 @@ class TestDiscoverer:
 
         return False
 
-    def analyze_test_file(self, file_path: Path) -> Dict[str, Any]:
+    def analyze_test_file(self, file_path: Path) -> dict[str, Any]:
         """Analyze a test file to extract metadata."""
-        funcs_out: List[Dict[str, Any]] = []
-        classes_out: List[Dict[str, Any]] = []
-        imports_out: List[str] = []
-        metadata: Dict[str, Any] = {
+        funcs_out: list[dict[str, Any]] = []
+        classes_out: list[dict[str, Any]] = []
+        imports_out: list[str] = []
+        metadata: dict[str, Any] = {
             "functions": funcs_out,
             "classes": classes_out,
             "imports": imports_out,
@@ -195,7 +195,7 @@ class TestDiscoverer:
         }
 
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
 
             # Parse the AST
@@ -250,7 +250,7 @@ class TestDiscoverer:
 
         return metadata
 
-    def _detect_framework(self, imports: List[str]) -> str:
+    def _detect_framework(self, imports: list[str]) -> str:
         """Detect the testing framework being used."""
         frameworks = {
             "pytest": ["pytest"],
@@ -268,12 +268,12 @@ class TestDiscoverer:
 
         return "unknown"
 
-    def get_test_statistics(self) -> Dict[str, Any]:
+    def get_test_statistics(self) -> dict[str, Any]:
         """Get statistics about discovered tests."""
-        tests_by_type: Dict[str, int] = {}
-        tests_by_module: Dict[str, int] = {}
+        tests_by_type: dict[str, int] = {}
+        tests_by_module: dict[str, int] = {}
         total_files = 0
-        stats: Dict[str, Any] = {
+        stats: dict[str, Any] = {
             "total_modules": len(self.discovered_tests),
             "total_test_files": total_files,
             "tests_by_type": tests_by_type,
@@ -292,7 +292,7 @@ class TestDiscoverer:
 
         return stats
 
-    def find_cross_module_tests(self) -> List[Tuple[str, str, str]]:
+    def find_cross_module_tests(self) -> list[tuple[str, str, str]]:
         """Find tests that appear to test cross-module functionality."""
         cross_module_tests = []
 
@@ -325,13 +325,13 @@ class TestDiscoverer:
 
         return cross_module_tests
 
-    def validate_test_structure(self) -> Dict[str, List[str]]:
+    def validate_test_structure(self) -> dict[str, list[str]]:
         """Validate the structure of discovered tests."""
-        missing_dirs: List[str] = []
-        empty_dirs: List[str] = []
-        malformed_files: List[str] = []
-        missing_inits: List[str] = []
-        issues: Dict[str, List[str]] = {
+        missing_dirs: list[str] = []
+        empty_dirs: list[str] = []
+        malformed_files: list[str] = []
+        missing_inits: list[str] = []
+        issues: dict[str, list[str]] = {
             "missing_test_dirs": missing_dirs,
             "empty_test_dirs": empty_dirs,
             "malformed_test_files": malformed_files,
