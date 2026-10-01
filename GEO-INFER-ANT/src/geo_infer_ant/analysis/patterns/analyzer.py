@@ -32,10 +32,9 @@ except ImportError as e:
     SpatialAnalyticsInterface = None
     SpatialStatistics = None
 
-logger = logging.getLogger(__name__)
-
-
 from ._config import AnalysisConfiguration
+
+logger = logging.getLogger(__name__)
 
 
 class SwarmPatternAnalyzer:
@@ -269,8 +268,18 @@ class SwarmPatternAnalyzer:
         }
 
     def _analyze_flocking_patterns(self, trajectories: np.ndarray) -> dict[str, Any]:
-        """Analyze flocking behavior patterns."""
+        """Analyze flocking behavior patterns.
+
+        Separation is a nearest-neighbour distance, so fewer than two agents
+        is a degenerate input: the result is ``{"status":
+        "flocking_analysis_failed", "error": ...}`` naming the agent count.
+        """
         try:
+            if trajectories.shape[0] < 2:
+                raise ValueError(
+                    "flocking analysis requires at least 2 agents; "
+                    f"got {trajectories.shape[0]}"
+                )
             # Calculate velocity vectors
             velocities = np.diff(trajectories, axis=1)  # Shape: (agents, steps-1, dims)
 
@@ -308,11 +317,6 @@ class SwarmPatternAnalyzer:
             separation_scores = []
             for step in range(trajectories.shape[1]):
                 positions = trajectories[:, step, :]
-                if positions.shape[0] < 2:
-                    # Preserve the legacy degenerate-input failure path: the
-                    # original per-pair loop raised ValueError from min() on
-                    # an empty distance list.
-                    raise ValueError("min() iterable argument is empty")
                 pair_dists = np.linalg.norm(
                     positions[:, None, :] - positions[None, :, :], axis=-1
                 )
@@ -1196,7 +1200,7 @@ class SwarmPatternAnalyzer:
 
             # Extract collective outcome values
             collective_values = []
-            for outcome_type, outcome_data in collective_outcomes.items():
+            for outcome_data in collective_outcomes.values():
                 if isinstance(outcome_data, dict):
                     # Extract numerical value from outcome
                     value = outcome_data.get("value", outcome_data.get("score", 0.0))
@@ -1345,7 +1349,7 @@ class SwarmPatternAnalyzer:
 
             # Extract time series from outcomes
             outcome_series = []
-            for outcome_type, outcome_data in collective_outcomes.items():
+            for outcome_data in collective_outcomes.values():
                 if isinstance(outcome_data, dict):
                     outcome_series.append(
                         float(
@@ -1473,7 +1477,7 @@ class SwarmPatternAnalyzer:
 
         # Calculate weighted conditional entropy
         conditional_entropy = 0.0
-        for x_key, y_values in unique_combinations.items():
+        for y_values in unique_combinations.values():
             p_x = len(y_values) / len(y)
             h_y_given_x = self._calculate_entropy(np.array(y_values))
             conditional_entropy += p_x * h_y_given_x

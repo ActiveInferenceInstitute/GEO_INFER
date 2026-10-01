@@ -60,7 +60,7 @@ class _Publisher:
     def _run(self, fn):
         try:
             fn()
-        except BaseException as exc:  # noqa: BLE001 - surfaced to the test
+        except BaseException as exc:  # surfaced to the test thread
             self.error = exc
 
 

@@ -575,7 +575,7 @@ class TestCrossModuleIntegration:
             (base_location.latitude + 0.005, base_location.longitude - 0.005),
         ]
 
-        for i, (lat, lon) in enumerate(area_centers):
+        for i in range(len(area_centers)):
             pop_data = PopulationData(
                 area_id=f"area_{i}",
                 population_count=50000 + i * 25000,
@@ -594,10 +594,9 @@ class TestCrossModuleIntegration:
 
         # Test accessibility analysis for different population areas
         accessibility_results = {}
-        for pop_area in population_data:
-            # Use area center as proxy for population location
-            # In real implementation, would use actual population-weighted centroids
-            area_center = Location(latitude=34.0522, longitude=-118.2437)  # Simplified
+        for pop_area, (lat, lon) in zip(population_data, area_centers, strict=True):
+            # The area center stands in for the population-weighted centroid.
+            area_center = Location(latitude=lat, longitude=lon)
 
             nearest = analyzer.get_nearest_facility(loc=area_center)
             if nearest:
@@ -611,7 +610,7 @@ class TestCrossModuleIntegration:
         # Verify results
         assert len(accessibility_results) == len(population_data)
 
-        for area_id, result in accessibility_results.items():
+        for result in accessibility_results.values():
             assert result["distance_km"] >= 0
             assert result["population"] > 0
             assert result["facility_type"] in ["Hospital", "Clinic"]

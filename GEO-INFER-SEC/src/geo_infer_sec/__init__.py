@@ -6,16 +6,10 @@ and stored in a manner that protects individual privacy, organizational
 security, and complies with relevant regulations.
 """
 
-from datetime import datetime, timezone, UTC
+from datetime import datetime, UTC
 import logging
 from copy import deepcopy
-from typing import Any, Dict, List, Optional
-
-__version__ = "0.3.0"
-__author__ = "GEO-INFER Team"
-__email__ = "geo-infer@activeinference.institute"
-
-logger = logging.getLogger(__name__)
+from typing import Any
 
 from .core.authentication import AuthenticationManager, UserCredentials, TokenInfo
 from .core.authorization import GeospatialAccessManager, Role, SpatialPermission
@@ -24,6 +18,12 @@ from .core.audit import AuditLogger, AuditEvent, AuditEventType, AuditEventSever
 from .core.access_control import GeospatialAccessManager as AccessManager
 from .models.security_models import SecurityEvent, ThreatLevel
 from .utils.security_utils import SecurityUtils
+
+__version__ = "0.3.0"
+__author__ = "GEO-INFER Team"
+__email__ = "geo-infer@activeinference.institute"
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "AuthenticationManager",

@@ -315,7 +315,7 @@ def validate_config(config: dict[str, Any] | AntModuleConfig) -> bool:
         logger.error(f"Configuration validation failed: {e.message}")
         raise ValidationError(
             f"Invalid configuration: {e.message}", e.instance, e.schema_path
-        )
+        ) from e
 
 
 def _load_from_environment() -> dict[str, Any]:

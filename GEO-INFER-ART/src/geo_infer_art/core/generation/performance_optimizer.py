@@ -329,9 +329,11 @@ class PerformanceOptimizer:
         test_kwargs = test_kwargs or {}
 
         if test_function is None:
-            # Simple test function
+            # Deterministic synthetic workload
+            workload_rng = np.random.default_rng(0)
+
             def test_function(resolution: int) -> Any:
-                arr = np.random.rand(resolution, resolution)
+                arr = workload_rng.random((resolution, resolution))
                 return np.sum(arr)
 
         assert test_function is not None

@@ -22,19 +22,6 @@ from datetime import datetime
 from dataclasses import dataclass, field
 from collections import defaultdict
 
-# Integration imports: geo_infer_space is optional (guarded with a None
-# sentinel consumed at call sites); geo_infer_ant submodules ship with this
-# module and must import unconditionally.
-try:
-    from geo_infer_space.core.spatial_indexing import (
-        SpatialIndexingInterface,  # noqa: F401
-    )  # noqa: F401
-    from geo_infer_space.core.analytics import SpatialAnalyticsInterface  # noqa: F401
-except ImportError as e:
-    logging.getLogger(__name__).debug("Optional spatial integration unavailable: %s", e)
-    SpatialIndexingInterface = None
-    SpatialAnalyticsInterface = None
-
 from geo_infer_ant.core.agent_base import SwarmAgent
 from geo_infer_ant.core.stigmergy import PheromoneSystem
 from geo_infer_ant.core.digital_stigmergy import DigitalStigmergy
@@ -679,7 +666,7 @@ class EnvironmentalMonitoringSwarm:
         }
 
         # Simple assignment based on position
-        for i, position in enumerate(agent_positions):
+        for i in range(len(agent_positions)):
             agent_id = f"agent_{i}"
 
             # Assign to zone with highest priority that needs more agents

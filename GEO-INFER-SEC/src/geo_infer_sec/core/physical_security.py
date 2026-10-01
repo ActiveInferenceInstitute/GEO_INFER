@@ -491,7 +491,7 @@ class PhysicalSecurityManager:
 
     def _check_zone_integrity(self) -> None:
         """Check integrity of security zones by verifying device coverage."""
-        for zone_id, zone in self.security_zones.items():
+        for zone_id in self.security_zones:
             zone_devices = [
                 d
                 for d in self.access_devices.values()

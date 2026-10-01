@@ -4,16 +4,23 @@ This guide walks through installation, core concepts, and building your first sw
 
 ## Installation
 
-Install GEO-INFER-ANT in editable mode using `uv`:
+GEO-INFER-ANT is a member of the root uv workspace. From the repository root:
 
 ```bash
-uv pip install -e ./GEO-INFER-ANT
+uv sync --package geo-infer-ant
 ```
 
-For full integration with spatial indexing and Active Inference:
+For full integration with spatial indexing and Active Inference, include the
+`integrations` extra (SPACE, ACT, AGENT, MATH):
 
 ```bash
-uv pip install -e ./GEO-INFER-ANT ./GEO-INFER-SPACE ./GEO-INFER-ACT ./GEO-INFER-AGENT
+uv sync --package geo-infer-ant --extra integrations
+```
+
+Run the module's tests through the unified runner:
+
+```bash
+uv run python GEO-INFER-TEST/run_unified_tests.py --module ANT
 ```
 
 ### Dependencies

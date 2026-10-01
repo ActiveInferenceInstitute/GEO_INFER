@@ -108,7 +108,6 @@ def main():
     locations = [depot] + [o["location"] for o in orders]
 
     time_matrix = estimator.calculate_time_matrix(locations)
-    distance_matrix = estimator.calculate_distance_matrix(locations)
 
     print(f"   Matrix size: {len(locations)}x{len(locations)}")
     print(f"   Avg travel time: {time_matrix[time_matrix > 0].mean():.1f} min")

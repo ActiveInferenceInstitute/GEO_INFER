@@ -30,10 +30,7 @@ from geo_infer_ant.core import (
     PheromoneSystem,
     DigitalStigmergy,
 )
-from geo_infer_ant.algorithms import (
-    AntColonyOptimization,
-    ParticleSwarmOptimization,  # noqa: F401
-)  # noqa: F401
+from geo_infer_ant.algorithms import AntColonyOptimization
 from geo_infer_ant.applications import EnvironmentalMonitoringSwarm
 from geo_infer_ant.analysis import SwarmPatternAnalyzer
 from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
@@ -201,7 +198,7 @@ class TestEndToEndSimulation:
 
             # Generate sample sensor data
             sensor_readings = []
-            for i in range(100):
+            for _ in range(100):
                 reading = {
                     "agent_id": f"agent_{np.random.randint(0, 50)}",
                     "sensor_type": "pm25_sensor",
@@ -337,7 +334,7 @@ class TestEmergentBehavior:
 
             # Generate trajectory around cluster center
             agent_trajectory = []
-            for step in range(n_steps):
+            for _ in range(n_steps):
                 # Movement with attraction to center
                 noise = np.random.normal(0, 0.5, 2)
                 attraction = -0.1 * (np.random.uniform(-10, 10, 2) - center)

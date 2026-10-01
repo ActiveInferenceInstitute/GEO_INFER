@@ -6,7 +6,6 @@ Output workspace within `GEO-INFER-NORMS`.
 
 - `historical_zoning_changes.png`
 - `zoning_adjacency_network.png`
-- `zoning_analysis_results.json`
 - `zoning_change_visualization.png`
 - `zoning_compatibility_matrix.png`
 - `zoning_distribution_by_category.png`
@@ -22,7 +21,7 @@ Output workspace within `GEO-INFER-NORMS`.
 - Module: `GEO-INFER-NORMS`
 - Package: `geo_infer_norms`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-NORMS`
+- Install: `uv sync --package geo-infer-norms`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module NORMS`
 
 ## Dependencies

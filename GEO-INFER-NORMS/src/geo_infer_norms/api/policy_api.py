@@ -293,7 +293,7 @@ class PolicyAPI:
         try:
             return shape(geojson)
         except Exception as e:
-            raise ValueError(f"Invalid geometry: {str(e)}")
+            raise ValueError(f"Invalid geometry: {str(e)}") from e
 
     def _policy_to_dict(self, policy: Policy) -> dict[str, Any]:
         """
@@ -400,7 +400,7 @@ class PolicyAPI:
                 "policy_id": policy_id,
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def list_policies(
         self,
@@ -442,7 +442,7 @@ class PolicyAPI:
 
             return [self._policy_to_dict(p) for p in policies]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_policy(
         self, policy_id: str = Path(..., description="ID of the policy")
@@ -466,7 +466,7 @@ class PolicyAPI:
 
             return self._policy_to_dict(policy)
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Policy implementation endpoints
 
@@ -520,7 +520,7 @@ class PolicyAPI:
                 "implementation_id": implementation_id,
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def list_policy_implementations(
         self,
@@ -552,7 +552,7 @@ class PolicyAPI:
 
             return [self._policy_implementation_to_dict(i) for i in implementations]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_policy_implementation(
         self,
@@ -580,7 +580,7 @@ class PolicyAPI:
 
             return self._policy_implementation_to_dict(implementation)
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_implementations_by_policy(
         self, policy_id: str = Path(..., description="ID of the policy")
@@ -607,7 +607,7 @@ class PolicyAPI:
 
             return [self._policy_implementation_to_dict(i) for i in implementations]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Impact assessment endpoints
 
@@ -685,7 +685,7 @@ class PolicyAPI:
                 "assessment": assessment_result,
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_impact_assessment_history(
         self, policy_id: str = Path(..., description="ID of the policy")
@@ -737,7 +737,7 @@ class PolicyAPI:
 
             return assessments
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Regulatory comparison endpoints
 
@@ -827,7 +827,7 @@ class PolicyAPI:
                 "timestamp": datetime.datetime.now().isoformat(),
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Export endpoints
 
@@ -904,4 +904,4 @@ class PolicyAPI:
                 "geojson": geojson,
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e

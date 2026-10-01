@@ -729,10 +729,7 @@ class AgentPopulation:
 
         # Update resource distribution (regeneration/depletion)
         if self.environment.resource_distribution:
-            for (
-                resource_type,
-                distribution,
-            ) in self.environment.resource_distribution.items():
+            for distribution in self.environment.resource_distribution.values():
                 if "regeneration_rate" in distribution:
                     # Simple resource regeneration
                     max_density = distribution.get("max_density", 1.0)

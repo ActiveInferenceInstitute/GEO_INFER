@@ -18,7 +18,7 @@ Tests workspace within `GEO-INFER-LOG`.
 - Module: `GEO-INFER-LOG`
 - Package: `geo_infer_log`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-LOG`
+- Install: `uv sync --package geo-infer-log`
 - Tests: `uv run python -m pytest GEO-INFER-LOG/tests`
 
 ## Dependencies

@@ -26,7 +26,6 @@
 - `examples/`
 - `src/`
 - `tests/`
-- `clone_repos.py`
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`

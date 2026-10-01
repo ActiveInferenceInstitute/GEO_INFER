@@ -44,19 +44,9 @@ Example:
 import json
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Any
 
 import yaml
-
-# Set up logging
-logger = logging.getLogger(__name__)
-
-# Version information
-__version__ = "0.3.0"
-__author__ = "GEO-INFER Development Team"
-__description__ = (
-    "Swarm Intelligence and Complex Adaptive Systems for Geospatial Analysis"
-)
 
 # Public components are required package dependencies and are imported directly.
 from .core.agent_base import SwarmAgent
@@ -74,6 +64,15 @@ from .analysis.metrics import SwarmPerformanceMetrics
 from .utils.config import config_to_dict, load_config, validate_config
 from .utils.logging import setup_logging
 from .utils.integration import IntegrationManager
+
+logger = logging.getLogger(__name__)
+
+# Version information
+__version__ = "0.3.0"
+__author__ = "GEO-INFER Development Team"
+__description__ = (
+    "Swarm Intelligence and Complex Adaptive Systems for Geospatial Analysis"
+)
 
 
 # Configuration and setup

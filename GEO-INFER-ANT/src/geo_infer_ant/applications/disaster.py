@@ -305,7 +305,7 @@ class DisasterResponseSwarm:
 
         # Aggregate resource requirements
         total_required: defaultdict[str, int] = defaultdict(int)
-        for response_type, req_data in requirements.items():
+        for req_data in requirements.values():
             for resource, amount in req_data["resource_needs"].items():
                 total_required[resource] += amount
 
@@ -444,7 +444,7 @@ class DisasterResponseSwarm:
 
         # Operation time based on requirements
         operation_times = []
-        for response_type, req_data in requirements.items():
+        for req_data in requirements.values():
             operation_times.append(req_data["time_estimate"])
 
         total_operation_time = max(operation_times) if operation_times else 60

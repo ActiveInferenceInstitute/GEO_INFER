@@ -124,7 +124,10 @@ class TestSpatialGames:
 
     def test_location_game_analysis(self) -> None:
         locations = np.array([0.0, 0.25, 0.5, 0.75, 1.0])
-        demand_fn = lambda d: max(0, 1.0 - d)
+
+        def demand_fn(d: float) -> float:
+            return max(0.0, 1.0 - d)
+
         result = self.sg.location_game_analysis(locations, demand_fn)
         assert "equilibrium_locations" in result
         assert "market_shares" in result

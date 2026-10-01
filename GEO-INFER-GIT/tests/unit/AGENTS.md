@@ -23,7 +23,6 @@
 
 - `test_advanced_git.py`
 - `test_cli.py`
-- `test_clone_repos_wrapper.py`
 - `test_config_loader.py`
 - `test_config_loader_packaged_config.py`
 - `test_distributed_coordinator.py`
@@ -32,6 +31,7 @@
 - `test_github_api.py`
 - `test_intelligent_cache_prefetch.py`
 - `test_main.py`
+- `test_main_entrypoint.py`
 - `test_multi_platform_api.py`
 - `test_repo_analyzer.py`
 - `test_repo_cloner.py`

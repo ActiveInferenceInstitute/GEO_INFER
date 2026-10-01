@@ -450,7 +450,7 @@ class TestHotspotStatistics:
         case_counts = []
 
         # Create a hotspot
-        for i in range(10):
+        for _ in range(10):
             locations.append(
                 Location(
                     latitude=base_loc.latitude + np.random.uniform(-0.001, 0.001),
@@ -460,7 +460,7 @@ class TestHotspotStatistics:
             case_counts.append(5 + np.random.randint(0, 5))  # High case counts
 
         # Create some background points
-        for i in range(20):
+        for _ in range(20):
             locations.append(
                 Location(
                     latitude=base_loc.latitude + np.random.uniform(-0.01, 0.01),

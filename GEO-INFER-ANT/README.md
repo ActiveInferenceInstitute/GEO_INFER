@@ -9,30 +9,20 @@ Comprehensive swarm intelligence and complex adaptive systems modeling using Act
 - `examples/`
 - `src/`
 - `tests/`
-- `run_tests.py`
 - `IMPLEMENTATION_STATUS.md`
 - `SKILL.md`
 - `pyproject.toml`
 
 ## Public Interface
 
-- `run_tests.py:run_command` (function)
-- `run_tests.py:run_unit_tests` (function)
-- `run_tests.py:run_integration_tests` (function)
-- `run_tests.py:run_performance_tests` (function)
-- `run_tests.py:run_examples` (function)
-- `run_tests.py:run_coverage_analysis` (function)
-- `run_tests.py:run_quick_tests` (function)
-- `run_tests.py:generate_test_report` (function)
-- `run_tests.py:print_final_summary` (function)
-- `run_tests.py:main` (function)
+- No public Python symbols are defined directly in this directory.
 
 ## Module Metadata
 
 - Module: `GEO-INFER-ANT`
 - Package: `geo_infer_ant`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-ANT`
+- Install: `uv sync --package geo-infer-ant`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module ANT`
 
 ## Dependencies

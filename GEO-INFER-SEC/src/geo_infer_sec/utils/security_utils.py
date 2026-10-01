@@ -269,7 +269,7 @@ class SecurityUtils:
         groups = anonymized.groupby(quasi_identifiers)
 
         # For each group, ensure at least k records
-        for name, group in groups:
+        for _, group in groups:
             if len(group) < k:
                 # Suppress or generalize values
                 for col in quasi_identifiers:
@@ -278,19 +278,25 @@ class SecurityUtils:
         return anonymized
 
     def add_noise_to_numerical(
-        self, data: pd.DataFrame, columns: list[str], noise_level: float = 0.1
+        self,
+        data: pd.DataFrame,
+        columns: list[str],
+        noise_level: float = 0.1,
+        rng: int | np.random.Generator | None = None,
     ) -> pd.DataFrame:
         """
-            Add noise to numerical columns for privacy protection.
+        Add Gaussian noise to numerical columns for privacy protection.
 
         Args:
-                data: Input DataFrame
-                columns: Columns to add noise to
-                noise_level: Standard deviation of noise as fraction of data std
+            data: Input DataFrame
+            columns: Columns to add noise to
+            noise_level: Standard deviation of noise as fraction of data std
+            rng: Integer seed or ``np.random.Generator`` for reproducible noise
 
         Returns:
-                DataFrame with added noise
+            DataFrame with added noise
         """
+        generator = np.random.default_rng(rng)
         noisy_data = data.copy()
 
         for col in columns:
@@ -298,7 +304,7 @@ class SecurityUtils:
                 noisy_data[col]
             ):
                 std = noisy_data[col].std()
-                noise = np.random.normal(0, std * noise_level, len(noisy_data))
+                noise = generator.normal(0, std * noise_level, len(noisy_data))
                 noisy_data[col] = noisy_data[col] + noise
 
         return noisy_data
@@ -557,20 +563,6 @@ class SecurityUtils:
         for char in _DANGEROUS_CHARS:
             input_data = input_data.replace(char, "")
         return input_data
-
-    def sanitize_input(self, input_data: str) -> str:
-        """Deprecated alias for :meth:`strip_dangerous_chars`.
-
-        Kept because other GEO-INFER modules may import it. The old
-        docstring claimed this prevents injection attacks, which is false:
-        character stripping is not injection defense. Callers should
-        migrate to :meth:`strip_dangerous_chars`.
-        """
-        logger.warning(
-            "sanitize_input() is a deprecated alias for strip_dangerous_chars(); "
-            "character stripping is not injection defense"
-        )
-        return self.strip_dangerous_chars(input_data)
 
     def validate_file_upload(
         self, file_path: str, allowed_extensions: list[str], max_size_mb: int = 10

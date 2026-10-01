@@ -3,7 +3,6 @@
 import datetime
 
 from geo_infer_norms.models.regulation import Regulation, RegulatoryFramework
-from geo_infer_norms.models.policy import *  # noqa - import whatever policy models exist
 
 
 class TestRegulationLifecycle:

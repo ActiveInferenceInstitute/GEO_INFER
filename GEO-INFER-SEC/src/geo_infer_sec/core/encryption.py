@@ -6,8 +6,9 @@ geospatial data both at rest and in transit.
 """
 
 import base64
-import os
 import json
+import logging
+import os
 from typing import Any, cast
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
@@ -21,13 +22,11 @@ from cryptography.hazmat.primitives.serialization import (
     PublicFormat,
     NoEncryption,
 )
-
-import logging
-
-logger = logging.getLogger(__name__)
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Point
+
+logger = logging.getLogger(__name__)
 
 
 class GeospatialEncryption:

@@ -152,7 +152,7 @@ class PEPValidator:
 
         # Custom fields validation
         if employee.custom_fields:
-            for key, value in employee.custom_fields.items():
+            for key in employee.custom_fields:
                 if key.startswith("_"):
                     result.add_warning(
                         f"Custom field '{key}' starts with underscore (convention violation)"

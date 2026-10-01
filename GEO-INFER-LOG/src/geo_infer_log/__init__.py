@@ -19,8 +19,8 @@ import json
 import time
 import threading
 import weakref
-from datetime import datetime, timezone, timedelta, UTC
-from typing import Dict, List, Optional, Any, Tuple
+from datetime import datetime, timedelta, UTC
+from typing import Any
 from dataclasses import dataclass, field, asdict
 from collections import defaultdict, deque
 from pathlib import Path
@@ -123,7 +123,7 @@ class LogEntry:
     operation: str
     message: str
     context: dict[str, Any] = field(default_factory=dict)
-    spatial_context: Optional["SpatialLogContext"] = None
+    spatial_context: "SpatialLogContext | None" = None
     performance_metrics: dict[str, float] | None = None
     trace_id: str | None = None
     span_id: str | None = None

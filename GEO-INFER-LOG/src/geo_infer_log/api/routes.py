@@ -168,7 +168,7 @@ async def optimize_route(
 
         return route
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/vehicles", response_model=dict)
@@ -184,7 +184,7 @@ async def register_vehicle(
             "message": f"Vehicle {registration.vehicle.id} registered",
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/vrp", response_model=dict)
@@ -206,7 +206,7 @@ async def solve_vrp(
 
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/vehicles", response_model=list[Vehicle])
@@ -217,4 +217,4 @@ async def get_vehicles(
     try:
         return list(fleet_manager.vehicles.values())
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e

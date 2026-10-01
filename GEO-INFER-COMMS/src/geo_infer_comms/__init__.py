@@ -9,15 +9,14 @@ applications with full geospatial context and real-time capabilities.
 from __future__ import annotations
 import logging
 import threading
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timezone, UTC
+from typing import Any
+from datetime import datetime, UTC
 
 # Core components
 from geo_infer_comms.core.messaging import (
     MessageBroker,
     MessageRouter,
     MessageFormatter,
-    MessageMetrics,  # noqa: F401
 )
 from geo_infer_comms.core.notifications import (
     NotificationManager,
@@ -25,14 +24,11 @@ from geo_infer_comms.core.notifications import (
     EmergencyAlertSystem,
     NotificationMetrics,
     AlertRule,
-    AlertResponse,  # noqa: F401
 )
 from geo_infer_comms.core.channels import (
     ChannelManager,
     ChannelPermissionManager,
-    ChannelMessageFilter,  # noqa: F401
     ChannelAnalytics,
-    ChannelMetrics,  # noqa: F401
 )
 from geo_infer_comms.core.events import (
     EventManager,
@@ -40,7 +36,6 @@ from geo_infer_comms.core.events import (
     EventFilter,
     EventWebhookManager,
     EventMetrics,
-    EventProcessor,  # noqa: F401
 )
 
 # Collaboration, streaming, and spatial-routing engines (unified interface)
@@ -61,7 +56,7 @@ from geo_infer_comms.models.message import (
     MessageStatus,
     ChannelRequest,
     ChannelResponse,
-    ChannelType,  # noqa: F401
+    ChannelType,
     NotificationRequest,
     NotificationResponse,
     NotificationType,
@@ -85,7 +80,6 @@ from geo_infer_comms.models.message import (
     Participant,
     ParticipantRole,
     ParticipantStatus,
-    MessageMetadata,  # noqa: F401
     EventSubscriptionRequest,
 )
 

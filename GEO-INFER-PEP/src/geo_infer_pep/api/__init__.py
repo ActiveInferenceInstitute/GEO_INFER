@@ -1,6 +1,6 @@
 # API endpoints for GEO-INFER-PEP
 from fastapi import APIRouter, HTTPException
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import ValidationError
 
@@ -92,7 +92,7 @@ async def create_performance_review(review_data: dict[str, Any]) -> dict[str, An
     try:
         review = PerformanceReview(**review_data)
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     performance_review_store.add(employee_id, review)
     return {
         "message": "Performance review created",
@@ -120,7 +120,7 @@ async def create_learning_course(course_data: dict[str, Any]) -> dict[str, Any]:
     try:
         course = LearningCourse(**course_data)
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if any(
         existing.course_id == course.course_id
         for existing in pep_data_manager.learning_courses
@@ -153,7 +153,7 @@ async def enroll_employee(enrollment_data: dict[str, Any]) -> dict[str, Any]:
     try:
         enrollment = LearningEnrollment(**enrollment_data)
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not pep_data_manager.get_learning_courses({"course_id": enrollment.course_id}):
         raise HTTPException(
             status_code=404,
@@ -202,7 +202,7 @@ async def create_conflict_case(case_data: dict[str, Any]) -> dict[str, Any]:
     try:
         case = ConflictCase(**case_data)
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if any(
         existing.case_id == case.case_id for existing in pep_data_manager.conflict_cases
     ):
@@ -251,7 +251,7 @@ async def update_conflict_case(
     try:
         updated = ConflictCase(**merged_data)
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     pep_data_manager.conflict_cases[existing_index] = updated
     return {
         "message": f"Conflict case {case_id} updated",
@@ -266,7 +266,7 @@ async def create_survey(survey_data: dict[str, Any]) -> dict[str, Any]:
     try:
         survey = Survey(**survey_data)
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if any(
         existing.survey_id == survey.survey_id for existing in pep_data_manager.surveys
     ):
@@ -311,7 +311,7 @@ async def submit_survey_response(
     try:
         response = SurveyResponse(**{**response_data, "survey_id": survey_id})
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if any(
         existing.response_id == response.response_id
         for existing in pep_data_manager.survey_responses

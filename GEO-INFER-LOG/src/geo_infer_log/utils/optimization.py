@@ -5,8 +5,11 @@ This module provides optimization utility functions for solving
 problems like TSP and VRP.
 """
 
-import numpy as np
 from typing import Any, cast
+
+import numpy as np
+
+from geo_infer_log.utils.geo import haversine_distance
 
 _ORTOOLS_MODULES: tuple[object | None, object | None] | None = None
 _HAS_ORTOOLS: bool | None = None
@@ -35,9 +38,6 @@ def _load_ortools() -> tuple[object | None, object | None]:
         _ORTOOLS_MODULES = (None, None)
         _HAS_ORTOOLS = False
     return _ORTOOLS_MODULES
-
-
-from geo_infer_log.utils.geo import haversine_distance
 
 
 def _require_ortools() -> tuple[Any, Any]:

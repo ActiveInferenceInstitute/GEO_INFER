@@ -10,6 +10,9 @@ from unittest.mock import patch
 
 from geo_infer_ops.core.config import (
     Config,
+    DeploymentConfig,
+    DockerConfig,
+    KubernetesConfig,
     LoggingConfig,
     MonitoringConfig,
     TestingConfig as OpsTestingConfig,
@@ -144,6 +147,18 @@ def test_config_validation():
 
     with pytest.raises(ValueError):
         OpsTestingConfig(timeout=-1)
+
+
+def test_deployment_config_uses_top_level_models():
+    """Docker/Kubernetes models are top-level classes, not DeploymentConfig attributes."""
+    assert not hasattr(DeploymentConfig, "DockerConfig")
+    assert not hasattr(DeploymentConfig, "KubernetesConfig")
+    deployment = DeploymentConfig(
+        docker=DockerConfig(registry="r", tag="t"),
+        kubernetes=KubernetesConfig(namespace="ns"),
+    )
+    assert deployment.docker.registry == "r"
+    assert deployment.kubernetes.namespace == "ns"
 
 
 def test_config_defaults():

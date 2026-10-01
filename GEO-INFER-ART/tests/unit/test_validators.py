@@ -35,8 +35,8 @@ def _sample_algorithm(data, params, width, height):
     return [[(x + y) * 0.01 + offset for x in range(width)] for y in range(height)]
 
 
-# Source-text fixture for legacy saved-file entries (the framework exec's
-# this string; a literal copy, so tests never parse this file's own text).
+# Source-text fixture for saved-file entries (the framework exec's this
+# string; a literal copy, so tests never parse this file's own text).
 _SAMPLE_ALGORITHM_SOURCE = '''\
 def _sample_algorithm(data, params, width, height):
     """Deterministic grid generator (pure builtins; exec'd from saved source)."""
@@ -160,32 +160,59 @@ class TestCustomAlgorithmFramework(unittest.TestCase):
         )
         self.assertEqual(loaded_result, _sample_algorithm(None, {"offset": 1.5}, 4, 3))
 
-    def test_load_legacy_file_without_function_name(self):
-        source = _SAMPLE_ALGORITHM_SOURCE
+    def test_load_rejects_entry_without_function_name(self):
+        """Files without ``function_name`` are rejected before any exec."""
         payload = {
             "sample": {
                 "metadata": {
-                    "description": "legacy entry",
+                    "description": "entry without function_name",
                     "parameters": {},
                     "example_usage": "",
                 },
-                "source": source,
+                # Executing this source would register a marker; rejection
+                # must happen before the source runs.
+                "source": _SAMPLE_ALGORITHM_SOURCE
+                + "\nimport builtins\nbuiltins._geo_infer_art_exec_marker = True\n",
             }
         }
 
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        legacy_path = os.path.join(tmp.name, "legacy.json")
-        with open(legacy_path, "w") as f:
+        path = os.path.join(tmp.name, "no_function_name.json")
+        with open(path, "w") as f:
             json.dump(payload, f)
 
         framework = CustomAlgorithmFramework()
-        framework.load_algorithms_from_file(legacy_path)
-        self.assertIn("sample", framework.list_algorithms())
-        result = framework.execute_algorithm(
-            "sample", None, width=4, height=3, offset=1.5
-        )
-        self.assertEqual(result, _sample_algorithm(None, {"offset": 1.5}, 4, 3))
+        with self.assertRaisesRegex(
+            ValueError, "entry 'sample' is missing function_name"
+        ):
+            framework.load_algorithms_from_file(path)
+        self.assertNotIn("sample", framework.list_algorithms())
+        import builtins
+
+        self.assertFalse(hasattr(builtins, "_geo_infer_art_exec_marker"))
+
+    def test_load_skips_entry_whose_function_is_missing(self):
+        payload = {
+            "sample": {
+                "metadata": {"description": "", "parameters": {}, "example_usage": ""},
+                "source": _SAMPLE_ALGORITHM_SOURCE,
+                "function_name": "not_defined_here",
+            }
+        }
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = os.path.join(tmp.name, "wrong_name.json")
+        with open(path, "w") as f:
+            json.dump(payload, f)
+
+        framework = CustomAlgorithmFramework()
+        with self.assertLogs(
+            "geo_infer_art.core.generation.custom_algorithms", level="WARNING"
+        ) as captured:
+            framework.load_algorithms_from_file(path)
+        self.assertNotIn("sample", framework.list_algorithms())
+        self.assertIn("not_defined_here", "\n".join(captured.output))
 
     def test_load_skips_bad_entries_with_warning(self):
         source = _SAMPLE_ALGORITHM_SOURCE
@@ -206,6 +233,7 @@ class TestCustomAlgorithmFramework(unittest.TestCase):
                     "example_usage": "",
                 },
                 "source": "def broken(:\n    pass",
+                "function_name": "broken",
             },
         }
 

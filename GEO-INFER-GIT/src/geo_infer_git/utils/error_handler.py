@@ -940,7 +940,7 @@ def with_error_handling(
                             f"Final failure in {func.__name__}: {structured_error}"
                         )
 
-                    raise structured_error
+                    raise structured_error from error
 
             return None  # Should not reach here
 

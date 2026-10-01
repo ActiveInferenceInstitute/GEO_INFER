@@ -305,7 +305,7 @@ class EvolutionaryGames:
 
         dt = 0.1
 
-        for t in range(time_steps):
+        for _ in range(time_steps):
             current_freq = frequencies[-1]
 
             # Average payoffs for each strategy

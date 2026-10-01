@@ -279,10 +279,6 @@ class Config(BaseModel):
 # Global configuration instance
 _config: Config | None = None
 
-# Backward-compatible nested aliases used by older callers and tests.
-DeploymentConfig.DockerConfig = DockerConfig  # type: ignore[attr-defined]
-DeploymentConfig.KubernetesConfig = KubernetesConfig  # type: ignore[attr-defined]
-
 
 def load_config(config_file: str | None = None) -> Config:
     """Load configuration from file or environment variables."""

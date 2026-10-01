@@ -360,7 +360,7 @@ class EndogenousGrowthModels:
         time_steps = int(parameters.get("time_steps", 100))
         A_path = [A0]
 
-        for t in range(1, time_steps):
+        for _ in range(1, time_steps):
             A_t = A_path[-1] + gamma * s_r * L * A_path[-1] ** beta
             A_path.append(A_t)
 

@@ -120,7 +120,6 @@ def analyze_regional_growth():
     # Solow growth model parameters
     alpha = 0.33  # Capital share
     s = 0.2  # Savings rate
-    n = 0.02  # Population growth
     delta = 0.05  # Depreciation
     g = 0.02  # Technology growth
 
@@ -262,6 +261,7 @@ def integrated_analysis(consumer_results, growth_results, ecosystem_results):
     natural_capital_ratio = ecosystem_results["carbon_stock_value"] / total_regional_gdp
 
     print(f"Regional GDP: ${total_regional_gdp:,.0f}")
+    print(f"Consumer expenditure: ${total_consumer_expenditure:,.0f}")
     print(f"Ecosystem services value: ${ecosystem_service_value:,.0f}")
     print(f"Ecosystem services / GDP ratio: {ecosystem_gdp_ratio:.3f}")
     print(f"Natural capital / GDP ratio: {natural_capital_ratio:.3f}")

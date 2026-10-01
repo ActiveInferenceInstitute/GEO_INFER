@@ -11,7 +11,7 @@ from datetime import datetime
 import logging
 
 from ..models.hr_models import Employee, EmploymentStatus
-from .data_store import PEPDataManager, pep_data_manager  # noqa: F401 (re-export)
+from .data_store import PEPDataManager, pep_data_manager
 
 logger = logging.getLogger(__name__)
 

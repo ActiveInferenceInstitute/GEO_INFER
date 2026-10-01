@@ -11,7 +11,6 @@ Tests workspace within `GEO-INFER-ANT`.
 
 ## Public Interface
 
-- `conftest.py:pytest_configure` (function)
 - `conftest.py:sample_coordinates` (function)
 - `conftest.py:tmp_output_dir` (function)
 - `conftest.py:distance_matrix` (function)
@@ -23,7 +22,7 @@ Tests workspace within `GEO-INFER-ANT`.
 - Module: `GEO-INFER-ANT`
 - Package: `geo_infer_ant`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-ANT`
+- Install: `uv sync --package geo-infer-ant`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module ANT`
 
 ## Dependencies

@@ -1,97 +1,101 @@
-"""Tests for security input validation and sanitization."""
+"""Tests for SecurityUtils input normalisation and validation helpers."""
+
+from pathlib import Path
+
+import geopandas as gpd
+import pytest
+from shapely.geometry import Point
+
+from geo_infer_sec.utils.security_utils import (
+    SecurityUtils,
+    hash_password_simple,
+    validate_spatial_bounds,
+    verify_password_simple,
+)
 
 
-class TestInputSanitization:
-    """Test input sanitization for preventing injection attacks."""
-
-    def test_sql_injection_patterns_detected(self):
-        """Verify that common SQL injection patterns are identified."""
-        dangerous_inputs = [
-            "'; DROP TABLE users; --",
-            "1 OR 1=1",
-            "admin'--",
-            "' UNION SELECT * FROM passwords --",
-        ]
-        for inp in dangerous_inputs:
-            has_sql_chars = any(
-                c in inp for c in ("'", ";", "--", "UNION", "DROP", "OR 1=1")
-            )
-            assert has_sql_chars, f"SQL pattern not detected in: {inp}"
-
-    def test_xss_patterns_detected(self):
-        """Verify that common XSS patterns are identified."""
-        xss_inputs = [
-            "<script>alert('xss')</script>",
-            '<img onerror="alert(1)" src=x>',
-            "javascript:alert(1)",
-        ]
-        for inp in xss_inputs:
-            has_xss = any(
-                tag in inp.lower() for tag in ("<script", "onerror", "javascript:")
-            )
-            assert has_xss, f"XSS pattern not detected in: {inp}"
-
-    def test_path_traversal_detected(self):
-        """Verify path traversal attempts are identified."""
-        paths = [
-            "../../../etc/passwd",
-            "..\\..\\windows\\system32",
-            "/etc/shadow",
-        ]
-        for path in paths:
-            has_traversal = ".." in path or path.startswith("/etc/")
-            assert has_traversal, f"Path traversal not detected: {path}"
+@pytest.fixture
+def utils() -> SecurityUtils:
+    return SecurityUtils()
 
 
-class TestCoordinateValidation:
-    """Test geospatial coordinate input validation."""
+class TestStripDangerousChars:
+    """``strip_dangerous_chars`` removes the configured character set only."""
 
-    def test_valid_latitude_range(self):
-        for lat in [-90, -45, 0, 45, 90]:
-            assert -90 <= lat <= 90
+    @pytest.mark.parametrize(
+        ("raw", "expected"),
+        [
+            ("'; DROP TABLE users; --", " DROP TABLE users --"),
+            ("<script>alert('xss')</script>", "scriptalertxss/script"),
+            ("a | b && `c` $(d)", "a  b  c d"),
+            ("plain text 123", "plain text 123"),
+        ],
+    )
+    def test_strips_characters(
+        self, utils: SecurityUtils, raw: str, expected: str
+    ) -> None:
+        assert utils.strip_dangerous_chars(raw) == expected
 
-    def test_invalid_latitude(self):
-        for lat in [-91, 91, -200, 200]:
-            assert not (-90 <= lat <= 90)
-
-    def test_valid_longitude_range(self):
-        for lon in [-180, -90, 0, 90, 180]:
-            assert -180 <= lon <= 180
-
-    def test_invalid_longitude(self):
-        for lon in [-181, 181, -360, 360]:
-            assert not (-180 <= lon <= 180)
+    def test_deprecated_sanitize_input_alias_removed(self) -> None:
+        assert not hasattr(SecurityUtils, "sanitize_input")
 
 
-class TestPasswordValidation:
-    """Test password strength validation rules."""
+class TestFileUploadValidation:
+    """``validate_file_upload`` enforces extension and size limits."""
 
-    def _check_password_strength(self, password: str) -> dict:
-        issues = []
-        if len(password) < 8:
-            issues.append("too_short")
-        if not any(c.isupper() for c in password):
-            issues.append("no_uppercase")
-        if not any(c.islower() for c in password):
-            issues.append("no_lowercase")
-        if not any(c.isdigit() for c in password):
-            issues.append("no_digit")
-        if not any(c in "!@#$%^&*()-_=+[]{}|;:,.<>?" for c in password):
-            issues.append("no_special")
-        return {"valid": len(issues) == 0, "issues": issues}
+    def test_allowed_extension_within_size(
+        self, utils: SecurityUtils, tmp_path: Path
+    ) -> None:
+        upload = tmp_path / "data.geojson"
+        upload.write_text("{}", encoding="utf-8")
+        assert utils.validate_file_upload(str(upload), [".geojson"]) == (
+            True,
+            "File upload valid",
+        )
 
-    def test_strong_password(self):
-        result = self._check_password_strength("SecureP@ss1")
-        assert result["valid"] is True
+    def test_rejects_extension(self, utils: SecurityUtils, tmp_path: Path) -> None:
+        upload = tmp_path / "payload.exe"
+        upload.write_bytes(b"MZ")
+        valid, message = utils.validate_file_upload(str(upload), [".geojson"])
+        assert valid is False
+        assert ".exe" in message
 
-    def test_weak_password_short(self):
-        result = self._check_password_strength("Ab1!")
-        assert "too_short" in result["issues"]
+    def test_rejects_oversized_file(self, utils: SecurityUtils, tmp_path: Path) -> None:
+        upload = tmp_path / "big.csv"
+        upload.write_bytes(b"0" * (2 * 1024 * 1024))
+        valid, message = utils.validate_file_upload(
+            str(upload), [".csv"], max_size_mb=1
+        )
+        assert valid is False
+        assert "exceeds maximum 1MB" in message
 
-    def test_weak_password_no_uppercase(self):
-        result = self._check_password_strength("password1!")
-        assert "no_uppercase" in result["issues"]
 
-    def test_weak_password_no_digit(self):
-        result = self._check_password_strength("Password!")
-        assert "no_digit" in result["issues"]
+class TestSpatialBounds:
+    """``validate_spatial_bounds`` accepts only WGS84-range geometries."""
+
+    def test_valid_bounds(self) -> None:
+        gdf = gpd.GeoDataFrame(
+            geometry=[Point(-180, -90), Point(180, 90)], crs="EPSG:4326"
+        )
+        assert validate_spatial_bounds(gdf) is True
+
+    @pytest.mark.parametrize("point", [Point(0, 91), Point(181, 0), Point(-200, 0)])
+    def test_out_of_range_bounds(self, point: Point) -> None:
+        gdf = gpd.GeoDataFrame(geometry=[Point(0, 0), point])
+        assert validate_spatial_bounds(gdf) is False
+
+    def test_empty_or_non_geodataframe(self) -> None:
+        assert validate_spatial_bounds(gpd.GeoDataFrame(geometry=[])) is False
+        assert validate_spatial_bounds([Point(0, 0)]) is False
+
+
+class TestSimplePasswordHashing:
+    """``hash_password_simple``/``verify_password_simple`` round-trip."""
+
+    def test_round_trip(self) -> None:
+        stored = hash_password_simple("SecureP@ss1")
+        assert verify_password_simple("SecureP@ss1", stored) is True
+        assert verify_password_simple("wrong", stored) is False
+
+    def test_malformed_hash_is_rejected(self) -> None:
+        assert verify_password_simple("anything", "not-base64!") is False

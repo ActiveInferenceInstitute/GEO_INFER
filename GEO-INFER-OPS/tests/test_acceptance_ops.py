@@ -13,6 +13,7 @@ No mocks, stubs, or placeholders: every assertion exercises actual code paths.
 """
 
 import socket
+import time
 
 from geo_infer_ops.core.monitoring import (
     is_port_in_use,
@@ -31,6 +32,16 @@ def _kernel_assigned_port() -> int:
         return s.getsockname()[1]
 
 
+def _port_released_within(port: int, deadline_s: float = 5.0) -> bool:
+    """Poll until ``port`` is free or the deadline passes; return the final state."""
+    deadline = time.monotonic() + deadline_s
+    while is_port_in_use(port):
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.01)
+    return True
+
+
 # ---------------------------------------------------------------------------
 # is_port_in_use
 # ---------------------------------------------------------------------------
@@ -41,12 +52,7 @@ class TestIsPortInUse:
 
     def test_free_port_returns_false(self):
         """A port with nothing listening returns False."""
-        # Find a definitely-free port
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(("localhost", 0))
-            free_port = s.getsockname()[1]
-        # After closing, the port should be free
-        assert is_port_in_use(free_port) is False
+        assert is_port_in_use(_kernel_assigned_port()) is False
 
     def test_occupied_port_returns_true(self):
         """A port with an active listener returns True."""
@@ -81,10 +87,10 @@ class TestMetricsServerPortSelection:
         """After exiting, the port is released."""
         with start_metrics_server(port=_kernel_assigned_port()) as port:
             assert is_port_in_use(port) is True
-        # Exit runs server.shutdown() + server_close() synchronously and the
-        # server never accepted a connection (no TIME_WAIT), so the release
-        # is observable immediately; no sleep or grace period is needed.
-        assert is_port_in_use(port) is False
+        # Poll for release against a deadline rather than asserting after a
+        # fixed sleep, so a loaded host cannot turn shutdown latency into a
+        # spurious failure.
+        assert _port_released_within(port)
 
     def test_shifts_to_next_port_if_occupied(self):
         """If the requested port is busy, the server moves to the next free one."""

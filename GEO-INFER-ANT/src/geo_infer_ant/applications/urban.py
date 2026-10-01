@@ -650,7 +650,7 @@ class UrbanTrafficSwarm:
         # Assign routes based on optimization results
         route_recommendations = optimization.get("route_recommendations", {})
 
-        for i, vehicle in enumerate(sorted_vehicles):
+        for vehicle in sorted_vehicles:
             vehicle_type = vehicle.get("type", "autonomous_cars")
             route_data = route_recommendations.get(vehicle_type, {})
 
@@ -892,7 +892,7 @@ class UrbanTrafficSwarm:
                 volumes = [entry.get("volume", 0) for entry in time_series]
                 peak_threshold = np.percentile(volumes, 80)  # 80th percentile
 
-                for i, entry in enumerate(time_series):
+                for entry in time_series:
                     if entry.get("volume", 0) > peak_threshold:
                         analysis["peak_periods"].append(
                             {

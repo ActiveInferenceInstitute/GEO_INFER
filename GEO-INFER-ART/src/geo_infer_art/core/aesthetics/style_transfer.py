@@ -61,13 +61,16 @@ class StyleTransfer:
         self,
         style_image: str | np.ndarray | Image.Image | None = None,
         content_image: str | np.ndarray | Image.Image | None = None,
-    ):
+        seed: int | np.random.Generator | None = None,
+    ) -> None:
         """
         Initialize a StyleTransfer object.
 
         Args:
             style_image: Path to style image or image array/object
             content_image: Path to content image or image array/object
+            seed: Integer seed or ``np.random.Generator`` for preprocessing
+                noise; ``None`` draws fresh entropy.
 
         Raises:
             ImportError: If TensorFlow is not available for neural style transfer
@@ -75,12 +78,13 @@ class StyleTransfer:
         if not TF_AVAILABLE:
             raise ImportError(
                 "TensorFlow is required for StyleTransfer. "
-                "Install it with 'uv pip install tensorflow'."
+                "Install it with 'uv sync --package geo-infer-art --extra neural'."
             )
 
         self.style_image: Image.Image | None = None
         self.content_image: Image.Image | None = None
         self.model: Any | None = None
+        self.rng: np.random.Generator = np.random.default_rng(seed)
         requested_device = os.environ.get("GEO_INFER_ART_TF_DEVICE", "CPU").upper()
         if requested_device not in {"CPU", "GPU"}:
             raise ValueError("GEO_INFER_ART_TF_DEVICE must be CPU or GPU")
@@ -305,7 +309,7 @@ class StyleTransfer:
         if not TF_AVAILABLE:
             raise ImportError(
                 "TensorFlow is required for StyleTransfer. "
-                "Install it with 'uv pip install tensorflow'."
+                "Install it with 'uv sync --package geo-infer-art --extra neural'."
             )
 
         # Create a StyleTransfer instance
@@ -624,7 +628,7 @@ class StyleTransfer:
         if self.content_image is None:
             return
         arr = np.array(self.content_image, dtype=np.float32)
-        noise = np.random.normal(loc=0.0, scale=8.0, size=arr.shape)
+        noise = self.rng.normal(loc=0.0, scale=8.0, size=arr.shape)
         arr = np.clip(arr + noise, 0, 255).astype(np.uint8)
         self.content_image = Image.fromarray(arr)
 

@@ -7,7 +7,6 @@ Tests workspace within `GEO-INFER-ART`.
 - `integration/`
 - `unit/`
 - `conftest.py`
-- `run_all_tests.py`
 - `test_generative_terrain.py`
 
 ## Public Interface
@@ -20,14 +19,13 @@ Tests workspace within `GEO-INFER-ART`.
 - `conftest.py:color_palette` (function)
 - `conftest.py:sample_terrain_data` (function)
 - `conftest.py:pytest_collection_modifyitems` (function)
-- `run_all_tests.py:run_all_tests` (function)
 
 ## Module Metadata
 
 - Module: `GEO-INFER-ART`
 - Package: `geo_infer_art`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-ART`
+- Install: `uv sync --package geo-infer-art`
 - Tests: `uv run python -m pytest GEO-INFER-ART/tests`
 
 ## Dependencies

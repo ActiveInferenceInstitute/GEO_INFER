@@ -96,7 +96,7 @@ def sample_disease_reports(sample_locations):
 
 
 @pytest.fixture
-def sample_population_data(sample_locations):
+def sample_population_data():
     """Create sample PopulationData objects for testing."""
     population_data = []
     age_distributions = [
@@ -105,11 +105,11 @@ def sample_population_data(sample_locations):
         {"0-18": 35000, "19-65": 55000, "65+": 15000},
     ]
 
-    for i, location in enumerate(sample_locations[:3]):
+    for i, age_distribution in enumerate(age_distributions):
         pop_data = PopulationData(
             area_id=f"area_{i + 1}",
-            population_count=sum(age_distributions[i].values()),
-            age_distribution=age_distributions[i],
+            population_count=sum(age_distribution.values()),
+            age_distribution=age_distribution,
         )
         population_data.append(pop_data)
 

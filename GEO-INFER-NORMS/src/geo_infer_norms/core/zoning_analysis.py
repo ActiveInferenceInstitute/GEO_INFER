@@ -19,6 +19,18 @@ from ..models.zoning import ZoningCode, LandUseType, ZoningDistrict
 
 logger = logging.getLogger(__name__)
 
+#: Global cylindrical equal-area CRS (WGS 84 / NSIDC EASE-Grid 2.0) used for
+#: every area statistic, so hectares are true ground area at any latitude.
+EQUAL_AREA_CRS = "EPSG:6933"
+M2_PER_HECTARE = 10_000.0
+
+
+def _equal_area_m2(gdf: gpd.GeoDataFrame) -> pd.Series:
+    """Return per-geometry ground area in square metres."""
+    if gdf.crs is None:
+        raise ValueError("area statistics require a GeoDataFrame with a CRS")
+    return gdf.to_crs(EQUAL_AREA_CRS).geometry.area
+
 
 class ZoningAnalyzer:
     """
@@ -481,12 +493,13 @@ class ZoningAnalyzer:
             return {"error": "No zoning districts available for analysis"}
 
         districts_gdf = self.export_districts_to_geodataframe()
+        area_hectares = _equal_area_m2(districts_gdf) / M2_PER_HECTARE
 
         # Basic counts
         stats = {
             "total_districts": len(self.zoning_districts),
             "total_zoning_codes": len(self.zoning_codes),
-            "total_area_hectares": districts_gdf.geometry.area.sum() / 10000,
+            "total_area_hectares": float(area_hectares.sum()),
             "total_population": sum(d.population for d in self.zoning_districts),
             "total_employment": sum(d.employment for d in self.zoning_districts),
         }
@@ -502,11 +515,8 @@ class ZoningAnalyzer:
         # Area by category
         area_by_category = {}
         for category in category_counts.keys():
-            area = (
-                districts_gdf[districts_gdf["category"] == category].geometry.area.sum()
-                / 10000
-            )
-            area_by_category[category] = area
+            mask = districts_gdf["category"] == category
+            area_by_category[category] = float(area_hectares[mask].sum())
         stats["area_by_category_hectares"] = area_by_category
 
         # Population density statistics
@@ -658,11 +668,15 @@ class ZoningAnalyzer:
         report.append("-" * 20)
         report.append(f"Total Zoning Districts: {stats['total_districts']}")
         report.append(f"Total Zoning Codes: {stats['total_zoning_codes']}")
-        report.append(".2f")
+        report.append(f"Total Area: {stats['total_area_hectares']:.2f} ha")
         report.append(f"Total Population: {stats['total_population']:,}")
         report.append(f"Total Employment: {stats['total_employment']:,}")
-        report.append(".1f")
-        report.append(".1f")
+        report.append(
+            f"Population Density: {stats['overall_population_density']:.1f} per ha"
+        )
+        report.append(
+            f"Employment Density: {stats['overall_employment_density']:.1f} per ha"
+        )
         report.append("")
 
         report.append("2. ZONING CODE DISTRIBUTION")
@@ -699,7 +713,9 @@ class ZoningAnalyzer:
                 report.append(
                     f"      ↔ {conflict['district2_name']} ({conflict['district2_code']})"
                 )
-                report.append(".3f")
+                report.append(
+                    f"      Compatibility: {conflict['compatibility_score']:.3f}"
+                )
                 report.append(f"      Severity: {conflict['severity']}")
                 report.append("")
 
@@ -1037,9 +1053,10 @@ class LandUseClassifier:
             logger.error(results["message"])
             return results
 
-        # Reproject for accurate area calculation (using EPSG:3857 as a common web mercator)
+        # Areas come from an equal-area projection; Web Mercator inflates area
+        # with latitude and geographic degrees are not an area unit.
         try:
-            gdf_proj = land_use_gdf.to_crs(epsg=3857)
+            gdf_proj = land_use_gdf.to_crs(EQUAL_AREA_CRS)
         except Exception as e:
             logger.error(f"Failed to reproject GeoDataFrame for area calculation: {e}")
             results["status"] = "error"
@@ -1047,7 +1064,6 @@ class LandUseClassifier:
             return results
 
         gdf_proj["area"] = gdf_proj.geometry.area
-        # land_use_gdf['area'] = land_use_gdf.geometry.area # Original line
 
         total_area = gdf_proj["area"].sum()
         results["total_area"] = total_area

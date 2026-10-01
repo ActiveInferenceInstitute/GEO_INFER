@@ -127,7 +127,7 @@ def test_record_request_multiple():
     reset_metrics()
 
     # Record multiple requests
-    for i in range(5):
+    for _ in range(5):
         record_request("test_module", "/test", 200, 0.1)
 
     # Check request count
@@ -153,7 +153,7 @@ def test_record_error_multiple():
     reset_metrics()
 
     # Record multiple errors
-    for i in range(3):
+    for _ in range(3):
         record_error("test_module", "test_error")
 
     # Check error count

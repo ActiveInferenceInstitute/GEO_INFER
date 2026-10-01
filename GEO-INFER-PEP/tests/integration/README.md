@@ -15,7 +15,7 @@ Integration workspace within `GEO-INFER-PEP`.
 - Module: `GEO-INFER-PEP`
 - Package: `geo_infer_pep`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-PEP`
+- Install: `uv sync --package geo-infer-pep`
 - Tests: `uv run python -m pytest GEO-INFER-PEP/tests/integration`
 
 ## Dependencies

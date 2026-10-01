@@ -105,7 +105,7 @@ class TestConfigValidation:
             }
         }
 
-        with pytest.raises(Exception):  # ValidationError
+        with pytest.raises(ValueError, match="semantic version"):
             validate_config(invalid_config)
 
     def test_health_config_creation(self):
@@ -366,12 +366,13 @@ class TestConfigErrorHandling:
         finally:
             os.unlink(temp_path)
 
-    def test_save_config_invalid_path(self):
-        """Test saving configuration to invalid path."""
-        config_data = {"test": "data"}
+    def test_save_config_invalid_path(self, tmp_path: Path) -> None:
+        """Saving below a regular file fails regardless of user privileges."""
+        blocker = tmp_path / "blocker"
+        blocker.write_text("not a directory", encoding="utf-8")
 
-        with pytest.raises(Exception):
-            save_config(config_data, "/invalid/path/config.yaml")
+        with pytest.raises(NotADirectoryError):
+            save_config({"test": "data"}, blocker / "nested" / "config.yaml")
 
     def test_validate_config_type_mismatch(self):
         """Test validation with type mismatches."""
@@ -381,5 +382,5 @@ class TestConfigErrorHandling:
             }
         }
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError, match="api.port"):
             validate_config(invalid_config)

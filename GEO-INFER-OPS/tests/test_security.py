@@ -174,7 +174,7 @@ def test_security_disabled(security_manager):
 def test_load_keys_failure(security_manager):
     """Test key loading failure."""
     with patch("builtins.open", side_effect=OSError("File not found")):
-        with pytest.raises(Exception):
+        with pytest.raises(OSError, match="File not found"):
             security_manager._load_keys()
 
 

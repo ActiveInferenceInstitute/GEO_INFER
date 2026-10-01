@@ -22,7 +22,7 @@ Unit workspace within `GEO-INFER-ANT`.
 - Module: `GEO-INFER-ANT`
 - Package: `geo_infer_ant`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-ANT`
+- Install: `uv sync --package geo-infer-ant`
 - Tests: `uv run python -m pytest GEO-INFER-ANT/tests/unit`
 
 ## Dependencies

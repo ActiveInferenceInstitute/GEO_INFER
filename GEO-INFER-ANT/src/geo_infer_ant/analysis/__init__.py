@@ -43,11 +43,10 @@ Example:
 
 import logging
 
-# Set up logging
-logger = logging.getLogger(__name__)
-
 from .patterns import SwarmPatternAnalyzer, AnalysisConfiguration
 from .metrics import SwarmPerformanceMetrics, PerformanceConfiguration
+
+logger = logging.getLogger(__name__)
 
 # Export main classes and functions
 __all__ = [

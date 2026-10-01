@@ -538,7 +538,8 @@ def run_validation(args: argparse.Namespace, config: Any) -> None:
     Raises:
         FileNotFoundError: If the input file does not exist.
         ValueError: If the file contains no features.
-        Exception: If the file cannot be read as geospatial data.
+        pyogrio.errors.DataSourceError: If the file cannot be read as
+            geospatial data.
     """
     input_path = Path(args.input)
     logger.info(f"Validating file: {input_path}")

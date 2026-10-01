@@ -35,6 +35,7 @@ class PlaceArt:
         self,
         location: dict[str, Any] | None = None,
         data: gpd.GeoDataFrame | None = None,
+        seed: int | np.random.Generator | None = None,
     ) -> None:
         """
         Initialize a PlaceArt object.
@@ -42,7 +43,10 @@ class PlaceArt:
         Args:
             location: Dictionary with location information (name, coordinates, etc.)
             data: GeoDataFrame with geospatial data for the location
+            seed: Integer seed or ``np.random.Generator`` for texture overlays;
+                ``None`` draws fresh entropy.
         """
+        self.rng: np.random.Generator = np.random.default_rng(seed)
         self.location = location or {}
         self.data = data
         self.image: Image.Image | None = None
@@ -754,7 +758,7 @@ class PlaceArt:
 
         if texture_type == "paper":
             # Create paper-like texture
-            texture = np.random.randint(240, 255, (height, width, 3), dtype=np.uint8)
+            texture = self.rng.integers(240, 255, (height, width, 3), dtype=np.uint8)
             texture_img = Image.fromarray(texture)
 
             # Blend with original
@@ -762,7 +766,7 @@ class PlaceArt:
 
         elif texture_type == "canvas":
             # Create canvas-like texture
-            texture = np.random.randint(245, 255, (height, width, 3), dtype=np.uint8)
+            texture = self.rng.integers(245, 255, (height, width, 3), dtype=np.uint8)
             # Add some subtle variations
             texture[::10, ::10] = [240, 240, 240]
             texture_img = Image.fromarray(texture)

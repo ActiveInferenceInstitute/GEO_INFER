@@ -172,14 +172,20 @@ class CustomAlgorithmFramework:
 
     def load_algorithms_from_file(self, filepath: str) -> None:
         """
-        Load algorithms from a JSON file.
+        Load algorithms from a JSON file written by :meth:`save_algorithms_to_file`.
+
+        Every entry must carry ``metadata``, ``source`` and ``function_name``;
+        the whole file is validated before any source is executed. Entries
+        whose source fails to compile or does not define ``function_name``
+        are skipped with a warning.
 
         Args:
             filepath: Path to the algorithms file
 
         Raises:
             FileNotFoundError: If file doesn't exist
-            ValueError: If file format is invalid
+            ValueError: If the file is not a mapping of entries in the current
+                format (for example an entry without ``function_name``)
         """
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"Algorithms file not found: {filepath}")
@@ -187,30 +193,39 @@ class CustomAlgorithmFramework:
         with open(filepath) as f:
             algorithms_data = json.load(f)
 
+        if not isinstance(algorithms_data, dict):
+            raise ValueError(
+                f"Invalid algorithms file {filepath}: expected a JSON object "
+                "mapping algorithm names to entries"
+            )
+        required_keys = ("metadata", "source", "function_name")
+        for name, data in algorithms_data.items():
+            missing = [
+                key
+                for key in required_keys
+                if not isinstance(data, dict) or key not in data
+            ]
+            if missing:
+                raise ValueError(
+                    f"Invalid algorithms file {filepath}: entry '{name}' is "
+                    f"missing {', '.join(missing)}"
+                )
+
         for name, data in algorithms_data.items():
             metadata = data["metadata"]
             source = data["source"]
+            function_name = data["function_name"]
 
             # Recreate the function from its saved source
             try:
                 module = types.ModuleType(f"geo_infer_art_loaded_{name}")
                 exec(compile(source, f"<algorithm:{name}>", "exec"), module.__dict__)
 
-                function_name = data.get("function_name")
-                if function_name and hasattr(module, function_name):
-                    algorithm_function = getattr(module, function_name)
-                else:
-                    # Legacy saved files carry no function name; fall back to the
-                    # single function defined by the source.
-                    defined = [
-                        v for v in module.__dict__.values() if inspect.isfunction(v)
-                    ]
-                    if len(defined) != 1:
-                        raise ValueError(
-                            "cannot identify the algorithm function in the saved "
-                            "source; it must define exactly one function"
-                        )
-                    algorithm_function = defined[0]
+                algorithm_function = getattr(module, function_name, None)
+                if not inspect.isfunction(algorithm_function):
+                    raise ValueError(
+                        f"saved source does not define function '{function_name}'"
+                    )
 
                 # Re-register the algorithm
                 self.register_algorithm(
@@ -273,13 +288,15 @@ def example_cellular_growth_algorithm(
 
     Args:
         data: Input data (can influence growth patterns)
-        params: Parameters including 'seed_points', 'growth_rate', etc.
+        params: Parameters including 'seed_points', 'growth_rate' and an
+            optional 'seed' (int or ``np.random.Generator``) for placement.
         width: Output width
         height: Output height
 
     Returns:
         Matplotlib figure
     """
+    rng = np.random.default_rng(params.get("seed"))
     seed_points = params.get("seed_points", 5)
     growth_rate = params.get("growth_rate", 1.5)
     max_radius = params.get("max_radius", min(width, height) / 4)
@@ -291,8 +308,8 @@ def example_cellular_growth_algorithm(
     # Initialize with seed points
     cells = []
     for i in range(seed_points):
-        x = np.random.uniform(width * 0.2, width * 0.8)
-        y = np.random.uniform(height * 0.2, height * 0.8)
+        x = rng.uniform(width * 0.2, width * 0.8)
+        y = rng.uniform(height * 0.2, height * 0.8)
         cells.append([x, y, 0, i % len(["red", "green", "blue", "yellow"])])
 
     # Simulate growth
@@ -357,7 +374,7 @@ def example_fractal_landscape_algorithm(
     frequency = 1.0
     max_value = 0.0
 
-    for i in range(octaves):
+    for _ in range(octaves):
         noise += amplitude * np.sin(X * frequency * 0.1) * np.cos(Y * frequency * 0.1)
         max_value += amplitude
         amplitude *= persistence

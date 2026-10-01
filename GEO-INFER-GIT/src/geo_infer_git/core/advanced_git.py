@@ -177,7 +177,7 @@ class SubmoduleManager:
 
         except git.GitCommandError as e:
             logger.error(f"Error initializing submodules: {e}")
-            raise GitOperationError(f"Submodule initialization failed: {e}")
+            raise GitOperationError(f"Submodule initialization failed: {e}") from e
 
         return results
 
@@ -222,7 +222,7 @@ class SubmoduleManager:
 
         except git.GitCommandError as e:
             logger.error(f"Error updating submodules: {e}")
-            raise GitOperationError(f"Submodule update failed: {e}")
+            raise GitOperationError(f"Submodule update failed: {e}") from e
 
         return results
 
@@ -985,7 +985,7 @@ def create_advanced_git_operations(
 
         return AdvancedGitOperations(repo_path)
 
-    except git.InvalidGitRepositoryError:
-        raise GitOperationError(f"Invalid Git repository: {repo_path}")
+    except git.InvalidGitRepositoryError as exc:
+        raise GitOperationError(f"Invalid Git repository: {repo_path}") from exc
     except Exception as e:
-        raise GitOperationError(f"Error accessing repository {repo_path}: {e}")
+        raise GitOperationError(f"Error accessing repository {repo_path}: {e}") from e

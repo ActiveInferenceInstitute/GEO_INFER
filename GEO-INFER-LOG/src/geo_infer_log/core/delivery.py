@@ -13,6 +13,9 @@ from shapely.geometry import Point, Polygon
 from shapely.ops import unary_union, voronoi_diagram
 from datetime import datetime, timedelta
 
+from geo_infer_log.models.schemas import Vehicle, Location, Route, RoutingParameters
+from geo_infer_log.core.routing import RouteOptimizer
+
 try:
     from sklearn.cluster import KMeans
 
@@ -30,10 +33,6 @@ _DEG_PER_KM_LAT = 1.0 / 111.32
 def _deg_per_km_lon(lat_deg: float) -> float:
     """Return the number of degrees of longitude per km at a given latitude."""
     return 1.0 / (111.32 * math.cos(math.radians(lat_deg)))
-
-
-from geo_infer_log.models.schemas import Vehicle, Location, Route, RoutingParameters
-from geo_infer_log.core.routing import RouteOptimizer
 
 
 class LastMileRouter:
@@ -323,7 +322,7 @@ class DeliveryScheduler:
         # Find and remove the delivery from its current route
         original_route = None
         removed_delivery = None
-        for date_str, routes in self.schedule.items():
+        for routes in self.schedule.values():
             for route in routes:
                 if route.id == route_id:
                     original_route = route

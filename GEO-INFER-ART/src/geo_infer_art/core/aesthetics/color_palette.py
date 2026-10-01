@@ -226,8 +226,8 @@ class ColorPalette:
 
             return cls(name=name, colors=colors, n_colors=n_colors)
 
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Image file not found: {image_path}")
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(f"Image file not found: {image_path}") from exc
         except Exception as e:
             raise ValueError(f"Failed to extract colors from image: {str(e)}") from e
 

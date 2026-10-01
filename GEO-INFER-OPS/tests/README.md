@@ -34,7 +34,7 @@ Tests workspace within `GEO-INFER-OPS`.
 - Module: `GEO-INFER-OPS`
 - Package: `geo_infer_ops`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-OPS`
+- Install: `uv sync --package geo-infer-ops`
 - Tests: `uv run python -m pytest GEO-INFER-OPS/tests`
 
 ## Dependencies

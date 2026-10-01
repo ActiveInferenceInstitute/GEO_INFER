@@ -344,6 +344,9 @@ def main() -> None:
             f"Cloning complete: {results['success_repos']}/{results['total_repos']} repositories cloned successfully ({success_rate:.2f}%)"
         )
 
+    except KeyboardInterrupt:
+        logger.info("Operation canceled by user.")
+        raise SystemExit(1) from None
     finally:
         # Clean up resources
         repo_cloner.close()

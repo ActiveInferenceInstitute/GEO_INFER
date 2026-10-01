@@ -9,12 +9,12 @@ from ..models.talent_models import (
     CandidateStatus,
     JobRequisitionStatus,
 )
-
-logger = logging.getLogger(__name__)
 from ..talent.transformer import (
     convert_candidates_to_dataframe,
     convert_requisitions_to_dataframe,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def generate_candidate_pipeline_report(
@@ -39,11 +39,10 @@ def generate_candidate_pipeline_report(
     if requisitions:
         req_df = convert_requisitions_to_dataframe(requisitions)
         if not req_df.empty:
-            # Merge or join candidate data with requisition data if needed for more detailed report
-            # For now, just list active requisitions and their candidate counts by status
+            # Active requisitions with their candidate counts by status.
             pipeline_by_req = {}
             active_reqs = req_df[req_df["status"] == JobRequisitionStatus.OPEN]
-            for index, req in active_reqs.iterrows():
+            for _, req in active_reqs.iterrows():
                 req_id = req["requisition_id"]
                 req_cands = cand_df[cand_df["job_requisition_id"] == req_id]
                 pipeline_by_req[req_id] = {

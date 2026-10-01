@@ -17,9 +17,9 @@ import logging
 before_handlers = len(logging.root.handlers)
 before_level = logging.root.level
 
-import geo_infer_ops  # noqa: F401
-import geo_infer_ops.core  # noqa: F401
-import geo_infer_ops.utils.shared_logging  # noqa: F401
+import geo_infer_ops  # noqa: F401 -- import side effect under test
+import geo_infer_ops.core  # noqa: F401 -- import side effect under test
+import geo_infer_ops.utils.shared_logging  # noqa: F401 -- import side effect under test
 
 after_handlers = len(logging.root.handlers)
 after_level = logging.root.level

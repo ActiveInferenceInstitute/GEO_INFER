@@ -5,24 +5,20 @@ Tests GeospatialAnonymizer and GeospatialEncryption working together in a full
 data protection pipeline using real geospatial data.
 """
 
+import importlib.util
+
 import pytest
 import numpy as np
 
 try:
     import geopandas as gpd
     from shapely.geometry import Point, Polygon
-    import pandas as pd  # noqa: F401
 
     HAS_GEO_DEPS = True
 except ImportError:
     HAS_GEO_DEPS = False
 
-try:
-    from cryptography.fernet import Fernet  # noqa: F401
-
-    HAS_CRYPTO = True
-except ImportError:
-    HAS_CRYPTO = False
+HAS_CRYPTO = importlib.util.find_spec("cryptography") is not None
 
 
 pytestmark = [

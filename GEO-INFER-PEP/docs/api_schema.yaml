@@ -1,14 +1,12 @@
 openapi: 3.0.3
 #
-# STATUS: legacy design artifact, NOT a description of running code. The only
-# implemented REST surface is the FastAPI layer under
-# src/geo_infer_pep/api/. Implemented with real behavior: crm_endpoints,
-# hr_endpoints, talent_endpoints, and the api_router aggregates /pep/health,
-# /pep/status, /pep/dashboard, workflows, validate, and the store-backed
-# /pep/performance/reviews create+get. The remaining aggregate domains
-# (learning, conflicts, surveys) are echo/constant placeholder bodies with no
-# persistence and are DESCOPED. Paths below that do not exist in code are
-# DESCOPED and marked in place.
+# STATUS: design artifact, NOT a description of running code. The
+# implemented REST surface is the FastAPI layer under src/geo_infer_pep/api/:
+# crm_endpoints, hr_endpoints, talent_endpoints, and the api_router aggregates
+# /pep/health, /pep/status, /pep/dashboard, workflows, validate, and the
+# store-backed /pep/performance/reviews, /pep/learning/{courses,enrollments},
+# /pep/conflicts/cases and /pep/surveys endpoints. Paths below that do not
+# exist in code are DESCOPED and marked in place.
 info:
   title: GEO-INFER-PEP API
   description: |
@@ -226,8 +224,8 @@ paths:
   # GET /hr/employees IS implemented (src/geo_infer_pep/api/hr_endpoints.py).
   # The per-employee performance endpoint is DESCOPED: no backing behavior.
   # The shipped performance surface is /pep/performance/reviews (store-backed
-  # create/get) in src/geo_infer_pep/api/__init__.py; this legacy yaml path
-  # itself remains DESCOPED.
+  # create/get) in src/geo_infer_pep/api/__init__.py; this yaml path itself
+  # remains DESCOPED.
   /hr/employees:
     get:
       tags: [hr]

@@ -145,7 +145,7 @@ class CommunicationAPI:
                 self.logger.error(f"Error sending message: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         @self.app.get("/messages", response_model=list[MessageResponse])
         async def get_messages(
@@ -172,7 +172,7 @@ class CommunicationAPI:
                 self.logger.error(f"Error getting messages: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         @self.app.get("/messages/{message_id}", response_model=MessageResponse)
         async def get_message(
@@ -200,7 +200,7 @@ class CommunicationAPI:
                 self.logger.error(f"Error getting message: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         # Channel endpoints
         @self.app.post("/channels", response_model=ChannelResponse)
@@ -231,7 +231,7 @@ class CommunicationAPI:
                 self.logger.error(f"Error creating channel: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         @self.app.get("/channels", response_model=list[ChannelResponse])
         async def get_channels(
@@ -257,7 +257,7 @@ class CommunicationAPI:
                 self.logger.error(f"Error getting channels: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         @self.app.get("/channels/{channel_id}", response_model=ChannelResponse)
         async def get_channel(
@@ -285,7 +285,7 @@ class CommunicationAPI:
                 self.logger.error(f"Error getting channel: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         # Notification endpoints
         @self.app.post("/notifications", response_model=NotificationResponse)
@@ -320,7 +320,7 @@ class CommunicationAPI:
                 self.logger.error(f"Error creating notification: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         @self.app.get("/notifications", response_model=list[NotificationResponse])
         async def get_notifications(
@@ -341,11 +341,11 @@ class CommunicationAPI:
                         from geo_infer_comms.models.message import NotificationStatus
 
                         notification_status = NotificationStatus(status_filter)
-                    except ValueError:
+                    except ValueError as exc:
                         raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
                             detail=f"Invalid notification status: {status_filter}",
-                        )
+                        ) from exc
 
                 notifications = self.system.notification_manager.get_notifications(
                     status=notification_status, limit=limit
@@ -359,7 +359,7 @@ class CommunicationAPI:
                 self.logger.error(f"Error getting notifications: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         # Event endpoints
         @self.app.post("/events", response_model=EventPublishResponse)
@@ -392,7 +392,7 @@ class CommunicationAPI:
                 self.logger.error(f"Error publishing event: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         @self.app.get("/events", response_model=list[EventPublishResponse])
         async def get_events(
@@ -419,7 +419,7 @@ class CommunicationAPI:
                 self.logger.error(f"Error getting events: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         # Broadcast endpoints
         @self.app.post("/messages/broadcast", response_model=BroadcastResponse)
@@ -450,7 +450,7 @@ class CommunicationAPI:
                 self.logger.error(f"Error broadcasting message: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         # Geospatial endpoints
         @self.app.post("/geospatial/distance")
@@ -498,7 +498,7 @@ class CommunicationAPI:
                 self.logger.error(f"Error calculating distance: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         @self.app.get("/geospatial/channels/nearby")
         async def get_nearby_channels(
@@ -534,7 +534,7 @@ class CommunicationAPI:
                 self.logger.error(f"Error finding nearby channels: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         # System metrics endpoint
         @self.app.get("/metrics")
@@ -557,7 +557,7 @@ class CommunicationAPI:
                 self.logger.error(f"Error getting metrics: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
     def _get_credentials(self) -> HTTPBearer | None:
         """Get authentication credentials dependency."""

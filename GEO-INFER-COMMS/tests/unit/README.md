@@ -32,7 +32,7 @@ Unit workspace within `GEO-INFER-COMMS`.
 - Module: `GEO-INFER-COMMS`
 - Package: `geo_infer_comms`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-COMMS`
+- Install: `uv sync --package geo-infer-comms`
 - Tests: `uv run python -m pytest GEO-INFER-COMMS/tests/unit`
 
 ## Dependencies

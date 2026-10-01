@@ -293,7 +293,7 @@ def plot_service_area(
     colors = list(mcolors.TABLEAU_COLORS.values())
 
     # Plot service areas
-    for i, (area_id, area_gdf) in enumerate(service_areas.items()):
+    for i, area_gdf in enumerate(service_areas.values()):
         color = colors[i % len(colors)]
 
         # Ensure the GeoDataFrame is in Web Mercator
@@ -312,7 +312,7 @@ def plot_service_area(
 
         # Add facility labels if 'name' column exists
         if "name" in facilities.columns:
-            for idx, row in facilities.iterrows():
+            for _, row in facilities.iterrows():
                 ax.annotate(
                     row["name"],
                     (row.geometry.x, row.geometry.y),

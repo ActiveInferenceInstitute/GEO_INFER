@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Body, Query
-from typing import Optional, Any
+from typing import Any
 
 from geo_infer_health.models import HealthFacility, Location, PopulationData
 from geo_infer_health.core.healthcare_accessibility import (
@@ -71,7 +71,7 @@ async def find_nearby_facilities(
 
 
 @router.post(
-    "/facilities/nearest", response_model=Optional[dict[str, Any]]
+    "/facilities/nearest", response_model=dict[str, Any] | None
 )  # HealthFacility and distance
 async def get_nearest_facility_endpoint(
     latitude: float = Query(..., description="Latitude of the origin point."),
@@ -101,7 +101,7 @@ async def get_nearest_facility_endpoint(
 
 
 @router.get(
-    "/facility_population_ratio/{area_id}", response_model=Optional[dict[str, Any]]
+    "/facility_population_ratio/{area_id}", response_model=dict[str, Any] | None
 )
 async def get_facility_population_ratio(
     area_id: str,

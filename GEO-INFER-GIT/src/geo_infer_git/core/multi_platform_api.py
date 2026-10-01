@@ -350,7 +350,7 @@ class GitLabAPI:
             repo_data = response.json()
             return GitLabRepository.from_api_response(repo_data)
 
-        except requests.RequestException:
+        except requests.RequestException as exc:
             # Method 2: Search by name
             endpoint = "/projects"
             params = {"search": repo, "per_page": 1}
@@ -361,7 +361,9 @@ class GitLabAPI:
             if projects:
                 return GitLabRepository.from_api_response(projects[0])
             else:
-                raise requests.RequestException(f"Repository {owner}/{repo} not found")
+                raise requests.RequestException(
+                    f"Repository {owner}/{repo} not found"
+                ) from exc
 
     def check_credentials(self) -> bool:
         """Check if GitLab credentials are valid."""

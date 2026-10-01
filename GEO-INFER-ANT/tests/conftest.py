@@ -5,16 +5,11 @@ Provides distance matrices, pheromone grids on H3 cells,
 ant colony configurations, and standard spatial fixtures.
 """
 
-import pytest
-import numpy as np
-
-
-def pytest_configure(config):
-    config.addinivalue_line("markers", "slow: marks tests as slow")
-
-
 from pathlib import Path
 from typing import Any
+
+import numpy as np
+import pytest
 
 
 @pytest.fixture(scope="session")

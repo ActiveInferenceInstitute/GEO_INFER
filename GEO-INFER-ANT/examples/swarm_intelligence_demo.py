@@ -16,21 +16,16 @@ Usage:
 This will run a complete simulation and generate analysis results.
 """
 
-import numpy as np
 import asyncio
+import json
 import logging
 from datetime import datetime, timedelta
-import json
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+import numpy as np
 
-# Import GEO-INFER-ANT modules. There is deliberately no mock fallback:
-# a broken environment must fail loudly instead of "demonstrating" with
-# simulated components.
+# There is deliberately no mock fallback: a broken environment must fail
+# loudly instead of "demonstrating" with simulated components.
+import geo_infer_ant
 from geo_infer_ant.core.agent_base import SwarmAgent
 from geo_infer_ant.core.population import AgentPopulation
 from geo_infer_ant.core.stigmergy import PheromoneSystem
@@ -41,7 +36,10 @@ from geo_infer_ant.algorithms.abc import ArtificialBeeColony
 from geo_infer_ant.applications.environmental import EnvironmentalMonitoringSwarm
 from geo_infer_ant.analysis.patterns import SwarmPatternAnalyzer
 
-import geo_infer_ant
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 logger.info(
     "GEO-INFER-ANT %s modules imported successfully",
@@ -71,7 +69,7 @@ def generate_sample_data():
         agent_trajectory = [start_pos]
         current_pos = start_pos.copy()
 
-        for step in range(n_time_steps):
+        for _ in range(n_time_steps):
             # Movement with social attraction
             center_attraction = -0.1 * (
                 current_pos - np.array([0, 0])
@@ -86,7 +84,7 @@ def generate_sample_data():
 
     # Generate communication data
     communication_data = []
-    for i in range(100):  # 100 communication events
+    for _ in range(100):  # 100 communication events
         comm = {
             "from": f"agent_{np.random.randint(0, n_agents)}",
             "to": f"agent_{np.random.randint(0, n_agents)}",
@@ -98,7 +96,7 @@ def generate_sample_data():
 
     # Generate sensor readings
     sensor_readings = []
-    for i in range(200):  # 200 sensor readings
+    for _ in range(200):  # 200 sensor readings
         reading = {
             "agent_id": f"agent_{np.random.randint(0, n_agents)}",
             "sensor_type": np.random.choice(["temperature", "humidity", "pm25", "no2"]),
@@ -625,7 +623,7 @@ async def main():
         print(f"Components tested: {results['components_tested']}")
 
         print("\n📊 RESULTS SUMMARY:")
-        for component, data in results["results"].items():
+        for component in results["results"]:
             print(f"  {component}: ✓")
 
         print("📁 Results saved to file for detailed analysis")

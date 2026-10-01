@@ -215,7 +215,7 @@ async def create_network(
         model.load_network(request.network)
         return {"status": "success", "message": f"Network {request.network.id} created"}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/flow", response_model=dict)
@@ -232,7 +232,7 @@ async def optimize_flow(
         )
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/resilience/disruption", response_model=dict)
@@ -248,7 +248,7 @@ async def analyze_disruption(
         )
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/resilience/critical-nodes", response_model=list[str])
@@ -259,7 +259,7 @@ async def get_critical_nodes(
     try:
         return analyzer.identify_critical_nodes()
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/resilience/improvements", response_model=list[dict])
@@ -270,7 +270,7 @@ async def get_improvement_suggestions(
     try:
         return analyzer.suggest_improvements()
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/facility-location", response_model=list[dict])
@@ -288,7 +288,7 @@ async def optimize_facility_locations(
         )
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/network-optimization", response_model=dict)
@@ -305,4 +305,4 @@ async def optimize_network(
         )
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e

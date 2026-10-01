@@ -273,7 +273,7 @@ class NormativeAPI:
         try:
             return shape(geojson)
         except Exception as e:
-            raise ValueError(f"Invalid geometry: {str(e)}")
+            raise ValueError(f"Invalid geometry: {str(e)}") from e
 
     def _social_norm_to_dict(self, norm: dict[str, Any]) -> dict[str, Any]:
         """
@@ -364,7 +364,7 @@ class NormativeAPI:
                 "norm_id": norm_id,
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def list_social_norms(
         self,
@@ -406,7 +406,7 @@ class NormativeAPI:
 
             return [self._social_norm_to_dict(n) for n in norms]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_social_norm(
         self, norm_id: str = Path(..., description="ID of the social norm")
@@ -430,7 +430,7 @@ class NormativeAPI:
 
             return self._social_norm_to_dict(norm)
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Norm diffusion endpoints
 
@@ -512,7 +512,7 @@ class NormativeAPI:
                 "adoption_summary": summary,
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_diffusion_factors(
         self, norm_id: str = Path(..., description="ID of the social norm")
@@ -553,7 +553,7 @@ class NormativeAPI:
                 ),
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Normative inference endpoints
 
@@ -654,9 +654,9 @@ class NormativeAPI:
             raise HTTPException(
                 status_code=500,
                 detail=f"Norm condition evaluation failed: {e}",
-            )
+            ) from e
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def analyze_spatial_patterns(
         self, inference_request: NormativeInferenceRequest
@@ -698,7 +698,7 @@ class NormativeAPI:
                 "analysis_id": f"spatial-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}",
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Policy impact endpoints
 
@@ -804,7 +804,7 @@ class NormativeAPI:
                 },
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Spatial query endpoints
 
@@ -827,7 +827,7 @@ class NormativeAPI:
             ]
             return [self._social_norm_to_dict(n) for n in norms]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Export endpoints
 
@@ -888,4 +888,4 @@ class NormativeAPI:
                 "geojson": geojson,
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e

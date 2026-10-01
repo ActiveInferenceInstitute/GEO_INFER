@@ -67,7 +67,7 @@ def create_sample_disease_data():
         current_date = base_time - timedelta(days=29 - day)
 
         for loc_idx, location in enumerate(locations):
-            for disease_idx, disease in enumerate(diseases):
+            for disease in diseases:
                 # Simulate disease patterns
                 base_cases = 1
 
@@ -247,18 +247,8 @@ def create_sample_population_data():
     """Create sample population data."""
     logger.info("Creating sample population data...")
 
-    base_location = Location(latitude=34.0522, longitude=-118.2437)
-
     population_areas = []
     for i in range(5):
-        lat_offset = (i % 3 - 1) * 0.03
-        lon_offset = (i // 3) * 0.03
-
-        location = Location(
-            latitude=base_location.latitude + lat_offset,
-            longitude=base_location.longitude + lon_offset,
-        )
-
         population = PopulationData(
             area_id=f"area_{i}",
             population_count=50000 + i * 20000,

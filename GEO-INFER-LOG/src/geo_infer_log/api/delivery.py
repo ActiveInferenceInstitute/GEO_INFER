@@ -229,7 +229,7 @@ async def optimize_deliveries(
         # Convert route objects to dictionaries
         return [route.model_dump() for route in routes]
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/schedule", response_model=dict)
@@ -249,7 +249,7 @@ async def create_schedule(
         )
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/schedule/{date}", response_model=list[dict])
@@ -265,7 +265,7 @@ async def get_daily_schedule(
         # Convert route objects to dictionaries
         return [route.model_dump() for route in routes]
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/schedule/vehicle/{vehicle_id}", response_model=list[dict])
@@ -279,7 +279,7 @@ async def get_vehicle_schedule(
         # Convert route objects to dictionaries
         return [route.model_dump() for route in routes]
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/reschedule", response_model=dict)
@@ -296,7 +296,7 @@ async def reschedule_delivery(
         )
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/service-area", response_model=dict)
@@ -323,7 +323,7 @@ async def create_service_area(
             "area": geo_json,
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/coverage", response_model=dict)
@@ -373,4 +373,4 @@ async def analyze_coverage(
             "depot_coverage": depot_coverage,
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e

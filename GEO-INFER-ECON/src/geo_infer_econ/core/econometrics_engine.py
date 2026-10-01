@@ -431,7 +431,9 @@ class SpatialEconometricsEngine(BaseEstimator, RegressorMixin):
         )
 
         if not result.success:
-            warnings.warn(f"SAR model optimization failed: {result.message}")
+            warnings.warn(
+                f"SAR model optimization failed: {result.message}", stacklevel=2
+            )
             # Fall back to OLS
             rho, beta, sigma2 = 0.0, beta_ols, sigma2_ols
         else:
@@ -557,7 +559,9 @@ class SpatialEconometricsEngine(BaseEstimator, RegressorMixin):
             fitted_values = X @ beta
             residuals = y - fitted_values
         else:
-            warnings.warn(f"SEM model optimization failed: {result.message}")
+            warnings.warn(
+                f"SEM model optimization failed: {result.message}", stacklevel=2
+            )
             beta, lambda_param, sigma2 = beta_ols, 0.0, sigma2_ols
             fitted_values = X @ beta
             residuals = y - fitted_values
@@ -677,7 +681,9 @@ class SpatialEconometricsEngine(BaseEstimator, RegressorMixin):
             lambda_param = result.x[k + 1]
             sigma2 = result.x[k + 2]
         else:
-            warnings.warn(f"SAC model optimization failed: {result.message}")
+            warnings.warn(
+                f"SAC model optimization failed: {result.message}", stacklevel=2
+            )
             rho, beta, lambda_param, sigma2 = 0.0, beta_ols, 0.0, sigma2_ols
 
         # Conditional mean: E[y] = (I - rho*W)^{-1} X beta

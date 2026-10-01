@@ -657,7 +657,7 @@ class AntColonyOptimization:
     def _update_pheromones(self, solutions: list[dict[str, Any]]) -> None:
         """Update pheromone trails based on solution quality."""
         # Evaporate pheromones
-        for edge, pheromone in self.pheromone_matrix.items():
+        for edge in self.pheromone_matrix:
             self.pheromone_matrix[edge] *= (
                 1 - self.parameters.pheromone_evaporation_rate
             )
@@ -867,7 +867,7 @@ class AntColonyOptimization:
 
         pareto_solutions: list = []
 
-        for gen in range(generations):
+        for _ in range(generations):
             # Construct ant solutions
             solutions = self._construct_solutions()
 

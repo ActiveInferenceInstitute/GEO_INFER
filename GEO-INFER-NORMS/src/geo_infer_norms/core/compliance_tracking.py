@@ -867,7 +867,7 @@ class ComplianceReport:
         time_points = []
         current_date = end_date
 
-        for i in range(months_back):
+        for _ in range(months_back):
             # Move back one month
             if current_date.month == 1:
                 new_month = 12
@@ -932,7 +932,7 @@ class ComplianceReport:
         time_points = []
         current_date = end_date
 
-        for i in range(months_back):
+        for _ in range(months_back):
             # Move back one month
             if current_date.month == 1:
                 new_month = 12

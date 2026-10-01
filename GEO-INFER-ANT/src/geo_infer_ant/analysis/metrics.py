@@ -743,7 +743,7 @@ class SwarmPerformanceMetrics:
             success_rates = []
             performance_restoration = []
 
-            for scenario, result in scenario_results.items():
+            for result in scenario_results.values():
                 if mechanism in [
                     "redundancy",
                     "adaptation",

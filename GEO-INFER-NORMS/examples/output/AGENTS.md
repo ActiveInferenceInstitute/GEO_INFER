@@ -23,7 +23,6 @@
 
 - `historical_zoning_changes.png`
 - `zoning_adjacency_network.png`
-- `zoning_analysis_results.json`
 - `zoning_change_visualization.png`
 - `zoning_compatibility_matrix.png`
 - `zoning_distribution_by_category.png`

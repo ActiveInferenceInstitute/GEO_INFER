@@ -581,7 +581,7 @@ class GeospatialAnalyzer:
                     with open(file_path, encoding="utf-8") as f:
                         content = f.read().lower()
 
-                    for software, indicators in gis_software.items():
+                    for indicators in gis_software.values():
                         if any(indicator in content for indicator in indicators):
                             self.content.has_gis_software = True
                             break

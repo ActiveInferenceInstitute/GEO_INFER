@@ -74,6 +74,13 @@ art = ProceduralArt(
 art.generate()
 ```
 
+Randomness is per instance: `ProceduralArt` seeds a `numpy.random.Generator`
+from `params["seed"]`; `GenerativeMap`, `GenerativeMap.from_elevation`,
+`PlaceArt` and `StyleTransfer` take a `seed` (int or `Generator`). Saved
+custom-algorithm files must carry `function_name` (as written by
+`CustomAlgorithmFramework.save_algorithms_to_file`); entries without it are
+rejected with `ValueError` before any source is executed.
+
 Neural style transfer (requires `tensorflow`, packaged as the `neural` extra;
 raises a clear `ImportError` when absent):
 

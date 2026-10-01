@@ -181,30 +181,30 @@ class DiseaseHotspotAnalyzer:
         """
         if gamma <= 0:
             raise ValueError("gamma must be > 0")
-        S: list[float] = [float(population - initial_infected)]
-        I: list[float] = [float(initial_infected)]
-        R: list[float] = [0.0]
+        susceptible: list[float] = [float(population - initial_infected)]
+        infected: list[float] = [float(initial_infected)]
+        recovered: list[float] = [0.0]
 
         for _ in range(days - 1):
-            s, i, r = S[-1], I[-1], R[-1]
+            s, i, r = susceptible[-1], infected[-1], recovered[-1]
             n = s + i + r
 
             # SIR differential equations (discrete approximation)
             new_infected = (beta * s * i) / n if n > 0 else 0
             new_recovered = gamma * i
 
-            S.append(max(0, s - new_infected))
-            I.append(max(0, i + new_infected - new_recovered))
-            R.append(r + new_recovered)
+            susceptible.append(max(0, s - new_infected))
+            infected.append(max(0, i + new_infected - new_recovered))
+            recovered.append(r + new_recovered)
 
         return {
-            "susceptible": S,
-            "infected": I,
-            "recovered": R,
+            "susceptible": susceptible,
+            "infected": infected,
+            "recovered": recovered,
             "days": list(range(days)),
             "basic_reproduction_number": beta / gamma,
-            "peak_infected": max(I),
-            "peak_day": I.index(max(I)),
+            "peak_infected": max(infected),
+            "peak_day": infected.index(max(infected)),
         }
 
     def find_potential_contacts(

@@ -78,7 +78,9 @@ async def get_readings_near_location_api(
         if end_time_iso:
             end_dt = datetime.fromisoformat(end_time_iso)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid ISO date format: {e}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid ISO date format: {e}"
+        ) from e
 
     readings = analyzer.get_environmental_readings_near_location(
         center_loc=center_loc,
@@ -123,13 +125,15 @@ async def get_average_exposure_api(
             Location(latitude=loc["latitude"], longitude=loc["longitude"])
             for loc in target_locations_query
         ]
-    except KeyError:
+    except KeyError as exc:
         raise HTTPException(
             status_code=400,
             detail="Each location in target_locations_query must have 'latitude' and 'longitude' keys.",
-        )
+        ) from exc
     except Exception as e:  # Broad exception for other Pydantic validation errors if Location model changes
-        raise HTTPException(status_code=400, detail=f"Invalid location format: {e}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid location format: {e}"
+        ) from e
 
     analyzer = EnvironmentalHealthAnalyzer(environmental_readings=_ENV_READINGS_DB)
     exposure_results = analyzer.calculate_average_exposure(

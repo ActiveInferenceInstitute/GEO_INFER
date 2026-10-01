@@ -40,7 +40,6 @@ except ImportError:
 
 try:
     import folium
-    from folium.plugins import MarkerCluster  # noqa: F401
 
     FOLIUM_AVAILABLE = True
 except ImportError:
@@ -48,7 +47,6 @@ except ImportError:
 
 try:
     import mayavi.mlab as mlab
-    import mayavi  # noqa: F401
 
     MAYAVI_AVAILABLE = True
 except ImportError:
@@ -650,7 +648,8 @@ class GeoArt:
         if not MAYAVI_AVAILABLE and not PLOTLY_AVAILABLE:
             raise ValueError(
                 "3D visualization requires either mayavi or plotly. "
-                "Install with: uv pip install mayavi or pip install plotly"
+                "Install with: uv sync --package geo-infer-art --extra viz3d "
+                "(mayavi) or --extra integrations (plotly)"
             )
 
         return GeoArt3D(
@@ -679,7 +678,8 @@ class GeoArt:
         """
         if not FOLIUM_AVAILABLE:
             raise ValueError(
-                "Interactive web maps require folium. Install with: uv pip install folium"
+                "Interactive web maps require folium. Install with: "
+                "uv sync --package geo-infer-art --extra integrations"
             )
 
         if self.data is None:
@@ -762,7 +762,8 @@ class GeoArt:
         """
         if not PLOTLY_AVAILABLE:
             raise ValueError(
-                "Plotly visualizations require plotly. Install with: uv pip install plotly"
+                "Plotly visualizations require plotly. Install with: "
+                "uv sync --package geo-infer-art --extra integrations"
             )
 
         if self.data is None:
@@ -1336,7 +1337,6 @@ class GeoArt3D:
             return anim
 
         # Fallback: matplotlib 3D rotation
-        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
         fig = plt.figure(figsize=(8, 6))
         ax = fig.add_subplot(111, projection="3d")

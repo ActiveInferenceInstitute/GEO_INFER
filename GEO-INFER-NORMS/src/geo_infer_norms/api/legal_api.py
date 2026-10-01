@@ -231,7 +231,7 @@ class LegalAPI:
         try:
             return shape(geojson)
         except Exception as e:
-            raise ValueError(f"Invalid geometry: {str(e)}")
+            raise ValueError(f"Invalid geometry: {str(e)}") from e
 
     def _jurisdiction_to_dict(self, jurisdiction: Jurisdiction) -> dict[str, Any]:
         """
@@ -345,7 +345,7 @@ class LegalAPI:
                 "jurisdiction_id": jurisdiction.id,
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def list_jurisdictions(
         self,
@@ -391,7 +391,7 @@ class LegalAPI:
 
             return result
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_jurisdiction(
         self, jurisdiction_id: str = Path(..., description="ID of the jurisdiction")
@@ -416,7 +416,7 @@ class LegalAPI:
 
             return self._jurisdiction_to_dict(jurisdiction)
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def find_jurisdictions_by_name(
         self,
@@ -442,7 +442,7 @@ class LegalAPI:
 
             return [self._jurisdiction_to_dict(j) for j in jurisdictions]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_jurisdiction_hierarchy(
         self, jurisdiction_id: str = Path(..., description="ID of the jurisdiction")
@@ -469,7 +469,7 @@ class LegalAPI:
 
             return [self._jurisdiction_to_dict(j) for j in hierarchy]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Regulation endpoints
 
@@ -512,7 +512,7 @@ class LegalAPI:
                 "regulation_id": regulation.id,
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def list_regulations(
         self,
@@ -540,7 +540,7 @@ class LegalAPI:
 
             return [self._regulation_to_dict(r) for r in regulations]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_regulation(
         self, regulation_id: str = Path(..., description="ID of the regulation")
@@ -565,7 +565,7 @@ class LegalAPI:
 
             return self._regulation_to_dict(regulation)
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_regulations_by_jurisdiction(
         self, jurisdiction_id: str = Path(..., description="ID of the jurisdiction")
@@ -586,7 +586,7 @@ class LegalAPI:
 
             return [self._regulation_to_dict(r) for r in regulations]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Regulatory framework endpoints
 
@@ -622,7 +622,7 @@ class LegalAPI:
                 "framework": self._framework_to_dict(framework),
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def list_regulatory_frameworks(
         self, sector: str | None = Query(None, description="Filter by sector")
@@ -674,7 +674,7 @@ class LegalAPI:
 
             return [self._jurisdiction_to_dict(j) for j in jurisdictions]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_regulations_by_point(
         self, point: PointLocation
@@ -697,7 +697,7 @@ class LegalAPI:
 
             return [self._regulation_to_dict(r) for r in regulations]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def export_to_geojson(
         self,
@@ -735,4 +735,4 @@ class LegalAPI:
                 "geojson": geojson,
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e

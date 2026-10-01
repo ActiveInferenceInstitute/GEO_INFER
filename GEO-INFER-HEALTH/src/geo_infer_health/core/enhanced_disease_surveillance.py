@@ -432,7 +432,7 @@ class ActiveInferenceDiseaseAnalyzer(DiseaseHotspotAnalyzer):
         )  # Adjust threshold based on activity belief
 
         hotspots = []
-        for i, report in enumerate(reports):
+        for report in reports:
             center_loc = report.location
             nearby_reports = [
                 r

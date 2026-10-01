@@ -124,7 +124,7 @@ class BiophysicalEquilibriumModels:
 
         dt = 0.1  # Time step
 
-        for t in range(time_steps):
+        for _ in range(time_steps):
             # Lotka-Volterra equations
             d_prey = r * prey - a * prey * predator
             d_predator = b * a * prey * predator - m * predator
@@ -172,7 +172,7 @@ class BiophysicalEquilibriumModels:
 
         dt = 0.1  # Time step
 
-        for t in range(time_steps):
+        for _ in range(time_steps):
             # Enhanced predator-prey equations with carrying capacity
             d_prey = r * prey * (1 - prey / K) - a * prey * predator
             d_predator = b * a * prey * predator - m * predator
@@ -219,7 +219,7 @@ class BiophysicalEquilibriumModels:
 
         dt = 0.1  # Time step
 
-        for t in range(time_steps):
+        for _ in range(time_steps):
             new_populations = []
 
             for i in range(n_species):

@@ -17,14 +17,15 @@ class GeospatialAnonymizer:
     Provides methods for anonymizing geospatial data while preserving utility.
     """
 
-    def __init__(self, seed: int | None = None):
+    def __init__(self, seed: int | np.random.Generator | None = None) -> None:
         """
         Initialize the anonymizer.
 
         Args:
-            seed: Random seed for reproducibility of anonymization operations.
+            seed: Integer seed or ``np.random.Generator`` used for all random
+                draws, for reproducible anonymization.
         """
-        self.rng = np.random.RandomState(seed)
+        self.rng = np.random.default_rng(seed)
 
     def location_perturbation(
         self,
@@ -113,12 +114,10 @@ class GeospatialAnonymizer:
         # or we reach resolution 0
         while current_resolution >= 0:
             # Add H3 cell IDs at current resolution
-            result["h3_cell"] = result.apply(
-                lambda row: h3.latlng_to_cell(
-                    row[geometry_col].y, row[geometry_col].x, current_resolution
-                ),
-                axis=1,
-            )
+            result["h3_cell"] = [
+                h3.latlng_to_cell(geom.y, geom.x, current_resolution)
+                for geom in result[geometry_col]
+            ]
 
             # Count records per cell
             cell_counts = result["h3_cell"].value_counts()

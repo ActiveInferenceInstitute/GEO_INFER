@@ -85,7 +85,7 @@ class WebSocketManager:
                 del self.connections[connection_id]
 
             # Remove from subscriptions
-            for message_type, connection_ids in self.subscriptions.items():
+            for connection_ids in self.subscriptions.values():
                 connection_ids.discard(connection_id)
 
     def broadcast_message(self, message: dict[str, Any]) -> None:

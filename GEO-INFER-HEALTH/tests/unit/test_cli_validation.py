@@ -13,6 +13,7 @@ from pathlib import Path
 
 import geopandas as gpd
 import pytest
+from pyogrio.errors import DataSourceError
 from shapely.geometry import Point
 
 from geo_infer_health.cli import main, run_validation, setup_cli
@@ -46,10 +47,15 @@ def empty_input_path(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def cli_argv(monkeypatch: pytest.MonkeyPatch):
-    """Run ``main`` with the given CLI argv (without the program name)."""
+def cli_argv(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    """Run ``main`` with the given CLI argv (without the program name).
+
+    The working directory is a temporary path so the configured relative
+    ``logs/health.log`` file sink never lands in the repository.
+    """
 
     def _run(*argv: str) -> None:
+        monkeypatch.chdir(tmp_path)
         monkeypatch.setattr(sys, "argv", ["geo-infer-health", *argv])
         main()
 
@@ -71,7 +77,7 @@ class TestRunValidationFailure:
         corrupt.write_text("{not geojson at all", encoding="utf-8")
         args = __import__("argparse").Namespace(input=str(corrupt))
 
-        with pytest.raises(Exception):
+        with pytest.raises(DataSourceError):
             run_validation(args, config=None)
 
     def test_empty_file_raises_value_error(self, empty_input_path: Path) -> None:

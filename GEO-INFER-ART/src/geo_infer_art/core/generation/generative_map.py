@@ -35,14 +35,18 @@ class GenerativeMap:
         self,
         data: np.ndarray | None = None,
         metadata: dict | None = None,
-    ):
+        seed: int | np.random.Generator | None = None,
+    ) -> None:
         """
         Initialize a GenerativeMap object.
 
         Args:
             data: Base data used for generation
             metadata: Information about the data source
+            seed: Integer seed or ``np.random.Generator`` for stochastic
+                styles and textures; ``None`` draws fresh entropy.
         """
+        self.rng: np.random.Generator = np.random.default_rng(seed)
         self.data = data
         self.metadata = metadata or {}
         self.image: Image.Image | None = None
@@ -57,6 +61,7 @@ class GenerativeMap:
         resolution: int = 512,
         abstraction_level: float = 0.5,
         style: str = "contour",
+        seed: int | np.random.Generator | None = None,
     ) -> "GenerativeMap":
         """
         Create generative art from elevation data.
@@ -66,6 +71,7 @@ class GenerativeMap:
             resolution: Resolution of the output image
             abstraction_level: Level of abstraction (0.0 to 1.0)
             style: Style of the generative art ("contour", "flow", "particles", etc.)
+            seed: Integer seed or ``np.random.Generator`` for stochastic styles
 
         Returns:
             A new GenerativeMap object with generated art
@@ -79,7 +85,7 @@ class GenerativeMap:
             raise ValueError("Abstraction level must be between 0 and 1.")
 
         # Initialize the object
-        gen_map = cls()
+        gen_map = cls(seed=seed)
         gen_map._output_resolution = resolution
 
         # Load elevation data
@@ -362,7 +368,7 @@ class GenerativeMap:
 
         # Create stream plot
         n_points = int(30 * density)
-        seed_points = np.random.rand(n_points, 2)
+        seed_points = self.rng.random((n_points, 2))
 
         # Scale seed points to data dimensions
         # Streamplot coordinates are indexed from zero through ``shape - 1``.
@@ -446,7 +452,7 @@ class GenerativeMap:
         probs = normalized_data.flatten() ** (2 - abstraction_level)
         probs = probs / np.sum(probs)
 
-        indices = np.random.choice(
+        indices = self.rng.choice(
             np.arange(normalized_data.size), size=n_particles, p=probs
         )
 
@@ -741,7 +747,7 @@ class GenerativeMap:
         if texture_type == "noise":
             # Add noise texture
             intensity = kwargs.get("intensity", 0.1)
-            noise = np.random.normal(0, intensity, img_array.shape[:2])
+            noise = self.rng.normal(0, intensity, img_array.shape[:2])
             noise = np.stack([noise] * 3, axis=2) if img_array.ndim == 3 else noise
 
             # Blend noise with image

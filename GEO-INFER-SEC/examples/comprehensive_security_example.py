@@ -332,7 +332,9 @@ class SecurityDemoEnvironment:
                     "reason": "invalid_credentials",
                 },
             )
-            logger.info(f"Failed login attempt {i + 1} from {suspicious_ip}")
+            logger.info(
+                f"Failed login attempt {i + 1} from {suspicious_ip} ({event.event_id})"
+            )
             await asyncio.sleep(1)
 
         # Wait for threat detection
@@ -366,6 +368,8 @@ class SecurityDemoEnvironment:
             detection_method="perimeter_sensor",
             confidence=0.7,
         )
+        if physical_threat:
+            logger.warning(f"Reconnaissance detected: {physical_threat.threat_id}")
 
         await asyncio.sleep(2)
 
@@ -380,13 +384,14 @@ class SecurityDemoEnvironment:
                 "suspicious": True,
             },
         )
+        logger.info(f"Network reconnaissance logged: {digital_event.event_id}")
 
         await asyncio.sleep(2)
 
         # Step 3: Social engineering attempt (cognitive)
         # Simulate unusual user behavior
-        for i in range(3):
-            event = self.integrated_manager.digital_manager.log_security_event(
+        for _ in range(3):
+            self.integrated_manager.digital_manager.log_security_event(
                 SecurityEventType.PRIVILEGE_ESCALATION,
                 {
                     "user_id": "compromised.user",

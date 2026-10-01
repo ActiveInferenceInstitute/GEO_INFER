@@ -269,7 +269,7 @@ class NormativeInference:
             has_location = False
             within_constraint = False
 
-            for behavior, obs_list in self.observations[entity_id].items():
+            for obs_list in self.observations[entity_id].values():
                 for obs in obs_list:
                     if obs["location"] is not None:
                         has_location = True
@@ -289,7 +289,7 @@ class NormativeInference:
             has_timestamp = False
             within_timeframe = False
 
-            for behavior, obs_list in self.observations[entity_id].items():
+            for obs_list in self.observations[entity_id].values():
                 for obs in obs_list:
                     if obs["timestamp"] is not None:
                         has_timestamp = True
@@ -404,7 +404,7 @@ class NormativeInference:
 
         # Find related norms
         related_norms = {}
-        for rel_id, rel in self.norm_relationships.items():
+        for rel in self.norm_relationships.values():
             if rel["norm1_id"] == norm_id:
                 related_norms[rel["norm2_id"]] = (rel["type"], rel["strength"])
             elif rel["norm2_id"] == norm_id:

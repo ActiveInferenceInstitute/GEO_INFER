@@ -56,7 +56,7 @@ def demo_place_module():
 
         # Create a place analyzer
         analyzer = PlaceAnalyzer(base_dir=str(demo_dir))
-        logger.info(f"✓ Created PlaceAnalyzer with base_dir {demo_dir}")
+        logger.info(f"✓ Created PlaceAnalyzer with data_dir {analyzer.data_dir}")
 
         return True
     except Exception as e:
@@ -77,7 +77,9 @@ def demo_iot_module():
 
         # Create IoT data ingestion
         ingestion = IoTDataIngestion(registry)
-        logger.info("✓ Created IoTDataIngestion")
+        logger.info(
+            f"✓ Created IoTDataIngestion ({len(ingestion.measurements)} measurements)"
+        )
 
         return True
     except Exception as e:
@@ -93,44 +95,14 @@ def demo_cross_module_integration():
         # Import from multiple modules
         from geo_infer_sec import SecurityFramework
 
-        # Create a simple integrated workflow
-        logger.info("✓ Successfully imported from SPACE, PLACE, IOT, and SEC modules")
-
-        # Demonstrate that modules can work together
         security = SecurityFramework()
-        logger.info("✓ Created security framework for integrated workflow")
+        logger.info(
+            f"✓ Created SecurityFramework (audit log entries: {len(security.audit_log)})"
+        )
 
         return True
     except Exception as e:
         logger.error(f"✗ Cross-module integration failed: {e}")
-        return False
-
-
-def demo_framework_entry_point():
-    """Demonstrate the main framework entry point."""
-    logger.info("=== Framework Entry Point Demo ===")
-
-    try:
-        from . import get_framework, list_modules, run_diagnostics
-
-        # Get framework instance
-        framework = get_framework()
-        modules = list_modules()
-        diagnostics = run_diagnostics()
-
-        logger.info(f"✓ Framework loaded with {len(modules)} modules")
-        logger.info(
-            f"✓ Framework version: {diagnostics.get('framework_version', 'unknown')}"
-        )
-
-        # Show some available modules
-        logger.info("Available modules:")
-        for module in sorted(modules)[:10]:  # Show first 10
-            logger.info(f"  - {module}")
-
-        return True
-    except Exception as e:
-        logger.error(f"✗ Framework entry point failed: {e}")
         return False
 
 
@@ -146,7 +118,6 @@ def main():
     results["place"] = demo_place_module()
     results["iot"] = demo_iot_module()
     results["cross_module"] = demo_cross_module_integration()
-    results["framework"] = demo_framework_entry_point()
 
     # Summary
     successful = sum(results.values())

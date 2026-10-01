@@ -51,7 +51,7 @@ def example_spatial_economic_analysis():
 
     # Convert to spatial cells
     print("\nConverting regions to spatial cells:")
-    for idx, row in regions.iterrows():
+    for _, row in regions.iterrows():
         centroid = row.geometry.centroid
         cell = space.latlng_to_cell(centroid.y, centroid.x, resolution=9)
         print(f"  Region {row['region_id']}: {cell}")
@@ -168,7 +168,6 @@ def example_integrated_analysis():
     # Initialize all integrations
     space = SpaceIntegration()
     time = TimeIntegration()
-    data = DataIntegration()
 
     # Create sample regional economic panel data
     regions = ["A", "B", "C"]
@@ -195,6 +194,8 @@ def example_integrated_analysis():
     gdf = gpd.GeoDataFrame(
         df, geometry=[Point(row["lon"], row["lat"]) for _, row in df.iterrows()]
     )
+    cells = {space.latlng_to_cell(pt.y, pt.x, resolution=7) for pt in gdf.geometry}
+    print(f"  {len(gdf)} observations across {len(cells)} H3 cells")
 
     # Temporal analysis per region
     print("\nPerforming temporal analysis per region:")

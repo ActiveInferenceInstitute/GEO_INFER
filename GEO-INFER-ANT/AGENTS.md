@@ -26,7 +26,6 @@
 - `examples/`
 - `src/`
 - `tests/`
-- `run_tests.py`
 - `IMPLEMENTATION_STATUS.md`
 - `SKILL.md`
 - `pyproject.toml`

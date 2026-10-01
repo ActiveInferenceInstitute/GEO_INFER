@@ -1,19 +1,21 @@
-import matplotlib
-
-matplotlib.use("Agg")  # Non-interactive backend for CI/headless testing
-
 """
 Pytest fixtures for GEO-INFER-ART tests.
 
 Provides sample image arrays, spatial art configurations,
 color palettes, and standard spatial fixtures.
 """
-import pytest
-import numpy as np
-import geopandas as gpd
-from shapely.geometry import Point
+
+import importlib.util
 from pathlib import Path
 from typing import Any
+
+import geopandas as gpd
+import matplotlib
+import numpy as np
+import pytest
+from shapely.geometry import Point
+
+matplotlib.use("Agg")  # Non-interactive backend for CI/headless testing
 
 
 @pytest.fixture(scope="session")
@@ -132,12 +134,7 @@ def pytest_collection_modifyitems(
     style-transfer tests are deselected (they run wherever the declared test
     dependency group is installed).
     """
-    try:
-        import tensorflow  # noqa: F401
-    except ImportError:
+    if importlib.util.find_spec("tensorflow") is None:
         items[:] = [
-            item
-            for item in items
-            if item.fspath is not None
-            and "test_style_transfer" not in Path(str(item.fspath)).name
+            item for item in items if "test_style_transfer" not in item.path.name
         ]

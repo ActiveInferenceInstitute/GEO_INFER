@@ -5,8 +5,6 @@ Examples workspace within `GEO-INFER-OPS`.
 ## Contents
 
 - `demo_framework.py`
-- `geo_infer_paths.py`
-- `setup_framework.py`
 
 ## Public Interface
 
@@ -14,25 +12,14 @@ Examples workspace within `GEO-INFER-OPS`.
 - `demo_framework.py:demo_place_module` (function)
 - `demo_framework.py:demo_iot_module` (function)
 - `demo_framework.py:demo_cross_module_integration` (function)
-- `demo_framework.py:demo_framework_entry_point` (function)
 - `demo_framework.py:main` (function)
-- `geo_infer_paths.py:GEOINFERPathManager` (class)
-- `geo_infer_paths.py:get_path_manager` (function)
-- `geo_infer_paths.py:add_module_paths` (function)
-- `geo_infer_paths.py:add_all_paths` (function)
-- `geo_infer_paths.py:import_module` (function)
-- `geo_infer_paths.py:import_from_module` (function)
-- `geo_infer_paths.py:list_available_modules` (function)
-- `geo_infer_paths.py:is_module_installed` (function)
-- `setup_framework.py:GEOINFERInstaller` (class)
-- `setup_framework.py:main` (function)
 
 ## Module Metadata
 
 - Module: `GEO-INFER-OPS`
 - Package: `geo_infer_ops`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-OPS`
+- Install: `uv sync --package geo-infer-ops`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module OPS`
 
 ## Dependencies

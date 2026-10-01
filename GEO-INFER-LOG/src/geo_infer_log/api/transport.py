@@ -240,7 +240,7 @@ async def plan_route(
         )
         return route
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/compare-routes", response_model=dict)
@@ -259,7 +259,7 @@ async def compare_routes(
         # Convert DataFrame to dict
         return {"comparisons": df.to_dict(orient="records")}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/network/load", response_model=dict)
@@ -276,7 +276,7 @@ async def load_network(
     try:
         analyzer.load_network(request.network_file)
     except (OSError, ValueError, pickle.UnpicklingError) as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     network = analyzer.network
     assert network is not None
     return {
@@ -296,7 +296,7 @@ async def get_network_metrics(
         metrics = analyzer.calculate_network_metrics()
         return metrics
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/network/critical-links", response_model=list[list[str]])
@@ -310,7 +310,7 @@ async def identify_critical_links(
         links = analyzer.identify_critical_links(top_n=top_n)
         return links
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/traffic/load", response_model=dict)
@@ -326,7 +326,7 @@ async def load_traffic_network(
     try:
         simulator.load_network(request.network_file)
     except (OSError, ValueError, pickle.UnpicklingError) as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     network = simulator.network
     assert network is not None
     return {
@@ -349,7 +349,7 @@ async def set_time_periods(
     try:
         simulator.set_time_periods(request.periods)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     return {"time_periods": list(simulator.time_periods)}
 
 
@@ -367,7 +367,7 @@ async def simulate_traffic(
         )
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/traffic/congestion", response_model=dict)
@@ -383,7 +383,7 @@ async def analyze_congestion(
         )
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/emissions/calculate", response_model=float)
@@ -401,7 +401,7 @@ async def calculate_emissions(
         )
         return emissions
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/emissions/compare", response_model=dict)
@@ -418,7 +418,7 @@ async def compare_vehicle_emissions(
         # Convert DataFrame to dict
         return {"comparisons": df.to_dict(orient="records")}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/emissions/fleet", response_model=dict)
@@ -432,4 +432,4 @@ async def calculate_fleet_emissions(
         result = calculator.calculate_fleet_emissions(fleet=fleet, routes=routes)
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e

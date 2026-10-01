@@ -5,6 +5,7 @@ Command-line interface for GEO-INFER-ART.
 
 from typing import Any
 import argparse
+import importlib.util
 import os
 import sys
 
@@ -94,11 +95,9 @@ def process_style_transfer(args: argparse.Namespace) -> int:
         return 1
 
     # Check if TensorFlow is available
-    try:
-        import tensorflow  # noqa: F401
-    except ImportError:
+    if importlib.util.find_spec("tensorflow") is None:
         print("Error: TensorFlow is required for style transfer")
-        print("Install it with 'uv pip install tensorflow'")
+        print("Install it with 'uv sync --package geo-infer-art --extra neural'")
         return 1
 
     # Apply style transfer
@@ -501,8 +500,9 @@ def process_performance(args: argparse.Namespace) -> int:
     if args.benchmark:
         print("Running performance benchmark...")
         # Benchmark some basic operations
+        rng = np.random.default_rng(0)
         benchmark = optimizer.benchmark_function(
-            lambda: np.random.rand(100, 100), iterations=5
+            lambda: rng.random((100, 100)), iterations=5
         )
         print(f"Benchmark results: {benchmark}")
 

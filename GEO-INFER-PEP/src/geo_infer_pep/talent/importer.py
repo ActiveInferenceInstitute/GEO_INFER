@@ -4,8 +4,9 @@ import logging
 import csv
 import os
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import Any
-from datetime import datetime, date
+from datetime import datetime
 from ..models.talent_models import (
     Candidate,
     JobRequisition,
@@ -99,9 +100,19 @@ class CSVTalentImporter(BaseTalentImporter):
         self,
         candidate_file_path: str | None = None,
         requisition_file_path: str | None = None,
-    ):
+        clock: Callable[[], datetime] = datetime.now,
+    ) -> None:
+        """Configure CSV sources.
+
+        Args:
+            candidate_file_path: Path to the candidate CSV file.
+            requisition_file_path: Path to the requisition CSV file.
+            clock: Source of the current time, used for missing or malformed
+                ``applied_at``/``updated_at``/``opened_at`` values.
+        """
         self.candidate_file_path = candidate_file_path
         self.requisition_file_path = requisition_file_path
+        self.clock = clock
         self.connection = False
 
     def connect(self, **kwargs: Any) -> None:
@@ -159,6 +170,7 @@ class CSVTalentImporter(BaseTalentImporter):
 
     def transform_candidates(self, raw_data: list[dict[str, Any]]) -> list[Candidate]:
         candidates: list[Candidate] = []
+        now = self.clock()
         for record in raw_data:
             try:
                 applied_at_dt = None
@@ -194,10 +206,8 @@ class CSVTalentImporter(BaseTalentImporter):
                     ),
                     "job_requisition_id": record.get("job_requisition_id"),
                     "source": record.get("source"),
-                    "applied_at": applied_at_dt
-                    or datetime.now(),  # Default if missing/bad
-                    "updated_at": updated_at_dt
-                    or datetime.now(),  # Default if missing/bad
+                    "applied_at": applied_at_dt or now,  # Default if missing/bad
+                    "updated_at": updated_at_dt or now,  # Default if missing/bad
                     "skills": (
                         [
                             s.strip()
@@ -273,7 +283,7 @@ class CSVTalentImporter(BaseTalentImporter):
                         else JobRequisitionStatus.OPEN
                     ),
                     "opened_at": opened_at_date
-                    or date.today(),  # Default if missing/bad
+                    or self.clock().date(),  # Default if missing/bad
                     "closed_at": closed_at_date,
                     "hiring_manager_id": record.get("hiring_manager_id"),
                     # Add other fields like location, description, etc.
@@ -290,6 +300,3 @@ class CSVTalentImporter(BaseTalentImporter):
                 )
         logger.info(f"Transformed {len(requisitions)} job requisition records.")
         return requisitions
-
-
-# Future importers: GreenhouseImporter, LeverImporter, WorkableImporter

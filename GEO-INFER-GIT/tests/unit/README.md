@@ -6,7 +6,6 @@ Unit workspace within `GEO-INFER-GIT`.
 
 - `test_advanced_git.py`
 - `test_cli.py`
-- `test_clone_repos_wrapper.py`
 - `test_config_loader.py`
 - `test_config_loader_packaged_config.py`
 - `test_distributed_coordinator.py`
@@ -15,6 +14,7 @@ Unit workspace within `GEO-INFER-GIT`.
 - `test_github_api.py`
 - `test_intelligent_cache_prefetch.py`
 - `test_main.py`
+- `test_main_entrypoint.py`
 - `test_multi_platform_api.py`
 - `test_repo_analyzer.py`
 - `test_repo_cloner.py`
@@ -32,7 +32,7 @@ Unit workspace within `GEO-INFER-GIT`.
 - Module: `GEO-INFER-GIT`
 - Package: `geo_infer_git`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-GIT`
+- Install: `uv sync --package geo-infer-git`
 - Tests: `uv run python -m pytest GEO-INFER-GIT/tests/unit`
 
 ## Dependencies

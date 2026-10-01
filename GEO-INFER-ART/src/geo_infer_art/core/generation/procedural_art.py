@@ -88,6 +88,7 @@ class ProceduralArt:
         self.algorithm = algorithm
         self.params: dict[str, Any] = params or {}
         self.resolution: tuple[int, int] = resolution
+        self.rng: np.random.Generator = np.random.default_rng(self.params.get("seed"))
         self.image: Image.Image | None = None
         self._figure: Figure | None = None
 
@@ -256,9 +257,10 @@ class ProceduralArt:
         """
         Generate the procedural art based on the selected algorithm and parameters.
         """
-        # Set random seed if provided
-        if "seed" in self.params:
-            np.random.seed(self.params["seed"])
+        # Every generator draws from this instance's Generator; a fixed
+        # ``params["seed"]`` reproduces the output, and the process-wide
+        # ``numpy.random`` state is never touched.
+        self.rng = np.random.default_rng(self.params.get("seed"))
 
         # Dispatch on the algorithm name; every entry in ALGORITHMS maps to a
         # "_generate_<algorithm>" method on this class.
@@ -301,7 +303,7 @@ class ProceduralArt:
         frequency = 1.0
         max_value = 0.0
 
-        for i in range(octaves):
+        for _ in range(octaves):
             noise += (
                 amplitude * np.sin(X * frequency * 0.1) * np.cos(Y * frequency * 0.1)
             )
@@ -355,25 +357,25 @@ class ProceduralArt:
         # If clustering is 1, points are clustered around centers
         if point_clustering < 0.1:
             # Uniform random points
-            points = np.random.rand(num_points, 2)
+            points = self.rng.random((num_points, 2))
             points[:, 0] *= width
             points[:, 1] *= height
         else:
             # Create clustered points
             num_clusters = max(1, int(num_points / 10))
-            cluster_centers = np.random.rand(num_clusters, 2)
+            cluster_centers = self.rng.random((num_clusters, 2))
             cluster_centers[:, 0] *= width
             cluster_centers[:, 1] *= height
 
             points = np.zeros((num_points, 2))
             for i in range(num_points):
                 # Pick a random cluster center
-                center_idx = np.random.randint(0, num_clusters)
+                center_idx = self.rng.integers(0, num_clusters)
                 center = cluster_centers[center_idx]
 
                 # Generate point with distance based on clustering parameter
-                distance = np.random.normal(0, width / 10 * (1 - point_clustering))
-                angle = np.random.uniform(0, 2 * np.pi)
+                distance = self.rng.normal(0, width / 10 * (1 - point_clustering))
+                angle = self.rng.uniform(0, 2 * np.pi)
 
                 # Calculate the offset from center
                 dx = distance * np.cos(angle)
@@ -497,7 +499,7 @@ class ProceduralArt:
         min_y, max_y = pos[1], pos[1]
 
         # Parse and draw the L-system
-        for i, char in enumerate(current):
+        for char in current:
             if char == "F":  # Move forward and draw a line
                 # Calculate new position
                 rad = math.radians(direction)
@@ -598,7 +600,7 @@ class ProceduralArt:
         else:
             # Use provided initial state or random
             if initial_state == "random":
-                cells[0] = np.random.randint(0, 2, width)
+                cells[0] = self.rng.integers(0, 2, width)
             else:
                 for i, val in enumerate(initial_state[:width]):
                     cells[0, i] = 1 if val else 0
@@ -664,10 +666,10 @@ class ProceduralArt:
 
         # Create seed
         if seed_type == "random":
-            for i in range(10):
-                y = np.random.randint(height)
-                x = np.random.randint(width)
-                r = np.random.randint(3, 10)
+            for _ in range(10):
+                y = self.rng.integers(height)
+                x = self.rng.integers(width)
+                r = self.rng.integers(3, 10)
                 y_idxs, x_idxs = np.ogrid[-r : r + 1, -r : r + 1]
                 mask = x_idxs**2 + y_idxs**2 <= r**2
                 for yy in range(-r, r + 1):
@@ -796,13 +798,13 @@ class ProceduralArt:
             )
 
             # Add variation to parameters
-            left_var = 1.0 + variation * (np.random.random() - 0.5)
-            right_var = 1.0 + variation * (np.random.random() - 0.5)
+            left_var = 1.0 + variation * (self.rng.random() - 0.5)
+            right_var = 1.0 + variation * (self.rng.random() - 0.5)
             left_angle_var = branch_angle * (
-                1.0 + variation * (np.random.random() - 0.5)
+                1.0 + variation * (self.rng.random() - 0.5)
             )
             right_angle_var = branch_angle * (
-                1.0 + variation * (np.random.random() - 0.5)
+                1.0 + variation * (self.rng.random() - 0.5)
             )
 
             # Recursively draw left and right branches
@@ -1059,7 +1061,7 @@ class ProceduralArt:
         frequency = 1.0
         max_value = 0.0
 
-        for i in range(octaves):
+        for _ in range(octaves):
             noise += (
                 amplitude * np.sin(X * frequency * 0.1) * np.cos(Y * frequency * 0.1)
             )
@@ -1097,13 +1099,14 @@ class ProceduralArt:
         self._figure_to_image()
 
     @staticmethod
-    def _simplex_noise_2d(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    def _simplex_noise_2d(
+        x: np.ndarray, y: np.ndarray, rng: np.random.Generator
+    ) -> np.ndarray:
         """
         Evaluate classic 2D simplex noise (Gustavson-style simplicial lattice).
 
-        The permutation table is drawn from the module-level numpy random
-        state, so ProceduralArt.generate()'s seeded call makes this
-        deterministic for a fixed seed.
+        The permutation table is drawn from ``rng``, so a seeded generator
+        makes the noise deterministic.
 
         Returns values in approximately [-1, 1].
         """
@@ -1123,7 +1126,7 @@ class ProceduralArt:
         )
 
         # Permutation table (doubled to avoid index wraparound arithmetic).
-        perm = np.random.permutation(256)
+        perm = rng.permutation(256)
         perm = np.concatenate([perm, perm])
 
         # Skew input space onto the simplicial lattice.
@@ -1190,7 +1193,9 @@ class ProceduralArt:
         max_value = 0.0
 
         for _ in range(octaves):
-            noise += amplitude * self._simplex_noise_2d(X * frequency, Y * frequency)
+            noise += amplitude * self._simplex_noise_2d(
+                X * frequency, Y * frequency, self.rng
+            )
             max_value += amplitude
             amplitude *= persistence
             frequency *= lacunarity
@@ -1240,7 +1245,7 @@ class ProceduralArt:
         tiles_y = height // tile_size
 
         # Generate a pattern using simple rules
-        pattern = np.random.randint(0, 4, (tiles_y, tiles_x))  # 4 different tile types
+        pattern = self.rng.integers(0, 4, (tiles_y, tiles_x))  # 4 different tile types
 
         # Apply some smoothing based on neighbors
         for _ in range(3):  # Multiple passes for coherence
@@ -1255,7 +1260,7 @@ class ProceduralArt:
                         pattern[i, j + 1],
                     ]
                     most_common = np.argmax(np.bincount(neighbors))
-                    if np.random.random() < pattern_complexity:
+                    if self.rng.random() < pattern_complexity:
                         new_pattern[i, j] = most_common
             pattern = new_pattern
 
@@ -1368,8 +1373,8 @@ class ProceduralArt:
         # Create attraction points (leaves)
         attraction_points = []
         for _ in range(num_seeds):
-            x = np.random.randint(influence_radius, width - influence_radius)
-            y = np.random.randint(influence_radius, height - influence_radius)
+            x = self.rng.integers(influence_radius, width - influence_radius)
+            y = self.rng.integers(influence_radius, height - influence_radius)
             attraction_points.append([x, y])
 
         # Start with root branches
@@ -1494,10 +1499,10 @@ class ProceduralArt:
         # Initialize boids with random positions and velocities
         boids = []
         for _ in range(num_boids):
-            x = np.random.uniform(0, width)
-            y = np.random.uniform(0, height)
-            vx = np.random.uniform(-max_speed, max_speed)
-            vy = np.random.uniform(-max_speed, max_speed)
+            x = self.rng.uniform(0, width)
+            y = self.rng.uniform(0, height)
+            vx = self.rng.uniform(-max_speed, max_speed)
+            vy = self.rng.uniform(-max_speed, max_speed)
             boids.append([x, y, vx, vy])
 
         # Run boids simulation
@@ -1589,11 +1594,11 @@ class ProceduralArt:
         # Initialize particles
         particles = []
         for _ in range(num_particles):
-            x = np.random.uniform(0, width)
-            y = np.random.uniform(0, height)
-            vx = np.random.uniform(-2, 2)
-            vy = np.random.uniform(-2, 2)
-            life = np.random.uniform(50, 200)
+            x = self.rng.uniform(0, width)
+            y = self.rng.uniform(0, height)
+            vx = self.rng.uniform(-2, 2)
+            vy = self.rng.uniform(-2, 2)
+            life = self.rng.uniform(50, 200)
             particles.append([x, y, vx, vy, life])
 
         # Run particle simulation
@@ -1670,19 +1675,19 @@ class ProceduralArt:
             # Add multiple particles per iteration
             for _ in range(num_particles // iterations):
                 # Start particle at random position on edge
-                if np.random.random() < 0.5:
-                    x = np.random.randint(0, width)
-                    y = 0 if np.random.random() < 0.5 else height
+                if self.rng.random() < 0.5:
+                    x = self.rng.integers(0, width)
+                    y = 0 if self.rng.random() < 0.5 else height
                 else:
-                    x = 0 if np.random.random() < 0.5 else width
-                    y = np.random.randint(0, height)
+                    x = 0 if self.rng.random() < 0.5 else width
+                    y = self.rng.integers(0, height)
 
                 # Move particle until it sticks or goes out of bounds
                 stuck = False
                 while not stuck and 0 <= x < width and 0 <= y < height:
                     # Random walk
-                    dx = np.random.choice([-1, 0, 1])
-                    dy = np.random.choice([-1, 0, 1])
+                    dx = self.rng.choice([-1, 0, 1])
+                    dy = self.rng.choice([-1, 0, 1])
 
                     x += dx
                     y += dy
@@ -1691,7 +1696,7 @@ class ProceduralArt:
                     neighbors = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
 
                     if any(neighbor in structure for neighbor in neighbors):
-                        if np.random.random() < stickiness:
+                        if self.rng.random() < stickiness:
                             structure.add((x, y))
                             stuck = True
 
@@ -1746,9 +1751,9 @@ class ProceduralArt:
         # Initialize turtles
         turtles = []
         for i in range(num_turtles):
-            x = width // 2 + np.random.uniform(-50, 50)
-            y = height // 2 + np.random.uniform(-50, 50)
-            angle = np.random.uniform(0, 360)
+            x = width // 2 + self.rng.uniform(-50, 50)
+            y = height // 2 + self.rng.uniform(-50, 50)
+            angle = self.rng.uniform(0, 360)
             color_idx = i % len(ColorPalette.get_palette("bright").colors)
             turtles.append([x, y, angle, color_idx])
 
@@ -1778,7 +1783,7 @@ class ProceduralArt:
                 # Update position and angle
                 turtle[0] = new_x
                 turtle[1] = new_y
-                turtle[2] = (turtle[2] + angle_step + np.random.uniform(-10, 10)) % 360
+                turtle[2] = (turtle[2] + angle_step + self.rng.uniform(-10, 10)) % 360
 
                 # Boundary conditions
                 if not (0 <= turtle[0] < width and 0 <= turtle[1] < height):
@@ -2081,7 +2086,7 @@ class ProceduralArt:
 
         for _ in range(num_points):
             # Choose random transformation
-            r = np.random.random()
+            r = self.rng.random()
             cumulative_prob: float = 0.0
 
             for transform, prob in transformations:
@@ -2134,12 +2139,12 @@ class ProceduralArt:
         transforms = []
         for _ in range(num_transforms):
             # Random affine transformation
-            a = np.random.uniform(-0.5, 0.5)
-            b = np.random.uniform(-0.5, 0.5)
-            c = np.random.uniform(-0.5, 0.5)
-            d = np.random.uniform(-0.5, 0.5)
-            e = np.random.uniform(-2, 2)
-            f = np.random.uniform(-2, 2)
+            a = self.rng.uniform(-0.5, 0.5)
+            b = self.rng.uniform(-0.5, 0.5)
+            c = self.rng.uniform(-0.5, 0.5)
+            d = self.rng.uniform(-0.5, 0.5)
+            e = self.rng.uniform(-2, 2)
+            f = self.rng.uniform(-2, 2)
 
             prob = 1.0 / num_transforms
             transforms.append(([a, b, c, d, e, f], prob))
@@ -2151,7 +2156,7 @@ class ProceduralArt:
 
         for _ in range(num_points):
             # Choose random transformation
-            r = np.random.random()
+            r = self.rng.random()
             cumulative_prob: float = 0.0
 
             for transform, prob in transforms:

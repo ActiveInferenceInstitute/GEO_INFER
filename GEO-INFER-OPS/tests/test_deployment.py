@@ -16,7 +16,12 @@ from kubernetes.client.models.v1_pod import V1Pod
 from kubernetes.client.models.v1_container_status import V1ContainerStatus
 
 from geo_infer_ops.core.deployment import DeploymentManager
-from geo_infer_ops.core.config import Config, DeploymentConfig
+from geo_infer_ops.core.config import (
+    Config,
+    DeploymentConfig,
+    DockerConfig,
+    KubernetesConfig,
+)
 
 
 @pytest.fixture
@@ -24,10 +29,8 @@ def mock_config():
     """Fixture providing a mock configuration."""
     return Config(
         deployment=DeploymentConfig(
-            docker=DeploymentConfig.DockerConfig(
-                registry="test-registry", tag="test-tag"
-            ),
-            kubernetes=DeploymentConfig.KubernetesConfig(namespace="test-namespace"),
+            docker=DockerConfig(registry="test-registry", tag="test-tag"),
+            kubernetes=KubernetesConfig(namespace="test-namespace"),
         )
     )
 
