@@ -18,9 +18,9 @@ from typing import Any
 from datetime import datetime
 from collections import defaultdict
 
-logger = logging.getLogger(__name__)
-
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class SpatioTemporalAnalyzer:

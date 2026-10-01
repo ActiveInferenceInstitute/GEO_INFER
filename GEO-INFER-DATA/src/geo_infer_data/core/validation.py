@@ -5,10 +5,10 @@ This module provides comprehensive data validation capabilities including
 geospatial validation, temporal validation, completeness checks, and
 quality assessment.
 
-The canonical :class:`GeospatialValidator` implementation (plus
-``ValidationConfig`` and ``ValidationRule``) lives in
-``geo_infer_data.utils.validation`` and is re-exported here for backwards
-compatibility; this module hosts ``DataQualityManager``.
+This module hosts ``DataQualityManager``, which drives the
+:class:`~geo_infer_data.utils.validation.GeospatialValidator` (configured via
+``ValidationConfig`` and ``ValidationRule``) defined in
+``geo_infer_data.utils.validation``; import those names from there.
 """
 
 import logging

@@ -5,7 +5,6 @@ Visualization workspace within `GEO-INFER-PLACE`.
 ## Contents
 
 - `__init__.py`
-- `bioregion_visualization.py`
 - `comprehensive_visualization.py`
 - `datashader_visualization.py`
 - `deepscatter_visualization.py`
@@ -31,7 +30,7 @@ Visualization workspace within `GEO-INFER-PLACE`.
 - Module: `GEO-INFER-PLACE`
 - Package: `geo_infer_place`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-PLACE`
+- Install: `uv sync --package geo-infer-place`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module PLACE`
 
 ## Dependencies

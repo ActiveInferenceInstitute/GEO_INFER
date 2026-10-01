@@ -293,7 +293,7 @@ class H3MessageBroker:
                 del self.handlers[handler_id]
 
                 # Remove from system handlers
-                for system_id, handler_list in self.system_handlers.items():
+                for handler_list in self.system_handlers.values():
                     if handler_id in handler_list:
                         handler_list.remove(handler_id)
                         break
@@ -558,7 +558,7 @@ class H3MessageBroker:
         while self.running:
             try:
                 # Check all queues for messages
-                for recipient_id, msg_queue in list(self.message_queues.items()):
+                for msg_queue in list(self.message_queues.values()):
                     try:
                         # Non-blocking get with timeout
                         priority, timestamp, message = msg_queue.get(timeout=0.1)

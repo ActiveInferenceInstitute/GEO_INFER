@@ -22,9 +22,8 @@ class MockModule(BaseAnalysisModule):
 @pytest.mark.core
 class TestUnifiedH3Backend(unittest.TestCase):
     def setUp(self):
-        # The backend reads config/target_areas.geojson relative to CWD
-        self._config_dir = Path.cwd() / "config"
-        self._config_dir.mkdir(exist_ok=True)
+        # Target areas come from an explicit geojson_path (no CWD default).
+        self._config_dir = Path(tempfile.mkdtemp())
         config_path = self._config_dir / "target_areas.geojson"
         sample_geojson = {
             "type": "FeatureCollection",
@@ -50,6 +49,7 @@ class TestUnifiedH3Backend(unittest.TestCase):
             target_region="TestRegion",
             target_areas={"TestRegion": ["all"]},
             base_data_dir=Path("test_data"),
+            geojson_path=config_path,
         )
 
     def tearDown(self):

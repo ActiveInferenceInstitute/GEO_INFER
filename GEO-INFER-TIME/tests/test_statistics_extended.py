@@ -340,20 +340,20 @@ class TestResidualDiagnosticsExtended:
     def test_mean_test_for_zero_mean(self, stats, white_noise):
         """White noise mean should not differ significantly from zero."""
         result = stats.residual_diagnostics(white_noise)
-        assert result["mean_test"]["mean_is_zero"] == True
+        assert result["mean_test"]["mean_is_zero"]
 
     def test_mean_test_for_nonzero_mean(self, stats):
         """Residuals with nonzero mean are flagged."""
         np.random.seed(42)
         biased = list(np.random.randn(100) + 5.0)  # mean ~5
         result = stats.residual_diagnostics(biased)
-        assert result["mean_test"]["mean_is_zero"] == False
+        assert not result["mean_test"]["mean_is_zero"]
         assert "Mean significantly different from zero" in result["overall"]["issues"]
 
     def test_variance_test_homoscedastic(self, stats, white_noise):
         """Constant variance data is detected as homoscedastic."""
         result = stats.residual_diagnostics(white_noise)
-        assert result["variance_test"]["homoscedastic"] == True
+        assert result["variance_test"]["homoscedastic"]
 
     def test_variance_test_heteroscedastic(self, stats):
         """Increasing variance is detected as heteroscedastic."""
@@ -364,7 +364,7 @@ class TestResidualDiagnosticsExtended:
             np.random.randn(n // 2) * 10.0
         )
         result = stats.residual_diagnostics(data)
-        assert result["variance_test"]["homoscedastic"] == False
+        assert not result["variance_test"]["homoscedastic"]
         assert "heteroscedasticity" in " ".join(result["overall"]["issues"]).lower()
 
     def test_overall_recommendation(self, stats, white_noise):

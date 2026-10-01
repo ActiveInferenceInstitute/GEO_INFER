@@ -29,7 +29,6 @@ try:
     import uvicorn
     from fastapi import FastAPI, HTTPException
     from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
-    from fastapi.staticfiles import StaticFiles
 
     _FASTAPI_AVAILABLE = True
 except ImportError:

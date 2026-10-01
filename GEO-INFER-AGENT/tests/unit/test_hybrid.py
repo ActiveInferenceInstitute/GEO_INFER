@@ -3,20 +3,13 @@
 """
 Tests for the hybrid agent architecture: SubAgentWrapper, HybridState, decision policy.
 
-Note: hybrid.py references ``agent.id`` but ExampleAgent stores the identifier
-as ``agent_id``.  The helper below patches the attribute for compatibility.
+Sub-agents are keyed by their ``agent_id`` attribute.
 """
 
 import unittest
 
 from geo_infer_agent.core.agent_base import ExampleAgent
 from geo_infer_agent.models.hybrid import HybridState, SubAgentWrapper
-
-
-def _patch_agent(agent: ExampleAgent) -> ExampleAgent:
-    """Add ``id`` alias so hybrid.py can find it via ``agent.id``."""
-    agent.id = agent.agent_id
-    return agent
 
 
 class TestSubAgentWrapper(unittest.TestCase):
@@ -28,7 +21,7 @@ class TestSubAgentWrapper(unittest.TestCase):
         priority: int = 5,
         activation_conditions: dict = None,
     ) -> SubAgentWrapper:
-        agent = _patch_agent(ExampleAgent(agent_id=f"sub-{agent_type}"))
+        agent = ExampleAgent(agent_id=f"sub-{agent_type}")
         return SubAgentWrapper(
             agent_type=agent_type,
             agent=agent,
@@ -93,7 +86,7 @@ class TestHybridState(unittest.TestCase):
     """Tests for HybridState shared context and sub-agent management."""
 
     def _make_wrapper(self, agent_id: str, priority: int = 5) -> SubAgentWrapper:
-        agent = _patch_agent(ExampleAgent(agent_id=agent_id))
+        agent = ExampleAgent(agent_id=agent_id)
         return SubAgentWrapper(agent_type="default", agent=agent, priority=priority)
 
     def test_add_and_remove_sub_agent(self) -> None:
@@ -176,7 +169,7 @@ class TestHybridState(unittest.TestCase):
     def test_activation_with_context_conditions(self) -> None:
         """Sub-agents with context conditions activate based on shared context."""
         state = HybridState()
-        agent = _patch_agent(ExampleAgent(agent_id="cond-agent"))
+        agent = ExampleAgent(agent_id="cond-agent")
         wrapper = SubAgentWrapper(
             agent_type="default",
             agent=agent,

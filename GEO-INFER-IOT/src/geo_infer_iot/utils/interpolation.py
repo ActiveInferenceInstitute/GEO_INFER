@@ -382,7 +382,10 @@ class SpatialInterpolation:
             return []
 
     def cross_validate_interpolation(
-        self, measurements: list[dict], test_fraction: float = 0.2
+        self,
+        measurements: list[dict],
+        test_fraction: float = 0.2,
+        seed: int | np.random.Generator | None = 42,
     ) -> dict:
         """
         Cross-validate interpolation quality using hold-out testing.
@@ -390,6 +393,8 @@ class SpatialInterpolation:
         Args:
             measurements: All available measurements
             test_fraction: Fraction of data to use for testing
+            seed: Seed or Generator for the hold-out split (deterministic by
+                default; the global NumPy random state is never touched)
 
         Returns:
             Cross-validation results with error metrics
@@ -399,9 +404,9 @@ class SpatialInterpolation:
                 return {"error": "Insufficient measurements for cross-validation"}
 
             # Split data into training and testing
-            np.random.seed(42)  # For reproducibility
+            rng = np.random.default_rng(seed)
             n_test = int(len(measurements) * test_fraction)
-            test_indices = np.random.choice(len(measurements), n_test, replace=False)
+            test_indices = rng.choice(len(measurements), n_test, replace=False)
 
             train_measurements = [
                 measurements[i]

@@ -52,9 +52,9 @@ a numeric operation, and a float64 result. Results are cached; call
 `get_backend_diagnostics(refresh=True)` after changing device availability or
 configuration. JAX requires a GPU and `JAX_ENABLE_X64=1` configured before its
 initialization; CPU-only JAX is not advertised as GPU acceleration. The library
-does not change JAX global precision settings. Legacy `HAS_CUPY`, `HAS_TORCH`,
-`HAS_JAX`, and `HAS_GPU` boolean attributes remain available but accessing them
-performs a cached capability probe. A previously imported boolean is a snapshot.
+does not change JAX global precision settings. Use `is_accelerator_available()`
+or `get_available_backends()` for capability checks; the module exposes no
+import-time `HAS_*` availability flags.
 
 GPU packages and drivers are provisioned separately for the target machine.
 They are not mandatory SPACE dependencies. This change establishes CPU and
@@ -81,19 +81,17 @@ kernels accumulate dimensions without allocating an `(N, M, D)` tensor.
 ## H3 integration and migrations
 
 `H3Backend.geodesic_distance_matrix()` and `geodesic_spatial_join()` accept
-`backend` and `chunk_size` and return diagnostics. Their existing
-`use_gpu=False` now actually forces CPU execution. Combining it with an
-explicit GPU backend raises a conflicting-options error. Invalid centroid cell
+keyword-only `backend` (default `"auto"`; `"cpu"` forces CPU without probing
+accelerators) and `chunk_size`, and return diagnostics. Invalid centroid cell
 identifiers raise; they are never converted to `(0, 0)`.
 
-H3 grid distance and topology joins always use host H3. Their `use_gpu` argument
-remains accepted for compatibility, but metadata reports `backend="cpu"` and
-`accelerator=[]`. H3 `intersects` means identical or distance-1 adjacent cells,
+H3 grid distance (`compute_distance_matrix()`) and topology joins
+(`spatial_join()`) always use host H3 and take no backend argument; metadata
+reports `backend="cpu"` and `accelerator=[]`. H3 `intersects` means identical or distance-1 adjacent cells,
 and `contains`/`within` mean strict H3 ancestry; these are not arbitrary polygon
 intersection predicates. Join matches preserve input order; unmatched cell IDs
-are unique in input order. Invalid cells in topology joins raise. The legacy
-`spatial_join_kernel(resolution=...)` parameter must remain `-1`; ancestry is
-inferred from each cell's actual resolution. Grid-distance matrices retain the
+are unique in input order. Invalid cells in topology joins raise.
+`spatial_join_kernel()` infers ancestry from each cell's actual resolution. Grid-distance matrices retain the
 documented `-1` sentinel for incomparable or invalid pairs.
 
 For distance joins using `label_offsets_a`/`label_offsets_b`, both matched pairs

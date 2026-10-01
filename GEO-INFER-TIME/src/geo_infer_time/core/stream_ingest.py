@@ -23,13 +23,20 @@ from urllib.parse import urlsplit
 
 
 def normalize_timestamp(value: datetime) -> datetime:
-    """Normalize a datetime to UTC, interpreting legacy naive values as UTC."""
+    """Convert a timezone-aware datetime to UTC.
+
+    Naive datetimes are ambiguous (local wall-clock or UTC) and raise
+    ValueError; attach an explicit ``tzinfo`` (e.g. ``datetime.UTC``).
+    """
     if not isinstance(value, datetime):
         raise TypeError("timestamp must be a datetime")
     if value != value:  # Reject pandas NaT, a datetime subclass.
         raise ValueError("timestamp must not be NaT")
     if value.utcoffset() is None:
-        return value.replace(tzinfo=UTC)
+        raise ValueError(
+            "timestamp must be timezone-aware; naive datetimes are ambiguous "
+            f"(got {value.isoformat()!r}, attach tzinfo such as UTC)"
+        )
     return value.astimezone(UTC)
 
 
@@ -91,7 +98,12 @@ class StreamIngestAdapter(ABC):
         yield  # pragma: no cover
 
     async def acknowledge(self, record: dict[str, Any]) -> None:
-        """Confirm successful processing (no-op for sources without offsets)."""
+        """Confirm successful processing of ``record``.
+
+        Sources without offsets have nothing to commit, so the default does
+        nothing; offset-tracking adapters (Kafka) override it.
+        """
+        return None
 
     def normalize_record(self, record: str | bytes | dict[str, Any]) -> dict[str, Any]:
         """Validate a record and return canonical UTC ISO time and numeric value."""
@@ -103,7 +115,8 @@ class StreamIngestAdapter(ABC):
     ) -> tuple[datetime, float, dict[str, Any]]:
         """Parse UTC event time and a finite value, retaining other metadata.
 
-        Naive timestamps are interpreted as UTC. Numeric timestamps are seconds,
+        String and datetime timestamps must carry a UTC offset (ISO 8601 ``Z``
+        or ``+HH:MM``); naive values raise ValueError. Numeric timestamps are seconds,
         or milliseconds when their absolute value exceeds 1e11. Event time must
         be supplied explicitly; wall-clock time is never substituted.
         """

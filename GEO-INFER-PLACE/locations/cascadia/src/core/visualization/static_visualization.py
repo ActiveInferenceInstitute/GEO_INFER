@@ -165,7 +165,7 @@ def create_summary_statistics(unified_data: dict, redevelopment_scores: dict) ->
         ) ** 0.5
 
     # Calculate module statistics
-    for module_name, module_stats in stats["modules"].items():
+    for module_stats in stats["modules"].values():
         if module_stats["cells_with_data"] > 0:
             module_stats["coverage_percentage"] = (
                 module_stats["cells_with_data"] / module_stats["total_cells"]

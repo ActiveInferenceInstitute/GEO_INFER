@@ -7,14 +7,12 @@ and server endpoints.
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 import yaml
 
 # Ensure cascadia src is on path
 CASCADIA_DIR = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(CASCADIA_DIR))
 
 CONFIG_DIR = CASCADIA_DIR / "config"
 
@@ -184,7 +182,7 @@ class TestGeoInferIntegrations:
         result = eco.run_final_analysis(h3_data)
         assert isinstance(result, dict)
         assert len(result) == 2
-        for cell_id, props in result.items():
+        for props in result.values():
             assert "ecoregion_code" in props
             assert "salmon_esu_count" in props
 
@@ -195,7 +193,7 @@ class TestBioregionVisualization:
     def test_bioregion_map_generates_html(self, tmp_path):
         # folium is a hard PLACE dependency; plain import.
 
-        from src.core.visualization.bioregion_visualization import create_bioregion_map
+        from geo_infer_place.core.bioregion_visualization import create_bioregion_map
 
         output = tmp_path / "test_bioregion.html"
         # cascadia_bioregion_boundary.geojson is absent from config/; the
@@ -207,7 +205,7 @@ class TestBioregionVisualization:
     def test_html_contains_volcano_layer(self, tmp_path):
         # folium is a hard PLACE dependency; plain import.
 
-        from src.core.visualization.bioregion_visualization import create_bioregion_map
+        from geo_infer_place.core.bioregion_visualization import create_bioregion_map
 
         output = tmp_path / "test_bioregion_volcano.html"
         # cascadia_bioregion_boundary.geojson is absent from config/; the
@@ -220,7 +218,7 @@ class TestBioregionVisualization:
     def test_html_file_size_under_5mb(self, tmp_path):
         # folium is a hard PLACE dependency; plain import.
 
-        from src.core.visualization.bioregion_visualization import create_bioregion_map
+        from geo_infer_place.core.bioregion_visualization import create_bioregion_map
 
         output = tmp_path / "test_bioregion_size.html"
         # cascadia_bioregion_boundary.geojson is absent from config/; the

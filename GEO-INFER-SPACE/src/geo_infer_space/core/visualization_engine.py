@@ -587,7 +587,7 @@ class InteractiveVisualizationEngine:
         domain_datasets = integration_data.get("domain_spatial", {})
         if not isinstance(domain_datasets, dict):
             return h3_cells
-        for domain_name, domain_data in domain_datasets.items():
+        for domain_data in domain_datasets.values():
             if not isinstance(domain_data, dict):
                 continue
             for cell_id, cell_data in domain_data.get("h3_cells", {}).items():
@@ -617,6 +617,6 @@ class InteractiveVisualizationEngine:
                 output["domain_count"] += 1
                 output["risk_factors"] += int(cell_data.get("risk_factors", 0))
 
-        for cell_id, cell_data in h3_cells.items():
+        for cell_data in h3_cells.values():
             cell_data["integration_score"] /= max(cell_data["domain_count"], 1)
         return h3_cells

@@ -15,8 +15,6 @@ Core workspace within `GEO-INFER-IOT`.
 
 - `inference.py:BayesianSpatialInference` (class)
 - `ingestion.py:SpatialOperations` (class)
-- `ingestion.py:CoordinateTransform` (class)
-- `ingestion.py:OSCCatalog` (class)
 - `ingestion.py:SensorMeasurement` (class)
 - `ingestion.py:SpatialInferenceConfig` (class)
 - `ingestion.py:IoTDataIngestion` (class)
@@ -39,7 +37,7 @@ Core workspace within `GEO-INFER-IOT`.
 - Module: `GEO-INFER-IOT`
 - Package: `geo_infer_iot`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-IOT`
+- Install: `uv sync --package geo-infer-iot`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module IOT`
 
 ## Dependencies

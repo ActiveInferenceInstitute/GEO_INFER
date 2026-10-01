@@ -120,7 +120,7 @@ class VectorReader:
                 raise ValueError(f"Unsupported GeoJSON type: {geojson_type}")
 
         except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON format: {e}")
+            raise ValueError(f"Invalid JSON format: {e}") from e
 
     def _read_csv(self, file_path: Path, **kwargs: Any) -> gpd.GeoDataFrame:
         """Read CSV file and convert to GeoDataFrame."""
@@ -194,7 +194,7 @@ class VectorReader:
         try:
             # Try reading as GeoParquet first
             return gpd.read_parquet(file_path, **kwargs)
-        except Exception:
+        except Exception as exc:
             # Fallback to regular parquet with geometry reconstruction
             df = pd.read_parquet(file_path, **kwargs)
 
@@ -218,13 +218,13 @@ class VectorReader:
                 except Exception:
                     try:
                         geometries = df[geom_col].apply(wkb.loads)
-                    except Exception:
-                        raise ValueError("Could not parse geometry column")
+                    except Exception as wkb_exc:
+                        raise ValueError("Could not parse geometry column") from wkb_exc
 
                 df = df.drop(columns=[geom_col])
                 return gpd.GeoDataFrame(df, geometry=geometries)
             else:
-                raise ValueError("No geometry column found in Parquet file")
+                raise ValueError("No geometry column found in Parquet file") from exc
 
     def _read_feather(self, file_path: Path, **kwargs: Any) -> gpd.GeoDataFrame:
         """Read Feather file with geospatial data."""

@@ -14,6 +14,8 @@ from collections.abc import Callable
 from enum import Enum
 from collections import defaultdict
 
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -23,8 +25,6 @@ try:
 except ImportError:
     H3_AVAILABLE = False
     logger.warning("h3-py package not available")
-
-import numpy as np  # hard dependency (numpy<2.0 pinned); no fallback path
 
 try:
     from sklearn.cluster import KMeans as KMeans, DBSCAN, AgglomerativeClustering
@@ -300,9 +300,9 @@ class H3LumpingEngine:
 
         for cell in cells:
             feature_vector = []
-            for field in attribute_fields:
-                if field in cell.state_variables:
-                    feature_vector.append(cell.state_variables[field])
+            for field_name in attribute_fields:
+                if field_name in cell.state_variables:
+                    feature_vector.append(cell.state_variables[field_name])
                 else:
                     feature_vector.append(0.0)
 
@@ -410,9 +410,9 @@ class H3LumpingEngine:
 
         for cell in cells:
             feature_vector = []
-            for field in attribute_fields:
-                if field in cell.state_variables:
-                    feature_vector.append(cell.state_variables[field])
+            for field_name in attribute_fields:
+                if field_name in cell.state_variables:
+                    feature_vector.append(cell.state_variables[field_name])
                 else:
                     feature_vector.append(0.0)
 
@@ -501,9 +501,9 @@ class H3LumpingEngine:
 
         for cell in cells:
             feature_vector = []
-            for field in attribute_fields:
-                if field in cell.state_variables:
-                    feature_vector.append(cell.state_variables[field])
+            for field_name in attribute_fields:
+                if field_name in cell.state_variables:
+                    feature_vector.append(cell.state_variables[field_name])
                 else:
                     feature_vector.append(0.0)
 
@@ -691,7 +691,7 @@ class H3LumpingEngine:
             return 0.5
 
         lump_similarities: list[float] = []
-        for lump_id, cell_ids in lumps.items():
+        for cell_ids in lumps.values():
             if len(cell_ids) < 2:
                 lump_similarities.append(1.0)  # A single-cell lump is perfectly similar
                 continue

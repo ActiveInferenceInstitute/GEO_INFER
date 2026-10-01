@@ -7,7 +7,7 @@ and data quality management (``DataQualityManager``) for the GEO-INFER framework
 Use ``initialize_data_system()`` to set up all components in one call.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 import logging
 
 __version__ = "0.3.0"

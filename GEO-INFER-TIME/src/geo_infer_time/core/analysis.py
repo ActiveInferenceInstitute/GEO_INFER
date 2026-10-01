@@ -706,14 +706,14 @@ class TemporalAnalyzer:
             "max_lag": nlags,
             "confidence_bound": float(conf_bound),
             "acf_values": [float(a) for a in acf_values],
-            "significant_lags": [l for l in significant_lags if l["significant"]],
+            "significant_lags": [lag for lag in significant_lags if lag["significant"]],
             "detected_periods": peaks[:5] if peaks else [],
             "summary": {
                 "first_significant_lag": next(
-                    (l["lag"] for l in significant_lags if l["significant"]), None
+                    (lag["lag"] for lag in significant_lags if lag["significant"]), None
                 ),
                 "number_significant": sum(
-                    1 for l in significant_lags if l["significant"]
+                    1 for lag in significant_lags if lag["significant"]
                 ),
             },
         }

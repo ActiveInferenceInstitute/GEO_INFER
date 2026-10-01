@@ -22,7 +22,8 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 
-from geo_infer_data.core.validation import DataQualityManager, GeospatialValidator
+from geo_infer_data.core.validation import DataQualityManager
+from geo_infer_data.utils.validation import GeospatialValidator
 from geo_infer_data.models.schemas import (
     DatasetMetadata,
     SpatialExtent,

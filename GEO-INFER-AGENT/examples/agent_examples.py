@@ -13,18 +13,17 @@ import json
 import os
 from datetime import datetime
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-
-# Import agent models
 from geo_infer_agent.models import (
     BDIAgent,
     ActiveInferenceAgent,
     RLAgent,
     RuleBasedAgent,
     HybridAgent,
+)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 
@@ -164,7 +163,7 @@ async def run_active_inference_agent_example():
         print(f"\nAgent cycle {i + 1}:")
 
         # Perceive environment
-        perceptions = await agent.perceive()
+        await agent.perceive()
         print("  Perceptions: sensor data received")
 
         # Update preferences based on cycle
@@ -233,7 +232,7 @@ async def run_rl_agent_example():
         print(f"\nAgent cycle {i + 1}:")
 
         # Perceive environment
-        perceptions = await agent.perceive()
+        await agent.perceive()
         print("  Perceptions: sensor data received")
 
         # Make decision
@@ -316,7 +315,7 @@ async def run_rule_based_agent_example():
         print(f"\nAgent cycle {i + 1}:")
 
         # Perceive environment
-        perceptions = await agent.perceive()
+        await agent.perceive()
         print("  Perceptions: sensor data received")
 
         # Make decision
@@ -422,7 +421,7 @@ async def run_hybrid_agent_example():
         print(f"\nAgent cycle {i + 1}:")
 
         # Perceive environment
-        perceptions = await agent.perceive()
+        await agent.perceive()
         print("  Perceptions: sensor data received")
 
         # Query active agents

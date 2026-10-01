@@ -123,7 +123,7 @@ class BayesianInferenceAPI:
                 logger.error(f"Error in spatial inference: {e}")
                 raise HTTPException(
                     status_code=500, detail=f"Inference failed: {str(e)}"
-                )
+                ) from e
 
         @self.app.get("/inference/{inference_id}")
         async def get_inference_result(inference_id: int) -> dict[str, Any]:
@@ -215,7 +215,7 @@ class BayesianInferenceAPI:
                 logger.error(f"Error configuring model: {e}")
                 raise HTTPException(
                     status_code=500, detail=f"Model configuration failed: {str(e)}"
-                )
+                ) from e
 
         @self.app.get("/predictions/spatial")
         async def get_spatial_predictions(
@@ -253,7 +253,7 @@ class BayesianInferenceAPI:
                 logger.error(f"Error getting spatial predictions: {e}")
                 raise HTTPException(
                     status_code=500, detail=f"Prediction retrieval failed: {str(e)}"
-                )
+                ) from e
 
         @self.app.post("/inference/batch")
         async def run_batch_inference(

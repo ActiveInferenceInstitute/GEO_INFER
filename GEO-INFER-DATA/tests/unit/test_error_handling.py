@@ -328,11 +328,8 @@ class TestIntegrationErrorHandling:
     async def test_system_initialization_errors(self):
         """Test error handling during system initialization."""
         # Test with invalid storage backends
-        try:
+        with pytest.raises(ValueError, match="Unsupported storage backend"):
             initialize_data_system(storage_backends=["invalid_backend"])
-            assert False, "Should have raised an error"
-        except Exception:
-            pass  # Expected
 
         # Test with valid backends after error
         system = initialize_data_system(storage_backends=["local"])

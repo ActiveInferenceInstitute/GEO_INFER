@@ -11,7 +11,6 @@ Data Modules workspace within `GEO-INFER-PLACE`.
 - `mortgage_debt/`
 - `ownership/`
 - `power_source/`
-- `surface_water/`
 - `water_rights/`
 - `zoning/`
 - `__init__.py`
@@ -25,7 +24,7 @@ Data Modules workspace within `GEO-INFER-PLACE`.
 - Module: `GEO-INFER-PLACE`
 - Package: `geo_infer_place`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-PLACE`
+- Install: `uv sync --package geo-infer-place`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module PLACE`
 
 ## Dependencies

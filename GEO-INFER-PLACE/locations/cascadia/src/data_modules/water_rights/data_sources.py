@@ -127,7 +127,6 @@ class CascadianWaterRightsDataSources:
             from shapely.geometry import LineString
 
             for element in elements:
-                coords = None
                 geom = None
 
                 if element["type"] == "node":
@@ -219,10 +218,6 @@ class CascadianWaterRightsDataSources:
         or_gdf["state"] = "OR"
         return or_gdf
 
-    def _fetch_wa_data(self, bbox: tuple[float, float, float, float]) -> gpd.GeoDataFrame:
-        """WA data not available via easy API, relying on OSM fallback only."""
-        return gpd.GeoDataFrame()
-
     def fetch_all_water_rights_data(self, target_hexagons: list) -> gpd.GeoDataFrame:
         """
         Fetches water rights data for all three states (CA, OR, WA).
@@ -253,8 +248,6 @@ class CascadianWaterRightsDataSources:
         or_gdf = self._fetch_or_data(bbox)
         if not or_gdf.empty:
             all_gdfs.append(or_gdf)
-
-        wa_gdf = self._fetch_wa_data(bbox)  # returns empty
 
         # OSM Fallback if very little data found (or always to augment?)
         # Let's augment, as official records + physical wells are complementary

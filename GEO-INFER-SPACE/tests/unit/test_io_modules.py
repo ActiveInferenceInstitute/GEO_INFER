@@ -7,23 +7,12 @@ Covers:
   - Point Cloud I/O (geo_infer_space.io.point_cloud_io)
   - Format Handlers (geo_infer_space.io.format_handlers)
 
-The I/O modules import unconditionally; heavy optional dependencies such
-as rasterio are guarded inside the modules themselves via capability
-flags, and the public callables raise ImportError when the dependency is
-missing. Tests that exercise those callables branch on ``HAS_RASTERIO``
-(mirroring test_whitebox_bridge.py) and assert the loud ImportError
-contract when the dependency is absent.
+rasterio and laspy are workspace dependencies, so these tests import and
+exercise them directly; no test branches on dependency availability.
 """
 
 import numpy as np
 import pytest
-
-try:
-    import rasterio  # noqa: F401
-
-    HAS_RASTERIO = True
-except ImportError:
-    HAS_RASTERIO = False
 
 
 # ---------------------------------------------------------------------------
@@ -325,39 +314,22 @@ class TestRasterWriterDirectoryCreation:
         data = np.random.rand(1, 16, 16).astype(np.float32)
 
         writer = self._RasterWriter()
-        if HAS_RASTERIO:
-            writer.write(data, str(out_file), crs="EPSG:4326")
+        writer.write(data, str(out_file), crs="EPSG:4326")
 
-            assert nested_dir.exists()
-            assert out_file.exists()
-        else:
-            # Without rasterio the call must fail loudly, never fabricate
-            # a silently-created output tree.
-            with pytest.raises(ImportError, match="rasterio is required"):
-                writer.write(data, str(out_file), crs="EPSG:4326")
-            assert not nested_dir.exists()
+        assert nested_dir.exists()
+        assert out_file.exists()
 
     def test_write_unsupported_format_raises_value_error(self, tmp_path):
         writer = self._RasterWriter()
         data = np.zeros((1, 4, 4), dtype=np.float32)
-        if HAS_RASTERIO:
-            with pytest.raises(ValueError, match="Unsupported raster format"):
-                writer.write(data, str(tmp_path / "output.bmp"))
-        else:
-            # The rasterio availability check fires before the format check
-            # in this environment.
-            with pytest.raises(ImportError, match="rasterio is required"):
-                writer.write(data, str(tmp_path / "output.bmp"))
+        with pytest.raises(ValueError, match="Unsupported raster format"):
+            writer.write(data, str(tmp_path / "output.bmp"))
 
     def test_write_rejects_4d_array(self, tmp_path):
         writer = self._RasterWriter()
         data = np.zeros((2, 3, 4, 4), dtype=np.float32)
-        if HAS_RASTERIO:
-            with pytest.raises(ValueError, match="Expected 2D or 3D array"):
-                writer.write(data, str(tmp_path / "bad.tif"))
-        else:
-            with pytest.raises(ImportError, match="rasterio is required"):
-                writer.write(data, str(tmp_path / "bad.tif"))
+        with pytest.raises(ValueError, match="Expected 2D or 3D array"):
+            writer.write(data, str(tmp_path / "bad.tif"))
 
 
 class TestRasterRoundTrip:
@@ -1283,37 +1255,37 @@ class TestIOModuleReExports:
 
         assert callable(supported_vector_formats)
 
-    def test_raster_reader_if_available(self):
+    def test_raster_reader_exported(self):
         from geo_infer_space.io import RasterReader
 
         assert RasterReader is not None
 
-    def test_raster_writer_if_available(self):
+    def test_raster_writer_exported(self):
         from geo_infer_space.io import RasterWriter
 
         assert RasterWriter is not None
 
-    def test_point_cloud_reader_if_available(self):
+    def test_point_cloud_reader_exported(self):
         from geo_infer_space.io import PointCloudReader
 
         assert PointCloudReader is not None
 
-    def test_point_cloud_writer_if_available(self):
+    def test_point_cloud_writer_exported(self):
         from geo_infer_space.io import PointCloudWriter
 
         assert PointCloudWriter is not None
 
-    def test_format_handler_if_available(self):
+    def test_format_handler_exported(self):
         from geo_infer_space.io import FormatHandler
 
         assert FormatHandler is not None
 
-    def test_geojson_handler_if_available(self):
+    def test_geojson_handler_exported(self):
         from geo_infer_space.io import GeoJSONHandler
 
         assert GeoJSONHandler is not None
 
-    def test_geotiff_handler_if_available(self):
+    def test_geotiff_handler_exported(self):
         from geo_infer_space.io import GeoTIFFHandler
 
         assert GeoTIFFHandler is not None

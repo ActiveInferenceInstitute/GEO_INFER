@@ -12,22 +12,13 @@ from typing import Any, Optional, Union
 
 import numpy as np
 
+import rasterio
+from rasterio.crs import CRS
+from rasterio.enums import Resampling
+from rasterio.transform import Affine, from_bounds
+from rasterio.windows import Window
+
 logger = logging.getLogger(__name__)
-
-try:
-    import rasterio
-    from rasterio.crs import CRS
-    from rasterio.transform import Affine, from_bounds
-    from rasterio.enums import Resampling
-    from rasterio.windows import Window
-
-    HAS_RASTERIO = True
-except ImportError:
-    HAS_RASTERIO = False
-    logger.warning(
-        "rasterio is not installed. Raster I/O functionality will be limited. "
-        "Install with: pip install rasterio"
-    )
 
 # Supported raster formats
 SUPPORTED_RASTER_FORMATS = {
@@ -54,15 +45,6 @@ FORMAT_DRIVERS = {
     "PNG": "PNG",
     "JPEG": "JPEG",
 }
-
-
-def _check_rasterio() -> None:
-    """Raise ImportError if rasterio is not available."""
-    if not HAS_RASTERIO:
-        raise ImportError(
-            "rasterio is required for raster I/O operations. "
-            "Install with: pip install rasterio"
-        )
 
 
 class RasterReader:
@@ -107,7 +89,6 @@ class RasterReader:
             ValueError: If file format is not supported.
             FileNotFoundError: If file does not exist.
         """
-        _check_rasterio()
 
         file_path = Path(file_path)
 
@@ -315,7 +296,6 @@ class RasterReader:
         Returns:
             Dictionary with metadata, crs, transform, bounds, and shape info.
         """
-        _check_rasterio()
 
         file_path = Path(file_path)
 
@@ -389,7 +369,6 @@ class RasterWriter:
             ValueError: If file format is not supported or data shape is wrong.
             FileExistsError: If file exists and overwrite is False.
         """
-        _check_rasterio()
 
         file_path = Path(file_path)
         file_ext = file_path.suffix.lower()
@@ -429,7 +408,7 @@ class RasterWriter:
                 affine_transform = transform
             else:
                 affine_transform = Affine(*transform[:6])
-        elif HAS_RASTERIO:
+        else:
             # A non-identity affine transform makes synthetic rasters valid
             # geospatial datasets and avoids Rasterio's warning on write.
             affine_transform = from_bounds(0, 0, width, height, width, height)

@@ -294,7 +294,7 @@ class SpaceConfig(BaseModel):
                 try:
                     directory.mkdir(parents=True, exist_ok=True)
                 except Exception as e:
-                    raise ValueError(f"Cannot create directory {directory}: {e}")
+                    raise ValueError(f"Cannot create directory {directory}: {e}") from e
         return self
 
     @classmethod

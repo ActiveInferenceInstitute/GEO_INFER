@@ -11,9 +11,9 @@ from typing import Any, cast
 import math
 from .core import H3Grid, H3Cell
 
-logger = logging.getLogger(__name__)
-
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 MIN_H3_VERSION = (4, 5, 0)
@@ -263,7 +263,7 @@ class H3SpatialAnalyzer:
         std_val = np.std(values)
 
         # Calculate Gi* for each cell
-        for i, data in enumerate(valid_data):
+        for data in valid_data:
             cell = data["cell"]
 
             # Get neighbors including self. h3-py 4.x raises ValueError for
@@ -283,7 +283,7 @@ class H3SpatialAnalyzer:
             local_count = 0
 
             for neighbor_idx in neighbors:
-                for j, neighbor_data in enumerate(valid_data):
+                for neighbor_data in valid_data:
                     if neighbor_data["cell"].index == neighbor_idx:
                         local_sum += neighbor_data["value"]
                         local_count += 1
@@ -349,7 +349,7 @@ class H3SpatialAnalyzer:
         values = np.array([d["value"] for d in valid_data])
         mean_val = np.mean(values)
         # Calculate local Moran's I for each cell
-        for i, data in enumerate(valid_data):
+        for data in valid_data:
             cell = data["cell"]
             cell_value = data["value"]
 
@@ -855,7 +855,7 @@ class H3ClusterAnalyzer:
         current_clusters = list(range(n))
 
         # Perform a few merge steps
-        for step in range(min(3, n - 1)):
+        for _ in range(min(3, n - 1)):
             min_dist = float("inf")
             merge_i, merge_j = -1, -1
 

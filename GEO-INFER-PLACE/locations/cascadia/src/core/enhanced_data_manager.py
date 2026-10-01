@@ -18,7 +18,6 @@ import geopandas as gpd
 import h3
 import time
 import psutil
-import os
 import sys
 
 # Import enhanced logging
@@ -609,8 +608,6 @@ class EnhancedDataManager:
 
             # Calculate file size and performance metrics
             file_size_mb = raw_data_path.stat().st_size / 1024 / 1024
-            process = psutil.Process(os.getpid())
-            memory_usage_mb = process.memory_info().rss / 1024 / 1024
 
             # Perform validation
             validation_result = self._validate_geodataframe(gdf, module_name)

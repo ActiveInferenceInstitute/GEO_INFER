@@ -13,17 +13,13 @@ import numpy as np
 from pathlib import Path
 import logging
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from geo_infer_space.core import SpatialIndexingInterface
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-# Unified Spatial Architecture
-from geo_infer_space.core import SpatialIndexingInterface
 
 try:
     import h3
@@ -36,7 +32,7 @@ except ImportError:
 
 try:
     import geopandas as gpd
-    from shapely.geometry import Polygon, Point
+    from shapely.geometry import Polygon
 
     GEOPANDAS_AVAILABLE = True
 except ImportError:
@@ -183,7 +179,7 @@ def example_3_transportation_corridor():
         }
     }
 
-    for corridor_id, corridor_data in corridors.items():
+    for corridor_data in corridors.values():
         print(f"\nAnalyzing {corridor_data['name']}:")
         print("-" * 50)
 

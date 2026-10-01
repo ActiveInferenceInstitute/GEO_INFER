@@ -12,11 +12,8 @@ import numpy as np
 from datetime import datetime
 from shapely.geometry import Point
 
-from geo_infer_data.core.validation import (
-    DataQualityManager,
-    GeospatialValidator,
-    ValidationConfig,
-)
+from geo_infer_data.core.validation import DataQualityManager
+from geo_infer_data.utils.validation import GeospatialValidator, ValidationConfig
 from geo_infer_data.models.schemas import (
     DatasetMetadata,
     SpatialExtent,

@@ -2,7 +2,7 @@
 Tests for Unified ML Integration using SpatialIndexingInterface.
 
 Verifies that ML feature engineering workflows can be executed using the
-unified spatial architecture, replacing legacy H3-specific ML modules.
+unified spatial architecture (``SpatialIndexingInterface``).
 """
 
 import pytest
@@ -36,7 +36,7 @@ class TestUnifiedMLIntegration:
 
         # 2. Generate Grid and Features
         features = []
-        for i, (lat, lng) in enumerate(sf_area):
+        for lat, lng in sf_area:
             # Convert to cell
             cell_index = indexer.latlng_to_cell(lat, lng, 9)
             assert isinstance(cell_index, str)

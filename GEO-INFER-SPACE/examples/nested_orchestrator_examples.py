@@ -11,11 +11,9 @@ import json
 import logging
 from datetime import datetime
 from typing import Any
-from pathlib import Path
-import sys
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+import numpy as np
+
 
 # Unified Spatial Architecture
 from geo_infer_space.core import (
@@ -29,41 +27,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-try:
-    from geo_infer_space.analytics.temporal import TemporalAnalyzer
-
-    TEMPORAL_AVAILABLE = True
-except ImportError:
-    TEMPORAL_AVAILABLE = False
-    logger.warning("TemporalAnalyzer not available")
-
 # Visualization imports
 try:
     import matplotlib.pyplot as plt
-    import matplotlib.patches as patches
-    from matplotlib.colors import ListedColormap
-    import seaborn as sns
 
     MATPLOTLIB_AVAILABLE = True
 except ImportError:
     MATPLOTLIB_AVAILABLE = False
     logger.warning("Matplotlib not available - visualizations will be limited")
 
-try:
-    import numpy as np
-
-    NUMPY_AVAILABLE = True
-except ImportError:
-    NUMPY_AVAILABLE = False
-    logger.warning("NumPy not available - some features will be limited")
-
-try:
-    import folium
-
-    FOLIUM_AVAILABLE = True
-except ImportError:
-    FOLIUM_AVAILABLE = False
-    logger.warning("Folium not available - interactive maps will be limited")
+RNG = np.random.default_rng(42)
 
 
 class NestedH3Orchestrator:
@@ -120,20 +93,12 @@ class NestedH3Orchestrator:
         # We simulate ~50 cells
         cells = []
         for i in range(50):
-            lat = center_lat + (
-                np.random.uniform(-0.05, 0.05)
-                if NUMPY_AVAILABLE
-                else (i % 10 - 5) * 0.01
-            )
-            lng = center_lng + (
-                np.random.uniform(-0.05, 0.05)
-                if NUMPY_AVAILABLE
-                else (i // 10 - 5) * 0.01
-            )
+            lat = center_lat + RNG.uniform(-0.05, 0.05)
+            lng = center_lng + RNG.uniform(-0.05, 0.05)
             cell_index = self.indexer.latlng_to_cell(lat, lng, 9)
 
             # Attributes
-            pop = np.random.randint(100, 5000) if NUMPY_AVAILABLE else 1000 + i * 50
+            pop = int(RNG.integers(100, 5000))
             density = pop / 0.1  # Approx density
             d_type = ["residential", "commercial", "industrial", "mixed", "park"][i % 5]
 
@@ -141,9 +106,7 @@ class NestedH3Orchestrator:
                 "population": pop,
                 "density": density,
                 "type": d_type,
-                "infrastructure": (
-                    np.random.uniform(0.3, 1.0) if NUMPY_AVAILABLE else 0.7
-                ),
+                "infrastructure": RNG.uniform(0.3, 1.0),
                 "lat": lat,
                 "lng": lng,
             }
@@ -201,9 +164,7 @@ class NestedH3Orchestrator:
                 type_map = {t: i for i, t in enumerate(unique_types)}
                 colors = [type_map[t] for t in types]
 
-                sc2 = axes[1].scatter(
-                    lngs, lats, c=colors, cmap="tab10", s=100, alpha=0.7
-                )
+                axes[1].scatter(lngs, lats, c=colors, cmap="tab10", s=100, alpha=0.7)
                 axes[1].set_title("Zoning Types")
 
                 viz_filename = (
@@ -239,16 +200,16 @@ class NestedH3Orchestrator:
         sensor_data = {}
         center_lat, center_lng = 37.7749, -122.4194
 
-        for i in range(30):
+        for _ in range(30):
             # Hex grid around center
-            lat = center_lat + (np.random.uniform(-0.1, 0.1) if NUMPY_AVAILABLE else 0)
-            lng = center_lng + (np.random.uniform(-0.1, 0.1) if NUMPY_AVAILABLE else 0)
+            lat = center_lat + RNG.uniform(-0.1, 0.1)
+            lng = center_lng + RNG.uniform(-0.1, 0.1)
             cell = self.indexer.latlng_to_cell(lat, lng, 8)
 
             sensor_data[cell] = {
-                "temperature": 20 + (np.random.normal(0, 2) if NUMPY_AVAILABLE else 0),
-                "aqi": 50 + (np.random.randint(0, 100) if NUMPY_AVAILABLE else 10),
-                "humidity": 60 + (np.random.normal(0, 10) if NUMPY_AVAILABLE else 0),
+                "temperature": 20 + RNG.normal(0, 2),
+                "aqi": 50 + int(RNG.integers(0, 100)),
+                "humidity": 60 + RNG.normal(0, 10),
                 "lat": lat,
                 "lng": lng,
             }
@@ -340,7 +301,7 @@ class NestedH3Orchestrator:
         if MATPLOTLIB_AVAILABLE:
             fig, ax = plt.subplots(figsize=(10, 8))
 
-            for c, d in nodes.items():
+            for d in nodes.values():
                 color = "blue" if d["type"] == "warehouse" else "green"
                 marker = "s" if d["type"] == "warehouse" else "o"
                 ax.scatter(

@@ -359,13 +359,10 @@ class TestEndToEndWorkflows:
     async def test_error_recovery_integration(self):
         """Test error recovery across integrated components."""
         # Test with invalid configuration
-        try:
+        with pytest.raises(ValueError, match="Unsupported storage backend"):
             initialize_data_system(
                 storage_backends=["invalid_backend"], enable_validation=True
             )
-            assert False, "Should have raised an error"
-        except Exception:
-            pass  # Expected error
 
         # Test with valid configuration after error
         system = initialize_data_system(
@@ -390,11 +387,8 @@ class TestEndToEndWorkflows:
         ingestion = system["ingestion"]
 
         # Test with unsupported source
-        try:
+        with pytest.raises(ValueError):
             await ingestion.ingest_multi_source(unsupported_source={"data": "test"})
-            assert False, "Should have raised an error"
-        except ValueError:
-            pass  # Expected error
 
         print("✅ Error recovery integration test passed")
         print("   - Invalid backend handled correctly")
@@ -837,7 +831,7 @@ class TestPerformanceIntegration:
         )
 
         # Test concurrent operations
-        start_time = asyncio.get_event_loop().time()
+        start_time = asyncio.get_running_loop().time()
 
         tasks = [
             concurrent_ingestion("sensors", {"time_range": "2023-01-01/2023-01-31"}),
@@ -847,7 +841,7 @@ class TestPerformanceIntegration:
 
         results = await asyncio.gather(*tasks)
 
-        total_time = asyncio.get_event_loop().time() - start_time
+        total_time = asyncio.get_running_loop().time() - start_time
 
         # Verify concurrent execution
         assert len(results) == 3

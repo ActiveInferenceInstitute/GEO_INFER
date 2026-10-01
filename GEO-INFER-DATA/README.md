@@ -21,7 +21,7 @@ Foundational data backbone providing ETL pipelines, storage optimization, and da
 - Module: `GEO-INFER-DATA`
 - Package: `geo_infer_data`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-DATA`
+- Install: `uv sync --package geo-infer-data`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module DATA`
 
 ## Dependencies

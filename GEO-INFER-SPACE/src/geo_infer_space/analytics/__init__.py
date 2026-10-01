@@ -11,11 +11,11 @@ This module provides comprehensive spatial analysis capabilities including:
 
 import logging
 
-logger = logging.getLogger(__name__)
-
 # Core analytics - always available
 from .temporal import TemporalAnalyzer
 from .spatiotemporal import SpatioTemporalAnalyzer
+
+logger = logging.getLogger(__name__)
 
 # Vector operations
 try:

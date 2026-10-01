@@ -21,7 +21,6 @@
 
 ## Local Contents
 
-- `comprehensive_validation.py`
 - `focused_framework_validation.py`
 - `run_comprehensive_validation.py`
 - `test_bioregion_pipeline.py`

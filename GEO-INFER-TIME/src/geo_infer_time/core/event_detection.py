@@ -111,10 +111,7 @@ class EventDetector:
                     )
 
         elif method == "isolation_forest":
-            try:
-                from sklearn.ensemble import IsolationForest
-            except ImportError:
-                raise ImportError("scikit-learn required for isolation_forest method")
+            from sklearn.ensemble import IsolationForest
 
             clf = IsolationForest(
                 contamination=0.05,

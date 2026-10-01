@@ -1,10 +1,8 @@
 """Tests for the configurable GeoJSON path seam in UnifiedH3Backend.
 
-DOMAIN-02 / review scoping: the backend previously hard-coded the CWD-relative
-path ``config/target_areas.geojson``.  Callers can now pass an explicit
-``geojson_path``; the hard-coded default is retained for compatibility.  These
-tests pin the new seam and the missing-file behavior without touching the
-working directory.
+Target-area geometries come only from an explicit ``geojson_path``; there is no
+CWD-relative default.  These tests pin the seam, the unconfigured behavior and
+the missing-file behavior without touching the working directory.
 """
 
 import json
@@ -49,10 +47,11 @@ def test_geojson_path_parameter_is_used(tmp_path):
     assert "all" in geometries["TestRegion"]
 
 
-def test_default_geojson_path_kept_for_compatibility(tmp_path):
-    """Legacy default path is preserved when no explicit path is given."""
+def test_no_geojson_path_resolves_no_geometries(tmp_path):
+    """Without an explicit path no CWD-relative file is consulted."""
     backend = _backend(tmp_path)
-    assert backend.geojson_path == Path("config/target_areas.geojson")
+    assert backend.geojson_path is None
+    assert backend._get_geometries({"TestRegion": ["all"]}) == {}
 
 
 def test_missing_geojson_returns_empty_without_raising(tmp_path):

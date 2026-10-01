@@ -104,11 +104,7 @@ class TestTaskAssignment(unittest.TestCase):
     """Tests for assigning plans to BDIState intentions."""
 
     def test_add_intention_to_state(self) -> None:
-        """Plans can be added as intentions to a BDIState.
-
-        Note: add_intention stores both a Plan object and a compatibility dict
-        (via the parent AgentState.set_intention) in the same list.
-        """
+        """Plans added via add_intention are stored as Plan objects."""
         state = BDIState()
         plan = Plan(name="p1", desire_name="d1", actions=[{"type": "a"}])
         state.add_intention(plan)

@@ -6,19 +6,15 @@ hardware correctness. Actual detected GPUs are compared with the CPU reference.
 
 from __future__ import annotations
 
-
 import numpy as np
 import pytest
 
 import h3
 
 from geo_infer_space.backends.gpu.gpu_acceleration import (
-    HAS_CUPY,
-    HAS_GPU,
-    HAS_JAX,
-    HAS_TORCH,
     euclidean_distance_kernel,
     get_available_backends,
+    get_backend_diagnostics,
     gpu_spatial_join_by_distance,
     h3_grid_distance_kernel,
     is_accelerator_available,
@@ -223,17 +219,24 @@ def test_h3_grid_distance_kernel_same_resolution_finite() -> None:
 # ---------------------------------------------------------------------------
 # Availability helpers.
 # ---------------------------------------------------------------------------
-def test_is_accelerator_available_flag_congruence() -> None:
-    """The exported HAS_* flags and the availability helper must agree."""
-    assert is_accelerator_available() == HAS_GPU
+def test_is_accelerator_available_matches_usable_backends() -> None:
+    """Availability agrees with the usable entries in the diagnostics report."""
     backends = set(get_available_backends())
-    for name in ("cupy", "torch", "jax"):
-        if name == "cupy" and HAS_CUPY:
-            assert name in backends
-        if name == "torch" and HAS_TORCH:
-            assert name in backends
-        if name == "jax" and HAS_JAX:
-            assert name in backends
+    assert is_accelerator_available() == bool(backends)
+    usable = {
+        name for name, info in get_backend_diagnostics().items() if info["usable"]
+    }
+    assert usable == backends
+
+
+def test_removed_has_flags_are_not_exported() -> None:
+    import geo_infer_space.backends.gpu as gpu_pkg
+    from geo_infer_space.backends.gpu import gpu_acceleration
+
+    for name in ("HAS_CUPY", "HAS_GPU", "HAS_JAX", "HAS_TORCH"):
+        assert not hasattr(gpu_pkg, name)
+        assert not hasattr(gpu_acceleration, name)
+        assert name not in gpu_pkg.__all__
 
 
 def test_module_imports_cleanly() -> None:
@@ -249,23 +252,18 @@ def test_module_imports_cleanly() -> None:
 # ---------------------------------------------------------------------------
 # CPU fallback is authoritative regardless of accelerator presence.
 # ---------------------------------------------------------------------------
-@pytest.mark.parametrize("use_gpu", [True, False])
-def test_kernels_identical_result_when_accelerator_or_not(use_gpu: bool) -> None:
+@pytest.mark.parametrize("backend_name", ["auto", "cpu"])
+def test_kernels_identical_result_when_accelerator_or_not(backend_name: str) -> None:
     """Kernels must return identical values on the CPU reference path, and on
     the accelerator path the results are numerically equivalent."""
     a = np.array([[37.0, -122.0], [40.0, -120.0], [34.0, -118.0]])
     b = np.array([[37.0, -122.0], [36.0, -115.0]])
-    dist = pairwise_haversine_kernel(a, b, backend="auto" if use_gpu else "cpu")
+    dist = pairwise_haversine_kernel(a, b, backend=backend_name)
     assert dist.shape == (3, 2)
     # A known distance (approx): SF -> LA ~ 559 km
     assert dist[0, 0] == pytest.approx(0.0, abs=1e-9)
     assert dist[0, 1] > 400.0
     assert dist[0, 1] < 650.0
-
-
-def test_accelerator_flags_are_booleans() -> None:
-    for flag in (HAS_CUPY, HAS_JAX, HAS_TORCH, HAS_GPU):
-        assert isinstance(flag, bool)
 
 
 def test_backend_metadata() -> None:
@@ -479,7 +477,7 @@ sys.meta_path.insert(0, DenyAccelerators())
 from geo_infer_space.backends.gpu import pairwise_haversine_kernel
 from geo_infer_space.backends.h3 import H3Backend
 assert pairwise_haversine_kernel([[0, 0]], [[0, 0]], backend='cpu')[0, 0] == 0
-assert H3Backend().geodesic_spatial_join([[0, 0]], [[0, 0]], 1, use_gpu=False)['pairs'] == [(0, 0)]
+assert H3Backend().geodesic_spatial_join([[0, 0]], [[0, 0]], 1, backend='cpu')['pairs'] == [(0, 0)]
 """
     completed = subprocess.run(
         [sys.executable, "-c", code], capture_output=True, text=True, timeout=60

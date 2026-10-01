@@ -33,10 +33,7 @@ print(f"Timestamp: {datetime.now().isoformat()}")
 section("1. MODULE IMPORTS")
 
 try:
-    from geo_infer_space.core import (
-        get_backend_dispatcher,
-        SpatialStatistics,
-    )
+    from geo_infer_space.core import SpatialStatistics
     from geo_infer_space.backends.h3.h3_backend import H3Backend
 
     success("Core modules imported successfully")

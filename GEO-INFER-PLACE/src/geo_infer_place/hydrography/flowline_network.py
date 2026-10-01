@@ -464,7 +464,7 @@ class CascadiaFlowlineNetwork:
                 hex_data[cell]["comids"].append(comid)
 
         # Convert sets to lists for JSON serializability
-        for cell, metrics in hex_data.items():
+        for metrics in hex_data.values():
             metrics["river_names"] = sorted(list(metrics["river_names"]))
 
         return hex_data

@@ -33,11 +33,19 @@ logger = logging.getLogger(__name__)
 
 
 def _normalise_timestamp(value: datetime | None) -> datetime:
-    """Return a timezone-aware UTC timestamp for cache entries."""
-    timestamp = value or datetime.now(UTC)
-    if timestamp.tzinfo is None:
-        return timestamp.replace(tzinfo=UTC)
-    return timestamp.astimezone(UTC)
+    """Return a UTC timestamp for cache entries (now when ``value`` is None).
+
+    Naive datetimes are ambiguous (local wall-clock or UTC) and raise
+    ValueError, matching the GEO-INFER-TIME stream timestamp contract.
+    """
+    if value is None:
+        return datetime.now(UTC)
+    if value.utcoffset() is None:
+        raise ValueError(
+            "cache timestamps must be timezone-aware; naive datetimes are "
+            f"ambiguous (got {value.isoformat()!r}, attach tzinfo such as UTC)"
+        )
+    return value.astimezone(UTC)
 
 
 class CacheEntry:
@@ -268,7 +276,7 @@ class CacheManager:
         # Remove oldest 10% or at least 1 entry
         entries_to_remove = max(1, len(self.cache) // 10)
 
-        for key, entry in sorted_entries[:entries_to_remove]:
+        for key, _ in sorted_entries[:entries_to_remove]:
             del self.cache[key]
             if self.enable_persistence:
                 cache_file = self._cache_file(key)

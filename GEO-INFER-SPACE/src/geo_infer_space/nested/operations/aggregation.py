@@ -15,9 +15,9 @@ from collections.abc import Callable
 from enum import Enum
 from collections import defaultdict
 
-logger = logging.getLogger(__name__)
+import numpy as np
 
-import numpy as np  # hard dependency (numpy<2.0 pinned); no fallback path
+logger = logging.getLogger(__name__)
 
 try:
     import h3
@@ -460,7 +460,7 @@ class H3AggregationEngine:
         # Aggregate within each resolution group
         results = {}
 
-        for resolution, resolution_cells in resolution_groups.items():
+        for resolution_cells in resolution_groups.values():
             aggregated = rule.apply(resolution_cells)
 
             # Assign aggregated values to all cells in the group
@@ -527,7 +527,7 @@ class H3AggregationEngine:
         # Aggregate within each hierarchy group
         results = {}
 
-        for parent, child_cells in hierarchy_groups.items():
+        for child_cells in hierarchy_groups.values():
             aggregated = rule.apply(child_cells)
 
             # Assign aggregated values to all cells in the group
@@ -556,17 +556,17 @@ class H3AggregationEngine:
         field_values = defaultdict(list)
 
         for cell_data in aggregated_data.values():
-            for field, value in cell_data.items():
+            for field_name, value in cell_data.items():
                 if isinstance(value, (int, float)):
-                    field_values[field].append(value)
+                    field_values[field_name].append(value)
 
         # Calculate statistics for each field
         summary = {}
 
-        for field, values in field_values.items():
+        for field_name, values in field_values.items():
             if values:
                 values_array = np.array(values)
-                summary[field] = {
+                summary[field_name] = {
                     "count": len(values),
                     "mean": np.mean(values_array),
                     "std": np.std(values_array),

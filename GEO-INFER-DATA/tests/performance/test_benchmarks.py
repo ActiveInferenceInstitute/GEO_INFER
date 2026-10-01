@@ -295,7 +295,7 @@ class TestStorageBenchmarks:
 
             # Benchmark spatial queries
             spatial_times = []
-            for i in range(10):  # Multiple queries for averaging
+            for _ in range(10):  # Multiple queries for averaging
                 start_time = time.time()
                 results = await storage.adaptive_query(
                     spatial_bounds=[-122.5, 37.7, -122.3, 37.9],
@@ -306,7 +306,7 @@ class TestStorageBenchmarks:
 
             # Benchmark temporal queries
             temporal_times = []
-            for i in range(10):
+            for _ in range(10):
                 start_time = time.time()
                 results = await storage.adaptive_query(
                     temporal_range=(datetime(2023, 1, 1), datetime(2023, 1, 2)),

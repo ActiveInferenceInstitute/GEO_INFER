@@ -26,33 +26,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-# --- EARLY PATH SETUP ---
-# This must happen before any imports that depend on geo_infer_place or geo_infer_space
-cascadian_dir = os.path.dirname(os.path.realpath(__file__))
-project_root = os.path.abspath(os.path.join(cascadian_dir, "..", "..", ".."))
+from geo_infer_space.utils.h3_utils import cell_to_latlng, cell_to_latlng_boundary
 
-# Set OSC repository path environment variable early
-osc_repo_path = os.path.join(project_root, "GEO-INFER-SPACE", "repo")
-os.environ["OSC_REPOS_DIR"] = osc_repo_path
-print(f"INFO: Set OSC_REPOS_DIR to {osc_repo_path}")
-
-# Define the 'src' paths for the required modules
-place_src_path = os.path.join(project_root, "GEO-INFER-PLACE", "src")
-space_src_path = os.path.join(project_root, "GEO-INFER-SPACE", "src")
-
-# Add the local directory for specialized modules like 'zoning'
-if cascadian_dir not in sys.path:
-    sys.path.insert(0, cascadian_dir)
-
-# Add the src directories to the path
-for p in [place_src_path, space_src_path]:
-    if os.path.isdir(p) and p not in sys.path:
-        sys.path.insert(0, p)
-        print(f"INFO: Successfully added {p} to sys.path")
-    elif not os.path.isdir(p):
-        print(f"WARNING: Required src path not found: {p}")
-
-# Now we can safely import the utility functions from new src.core location
+# The script directory (on sys.path when run as a script, and on the pytest
+# pythonpath) makes the local ``src`` package importable.
 from src.core.setup_manager import setup_logging, load_analysis_config
 from src.core.data_processor import create_shared_backend, export_results
 from src.core.reporting_engine import generate_analysis_report, export_data_provenance
@@ -185,20 +162,7 @@ def initialize_analysis(args):
     )
 
     # Create shared backend
-    # Resolve OSC repo path from environment or project structure for portability
-    import os as _os
-
-    env_repo = _os.environ.get("OSC_REPOS_DIR")
-    if env_repo and Path(env_repo).exists():
-        osc_repo_path = env_repo
-    else:
-        # Fallback: derive from project root
-        proj_root = Path(__file__).resolve().parents[3]
-        derived = proj_root / "GEO-INFER-SPACE" / "repo"
-        osc_repo_path = str(derived)
-    shared_backend = create_shared_backend(
-        args.h3_resolution, counties_dict, Path(args.output_dir), osc_repo_path
-    )
+    shared_backend = create_shared_backend(args.h3_resolution, counties_dict, Path(args.output_dir))
 
     # Initialize enhanced data manager
     data_manager = create_enhanced_data_manager(
@@ -234,7 +198,7 @@ def initialize_analysis(args):
 
     # Initialize modules with enhanced data management
     modules = initialize_modules_with_enhanced_data_management(
-        active_modules, shared_backend, data_manager, h3_fusion, osc_repo_path
+        active_modules, shared_backend, data_manager, h3_fusion
     )
 
     if not modules:
@@ -252,7 +216,7 @@ def initialize_analysis(args):
 
 
 def initialize_modules_with_enhanced_data_management(
-    active_modules, shared_backend, data_manager, h3_fusion, osc_repo_path
+    active_modules, shared_backend, data_manager, h3_fusion
 ):
     """Initialize modules with enhanced data management and H3 fusion"""
     logger = logging.getLogger(__name__)
@@ -517,19 +481,6 @@ Options:
     --validate-h3: Validate H3 operations and API usage
 """
 
-# Additional imports needed for main script functionality
-
-# Import utils modules
-
-# Import enhanced modules
-
-# Existing imports for SPACE and PLACE
-
-
-from geo_infer_space.utils.h3_utils import (
-    cell_to_latlng,
-    cell_to_latlng_boundary,
-)
 
 # Import from the new core location
 
@@ -1204,7 +1155,6 @@ def run_comprehensive_analysis_with_enhanced_data(
             for name, mod in modules.items()
         }
         for future in as_completed(futures):
-            name = futures[future]
             mn, res = future.result()
             if res is not None:
                 module_data[mn] = res
@@ -1376,11 +1326,17 @@ def run_comprehensive_analysis_with_enhanced_data(
             visible_layers: list[str] | None = None
             include_layers: list[str] | None = None
             if args.visible_layers:
-                visible_layers = [l.strip() for l in args.visible_layers.split(",") if l.strip()]
+                visible_layers = [
+                    layer.strip() for layer in args.visible_layers.split(",") if layer.strip()
+                ]
             elif visible_layers_env:
-                visible_layers = [l.strip() for l in visible_layers_env.split(",") if l.strip()]
+                visible_layers = [
+                    layer.strip() for layer in visible_layers_env.split(",") if layer.strip()
+                ]
             if args.include_layers:
-                include_layers = [l.strip() for l in args.include_layers.split(",") if l.strip()]
+                include_layers = [
+                    layer.strip() for layer in args.include_layers.split(",") if layer.strip()
+                ]
             # Build per-module status for interactive HTML panel
             module_status: dict[str, Any] = {}
             try:
@@ -1649,8 +1605,6 @@ def export_results_with_visualizations(backend, redevelopment_scores, summary, a
     """Export results with selected visualization options"""
     logger = logging.getLogger(__name__)
 
-    # Parse counties
-    counties_dict = parse_counties(args.counties)
     bioregion_lower = "cascadia"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir = Path(args.output_dir)
@@ -1709,8 +1663,6 @@ def export_results_with_visualizations(backend, redevelopment_scores, summary, a
 
 def print_analysis_summary(summary, export_paths, args):
     """Print a comprehensive analysis summary"""
-    logger = logging.getLogger(__name__)
-
     print("\n" + "=" * 80)
     print("🌲 CASCADIA AGRICULTURAL ANALYSIS SUMMARY")
     print("=" * 80)

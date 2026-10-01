@@ -210,7 +210,9 @@ class EnhancedH3Fusion:
             fused_data = self._perform_spatial_analysis(fused_data, target_hexagons)
 
         # Generate fusion report
-        fusion_report = self._generate_fusion_report(fused_data, data_sources, target_hexagons)
+        self.last_fusion_report = self._generate_fusion_report(
+            fused_data, data_sources, target_hexagons
+        )
 
         logger.info(f"✅ Enhanced H3 fusion completed: {len(fused_data)} hexagons")
         logger.info(f"📊 Fusion coverage: {len(fused_data) / len(target_hexagons) * 100:.1f}%")
@@ -437,7 +439,7 @@ class EnhancedH3Fusion:
         matched_total = 0
         next_log_at = min(1000, max(100, total // 10))  # Log more frequently for large datasets
 
-        for i, source_hex_id in enumerate(source_hex_ids):
+        for source_hex_id in source_hex_ids:
             try:
                 # Validate source hexagon
                 if not is_valid_cell(source_hex_id):
@@ -893,7 +895,7 @@ class EnhancedH3Fusion:
             validation_result["operations_tested"].append("cell_to_latlng")
 
             # Test cell_to_latlng_boundary
-            boundary = cell_to_latlng_boundary(test_cell)
+            cell_to_latlng_boundary(test_cell)
             validation_result["operations_tested"].append("cell_to_latlng_boundary")
 
             # Test geo_to_cells
@@ -909,19 +911,19 @@ class EnhancedH3Fusion:
                     ]
                 ],
             }
-            cells = geo_to_cells(test_polygon, test_resolution)
+            geo_to_cells(test_polygon, test_resolution)
             validation_result["operations_tested"].append("geo_to_cells")
 
             # Test grid_disk
-            neighbors = grid_disk(test_cell, 1)
+            grid_disk(test_cell, 1)
             validation_result["operations_tested"].append("grid_disk")
 
             # Test cell_area
-            area = cell_area(test_cell, unit="km^2")
+            cell_area(test_cell, unit="km^2")
             validation_result["operations_tested"].append("cell_area")
 
             # Test is_valid_cell
-            is_valid = is_valid_cell(test_cell)
+            is_valid_cell(test_cell)
             validation_result["operations_tested"].append("is_valid_cell")
 
             logger.info("✅ H3 operations validation completed successfully")

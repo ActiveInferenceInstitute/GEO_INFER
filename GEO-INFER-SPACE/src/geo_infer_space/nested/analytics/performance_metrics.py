@@ -19,9 +19,9 @@ from collections.abc import Callable
 from enum import Enum
 from collections import defaultdict, deque
 
-logger = logging.getLogger(__name__)
+import numpy as np
 
-import numpy as np  # hard dependency (numpy<2.0 pinned); no fallback path
+logger = logging.getLogger(__name__)
 
 
 class PerformanceMetric(Enum):

@@ -41,7 +41,7 @@ class TestStreamIngestAdapter:
 
     def test_parse_iso_datetime_record(self):
         adapter = ReplayIngestAdapter([])
-        record = {"timestamp": "2024-01-01T00:00:00", "value": 42.5, "sensor": "a"}
+        record = {"timestamp": "2024-01-01T00:00:00Z", "value": 42.5, "sensor": "a"}
         ts, value, meta = adapter.parse_record(record)
         assert ts == datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
         assert value == 42.5
@@ -50,7 +50,7 @@ class TestStreamIngestAdapter:
     def test_parse_json_string_record(self):
         adapter = ReplayIngestAdapter([])
         ts, value, meta = adapter.parse_record(
-            '{"timestamp":"2024-01-01T00:00:00","value":7}'
+            '{"timestamp":"2024-01-01T00:00:00Z","value":7}'
         )
         assert value == 7.0
         assert meta == {}
@@ -58,13 +58,13 @@ class TestStreamIngestAdapter:
     def test_parse_bytes_record(self):
         adapter = ReplayIngestAdapter([])
         ts, value, meta = adapter.parse_record(
-            b'{"timestamp":"2024-01-01T00:00:00","value":3.0}'
+            b'{"timestamp":"2024-01-01T00:00:00Z","value":3.0}'
         )
         assert value == 3.0
 
     def test_parse_nested_data_value(self):
         adapter = ReplayIngestAdapter([])
-        record = {"timestamp": "2024-01-01T00:00:00", "data": {"measurement": 11.0}}
+        record = {"timestamp": "2024-01-01T00:00:00Z", "data": {"measurement": 11.0}}
         ts, value, meta = adapter.parse_record(record)
         assert value == 11.0
 
@@ -76,7 +76,7 @@ class TestStreamIngestAdapter:
     def test_parse_missing_value_closes_base(self):
         adapter = ReplayIngestAdapter([])
         with pytest.raises(ValueError):
-            adapter.parse_record({"timestamp": "2024-01-01T00:00:00"})
+            adapter.parse_record({"timestamp": "2024-01-01T00:00:00Z"})
 
     def test_parse_invalid_type_raises(self):
         adapter = ReplayIngestAdapter([])

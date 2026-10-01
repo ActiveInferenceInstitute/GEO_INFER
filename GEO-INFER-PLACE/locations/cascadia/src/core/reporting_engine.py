@@ -49,11 +49,6 @@ def generate_spatial_analysis_report(backend, output_dir: Path) -> str:
     logger.info("Generating spatial analysis report with SPACE integration...")
 
     try:
-        # Initialize spatial processor for analysis
-        from .setup_manager import setup_spatial_processor
-
-        spatial_processor = setup_spatial_processor()
-
         # Perform spatial analysis
         spatial_analysis = {
             "h3_coverage": {

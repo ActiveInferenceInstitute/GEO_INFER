@@ -8,7 +8,7 @@ for Bayesian spatial inference.
 Key features:
 - Multi-protocol IoT data ingestion (MQTT, CoAP, LoRaWAN, HTTP)
 - Real-time H3 spatial indexing
-- Integration with OSC (Open Science Catalog) methods from GEO-INFER-SPACE
+- H3 neighbourhood context from GEO-INFER-SPACE
 - Bayesian spatial inference for converting point measurements to surfaces
 - Quality control and data validation
 """
@@ -28,17 +28,14 @@ import numpy as np
 import pandas as pd
 
 # GEO-INFER-SPACE and GEO-INFER-BAYES are required workspace dependencies for
-# this module. Import their current public paths directly so compatibility
-# drift is an explicit import failure instead of a silent fallback.
+# this module. Import their current public paths directly so API drift is an
+# explicit import failure instead of a silent fallback.
 from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
 from geo_infer_space.utils.h3_utils import (
     get_h3_neighbors,
     h3_resolution_stats,
 )
 from geo_infer_bayes import GaussianProcess, SpatialCovariance  # type: ignore[import-untyped]
-
-HAS_GEO_SPACE = True
-HAS_GEO_BAYES = True
 
 
 class SpatialOperations:
@@ -52,21 +49,6 @@ class SpatialOperations:
     ) -> tuple[float, float]:
         """Convert latitude/longitude to a deterministic local metric approximation."""
         return longitude * 111_320.0, latitude * 110_540.0
-
-
-class CoordinateTransform(SpatialOperations):
-    """Backward-compatible name for the IoT coordinate adapter."""
-
-
-class OSCCatalog:
-    """Minimal local measurement catalog owned by the IoT integration boundary."""
-
-    def __init__(self) -> None:
-        self.measurements: list[Any] = []
-
-    def add_measurement(self, measurement: "SensorMeasurement") -> None:
-        """Record a measurement for deterministic local integration tests."""
-        self.measurements.append(measurement)
 
 
 # Protocol handlers
@@ -148,11 +130,8 @@ class IoTDataIngestion:
         self.inference_configs: dict[str, SpatialInferenceConfig] = {}
         self.spatial_models: dict[str, Any] = {}
 
-        # OSC integration
-        if HAS_GEO_SPACE:
-            self.spatial_ops = SpatialOperations()
-            self.osc_catalog = OSCCatalog()
-            self.coord_transform = CoordinateTransform()
+        # GEO-INFER-SPACE indexing and local metric projection
+        self.spatial_ops = SpatialOperations()
 
         # Protocol handlers
         self.protocol_handlers: dict[str, Any] = {}
@@ -244,7 +223,7 @@ class IoTDataIngestion:
         temporal comparison sees a consistent, tz-aware datetime.
         """
         raw_timestamp = datetime.fromisoformat(
-            data.get("timestamp", datetime.now().isoformat())
+            data.get("timestamp", datetime.now(UTC).isoformat())
         )
         if raw_timestamp.tzinfo is None:
             raw_timestamp = raw_timestamp.replace(tzinfo=UTC)
@@ -282,15 +261,15 @@ class IoTDataIngestion:
         return True
 
     def _add_spatial_index(self, measurement: SensorMeasurement) -> None:
-        """Add H3 spatial index to measurement and integrate with OSC methods."""
+        """Add the H3 index plus neighbourhood and resolution context."""
         # Basic H3 indexing
         if not measurement.h3_index:
             measurement.h3_index = h3.latlng_to_cell(
                 measurement.latitude, measurement.longitude, measurement.h3_resolution
             )
 
-        # Enhanced spatial operations using GEO-INFER-SPACE OSC methods
-        if HAS_GEO_SPACE and measurement.h3_index is not None:
+        # Spatial context from GEO-INFER-SPACE
+        if measurement.h3_index is not None:
             try:
                 # Get neighbor cells for spatial context
                 neighbors = get_h3_neighbors(measurement.h3_index, ring_size=1)
@@ -299,10 +278,6 @@ class IoTDataIngestion:
                 # Calculate H3 resolution statistics
                 stats = h3_resolution_stats(measurement.h3_resolution)
                 measurement.metadata["h3_stats"] = stats
-
-                # Add to OSC catalog if configured
-                if hasattr(self.osc_catalog, "add_measurement"):
-                    self.osc_catalog.add_measurement(measurement)
 
             except Exception as e:
                 logger.warning(f"Error in enhanced spatial indexing: {e}")
@@ -316,12 +291,6 @@ class IoTDataIngestion:
         Args:
             config: Configuration for spatial inference
         """
-        if not HAS_GEO_BAYES:
-            logger.error(
-                "GEO-INFER-BAYES not available, cannot setup spatial inference"
-            )
-            return
-
         if isinstance(config, dict):
             config_obj = SpatialInferenceConfig(**config)
         elif not isinstance(config, SpatialInferenceConfig):
@@ -374,7 +343,7 @@ class IoTDataIngestion:
 
     async def _update_spatial_inference(self, variable: str) -> None:
         """Update Bayesian spatial inference for a variable."""
-        if not HAS_GEO_BAYES or variable not in self.spatial_models:
+        if variable not in self.spatial_models:
             return
 
         try:
@@ -396,14 +365,9 @@ class IoTDataIngestion:
 
             for measurement in recent_data:
                 # Convert lat/lon to local coordinate system
-                if HAS_GEO_SPACE:
-                    x, y = self.coord_transform.latlon_to_meters(
-                        measurement.latitude, measurement.longitude
-                    )
-                else:
-                    # Simple approximation
-                    x = measurement.longitude * 111000  # rough meters per degree
-                    y = measurement.latitude * 111000
+                x, y = self.spatial_ops.latlon_to_meters(
+                    measurement.latitude, measurement.longitude
+                )
 
                 coords_list.append([x, y])
                 values_list.append(measurement.value)
@@ -471,24 +435,14 @@ class IoTDataIngestion:
 
         # Add neighbor cells for smoother interpolation
         for h3_index in list(h3_cells):
-            if HAS_GEO_SPACE:
-                neighbors = get_h3_neighbors(h3_index, ring_size=2)
-                h3_cells.update(neighbors)
-            else:
-                # Use basic H3 neighbor function
-                neighbors = h3.grid_disk(h3_index, 2)
-                h3_cells.update(neighbors)
+            h3_cells.update(get_h3_neighbors(h3_index, ring_size=2))
 
         # Convert H3 cells to coordinates
         grid_coords = []
         for h3_index in h3_cells:
             lat, lon = h3.cell_to_latlng(h3_index)
 
-            if HAS_GEO_SPACE:
-                x, y = self.coord_transform.latlon_to_meters(lat, lon)
-            else:
-                x = lon * 111000
-                y = lat * 111000
+            x, y = self.spatial_ops.latlon_to_meters(lat, lon)
 
             grid_coords.append([x, y])
 
@@ -524,7 +478,7 @@ class IoTDataIngestion:
         logger.info("Starting IoT stream processing")
 
         # Start protocol handlers
-        for protocol, handler in self.protocol_handlers.items():
+        for handler in self.protocol_handlers.values():
             task = asyncio.create_task(handler())
             self.processing_tasks.append(task)
 

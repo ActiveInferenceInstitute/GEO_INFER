@@ -45,7 +45,7 @@ class GeospatialEnvironment:
         """
         self.width = width
         self.height = height
-        self.rng = np.random.RandomState(seed)
+        self.rng = np.random.default_rng(seed)
 
         # Create land cover types (0: water, 1: forest, 2: urban, 3: agriculture)
         self.land_cover = self._generate_land_cover()
@@ -68,8 +68,9 @@ class GeospatialEnvironment:
         for _ in range(10):
             # Random seed points
             for _ in range(10):
-                x, y = self.rng.randint(0, self.width), self.rng.randint(0, self.height)
-                land_cover[y, x] = self.rng.randint(1, 4)  # Random land type
+                x = int(self.rng.integers(0, self.width))
+                y = int(self.rng.integers(0, self.height))
+                land_cover[y, x] = self.rng.integers(1, 4)  # Random land type
 
             # Expand regions
             for _ in range(3):
@@ -103,8 +104,8 @@ class GeospatialEnvironment:
         """
         points = []
         for _ in range(num_points):
-            x = self.rng.randint(0, self.width)
-            y = self.rng.randint(0, self.height)
+            x = int(self.rng.integers(0, self.width))
+            y = int(self.rng.integers(0, self.height))
             reward = self.rng.uniform(0.5, 1.0)
             points.append((x, y, reward))
         return points
@@ -334,8 +335,8 @@ class GeospatialActiveInferenceAgent(ActiveInferenceAgent):
         results = []
 
         for i in range(steps):
-            # Perceive
-            observations = await self.perceive()
+            # Perceive (updates the agent's beliefs in place)
+            await self.perceive()
             logger.info(f"Step {i + 1}/{steps}: Perceived environment")
 
             # Decide

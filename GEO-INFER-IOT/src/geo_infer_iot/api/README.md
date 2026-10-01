@@ -19,7 +19,7 @@ Api workspace within `GEO-INFER-IOT`.
 - Module: `GEO-INFER-IOT`
 - Package: `geo_infer_iot`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-IOT`
+- Install: `uv sync --package geo-infer-iot`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module IOT`
 
 ## Dependencies

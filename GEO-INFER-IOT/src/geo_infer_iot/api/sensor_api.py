@@ -132,7 +132,7 @@ class SensorAPI:
                 logger.error(f"Error listing sensors: {e}")
                 raise HTTPException(
                     status_code=500, detail=f"Error retrieving sensors: {str(e)}"
-                )
+                ) from e
 
         @self.app.get("/sensors/{sensor_id}")
         async def get_sensor(sensor_id: str) -> dict[str, Any]:
@@ -182,7 +182,7 @@ class SensorAPI:
                 logger.error(f"Error registering sensor: {e}")
                 raise HTTPException(
                     status_code=400, detail=f"Error registering sensor: {str(e)}"
-                )
+                ) from e
 
         @self.app.get("/measurements")
         async def query_measurements(
@@ -284,7 +284,7 @@ class SensorAPI:
                 logger.error(f"Error querying measurements: {e}")
                 raise HTTPException(
                     status_code=500, detail=f"Error querying measurements: {str(e)}"
-                )
+                ) from e
 
         @self.app.post("/measurements")
         async def submit_measurements(measurements: list[dict]) -> dict[str, Any]:
@@ -316,7 +316,7 @@ class SensorAPI:
                 logger.error(f"Error submitting measurements: {e}")
                 raise HTTPException(
                     status_code=500, detail=f"Error processing measurements: {str(e)}"
-                )
+                ) from e
 
         @self.app.get("/networks")
         async def list_networks() -> dict[str, Any]:

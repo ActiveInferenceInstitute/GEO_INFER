@@ -269,7 +269,7 @@ def cell_to_coordinates(h3_index: str) -> tuple[float, float]:
         return cast(tuple[float, float], h3.cell_to_latlng(h3_index))
     except Exception as e:
         logger.error(f"Failed to convert H3 index {h3_index} to coordinates: {e}")
-        raise ValueError(f"Invalid H3 index: {h3_index}")
+        raise ValueError(f"Invalid H3 index: {h3_index}") from e
 
 
 def cell_to_boundary(
@@ -298,14 +298,14 @@ def cell_to_boundary(
     try:
         # H3-py v4 removed the ``geo_json`` keyword from ``cell_to_boundary``.
         # Its native result is always ``(latitude, longitude)``; convert only
-        # when this compatibility flag explicitly requests GeoJSON order.
+        # when ``geo_json`` requests GeoJSON order.
         boundary = h3.cell_to_boundary(h3_index)
         if geo_json:
             return [(lng, lat) for lat, lng in boundary]
         return [(lat, lng) for lat, lng in boundary]
     except Exception as e:
         logger.error(f"Failed to get boundary for H3 index {h3_index}: {e}")
-        raise ValueError(f"Invalid H3 index: {h3_index}")
+        raise ValueError(f"Invalid H3 index: {h3_index}") from e
 
 
 def cells_to_geojson(

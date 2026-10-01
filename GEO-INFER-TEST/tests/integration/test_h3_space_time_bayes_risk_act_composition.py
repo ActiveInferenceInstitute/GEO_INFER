@@ -12,47 +12,22 @@ Verifies full multi-module composition with zero mock leakage and strict H3 v4 c
 from __future__ import annotations
 
 import datetime
+
+import h3
 import numpy as np
 import pandas as pd
 import pytest
-
-import h3
-
-# Module Imports
-import geo_infer_space as geo_infer_space
-from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
-from geo_infer_space.core.analytics import (
-    SpatialAnalyticsInterface as SpatialAnalyticsInterface,
-)
-from geo_infer_space.nested import NestedH3Grid, HierarchyManager as HierarchyManager
-from geo_infer_space.backends.h3.h3_backend import H3Backend as H3Backend
-
-import geo_infer_time as geo_infer_time
-from geo_infer_time.models.timeseries import TimeSeries
-from geo_infer_time.core.stream_processing import StreamProcessor
-from geo_infer_time.core.event_detection import EventDetector as EventDetector
-
-import geo_infer_bayes as geo_infer_bayes
-from geo_infer_bayes.models.spatial_gp import SpatialGP
-from geo_infer_bayes.core.inference import BayesianInference as BayesianInference
-from geo_infer_bayes.utils.rng import resolve_rng as resolve_bayes_rng
-
-import geo_infer_risk as geo_infer_risk
-from geo_infer_risk.core.exposure_model import EnhancedExposureModel
-from geo_infer_risk.core.hazard_model import EnhancedHazardModel as EnhancedHazardModel
-from geo_infer_risk.core.vulnerability_model import (
-    EnhancedVulnerabilityModel as EnhancedVulnerabilityModel,
-)
-from geo_infer_risk.core.risk_engine import EnhancedRiskEngine as EnhancedRiskEngine
-from geo_infer_risk.utils.risk_metrics import (
-    calculate_ep_curve,
-    calculate_aal as calculate_aal,
-)
-
-import geo_infer_act as geo_infer_act
-from geo_infer_act.utils.h3_adapter import get_h3_adapter
-from geo_infer_act.core.generative_model import GenerativeModel
 from geo_infer_act.core.active_inference import ActiveInferenceModel
+from geo_infer_act.core.generative_model import GenerativeModel
+from geo_infer_act.utils.h3_adapter import get_h3_adapter
+from geo_infer_bayes.models.spatial_gp import SpatialGP
+from geo_infer_bayes.utils.rng import resolve_rng as resolve_bayes_rng
+from geo_infer_risk.core.exposure_model import EnhancedExposureModel
+from geo_infer_risk.utils.risk_metrics import calculate_ep_curve
+from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
+from geo_infer_space.nested import NestedH3Grid
+from geo_infer_time.core.stream_processing import StreamProcessor
+from geo_infer_time.models.timeseries import TimeSeries
 
 
 @pytest.fixture
@@ -93,7 +68,7 @@ def test_h3_space_nested_hierarchy_composition(h3_spatial_domain):
 def test_space_time_spatiotemporal_stream_composition(h3_spatial_domain):
     """Test composition of H3 spatial cells with TIME stream processor and TimeSeries."""
     cells = h3_spatial_domain["disk_cells"][:5]
-    base_time = datetime.datetime(2026, 1, 1, 12, 0, 0)
+    base_time = datetime.datetime(2026, 1, 1, 12, 0, 0, tzinfo=datetime.UTC)
 
     cell_streams: dict[str, StreamProcessor] = {}
     for cell in cells:
@@ -108,7 +83,7 @@ def test_space_time_spatiotemporal_stream_composition(h3_spatial_domain):
         cell_streams[cell] = processor
 
     # Validate stream aggregation per H3 cell
-    for cell, processor in cell_streams.items():
+    for processor in cell_streams.values():
         summary = processor.get_buffer_summary()
         assert summary["size"] == 12
         assert "mean" in summary

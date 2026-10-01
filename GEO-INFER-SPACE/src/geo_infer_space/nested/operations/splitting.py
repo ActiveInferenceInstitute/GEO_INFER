@@ -15,6 +15,8 @@ from collections.abc import Callable
 from enum import Enum
 from collections import defaultdict
 
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -24,8 +26,6 @@ try:
 except ImportError:
     H3_AVAILABLE = False
     logger.warning("h3-py package not available")
-
-import numpy as np  # hard dependency (numpy<2.0 pinned); no fallback path
 
 
 class SplittingStrategy(Enum):

@@ -25,8 +25,6 @@ Key Features:
 import logging
 from typing import Any
 
-logger = logging.getLogger(__name__)
-
 # Core components
 from .core.nested_grid import NestedH3Grid, NestedCell
 from .core.hierarchy import HierarchyManager
@@ -34,6 +32,8 @@ from .core.hierarchy import HierarchyManager
 # Boundary operations
 from .boundaries.boundary_manager import H3BoundaryManager
 from .boundaries.detector import BoundaryDetector, BoundarySegment, BoundaryType
+
+logger = logging.getLogger(__name__)
 
 # Message passing
 try:

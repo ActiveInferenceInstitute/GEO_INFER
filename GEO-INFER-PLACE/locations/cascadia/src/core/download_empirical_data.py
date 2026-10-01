@@ -368,7 +368,7 @@ class EmpiricalDataDownloader:
         import random
 
         improvements_features = []
-        for i in range(100):  # 100 realistic improvements
+        for _ in range(100):  # 100 realistic improvements
             # Generate coordinates within Del Norte county
             lon = random.uniform(-124.4, -123.6)
             lat = random.uniform(41.5, 41.9)

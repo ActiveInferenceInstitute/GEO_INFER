@@ -10,7 +10,14 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def fresh_event_loop() -> Iterator[asyncio.AbstractEventLoop]:
-    """Give legacy unittest-style async tests an explicit isolated loop."""
+    """Install a fresh event loop per test and close it afterwards.
+
+    The unittest-style suites drive coroutines with ``run_until_complete``
+    across several calls in one test (an agent started in one call keeps
+    background tasks that later calls observe), so each test needs a single
+    persistent loop rather than ``asyncio.run`` per call. Pending tasks are
+    cancelled and async generators shut down before the loop is closed.
+    """
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:

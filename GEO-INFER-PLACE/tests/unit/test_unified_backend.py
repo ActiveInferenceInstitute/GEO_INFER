@@ -117,3 +117,77 @@ class TestCascadianBackendSPACEIntegration:
             # If method doesn't exist, verify h3 directly
             boundary = h3.cell_to_boundary(cell)
             assert boundary is not None
+
+
+class TestRemovedLoaderSurface:
+    def test_no_osc_loader_attributes(self, backend):
+        """The removed OSC loader surface is not reintroduced."""
+        for name in ("h3_loader", "h3_data_loader", "osc_repo_dir"):
+            assert not hasattr(backend, name)
+
+    def test_osc_repo_dir_argument_rejected(self, backend_modules, tmp_path):
+        with pytest.raises(TypeError):
+            CascadianAgriculturalH3Backend(
+                modules=backend_modules,
+                base_data_dir=tmp_path,
+                enable_caching=False,
+                osc_repo_dir=str(tmp_path),
+            )
+
+
+class TestBaseModuleProcessToH3:
+    """PLACE BaseAnalysisModule indexes vector files onto H3 directly."""
+
+    @staticmethod
+    def _module(backend):
+        from geo_infer_place.core.base_module import BaseAnalysisModule
+
+        class _Module(BaseAnalysisModule):
+            def acquire_raw_data(self):
+                raise RuntimeError("not used in this test")
+
+            def run_final_analysis(self, h3_data):
+                return h3_data
+
+        return _Module(backend, "unit")
+
+    def test_points_and_polygons_are_indexed(self, backend, tmp_path):
+        import json
+
+        import h3
+
+        polygon = [
+            [-124.21, 41.74],
+            [-124.19, 41.74],
+            [-124.19, 41.76],
+            [-124.21, 41.76],
+            [-124.21, 41.74],
+        ]
+        payload = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {"kind": "site"},
+                    "geometry": {"type": "Point", "coordinates": [-124.2, 41.75]},
+                },
+                {
+                    "type": "Feature",
+                    "properties": {"kind": "parcel"},
+                    "geometry": {"type": "Polygon", "coordinates": [polygon]},
+                },
+            ],
+        }
+        raw = tmp_path / "raw.geojson"
+        raw.write_text(json.dumps(payload), encoding="utf-8")
+
+        h3_data = self._module(backend).process_to_h3(raw)
+
+        point_cell = h3.latlng_to_cell(41.75, -124.2, backend.resolution)
+        assert {"kind": "site"} in h3_data[point_cell]
+        polygon_cells = h3.geo_to_cells(
+            {"type": "Polygon", "coordinates": [polygon]}, backend.resolution
+        )
+        assert polygon_cells
+        assert all({"kind": "parcel"} in h3_data[cell] for cell in polygon_cells)
+        json.dumps(h3_data)  # cached results must be JSON-serializable

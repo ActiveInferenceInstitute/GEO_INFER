@@ -16,7 +16,7 @@ Srai workspace within `GEO-INFER-SPACE`.
 - Module: `GEO-INFER-SPACE`
 - Package: `geo_infer_space`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-SPACE`
+- Install: `uv sync --package geo-infer-space`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module SPACE`
 
 ## Dependencies

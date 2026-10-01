@@ -1100,7 +1100,7 @@ class GeospatialValidator:
             # Check geometry validity
             invalid_geoms = 0
             invalid_coords = 0
-            for idx, geom in data.geometry.items():
+            for geom in data.geometry:
                 if geom is None or not geom.is_valid:
                     invalid_geoms += 1
                     continue
@@ -1181,7 +1181,7 @@ class GeospatialValidator:
             # Check coordinate validity for lat/lon data
             invalid_coords = 0
 
-            for idx, row in data.iterrows():
+            for _, row in data.iterrows():
                 lat = row.get("latitude")
                 lon = row.get("longitude")
 

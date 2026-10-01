@@ -14,9 +14,9 @@ from collections.abc import Callable
 from enum import Enum
 from collections import defaultdict
 
-logger = logging.getLogger(__name__)
+import numpy as np
 
-import numpy as np  # hard dependency (numpy<2.0 pinned); no fallback path
+logger = logging.getLogger(__name__)
 
 try:
     from scipy import signal as signal, stats
@@ -591,9 +591,9 @@ class H3PatternDetector:
 
         for cell in cells:
             feature_vector = []
-            for field in feature_fields:
-                if field in cell.state_variables:
-                    feature_vector.append(cell.state_variables[field])
+            for field_name in feature_fields:
+                if field_name in cell.state_variables:
+                    feature_vector.append(cell.state_variables[field_name])
                 else:
                     feature_vector.append(0.0)
 

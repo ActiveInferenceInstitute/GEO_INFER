@@ -70,9 +70,9 @@ class UnifiedH3Backend:
             target_region: Region identifier (default: 'Global')
             target_areas: A dict specifying areas to run, e.g., {'CA': ['all']}.
             base_data_dir: The root directory for data caching.
-            geojson_path: Explicit path to the target-areas GeoJSON file. When
-                omitted, the CWD-relative default of
-                ``config/target_areas.geojson`` is used.
+            geojson_path: Path to the target-areas GeoJSON file. When omitted,
+                no area geometries are loaded and ``target_areas`` resolves to
+                an empty region.
         """
         self.modules = modules
         self.resolution = resolution
@@ -81,8 +81,8 @@ class UnifiedH3Backend:
             self.base_data_dir = Path(base_data_dir)
         else:
             self.base_data_dir = Path("./data")
-        self.geojson_path = (
-            Path(geojson_path) if geojson_path else Path("config/target_areas.geojson")
+        self.geojson_path: Path | None = (
+            Path(geojson_path) if geojson_path is not None else None
         )
         self.unified_data: dict[str, dict] = {}
         self.analysis_scores: dict[str, dict] = {}
@@ -250,6 +250,12 @@ class UnifiedH3Backend:
             return {}
 
         geojson_path = self.geojson_path
+        if geojson_path is None:
+            logger.warning(
+                "No geojson_path configured; cannot resolve target areas %s",
+                sorted(target_areas),
+            )
+            return {}
         if not geojson_path.exists():
             logger.error(f"GeoJSON file not found: {geojson_path}")
             return {}
@@ -345,7 +351,7 @@ class UnifiedH3Backend:
         for h3_index, hex_data in self.unified_data.items():
             scores: dict[str, Any] = {}
             module_scores = []
-            for module_name, module_data in hex_data.items():
+            for module_data in hex_data.values():
                 if isinstance(module_data, dict) and "score" in module_data:
                     module_scores.append(module_data["score"])
             if module_scores:

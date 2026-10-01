@@ -8,7 +8,6 @@ import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from geo_infer_time.models.timeseries import TimeSeries
 

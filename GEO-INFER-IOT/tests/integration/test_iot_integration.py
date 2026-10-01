@@ -11,10 +11,7 @@ from datetime import datetime, UTC
 from unittest.mock import AsyncMock, Mock, patch
 
 # Import the module to test
-import sys
-import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from geo_infer_iot.core.ingestion import IoTDataIngestion, SensorMeasurement
 from geo_infer_iot.core.registry import SensorRegistry
@@ -220,8 +217,6 @@ class TestCrossModuleIntegration(unittest.TestCase):
             "bayesian_inference": {"enabled": True},
         }
 
-    @patch("geo_infer_iot.core.ingestion.HAS_GEO_BAYES", True)
-    @patch("geo_infer_iot.core.ingestion.HAS_GEO_SPACE", True)
     def test_bayes_integration(self):
         """Test integration with GEO-INFER-BAYES."""
         registry = SensorRegistry(self.config)
@@ -258,7 +253,6 @@ class TestCrossModuleIntegration(unittest.TestCase):
                 # Verify model was created and used
                 self.assertIsNotNone(ingestion.spatial_models.get("temperature"))
 
-    @patch("geo_infer_iot.core.ingestion.HAS_GEO_SPACE", True)
     def test_space_integration(self):
         """Test integration with GEO-INFER-SPACE."""
         registry = SensorRegistry(self.config)

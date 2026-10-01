@@ -7,7 +7,7 @@ and profiling capabilities for the GEO-INFER-IOT system.
 
 import logging
 import time
-from typing import Dict, List, Optional, Any, Deque
+from typing import Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from collections import deque

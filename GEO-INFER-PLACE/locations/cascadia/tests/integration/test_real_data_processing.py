@@ -7,22 +7,11 @@ This test validates that the framework can process real data correctly.
 
 import json
 import logging
-import os
 import sys
 import tempfile
 from pathlib import Path
 
 import yaml
-
-# Setup paths
-cascadian_dir = os.path.dirname(os.path.realpath(__file__))
-project_root = os.path.abspath(os.path.join(cascadian_dir, "..", "..", ".."))
-place_src_path = os.path.join(project_root, "GEO-INFER-PLACE", "src")
-space_src_path = os.path.join(project_root, "GEO-INFER-SPACE", "src")
-
-for p in [cascadian_dir, place_src_path, space_src_path]:
-    if os.path.isdir(p) and p not in sys.path:
-        sys.path.insert(0, p)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -58,7 +47,14 @@ def test_config_loading_is_cwd_independent(tmp_path, monkeypatch):
 
 def test_canonical_validation_profile_passes():
     """Keep the three script entry points bound to real deterministic checks."""
-    import run_comprehensive_validation
+    import importlib.util
+
+    # Sibling script (tests/integration is not a package): load it by path.
+    script = Path(__file__).with_name("run_comprehensive_validation.py")
+    spec = importlib.util.spec_from_file_location("run_comprehensive_validation", script)
+    assert spec is not None and spec.loader is not None
+    run_comprehensive_validation = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(run_comprehensive_validation)
 
     results = run_comprehensive_validation.run_checks()
 

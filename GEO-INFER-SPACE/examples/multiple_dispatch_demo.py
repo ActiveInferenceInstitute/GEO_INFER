@@ -7,10 +7,6 @@ to different backends (H3 and SRAI) through the unified API.
 """
 
 import sys
-from pathlib import Path
-
-# Add src to path for testing
-sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 
 def demonstrate_multiple_dispatch():

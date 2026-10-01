@@ -137,7 +137,7 @@ async def create_agent(
         )
     except Exception as e:
         logger.error(f"Failed to create agent: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/agents/{agent_id}", response_model=AgentResponse, tags=["Agents"])
@@ -148,8 +148,10 @@ async def get_agent(agent_id: str) -> AgentResponse:
         return AgentResponse(
             success=True, message=f"Details for agent {agent_id}", data=agent_info
         )
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Agent {agent_id} not found"
+        ) from exc
 
 
 @app.delete("/agents/{agent_id}", response_model=AgentResponse, tags=["Agents"])
@@ -161,8 +163,10 @@ async def delete_agent(agent_id: str) -> AgentResponse:
         return AgentResponse(
             success=True, message=f"Agent {agent_id} deleted successfully", data=None
         )
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Agent {agent_id} not found"
+        ) from exc
 
 
 @app.post("/agents/{agent_id}/start", response_model=AgentResponse, tags=["Control"])
@@ -180,8 +184,10 @@ async def start_agent(
         return AgentResponse(
             success=True, message=f"Agent {agent_id} started", data=None
         )
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Agent {agent_id} not found"
+        ) from exc
 
 
 @app.post("/agents/{agent_id}/stop", response_model=AgentResponse, tags=["Control"])
@@ -192,8 +198,10 @@ async def stop_agent(agent_id: str) -> AgentResponse:
         return AgentResponse(
             success=True, message=f"Agent {agent_id} stopped", data=None
         )
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Agent {agent_id} not found"
+        ) from exc
 
 
 @app.post("/agents/{agent_id}/action", response_model=AgentResponse, tags=["Control"])
@@ -210,10 +218,12 @@ async def agent_action(agent_id: str, action_data: AgentAction) -> AgentResponse
             message=f"Action '{action_data.action}' executed on agent {agent_id}",
             data=result,
         )
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Agent {agent_id} not found"
+        ) from exc
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/agents/{agent_id}/state", response_model=AgentResponse, tags=["State"])
@@ -224,8 +234,10 @@ async def get_agent_state(agent_id: str) -> AgentResponse:
         return AgentResponse(
             success=True, message=f"Current state of agent {agent_id}", data=state
         )
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Agent {agent_id} not found"
+        ) from exc
 
 
 @app.post(
@@ -246,11 +258,11 @@ async def send_message(agent_id: str, message: AgentMessage) -> AgentResponse:
             else "Failed to send message",
             data=None,
         )
-    except KeyError:
+    except KeyError as exc:
         raise HTTPException(
             status_code=404,
             detail=f"Agent {agent_id} or {message.to_agent_id} not found",
-        )
+        ) from exc
 
 
 def start_api_server(host: str = "0.0.0.0", port: int = 8000) -> None:

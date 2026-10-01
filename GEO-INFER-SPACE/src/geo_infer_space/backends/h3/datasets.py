@@ -5,9 +5,9 @@ from typing import Any
 from datetime import datetime
 import json
 
-logger = logging.getLogger(__name__)
-
 from .core import H3Grid, H3Cell
+
+logger = logging.getLogger(__name__)
 
 
 class H3Dataset:

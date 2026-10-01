@@ -25,15 +25,15 @@ from pathlib import Path
 
 import pytest
 
-PLACE_DIR = Path(__file__).resolve().parents[2]
-CASCADIA_DIR = PLACE_DIR / "locations" / "cascadia"
-CASCADIA_CONFIG = CASCADIA_DIR / "config"
-DEL_NORTE_DIR = PLACE_DIR / "locations" / "del_norte_county"
-
 from geo_infer_place.core.bioregion_visualization import (
     create_bioregion_map,
     _load_json,
 )
+
+PLACE_DIR = Path(__file__).resolve().parents[2]
+CASCADIA_DIR = PLACE_DIR / "locations" / "cascadia"
+CASCADIA_CONFIG = CASCADIA_DIR / "config"
+DEL_NORTE_DIR = PLACE_DIR / "locations" / "del_norte_county"
 
 
 @pytest.fixture
@@ -76,7 +76,7 @@ def constructed_layer_dir(tmp_path):
 
 
 def _load_module(module_name: str, file_path: Path):
-    """Load a standalone script module by path (mirrors demo sys.path usage)."""
+    """Load a standalone script module by file path."""
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

@@ -6,13 +6,11 @@ and verifies the integration bridge API surface.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from unittest.mock import patch
 
 
 CASCADIA_DIR = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(CASCADIA_DIR))
 
 
 class TestCascadiaSpatialStats:

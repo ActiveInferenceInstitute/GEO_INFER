@@ -15,27 +15,14 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
+import geopandas as gpd
+import rasterio
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Optional dependency availability flags
+# Optional dependency availability flags (laspy and xarray are SPACE extras)
 # ---------------------------------------------------------------------------
-
-try:
-    import geopandas as gpd
-
-    HAS_GEOPANDAS = True
-except ImportError:
-    HAS_GEOPANDAS = False
-    gpd = None
-
-try:
-    import rasterio
-
-    HAS_RASTERIO = True
-except ImportError:
-    HAS_RASTERIO = False
-    rasterio = None
 
 try:
     import laspy  # type: ignore[import-untyped]
@@ -52,14 +39,6 @@ try:
 except ImportError:
     HAS_XARRAY = False
     xr = None  # type: ignore[assignment]
-
-try:
-    import numpy as np
-
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
 
 
 # ---------------------------------------------------------------------------
@@ -211,12 +190,6 @@ class GeoJSONHandler(FormatHandler):
         Returns:
             ``geopandas.GeoDataFrame``.
         """
-        if not HAS_GEOPANDAS:
-            raise ImportError(
-                "geopandas is required to read GeoJSON files. "
-                "Install it with: pip install geopandas"
-            )
-
         resolved = self._ensure_file_exists(path)
         logger.info("Reading GeoJSON file: %s", resolved)
 
@@ -236,12 +209,6 @@ class GeoJSONHandler(FormatHandler):
             path: Output file path.
             **kwargs: Forwarded to ``GeoDataFrame.to_file``.
         """
-        if not HAS_GEOPANDAS:
-            raise ImportError(
-                "geopandas is required to write GeoJSON files. "
-                "Install it with: pip install geopandas"
-            )
-
         resolved = self._ensure_parent_dir(path)
         logger.info("Writing GeoJSON file: %s", resolved)
 
@@ -302,14 +269,13 @@ class GeoJSONHandler(FormatHandler):
                     }
                     metadata["geometry_types"] = sorted(geom_types - {None})
 
-            if HAS_GEOPANDAS:
-                try:
-                    gdf = gpd.read_file(resolved, driver="GeoJSON")
-                    metadata["crs"] = str(gdf.crs) if gdf.crs else None
-                    if len(gdf) > 0:
-                        metadata["bounds"] = gdf.total_bounds.tolist()
-                except Exception:
-                    pass  # validation still succeeds with partial metadata
+            try:
+                gdf = gpd.read_file(resolved, driver="GeoJSON")
+                metadata["crs"] = str(gdf.crs) if gdf.crs else None
+                if len(gdf) > 0:
+                    metadata["bounds"] = gdf.total_bounds.tolist()
+            except Exception:
+                pass  # validation still succeeds with partial metadata
 
             result["valid"] = True
             result["metadata"] = metadata
@@ -352,12 +318,6 @@ class ShapefileHandler(FormatHandler):
         Returns:
             ``geopandas.GeoDataFrame``.
         """
-        if not HAS_GEOPANDAS:
-            raise ImportError(
-                "geopandas is required to read Shapefiles. "
-                "Install it with: pip install geopandas"
-            )
-
         resolved = self._ensure_file_exists(path)
         logger.info("Reading Shapefile: %s", resolved)
 
@@ -377,12 +337,6 @@ class ShapefileHandler(FormatHandler):
             path: Output ``.shp`` file path.
             **kwargs: Forwarded to ``GeoDataFrame.to_file``.
         """
-        if not HAS_GEOPANDAS:
-            raise ImportError(
-                "geopandas is required to write Shapefiles. "
-                "Install it with: pip install geopandas"
-            )
-
         resolved = self._ensure_parent_dir(path)
         logger.info("Writing Shapefile: %s", resolved)
 
@@ -425,24 +379,20 @@ class ShapefileHandler(FormatHandler):
             result["metadata"] = metadata
             return result
 
-        if HAS_GEOPANDAS:
-            try:
-                gdf = gpd.read_file(resolved)
-                metadata.update(
-                    {
-                        "num_features": len(gdf),
-                        "columns": list(gdf.columns),
-                        "geometry_types": list(gdf.geometry.geom_type.unique()),
-                        "crs": str(gdf.crs) if gdf.crs else None,
-                        "bounds": gdf.total_bounds.tolist() if len(gdf) > 0 else None,
-                    }
-                )
-                result["valid"] = True
-            except Exception as exc:
-                result["error"] = f"Failed to read Shapefile: {exc}"
-        else:
-            # Without geopandas we can only do the sidecar check.
+        try:
+            gdf = gpd.read_file(resolved)
+            metadata.update(
+                {
+                    "num_features": len(gdf),
+                    "columns": list(gdf.columns),
+                    "geometry_types": list(gdf.geometry.geom_type.unique()),
+                    "crs": str(gdf.crs) if gdf.crs else None,
+                    "bounds": gdf.total_bounds.tolist() if len(gdf) > 0 else None,
+                }
+            )
             result["valid"] = True
+        except Exception as exc:
+            result["error"] = f"Failed to read Shapefile: {exc}"
 
         result["metadata"] = metadata
         return result
@@ -472,14 +422,6 @@ class GeoTIFFHandler(FormatHandler):
 
     # -- internal helpers ---------------------------------------------------
 
-    @staticmethod
-    def _require_rasterio() -> None:
-        if not HAS_RASTERIO:
-            raise ImportError(
-                "rasterio is required to handle GeoTIFF files. "
-                "Install it with: pip install rasterio"
-            )
-
     def _get_write_profile(
         self, data: Any, path: Path, **kwargs: Any
     ) -> dict[str, Any]:
@@ -488,12 +430,6 @@ class GeoTIFFHandler(FormatHandler):
         Subclasses (e.g. ``COGHandler``) override this method to inject
         format-specific profile options.
         """
-        if not HAS_NUMPY:
-            raise ImportError(
-                "numpy is required to write GeoTIFF files. "
-                "Install it with: pip install numpy"
-            )
-
         # Accept either a raw numpy array or a dict with 'data' and optional
         # metadata keys that mirror a rasterio dataset.
         if isinstance(data, dict):
@@ -539,7 +475,6 @@ class GeoTIFFHandler(FormatHandler):
             ``'crs'``, ``'transform'``, ``'bounds'``, ``'count'``,
             ``'width'``, ``'height'``, ``'dtype'``, and ``'nodata'``.
         """
-        self._require_rasterio()
 
         resolved = self._ensure_file_exists(path)
         logger.info("Reading GeoTIFF file: %s", resolved)
@@ -590,7 +525,6 @@ class GeoTIFFHandler(FormatHandler):
             **kwargs: Additional profile options (``crs``, ``transform``,
                 ``compress``, etc.).
         """
-        self._require_rasterio()
 
         resolved = self._ensure_parent_dir(path)
         logger.info("Writing GeoTIFF file: %s", resolved)
@@ -617,13 +551,6 @@ class GeoTIFFHandler(FormatHandler):
             resolved = self._ensure_file_exists(path)
         except FileNotFoundError as exc:
             result["error"] = str(exc)
-            return result
-
-        if not HAS_RASTERIO:
-            result["error"] = (
-                "rasterio is required to validate GeoTIFF files. "
-                "Install it with: pip install rasterio"
-            )
             return result
 
         try:
@@ -705,7 +632,6 @@ class COGHandler(GeoTIFFHandler):
                 (str, default ``'nearest'``) to control overview
                 generation.
         """
-        self._require_rasterio()
 
         overview_levels: list[int] = kwargs.pop("overview_levels", [2, 4, 8, 16])
         overview_resampling: str = kwargs.pop("overview_resampling", "nearest")

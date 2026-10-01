@@ -66,31 +66,6 @@ class H3Backend:
     def __init__(self) -> None:
         """Initialize the H3 backend and check library availability."""
         self._check_h3_availability()
-        self._init_accelerator()
-
-    def _init_accelerator(self) -> None:
-        """Initialize compatibility state without loading optional GPU libraries."""
-        self.accelerator = False
-        self.accelerator_backends: list[str] = []
-
-    def _prepare_accelerator(self) -> None:
-        """Explicitly refresh cached GPU capability diagnostics."""
-        from ..gpu.gpu_acceleration import get_backend_diagnostics
-
-        capabilities = get_backend_diagnostics(refresh=True)
-        self.accelerator_backends = [
-            name for name, details in capabilities.items() if details["usable"]
-        ]
-        self.accelerator = bool(self.accelerator_backends)
-
-    @staticmethod
-    def _numeric_backend(use_gpu: bool, backend: str | None) -> str:
-        """Resolve legacy use_gpu without silently overriding an explicit backend."""
-        if not use_gpu:
-            if backend not in (None, "cpu", "auto"):
-                raise ValueError("use_gpu=False conflicts with an explicit GPU backend")
-            return "cpu"
-        return backend if backend is not None else "auto"
 
     def _check_h3_availability(self) -> None:
         """Check if H3 library is available."""
@@ -339,12 +314,11 @@ class H3Backend:
         self,
         cells_a: list[str],
         cells_b: list[str],
-        use_gpu: bool = True,
     ) -> dict[str, Any]:
         """Return host H3 int64 grid distances; incomparable pairs are -1.
 
-        use_gpu is retained for compatibility. Exact H3 topology always runs
-        on the CPU, and the returned metadata reflects that execution.
+        Exact H3 topology always runs on the CPU, and the returned metadata
+        reflects that execution.
         """
         from ..gpu.gpu_acceleration import h3_grid_distance_kernel
 
@@ -363,15 +337,14 @@ class H3Backend:
         self,
         cells_a: list[str],
         cells_b: list[str],
-        use_gpu: bool = True,
         *,
-        backend: str | None = None,
+        backend: str = "auto",
         chunk_size: int = 1024,
     ) -> dict[str, Any]:
         """Return float64 centroid great-circle distances in km and diagnostics.
 
         Invalid cells raise; they are never replaced by an unrelated location.
-        use_gpu=False forces CPU. An explicit unavailable backend raises.
+        backend="cpu" forces CPU. An explicit unavailable GPU backend raises.
         """
         from ..gpu.gpu_acceleration import pairwise_haversine_kernel
 
@@ -381,7 +354,7 @@ class H3Backend:
         matrix = pairwise_haversine_kernel(
             pts_a,
             pts_b,
-            backend=self._numeric_backend(use_gpu, backend),
+            backend=backend,
             chunk_size=chunk_size,
             diagnostics=diagnostics,
         )
@@ -404,9 +377,8 @@ class H3Backend:
         points_a: list[tuple[float, float]],
         points_b: list[tuple[float, float]],
         max_distance_km: float,
-        use_gpu: bool = True,
         *,
-        backend: str | None = None,
+        backend: str = "auto",
         chunk_size: int = 1024,
     ) -> dict[str, Any]:
         """Join finite geographic points within a positive distance using tiles.
@@ -421,7 +393,7 @@ class H3Backend:
             points_a,
             points_b,
             max_distance_km=max_distance_km,
-            backend=self._numeric_backend(use_gpu, backend),
+            backend=backend,
             chunk_size=chunk_size,
             diagnostics=diagnostics,
         )
@@ -1125,13 +1097,12 @@ class H3Backend:
         cells_a: list[str],
         cells_b: list[str],
         join_type: str = "intersects",
-        use_gpu: bool = True,
     ) -> dict[str, Any]:
         """Join exact H3 host topology with deterministic input ordering.
 
         Intersects means identical or adjacent cells; contains/within mean
-        strict H3 ancestry. use_gpu is a compatibility argument and does not
-        accelerate these host H3 operations. Invalid cells raise.
+        strict H3 ancestry. These host H3 operations always run on the CPU.
+        Invalid cells raise.
         """
         from ..gpu.gpu_acceleration import spatial_join_kernel
 

@@ -93,7 +93,7 @@ class TestDesire:
         assert desire.priority == 0.7
         assert isinstance(desire.deadline, datetime)
         assert desire.conditions == {"test_condition": True}
-        assert desire.achieved == False
+        assert desire.achieved is False
         assert desire.achieved_at is None
 
     def test_desire_set_achieved(self):
@@ -103,13 +103,13 @@ class TestDesire:
         # Set as achieved
         desire.set_achieved(True)
 
-        assert desire.achieved == True
+        assert desire.achieved is True
         assert isinstance(desire.achieved_at, datetime)
 
         # Set as not achieved
         desire.set_achieved(False)
 
-        assert desire.achieved == False
+        assert desire.achieved is False
         assert desire.achieved_at is None
 
     def test_desire_is_expired(self):
@@ -122,7 +122,7 @@ class TestDesire:
             deadline=past_deadline,
         )
 
-        assert expired_desire.is_expired() == True
+        assert expired_desire.is_expired() is True
 
         # Create a desire with a deadline in the future
         future_deadline = datetime.now() + timedelta(hours=1)
@@ -132,14 +132,14 @@ class TestDesire:
             deadline=future_deadline,
         )
 
-        assert active_desire.is_expired() == False
+        assert active_desire.is_expired() is False
 
         # Create a desire with no deadline
         indefinite_desire = Desire(
             name="indefinite_desire", description="A desire with no deadline"
         )
 
-        assert indefinite_desire.is_expired() == False
+        assert indefinite_desire.is_expired() is False
 
     def test_desire_to_dict(self):
         """Test conversion to dictionary."""
@@ -149,7 +149,7 @@ class TestDesire:
 
         assert desire_dict["name"] == "test_desire"
         assert desire_dict["description"] == "A test desire"
-        assert desire_dict["achieved"] == False
+        assert desire_dict["achieved"] is False
 
     def test_desire_from_dict(self):
         """Test creation from dictionary."""
@@ -169,7 +169,7 @@ class TestDesire:
         assert desire.name == "test_desire"
         assert desire.description == "A test desire"
         assert desire.priority == 0.7
-        assert desire.achieved == False
+        assert desire.achieved is False
 
 
 class TestPlan:
@@ -194,7 +194,7 @@ class TestPlan:
         assert plan.actions == actions
         assert plan.context_conditions == {"condition1": True}
         assert plan.current_action_index == 0
-        assert plan.complete == False
+        assert plan.complete is False
         assert plan.successful is None
 
     def test_plan_next_action(self):
@@ -227,15 +227,15 @@ class TestPlan:
         # Mark as successful
         plan.mark_complete(True)
 
-        assert plan.complete == True
-        assert plan.successful == True
+        assert plan.complete is True
+        assert plan.successful is True
 
         # Create new plan and mark as failed
         plan = Plan(name="test_plan", desire_name="test_desire", actions=[])
         plan.mark_complete(False)
 
-        assert plan.complete == True
-        assert plan.successful == False
+        assert plan.complete is True
+        assert plan.successful is False
 
     def test_plan_to_dict(self):
         """Test conversion to dictionary."""
@@ -247,7 +247,7 @@ class TestPlan:
         assert plan_dict["name"] == "test_plan"
         assert plan_dict["desire_name"] == "test_desire"
         assert plan_dict["actions"] == actions
-        assert plan_dict["complete"] == False
+        assert plan_dict["complete"] is False
 
     def test_plan_from_dict(self):
         """Test creation from dictionary."""
@@ -269,7 +269,7 @@ class TestPlan:
         assert plan.desire_name == "test_desire"
         assert len(plan.actions) == 1
         assert plan.current_action_index == 0
-        assert plan.complete == False
+        assert plan.complete is False
 
 
 class TestBDIState:

@@ -222,7 +222,7 @@ class DataCollectorAgent(BDIAgent):
                 is_available = agent.state.get_belief(
                     f"data_source.{source_id}.available"
                 )
-                if is_available and is_available.value == False:
+                if is_available and is_available.value is False:
                     logger.warning(f"Skipping unavailable data source {source_id}")
                     continue
 

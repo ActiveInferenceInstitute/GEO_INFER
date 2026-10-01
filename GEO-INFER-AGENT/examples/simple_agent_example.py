@@ -121,8 +121,7 @@ async def run_simple_agent(args):
             # Monitor agent state
             try:
                 while True:
-                    # Get agent state and info
-                    agent_info = agent_interface.get_agent_info(agent_id)
+                    # Get agent state
                     agent_state = await agent_interface.get_agent_state(agent_id)
 
                     logging.info(

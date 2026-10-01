@@ -113,7 +113,9 @@ class AgentRegistry:
             logger.error(
                 f"Failed to load agent class for type '{agent_type}': {str(e)}"
             )
-            raise ImportError(f"Failed to load agent type {agent_type}: {str(e)}")
+            raise ImportError(
+                f"Failed to load agent type {agent_type}: {str(e)}"
+            ) from e
 
     async def create_agent(
         self,

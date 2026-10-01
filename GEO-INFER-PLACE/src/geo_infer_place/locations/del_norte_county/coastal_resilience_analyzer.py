@@ -530,7 +530,7 @@ class CoastalResilienceAnalyzer:
 
         # Calculate total value at risk
         for asset_vuln in vulnerability_assessment["asset_vulnerabilities"]:
-            for scenario, vuln_data in asset_vuln["vulnerability_by_scenario"].items():
+            for vuln_data in asset_vuln["vulnerability_by_scenario"].values():
                 if vuln_data["at_risk"]:
                     vulnerability_assessment["total_value_at_risk"] += asset_vuln[
                         "replacement_value"

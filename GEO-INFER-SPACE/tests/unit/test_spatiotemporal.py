@@ -4,11 +4,7 @@ Tests for Spatio-Temporal Analysis Module.
 
 import pytest
 from datetime import datetime, timedelta
-import sys
-import os
 
-# Add source path for direct imports to avoid rasterio dependency
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../src"))
 
 from geo_infer_space.analytics.spatiotemporal import SpatioTemporalAnalyzer
 from geo_infer_space.core.spatial_methods import SpatialMethods

@@ -32,6 +32,13 @@ from pathlib import Path
 from datetime import datetime
 import traceback
 
+from geo_infer_place.locations.del_norte_county.comprehensive_dashboard import (
+    DelNorteComprehensiveDashboard,
+)
+from geo_infer_place.locations.del_norte_county.dashboard.core import AdvancedDashboard
+from geo_infer_place.utils.data_sources import CaliforniaDataSources
+from geo_infer_place.core.api_clients import CaliforniaAPIManager
+
 # Log to the system temp directory — never scatter log files into the cwd
 _log_path = Path(tempfile.gettempdir()) / "del_norte_demo.log"
 logging.basicConfig(
@@ -170,16 +177,6 @@ except ImportError as e:
 
 print("=== Core Module Import Complete ===")
 print()
-
-# Import the concrete dashboard and data integration components.
-from geo_infer_place.locations.del_norte_county.comprehensive_dashboard import (
-    DelNorteComprehensiveDashboard,
-)
-from geo_infer_place.locations.del_norte_county.dashboard.core import AdvancedDashboard
-from geo_infer_place.utils.data_sources import CaliforniaDataSources
-from geo_infer_place.core.api_clients import CaliforniaAPIManager
-
-# Logging already configured earlier in the file
 
 
 def load_api_keys(api_keys_file: str) -> dict:
@@ -330,7 +327,7 @@ def run_comprehensive_demo(
         analysis_results = dashboard.run_comprehensive_analysis()
 
         logger.info(f"Analysis completed for {len(analysis_results)} domains:")
-        for domain, results in analysis_results.items():
+        for domain in analysis_results:
             logger.info(f"  ✓ {domain}")
 
         # Step 4: Generate interactive dashboard
@@ -369,7 +366,6 @@ def run_comprehensive_demo(
             logger.info(f"  - Resolution: {h3_data.get('resolution', 'Unknown')}")
 
         if "integration" in analysis_results:
-            integration = analysis_results["integration"]
             logger.info("Cross-domain integration:")
             logger.info(
                 f"  - Climate vulnerability index: {dashboard._calculate_climate_vulnerability_index():.2f}"
@@ -572,13 +568,13 @@ API Keys File Format (JSON):
     logger.info("Running component demonstrations...")
 
     # Demonstrate data sources catalog
-    data_sources = demonstrate_data_sources()
+    demonstrate_data_sources()
 
     # Demonstrate API connections
-    api_manager = demonstrate_api_connections(api_keys)
+    demonstrate_api_connections(api_keys)
 
     # Demonstrate H3 spatial analysis
-    h3_cells = demonstrate_h3_spatial_analysis()
+    demonstrate_h3_spatial_analysis()
 
     if args.demo_only:
         logger.info("Demo-only mode completed.")

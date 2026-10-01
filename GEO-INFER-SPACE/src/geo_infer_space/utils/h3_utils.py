@@ -10,6 +10,8 @@ import json
 import math
 from typing import Any, cast
 
+import h3
+
 logger = logging.getLogger(__name__)
 
 MIN_H3_VERSION = (4, 5, 0)
@@ -28,17 +30,12 @@ def _version_tuple(version: str) -> tuple[int, int, int] | None:
         return None
 
 
-try:
-    import h3 as _h3
-except ImportError:
-    _h3 = None
-else:
-    _h3_version = _version_tuple(cast(str, getattr(_h3, "__version__", None)))
-    if _h3_version is None or _h3_version < MIN_H3_VERSION or _h3_version[0] >= 5:
-        raise RuntimeError(
-            "GEO-INFER-SPACE requires h3-py >=4.5.0,<5; "
-            f"found {getattr(_h3, '__version__', 'unknown')!r}"
-        )
+_h3_version = _version_tuple(cast(str, getattr(h3, "__version__", None)))
+if _h3_version is None or _h3_version < MIN_H3_VERSION or _h3_version[0] >= 5:
+    raise RuntimeError(
+        "GEO-INFER-SPACE requires h3-py >=4.5.0,<5; "
+        f"found {getattr(h3, '__version__', 'unknown')!r}"
+    )
 
 
 def latlng_to_cell(lat: float, lng: float, resolution: int) -> str:
@@ -53,14 +50,6 @@ def latlng_to_cell(lat: float, lng: float, resolution: int) -> str:
     Returns:
         H3 cell index
     """
-    try:
-        import h3
-    except ImportError:
-        logger.error(
-            "h3-py package not found. Please install it with 'uv pip install h3'"
-        )
-        raise ImportError("h3-py package required for latlng_to_cell")
-
     return cast(str, h3.latlng_to_cell(lat, lng, resolution))
 
 
@@ -74,14 +63,6 @@ def cell_to_latlng(h3_index: str) -> tuple[float, float]:
     Returns:
         (lat, lng) tuple
     """
-    try:
-        import h3
-    except ImportError:
-        logger.error(
-            "h3-py package not found. Please install it with 'uv pip install h3'"
-        )
-        raise ImportError("h3-py package required for cell_to_latlng")
-
     return cast(tuple[float, float], h3.cell_to_latlng(h3_index))
 
 
@@ -95,14 +76,6 @@ def cell_to_latlng_boundary(h3_index: str) -> list[tuple[float, float]]:
     Returns:
         List of (lat, lng) tuples representing the boundary
     """
-    try:
-        import h3
-    except ImportError:
-        logger.error(
-            "h3-py package not found. Please install it with 'uv pip install h3'"
-        )
-        raise ImportError("h3-py package required for cell_to_latlng_boundary")
-
     return cast(list[tuple[float, float]], h3.cell_to_boundary(h3_index))
 
 
@@ -119,14 +92,6 @@ def polygon_to_cells(
     Returns:
         List of H3 cell indices covering the polygon
     """
-    try:
-        import h3
-    except ImportError:
-        logger.error(
-            "h3-py package not found. Please install it with 'uv pip install h3'"
-        )
-        raise ImportError("h3-py package required for polygon_to_cells")
-
     # Handle different input formats
     if isinstance(polygon, dict):
         # For GeoJSON Feature or FeatureCollection
@@ -173,14 +138,6 @@ def cell_to_latlngjson(
     """
     Convert H3 indices to GeoJSON format (H3 4.x API).
     """
-    try:
-        import h3
-    except ImportError:
-        logger.error(
-            "h3-py package not found. Please install it with 'uv pip install h3'"
-        )
-        raise ImportError("h3-py package required for cell_to_latlngjson")
-
     features = []
 
     for h3_index in h3_indices:
@@ -226,14 +183,6 @@ def geojson_to_h3(
     Returns:
         Dictionary with H3 indices and properties.
     """
-    try:
-        import h3
-    except ImportError:
-        logger.error(
-            "h3-py package not found. Please install it with 'uv pip install h3'"
-        )
-        raise ImportError("h3-py package required for geojson_to_h3")
-
     # Parse GeoJSON if it's a string
     if isinstance(geojson_data, str):
         geojson_data = json.loads(geojson_data)
@@ -286,27 +235,11 @@ def geojson_to_h3(
 
 def geo_to_cells(geojson: dict[str, Any], resolution: int) -> list[str]:
     """Convert GeoJSON to H3 cells using H3 v4 API."""
-    try:
-        import h3
-    except ImportError:
-        logger.error(
-            "h3-py package not found. Please install it with 'uv pip install h3'"
-        )
-        raise ImportError("h3-py package required for geo_to_cells")
-
     return sorted(h3.geo_to_cells(geojson, resolution))
 
 
 def grid_disk(h3_index: str, k: int) -> list[str]:
     """Get cells within grid distance k using the H3 v4 API."""
-    try:
-        import h3
-    except ImportError:
-        logger.error(
-            "h3-py package not found. Please install it with 'uv pip install h3'"
-        )
-        raise ImportError("h3-py package required for grid_disk")
-
     return sorted(h3.grid_disk(h3_index, k))
 
 
@@ -317,10 +250,6 @@ def get_h3_neighbors(h3_index: str, ring_size: int = 1) -> list[str]:
 
 def h3_resolution_stats(resolution: int) -> dict[str, float]:
     """Return finite area statistics for an H3 resolution."""
-    try:
-        import h3
-    except ImportError as exc:
-        raise ImportError("h3-py package required for h3_resolution_stats") from exc
     if not 0 <= resolution <= 15:
         raise ValueError("H3 resolution must be between 0 and 15")
     return {
@@ -331,92 +260,36 @@ def h3_resolution_stats(resolution: int) -> dict[str, float]:
 
 def grid_distance(h3_index1: str, h3_index2: str) -> int:
     """Get grid distance between two H3 indices using H3 v4 API."""
-    try:
-        import h3
-    except ImportError:
-        logger.error(
-            "h3-py package not found. Please install it with 'uv pip install h3'"
-        )
-        raise ImportError("h3-py package required for grid_distance")
-
     return cast(int, h3.grid_distance(h3_index1, h3_index2))
 
 
 def compact_cells(h3_indices: list[str]) -> list[str]:
     """Compact H3 cells using H3 v4 API."""
-    try:
-        import h3
-    except ImportError:
-        logger.error(
-            "h3-py package not found. Please install it with 'uv pip install h3'"
-        )
-        raise ImportError("h3-py package required for compact_cells")
-
     return list(h3.compact_cells(h3_indices))
 
 
 def uncompact_cells(h3_indices: list[str], resolution: int) -> list[str]:
     """Uncompact H3 cells using H3 v4 API."""
-    try:
-        import h3
-    except ImportError:
-        logger.error(
-            "h3-py package not found. Please install it with 'uv pip install h3'"
-        )
-        raise ImportError("h3-py package required for uncompact_cells")
-
     return list(h3.uncompact_cells(h3_indices, resolution))
 
 
 def cell_area(h3_index: str, unit: str = "km^2") -> float:
     """Get area of H3 cell using H3 v4 API."""
-    try:
-        import h3
-    except ImportError:
-        logger.error(
-            "h3-py package not found. Please install it with 'uv pip install h3'"
-        )
-        raise ImportError("h3-py package required for cell_area")
-
     return cast(float, h3.cell_area(h3_index, unit))
 
 
 def get_resolution(h3_index: str) -> int:
     """Get resolution of H3 index using H3 v4 API."""
-    try:
-        import h3
-    except ImportError:
-        logger.error(
-            "h3-py package not found. Please install it with 'uv pip install h3'"
-        )
-        raise ImportError("h3-py package required for get_resolution")
-
     return cast(int, h3.get_resolution(h3_index))
 
 
 def is_valid_cell(h3_index: str) -> bool:
     """Check if H3 index is valid using H3 v4 API."""
-    try:
-        import h3
-    except ImportError:
-        logger.error(
-            "h3-py package not found. Please install it with 'uv pip install h3'"
-        )
-        raise ImportError("h3-py package required for is_valid_cell")
-
     return cast(bool, h3.is_valid_cell(h3_index))
 
 
 def are_neighbor_cells(h3_index1: str, h3_index2: str) -> bool:
     """Check if two H3 indices are neighbors using H3 v4 API."""
-    try:
-        import h3
-    except ImportError:
-        logger.error(
-            "h3-py package not found. Please install it with 'uv pip install h3'"
-        )
-        raise ImportError("h3-py package required for are_neighbor_cells")
-
     return cast(bool, h3.are_neighbor_cells(h3_index1, h3_index2))
 
 

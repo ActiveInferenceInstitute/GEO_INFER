@@ -6,6 +6,8 @@ Comprehensive examples demonstrating all H3 operations available in GEO-INFER-SP
 Run with: uv run python examples/h3_examples.py
 """
 
+import random
+
 from geo_infer_space.backends.h3.h3_backend import H3Backend
 
 # Initialize H3 backend
@@ -264,8 +266,6 @@ print(f"Cells in polygon (res 9): {len(cells_in_polygon)}")
 # =============================================================================
 print("\n📊 EXAMPLE 12: Spatial Analytics")
 print("-" * 40)
-
-import random
 
 random.seed(42)
 

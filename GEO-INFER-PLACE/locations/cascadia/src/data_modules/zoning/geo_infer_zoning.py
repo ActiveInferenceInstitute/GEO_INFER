@@ -195,7 +195,7 @@ class GeoInferZoning(BaseAnalysisModule):
             zoning_stats["total_area"] = total_intersection_area
 
             # Calculate percentages for each zone type
-            for zone_class, stats in zoning_stats["zone_breakdown"].items():
+            for stats in zoning_stats["zone_breakdown"].values():
                 if total_intersection_area > 0:
                     stats["percentage"] = (stats["area"] / total_intersection_area) * 100
 

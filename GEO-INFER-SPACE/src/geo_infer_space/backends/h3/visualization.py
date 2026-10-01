@@ -6,11 +6,16 @@ including interactive maps, static plots, animations, and analytical visualizati
 """
 
 import logging
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
 
+from .core import H3Grid, H3Cell, H3Analytics
+from .operations import cell_to_boundary
+
 try:
+    import matplotlib
     import matplotlib.pyplot as plt
     import matplotlib.patches as patches
     from matplotlib.colors import Normalize
@@ -46,9 +51,6 @@ try:
 except ImportError:
     PLOTLY_AVAILABLE = False
     logger.warning("plotly not available. Install with 'uv pip install plotly'")
-
-from .core import H3Grid, H3Cell, H3Analytics
-from .operations import cell_to_boundary
 
 
 class H3MapVisualizer:
@@ -156,11 +158,14 @@ class H3MapVisualizer:
             normalized_values = [(v - min_val) / (max_val - min_val) for v in values]
 
         # Create color map
+        colormap: Callable[[float], tuple[float, ...]]
         if MATPLOTLIB_AVAILABLE:
-            colormap = plt.cm.get_cmap(color_scheme)
+            colormap = matplotlib.colormaps[color_scheme]
         else:
-            # Fallback color mapping
-            colormap = lambda x: (x, 0, 1 - x)  # type: ignore[assignment]
+
+            def colormap(x: float) -> tuple[float, ...]:
+                """Blue-to-red ramp used when matplotlib is unavailable."""
+                return (x, 0.0, 1.0 - x)
 
         # Add cells with colors
         for cell, norm_value, actual_value in zip(

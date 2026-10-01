@@ -17,7 +17,7 @@ Tests workspace within `GEO-INFER-AGENT`.
 - Module: `GEO-INFER-AGENT`
 - Package: `geo_infer_agent`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-AGENT`
+- Install: `uv sync --package geo-infer-agent`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module AGENT`
 
 ## Dependencies

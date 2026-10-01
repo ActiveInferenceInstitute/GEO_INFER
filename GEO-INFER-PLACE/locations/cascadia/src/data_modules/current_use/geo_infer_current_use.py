@@ -267,7 +267,7 @@ class GeoInferCurrentUse(BaseAnalysisModule):
 
         total_acres = crop_stats.get("total_acres", 0.0)
 
-        for crop_name, crop_data in crop_breakdown.items():
+        for crop_data in crop_breakdown.values():
             crop_acres = crop_data["acres"]
             water_usage = crop_data.get("water_usage", "unknown")
 

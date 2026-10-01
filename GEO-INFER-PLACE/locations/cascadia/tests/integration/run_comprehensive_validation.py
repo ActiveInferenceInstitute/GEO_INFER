@@ -12,18 +12,12 @@ from pathlib import Path
 from types import ModuleType
 
 CASCADIA_ROOT = Path(__file__).resolve().parents[2]
-WORKSPACE_ROOT = CASCADIA_ROOT.parents[2]
 CASCADIA_SRC = CASCADIA_ROOT / "src"
 
-for import_root in (
-    CASCADIA_ROOT,
-    CASCADIA_SRC,
-    WORKSPACE_ROOT / "GEO-INFER-PLACE" / "src",
-    WORKSPACE_ROOT / "GEO-INFER-SPACE" / "src",
-):
-    resolved = str(import_root)
-    if import_root.is_dir() and resolved not in sys.path:
-        sys.path.insert(0, resolved)
+# Run directly, this script's directory is tests/integration; the Cascadia
+# location's own ``src`` package (not a workspace member) lives at CASCADIA_ROOT.
+if str(CASCADIA_ROOT) not in sys.path:
+    sys.path.insert(0, str(CASCADIA_ROOT))
 
 logger = logging.getLogger(__name__)
 Check = tuple[str, Callable[[], None]]

@@ -14,15 +14,23 @@ def test_epoch_zero_is_preserved():
     assert timestamp == datetime(1970, 1, 1, tzinfo=UTC)
 
 
-def test_offsets_and_naive_records_normalize_to_utc():
+def test_offsets_normalize_to_utc():
     adapter = ReplayIngestAdapter([])
     first, _, _ = adapter.parse_record(
         {"timestamp": "2024-01-01T02:00:00+02:00", "value": 1}
     )
     second, _, _ = adapter.parse_record(
-        {"timestamp": "2024-01-01T00:00:00", "value": 1}
+        {"timestamp": "2024-01-01T00:00:00Z", "value": 1}
     )
     assert first == second == datetime(2024, 1, 1, tzinfo=UTC)
+
+
+def test_naive_timestamps_are_rejected():
+    adapter = ReplayIngestAdapter([])
+    with pytest.raises(ValueError, match="timezone-aware"):
+        adapter.parse_record({"timestamp": "2024-01-01T00:00:00", "value": 1})
+    with pytest.raises(ValueError, match="timezone-aware"):
+        StreamProcessor(timedelta(seconds=10)).add_data_point(datetime(2024, 1, 1), 1)
 
 
 def test_missing_timestamp_is_rejected():
@@ -132,6 +140,8 @@ def test_history_capacity_and_session_gap_equality():
 
 
 def test_websocket_failed_handshake_never_claims_connection():
+    from websockets.exceptions import InvalidHandshake
+
     from geo_infer_time import WebSocketIngestAdapter
 
     async def run():
@@ -144,7 +154,7 @@ def test_websocket_failed_handshake_never_claims_connection():
             adapter = WebSocketIngestAdapter(
                 {"url": f"ws://127.0.0.1:{port}", "max_retries": 0}
             )
-            with pytest.raises(Exception):
+            with pytest.raises(InvalidHandshake):
                 await adapter.connect()
             assert not adapter.is_connected
 

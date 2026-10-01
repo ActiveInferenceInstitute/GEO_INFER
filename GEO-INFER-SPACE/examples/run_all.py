@@ -18,10 +18,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Any
 
-# Add src to path for imports
 EXAMPLES_DIR = Path(__file__).parent
-PROJECT_ROOT = EXAMPLES_DIR.parent
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 # ============================================================================
 # Configuration

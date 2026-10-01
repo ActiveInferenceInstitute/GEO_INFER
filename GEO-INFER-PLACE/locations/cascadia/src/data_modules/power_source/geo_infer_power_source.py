@@ -99,7 +99,6 @@ class GeoInferPowerSource:
         infra_data = self.data_source.fetch_power_infrastructure_features(target_hexagons)
 
         trans_lines_gdf = infra_data.get("transmission_lines")
-        power_plants_gdf = infra_data.get("power_plants")  # Available for future use
 
         if trans_lines_gdf is None or trans_lines_gdf.empty:
             logger.warning(

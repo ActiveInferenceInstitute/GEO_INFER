@@ -10,9 +10,9 @@ import logging
 from typing import Any
 from datetime import datetime
 
-logger = logging.getLogger(__name__)
-
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class TemporalAnalyzer:

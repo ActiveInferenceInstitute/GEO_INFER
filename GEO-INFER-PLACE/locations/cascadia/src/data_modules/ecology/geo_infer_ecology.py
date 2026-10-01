@@ -113,7 +113,7 @@ class GeoInferEcology:
     def _salmon_esu_count_at(self, lat: float, lon: float) -> int:
         """Estimate number of salmon ESUs present at this location."""
         count = 0
-        for watershed, bbox in _WATERSHED_BBOX.items():
+        for bbox in _WATERSHED_BBOX.values():
             if self._point_in_bbox(lat, lon, bbox):
                 count += 1
         return count

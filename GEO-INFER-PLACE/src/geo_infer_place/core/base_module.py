@@ -7,14 +7,14 @@ in the Cascadian framework. It enforces a standardized workflow for data
 acquisition, caching, H3 processing, and analysis.
 """
 
+import json
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-import json
-import os
+from typing import TYPE_CHECKING, Any
 
-# A forward declaration for type hinting the backend without circular imports
-from typing import TYPE_CHECKING
+import geopandas as gpd
+import h3
 
 if TYPE_CHECKING:
     from .unified_backend import CascadianAgriculturalH3Backend
@@ -30,7 +30,7 @@ class BaseAnalysisModule(ABC):
     The base class provides a standardized workflow:
     1.  Check for cached, H3-processed data.
     2.  If not found, acquire raw data from source.
-    3.  Process raw data into H3 using the backend's OSC H3 loader.
+    3.  Index the raw vector data onto H3 cells (``process_to_h3``).
     4.  Cache the H3 data.
     5.  Load and perform final analysis on the H3 data.
     """
@@ -70,54 +70,54 @@ class BaseAnalysisModule(ABC):
             "BaseAnalysisModule.acquire_raw_data requires a concrete module implementation"
         )
 
-    def process_to_h3(self, raw_data_path: Path) -> dict:
+    def process_to_h3(self, raw_data_path: Path) -> dict[str, list[dict[str, Any]]]:
         """
-        Processes a raw data file (e.g., GeoJSON, Shapefile) into an H3-indexed dictionary.
+        Index a vector data file (GeoJSON, Shapefile, ...) onto H3 cells.
 
-        This method uses the backend's shared H3DataLoader (from GEO-INFER-SPACE).
+        Polygonal features cover the cells whose centroids fall inside them
+        (``h3.geo_to_cells``); point features map to their containing cell.
+        Other geometry types are skipped. Each cell collects the JSON-safe
+        property dicts of every feature that covers it.
 
         Args:
             raw_data_path: Path to the raw geospatial data file.
 
         Returns:
-            A dictionary of H3-indexed data.
+            Mapping of H3 cell index to the list of covering feature properties.
         """
-        if not self.backend.h3_loader:
-            logger.error(
-                f"[{self.module_name}] H3 loader not available. Cannot process data."
-            )
-            return {}
+        gdf = gpd.read_file(raw_data_path)
+        if gdf.crs is not None and gdf.crs.to_epsg() != 4326:
+            gdf = gdf.to_crs(epsg=4326)
 
-        try:  # type: ignore[unreachable]
-            # Define a temporary output path for the H3 conversion
-            h3_output_path = self.data_dir / f"temp_{self.module_name}_h3.geojson"
-
-            logger.info(
-                f"[{self.module_name}] Using H3 loader to process {raw_data_path} -> {h3_output_path}"
-            )
-
-            h3_data = self.backend.h3_loader.load_data(
-                input_file=str(raw_data_path), output_file=str(h3_output_path)
-            )
-
-            # After processing, we would typically load the h3_output_path file
-            # For now, this part of the logic is incomplete in the original file
-            # We will assume success returns the data directly or we load the file
-            if h3_output_path.exists():
-                with open(h3_output_path) as f:
-                    h3_data = json.load(f)
-                # Clean up the temporary file
-                os.remove(h3_output_path)
+        geometry_column = gdf.geometry.name
+        h3_data: dict[str, list[dict[str, Any]]] = {}
+        skipped = 0
+        for _, row in gdf.iterrows():
+            geom = row[geometry_column]
+            if geom is None or geom.is_empty:
+                skipped += 1
+                continue
+            if geom.geom_type == "Point":
+                cells = [h3.latlng_to_cell(geom.y, geom.x, self.resolution)]
+            elif geom.geom_type in ("Polygon", "MultiPolygon"):
+                cells = h3.geo_to_cells(geom.__geo_interface__, self.resolution)
             else:
-                # This case needs to be handled based on what h3_loader.load_data returns
-                h3_data = {}
-
-        except Exception as e:
-            logger.error(
-                f"[{self.module_name}] Failed to process data to H3: {e}", exc_info=True
+                skipped += 1
+                continue
+            properties = json.loads(
+                row.drop(labels=[geometry_column]).to_json(default_handler=str)
             )
-            h3_data = {}
+            for cell in cells:
+                h3_data.setdefault(cell, []).append(properties)
 
+        logger.info(
+            "[%s] Indexed %d features onto %d H3 cells at resolution %d (%d skipped)",
+            self.module_name,
+            len(gdf) - skipped,
+            len(h3_data),
+            self.resolution,
+            skipped,
+        )
         return h3_data
 
     @abstractmethod

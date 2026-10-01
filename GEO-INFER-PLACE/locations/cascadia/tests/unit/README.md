@@ -16,7 +16,7 @@ Unit workspace within `GEO-INFER-PLACE`.
 - Module: `GEO-INFER-PLACE`
 - Package: `geo_infer_place`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-PLACE`
+- Install: `uv sync --package geo-infer-place`
 - Tests: `uv run python -m pytest GEO-INFER-PLACE/locations/cascadia/tests/unit`
 
 ## Dependencies

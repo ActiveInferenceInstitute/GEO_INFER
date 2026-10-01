@@ -12,16 +12,6 @@ from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 import h3
 
-# Optional imports for enhanced functionality
-try:
-    from geo_infer_space.osc_geo.utils.spatial_operations import (
-        CoordinateTransform,  # noqa: F401
-    )  # noqa: F401
-
-    HAS_SPATIAL_OPS = True
-except ImportError:
-    HAS_SPATIAL_OPS = False
-
 logger = logging.getLogger(__name__)
 
 

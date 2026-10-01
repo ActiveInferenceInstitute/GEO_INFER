@@ -118,8 +118,8 @@ async def main():
     """Main example function."""
     logger.info("Starting API example")
 
-    # Start API server
-    api = await start_api_server()
+    # Start API server (runs in a daemon thread for the example's lifetime)
+    await start_api_server()
 
     # Create API client
     client = DataAPIClient()

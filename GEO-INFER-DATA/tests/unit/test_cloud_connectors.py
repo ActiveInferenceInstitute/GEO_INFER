@@ -156,8 +156,10 @@ class TestS3Connector:
         assert ("head_bucket", "my-bucket") in fake_client.calls
 
     def test_connect_missing_bucket_raises(self, fake_client):
+        from botocore.exceptions import ClientError
+
         connector = S3Connector({"bucket": "no-such-bucket"})
-        with pytest.raises(Exception):
+        with pytest.raises(ClientError):
             _run(connector.connect())
 
     def test_upload_download_roundtrip(self, fake_client, tmp_path):

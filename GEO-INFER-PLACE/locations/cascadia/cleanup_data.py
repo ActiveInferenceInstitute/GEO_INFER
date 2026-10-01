@@ -13,9 +13,6 @@ import sys
 from pathlib import Path
 import shutil
 
-# Add the src directory to the path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
 
 def setup_logging():
     """Set up logging for the cleanup script."""

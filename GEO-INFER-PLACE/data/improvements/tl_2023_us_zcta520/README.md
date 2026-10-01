@@ -20,7 +20,7 @@ Tl 2023 Us Zcta520 workspace within `GEO-INFER-PLACE`.
 - Module: `GEO-INFER-PLACE`
 - Package: `geo_infer_place`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-PLACE`
+- Install: `uv sync --package geo-infer-place`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module PLACE`
 
 ## Dependencies

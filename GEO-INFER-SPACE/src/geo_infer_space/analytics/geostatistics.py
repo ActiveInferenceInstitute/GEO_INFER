@@ -422,7 +422,7 @@ def _getis_ord_gi_star(
     gi_star_values = []
     z_scores = []
 
-    for i, coord in enumerate(coords):
+    for coord in coords:
         # Find neighbors within distance threshold
         distances = np.sqrt(np.sum((coords - coord) ** 2, axis=1))
         neighbors = distances <= distance_threshold

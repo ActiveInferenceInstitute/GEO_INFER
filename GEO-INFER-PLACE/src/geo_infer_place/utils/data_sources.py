@@ -526,7 +526,7 @@ class CaliforniaDataSources:
             "low_priority": [],
         }
 
-        for source_id, source in self.sources.items():
+        for source in self.sources.values():
             priority = "low_priority"
 
             # California-specific sources get high priority for CA locations

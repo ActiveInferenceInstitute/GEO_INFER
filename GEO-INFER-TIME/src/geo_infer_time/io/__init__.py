@@ -7,7 +7,7 @@ Provides readers and writers for common time series file formats
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import pandas as pd
 
@@ -158,11 +158,11 @@ class TimeSeriesReader:
         # Last resort: try to parse the existing index
         try:
             df.index = pd.to_datetime(df.index)
-        except Exception:
+        except Exception as exc:
             raise ValueError(
                 "Could not identify a time column or convert the index "
                 "to datetime. Specify time_column explicitly."
-            )
+            ) from exc
 
         return df
 

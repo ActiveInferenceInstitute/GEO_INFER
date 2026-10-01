@@ -199,7 +199,7 @@ class GenerativeModel:
         current_belief = state_belief.copy()
 
         # Look ahead for planning_horizon steps
-        for t in range(planning_horizon):
+        for _ in range(planning_horizon):
             # Predict next state
             next_state = self.predict_next_state(current_belief, action)
 

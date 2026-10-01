@@ -56,7 +56,6 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
         bioregion: str = "Cascadia",
         target_counties: dict[str, list[str]] | None = None,
         base_data_dir: Path | None = None,
-        osc_repo_dir: str | None = None,
         enable_caching: bool = True,
     ) -> None:
         """
@@ -68,7 +67,6 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
             bioregion: Target bioregion identifier
             target_counties: Dictionary mapping states to county lists
             base_data_dir: Base directory for data storage
-            osc_repo_dir: Path to OSC repository for SPACE integration
             enable_caching: Whether to enable persistent caching
         """
         self.bioregion = bioregion
@@ -81,18 +79,6 @@ class CascadianAgriculturalH3Backend(UnifiedH3Backend):
 
         if self.cache_dir:
             self.cache_dir.mkdir(parents=True, exist_ok=True)
-
-        logger = logging.getLogger(__name__)
-
-        # Initialize SPACE data loader if available
-        self.h3_data_loader = None
-        self.h3_loader = (
-            None  # Add this attribute for compatibility with SPACE BaseAnalysisModule
-        )
-        self.osc_repo_dir = osc_repo_dir
-        # Note: H3DataLoader from osc_geo has been removed from SPACE
-        # Using native H3 library directly for spatial operations
-        logger.info("Using native H3 library for spatial indexing")
 
         # Get target counties and generate hexagons with caching
         _hexagons_by_state, all_hexagons = self._define_target_region_cached(

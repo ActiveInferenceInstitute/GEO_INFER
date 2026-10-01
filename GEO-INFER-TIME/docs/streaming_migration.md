@@ -38,9 +38,11 @@ broker timestamp still fails validation. Payload event time always takes precede
 (UTC ISO string), numeric `value`, and preserved metadata. Network adapters apply
 this validation before yielding a record.
 
-Epoch zero is preserved. Naive timestamps mean UTC and all output timestamps are
-UTC-aware. Missing timestamps, booleans, nonfinite measurements and `NaT` fail
-validation. Migrate naive datetime comparisons to timezone-aware UTC values.
+Epoch zero is preserved. Datetime and ISO-string timestamps must carry an
+explicit UTC offset (`Z` or `+HH:MM`); naive values raise `ValueError` because
+they are ambiguous between local wall-clock time and UTC. All output timestamps
+are UTC-aware. Missing timestamps, booleans, nonfinite measurements and `NaT`
+fail validation.
 
 Window input stays in event-time order, with stable order for equal timestamps.
 Watermarks never move backward. Records strictly before the watermark enter the

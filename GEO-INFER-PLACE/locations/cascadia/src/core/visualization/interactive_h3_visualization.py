@@ -143,8 +143,6 @@ class InteractiveH3Visualization:
         Returns:
             Path to the generated HTML file
         """
-        start_time = datetime.now()
-
         self.viz_logger.log_visualization_creation(
             viz_type="Comprehensive H3 Map",
             data_sources=list(data_sources.keys()),
@@ -194,7 +192,6 @@ class InteractiveH3Visualization:
             f.write(html_content)
 
         # Log completion
-        duration = (datetime.now() - start_time).total_seconds()
         self.viz_logger.log_visualization_creation(
             viz_type="Comprehensive H3 Map",
             data_sources=list(data_sources.keys()),

@@ -12,10 +12,7 @@ import numpy as np
 import h3
 
 # Import the module to test
-import sys
-import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from geo_infer_iot.core.ingestion import (
     SensorMeasurement,

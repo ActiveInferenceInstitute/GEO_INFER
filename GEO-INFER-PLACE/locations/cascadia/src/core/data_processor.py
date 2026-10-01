@@ -42,9 +42,7 @@ except ImportError as e:
             return super().default(obj)
 
 
-def initialize_modules(
-    active_modules: list[str], shared_backend, osc_repo_path: str
-) -> dict[str, Any]:
+def initialize_modules(active_modules: list[str], shared_backend) -> dict[str, Any]:
     """Initialize all available modules using the shared backend"""
     logger = logging.getLogger(__name__)
     modules = {}
@@ -144,7 +142,7 @@ def initialize_modules(
 
 
 def create_shared_backend(
-    resolution: int, target_counties: dict, output_dir: Path, osc_repo_path: str
+    resolution: int, target_counties: dict, output_dir: Path
 ) -> CascadianAgriculturalH3Backend:
     """Create a single shared backend for all modules"""
     logger = logging.getLogger(__name__)
@@ -157,7 +155,6 @@ def create_shared_backend(
             bioregion="Cascadia",
             target_counties=target_counties,
             base_data_dir=output_dir / "data",
-            osc_repo_dir=osc_repo_path,
         )
         logger.info(
             f"✅ Shared backend created with {len(shared_backend.target_hexagons)} target hexagons"

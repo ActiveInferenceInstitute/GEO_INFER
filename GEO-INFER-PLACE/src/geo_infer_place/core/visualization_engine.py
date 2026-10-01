@@ -610,7 +610,7 @@ class InteractiveVisualizationEngine:
                     sid = rec.get("station_id", "UNK")
                     station_map.setdefault(sid, []).append(rec)
                 sites = []
-                for i, (sid, recs) in enumerate(station_map.items()):
+                for i, recs in enumerate(station_map.values()):
                     latest = recs[-1]
                     fwi_vals = [r.get("fire_weather_index", 0) for r in recs]
                     fm_vals = [r.get("fuel_moisture", 15) for r in recs]

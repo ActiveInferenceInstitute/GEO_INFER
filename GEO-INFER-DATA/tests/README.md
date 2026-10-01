@@ -12,7 +12,7 @@ Tests workspace within `GEO-INFER-DATA`.
 
 ## Public Interface
 
-- `conftest.py:ensure_event_loop` (function)
+- `conftest.py:owned_event_loop` (function)
 - `conftest.py:sample_coordinates` (function)
 - `conftest.py:sample_geodataframe` (function)
 - `conftest.py:tmp_output_dir` (function)
@@ -25,7 +25,7 @@ Tests workspace within `GEO-INFER-DATA`.
 - Module: `GEO-INFER-DATA`
 - Package: `geo_infer_data`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-DATA`
+- Install: `uv sync --package geo-infer-data`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module DATA`
 
 ## Dependencies

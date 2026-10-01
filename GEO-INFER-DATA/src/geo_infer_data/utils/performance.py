@@ -400,7 +400,7 @@ class DataProcessingProfiler:
         # Calculate step percentages
         total_time = self.profile_data["total_time"]
 
-        for step_name, step_data in self.profile_data["steps"].items():
+        for step_data in self.profile_data["steps"].values():
             step_data["percentage"] = (
                 (step_data["duration"] / total_time) * 100 if total_time > 0 else 0
             )

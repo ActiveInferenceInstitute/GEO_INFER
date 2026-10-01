@@ -856,10 +856,10 @@ class H3Visualizer:
         """
         try:
             import folium
-        except ImportError:
+        except ImportError as exc:
             raise ImportError(
                 "folium package required for interactive maps. Install with 'uv pip install folium'"
-            )
+            ) from exc
 
         if not self.grid.cells:
             # Create empty map

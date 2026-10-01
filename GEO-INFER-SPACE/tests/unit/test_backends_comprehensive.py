@@ -7,11 +7,6 @@ via the unified spatial interface. All tests use real methods - no mocks.
 """
 
 import pytest
-import sys
-from pathlib import Path
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 
 # ============================================================================

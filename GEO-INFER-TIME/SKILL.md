@@ -82,7 +82,7 @@ assert window["aggregated_value"] == 21.5
 
 - Select `ReplayIngestAdapter` for recorded or offline input. Network adapters connect to real services and never supply replacement measurements.
 - Install the TIME `streaming` extra for WebSocket and Kafka ingestion.
-- Supply explicit event timestamps; naive input means UTC and output is timezone-aware UTC.
+- Supply explicit, timezone-aware event timestamps (naive datetimes or offset-less ISO strings raise `ValueError`); output is timezone-aware UTC.
 - Read [streaming migration and delivery contracts](docs/streaming_migration.md) before changing callers.
 - Run `uv run python GEO-INFER-TEST/run_unified_tests.py --module TIME` for local verification.
 - Run the explicit live Kafka service check against a disposable broker when validating network delivery.

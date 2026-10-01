@@ -133,7 +133,7 @@ def generate_class_diagram(root_dir: str) -> list[str]:
     lines.append("    }")
 
     # Add model-specific classes
-    for module, classes in models:
+    for _module, classes in models:
         for cls in classes:
             lines.append(f"    class {cls}")
 

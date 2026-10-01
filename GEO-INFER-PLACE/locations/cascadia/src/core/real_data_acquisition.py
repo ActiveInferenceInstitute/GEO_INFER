@@ -252,7 +252,6 @@ class RealDataAcquisition:
         Returns:
             Path to acquired zoning data file, or None if failed
         """
-        start_time = time.time()
         self.processing_logger.log_processing_start(
             "Zoning Data Acquisition",
             {"sources": ["Del Norte County", "California State"]},
@@ -383,7 +382,6 @@ class RealDataAcquisition:
         Returns:
             Path to acquired current use data file, or None if failed
         """
-        start_time = time.time()
         self.processing_logger.log_processing_start(
             "Current Use Data Acquisition",
             {

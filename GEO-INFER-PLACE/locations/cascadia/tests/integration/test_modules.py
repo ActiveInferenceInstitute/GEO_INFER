@@ -7,7 +7,6 @@ with the BaseAnalysisModule pattern and SPACE integration.
 """
 
 import logging
-import os
 import sys
 import tempfile
 from pathlib import Path
@@ -15,16 +14,6 @@ from pathlib import Path
 import yaml
 
 CASCADIA_ROOT = Path(__file__).resolve().parents[2]
-WORKSPACE_ROOT = CASCADIA_ROOT.parents[2]
-
-for import_root in (
-    CASCADIA_ROOT,
-    WORKSPACE_ROOT / "GEO-INFER-PLACE" / "src",
-    WORKSPACE_ROOT / "GEO-INFER-SPACE" / "src",
-):
-    resolved = str(import_root)
-    if import_root.is_dir() and resolved not in sys.path:
-        sys.path.insert(0, resolved)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -76,19 +65,12 @@ def _init_backend_and_modules(base_data_dir: Path):
     assert config.get("analysis_settings"), "Cascadia analysis config is empty"
 
     base_data_dir.mkdir(parents=True, exist_ok=True)
-    osc_repo_dir = Path(
-        os.environ.get(
-            "OSC_REPOS_DIR",
-            str(WORKSPACE_ROOT / "GEO-INFER-SPACE" / "repo"),
-        )
-    )
     backend = CascadianAgriculturalH3Backend(
         modules={},
         resolution=8,
         bioregion="Cascadia",
         target_counties={"CA": ["Lassen"]},
         base_data_dir=base_data_dir,
-        osc_repo_dir=osc_repo_dir,
     )
     logger.info(f"✅ Backend created with {len(backend.target_hexagons)} target hexagons")
 

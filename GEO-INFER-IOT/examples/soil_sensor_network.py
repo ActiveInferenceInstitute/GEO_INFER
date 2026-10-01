@@ -196,8 +196,9 @@ class SoilSensorNetwork:
                     "length_scale", 1000
                 ),  # meters
             }
-            # Perform Bayesian spatial inference (synchronous GP backend)
-            posterior = self.spatial_inference.infer_spatial_distribution(
+            # Perform Bayesian spatial inference (synchronous GP backend); the
+            # fitted state is read back through get_posterior_map below.
+            self.spatial_inference.infer_spatial_distribution(
                 sensor_data=recent_data.to_dict("records"),
                 priors=priors,
                 update_interval="15min",

@@ -13,8 +13,6 @@ from typing import Any
 import pandas as pd
 import numpy as np
 
-logger = logging.getLogger(__name__)
-
 # scikit-learn and statsmodels are declared hard dependencies (pyproject.toml)
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, mean_absolute_error
@@ -25,6 +23,8 @@ from geo_infer_time.core.advanced_forecasting import (
     fit_arima_forecast,
     fit_exponential_smoothing_forecast,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ForecastingEngine:

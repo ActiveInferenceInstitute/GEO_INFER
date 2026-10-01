@@ -35,12 +35,10 @@ class CascadianMortgageDataSources:
 
         self.hmda_bulk_url_template = self.config.get("hmda_bulk_url")
 
-    def _fetch_hmda_data(self, year: int, states: list) -> pd.DataFrame:
+    def _fetch_hmda_data(self, year: int) -> pd.DataFrame:
         """
         Fetches HMDA LAR data using the Data Browser API (filtered) instead of bulk files.
         """
-        all_state_dfs = []
-
         # We need to fetch by state or even county to keep it small.
         # Del Norte (CA) is 06015. Curry (OR) is 41015, Josephine (OR) is 41033.
         # Let's try getting data for specific counties if possible, or state subset.
@@ -111,8 +109,7 @@ class CascadianMortgageDataSources:
         """
         logger.info(f"Fetching mortgage data for year {year}.")
 
-        states = ["CA", "OR"]  # Kept for signature compatibility
-        hmda_df = self._fetch_hmda_data(year, states)
+        hmda_df = self._fetch_hmda_data(year)
 
         if hmda_df.empty:
             logger.warning("No mortgage data found; returning an empty typed result.")

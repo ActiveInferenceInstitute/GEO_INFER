@@ -241,7 +241,10 @@ class CascadiaCoastalAnalysis:
 # Ecosystem services valuation — GEO-INFER-ECON
 # ---------------------------------------------------------------------------
 try:
-    from geo_infer_econ.bioregional.bioregional_markets import BiodiversityMarkets  # type: ignore[import]
+    from geo_infer_econ.bioregional.bioregional_markets import (  # type: ignore[import]
+        BioregionalAsset,
+        BioregionalMarketDesign,
+    )
 
     _ECON_AVAILABLE = True
 except ImportError as _e:
@@ -262,17 +265,12 @@ class CascadiaEcosystemServices:
             import h3 as h3lib
             import geopandas as gpd
             from shapely.geometry import box
-            from geo_infer_econ.bioregional.bioregional_markets import (  # type: ignore[import]
-                BioregionalMarketDesign,
-                BioregionalAsset,
-            )
 
             cascadia_bbox = box(-124.8, 41.8, -114.0, 54.0)
             boundary_gdf = gpd.GeoDataFrame(
                 {"name": ["Cascadia"]}, geometry=[cascadia_bbox], crs="EPSG:4326"
             )
             design = BioregionalMarketDesign(bioregion_boundary=boundary_gdf)
-            market = BiodiversityMarkets(market_design=design)
             credit_types = ["carbon", "biodiversity", "water"]
             credits_created: list[dict] = []
             for cell_id in list(h3_data.keys())[:5]:  # sample up to 5 cells

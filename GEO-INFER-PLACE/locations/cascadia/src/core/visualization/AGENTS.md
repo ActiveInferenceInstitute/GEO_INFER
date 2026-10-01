@@ -22,7 +22,6 @@
 ## Local Contents
 
 - `__init__.py`
-- `bioregion_visualization.py`
 - `comprehensive_visualization.py`
 - `datashader_visualization.py`
 - `deepscatter_visualization.py`

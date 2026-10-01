@@ -27,7 +27,6 @@ try:
     import folium.plugins as plugins
     import matplotlib.pyplot as plt
     import seaborn as sns
-    from matplotlib.colors import LinearSegmentedColormap
 
     FOLIUM_AVAILABLE = True
     MATPLOTLIB_AVAILABLE = True
@@ -149,8 +148,6 @@ class ComprehensiveVisualizationEngine:
         if not FOLIUM_AVAILABLE:
             logger.error("Folium not available for interactive maps")
             return None
-
-        start_time = datetime.now()
 
         self.viz_logger.log_visualization_creation(
             viz_type="Interactive H3 Map",
@@ -288,7 +285,6 @@ class ComprehensiveVisualizationEngine:
             f.write(html_content)
 
         # Log completion
-        duration = (datetime.now() - start_time).total_seconds()
         self.viz_logger.log_visualization_creation(
             viz_type="Interactive H3 Map",
             data_sources=list(data_sources.keys()),
@@ -327,7 +323,6 @@ class ComprehensiveVisualizationEngine:
             logger.error("Matplotlib not available for static visualizations")
             return {}
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         viz_paths = {}
 
         try:
@@ -1008,7 +1003,7 @@ class ComprehensiveVisualizationEngine:
         modules = list(data_sources.keys())
         coverages = []
 
-        for module_name, module_data in data_sources.items():
+        for module_data in data_sources.values():
             hex_map = self._get_hexagons_map(module_data)
             cov = (len(hex_map) / total_targets * 100.0) if total_targets > 0 else 0.0
             coverages.append(cov)
@@ -1068,7 +1063,7 @@ class ComprehensiveVisualizationEngine:
         hexagon_counts = []
         quality_scores = []
 
-        for module_name, module_data in data_sources.items():
+        for module_data in data_sources.values():
             hex_map = self._get_hexagons_map(module_data)
             hex_count = len(hex_map)
             # Heuristic quality: attribute diversity across features
@@ -1085,13 +1080,13 @@ class ComprehensiveVisualizationEngine:
             hexagon_counts.append(hex_count)
             quality_scores.append(quality)
 
-        bars1 = ax1.bar(modules, hexagon_counts, color="lightgreen", alpha=0.8)
+        ax1.bar(modules, hexagon_counts, color="lightgreen", alpha=0.8)
         ax1.set_title("Hexagon Count by Module", fontsize=12, fontweight="bold")
         ax1.set_ylabel("Number of Hexagons", fontsize=10)
         ax1.tick_params(axis="x", rotation=45)
         ax1.set_ylim(0, max(hexagon_counts + [0]) * 1.2 + 1)
 
-        bars2 = ax2.bar(modules, quality_scores, color="lightblue", alpha=0.8)
+        ax2.bar(modules, quality_scores, color="lightblue", alpha=0.8)
         ax2.set_title("Quality Score by Module", fontsize=12, fontweight="bold")
         ax2.set_ylabel("Quality Score (0-1)", fontsize=10)
         ax2.set_ylim(0, 1)

@@ -175,19 +175,19 @@ class PlaceAnalyzer:
         not be used for real-world decisions. Callers must treat this output
         as demo data (flagged via 'data_provenance': 'synthetic_demo').
         """
-        rng = np.random.RandomState(int(abs(lat * lon * 100)) % 10000)
+        rng = np.random.default_rng(int(abs(lat * lon * 100)) % 10000)
         return {
             "elevation_range": {
                 "min": float(rng.uniform(0, 100)),
                 "max": float(rng.uniform(100, 2000)),
                 "mean": float(rng.uniform(50, 500)),
             },
-            "climate_zone": rng.choice(
-                ["temperate", "tropical", "arid", "continental", "polar"]
+            "climate_zone": str(
+                rng.choice(["temperate", "tropical", "arid", "continental", "polar"])
             ),
             "vegetation_cover": float(rng.uniform(0.1, 0.95)),
-            "water_bodies": int(rng.randint(0, 5)),
-            "protected_areas": int(rng.randint(0, 3)),
+            "water_bodies": int(rng.integers(0, 5)),
+            "protected_areas": int(rng.integers(0, 3)),
         }
 
     def _calculate_accessibility(

@@ -387,7 +387,7 @@ class TestAdvancedDashboard(unittest.TestCase):
         self.assertIsInstance(panels, dict)
         self.assertGreater(len(panels), 0)
         # Each value should be an HTML string
-        for key, html in panels.items():
+        for html in panels.values():
             self.assertIsInstance(html, str)
             self.assertGreater(len(html), 0)
 

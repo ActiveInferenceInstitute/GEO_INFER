@@ -3,7 +3,7 @@
 NumPy is the CPU reference. H3 topology always executes through host H3.
 Automatic numeric dispatch falls back with diagnostics; explicit GPU requests
 fail if unavailable or if execution fails. Importing this module never imports
-an accelerator library. Legacy HAS_* attributes probe only when accessed.
+an accelerator library; ``get_backend_diagnostics`` reports capability.
 """
 
 from __future__ import annotations
@@ -128,16 +128,6 @@ def get_available_backends() -> list[str]:
 def is_accelerator_available() -> bool:
     """Return whether a GPU can execute the float64 numeric contract."""
     return bool(get_available_backends())
-
-
-def __getattr__(name: str) -> bool:
-    """Keep historical boolean imports available without eager GPU imports."""
-    flags = {"HAS_CUPY": "cupy", "HAS_TORCH": "torch", "HAS_JAX": "jax"}
-    if name == "HAS_GPU":
-        return is_accelerator_available()
-    if name in flags:
-        return _probe_backend(flags[name]).backend is not None
-    raise AttributeError(name)
 
 
 def _validated_points(points: Any, name: str) -> npt.NDArray[np.float64]:
@@ -374,23 +364,18 @@ def spatial_join_kernel(
     cells_b: Sequence[str],
     join_type: str = "intersects",
     h3_module: Any = None,
-    resolution: int = -1,
 ) -> tuple[list[tuple[str, str]], list[str], list[str]]:
     """Host H3 topology join, preserving input order (including pair duplicates).
 
     'intersects' means identical or distance-1 neighbors at the same resolution;
-    contains/within use strict H3 ancestry, not geographic polygon containment.
-    The legacy resolution argument must remain -1: cell resolutions determine
-    ancestry. Invalid cells raise instead of silently disappearing.
+    contains/within use strict H3 ancestry, not geographic polygon containment;
+    each cell's own resolution determines ancestry. Invalid cells raise instead
+    of silently disappearing.
     """
     if h3_module is None:
         h3_module = importlib.import_module("h3")
     if join_type not in {"intersects", "contains", "within"}:
         raise ValueError("join_type must be intersects, contains, or within")
-    if resolution != -1:
-        raise ValueError(
-            "resolution must be -1; H3 cell resolutions determine ancestry"
-        )
     resolutions = {
         cell: h3_module.get_resolution(cell) for cell in (*cells_a, *cells_b)
     }

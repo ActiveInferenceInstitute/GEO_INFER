@@ -203,11 +203,14 @@ class Rule:
             if condition["_type"] == "pattern":
                 condition = condition["pattern"]
             elif condition["_type"] == "function":
-                # We can't deserialize a function, use a default always-false function
+                # A function cannot be deserialized; the rule never matches.
                 logger.warning(
                     f"Cannot deserialize function condition for rule {data['id']}"
                 )
-                condition = lambda state: False
+
+                def condition(state: Any) -> bool:
+                    """Never-matching stand-in for a non-serializable condition."""
+                    return False
 
         rule = cls(
             rule_id=data["id"],
@@ -336,7 +339,7 @@ class RuleSet:
         """Create rule set from dictionary representation."""
         rule_set = cls()
 
-        for rule_id, rule_data in data["rules"].items():
+        for rule_data in data["rules"].values():
             rule = Rule.from_dict(rule_data)
             rule_set.add_rule(rule)
 
