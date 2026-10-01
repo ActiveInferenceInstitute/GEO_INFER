@@ -37,7 +37,7 @@ diagnostics, and recorded free energy therefore describe the same observation
 update. Free energy is retained from perception when action candidates or
 preferences change. Repeated `act` calls neither advance time nor alter beliefs.
 
-This legacy backend normalizes observation vectors to frequencies before
+This backend normalizes observation vectors to frequencies before
 conditioning, so `[8, 2]` and `[0.8, 0.2]` have the same effect. Unlike
 `GenerativeModel.update_beliefs`, it does not propagate B before the next
 observation. B supplies prospective transitions for policy evaluation. Use the

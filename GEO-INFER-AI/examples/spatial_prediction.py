@@ -45,7 +45,7 @@ def main() -> None:
 
     # Feature engineering
     print("\nPerforming feature engineering...")
-    engineer = GeospatialFeatureEngineer(normalize=True, handle_spatial_autocorr=True)
+    engineer = GeospatialFeatureEngineer(normalize=True)
     X_processed = engineer.fit_transform(X, coordinates=coordinates)
 
     print(f"Original features: {X.shape[1]}")

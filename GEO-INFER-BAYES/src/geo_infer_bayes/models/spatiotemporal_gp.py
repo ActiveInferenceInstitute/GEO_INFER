@@ -203,8 +203,10 @@ class SpatioTemporalGP(BayesianModel):
             raise ValueError("Model must be fitted before sampling")
 
         # Get predictions and uncertainties
-        mean_pred, std_pred = self.predict(
-            spatial_coords, temporal_coords, return_std=True
+        mean_pred, std_pred = self._predict_components(
+            np.asarray(spatial_coords, dtype=float),
+            np.asarray(temporal_coords, dtype=float),
+            return_std=True,
         )
 
         # Generate samples
@@ -319,30 +321,12 @@ class SpatioTemporalGP(BayesianModel):
             "noise": {"prior": "log_normal", "hyperparams": {"mu": -2.0, "sigma": 1.0}},
         }
 
-    def log_likelihood(
-        self,
-        theta: dict[str, Any],
-        data: Any,
-        observations: np.ndarray | None = None,
-    ) -> float:
+    def log_likelihood(self, theta: dict[str, Any], data: Any) -> float:
         """Compute a Gaussian log-likelihood without mutating model state.
 
-        ``data`` is normally a mapping containing ``spatial_coords``,
-        ``temporal_coords``, and ``observations``.  For compatibility with the
-        original fitted-model convenience API, callers may instead pass
-        ``(spatial_coords, temporal_coords, observations)``.
+        ``data`` is a mapping containing ``spatial_coords``,
+        ``temporal_coords``, and ``observations``.
         """
-        if observations is not None:
-            if not self.is_fitted:
-                raise ValueError("Model must be fitted before calculating likelihood")
-            spatial_coords = np.asarray(theta, dtype=float)
-            temporal_coords = np.asarray(data, dtype=float)
-            observed_values = np.asarray(observations, dtype=float)
-            predictions, std_pred = self._predict_components(
-                spatial_coords, temporal_coords, return_std=True
-            )
-            return self._gaussian_log_likelihood(observed_values, predictions, std_pred)
-
         if not isinstance(theta, dict) or not isinstance(data, dict):
             raise TypeError("theta must be a mapping and data must be a mapping")
         required = {"spatial_coords", "temporal_coords", "observations"}
@@ -433,25 +417,16 @@ class SpatioTemporalGP(BayesianModel):
         samples: int = 100,
         return_std: bool = False,
     ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
-        """Predict from ``[x, y, time]`` rows or posterior parameter draws.
+        """Predict from ``[x, y, time]`` rows, optionally over posterior draws.
 
-        The supported composable interface is ``predict(X_new, posterior=None)``
-        where ``X_new`` has shape ``(n_points, 3)``. Calls using the
-        two-coordinate ``predict(spatial_coords, temporal_coords)`` form remain
-        accepted when the second argument is a one-dimensional coordinate array.
+        Args:
+            X_new: Prediction matrix of shape ``(n_points, 3)``: x, y, and time.
+            posterior: Posterior draws; ``None`` predicts from the fitted
+                hyperparameters.
+            samples: Maximum number of posterior draws to average.
+            return_std: Also return the predictive standard deviation.
         """
-        split_coordinate_components = (
-            posterior is not None and self._is_coordinate_vector(posterior)
-        )
-        if split_coordinate_components:
-            temporal_coords = np.asarray(posterior, dtype=float)
-            if isinstance(samples, (bool, np.bool_)):
-                return_std = bool(samples)
-                samples = 100
-            posterior = None
-            spatial_coords = np.asarray(X_new, dtype=float)
-        else:
-            spatial_coords, temporal_coords = self._split_prediction_input(X_new)
+        spatial_coords, temporal_coords = self._split_prediction_input(X_new)
 
         if posterior is None:
             return self._predict_components(
@@ -476,17 +451,6 @@ class SpatioTemporalGP(BayesianModel):
             std_prediction: np.ndarray = np.asarray(np.std(draws, axis=0))
             return mean_prediction, std_prediction
         return mean_prediction
-
-    @staticmethod
-    def _is_coordinate_vector(value: Any) -> bool:
-        """Return whether a value can be a split temporal coordinate vector."""
-        if isinstance(value, (str, bytes, dict)):
-            return False
-        try:
-            array = np.asarray(value)
-        except (TypeError, ValueError):
-            return False
-        return array.ndim == 1 and np.issubdtype(array.dtype, np.number)
 
     @staticmethod
     def _split_prediction_input(X_new: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -645,7 +609,11 @@ class SpatioTemporalGP(BayesianModel):
         return theta
 
     def posterior_predictive(
-        self, posterior: Any, X: np.ndarray | None = None, samples: int = 100
+        self,
+        posterior: Any,
+        X: np.ndarray | None = None,
+        samples: int = 100,
+        random_seed: SeedLike = None,
     ) -> np.ndarray:
         """
         Generate posterior predictive samples.
@@ -658,6 +626,9 @@ class SpatioTemporalGP(BayesianModel):
             Locations to generate predictions for. If None, use observed locations.
         samples : int, default=100
             Number of posterior samples to use
+        random_seed : int or numpy.random.Generator, optional
+            Seed or generator for the predictive draws. See
+            :func:`geo_infer_bayes.utils.rng.resolve_rng`.
 
         Returns
         -------
@@ -679,6 +650,7 @@ class SpatioTemporalGP(BayesianModel):
         n_draws = min(int(samples), self._posterior_draw_count(posterior))
         if n_draws < 1:
             raise ValueError("posterior must contain at least one draw")
+        rng = self.rng if random_seed is None else resolve_rng(random_seed)
         all_samples = []
 
         for i in range(n_draws):
@@ -687,7 +659,7 @@ class SpatioTemporalGP(BayesianModel):
                 spatial_coords, temporal_coords, theta=param_sample
             )
             noise = self._positive_scalar(param_sample["noise"], "noise")
-            noisy_sample = self.rng.normal(pred, np.sqrt(noise))
+            noisy_sample = rng.normal(pred, np.sqrt(noise))
             all_samples.append(noisy_sample)
 
         return np.stack(all_samples)

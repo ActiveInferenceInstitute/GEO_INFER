@@ -98,7 +98,9 @@ def variational_inference_helper(
     posterior = prior.copy()
 
     # Iterative update
-    for iteration in range(max_iterations):
+    iterations = 0
+    for _ in range(max_iterations):
+        iterations += 1
         posterior_old = posterior.copy()
 
         # Update posterior (simplified mean-field update)
@@ -135,8 +137,8 @@ def variational_inference_helper(
             break
 
     metadata = {
-        "iterations": iteration + 1,
-        "converged": iteration < max_iterations - 1,
+        "iterations": iterations,
+        "converged": iterations < max_iterations,
         "final_kl": np.sum(posterior * np.log(posterior / prior + 1e-10)),
     }
 

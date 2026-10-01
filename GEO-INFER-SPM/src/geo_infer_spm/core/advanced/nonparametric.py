@@ -372,7 +372,9 @@ class NonparametricSPM:
         max_iter = 20
         tol = 1e-6
 
-        for iteration in range(max_iter):
+        n_iter = 0
+        for _ in range(max_iter):
+            n_iter += 1
             # Compute residuals
             residuals = y - X @ beta
 
@@ -408,8 +410,8 @@ class NonparametricSPM:
         diagnostics = {
             "r_squared": r_squared,
             "robust_scale": scale,
-            "n_iterations": iteration + 1,
-            "converged": iteration < max_iter - 1,
+            "n_iterations": n_iter,
+            "converged": n_iter < max_iter,
         }
 
         return y_hat, weights, diagnostics

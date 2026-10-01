@@ -248,7 +248,7 @@ class SpatiallyConstrainedKMeans:
 
         self.labels_ = np.zeros(n_samples, dtype=int)
 
-        for iteration in range(self.max_iter):
+        for _ in range(self.max_iter):
             old_labels = self.labels_.copy()
 
             # Assign points to clusters

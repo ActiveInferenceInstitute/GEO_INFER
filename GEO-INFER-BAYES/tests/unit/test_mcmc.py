@@ -9,10 +9,6 @@ simple Gaussian model.
 import numpy as np
 from typing import Any
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from geo_infer_bayes.core.mcmc import MCMC
 from geo_infer_bayes.models.base import BayesianModel

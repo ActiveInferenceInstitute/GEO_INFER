@@ -16,7 +16,9 @@ try:
     MATPLOTLIB_AVAILABLE = True
 except ImportError:
     MATPLOTLIB_AVAILABLE = False
-    warnings.warn("matplotlib not available. Visualization functions limited.")
+    warnings.warn(
+        "matplotlib not available. Visualization functions limited.", stacklevel=2
+    )
 
 from ..models.data_models import SPMResult
 

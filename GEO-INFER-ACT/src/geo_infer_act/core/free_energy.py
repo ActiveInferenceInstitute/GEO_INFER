@@ -18,7 +18,7 @@ no verification relationship between this numerical implementation and the
 Lean proofs.
 """
 
-from typing import Any, Union, cast
+from typing import Any, cast
 import logging
 
 import numpy as np
@@ -33,7 +33,7 @@ EPSILON = 1e-12
 # Preferences may be a plain vector or the structured dict shape produced by
 # helpers such as ``hazard_policy_prior``; ``_preferences_to_vector`` lowers
 # both into a belief-aligned vector before use.
-PreferenceInput = Union[np.ndarray, dict[str, Any]]
+PreferenceInput = np.ndarray | dict[str, Any]
 
 
 def _coerce_probability_vector(

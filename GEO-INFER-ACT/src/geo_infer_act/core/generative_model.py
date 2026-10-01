@@ -1337,16 +1337,23 @@ class GenerativeModel:
 
         try:
             with warnings.catch_warnings():
-                warnings.simplefilter("ignore", DeprecationWarning)
-                import bayeux as bx
-                import jax
-
-                model = bx.Model(log_density=log_density_fn, test_point=test_point)
-                # Use NUTS sampler by default
-                results = model.mcmc.numpyro_nuts(
-                    seed=jax.random.PRNGKey(int(self.parameters.get("random_seed", 0))),
-                    num_samples=1000,
+                # bayeux imports oryx, whose tensorflow-probability substrate
+                # reads ``jax.interpreters.xla.pytype_aval_mappings`` (deprecated
+                # in JAX 0.5). Silence only that third-party import warning.
+                warnings.filterwarnings(
+                    "ignore",
+                    message=r"jax\.interpreters\.xla\.pytype_aval_mappings",
+                    category=DeprecationWarning,
                 )
+                import bayeux as bx
+            import jax
+
+            model = bx.Model(log_density=log_density_fn, test_point=test_point)
+            # Use NUTS sampler by default
+            results = model.mcmc.numpyro_nuts(
+                seed=jax.random.PRNGKey(int(self.parameters.get("random_seed", 0))),
+                num_samples=1000,
+            )
             posterior_samples = {k: np.array(v) for k, v in results.items()}
             logger.info("Bayeux/JAX NUTS sampling completed")
             return {
@@ -1396,9 +1403,6 @@ class GenerativeModel:
                     "backend_error": str(backend_error),
                 },
             }
-        except Exception as e:
-            logger.error(f"Bayeux integration failed: {e}")
-            return {"status": "error", "message": str(e)}
 
     def diffuse_beliefs(
         self, beliefs: dict[str, np.ndarray], diffusion_rate: float = 0.1
@@ -1580,7 +1584,7 @@ class GenerativeModel:
         """Compute total entropy of current beliefs."""
         if self.hierarchical:
             total_entropy = 0.0
-            for level_key, beliefs in self.beliefs.items():
+            for beliefs in self.beliefs.values():
                 if self.model_type == "categorical":
                     total_entropy += entropy(beliefs["states"])
                 elif self.model_type in ["gaussian", "hierarchical_gaussian"]:

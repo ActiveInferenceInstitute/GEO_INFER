@@ -222,7 +222,7 @@ def bayesian_optimization_helper(
     evaluated_indices: list = []
     evaluated_values: list = []
 
-    for iteration in range(n_iterations):
+    for _ in range(n_iterations):
         n_states = len(prior)
 
         if not evaluated_values:

@@ -18,6 +18,10 @@ from geo_infer_act import (
     hazard_policy_prior,
     parse_crescent_city_intel,
 )
+from geo_infer_act.core.civic_intel import (
+    CRESCENT_CITY_OBSERVATIONS_SCHEMA,
+    load_crescent_city_geo_observations,
+)
 from geo_infer_act.core.policy_selection import PolicySelector
 
 
@@ -365,11 +369,6 @@ class TestPolicyCoupling:
 
 
 # --- crescent-city-geo-observations/v1 delegation (2026-09-08 producer pass) ---
-
-from geo_infer_act.core.civic_intel import (  # noqa: E402
-    CRESCENT_CITY_OBSERVATIONS_SCHEMA,
-    load_crescent_city_geo_observations,
-)
 
 
 class TestObservationsDelegation:

@@ -198,7 +198,7 @@ class TestContrastCorrectness:
         true_effect = 1.2
         significant_count = 0
 
-        for sim in range(n_simulations):
+        for _ in range(n_simulations):
             n_points = 80
             X = np.random.randn(n_points, 2)
             y = 1.0 + true_effect * X[:, 1] + 0.5 * np.random.randn(n_points)

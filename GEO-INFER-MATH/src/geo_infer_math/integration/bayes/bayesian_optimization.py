@@ -9,6 +9,8 @@ from typing import Any, cast
 from collections.abc import Callable
 import logging
 
+from geo_infer_math.utils.rng import SeedLike, resolve_rng
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,6 +28,7 @@ class BayesianOptimization:
         max_iterations: int = 25,
         length_scale: float = 1.0,
         noise: float = 1e-6,
+        seed: SeedLike = None,
     ) -> None:
         """Initialize Bayesian optimiser.
 
@@ -35,12 +38,15 @@ class BayesianOptimization:
             max_iterations: Maximum BO iterations after initialisation.
             length_scale: RBF kernel length scale.
             noise: Observation noise variance.
+            seed: Seed or generator for the random initial design and EI
+                candidate search; see :func:`geo_infer_math.utils.rng.resolve_rng`.
         """
         self.bounds = bounds
         self.n_initial = n_initial
         self.max_iterations = max_iterations
         self.length_scale = length_scale
         self.noise = noise
+        self.rng = resolve_rng(seed)
         logger.debug(
             "BayesianOptimization initialized (n_init=%d, max_iter=%d)",
             n_initial,
@@ -194,5 +200,5 @@ class BayesianOptimization:
     def _random_points(self, bounds: np.ndarray, n: int) -> np.ndarray:
         """Generate random points within bounds."""
         d = bounds.shape[0]
-        points = np.random.rand(n, d)
+        points = self.rng.random((n, d))
         return cast(np.ndarray, bounds[:, 0] + points * (bounds[:, 1] - bounds[:, 0]))

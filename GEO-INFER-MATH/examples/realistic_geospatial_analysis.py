@@ -259,13 +259,6 @@ class RealisticGeospatialAnalyzer:
             + np.random.normal(0, 0.3, n_stations)
         )
 
-        # Risk assessment using spatial statistics
-        from geo_infer_math.core.linalg_tensor import MatrixOperations
-
-        weights_matrix = MatrixOperations.spatial_weights_matrix(
-            station_coords, method="inverse_distance"
-        )
-
         # High-risk areas identification
         risk_threshold = np.percentile(seismic_activity, 75)
         high_risk_mask = seismic_activity > risk_threshold
@@ -372,7 +365,6 @@ class RealisticGeospatialAnalyzer:
         # Temperature readings (realistic seasonal variation)
         base_temp = 15  # Base temperature
         elevation_effect = np.random.rand(n_stations) * 5  # Elevation effect
-        precipitation = np.random.exponential(2, n_stations)  # Precipitation in mm
 
         # Temperature influenced by latitude and elevation
         lat_effect = (station_coords[:, 0] - 45.0) * -2  # Cooler at higher latitudes
@@ -639,34 +631,54 @@ class RealisticGeospatialAnalyzer:
             f.write("-" * 40 + "\n")
             env_data = results["environmental"]
             air_quality = env_data["air_quality"]
-
-            f.write(".3f.3f.3f")
+            urban_heat = env_data["urban_heat"]
+            f.write(
+                f"Air quality Moran's I: {air_quality['moran_i']['I']:.3f} "
+                f"(p={air_quality['moran_i']['p_value']:.3f})\n"
+                f"Urban heat Moran's I: {urban_heat['moran_i']['I']:.3f}"
+            )
 
             # Public Health Summary
             f.write("\n\n2. PUBLIC HEALTH ANALYSIS\n")
             f.write("-" * 40 + "\n")
             health_data = results["public_health"]
-            f.write(".3f.3f")
+            f.write(
+                f"Mean asthma rate: {np.mean(health_data['asthma_rates']):.3f}\n"
+                f"Asthma Moran's I: {health_data['moran_i']['I']:.3f}"
+            )
 
             # Disaster Risk Summary
             f.write("\n\n3. DISASTER RISK ASSESSMENT\n")
             f.write("-" * 40 + "\n")
             disaster_data = results["disaster_risk"]
-            f.write(".2f.0f")
+            f.write(
+                f"Seismic risk threshold (75th pct): "
+                f"{disaster_data['risk_threshold']:.2f}\n"
+                f"High-risk stations: {len(disaster_data['high_risk_coordinates']):.0f}"
+            )
 
             # Transportation Summary
             f.write("\n\n4. TRANSPORTATION NETWORK ANALYSIS\n")
             f.write("-" * 40 + "\n")
             transport_data = results["transportation"]
             network_analysis = transport_data["network_analysis"]
-            f.write(".0f.0f.3f.1f")
+            f.write(
+                f"Nodes: {network_analysis['n_nodes']:.0f}, "
+                f"edges: {network_analysis['n_edges']:.0f}, "
+                f"density: {network_analysis['density']:.3f}\n"
+                f"Sample path length: {transport_data['sample_distance']:.1f}"
+            )
 
             # Climate Summary
             f.write("\n\n5. CLIMATE DATA INTERPOLATION\n")
             f.write("-" * 40 + "\n")
             climate_data = results["climate"]
             station_temps = climate_data["station_temperatures"]
-            f.write(".1f.1f.1f.1f")
+            f.write(
+                f"Station temperature mean: {np.mean(station_temps):.1f}, "
+                f"std: {np.std(station_temps):.1f}, "
+                f"min: {np.min(station_temps):.1f}, max: {np.max(station_temps):.1f}"
+            )
 
             f.write("\n\nANALYSIS COMPLETED SUCCESSFULLY\n")
             f.write("=" * 60 + "\n")

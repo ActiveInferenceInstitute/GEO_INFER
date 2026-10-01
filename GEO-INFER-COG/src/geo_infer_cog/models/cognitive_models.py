@@ -927,7 +927,7 @@ class SpatialKnowledgeGraph:
 
         # Entity type distribution
         entity_types: dict[str, int] = {}
-        for node, node_data in self.graph.nodes(data=True):
+        for _node, node_data in self.graph.nodes(data=True):
             entity_type = node_data.get("entity_type", "unknown")
             entity_types[entity_type] = entity_types.get(entity_type, 0) + 1
 

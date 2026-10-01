@@ -11,9 +11,11 @@ from typing import Any
 from collections.abc import Callable
 from dataclasses import dataclass
 from scipy.optimize import minimize_scalar, root_scalar
-from scipy.integrate import solve_ivp, quad, simpson as scipy_simpson
+from scipy.integrate import solve_ivp, quad, simpson as scipy_simpson, trapezoid
 from scipy.interpolate import interp1d, RBFInterpolator
 import logging
+
+from geo_infer_math.utils.rng import SeedLike, resolve_rng
 
 logger = logging.getLogger(__name__)
 
@@ -344,7 +346,8 @@ class SpatialOptimizer:
             objective: Objective function to minimize
             bounds: Parameter bounds
             initial_guess: Initial parameter values
-            **kwargs: Method-specific parameters
+            **kwargs: Method-specific parameters (``simulated_annealing``
+                accepts ``seed`` for reproducible proposals).
 
         Returns:
             Optimization result
@@ -480,8 +483,14 @@ class SpatialOptimizer:
         max_iter: int = 1000,
         initial_temp: float = 100.0,
         cooling_rate: float = 0.95,
+        seed: SeedLike = None,
     ) -> OptimizationResult:
-        """Simulated annealing optimization."""
+        """Simulated annealing optimization.
+
+        ``seed`` drives candidate proposals and acceptance draws; see
+        :func:`geo_infer_math.utils.rng.resolve_rng`.
+        """
+        rng = resolve_rng(seed)
         x = x0.copy()
         current_energy = objective(x)
         best_x = x.copy()
@@ -489,9 +498,9 @@ class SpatialOptimizer:
         temperature = initial_temp
         n_evaluations = 1
 
-        for iteration in range(max_iter):
+        for _ in range(max_iter):
             # Generate candidate solution
-            candidate = x + np.random.normal(0, temperature / 10, size=len(x))
+            candidate = x + rng.normal(0, temperature / 10, size=len(x))
 
             # Apply bounds
             candidate = np.clip(
@@ -505,9 +514,7 @@ class SpatialOptimizer:
             # Accept or reject candidate
             delta_energy = candidate_energy - current_energy
 
-            if delta_energy < 0 or np.random.random() < np.exp(
-                -delta_energy / temperature
-            ):
+            if delta_energy < 0 or rng.random() < np.exp(-delta_energy / temperature):
                 x = candidate
                 current_energy = candidate_energy
 
@@ -775,7 +782,7 @@ def numerical_integration(
     if method == "trapezoidal":
         x = np.linspace(a, b, n_points)
         y = np.array([func(xi) for xi in x])
-        return float(np.trapz(y, x))
+        return float(trapezoid(y, x))
 
     elif method == "simpson":
         x = np.linspace(a, b, n_points)

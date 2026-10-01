@@ -344,7 +344,7 @@ def requires_numpy_arrays(*param_names: str) -> Callable:
                         except Exception as e:
                             raise ValueError(
                                 f"Cannot convert parameter '{param_name}' to numpy array: {e}"
-                            )
+                            ) from e
 
             return func(*bound_args.args, **bound_args.kwargs)
 

@@ -38,6 +38,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     payload = {
         "gallery": str(args.output_dir / "index.html"),
         "manifest": str(args.output_dir / "gallery_manifest.json"),
+        "runs": len(manifest["runs"]),
     }
     print(json.dumps(payload) if args.json else f"Gallery: {payload['gallery']}")
     return 0

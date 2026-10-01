@@ -626,7 +626,7 @@ class SpatialAnalysisAPI:
 
         except Exception as e:
             logger.error(f"Error calculating descriptive statistics: {e}")
-            raise BadRequest(f"Invalid request: {str(e)}")
+            raise BadRequest(f"Invalid request: {e}") from e
 
     def calculate_autocorrelation(self, request_data: dict[str, Any]) -> dict[str, Any]:
         """Calculate spatial autocorrelation (API endpoint)."""
@@ -719,7 +719,7 @@ class SpatialAnalysisAPI:
 
         except Exception as e:
             logger.error(f"Error calculating autocorrelation: {e}")
-            raise BadRequest(f"Invalid request: {str(e)}")
+            raise BadRequest(f"Invalid request: {e}") from e
 
     def analyze_hotspots(self, request_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze hot spots (API endpoint)."""
@@ -814,7 +814,7 @@ class SpatialAnalysisAPI:
 
         except Exception as e:
             logger.error(f"Error analyzing hotspots: {e}")
-            raise BadRequest(f"Invalid request: {str(e)}")
+            raise BadRequest(f"Invalid request: {e}") from e
 
     def perform_clustering(self, request_data: dict[str, Any]) -> dict[str, Any]:
         """Perform spatial clustering (API endpoint)."""
@@ -883,7 +883,7 @@ class SpatialAnalysisAPI:
 
         except Exception as e:
             logger.error(f"Error performing clustering: {e}")
-            raise BadRequest(f"Invalid request: {str(e)}")
+            raise BadRequest(f"Invalid request: {e}") from e
 
     def create_flask_app(self) -> Flask:
         """Create Flask application with API endpoints."""

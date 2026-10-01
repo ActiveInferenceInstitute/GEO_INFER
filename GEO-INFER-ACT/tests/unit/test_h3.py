@@ -40,6 +40,7 @@ class TestH3Methods(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         self.boundary = {
+            "type": "Polygon",
             "coordinates": [
                 [
                     [-122.435, 37.765],
@@ -48,9 +49,10 @@ class TestH3Methods(unittest.TestCase):
                     [-122.405, 37.765],
                     [-122.435, 37.765],
                 ]
-            ]
+            ],
         }
         self.simple_boundary = {
+            "type": "Polygon",
             "coordinates": [
                 [
                     [-122.42, 37.77],
@@ -59,7 +61,7 @@ class TestH3Methods(unittest.TestCase):
                     [-122.41, 37.77],
                     [-122.42, 37.77],
                 ]
-            ]
+            ],
         }
         logger.info("H3 test setup complete")
 
@@ -107,7 +109,7 @@ class TestH3Methods(unittest.TestCase):
         self.assertGreaterEqual(typed.spatial_consistency.cell_count, 1)
 
         # Verify belief normalization
-        for cell, belief in updated["h3_beliefs"].items():
+        for belief in updated["h3_beliefs"].values():
             self.assertAlmostEqual(np.sum(belief), 1.0, places=6)
             self.assertTrue(np.all(belief >= 0))
 
@@ -122,6 +124,7 @@ class TestH3Methods(unittest.TestCase):
         """The generic update path remains valid after H3 expands state space."""
         model = GenerativeModel("categorical", {"state_dim": 2})
         small_boundary = {
+            "type": "Polygon",
             "coordinates": [
                 [
                     [-122.42, 37.77],
@@ -130,7 +133,7 @@ class TestH3Methods(unittest.TestCase):
                     [-122.419, 37.77],
                     [-122.42, 37.77],
                 ]
-            ]
+            ],
         }
         model.enable_h3_spatial(11, small_boundary)  # r=11: tiny box yields 4 cells
         observation = np.zeros(model.state_dim)
@@ -174,7 +177,7 @@ class TestH3Methods(unittest.TestCase):
         self.assertEqual(len(typed.cell_results), len(grid_observations))
         self.assertTrue(np.isfinite(typed.aggregate_free_energy))
 
-        for cell, result in results.items():
+        for result in results.values():
             self.assertIn("beliefs", result)
             self.assertIn("free_energy", result)
             self.assertIn("precision", result)
@@ -249,7 +252,7 @@ class TestH3Methods(unittest.TestCase):
             )
 
             # Check that beliefs are still normalized
-            for cell, beliefs in diffused_beliefs.items():
+            for beliefs in diffused_beliefs.values():
                 self.assertAlmostEqual(np.sum(beliefs), 1.0, places=6)
                 self.assertTrue(np.all(beliefs >= 0))
 

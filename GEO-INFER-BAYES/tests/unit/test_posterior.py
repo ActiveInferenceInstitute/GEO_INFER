@@ -10,11 +10,6 @@ import pytest
 from geo_infer_bayes.core.posterior import PosteriorAnalysis
 from geo_infer_bayes.models.bayesian_timeseries import BayesianTimeSeriesModel
 
-import os
-import sys
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
-
 
 def _make_posterior_samples():
     """Create deterministic posterior draws for summary-statistic tests."""

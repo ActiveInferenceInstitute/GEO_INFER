@@ -33,7 +33,7 @@ Unit workspace within `GEO-INFER-AI`.
 - Module: `GEO-INFER-AI`
 - Package: `geo_infer_ai`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-AI`
+- Install: `uv sync --package geo-infer-ai`
 - Tests: `uv run python -m pytest GEO-INFER-AI/tests/unit`
 
 ## Dependencies

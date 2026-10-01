@@ -111,7 +111,7 @@ class SpatialGraph:
 
         # Remove all edges connected to this node
         edges_to_remove = []
-        for (source, target), edge in self.edges.items():
+        for source, target in self.edges:
             if source == node_id or target == node_id:
                 edges_to_remove.append((source, target))
 

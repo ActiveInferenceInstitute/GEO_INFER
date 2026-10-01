@@ -58,7 +58,7 @@ class TestDataLoading:
 
             np.testing.assert_array_equal(spm_data.data, self.data)
             np.testing.assert_array_equal(spm_data.coordinates, self.coordinates)
-            assert spm_data.metadata["test"] == True
+            assert spm_data.metadata["test"]
 
         finally:
             os.unlink(temp_path)

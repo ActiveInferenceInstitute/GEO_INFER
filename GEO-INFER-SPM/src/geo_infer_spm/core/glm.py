@@ -214,7 +214,7 @@ class GeneralLinearModel:
         # Iteratively reweighted least squares
         max_iter = 50
         tol = 1e-6
-        for iteration in range(max_iter):
+        for _ in range(max_iter):
             # Compute residuals
             residuals = y - X @ beta
 

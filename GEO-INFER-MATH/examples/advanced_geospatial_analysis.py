@@ -263,7 +263,7 @@ def create_comprehensive_visualization(
 
     # Plot 3: Interpolation surface
     im = axes[0, 2].contourf(xx, yy, interpolated_grid, levels=20, cmap="viridis")
-    scatter_interp = axes[0, 2].scatter(
+    axes[0, 2].scatter(
         utm_coords[:, 0],
         utm_coords[:, 1],
         c=values,
@@ -403,7 +403,8 @@ def main():
         print(f"  Cluster {i + 1}: {count} points")
 
     print("GWR Results:")
-    print("  Completed model: GeographicallyWeightedRegression")
+    print(f"  Completed model: {type(gwr_model).__name__}")
+    print(f"  Bandwidth: {gwr_model.bandwidth}")
 
     print("Parallel Processing:")
     print(f"  Processed {len(parallel_results)} distance queries")

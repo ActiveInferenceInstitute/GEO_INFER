@@ -9,10 +9,10 @@ import numpy as np
 from typing import Any, cast
 import logging
 
-logger = logging.getLogger(__name__)
-
 # Import core tensor ops under a different name to avoid collision
 from geo_infer_math.core.linalg_tensor import TensorOperations as _CoreTensorOperations
+
+logger = logging.getLogger(__name__)
 
 
 class SpatialTensorOperations:

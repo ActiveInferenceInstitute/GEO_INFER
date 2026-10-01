@@ -16,7 +16,7 @@ Config workspace within `GEO-INFER-ACT`.
 - Module: `GEO-INFER-ACT`
 - Package: `geo_infer_act`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-ACT`
+- Install: `uv sync --package geo-infer-act`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module ACT`
 
 ## Dependencies

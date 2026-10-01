@@ -2,14 +2,9 @@
 Tests for GEO-INFER-ACT core functionality.
 """
 
-import os
-import sys
 import unittest
 import pytest
 import numpy as np
-
-# Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from geo_infer_act import ActiveInferenceStepResult, H3BeliefUpdateResult
 from geo_infer_act.core.active_inference import ActiveInferenceModel
@@ -617,6 +612,7 @@ class TestGenerativeModel(unittest.TestCase):
         """Test H3 spatial enabling."""
         model = GenerativeModel("categorical", {"state_dim": 1})
         boundary = {
+            "type": "Polygon",
             "coordinates": [
                 [
                     [-122.42, 37.77],
@@ -625,7 +621,7 @@ class TestGenerativeModel(unittest.TestCase):
                     [-122.41, 37.77],
                     [-122.42, 37.77],
                 ]
-            ]
+            ],
         }
         model.enable_h3_spatial(8, boundary)
         if hasattr(model, "spatial_config"):
@@ -637,6 +633,7 @@ class TestGenerativeModel(unittest.TestCase):
         model.enable_h3_spatial(
             8,
             {
+                "type": "Polygon",
                 "coordinates": [
                     [
                         [-122.42, 37.77],
@@ -645,7 +642,7 @@ class TestGenerativeModel(unittest.TestCase):
                         [-122.41, 37.77],
                         [-122.42, 37.77],
                     ]
-                ]
+                ],
             },
         )
         obs = {
@@ -871,7 +868,7 @@ class TestDiffuseAndAggregateBeliefs(unittest.TestCase):
         # Should have fewer cells at coarser resolution
         self.assertLessEqual(len(aggregated), len(beliefs))
         # All values should be valid distributions
-        for cell, b in aggregated.items():
+        for b in aggregated.values():
             self.assertAlmostEqual(np.sum(b), 1.0, places=5)
 
 

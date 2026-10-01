@@ -257,7 +257,10 @@ class PosteriorAnalysis:
         return float(lower), float(upper)
 
     def posterior_predictive(
-        self, X: np.ndarray | None = None, samples: int = 100
+        self,
+        X: np.ndarray | None = None,
+        samples: int = 100,
+        random_seed: SeedLike = None,
     ) -> np.ndarray:
         """
         Generate posterior predictive samples.
@@ -268,13 +271,18 @@ class PosteriorAnalysis:
             Locations to generate predictions for. If None, use observed locations.
         samples : int, default=100
             Number of posterior samples to use
+        random_seed : SeedLike, optional
+            Seed or generator for the predictive draws. See
+            :func:`geo_infer_bayes.utils.rng.resolve_rng`.
 
         Returns
         -------
         ndarray
             Posterior predictive samples
         """
-        return self.model.posterior_predictive(posterior=self, X=X, samples=samples)
+        return self.model.posterior_predictive(
+            posterior=self, X=X, samples=samples, random_seed=random_seed
+        )
 
     def epistemic_uncertainty(self, parameter: str) -> float:
         """
@@ -348,24 +356,16 @@ class PosteriorAnalysis:
         Raises
         ------
         ValueError
-            If the model's ``posterior_predictive`` does not accept
-            ``random_seed``, or ``level`` is outside ``(0, 1)``.
+            If ``level`` is outside ``(0, 1)``.
         """
         interval_level = float(level)
         if not np.isfinite(interval_level) or not 0.0 < interval_level < 1.0:
             raise ValueError(
                 "level must be a finite probability strictly between zero and one"
             )
-        # ``self.model`` is declared as the abstract base, whose posterior
-        # predictive signature has no ``random_seed``; concrete models extend
-        # it, so it is routed through an ``Any`` handle.
-        model: Any = self.model
-        try:
-            draws = model.posterior_predictive(
-                posterior=self, X=X, samples=samples, random_seed=random_seed
-            )
-        except TypeError:  # pragma: no cover - legacy signature fallback
-            draws = model.posterior_predictive(posterior=self, X=X, samples=samples)
+        draws = self.model.posterior_predictive(
+            posterior=self, X=X, samples=samples, random_seed=random_seed
+        )
         draws = np.asarray(draws, dtype=float)
         if draws.ndim == 1:
             draws = draws.reshape(1, -1)

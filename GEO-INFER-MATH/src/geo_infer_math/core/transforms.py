@@ -69,8 +69,8 @@ class CoordinateTransformer:
                 try:
                     epsg_code = int(crs.split(":")[1])
                     return CRSDefinition(name=crs, epsg_code=epsg_code)
-                except (ValueError, IndexError):
-                    raise ValueError(f"Invalid EPSG code specification: {crs}")
+                except (ValueError, IndexError) as exc:
+                    raise ValueError(f"Invalid EPSG code specification: {crs}") from exc
             elif crs_upper in ["WGS84", "EPSG:4326"]:
                 return CRSDefinition(name=crs, epsg_code=4326)
             elif crs_upper in ["UTM"]:
@@ -382,7 +382,8 @@ class CoordinateTransformer:
         """Pass-through fallback for unrecognised CRS pairs."""
         warnings.warn(
             f"Generic transformation from {self.from_crs.name} to {self.to_crs.name} is unsupported. "
-            "Returning original coordinates."
+            "Returning original coordinates.",
+            stacklevel=2,
         )
         return x, y, z
 
@@ -509,7 +510,8 @@ def datum_transformation(
     else:
         warnings.warn(
             f"Datum transformation from {from_datum} to {to_datum} is unsupported. "
-            "Returning original coordinates."
+            "Returning original coordinates.",
+            stacklevel=2,
         )
         return x, y, z
 

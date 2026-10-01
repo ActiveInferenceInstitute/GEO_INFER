@@ -162,7 +162,7 @@ class TestContrastAnalysis:
         # With default threshold, should be significant
         assert contrast_result.p_values < 0.05
         if contrast_result.significance_mask is not None:
-            assert contrast_result.significance_mask == True
+            assert np.all(contrast_result.significance_mask)
 
     def test_invalid_contrast_dimensions(self):
         """Test error handling for invalid contrast dimensions."""

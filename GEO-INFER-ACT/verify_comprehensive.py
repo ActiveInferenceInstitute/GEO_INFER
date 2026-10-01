@@ -23,9 +23,6 @@ import numpy as np
 
 ACT_ROOT = Path(__file__).resolve().parent
 REPO_ROOT = ACT_ROOT.parent
-SRC_ROOT = ACT_ROOT / "src"
-if str(SRC_ROOT) not in sys.path:
-    sys.path.insert(0, str(SRC_ROOT))
 
 
 def _jsonable(value: Any) -> Any:
@@ -594,6 +591,7 @@ def audit_domain_models(output_dir: Path) -> dict[str, Any]:
         _assert_finite(value, label)
 
     payload = {
+        "categorical_beliefs": categorical_beliefs,
         "categorical_step": categorical_step,
         "categorical_free_energy": categorical_fe,
         "categorical_reset": categorical_reset,

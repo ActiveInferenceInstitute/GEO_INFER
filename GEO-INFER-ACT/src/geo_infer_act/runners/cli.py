@@ -16,10 +16,18 @@ from geo_infer_act.runners.scenarios import (
 )
 
 
-def build_parser(default_all: bool = False) -> argparse.ArgumentParser:
-    """Build the shared ACT runner CLI parser."""
+def build_parser(
+    default_all: bool = False, prog: str | None = None
+) -> argparse.ArgumentParser:
+    """Build the shared ACT runner CLI parser.
+
+    Args:
+        default_all: Default ``--scenario`` to ``all`` instead of unset.
+        prog: Program name shown in usage text and recorded in run manifests.
+    """
     parser = argparse.ArgumentParser(
-        description="Run GEO-INFER-ACT Active Inference scenarios."
+        prog=prog,
+        description="Run GEO-INFER-ACT Active Inference scenarios.",
     )
     parser.add_argument(
         "--scenario",

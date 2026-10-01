@@ -40,7 +40,9 @@ def create_interactive_map(
         Plotly figure object or None if plotly not available
     """
     if not PLOTLY_AVAILABLE:
-        warnings.warn("plotly not available for interactive visualization")
+        warnings.warn(
+            "plotly not available for interactive visualization", stacklevel=2
+        )
         return None
 
     if not isinstance(contrast_idx, int) or contrast_idx < 0:
@@ -158,7 +160,8 @@ def create_interactive_map(
         # Deferred: see docs/deferred_statistical_methods.md
         # ("Choropleth rendering (polygon data)").
         warnings.warn(
-            "Choropleth map requires polygon data. Using scatter plot instead."
+            "Choropleth map requires polygon data. Using scatter plot instead.",
+            stacklevel=2,
         )
         return create_interactive_map(spm_result, contrast_idx, "scattergeo", **kwargs)
 
@@ -182,7 +185,7 @@ def create_dashboard(
         Plotly figure with dashboard or None if plotly not available
     """
     if not PLOTLY_AVAILABLE:
-        warnings.warn("plotly not available for dashboard creation")
+        warnings.warn("plotly not available for dashboard creation", stacklevel=2)
         return None
 
     # Create subplot figure
@@ -344,11 +347,13 @@ def create_time_series_explorer(spm_result: SPMResult) -> Any | None:
         Plotly figure for time series exploration or None
     """
     if not PLOTLY_AVAILABLE:
-        warnings.warn("plotly not available for time series explorer")
+        warnings.warn("plotly not available for time series explorer", stacklevel=2)
         return None
 
     if not spm_result.spm_data.has_temporal:
-        warnings.warn("No temporal data available for time series explorer")
+        warnings.warn(
+            "No temporal data available for time series explorer", stacklevel=2
+        )
         return None
 
     import numpy as np

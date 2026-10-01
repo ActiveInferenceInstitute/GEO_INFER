@@ -124,7 +124,7 @@ class TestCoordinateGeneration:
     def test_random_coordinate_generation(self):
         """Test random coordinate generation."""
         coordinates = generate_coordinates(
-            "random", n_points=100, bounds=(-180, 180, -90, 90)
+            "random", n_points=100, bounds=(-180, 180, -90, 90), random_seed=0
         )
 
         assert coordinates.shape == (100, 2)
@@ -136,7 +136,11 @@ class TestCoordinateGeneration:
     def test_clustered_coordinate_generation(self):
         """Test clustered coordinate generation."""
         coordinates = generate_coordinates(
-            "clustered", n_points=60, bounds=(0, 100, 0, 100), n_clusters=3
+            "clustered",
+            n_points=60,
+            bounds=(0, 100, 0, 100),
+            n_clusters=3,
+            random_seed=0,
         )
 
         assert coordinates.shape == (60, 2)
@@ -165,7 +169,7 @@ class TestSyntheticDataGeneration:
 
     def test_basic_synthetic_data_generation(self):
         """Test basic synthetic data generation."""
-        spm_data = generate_synthetic_data(self.coordinates)
+        spm_data = generate_synthetic_data(self.coordinates, random_seed=0)
 
         assert isinstance(spm_data, SPMData)
         assert len(spm_data.data) == 20
@@ -180,7 +184,7 @@ class TestSyntheticDataGeneration:
         }
 
         spm_data = generate_synthetic_data(
-            self.coordinates, effects=effects, noise_level=0.1
+            self.coordinates, effects=effects, noise_level=0.1, random_seed=0
         )
 
         assert spm_data.metadata["effects"] == effects
@@ -191,7 +195,9 @@ class TestSyntheticDataGeneration:
         """Test generation of temporal synthetic data."""
         coordinates = self.coordinates[:5]  # Fewer spatial points
 
-        spm_data = generate_synthetic_data(coordinates, temporal=True, n_timepoints=10)
+        spm_data = generate_synthetic_data(
+            coordinates, temporal=True, n_timepoints=10, random_seed=0
+        )
 
         assert spm_data.has_temporal
         assert spm_data.data.shape == (5, 10)  # (space, time) — data stored as data.T
@@ -199,7 +205,7 @@ class TestSyntheticDataGeneration:
 
     def test_synthetic_data_covariates(self):
         """Test that synthetic data includes appropriate covariates."""
-        spm_data = generate_synthetic_data(self.coordinates)
+        spm_data = generate_synthetic_data(self.coordinates, random_seed=0)
 
         # Should have elevation and temperature covariates
         assert "elevation" in spm_data.covariates
@@ -277,7 +283,7 @@ class TestPowerAnalysis:
     def test_power_analysis_calculation(self):
         """Test power analysis computation."""
         results = compute_power_analysis(
-            effect_size=0.5, n_points=100, alpha=0.05, n_simulations=100
+            effect_size=0.5, n_points=100, alpha=0.05, n_simulations=100, random_seed=0
         )
 
         assert isinstance(results, dict)
@@ -293,10 +299,10 @@ class TestPowerAnalysis:
     def test_power_vs_effect_size(self):
         """Test that power increases with effect size."""
         power_small = compute_power_analysis(
-            effect_size=0.2, n_points=50, alpha=0.05, n_simulations=50
+            effect_size=0.2, n_points=50, alpha=0.05, n_simulations=50, random_seed=0
         )
         power_large = compute_power_analysis(
-            effect_size=0.8, n_points=50, alpha=0.05, n_simulations=50
+            effect_size=0.8, n_points=50, alpha=0.05, n_simulations=50, random_seed=0
         )
 
         assert power_large["power"] > power_small["power"]
@@ -304,10 +310,10 @@ class TestPowerAnalysis:
     def test_power_vs_sample_size(self):
         """Test that power increases with sample size."""
         power_small_n = compute_power_analysis(
-            effect_size=0.5, n_points=30, alpha=0.05, n_simulations=50
+            effect_size=0.5, n_points=30, alpha=0.05, n_simulations=50, random_seed=0
         )
         power_large_n = compute_power_analysis(
-            effect_size=0.5, n_points=100, alpha=0.05, n_simulations=50
+            effect_size=0.5, n_points=100, alpha=0.05, n_simulations=50, random_seed=0
         )
 
         assert power_large_n["power"] > power_small_n["power"]
@@ -315,10 +321,10 @@ class TestPowerAnalysis:
     def test_power_vs_alpha(self):
         """Test that power decreases with stricter alpha."""
         power_liberal = compute_power_analysis(
-            effect_size=0.5, n_points=50, alpha=0.10, n_simulations=50
+            effect_size=0.5, n_points=50, alpha=0.10, n_simulations=50, random_seed=0
         )
         power_conservative = compute_power_analysis(
-            effect_size=0.5, n_points=50, alpha=0.01, n_simulations=50
+            effect_size=0.5, n_points=50, alpha=0.01, n_simulations=50, random_seed=0
         )
 
         assert power_liberal["power"] > power_conservative["power"]
@@ -350,7 +356,7 @@ class TestHelperFunctionEdgeCases:
     def test_zero_effect_size_power(self):
         """Test power analysis with zero effect size."""
         results = compute_power_analysis(
-            effect_size=0.0, n_points=50, alpha=0.05, n_simulations=20
+            effect_size=0.0, n_points=50, alpha=0.05, n_simulations=20, random_seed=0
         )
 
         # Power should be approximately alpha (false positive rate)
@@ -394,12 +400,12 @@ class TestHelperFunctionEdgeCases:
 
     def test_synthetic_data_extreme_parameters(self):
         """Test synthetic data generation with extreme parameters."""
-        coordinates = np.array([[0.0, 0.0], [1.0, 1.0]])
+        coordinates = np.column_stack([np.linspace(0, 1, 50), np.linspace(0, 1, 50)])
 
-        # Very high noise
+        # Very high noise: the sample std over 50 points tracks noise_level=10.
         spm_data = generate_synthetic_data(
-            coordinates, noise_level=10.0, effects={"intercept": 100.0}
+            coordinates, noise_level=10.0, effects={"intercept": 100.0}, random_seed=0
         )
 
-        assert len(spm_data.data) == 2
+        assert len(spm_data.data) == 50
         assert spm_data.data.std() > 5.0  # Should have high variance due to noise

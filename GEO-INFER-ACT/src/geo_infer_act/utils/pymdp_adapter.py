@@ -386,20 +386,6 @@ def run_model_step(
     )
 
 
-def obj_array_zeros(shape_list: list[Any]) -> Any:
-    """Zero-init pymdp-style matrix list under legacy ``obj_array_zeros`` semantics.
-
-    pymdp 1.0.3 renamed this helper to ``list_array_zeros`` and returns immutable
-    JAX arrays. GEO-INFER matrix builders mutate entries after allocation, so
-    this facade returns mutable numpy equivalents with identical shapes.
-    """
-
-    def _as_shape(dim: Any) -> tuple:
-        return (dim,) if isinstance(dim, int) else tuple(dim)
-
-    return [np.zeros(_as_shape(shape)) for shape in shape_list]
-
-
 def jax_prng_key(seed: int) -> Any:
     """Bridge facade for ``jax.random.PRNGKey``."""
     import jax.random as jr  # noqa: PLC0415

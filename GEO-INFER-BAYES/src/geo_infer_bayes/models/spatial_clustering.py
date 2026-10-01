@@ -8,6 +8,7 @@ identifying spatial patterns and clusters in geospatial data.
 import numpy as np
 from typing import Any
 from .base import BayesianModel
+from ..utils.rng import SeedLike
 from ._model_utils import (
     features_from,
     log_prior_from_parameters,
@@ -108,10 +109,18 @@ class SpatialClusteringModel(BayesianModel):
         return prediction
 
     def posterior_predictive(
-        self, posterior: Any, X: np.ndarray | None = None, samples: int = 100
+        self,
+        posterior: Any,
+        X: np.ndarray | None = None,
+        samples: int = 100,
+        random_seed: SeedLike = None,
     ) -> np.ndarray:
-        """Generate posterior predictive samples."""
+        """Generate posterior predictive samples.
+
+        ``random_seed`` seeds the predictive draws; see
+        :func:`geo_infer_bayes.utils.rng.resolve_rng`.
+        """
         if X is None:
             raise ValueError("X is required to generate posterior predictive samples")
         mean, std = self.predict(X, posterior, samples=samples, return_std=True)
-        return predictive_samples(mean, std, samples)
+        return predictive_samples(mean, std, samples, seed=random_seed)

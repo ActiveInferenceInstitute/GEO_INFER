@@ -263,7 +263,8 @@ class TemporalAnalyzer:
 
             except Exception as e:
                 warnings.warn(
-                    f"Seasonal decomposition failed for variable {var_idx}: {e}"
+                    f"Seasonal decomposition failed for variable {var_idx}: {e}",
+                    stacklevel=2,
                 )
                 # Fallback to simple decomposition
                 result = self._simple_seasonal_decomposition(y, period)
@@ -411,7 +412,7 @@ class TemporalAnalyzer:
             }
 
         except Exception as e:
-            warnings.warn(f"ARIMA fitting failed: {e}")
+            warnings.warn(f"ARIMA fitting failed: {e}", stacklevel=2)
             return {
                 "error": str(e),
                 "success": False,
@@ -464,7 +465,7 @@ class TemporalAnalyzer:
                 result["window_center"] = (start_idx + end_idx) / 2
                 window_results.append(result)
             except Exception as e:
-                warnings.warn(f"Analysis failed for window {i}: {e}")
+                warnings.warn(f"Analysis failed for window {i}: {e}", stacklevel=2)
                 continue
 
         return {
@@ -491,8 +492,10 @@ class TemporalAnalyzer:
         """
         try:
             from ruptures import Pelt, Binseg
-        except ImportError:
-            raise ImportError("ruptures package required for change point detection")
+        except ImportError as exc:
+            raise ImportError(
+                "ruptures package required for change point detection"
+            ) from exc
 
         if data.ndim == 1:
             data = data.reshape(-1, 1)
@@ -583,7 +586,9 @@ class TemporalAnalyzer:
 
             except Exception:
                 # Fallback to Gaussian basis
-                warnings.warn("B-spline implementation failed, using Gaussian basis")
+                warnings.warn(
+                    "B-spline implementation failed, using Gaussian basis", stacklevel=2
+                )
                 centers = np.linspace(0, 1, n_basis)
                 basis = np.zeros((n_timepoints, n_basis))
                 for i in range(n_basis):

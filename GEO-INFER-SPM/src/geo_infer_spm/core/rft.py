@@ -20,7 +20,6 @@ search-volume FWE probability follows from a Poisson maximum-cluster model.
 from __future__ import annotations
 
 from itertools import combinations
-from typing import Union
 
 import numpy as np
 from scipy import ndimage
@@ -29,7 +28,7 @@ from scipy.stats import f, norm, t
 
 from ..models.data_models import ContrastResult, SPMResult
 
-ScalarOrArray = Union[float, np.ndarray]
+ScalarOrArray = float | np.ndarray
 
 
 class RandomFieldTheory:

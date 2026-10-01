@@ -106,6 +106,17 @@ def test_h3_spatial_model_accepts_feature_boundaries() -> None:
         {"type": "Point", "coordinates": [-122.4, 37.7]},
         {"type": "Polygon", "coordinates": []},
         {"type": "Polygon", "coordinates": [[[]]]},
+        # Untyped coordinate-only mappings are rejected, not coerced to Polygon.
+        {
+            "coordinates": [
+                [
+                    [-122.50, 37.70],
+                    [-122.30, 37.70],
+                    [-122.30, 37.80],
+                    [-122.50, 37.70],
+                ]
+            ]
+        },
     ],
 )
 def test_h3_spatial_model_rejects_invalid_boundaries(boundary) -> None:

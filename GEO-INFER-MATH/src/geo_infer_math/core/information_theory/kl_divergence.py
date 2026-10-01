@@ -9,6 +9,8 @@ import numpy as np
 from typing import Any
 import logging
 
+from scipy.integrate import trapezoid
+
 logger = logging.getLogger(__name__)
 
 
@@ -192,8 +194,8 @@ def spatial_kl_divergence(
         q_density = kde_q(grid)
 
         # Renormalize by the numeric integral so each is a proper density
-        p_density = p_density / np.trapz(p_density, grid)
-        q_density = q_density / np.trapz(q_density, grid)
+        p_density = p_density / trapezoid(p_density, grid)
+        q_density = q_density / trapezoid(q_density, grid)
 
         integrand = np.where(
             p_density > 0,

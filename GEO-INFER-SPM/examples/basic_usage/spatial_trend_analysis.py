@@ -54,6 +54,7 @@ def main():
             },
         },
         noise_level=0.8,  # Realistic measurement noise
+        random_seed=42,
     )
 
     # Add urban vs rural covariate
@@ -64,7 +65,10 @@ def main():
     print(
         f"   Spatial extent: {coordinates.min(axis=0)} to {coordinates.max(axis=0)} km"
     )
-    print(".2f")
+    print(
+        f"   Pollution range: {np.min(air_quality_data.data):.2f} to "
+        f"{np.max(air_quality_data.data):.2f}"
+    )
     print()
 
     # Step 2: Preprocess the data
@@ -108,9 +112,10 @@ def main():
         method="OLS",  # Ordinary Least Squares
     )
 
-    print(".3f")
+    diagnostics = spm_result.model_diagnostics
+    print(f"   Model R²: {diagnostics.get('r_squared', float('nan')):.3f}")
     print(f"   Model degrees of freedom: {design_matrix.n_regressors}")
-    print(".2e")
+    print(f"   Model F-test p-value: {diagnostics.get('f_p_value', float('nan')):.2e}")
     print()
 
     # Step 5: Test statistical hypotheses (contrasts)
@@ -118,14 +123,14 @@ def main():
 
     # Test for east-west pollution gradient
     ew_contrast = contrast(spm_result, "longitude")
-    print(".3f")
-    print(".2e")
+    print(f"   East-west t-statistic: {float(np.mean(ew_contrast.t_statistic)):.3f}")
+    print(f"   East-west min p-value: {float(np.min(ew_contrast.p_values)):.2e}")
     print()
 
     # Test for urban proximity effect
     urban_contrast = contrast(spm_result, "urban_distance")
-    print(".3f")
-    print(".2e")
+    print(f"   Urban t-statistic: {float(np.mean(urban_contrast.t_statistic)):.3f}")
+    print(f"   Urban min p-value: {float(np.min(urban_contrast.p_values)):.2e}")
     print()
 
     # Step 6: Apply multiple comparison correction
@@ -155,11 +160,12 @@ def main():
     )
 
     # Display results
+    print(f"   Map keys: {sorted(ew_map)}")
     print("\n=== ANALYSIS RESULTS ===")
-    print(".3f")
-    print(".3f")
-    print(".2e")
-    print(".2e")
+    print(f"East-west effect size: {float(np.mean(ew_contrast.effect_size)):.3f}")
+    print(f"Urban effect size: {float(np.mean(urban_contrast.effect_size)):.3f}")
+    print(f"East-west min p-value: {float(np.min(ew_contrast.p_values)):.2e}")
+    print(f"Urban min p-value: {float(np.min(urban_contrast.p_values)):.2e}")
     print(f"Number of significant stations (EW): {corrected_ew.n_significant}")
     print(f"Number of significant stations (Urban): {corrected_urban.n_significant}")
 

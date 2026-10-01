@@ -90,8 +90,8 @@ features = engineer.create_spatial_features(coordinates, include_distances=True)
   autocorrelated — it blocks contiguous regions to prevent spatial leakage.
 - Kriging `predict` returns `(values, variances)`; use the variances for
   prediction-uncertainty estimates.
-- `handle_spatial_autocorr` on `GeospatialFeatureEngineer` is advisory only;
-  spatial autocorrelation is handled by spatial models and block CV.
+- `GeospatialFeatureEngineer` does not correct for spatial autocorrelation;
+  it is handled by spatial models and block CV.
 
 ### Integrations
 

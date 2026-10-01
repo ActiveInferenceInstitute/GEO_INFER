@@ -53,7 +53,7 @@ class MultiAgentModel(BaseActiveInferenceModel):
 
         # Initialize agent models with enhanced active inference capabilities
         self.agent_models = []
-        for i in range(self.n_agents):
+        for _ in range(self.n_agents):
             agent = CategoricalModel(
                 state_dim=4, obs_dim=4
             )  # 4-state environmental model

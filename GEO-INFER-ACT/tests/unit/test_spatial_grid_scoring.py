@@ -72,7 +72,7 @@ def test_multi_agent_scoring_ranks_uncertain_cells() -> None:
     model = MultiAgentModel(n_agents=3)
     model.enable_h3_spatial(resolution=7, boundary=boundary)
     assert len(model.agent_models) >= 1
-    for idx, agent in enumerate(model.agent_models):
+    for agent in model.agent_models:
         agent.beliefs = np.ones(4) / 4.0
     # Peaked beliefs on the first agent drop its score below the others.
     model.agent_models[0].beliefs = np.array([0.95, 0.02, 0.02, 0.01])

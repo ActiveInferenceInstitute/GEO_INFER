@@ -12,10 +12,6 @@ import numpy as np
 import pytest
 from typing import Any
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from geo_infer_bayes.core.inference import BayesianInference
 from geo_infer_bayes.core.evaluation import empirical_coverage

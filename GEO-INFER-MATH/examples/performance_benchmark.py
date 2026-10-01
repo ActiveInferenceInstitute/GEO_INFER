@@ -119,6 +119,7 @@ def benchmark_spatial_statistics(coordinates: np.ndarray, values: np.ndarray) ->
     moran_result = moran.compute(values)
     moran_time = time.time() - start_time
     results["morans_i"] = moran_time
+    results["morans_i_value"] = float(moran_result["I"])
 
     logger.info(
         f"Spatial statistics timings (seconds): "
@@ -152,6 +153,7 @@ def benchmark_interpolation(
     idw_result = idw_interpolator.predict(grid_points)
     idw_time = time.time() - start_time
     results["idw_interpolation"] = idw_time
+    results["idw_grid_points"] = int(np.size(idw_result))
 
     # RBF interpolation
     start_time = time.time()
@@ -160,6 +162,7 @@ def benchmark_interpolation(
     rbf_result = rbf_interpolator.predict(grid_points)
     rbf_time = time.time() - start_time
     results["rbf_interpolation"] = rbf_time
+    results["rbf_grid_points"] = int(np.size(rbf_result))
 
     logger.info(
         f"Interpolation timings (seconds): idw={idw_time:.3f}, rbf={rbf_time:.3f}"
@@ -270,12 +273,14 @@ def create_performance_report(all_results: dict) -> None:
         f"  Weights matrix creation: {stats_results['weights_matrix_creation']:.3f} seconds"
     )
     print(f"  Moran's I computation: {stats_results['morans_i']:.3f} seconds")
+    print(f"  Moran's I value: {stats_results['morans_i_value']:.4f}")
 
     print("\n3. SPATIAL INTERPOLATION")
     print("-" * 40)
     interp_results = all_results["interpolation"]
     print(f"  IDW interpolation: {interp_results['idw_interpolation']:.3f} seconds")
     print(f"  RBF interpolation: {interp_results['rbf_interpolation']:.3f} seconds")
+    print(f"  Grid points predicted: {interp_results['idw_grid_points']}")
 
     print("\n4. PARALLEL PROCESSING")
     print("-" * 40)

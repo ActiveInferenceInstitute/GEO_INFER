@@ -10,7 +10,6 @@ full ActiveInferenceModel step can return the typed step result.
 
 from __future__ import annotations
 
-import sys
 import ast
 from pathlib import Path
 
@@ -45,12 +44,6 @@ STALE_DOC_SYMBOLS = [
     "TrackingAgent",
     "SwarmCoordinator",
 ]
-
-
-def _ensure_import_path() -> None:
-    for src in (str(ACT_SRC), str(SPACE_SRC)):
-        if src not in sys.path:
-            sys.path.insert(0, src)
 
 
 def _validate_no_inert_methods() -> None:
@@ -100,9 +93,8 @@ def _validate_docs_reference_real_symbols() -> None:
 
 
 def main() -> int:
-    _ensure_import_path()
 
-    from geo_infer_act import (  # noqa: PLC0415
+    from geo_infer_act import (
         ActiveInferenceModel,
         ActiveInferenceStepResult,
         FreeEnergyBreakdown,
@@ -112,7 +104,7 @@ def main() -> int:
         PolicyEvaluation,
         PolicySelector,
     )
-    from geo_infer_act.core.free_energy import FreeEnergyCalculator  # noqa: PLC0415
+    from geo_infer_act.core.free_energy import FreeEnergyCalculator
 
     calc = FreeEnergyCalculator()
     breakdown = calc.compute_categorical_free_energy(
@@ -177,6 +169,7 @@ def main() -> int:
     assert np.all(np.isfinite(gaussian_beliefs["mean"]))
 
     h3_boundary = {
+        "type": "Polygon",
         "coordinates": [
             [
                 [-122.42, 37.77],
@@ -185,7 +178,7 @@ def main() -> int:
                 [-122.39, 37.77],
                 [-122.42, 37.77],
             ]
-        ]
+        ],
     }
     h3_model = GenerativeModel("categorical", {"state_dim": 3, "obs_dim": 3})
     h3_model.enable_h3_spatial(8, h3_boundary)

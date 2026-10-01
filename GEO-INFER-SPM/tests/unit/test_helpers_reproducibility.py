@@ -1,8 +1,8 @@
 """Tests for deterministic random-seed threading in SPM helpers.
 
 Verifies the REPRO-01 migration: public SPM helpers produce identical outputs
-when given the same explicit seed. It also protects the legacy global-stream
-default where that behavior remains part of a helper's documented contract.
+when given the same explicit seed, and ``random_seed=None`` draws fresh OS
+entropy without reading or advancing the global ``np.random`` stream.
 """
 
 from __future__ import annotations
@@ -68,10 +68,20 @@ def test_compute_power_analysis_seed_replay() -> None:
     assert a["power"] is not None
 
 
-def test_compute_power_analysis_default_uses_global_state() -> None:
-    """Default path draws from global np.random state (legacy behaviour)."""
+def test_default_seed_does_not_touch_global_numpy_stream() -> None:
+    """``random_seed=None`` draws fresh entropy, never the global stream."""
     np.random.seed(5)
-    a = compute_power_analysis(0.5, n_points=30, n_simulations=50)
+    before = np.random.get_state()[1].copy()
+    compute_power_analysis(0.5, n_points=30, n_simulations=50)
+    coords = generate_coordinates("random", n_points=50)
+    generate_synthetic_data(coords)
+    assert np.array_equal(np.random.get_state()[1], before)
+
+
+def test_default_seed_is_not_controlled_by_global_seed() -> None:
+    """Seeding ``np.random`` no longer replays the ``None``-seed path."""
     np.random.seed(5)
-    b = compute_power_analysis(0.5, n_points=30, n_simulations=50)
-    assert a["power"] == b["power"]
+    a = generate_coordinates("random", n_points=50)
+    np.random.seed(5)
+    b = generate_coordinates("random", n_points=50)
+    assert not np.array_equal(a, b)

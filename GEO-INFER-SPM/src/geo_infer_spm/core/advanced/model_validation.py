@@ -60,8 +60,7 @@ class ModelValidator:
         self.n_bootstraps = n_bootstraps
         self.random_state = random_state
 
-        # Reproducible per-instance RNG (unlike the legacy global seed, this
-        # does not mutate process-wide np.random state).
+        # Per-instance RNG; never reads or mutates process-wide np.random state.
         self._rng = np.random.default_rng(random_state)
 
     def cross_validate(
@@ -143,7 +142,7 @@ class ModelValidator:
                 )
 
             except Exception as e:
-                warnings.warn(f"Cross-validation fold failed: {e}")
+                warnings.warn(f"Cross-validation fold failed: {e}", stacklevel=2)
                 continue
 
         # Average predictions
@@ -201,7 +200,10 @@ class ModelValidator:
                 errors.append(error**2)
 
             except Exception as e:
-                warnings.warn(f"LOO-CV prediction failed for point {test_idx[0]}: {e}")
+                warnings.warn(
+                    f"LOO-CV prediction failed for point {test_idx[0]}: {e}",
+                    stacklevel=2,
+                )
                 continue
 
         # Compute statistics
@@ -257,7 +259,7 @@ class ModelValidator:
                 bootstrap_scores.append(boot_score)
 
             except Exception as e:
-                warnings.warn(f"Bootstrap iteration {i} failed: {e}")
+                warnings.warn(f"Bootstrap iteration {i} failed: {e}", stacklevel=2)
                 continue
 
         # Average predictions across bootstraps
@@ -340,7 +342,7 @@ class ModelValidator:
                 )
 
             except Exception as e:
-                warnings.warn(f"Spatial CV fold {fold} failed: {e}")
+                warnings.warn(f"Spatial CV fold {fold} failed: {e}", stacklevel=2)
                 continue
 
         # Average predictions

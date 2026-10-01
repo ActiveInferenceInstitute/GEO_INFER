@@ -31,7 +31,7 @@ Unit workspace within `GEO-INFER-SPM`.
 - Module: `GEO-INFER-SPM`
 - Package: `geo_infer_spm`
 - Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-SPM`
+- Install: `uv sync --package geo-infer-spm`
 - Tests: `uv run python -m pytest GEO-INFER-SPM/tests/unit`
 
 ## Dependencies

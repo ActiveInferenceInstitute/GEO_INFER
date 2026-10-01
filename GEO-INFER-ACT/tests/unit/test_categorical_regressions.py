@@ -132,8 +132,8 @@ def test_categorical_inputs_fail_loudly_when_invalid() -> None:
         )
 
 
-def test_legacy_categorical_model_applies_transition_before_update() -> None:
-    """The legacy CategoricalModel follows the same predict-update semantics."""
+def test_base_categorical_model_applies_transition_before_update() -> None:
+    """``models.base.CategoricalModel`` follows the same predict-update semantics."""
     model = CategoricalModel(state_dim=3, obs_dim=3)
     model.beliefs = np.array([1.0, 0.0, 0.0])
     model.set_transition_matrix(np.roll(np.eye(3), -1, axis=0))

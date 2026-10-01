@@ -148,7 +148,7 @@ class TestSpatialGraph:
         assert "closeness" in centrality
 
         # All nodes should have centrality measures
-        for measure_name, measure_values in centrality.items():
+        for measure_values in centrality.values():
             assert len(measure_values) == 4
             assert all(v >= 0 for v in measure_values.values())
 

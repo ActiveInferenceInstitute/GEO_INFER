@@ -133,7 +133,7 @@ class PolicyOptimization:
         total_ambiguity = 0.0
         total_risk = 0.0
 
-        for t, action in enumerate(policy):
+        for action in policy:
             # Predict future state: q(s_t+1) = B(a) @ q(s_t)
             if action < B.shape[2]:
                 current = B[:, :, action] @ current

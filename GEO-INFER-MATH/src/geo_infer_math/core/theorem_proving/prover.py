@@ -70,7 +70,7 @@ class TheoremProver:
 
                 self._prover = z3
                 logger.info("Initialized Z3 theorem prover")
-            except ImportError:
+            except ImportError as exc:
                 if self._explicit_backend:
                     raise ValueError(
                         "The z3 backend was explicitly requested, but "
@@ -79,7 +79,7 @@ class TheoremProver:
                         "`uv pip install geo-infer-math[theorem-proving]` "
                         "(or `uv sync --all-extras` in the monorepo), or "
                         "omit the backend argument to select numpy."
-                    )
+                    ) from exc
                 logger.warning("Z3 not available, using numpy backend")
                 self.backend = "numpy"
                 self._prover = None
@@ -168,7 +168,9 @@ class TheoremProver:
                             logger.warning(
                                 f"Could not parse assumption '{assumption}': {e}"
                             )
-                            raise ValueError(f"Invalid assumption format: {assumption}")
+                            raise ValueError(
+                                f"Invalid assumption format: {assumption}"
+                            ) from e
 
                 # Negate theorem (proof by contradiction)
                 try:
@@ -184,7 +186,7 @@ class TheoremProver:
                         solver.add(negated)
                     except Exception as e:
                         logger.warning(f"Could not parse theorem '{theorem}': {e}")
-                        raise ValueError(f"Invalid theorem format: {theorem}")
+                        raise ValueError(f"Invalid theorem format: {theorem}") from e
 
                 # Check satisfiability
                 result = solver.check()

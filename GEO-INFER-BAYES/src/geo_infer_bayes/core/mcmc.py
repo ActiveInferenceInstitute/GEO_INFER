@@ -274,7 +274,7 @@ class MCMC:
                 "init_strategy must be 'random', 'prior', 'map', or 'custom'"
             )
 
-        for c in range(self.n_chains):
+        for _ in range(self.n_chains):
             chain = {}
             for param in param_names:
                 param_info = self.model.parameters[param]

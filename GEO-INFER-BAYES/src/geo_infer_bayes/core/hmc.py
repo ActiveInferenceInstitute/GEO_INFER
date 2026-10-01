@@ -672,7 +672,7 @@ class HMC:
         grad = np.zeros(self._parameter_dimension)
 
         h = 1e-6  # Step size for central finite differences
-        for param, start, end, shape in self._parameter_layout:
+        for param, start, _end, shape in self._parameter_layout:
             value = np.asarray(theta[param], dtype=float).reshape(-1)
             for index in range(value.size):
                 plus_value = value.copy()
@@ -713,7 +713,7 @@ class HMC:
                 "init_strategy must be 'random', 'prior', 'map', or 'custom'"
             )
 
-        for c in range(self.n_chains):
+        for _ in range(self.n_chains):
             chain = {}
             for param in param_names:
                 param_info = self.model.parameters[param]

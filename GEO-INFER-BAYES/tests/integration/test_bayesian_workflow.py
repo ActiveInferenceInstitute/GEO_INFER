@@ -8,11 +8,6 @@ class and lower-level components.
 
 import numpy as np
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
-
 
 class TestGaussianProcessEndToEnd:
     """End-to-end test of the GaussianProcess convenience class."""

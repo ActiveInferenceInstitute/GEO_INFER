@@ -339,7 +339,7 @@ class TestParallelProcessing:
         )
 
         results = []
-        for i in range(n_datasets):
+        for _ in range(n_datasets):
             X = np.random.randn(n_points, 3)
             y = X @ np.random.randn(3) + 0.1 * np.random.randn(n_points)
 

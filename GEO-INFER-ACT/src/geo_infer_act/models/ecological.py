@@ -6,7 +6,6 @@ from typing import Any
 import numpy as np
 
 from geo_infer_act.core.active_inference import ActiveInferenceModel
-from geo_infer_act.utils.pymdp_adapter import obj_array_zeros
 
 
 class EcologicalModel(ActiveInferenceModel):
@@ -72,9 +71,6 @@ class EcologicalModel(ActiveInferenceModel):
 
     def _build_A_matrix(self) -> list[np.ndarray]:
         """Build Likelihood Matrix A: P(o|s)."""
-        A: list[np.ndarray]
-        A = obj_array_zeros([self.num_obs, self.num_states])
-
         # --- Modality 0: Food Signal (mapping from Resource Level) ---
         # State Factor 0 (Resources): Low(0) -> None(0), Med(1) -> Scant(1), High(2) -> Abundant(2)
         # State Factor 1 (Risk): Irrelevant for food signal
@@ -97,9 +93,6 @@ class EcologicalModel(ActiveInferenceModel):
         A_food[1, 2, :] = 0.2
         A_food[2, 2, :] = 0.8
 
-        # Flatten A_food to (Obs_Food, Total_States=6)
-        A[0] = A_food.reshape(3, 6)
-
         # --- Modality 1: Threat Signal (mapping from Risk) ---
         # State Factor 0 (Resources): Irrelevant
         # State Factor 1 (Risk): Safe(0) -> Quiet(0), Risky(1) -> Noise(1)
@@ -114,9 +107,8 @@ class EcologicalModel(ActiveInferenceModel):
         A_threat[0, :, 1] = 0.2
         A_threat[1, :, 1] = 0.8
 
-        A[1] = A_threat.reshape(2, 6)
-
-        return A
+        # Flatten each modality to (Obs, Total_States=6)
+        return [A_food.reshape(3, 6), A_threat.reshape(2, 6)]
 
     def _build_B_matrix(self) -> list[np.ndarray]:
         """Build Transition Matrix B: P(s'|s,u)."""
@@ -185,8 +177,7 @@ class EcologicalModel(ActiveInferenceModel):
 
     def _build_C_matrix(self) -> list[np.ndarray]:
         """Build Preference Matrix C: P(o)."""
-        C: list[np.ndarray]
-        C = obj_array_zeros(self.num_obs)
+        C = [np.zeros(n_obs) for n_obs in self.num_obs]
 
         # Prefer Abundant Food (Modality 0, Index 2)
         # C values are log-probabilities (utilities)
@@ -202,8 +193,7 @@ class EcologicalModel(ActiveInferenceModel):
 
     def _build_D_matrix(self) -> list[np.ndarray]:
         """Build Prior Matrix D: P(s)."""
-        D: list[np.ndarray]
-        D = obj_array_zeros(self.num_states)
+        D = [np.zeros(n_states) for n_states in self.num_states]
 
         # Start expecting High Resources
         D[0][0] = 0.1

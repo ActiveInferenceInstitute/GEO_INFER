@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 from typing import Any
 from abc import ABC, abstractmethod
 
+from ..utils.rng import SeedLike
+
 
 class BayesianModel(ABC):
     """
@@ -172,7 +174,11 @@ class BayesianModel(ABC):
 
     @abstractmethod
     def posterior_predictive(
-        self, posterior: Any, X: np.ndarray | None = None, samples: int = 100
+        self,
+        posterior: Any,
+        X: np.ndarray | None = None,
+        samples: int = 100,
+        random_seed: SeedLike = None,
     ) -> np.ndarray:
         """
         Generate posterior predictive samples.
@@ -185,6 +191,9 @@ class BayesianModel(ABC):
             Locations to generate predictions for. If None, use observed locations.
         samples : int, default=100
             Number of posterior samples to use
+        random_seed : int or numpy.random.Generator, optional
+            Seed or generator for the predictive draws. See
+            :func:`geo_infer_bayes.utils.rng.resolve_rng`.
 
         Returns
         -------

@@ -59,7 +59,7 @@ class MultilevelModel(BayesianModel):
         }
 
         # Add level-specific parameters
-        for i, level in enumerate(self.levels[1:], 1):  # Skip global level
+        for level in self.levels[1:]:  # Skip global level
             self.parameters[f"{level}_variance"] = {
                 "prior": "half_normal",
                 "hyperparams": {"sigma": 1.0},

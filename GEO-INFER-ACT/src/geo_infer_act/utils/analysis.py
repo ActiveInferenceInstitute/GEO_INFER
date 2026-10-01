@@ -445,19 +445,9 @@ class ActiveInferenceAnalyzer:
         # Check for flat patterns
         flat_threshold = 1e-3
         if beliefs_array.dtype == object:
-            # Manual check for ragged arrays
-            is_flat = True
-            for col in range(len(beliefs_array[0])):
-                try:
-                    # Extract column manually if possible, or skip
-                    # Ragged arrays are hard to slice column-wise if lengths differ
-                    # Simplified: check distinct values in flattened history
-                    # If all values are roughly same, it's flat.
-                    # But efficiently? Let's just assume false for complex ragged arrays unless trivial
-                    is_flat = False
-                    break
-                except (TypeError, ValueError):
-                    is_flat = False
+            # Ragged (object) histories have no column-wise spread; only an
+            # empty first row is reported as flat.
+            is_flat = len(beliefs_array[0]) == 0
         else:
             is_flat = bool(np.all(np.std(beliefs_array, axis=0) < flat_threshold))
 

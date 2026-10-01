@@ -23,22 +23,18 @@ class GeospatialFeatureEngineer:
     autocorrelation, and preparing geospatial data for ML models.
     """
 
-    def __init__(
-        self, normalize: bool = True, handle_spatial_autocorr: bool = True
-    ) -> None:
+    def __init__(self, normalize: bool = True) -> None:
         """
         Initialize the feature engineer.
 
+        Spatial autocorrelation is addressed downstream by spatially aware
+        models (e.g. ``SpatialPredictor``) and by spatial block
+        cross-validation during evaluation, not by feature computation.
+
         Args:
             normalize: Whether to normalize features
-            handle_spatial_autocorr: Accepted for API compatibility. Advisory
-                only: it is stored but does not alter feature computation.
-                Spatial autocorrelation is instead addressed downstream by
-                spatially aware models (e.g. ``SpatialPredictor``) and by
-                spatial block cross-validation during evaluation.
         """
         self.normalize = normalize
-        self.handle_spatial_autocorr = handle_spatial_autocorr
         self.scaler: StandardScaler | None = None
         self.feature_names_: list[str] | None = None
         self.spatial_centroid_: np.ndarray | None = None

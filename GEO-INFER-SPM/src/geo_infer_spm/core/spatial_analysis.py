@@ -22,6 +22,7 @@ where γ(h) is the semivariogram, h is spatial lag, N(h) is number of pairs.
 """
 
 import numpy as np
+from collections.abc import Callable
 from typing import Any, cast
 from scipy.spatial.distance import pdist, squareform
 from scipy.optimize import minimize
@@ -184,7 +185,9 @@ class SpatialAnalyzer:
                 )
                 nugget_guess = np.min(values)
 
-                def objective(params: np.ndarray) -> float:
+                def objective(
+                    params: np.ndarray, model_func: Callable[..., Any] = model_func
+                ) -> float:
                     nugget, sill, range_ = params
                     predicted = model_func(distances, nugget, sill, range_)
                     return float(np.sum((values - predicted) ** 2))
@@ -475,9 +478,9 @@ class SpatialAnalyzer:
         Args:
             n_basis: Number of basis functions
             basis_type: Type of basis functions ('gaussian', 'polynomial')
-            random_seed: Optional seed for reproducible Gaussian center
-                selection. When ``None`` (default) the legacy behaviour is
-                kept: the global ``np.random`` state is seeded with 42.
+            random_seed: Seed or generator for Gaussian center selection;
+                ``None`` (default) draws fresh OS entropy. See
+                :func:`geo_infer_spm.utils.rng.resolve_rng`.
 
         Returns:
             Basis function matrix (n_points x n_basis)

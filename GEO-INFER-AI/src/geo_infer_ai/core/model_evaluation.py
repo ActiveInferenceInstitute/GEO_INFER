@@ -204,7 +204,7 @@ class GeospatialModelEvaluator:
 
         result: dict[str, Any] = {
             "confusion_matrix": cm.tolist(),
-            "labels": [str(l) for l in labels],
+            "labels": [str(label) for label in labels],
             "per_class": per_class,
         }
         if cm_normalized is not None:

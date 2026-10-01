@@ -329,6 +329,7 @@ class TestIntegrationUtils(unittest.TestCase):
         """Test H3 spatial model creation."""
         config = {}
         boundary = {
+            "type": "Polygon",
             "coordinates": [
                 [
                     [-122.42, 37.77],
@@ -337,7 +338,7 @@ class TestIntegrationUtils(unittest.TestCase):
                     [-122.41, 37.77],
                     [-122.42, 37.77],
                 ]
-            ]
+            ],
         }
         result = create_h3_spatial_model(config, 8, boundary)
         if result["status"] == "error":

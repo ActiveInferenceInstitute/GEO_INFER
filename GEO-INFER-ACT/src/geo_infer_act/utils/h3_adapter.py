@@ -8,9 +8,6 @@ available and uses direct H3 v4 calls for operations SPACE does not expose.
 from __future__ import annotations
 
 import logging
-import os
-from pathlib import Path
-import sys
 from typing import Any
 from collections.abc import Iterable
 
@@ -203,42 +200,19 @@ def get_h3_adapter(prefer_space: bool = True) -> H3Adapter:
 
 
 def get_nested_h3_grid_class() -> Any:
-    """Return SPACE's ``NestedH3Grid`` class in installed or repo-local runs."""
+    """Return SPACE's ``NestedH3Grid`` class.
+
+    Raises:
+        ImportError: If ``geo_infer_space`` (the ACT ``space`` extra) is not
+            installed.
+    """
     try:
         from geo_infer_space.nested import NestedH3Grid  # noqa: PLC0415
-
-        return NestedH3Grid
-    except ImportError:
-        # Monorepo-only fallback: extend sys.path with the sibling SPACE
-        # checkout. Opt-in via environment flags so installed (non-monorepo)
-        # deployments never depend on the checkout layout, and the checkout
-        # location is always supplied explicitly instead of inferred from
-        # this file's path.
-        if os.environ.get("GEO_INFER_ACT_ALLOW_REPO_PATH_FALLBACK", "").lower() not in {
-            "1",
-            "true",
-            "yes",
-        }:
-            raise
-        repo_root = os.environ.get("GEO_INFER_ACT_REPO_ROOT")
-        if not repo_root:
-            raise RuntimeError(
-                "GEO_INFER_ACT_ALLOW_REPO_PATH_FALLBACK requires "
-                "GEO_INFER_ACT_REPO_ROOT to point at the monorepo checkout "
-                "root that contains GEO-INFER-SPACE/"
-            ) from None
-        space_src = Path(repo_root) / "GEO-INFER-SPACE" / "src"
-        if space_src.exists() and str(space_src) not in sys.path:
-            sys.path.insert(0, str(space_src))
-        try:
-            from geo_infer_space.nested import NestedH3Grid  # noqa: PLC0415
-        except ImportError as exc:
-            raise RuntimeError(
-                f"NestedH3Grid not found under {space_src}; install "
-                "geo-infer-act[space] or point GEO_INFER_ACT_REPO_ROOT at "
-                "the monorepo checkout root"
-            ) from exc
-        return NestedH3Grid
+    except ImportError as exc:
+        raise ImportError(
+            "Nested H3 grids require geo_infer_space; install geo-infer-act[space]"
+        ) from exc
+    return NestedH3Grid
 
 
 def normalize_belief_vector(values: Any) -> Any:

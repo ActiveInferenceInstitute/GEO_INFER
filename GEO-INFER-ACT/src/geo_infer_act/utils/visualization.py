@@ -407,7 +407,7 @@ def plot_policies(
         axes[0].grid(True, alpha=0.3)
 
         # Add probability labels
-        for i, bar in enumerate(bars):
+        for bar in bars:
             height = bar.get_height()
             axes[0].annotate(
                 f"{height:.3f}",
@@ -553,7 +553,7 @@ def plot_policies(
         axes[1, 1].grid(True, alpha=0.3)
 
         # Add value labels
-        for i, bar in enumerate(bars):
+        for bar in bars:
             height = bar.get_height()
             axes[1, 1].annotate(
                 f"{height:.3f}",
@@ -767,7 +767,7 @@ def plot_perception_analysis(
     ax8.grid(True)
 
     # Add metric values as text
-    for angle, value, label in zip(angles[:-1], values[:-1], quality_metrics.keys()):
+    for angle, value in zip(angles[:-1], values[:-1]):
         x = (value + 0.1) * np.cos(angle)
         y = (value + 0.1) * np.sin(angle)
         ax8.text(x, y, f"{value:.2f}", ha="center", va="center", fontweight="bold")
@@ -1074,7 +1074,7 @@ def plot_action_analysis(
     ax8.grid(True)
 
     # Add metric values
-    for angle, value, label in zip(angles[:-1], values[:-1], quality_metrics.keys()):
+    for angle, value in zip(angles[:-1], values[:-1]):
         x = (value + 0.1) * np.cos(angle)
         y = (value + 0.1) * np.sin(angle)
         ax8.text(x, y, f"{value:.2f}", ha="center", va="center", fontweight="bold")

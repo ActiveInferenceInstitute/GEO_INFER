@@ -212,7 +212,7 @@ class TestStepFunction:
         """Test multiple steps accumulate history."""
         agent = SpatialActiveInferenceAgent(initial_cells=_cells(2))
 
-        for i in range(5):
+        for _ in range(5):
             obs = {_cell(0): np.random.rand(4)}
             agent.step(obs)
 

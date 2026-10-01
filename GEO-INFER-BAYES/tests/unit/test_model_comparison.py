@@ -8,10 +8,6 @@ model ranking, and the plot_comparison method.
 import numpy as np
 import pytest
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from geo_infer_bayes.core.model_comparison import ModelComparison
 

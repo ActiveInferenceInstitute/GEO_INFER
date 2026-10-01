@@ -39,7 +39,7 @@ def validate_spm_data(data: SPMData) -> SPMData:
         try:
             data.data = np.asarray(data.data)
         except Exception as e:
-            raise ValueError(f"Cannot convert data to numpy array: {e}")
+            raise ValueError(f"Cannot convert data to numpy array: {e}") from e
 
     # Check for empty data
     if data.data.size == 0:

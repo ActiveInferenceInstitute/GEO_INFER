@@ -37,6 +37,7 @@ class TestSpaceImportSafety:
             config={},
             h3_resolution=8,  # r=4 produces 0 cells for a ~100 km² polygon
             boundary={
+                "type": "Polygon",
                 "coordinates": [
                     [
                         [-122.5, 37.7],
@@ -45,7 +46,7 @@ class TestSpaceImportSafety:
                         [-122.5, 37.8],
                         [-122.5, 37.7],
                     ]
-                ]
+                ],
             },
         )
 
@@ -61,6 +62,7 @@ class TestSpaceImportSafety:
             config={"max_cells": 1},
             h3_resolution=8,
             boundary={
+                "type": "Polygon",
                 "coordinates": [
                     [
                         [-122.5, 37.7],
@@ -69,7 +71,7 @@ class TestSpaceImportSafety:
                         [-122.5, 37.8],
                         [-122.5, 37.7],
                     ]
-                ]
+                ],
             },
         )
 

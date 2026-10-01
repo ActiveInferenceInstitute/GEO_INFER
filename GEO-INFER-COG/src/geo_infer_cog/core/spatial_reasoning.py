@@ -405,7 +405,7 @@ class SpatialReasoningEngine:
         if geometries:
             # Create relations between geometries
             for i, geom1 in enumerate(geometries):
-                for j, geom2 in enumerate(geometries[i + 1 :], i + 1):
+                for geom2 in geometries[i + 1 :]:
                     relation = self._infer_spatial_relation(geom1, geom2)
                     if relation:
                         premises.append(relation)

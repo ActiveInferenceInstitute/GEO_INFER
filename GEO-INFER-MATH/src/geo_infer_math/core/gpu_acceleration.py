@@ -120,7 +120,7 @@ class GPUAccelerator:
             List of results
         """
         if not self.gpu_available:
-            warnings.warn("GPU acceleration not available, using CPU")
+            warnings.warn("GPU acceleration not available, using CPU", stacklevel=2)
             return self._cpu_matrix_operations(matrices, operation)
 
         # Use CuPy for NVIDIA GPU acceleration
@@ -251,7 +251,7 @@ class GPUAccelerator:
         p2 = points1 if points2 is None else points2
 
         if not self.gpu_available:
-            warnings.warn("GPU acceleration not available, using CPU")
+            warnings.warn("GPU acceleration not available, using CPU", stacklevel=2)
             return self._cpu_distance_calculation(points1, p2)
 
         # Use CuPy for distance calculations
@@ -326,7 +326,7 @@ class GPUAccelerator:
             Interpolated values
         """
         if not self.gpu_available:
-            warnings.warn("GPU acceleration not available, using CPU")
+            warnings.warn("GPU acceleration not available, using CPU", stacklevel=2)
             return self._cpu_spatial_interpolation(
                 known_points, known_values, query_points, method, **kwargs
             )
@@ -471,7 +471,7 @@ class GPUAccelerator:
             Clustering results
         """
         if not self.gpu_available:
-            warnings.warn("GPU acceleration not available, using CPU")
+            warnings.warn("GPU acceleration not available, using CPU", stacklevel=2)
             return self._cpu_clustering(data, coordinates, method, **kwargs)
 
         # Use CuPy for clustering

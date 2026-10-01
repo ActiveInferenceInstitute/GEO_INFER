@@ -114,8 +114,8 @@ refusing to report a diagnostic that is not defined:
   between the $100\alpha/2$ and $100(1-\alpha/2)$ percentiles of the posterior
   draws. It requires $0 < \alpha < 1$ and rejects missing, empty, or
   non-finite draws.
-- `SpatioTemporalGP.predict()` accepts an $(n, 3)$ matrix of $x$, $y$, and
-  time; the two-coordinate call remains a compatibility path. Posterior
+- `SpatioTemporalGP.predict()` accepts only an $(n, 3)$ matrix of $x$, $y$,
+  and time; split spatial/temporal arguments are rejected. Posterior
   predictions fit a concrete spatial GP for each draw without mutating the
   fitted model.
 

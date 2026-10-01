@@ -139,7 +139,8 @@ class SymbolicMath:
 
         except ImportError as e:
             warnings.warn(
-                f"Backend {backend} not available: {e}. Using numpy-based symbolic operations."
+                f"Backend {backend} not available: {e}. Using numpy-based symbolic operations.",
+                stacklevel=2,
             )
             self._engine = "numpy"
             self._setup_numpy_backend()

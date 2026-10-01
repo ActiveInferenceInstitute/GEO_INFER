@@ -32,7 +32,7 @@ class TestSPMDataValidation:
 
         assert validated is spm_data
         assert "validation" in validated.metadata
-        assert validated.metadata["validation"]["passed"] == True
+        assert validated.metadata["validation"]["passed"]
 
     def test_invalid_coordinate_shape(self):
         """Test validation of invalid coordinate shapes."""
@@ -144,7 +144,7 @@ class TestSPMDataValidation:
         spm_data = SPMData(data=data, coordinates=coordinates, time=time)
         validated = validate_spm_data(spm_data)
 
-        assert validated.has_temporal == True
+        assert validated.has_temporal
         assert validated.time is not None
 
     def test_invalid_temporal_length(self):

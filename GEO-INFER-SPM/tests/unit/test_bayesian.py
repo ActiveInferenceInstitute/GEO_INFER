@@ -68,17 +68,12 @@ class TestBayesianSPM:
         assert "method" in result.model_diagnostics
         assert result.model_diagnostics["method"] == "Empirical_Bayes_GLM"
 
-    def test_pymc3_fallback(self):
-        """Test PyMC3 fallback behavior."""
-        # This should work even if PyMC3 is not available
-        try:
-            result = self.bayesian_spm.fit_bayesian_glm(
-                self.spm_data, self.design_matrix.matrix, n_samples=50, n_tune=25
-            )
-            assert result is not None
-        except ImportError:
-            # Should fallback to empirical Bayes
-            pytest.fail("PyMC3 not available, testing fallback")
+    def test_fit_works_with_or_without_pymc(self):
+        """Fitting succeeds via PyMC >= 5 when installed, else empirical Bayes."""
+        result = self.bayesian_spm.fit_bayesian_glm(
+            self.spm_data, self.design_matrix.matrix, n_samples=50, n_tune=25
+        )
+        assert result is not None
 
     def test_posterior_probability_map(self):
         """Test posterior probability map computation."""
@@ -169,7 +164,7 @@ class TestBayesianModelTypes:
         # Should initialize with hierarchical model type
         assert bayesian_spm.model_type == "hierarchical_glm"
 
-        # Test fitting (should fallback to empirical Bayes if PyMC3 unavailable)
+        # Test fitting (falls back to empirical Bayes when PyMC is unavailable)
         result = bayesian_spm.fit_bayesian_glm(
             self.spm_data, self.design_matrix.matrix, n_samples=50, n_tune=25
         )

@@ -357,7 +357,7 @@ class GeographicallyWeightedRegression:
 
         predictions = []
 
-        for i, coord in enumerate(coordinates):
+        for coord in coordinates:
             pred = self._local_regression(
                 self.X, self.y, self.coordinates, coord, self.bandwidth
             )

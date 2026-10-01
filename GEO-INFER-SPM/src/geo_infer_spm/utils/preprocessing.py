@@ -63,7 +63,7 @@ def preprocess_data(
                 processed_data, **kwargs.get("temporal_params", {})
             )
         else:
-            warnings.warn(f"Unknown preprocessing step: {step}")
+            warnings.warn(f"Unknown preprocessing step: {step}", stacklevel=2)
 
     # Update metadata
     processed_data.metadata["preprocessing_steps"] = steps
@@ -356,7 +356,8 @@ def _detect_outliers_1d(data: np.ndarray, method: str, threshold: float) -> np.n
             outliers = iso_forest.fit_predict(data.reshape(-1, 1)) == -1
         except ImportError:
             warnings.warn(
-                "scikit-learn required for isolation forest. Using IQR method."
+                "scikit-learn required for isolation forest. Using IQR method.",
+                stacklevel=2,
             )
             outliers = _detect_outliers_1d(data, "iqr", threshold)
 
@@ -465,7 +466,8 @@ def temporal_filter(
                 filtered_data = savgol_filter(data.data, window_size, 2)
             except ImportError:
                 warnings.warn(
-                    "SciPy required for Savitzky-Golay filter. Using moving average."
+                    "SciPy required for Savitzky-Golay filter. Using moving average.",
+                    stacklevel=2,
                 )
                 filtered_data = _moving_average_filter(data.data, window_size)
 

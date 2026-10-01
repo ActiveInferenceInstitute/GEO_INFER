@@ -6,12 +6,9 @@ bearing calculations, point-in-polygon, line intersection, and spherical area.
 """
 
 import numpy as np
-import sys
-import os
 
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from geo_infer_math.core.geometry import (
     Point,

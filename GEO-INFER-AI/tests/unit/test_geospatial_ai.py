@@ -6,21 +6,12 @@ environmental modeling, resource optimization, multi-scale analysis, and
 predictive environmental dynamics.
 """
 
+import logging
 import unittest
+
+import matplotlib
 import numpy as np
 
-import logging
-
-# Set matplotlib backend before any imports that might use it
-import matplotlib
-
-matplotlib.use("Agg")
-
-# Configure logging for tests
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Test imports
 from geo_infer_ai.models.predictive.geospatial_ai import (
     EnvironmentalActiveInferenceEngine,
     MultiScaleHierarchicalAnalyzer,
@@ -29,6 +20,10 @@ from geo_infer_ai.models.predictive.geospatial_ai import (
     SpatialPrediction,
     analyze_multi_scale_patterns,
 )
+
+matplotlib.use("Agg")
+
+logger = logging.getLogger(__name__)
 
 
 class TestEnvironmentalActiveInferenceEngine(unittest.TestCase):
@@ -141,7 +136,7 @@ class TestEnvironmentalActiveInferenceEngine(unittest.TestCase):
         # Check predictions structure
         self.assertIsInstance(predictions, dict)
 
-        for var, var_predictions in predictions.items():
+        for var_predictions in predictions.values():
             self.assertIsInstance(var_predictions, list)
             if var_predictions:  # May be empty if GP training failed
                 for pred in var_predictions:
@@ -198,7 +193,7 @@ class TestEnvironmentalActiveInferenceEngine(unittest.TestCase):
         self.engine.initialize_spatial_domain(self.boundary)
 
         # Add uncertainty to environmental states
-        for cell, env_state in self.engine.environmental_states.items():
+        for env_state in self.engine.environmental_states.values():
             env_state.uncertainty = {
                 "temperature": np.random.uniform(0.1, 0.3),
                 "humidity": np.random.uniform(0.05, 0.2),
@@ -309,9 +304,9 @@ class TestMultiScaleHierarchicalAnalyzer(unittest.TestCase):
         self.assertGreater(len(self.analyzer.hierarchical_beliefs), 0)
 
         # Check that beliefs are properly initialized
-        for level_name, beliefs in self.analyzer.hierarchical_beliefs.items():
+        for beliefs in self.analyzer.hierarchical_beliefs.values():
             self.assertIsInstance(beliefs, dict)
-            for cell, belief in beliefs.items():
+            for belief in beliefs.values():
                 self.assertIsInstance(belief, np.ndarray)
                 self.assertEqual(len(belief), 4)  # 4-state categorical model
                 self.assertAlmostEqual(np.sum(belief), 1.0, places=6)
@@ -377,7 +372,7 @@ class TestMultiScaleHierarchicalAnalyzer(unittest.TestCase):
         self.analyzer.initialize_hierarchy(self.boundary)
 
         # Create diverse belief patterns
-        for level_name, beliefs in self.analyzer.hierarchical_beliefs.items():
+        for beliefs in self.analyzer.hierarchical_beliefs.values():
             cells = list(beliefs.keys())
             if len(cells) >= 4:
                 # Create a cluster pattern

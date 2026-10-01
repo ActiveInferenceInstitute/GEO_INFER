@@ -152,8 +152,8 @@ flowchart TD
 
 Every public geospatial method follows the same gate sequence before returning
 data to callers: validate cell identity, normalize probability vectors, compute
-finite diagnostics, and expose either the backward-compatible dictionary result
-or the typed result object.
+finite diagnostics, and expose either the default dictionary result or the
+typed result object.
 
 ```mermaid
 flowchart LR

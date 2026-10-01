@@ -519,7 +519,7 @@ class SpatialActiveInferenceAgent:
         efe_per_action = np.zeros(self.n_actions)
         cell_efe = np.zeros((len(self.cells), self.n_actions))
 
-        for c_idx, cell_id in enumerate(self.cells):
+        for c_idx in range(len(self.cells)):
             for a in range(self.n_actions):
                 # Predict next state: P(s'|s,a)
                 B_a = self.transition_model[c_idx, :, :, a]

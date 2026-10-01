@@ -7,10 +7,7 @@ bayesian_optimization_helper, and BayesianConvenience class.
 
 import numpy as np
 import pytest
-import sys
-import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from geo_infer_math.api.convenience.bayes_convenience import (
     posterior_helper,
@@ -26,7 +23,10 @@ class TestPosteriorHelper:
 
     def test_posterior_is_normalized(self):
         prior = np.array([0.25, 0.25, 0.25, 0.25])
-        likelihood = lambda data, params: np.array([0.1, 0.6, 0.2, 0.1])
+
+        def likelihood(data, params):
+            return np.array([0.1, 0.6, 0.2, 0.1])
+
         data = np.array([1.0])
         posterior = posterior_helper(prior, likelihood, data)
         assert abs(np.sum(posterior) - 1.0) < 1e-10
@@ -34,7 +34,10 @@ class TestPosteriorHelper:
     def test_posterior_proportional_to_prior_times_likelihood(self):
         prior = np.array([0.5, 0.3, 0.2])
         likelihood_vals = np.array([0.8, 0.1, 0.1])
-        likelihood = lambda data, params: likelihood_vals
+
+        def likelihood(data, params):
+            return likelihood_vals
+
         data = np.array([1.0])
         posterior = posterior_helper(prior, likelihood, data, normalize=False)
         expected_unnorm = prior * likelihood_vals
@@ -44,7 +47,10 @@ class TestPosteriorHelper:
         n = 5
         prior = np.ones(n) / n
         likelihood_vals = np.array([0.1, 0.2, 0.4, 0.2, 0.1])
-        likelihood = lambda d, p: likelihood_vals
+
+        def likelihood(d, p):
+            return likelihood_vals
+
         data = np.array([1.0])
         posterior = posterior_helper(prior, likelihood, data)
         # With uniform prior, posterior should be proportional to likelihood
@@ -139,7 +145,10 @@ class TestBayesianOptimizationHelper:
 
     def test_finds_optimum(self):
         prior = np.ones(10) / 10
-        objective = lambda idx: -float((idx - 5) ** 2)  # max at idx=5
+
+        def objective(idx):  # max at idx=5
+            return -float((idx - 5) ** 2)
+
         opt_params, opt_val, metadata = bayesian_optimization_helper(
             objective, prior, n_iterations=50, rng=np.random.default_rng(42)
         )
@@ -158,7 +167,10 @@ class TestBayesianConvenience:
     def test_calculate_posterior(self):
         bc = BayesianConvenience()
         prior = np.array([0.5, 0.3, 0.2])
-        likelihood = lambda d, p: np.array([0.1, 0.8, 0.1])
+
+        def likelihood(d, p):
+            return np.array([0.1, 0.8, 0.1])
+
         data = np.array([1.0])
         posterior = bc.calculate_posterior(prior, likelihood, data)
         assert abs(np.sum(posterior) - 1.0) < 1e-10
@@ -178,7 +190,10 @@ class TestBayesianConvenience:
 
     def test_mcmc_sample(self):
         bc = BayesianConvenience()
-        log_post = lambda x: float(-0.5 * np.sum(x**2))
+
+        def log_post(x):
+            return float(-0.5 * np.sum(x**2))
+
         samples, meta = bc.mcmc_sample(
             log_post,
             np.array([0.0]),

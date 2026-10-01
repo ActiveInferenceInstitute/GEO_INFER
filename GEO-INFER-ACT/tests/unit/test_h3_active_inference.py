@@ -1,33 +1,22 @@
 """
 Comprehensive Tests for H3 Active Inference Example Script
 
-This module provides in-depth tests for the h3_active_inference.py example
-to ensure the robustness and correctness of the geospatial active inference simulation.
+This module tests the H3 scenario helpers in ``geo_infer_act.runners.h3``
+(re-exported by ``examples/h3_active_inference.py``) to ensure the robustness and correctness of the geospatial active inference simulation.
 """
 
 import unittest
 import numpy as np
 import h3
-import sys
-import os
 from pathlib import Path
 import tempfile
 import json
 import pytest
 
-# Add project root to path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-sys.path.insert(0, project_root)
-
-# Add examples directory to path (examples/ is at module root, not inside package)
-examples_dir = os.path.join(project_root, "examples")
-sys.path.insert(0, examples_dir)
-
-# Import from examples directory at project root
-from h3_active_inference import (
+from geo_infer_act.runners.h3 import (
     generate_realistic_environmental_observations,
-    setup_san_francisco_boundary,
     run_h3_active_inference,
+    setup_san_francisco_boundary,
 )
 from geo_infer_act.models.multi_agent import MultiAgentModel
 

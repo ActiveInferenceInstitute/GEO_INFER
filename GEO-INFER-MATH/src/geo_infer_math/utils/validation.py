@@ -43,8 +43,8 @@ def _validate_probability_array(probabilities: Any) -> bool:
 def validate_probabilities(value: Any) -> Any:
     """Validate probabilities directly or validate arguments in a decorator.
 
-    The direct form supports examples and callers that validate data before a
-    computation. Passing a callable retains the historical decorator API.
+    Passing an array validates it and returns ``True``. Passing a callable
+    returns a decorator that validates every ndarray argument before the call.
     """
     if not callable(value):
         return _validate_probability_array(value)

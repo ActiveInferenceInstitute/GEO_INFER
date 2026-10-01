@@ -139,7 +139,10 @@ def main():
     print(
         f"Data generated: {climate_data.data.shape[0]} years × {climate_data.data.shape[1]} stations"
     )
-    print(".1f")
+    print(
+        f"Temperature range: {np.min(climate_data.data):.1f} to "
+        f"{np.max(climate_data.data):.1f} °C"
+    )
     print()
 
     # Step 2: Preprocess data
@@ -160,24 +163,8 @@ def main():
     # Step 3: Create spatio-temporal design matrix
     print("3. Creating spatio-temporal design matrix...")
 
-    # Design includes:
-    # - Global intercept
-    # - Linear time trend (global warming)
-    # - Latitude effect on warming
-    # - Urbanization effect
-    # - Spatial basis functions for regional variation
-
-    n_years = processed_data.data.shape[0]
-    years = processed_data.time
-
-    # Create temporal regressors
-    temporal_regressors = np.column_stack(
-        [
-            np.ones(n_years),  # Intercept
-            years - years[0],  # Linear trend (years since start)
-            (years - years[0]) ** 2 / 100,  # Quadratic trend
-        ]
-    )
+    # Design includes the latitude, longitude, and urbanization regressors;
+    # temporal trends are tested separately in step 9.
 
     # Spatial regressors
     spatial_regressors = np.column_stack(
@@ -188,8 +175,6 @@ def main():
         ]
     )
 
-    # Combine into full spatio-temporal design matrix
-    # For simplicity, we'll use spatial regressors only (could be extended)
     design_matrix = DesignMatrix(
         matrix=spatial_regressors, names=["latitude", "longitude", "urbanization"]
     )
@@ -211,7 +196,9 @@ def main():
         },
     )
 
-    print(".3f")
+    print(
+        f"   Model R²: {spm_result.model_diagnostics.get('r_squared', float('nan')):.3f}"
+    )
     print("   Spatial regularization: λ = 0.1")
     print()
 
@@ -220,11 +207,15 @@ def main():
 
     # Test for latitudinal effect on temperature
     latitude_contrast = contrast(spm_result, "latitude")
-    print(".3f")
+    print(
+        f"   Latitude mean t-statistic: {float(np.mean(latitude_contrast.t_statistic)):.3f}"
+    )
 
     # Test for urbanization effect
     urban_contrast = contrast(spm_result, "urbanization")
-    print(".3f")
+    print(
+        f"   Urbanization mean t-statistic: {float(np.mean(urban_contrast.t_statistic)):.3f}"
+    )
 
     print()
 
@@ -240,11 +231,11 @@ def main():
 
     # Estimate spatial smoothness
     smoothness = rft.estimate_smoothness(spm_result.residuals.reshape(field_shape))
-    print(".2f")
+    print(f"   Estimated FWHM per axis: {np.round(smoothness, 2).tolist()}")
 
     # Compute search volume
     search_volume = rft.compute_search_volume()
-    print(".1f")
+    print(f"   Search volume: {search_volume:.1f} resels")
 
     # Apply RFT correction
     rft_corrected_lat = compute_spm(spm_result, latitude_contrast, correction="RFT")
@@ -265,8 +256,8 @@ def main():
 
     # Estimate variogram
     variogram = spatial_analyzer.estimate_variogram(spm_result.residuals)
-    print(".2f")
-    print(".1f")
+    print(f"   Variogram sill: {float(variogram['sill']):.2f}")
+    print(f"   Variogram range: {float(variogram['range']):.1f}")
 
     # Detect significant clusters
     clusters = spatial_analyzer.detect_clusters(
@@ -287,18 +278,19 @@ def main():
     try:
         bayesian_spm = BayesianSPM()
 
-        # Note: This would use PyMC3 for full Bayesian analysis
-        # For demonstration, we'll use empirical Bayes
+        # Uses PyMC >= 5 when installed, otherwise empirical Bayes
         bayesian_result = bayesian_spm.fit_bayesian_glm(
             processed_data, design_matrix.matrix, n_samples=500, n_tune=200
         )
 
-        print("   ✓ Bayesian GLM fitted (empirical Bayes approximation)")
-        print(".3f")
+        print("   ✓ Bayesian GLM fitted")
+        print(
+            "   Mean posterior coefficient: "
+            f"{float(np.mean(bayesian_result.beta_coefficients)):.3f}"
+        )
 
     except Exception as e:
         print(f"   Note: Bayesian analysis skipped ({e})")
-        bayesian_result = None
 
     print()
 
@@ -326,7 +318,7 @@ def main():
                 processed_data.data.mean(axis=1),  # Mean across stations
                 period=3,  # Simplified for annual data
             )
-            print("   ✓ Seasonal decomposition completed")
+            print(f"   ✓ Seasonal decomposition completed: {sorted(decomposition)}")
         except Exception:
             print("   Note: Seasonal decomposition skipped (insufficient data)")
 
@@ -365,11 +357,14 @@ def main():
 
     print("\nTemporal Patterns:")
     print(f"  • Stations with significant trends: {significant_trends}")
-    print(".3f")
-    print(".3f")
+    print(
+        f"  • Fraction of stations trending: {significant_trends / len(trends['trends']):.3f}"
+    )
 
     print("\nModel Performance:")
-    print(".3f")
+    print(
+        f"  • Model R²: {spm_result.model_diagnostics.get('r_squared', float('nan')):.3f}"
+    )
     print(f"  • Spatial autocorrelation range: {variogram.get('range', 'N/A'):.1f} km")
 
     print("\n=== ANALYSIS COMPLETE ===")

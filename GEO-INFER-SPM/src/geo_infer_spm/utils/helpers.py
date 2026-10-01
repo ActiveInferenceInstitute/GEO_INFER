@@ -14,20 +14,6 @@ from ..models.data_models import DesignMatrix, SPMData
 from .rng import SeedLike, resolve_rng
 
 
-def _resolve_rng(random_seed: SeedLike = None) -> Any:
-    """Return the legacy global stream or an explicitly isolated generator."""
-    if random_seed is None:
-        return np.random
-    return resolve_rng(random_seed)
-
-
-def _randint(rng: Any, *args: Any, **kwargs: Any) -> Any:
-    """Draw integers from either the legacy module or a Generator."""
-    if hasattr(rng, "integers"):
-        return rng.integers(*args, **kwargs)
-    return rng.randint(*args, **kwargs)
-
-
 def create_design_matrix(
     data: SPMData,
     formula: str | None = None,
@@ -168,7 +154,7 @@ def generate_coordinates(
     grid_type: str = "regular",
     n_points: int = 100,
     bounds: tuple[float, float, float, float] | None = None,
-    random_seed: int | None = None,
+    random_seed: SeedLike = None,
     **kwargs: Any,
 ) -> np.ndarray:
     """
@@ -196,7 +182,7 @@ def generate_coordinates(
         >>> # Reproducible random coordinates
         >>> coords = generate_coordinates('random', n_points=50, random_seed=7)
     """
-    rng = _resolve_rng(random_seed)
+    rng = resolve_rng(random_seed)
 
     if bounds is None:
         bounds = (-180, 180, -90, 90)  # Global bounds
@@ -267,7 +253,7 @@ def generate_synthetic_data(
     noise_level: float = 0.1,
     temporal: bool = False,
     n_timepoints: int = 10,
-    random_seed: int | None = None,
+    random_seed: SeedLike = None,
 ) -> SPMData:
     """
     Generate synthetic SPM data for testing and examples.
@@ -278,8 +264,8 @@ def generate_synthetic_data(
         noise_level: Standard deviation of noise
         temporal: Whether to include temporal dimension
         n_timepoints: Number of time points if temporal
-        random_seed: Optional seed for reproducible noise generation. When
-            ``None`` (default) the legacy global ``np.random`` state is used.
+        random_seed: Seed or generator for the noise draws; ``None`` (default)
+            draws fresh OS entropy. See :func:`geo_infer_spm.utils.rng.resolve_rng`.
 
     Returns:
         SPMData with synthetic data
@@ -288,7 +274,7 @@ def generate_synthetic_data(
         >>> coords = generate_coordinates('regular', 100)
         >>> data = generate_synthetic_data(coords, effects={'trend': 'north_south'})
     """
-    rng = _resolve_rng(random_seed)
+    rng = resolve_rng(random_seed)
     n_points = len(coordinates)
 
     if effects is None:
@@ -330,9 +316,9 @@ def generate_synthetic_data(
         cluster_effect = effects["clusters"].get("effect_size", 3.0)
 
         # Simple cluster generation
-        for i in range(n_clusters):
+        for _ in range(n_clusters):
             # Random cluster center
-            center_idx = _randint(rng, 0, n_points)
+            center_idx = rng.integers(0, n_points)
             center = coordinates[center_idx]
 
             # Points within cluster radius
@@ -401,7 +387,7 @@ def create_spatial_basis_functions(
     coordinates: np.ndarray,
     n_basis: int = 10,
     method: str = "gaussian",
-    random_seed: int | None = None,
+    random_seed: SeedLike = None,
 ) -> np.ndarray:
     """
     Create spatial basis functions for modeling spatial variation.
@@ -500,7 +486,7 @@ def compute_power_analysis(
     n_points: int,
     alpha: float = 0.05,
     n_simulations: int = 1000,
-    random_seed: int | None = None,
+    random_seed: SeedLike = None,
 ) -> dict[str, Any]:
     """
     Perform power analysis for SPM statistical tests.
@@ -510,15 +496,15 @@ def compute_power_analysis(
         n_points: Number of spatial/temporal points
         alpha: Significance level
         n_simulations: Number of simulation runs
-        random_seed: Optional seed for reproducible simulations. When ``None``
-            (default) the legacy global ``np.random`` state is used.
+        random_seed: Seed or generator for the simulations; ``None`` (default)
+            draws fresh OS entropy. See :func:`geo_infer_spm.utils.rng.resolve_rng`.
 
     Returns:
         Dictionary with power analysis results
     """
     # Deferred: see docs/deferred_statistical_methods.md
     # ("Power analysis with spatial autocorrelation").
-    rng = _resolve_rng(random_seed)
+    rng = resolve_rng(random_seed)
 
     # Degrees of freedom for one-sample t-test
     df = n_points - 1

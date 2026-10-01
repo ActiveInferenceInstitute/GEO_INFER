@@ -6,10 +6,7 @@ Tests cover: cross_module_helper and IntegrationConvenience class.
 
 import numpy as np
 import pytest
-import sys
-import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from geo_infer_math.api.convenience.integration_convenience import (
     cross_module_helper,
@@ -22,7 +19,10 @@ class TestCrossModuleHelper:
 
     def test_bayes_posterior_operation(self):
         prior = np.array([0.5, 0.3, 0.2])
-        likelihood = lambda d, p: np.array([0.1, 0.8, 0.1])
+
+        def likelihood(d, p):
+            return np.array([0.1, 0.8, 0.1])
+
         data = np.array([1.0])
         result = cross_module_helper(
             "bayes",
@@ -62,7 +62,10 @@ class TestIntegrationConvenience:
     def test_execute_cross_module_bayes(self):
         ic = IntegrationConvenience()
         prior = np.array([0.5, 0.3, 0.2])
-        likelihood = lambda d, p: np.array([0.2, 0.6, 0.2])
+
+        def likelihood(d, p):
+            return np.array([0.2, 0.6, 0.2])
+
         data = np.array([1.0])
         result = ic.execute_cross_module(
             "bayes",

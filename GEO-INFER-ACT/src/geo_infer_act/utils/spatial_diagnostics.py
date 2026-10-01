@@ -582,18 +582,18 @@ class SpatialDiagnostics:
             return {"morans_i": 0.0, "interpretation": "zero_variance"}
 
         # Moran's I
-        I = (n / W) * (numerator / denominator)
+        morans_i = (n / W) * (numerator / denominator)
 
         # Interpretation
-        if I > 0.3:
+        if morans_i > 0.3:
             interpretation = "positive_clustering"
-        elif I < -0.3:
+        elif morans_i < -0.3:
             interpretation = "negative_dispersion"
         else:
             interpretation = "random"
 
         return {
-            "morans_i": float(I),
+            "morans_i": float(morans_i),
             "interpretation": interpretation,
             "n_cells": n,
             "mean_value": float(mean_val),

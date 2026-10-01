@@ -9,10 +9,6 @@ import numpy as np
 import pytest
 from typing import Any
 
-import os
-import sys
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from geo_infer_bayes.core.variational import VariationalInference
 from geo_infer_bayes.models.base import BayesianModel

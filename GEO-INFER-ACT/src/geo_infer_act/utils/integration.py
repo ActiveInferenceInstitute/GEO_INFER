@@ -796,10 +796,9 @@ def create_h3_spatial_model(
     Args:
         config: Configuration dictionary
         h3_resolution: H3 hexagonal grid resolution
-        boundary: GeoJSON boundary specification. Accepts:
-            - GeoJSON Polygon or MultiPolygon geometries
-            - GeoJSON Feature or FeatureCollection containing those geometries
-            - Legacy coordinate-only Polygon dictionaries
+        boundary: GeoJSON Polygon or MultiPolygon geometry, or a Feature or
+            FeatureCollection containing those geometries. Every mapping must
+            carry a GeoJSON ``type`` member.
 
     Returns:
         H3 spatial model configuration
@@ -820,14 +819,9 @@ def create_h3_spatial_model(
         if not isinstance(boundary, dict):
             raise ValueError("boundary must be a GeoJSON-like mapping")
 
-        # Preserve the historical coordinate-only Polygon form, but normalize
-        # every accepted boundary through the same native H3 adapter. Invalid,
-        # empty, point, or malformed inputs must fail closed rather than
-        # silently generating an unrelated San Francisco grid.
+        # Invalid, untyped, empty, point, or malformed inputs fail closed
+        # rather than silently generating an unrelated grid.
         boundary_type = boundary.get("type")
-        if boundary_type is None and "coordinates" in boundary:
-            boundary = {"type": "Polygon", "coordinates": boundary["coordinates"]}
-            boundary_type = "Polygon"
         if boundary_type not in {
             "Polygon",
             "MultiPolygon",

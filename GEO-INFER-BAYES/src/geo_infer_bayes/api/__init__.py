@@ -1,6 +1,6 @@
 """API interfaces for Bayesian inference engines."""
 
-from typing import Any, Optional, Type
+from typing import Any
 
 # External library interfaces
 try:

@@ -185,8 +185,8 @@ class SpatialRegression:
             rho = np.clip(rho, -1, 1)
 
             # Create (I - ρW) matrix
-            I = sparse.eye(n_points)
-            A = I - rho * W
+            identity = sparse.eye(n_points)
+            A = identity - rho * W
 
             try:
                 # Solve for transformed y
@@ -233,8 +233,8 @@ class SpatialRegression:
                 loglik = -result.fun
 
                 # Compute final residuals
-                I = sparse.eye(n_points)
-                A = I - rho_hat * W
+                identity = sparse.eye(n_points)
+                A = identity - rho_hat * W
                 y_transformed = sparse.linalg.spsolve(A, y)
                 X_transformed = sparse.linalg.spsolve(A, X)
                 beta_hat = linalg.pinv(X_transformed.T @ X_transformed) @ (
@@ -244,7 +244,7 @@ class SpatialRegression:
                 residuals = y - y_hat
 
             else:
-                warnings.warn("SAR estimation did not converge")
+                warnings.warn("SAR estimation did not converge", stacklevel=2)
                 rho_hat = 0.0
                 beta_hat = np.linalg.pinv(X) @ y
                 y_hat = X @ beta_hat
@@ -252,7 +252,7 @@ class SpatialRegression:
                 loglik = -np.inf
 
         except Exception as e:
-            warnings.warn(f"SAR fitting failed: {e}")
+            warnings.warn(f"SAR fitting failed: {e}", stacklevel=2)
             rho_hat = 0.0
             beta_hat = np.linalg.pinv(X) @ y
             y_hat = X @ beta_hat
@@ -303,8 +303,8 @@ class SpatialRegression:
 
             lambda_param = np.clip(lambda_param, -1, 1)
 
-            I = sparse.eye(n_points)
-            B = I - lambda_param * W
+            identity = sparse.eye(n_points)
+            B = identity - lambda_param * W
 
             try:
                 # OLS with spatially filtered errors
@@ -538,7 +538,7 @@ class SpatialRegression:
                 y_hat = X @ beta_hat
 
         except Exception as e:
-            warnings.warn(f"Spatial filter fitting failed: {e}")
+            warnings.warn(f"Spatial filter fitting failed: {e}", stacklevel=2)
             beta_hat = linalg.pinv(X.T @ X) @ (X.T @ y)
             y_hat = X @ beta_hat
 

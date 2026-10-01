@@ -29,23 +29,18 @@ from scipy import stats
 from scipy.optimize import minimize
 import logging
 
+from ..models.data_models import SPMData, SPMResult
+from ..utils.rng import resolve_rng
+
 logger = logging.getLogger(__name__)
 
-try:  # Modern PyMC (v4+)
+try:  # PyMC >= 5
     import pymc as pm
 
     PYMC_AVAILABLE = True
 except ImportError:
-    try:  # Legacy PyMC3 fallback
-        import pymc3 as pm  # type: ignore[no-redef]
-
-        PYMC_AVAILABLE = True
-    except ImportError:
-        PYMC_AVAILABLE = False
-        logger.debug("PyMC is unavailable; Bayesian SPM uses empirical Bayes.")
-
-from ..models.data_models import SPMData, SPMResult  # noqa: E402
-from ..utils.rng import resolve_rng  # noqa: E402
+    PYMC_AVAILABLE = False
+    logger.debug("PyMC is unavailable; Bayesian SPM uses empirical Bayes.")
 
 
 def gelman_rubin_r_hat(chains: np.ndarray) -> np.ndarray:
@@ -535,9 +530,9 @@ class BayesianSPM:
             data: SPMData with spatial coordinates
             design_matrix: Design matrix for GLM
             spatial_structure: Spatial correlation structure specification
-            random_seed: Optional seed for reproducible basis selection and
-                posterior samples. When ``None`` the legacy global
-                ``np.random`` state is used.
+            random_seed: Seed or generator for basis selection and posterior
+                samples; ``None`` draws fresh OS entropy. See
+                :func:`geo_infer_spm.utils.rng.resolve_rng`.
 
         Returns:
             SPMResult with hierarchical parameter estimates
@@ -674,7 +669,7 @@ class BayesianSPM:
         a_sigma = b_sigma = 1.0  # Gamma parameters for sigma
 
         # Variational inference loop
-        for iteration in range(n_iterations):
+        for _ in range(n_iterations):
             # Update beta posterior given sigma
             sigma_sq = b_sigma / a_sigma  # Expected value of sigma^2
             Lambda_beta = X.T @ X / sigma_sq + np.eye(n_regressors)

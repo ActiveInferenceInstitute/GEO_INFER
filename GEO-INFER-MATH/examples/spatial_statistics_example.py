@@ -30,7 +30,7 @@ def generate_clustered_data(n=100, clusters=3, seed=42):
     cluster_centers = np.random.uniform(0, 100, size=(clusters, 2))
     cluster_values = np.random.uniform(50, 150, size=clusters)
 
-    for i in range(n):
+    for _ in range(n):
         # Randomly select a cluster
         cluster_idx = np.random.randint(0, clusters)
 
@@ -153,7 +153,7 @@ def plot_results(coords, values, lisa_result, g_star_zscores):
     # Plot 2: LISA clusters
     # Create custom colormap for LISA clusters
     class_cmap = ListedColormap(["#ffffff", "#ff0000", "#0000ff", "#ff00ff", "#00ffff"])
-    lisa_scatter = axs[0, 1].scatter(
+    axs[0, 1].scatter(
         coords[:, 0],
         coords[:, 1],
         c=lisa_result["classifications"],

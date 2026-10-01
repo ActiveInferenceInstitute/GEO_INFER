@@ -7,10 +7,6 @@ metrics (Geweke Z-score, Monte Carlo standard error), and edge cases.
 
 import numpy as np
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from geo_infer_bayes.utils.diagnostics import (
     mcmc_diagnostics,

@@ -725,7 +725,7 @@ class EnvironmentalActiveInferenceEngine:
         # Global uncertainty metrics
         all_uncertainties = defaultdict(list)
 
-        for cell, env_state in self.environmental_states.items():
+        for env_state in self.environmental_states.values():
             for var in self.environmental_variables:
                 if var in env_state.uncertainty:
                     all_uncertainties[var].append(env_state.uncertainty[var])

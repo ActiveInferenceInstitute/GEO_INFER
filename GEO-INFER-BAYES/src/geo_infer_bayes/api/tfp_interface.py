@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 tfp = None
 tf = None
 TFP_AVAILABLE = False
-logger.debug("Using NumPy/SciPy GP backend for deterministic compatibility.")
 
 
 def _squared_exponential_kernel(

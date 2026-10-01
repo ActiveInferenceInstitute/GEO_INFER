@@ -186,7 +186,7 @@ class MatrixOperations:
         numerator = z.T @ weights_matrix @ z
         denominator = np.sum(z**2)
 
-        I = (n / np.sum(weights_matrix)) * (numerator / denominator)
+        morans_i = (n / np.sum(weights_matrix)) * (numerator / denominator)
 
         # Expected value and variance
         expected_I = -1.0 / (n - 1)
@@ -194,13 +194,13 @@ class MatrixOperations:
         var_I = morans_i_variance(values, weights_matrix)
 
         # Z-score and p-value (two-tailed using erfc)
-        z_score = (I - expected_I) / np.sqrt(var_I) if var_I > 0 else 0.0
+        z_score = (morans_i - expected_I) / np.sqrt(var_I) if var_I > 0 else 0.0
         from math import erfc, sqrt
 
         p_value = erfc(abs(z_score) / sqrt(2))
 
         return {
-            "I": I,
+            "I": morans_i,
             "expected_I": expected_I,
             "variance": var_I,
             "z_score": z_score,
@@ -431,8 +431,7 @@ class TensorOperations:
         unfolded_2 = np.moveaxis(data, 2, 0).reshape(n2, -1)
 
         errors: list[float] = []
-        n_iter = 0
-        for n_iter in range(1, max_iter + 1):
+        for _ in range(max_iter):
             kr_BC = TensorOperations._khatri_rao(B, C)  # rows (i1, i2)
             A = np.linalg.lstsq(kr_BC, unfolded_0.T, rcond=None)[0].T
 
@@ -447,6 +446,7 @@ class TensorOperations:
             errors.append(rel_error)
             if rel_error < tol:
                 break
+        n_iter = len(errors)
 
         # Column-normalize the leading factor and carry the scales as weights.
         weights = np.linalg.norm(A, axis=0)

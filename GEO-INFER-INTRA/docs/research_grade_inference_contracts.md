@@ -38,8 +38,8 @@ source, tests, and strict validators remain authoritative if this page drifts.
   convergence is undefined; it is not replaced with a misleading scalar.
 - `PosteriorAnalysis.credible_interval()` requires `0 < alpha < 1` and rejects
   missing, empty, or non-finite draws.
-- `SpatioTemporalGP.predict()` accepts an `(n, 3)` matrix of `x`, `y`, and time;
-  the two-coordinate call remains a compatibility path. Posterior
+- `SpatioTemporalGP.predict()` accepts only an `(n, 3)` matrix of `x`, `y`, and
+  time; split spatial/temporal arguments are rejected. Posterior
   predictions fit a concrete spatial GP for each draw without mutating the
   fitted model.
 
@@ -72,7 +72,7 @@ From the repository root, run the focused gates first:
 uv run pytest GEO-INFER-ACT/tests/unit GEO-INFER-ACT/tests/integration -q
 uv run pytest GEO-INFER-BAYES/tests/unit GEO-INFER-BAYES/tests/integration -q
 uv run pytest GEO-INFER-RISK/tests/unit -q
-uv run --with 'ruff>=0.15.6,<0.16' ruff check GEO-INFER-*/src --select F821,F823,E721,E722
+uv run --with 'ruff>=0.15.6,<0.16' ruff check .
 python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
 ```
 
