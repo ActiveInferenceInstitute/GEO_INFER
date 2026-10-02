@@ -31,7 +31,7 @@ Core workspace within `GEO-INFER-ANT`.
 
 - Module: `GEO-INFER-ANT`
 - Package: `geo_infer_ant`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-ant`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module ANT`
 

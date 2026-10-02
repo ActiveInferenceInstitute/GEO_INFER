@@ -4,7 +4,7 @@ GEO-INFER-API package.
 A standardized API for geospatial interoperability within the GEO-INFER framework.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 
 from geo_infer_api.core.config import Settings, get_settings

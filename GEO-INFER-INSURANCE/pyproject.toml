@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-insurance"
-version = "0.3.0"
+version = "0.4.0"
 description = "Underwriting, policy, claims, and pricing operations for geospatial insurance workflows within the GEO-INFER framework"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"
@@ -43,13 +43,13 @@ dependencies = [
 # src/ are guarded with try/except and degrade gracefully; install this extra
 # to enable the risk-engine-backed assessment surfaces.
 integrations = [
-    "geo-infer-risk",
-    "geo-infer-space",
+    "geo-infer-risk>=0.4.0",
+    "geo-infer-space>=0.4.0",
 ]
 dev = [
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
-    "pytest-asyncio>=0.20.0",
+    "pytest-asyncio>=0.24.0",
     "pytest-timeout>=2.1.0",
     # Test-only dependencies (imported by tests/, not by src/)
     "requests>=2.28.0",

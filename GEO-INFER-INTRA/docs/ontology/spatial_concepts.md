@@ -1,229 +1,45 @@
 # Spatial Concepts
 
-> **Illustrative example notice.** This page contains historical or
-> conceptual integration sketches. Names such as `SpatialAnalyzer` and
-> domain-specific facade classes are not public GEO-INFER exports in the
-> current checkout; verify imports against each module's `src/` package
-> and use the module README/tests for executable examples.
+A spatial vocabulary distinguishes features, geometries, rasters, cells, networks,
+and coordinate reference systems. Names such as contains, intersects, touches,
+and disjoint express predicates with specific geometric meanings. An ontology
+can record those meanings, but this page does not provide a runtime ontology manager.
 
-This document describes the spatial concepts defined in the GEO-INFER-INTRA ontology system, which provide a standardized vocabulary for spatial entities, relationships, and properties.
+## Geometry and indexing are different contracts
 
-## Core Spatial Entities
-The ontology defines the following core spatial entities:
-| Concept
-| Definition
-| Properties
-|
-|---------|------------|------------|
-| `SpatialFeature`
-| Any identifiable entity with a spatial extent
-| `hasGeometry`, `hasCRS`, `hasIdentifier`
-|
-| `Point`
-| Zero-dimensional geometry representing a location
-| `hasCoordinates`, `hasElevation`
-|
-| `Line`
-| One-dimensional geometry connecting points
-| `hasVertices`, `hasLength`
-|
-| `Polygon`
-| Two-dimensional geometry bounded by lines
-| `hasVertices`, `hasArea`, `hasPerimeter`
-|
-| `Raster`
-| Gridded representation of continuous spatial data
-| `hasResolution`, `hasBounds`, `hasDataType`
-|
-| `Vector`
-| Collection of discrete spatial features
-| `hasFeatures`, `hasAttributes`
-|
-| `Region`
-| Defined geographical area with boundaries
-| `hasBoundary`, `hasName`, `hasDescription`
-|
-| `Network`
-| Connected system of nodes and edges
-| `hasNodes`, `hasEdges`, `hasConnectivity`
-|
+Shapely/GeoJSON points use [longitude, latitude] in EPSG:4326; H3 indexing takes
+(latitude, longitude). The example verifies polygon containment and explicit H3
+state location using the respective real interfaces.
 
-## Spatial Relationships
-The ontology defines the following spatial relationships:
-| Relationship
-| Definition
-| Domain
-| Range
-|
-|--------------|------------|--------|-------|
-| `contains`
-| Entity A fully contains entity B
-| `SpatialFeature`
-| `SpatialFeature`
-|
-| `within`
-| Entity A is fully within entity B
-| `SpatialFeature`
-| `SpatialFeature`
-|
-| `intersects`
-| Entity A shares any space with entity B
-| `SpatialFeature`
-| `SpatialFeature`
-|
-| `touches`
-| Entity A shares boundary points with B without overlapping
-| `SpatialFeature`
-| `SpatialFeature`
-|
-| `disjoint`
-| Entity A has no spatial overlap with entity B
-| `SpatialFeature`
-| `SpatialFeature`
-|
-| `crosses`
-| Entity A crosses entity B
-| `Line`
-| `Line` or `Polygon`
-|
-| `overlaps`
-| Entity A partially overlaps entity B
-| `SpatialFeature`
-| `SpatialFeature`
-|
-| `adjacentTo`
-| Entity A is adjacent to entity B
-| `SpatialFeature`
-| `SpatialFeature`
-|
-| `connectedTo`
-| Entity A is connected to entity B
-| `Node`
-| `Node`
-|
+```python
+import h3
+from shapely.geometry import Point, Polygon
+from geo_infer_space import H3StateSpace
 
-## Spatial Properties
-The ontology defines the following spatial properties:
-| Property
-| Definition
-| Domain
-| Range
-|
-|----------|------------|--------|-------|
-| `hasGeometry`
-| Specifies the geometry of a spatial feature
-| `SpatialFeature`
-| `Geometry`
-|
-| `hasCRS`
-| Specifies the coordinate reference system
-| `SpatialFeature`
-| `CoordinateReferenceSystem`
-|
-| `hasCoordinates`
-| Specifies the coordinates of a point
-| `Point`
-| `Coordinates`
-|
-| `hasArea`
-| Specifies the area of a polygon
-| `Polygon`
-| `xsd:double`
-|
-| `hasPerimeter`
-| Specifies the perimeter of a polygon
-| `Polygon`
-| `xsd:double`
-|
-| `hasLength`
-| Specifies the length of a line
-| `Line`
-| `xsd:double`
-|
-| `hasResolution`
-| Specifies the resolution of a raster
-| `Raster`
-| `Resolution`
-|
-| `hasBounds`
-| Specifies the bounding box of a feature
-| `SpatialFeature`
-| `BoundingBox`
-|
-| `hasElevation`
-| Specifies the elevation of a point
-| `Point`
-| `xsd:double`
-|
-| `hasDistance`
-| Specifies the distance between features
-| `SpatialFeature`
-| `xsd:double`
-|
-
-## Coordinate Reference Systems
-The ontology includes definitions for common coordinate reference systems:
-| CRS
-| Definition
-| EPSG Code
-|
-|-----|------------|-----------|
-| `WGS84`
-| World Geodetic System 1984
-| EPSG:4326
-|
-| `WebMercator`
-| Web Mercator projection
-| EPSG:3857
-|
-| `UTM`
-| Universal Transverse Mercator
-| EPSG:32601-32660 (N), EPSG:32701-32760 (S)
-|
-| `NAD83`
-| North American Datum 1983
-| EPSG:4269
-|
-| `ETRS89`
-| European Terrestrial Reference System 1989
-| EPSG:4258
-|
-| `GDA94`
-| Geocentric Datum of Australia 1994
-| EPSG:4283
-|
-
-## Spatial Metrics
-The ontology defines the following spatial metrics:
-| Metric
-| Definition
-| Formula
-|
-|--------|------------|---------|
-| `EuclideanDistance`
-| Straight-line distance between two points
-| √[(x₂-x₁)² + (y₂-y₁)²]
-|
-| `ManhattanDistance`
-| Sum of absolute differences between coordinates
-|
-|x₂-x₁| +
-|y₂-y₁|
-|
-| `HaversineDistance`
-| Great-circle distance between two points on a sphere
-| 2r·arcsin(√[sin²((φ₂-φ₁)/2)
-+ cos(φ₁)cos(φ₂)sin²((λ₂-λ₁)/2)])
-
-|
-| `MinkowskiDistance`
-| Generalization of Euclidean and Manhattan distances
-| (Σ|xᵢ-yᵢ|ᵖ)^(1/p) |
-
-## Usage Example
-The following example shows how to use the spatial concepts in Python code:
-
+point = Point(-124.2, 41.75)
+region = Polygon([(-124.3, 41.6), (-124.1, 41.6), (-124.1, 41.8), (-124.3, 41.8)])
+assert region.contains(point)
+assert not region.disjoint(point)
+cell = h3.latlng_to_cell(point.y, point.x, 8)
+space = H3StateSpace([cell])
+assert space.locate(point.y, point.x) == 0
+assert h3.cell_area(cell, unit="m^2") > 0
 ```
-python from geo_infer_intra.ontology import OntologyManager # Initialize the ontology manager ontology_manager = OntologyManager() # Load the spatial concepts ontology spatial_ontology = ontology_manager.load_ontology("spatial") # Get all spatial relationships relationships = spatial_ontology.get_instances_of("SpatialRelationship") # Find all features that can have area area_features = spatial_ontology.get_domain_of_property("hasArea") # Get the definition of a concept contains_def = spatial_ontology.get_definition("contains") print(f"Definition of 'contains': {contains_def}") # Check if a relationship is transitive is_transitive = spatial_ontology.is_transitive("contains") print(f"Is 'contains' transitive? {is_transitive}")
-```
- ## Extending Spatial Concepts To extend the spatial concepts ontology with custom concepts: 1. Create a ontology file that imports the core spatial concepts 2. Define your concepts, relationships, or properties 3. Establish the relationships with existing concepts 4. Register your extension with the ontology manager See [Ontology Extension](../developer_guide/index.md) for instructions.
+
+## Properties, relationships, and metrics
+
+Attach geometry, CRS, coordinate order, bounds, units, and measurement support to
+a feature. A relation derived from geometry should retain the geometry versions
+and predicate used to produce it. `contains` excludes a boundary-only point;
+`covers` has different boundary semantics. Network connection and physical
+adjacency are also distinct relations.
+
+EPSG:4326 coordinates are angular. Euclidean length or area in degrees is not a
+metric length or area; choose a suitable projection or geodesic operation. H3 cell
+membership does not prove full polygon containment. H3 neighborhood degree comes
+from topology, including pentagons, rather than assuming six neighbors everywhere.
+
+An application may serialize its vocabulary in RDF/OWL and use an explicitly
+selected reasoner. That does not make its geometric predicates or inferred domain
+facts automatically valid. See [ontology modeling](ontology_modeling.md),
+[H3](../geospatial/data_formats/h3/index.md), and [SPACE](../modules/geo-infer-space.md).

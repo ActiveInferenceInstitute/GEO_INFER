@@ -75,52 +75,33 @@ class TestPlaceTemporalAnalyzer:
         assert "anomalies" in result
         assert len(result["anomalies"]) >= 1
 
-    def test_detect_trend_time_backend_reports_honest_fit(self, monkeypatch):
-        """The TIME backend path must not fabricate r_squared=1.0/significant=True.
-
-        GS-190: r_squared and significant must be derived from the backend's
-        real fields (trend_strength) rather than hardcoded.
-        """
-        import geo_infer_place.core.module_bridge as module_bridge
-
-        monkeypatch.setattr(module_bridge, "_HAS_TIME", True)
-        analyzer = object.__new__(PlaceTemporalAnalyzer)
-        analyzer._analyzer = type(
-            "FakeAnalyzer",
-            (),
-            {
-                "detect_trend": lambda self, ts: {
-                    "trend_direction": "increasing",
-                    "trend_strength": 0.1,
-                }
-            },
-        )()
-        result = analyzer.detect_trend([1, 2, 3, 4], label="patched_backend")
+    def test_detect_trend_time_backend_preserves_real_axis_and_fit(self):
+        """Actual TIME analysis preserves UTC instants and independent fit quality."""
+        timestamps = [f"2026-10-0{day}T00:00:00Z" for day in range(1, 6)]
+        result = PlaceTemporalAnalyzer().detect_trend(
+            [5, 4, 3, 2, 1], timestamps=timestamps
+        )
         assert result["backend"] == "geo_infer_time"
-        assert result["r_squared"] != 1.0
-        assert result["r_squared"] == 0.1
-        assert result["significant"] is False
-
-    def test_detect_trend_time_backend_strong_trend_is_significant(self, monkeypatch):
-        """A backend-reported strength above the threshold is significant."""
-        import geo_infer_place.core.module_bridge as module_bridge
-
-        monkeypatch.setattr(module_bridge, "_HAS_TIME", True)
-        analyzer = object.__new__(PlaceTemporalAnalyzer)
-        analyzer._analyzer = type(
-            "FakeAnalyzer",
-            (),
-            {
-                "detect_trend": lambda self, ts: {
-                    "trend_direction": "decreasing",
-                    "trend_strength": 0.9,
-                }
-            },
-        )()
-        result = analyzer.detect_trend([5, 4, 3, 2], label="patched_backend")
-        assert result["slope"] < 0
+        assert result["direction"] == "decreasing"
+        assert result["slope"] == pytest.approx(-1)
+        assert result["r_squared"] == pytest.approx(1)
         assert result["significant"] is True
-        assert result["r_squared"] == 0.9
+        weak = PlaceTemporalAnalyzer().detect_trend(
+            [1, 2, 1, 2, 1], timestamps=timestamps
+        )
+        assert weak["r_squared"] == pytest.approx(0, abs=1e-12)
+        assert weak["significant"] is False
+
+    @pytest.mark.parametrize(
+        "operation", ["detect_trend", "detect_anomalies", "forecast"]
+    )
+    def test_temporal_backend_rejects_naive_axis_without_fallback(self, operation):
+        """Timestamp contract violations cannot silently change execution backend."""
+        analyzer = PlaceTemporalAnalyzer()
+        with pytest.raises(ValueError, match="timezone"):
+            getattr(analyzer, operation)(
+                [1, 2, 3], timestamps=["2026-10-01", "2026-10-02", "2026-10-03"]
+            )
 
     def test_forecast_returns_values(self):
         """forecast should return predicted values list."""

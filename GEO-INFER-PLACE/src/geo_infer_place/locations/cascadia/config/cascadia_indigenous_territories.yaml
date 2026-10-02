@@ -1,0 +1,232 @@
+# Cascadia Indigenous Nations and Territories
+# Source: Bureau of Indian Affairs (BIA) tribal directory, 2024
+# NAGPRA and treaty rights data from US Dept of Interior
+
+metadata:
+  total_federally_recognized_tribes: 52
+  states: ["CA", "OR", "WA", "ID"]
+  province: ["BC"]
+  data_source: "Bureau of Indian Affairs, BC Treaty Commission, tribal websites"
+  note: "Boundaries are approximate; traditional territories overlap and predate current political boundaries"
+
+washington_state:
+  - name: "Makah Indian Tribe"
+    state: "WA"
+    bia_code: "MAKA"
+    reservation: "Makah Indian Reservation"
+    county: "Clallam"
+    latitude: 48.3658
+    longitude: -124.6307
+    reservation_area_acres: 27012
+    population: 2250
+    traditional_territory: "Olympic Peninsula coast"
+    treaty: "Treaty of Neah Bay, 1855"
+    treaty_rights: ["fishing", "whaling", "sealing", "hunting"]
+    website: "https://www.makah.com"
+
+  - name: "Lower Elwha Klallam Tribe"
+    state: "WA"
+    county: "Clallam"
+    latitude: 48.098
+    longitude: -123.566
+    treaty: "Point No Point Treaty, 1855"
+    notable: "Elwha Dam removal project (2011-2014), largest in US history at the time"
+
+  - name: "Lummi Nation"
+    state: "WA"
+    county: "Whatcom"
+    latitude: 48.7463
+    longitude: -122.6701
+    reservation_area_acres: 13000
+    population: 5000
+    treaty: "Point Elliott Treaty, 1855"
+    treaty_rights: ["fishing", "hunting"]
+    notable: "Major salmon fishing rights on Nooksack/Fraser systems"
+
+  - name: "Nooksack Indian Tribe"
+    state: "WA"
+    county: "Whatcom"
+    latitude: 48.9335
+    longitude: -122.1022
+    reservation_area_acres: 3009
+    population: 2000
+    treaty: "Point Elliott Treaty, 1855"
+
+  - name: "Tulalip Tribes"
+    state: "WA"
+    county: "Snohomish"
+    latitude: 48.058
+    longitude: -122.290
+    reservation_area_acres: 22490
+    population: 5000
+    treaty: "Point Elliott Treaty, 1855"
+
+  - name: "Muckleshoot Indian Tribe"
+    state: "WA"
+    county: "King"
+    latitude: 47.370
+    longitude: -122.017
+    reservation_area_acres: 3772
+    population: 5000
+    treaty: "Medicine Creek Treaty, 1854; Point Elliott Treaty, 1855"
+
+  - name: "Puyallup Tribe"
+    state: "WA"
+    county: "Pierce"
+    latitude: 47.187
+    longitude: -122.426
+    reservation_area_acres: 18062
+    population: 5300
+    treaty: "Medicine Creek Treaty, 1854"
+
+  - name: "Nisqually Indian Tribe"
+    state: "WA"
+    county: "Thurston"
+    latitude: 47.069
+    longitude: -122.638
+    treaty: "Medicine Creek Treaty, 1854"
+    notable: "Billy Frank Jr., legendary fishing rights activist, buried here"
+
+  - name: "Yakama Nation"
+    state: "WA"
+    county: "Yakima"
+    latitude: 46.093
+    longitude: -120.704
+    reservation_area_acres: 1200000
+    population: 11000
+    treaty: "Treaty of 1855"
+    treaty_rights: ["fishing at usual and accustomed stations", "hunting", "gathering"]
+
+  - name: "Colville Confederated Tribes"
+    state: "WA"
+    county: "Okanogan/Ferry"
+    latitude: 48.593
+    longitude: -118.982
+    reservation_area_acres: 1400000
+    population: 9250
+
+oregon_state:
+  - name: "Confederated Tribes of the Grand Ronde"
+    state: "OR"
+    county: "Polk"
+    latitude: 45.077
+    longitude: -123.574
+    reservation_area_acres: 10993
+    population: 5200
+    tribes_included: ["Kalapuya", "Rogue River", "Umpqua", "Molalla", "Tillamook"]
+    restoration_year: 1983
+
+  - name: "Confederated Tribes of Siletz Indians"
+    state: "OR"
+    county: "Lincoln"
+    latitude: 44.723
+    longitude: -123.921
+    reservation_area_acres: 3666
+    population: 5000
+    restoration_year: 1977
+    coastal_access: true
+
+  - name: "Confederated Tribes of Warm Springs"
+    state: "OR"
+    county: "Jefferson"
+    latitude: 44.769
+    longitude: -121.274
+    reservation_area_acres: 642798
+    population: 4300
+    treaty: "Treaty of 1855"
+    treaty_rights: ["fishing at usual and accustomed stations on Columbia River"]
+
+  - name: "Confederated Tribes of Umatilla Indian Reservation"
+    state: "OR"
+    county: "Umatilla"
+    latitude: 45.676
+    longitude: -118.555
+    reservation_area_acres: 172000
+    population: 2900
+    tribes_included: ["Cayuse", "Umatilla", "Walla Walla"]
+    treaty: "Treaty of 1855"
+
+  - name: "Cow Creek Band of Umpqua Tribe"
+    state: "OR"
+    county: "Douglas"
+    latitude: 43.065
+    longitude: -123.431
+    population: 1600
+    restoration_year: 1982
+
+  - name: "Coquille Indian Tribe"
+    state: "OR"
+    county: "Coos"
+    latitude: 43.365
+    longitude: -124.231
+    reservation_area_acres: 6580
+    population: 1100
+    coastal_access: true
+    restoration_year: 1989
+
+  - name: "Confederated Tribes of Coos, Lower Umpqua and Siuslaw Indians"
+    state: "OR"
+    county: "Coos/Douglas/Lane"
+    latitude: 43.366
+    longitude: -124.224
+    population: 900
+    coastal_access: true
+    restoration_year: 1984
+
+  - name: "Klamath Tribes"
+    state: "OR"
+    county: "Klamath"
+    latitude: 42.711
+    longitude: -121.682
+    population: 3500
+    tribes_included: ["Klamath", "Modoc", "Yahooskin Band of Snake Paiute"]
+    treaty: "Treaty of 1864"
+    restoration_year: 1986
+    klamath_dam_removal_advocates: true
+
+california_tribes:
+  - name: "Yurok Tribe"
+    state: "CA"
+    county: "Humboldt/Del Norte"
+    latitude: 41.558
+    longitude: -124.066
+    reservation_area_acres: 73000
+    population: 6000
+    treaty_rights: ["Klamath River fishing", "Pacific Ocean fishing"]
+    notable: "Largest tribal nation in California by enrollment; central to Klamath Dam removal"
+
+  - name: "Karuk Tribe"
+    state: "CA"
+    county: "Siskiyou/Humboldt"
+    latitude: 41.455
+    longitude: -123.609
+    population: 4100
+    treaty_rights: ["Klamath River fishing"]
+    notable: "Middle Klamath River stewards; key partner in dam removal"
+
+  - name: "Hoopa Valley Tribe"
+    state: "CA"
+    county: "Humboldt"
+    latitude: 41.053
+    longitude: -123.671
+    reservation_area_acres: 89572
+    population: 3000
+    treaty_rights: ["Trinity/Klamath River fishing"]
+    notable: "Largest reservation in California by area"
+
+  - name: "Tolowa Dee-ni' Nation"
+    state: "CA"
+    county: "Del Norte"
+    latitude: 41.794
+    longitude: -124.145
+    population: 900
+    traditional_territory: "Northwest Del Norte coast and Smith River drainage"
+
+  - name: "Wiyot Tribe"
+    state: "CA"
+    county: "Humboldt"
+    latitude: 40.741
+    longitude: -124.160
+    reservation_area_acres: 99
+    population: 600
+    notable: "In 2019, Eureka returned 200+ acres of Indian Island to Wiyot Tribe -- first land return by a US city"

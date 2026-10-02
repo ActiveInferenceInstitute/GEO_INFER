@@ -3,6 +3,20 @@ phase: verifying
 ---
 # GEO-INFER Ideal State Artifact
 
+## Current candidate: 0.4.0
+
+The active preparation target is coherent SPACE/TIME composition and trustworthy
+execution evidence, with connected runtime, security, packaging and documentation
+repairs. The implementation-stage ledger and verifiable acceptance boundaries are
+recorded in
+[0.4.0 readiness](GEO-INFER-INTRA/docs/releases/0.4.0_readiness.md); breaking API
+changes are recorded in
+[0.4.0 migrations](GEO-INFER-INTRA/docs/releases/0.4.0_migration.md).
+Main integration is authorized; tagging and package publication remain outside
+this preparation. Readiness requires retained local and hosted evidence for the
+exact candidate, all 45 installed wheels, both supported interpreters and clean
+generated-document checks. Historical evidence below retains its original scope.
+
 > History note (2026-09-07): the published history was rewritten to re-attribute
 > hum-side personal commit identities to docxology
 > <docxology@users.noreply.github.com>. Every commit SHA recorded in this

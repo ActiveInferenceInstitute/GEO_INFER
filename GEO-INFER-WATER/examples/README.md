@@ -17,7 +17,7 @@ Examples workspace within `GEO-INFER-WATER`.
 
 - Module: `GEO-INFER-WATER`
 - Package: `geo_infer_water`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-water`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module WATER`
 

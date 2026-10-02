@@ -7,43 +7,48 @@ and verifies the integration bridge API surface.
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch
+import importlib
+import sys
 
 
 CASCADIA_DIR = Path(__file__).resolve().parents[2]
 
 
 class TestCascadiaSpatialStats:
-    def test_unavailable_returns_dict_with_available_false(self):
-        with patch.dict(
-            "sys.modules",
-            {
-                "geo_infer_math": None,
-                "geo_infer_math.core": None,
-                "geo_infer_math.core.spatial_statistics": None,
-                "geo_infer_math.core.interpolation": None,
-            },
-        ):
-            # Re-import to trigger the ImportError path
-            import importlib
-            import src.core.geo_infer_integrations as mod
+    def test_unavailable_returns_dict_with_available_false(self, monkeypatch):
+        """A missing optional extra reports absence without resetting native imports."""
+        import geo_infer_place.locations.cascadia.core.geo_infer_integrations as mod
 
+        try:
+            with monkeypatch.context() as isolated:
+                for name in (
+                    "geo_infer_math",
+                    "geo_infer_math.core",
+                    "geo_infer_math.core.spatial_statistics",
+                    "geo_infer_math.core.interpolation",
+                ):
+                    isolated.setitem(sys.modules, name, None)
+                importlib.reload(mod)
+                result = mod.CascadiaSpatialStats().compute_spatial_autocorrelation(
+                    {"cell1": {"score": 0.5}}
+                )
+                assert result["available"] is False
+        finally:
             importlib.reload(mod)
-            stats = mod.CascadiaSpatialStats()
-            result = stats.compute_spatial_autocorrelation({"cell1": {"score": 0.5}})
-            # Either available=True with data, or available=False with reason
-            assert isinstance(result, dict)
-            assert "available" in result
 
     def test_available_module_returns_dict(self):
-        from src.core.geo_infer_integrations import CascadiaSpatialStats
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaSpatialStats,
+        )
 
         stats = CascadiaSpatialStats()
         result = stats.compute_spatial_autocorrelation({})
         assert isinstance(result, dict)
 
     def test_interpolate_sparse_data_returns_dict(self):
-        from src.core.geo_infer_integrations import CascadiaSpatialStats
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaSpatialStats,
+        )
 
         stats = CascadiaSpatialStats()
         result = stats.interpolate_sparse_data({}, resolution=7)
@@ -52,7 +57,9 @@ class TestCascadiaSpatialStats:
 
 class TestCascadiaBayesianAnalysis:
     def test_returns_dict(self):
-        from src.core.geo_infer_integrations import CascadiaBayesianAnalysis
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaBayesianAnalysis,
+        )
 
         bayes = CascadiaBayesianAnalysis()
         result = bayes.estimate_ecological_uncertainty({})
@@ -60,7 +67,9 @@ class TestCascadiaBayesianAnalysis:
         assert "available" in result
 
     def test_with_sample_data(self):
-        from src.core.geo_infer_integrations import CascadiaBayesianAnalysis
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaBayesianAnalysis,
+        )
 
         bayes = CascadiaBayesianAnalysis()
         h3_data = {f"cell{i}": {"score": i * 0.1} for i in range(5)}
@@ -70,7 +79,9 @@ class TestCascadiaBayesianAnalysis:
 
 class TestCascadiaSeismicRisk:
     def test_missing_geojson_returns_error_dict(self, tmp_path):
-        from src.core.geo_infer_integrations import CascadiaSeismicRisk
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaSeismicRisk,
+        )
 
         risk = CascadiaSeismicRisk()
         missing = tmp_path / "nonexistent.geojson"
@@ -80,7 +91,9 @@ class TestCascadiaSeismicRisk:
         assert "available" in result or "error" in result
 
     def test_returns_dict(self):
-        from src.core.geo_infer_integrations import CascadiaSeismicRisk
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaSeismicRisk,
+        )
 
         risk = CascadiaSeismicRisk()
         result = risk.compute_csz_hazard([], Path("/nonexistent/path.geojson"))
@@ -89,7 +102,9 @@ class TestCascadiaSeismicRisk:
 
 class TestCascadiaForestHealth:
     def test_returns_dict(self):
-        from src.core.geo_infer_integrations import CascadiaForestHealth
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaForestHealth,
+        )
 
         fh = CascadiaForestHealth()
         result = fh.assess_forest_health({}, {})
@@ -99,7 +114,9 @@ class TestCascadiaForestHealth:
 
 class TestCascadiaCoastalAnalysis:
     def test_returns_dict(self):
-        from src.core.geo_infer_integrations import CascadiaCoastalAnalysis
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaCoastalAnalysis,
+        )
 
         ca = CascadiaCoastalAnalysis()
         result = ca.assess_coastal_resilience({})
@@ -109,7 +126,9 @@ class TestCascadiaCoastalAnalysis:
 
 class TestCascadiaEcosystemServices:
     def test_returns_dict(self):
-        from src.core.geo_infer_integrations import CascadiaEcosystemServices
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaEcosystemServices,
+        )
 
         es = CascadiaEcosystemServices()
         result = es.value_ecosystem_services({}, {})
@@ -119,7 +138,9 @@ class TestCascadiaEcosystemServices:
 
 class TestCascadiaDataQuality:
     def test_returns_dict(self):
-        from src.core.geo_infer_integrations import CascadiaDataQuality
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaDataQuality,
+        )
 
         dq = CascadiaDataQuality()
         result = dq.validate_module_outputs({"module_a": {"score": 0.8}})
@@ -130,7 +151,9 @@ class TestCascadiaDataQuality:
         import h3
         import pytest
 
-        from src.core.geo_infer_integrations import CascadiaDataQuality
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaDataQuality,
+        )
 
         center = h3.latlng_to_cell(41.75, -124.2, 7)
         hexagons = {cell: {"score": 0.5} for cell in sorted(h3.grid_disk(center, 1))}
@@ -153,7 +176,9 @@ class TestCascadiaDataQuality:
         import geopandas as gpd
         from shapely.geometry import Polygon
 
-        from src.core.geo_infer_integrations import CascadiaDataQuality
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaDataQuality,
+        )
 
         bowtie = Polygon([(0, 0), (1, 1), (1, 0), (0, 1), (0, 0)])
         frame = gpd.GeoDataFrame({"score": [0.1]}, geometry=[bowtie], crs="EPSG:4326")
@@ -165,7 +190,9 @@ class TestCascadiaDataQuality:
 
 class TestCascadiaClimateAnalysis:
     def test_missing_yaml_returns_error_dict(self, tmp_path):
-        from src.core.geo_infer_integrations import CascadiaClimateAnalysis
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaClimateAnalysis,
+        )
 
         ca = CascadiaClimateAnalysis()
         result = ca.assign_climate_zones({}, tmp_path / "nonexistent.yaml")
@@ -173,7 +200,9 @@ class TestCascadiaClimateAnalysis:
         assert "available" in result
 
     def test_returns_dict(self):
-        from src.core.geo_infer_integrations import CascadiaClimateAnalysis
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaClimateAnalysis,
+        )
 
         ca = CascadiaClimateAnalysis()
         result = ca.assign_climate_zones({}, Path("/nonexistent/climate.yaml"))
@@ -182,7 +211,9 @@ class TestCascadiaClimateAnalysis:
 
 class TestIntegrationSuite:
     def test_build_integration_suite_returns_8_wrappers(self):
-        from src.core.geo_infer_integrations import build_integration_suite
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            build_integration_suite,
+        )
 
         suite = build_integration_suite()
         expected_keys = {
@@ -198,7 +229,9 @@ class TestIntegrationSuite:
         assert set(suite.keys()) == expected_keys
 
     def test_get_availability_report_all_bool(self):
-        from src.core.geo_infer_integrations import get_availability_report
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            get_availability_report,
+        )
 
         report = get_availability_report()
         assert len(report) == 8

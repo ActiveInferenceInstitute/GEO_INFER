@@ -19,7 +19,7 @@ from .core.access_control import GeospatialAccessManager as AccessManager
 from .models.security_models import SecurityEvent, ThreatLevel
 from .utils.security_utils import SecurityUtils
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Team"
 __email__ = "geo-infer@activeinference.institute"
 

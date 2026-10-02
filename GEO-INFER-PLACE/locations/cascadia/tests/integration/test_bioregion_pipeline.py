@@ -84,8 +84,12 @@ class TestBioregionConfig:
                 for line in coords:
                     all_lats.extend(c[1] for c in line)
         if all_lats:
-            assert min(all_lats) <= 42.0, f"CSZ south bound too far north: {min(all_lats)}"
-            assert max(all_lats) >= 50.0, f"CSZ north bound too far south: {max(all_lats)}"
+            assert min(all_lats) <= 42.0, (
+                f"CSZ south bound too far north: {min(all_lats)}"
+            )
+            assert max(all_lats) >= 50.0, (
+                f"CSZ north bound too far south: {max(all_lats)}"
+            )
 
     def test_salmon_esu_listed_count_ge_12(self):
         path = CONFIG_DIR / "cascadia_salmon_esus.yaml"
@@ -105,7 +109,9 @@ class TestBioregionConfig:
                 status = entry.get("esa_status", "")
                 if status not in ("Not Listed", "Not Listed (Species of Concern)", ""):
                     listed.append(entry["name"])
-        assert len(listed) >= 12, f"Expected >= 12 ESA-listed species, got {len(listed)}: {listed}"
+        assert len(listed) >= 12, (
+            f"Expected >= 12 ESA-listed species, got {len(listed)}: {listed}"
+        )
 
     def test_h3_res7_cell_count_for_bioregion(self):
         """H3 resolution 7 produces a valid cell for the bioregion extent."""
@@ -129,7 +135,9 @@ class TestGeoInferIntegrations:
     """Integration wrappers degrade gracefully when GEO-INFER modules absent."""
 
     def test_spatial_stats_import_graceful(self):
-        from src.core.geo_infer_integrations import CascadiaSpatialStats
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaSpatialStats,
+        )
 
         stats = CascadiaSpatialStats()
         result = stats.compute_spatial_autocorrelation({})
@@ -137,14 +145,18 @@ class TestGeoInferIntegrations:
         assert isinstance(result, dict)
 
     def test_bayesian_import_graceful(self):
-        from src.core.geo_infer_integrations import CascadiaBayesianAnalysis
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            CascadiaBayesianAnalysis,
+        )
 
         bayes = CascadiaBayesianAnalysis()
         result = bayes.estimate_ecological_uncertainty({})
         assert isinstance(result, dict)
 
     def test_all_wrappers_return_dicts(self):
-        from src.core.geo_infer_integrations import build_integration_suite
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            build_integration_suite,
+        )
 
         suite = build_integration_suite()
         assert len(suite) == 8
@@ -152,7 +164,9 @@ class TestGeoInferIntegrations:
             assert wrapper is not None, f"Wrapper {name} is None"
 
     def test_availability_report_returns_bool_map(self):
-        from src.core.geo_infer_integrations import get_availability_report
+        from geo_infer_place.locations.cascadia.core.geo_infer_integrations import (
+            get_availability_report,
+        )
 
         report = get_availability_report()
         assert isinstance(report, dict)
@@ -161,7 +175,9 @@ class TestGeoInferIntegrations:
             assert isinstance(v, bool), f"availability[{k}] should be bool"
 
     def test_ecology_module_acquire_data(self):
-        from src.data_modules.ecology.geo_infer_ecology import GeoInferEcology
+        from geo_infer_place.locations.cascadia.data_modules.ecology.geo_infer_ecology import (
+            GeoInferEcology,
+        )
 
         eco = GeoInferEcology()
         result = eco.acquire_raw_data()
@@ -170,7 +186,9 @@ class TestGeoInferIntegrations:
         assert result["salmon_esu_count"] >= 0
 
     def test_ecology_module_run_analysis(self):
-        from src.data_modules.ecology.geo_infer_ecology import GeoInferEcology
+        from geo_infer_place.locations.cascadia.data_modules.ecology.geo_infer_ecology import (
+            GeoInferEcology,
+        )
 
         eco = GeoInferEcology()
         eco.acquire_raw_data()
@@ -213,7 +231,9 @@ class TestBioregionVisualization:
         create_bioregion_map(CONFIG_DIR, {}, output, allow_missing_layers=True)
         content = output.read_text(encoding="utf-8")
         # Mt. Rainier should appear in the generated HTML
-        assert "Rainier" in content or "Baker" in content, "No volcano names found in HTML output"
+        assert "Rainier" in content or "Baker" in content, (
+            "No volcano names found in HTML output"
+        )
 
     def test_html_file_size_under_5mb(self, tmp_path):
         # folium is a hard PLACE dependency; plain import.
@@ -239,7 +259,9 @@ class TestServer:
         spec = importlib.util.spec_from_file_location("cascadia_server", server_path)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
-        assert hasattr(mod, "create_app"), "create_app() not found in cascadia_server.py"
+        assert hasattr(mod, "create_app"), (
+            "create_app() not found in cascadia_server.py"
+        )
         assert hasattr(mod, "main"), "main() not found in cascadia_server.py"
 
     def test_fastapi_app_creates_successfully(self, tmp_path):

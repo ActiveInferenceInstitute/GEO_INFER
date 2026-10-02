@@ -29,7 +29,7 @@ Models workspace within `GEO-INFER-NORMS`.
 
 - Module: `GEO-INFER-NORMS`
 - Package: `geo_infer_norms`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-norms`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module NORMS`
 

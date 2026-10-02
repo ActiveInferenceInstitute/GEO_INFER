@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-place"
-version = "0.3.0"
+version = "0.4.0"
 description = "Comprehensive place-based analysis framework providing deep insights into specific geographic locations and regional systems"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"
@@ -47,18 +47,64 @@ dependencies = [
     "matplotlib>=3.5.0",
     "branca>=0.6.0",
     "requests>=2.28.0",
-    "geo-infer-space",
+    "geo-infer-space>=0.4.0",
+    "geo-infer-time>=0.4.0",
 ]
 
 [project.optional-dependencies]
+cascadia = [
+    "colorcet>=3.0.0",
+    "beautifulsoup4>=4.11.0",
+    "bokeh>=2.4.0",
+    "branca>=0.6.0",
+    "contextily>=1.2.0",
+    "datashader>=0.14.0",
+    "fastapi>=0.100.0",
+    "fiona>=1.8.0",
+    "folium>=0.14.0",
+    "geo-infer-bayes>=0.4.0",
+    "geo-infer-climate>=0.4.0",
+    "geo-infer-data>=0.4.0",
+    "geo-infer-econ>=0.4.0",
+    "geo-infer-forest>=0.4.0",
+    "geo-infer-marine>=0.4.0",
+    "geo-infer-math>=0.4.0",
+    "geo-infer-risk>=0.4.0",
+    "geopandas>=0.10.0",
+    "h3>=4.5.0,<5",
+    "holoviews>=1.15.0",
+    "html5lib>=1.1",
+    "jinja2>=3.1.0",
+    "lxml>=4.9.0",
+    "matplotlib>=3.4.0",
+    "networkx>=2.6.0",
+    "numpy>=1.21.0",
+    "openpyxl>=3.0.0",
+    "pandas>=1.3.0",
+    "psutil>=5.9.0",
+    "pyproj>=3.2.0",
+    "python-dotenv>=0.19.0",
+    "pyyaml>=5.4.0",
+    "rasterio>=1.2.0",
+    "requests>=2.25.0",
+    "scikit-learn>=1.0.0",
+    "scipy>=1.7.0",
+    "seaborn>=0.11.0",
+    "selenium>=4.0.0",
+    "shapely>=2.0.0",
+    "tqdm>=4.62.0",
+    "urllib3>=1.26.0",
+    "uvicorn>=0.22.0",
+    "webdriver-manager>=3.8.0",
+]
 full = [
-    "geo-infer-data",
-    "geo-infer-time",
+    "geo-infer-data>=0.4.0",
+    "geo-infer-time>=0.4.0",
 ]
 dev = [
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
-    "pytest-asyncio>=0.20.0",
+    "pytest-asyncio>=0.24.0",
     "ruff>=0.15.6,<0.16",
     "mypy>=0.910",
     # Test-only dependencies (imported by tests/, not by src/)
@@ -72,7 +118,7 @@ docs = [
 ]
 integrations = [
     # Workspace siblings imported by this module's tests (resolved via [tool.uv.sources])
-    "geo-infer-test>=0.3.0",
+    "geo-infer-test>=0.4.0",
 ]
 
 [project.urls]
@@ -90,39 +136,6 @@ exclude = ["tests*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.geojson", "*.json", "*.md", "*.txt"]
-
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-
-[[tool.mypy.overrides]]
-module = [
-    "numpy.*",
-    "pandas.*",
-    "geopandas.*",
-    "h3.*",
-    "folium.*",
-    "plotly.*",
-    "matplotlib.*",
-    "scipy.*",
-    "sklearn.*",
-    "tensorflow.*",
-    "torch.*",
-    "pymc.*",
-    "arviz.*",
-]
-ignore_missing_imports = true
 
 [tool.coverage.run]
 source = ["src"]
@@ -147,3 +160,10 @@ geo-infer-space = { workspace = true }
 geo-infer-data = { workspace = true }
 geo-infer-time = { workspace = true }
 geo-infer-test = { workspace = true }
+geo-infer-bayes = { workspace = true }
+geo-infer-climate = { workspace = true }
+geo-infer-econ = { workspace = true }
+geo-infer-forest = { workspace = true }
+geo-infer-marine = { workspace = true }
+geo-infer-math = { workspace = true }
+geo-infer-risk = { workspace = true }

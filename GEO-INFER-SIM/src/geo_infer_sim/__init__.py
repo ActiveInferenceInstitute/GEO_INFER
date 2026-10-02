@@ -6,7 +6,7 @@ geospatial hypotheses, evaluating policies, and analyzing complex system
 behaviors using agent-based modeling, system dynamics, and other paradigms.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Development Team"
 
 from geo_infer_sim.core.simulation_engine import SimulationEngine, SimulationConfig

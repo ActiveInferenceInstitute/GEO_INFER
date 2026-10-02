@@ -14,7 +14,7 @@ Src workspace within `GEO-INFER-FOREST`.
 
 - Module: `GEO-INFER-FOREST`
 - Package: `geo_infer_forest`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-forest`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module FOREST`
 

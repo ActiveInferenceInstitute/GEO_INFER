@@ -14,7 +14,7 @@ Performance workspace within `GEO-INFER-INTRA`.
 
 - Module: `GEO-INFER-INTRA`
 - Package: `geo_infer_intra`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-intra`
 - Tests: `uv run python -m pytest GEO-INFER-INTRA/tests/performance`
 

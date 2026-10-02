@@ -4,6 +4,6 @@
 
 **Public API.** The `geo_infer_art` package exports a coherent artistic toolchain: `GeoArt` with `MapStyle` as the core visualization pair; `StyleTransfer` and `ColorPalette` from the aesthetics layer; the generative pair `GenerativeMap` and `ProceduralArt`; the place-based `PlaceArt` and `CulturalMap` for culturally grounded cartography; plus `CustomAlgorithmFramework` for user-defined art algorithms and `PerformanceOptimizer` for rendering throughput. The subpackage layout (`core/`, `utils/`) under `geo_infer_art` mirrors this split; `geopandas>=0.10.0` is the declared geospatial dependency.
 
-**Verification status.** The `tests/` directory is present with 11 test files covering the core visualization, aesthetics, and generation components; testing routes through the unified runner (`--module ART`).
+**Verification status.** The `tests/` directory is present with 12 test files covering the core visualization, aesthetics, and generation components; testing routes through the unified runner (`--module ART`).
 
 **Theme role.** Domain sciences and human-facing applications: ART demonstrates the framework's reach beyond analytics into communication and culture, consuming standard geospatial inputs from the DATA band and expressing them for non-technical audiences.

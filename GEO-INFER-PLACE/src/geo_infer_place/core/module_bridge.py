@@ -4,8 +4,8 @@ Module bridge: integrates GEO-INFER-DATA and GEO-INFER-TIME into PLACE workflows
 Provides PlaceDataManager (data acquisition + quality) and PlaceTemporalAnalyzer
 (time-series trend detection on tide, seismic, and environmental data).
 
-Both classes use graceful degradation - if the upstream module is not installed
-the bridge still works with reduced functionality and logs a warning.
+DATA integration is optional. Temporal operations with explicit timestamps use
+the declared TIME dependency; value-only operations use local sequence statistics.
 """
 
 from __future__ import annotations
@@ -13,6 +13,12 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from typing import Any
+from geo_infer_time import (
+    EventDetector,
+    ForecastingEngine,
+    TemporalAnalyzer,
+    TimeSeries,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,19 +42,8 @@ except ImportError:
         "geo_infer_data not available; PlaceDataManager will use built-in methods"
     )
 
-try:
-    from geo_infer_time import (
-        EventDetector,
-        ForecastingEngine,
-        TemporalAnalyzer,
-        TimeSeries,
-    )
 
-    _HAS_TIME = True
-except ImportError:
-    logger.info(
-        "geo_infer_time not available; PlaceTemporalAnalyzer will use built-in methods"
-    )
+_HAS_TIME = True
 
 
 # ---------------------------------------------------------------------------
@@ -196,15 +191,9 @@ class PlaceTemporalAnalyzer:
         self._forecaster = None
 
         if _HAS_TIME:
-            try:
-                self._analyzer = TemporalAnalyzer()
-                self._detector = EventDetector()
-                self._forecaster = ForecastingEngine()
-                logger.info(
-                    "PlaceTemporalAnalyzer initialised with GEO-INFER-TIME backend"
-                )
-            except Exception as exc:
-                logger.warning("GEO-INFER-TIME init failed, using built-in: %s", exc)
+            self._analyzer = TemporalAnalyzer()
+            self._detector = EventDetector()
+            self._forecaster = ForecastingEngine()
 
     @property
     def has_time_module(self) -> bool:
@@ -230,39 +219,26 @@ class PlaceTemporalAnalyzer:
         """
         import numpy as np
 
-        if self._analyzer is not None:
-            try:
-                import pandas as pd
-
-                time_series_cls = globals().get("TimeSeries")
-                if time_series_cls is not None:
-                    ts = time_series_cls(data=pd.Series(values))
-                    res = self._analyzer.detect_trend(ts)
-                else:
-                    # TIME payload class unavailable despite a patched flag;
-                    # pass raw values so the backend can still be exercised.
-                    res = self._analyzer.detect_trend(values)
-                if isinstance(res, dict):
-                    slope_val = res.get("trend_strength", 0.0)
-                    if res.get("trend_direction") == "decreasing":
-                        slope_val = -slope_val
-                    merged = {
-                        "slope": slope_val,
-                        "direction": res.get("trend_direction", "stable"),
-                        **res,
-                        "backend": "geo_infer_time",
-                    }
-                    # Report fit quality honestly: prefer a real r_squared
-                    # field from the backend, otherwise fall back to the
-                    # reported trend_strength. Never fabricate a perfect fit.
-                    r_sq = float(
-                        merged.get("r_squared", merged.get("trend_strength", 0.0))
-                    )
-                    merged["r_squared"] = r_sq
-                    merged["significant"] = r_sq > 0.5
-                    return merged
-            except Exception as exc:
-                logger.debug("TIME trend detection fallback for %s: %s", label, exc)
+        if timestamps is not None:
+            ts = TimeSeries(data=np.asarray(values, dtype=float), timestamps=timestamps)
+            if self._analyzer is not None:
+                res = self._analyzer.detect_trend(ts)
+                observed = np.asarray(values, dtype=float)
+                fitted = np.asarray(res["trend_values"], dtype=float)
+                residual = np.sum((observed - fitted) ** 2)
+                total = np.sum((observed - np.mean(observed)) ** 2)
+                r_squared = float(1 - residual / total) if total > 0 else 0.0
+                slope = float(res["trend_strength"])
+                if res["trend_direction"] == "decreasing":
+                    slope = -slope
+                return {
+                    **res,
+                    "slope": slope,
+                    "direction": res["trend_direction"],
+                    "r_squared": r_squared,
+                    "significant": r_squared > 0.5 and len(values) >= 5,
+                    "backend": "geo_infer_time",
+                }
 
         # Built-in numpy linear regression
         arr = np.array(values, dtype=float)
@@ -303,6 +279,8 @@ class PlaceTemporalAnalyzer:
         values: list[float],
         sigma_threshold: float = 2.0,
         label: str = "series",
+        *,
+        timestamps: list[str] | None = None,
     ) -> dict[str, Any]:
         """Detect anomalous values in a time series.
 
@@ -316,17 +294,11 @@ class PlaceTemporalAnalyzer:
         """
         import numpy as np
 
-        if self._detector is not None:
-            try:
-                import pandas as pd
-
-                ts = TimeSeries(data=pd.Series(values)) if _HAS_TIME else None
-                if ts is not None and hasattr(self._detector, "detect_anomalies"):
-                    result = self._detector.detect_anomalies(ts)
-                    if isinstance(result, dict):
-                        return {**result, "backend": "geo_infer_time"}
-            except Exception as exc:
-                logger.debug("TIME anomaly detection fallback for %s: %s", label, exc)
+        if timestamps is not None:
+            ts = TimeSeries(data=np.asarray(values, dtype=float), timestamps=timestamps)
+            if self._detector is not None:
+                result = self._detector.detect_anomalies(ts)
+                return {**result, "backend": "geo_infer_time"}
 
         arr = np.array(values, dtype=float)
         if len(arr) < 3:
@@ -362,6 +334,8 @@ class PlaceTemporalAnalyzer:
         values: list[float],
         horizon: int = 12,
         label: str = "series",
+        *,
+        timestamps: list[str] | None = None,
     ) -> dict[str, Any]:
         """Produce a simple forecast for a time series.
 
@@ -375,17 +349,11 @@ class PlaceTemporalAnalyzer:
         """
         import numpy as np
 
-        if self._forecaster is not None:
-            try:
-                import pandas as pd
-
-                ts = TimeSeries(data=pd.Series(values)) if _HAS_TIME else None
-                if ts is not None and hasattr(self._forecaster, "forecast_linear"):
-                    result = self._forecaster.forecast_linear(ts, horizon=horizon)
-                    if isinstance(result, dict):
-                        return {**result, "backend": "geo_infer_time"}
-            except Exception as exc:
-                logger.debug("TIME forecasting fallback for %s: %s", label, exc)
+        if timestamps is not None:
+            ts = TimeSeries(data=np.asarray(values, dtype=float), timestamps=timestamps)
+            if self._forecaster is not None:
+                result = self._forecaster.forecast_linear(ts, horizon=horizon)
+                return {**result, "backend": "geo_infer_time"}
 
         # Simple linear extrapolation
         arr = np.array(values, dtype=float)

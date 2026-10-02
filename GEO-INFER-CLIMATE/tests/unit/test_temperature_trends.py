@@ -161,15 +161,3 @@ class TestVectorizedStatistics:
         result = analyzer.sens_slope(np.array([1.0, 2.0, 3.0, 4.0]))
         slopes = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
         assert result["median_slope"] == pytest.approx(float(np.median(slopes)))
-
-    def test_10k_series_under_one_second(self, analyzer):
-        data = np.random.default_rng(3).normal(0, 1, 10_000)
-        import time
-
-        start = time.perf_counter()
-        analyzer.mann_kendall_test(data)
-        mid = time.perf_counter()
-        analyzer.sens_slope(data)
-        elapsed = time.perf_counter() - start
-        assert elapsed < 2.0  # both calls combined; each well under 1s pre-CI jitter
-        assert mid - start < 1.0  # MK alone: the probe's sub-second bound

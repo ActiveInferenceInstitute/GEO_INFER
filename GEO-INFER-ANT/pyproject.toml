@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-ant"
-version = "0.3.0"
+version = "0.4.0"
 description = "Comprehensive swarm intelligence and complex adaptive systems modeling using Active Inference principles for emergent collective behavior in geospatial contexts"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"
@@ -47,16 +47,16 @@ dependencies = [
 
 [project.optional-dependencies]
 integrations = [
-    "geo-infer-act",
-    "geo-infer-agent",
-    "geo-infer-math>=0.3.0",
-    "geo-infer-space",
+    "geo-infer-act>=0.4.0",
+    "geo-infer-agent>=0.4.0",
+    "geo-infer-math>=0.4.0",
+    "geo-infer-space>=0.4.0",
 ]
 dev = [
     "h3>=4.5.0,<5",
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
-    "pytest-asyncio>=0.20.0",
+    "pytest-asyncio>=0.24.0",
     "ruff>=0.15.6,<0.16",
     "mypy>=0.910",
     # Test-only dependencies (imported by tests/, not by src/)
@@ -84,39 +84,6 @@ exclude = ["tests*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.md", "*.txt"]
-
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-
-[[tool.mypy.overrides]]
-module = [
-    "numpy.*",
-    "pandas.*",
-    "geopandas.*",
-    "h3.*",
-    "folium.*",
-    "plotly.*",
-    "matplotlib.*",
-    "scipy.*",
-    "sklearn.*",
-    "tensorflow.*",
-    "torch.*",
-    "pymc.*",
-    "arviz.*",
-]
-ignore_missing_imports = true
 
 [tool.coverage.run]
 source = ["src"]

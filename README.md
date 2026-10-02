@@ -30,8 +30,8 @@ domain modeling, agent workflows, and reproducible repository validation in one
 | Metric | Value |
 | --- | ---: |
 | Modules | 45 |
-| Python source files | 924 |
-| Python test files | 749 |
+| Python source files | 986 |
+| Python test files | 768 |
 | Repository README.md files | 807 |
 | Repository AGENTS.md files | 804 |
 
@@ -98,21 +98,21 @@ the exact reproducible exception list.
 
 | Module | Package | Source files | Test files |
 | --- | --- | ---: | ---: |
-| `GEO-INFER-ACT` | `geo_infer_act` | 46 | 46 |
+| `GEO-INFER-ACT` | `geo_infer_act` | 46 | 47 |
 | `GEO-INFER-AG` | `geo_infer_ag` | 16 | 12 |
-| `GEO-INFER-AGENT` | `geo_infer_agent` | 26 | 27 |
+| `GEO-INFER-AGENT` | `geo_infer_agent` | 26 | 28 |
 | `GEO-INFER-AI` | `geo_infer_ai` | 18 | 20 |
 | `GEO-INFER-ANT` | `geo_infer_ant` | 24 | 10 |
 | `GEO-INFER-API` | `geo_infer_api` | 14 | 11 |
 | `GEO-INFER-APP` | `geo_infer_app` | 13 | 9 |
-| `GEO-INFER-ART` | `geo_infer_art` | 20 | 11 |
+| `GEO-INFER-ART` | `geo_infer_art` | 20 | 12 |
 | `GEO-INFER-BAYES` | `geo_infer_bayes` | 38 | 28 |
 | `GEO-INFER-BIO` | `geo_infer_bio` | 12 | 10 |
 | `GEO-INFER-CIV` | `geo_infer_civ` | 5 | 7 |
-| `GEO-INFER-CLIMATE` | `geo_infer_climate` | 11 | 11 |
+| `GEO-INFER-CLIMATE` | `geo_infer_climate` | 11 | 12 |
 | `GEO-INFER-COG` | `geo_infer_cog` | 21 | 16 |
 | `GEO-INFER-COMMS` | `geo_infer_comms` | 19 | 20 |
-| `GEO-INFER-DATA` | `geo_infer_data` | 27 | 24 |
+| `GEO-INFER-DATA` | `geo_infer_data` | 29 | 26 |
 | `GEO-INFER-ECON` | `geo_infer_econ` | 36 | 18 |
 | `GEO-INFER-EDU` | `geo_infer_edu` | 7 | 7 |
 | `GEO-INFER-EMERGENCY` | `geo_infer_emergency` | 8 | 9 |
@@ -123,8 +123,8 @@ the exact reproducible exception list.
 | `GEO-INFER-HEALTH` | `geo_infer_health` | 18 | 15 |
 | `GEO-INFER-INSURANCE` | `geo_infer_insurance` | 21 | 12 |
 | `GEO-INFER-INTRA` | `geo_infer_intra` | 9 | 10 |
-| `GEO-INFER-IOT` | `geo_infer_iot` | 17 | 16 |
-| `GEO-INFER-LOG` | `geo_infer_log` | 21 | 19 |
+| `GEO-INFER-IOT` | `geo_infer_iot` | 19 | 18 |
+| `GEO-INFER-LOG` | `geo_infer_log` | 21 | 20 |
 | `GEO-INFER-MARINE` | `geo_infer_marine` | 12 | 10 |
 | `GEO-INFER-MATH` | `geo_infer_math` | 66 | 21 |
 | `GEO-INFER-METAGOV` | `geo_infer_metagov` | 21 | 16 |
@@ -132,15 +132,15 @@ the exact reproducible exception list.
 | `GEO-INFER-OPS` | `geo_infer_ops` | 17 | 18 |
 | `GEO-INFER-ORG` | `geo_infer_org` | 5 | 7 |
 | `GEO-INFER-PEP` | `geo_infer_pep` | 40 | 16 |
-| `GEO-INFER-PLACE` | `geo_infer_place` | 41 | 25 |
+| `GEO-INFER-PLACE` | `geo_infer_place` | 91 | 25 |
 | `GEO-INFER-REQ` | `geo_infer_req` | 5 | 7 |
 | `GEO-INFER-RISK` | `geo_infer_risk` | 15 | 24 |
 | `GEO-INFER-SEC` | `geo_infer_sec` | 22 | 20 |
 | `GEO-INFER-SIM` | `geo_infer_sim` | 11 | 9 |
-| `GEO-INFER-SPACE` | `geo_infer_space` | 83 | 47 |
-| `GEO-INFER-SPM` | `geo_infer_spm` | 27 | 21 |
-| `GEO-INFER-TEST` | `geo_infer_test` | 12 | 41 |
-| `GEO-INFER-TIME` | `geo_infer_time` | 18 | 19 |
+| `GEO-INFER-SPACE` | `geo_infer_space` | 84 | 48 |
+| `GEO-INFER-SPM` | `geo_infer_spm` | 27 | 22 |
+| `GEO-INFER-TEST` | `geo_infer_test` | 18 | 46 |
+| `GEO-INFER-TIME` | `geo_infer_time` | 19 | 22 |
 | `GEO-INFER-TRANSPORT` | `geo_infer_transport` | 7 | 10 |
 | `GEO-INFER-WATER` | `geo_infer_water` | 9 | 9 |
 

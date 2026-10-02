@@ -6,7 +6,7 @@ decisions, policy lifecycle management, claims processing, premium pricing,
 portfolio management, and regulatory compliance.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Development Team"
 __license__ = "CC-BY-NC-SA-4.0"
 

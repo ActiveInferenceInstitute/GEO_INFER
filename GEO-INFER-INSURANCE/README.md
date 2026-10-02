@@ -18,7 +18,7 @@ Underwriting, policy, claims, and pricing operations for geospatial insurance wo
 
 - Module: `GEO-INFER-INSURANCE`
 - Package: `geo_infer_insurance`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-insurance`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module INSURANCE`
 

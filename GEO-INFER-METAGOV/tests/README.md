@@ -16,7 +16,7 @@ Tests workspace within `GEO-INFER-METAGOV`.
 
 - Module: `GEO-INFER-METAGOV`
 - Package: `geo_infer_metagov`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-metagov`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module METAGOV`
 

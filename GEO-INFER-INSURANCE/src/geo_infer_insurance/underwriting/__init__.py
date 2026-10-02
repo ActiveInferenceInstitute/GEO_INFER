@@ -15,7 +15,7 @@ This module provides enterprise-grade underwriting capabilities including:
   built-in default endpoints are placeholders, fetches fail closed to None)
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Development Team"
 
 from typing import Any

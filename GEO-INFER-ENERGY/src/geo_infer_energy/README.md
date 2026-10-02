@@ -15,7 +15,7 @@ Geo Infer Energy workspace within `GEO-INFER-ENERGY`.
 
 - Module: `GEO-INFER-ENERGY`
 - Package: `geo_infer_energy`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-energy`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module ENERGY`
 

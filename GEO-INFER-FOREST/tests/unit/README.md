@@ -19,7 +19,7 @@ Unit workspace within `GEO-INFER-FOREST`.
 
 - Module: `GEO-INFER-FOREST`
 - Package: `geo_infer_forest`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-forest`
 - Tests: `uv run python -m pytest GEO-INFER-FOREST/tests/unit`
 

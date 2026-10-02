@@ -14,7 +14,7 @@ Integration workspace within `GEO-INFER-BIO`.
 
 - Module: `GEO-INFER-BIO`
 - Package: `geo_infer_bio`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-bio`
 - Tests: `uv run python -m pytest GEO-INFER-BIO/tests/integration`
 

@@ -16,7 +16,7 @@ Unit workspace within `GEO-INFER-AG`.
 
 - Module: `GEO-INFER-AG`
 - Package: `geo_infer_ag`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-ag`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module AG`
 

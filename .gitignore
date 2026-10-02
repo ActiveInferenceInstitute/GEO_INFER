@@ -78,10 +78,11 @@ GEO-INFER-NORMS/tests/test-outputs/
 GEO-INFER-*/src/**/config/__pycache__/
 GEO-INFER-*/src/**/config/**/*.pyc
 
-# Runtime logs and machine-specific generated config never ship. The ACT
-# audit evidence bundle and the INTRA realms probe receipts are curated
-# exceptions referenced by docs.
+# Runtime logs and machine-specific generated config never ship.
+# INTRA realms probe receipts are curated exceptions referenced by docs.
 *.log
-!GEO-INFER-ACT/examples/output/comprehensive_act_audit/**/*.log
 !GEO-INFER-INTRA/docs/realms/outputs/**/*.log
 GEO-INFER-PLACE/locations/cascadia/config/data_cleanup_config.json
+
+# Regenerate ACT audit artifacts with verify_comprehensive.py; never track output.
+/GEO-INFER-ACT/examples/output/

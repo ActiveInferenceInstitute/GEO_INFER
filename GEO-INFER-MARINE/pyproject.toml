@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-marine"
-version = "0.3.0"
+version = "0.4.0"
 description = "Marine and oceanographic analysis, coastal management, and marine ecosystem monitoring"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"

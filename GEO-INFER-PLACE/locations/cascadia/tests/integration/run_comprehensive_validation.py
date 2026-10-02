@@ -3,35 +3,23 @@
 
 from __future__ import annotations
 
-import importlib.util
 import logging
-import sys
 import tempfile
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from types import ModuleType
 
 CASCADIA_ROOT = Path(__file__).resolve().parents[2]
-CASCADIA_SRC = CASCADIA_ROOT / "src"
-
-# Run directly, this script's directory is tests/integration; the Cascadia
-# location's own ``src`` package (not a workspace member) lives at CASCADIA_ROOT.
-if str(CASCADIA_ROOT) not in sys.path:
-    sys.path.insert(0, str(CASCADIA_ROOT))
 
 logger = logging.getLogger(__name__)
 Check = tuple[str, Callable[[], None]]
 
 
 def _load_cascadia_main() -> ModuleType:
-    """Import the tracked entry point without changing the process CWD."""
-    module_path = CASCADIA_ROOT / "cascadia_main.py"
-    spec = importlib.util.spec_from_file_location("cascadia_validation_main", module_path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"cannot load Cascadia entry point: {module_path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    """Import the installed PLACE-owned application without changing CWD."""
+    from geo_infer_place.locations.cascadia import cli
+
+    return cli
 
 
 def check_main_script_contract() -> None:
@@ -46,7 +34,9 @@ def check_main_script_contract() -> None:
         "load_analysis_config",
         "main",
     )
-    missing = [name for name in required_functions if not callable(getattr(module, name, None))]
+    missing = [
+        name for name in required_functions if not callable(getattr(module, name, None))
+    ]
     assert not missing, f"missing Cascadia entry-point functions: {missing}"
     assert Path.cwd() == entry_cwd, "importing cascadia_main changed the process CWD"
 
@@ -65,10 +55,15 @@ def check_configuration_contract() -> None:
 
 def check_module_structure() -> None:
     """Verify each configured core data module has an importable source package."""
+    from geo_infer_place.locations import cascadia
+
+    package_root = Path(cascadia.__file__).resolve().parent
     for module_name in ("zoning", "current_use", "ownership", "improvements"):
-        module_dir = CASCADIA_SRC / "data_modules" / module_name
+        module_dir = package_root / "data_modules" / module_name
         expected = module_dir / f"geo_infer_{module_name}.py"
-        assert (module_dir / "__init__.py").is_file(), f"missing package initializer: {module_dir}"
+        assert (module_dir / "__init__.py").is_file(), (
+            f"missing package initializer: {module_dir}"
+        )
         assert expected.is_file(), f"missing module implementation: {expected}"
 
 
@@ -115,12 +110,18 @@ def check_backend_initialization() -> None:
 
 def check_data_module_initialization() -> None:
     """Instantiate the four core data modules against the production backend."""
-    from src.data_modules.current_use.geo_infer_current_use import GeoInferCurrentUse
-    from src.data_modules.improvements.geo_infer_improvements import (
+    from geo_infer_place.locations.cascadia.data_modules.current_use.geo_infer_current_use import (
+        GeoInferCurrentUse,
+    )
+    from geo_infer_place.locations.cascadia.data_modules.improvements.geo_infer_improvements import (
         GeoInferImprovements,
     )
-    from src.data_modules.ownership.geo_infer_ownership import GeoInferOwnership
-    from src.data_modules.zoning.geo_infer_zoning import GeoInferZoning
+    from geo_infer_place.locations.cascadia.data_modules.ownership.geo_infer_ownership import (
+        GeoInferOwnership,
+    )
+    from geo_infer_place.locations.cascadia.data_modules.zoning.geo_infer_zoning import (
+        GeoInferZoning,
+    )
 
     module_classes = (
         GeoInferCurrentUse,

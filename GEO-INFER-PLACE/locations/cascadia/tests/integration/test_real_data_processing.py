@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 def test_config_loading_is_cwd_independent(tmp_path, monkeypatch):
     """Load an explicit Cascadia config from an unrelated working directory."""
-    import importlib.util
 
     config_path = tmp_path / "analysis_config.yaml"
     expected_config = {
@@ -33,15 +32,11 @@ def test_config_loading_is_cwd_independent(tmp_path, monkeypatch):
     config_path.write_text(yaml.safe_dump(expected_config), encoding="utf-8")
     monkeypatch.chdir(tmp_path)
 
-    spec = importlib.util.spec_from_file_location(
-        "cascadia_main_config_test",
-        Path(__file__).resolve().parents[2] / "cascadia_main.py",
+    from geo_infer_place.locations.cascadia.core.setup_manager import (
+        load_analysis_config,
     )
-    assert spec is not None and spec.loader is not None
-    cascadia_main = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(cascadia_main)
 
-    assert cascadia_main.load_analysis_config(config_path) == expected_config
+    assert load_analysis_config(config_path) == expected_config
     assert Path.cwd() == tmp_path
 
 
@@ -51,7 +46,9 @@ def test_canonical_validation_profile_passes():
 
     # Sibling script (tests/integration is not a package): load it by path.
     script = Path(__file__).with_name("run_comprehensive_validation.py")
-    spec = importlib.util.spec_from_file_location("run_comprehensive_validation", script)
+    spec = importlib.util.spec_from_file_location(
+        "run_comprehensive_validation", script
+    )
     assert spec is not None and spec.loader is not None
     run_comprehensive_validation = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(run_comprehensive_validation)

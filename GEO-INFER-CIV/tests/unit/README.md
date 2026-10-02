@@ -19,7 +19,7 @@ Unit workspace within `GEO-INFER-CIV`.
 
 - Module: `GEO-INFER-CIV`
 - Package: `geo_infer_civ`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-civ`
 - Tests: `uv run python -m pytest GEO-INFER-CIV/tests/unit`
 

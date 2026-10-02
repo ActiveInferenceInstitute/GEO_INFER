@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-climate"
-version = "0.3.0"
+version = "0.4.0"
 description = "Climate modeling, weather analysis, and climate change impact assessment for geospatial systems"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"

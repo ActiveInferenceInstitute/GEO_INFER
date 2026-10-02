@@ -19,7 +19,7 @@ Advanced simulation environments for geospatial hypothesis testing, policy evalu
 
 - Module: `GEO-INFER-SIM`
 - Package: `geo_infer_sim`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-sim`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module SIM`
 

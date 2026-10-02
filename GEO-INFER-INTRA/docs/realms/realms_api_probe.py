@@ -26,18 +26,6 @@ import argparse
 import sys
 import os
 
-# Create timestamped output directory
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-output_dir = os.path.join("outputs", f"test_run_{timestamp}")
-os.makedirs(output_dir, exist_ok=True)
-
-# Configure logging to write to timestamped directory
-log_file = os.path.join(output_dir, "test_execution.log")
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler(log_file), logging.StreamHandler(sys.stdout)],
-)
 logger = logging.getLogger(__name__)
 
 
@@ -605,6 +593,18 @@ def main():
     )
 
     args = parser.parse_args()
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir = os.path.join("outputs", f"test_run_{timestamp}")
+    os.makedirs(output_dir, exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler(os.path.join(output_dir, "test_execution.log")),
+            logging.StreamHandler(sys.stdout),
+        ],
+    )
 
     # Initialize tester
     tester = RealmsAPITester(

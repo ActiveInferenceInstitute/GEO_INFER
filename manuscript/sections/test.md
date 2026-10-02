@@ -4,6 +4,6 @@ GEO-INFER-TEST is the unified testing framework for quality assurance across all
 
 The public interface, verified from `__init__.py`, exports twenty-two symbols. Execution: `GeoInferTestRunner`, `TestConfiguration`, `TestOutcome`, `run_full_system_test`, and `LocalService`.
 
-The test census counts 41 test files with 72 test classes and 405 test functions — the framework eating its own cooking with the repository's second-largest suite.
+The test census counts 46 test files. Shared execution, selection, and receipt handling preserve module isolation while accounting for collected and executed tests. Missing or malformed JUnit reports, empty aggregate lanes, and incomplete execution fail the gate; assertion failures are not automatically retried.
 
 Under the root README's Module Themes, TEST anchors Infrastructure & Validation with INTRA, LOG, GIT, EXAMPLES, and BIO. Its role is the evidence engine: the manuscript's reproducibility section cites its validator fleet, and every module section's claims ultimately trace to gates TEST defines and enforces.

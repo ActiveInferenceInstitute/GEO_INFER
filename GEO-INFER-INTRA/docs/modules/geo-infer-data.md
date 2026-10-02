@@ -1,131 +1,63 @@
 # GEO-INFER-DATA: Data Management Engine
 
-> **Illustrative example notice.** This page contains historical or
-> conceptual integration sketches. Names such as `SpatialAnalyzer` and
-> domain-specific facade classes are not public GEO-INFER exports in the
-> current checkout; verify imports against each module's `src/` package
-> and use the module README/tests for executable examples.
+`GEO-INFER-DATA` owns the `geo_infer_data` package under `GEO-INFER-DATA/src/`.
+GEO-INFER-DATA: Geospatial Data Management, ETL, and Storage Optimization
 
-> **Explanation**: Understanding Data Management in GEO-INFER
->
-> This module provides data management capabilities for geospatial data, including ingestion, storage, validation, and processing pipelines.
+## Public import surface
 
-## 🎯 What is GEO-INFER-DATA?
-Note: Code examples are illustrative; see `GEO-INFER-DATA/examples` for runnable scripts.
+These names are exported by the current owning package:
 
-### Links
-- Module README: [Module README](../../../GEO-INFER-DATA/README.md) - Modules Overview: ../modules/index.md GEO-INFER-DATA is the data management engine that provides data handling capabilities for geospatial information. It enables:
+- `geo_infer_data.MultiSourceDataIngestion`
+- `geo_infer_data.IntelligentETLPipeline`
+- `geo_infer_data.AdaptiveDataStorage`
+- `geo_infer_data.DataQualityManager`
+- `geo_infer_data.Dataset`
+- `geo_infer_data.DatasetMetadata`
+- `geo_infer_data.DataQualityReport`
+- `geo_infer_data.initialize_data_system`
 
-- **Multi-format Data Support**: Handle various geospatial data formats with validation - **Data Validation**: Quality control and data integrity checks with diagnostics - **ETL Pipelines**: Extract, transform, and load data workflows with parallel processing - **Data Versioning**: Track data lineage and changes with semantic versioning - **Storage Management**: Efficient data storage and retrieval with compression and indexing - **Real-time Data Streaming**: Real-time data processing and streaming capabilities - **Data Governance**: Data governance and compliance framework - **Analytics**: Data analytics and machine learning integration
+The small example below verifies the installed import contract. It does not infer
+scientific validity or service availability from successful imports; the owning
+regression tests exercise behavior with concrete inputs.
 
-### Key Concepts
-
-#### Data Formats
-The module supports multiple geospatial data formats with validation:
-
-```
-python from geo_infer_data import DataManager # Initialize data manager with features data_manager = DataManager( supported_formats=['geojson', 'shapefile', 'geotiff', 'netcdf', 'parquet', 'hdf5'], validation_enabled=True, compression_enabled=True, parallel_processing=True ) # Load different data formats with validation geojson_data = data_manager.load_data( 'sensors.geojson', validation_config={ 'geometry_validation': True, 'attribute_validation': True, 'coordinate_system_validation': True } ) shapefile_data = data_manager.load_data( 'boundaries.shp', validation_config={ 'topology_validation': True, 'attribute_completeness': True } ) raster_data = data_manager.load_data( 'elevation.tif', validation_config={ 'raster_validation': True, 'metadata_validation': True } ) # Export to different formats with optimization data_manager.export_data( data=processed_data, format='geojson', optimization_config={ 'compression': True, 'spatial_indexing': True, 'metadata_enrichment': True } )
-```
- #### Data Validation Data quality control with diagnostics:
-```
-python from geo_infer_data import initialize_data_system # Set up ingestion, storage, ETL pipeline and quality manager in one call system = initialize_data_system(enable_validation=True) quality_manager = system['quality_manager'] # Quality checks produce DataQualityReport results; rules and diagnostics live in # src/geo_infer_data/core/validation.py (ValidationLevel, ValidationRule, GeospatialValidator)
-```
- ## 📚 Core Features ### 1. Data Ingestion **Purpose**: Load and process data from various sources and formats with validation.
 ```python
- from geo_infer_data.ingestion import DataIngestion # Initialize data ingestion with features ingestion = DataIngestion( supported_sources=['file', 'database', 'api', 'cloud', 'stream'], parallel_processing=True, validation_enabled=True ) # Load from file system with validation file_data = ingestion.load_from_file( file_path='data/sensors.geojson', format='geojson', encoding='utf-8', validation_config={ 'schema_validation': True, 'data_quality_check': True, 'spatial_validation': True } ) # Load from database with optimization db_data = ingestion.load_from_database( connection_string='postgresql://user:pass@localhost/geo_db', query='SELECT * FROM environmental_sensors', optimization_config={ 'query_optimization': True, 'index_utilization': True, 'parallel_loading': True } ) # Load from API with authentication api_data = ingestion.load_from_api( endpoint='https://api.example.com/sensors', authentication={'api_key': 'your_key'}, format='json', rate_limiting=True, retry_mechanism=True ) # Load from cloud storage with streaming cloud_data = ingestion.load_from_cloud( provider='aws_s3', bucket='geo-data-bucket', key='sensors/2023/sensors.geojson', streaming_config={ 'chunk_size': 1000, 'parallel_download': True, 'caching': True } ) # Load from real-time streams stream_data = ingestion.load_from_stream( stream_config={ 'stream_type': 'kafka', 'topics': ['sensor_data', 'environmental_data'], 'processing_config': { 'real_time_processing': True, 'window_size': 300, 'aggregation': True } } )
+import geo_infer_data
+from geo_infer_data import MultiSourceDataIngestion, IntelligentETLPipeline, AdaptiveDataStorage, DataQualityManager
+assert all(value is not None for value in (MultiSourceDataIngestion, IntelligentETLPipeline, AdaptiveDataStorage, DataQualityManager,))
+assert geo_infer_data.__version__ == "0.4.0"
 ```
- ### 2. Data Processing **Purpose**: Process and transform data with ETL capabilities.
-```python
- from geo_infer_data.processing import DataProcessingEngine # Initialize data processing engine with features processing_engine = DataProcessingEngine( processing_types=['etl', 'streaming', 'batch', 'real_time'], parallel_processing=True, memory_optimization=True ) # Configure processing parameters processing_config = processing_engine.configure_processing({ 'extraction': { 'parallel_extraction': True, 'incremental_loading': True, 'data_validation': True }, 'transformation': { 'data_cleaning': True, 'format_conversion': True, 'spatial_transformation': True, 'temporal_processing': True }, 'loading': { 'optimized_loading': True, 'indexing': True, 'compression': True } }) # Perform ETL processing etl_result = processing_engine.perform_etl_processing( source_data=raw_data, processing_config=processing_config, transformation_rules={ 'data_cleaning': cleaning_rules, 'format_conversion': conversion_rules, 'spatial_processing': spatial_rules, 'temporal_processing': temporal_rules } ) # Perform real-time data processing streaming_result = processing_engine.process_real_time_data( data_stream=real_time_stream, processing_config={ 'window_processing': True, 'aggregation': True, 'anomaly_detection': True, 'quality_monitoring': True } ) # Perform batch data processing batch_result = processing_engine.process_batch_data( batch_data=large_dataset, processing_config={ 'parallel_processing': True, 'memory_optimization': True, 'chunked_processing': True } )
-```
- ### 3. Data Storage **Purpose**: Efficient data storage and retrieval with optimization and indexing.
-```python
-python from geo_infer_data import initialize_data_system # Adaptive storage across local-file, PostgreSQL/PostGIS, MinIO/S3 and Redis backends system = initialize_data_system(storage_backends=['local']) storage = system['storage'] # see src/geo_infer_data/core/storage.py for StorageConfig, OptimizationStrategy and IndexingStrategy
-```
- ### 4. Data Validation **Purpose**: data quality control and validation with diagnostics.
-```
-python from geo_infer_data import initialize_data_system # Data quality control with diagnostics quality_manager = initialize_data_system(enable_validation=True)['quality_manager'] # Validation rules, levels and diagnostics live in src/geo_infer_data/core/validation.py # (ValidationLevel, ValidationRule, ValidationConfig, GeospatialValidator, DataQualityManager)
-```
- ### 5. Data Lineage and Provenance **Purpose**: Track dataset provenance and transformation history. A standalone versioning engine is not part of the current public API; lineage and provenance are modeled by `geo_infer_data.models.schemas.DataLineage` and carried on `DatasetMetadata`:
-```
-python from geo_infer_data import Dataset, DatasetMetadata from geo_infer_data.models.schemas import DataLineage # Dataset metadata carries provenance, spatial/temporal extent and quality status # see src/geo_infer_data/models/schemas.py for the full model surface
-```
- ### 6. Real-time Data Streaming **Purpose**: Process real-time data streams with analytics.
-```
-python from geo_infer_data.streaming import RealTimeDataStreaming # Initialize real-time data streaming streaming_engine = RealTimeDataStreaming( streaming_platforms=['kafka', 'spark', 'flink'], real_time_processing=True, analytics_enabled=True ) # Configure streaming parameters streaming_config = streaming_engine.configure_streaming({ 'stream_platform': 'kafka', 'processing_type': 'real_time', 'analytics_enabled': True, 'quality_monitoring': True }) # Process real-time data streams streaming_result = streaming_engine.process_streams( data_streams=real_time_streams, processing_config={ 'window_processing': True, 'aggregation': True, 'anomaly_detection': True, 'quality_monitoring': True } ) # Generate real-time analytics real_time_analytics = streaming_engine.generate_real_time_analytics( streaming_data=streaming_result, analytics_config={ 'trend_analysis': True, 'pattern_detection': True, 'predictive_analytics': True } )
-```
- ### 7. Data Governance **Purpose**: data governance and compliance framework.
-```
-python from geo_infer_data.governance import DataGovernanceEngine # Initialize data governance engine governance_engine = DataGovernanceEngine( governance_framework='comprehensive', compliance_enabled=True, security_enabled=True ) # Configure governance parameters governance_config = governance_engine.configure_governance({ 'data_classification': True, 'access_control': True, 'privacy_protection': True, 'compliance_monitoring': True, 'audit_trail': True }) # Implement data governance governance_result = governance_engine.implement_governance( data=dataset, governance_config=governance_config, compliance_config={ 'gdpr_compliance': True, 'data_protection': True, 'access_control': True } ) # Monitor compliance compliance_monitoring = governance_engine.monitor_compliance( data=dataset, compliance_standards=['gdpr', 'iso27001', 'sox'], monitoring_config={ 'continuous_monitoring': True, 'audit_reporting': True, 'violation_detection': True } )
-```
- ## 🔧 API Reference ### DataManager The core data manager class.
-```
-python class DataManager: def __init__(self, supported_formats, validation_enabled=True): """ Initialize data manager. Args: supported_formats (list): Supported data formats validation_enabled (bool): Enable data validation """ def load_data(self, source, format, validation_config=None): """Load data from various sources with validation.""" def export_data(self, data, format, optimization_config=None): """Export data to various formats with optimization.""" def process_data(self, data, processing_config): """Process data with ETL capabilities.""" def validate_data(self, data, validation_config): """Validate data with quality checks."""
-```
- ### DataValidator data validation capabilities.
-```
-python class DataValidator: def __init__(self, validation_levels, diagnostics_enabled=True): """ Initialize data validator. Args: validation_levels (list): Validation levels diagnostics_enabled (bool): Enable diagnostics """ def validate_spatial_data(self, data, checks, diagnostics_config): """Validate spatial data with checks.""" def validate_temporal_data(self, data, checks, diagnostics_config): """Validate temporal data with checks.""" def generate_validation_report(self, validation_results, report_config): """Generate validation report."""
-```
- ### DataProcessingEngine data processing capabilities.
-```
-python class DataProcessingEngine: def __init__(self, processing_types, parallel_processing=True): """ Initialize data processing engine. Args: processing_types (list): Processing types parallel_processing (bool): Enable parallel processing """ def perform_etl_processing(self, source_data, processing_config, transformation_rules): """Perform ETL processing.""" def process_real_time_data(self, data_stream, processing_config): """Process real-time data streams.""" def process_batch_data(self, batch_data, processing_config): """Process batch data with optimization."""
-```
- ## 🎯 Use Cases ### 1. Environmental Data Management **Problem**: Manage environmental data from multiple sources. **Solution**: Use data management for environmental data processing.
-```
-python from geo_infer_data import initialize_data_system # Initialize data management tools system = initialize_data_system(enable_validation=True) data_manager = system['ingestion'] quality_manager = system['quality_manager'] # Configure environmental data management with the ingestion + quality components; # see src/geo_infer_data/core/ingestion.py for MultiSourceDataIngestion options
-```
- ### 2. City Data Integration **Problem**: Integrate diverse data sources for city applications. **Solution**: Use data management for city data integration.
-```
-python from geo_infer_data.processing import DataProcessingEngine from geo_infer_data.streaming import RealTimeDataStreaming # Initialize data processing tools processing_engine = DataProcessingEngine(processing_types=['etl', 'streaming']) streaming_engine = RealTimeDataStreaming(streaming_platforms=['kafka']) # Configure city data integration smart_city_config = processing_engine.configure_smart_city_integration({ 'data_sources': ['traffic', 'environmental', 'utilities', 'security'], 'integration_strategy': 'real_time', 'quality_monitoring': True, 'analytics_enabled': True }) # Integrate city data smart_city_integration = processing_engine.integrate_smart_city_data( data_sources=smart_city_sources, integration_config={ 'real_time_integration': True, 'quality_monitoring': True, 'analytics_enabled': True } ) # Process real-time city streams smart_city_streams = streaming_engine.process_smart_city_streams( data_streams=smart_city_data_streams, processing_config={ 'real_time_processing': True, 'quality_monitoring': True, 'analytics_generation': True } )
-```
- ### 3. Scientific Data Management **Problem**: Manage complex scientific data with validation. **Solution**: Use data management for scientific data processing.
-```
-python from geo_infer_data import initialize_data_system from geo_infer_data.models.schemas import DataLineage # Initialize scientific data management tools system = initialize_data_system(enable_validation=True) quality_manager = system['quality_manager'] # Record provenance with DataLineage and DatasetMetadata (no versioning engine in the current public API)
-```
- ## 🔗 Integration with Other Modules ### GEO-INFER-SPACE Integration
-```
-python from geo_infer_data import DataManager from geo_infer_space import SpatialAnalyzer # Combine data management with spatial analysis data_manager = DataManager(supported_formats=['geojson', 'shapefile']) spatial_analyzer = SpatialAnalyzer() # Use spatial analysis for data validation spatial_validation = spatial_analyzer.validate_spatial_data( data=spatial_dataset, validation_config={ 'geometry_validation': True, 'spatial_consistency': True } ) # Process spatial data with data management processed_spatial_data = data_manager.process_spatial_data( data=spatial_dataset, processing_config={ 'spatial_optimization': True, 'format_standardization': True } )
-```
- ### GEO-INFER-TIME Integration
-```
-python from geo_infer_data.processing import DataProcessingEngine from geo_infer_time import TemporalAnalyzer # Combine data processing with temporal analysis processing_engine = DataProcessingEngine(processing_types=['etl', 'streaming']) temporal_analyzer = TemporalAnalyzer() # Use temporal analysis for data processing temporal_validation = temporal_analyzer.validate_temporal_data( data=temporal_dataset, validation_config={ 'temporal_consistency': True, 'temporal_gaps': True } ) # Process temporal data with data management processed_temporal_data = processing_engine.process_temporal_data( data=temporal_dataset, processing_config={ 'temporal_processing': True, 'quality_improvement': True } )
-```
- ### GEO-INFER-ACT Integration
-```
-python from geo_infer_data import DataManager from geo_infer_act import ActiveInferenceModel # Combine data management with active inference data_manager = DataManager(supported_formats=['geojson', 'csv']) active_model = ActiveInferenceModel( state_space=['data_quality', 'processing_state'], observation_space=['data_observation'] ) # Use active inference for data management decisions data_quality_state = data_manager.assess_data_quality(dataset) active_model.update_beliefs({ 'data_quality': data_quality_state, 'processing_state': current_processing_state }) # Make data management decisions using active inference data_decisions = active_model.make_data_management_decisions( context=current_data_context, available_actions=['validate', 'process', 'store', 'archive'] )
-```
- ## 🚨 Troubleshooting ### Common Issues **Data loading problems:**
-```
-python # Diagnose data loading issues loading_diagnostics = data_manager.diagnose_loading_issues( source=data_source, diagnostics=['format_compatibility', 'encoding_issues', 'validation_errors'] ) # Implement loading robust_loading = data_manager.implement_robust_loading( source=data_source, fallback_strategies=['alternative_format', 'partial_loading', 'error_recovery'] ) # Optimize loading performance optimized_loading = data_manager.optimize_loading_performance( source=data_source, optimization_config={ 'parallel_loading': True, 'caching': True, 'streaming': True } )
-```
- **Data validation issues:**
-```
-python # Implement validation comprehensive_validation = advanced_validator.implement_comprehensive_validation( data=dataset, validation_config={ 'multi_level_validation': True, 'auto_correction': True, 'quality_assessment': True } ) # Generate validation recommendations validation_recommendations = advanced_validator.generate_validation_recommendations( validation_results=validation_results, recommendation_config={ 'issue_prioritization': True, 'remediation_suggestions': True, 'quality_improvement': True } )
-```
- **Processing performance issues:**
-```
-python # Optimize processing performance processing_optimization = processing_engine.optimize_processing_performance( processing_config={ 'parallel_processing': True, 'memory_optimization': True, 'streaming_optimization': True } ) # Implement distributed processing distributed_processing = processing_engine.implement_distributed_processing( cluster_config={ 'worker_nodes': 4, 'load_balancing': True, 'fault_tolerance': True } )
-```
- ## 📊 Performance Optimization ### Efficient Data Processing
-```
-python # Enable parallel data processing data_manager.enable_parallel_processing(n_workers=8) # Enable data caching data_manager.enable_data_caching( cache_size=10000, cache_ttl=1800 ) # Enable adaptive data processing data_manager.enable_adaptive_data_processing( adaptation_rate=0.1, adaptation_threshold=0.05 )
-```
- ### Optimization
-```
-python # Enable distributed data processing processing_engine.enable_distributed_processing( cluster_size=4, load_balancing=True ) # Enable data intelligence data_manager.enable_data_intelligence( intelligence_sources=['data_patterns', 'usage_analytics', 'quality_metrics'], update_frequency='real_time' )
-```
- ## 🔒 Security Considerations ### Data Security
-```
-python # Enable data encryption data_manager.enable_data_encryption( encryption_method='aes256', key_rotation=True ) # Enable data access control data_manager.enable_data_access_control( authentication='certificate_based', authorization='role_based', audit_logging=True )
-```
- ## 🔗 Related Documentation ### Tutorials - **[Data Management Basics](../getting_started/index.md)** - Learn data management fundamentals - **[Data Validation Tutorial](../getting_started/index.md)** - Master data validation techniques - **[ETL Processing Tutorial](../getting_started/index.md)** - Build ETL data pipelines ### How-to Guides - **[Environmental Data Management](../examples_gallery.md)** - Manage environmental data - **[City Data Integration](../examples_gallery.md)** - Integrate city data - **[Scientific Data Management](../examples_gallery.md)** - Manage scientific data ### Technical Reference - **[Data Management API Reference](../api/reference.md)** - data management API documentation - **[Data Validation Methods](../api/reference.md)** - Available data validation methods - **[ETL Processing Patterns](../api/reference.md)** - ETL processing patterns and best practices ### Explanations - **Data Management Theory** - Deep dive into data management concepts - **Data Validation Theory** - Understanding data validation - **ETL Processing Theory** - ETL processing foundations ### Related Modules - **[GEO-INFER-SPACE](../modules/geo-infer-space.md)** - Spatial analysis capabilities - **[GEO-INFER-TIME](../modules/geo-infer-time.md)** - Temporal analysis capabilities - **[GEO-INFER-ACT](../modules/geo-infer-act.md)** - Active inference capabilities - **[GEO-INFER-SEC](../modules/geo-infer-sec.md)** - Security capabilities --- **Ready to get started?** Check out the **[Data Management Basics Tutorial](../getting_started/index.md)** or explore **[Environmental Data Management Examples](../examples_gallery.md)**!
 
-## 🗺️ Interactive Spatial Preview
+Run examples in the shared, locked workspace environment. Constructor inputs,
+optional backends, and result shapes belong to the referenced source and tests.
+Cross-module callers should pass explicit spatial state ordering and timezone-aware
+instants when those fields are part of their data contract.
 
-Pre-rendered spatial snapshot for **GEO-INFER-DATA** (*Data Management Engine*). Reproducible preview cards are generated by `geo_infer_intra.core.documentation.visual_preview`.
+## Verification
 
-| Preview | Widget |
-| --- | --- |
-| ![GEO-INFER-DATA Leaflet Preview](previews/geo-infer-data_preview.svg) | [Interactive map](previews/geo-infer-data_preview.html) · [PNG](previews/geo-infer-data_preview.png) |
+From the repository root:
 
-> **Reproducible contract:** each map ships as `geo-infer-data_preview.html`, `geo-infer-data_preview.svg`, `geo-infer-data_preview.png`, and `geo-infer-data_preview.manifest.json` beneath `previews/`. The receipt records geometry provenance and artifact SHA-256 hashes. Values are illustrative, not observations.
+```bash
+uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --module DATA --timeout 600 --workers 2
+```
+
+The module command includes its owned test files and registered nested test roots.
+The fleet's separate unit and slow categories cover complementary marker selections;
+release CI requires unit, slow, integration, performance, system, and H3 lanes on
+Python 3.11 and 3.12. Results include immutable attempt receipts under
+`.geo-infer-test-results/runs/`, with logs, current JUnit, selection inventories,
+interpreter and source custody. A missing optional dependency must be addressed by
+the declared package extra rather than by omitting its tests.
+
+## Source and examples
+
+- [Owning package](../../../GEO-INFER-DATA/src/geo_infer_data/README.md)
+- [Module inventory and dependencies](../../../GEO-INFER-DATA/README.md)
+- [Module operating contract](../../../GEO-INFER-DATA/AGENTS.md)
+- [Regression: test_end_to_end.py](../../../GEO-INFER-DATA/tests/integration/test_end_to_end.py)
+- [Regression: test_pipeline_integration.py](../../../GEO-INFER-DATA/tests/integration/test_pipeline_integration.py)
+- [Regression: test_benchmarks.py](../../../GEO-INFER-DATA/tests/performance/test_benchmarks.py)
+- [Example source: api_example.py](../../../GEO-INFER-DATA/examples/api_example.py)
+- [Example source: basic_ingestion_example.py](../../../GEO-INFER-DATA/examples/basic_ingestion_example.py)
+
+See the [cross-module integration guide](../../../GEO-INFER-EXAMPLES/docs/INTEGRATION_GUIDE.md)
+for actual DATA, SPACE, TIME, BAYES, and ACT composition checks.

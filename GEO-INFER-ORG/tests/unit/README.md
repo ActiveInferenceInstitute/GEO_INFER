@@ -19,7 +19,7 @@ Unit workspace within `GEO-INFER-ORG`.
 
 - Module: `GEO-INFER-ORG`
 - Package: `geo_infer_org`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-org`
 - Tests: `uv run python -m pytest GEO-INFER-ORG/tests/unit`
 

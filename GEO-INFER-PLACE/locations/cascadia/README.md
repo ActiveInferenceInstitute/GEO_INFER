@@ -15,29 +15,11 @@ Cascadia workspace within `GEO-INFER-PLACE`.
 - `cascadia_server.py`
 - `cleanup_data.py`
 - `.gitignore`
-- `.python-version`
 - `DATA_STRUCTURE.md`
-- `pyproject.toml`
-- `requirements.txt`
 - `run_analysis.sh`
-- `uv.lock`
 
 ## Public Interface
 
-- `cascadia_main.py:parse_counties` (function)
-- `cascadia_main.py:initialize_analysis` (function)
-- `cascadia_main.py:initialize_modules_with_enhanced_data_management` (function)
-- `cascadia_main.py:generate_reports` (function)
-- `cascadia_main.py:parse_arguments` (function)
-- `cascadia_main.py:main` (function)
-- `cascadia_main.py:run_comprehensive_analysis_with_enhanced_data` (function)
-- `cascadia_main.py:calculate_enhanced_redevelopment_score` (function)
-- `cascadia_main.py:export_results_with_visualizations` (function)
-- `cascadia_main.py:print_analysis_summary` (function)
-- `cascadia_server.py:create_app` (function)
-- `cascadia_server.py:run_stdlib_server` (function)
-- `cascadia_server.py:parse_args` (function)
-- `cascadia_server.py:main` (function)
 - `cleanup_data.py:setup_logging` (function)
 - `cleanup_data.py:cleanup_old_logs` (function)
 - `cleanup_data.py:cleanup_pycache` (function)
@@ -47,7 +29,7 @@ Cascadia workspace within `GEO-INFER-PLACE`.
 
 - Module: `GEO-INFER-PLACE`
 - Package: `geo_infer_place`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-place`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module PLACE`
 
@@ -66,7 +48,8 @@ Cascadia workspace within `GEO-INFER-PLACE`.
 - `matplotlib>=3.5.0`
 - `branca>=0.6.0`
 - `requests>=2.28.0`
-- `geo-infer-space`
+- `geo-infer-space>=0.4.0`
+- `geo-infer-time>=0.4.0`
 
 
 ## Validation

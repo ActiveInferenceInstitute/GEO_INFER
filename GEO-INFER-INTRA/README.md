@@ -26,7 +26,7 @@ Reproducible documentation previews and configuration utilities for the GEO-INFE
 
 - Module: `GEO-INFER-INTRA`
 - Package: `geo_infer_intra`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-intra`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module INTRA`
 

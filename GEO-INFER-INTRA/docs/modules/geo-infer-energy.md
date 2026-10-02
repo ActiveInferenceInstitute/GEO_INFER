@@ -1,494 +1,63 @@
 # GEO-INFER-ENERGY: Energy Systems Module
-> **Illustrative example notice.** This page contains historical or
-> conceptual integration sketches. Names such as `SpatialAnalyzer` and
-> domain-specific facade classes are not public GEO-INFER exports in the
-> current checkout; verify imports against each module's `src/` package
-> and use the module README/tests for executable examples.
-> **Purpose**: Energy systems analysis, renewable optimization, and grid management
->
-> This module provides energy analysis capabilities including renewable resource assessment, grid optimization, demand forecasting, and integration with Active Inference principles.
-## Overview
-Note: Code examples are illustrative; see `GEO-INFER-ENERGY/examples` for runnable scripts.
-### Links
-- Module README: [Module README](../../../GEO-INFER-ENERGY/README.md)
-- Modules Overview: ../modules/index.md
-GEO-INFER-ENERGY implements energy analysis for geospatial applications. It provides:
-- **Renewable Assessment**: Solar, wind, hydro, and geothermal potential analysis
-- **Grid Optimization**: Network topology, load balancing, and reliability
-- **Demand Forecasting**: Energy consumption prediction and peak management
-- **Infrastructure Planning**: Facility siting, capacity planning, and transmission
-- **Carbon Analysis**: Emissions tracking, renewable integration, and decarbonization pathways
-### Mathematical Foundations
-#### Solar Resource Assessment
-Solar irradiance modeling:
-```
-G = G₀ * cos(θ) * τ
-```
-Where:
-- `G` is global horizontal irradiance
-- `G₀` is extraterrestrial irradiance
-- `θ` is solar zenith angle
-- `τ` is atmospheric transmittance
-#### Wind Power Estimation
-Wind power density:
-```
-P = ½ρAv³
-```
-Where:
-- `P` is power
-- `ρ` is air density
-- `A` is rotor area
-- `v` is wind speed
-## Core Features
-### 1. Renewable Resource Assessment
-**Purpose**: Assess renewable energy potential across geographic regions.
-```python
-from geo_infer_energy import RenewableAssessor
-# Initialize renewable assessor
-assessor = RenewableAssessor(
-resource_types=['solar', 'wind', 'hydro', 'geothermal'],
-temporal_resolution='hourly',
-spatial_resolution=1000, # meters
-uncertainty_quantification=True
-)
-# Assess solar potential
-solar_potential = assessor.assess_solar(
-location=coordinates,
-panel_efficiency=0.20,
-tracking='single_axis',
-time_period='annual',
-include_shading=True
-)
-# Assess wind potential
-wind_potential = assessor.assess_wind(
-region=study_area,
-hub_height=100, # meters
-turbine_power_curve=power_curve,
-wake_effects=True,
-capacity_factor_threshold=0.25
-)
-# Assess hydropower potential
-hydro_potential = assessor.assess_hydro(
-rivers=stream_network,
-flow_data=discharge_data,
-head_calculation='elevation_difference',
-environmental_flow=0.3 # Minimum ecological flow fraction
-)
-# Multi-resource optimization
-optimal_mix = assessor.optimize_renewable_mix(
-region=planning_area,
-resources=['solar', 'wind', 'storage'],
-constraints={'land_use': exclusion_zones, 'grid': transmission_capacity},
-objectives=['capacity', 'reliability', 'cost']
-)
-```
-### 2. Grid Optimization
-**Purpose**: Optimize electricity grid operations and planning.
-```python
-from geo_infer_energy import GridOptimizer
-# Initialize grid optimizer
-optimizer = GridOptimizer(
-network_model='powerflow',
-optimization_algorithm='interior_point',
-reliability_standards='n_1',
-renewable_integration=True
-)
-# Optimize power flow
-power_flow = optimizer.optimize_power_flow(
-network=transmission_network,
-generation=power_plants,
-demand=load_centers,
-constraints=['thermal_limits', 'voltage_limits', 'contingency']
-)
-# Optimal dispatch
-dispatch = optimizer.optimal_dispatch(
-generators=generation_fleet,
-demand_forecast=load_forecast,
-renewable_forecast=solar_wind_forecast,
-storage=battery_systems,
-objectives=['cost', 'emissions', 'reliability']
-)
-# Optimize pump scheduling
-schedule = optimizer.optimize_pumping(
-network=water_network,
-demand_pattern=daily_demand,
-electricity_tariff=time_of_use_rates,
-constraints=['min_pressure', 'tank_levels']
-)
-# Plan grid expansion
-expansion = optimizer.plan_expansion(
-existing_network=current_grid,
-projected_demand=demand_scenarios,
-renewable_targets=clean_energy_goals,
-horizon_years=20,
-investment_budget=capital_budget
-)
-```
-### 3. Demand Forecasting
-**Purpose**: Forecast energy demand at multiple temporal scales.
-```python
-from geo_infer_energy import DemandForecaster
-# Initialize demand forecaster
-forecaster = DemandForecaster(
-models=['arima', 'neural_network', 'ensemble'],
-temporal_scales=['hourly', 'daily', 'seasonal'],
-weather_integration=True,
-uncertainty_quantification=True
-)
-# Short-term load forecast
-short_term = forecaster.forecast_short_term(
-historical_load=load_history,
-weather_forecast=weather_data,
-horizon_hours=168, # One week
-include_uncertainty=True
-)
-# Peak demand forecast
-peak_forecast = forecaster.forecast_peak(
-historical_peaks=annual_peaks,
-weather_scenarios=extreme_weather,
-economic_indicators=gdp_growth,
-return_periods=[1, 5, 10]
-)
-# Spatial demand distribution
-spatial_demand = forecaster.distribute_demand(
-total_demand=system_load,
-customer_data=metered_accounts,
-land_use=zoning_map,
-method='regression'
-)
-# Demand response modeling
-dr_potential = forecaster.model_demand_response(
-customer_segments=load_profiles,
-response_programs=['time_of_use', 'critical_peak', 'real_time'],
-price_elasticity=elasticity_estimates
-)
-```
-### 4. Infrastructure Planning
-**Purpose**: Plan and optimize energy infrastructure investments.
-```python
-from geo_infer_energy import InfrastructurePlanner
-# Initialize infrastructure planner
-planner = InfrastructurePlanner(
-planning_horizon_years=30,
-discount_rate=0.05,
-technology_learning=True,
-policy_scenarios=True
-)
-# Site renewable facilities
-site_analysis = planner.site_facilities(
-facility_type='wind_farm',
-candidate_sites=potential_locations,
-constraints={
-'environmental': protected_areas,
-'social': setback_distances,
-'technical': grid_connection
-},
-objectives=['capacity_factor', 'lcoe', 'grid_access']
-)
-# Plan transmission expansion
-transmission = planner.plan_transmission(
-generation_scenarios=renewable_build,
-demand_centers=load_growth,
-existing_network=current_lines,
-technologies=['ac_overhead', 'hvdc', 'underground']
-)
-# Evaluate storage needs
-storage_analysis = planner.evaluate_storage(
-renewable_penetration=high_renewable_scenario,
-grid_services=['arbitrage', 'frequency_regulation', 'capacity'],
-technologies=['lithium_ion', 'flow_battery', 'pumped_hydro'],
-duration_hours=[4, 8, 24, 100]
-)
-# Carbon transition pathways
-pathways = planner.model_decarbonization(
-baseline=current_system,
-target_year=2050,
-emissions_targets={'2030': 0.5, '2040': 0.2, '2050': 0.0},
-technologies=available_technologies,
-cost_assumptions=technology_costs
-)
-```
-### 5. Carbon and Emissions Analysis
-**Purpose**: Track and reduce energy-related emissions.
-```python
-from geo_infer_energy import EmissionsAnalyzer
-# Initialize emissions analyzer
-emissions = EmissionsAnalyzer(
-scope=['direct', 'indirect', 'lifecycle'],
-emission_factors='ipcc_2019',
-grid_mix='marginal'
-)
-# Calculate grid emissions
-grid_emissions = emissions.calculate_grid_emissions(
-generation_mix=hourly_generation,
-emission_factors=plant_factors,
-method='average_marginal'
-)
-# Map emissions spatially
-emissions_map = emissions.map_emissions(
-region=study_area,
-sectors=['electricity', 'heating', 'transport'],
-resolution=1000 # meters
-)
-# Track renewable integration
-renewable_impact = emissions.assess_renewable_impact(
-baseline=fossil_system,
-renewable_scenario=high_renewable,
-metrics=['emissions_avoided', 'marginal_rate', 'lifecycle']
-)
-# Model decarbonization scenarios
-scenarios = emissions.model_scenarios(
-baseline_emissions=current_emissions,
-interventions=['electrification', 'efficiency', 'renewables', 'carbon_capture'],
-timeline=np.arange(2024, 2051),
-targets=climate_goals
-)
-```
-## API Reference
-### RenewableAssessor
-Renewable energy resource assessment.
-```python
-class RenewableAssessor:
-def __init__(self, resource_types, temporal_resolution='hourly',
-spatial_resolution=1000, uncertainty_quantification=True):
-"""
-Initialize renewable assessor.
-Args:
-resource_types (list): Resource types ['solar', 'wind', 'hydro', 'geothermal']
-temporal_resolution (str): Temporal resolution
-spatial_resolution (float): Spatial resolution in meters
-uncertainty_quantification (bool): Enable uncertainty quantification
-"""
-def assess_solar(self, location, panel_efficiency, tracking, time_period, include_shading):
-"""Assess solar energy potential."""
-def assess_wind(self, region, hub_height, turbine_power_curve, wake_effects, capacity_factor_threshold):
-"""Assess wind energy potential."""
-def optimize_renewable_mix(self, region, resources, constraints, objectives):
-"""Optimize renewable energy mix for region."""
-```
-### GridOptimizer
-Power grid optimization.
-```python
-class GridOptimizer:
-def __init__(self, network_model='powerflow', optimization_algorithm='interior_point',
-reliability_standards='n_1', renewable_integration=True):
-"""
-Initialize grid optimizer.
-Args:
-network_model (str): Network model type
-optimization_algorithm (str): Optimization algorithm
-reliability_standards (str): Reliability criteria
-renewable_integration (bool): Enable renewable integration
-"""
-def optimize_power_flow(self, network, generation, demand, constraints):
-"""Optimize power flow across network."""
-def optimal_dispatch(self, generators, demand_forecast, renewable_forecast, storage, objectives):
-"""Calculate optimal generation dispatch."""
-```
-### DemandForecaster
-Energy demand forecasting.
-```python
-class DemandForecaster:
-def __init__(self, models, temporal_scales, weather_integration=True,
-uncertainty_quantification=True):
-"""
-Initialize demand forecaster.
-Args:
-models (list): Forecasting models to use
-temporal_scales (list): Temporal scales for forecasting
-weather_integration (bool): Include weather in forecasts
-uncertainty_quantification (bool): Enable uncertainty quantification
-"""
-def forecast_short_term(self, historical_load, weather_forecast, horizon_hours, include_uncertainty):
-"""Generate short-term load forecast."""
-def forecast_peak(self, historical_peaks, weather_scenarios, economic_indicators, return_periods):
-"""Forecast peak demand with uncertainty."""
-```
-## Use Cases
-### 1. Renewable Energy Siting
-**Problem**: Identify optimal locations for utility-scale renewable energy projects.
-```python
-from geo_infer_energy import RenewableAssessor, InfrastructurePlanner
-from geo_infer_space import SpatialAnalyzer
-# Assess renewable resources
-assessor = RenewableAssessor()
-solar_resource = assessor.assess_solar(
-region=planning_area,
-resolution=100,
-annual_statistics=True
-)
-# Apply siting constraints
-spatial = SpatialAnalyzer()
-suitable_areas = spatial.apply_constraints(
-base_layer=solar_resource,
-exclusions=[protected_areas, urban_areas, steep_slopes],
-buffers={'roads': 100, 'power_lines': 50}
-)
-# Rank sites
-planner = InfrastructurePlanner()
-ranked_sites = planner.rank_sites(
-candidate_areas=suitable_areas,
-criteria={
-'resource_quality': solar_resource,
-'grid_distance': transmission_lines,
-'land_cost': parcel_values
-},
-weights={'resource_quality': 0.4, 'grid_distance': 0.35, 'land_cost': 0.25}
-)
-```
-### 2. Grid Integration of Renewables
-**Problem**: Integrate high levels of renewable energy while maintaining reliability.
-```python
-from geo_infer_energy import GridOptimizer, DemandForecaster, RenewableAssessor
-# Forecast renewable generation
-assessor = RenewableAssessor()
-renewable_forecast = assessor.forecast_generation(
-solar_plants=solar_fleet,
-wind_farms=wind_fleet,
-weather_forecast=weather_data,
-horizon_hours=48
-)
-# Forecast demand
-demand_forecaster = DemandForecaster()
-load_forecast = demand_forecaster.forecast_short_term(
-historical_load=load_history,
-weather_forecast=weather_data,
-horizon_hours=48
-)
-# Optimize dispatch with storage
-optimizer = GridOptimizer()
-optimal_dispatch = optimizer.optimal_dispatch(
-generators=dispatchable_fleet,
-demand_forecast=load_forecast,
-renewable_forecast=renewable_forecast,
-storage=battery_storage,
-objectives=['cost', 'emissions', 'curtailment']
-)
-# Analyze reliability
-reliability = optimizer.analyze_reliability(
-dispatch=optimal_dispatch,
-contingencies=n_1_scenarios,
-metrics=['lolp', 'eue', 'reserve_margin']
-)
-```
-### 3. Community Energy Planning
-**Problem**: Develop sustainable energy plans for communities.
-```python
-from geo_infer_energy import RenewableAssessor, DemandForecaster, EmissionsAnalyzer
-from geo_infer_econ import EconomicAnalyzer
-# Baseline energy assessment
-assessor = RenewableAssessor()
-community_resources = assessor.assess_all_resources(
-community_boundary=city_limits,
-resources=['rooftop_solar', 'ground_solar', 'wind']
-)
-# Energy demand analysis
-forecaster = DemandForecaster()
-community_demand = forecaster.analyze_demand(
-customer_data=utility_accounts,
-building_data=building_footprints,
-segmentation=['residential', 'commercial', 'industrial']
-)
-# Emissions baseline
-emissions = EmissionsAnalyzer()
-baseline_emissions = emissions.calculate_community_emissions(
-demand=community_demand,
-current_sources=energy_supply,
-scope=['electricity', 'heating', 'transport']
-)
-# Economic analysis
-econ = EconomicAnalyzer()
-feasibility = econ.evaluate_scenarios(
-scenarios=['business_as_usual', '50_renewable', '100_renewable'],
-costs=technology_costs,
-benefits=['energy_savings', 'emissions_reduction', 'jobs'],
-discount_rate=0.03
-)
-```
-## Integration with Other Modules
-### GEO-INFER-SPACE Integration
-```python
-from geo_infer_energy import RenewableAssessor
-from geo_infer_space import SpatialAnalyzer
-# Combine energy and spatial analysis
-assessor = RenewableAssessor()
-spatial = SpatialAnalyzer()
-# H3-based resource aggregation
-energy_h3 = spatial.aggregate_by_h3(
-data=solar_resource,
-resolution=7,
-metrics=['mean_ghi', 'capacity_factor']
-)
-```
-### GEO-INFER-CLIMATE Integration
-```python
-from geo_infer_energy import RenewableAssessor
-from geo_infer_climate import ClimateProjector
-# Climate impacts on renewable resources
-assessor = RenewableAssessor()
-projector = ClimateProjector()
-# Project future solar resources
-future_solar = assessor.project_resource_change(
-baseline=current_solar_resource,
-climate_projections=projector.project(variables=['cloud_cover', 'temperature']),
-scenarios=['ssp245', 'ssp585']
-)
-```
-## Troubleshooting
-### Common Issues
-**Inaccurate resource assessment:**
-```python
-# Validate with ground measurements
-assessor.validate(
-modeled=solar_assessment,
-observed=pyranometer_data,
-metrics=['mbe', 'rmse', 'correlation']
-)
-# Calibrate model
-calibrated = assessor.calibrate(
-ground_truth=measurement_stations,
-method='bias_correction'
-)
-```
-**Grid optimization convergence:**
-```python
-# Adjust solver settings
-optimizer.set_solver(
-algorithm='interior_point',
-tolerance=1e-6,
-max_iterations=10000
-)
-# Simplify network model
-optimizer.reduce_network(
-method='ward_equivalent',
-retained_buses=critical_buses
-)
-```
-## Performance Optimization
-```python
-# Enable parallel processing
-assessor.enable_parallel_processing(n_workers=8)
-# Use GPU for optimization
-optimizer.enable_gpu_acceleration()
-# Cache resource calculations
-assessor.enable_caching(cache_path='/tmp/energy_cache')
-```
-## Related Documentation
-### Related Modules
-- **[GEO-INFER-SPACE](../modules/geo-infer-space.md)** - Spatial energy resource mapping
-- **[GEO-INFER-TIME](../modules/geo-infer-time.md)** - Temporal demand patterns
-- **[GEO-INFER-ECON](../modules/geo-infer-econ.md)** - Economic analysis
-- **[GEO-INFER-CLIMATE](../modules/geo-infer-climate.md)** - Climate impacts
-- **[GEO-INFER-RISK](../modules/geo-infer-risk.md)** - Energy grid resilience
----
-**Ready to get started?** Check out the **[Renewable Assessment Tutorial](../getting_started/index.md)** or explore **[Grid Optimization Examples](../examples_gallery.md)**!
 
-## 🗺️ Interactive Spatial Preview
+`GEO-INFER-ENERGY` owns the `geo_infer_energy` package under `GEO-INFER-ENERGY/src/`.
+GEO-INFER-ENERGY: Energy Systems Analysis Module.
 
-Pre-rendered spatial snapshot for **GEO-INFER-ENERGY** (*Energy Systems Module*). Reproducible preview cards are generated by `geo_infer_intra.core.documentation.visual_preview`.
+## Public import surface
 
-| Preview | Widget |
-| --- | --- |
-| ![GEO-INFER-ENERGY Leaflet Preview](previews/geo-infer-energy_preview.svg) | [Interactive map](previews/geo-infer-energy_preview.html) · [PNG](previews/geo-infer-energy_preview.png) |
+These names are exported by the current owning package:
 
-> **Reproducible contract:** each map ships as `geo-infer-energy_preview.html`, `geo-infer-energy_preview.svg`, `geo-infer-energy_preview.png`, and `geo-infer-energy_preview.manifest.json` beneath `previews/`. The receipt records geometry provenance and artifact SHA-256 hashes. Values are illustrative, not observations.
+- `geo_infer_energy.RenewableResourceAssessor`
+- `geo_infer_energy.RenewableType`
+- `geo_infer_energy.SuitabilityClass`
+- `geo_infer_energy.RenewableSite`
+- `geo_infer_energy.EnergyGridOptimizer`
+- `geo_infer_energy.EnergyDemandForecaster`
+- `geo_infer_energy.EnergyInfrastructurePlanner`
+- `geo_infer_energy.CarbonFootprintAnalyzer`
+
+The small example below verifies the installed import contract. It does not infer
+scientific validity or service availability from successful imports; the owning
+regression tests exercise behavior with concrete inputs.
+
+```python
+import geo_infer_energy
+from geo_infer_energy import RenewableResourceAssessor, RenewableType, SuitabilityClass, RenewableSite
+assert all(value is not None for value in (RenewableResourceAssessor, RenewableType, SuitabilityClass, RenewableSite,))
+assert geo_infer_energy.__version__ == "0.4.0"
+```
+
+Run examples in the shared, locked workspace environment. Constructor inputs,
+optional backends, and result shapes belong to the referenced source and tests.
+Cross-module callers should pass explicit spatial state ordering and timezone-aware
+instants when those fields are part of their data contract.
+
+## Verification
+
+From the repository root:
+
+```bash
+uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --module ENERGY --timeout 600 --workers 2
+```
+
+The module command includes its owned test files and registered nested test roots.
+The fleet's separate unit and slow categories cover complementary marker selections;
+release CI requires unit, slow, integration, performance, system, and H3 lanes on
+Python 3.11 and 3.12. Results include immutable attempt receipts under
+`.geo-infer-test-results/runs/`, with logs, current JUnit, selection inventories,
+interpreter and source custody. A missing optional dependency must be addressed by
+the declared package extra rather than by omitting its tests.
+
+## Source and examples
+
+- [Owning package](../../../GEO-INFER-ENERGY/src/geo_infer_energy/README.md)
+- [Module inventory and dependencies](../../../GEO-INFER-ENERGY/README.md)
+- [Module operating contract](../../../GEO-INFER-ENERGY/AGENTS.md)
+- [Regression: test_energy_integration.py](../../../GEO-INFER-ENERGY/tests/integration/test_energy_integration.py)
+- [Regression: test_acceptance_energy.py](../../../GEO-INFER-ENERGY/tests/unit/test_acceptance_energy.py)
+- [Regression: test_carbon_footprint.py](../../../GEO-INFER-ENERGY/tests/unit/test_carbon_footprint.py)
+- [Example source: __init__.py](../../../GEO-INFER-ENERGY/examples/__init__.py)
+- [Example source: basic_energy_analysis.py](../../../GEO-INFER-ENERGY/examples/basic_energy_analysis.py)
+
+See the [cross-module integration guide](../../../GEO-INFER-EXAMPLES/docs/INTEGRATION_GUIDE.md)
+for actual DATA, SPACE, TIME, BAYES, and ACT composition checks.

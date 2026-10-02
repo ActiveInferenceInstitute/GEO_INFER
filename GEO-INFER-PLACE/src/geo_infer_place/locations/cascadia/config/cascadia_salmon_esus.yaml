@@ -1,0 +1,182 @@
+# Cascadia Salmon ESU/DPS Data
+# Source: NOAA NMFS Office of Protected Resources
+# Last updated: 2024
+# ESU = Evolutionarily Significant Unit (salmon/steelhead designation)
+# DPS = Distinct Population Segment (for non-salmon species)
+
+metadata:
+  data_source: "NOAA NMFS Office of Protected Resources"
+  federal_register_base_url: "https://www.fisheries.noaa.gov/species/"
+  total_esa_listed_pacific_salmonids: 28
+  endangered_count: 7
+  threatened_count: 21
+
+chinook_salmon:
+  - name: "Snake River Spring/Summer-run Chinook Salmon"
+    esa_status: "Threatened"
+    listed_year: 1992
+    listing_rule: "57 FR 14653"
+    states: ["ID", "OR", "WA"]
+    critical_habitat_designated: true
+    critical_habitat_area_sq_mi: 17000
+    spawning_rivers: ["Salmon River", "Clearwater River", "Grande Ronde River", "Imnaha River"]
+    hatchery_supplementation: true
+    current_return_trend: "declining"
+    historic_run_size: 1500000
+    current_run_size: 25000
+    primary_threats: ["hydropower_dams", "water_temperature", "habitat_loss", "hatchery_impacts"]
+
+  - name: "Snake River Fall-run Chinook Salmon"
+    esa_status: "Threatened"
+    listed_year: 1992
+    states: ["ID", "OR", "WA"]
+    critical_habitat_designated: true
+    primary_threats: ["hydropower_dams", "water_temperature"]
+
+  - name: "Upper Columbia River Spring-run Chinook Salmon"
+    esa_status: "Endangered"
+    listed_year: 1999
+    states: ["WA"]
+    spawning_rivers: ["Wenatchee River", "Entiat River", "Methow River", "Okanagan River"]
+    primary_threats: ["Bonneville Dam", "Grand Coulee Dam", "habitat_loss"]
+
+  - name: "Lower Columbia River Chinook Salmon"
+    esa_status: "Threatened"
+    listed_year: 1999
+    states: ["OR", "WA"]
+    spawning_rivers: ["Sandy River", "Lewis River", "Cowlitz River", "Kalama River"]
+
+  - name: "Upper Willamette River Chinook Salmon"
+    esa_status: "Threatened"
+    listed_year: 1999
+    states: ["OR"]
+    spawning_rivers: ["McKenzie River", "Santiam River", "South Fork Willamette"]
+
+  - name: "Puget Sound Chinook Salmon"
+    esa_status: "Threatened"
+    listed_year: 1999
+    states: ["WA"]
+    critical_habitat_designated: true
+    southern_resident_killer_whale_prey: true
+    spawning_rivers: ["Green River", "Cedar River", "Snohomish River", "Skagit River", "Nooksack River"]
+    notes: "Primary prey of ESA-listed Southern Resident Killer Whales"
+
+  - name: "California Central Valley Spring-run Chinook Salmon"
+    esa_status: "Threatened"
+    listed_year: 1999
+    states: ["CA"]
+
+  - name: "Central Valley Fall and Late Fall-run Chinook Salmon"
+    esa_status: "Candidate"
+    states: ["CA"]
+
+coho_salmon:
+  - name: "Oregon Coast Coho Salmon"
+    esa_status: "Threatened"
+    listed_year: 1998
+    states: ["OR"]
+    spawning_rivers: ["Umpqua River", "Coquille River", "Coos River", "Rogue River", "coastal streams"]
+    hatchery_supplementation: true
+
+  - name: "Southern Oregon/Northern California Coast Coho Salmon"
+    esa_status: "Threatened"
+    listed_year: 1997
+    states: ["OR", "CA"]
+    spawning_rivers: ["Klamath River", "Rogue River", "Chetco River", "Smith River", "Eel River"]
+
+  - name: "Central California Coast Coho Salmon"
+    esa_status: "Endangered"
+    listed_year: 1996
+    states: ["CA"]
+
+steelhead:
+  - name: "Snake River Basin Steelhead"
+    esa_status: "Threatened"
+    listed_year: 1997
+    states: ["ID", "OR", "WA"]
+
+  - name: "Middle Columbia River Steelhead"
+    esa_status: "Threatened"
+    listed_year: 1999
+    states: ["OR", "WA"]
+
+  - name: "Upper Columbia River Steelhead"
+    esa_status: "Endangered"
+    listed_year: 1997
+    states: ["WA"]
+
+  - name: "Puget Sound Steelhead"
+    esa_status: "Threatened"
+    listed_year: 2007
+    states: ["WA"]
+
+  - name: "Lower Columbia River Steelhead"
+    esa_status: "Threatened"
+    listed_year: 1998
+    states: ["OR", "WA"]
+
+  - name: "Upper Willamette River Steelhead"
+    esa_status: "Threatened"
+    listed_year: 1999
+    states: ["OR"]
+
+  - name: "Oregon Coast Steelhead"
+    esa_status: "Not Listed (Species of Concern)"
+    states: ["OR"]
+
+  - name: "Northern California Steelhead"
+    esa_status: "Threatened"
+    listed_year: 2000
+    states: ["CA"]
+    spawning_rivers: ["Eel River", "Mattole River", "Russian River"]
+
+sockeye_salmon:
+  - name: "Snake River Sockeye Salmon"
+    esa_status: "Endangered"
+    listed_year: 1991
+    states: ["ID"]
+    spawning_lake: "Redfish Lake, Stanley Basin, Idaho"
+    notes: "Most imperiled salmonid; population nearly extinct in 1990s; captive broodstock program"
+    current_return_size: "fewer than 20 per year recently"
+
+  - name: "Lake Wenatchee/Okanogan Sockeye"
+    esa_status: "Not Listed"
+    states: ["WA"]
+
+  - name: "Ozette Lake Sockeye Salmon"
+    esa_status: "Threatened"
+    listed_year: 1999
+    states: ["WA"]
+    lake: "Lake Ozette, Olympic Peninsula"
+
+chum_salmon:
+  - name: "Hood Canal Summer-run Chum Salmon"
+    esa_status: "Threatened"
+    listed_year: 1999
+    states: ["WA"]
+    notes: "Only summer-run chum in lower 48 states"
+
+  - name: "Columbia River Chum Salmon"
+    esa_status: "Threatened"
+    listed_year: 1999
+    states: ["OR", "WA"]
+
+other_species:
+  - name: "Southern Resident Killer Whale"
+    esa_status: "Endangered"
+    listed_year: 2005
+    type: "DPS"
+    population_2024: 73
+    pods: ["J Pod", "K Pod", "L Pod"]
+    range: "Puget Sound, Salish Sea, Pacific Coast OR/WA/CA"
+    primary_prey: "Chinook salmon"
+    threats: ["prey_depletion", "vessel_disturbance", "contaminants", "noise"]
+    critical_habitat_designated: true
+    critical_habitat_area: "Washington/Oregon coastal waters"
+
+  - name: "Bull Trout"
+    esa_status: "Threatened"
+    listed_year: 1999
+    type: "Species"
+    states: ["WA", "OR", "ID", "MT", "NV"]
+    threats: ["water_temperature", "habitat_fragmentation", "hybridization_with_brook_trout"]

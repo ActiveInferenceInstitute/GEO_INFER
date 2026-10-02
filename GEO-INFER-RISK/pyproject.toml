@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-risk"
-version = "0.3.0"
+version = "0.4.0"
 description = "Advanced risk analysis and catastrophe modeling framework for geospatial applications including insurance, hazard assessment, and resilience planning"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"
@@ -50,13 +50,13 @@ dependencies = [
 # install this extra to enable the spatial/temporal/bayesian/data
 # integration surfaces.
 integrations = [
-    "geo-infer-space",
-    "geo-infer-time",
-    "geo-infer-math",
-    "geo-infer-bayes",
-    "geo-infer-data",
+    "geo-infer-space>=0.4.0",
+    "geo-infer-time>=0.4.0",
+    "geo-infer-math>=0.4.0",
+    "geo-infer-bayes>=0.4.0",
+    "geo-infer-data>=0.4.0",
     # Workspace siblings imported by this module's tests (resolved via [tool.uv.sources])
-    "geo-infer-test>=0.3.0",
+    "geo-infer-test>=0.4.0",
 ]
 
 # Optional machine-learning backend for hotspot clustering. The KMeans
@@ -71,7 +71,7 @@ ml = [
 dev = [
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
-    "pytest-asyncio>=0.20.0",
+    "pytest-asyncio>=0.24.0",
     "ruff>=0.15.6,<0.16",
     "mypy>=0.910",
 ]
@@ -105,39 +105,6 @@ exclude = ["tests*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.md", "*.txt"]
-
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-
-[[tool.mypy.overrides]]
-module = [
-    "numpy.*",
-    "pandas.*",
-    "geopandas.*",
-    "h3.*",
-    "folium.*",
-    "plotly.*",
-    "matplotlib.*",
-    "scipy.*",
-    "sklearn.*",
-    "tensorflow.*",
-    "torch.*",
-    "pymc.*",
-    "arviz.*",
-]
-ignore_missing_imports = true
 
 [tool.coverage.run]
 source = ["src"]

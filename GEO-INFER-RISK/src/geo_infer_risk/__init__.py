@@ -5,7 +5,7 @@ A framework for modeling, analyzing, and visualizing geospatial risk
 across multiple hazards, vulnerabilities, and exposure types.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Team"
 __license__ = "CC-BY-NC-SA-4.0"
 

@@ -8,6 +8,7 @@ GEO-INFER workspace. The maintained implementation is under
 
 The package exports these interfaces and helpers from `geo_infer_space`:
 
+- `H3StateSpace` and `align_h3_observations`
 - `SpatialIndexingInterface`
 - `GeometricOperationsInterface`
 - `SpatialAnalyticsInterface`
@@ -27,6 +28,8 @@ import geo_infer_space as space
 
 cell = space.latlng_to_cell(37.7749, -122.4194, resolution=9)
 lat, lng = space.cell_to_latlng(cell)
+assert abs(lat - 37.7749) < 0.01
+assert abs(lng + 122.4194) < 0.01
 print(cell, lat, lng)
 ```
 
@@ -48,7 +51,42 @@ cells = polygon_to_cells(
     },
     resolution=9,
 )
+assert cells
 ```
+
+## Explicit H3 state/time axes
+
+`H3StateSpace` retains unique canonical cells at one resolution in caller order.
+Its sparse stay/diffuse operators conserve probability with reflecting domain
+boundaries and real pentagon topology. Dense materialization is budgeted.
+
+`align_h3_observations` maps records onto an explicit UTC axis, rejects duplicates
+and unknown cells/times, and preserves missing pairs as NaN.
+
+```python
+import h3
+import numpy as np
+import pandas as pd
+from geo_infer_space import H3StateSpace, align_h3_observations
+
+center = h3.latlng_to_cell(41.75, -124.2, 8)
+neighbor = sorted(set(h3.grid_disk(center, 1)) - {center})[0]
+space = H3StateSpace([neighbor, center])
+times = ["2024-01-01T00:00:00Z", "2024-01-01T01:00:00Z"]
+records = pd.DataFrame([
+    {"cell": center, "timestamp": "2023-12-31T16:00:00-08:00", "value": 2.0},
+    {"cell": neighbor, "timestamp": times[0], "value": 0.0},
+    {"cell": center, "timestamp": times[1], "value": 4.0},
+])
+series = align_h3_observations(records, state_space=space, timestamps=times)
+assert list(series.data.columns) == [neighbor, center]
+assert series.data.iloc[0, 0] == 0.0
+assert np.isnan(series.data.iloc[1, 0])
+assert series.duration.total_seconds() == 3600
+```
+
+See the [composition guide](../../../GEO-INFER-SPACE/docs/CROSS_MODULE_COMPOSITION.md)
+and [TIME migration](../../../GEO-INFER-TIME/docs/utc_timeseries_migration.md).
 
 ## Interfaces and backends
 
@@ -59,18 +97,19 @@ selects configured implementations and raises
 `UnifiedH3Backend`, nested H3 utilities, and the backend protocols live in the
 module's `core/`, `backends/`, and `nested/` packages.
 
-Do not use `SpatialAnalyzer`: it is not a public class in the current package.
-Older INTRA pages may contain historical, non-executable examples using that
-name; use the exports above and the source-backed module tests instead.
+Spatiotemporal analytics use `geo_infer_space.analytics.spatiotemporal.SpatioTemporalAnalyzer`.
+Its `interpolate_spatiotemporal` method performs softened inverse-distance
+interpolation; the former kriging name was removed because the method does not
+fit a variogram or produce a kriging posterior. UTC bins and finite H3 inputs
+are validated at this boundary.
 
 ## Verification
 
 From the repository root:
 
 ```bash
-uv sync --package geo-infer-space
-uv run python GEO-INFER-TEST/run_unified_tests.py --module SPACE
-uv run python GEO-INFER-TEST/validate_h3_active_inference_contract.py
+uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --module SPACE
+uv run --no-sync python GEO-INFER-TEST/validate_h3_active_inference_contract.py
 ```
 
 See the [SPACE module README](../../../GEO-INFER-SPACE/README.md), the

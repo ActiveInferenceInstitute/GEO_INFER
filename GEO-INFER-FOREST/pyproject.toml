@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-forest"
-version = "0.3.0"
+version = "0.4.0"
 description = "Forest management, carbon sequestration, wildfire risk, and forest ecosystem analysis"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"

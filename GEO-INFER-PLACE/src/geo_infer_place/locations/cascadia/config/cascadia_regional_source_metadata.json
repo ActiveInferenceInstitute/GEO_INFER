@@ -1,0 +1,28 @@
+{
+  "tectonics": {
+    "doi": "10.5066/P9O69X6E",
+    "metadata_url": "https://www.sciencebase.gov/catalog/file/get/623cf2a6d34e915b67d47586?f=__disk__5f%2F28%2F90%2F5f289062d35678ec3392d2e0a7abf9b53705c7e5",
+    "metadata_file": "cascadia_tectonics.metadata.xml",
+    "metadata_sha256": "55353d4fac700ed97fe001d313548b0bf71eff623ebcf4ee0a95e68769ac6158",
+    "access_constraints": "none",
+    "use_constraints": "none"
+  },
+  "watersheds": {
+    "service_url": "https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer",
+    "use_constraints": "None; open and non-proprietary",
+    "service_refresh": "July 2026"
+  },
+  "volcanoes": {
+    "documentation_url": "https://volcanoes.usgs.gov/vsc/api/volcanoApi/",
+    "use_statement": "Freely available to support USGS applications",
+    "license_policy_url": "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits"
+  },
+  "missing_bioregion": {
+    "sources_reviewed": [
+      "https://cascadia-institute.org/",
+      "https://cascadiabioregion.org/cascadia",
+      "https://cascadiabioregion.org/maps-and-resources"
+    ],
+    "finding": "Originating map sites provide descriptions and raster/poster maps; no licensed full-boundary vector download verified. Do not digitize an invented outline or substitute study bbox."
+  }
+}

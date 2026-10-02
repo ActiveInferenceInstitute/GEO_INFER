@@ -10,6 +10,7 @@ Verifies:
 """
 
 import logging
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -145,11 +146,29 @@ class TestRequirementsFiles:
 
     LOCATIONS_WITH_REQUIREMENTS = [
         "australia",
-        "cascadia",
         "del_norte_county",
         "del_norte_county_synthetic",
         "siberia",
     ]
+
+    def test_cascadia_dependencies_belong_to_place_extra(self):
+        """Cascadia uses the owning distribution instead of a second toolchain."""
+        cascadia = LOCATIONS_DIR / "cascadia"
+        for name in (
+            "requirements.txt",
+            "pyproject.toml",
+            "uv.lock",
+            ".python-version",
+        ):
+            assert not (cascadia / name).exists()
+        project = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text())
+        dependencies = project["project"]["optional-dependencies"]["cascadia"]
+        assert any(
+            dep.startswith("geo-infer-space")
+            for dep in project["project"]["dependencies"]
+        )
+        assert any(dep.startswith("datashader") for dep in dependencies)
+        assert all(not dep.startswith("src") for dep in dependencies)
 
     @pytest.mark.parametrize("location", LOCATIONS_WITH_REQUIREMENTS)
     def test_requirements_exists(self, location):

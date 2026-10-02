@@ -1,368 +1,119 @@
-# GEO-INFER Documentation Guide
+# GEO-INFER documentation guide
 
-> **Illustrative example notice.** This page contains historical or
-> conceptual integration sketches. Names such as `SpatialAnalyzer` and
-> domain-specific facade classes are not public GEO-INFER exports in the
-> current checkout; verify imports against each module's `src/` package
-> and use the module README/tests for executable examples.
+Documentation must describe the installed APIs and the evidence behind each claim.
+Keep conceptual cross-module guidance in `GEO-INFER-INTRA/docs/`, reusable behavior
+in the owning package under `src/`, and executable orchestration in examples or
+scripts. Planned interfaces belong in a roadmap or tracked issue.
 
+## Generated inventories and authored guidance
 
-This guide defines the documentation standards for all 45 GEO-INFER modules.
-Every document, docstring, README, and code example in the framework must follow
-these conventions to maintain consistency and technical precision.
+Module and directory `README.md` and `AGENTS.md` files are generated signposts.
+Regenerate them after changing tracked source, public exports, tests, dependencies,
+or validation commands, then review the diff against the intended change.
+Do not replace generated operating contracts with hand-written capability or
+communication templates.
 
-## Documentation Philosophy
-
-### Technical Precision
-
-GEO-INFER documentation uses precise, technical language. Avoid unnecessary
-adjectives, superlatives, and marketing phrasing. Every sentence should either
-convey factual information, explain a concept, or demonstrate usage.
-
-**Do:**
-- "This function computes the Haversine distance between two points."
-- "The module provides Bayesian inference using MCMC and variational methods."
-- "H3 resolution 9 produces cells of approximately 0.1 km^2."
-
-**Do not:**
-- "This powerful function efficiently computes distances in a sophisticated way."
-- "Our cutting-edge module provides state-of-the-art Bayesian inference."
-- "The highly optimized H3 system delivers exceptional spatial resolution."
-
-### Active Inference Alignment
-
-Documentation should reference Active Inference concepts where they apply to the
-module's function. This does not mean forcing Active Inference terminology into
-every sentence, but rather explaining how a module's capabilities connect to the
-broader framework of perception, belief updating, and action selection.
-
-### Concise Professional Language
-
-- Use imperative mood for function descriptions: "Compute the free energy" not
-  "This function computes the free energy."
-- Use present tense: "Returns a GeoDataFrame" not "Will return a GeoDataFrame."
-- Define acronyms on first use within each document.
-- Keep paragraphs to 3-5 sentences. Break longer explanations into subsections.
-
-## README Structure
-
-Module-root `README.md` and `AGENTS.md` files are generated signposts
-(`uv run python GEO-INFER-TEST/rewrite_readme_agents.py`) and are not written by
-hand. The structure below applies to hand-written module overview pages, such
-as `GEO-INFER-INTRA/docs/modules/geo-infer-<module>.md` and a module's `docs/`
-pages, in this order:
-
-### Required Sections
-
-1. **Title and Badge Line**
-   - Module name as H1 heading
-   - Python version badge, license badge, test status badge
-
-2. **Overview**
-   - 2-3 sentences describing the module's purpose
-   - How it relates to the GEO-INFER ecosystem
-   - What problems it solves
-
-3. **Key Capabilities**
-   - Bulleted list of 4-8 primary features
-   - Each item: bold feature name followed by 1-sentence description
-
-4. **Quick Start**
-   - Installation command: `uv sync --package geo-infer-module`
-   - Minimal working code example (under 15 lines)
-   - Expected output or result description
-
-5. **Core Components**
-   - Table with columns: Component, Module Path, Description
-   - List every subpackage in `src/geo_infer_module/`
-
-6. **Integration**
-   - Which upstream modules this module depends on
-   - Which downstream modules consume this module's output
-   - Code example showing a cross-module workflow
-
-7. **API Reference**
-   - Key classes with constructor signatures
-   - Key functions with parameter types and return types
-   - Link to full API docs if generated
-
-8. **Configuration**
-   - `pyproject.toml` settings relevant to this module
-   - Environment variables recognized by the module
-   - Default values and overrides
-
-9. **Testing**
-   - Command to run the module's tests: `uv run python -m pytest GEO-INFER-MODULE/tests/ -v`
-   - Test categories available (unit, integration, etc.)
-   - Coverage command
-
-10. **Documentation Hub**
-    - Link to GEO-INFER-INTRA documentation hub
-    - Links to relevant guides (active inference, geospatial standards, etc.)
-
-11. **License**
-    - "CC BY-NC-SA 4.0" with link to LICENSE file
-
-## SKILL.md Structure
-
-Each module contains a `SKILL.md` file that Claude Code auto-discovers. This file
-teaches the AI assistant how to work with the module.
-
-### Required Format
-
-```markdown
----
-name: GEO-INFER-MODULE Skill
-description: Brief description of what this skill enables
-prerequisites:
-  - Python 3.11+
-  - uv package manager
-  - List specific dependencies
-difficulty: beginner | intermediate | advanced
-estimated_time: 15 minutes | 30 minutes | 1 hour
----
-
-# GEO-INFER-MODULE
-
-## Instructions
-
-[Detailed instructions for Claude Code on how to work with this module.
-Include import patterns, common operations, testing commands, and
-integration patterns with other modules.]
-
-## Examples
-
-[3-5 concrete examples showing common tasks. Each example should include
-the input, the code to run, and the expected output.]
-
-## Common Issues
-
-[List 3-5 common errors and their solutions.]
+```bash
+uv run --no-sync python GEO-INFER-TEST/rewrite_readme_agents.py
+uv run --no-sync python GEO-INFER-TEST/rewrite_readme_agents.py --check
 ```
 
-### SKILL.md Guidelines
+Authored module overviews should explain purpose, actual import paths, inputs and
+outputs, declared dependencies/extras, configuration, failure cases, and owning
+verification commands. Link to source/tests for detailed signatures rather than
+maintaining an invented facade. `SKILL.md` should give action-oriented instructions
+using real APIs and explain recovery from concrete failures. Keep source-grounded
+facts distinct from conceptual relationships and future plans.
 
-- Keep instructions action-oriented: "To create a spatial index, use..."
-- Include error recovery patterns: "If import fails, check that..."
-- Reference the module's actual class and function names from source code
-- Update SKILL.md whenever the module's public API changes
+## Executable examples
 
-## AGENTS.md Structure
+Use tiny deterministic local data, complete imports, and acceptance assertions.
+State the dependency profile, units, spatial coordinate order, time convention,
+missing-data policy, and expected result where relevant. Keep remote credentials,
+private records, hardware setup, and paid/licensed services out of a self-contained
+example. Document service-backed examples with explicit prerequisites and direct
+acceptance evidence separately.
 
-Each module has an `AGENTS.md` describing its capabilities for multi-agent
-orchestration.
-
-### Required Format
-
-```markdown
-# GEO-INFER-MODULE Agent Capabilities
-
-## Capabilities
-
-- **Capability 1**: What this module can do as an agent component
-- **Capability 2**: Another capability
-- ...
-
-## Integration Patterns
-
-### Input Formats
-[What data this module accepts and from which other modules]
-
-### Output Formats
-[What data this module produces and for which other modules]
-
-## Agent Communication
-
-[How this module participates in multi-agent workflows,
-including message formats and coordination patterns]
-```
-
-## Code Example Guidelines
-
-All code examples in documentation must follow these rules:
-
-### Must Be Functional
-
-Every code example must run without modification when the module is installed.
-No placeholder comments like `# Implementation here` or `# TODO: add logic`.
+This example exercises TIME's public contract and compares a numerical result to
+an independently specified expectation. It creates no files and makes no network
+requests.
 
 ```python
-# CORRECT: functional example
 import numpy as np
-from geo_infer_act.core.free_energy import FreeEnergyCalculator
+import pandas as pd
+from geo_infer_time import TemporalAnalyzer, TimeSeries
 
-calculator = FreeEnergyCalculator()
-beliefs = np.array([0.25, 0.25, 0.25, 0.25])
-observations = np.array([0.7, 0.1, 0.1, 0.1])
-fe = calculator.compute_categorical_free_energy(beliefs, observations)
-print(f"Free energy: {fe:.4f}")
+axis = pd.date_range("2026-01-01T00:00:00Z", periods=4, freq="h")
+series = TimeSeries(np.array([-6.0, -4.0, -2.0, 0.0]), timestamps=axis)
+result = TemporalAnalyzer().detect_trend(series)
+assert str(series.timestamps.tz) == "UTC"
+assert result["trend_direction"] == "increasing"
+assert np.isclose(result["slope_per_sample"], 2.0)
+assert np.isclose(result["r_squared"], 1.0)
+np.testing.assert_allclose(result["trend_values"], [-6.0, -4.0, -2.0, 0.0], atol=1e-12, rtol=0)
 ```
 
-```python
-# INCORRECT: non-functional stub
-from geo_infer_act import SomeClass
-result = SomeClass().do_something()  # process the data
-# ... more processing ...
+An assertion of non-null imports proves an import contract; it does not prove a
+model's scientific correctness, a deployment, or an optional backend's operation.
+Prefer behavioral examples with analytical expectations for usage guidance.
+Describe omitted evidence explicitly instead of implying success from an import.
+
+The maintained page inventory is
+[`GEO-INFER-TEST/doc_examples.json`](../../GEO-INFER-TEST/doc_examples.json).
+Its gate rejects empty inventories, duplicate/outside paths, obsolete exemption
+banners, absent Python examples, and examples without an acceptance assertion.
+It validates the complete manifest before running each page in a fresh isolated
+process and temporary directory with a finite deadline and attempt receipt.
+Fenced Python blocks on a page execute together in order; avoid collisions between
+blocks or make each block self-contained. Unexpected exceptions must propagate.
+
+```bash
+uv run --no-sync python GEO-INFER-TEST/validate_doc_examples.py
 ```
 
-### Use Real Imports
+A conceptual pseudocode sketch should use a `text` fence and identify itself as a
+conceptual sketch. Do not advertise it as a public API or hide broken imports behind
+an exemption banner. For maintained Python usage examples, execute the example
+before accepting an interface or dependency change.
 
-Import from actual module paths that exist in the codebase. Do not invent
-module paths or class names.
+## Writing and linking conventions
 
-### Use Realistic Data
+Use plain, precise language and present-tense behavior. Explain active inference
+where an operation actually implements it. Avoid unsupported speed claims,
+coverage badges, component versions, or universal domain-validity claims. Define
+acronyms, label units, and give observable failure conditions.
 
-Examples should use data that makes domain sense. For geospatial examples, use
-real coordinates (Portland: 45.5231, -122.6765). For Active Inference, use
-probability vectors that sum to 1.0.
+Use one H1 title, descriptive headings, and fenced blocks with language tags.
+Use relative links from the document's directory for repository material and full
+URLs for external references. Check links instead of guessing anchor names.
+Code paths, exports, and install commands must match the owning package and root
+uv environment. Keep test categories distinct: unit, integration, performance,
+system, slow, and H3 each cover declared selections; installed wheels and hosted
+checks supply additional evidence.
 
-### Include Expected Output
+Google-style docstrings should describe parameters, return values, relevant
+exceptions, shapes/order, ownership of mutable inputs, and assumptions. Only add
+mathematical or performance claims supported by implementation and independent
+reference tests. An AST-extracted signature or source hash identifies bytes; it
+alone does not establish runtime behavior or equivalence to a formal proof.
 
-Where practical, show what the code produces:
+## Verify and retain evidence
 
-```python
-cell = h3.latlng_to_cell(45.5231, -122.6765, 9)
-print(cell)
-# Output: 8928308280fffff
+From the repository root, run generated-signpost, strict documentation, import,
+example, and skill checks after changing guidance:
+
+```bash
+uv run --no-sync python GEO-INFER-TEST/rewrite_readme_agents.py --check
+uv run --no-sync python GEO-INFER-TEST/validate_documentation.py --strict
+uv run --no-sync python GEO-INFER-TEST/validate_doc_imports.py
+uv run --no-sync python GEO-INFER-TEST/validate_doc_examples.py
+uv run --no-sync python GEO-INFER-TEST/validate_skills.py --check-xrefs --warnings-fatal
 ```
 
-### Code Block Language Tags
-
-Always specify the language in fenced code blocks:
-- Python: ` ```python `
-- Bash: ` ```bash `
-- JSON: ` ```json `
-- YAML: ` ```yaml `
-- Plain text or output: ` ```text `
-
-## Link Conventions
-
-### Internal Links
-
-Use relative paths from the document's location:
-
-```markdown
-<!-- From GEO-INFER-INTRA/docs/overview.md -->
-[Installation Guide](installation.md)
-[ACT Module](../../GEO-INFER-ACT/README.md)
-```
-
-### External Links
-
-Use full URLs with descriptive link text:
-
-```markdown
-[H3 Documentation](https://h3geo.org/docs/)
-[GeoPandas User Guide](https://geopandas.org/en/stable/docs/user_guide.html)
-```
-
-### Cross-Module References
-
-When referencing another GEO-INFER module from documentation, use the format:
-
-```markdown
-See [GEO-INFER-BAYES](../../GEO-INFER-BAYES/README.md) for Bayesian inference.
-```
-
-## Docstring Standards
-
-All Python code uses Google-style docstrings with full type annotations:
-
-```python
-def compute_spatial_autocorrelation(
-    gdf: gpd.GeoDataFrame,
-    value_column: str,
-    method: str = "moran",
-    weights: str | None = "queen",
-) -> dict[str, float]:
-    """Compute spatial autocorrelation statistics for a GeoDataFrame.
-
-    Calculates the specified spatial autocorrelation statistic using the
-    given spatial weights matrix. Supports Moran's I and Geary's C.
-
-    Args:
-        gdf: GeoDataFrame with geometry and value columns. Must have a
-            valid CRS set.
-        value_column: Name of the column containing numeric values to
-            analyze.
-        method: Autocorrelation method. One of "moran" (Moran's I) or
-            "geary" (Geary's C). Default: "moran".
-        weights: Spatial weights type. One of "queen", "rook", or "knn".
-            Default: "queen".
-
-    Returns:
-        Dictionary with keys:
-        - "statistic": The computed autocorrelation value.
-        - "p_value": Statistical significance.
-        - "z_score": Standard normal deviate.
-        - "expected": Expected value under null hypothesis.
-
-    Raises:
-        ValueError: If value_column is not in gdf or contains non-numeric data.
-        ValueError: If gdf has no CRS set.
-    """
-```
-
-## Review Checklist
-
-Before submitting documentation, verify all items:
-
-1. [ ] All code examples run without errors when the module is installed
-2. [ ] All imports reference real module paths and class names
-3. [ ] No marketing language, superlatives, or unnecessary adjectives
-4. [ ] All acronyms defined on first use
-5. [ ] Type annotations present on all function signatures in examples
-6. [ ] Links tested and pointing to correct targets
-7. [ ] H3 v4 API used (latlng_to_cell, not geo_to_h3)
-8. [ ] CRS explicitly set on all GeoDataFrame examples
-9. [ ] Probability vectors sum to 1.0 in Active Inference examples
-10. [ ] SKILL.md YAML front matter complete with all required fields
-
-## Common Documentation Anti-Patterns
-
-### 1. Aspirational Documentation
-
-Writing documentation for features that do not exist yet. Every documented
-function, class, or workflow must have a working implementation in the codebase.
-
-### 2. Copy-Paste Syndrome
-
-Duplicating the same explanation across multiple documents. Instead, write it
-once in the canonical location and link to it from other documents.
-
-### 3. Screenshot-Only Explanations
-
-Relying on screenshots to explain code output. Always include text-based output
-alongside any visual. Screenshots break when code changes; text can be validated.
-
-### 4. Undocumented Parameters
-
-Listing parameters in a function signature but omitting them from the docstring.
-Every parameter must have a description, type, and default value (if applicable).
-
-### 5. Stale Examples
-
-Code examples that referenced an older API version. When the API changes, all
-examples referencing the changed functions must be updated in the same commit.
-
-### 6. Vague Error Descriptions
-
-Writing "Raises an error if input is invalid" without specifying which exception
-type or what constitutes invalid input.
-
-### 7. Missing CRS Context
-
-Geospatial examples that create geometries or coordinates without specifying the
-coordinate reference system.
-
-### 8. Mixing Coordinate Orders
-
-Using `(lat, lng)` in one example and `(lng, lat)` in another without flagging
-the difference. Always specify which convention is in use.
-
-## Related Documents
-
-- [Module README Template](module_readme_template.md) -- copy-paste template
-- [Terminology](terminology.md) -- standard terms and definitions
-- [Geospatial Standards](geospatial_standards.md) -- CRS and format conventions
-- [Data Dictionary](data_dictionary.md) -- data structure reference
+Retain revision, dirty state/source custody, interpreter, lock, command, selection,
+result counts, logs, and artifact hashes with verification receipts. Separate local
+execution from hosted CI, installed-package behavior, live services, and hardware
+acceptance. Review generated files and explain deferred verification with a
+concrete follow-up. See the [migration guide](releases/0.4.0_migration.md) and
+[integration guide](../../GEO-INFER-EXAMPLES/docs/INTEGRATION_GUIDE.md) for current
+SPACE/TIME contracts.

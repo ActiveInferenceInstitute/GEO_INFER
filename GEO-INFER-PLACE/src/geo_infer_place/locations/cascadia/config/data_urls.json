@@ -1,0 +1,221 @@
+{
+  "data_sources": {
+    "ca_parcels": {
+      "name": "California Parcel Data",
+      "url": "https://services.gis.ca.gov/arcgis/rest/services/Boundaries/CA_Parcels/FeatureServer/0",
+      "type": "arcgis",
+      "description": "California statewide parcel boundaries from CAL FIRE",
+      "coverage": "California",
+      "update_frequency": "Quarterly",
+      "fields_of_interest": [
+        "OWNER_NAME",
+        "PARCEL_SIZE",
+        "LAND_USE",
+        "ASSESSED_VALUE"
+      ]
+    },
+    "del_norte_parcels": {
+      "name": "Del Norte County Parcel Data",
+      "url": "https://services.countyofdelnorte.us/arcgis/rest/services/Parcels/MapServer/0",
+      "type": "arcgis",
+      "description": "Del Norte County official parcel data",
+      "coverage": "Del Norte County, CA",
+      "update_frequency": "Monthly",
+      "fields_of_interest": [
+        "OWNER_NAME",
+        "ACRES",
+        "LAND_USE",
+        "IMPROVEMENT_VALUE",
+        "LAND_VALUE"
+      ]
+    },
+    "del_norte_zoning": {
+      "name": "Del Norte County Zoning Data",
+      "url": "https://services.countyofdelnorte.us/arcgis/rest/services/Zoning/MapServer/0",
+      "type": "arcgis",
+      "description": "Del Norte County official zoning designations",
+      "coverage": "Del Norte County, CA",
+      "update_frequency": "Monthly",
+      "fields_of_interest": [
+        "ZONE_CODE",
+        "ZONE_DESC",
+        "ACRES",
+        "GENERAL_PLAN"
+      ]
+    },
+    "ca_fmmp": {
+      "name": "California Farmland Mapping and Monitoring Program",
+      "url": "https://gis.conservation.ca.gov/server/rest/services/DLRP/CaliforniaImportantFarmland_2022/FeatureServer/0",
+      "type": "arcgis",
+      "description": "Official California farmland classification data (2022)",
+      "coverage": "California",
+      "update_frequency": "Biennial",
+      "fields_of_interest": [
+        "polygon_ty",
+        "upd_year",
+        "county_nam",
+        "Shape_Area"
+      ]
+    },
+    "usda_cdl": {
+      "name": "USDA Cropland Data Layer",
+      "url": "https://nassgeodata.gmu.edu/axis2/services/CDLService/GetCDLFile",
+      "type": "wms",
+      "description": "30-meter cropland classification data",
+      "coverage": "United States",
+      "update_frequency": "Annual",
+      "fields_of_interest": [
+        "CLASS_NAME",
+        "ACRES",
+        "VALUE"
+      ]
+    },
+    "or_parcels": {
+      "name": "Oregon Parcel Data (ORMAP)",
+      "url": "https://gis.oregon.gov/arcgis/rest/services/ORMAP/ORMAP_Parcels/MapServer/0",
+      "type": "arcgis",
+      "description": "Oregon statewide parcel mapping from ORMAP consortium",
+      "coverage": "Oregon",
+      "update_frequency": "Continuous",
+      "fields_of_interest": [
+        "OWNER_NAME",
+        "ACRES",
+        "PROP_CLASS",
+        "MARKET_VALUE"
+      ]
+    },
+    "wa_parcels": {
+      "name": "Washington County Parcel Data",
+      "url": "https://gisdata.kingcounty.gov/arcgis/rest/services/Property/Parcels/MapServer/0",
+      "type": "arcgis",
+      "description": "King County parcel data (example for Washington state)",
+      "coverage": "King County, WA",
+      "update_frequency": "Weekly",
+      "fields_of_interest": [
+        "TAXPAYER_NAME",
+        "SQFT_LOT",
+        "CURRENT_ZONING",
+        "APPRAISED_VALUE"
+      ]
+    }
+  },
+  "ground_water": {
+    "nwis_url": "https://waterservices.usgs.gov/nwis/gwlevels/",
+    "parameter_cd": "72019"
+  },
+  "surface_water": {
+    "nhd_flowlines_url": "https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/4",
+    "nhd_waterbodies_url": "https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/6"
+  },
+  "water_rights": {
+    "ca_ewrims_csv_url": "https://data.ca.gov/dataset/e68dbb51-5a02-42c2-9e8c-8f921501650c/resource/82a9d821-2a5c-42b7-a8b2-2977d2087522/download/water_rights_ewrims_2021-01-01.csv",
+    "ca_ewrims_service_url": "https://gispublic.waterboards.ca.gov/arcgis/rest/services/Water_Rights/Points_of_Diversion/MapServer/0",
+    "or_wr_service_url": "https://gis.oregon.gov/arcgis/rest/services/WR/WR_WaterRights/MapServer"
+  },
+  "power_source": {
+    "eia_url": "https://api.eia.gov/v2/",
+    "hifld_transmission_url": "https://services1.arcgis.com/Hp6G80Pky0om7QvQ/arcgis/rest/services/Electric_Power_Transmission_Lines/FeatureServer/0",
+    "hifld_power_plants_url": "https://services1.arcgis.com/Hp6G80Pky0om7QvQ/arcgis/rest/services/Power_Plants/FeatureServer/0"
+  },
+  "mortgage_debt": {
+    "census_api_base": "https://api.census.gov/data/2022/acs/acs5",
+    "hmda_url": "https://ffiec.cfpb.gov/v2/public/hmda/aggregated"
+  },
+  "improvements": {
+    "ms_footprints_url": "https://usbuildingfootprints.blob.core.windows.net/footprints/California.json"
+  },
+  "wdfw_salmon": {
+    "name": "Washington Dept of Fish and Wildlife - Salmon Data",
+    "url": "https://geodataservices.wdfw.wa.gov/",
+    "description": "WDFW geospatial data services including salmon distribution",
+    "format": "REST/GeoJSON"
+  },
+  "odfw_salmon": {
+    "name": "Oregon Dept of Fish and Wildlife - Oregon Explorer",
+    "url": "https://www.oregonexplorer.info/",
+    "description": "ODFW salmon and wildlife habitat data",
+    "format": "REST/GeoJSON"
+  },
+  "noaa_nmfs_species": {
+    "name": "NOAA NMFS ESA Species",
+    "url": "https://www.fisheries.noaa.gov/species/",
+    "description": "NOAA Fisheries ESA-listed Pacific salmonids data",
+    "format": "HTML/JSON"
+  },
+  "usgs_streamstats": {
+    "name": "USGS StreamStats",
+    "url": "https://streamstats.usgs.gov/ss/",
+    "description": "USGS watershed statistics and flow data",
+    "format": "REST/JSON"
+  },
+  "wa_ecology_gis": {
+    "name": "Washington Ecology GIS",
+    "url": "https://ecology.wa.gov/",
+    "description": "Washington State Department of Ecology GIS data",
+    "format": "GeoJSON/Shapefile"
+  },
+  "or_dlcd": {
+    "name": "Oregon DLCD Statewide Zoning",
+    "url": "https://www.oregon.gov/lcd/pages/index.aspx",
+    "description": "Oregon Department of Land Conservation and Development zoning data",
+    "format": "Shapefile/GeoJSON"
+  },
+  "bc_databc": {
+    "name": "BC DataBC",
+    "url": "https://data.gov.bc.ca/",
+    "description": "British Columbia open data portal including environmental and land data",
+    "format": "REST/GeoJSON/Shapefile"
+  },
+  "fallback_sources": {
+    "parcelquest": {
+      "name": "ParcelQuest API",
+      "description": "Commercial parcel data service with comprehensive coverage",
+      "requires_api_key": true,
+      "coverage": "National"
+    },
+    "county_assessors": {
+      "name": "County Assessor Offices",
+      "description": "Direct county-level parcel and ownership data",
+      "requires_manual_download": true,
+      "coverage": "County-specific"
+    }
+  },
+  "field_mappings": {
+    "standard_fields": {
+      "owner_name": [
+        "OWNER_NAME",
+        "TAXPAYER_NAME",
+        "OWNER"
+      ],
+      "parcel_size": [
+        "PARCEL_SIZE",
+        "ACRES",
+        "SQFT_LOT",
+        "AREA"
+      ],
+      "land_use": [
+        "LAND_USE",
+        "PROP_CLASS",
+        "CURRENT_ZONING",
+        "USE_CODE"
+      ],
+      "assessed_value": [
+        "ASSESSED_VALUE",
+        "MARKET_VALUE",
+        "APPRAISED_VALUE",
+        "TOTAL_VALUE"
+      ]
+    }
+  },
+  "data_quality": {
+    "minimum_fields": [
+      "owner_name",
+      "parcel_size"
+    ],
+    "validation_rules": {
+      "owner_name": "Required, non-empty string",
+      "parcel_size": "Positive numeric value",
+      "assessed_value": "Optional, positive numeric value"
+    }
+  }
+}

@@ -31,7 +31,7 @@ Core workspace within `GEO-INFER-MARINE`.
 
 - Module: `GEO-INFER-MARINE`
 - Package: `geo_infer_marine`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-marine`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module MARINE`
 

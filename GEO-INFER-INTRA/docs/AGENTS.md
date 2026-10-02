@@ -37,6 +37,7 @@
 - `modules/`
 - `ontology/`
 - `realms/`
+- `releases/`
 - `security/`
 - `support/`
 - `tnfd/`

@@ -15,7 +15,7 @@ Unit workspace within `GEO-INFER-PLACE`.
 
 - Module: `GEO-INFER-PLACE`
 - Package: `geo_infer_place`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-place`
 - Tests: `uv run python -m pytest GEO-INFER-PLACE/locations/cascadia/tests/unit`
 
@@ -34,7 +34,8 @@ Unit workspace within `GEO-INFER-PLACE`.
 - `matplotlib>=3.5.0`
 - `branca>=0.6.0`
 - `requests>=2.28.0`
-- `geo-infer-space`
+- `geo-infer-space>=0.4.0`
+- `geo-infer-time>=0.4.0`
 
 
 ## Validation

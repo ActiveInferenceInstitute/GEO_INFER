@@ -68,7 +68,7 @@ from .utils.integration import IntegrationManager
 logger = logging.getLogger(__name__)
 
 # Version information
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Development Team"
 __description__ = (
     "Swarm Intelligence and Complex Adaptive Systems for Geospatial Analysis"

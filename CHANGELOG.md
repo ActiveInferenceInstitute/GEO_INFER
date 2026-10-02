@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 0.4.0 candidate preparation
+
+- Introduce strict TIME-owned UTC normalization and ordered H3 observation
+  alignment, retaining explicit gaps and state identities across composition.
+- Retain immutable execution attempts and require fresh JUnit/receipts; preserve
+  all category lanes, add required slow tests and paired GNN interchange.
+- Repair DATA async transport and optional integrations, IOT timestamp and bounds
+  semantics, ART registry-only persistence, and OPS metrics lifecycle.
+- Consolidate Cascadia inside PLACE, defer GPU probing, rename misleading AI
+  value metrics and MATH memory constraints, and separate large climate timing
+  cases from numerical unit tests.
+- Align root, member, public runtime and citation versions to 0.4.0. This section
+  records preparation changes, not publication or hosted acceptance. See the
+  [migration guide](GEO-INFER-INTRA/docs/releases/0.4.0_migration.md).
+- Solve LOG supply-chain models with the declared MILP constraints, preserve ACT
+  scoring state and analyzer history across cell permutations, and verify SPM's
+  real compiled backend with an explicit macOS 27 compiler profile.
+- Execute maintained documentation examples, test all 45 installed wheels outside
+  the checkout, and provision DuckDB Spatial explicitly for actual fast-path proof.
+
+
 ### Post-0.3.0 waves (2026-09-26 .. 2026-09-28, PRs #40-#60)
 
 - Ledger reconciliation and scope passes (#40, #44, #45, #52); test-guard and

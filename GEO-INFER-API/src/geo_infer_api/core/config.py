@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     # Derived from the installed distribution so the version surface tracks
     # releases without a code edit; the literal is only the source-checkout
     # fallback when the package was never installed.
-    app_version: str = _installed_version("0.3.0")
+    app_version: str = _installed_version("0.4.0")
 
     # API settings
     api_prefix: str = "/api/v1"

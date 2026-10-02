@@ -15,7 +15,7 @@ Utils workspace within `GEO-INFER-PEP`.
 
 - Module: `GEO-INFER-PEP`
 - Package: `geo_infer_pep`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-pep`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module PEP`
 

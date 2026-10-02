@@ -204,6 +204,57 @@ class TestCascadiaParseCounties:
         assert result == {"CA": ["all"], "OR": ["all"]}
 
 
+class TestCascadiaConfigurationOwnership:
+    """Installed resource defaults and caller-owned overrides stay separate."""
+
+    def test_packaged_defaults_do_not_write_to_current_directory(
+        self, tmp_path, monkeypatch
+    ):
+        from geo_infer_place.locations.cascadia.core.enhanced_config import (
+            EnhancedConfigManager,
+        )
+
+        monkeypatch.chdir(tmp_path)
+        manager = EnhancedConfigManager()
+        assert manager.config.visualization.default_center == [45.5, -122.5]
+        assert manager.config.bioregion["bounds"]["west"] == -124.8
+        assert manager.config.spatial_analysis["buffer_distance"] == 1000
+        assert list(tmp_path.iterdir()) == []
+        with pytest.raises(ValueError, match="explicit writable"):
+            manager.save_configuration(manager.config)
+
+    def test_explicit_override_roundtrips_without_changing_packaged_defaults(
+        self, tmp_path
+    ):
+        from geo_infer_place.locations.cascadia.core.enhanced_config import (
+            EnhancedConfigManager,
+        )
+
+        directory = tmp_path / "caller-config"
+        manager = EnhancedConfigManager(directory)
+        assert not directory.exists()
+        manager.update_configuration({"analysis": {"h3_resolution": 0}})
+        assert EnhancedConfigManager(directory).config.analysis.h3_resolution == 0
+        assert EnhancedConfigManager().config.analysis.h3_resolution == 8
+
+    def test_invalid_override_fails_before_state_or_file_mutation(self, tmp_path):
+        from geo_infer_place.locations.cascadia.core.enhanced_config import (
+            EnhancedConfigManager,
+        )
+
+        manager = EnhancedConfigManager(tmp_path)
+        manager.save_configuration(manager.config)
+        config_file = tmp_path / "cascadia_config.yaml"
+        previous = config_file.read_bytes()
+        with pytest.raises(TypeError):
+            manager.update_configuration({"analysis": {"unknown_setting": True}})
+        assert manager.config.analysis.h3_resolution == 8
+        assert config_file.read_bytes() == previous
+        config_file.write_text("[invalid, mapping]")
+        with pytest.raises(ValueError, match="mapping"):
+            EnhancedConfigManager(tmp_path)
+
+
 class TestCascadiaBioregionMap:
     """Bioregion visualization renders the tracked GeoJSON layers to HTML."""
 

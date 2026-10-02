@@ -1,6 +1,6 @@
 [project]
 name = "geo-infer-framework"
-version = "0.3.0"
+version = "0.4.0"
 description = "Comprehensive geospatial inference framework for ecological, civic, and commercial applications"
 authors = [
     {name = "docxology", email = "docxology@users.noreply.github.com"}
@@ -80,7 +80,8 @@ ai = [
 
 # Bayesian inference
 bayesian = [
-    "pymc>=4.0.0",
+    "pymc>=5.0.0",
+    "pytensor>=2.31.7,<2.32",
     "arviz>=0.11.0",
     "emcee>=3.1.0",
     "corner>=2.2.0",
@@ -126,7 +127,7 @@ performance = [
 quality = [
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
-    "pytest-asyncio>=0.20.0",
+    "pytest-asyncio>=0.24.0",
     "pytest-mock>=3.12.0",
     "ruff>=0.15.6,<0.16",
     "mypy>=0.910",
@@ -170,6 +171,7 @@ all = [
     "optuna>=2.10.0",
     # bayesian
     "arviz>=0.11.0",
+    "pytensor>=2.31.7,<2.32",
     "emcee>=3.1.0",
     "corner>=2.2.0",
     # simulation
@@ -195,7 +197,7 @@ all = [
     # quality
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
-    "pytest-asyncio>=0.20.0",
+    "pytest-asyncio>=0.24.0",
     "ruff>=0.15.6,<0.16",
     "mypy>=0.910",
     "pytest-mock>=3.12.0",
@@ -333,7 +335,6 @@ testpaths = [
     "tests",
     "GEO-INFER-PLACE/locations/cascadia/tests",
 ]
-pythonpath = ["GEO-INFER-PLACE/locations/cascadia"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -378,6 +379,9 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+
+[tool.uv]
+package = false
 
 [tool.uv.workspace]
 members = ["GEO-INFER-*"]

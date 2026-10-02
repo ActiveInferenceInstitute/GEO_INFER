@@ -14,7 +14,7 @@ Integration workspace within `GEO-INFER-EMERGENCY`.
 
 - Module: `GEO-INFER-EMERGENCY`
 - Package: `geo_infer_emergency`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-emergency`
 - Tests: `uv run python -m pytest GEO-INFER-EMERGENCY/tests/integration`
 

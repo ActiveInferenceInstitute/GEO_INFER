@@ -15,7 +15,7 @@ Api workspace within `GEO-INFER-AG`.
 
 - Module: `GEO-INFER-AG`
 - Package: `geo_infer_ag`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-ag`
 - Tests: `uv run python -m pytest GEO-INFER-AG/tests/unit/api`
 

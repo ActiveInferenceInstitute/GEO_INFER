@@ -1,0 +1,77 @@
+# Cascadia Climate Zones
+# Source: NOAA Climate Normals 1991-2020
+
+climate_zones:
+  - zone: "Pacific Maritime"
+    description: "West of Cascades; marine-dominated climate"
+    precipitation_mm_annual: [900, 3800]
+    temp_january_c_avg: [2, 7]
+    temp_july_c_avg: [15, 20]
+    frost_days_avg: 30
+    fog_days_avg: 180
+    cities: ["Seattle WA", "Portland OR", "Eugene OR", "Arcata CA"]
+
+  - zone: "Coastal Temperate Rainforest"
+    description: "Olympic Peninsula, Coast Range; highest precipitation"
+    precipitation_mm_annual: [2000, 6000]
+    temp_january_c_avg: [2, 5]
+    temp_july_c_avg: [13, 17]
+    stations:
+      - station_id: "USW00094224"
+        name: "Hoh Rain Forest Visitor Center"
+        lat: 47.8537
+        lon: -123.9349
+        annual_precip_mm: 3744
+        record_year: 2021
+
+  - zone: "Mediterranean Transition"
+    description: "Willamette Valley, SW Oregon; warm dry summers"
+    precipitation_mm_annual: [900, 1400]
+    temp_january_c_avg: [3, 6]
+    temp_july_c_avg: [18, 23]
+    summer_drought_months: [7, 8]
+
+  - zone: "Cascade Alpine"
+    description: "High Cascades above 1200m; heavy snowpack"
+    snowpack_swe_mm: [500, 3000]
+    snow_season_months: [11, 6]
+
+  - zone: "High Desert"
+    description: "East of Cascades; rain shadow effect"
+    precipitation_mm_annual: [200, 500]
+    temp_january_c_avg: [-3, 2]
+    temp_july_c_avg: [20, 30]
+
+key_noaa_stations:
+  - station_id: "USW00024233"
+    name: "Seattle-Tacoma International Airport"
+    lat: 47.4444
+    lon: -122.3138
+    elevation_m: 131
+    annual_precip_mm: 940
+    jan_temp_c: 4.3
+    jul_temp_c: 18.6
+
+  - station_id: "USW00024229"
+    name: "Portland International Airport"
+    lat: 45.5898
+    lon: -122.5976
+    elevation_m: 9
+    annual_precip_mm: 1076
+    jan_temp_c: 4.1
+    jul_temp_c: 21.3
+
+  - station_id: "USW00094224"
+    name: "Crescent City, CA"
+    lat: 41.7833
+    lon: -124.2167
+    elevation_m: 14
+    annual_precip_mm: 1620
+    jan_temp_c: 8.8
+    jul_temp_c: 14.5
+
+snowpack_data:
+  cascade_snowpack_april1_avg_swe_mm: 900
+  recent_trend: "declining"
+  percent_below_average_2024: 85
+  source: "NRCS SNOTEL network"
