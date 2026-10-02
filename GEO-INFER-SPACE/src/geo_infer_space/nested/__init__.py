@@ -89,7 +89,7 @@ __all__ = [
 ]
 
 # Module metadata
-__version__ = "1.0.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Development Team"
 __description__ = "Nested H3 Hexagonal Grid Systems for Advanced Geospatial Modeling"
 

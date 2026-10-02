@@ -7,10 +7,20 @@ validation and serialization capabilities.
 """
 
 from typing import Any, cast
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 from geojson_pydantic import Feature, FeatureCollection, Point, Polygon, LineString
+from geo_infer_time import normalize_timestamp
+
+
+class _UTCMetadataModel(BaseModel):
+    model_config = ConfigDict(validate_assignment=True, validate_default=True)
+
+    @field_validator("created_at", "updated_at", check_fields=False)
+    @classmethod
+    def normalize_metadata_time(cls, value: datetime | None) -> datetime | None:
+        return None if value is None else normalize_timestamp(value)
 
 
 class GeometryType(StrEnum):
@@ -99,7 +109,7 @@ class SpatialBounds(BaseModel):
         return self.width * self.height
 
 
-class SpatialIndex(BaseModel):
+class SpatialIndex(_UTCMetadataModel):
     """Model for spatial index configuration."""
 
     index_type: str = Field(..., description="Type of spatial index")
@@ -107,7 +117,8 @@ class SpatialIndex(BaseModel):
         default_factory=dict, description="Index parameters"
     )
     created_at: datetime = Field(
-        default_factory=datetime.now, description="Creation timestamp"
+        default_factory=lambda: datetime.now(UTC),
+        description="Creation timestamp (UTC)",
     )
     num_features: int = Field(0, description="Number of indexed features")
 
@@ -119,14 +130,15 @@ class SpatialIndex(BaseModel):
         return v.lower()
 
 
-class SpatialMetadata(BaseModel):
+class SpatialMetadata(_UTCMetadataModel):
     """Model for spatial dataset metadata."""
 
     name: str = Field(..., description="Dataset name")
     description: str | None = Field(None, description="Dataset description")
     source: str | None = Field(None, description="Data source")
     created_at: datetime = Field(
-        default_factory=datetime.now, description="Creation timestamp"
+        default_factory=lambda: datetime.now(UTC),
+        description="Creation timestamp (UTC)",
     )
     updated_at: datetime | None = Field(None, description="Last update timestamp")
     bounds: SpatialBounds | None = Field(None, description="Spatial bounds")
@@ -234,7 +246,7 @@ class SpatialDataset(BaseModel):
         return []
 
 
-class AnalysisResult(BaseModel):
+class AnalysisResult(_UTCMetadataModel):
     """Model for spatial analysis results."""
 
     analysis_type: str = Field(..., description="Type of analysis performed")
@@ -250,7 +262,8 @@ class AnalysisResult(BaseModel):
     )
     execution_time: float | None = Field(None, description="Execution time in seconds")
     created_at: datetime = Field(
-        default_factory=datetime.now, description="Creation timestamp"
+        default_factory=lambda: datetime.now(UTC),
+        description="Creation timestamp (UTC)",
     )
     error_message: str | None = Field(None, description="Error message if failed")
 

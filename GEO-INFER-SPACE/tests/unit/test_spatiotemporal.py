@@ -3,7 +3,7 @@ Tests for Spatio-Temporal Analysis Module.
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 
 from geo_infer_space.analytics.spatiotemporal import SpatioTemporalAnalyzer
@@ -25,7 +25,7 @@ def spatial_methods():
 @pytest.fixture
 def sample_spatiotemporal_data(st_analyzer):
     """Generate sample spatio-temporal data."""
-    base_time = datetime(2024, 1, 1, 12, 0, 0)
+    base_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
     base_cell = st_analyzer.h3.latlng_to_cell(37.7749, -122.4194, 8)
     neighbors = st_analyzer.h3.get_cell_neighbors(base_cell, k=2)
     all_cells = [base_cell] + list(neighbors)
@@ -46,7 +46,7 @@ def sample_spatiotemporal_data(st_analyzer):
 @pytest.fixture
 def sample_trajectory_data(st_analyzer):
     """Generate sample trajectory data."""
-    base_time = datetime(2024, 1, 1, 8, 0, 0)
+    base_time = datetime(2024, 1, 1, 8, 0, 0, tzinfo=UTC)
     base_cell = st_analyzer.h3.latlng_to_cell(37.7749, -122.4194, 8)
     path = st_analyzer.h3.get_cell_path(
         base_cell, st_analyzer.h3.latlng_to_cell(37.78, -122.40, 8)
@@ -186,16 +186,16 @@ class TestSpatioTemporalAnalyzer:
         assert "top_flows" in result
         assert "summary" in result
 
-    def test_kriging_spatiotemporal(self, st_analyzer, sample_spatiotemporal_data):
-        """Test space-time kriging interpolation."""
+    def test_interpolate_spatiotemporal(self, st_analyzer, sample_spatiotemporal_data):
+        """Test space-time weighted interpolation."""
         # Get some target cells
         base_cell = st_analyzer.h3.latlng_to_cell(37.77, -122.42, 8)
         target_cells = [base_cell]
 
-        result = st_analyzer.kriging_spatiotemporal(
+        result = st_analyzer.interpolate_spatiotemporal(
             sample_spatiotemporal_data,
             target_cells=target_cells,
-            target_timestamp=datetime(2024, 1, 5, 12, 0),
+            target_timestamp=datetime(2024, 1, 5, 12, 0, tzinfo=UTC),
             cell_column="cell",
             timestamp_column="timestamp",
             value_column="value",

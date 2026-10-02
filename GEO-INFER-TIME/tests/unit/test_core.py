@@ -32,7 +32,7 @@ class TestTimeModule:
 
     def test_timeseries_creation(self) -> None:
         """Test TimeSeries creation."""
-        dates = pd.date_range(start="2020-01-01", periods=100, freq="D")
+        dates = pd.date_range(start="2020-01-01", periods=100, freq="D", tz="UTC")
         values = np.random.randn(100)
         ts = TimeSeries(values, dates)
         assert ts is not None
@@ -41,7 +41,7 @@ class TestTimeModule:
     def test_temporal_analysis_trend_detection(self) -> None:
         """Test trend detection functionality."""
         analyzer = TemporalAnalyzer()
-        dates = pd.date_range(start="2020-01-01", periods=100, freq="D")
+        dates = pd.date_range(start="2020-01-01", periods=100, freq="D", tz="UTC")
         # Create data with a clear trend
         values = np.linspace(0, 10, 100) + np.random.randn(100) * 0.1
         ts = TimeSeries(values, dates)

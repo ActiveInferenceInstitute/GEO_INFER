@@ -64,18 +64,46 @@ class TemporalAnalyzer:
             method: Trend detection method ('linear', 'polynomial', 'moving_average')
 
         Returns:
-            Dictionary with trend information
+            Dictionary with trend information. Linear ``slope_per_sample``
+            and the legacy ``trend_strength`` describe change per observation;
+            ``r_squared`` measures fit quality. Numerical constants are stable.
         """
         data = timeseries.to_dataframe()
-        values = data.iloc[:, 0].values
+        values = data.iloc[:, 0].to_numpy(dtype=float)
         time_points = np.arange(len(values))
 
         if method == "linear":
-            # Linear regression for trend
-            coeffs = np.polyfit(time_points, values, 1)
-            trend_line = np.polyval(coeffs, time_points)
-            trend_direction = "increasing" if coeffs[0] > 0 else "decreasing"
-            trend_strength = abs(coeffs[0])
+            if len(values) < 2 or not np.isfinite(values).all():
+                raise ValueError(
+                    "Linear trend requires at least two finite observations"
+                )
+            # Centering avoids a large constant offset contaminating the slope.
+            centered_time = time_points - time_points.mean()
+            scale = max(float(np.abs(values).max()), np.finfo(float).tiny)
+            scaled_values = values / scale
+            scaled_mean = scaled_values.mean()
+            centered_values = scaled_values - scaled_mean
+            scaled_slope = float(
+                np.dot(centered_time, centered_values)
+                / np.dot(centered_time, centered_time)
+            )
+            if abs(scaled_slope) * (len(values) - 1) <= 8 * np.finfo(float).eps:
+                scaled_slope = 0.0
+                slope = 0.0
+                trend_direction = "stable"
+            else:
+                slope = scaled_slope * scale
+                trend_direction = "increasing" if slope > 0 else "decreasing"
+            scaled_trend = scaled_mean + scaled_slope * centered_time
+            trend_line = scale * scaled_trend
+            total_variation = float(np.dot(centered_values, centered_values))
+            residuals = scaled_values - scaled_trend
+            r_squared = (
+                max(0.0, 1 - float(np.dot(residuals, residuals)) / total_variation)
+                if total_variation
+                else 1.0
+            )
+            trend_strength = abs(slope)
 
         elif method == "polynomial":
             # Polynomial trend
@@ -96,12 +124,15 @@ class TemporalAnalyzer:
         else:
             raise ValueError(f"Unknown trend detection method: {method}")
 
-        return {
+        result = {
             "method": method,
             "trend_direction": trend_direction,
             "trend_strength": float(trend_strength),
             "trend_values": trend_line.tolist(),
         }
+        if method == "linear":
+            result.update(slope_per_sample=slope, r_squared=r_squared)
+        return result
 
     def detect_seasonality(
         self, timeseries: TimeSeries, max_periods: int = 12

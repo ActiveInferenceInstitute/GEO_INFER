@@ -12,7 +12,7 @@ from geo_infer_time.models.timeseries import TimeSeries
 
 @pytest.fixture
 def daily_series() -> TimeSeries:
-    index = pd.date_range("2024-01-01", periods=4, freq="D")
+    index = pd.date_range("2024-01-01", periods=4, freq="D", tz="UTC")
     data = pd.DataFrame({"value": [1.0, np.nan, 3.0, 4.0]}, index=index)
     return TimeSeries(
         data,
@@ -22,11 +22,11 @@ def daily_series() -> TimeSeries:
 
 
 def test_package_version_matches_distribution_metadata() -> None:
-    assert geo_infer_time.__version__ == version("geo-infer-time") == "0.3.0"
+    assert geo_infer_time.__version__ == version("geo-infer-time")
 
 
 def test_constructor_normalizes_supported_inputs_and_copies_metadata() -> None:
-    timestamps = pd.date_range("2024-01-01", periods=3, freq="h")
+    timestamps = pd.date_range("2024-01-01", periods=3, freq="h", tz="UTC")
     metadata = {"source": "array"}
     location = {"lat": 1.0, "lon": 2.0}
 
@@ -50,7 +50,11 @@ def test_constructor_normalizes_supported_inputs_and_copies_metadata() -> None:
     [
         ([1, 2], None, TypeError),
         (np.array([1, 2]), None, ValueError),
-        (np.array([1, 2]), pd.date_range("2024-01-01", periods=1), ValueError),
+        (
+            np.array([1, 2]),
+            pd.date_range("2024-01-01", periods=1, tz="UTC"),
+            ValueError,
+        ),
     ],
 )
 def test_constructor_rejects_invalid_input_contracts(data, timestamps, exception):
@@ -59,11 +63,13 @@ def test_constructor_rejects_invalid_input_contracts(data, timestamps, exception
 
 
 def test_constructor_converts_datetime_like_index() -> None:
-    timeseries = TimeSeries(pd.Series([1, 2], index=["2024-01-01", "2024-01-02"]))
+    timeseries = TimeSeries(
+        pd.Series([1, 2], index=["2024-01-01T00:00:00Z", "2024-01-02T00:00:00Z"])
+    )
 
     assert isinstance(timeseries.timestamps, pd.DatetimeIndex)
-    assert timeseries.start_time == pd.Timestamp("2024-01-01")
-    assert timeseries.end_time == pd.Timestamp("2024-01-02")
+    assert timeseries.start_time == pd.Timestamp("2024-01-01", tz="UTC")
+    assert timeseries.end_time == pd.Timestamp("2024-01-02", tz="UTC")
     assert timeseries.duration == pd.Timedelta(days=1)
     assert timeseries.frequency is None
 
@@ -89,7 +95,7 @@ def test_empty_timeseries_has_explicit_temporal_boundary_error() -> None:
     ],
 )
 def test_resample_supports_each_documented_method(method: str, expected: list[float]):
-    index = pd.date_range("2024-01-01", periods=4, freq="h")
+    index = pd.date_range("2024-01-01", periods=4, freq="h", tz="UTC")
     timeseries = TimeSeries(pd.Series([1.0, 2.0, 3.0, 4.0], index=index))
 
     resampled = timeseries.resample("2h", method=method)
@@ -119,11 +125,15 @@ def test_interpolation_statistics_and_dataframe_copy(daily_series: TimeSeries) -
 
 
 def test_slice_preserves_context_and_validates_bounds(daily_series: TimeSeries) -> None:
-    sliced = daily_series.slice(pd.Timestamp("2024-01-02"), pd.Timestamp("2024-01-03"))
+    sliced = daily_series.slice(
+        pd.Timestamp("2024-01-02", tz="UTC"), pd.Timestamp("2024-01-03", tz="UTC")
+    )
 
     assert len(sliced) == 2
     assert sliced.metadata == {"source": "sensor", "sliced": True}
     assert sliced.spatial_location == {"lat": 45.5, "lon": -122.6}
 
     with pytest.raises(ValueError, match="must not be after"):
-        daily_series.slice(pd.Timestamp("2024-01-03"), pd.Timestamp("2024-01-02"))
+        daily_series.slice(
+            pd.Timestamp("2024-01-03", tz="UTC"), pd.Timestamp("2024-01-02", tz="UTC")
+        )

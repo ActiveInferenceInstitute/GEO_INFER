@@ -22,7 +22,7 @@ def analyzer():
 @pytest.fixture
 def sample_timeseries():
     """Create a sample time series for testing."""
-    dates = pd.date_range(start="2024-01-01", periods=100, freq="D")
+    dates = pd.date_range(start="2024-01-01", periods=100, freq="D", tz="UTC")
     values = (
         np.sin(np.arange(100) * 2 * np.pi / 12) * 10 + 50 + np.random.randn(100) * 2
     )
@@ -32,7 +32,7 @@ def sample_timeseries():
 @pytest.fixture
 def periodic_timeseries():
     """Create a time series with clear periodicity."""
-    dates = pd.date_range(start="2024-01-01", periods=120, freq="D")
+    dates = pd.date_range(start="2024-01-01", periods=120, freq="D", tz="UTC")
     # Clear 7-day period
     values = 10 * np.sin(np.arange(120) * 2 * np.pi / 7) + 50
     return TimeSeries(data=pd.Series(values, index=dates))
@@ -41,7 +41,7 @@ def periodic_timeseries():
 @pytest.fixture
 def causal_timeseries_pair():
     """Create a pair of time series where one causes the other."""
-    dates = pd.date_range(start="2024-01-01", periods=100, freq="D")
+    dates = pd.date_range(start="2024-01-01", periods=100, freq="D", tz="UTC")
 
     # Series 1 - random walk
     np.random.seed(42)
@@ -132,7 +132,7 @@ class TestPeriodicityDetection:
 
     def test_short_series_error(self, analyzer):
         """Test handling of very short series."""
-        dates = pd.date_range(start="2024-01-01", periods=3, freq="D")
+        dates = pd.date_range(start="2024-01-01", periods=3, freq="D", tz="UTC")
         values = [1, 2, 3]
         short_ts = TimeSeries(data=pd.Series(values, index=dates))
 
@@ -237,7 +237,7 @@ class TestTemporalEntropy:
 
     def test_low_entropy_series(self, analyzer):
         """Test that a regular series has low entropy."""
-        dates = pd.date_range(start="2024-01-01", periods=100, freq="D")
+        dates = pd.date_range(start="2024-01-01", periods=100, freq="D", tz="UTC")
         # Very regular series
         values = [1, 2] * 50
         regular_ts = TimeSeries(data=pd.Series(values, index=dates))
@@ -249,7 +249,7 @@ class TestTemporalEntropy:
 
     def test_high_entropy_series(self, analyzer):
         """Test that a random series has high entropy."""
-        dates = pd.date_range(start="2024-01-01", periods=100, freq="D")
+        dates = pd.date_range(start="2024-01-01", periods=100, freq="D", tz="UTC")
         np.random.seed(42)
         values = np.random.uniform(0, 100, 100)
         random_ts = TimeSeries(data=pd.Series(values, index=dates))
@@ -300,7 +300,7 @@ class TestDecompose:
 
     def test_explicit_period_returns_components(self, analyzer):
         """An explicit period yields trend/seasonal/residual components."""
-        dates = pd.date_range(start="2024-01-01", periods=120, freq="D")
+        dates = pd.date_range(start="2024-01-01", periods=120, freq="D", tz="UTC")
         values = 10 * np.sin(np.arange(120) * 2 * np.pi / 7) + 50
         result = analyzer.decompose(
             TimeSeries(data=pd.Series(values, index=dates)), period=7
@@ -311,33 +311,33 @@ class TestDecompose:
 
     def test_daily_frequency_infers_weekly_period(self, analyzer):
         """Daily data infers a 7-sample weekly period."""
-        dates = pd.date_range(start="2024-01-01", periods=120, freq="D")
+        dates = pd.date_range(start="2024-01-01", periods=120, freq="D", tz="UTC")
         ts = TimeSeries(data=pd.Series(np.arange(120.0), index=dates))
         assert ts.frequency == "D"
         assert analyzer.decompose(ts)["period"] == 7
 
     def test_hourly_frequency_infers_daily_period(self, analyzer):
         """Hourly data infers a 24-sample daily period."""
-        dates = pd.date_range(start="2024-01-01", periods=120, freq="h")
+        dates = pd.date_range(start="2024-01-01", periods=120, freq="h", tz="UTC")
         ts = TimeSeries(data=pd.Series(np.arange(120.0), index=dates))
         assert analyzer.decompose(ts)["period"] == 24
 
     def test_hourly_multiple_infers_pro_rated_period(self, analyzer):
         """'2h' sampling infers a 12-sample daily period, not 24."""
-        dates = pd.date_range(start="2024-01-01", periods=120, freq="2h")
+        dates = pd.date_range(start="2024-01-01", periods=120, freq="2h", tz="UTC")
         ts = TimeSeries(data=pd.Series(np.arange(120.0), index=dates))
         assert analyzer.decompose(ts)["period"] == 12
 
     def test_sub_daily_sample_frequency_raises(self, analyzer):
         """'15min' data cannot map to a sample count and must raise."""
-        dates = pd.date_range(start="2024-01-01", periods=300, freq="15min")
+        dates = pd.date_range(start="2024-01-01", periods=300, freq="15min", tz="UTC")
         ts = TimeSeries(data=pd.Series(np.arange(300.0), index=dates))
         with pytest.raises(ValueError, match="pass period explicitly"):
             analyzer.decompose(ts)
 
     def test_quarterly_frequency_infers_quarterly_period(self, analyzer):
         """'QE' data maps to a 4-sample period (no misfire on the embedded 'D')."""
-        dates = pd.date_range(start="2020-01-01", periods=40, freq="QE")
+        dates = pd.date_range(start="2020-01-01", periods=40, freq="QE", tz="UTC")
         ts = TimeSeries(data=pd.Series(np.arange(40.0), index=dates))
         assert analyzer.decompose(ts)["period"] == 4
 
@@ -353,7 +353,8 @@ class TestDecompose:
                 "2024-01-21 08:12",
                 "2024-02-02 04:44",
                 "2024-02-19 19:19",
-            ]
+            ],
+            tz="UTC",
         )
         ts = TimeSeries(data=pd.Series(np.arange(8.0), index=dates))
         assert ts.frequency is None

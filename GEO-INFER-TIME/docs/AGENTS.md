@@ -22,8 +22,8 @@
 ## Local Contents
 
 - `action_observation_schedule.md`
-- `api_schema.yaml`
 - `streaming_migration.md`
+- `utc_timeseries_migration.md`
 
 ## Validation
 

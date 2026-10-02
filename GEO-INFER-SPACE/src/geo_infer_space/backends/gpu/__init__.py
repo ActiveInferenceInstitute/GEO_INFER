@@ -20,7 +20,7 @@ from .gpu_acceleration import (
     spatial_join_kernel,
 )
 
-__version__ = "1.1.0"
+__version__ = "0.4.0"
 
 
 __all__ = [

@@ -15,6 +15,7 @@ Core workspace within `GEO-INFER-TIME`.
 - `statistics.py`
 - `stream_ingest.py`
 - `stream_processing.py`
+- `timestamps.py`
 - `visualization.py`
 
 ## Public Interface
@@ -32,19 +33,19 @@ Core workspace within `GEO-INFER-TIME`.
 - `inference_schedule.py:inference_schedule` (function)
 - `interpolation.py:TemporalInterpolator` (class)
 - `statistics.py:TemporalStatistics` (class)
-- `stream_ingest.py:normalize_timestamp` (function)
 - `stream_ingest.py:StreamIngestAdapter` (class)
 - `stream_ingest.py:ReplayIngestAdapter` (class)
 - `stream_ingest.py:WebSocketIngestAdapter` (class)
 - `stream_ingest.py:KafkaIngestAdapter` (class)
 - `stream_processing.py:StreamProcessor` (class)
-- `visualization.py:TemporalVisualization` (class)
+- `timestamps.py:normalize_timestamp` (function)
+- `timestamps.py:normalize_datetime_index` (function)
 
 ## Module Metadata
 
 - Module: `GEO-INFER-TIME`
 - Package: `geo_infer_time`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-time`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module TIME`
 

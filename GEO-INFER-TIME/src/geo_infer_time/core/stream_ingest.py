@@ -22,22 +22,7 @@ from collections.abc import AsyncIterator, Iterable
 from urllib.parse import urlsplit
 
 
-def normalize_timestamp(value: datetime) -> datetime:
-    """Convert a timezone-aware datetime to UTC.
-
-    Naive datetimes are ambiguous (local wall-clock or UTC) and raise
-    ValueError; attach an explicit ``tzinfo`` (e.g. ``datetime.UTC``).
-    """
-    if not isinstance(value, datetime):
-        raise TypeError("timestamp must be a datetime")
-    if value != value:  # Reject pandas NaT, a datetime subclass.
-        raise ValueError("timestamp must not be NaT")
-    if value.utcoffset() is None:
-        raise ValueError(
-            "timestamp must be timezone-aware; naive datetimes are ambiguous "
-            f"(got {value.isoformat()!r}, attach tzinfo such as UTC)"
-        )
-    return value.astimezone(UTC)
+from geo_infer_time.core.timestamps import normalize_timestamp as normalize_timestamp
 
 
 def _integer(value: Any, name: str, minimum: int = 0) -> int:

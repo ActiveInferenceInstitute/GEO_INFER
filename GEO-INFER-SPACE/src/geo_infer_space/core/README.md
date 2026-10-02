@@ -20,6 +20,7 @@ Core workspace within `GEO-INFER-SPACE`.
 - `spatial_indexing.py`
 - `spatial_methods.py`
 - `spatial_processor.py`
+- `spatiotemporal.py`
 - `state_space.py`
 - `statistics.py`
 - `unified_backend.py`
@@ -54,12 +55,13 @@ Core workspace within `GEO-INFER-SPACE`.
 
 - Module: `GEO-INFER-SPACE`
 - Package: `geo_infer_space`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-space`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module SPACE`
 
 ## Dependencies
 
+- `geo-infer-time>=0.4.0`
 - `fastapi>=0.100.0`
 - `fiona>=1.8.0`
 - `geojson-pydantic>=2.0.0`

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-space"
-version = "0.3.0"
+version = "0.4.0"
 description = "H3 v4 spatial indexing and comprehensive geospatial analysis framework with advanced spatial methods and coordinate transformations"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"
@@ -34,6 +34,7 @@ classifiers = [
 ]
 
 dependencies = [
+    "geo-infer-time>=0.4.0",
     "fastapi>=0.100.0",
     "fiona>=1.8.0",
     "geojson-pydantic>=2.0.0",
@@ -59,7 +60,7 @@ dependencies = [
 dev = [
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
-    "pytest-asyncio>=0.20.0",
+    "pytest-asyncio>=0.24.0",
     "ruff>=0.15.6,<0.16",
     "mypy>=0.910",
 ]
@@ -87,12 +88,35 @@ viz = [
     "folium>=0.12.0"
 ]
 all = [
-    "geo-infer-space[optional,viz]"
+    "dask>=2021.10.0",
+    "dask[dataframe]>=2021.10.0",
+    "folium>=0.12.0",
+    "geo-infer-math>=0.4.0",
+    "geo-infer-test>=0.4.0",
+    "laspy>=2.0.0",
+    "matplotlib>=3.5.0",
+    "mypy>=0.910",
+    "myst-parser>=0.15.0",
+    "nbsphinx>=0.8.0",
+    "numba>=0.56.0",
+    "osmnx>=1.2.0",
+    "plotly>=5.0.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=2.12.0",
+    "pytest>=6.2.0",
+    "redis>=4.0.0",
+    "rioxarray>=0.11.0",
+    "ruff<0.16,>=0.15.6",
+    "seaborn>=0.11.0",
+    "sphinx-rtd-theme>=1.0.0",
+    "sphinx>=4.2.0",
+    "srai>=0.10.2",
+    "xarray>=0.20.0",
 ]
 integrations = [
     # Workspace siblings imported by this module's tests (resolved via [tool.uv.sources])
-    "geo-infer-math>=0.3.0",
-    "geo-infer-test>=0.3.0",
+    "geo-infer-math>=0.4.0",
+    "geo-infer-test>=0.4.0",
 ]
 
 [project.urls]
@@ -105,6 +129,7 @@ Repository = "https://github.com/ActiveInferenceInstitute/GEO_INFER"
 # No scripts (legacy tools removed)
 
 [tool.uv.sources]
+geo-infer-time = { workspace = true }
 geo-infer-math = { workspace = true }
 geo-infer-test = { workspace = true }
 
@@ -117,39 +142,6 @@ exclude = ["tests*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.md", "*.txt"]
-
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-
-[[tool.mypy.overrides]]
-module = [
-    "numpy.*",
-    "pandas.*",
-    "geopandas.*",
-    "h3.*",
-    "folium.*",
-    "plotly.*",
-    "matplotlib.*",
-    "scipy.*",
-    "sklearn.*",
-    "tensorflow.*",
-    "torch.*",
-    "pymc.*",
-    "arviz.*",
-]
-ignore_missing_imports = true
 
 [tool.coverage.run]
 source = ["src"]

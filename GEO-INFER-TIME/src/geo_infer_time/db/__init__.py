@@ -10,6 +10,7 @@ from copy import deepcopy
 from datetime import datetime
 
 from geo_infer_time.models.timeseries import TimeSeries
+from geo_infer_time.core.timestamps import normalize_datetime_index
 
 logger = logging.getLogger(__name__)
 
@@ -169,8 +170,10 @@ class InMemoryStore(TimeSeriesStore):
         df = ts.to_dataframe()
 
         if start is not None:
+            start = normalize_datetime_index([start])[0]
             df = df.loc[df.index >= start]
         if end is not None:
+            end = normalize_datetime_index([end])[0]
             df = df.loc[df.index <= end]
 
         logger.debug(

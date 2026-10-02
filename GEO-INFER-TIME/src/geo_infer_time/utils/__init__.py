@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from geo_infer_time.models.timeseries import TimeSeries
+from geo_infer_time.core.timestamps import normalize_timestamp
 
 logger = logging.getLogger(__name__)
 
@@ -295,7 +296,7 @@ def create_timeseries(
     freq: str,
     name: str | None = None,
     metadata: dict[str, Any] | None = None,
-    spatial_location: dict[str, float] | None = None,
+    spatial_location: dict[str, float | str] | None = None,
     **kwargs: Any,
 ) -> TimeSeries:
     """Create a TimeSeries from raw values and a start time / frequency.
@@ -318,6 +319,7 @@ def create_timeseries(
     Returns:
         A new TimeSeries.
     """
+    start = normalize_timestamp(start)
     if isinstance(values, dict):
         length = len(next(iter(values.values())))
         index = pd.date_range(start=start, periods=length, freq=freq)

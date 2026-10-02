@@ -19,6 +19,8 @@ from datetime import datetime
 from collections import defaultdict
 
 import numpy as np
+import h3
+from geo_infer_time import normalize_datetime_index
 
 logger = logging.getLogger(__name__)
 
@@ -40,12 +42,9 @@ class SpatioTemporalAnalyzer:
         """
         self.h3: Any = h3_backend
         if self.h3 is None:
-            try:
-                from ..backends.h3.h3_backend import H3Backend
+            from ..backends.h3.h3_backend import H3Backend
 
-                self.h3 = H3Backend()
-            except ImportError:
-                logger.warning("H3 backend not available")
+            self.h3 = H3Backend()
 
         logger.info("SpatioTemporalAnalyzer initialized")
 
@@ -70,6 +69,7 @@ class SpatioTemporalAnalyzer:
         Returns:
             Per-cell time series analysis with trends and patterns
         """
+        self._validate_time_resolution(temporal_resolution)
         if not data:
             return {"error": "No data provided"}
 
@@ -80,12 +80,14 @@ class SpatioTemporalAnalyzer:
             ts = record.get(timestamp_column)
             value = record.get(value_column)
 
-            if cell and ts and value is not None:
+            if cell is not None and ts is not None and value is not None:
                 timestamp = self._parse_timestamp(ts)
                 if timestamp:
                     cell_series[cell].append(
-                        {"timestamp": timestamp, "value": float(value)}
+                        {"timestamp": timestamp, "value": self._finite_value(value)}
                     )
+
+        self._validate_cells(list(cell_series))
 
         # Analyze each cell's time series
         cell_analyses: dict[Any, dict[str, Any]] = {}
@@ -158,6 +160,14 @@ class SpatioTemporalAnalyzer:
         Returns:
             Cluster assignments and statistics
         """
+        self._nonnegative_integer(spatial_eps, "spatial_eps")
+        self._nonnegative_number(temporal_eps_hours, "temporal_eps_hours")
+        if (
+            isinstance(min_points, bool)
+            or not isinstance(min_points, int)
+            or min_points < 1
+        ):
+            raise ValueError("min_points must be a positive integer")
         if not data or not self.h3:
             return {"error": "No data or H3 backend not available"}
 
@@ -166,7 +176,7 @@ class SpatioTemporalAnalyzer:
         for i, record in enumerate(data):
             cell = record.get(cell_column)
             ts = record.get(timestamp_column)
-            if cell and ts:
+            if cell is not None and ts is not None:
                 timestamp = self._parse_timestamp(ts)
                 if timestamp:
                     points.append(
@@ -178,8 +188,14 @@ class SpatioTemporalAnalyzer:
                         }
                     )
 
+        self._validate_cells([point["cell"] for point in points])
         if len(points) < min_points:
             return {"error": f"Need at least {min_points} points"}
+
+        spatial_neighbors = {
+            cell: set(h3.grid_disk(cell, spatial_eps))
+            for cell in {point["cell"] for point in points}
+        }
 
         temporal_eps_seconds = temporal_eps_hours * 3600
 
@@ -191,11 +207,9 @@ class SpatioTemporalAnalyzer:
                 return False
 
             # Spatial check
-            try:
-                dist = self.h3.get_cell_distance(p1["cell"], p2["cell"])
-                return bool(dist <= spatial_eps)
-            except Exception:
-                return bool(p1["cell"] == p2["cell"])
+            # grid_disk supports pentagons; failed grid_distance calls must not
+            # silently replace real topology with same-cell-only adjacency.
+            return p2["cell"] in spatial_neighbors[p1["cell"]]
 
         def get_neighbors(point_idx: int) -> list[int]:
             """Get all neighbors of a point."""
@@ -246,7 +260,7 @@ class SpatioTemporalAnalyzer:
             if cid == 0:
                 continue  # Skip noise
 
-            cells = list(set(m["cell"] for m in members))
+            cells = sorted(set(m["cell"] for m in members))
             timestamps = [m["timestamp"] for m in members]
 
             cluster_summaries.append(
@@ -303,6 +317,9 @@ class SpatioTemporalAnalyzer:
         Returns:
             Space-time cube with binned values
         """
+        self._validate_time_resolution(temporal_bin_size)
+        if aggregation not in {"mean", "sum", "count", "max", "min"}:
+            raise ValueError("Unsupported space-time aggregation")
         if not data:
             return {"error": "No data provided"}
 
@@ -314,11 +331,13 @@ class SpatioTemporalAnalyzer:
             ts = record.get(timestamp_column)
             value = record.get(value_column)
 
-            if cell and ts and value is not None:
+            if cell is not None and ts is not None and value is not None:
                 timestamp = self._parse_timestamp(ts)
                 if timestamp:
                     time_bin = self._get_time_bin(timestamp, temporal_bin_size)
-                    cube[(cell, time_bin)].append(float(value))
+                    cube[(cell, time_bin)].append(self._finite_value(value))
+
+        self._validate_cells([cell for cell, _ in cube])
 
         # Aggregate
         aggregated_cube = {}
@@ -333,8 +352,6 @@ class SpatioTemporalAnalyzer:
                 agg_value = max(values)
             elif aggregation == "min":
                 agg_value = min(values)
-            else:
-                agg_value = sum(values) / len(values)
 
             aggregated_cube[key] = {"value": agg_value, "count": len(values)}
 
@@ -511,6 +528,8 @@ class SpatioTemporalAnalyzer:
         Returns:
             Space-time autocorrelation statistics
         """
+        self._nonnegative_integer(spatial_lag, "spatial_lag")
+        self._nonnegative_number(temporal_lag_hours, "temporal_lag_hours")
         if not data or not self.h3:
             return {"error": "No data or H3 backend not available"}
 
@@ -521,15 +540,26 @@ class SpatioTemporalAnalyzer:
             ts = record.get(timestamp_column)
             value = record.get(value_column)
 
-            if cell and ts and value is not None:
+            if cell is not None and ts is not None and value is not None:
                 timestamp = self._parse_timestamp(ts)
                 if timestamp:
                     points.append(
-                        {"cell": cell, "timestamp": timestamp, "value": float(value)}
+                        {
+                            "cell": cell,
+                            "timestamp": timestamp,
+                            "value": self._finite_value(value),
+                        }
                     )
+
+        self._validate_cells([point["cell"] for point in points])
 
         if len(points) < 3:
             return {"error": "Need at least 3 points"}
+
+        spatial_neighbors = {
+            cell: set(h3.grid_disk(cell, spatial_lag))
+            for cell in {point["cell"] for point in points}
+        }
 
         # Calculate global mean
         values = [p["value"] for p in points]
@@ -556,13 +586,8 @@ class SpatioTemporalAnalyzer:
                 if time_diff > temporal_lag_seconds:
                     continue
 
-                try:
-                    spatial_dist = self.h3.get_cell_distance(pi["cell"], pj["cell"])
-                    if spatial_dist > spatial_lag:
-                        continue
-                except Exception:
-                    if pi["cell"] != pj["cell"]:
-                        continue
+                if pj["cell"] not in spatial_neighbors[pi["cell"]]:
+                    continue
 
                 # Weight is 1 for neighbors
                 weight = 1.0
@@ -635,13 +660,16 @@ class SpatioTemporalAnalyzer:
             cell = record.get(cell_column)
             ts = record.get(timestamp_column)
 
-            if entity_id and cell and ts:
+            if entity_id is not None and cell is not None and ts is not None:
                 timestamp = self._parse_timestamp(ts)
                 if timestamp:
                     entity_tracks[entity_id].append(
                         {"cell": cell, "timestamp": timestamp}
                     )
 
+        self._validate_cells(
+            [p["cell"] for track in entity_tracks.values() for p in track]
+        )
         # Sort each track by time
         for entity_id in entity_tracks:
             entity_tracks[entity_id].sort(key=lambda x: x["timestamp"])
@@ -716,7 +744,7 @@ class SpatioTemporalAnalyzer:
             "entity_stats": entity_stats[:10],  # Limit output
         }
 
-    def kriging_spatiotemporal(
+    def interpolate_spatiotemporal(
         self,
         known_data: list[dict[str, Any]],
         target_cells: list[str],
@@ -728,7 +756,7 @@ class SpatioTemporalAnalyzer:
         temporal_range_hours: float = 48,
     ) -> dict[str, Any]:
         """
-        Interpolate values using space-time kriging.
+        Interpolate values using softened inverse space-time distance weights.
 
         Estimates values at target locations and time using nearby
         observations weighted by space-time distance.
@@ -746,6 +774,9 @@ class SpatioTemporalAnalyzer:
         Returns:
             Interpolated values for target cells
         """
+        self._nonnegative_integer(spatial_range, "spatial_range")
+        self._nonnegative_number(temporal_range_hours, "temporal_range_hours")
+        target_timestamp = self._parse_timestamp(target_timestamp)
         if not known_data or not target_cells:
             return {"error": "Missing data or targets"}
 
@@ -759,12 +790,18 @@ class SpatioTemporalAnalyzer:
             ts = record.get(timestamp_column)
             value = record.get(value_column)
 
-            if cell and ts and value is not None:
+            if cell is not None and ts is not None and value is not None:
                 timestamp = self._parse_timestamp(ts)
                 if timestamp:
                     known_points.append(
-                        {"cell": cell, "timestamp": timestamp, "value": float(value)}
+                        {
+                            "cell": cell,
+                            "timestamp": timestamp,
+                            "value": self._finite_value(value),
+                        }
                     )
+
+        self._validate_cells(target_cells + [point["cell"] for point in known_points])
 
         if not known_points:
             return {"error": "No valid known points"}
@@ -775,6 +812,10 @@ class SpatioTemporalAnalyzer:
         for target_cell in target_cells:
             weights = []
             values = []
+            distances: dict[str, int] = {}
+            for distance in range(spatial_range + 1):
+                for cell in h3.grid_disk(target_cell, distance):
+                    distances.setdefault(cell, distance)
 
             for kp in known_points:
                 # Temporal distance
@@ -783,14 +824,9 @@ class SpatioTemporalAnalyzer:
                     continue
 
                 # Spatial distance
-                try:
-                    spatial_dist = self.h3.get_cell_distance(target_cell, kp["cell"])
-                    if spatial_dist > spatial_range:
-                        continue
-                except Exception:
-                    if target_cell != kp["cell"]:
-                        continue
-                    spatial_dist = 0
+                spatial_dist = distances.get(kp["cell"])
+                if spatial_dist is None:
+                    continue
 
                 # Calculate space-time weight (inverse distance)
                 temporal_weight = 1.0 / (1.0 + time_diff / 3600)
@@ -823,6 +859,7 @@ class SpatioTemporalAnalyzer:
         ]
 
         return {
+            "method": "softened_inverse_distance",
             "target_timestamp": target_timestamp.isoformat(),
             "num_targets": len(target_cells),
             "num_interpolated": len(valid_interpolations),
@@ -837,48 +874,60 @@ class SpatioTemporalAnalyzer:
     # HELPER METHODS
     # =========================================================================
 
-    def _parse_timestamp(self, ts: Any) -> datetime | None:
-        """Parse timestamp from various formats."""
-        if isinstance(ts, datetime):
-            return ts
+    def _parse_timestamp(self, ts: Any) -> datetime:
+        """Require an aware instant and preserve pandas fractional precision."""
+        return normalize_datetime_index([ts])[0]
 
-        if isinstance(ts, (int, float)):
-            try:
-                return datetime.fromtimestamp(ts)
-            except (ValueError, OSError, OverflowError):
-                return None
+    @staticmethod
+    def _validate_cells(cells: list[str]) -> None:
+        if any(
+            not isinstance(cell, str) or not h3.is_valid_cell(cell) for cell in cells
+        ):
+            raise ValueError("Expected valid H3 cells")
+        if len({h3.get_resolution(cell) for cell in cells}) > 1:
+            raise ValueError("H3 cells must share a resolution")
 
-        timestamp_str = str(ts)
-        formats = [
-            "%Y-%m-%d %H:%M:%S",
-            "%Y-%m-%dT%H:%M:%S",
-            "%Y-%m-%dT%H:%M:%SZ",
-            "%Y-%m-%d",
-        ]
+    @staticmethod
+    def _finite_value(value: Any) -> float:
+        if isinstance(value, bool):
+            raise TypeError("value must be a finite number")
+        result = float(value)
+        if not np.isfinite(result):
+            raise ValueError("value must be finite")
+        return result
 
-        for fmt in formats:
-            try:
-                return datetime.strptime(timestamp_str, fmt)
-            except ValueError:
-                continue
+    @staticmethod
+    def _nonnegative_integer(value: int, name: str) -> None:
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(f"{name} must be a non-negative integer")
 
-        try:
-            return datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
-        except Exception:
-            return None
+    @staticmethod
+    def _nonnegative_number(value: float, name: str) -> None:
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not np.isfinite(value)
+            or value < 0
+        ):
+            raise ValueError(f"{name} must be finite and non-negative")
+
+    @staticmethod
+    def _validate_time_resolution(resolution: str) -> None:
+        if resolution not in {"hour", "day", "week", "month"}:
+            raise ValueError("temporal resolution must be hour, day, week or month")
 
     def _get_time_bin(self, timestamp: datetime, bin_size: str) -> str:
         """Get time bin key for a timestamp."""
+        self._validate_time_resolution(bin_size)
+        timestamp = self._parse_timestamp(timestamp)
         if bin_size == "hour":
             return timestamp.strftime("%Y-%m-%d-%H")
         elif bin_size == "day":
             return timestamp.strftime("%Y-%m-%d")
         elif bin_size == "week":
-            return timestamp.strftime("%Y-W%W")
+            return timestamp.strftime("%G-W%V")
         elif bin_size == "month":
             return timestamp.strftime("%Y-%m")
-        else:
-            return timestamp.strftime("%Y-%m-%d")
 
     def _detect_trend(self, values: list[float]) -> dict[str, Any]:
         """Detect trend in a series of values."""
@@ -899,9 +948,10 @@ class SpatioTemporalAnalyzer:
             slope = numerator / denominator
 
         # Determine direction
-        if slope > 0.01 * y_mean:
+        threshold = 0.01 * abs(y_mean)
+        if slope > threshold:
             direction = "increasing"
-        elif slope < -0.01 * y_mean:
+        elif slope < -threshold:
             direction = "decreasing"
         else:
             direction = "stable"

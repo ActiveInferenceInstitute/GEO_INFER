@@ -9,7 +9,7 @@ methods to verify they are functional and produce accurate outputs.
 import numpy as np
 import pandas as pd
 import sys
-from datetime import datetime
+from datetime import datetime, UTC
 
 
 # Colored output
@@ -26,7 +26,7 @@ def section(msg):
 
 
 section("GEO-INFER-TIME COMPREHENSIVE DEMONSTRATION")
-print(f"Timestamp: {datetime.now().isoformat()}")
+print(f"Timestamp: {datetime.now(UTC).isoformat()}")
 
 # ==============================================================================
 # 1. IMPORTS
@@ -57,7 +57,7 @@ np.random.seed(42)
 n = 200
 
 # Time index
-dates = pd.date_range(start="2024-01-01", periods=n, freq="D")
+dates = pd.date_range(start="2024-01-01", periods=n, freq="D", tz="UTC")
 
 # Generate realistic time series with trend, seasonality, and noise
 trend = np.linspace(50, 100, n)

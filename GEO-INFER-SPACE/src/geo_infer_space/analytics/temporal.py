@@ -11,6 +11,7 @@ from typing import Any
 from datetime import datetime
 
 import numpy as np
+from geo_infer_time import normalize_datetime_index
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,8 @@ class TemporalAnalyzer:
         Returns:
             Dictionary containing temporal pattern analysis
         """
+        if temporal_resolution not in {"hour", "day", "week", "month"}:
+            raise ValueError("temporal resolution must be hour, day, week or month")
         if not data:
             return {"error": "No data provided"}
 
@@ -91,31 +94,9 @@ class TemporalAnalyzer:
             "method": "Temporal Pattern Analysis",
         }
 
-    def _parse_timestamp(self, ts: Any) -> datetime | None:
-        """Parse timestamp from various formats."""
-        if isinstance(ts, datetime):
-            return ts
-
-        timestamp_str = str(ts)
-        try:
-            # Try common formats
-            formats = [
-                "%Y-%m-%d %H:%M:%S",
-                "%Y-%m-%dT%H:%M:%S",
-                "%Y-%m-%d",
-                "%m/%d/%Y %H:%M:%S",
-            ]
-            for fmt in formats:
-                try:
-                    return datetime.strptime(timestamp_str, fmt)
-                except ValueError:
-                    continue
-
-            # ISO format fallback
-            return datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
-        except Exception as e:
-            logger.debug(f"Failed to parse timestamp '{timestamp_str}': {e}")
-            return None
+    def _parse_timestamp(self, ts: Any) -> datetime:
+        """Normalize an explicit aware instant to UTC."""
+        return normalize_datetime_index([ts])[0]
 
     def _aggregate_by_temporal_resolution(
         self, temporal_data: list[dict], resolution: str

@@ -63,6 +63,10 @@ from geo_infer_time import (
 - Feed timestamped measurements from GEO-INFER-DATA or GEO-INFER-IOT into the explicit replay or live transport adapters.
 - Combine temporal windows with GEO-INFER-SPACE H3 indices when records carry spatial identifiers.
 - Pass processed windows to the anomaly and forecasting APIs described in the module documentation.
+- Use the public `normalize_timestamp` and `normalize_datetime_index` helpers
+  for UTC boundary validation; the scalar helper imports no analytical engines.
+- Compose explicit H3/time axes with `geo_infer_space.align_h3_observations`;
+  missing observations remain NaN and duplicate pairs fail.
 
 ## Examples
 
@@ -84,5 +88,7 @@ assert window["aggregated_value"] == 21.5
 - Install the TIME `streaming` extra for WebSocket and Kafka ingestion.
 - Supply explicit, timezone-aware event timestamps (naive datetimes or offset-less ISO strings raise `ValueError`); output is timezone-aware UTC.
 - Read [streaming migration and delivery contracts](docs/streaming_migration.md) before changing callers.
+- Read [UTC TimeSeries migration](docs/utc_timeseries_migration.md) when moving
+  constructors, IO, query bounds or spatial composition to 0.4.0.
 - Run `uv run python GEO-INFER-TEST/run_unified_tests.py --module TIME` for local verification.
 - Run the explicit live Kafka service check against a disposable broker when validating network delivery.

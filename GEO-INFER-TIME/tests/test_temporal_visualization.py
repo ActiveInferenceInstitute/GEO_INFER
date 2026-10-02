@@ -34,7 +34,7 @@ def sample_values():
 @pytest.fixture
 def sample_timestamps():
     """Generate sample timestamps."""
-    return list(pd.date_range(start="2024-01-01", periods=100, freq="D"))
+    return list(pd.date_range(start="2024-01-01", periods=100, freq="D", tz="UTC"))
 
 
 @pytest.fixture

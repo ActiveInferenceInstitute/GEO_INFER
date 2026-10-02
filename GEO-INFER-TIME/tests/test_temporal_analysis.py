@@ -6,19 +6,16 @@ import pytest
 import numpy as np
 import pandas as pd
 
+from geo_infer_time import TimeSeries
 from geo_infer_time.core.analysis import TemporalAnalyzer, AnomalyType
 
 
-class MockTimeSeries:
-    """Mock TimeSeries for testing."""
-
-    def __init__(self, values, frequency=None):
-        self.values = values
-        self.frequency = frequency
-
-    def to_dataframe(self):
-        dates = pd.date_range("2024-01-01", periods=len(self.values), freq="D")
-        return pd.DataFrame({"value": self.values}, index=dates)
+def make_timeseries(values, frequency=None):
+    """Exercise analysis through the real strict UTC model."""
+    dates = pd.date_range(
+        "2024-01-01", periods=len(values), freq=frequency or "D", tz="UTC"
+    )
+    return TimeSeries(pd.DataFrame({"value": values}, index=dates))
 
 
 class TestTemporalAnalyzer:
@@ -32,7 +29,7 @@ class TestTemporalAnalyzer:
     def trend_series(self):
         # Series with clear upward trend
         values = [10 + i * 2 + np.random.normal(0, 1) for i in range(100)]
-        return MockTimeSeries(values)
+        return make_timeseries(values)
 
     @pytest.fixture
     def seasonal_series(self):
@@ -41,7 +38,7 @@ class TestTemporalAnalyzer:
             50 + 20 * np.sin(2 * np.pi * i / 7) + np.random.normal(0, 2)
             for i in range(100)
         ]
-        return MockTimeSeries(values, frequency="D")
+        return make_timeseries(values, frequency="D")
 
     def test_detect_trend_linear(self, analyzer, trend_series):
         """Test linear trend detection."""
@@ -54,7 +51,7 @@ class TestTemporalAnalyzer:
     def test_detect_trend_polynomial(self, analyzer):
         """Test polynomial trend detection."""
         values = [i**2 / 100 + np.random.normal(0, 1) for i in range(100)]
-        series = MockTimeSeries(values)
+        series = make_timeseries(values)
 
         result = analyzer.detect_trend(series, method="polynomial")
 
@@ -82,7 +79,7 @@ class TestAnomalyDetection:
         # Insert anomalies
         values[25] = 150  # High anomaly
         values[75] = -50  # Low anomaly
-        return MockTimeSeries(values)
+        return make_timeseries(values)
 
     def test_detect_anomalies_zscore(self, analyzer, series_with_anomalies):
         """Test z-score anomaly detection."""
@@ -111,7 +108,7 @@ class TestAnomalyDetection:
     def test_anomaly_rate_calculation(self, analyzer):
         """Test anomaly rate is calculated correctly."""
         values = list(range(100))
-        series = MockTimeSeries(values)
+        series = make_timeseries(values)
 
         result = analyzer.detect_anomalies(series, method="zscore", threshold=3.0)
 
@@ -130,7 +127,7 @@ class TestChangePointDetection:
         # Series with level shift at index 50
         values = [10 + np.random.normal(0, 1) for _ in range(50)]
         values += [30 + np.random.normal(0, 1) for _ in range(50)]
-        return MockTimeSeries(values)
+        return make_timeseries(values)
 
     def test_detect_change_points_cusum(self, analyzer, series_with_change):
         """Test CUSUM change point detection."""
@@ -174,8 +171,8 @@ class TestCrossCorrelation:
         values1 = [np.sin(i / 10) for i in range(100)]
         values2 = [np.sin((i - 5) / 10) for i in range(100)]
 
-        series1 = MockTimeSeries(values1)
-        series2 = MockTimeSeries(values2)
+        series1 = make_timeseries(values1)
+        series2 = make_timeseries(values2)
 
         result = analyzer.calculate_cross_correlation(series1, series2, max_lag=20)
 
@@ -187,8 +184,8 @@ class TestCrossCorrelation:
         # Use sinusoidal pattern for better cross-correlation behavior
         values1 = [np.sin(i / 5) for i in range(100)]
         values2 = [np.sin((i - 3) / 5) for i in range(100)]  # Lagged by 3
-        series1 = MockTimeSeries(values1)
-        series2 = MockTimeSeries(values2)
+        series1 = make_timeseries(values1)
+        series2 = make_timeseries(values2)
 
         result = analyzer.calculate_cross_correlation(series1, series2, max_lag=10)
 
@@ -261,7 +258,7 @@ class TestAutocorrelation:
         values = [
             np.sin(2 * np.pi * i / 10) + np.random.normal(0, 0.1) for i in range(100)
         ]
-        return MockTimeSeries(values)
+        return make_timeseries(values)
 
     def test_calculate_autocorrelation(self, analyzer, periodic_series):
         """Test autocorrelation calculation."""

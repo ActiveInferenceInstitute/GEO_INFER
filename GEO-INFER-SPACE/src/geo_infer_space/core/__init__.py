@@ -5,7 +5,7 @@ This module provides generic spatial operations that can dispatch to
 different backends (H3, SRAI, etc.) based on configuration.
 """
 
-__version__ = "1.0.0"
+__version__ = "0.4.0"
 
 from .dispatcher import SpatialBackendDispatcher, get_backend_dispatcher
 from .spatial_indexing import SpatialIndexingInterface
@@ -13,6 +13,8 @@ from .geometric_operations import GeometricOperationsInterface
 from .analytics import SpatialAnalyticsInterface
 from .statistics import SpatialStatistics
 from .interfaces import UnsupportedSpatialOperationError
+from .state_space import H3StateSpace
+from .spatiotemporal import align_h3_observations
 from .h3_policy import (
     H3_AVG_AREA_KM2,
     H3_DEFAULT_TARGET_CELLS,
@@ -61,6 +63,8 @@ __all__ = [
     "SpatialAnalyticsInterface",
     "SpatialStatistics",
     "UnsupportedSpatialOperationError",
+    "H3StateSpace",
+    "align_h3_observations",
     "H3_AVG_AREA_KM2",
     "H3_DEFAULT_TARGET_CELLS",
     "H3_DEFAULT_MAX_RES",

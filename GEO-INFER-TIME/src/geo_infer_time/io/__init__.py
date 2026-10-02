@@ -12,6 +12,7 @@ from typing import Any
 import pandas as pd
 
 from geo_infer_time.models.timeseries import TimeSeries
+from geo_infer_time.core.timestamps import normalize_datetime_index
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ class TimeSeriesReader:
         path: str | Path,
         time_column: str | None = None,
         metadata: dict[str, Any] | None = None,
-        spatial_location: dict[str, float] | None = None,
+        spatial_location: dict[str, float | str] | None = None,
         **kwargs: Any,
     ) -> TimeSeries:
         """Read a time series file into a TimeSeries object.
@@ -139,25 +140,26 @@ class TimeSeriesReader:
                     f"Column '{time_column}' not found in data. "
                     f"Available: {list(df.columns)}"
                 )
-            df[time_column] = pd.to_datetime(df[time_column])
+            df[time_column] = normalize_datetime_index(df[time_column])
             df = df.set_index(time_column)
             return df
 
         # Already a DatetimeIndex
         if isinstance(df.index, pd.DatetimeIndex):
+            df.index = normalize_datetime_index(df.index)
             return df
 
         # Auto-detect a time column
         for name in common_names:
             if name in df.columns:
-                df[name] = pd.to_datetime(df[name])
+                df[name] = normalize_datetime_index(df[name])
                 df = df.set_index(name)
                 logger.debug("Auto-detected time column: %s", name)
                 return df
 
         # Last resort: try to parse the existing index
         try:
-            df.index = pd.to_datetime(df.index)
+            df.index = normalize_datetime_index(df.index)
         except Exception as exc:
             raise ValueError(
                 "Could not identify a time column or convert the index "
@@ -219,9 +221,11 @@ class TimeSeriesWriter:
         logger.info("Writing time series (%d rows) to %s", len(df), path)
 
         if suffix == ".csv":
+            kwargs.setdefault("index_label", df.index.name or "timestamp")
             df.to_csv(path, **kwargs)
         elif suffix == ".json":
             kwargs.setdefault("date_format", "iso")
+            kwargs.setdefault("date_unit", "ns")
             df.to_json(path, **kwargs)
         elif suffix in (".parquet", ".pq"):
             df.to_parquet(path, **kwargs)
@@ -249,7 +253,7 @@ def read_timeseries(
     path: str | Path,
     time_column: str | None = None,
     metadata: dict[str, Any] | None = None,
-    spatial_location: dict[str, float] | None = None,
+    spatial_location: dict[str, float | str] | None = None,
     **kwargs: Any,
 ) -> TimeSeries:
     """Read a time series file into a TimeSeries object.

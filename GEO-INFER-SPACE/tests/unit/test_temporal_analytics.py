@@ -6,7 +6,7 @@ and trend analysis using backend-agnostic data structures.
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Any
 
 from geo_infer_space.analytics.temporal import TemporalAnalyzer
@@ -19,7 +19,7 @@ SF_LAT, SF_LNG = 37.7749, -122.4194
 def temporal_data() -> list[dict[str, Any]]:
     """Create sample temporal data for testing."""
     data = []
-    base_time = datetime(2023, 1, 1, 8, 0, 0)  # 8 AM
+    base_time = datetime(2023, 1, 1, 8, 0, 0, tzinfo=UTC)  # 8 AM
 
     # 24 hours of data, with 3 "sensors" or locations per hour
     for i in range(24):
@@ -95,7 +95,7 @@ class TestTemporalAnalyzer:
 
     def test_insufficient_temporal_data(self):
         """Test handling of insufficient temporal data."""
-        data = [{"timestamp": datetime.now().isoformat(), "value": 100}]
+        data = [{"timestamp": datetime.now(UTC).isoformat(), "value": 100}]
 
         analyzer = TemporalAnalyzer()
         # Should work but produce limited stats

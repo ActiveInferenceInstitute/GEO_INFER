@@ -10,7 +10,7 @@ import json
 import pytest
 import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 from geo_infer_time.models.timeseries import TimeSeries
 from geo_infer_time.io import (
@@ -42,15 +42,22 @@ class MockTimeSeries:
         self.frequency = frequency
 
     def to_dataframe(self):
-        dates = pd.date_range("2024-01-01", periods=len(self.values), freq="D")
+        dates = pd.date_range(
+            "2024-01-01", periods=len(self.values), freq="D", tz="UTC"
+        )
         return pd.DataFrame({"value": self.values}, index=dates)
 
 
 def _make_ts(
-    n=50, freq="D", start="2024-01-01", col="value", metadata=None, spatial=None
+    n=50,
+    freq="D",
+    start="2024-01-01T00:00:00Z",
+    col="value",
+    metadata=None,
+    spatial=None,
 ):
     """Create a simple TimeSeries for reuse across tests."""
-    dates = pd.date_range(start, periods=n, freq=freq)
+    dates = pd.date_range(start, periods=n, freq=freq, tz="UTC")
     df = pd.DataFrame({col: np.arange(n, dtype=float)}, index=dates)
     return TimeSeries(data=df, spatial_location=spatial, metadata=metadata or {})
 
@@ -71,7 +78,7 @@ class TestTimeSeriesReaderCSV:
     def csv_path(self, tmp_path):
         """Write a simple CSV file with a 'date' column."""
         p = tmp_path / "series.csv"
-        dates = pd.date_range("2024-01-01", periods=30, freq="D")
+        dates = pd.date_range("2024-01-01", periods=30, freq="D", tz="UTC")
         df = pd.DataFrame({"date": dates, "value": np.arange(30, dtype=float)})
         df.to_csv(p, index=False)
         return p
@@ -125,7 +132,7 @@ class TestTimeSeriesReaderJSON:
     def json_path(self, tmp_path):
         """Write a records-oriented JSON file."""
         p = tmp_path / "series.json"
-        dates = pd.date_range("2024-03-01", periods=20, freq="h")
+        dates = pd.date_range("2024-03-01", periods=20, freq="h", tz="UTC")
         df = pd.DataFrame({"timestamp": dates, "temp": np.random.randn(20)})
         df.to_json(p, orient="records", date_format="iso")
         return p
@@ -255,26 +262,28 @@ class TestCreateTimeseries:
 
     def test_create_from_list(self):
         """Create TimeSeries from a plain list of values."""
-        ts = create_timeseries([1.0, 2.0, 3.0], start="2024-01-01", freq="D")
+        ts = create_timeseries([1.0, 2.0, 3.0], start="2024-01-01T00:00:00Z", freq="D")
         assert len(ts) == 3
         assert isinstance(ts.data.index, pd.DatetimeIndex)
         assert "value" in ts.data.columns
 
     def test_create_with_custom_name(self):
         """Column name can be specified."""
-        ts = create_timeseries([10, 20], start="2024-06-01", freq="h", name="temp")
+        ts = create_timeseries(
+            [10, 20], start="2024-06-01T00:00:00Z", freq="h", name="temp"
+        )
         assert "temp" in ts.data.columns
 
     def test_create_from_numpy(self):
         """Create from numpy array."""
         arr = np.array([5.0, 6.0, 7.0, 8.0])
-        ts = create_timeseries(arr, start="2024-01-01", freq="D")
+        ts = create_timeseries(arr, start="2024-01-01T00:00:00Z", freq="D")
         assert len(ts) == 4
 
     def test_create_from_dict(self):
         """Create multi-column TimeSeries from dict."""
         vals = {"temp": [20.0, 21.0, 22.0], "humidity": [60.0, 65.0, 70.0]}
-        ts = create_timeseries(vals, start="2024-01-01", freq="D")
+        ts = create_timeseries(vals, start="2024-01-01T00:00:00Z", freq="D")
         assert "temp" in ts.data.columns
         assert "humidity" in ts.data.columns
         assert len(ts) == 3
@@ -284,14 +293,18 @@ class TestCreateTimeseries:
         meta = {"sensor": "A1"}
         loc = {"lat": 0.0, "lon": 0.0}
         ts = create_timeseries(
-            [1, 2], start="2024-01-01", freq="D", metadata=meta, spatial_location=loc
+            [1, 2],
+            start="2024-01-01T00:00:00Z",
+            freq="D",
+            metadata=meta,
+            spatial_location=loc,
         )
         assert ts.metadata == meta
         assert ts.spatial_location == loc
 
     def test_create_hourly_frequency(self):
         """Hourly frequency produces correct index."""
-        ts = create_timeseries(list(range(24)), start="2024-01-01", freq="h")
+        ts = create_timeseries(list(range(24)), start="2024-01-01T00:00:00Z", freq="h")
         assert len(ts) == 24
         # Verify spacing is 1 hour
         diff = ts.timestamps[1] - ts.timestamps[0]
@@ -319,7 +332,7 @@ class TestValidateTimeseries:
 
     def test_missing_values_reported(self):
         """Missing values generate warnings."""
-        dates = pd.date_range("2024-01-01", periods=10, freq="D")
+        dates = pd.date_range("2024-01-01", periods=10, freq="D", tz="UTC")
         vals = [1.0, np.nan, 3.0, np.nan, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
         df = pd.DataFrame({"value": vals}, index=dates)
         ts = TimeSeries(data=df)
@@ -327,42 +340,19 @@ class TestValidateTimeseries:
         assert result["missing_values"]["value"] == 2
         assert result["missing_pct"]["value"] == 20.0
 
-    def test_non_monotonic_warning(self):
-        """Non-monotonic timestamps produce a warning.
-
-        Note: The source validate_timeseries has an indexing issue in the
-        gap-detection section when timestamps are not sorted.  We guard
-        against that here so the test documents the expected behaviour
-        without failing on the current implementation.
-        """
-        dates = pd.to_datetime(["2024-01-03", "2024-01-01", "2024-01-02"])
+    def test_non_monotonic_timestamps_rejected(self):
+        """Invalid order fails at construction instead of reaching analysis."""
+        dates = pd.to_datetime(["2024-01-03", "2024-01-01", "2024-01-02"], utc=True)
         df = pd.DataFrame({"value": [1.0, 2.0, 3.0]}, index=dates)
-        ts = TimeSeries(data=df)
-        try:
-            result = validate_timeseries(ts)
-            assert not result["is_monotonic"]
-            assert any("monotonic" in w.lower() for w in result["warnings"])
-        except IndexError:
-            pytest.fail(
-                "validate_timeseries crashes on non-monotonic index (known bug)"
-            )
+        with pytest.raises(ValueError, match="increasing"):
+            TimeSeries(data=df)
 
-    def test_duplicate_timestamps_warning(self):
-        """Duplicate timestamps produce a warning.
-
-        Note: validate_timeseries has an indexing issue in the gap-detection
-        section when duplicates are present.
-        """
-        dates = pd.to_datetime(["2024-01-01", "2024-01-01", "2024-01-02"])
+    def test_duplicate_timestamps_rejected(self):
+        """Duplicate observations require explicit aggregation before construction."""
+        dates = pd.to_datetime(["2024-01-01", "2024-01-01", "2024-01-02"], utc=True)
         df = pd.DataFrame({"value": [1.0, 2.0, 3.0]}, index=dates)
-        ts = TimeSeries(data=df)
-        try:
-            result = validate_timeseries(ts)
-            assert result["duplicate_timestamps"] > 0
-        except IndexError:
-            pytest.fail(
-                "validate_timeseries crashes on duplicate timestamps (known bug)"
-            )
+        with pytest.raises(ValueError, match="unique"):
+            TimeSeries(data=df)
 
     def test_gap_detection(self):
         """Large gaps in timestamps are detected.
@@ -371,8 +361,8 @@ class TestValidateTimeseries:
         code for certain data shapes. We guard against that here.
         """
         # Regular daily then a 10-day gap
-        dates = list(pd.date_range("2024-01-01", periods=10, freq="D"))
-        dates.append(pd.Timestamp("2024-01-25"))  # big gap
+        dates = list(pd.date_range("2024-01-01", periods=10, freq="D", tz="UTC"))
+        dates.append(pd.Timestamp("2024-01-25", tz="UTC"))  # big gap
         df = pd.DataFrame({"value": range(11)}, index=pd.DatetimeIndex(dates))
         ts = TimeSeries(data=df)
         try:
@@ -383,7 +373,7 @@ class TestValidateTimeseries:
 
     def test_single_point_valid(self):
         """A single-point TimeSeries is valid (no gaps possible)."""
-        dates = pd.DatetimeIndex([pd.Timestamp("2024-01-01")])
+        dates = pd.DatetimeIndex([pd.Timestamp("2024-01-01", tz="UTC")])
         df = pd.DataFrame({"value": [42.0]}, index=dates)
         ts = TimeSeries(data=df)
         result = validate_timeseries(ts)
@@ -412,7 +402,7 @@ class TestDetectFrequency:
 
     def test_single_point_returns_none(self):
         """Single data point cannot have a frequency."""
-        dates = pd.DatetimeIndex([pd.Timestamp("2024-01-01")])
+        dates = pd.DatetimeIndex([pd.Timestamp("2024-01-01", tz="UTC")])
         df = pd.DataFrame({"value": [1.0]}, index=dates)
         ts = TimeSeries(data=df)
         freq = detect_frequency(ts)
@@ -422,7 +412,7 @@ class TestDetectFrequency:
         """Irregular timestamps fall back to median-based detection."""
         # Roughly daily but with noise
         np.random.seed(42)
-        base = pd.Timestamp("2024-01-01")
+        base = pd.Timestamp("2024-01-01", tz="UTC")
         timestamps = [
             base + timedelta(days=i, hours=int(np.random.uniform(-2, 2)))
             for i in range(30)
@@ -450,7 +440,8 @@ class TestFillGaps:
                 "2024-01-06",
                 "2024-01-07",
                 "2024-01-08",
-            ]
+            ],
+            utc=True,
         )
         df = pd.DataFrame({"value": [1.0, 2.0, 3.0, 4.0, 6.0, 7.0, 8.0]}, index=dates)
         return TimeSeries(data=df)
@@ -460,19 +451,19 @@ class TestFillGaps:
         filled = fill_gaps(gapped_ts, method="linear", freq="D")
         assert len(filled) == 8  # 8 days from Jan 1 to Jan 8
         # The gap at Jan 5 should be interpolated
-        jan5 = pd.Timestamp("2024-01-05")
+        jan5 = pd.Timestamp("2024-01-05", tz="UTC")
         assert not np.isnan(filled.data.loc[jan5, "value"])
 
     def test_fill_ffill(self, gapped_ts):
         """Forward fill propagates last known value."""
         filled = fill_gaps(gapped_ts, method="ffill", freq="D")
-        jan5 = pd.Timestamp("2024-01-05")
+        jan5 = pd.Timestamp("2024-01-05", tz="UTC")
         assert filled.data.loc[jan5, "value"] == 4.0  # forward from Jan 4
 
     def test_fill_bfill(self, gapped_ts):
         """Backward fill propagates next known value."""
         filled = fill_gaps(gapped_ts, method="bfill", freq="D")
-        jan5 = pd.Timestamp("2024-01-05")
+        jan5 = pd.Timestamp("2024-01-05", tz="UTC")
         assert filled.data.loc[jan5, "value"] == 6.0  # backward from Jan 6
 
     def test_fill_metadata_updated(self, gapped_ts):
@@ -484,7 +475,7 @@ class TestFillGaps:
     def test_fill_no_freq_raises(self):
         """ValueError when frequency cannot be determined and not provided."""
         # Two points 1 second apart followed by 1 year -- too irregular
-        dates = pd.to_datetime(["2024-01-01", "2025-07-01"])
+        dates = pd.to_datetime(["2024-01-01", "2025-07-01"], utc=True)
         df = pd.DataFrame({"value": [1.0, 2.0]}, index=dates)
         ts = TimeSeries(data=df)
         # detect_frequency may still return something; if not, this raises
@@ -502,8 +493,8 @@ class TestAlignTimeseries:
     @pytest.fixture
     def ts_pair(self):
         """Two TimeSeries with overlapping but different timestamps."""
-        dates1 = pd.date_range("2024-01-01", periods=10, freq="D")
-        dates2 = pd.date_range("2024-01-05", periods=10, freq="D")
+        dates1 = pd.date_range("2024-01-01", periods=10, freq="D", tz="UTC")
+        dates2 = pd.date_range("2024-01-05", periods=10, freq="D", tz="UTC")
         df1 = pd.DataFrame({"temp": np.arange(10, dtype=float)}, index=dates1)
         df2 = pd.DataFrame({"temp": np.arange(100, 110, dtype=float)}, index=dates2)
         ts1 = TimeSeries(data=df1)
@@ -639,7 +630,7 @@ class TestInMemoryStoreQuery:
     @pytest.fixture
     def store_with_data(self):
         store = InMemoryStore()
-        ts = _make_ts(n=30, freq="D", start="2024-01-01")
+        ts = _make_ts(n=30, freq="D", start="2024-01-01T00:00:00Z")
         store.store("daily", ts)
         return store
 
@@ -650,20 +641,20 @@ class TestInMemoryStoreQuery:
 
     def test_query_start_only(self, store_with_data):
         """Query with start bound."""
-        result = store_with_data.query("daily", start=datetime(2024, 1, 15))
+        result = store_with_data.query("daily", start=datetime(2024, 1, 15, tzinfo=UTC))
         assert len(result) == 16  # Jan 15 through Jan 30
 
     def test_query_end_only(self, store_with_data):
         """Query with end bound."""
-        result = store_with_data.query("daily", end=datetime(2024, 1, 10))
+        result = store_with_data.query("daily", end=datetime(2024, 1, 10, tzinfo=UTC))
         assert len(result) == 10  # Jan 1 through Jan 10
 
     def test_query_start_and_end(self, store_with_data):
         """Query with both bounds."""
         result = store_with_data.query(
             "daily",
-            start=datetime(2024, 1, 5),
-            end=datetime(2024, 1, 10),
+            start=datetime(2024, 1, 5, tzinfo=UTC),
+            end=datetime(2024, 1, 10, tzinfo=UTC),
         )
         assert len(result) == 6  # Jan 5 through Jan 10
 
@@ -676,8 +667,8 @@ class TestInMemoryStoreQuery:
         """Query with range outside data returns empty TimeSeries."""
         result = store_with_data.query(
             "daily",
-            start=datetime(2025, 1, 1),
-            end=datetime(2025, 1, 31),
+            start=datetime(2025, 1, 1, tzinfo=UTC),
+            end=datetime(2025, 1, 31, tzinfo=UTC),
         )
         assert len(result) == 0
 
@@ -737,14 +728,14 @@ class TestEdgeCases:
 
     def test_single_point_frequency_none(self):
         """detect_frequency returns None for single point."""
-        dates = pd.DatetimeIndex([pd.Timestamp("2024-01-01")])
+        dates = pd.DatetimeIndex([pd.Timestamp("2024-01-01", tz="UTC")])
         df = pd.DataFrame({"value": [1.0]}, index=dates)
         ts = TimeSeries(data=df)
         assert detect_frequency(ts) is None
 
     def test_create_timeseries_single_value(self):
         """create_timeseries works with a single value."""
-        ts = create_timeseries([42.0], start="2024-01-01", freq="D")
+        ts = create_timeseries([42.0], start="2024-01-01T00:00:00Z", freq="D")
         assert len(ts) == 1
         assert ts.data["value"].iloc[0] == 42.0
 

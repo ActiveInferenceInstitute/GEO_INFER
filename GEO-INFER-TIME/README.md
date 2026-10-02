@@ -20,7 +20,7 @@ Temporal analysis, time series processing, forecasting, and spatio-temporal data
 
 - Module: `GEO-INFER-TIME`
 - Package: `geo_infer_time`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-time`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module TIME`
 

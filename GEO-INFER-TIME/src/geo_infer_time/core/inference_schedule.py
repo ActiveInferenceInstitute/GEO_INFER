@@ -1,9 +1,10 @@
 """Explicit fixed-interval UTC schedules for sequential inference."""
 
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta
 from itertools import islice
 import math
 from collections.abc import Iterable
+from geo_infer_time.core.timestamps import normalize_datetime_index
 
 
 def inference_schedule(
@@ -34,18 +35,7 @@ def inference_schedule(
     for timestamp in islice(timestamps, max_steps + 1):
         if len(result) == max_steps:
             raise ValueError("Inference schedule exceeds max_steps")
-        instant = (
-            datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-            if isinstance(timestamp, str)
-            else timestamp
-        )
-        if (
-            not isinstance(instant, datetime)
-            or instant.tzinfo is None
-            or instant.utcoffset() is None
-        ):
-            raise ValueError("Inference timestamps must include a timezone")
-        instant = instant.astimezone(UTC)
+        instant = normalize_datetime_index([timestamp])[0]
         if result and instant - result[-1] != interval:
             raise ValueError("Timestamps must be ordered and separated by step_seconds")
         result.append(instant)

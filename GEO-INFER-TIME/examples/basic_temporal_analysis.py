@@ -11,7 +11,7 @@ This example demonstrates:
 
 import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 from geo_infer_time.models.timeseries import TimeSeries
 from geo_infer_time.core.analysis import TemporalAnalyzer
@@ -24,7 +24,7 @@ def generate_sample_timeseries(n_points=100, trend=0.1, seasonality=True, noise=
     rng = np.random.default_rng(42)
 
     # Create date range
-    start_date = datetime(2020, 1, 1)
+    start_date = datetime(2020, 1, 1, tzinfo=UTC)
     dates = [start_date + timedelta(days=i) for i in range(n_points)]
 
     # Generate values with trend

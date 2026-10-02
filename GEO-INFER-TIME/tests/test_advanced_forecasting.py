@@ -27,7 +27,7 @@ def trending_series():
     """Series with a clear linear trend and mild noise."""
     np.random.seed(42)
     n = 120
-    index = pd.date_range("2020-01-01", periods=n, freq="ME")
+    index = pd.date_range("2020-01-01", periods=n, freq="ME", tz="UTC")
     values = 50.0 + np.arange(n) * 0.5 + np.random.randn(n) * 2
     return pd.Series(values, index=index, name="trending")
 
@@ -37,7 +37,7 @@ def seasonal_series():
     """Series with additive monthly seasonality (period=12)."""
     np.random.seed(42)
     n = 120  # 10 years of monthly data
-    index = pd.date_range("2015-01-01", periods=n, freq="ME")
+    index = pd.date_range("2015-01-01", periods=n, freq="ME", tz="UTC")
     seasonal = 10 * np.sin(2 * np.pi * np.arange(n) / 12)
     trend = np.arange(n) * 0.3
     noise = np.random.randn(n) * 1.5
@@ -50,7 +50,7 @@ def stationary_series():
     """Stationary series (white noise around a constant mean)."""
     np.random.seed(42)
     n = 100
-    index = pd.date_range("2020-01-01", periods=n, freq="D")
+    index = pd.date_range("2020-01-01", periods=n, freq="D", tz="UTC")
     values = 50 + np.random.randn(n) * 3
     return pd.Series(values, index=index, name="stationary")
 
@@ -60,7 +60,7 @@ def short_series():
     """Very short series (only 20 points)."""
     np.random.seed(42)
     n = 20
-    index = pd.date_range("2024-01-01", periods=n, freq="D")
+    index = pd.date_range("2024-01-01", periods=n, freq="D", tz="UTC")
     values = np.random.randn(n) * 5 + 100
     return pd.Series(values, index=index, name="short")
 

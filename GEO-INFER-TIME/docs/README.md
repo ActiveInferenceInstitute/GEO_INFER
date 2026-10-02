@@ -5,8 +5,8 @@ Docs workspace within `GEO-INFER-TIME`.
 ## Contents
 
 - `action_observation_schedule.md`
-- `api_schema.yaml`
 - `streaming_migration.md`
+- `utc_timeseries_migration.md`
 
 ## Public Interface
 
@@ -16,7 +16,7 @@ Docs workspace within `GEO-INFER-TIME`.
 
 - Module: `GEO-INFER-TIME`
 - Package: `geo_infer_time`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-time`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module TIME`
 
