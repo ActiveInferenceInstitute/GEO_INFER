@@ -409,7 +409,7 @@ def run_command(
         metadata = runtime_receipt(timeout=min(timeout, 10))
         if metadata and not metadata.get("custody_complete", True):
             raise OSError("checkout revision or dirty-source inventory unavailable")
-    except (OSError, subprocess.SubprocessError, ExceptionGroup) as exc:
+    except Exception as exc:
         metadata_error = exc
     ensure_results_dir()
     attempt_dir = run_results_dir() / "attempts" / uuid.uuid4().hex
@@ -462,7 +462,7 @@ def run_command(
             )
         )
         status = "TIMEOUT"
-    except (OSError, subprocess.SubprocessError, ExceptionGroup) as exc:
+    except Exception as exc:
         stdout, stderr = (
             _text_tail(getattr(exc, "output", None), 1_000_000),
             _text_tail(getattr(exc, "stderr", None), 1_000_000),

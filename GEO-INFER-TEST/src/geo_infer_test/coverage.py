@@ -178,7 +178,7 @@ def junit_failure_names(path: Path) -> list[str]:
         return []
     try:
         root = ET.parse(path).getroot()
-    except ET.ParseError:
+    except (ET.ParseError, OSError):
         return []
     names: list[str] = []
     for testcase in root.iter("testcase"):
@@ -219,7 +219,7 @@ def junit_failure_details(path: Path) -> list[dict[str, str]]:
         return []
     try:
         root = ET.parse(path).getroot()
-    except ET.ParseError:
+    except (ET.ParseError, OSError):
         return []
     details: list[dict[str, str]] = []
     for testcase in root.iter("testcase"):
@@ -292,7 +292,14 @@ def main(argv: list[str] | None = None) -> int:
             results.append(result)
             print(json.dumps(result), flush=True)
     if include_root:
-        result = measure_module("ROOT")
+        try:
+            result = measure_module("ROOT")
+        except Exception as exc:
+            result = {
+                "module": "ROOT",
+                "status": "error",
+                "reason": f"{type(exc).__name__}: {exc}",
+            }
         results.append(result)
         print(json.dumps(result), flush=True)
     results.sort(key=lambda entry: entry["module"])

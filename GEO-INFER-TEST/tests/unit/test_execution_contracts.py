@@ -53,6 +53,56 @@ def test_validator_failure_without_junit_keeps_receipt(engine) -> None:
     assert len(list(Path(result.receipt).parent.parent.iterdir())) == 1
 
 
+def test_native_invalid_output_bytes_preserve_receipt(engine) -> None:
+    result = engine.run_command(
+        [
+            sys.executable,
+            "-c",
+            "import os; os.write(1, b'valid stdout\\n\\xff\\n'); os.write(2, b'valid stderr\\n\\xfe\\n')",
+        ],
+        "native diagnostic bytes",
+        5,
+    )
+    assert result.success and result.returncode == 0
+    assert result.stdout == "valid stdout\n\ufffd\n"
+    assert result.stderr == "valid stderr\n\ufffd\n"
+    attempt = Path(result.receipt).parent
+    assert (attempt / "stdout.log").read_text() == result.stdout
+    assert (attempt / "stderr.log").read_text() == result.stderr
+
+
+@pytest.mark.parametrize("kind", ["runtime", "value", "process-access"])
+def test_unexpected_process_failure_retains_failed_receipt(
+    engine, monkeypatch, kind
+) -> None:
+    import psutil
+
+    error = {
+        "runtime": RuntimeError("unexpected runtime failure"),
+        "value": ValueError("unexpected value failure"),
+        "process-access": psutil.AccessDenied(pid=123),
+    }[kind]
+    error.output = "retained target output"
+    error.stderr = "retained target diagnostics"
+    original = engine.run_process
+
+    def fail_target(command, **kwargs):
+        if command == [sys.executable, "-c", "pass"]:
+            raise error
+        return original(command, **kwargs)
+
+    monkeypatch.setattr(engine, "run_process", fail_target)
+    result = engine.run_command(
+        [sys.executable, "-c", "pass"], "unexpected child failure", 10
+    )
+    assert not result.success and result.status == "FAIL"
+    receipt = json.loads(Path(result.receipt).read_text())
+    assert receipt["success"] is False and receipt["returncode"] is None
+    assert result.stdout == "retained target output"
+    assert "retained target diagnostics" in result.stderr
+    assert type(error).__name__ in result.stderr
+
+
 @pytest.mark.parametrize(
     "content", [None, "<broken>", '<testsuites><testsuite tests="0"/></testsuites>']
 )
@@ -560,7 +610,12 @@ def test_failed_native_tree_tool_still_kills_primary_process(
     marker = tmp_path / "census-failure-descendant"
     code = f"from pathlib import Path; import time; time.sleep(0.8); Path({str(marker)!r}).touch(); time.sleep(30)"
     started = time.monotonic()
-    with pytest.raises(subprocess.CalledProcessError):
+    expected = (
+        subprocess.CalledProcessError
+        if os.name == "posix"
+        else subprocess.TimeoutExpired
+    )
+    with pytest.raises(expected):
         process_module.run_process(
             [sys.executable, "-c", code], cwd=tmp_path, timeout=0.3
         )
@@ -587,6 +642,43 @@ def test_environment_census_failure_does_not_expose_internal_listing(
     with pytest.raises(subprocess.TimeoutExpired) as failure:
         census.refresh(timeout=1)
     assert failure.value.output is None and failure.value.stderr is None
+
+
+def test_cleanup_scanner_failure_retains_target_output(tmp_path, monkeypatch) -> None:
+    import os
+    import geo_infer_test.process as process_module
+
+    ready = tmp_path / "output-ready"
+    original = subprocess.run
+
+    def failed_scan(command, **kwargs):
+        native = "ps" if os.name == "posix" else "taskkill"
+        if command[:1] == [native]:
+            deadline = time.monotonic() + 5
+            while not ready.exists() and time.monotonic() < deadline:
+                time.sleep(0.01)
+            assert ready.exists()
+            raise subprocess.CalledProcessError(
+                1, command, output="PRIVATE_SCAN_ENV", stderr="PRIVATE_SCAN_ERROR"
+            )
+        return original(command, **kwargs)
+
+    monkeypatch.setattr(process_module.subprocess, "run", failed_scan)
+    code = f"from pathlib import Path; import sys,time; print('target stdout', flush=True); print('target stderr', file=sys.stderr, flush=True); Path({str(ready)!r}).touch(); time.sleep(30)"
+    expected = (
+        subprocess.CalledProcessError
+        if os.name == "posix"
+        else subprocess.TimeoutExpired
+    )
+    with pytest.raises(expected) as failure:
+        process_module.run_process(
+            [sys.executable, "-c", code], timeout=0.3, cwd=tmp_path
+        )
+    assert "target stdout" in failure.value.output
+    assert "target stderr" in failure.value.stderr
+    assert "Process cleanup failed" in failure.value.stderr
+    assert "PRIVATE_SCAN_ENV" not in failure.value.output
+    assert "PRIVATE_SCAN_ERROR" not in failure.value.stderr
 
 
 def test_cancellation_during_census_setup_prevents_launch(

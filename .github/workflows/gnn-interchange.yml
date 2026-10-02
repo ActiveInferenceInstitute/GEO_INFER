@@ -1,11 +1,9 @@
 name: Paired GNN interchange
 
 on:
-  # GS-007: the paired ACT<->GNN interchange is a schema contract between two
-  # specific surfaces, so runs are scoped to the files that can change that
-  # contract. The bare push:[main] leg is dropped: every merged change already
-  # ran the interchange on its PR, and the push leg re-ran the identical job
-  # back-to-back under a different concurrency group.
+  # Standalone PR feedback follows the surfaces that can change interchange.
+  # ci.yml also calls this reusable workflow for every exact candidate on
+  # main/tag/dispatch/schedule, independently of these path filters.
   # GS19-21: PR legs target main/develop like ci.yml so feature-branch PRs
   # stay cheap; a feature-branch run is available on demand via
   # workflow_dispatch (Actions tab or `gh workflow run`).

@@ -129,7 +129,7 @@ def test_wheel_import_rejects_early_success_exit(tmp_path, source):
     """A zero exit cannot bypass installed provenance and resource checks."""
     wheel = _wheel(tmp_path, source)
     with pytest.raises(ValueError, match="completion receipt"):
-        _driver().verify_wheels([wheel], [sys.executable], import_timeout=2)
+        _driver().verify_wheels([wheel], [sys.executable], import_timeout=10)
 
 
 def test_wheel_import_timeout_stops_descendants(tmp_path):

@@ -356,3 +356,76 @@ def test_registered_extra_test_root_changes_measure_place(monkeypatch):
         "+assert value\n",
     )
     assert module._changed_modules("base", "head") == {"GEO-INFER-PLACE"}
+
+
+def test_dependency_manifest_change_remeasures_consumers(monkeypatch):
+    module = _load_module()
+    _fake_git_diff(
+        monkeypatch, "GEO-INFER-TIME/pyproject.toml\n", "+dependency changed\n"
+    )
+    names = module._changed_modules("base", "head")
+    assert {
+        "GEO-INFER-TIME",
+        "GEO-INFER-SPACE",
+        "GEO-INFER-DATA",
+        "GEO-INFER-IOT",
+        "ROOT",
+    } <= names
+    assert len(names) == 46
+
+
+def test_explicit_empty_selection_fails():
+    import pytest
+
+    with pytest.raises(SystemExit) as failure:
+        _load_module().main(["--base", "HEAD", "--head", "HEAD", "--modules", ", ,"])
+    assert failure.value.code == 2
+
+
+def test_worker_budget_and_root_after_package_writers(monkeypatch):
+    import threading
+
+    module = _load_module()
+    names = sorted(json.loads(module.MANIFEST.read_text())["modules"])[:2]
+    lock, both_started = threading.Lock(), threading.Event()
+    active = peak = 0
+    completed = []
+
+    def measure(name):
+        nonlocal active, peak
+        if name == "ROOT":
+            assert active == 0 and set(completed) == set(names)
+        else:
+            with lock:
+                active += 1
+                peak = max(peak, active)
+                if active == 2:
+                    both_started.set()
+            assert both_started.wait(5)
+            with lock:
+                active -= 1
+                completed.append(name)
+        return {
+            "module": name,
+            "status": "measured",
+            "coverage_percent": 100.0,
+            "pytest_rc": 0,
+        }
+
+    monkeypatch.setattr(module, "measure_module", measure)
+    assert (
+        module.main(
+            [
+                "--base",
+                "HEAD",
+                "--head",
+                "HEAD",
+                "--modules",
+                ",".join([*names, "ROOT"]),
+                "--workers",
+                "2",
+            ]
+        )
+        == 0
+    )
+    assert peak == 2

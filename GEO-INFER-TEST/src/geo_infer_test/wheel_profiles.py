@@ -22,6 +22,50 @@ class WheelProfile:
 
 REQUIRED_PROFILES = (
     WheelProfile(
+        "geo_infer_space",
+        (),
+        """
+import h3
+import numpy as np
+import pandas as pd
+from geo_infer_space import H3StateSpace, align_h3_observations
+cells = sorted(h3.grid_disk(h3.latlng_to_cell(41.75, -124.2, 8), 1), reverse=True)[:2]
+axis = ['2026-10-01T00:00:00Z', '2026-10-01T01:00:00Z']
+source = pd.DataFrame({'cell': [cells[1], cells[0]], 'timestamp': [axis[1], '2026-09-30T17:00:00-07:00'], 'value': [9., 0.]})
+original = source.copy(deep=True)
+series = align_h3_observations(source, state_space=H3StateSpace(cells), timestamps=axis)
+expected = pd.DataFrame([[0., np.nan], [np.nan, 9.]], columns=cells, index=pd.DatetimeIndex(axis))
+pd.testing.assert_frame_equal(series.to_dataframe(), expected)
+pd.testing.assert_frame_equal(source, original)
+source.loc[0, 'value'] = 99.
+pd.testing.assert_frame_equal(series.to_dataframe(), expected)
+""",
+    ),
+    WheelProfile(
+        "geo_infer_spm",
+        ("bayesian",),
+        """
+import numpy as np
+import pytensor
+import pytensor.tensor as pt
+from pytensor.compile.mode import Mode
+from geo_infer_spm.models.data_models import SPMData
+from geo_infer_spm.core.bayesian import BayesianSPM
+x = pt.dvector('x')
+compiled = pytensor.function([x], x*x+3*x, mode=Mode(linker='c', optimizer='fast_run'))
+np.testing.assert_array_equal(compiled(np.array([-2., 0., 4.])), [-2., 0., 28.])
+assert type(compiled.maker.linker).__name__ == 'CLinker'
+response = 1.5 + np.tile(np.array([-.15, -.05, .05, .15]), 6)
+data = SPMData(data=response, coordinates=np.column_stack([np.linspace(0, 1, response.size), np.zeros(response.size)]))
+model = BayesianSPM()
+result = model.fit_bayesian_glm(data, np.ones((response.size, 1)), n_samples=100, n_tune=100, random_seed=83, chains=2, cores=1)
+assert result.model_diagnostics['method'] == 'Bayesian_GLM_PyMC'
+np.testing.assert_allclose(result.beta_coefficients, [1.5], atol=.05, rtol=0)
+assert model.posterior_samples['beta'].shape == (200, 1)
+assert np.isfinite(model.posterior_samples['sigma']).all()
+""",
+    ),
+    WheelProfile(
         "geo_infer_data",
         (),
         """

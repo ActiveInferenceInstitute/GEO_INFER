@@ -216,6 +216,36 @@ def _terminate_unreaped_native_tree(process: subprocess.Popen[str]) -> None:
                 process.kill()
 
 
+def _capture_after_cleanup(
+    process: subprocess.Popen[str], process_lock: Any
+) -> tuple[str, str]:
+    """Drain target output even when ownership cleanup itself reports failure."""
+    diagnostics = []
+    try:
+        terminate_tree(process)
+    except Exception as exc:
+        diagnostics.append(f"Process cleanup failed: {type(exc).__name__}: {exc}")
+    try:
+        with process_lock:
+            stdout, stderr = process.communicate(timeout=10)
+    except subprocess.TimeoutExpired as exc:
+        raw_stdout, raw_stderr = exc.output or "", exc.stderr or ""
+        stdout = (
+            raw_stdout.decode(errors="replace")
+            if isinstance(raw_stdout, bytes)
+            else raw_stdout
+        )
+        stderr = (
+            raw_stderr.decode(errors="replace")
+            if isinstance(raw_stderr, bytes)
+            else raw_stderr
+        )
+        diagnostics.append("Target output pipes remained open after bounded cleanup")
+    if diagnostics:
+        stderr += "\n" + "\n".join(diagnostics)
+    return stdout, stderr
+
+
 def run_process(
     command: list[str],
     *,
@@ -228,6 +258,7 @@ def run_process(
 
     Captured output survives timeout and interruption. There are no retries;
     a caller must explicitly retain and account for any additional attempt.
+    Text logs decode UTF-8, replacing invalid bytes so diagnostics survive.
     """
     if not math.isfinite(timeout) or timeout <= 0:
         raise ValueError("Process timeout must be finite and positive")
@@ -257,6 +288,8 @@ def run_process(
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             start_new_session=os.name == "posix",
         )
         census.pid = process.pid
@@ -288,16 +321,12 @@ def run_process(
                     # running command retains identities between pipe polls.
                     census.refresh(timeout=deadline - time.monotonic())
         except subprocess.TimeoutExpired as exc:
-            terminate_tree(process)
-            with process_lock:
-                stdout, stderr = process.communicate(timeout=10)
+            stdout, stderr = _capture_after_cleanup(process, process_lock)
             cast(Any, exc).output = stdout
             cast(Any, exc).stderr = stderr
             raise
         except BaseException as exc:
-            terminate_tree(process)
-            with process_lock:
-                stdout, stderr = process.communicate(timeout=10)
+            stdout, stderr = _capture_after_cleanup(process, process_lock)
             cast(Any, exc).output = stdout
             cast(Any, exc).stderr = stderr
             raise

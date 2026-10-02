@@ -91,12 +91,20 @@ def _changed_modules(base: str, head: str) -> set[str]:
         top = line.split("/", 1)[0]
         if top in {"manuscript", "scripts", "tests"}:
             module_files.setdefault("ROOT", []).append(line)
-        if line in {
-            "pyproject.toml",
-            "uv.lock",
-            ".python-version",
-            "conftest.py",
-        } or line.startswith("GEO-INFER-TEST/src/geo_infer_test/"):
+        if (
+            line
+            in {
+                "pyproject.toml",
+                "uv.lock",
+                ".python-version",
+                "conftest.py",
+                "GEO-INFER-TEST/measure_module_coverage.py",
+                "GEO-INFER-TEST/check_coverage_floor.py",
+                "GEO-INFER-TEST/run_unified_tests.py",
+            }
+            or line.startswith("GEO-INFER-TEST/src/geo_infer_test/")
+            or (top.startswith("GEO-INFER-") and line.endswith("/pyproject.toml"))
+        ):
             return {
                 target.path.name if target.name != "ROOT" else "ROOT"
                 for target in discover_workspace_test_targets(REPO_ROOT)
@@ -135,7 +143,9 @@ def main(argv: list[str] | None = None) -> int:
     entries = manifest.get("modules", {})
 
     if args.modules:
-        modules = {name for name in args.modules.split(",") if name}
+        modules = {name for value in args.modules.split(",") if (name := value.strip())}
+        if not modules:
+            parser.error("coverage selection cannot be empty")
     else:
         modules = _changed_modules(args.base, args.head)
     if not modules:
