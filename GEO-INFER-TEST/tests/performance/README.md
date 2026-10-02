@@ -1,21 +1,10 @@
-# GEO-INFER-TEST/docs
+# GEO-INFER-TEST/tests/performance
 
-Docs workspace within `GEO-INFER-TEST`.
+Performance workspace within `GEO-INFER-TEST`.
 
 ## Contents
 
-- `examples/`
-- `api_reference.md`
-- `benchmark_baseline_2026-09-10.md`
-- `getting_started.md`
-- `gnn_continuation_2026_09.md`
-- `gnn_space_time_2026_09.md`
-- `import_latency_2026_09.md`
-- `index.md`
-- `perf01-act-importtime.txt`
-- `perf01-pandas-importtime.txt`
-- `pin_review_2026-Q3.md`
-- `secret_scan_policy.md`
+- `test_spatial_temporal_composition.py`
 
 ## Public Interface
 
@@ -27,7 +16,7 @@ Docs workspace within `GEO-INFER-TEST`.
 - Package: `geo_infer_test`
 - Version: `0.4.0`
 - Install: `uv sync --package geo-infer-test`
-- Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module TEST`
+- Tests: `uv run python -m pytest GEO-INFER-TEST/tests/performance`
 
 ## Dependencies
 
@@ -53,7 +42,7 @@ Docs workspace within `GEO-INFER-TEST`.
 
 ```bash
 uv sync --all-packages --all-extras --all-groups
-uv run python GEO-INFER-TEST/run_unified_tests.py --module TEST
+uv run python -m pytest GEO-INFER-TEST/tests/performance
 ```
 
 

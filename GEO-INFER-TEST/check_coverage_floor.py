@@ -25,13 +25,15 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 
-from measure_module_coverage import measure_module
+from geo_infer_test.coverage import measure_module, MAX_MODULE_WORKERS
+from geo_infer_test.execution import discover_workspace_test_targets
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 MANIFEST = REPO_ROOT / "GEO-INFER-TEST" / "coverage_baseline.json"
-DIFF_FILTER = "ACMRTUXB"
+DIFF_FILTER = "ACDMRTUXB"
 # GS19-01: release commits bump ``__version__`` in all 45 modules'
 # ``__init__.py``; those literal-only changes are not code changes and must
 # not trigger a full-fleet re-measurement.
@@ -76,8 +78,7 @@ def _changed_modules(base: str, head: str) -> set[str]:
             base,
             head,
             "--",
-            "GEO-INFER-*/src/*.py",
-            "GEO-INFER-*/tests/*.py",
+            ".",
         ],
         cwd=REPO_ROOT,
         capture_output=True,
@@ -88,7 +89,21 @@ def _changed_modules(base: str, head: str) -> set[str]:
     module_files: dict[str, list[str]] = {}
     for line in completed.stdout.splitlines():
         top = line.split("/", 1)[0]
-        if top.startswith("GEO-INFER-"):
+        if top in {"manuscript", "scripts", "tests"}:
+            module_files.setdefault("ROOT", []).append(line)
+        if line in {
+            "pyproject.toml",
+            "uv.lock",
+            ".python-version",
+            "conftest.py",
+        } or line.startswith("GEO-INFER-TEST/src/geo_infer_test/"):
+            return {
+                target.path.name if target.name != "ROOT" else "ROOT"
+                for target in discover_workspace_test_targets(REPO_ROOT)
+            }
+        if top.startswith("GEO-INFER-") and (
+            "/src/" in line or "/tests/" in line or line.endswith("/pyproject.toml")
+        ):
             module_files.setdefault(top, []).append(line)
     # GS19-01: a module whose only src change is its ``__version__`` literal
     # (release-commit version bumps) is not re-measured.
@@ -104,7 +119,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--base", required=True)
     parser.add_argument("--head", required=True)
     parser.add_argument("--modules", default="", help="force a module set")
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=MAX_MODULE_WORKERS,
+        help="isolated module coverage processes (1..4)",
+    )
     args = parser.parse_args(argv)
+    if not 1 <= args.workers <= 4:
+        parser.error("--workers must be between 1 and 4")
 
     import json
 
@@ -131,6 +154,10 @@ def main(argv: list[str] | None = None) -> int:
         _fail(f"coverage_baseline.json lacks floors for: {missing}")
 
     known = set(entries)
+    if any(
+        target.name == "ROOT" for target in discover_workspace_test_targets(REPO_ROOT)
+    ):
+        known.add("ROOT")
     unknown = sorted(modules - known)
     if unknown:
         _fail(
@@ -139,33 +166,47 @@ def main(argv: list[str] | None = None) -> int:
             "the baseline — add or drop its floor entry"
         )
 
+    selected = sorted(modules & known)
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        futures = {
+            module: pool.submit(measure_module, module)
+            for module in selected
+            if module != "ROOT"
+        }
+        results = {}
+        for module, future in futures.items():
+            try:
+                results[module] = future.result()
+            except Exception as exc:
+                results[module] = {
+                    "status": "error",
+                    "reason": f"{type(exc).__name__}: {exc}",
+                }
+    if "ROOT" in selected:
+        try:
+            results["ROOT"] = measure_module("ROOT")
+        except Exception as exc:
+            results["ROOT"] = {
+                "status": "error",
+                "reason": f"{type(exc).__name__}: {exc}",
+            }
     violations: list[str] = []
-    for module in sorted(modules & known):
-        floor = entries[module]["floor_percent"]
-        result = measure_module(module)
+    for module in selected:
+        floor = entries[module]["floor_percent"] if module != "ROOT" else None
+        result = results[module]
         if result["status"] != "measured":
+            print(
+                f"{module}: FAILED-SUITE {result.get('reason', 'measurement failed')}"
+            )
+            for name in result.get("failing_tests", [])[:20]:
+                print(f"  FAILED {name}")
             violations.append(
                 f"{module}: measurement failed ({result.get('reason', 'unknown')})"
             )
             continue
         pytest_rc = result.get("pytest_rc")
-        if pytest_rc not in (None, 0):
-            # GS19-01: one bounded retry — a full-fleet re-measurement under
-            # filterwarnings=['error'] is a flake lottery; a single retry
-            # absorbs a transient failure before the gate fails the release.
-            print(
-                f"{module}: measurement ran with pytest rc={pytest_rc}; "
-                "retrying once (GS19-01 bounded retry)"
-            )
-            result = measure_module(module)
-            if result["status"] != "measured":
-                violations.append(
-                    f"{module}: measurement failed ({result.get('reason', 'unknown')})"
-                )
-                continue
-            pytest_rc = result.get("pytest_rc")
         measured = float(result["coverage_percent"])
-        if pytest_rc not in (None, 0):
+        if pytest_rc != 0:
             # GS-004: pytest rc=1 with a coverage report means the suite
             # failed mid-measurement; the number is coverage of whatever ran
             # before the failure and must never read as a passing floor.
@@ -187,6 +228,11 @@ def main(argv: list[str] | None = None) -> int:
                 f"{module}: measurement ran with pytest rc={pytest_rc}"
                 + (f" ({len(failing)} failing tests)" if failing else "")
                 + "; failing tests make the measured floor unreliable"
+            )
+            continue
+        if module == "ROOT":
+            print(
+                f"ROOT: measured {measured}%; manuscript profile succeeded (no historical module floor)"
             )
             continue
         verdict = "ok" if measured >= floor else "VIOLATION"

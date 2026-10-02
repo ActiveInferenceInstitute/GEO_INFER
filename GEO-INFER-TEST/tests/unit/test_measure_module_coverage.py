@@ -9,12 +9,12 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SCRIPT_PATH = REPO_ROOT / "GEO-INFER-TEST" / "measure_module_coverage.py"
+SCRIPT_PATH = REPO_ROOT / "GEO-INFER-TEST" / "src" / "geo_infer_test" / "coverage.py"
 
 
 def load_module():
     spec = importlib.util.spec_from_file_location(
-        "geo_infer_measure_module_coverage", SCRIPT_PATH
+        "geo_infer_test.coverage_for_regression", SCRIPT_PATH
     )
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
@@ -53,6 +53,9 @@ EXPECTED_FAILURES = [
 
 def make_fake_module(root: Path) -> None:
     (root / "GEO-INFER-SAMPLE" / "src" / "geo_infer_sample").mkdir(parents=True)
+    test = root / "GEO-INFER-SAMPLE" / "tests" / "unit" / "test_sample.py"
+    test.parent.mkdir(parents=True)
+    test.write_text("def test_sample(): assert True\n")
 
 
 def write_fake_reports(command: list[str], junit_text: str, coverage: float) -> None:
@@ -94,11 +97,26 @@ def test_measure_module_reports_failing_tests_from_junit(tmp_path, monkeypatch):
         write_fake_reports(command, JUNIT_WITH_FAILURES, 55.0)
         return subprocess.CompletedProcess(command, 1, stdout="", stderr="")
 
-    monkeypatch.setattr(module.subprocess, "run", fake_run)
+    def fake_command(command, name, timeout, cwd, env_overrides):
+        completed = fake_run(command)
+        from geo_infer_test.execution import CommandResult
+
+        return CommandResult(
+            name,
+            completed.returncode == 0,
+            0.1,
+            command,
+            completed.stdout,
+            completed.stderr,
+            timeout,
+            completed.returncode,
+        )
+
+    monkeypatch.setattr(module, "run_command", fake_command)
 
     result = module.measure_module("GEO-INFER-SAMPLE")
 
-    assert result["status"] == "measured"
+    assert result["status"] == "error"
     assert result["pytest_rc"] == 1
     assert result["failing_tests"] == EXPECTED_FAILURES
 
@@ -112,7 +130,22 @@ def test_measure_module_clean_suite_has_no_failing_tests_field(tmp_path, monkeyp
         write_fake_reports(command, JUNIT_ALL_PASS, 90.0)
         return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
 
-    monkeypatch.setattr(module.subprocess, "run", fake_run)
+    def fake_command(command, name, timeout, cwd, env_overrides):
+        completed = fake_run(command)
+        from geo_infer_test.execution import CommandResult
+
+        return CommandResult(
+            name,
+            completed.returncode == 0,
+            0.1,
+            command,
+            completed.stdout,
+            completed.stderr,
+            timeout,
+            completed.returncode,
+        )
+
+    monkeypatch.setattr(module, "run_command", fake_command)
 
     result = module.measure_module("GEO-INFER-SAMPLE")
 
@@ -130,7 +163,22 @@ def test_measure_module_error_status_carries_failing_tests(tmp_path, monkeypatch
         write_fake_reports(command, JUNIT_WITH_FAILURES, 0.0)
         return subprocess.CompletedProcess(command, 4, stdout="", stderr="boom")
 
-    monkeypatch.setattr(module.subprocess, "run", fake_run)
+    def fake_command(command, name, timeout, cwd, env_overrides):
+        completed = fake_run(command)
+        from geo_infer_test.execution import CommandResult
+
+        return CommandResult(
+            name,
+            completed.returncode == 0,
+            0.1,
+            command,
+            completed.stdout,
+            completed.stderr,
+            timeout,
+            completed.returncode,
+        )
+
+    monkeypatch.setattr(module, "run_command", fake_command)
 
     result = module.measure_module("GEO-INFER-SAMPLE")
 

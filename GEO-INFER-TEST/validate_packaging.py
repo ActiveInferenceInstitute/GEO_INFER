@@ -240,6 +240,84 @@ def validate_version_uniformity(
             )
 
 
+def validate_release_metadata(
+    repo_root: Path,
+    inventories: list[tuple[str, dict]],
+    report: ContractReport,
+) -> None:
+    """Bind the virtual root, member metadata, and public runtime version literals."""
+    root_project = read_toml(repo_root / "pyproject.toml")
+    expected = root_project.get("project", {}).get("version")
+    if not isinstance(expected, str) or not expected:
+        report.error("root pyproject.toml: missing release version")
+        return
+    if root_project.get("tool", {}).get("uv", {}).get("package") is not False:
+        report.error(
+            "root pyproject.toml: the workspace must remain virtual (tool.uv.package=false)"
+        )
+    for module_name, project in inventories:
+        version = project.get("project", {}).get("version")
+        if version != expected:
+            report.error(
+                f"{module_name}: member version {version!r} differs from root {expected!r}"
+            )
+        package_name = package_name_from_distribution(distribution_name(project) or "")
+        source = repo_root / module_name / "src" / package_name
+        public_init = source / "__init__.py"
+        has_public_version = False
+        for path in sorted(source.rglob("*.py")):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for statement in tree.body:
+                if not isinstance(statement, ast.Assign):
+                    continue
+                if not any(
+                    isinstance(t, ast.Name) and t.id == "__version__"
+                    for t in statement.targets
+                ):
+                    continue
+                if path == public_init:
+                    has_public_version = True
+                value = (
+                    statement.value.value
+                    if isinstance(statement.value, ast.Constant)
+                    else None
+                )
+                if value != expected:
+                    report.error(
+                        f"{path.relative_to(repo_root)}: runtime version {value!r} differs from root {expected!r}"
+                    )
+        if not has_public_version:
+            report.error(
+                f"{module_name}: public package has no static __version__ release metadata"
+            )
+
+
+def validate_aggregate_extras(
+    project: dict, label: str, report: ContractReport
+) -> None:
+    """Expanded 'all' extras must include every declared optional requirement."""
+    extras = project.get("project", {}).get("optional-dependencies", {})
+    if "all" not in extras:
+        return
+    from packaging.requirements import Requirement
+
+    all_requirements = {str(Requirement(value)) for value in extras["all"]}
+    required = {
+        str(Requirement(value))
+        for name, values in extras.items()
+        if name != "all"
+        for value in values
+    }
+    self_name = project.get("project", {}).get("name", "").lower().replace("_", "-")
+    for value in extras["all"]:
+        if Requirement(value).name.lower().replace("_", "-") == self_name:
+            report.error(
+                f"{label}: aggregate extras must be expanded; self-reference {value!r}"
+            )
+    for missing in sorted(required - all_requirements):
+        report.error(f"{label}: all extra omits optional requirement {missing!r}")
+
+
 _CITATION_VERSION_RE = re.compile(
     r"""^version:[ \t]*["']?([^"'\s]+)["']?[ \t]*$""", re.MULTILINE
 )
@@ -555,7 +633,10 @@ def module_import_roots(module_dir: Path) -> dict:
 
 
 def validate_import_parity(
-    module_dir: Path, pyproject: dict, report: ContractReport
+    module_dir: Path,
+    pyproject: dict,
+    report: ContractReport,
+    workspace_distributions: set[str] | None = None,
 ) -> None:
     """Compare top-level third-party import roots against declared dependencies.
 
@@ -571,7 +652,11 @@ def validate_import_parity(
             pyproject_dependency_names(pyproject) | pyproject_optional_names(pyproject)
         )
     }
-    declared |= internal_requirement_names(REPO_ROOT)
+    declared |= (
+        workspace_distributions
+        if workspace_distributions is not None
+        else internal_requirement_names(REPO_ROOT)
+    )
     for roots in module_import_roots(module_dir).values():
         for root in sorted(roots):
             if root in _STDLIB_ROOTS:
@@ -763,6 +848,7 @@ def validate_all(target_dirs: list[Path] | None = None) -> ContractReport:
         target_dirs = module_dirs()
     inventories: list[tuple[str, dict]] = []
     workspace_packages = workspace_package_names(REPO_ROOT)
+    workspace_distributions = internal_requirement_names(REPO_ROOT)
     for module_dir in target_dirs:
         pyproject = parse_pyproject(module_dir)
         if not pyproject:
@@ -770,10 +856,13 @@ def validate_all(target_dirs: list[Path] | None = None) -> ContractReport:
             continue
         inventories.append((module_dir.name, pyproject))
         validate_module(module_dir, pyproject, report)
-        validate_import_parity(module_dir, pyproject, report)
+        validate_import_parity(module_dir, pyproject, report, workspace_distributions)
         validate_test_import_parity(module_dir, pyproject, report, workspace_packages)
         validate_source_traversal(module_dir, report)
+        validate_aggregate_extras(pyproject, module_dir.name, report)
     validate_version_uniformity(inventories, report)
+    validate_release_metadata(REPO_ROOT, inventories, report)
+    validate_aggregate_extras(read_toml(REPO_ROOT / "pyproject.toml"), "root", report)
     validate_citation_version(inventories, report)
     validate_classifier_consistency(inventories, report)
     validate_classifier_validity(inventories, report)

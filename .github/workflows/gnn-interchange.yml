@@ -13,16 +13,27 @@ on:
     branches: ["main", "develop"]
     paths:
       - "GEO-INFER-ACT/**"
+      - "GEO-INFER-SPACE/**"
+      - "GEO-INFER-TIME/**"
+      - "GEO-INFER-TEST/src/**"
+      - "GEO-INFER-TEST/tests/**"
+      - "pyproject.toml"
+      - "**/pyproject.toml"
+      - "uv.lock"
+      - ".python-version"
+      - "conftest.py"
+      - "GEO-INFER-TEST/*.py"
       - "GEO-INFER-TEST/validate_gnn_interchange.py"
       - ".github/gnn-pair.json"
       - ".github/workflows/gnn-interchange.yml"
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  group: gnn-interchange-${{ github.event.pull_request.number || github.ref }}
+  group: gnn-interchange-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -37,7 +48,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           path: geo
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
       - name: Read reviewed companion revision
         id: pair
@@ -82,7 +93,26 @@ jobs:
         run: |
           geo/.venv/bin/python geo/GEO-INFER-TEST/validate_gnn_interchange.py \
             --gnn-repo "$PWD/gnn" --gnn-python "$PWD/gnn/.venv/bin/python" \
-            > receipts/interchange.json
+            --output receipts/interchange.json
+      - name: Verify exact candidate receipt and retained artifacts
+        run: |
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          receipt = json.loads(Path('receipts/interchange.json').read_text())
+          pair = json.loads(Path('geo/.github/gnn-pair.json').read_text())
+          assert receipt['schema_version'] == '1.0' and receipt['success'] is True
+          assert receipt['geo']['revision'] == os.environ['GITHUB_SHA']
+          assert receipt['gnn']['revision'] == pair['revision']
+          assert receipt['geo']['dirty'] is False and receipt['gnn']['dirty'] is False
+          assert receipt['geo_execution']['custody_complete'] is True
+          assert receipt['artifacts']
+          for relative, digest in receipt['artifacts'].items():
+              root = Path('receipts/interchange-artifacts').resolve()
+              artifact = (root / relative).resolve()
+              assert artifact.is_relative_to(root)
+              assert hashlib.sha256(artifact.read_bytes()).hexdigest() == digest
+          PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:

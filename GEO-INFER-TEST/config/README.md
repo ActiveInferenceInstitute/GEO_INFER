@@ -15,7 +15,7 @@ Config workspace within `GEO-INFER-TEST`.
 
 - Module: `GEO-INFER-TEST`
 - Package: `geo_infer_test`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-test`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module TEST`
 

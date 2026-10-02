@@ -24,7 +24,13 @@
 - `core/`
 - `models/`
 - `__init__.py`
+- `coverage.py`
+- `doc_examples.py`
+- `execution.py`
+- `process.py`
+- `selection.py`
 - `testing.py`
+- `wheel_profiles.py`
 
 ## Validation
 

@@ -19,6 +19,7 @@ Unified testing framework for quality assurance across all GEO-INFER modules wit
 - `measure_module_coverage.py`
 - `orchestrator_coverage_metric.py`
 - `preview_receipt_metric.py`
+- `record_validation.py`
 - `render_lane_metric.py`
 - `rewrite_readme_agents.py`
 - `run_model_audit.py`
@@ -29,6 +30,7 @@ Unified testing framework for quality assurance across all GEO-INFER modules wit
 - `validate_act_geospatial_contract.py`
 - `validate_act_script_orchestration.py`
 - `validate_active_inference_contract.py`
+- `validate_doc_examples.py`
 - `validate_doc_imports.py`
 - `validate_documentation.py`
 - `validate_gnn_interchange.py`
@@ -44,6 +46,7 @@ Unified testing framework for quality assurance across all GEO-INFER modules wit
 - `SKILL.md`
 - `TESTING.md`
 - `coverage_baseline.json`
+- `doc_examples.json`
 - `pyproject.toml`
 
 ## Public Interface
@@ -65,15 +68,15 @@ Unified testing framework for quality assurance across all GEO-INFER modules wit
 - `build_package_wheels.py:validate_wheel_contents` (function)
 - `build_package_wheels.py:build_wheel` (function)
 - `build_package_wheels.py:verify_wheels` (function)
+- `build_package_wheels.py:verify_profiles` (function)
 - `build_package_wheels.py:install_and_verify` (function)
 - `build_package_wheels.py:main` (function)
-- `check_coverage_floor.py:main` (function)
 
 ## Module Metadata
 
 - Module: `GEO-INFER-TEST`
 - Package: `geo_infer_test`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-test`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module TEST`
 

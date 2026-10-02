@@ -9,12 +9,12 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-RUNNER_PATH = REPO_ROOT / "GEO-INFER-TEST" / "run_unified_tests.py"
+RUNNER_PATH = REPO_ROOT / "GEO-INFER-TEST" / "src" / "geo_infer_test" / "execution.py"
 
 
 def load_runner_module():
     spec = importlib.util.spec_from_file_location(
-        "geo_infer_run_unified_tests", RUNNER_PATH
+        "geo_infer_test.execution_for_regression", RUNNER_PATH
     )
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
@@ -92,7 +92,7 @@ def test_unit_category_includes_root_test_files(tmp_path, monkeypatch):
     assert runner.category_test_paths(module, "system") == []
 
 
-def test_clean_results_dir_removes_nested_stale_artifacts(tmp_path, monkeypatch):
+def test_new_run_preserves_earlier_attempt_artifacts(tmp_path, monkeypatch):
     runner = load_runner_module()
     results_dir = tmp_path / "results"
     stale_nested = results_dir / "old-run"
@@ -103,7 +103,9 @@ def test_clean_results_dir_removes_nested_stale_artifacts(tmp_path, monkeypatch)
 
     runner.ensure_results_dir(clean=True)
 
-    assert list(results_dir.iterdir()) == []
+    assert (stale_nested / "summary.json").read_text() == "{}\n"
+    assert (results_dir / "stale.xml").exists()
+    assert runner.run_results_dir().is_dir()
 
 
 def test_run_command_passes_workspace_env(tmp_path, monkeypatch):
@@ -116,10 +118,11 @@ def test_run_command_passes_workspace_env(tmp_path, monkeypatch):
         captured["env"] = kwargs["env"]
         return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(runner, "run_process", fake_run)
+    monkeypatch.setattr(runner, "runtime_receipt", lambda **_kwargs: {})
 
     result = runner.run_command(
-        [sys.executable, "-m", "pytest"],
+        [sys.executable, "-c", "pass"],
         "sample",
         timeout=10,
         cwd=tmp_path,
@@ -143,7 +146,8 @@ def test_pytest_no_tests_exit_is_a_failure(tmp_path, monkeypatch):
             stderr="",
         )
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(runner, "run_process", fake_run)
+    monkeypatch.setattr(runner, "runtime_receipt", lambda **_kwargs: {})
 
     result = runner.run_command(
         [sys.executable, "-m", "pytest"],
@@ -168,7 +172,7 @@ def test_non_pytest_no_tests_exit_remains_failure(tmp_path, monkeypatch):
             stderr="",
         )
 
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(runner, "run_process", fake_run)
 
     result = runner.run_command(
         ["python", "script.py"], "script", timeout=10, cwd=tmp_path
@@ -254,8 +258,12 @@ def test_coverage_category_isolates_modules_and_combines_data(tmp_path, monkeypa
         env_overrides=None,
     ):
         captured.append((name, command, timeout, cwd, env_overrides))
+        receipt = tmp_path / f"attempt-{len(captured)}" / "receipt.json"
+        receipt.parent.mkdir()
+        if "--cov=" in " ".join(command):
+            (receipt.parent / ".coverage").write_bytes(b"bound fixture data")
         return runner.CommandResult(
-            name=name, success=True, duration=0.0, command=command
+            name=name, success=True, duration=0.0, command=command, receipt=str(receipt)
         )
 
     monkeypatch.setattr(runner, "run_command", fake_run)
@@ -263,18 +271,21 @@ def test_coverage_category_isolates_modules_and_combines_data(tmp_path, monkeypa
     report = runner.run_coverage_analysis(timeout=42)
 
     assert report.success is True
-    assert not stale_report.exists()
-    assert len(captured) == 4
-    a_run, b_run, json_run, terminal_run = captured
+    assert stale_report.read_text() == "stale"
+    assert len(captured) == 5
+    a_run, b_run, combine_run, json_run, terminal_run = captured
     assert f"--cov={a_src}" in a_run[1]
     assert f"--cov={b_src}" not in a_run[1]
     assert f"--cov={b_src}" in b_run[1]
     assert f"--cov={a_src}" not in b_run[1]
-    assert "--cov-append" in a_run[1] and "--cov-report=" in a_run[1]
-    expected_data = str(runner.RESULTS_DIR / ".coverage")
+    assert "--cov-append" not in a_run[1]
+    assert any(arg.startswith("--cov-report=json:") for arg in a_run[1])
+    assert "--keep" in combine_run[1]
+    assert len([arg for arg in combine_run[1] if arg.endswith("/.coverage")]) == 2
+    expected_data = str(runner.run_results_dir() / ".coverage")
     assert a_run[4] == {"COVERAGE_FILE": expected_data}
     assert b_run[4] == {"COVERAGE_FILE": expected_data}
-    assert json_run[1][-2:] == ["-o", str(runner.RESULTS_DIR / "coverage.json")]
+    assert json_run[1][-2:] == ["-o", str(runner.run_results_dir() / "coverage.json")]
     assert terminal_run[1][-2:] == ["report", "--show-missing"]
 
 

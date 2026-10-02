@@ -6,16 +6,26 @@ across all GEO-INFER modules with comprehensive logging and reporting.
 """
 
 import logging
-import subprocess
-import sys
+import math
+import os
+import uuid
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from ..process import terminate_running_processes, reset_process_cancellation
 from .log_integration import LogIntegration
 from .test_discoverer import ALL_MODULES
+from ..execution import (
+    Module,
+    category_test_paths,
+    pytest_base_args,
+    run_command,
+    run_results_dir,
+    profile_selection_args,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +78,7 @@ class GeoInferTestRunner:
     """
 
     # Keep the programmatic runner aligned with the canonical discoverer.
-    AVAILABLE_MODULES = tuple(ALL_MODULES)
+    AVAILABLE_MODULES = (*ALL_MODULES, "ROOT")
 
     def __init__(self, config: TestConfiguration):
         """Initialize the test runner."""
@@ -80,10 +90,19 @@ class GeoInferTestRunner:
         )
         self.test_results: list[TestResult] = []
         self.discovered_tests: dict[str, list[str]] = {}
+        self._deadline: float | None = None
+        self._command_results: dict[str, Any] = {}
         self._setup_test_environment()
 
     def _setup_test_environment(self) -> None:
         """Validate runner prerequisites without mutating the checkout."""
+        if (
+            not math.isfinite(self.config.timeout_seconds)
+            or self.config.timeout_seconds <= 0
+        ):
+            raise ValueError("timeout_seconds must be finite and positive")
+        if self.config.max_workers <= 0:
+            raise ValueError("max_workers must be positive")
         # Test discovery is intentionally read-only.  Creating a ``tests/``
         # tree here hides missing module fixtures and dirties the caller's
         # working directory before the first test is executed.
@@ -101,9 +120,7 @@ class GeoInferTestRunner:
 
         for module in self.config.modules_to_test:
             if module not in self.AVAILABLE_MODULES:
-                if self.log_integration:
-                    self.log_integration.logger.warning(f"Unknown module: {module}")
-                continue
+                raise ValueError(f"Unknown module: {module}")
 
             module_tests = self._discover_module_tests(module)
             if module_tests:
@@ -121,23 +138,22 @@ class GeoInferTestRunner:
         tests: list[str] = []
 
         # Look for module test directory
-        module_test_dir = _REPO_ROOT / f"GEO-INFER-{module}/tests"
+        module_test_dir = (
+            _REPO_ROOT if module == "ROOT" else _REPO_ROOT / f"GEO-INFER-{module}"
+        ) / "tests"
         if not module_test_dir.exists():
             return tests
 
-        # Discover test files
+        descriptor = Module(module, module_test_dir.parent, module_test_dir, True)
+        seen: set[Path] = set()
         for test_type in self.config.test_types:
-            test_type_dir = module_test_dir / test_type
-            if test_type_dir.exists():
-                test_files = sorted(
-                    {
-                        *test_type_dir.rglob("test_*.py"),
-                        *test_type_dir.rglob("*_test.py"),
-                    }
-                )
-                for test_file in test_files:
-                    relative_path = test_file.relative_to(test_type_dir).with_suffix("")
-                    tests.append(f"{module}::{test_type}::{relative_path.as_posix()}")
+            for test_file in category_test_paths(descriptor, test_type):
+                if test_file in seen:
+                    continue
+                seen.add(test_file)
+                base = module_test_dir / ("unit" if test_type == "slow" else test_type)
+                relative = Path(os.path.relpath(test_file, base)).with_suffix("")
+                tests.append(f"{module}::{test_type}::{relative.as_posix()}")
 
         return tests
 
@@ -151,7 +167,12 @@ class GeoInferTestRunner:
         if not self.discovered_tests:
             self.discover_tests()
 
-        start_time = time.time()
+        self.test_results = []
+        self._command_results = {}
+        start_time = time.monotonic()
+        self._deadline = start_time + self.config.timeout_seconds
+        if not self.discovered_tests:
+            raise ValueError("No tests discovered for the requested modules/categories")
 
         if self.log_integration:
             self.log_integration.logger.info("Starting comprehensive test execution")
@@ -161,8 +182,7 @@ class GeoInferTestRunner:
         else:
             self._run_tests_sequential()
 
-        end_time = time.time()
-        total_duration = end_time - start_time
+        total_duration = time.monotonic() - start_time
 
         # Generate comprehensive report
         report = self._generate_execution_report(total_duration)
@@ -183,55 +203,46 @@ class GeoInferTestRunner:
         every future, and worker failures are recorded as ERROR results
         instead of being silently dropped from the report.
         """
+        reset_process_cancellation()
+        executor = ThreadPoolExecutor(max_workers=self.config.max_workers)
         futures = {
-            executor.submit(self._execute_single_test, module, test): (
-                module,
-                test,
-            )
-            for executor in [ThreadPoolExecutor(max_workers=self.config.max_workers)]
+            executor.submit(self._execute_single_test, module, test): (module, test)
             for module, tests in self.discovered_tests.items()
             for test in tests
         }
-
         try:
-            for future in as_completed(futures, timeout=self.config.timeout_seconds):
+            for future in as_completed(futures):
                 module, test = futures[future]
                 try:
                     result = future.result()
-                except Exception as e:
-                    logger.exception("Test execution error for %s/%s", module, test)
+                except Exception as exc:
                     result = TestResult(
-                        test_id=f"{module}_{test}_{int(time.time())}",
-                        module=module,
-                        test_name=test,
-                        status="ERROR",
-                        duration=0.0,
-                        message=f"Test execution failed: {e}",
-                        details={"error": str(e)},
+                        uuid.uuid4().hex,
+                        module,
+                        test,
+                        "ERROR",
+                        0.0,
+                        str(exc),
+                        {"error": str(exc)},
                     )
-                if result:
+                if result is not None:
                     self.test_results.append(result)
-        except TimeoutError:
-            logger.error(
-                "Parallel test run exceeded the global timeout of %ss; "
-                "remaining tests are recorded as ERROR",
-                self.config.timeout_seconds,
-            )
-            for future in futures:
-                if not future.done():
-                    module, test = futures[future]
-                    self.test_results.append(
-                        TestResult(
-                            test_id=f"{module}_{test}_{int(time.time())}",
-                            module=module,
-                            test_name=test,
-                            status="ERROR",
-                            duration=0.0,
-                            message="Test execution timed out",
-                            details={"timeout_seconds": self.config.timeout_seconds},
-                        )
-                    )
-                future.cancel()
+                if (
+                    self.config.fail_fast
+                    and result is not None
+                    and result.status != "PASS"
+                ):
+                    for pending in futures:
+                        pending.cancel()
+                    break
+        except KeyboardInterrupt:
+            for pending in futures:
+                pending.cancel()
+            terminate_running_processes()
+            raise
+        finally:
+            executor.shutdown(wait=True, cancel_futures=True)
+            reset_process_cancellation()
 
     def _run_tests_sequential(self) -> None:
         """Execute tests sequentially."""
@@ -251,8 +262,19 @@ class GeoInferTestRunner:
                             return
 
                 except Exception as e:
-                    if self.log_integration:
-                        self.log_integration.logger.error(f"Test execution error: {e}")
+                    self.test_results.append(
+                        TestResult(
+                            uuid.uuid4().hex,
+                            module,
+                            test,
+                            "ERROR",
+                            0.0,
+                            str(e),
+                            {"error": str(e)},
+                        )
+                    )
+                    if self.config.fail_fast:
+                        return
 
     def _execute_single_test(self, module: str, test: str) -> TestResult | None:
         """Execute a single test with comprehensive logging."""
@@ -261,7 +283,7 @@ class GeoInferTestRunner:
         # Parse test information
         parts = test.split("::")
         if len(parts) != 3:
-            return None
+            raise ValueError(f"Malformed test identifier: {test}")
 
         module_name, test_type, test_file = parts
         test_name = f"{test_type}_{test_file}"
@@ -284,7 +306,11 @@ class GeoInferTestRunner:
                         status="PASS" if result else "FAIL",
                         duration=duration,
                         message="Test execution completed",
-                        details={"test_type": test_type, "test_file": test_file},
+                        details={
+                            "test_type": test_type,
+                            "test_file": test_file,
+                            **self._command_details(module, test_type, test_file),
+                        },
                     )
             else:
                 # Execute without log integration
@@ -299,7 +325,11 @@ class GeoInferTestRunner:
                     status="PASS" if result else "FAIL",
                     duration=duration,
                     message="Test execution completed",
-                    details={"test_type": test_type, "test_file": test_file},
+                    details={
+                        "test_type": test_type,
+                        "test_file": test_file,
+                        **self._command_details(module, test_type, test_file),
+                    },
                 )
 
         except Exception as e:
@@ -320,34 +350,55 @@ class GeoInferTestRunner:
                 },
             )
 
+    def _command_details(self, module: str, category: str, filename: str) -> dict:
+        result = self._command_results.get(f"{module}::{category}::{filename}")
+        return (
+            {
+                "receipt": result.receipt,
+                "testcases": result.executed,
+                "returncode": result.returncode,
+            }
+            if result
+            else {}
+        )
+
     def _run_pytest_test(self, module: str, test_type: str, test_file: str) -> bool:
-        """Execute a pytest test file in an isolated subprocess.
-
-        ``pytest.main`` mutates global plugin/config state and is not safe to
-        call concurrently (or repeatedly) in-process, so execution shells out
-        to ``sys.executable -m pytest`` — the same model run_unified_tests.py
-        uses per module.
-        """
-        test_path = _REPO_ROOT / f"GEO-INFER-{module}/tests/{test_type}/{test_file}.py"
-
-        if not test_path.exists():
+        """Use the canonical execution engine, including JUnit and custody checks."""
+        base_type = "unit" if test_type == "slow" else test_type
+        module_root = (
+            _REPO_ROOT if module == "ROOT" else _REPO_ROOT / f"GEO-INFER-{module}"
+        )
+        path = (module_root / "tests" / base_type / f"{test_file}.py").resolve()
+        if not path.is_relative_to(module_root.resolve()) or not path.is_file():
             return False
-
-        try:
-            proc = subprocess.run(
-                [sys.executable, "-m", "pytest", str(test_path), "-v", "--tb=short"],
-                cwd=_REPO_ROOT,
-                timeout=self.config.timeout_seconds,
-                capture_output=True,
-            )
-        except subprocess.TimeoutExpired:
-            if self.log_integration:
-                self.log_integration.logger.warning(
-                    f"Test timed out after {self.config.timeout_seconds}s: {test_path}"
-                )
+        remaining = (
+            self.config.timeout_seconds
+            if self._deadline is None
+            else self._deadline - time.monotonic()
+        )
+        if remaining <= 0:
             return False
-
-        return proc.returncode == 0
+        markers = (
+            ["-m", "slow" if test_type == "slow" else "not slow"]
+            if test_type in {"unit", "slow"}
+            else []
+        )
+        result = run_command(
+            [
+                *pytest_base_args(),
+                *markers,
+                *profile_selection_args(
+                    Module(module, module_root, module_root / "tests", True), test_type
+                ),
+                str(path),
+                f"--junitxml={run_results_dir() / 'programmatic.xml'}",
+            ],
+            f"{module} {test_type} {test_file}",
+            timeout=remaining,
+            cwd=_REPO_ROOT,
+        )
+        self._command_results[f"{module}::{test_type}::{test_file}"] = result
+        return result.success
 
     def _generate_execution_report(self, total_duration: float) -> dict[str, Any]:
         """Generate comprehensive test execution report."""
@@ -382,6 +433,13 @@ class GeoInferTestRunner:
         report = {
             "execution_summary": {
                 "total_tests": total_tests,
+                "not_run": max(
+                    0, sum(map(len, self.discovered_tests.values())) - total_tests
+                ),
+                "testcases": sum(
+                    r.details.get("testcases", 0) for r in self.test_results
+                ),
+                "success": bool(self.test_results) and passed == total_tests,
                 "passed": passed,
                 "failed": failed,
                 "errors": errors,
@@ -431,92 +489,15 @@ class GeoInferTestRunner:
             self.config.modules_to_test = original_modules
 
     def run_cross_module_tests(self) -> dict[str, Any]:
-        """Run integration tests that verify cross-module interactions.
-
-        Discovers and executes every test file located in a
-        ``tests/integration/`` directory across all available GEO-INFER modules,
-        then returns a consolidated report. Each file runs in an isolated
-        pytest subprocess anchored to the repository root (not the CWD).
-        """
-        if self.log_integration:
-            self.log_integration.logger.info("Starting cross-module integration tests")
-
-        start_time = time.time()
-
-        cross_results: dict[str, Any] = {}
-        total_tests = 0
-        total_passed = 0
-        total_failed = 0
-
-        for module in self.AVAILABLE_MODULES:
-            integration_dir = _REPO_ROOT / f"GEO-INFER-{module}/tests/integration"
-            if not integration_dir.exists():
-                continue
-
-            test_files = sorted(
-                {
-                    *integration_dir.glob("test_*.py"),
-                    *integration_dir.glob("*_test.py"),
-                }
-            )
-            if not test_files:
-                continue
-
-            module_results = []
-            for test_file in test_files:
-                t0 = time.time()
-                try:
-                    proc = subprocess.run(
-                        [
-                            sys.executable,
-                            "-m",
-                            "pytest",
-                            str(test_file),
-                            "-q",
-                            "--no-header",
-                            "--disable-warnings",
-                        ],
-                        cwd=_REPO_ROOT,
-                        timeout=self.config.timeout_seconds,
-                        capture_output=True,
-                    )
-                    exit_code = proc.returncode
-                except subprocess.TimeoutExpired:
-                    exit_code = 1
-                elapsed = time.time() - t0
-                passed = exit_code == 0
-                module_results.append(
-                    {
-                        "test_file": str(test_file),
-                        "passed": passed,
-                        "duration_s": round(elapsed, 3),
-                    }
-                )
-                total_tests += 1
-                if passed:
-                    total_passed += 1
-                else:
-                    total_failed += 1
-
-            cross_results[module] = module_results
-
-        elapsed_total = time.time() - start_time
-        if self.log_integration:
-            self.log_integration.logger.info(
-                f"Cross-module integration tests completed: {total_passed}/{total_tests} passed "
-                f"in {elapsed_total:.2f}s"
-            )
-
-        return {
-            "cross_module_tests": cross_results,
-            "integration_status": "completed",
-            "summary": {
-                "total_tests": total_tests,
-                "passed": total_passed,
-                "failed": total_failed,
-                "success_rate": (
-                    (total_passed / total_tests * 100) if total_tests else 0.0
-                ),
-                "duration_s": round(elapsed_total, 3),
-            },
-        }
+        """Run canonical integration discovery without losing nested test roots."""
+        original_types = self.config.test_types
+        original_modules = self.config.modules_to_test
+        try:
+            self.config.test_types = ["integration"]
+            self.config.modules_to_test = list(self.AVAILABLE_MODULES)
+            self.discovered_tests = {}
+            return self.run_all_tests()
+        finally:
+            self.config.test_types = original_types
+            self.config.modules_to_test = original_modules
+            self.discovered_tests = {}

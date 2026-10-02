@@ -34,7 +34,7 @@ TEST_CONFIG = {
     "timeout": 300,
     "memory_limit": "2GB",
     "parallel_workers": 4,
-    "retry_failed": 2,
+    "retry_failed": 0,
     "coverage_threshold": 80,
     "performance_threshold": 1.5,
     "geospatial_precision": 1e-6,

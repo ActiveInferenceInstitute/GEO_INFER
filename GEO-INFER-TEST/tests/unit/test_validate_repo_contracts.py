@@ -41,6 +41,9 @@ def test_signpost_inventory_includes_new_files_and_excludes_deletions(
     tmp_path, monkeypatch
 ):
     subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "config", "core.fsmonitor", "false"], cwd=tmp_path, check=True
+    )
     tracked = tmp_path / "tracked.py"
     tracked.write_text("tracked = True\n")
     subprocess.run(["git", "add", "tracked.py"], cwd=tmp_path, check=True)

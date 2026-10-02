@@ -19,12 +19,14 @@ import pandas as pd
 import pytest
 from geo_infer_act.core.active_inference import ActiveInferenceModel
 from geo_infer_act.core.generative_model import GenerativeModel
+from geo_infer_act.core.policy_selection import PolicySelector
 from geo_infer_act.utils.h3_adapter import get_h3_adapter
 from geo_infer_bayes.models.spatial_gp import SpatialGP
 from geo_infer_bayes.utils.rng import resolve_rng as resolve_bayes_rng
 from geo_infer_risk.core.exposure_model import EnhancedExposureModel
 from geo_infer_risk.utils.risk_metrics import calculate_ep_curve
 from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
+from geo_infer_space import H3StateSpace
 from geo_infer_space.nested import NestedH3Grid
 from geo_infer_time.core.stream_processing import StreamProcessor
 from geo_infer_time.models.timeseries import TimeSeries
@@ -180,7 +182,11 @@ def test_space_risk_catastrophe_modeling_composition(h3_spatial_domain):
 
 def test_space_act_active_inference_spatial_belief_propagation(h3_spatial_domain):
     """Test Active Inference model over H3 spatial lattice with belief diffusion."""
-    cells = h3_spatial_domain["disk_cells"][:7]  # Center + 6 neighbors
+    center = h3_spatial_domain["center_cell"]
+    neighbors = sorted(set(h3.grid_disk(center, 1)) - {center})
+    # Deliberately preserve a nonlexical caller state order.
+    cells = [neighbors[-1], center, *neighbors[:-1]]
+    space = H3StateSpace(cells)
     adapter = get_h3_adapter()
 
     # Verify adapter wraps SPACE indexing cleanly
@@ -190,6 +196,19 @@ def test_space_act_active_inference_spatial_belief_propagation(h3_spatial_domain
 
     # Initialize Active Inference Generative Model over discrete spatial states
     n_states = len(cells)
+    likelihood = np.full((n_states, n_states), 0.2 / (n_states - 1))
+    np.fill_diagonal(likelihood, 0.8)
+    prior = np.arange(1, n_states + 1, dtype=float)
+    prior /= prior.sum()
+    transitions = space.dense_transition_tensor()
+    expected_diffusion = np.zeros((n_states, n_states))
+    for source, cell in enumerate(cells):
+        adjacent = set(h3.grid_disk(cell, 1)) - {cell}
+        for destination in adjacent:
+            target = cells.index(destination) if destination in cells else source
+            expected_diffusion[target, source] += 1 / len(adjacent)
+    np.testing.assert_allclose(transitions[:, :, 1], expected_diffusion, atol=1e-12)
+    np.testing.assert_allclose(transitions.sum(axis=0), 1, atol=1e-12)
     gen_model = GenerativeModel(
         model_type="categorical",
         parameters={
@@ -197,16 +216,36 @@ def test_space_act_active_inference_spatial_belief_propagation(h3_spatial_domain
             "obs_dim": n_states,
             "prior_precision": 1.0,
             "random_seed": 42,
+            "A": likelihood,
+            "B": transitions,
+            "C": np.arange(n_states, dtype=float),
+            "D": prior,
         },
     )
 
-    ai_model = ActiveInferenceModel(model_type="categorical")
+    ai_model = ActiveInferenceModel(model_type="categorical", random_seed=42)
     ai_model.set_generative_model(gen_model)
 
     observation = np.zeros(n_states)
-    observation[0] = 1.0  # Observe center cell
-    step_result = ai_model.step(observation)
-    assert step_result is not None
+    observed_index = cells.index(center)
+    observation[observed_index] = 1.0
+    step_result = ai_model.step(observation, available_actions=["stay", "diffuse"])
+    beliefs, action = step_result
+    # The default A matrix is uninformative. This analytical A/D fixture
+    # establishes the actual Bayes update rather than assuming one-hot belief.
+    posterior = likelihood[observed_index] * prior
+    posterior /= posterior.sum()
+    np.testing.assert_allclose(
+        # The installed pymdp/JAX backend runs this update in float32.
+        np.asarray(beliefs["states"]),
+        posterior,
+        atol=1e-7,
+        rtol=0,
+    )
+    policy = ai_model.latest_pymdp_result.policy_posterior
+    np.testing.assert_allclose(policy.sum(), 1, atol=1e-12)
+    assert action == ["stay", "diffuse"][int(np.argmax(policy))]
+    assert np.isfinite(ai_model.get_history()[0]["free_energy"])
 
 
 def test_full_cross_module_end_to_end_pipeline(h3_spatial_domain):
@@ -225,7 +264,7 @@ def test_full_cross_module_end_to_end_pipeline(h3_spatial_domain):
     coords = [indexer.cell_to_latlng(c) for c in cells]
 
     # 2. Temporal observations (sensor telemetry over 7 days)
-    base_date = pd.Timestamp("2026-08-01")
+    base_date = pd.Timestamp("2026-08-01T00:00:00Z")
     telemetry_records = []
     rng = np.random.default_rng(123)
     for day in range(7):
@@ -264,6 +303,21 @@ def test_full_cross_module_end_to_end_pipeline(h3_spatial_domain):
     ep = calculate_ep_curve(loss_data, exceedance_probs=[0.5, 0.1], exposure_years=50)
     assert len(ep["loss"]) == 2
 
-    # 5. Active Inference decision
-    highest_risk_cell_idx = int(np.argmax(preds))
-    assert 0 <= highest_risk_cell_idx < len(cells)
+    # 5. Actual ACT policy evaluation over the predicted spatial risk distribution.
+    beliefs = np.asarray(preds) / np.sum(preds)
+    policies = [
+        {
+            "action": cell,
+            "predicted_beliefs": np.eye(len(cells))[index],
+            "exploration_bonus": 0.0,
+        }
+        for index, cell in enumerate(cells)
+    ]
+    selector = PolicySelector(selection_mode="deterministic", random_seed=42)
+    evaluation = selector.evaluate_policy_set(beliefs, policies, preferences=beliefs)
+    result = selector.select_policy(beliefs, policies, preferences=beliefs)
+    assert result["policy"]["action"] == cells[int(np.argmax(preds))]
+    assert np.isfinite(evaluation["expected_free_energies"]).all()
+    assert result["expected_free_energy"] == pytest.approx(
+        min(evaluation["expected_free_energies"])
+    )

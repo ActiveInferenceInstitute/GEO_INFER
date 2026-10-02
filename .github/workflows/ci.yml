@@ -10,7 +10,7 @@ on:
     branches: ["main", "develop"]
   workflow_dispatch:
   schedule:
-    # GS19-38: weekly slow-category lane; scheduled runs execute on the default branch.
+    # Scheduled runs confirm the same complete category matrix on the default branch.
     - cron: "0 6 * * 1"
 
 permissions:
@@ -21,6 +21,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  paired-interchange:
+    uses: ./.github/workflows/gnn-interchange.yml
+
   # GS-005: the interpreter-independent gates (repo contracts, syntax/test
   # contracts, model audit, source hygiene, gitleaks, coverage floor) ran
   # identically in every test matrix leg; they now execute once in this
@@ -68,6 +71,18 @@ jobs:
             --no-install-package cupy --no-install-package mayavi \
             --no-install-package vaex --no-install-package vaex-core
 
+      - name: Provision compatible DuckDB Spatial runtime
+        run: |
+          mkdir -p .geo-infer-test-results/provisioning
+          uv run --no-sync python GEO-INFER-DATA/provision_duckdb_spatial.py \
+            > .geo-infer-test-results/provisioning/duckdb-spatial.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt = json.loads(Path('.geo-infer-test-results/provisioning/duckdb-spatial.json').read_text())
+          assert receipt['status'] == 'verified' and receipt['extension'] == 'spatial'
+          PY
+
       - name: Run code quality checks
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
@@ -110,24 +125,25 @@ jobs:
           # be advisory-only; both gates are now fatal so a package that
           # raises on import (or resolves from site-packages) and a broken
           # README/AGENTS<->SKILL cross-reference fail the job.
-          uv run python GEO-INFER-TEST/validate_repo_contracts.py \
+          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_repo_contracts.py \
             --strict-source-language --strict-import-smoke
-          uv run python GEO-INFER-TEST/validate_packaging.py --strict
-          uv run python GEO-INFER-TEST/validate_logging_hygiene.py
-          uv run python GEO-INFER-TEST/validate_documentation.py --strict
-          uv run python GEO-INFER-TEST/validate_skills.py --check-xrefs --warnings-fatal
-          uv run python GEO-INFER-TEST/validate_active_inference_contract.py
-          uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check
+          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_packaging.py --strict
+          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_logging_hygiene.py
+          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_documentation.py --strict
+          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_doc_examples.py
+          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_skills.py --check-xrefs --warnings-fatal
+          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_active_inference_contract.py
+          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/rewrite_readme_agents.py --check
 
       - name: Run syntax and strict test contracts
         run: |
           python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
-          uv run python GEO-INFER-TEST/validate_test_contracts.py --strict
+          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_test_contracts.py --strict
 
       - name: Run model contracts and reproducibility audit
         run: |
-          uv run python GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42
-          uv run python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible
+          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42
+          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible
 
       - name: Run source runtime hygiene
         run: |
@@ -177,24 +193,31 @@ jobs:
           uv run --with pytest-cov python GEO-INFER-TEST/check_coverage_floor.py \
             --base "$base_sha" --head "$HEAD_SHA"
 
+      - name: Retain validation and model audit receipts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: geo-infer-validation-receipts
+          path: .geo-infer-test-results/
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 14
+
       - name: Prune uv cache
         if: always()
         continue-on-error: true
         run: uv cache prune --ci
 
-  build-smoke:
-    # GS-006: the real 45-wheel build previously first executed at release
-    # time; PR CI now exercises `uv build` for every member so a pyproject
-    # change that breaks a wheel build surfaces before a v* tag. Install
-    # verification stays release-only to keep this job cheap; per-wheel
-    # builds are timeout-bounded inside build_package_wheels.py.
+  fast-contracts:
+    # Early feedback is independent of the full, required category matrix.
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     env:
       UV_PYTHON: "3.11"
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Python 3.11
@@ -207,15 +230,152 @@ jobs:
         with:
           version: "0.10.7"
           enable-cache: true
-          cache-suffix: build-smoke
+          cache-suffix: fast-contracts
+          cache-dependency-glob: |
+            **/pyproject.toml
+            **/uv.lock
+            .python-version
 
-      - name: Build one wheel per module
-        # The builder needs only the stdlib plus its sibling GEO-INFER-TEST
-        # helpers, so no workspace sync is required; `uv build` resolves each
-        # member's build backend in isolation and the artifacts are discarded.
+      - name: Install locked dependencies
         run: |
-          python GEO-INFER-TEST/build_package_wheels.py \
-            --outdir /tmp/geo-infer-build-smoke
+          # CuPy requires a CUDA toolchain when no compatible wheel is
+          # available; the hosted CPU runners do not provide one. Keep the
+          # performance extra available to developers while excluding it from
+          # this CPU-only validation environment.
+          # Mayavi is an optional Python <3.12 3-D extra whose source build is
+          # incompatible with the hosted runner's VTK dependency; no CI test
+          # requires that optional backend.
+          # Vaex is an optional Python <3.12 performance extra whose C++
+          # extension does not build against the hosted runner toolchain.
+          uv sync --locked --python "$(command -v python)" --all-packages --all-extras --all-groups \
+            --no-install-package cupy --no-install-package mayavi \
+            --no-install-package vaex --no-install-package vaex-core
+
+      - name: Provision compatible DuckDB Spatial runtime
+        run: |
+          mkdir -p .geo-infer-test-results/provisioning
+          uv run --no-sync python GEO-INFER-DATA/provision_duckdb_spatial.py \
+            > .geo-infer-test-results/provisioning/duckdb-spatial.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt = json.loads(Path('.geo-infer-test-results/provisioning/duckdb-spatial.json').read_text())
+          assert receipt['status'] == 'verified' and receipt['extension'] == 'spatial'
+          PY
+
+      - name: Run execution and SPACE TIME composition contracts
+        id: fast_tests
+        run: |
+          uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --timeout 600 --paths \
+            GEO-INFER-TEST/tests/unit/test_execution_contracts.py \
+            GEO-INFER-TEST/tests/unit/test_run_unified_tests.py \
+            GEO-INFER-TEST/tests/unit/test_ci_workflow_contracts.py \
+            GEO-INFER-TEST/tests/unit/test_check_coverage_floor_gate.py \
+            GEO-INFER-TEST/tests/integration/test_space_time_composition_contract.py
+      - name: Retain fast contract receipts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: geo-infer-fast-contract-receipts
+          path: .geo-infer-test-results/
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 14
+
+  process-contracts-windows:
+    # Hosted Windows acceptance for the shared process-tree deadline contract.
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Install process contract test dependency
+        run: python -m pip install pytest==8.4.1 psutil==7.0.0
+      - name: Run real Windows process and attempt contracts
+        run: |
+          python - <<'PY'
+          import sys, tempfile
+          from pathlib import Path
+          root = Path.cwd()
+          sys.path.insert(0, str(root / 'GEO-INFER-TEST/src'))
+          from geo_infer_test.execution import run_command, SuiteReport, write_summary
+          with tempfile.TemporaryDirectory() as directory:
+              config = Path(directory) / 'pytest.ini'
+              config.write_text('[pytest]\nfilterwarnings = error\n')
+              command = [sys.executable, '-m', 'pytest', '--noconftest', '-p',
+                         'geo_infer_test.selection', '-c', str(config),
+                         str(root / 'GEO-INFER-TEST/tests/unit/test_execution_contracts.py'),
+                         '-k', 'not (runtime_registry or programmatic_discovery or xdist or coverage_report)',
+                         '--junitxml=windows-process.xml']
+              result = run_command(command, 'Windows process contracts', timeout=300)
+              write_summary(SuiteReport([result]), show_failures=True)
+              raise SystemExit(0 if result.success else 1)
+          PY
+      - name: Retain Windows process receipts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: geo-infer-windows-process-receipts
+          path: .geo-infer-test-results/
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 14
+
+  build-smoke:
+    # GS-006: the real 45-wheel build previously first executed at release
+    # time; candidate CI now builds and installs every member outside the
+    # checkout, including separate base/extra behavior profiles.
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      UV_PYTHON: ${{ matrix.python-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.10.7"
+          enable-cache: true
+          cache-suffix: build-smoke-py${{ matrix.python-version }}
+
+      - name: Build and verify all installed wheels and dependency profiles
+        # The shared process engine requires psutil for retained descendant
+        # identity. No workspace sync is required; `uv build` resolves each
+        # member's build backend in isolation. Verification retains receipts.
+        run: |
+          uv run --no-project --with psutil==7.0.0 python GEO-INFER-TEST/build_package_wheels.py \
+            --outdir .geo-infer-test-results/wheels --verify --verify-extras
+
+      - name: Retain installed wheel evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: geo-infer-installed-wheel-receipts-py${{ matrix.python-version }}
+          path: .geo-infer-test-results/
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 14
 
   workflow-lint:
     # GS-008: CI meta-gate. The workflow definitions carry non-trivial
@@ -256,7 +416,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.11", "3.12"]
-        category: [unit, integration, performance, system, h3]
+        category: [unit, integration, performance, system, h3, slow]
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -295,6 +455,18 @@ jobs:
             --no-install-package cupy --no-install-package mayavi \
             --no-install-package vaex --no-install-package vaex-core
 
+      - name: Provision compatible DuckDB Spatial runtime
+        run: |
+          mkdir -p .geo-infer-test-results/provisioning
+          uv run --no-sync python GEO-INFER-DATA/provision_duckdb_spatial.py \
+            > .geo-infer-test-results/provisioning/duckdb-spatial.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt = json.loads(Path('.geo-infer-test-results/provisioning/duckdb-spatial.json').read_text())
+          assert receipt['status'] == 'verified' and receipt['extension'] == 'spatial'
+          PY
+
       - name: Run ${{ matrix.category }} tests
         id: category_tests
         run: |
@@ -304,9 +476,9 @@ jobs:
           # per-category summary in run_unified_tests.py keeps a leg
           # approaching its ceiling visible before the job timeout trips.
           if [ "${{ matrix.category }}" = "h3" ]; then
-            uv run python GEO-INFER-TEST/run_unified_tests.py --h3-migration
+            uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --h3-migration
           else
-            uv run python GEO-INFER-TEST/run_unified_tests.py \
+            uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py \
               --category ${{ matrix.category }} \
               --timeout 600
           fi
@@ -412,9 +584,8 @@ jobs:
 
       - name: Run render-dependent root tests
         run: |
-          uv run --with pytest python -m pytest \
-            tests/test_manuscript_pdf_layout.py \
-            "tests/test_manuscript_paths.py::TestFigurePathLiterals::test_the_combined_document_keeps_the_rewrite_inside_image_targets"
+          uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py \
+            --module ROOT --category manuscript-render --timeout 600 --show-failures
 
       - name: Retain render receipts
         if: always()
@@ -430,86 +601,19 @@ jobs:
           retention-days: 14
 
       - name: Run root manuscript regression tests
-        # run_unified_tests.py only enumerates GEO-INFER-* module
-        # directories, so the root tests/ suite never ran in CI. These 100+
-        # tests guard the generator, its verification record and the
-        # shipped-bundle contract. The 7 render-dependent tests (6 in
-        # test_manuscript_pdf_layout.py and the deselected paths test) run
-        # in this same workflow's manuscript job above, which renders
-        # output/pdf/* first; pytest is layered on because the locked env
-        # omits it.
+        # ROOT is a registered target. Its ordinary manuscript profile
+        # records render-dependent deselections; the complementary profile
+        # above runs after producing the actual PDF and combined sources.
         run: |
-          uv run --with pytest python -m pytest tests/ \
-            --ignore=tests/test_manuscript_pdf_layout.py \
-            --deselect "tests/test_manuscript_paths.py::TestFigurePathLiterals::test_the_combined_document_keeps_the_rewrite_inside_image_targets"
+          uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py \
+            --module ROOT --category manuscript --timeout 600 --show-failures
 
-  slow-scheduled:
-    # GS19-38: the unified runner's slow category is too heavy for every
-    # push/PR run; it executes on a weekly schedule with the same setup
-    # chain as the per-category matrix legs, uploading the same JUnit
-    # report artifact shape (single pinned interpreter) for triage.
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    continue-on-error: false
-    env:
-      UV_PYTHON: "3.11"
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Retain root manuscript execution evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.11"
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-        with:
-          version: "0.10.7"
-          enable-cache: true
-          cache-suffix: slow-scheduled
-          cache-dependency-glob: |
-            **/pyproject.toml
-            **/uv.lock
-            .python-version
-
-      - name: Install locked dependencies
-        run: |
-          # CuPy requires a CUDA toolchain when no compatible wheel is
-          # available; the hosted CPU runners do not provide one. Keep the
-          # performance extra available to developers while excluding it from
-          # this CPU-only validation environment.
-          # Mayavi is an optional Python <3.12 3-D extra whose source build is
-          # incompatible with the hosted runner's VTK dependency; no CI test
-          # requires that optional backend.
-          # Vaex is an optional Python <3.12 performance extra whose C++
-          # extension does not build against the hosted runner toolchain.
-          uv sync --locked --python "$(command -v python)" --all-packages --all-extras --all-groups \
-            --no-install-package cupy --no-install-package mayavi \
-            --no-install-package vaex --no-install-package vaex-core
-
-      - name: Run slow tests
-        id: slow_tests
-        run: |
-          # The slow category runs the same unified runner lane as the
-          # matrix jobs (--category slow applies the -m slow marker);
-          # the per-category summary keeps progress visible before the
-          # job timeout trips.
-          uv run python GEO-INFER-TEST/run_unified_tests.py --category slow --timeout 600
-
-      - name: Retain slow test reports
-        if: always() && steps.slow_tests.outcome != 'skipped' && steps.slow_tests.outcome != ''
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: geo-infer-slow-reports-py3.11
+          name: geo-infer-root-manuscript-test-receipts
           path: .geo-infer-test-results/
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 14
-
-      - name: Prune uv cache
-        if: always()
-        continue-on-error: true
-        run: uv cache prune --ci

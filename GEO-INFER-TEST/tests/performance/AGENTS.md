@@ -1,10 +1,10 @@
-# Agent Instructions: GEO-INFER-TEST/tests/integration
+# Agent Instructions: GEO-INFER-TEST/tests/performance
 
 ## Scope
 
 - Owning module: `GEO-INFER-TEST`
 - Python package: `geo_infer_test`
-- Directory role: Integration workspace within `GEO-INFER-TEST`.
+- Directory role: Performance workspace within `GEO-INFER-TEST`.
 
 ## Capabilities
 
@@ -21,23 +21,13 @@
 
 ## Local Contents
 
-- `test_act_agent_ant_coordination.py`
-- `test_ai_space_domain_integration.py`
-- `test_cross_module.py`
-- `test_cross_module_civic_intel.py`
-- `test_cross_module_workflows.py`
-- `test_ecosystem_health.py`
-- `test_h3_space_time_bayes_risk_act_composition.py`
-- `test_module_imports.py`
-- `test_sec_api_app_security.py`
-- `test_space_time_composition_contract.py`
-- `test_space_time_data_integration.py`
+- `test_spatial_temporal_composition.py`
 
 ## Validation
 
 ```bash
 uv sync --all-packages --all-extras --all-groups
-uv run python -m pytest GEO-INFER-TEST/tests/integration
+uv run python -m pytest GEO-INFER-TEST/tests/performance
 ```
 
 

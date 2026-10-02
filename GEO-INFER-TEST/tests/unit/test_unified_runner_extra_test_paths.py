@@ -3,15 +3,15 @@
 ``discover_geo_infer_modules`` only reaches top-level ``GEO-INFER-*/tests``
 trees, so nested test estates must be attached deliberately: the cascadia
 unit tree (``GEO-INFER-PLACE/locations/cascadia/tests/unit``) joins the PLACE
-lanes via ``EXTRA_TEST_PATHS``, while the cascadia integration tree stays out
-of every lane per the PLACE-V14 licensed-data deferral. The Crescent City
+lanes via ``EXTRA_TEST_PATHS``; the cascadia integration tree joins the
+integration lane with its local analytical fixtures. The Crescent City
 civic-intel demo test must ride the TEST module's unit lane instead of being
 stranded under ``GEO-INFER-TEST/demo/``.
 """
 
 from __future__ import annotations
 
-import run_unified_tests as runner
+from geo_infer_test import execution as runner
 
 
 def _module(name: str) -> runner.Module:
@@ -31,9 +31,16 @@ def test_cascadia_unit_tree_joins_the_place_unit_lane() -> None:
     }
 
 
-def test_cascadia_tests_are_absent_from_every_other_lane() -> None:
-    """No cascadia file is wired into integration/system/performance lanes."""
-    for category in ("integration", "system", "performance"):
+def test_cascadia_integration_tree_joins_its_own_lane() -> None:
+    paths = runner.category_test_paths(_module("PLACE"), "integration")
+    cascadia = [path for path in paths if "cascadia" in path.parts]
+    assert cascadia
+    assert all("integration" in path.parts for path in cascadia)
+
+
+def test_cascadia_tests_are_absent_from_nonmatching_lanes() -> None:
+    """Local Cascadia unit/integration fixtures are not performance/system."""
+    for category in ("system", "performance"):
         paths = runner.category_test_paths(_module("PLACE"), category)
         assert not any("cascadia" in path.parts for path in paths), category
 

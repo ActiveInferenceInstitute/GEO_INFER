@@ -199,6 +199,7 @@ def test_test_matrix_covers_all_categories_per_interpreter():
         "performance",
         "system",
         "h3",
+        "slow",
     ]
 
 
@@ -207,6 +208,55 @@ def test_build_smoke_builds_wheels_in_pr_ci():
     build = _dump(_load("ci.yml")["jobs"]["build-smoke"])
     assert "build_package_wheels.py" in build
     assert "--outdir" in build
+    assert "--verify --verify-extras" in build
+    assert "Retain installed wheel evidence" in build
+    assert "include-hidden-files: true" in build
+    assert _load("ci.yml")["jobs"]["build-smoke"]["strategy"]["matrix"][
+        "python-version"
+    ] == ["3.11", "3.12"]
+
+
+def test_documentation_examples_have_a_persistent_ci_gate():
+    validate = _dump(_load("ci.yml")["jobs"]["validate"])
+    assert (
+        "record_validation.py -- python GEO-INFER-TEST/validate_doc_examples.py"
+        in validate
+    )
+
+
+def test_manuscript_jobs_use_registered_root_profiles_and_receipts():
+    steps = _load("ci.yml")["jobs"]["manuscript"]["steps"]
+    source = next(
+        step["run"]
+        for step in steps
+        if step.get("name") == "Run root manuscript regression tests"
+    )
+    render = next(
+        step["run"]
+        for step in steps
+        if step.get("name") == "Run render-dependent root tests"
+    )
+    assert "--module ROOT --category manuscript " in source
+    assert "--module ROOT --category manuscript-render " in render
+    upload = next(
+        step
+        for step in steps
+        if step.get("name") == "Retain root manuscript execution evidence"
+    )
+    assert upload["if"] == "always()"
+    assert upload["with"]["if-no-files-found"] == "error"
+
+
+def test_standalone_import_probes_install_locked_process_dependency():
+    steps = _load("import-probes.yml")["jobs"]["probes"]["steps"]
+    resolve = next(step["run"] for step in steps if step.get("id") == "locked_tools")
+    install = next(
+        step["run"]
+        for step in steps
+        if step.get("name") == "Install standalone probe test tools"
+    )
+    assert "psutil_version" in resolve and 'pkg.get("name") == "psutil"' in resolve
+    assert '"psutil==${{ steps.locked_tools.outputs.psutil_version }}"' in install
 
 
 def test_workflow_definitions_are_linted_in_ci():
@@ -458,3 +508,107 @@ def test_generated_signposts_carry_ci_strict_flags():
             " --strict-import-smoke" in rendered
         )
         assert "validate_skills.py --check-xrefs --warnings-fatal" in rendered
+
+
+def test_slow_complement_is_required_for_both_release_interpreters():
+    jobs = _load("ci.yml")["jobs"]
+    matrix = jobs["test"]["strategy"]["matrix"]
+    assert set(matrix["python-version"]) == {"3.11", "3.12"}
+    assert set(matrix["category"]) == {
+        "unit",
+        "integration",
+        "performance",
+        "system",
+        "h3",
+        "slow",
+    }
+    assert "if" not in jobs["test"]
+    assert jobs["test"]["strategy"]["fail-fast"] is False
+    assert "slow-scheduled" not in jobs
+    assert (
+        jobs["paired-interchange"]["uses"] == "./.github/workflows/gnn-interchange.yml"
+    )
+
+
+def test_fast_and_validation_jobs_retain_full_attempt_artifacts():
+    jobs = _load("ci.yml")["jobs"]
+    for name in ("fast-contracts", "validate", "process-contracts-windows"):
+        uploads = [
+            step
+            for step in jobs[name]["steps"]
+            if "actions/upload-artifact@" in step.get("uses", "")
+        ]
+        assert len(uploads) == 1
+        assert uploads[0]["if"] == "always()"
+        assert uploads[0]["with"]["include-hidden-files"] is True
+        assert uploads[0]["with"]["if-no-files-found"] == "error"
+        assert uploads[0]["with"]["path"] == ".geo-infer-test-results/"
+    assert "needs" not in jobs["fast-contracts"]
+    fast = _dump(jobs["fast-contracts"])
+    assert "--paths" in fast and "test_space_time_composition_contract.py" in fast
+    assert "uv sync --locked" in fast and "--all-extras" in fast
+
+
+def test_process_tree_contract_has_real_hosted_windows_execution():
+    job = _load("ci.yml")["jobs"]["process-contracts-windows"]
+    assert job["runs-on"] == "windows-latest"
+    assert "test_execution_contracts.py" in _dump(job)
+    assert (
+        "timeout_terminates" not in _dump(job).split("'-k',")[1].split("--junitxml")[0]
+    )
+    assert "continue-on-error" not in job
+
+
+def test_paired_interchange_consumers_trigger_and_receipt_custody():
+    workflow = _load("gnn-interchange.yml")
+    trigger = _trigger(workflow)
+    assert "workflow_call" in trigger
+    paths = trigger["pull_request"]["paths"]
+    for path in (
+        "GEO-INFER-SPACE/**",
+        "GEO-INFER-TIME/**",
+        "GEO-INFER-TEST/src/**",
+        "pyproject.toml",
+        "**/pyproject.toml",
+        "uv.lock",
+        "conftest.py",
+    ):
+        assert path in paths
+    job = workflow["jobs"]["interchange"]
+    geo_checkout = next(
+        step for step in job["steps"] if step.get("with", {}).get("path") == "geo"
+    )
+    assert geo_checkout["with"]["ref"] == "${{ github.sha }}"
+    validator = next(
+        step["run"]
+        for step in job["steps"]
+        if "validate_gnn_interchange.py" in step.get("run", "")
+    )
+    assert "--output receipts/interchange.json" in validator
+    assert "> receipts/interchange.json" not in validator
+    verification = next(
+        step["run"]
+        for step in job["steps"]
+        if step.get("name") == "Verify exact candidate receipt and retained artifacts"
+    )
+    assert "GITHUB_SHA" in verification and "sha256" in verification
+    assert "receipt['gnn']['revision'] == pair['revision']" in verification
+    assert "custody_complete" in verification
+
+
+def test_cpu_jobs_explicitly_provision_real_duckdb_spatial_runtime():
+    for name in ("validate", "fast-contracts", "test"):
+        job = _load("ci.yml")["jobs"][name]
+        provision = next(
+            step
+            for step in job["steps"]
+            if step.get("name") == "Provision compatible DuckDB Spatial runtime"
+        )
+        assert "provision_duckdb_spatial.py" in provision["run"]
+        assert "json.loads" in provision["run"] and "verified" in provision["run"]
+        assert "continue-on-error" not in provision
+
+
+def test_called_and_standalone_pair_jobs_have_distinct_concurrency_groups():
+    group = _load("gnn-interchange.yml")["concurrency"]["group"]
+    assert "github.workflow" in group and "github.event_name" in group

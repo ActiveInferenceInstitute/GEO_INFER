@@ -131,6 +131,73 @@ def test_validate_all_runs_on_live_monorepo():
     assert report.errors == []
 
 
+def test_release_metadata_rejects_root_member_and_component_drift(tmp_path):
+    """Release parity binds runtime literals as well as wheel metadata."""
+    packaging = load_packaging_module()
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nversion="0.4.0"\n[tool.uv]\npackage=false\n'
+    )
+    member = tmp_path / "GEO-INFER-SAMPLE"
+    package = member / "src" / "geo_infer_sample"
+    (package / "nested").mkdir(parents=True)
+    _make_pyproject(member)
+    (package / "__init__.py").write_text('__version__ = "0.2.0"\n')
+    (package / "nested" / "__init__.py").write_text('__version__ = "1.0.0"\n')
+    report = packaging.ContractReport()
+    packaging.validate_release_metadata(
+        tmp_path, [(member.name, packaging.parse_pyproject(member))], report
+    )
+    assert len(report.errors) == 3
+    assert any("member version" in error for error in report.errors)
+    assert any("nested/__init__.py" in error for error in report.errors)
+
+
+def test_release_metadata_accepts_coherent_virtual_workspace(tmp_path):
+    """Aligned metadata is accepted without executing package source."""
+    packaging = load_packaging_module()
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nversion="0.4.0"\n[tool.uv]\npackage=false\n'
+    )
+    member = tmp_path / "GEO-INFER-SAMPLE"
+    package = member / "src" / "geo_infer_sample"
+    package.mkdir(parents=True)
+    project = _make_pyproject(member)
+    project.write_text(
+        project.read_text().replace('version = "0.2.0"', 'version = "0.4.0"')
+    )
+    (package / "__init__.py").write_text(
+        '__version__ = "0.4.0"\nraise RuntimeError("never import")\n'
+    )
+    report = packaging.ContractReport()
+    packaging.validate_release_metadata(
+        tmp_path, [(member.name, packaging.parse_pyproject(member))], report
+    )
+    assert report.errors == []
+
+
+def test_aggregate_extras_require_full_expansion_and_marker_parity():
+    """A missing backend or weakened platform marker cannot pass aggregate parity."""
+    packaging = load_packaging_module()
+    project = {
+        "project": {
+            "name": "geo-infer-sample",
+            "optional-dependencies": {
+                "backend": ['redis>=4; python_version >= "3.11"'],
+                "all": ["geo-infer-sample[backend]", "redis>=4"],
+            },
+        }
+    }
+    report = packaging.ContractReport()
+    packaging.validate_aggregate_extras(project, "sample", report)
+    assert len(report.errors) == 2
+    project["project"]["optional-dependencies"]["all"] = project["project"][
+        "optional-dependencies"
+    ]["backend"].copy()
+    report = packaging.ContractReport()
+    packaging.validate_aggregate_extras(project, "sample", report)
+    assert report.errors == []
+
+
 def test_citation_version_matches_fleet_majority(tmp_path):
     packaging = load_packaging_module()
     citation = tmp_path / "CITATION.cff"

@@ -15,6 +15,7 @@ are separate so small fixture wheels can exercise failure paths independently.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 from email.parser import BytesParser
 from fnmatch import fnmatchcase
 import zipfile
@@ -26,13 +27,24 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from import_probe import run_import_probe
+from import_probe import run_import_probe, run_process
 from validate_packaging import (
     distribution_name,
     module_dirs,
     parse_pyproject,
     wheel_filename_is_valid,
 )
+
+# This CLI also runs in the stdlib-only build/import portability lane.
+_profile_spec = importlib.util.spec_from_file_location(
+    "geo_infer_test_wheel_profiles_standalone",
+    Path(__file__).parent / "src" / "geo_infer_test" / "wheel_profiles.py",
+)
+assert _profile_spec is not None and _profile_spec.loader is not None
+_profiles = importlib.util.module_from_spec(_profile_spec)
+sys.modules[_profile_spec.name] = _profiles
+_profile_spec.loader.exec_module(_profiles)
+REQUIRED_PROFILES = _profiles.REQUIRED_PROFILES
 
 
 @dataclass
@@ -131,7 +143,7 @@ def build_wheel(module_dir: Path, outdir: Path, python: list[str]) -> BuildResul
     outdir.mkdir(parents=True, exist_ok=True)
     try:
         with tempfile.TemporaryDirectory(dir=outdir) as temporary:
-            subprocess.run(
+            run_process(
                 [
                     "uv",
                     "build",
@@ -143,8 +155,8 @@ def build_wheel(module_dir: Path, outdir: Path, python: list[str]) -> BuildResul
                     str(module_dir),
                 ],
                 check=True,
-                capture_output=True,
                 timeout=300,
+                cwd=Path.cwd(),
             )
             wheels = list(Path(temporary).glob("*.whl"))
             if len(wheels) != 1 or not wheel_filename_is_valid(
@@ -167,7 +179,12 @@ def build_wheel(module_dir: Path, outdir: Path, python: list[str]) -> BuildResul
 
 
 def verify_wheels(
-    wheels: list[Path], python: list[str], *, import_timeout: float = 120
+    wheels: list[Path],
+    python: list[str],
+    *,
+    import_timeout: float = 120,
+    extras: tuple[str, ...] = (),
+    probe_code: str = "",
 ) -> None:
     """Install wheels in a clean environment and execute actual import/resource probes."""
     if not wheels:
@@ -175,25 +192,41 @@ def verify_wheels(
     if not math.isfinite(import_timeout) or import_timeout <= 0:
         raise ValueError("Import timeout must be finite and positive")
     wheels = [wheel.resolve() for wheel in wheels]
+    if extras and len(wheels) != 1:
+        raise ValueError("Extra verification requires exactly one target wheel")
     env = os.environ.copy()
-    for key in ("PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV"):
+    for key in (
+        "PYTHONPATH",
+        "PYTHONHOME",
+        "VIRTUAL_ENV",
+        "UV_PROJECT_ENVIRONMENT",
+        "UV_PROJECT",
+    ):
         env.pop(key, None)
+    for key in (
+        "OPENBLAS_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "TF_NUM_INTRAOP_THREADS",
+        "TF_NUM_INTEROP_THREADS",
+    ):
+        env[key] = "1"
     with tempfile.TemporaryDirectory(prefix="geo-infer-wheel-check-") as temporary:
         root = Path(temporary)
         environment = root / "venv"
-        subprocess.run(
+        run_process(
             ["uv", "venv", "--python", python[0], str(environment)],
             check=True,
-            capture_output=True,
             env=env,
             timeout=120,
+            cwd=root,
         )
         executable = str(
             environment / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
         )
         repository = Path(__file__).resolve().parent.parent
         constraints = root / "constraints.txt"
-        subprocess.run(
+        run_process(
             [
                 "uv",
                 "export",
@@ -210,10 +243,9 @@ def verify_wheels(
             cwd=repository,
             env=env,
             check=True,
-            capture_output=True,
             timeout=120,
         )
-        subprocess.run(
+        run_process(
             [
                 "uv",
                 "pip",
@@ -224,12 +256,14 @@ def verify_wheels(
                 str(constraints),
                 "--find-links",
                 str(wheels[0].parent),
-                *[str(wheel) for wheel in wheels],
+                *[
+                    str(wheel) + ("[" + ",".join(extras) + "]" if extras else "")
+                    for wheel in wheels
+                ],
             ],
             cwd=root,
             env=env,
             check=True,
-            capture_output=True,
             timeout=600,
         )
         probe = """import faulthandler, importlib, importlib.metadata, importlib.resources, json, pathlib, sys, sysconfig
@@ -249,19 +283,47 @@ for path in dist.files or []:
         assert target.is_file(), target
         target.read_bytes()
         resources.append(str(path))
+# EXTRA_PROBE
 faulthandler.cancel_dump_traceback_later()
-print(json.dumps({'package':name,'version':dist.version,'origin':str(origin),'resources':resources,'probe_token':sys.argv[-1],'status':'ok'}))
+print(json.dumps({'package':name,'profile':sys.argv[3],'version':dist.version,'origin':str(origin),'resources':resources,'probe_token':sys.argv[-1],'status':'ok'}))
 """
+        probe = probe.replace("# EXTRA_PROBE", probe_code)
         for wheel in wheels:
             package = wheel.name.split("-")[0]
             result = run_import_probe(
-                [executable, "-I", "-c", probe, package, str(import_timeout)],
+                [
+                    executable,
+                    "-I",
+                    "-c",
+                    probe,
+                    package,
+                    str(import_timeout),
+                    ",".join(extras) or "base",
+                ],
                 package=package,
                 cwd=root,
                 env=env,
                 timeout=import_timeout,
             )
             print(result.stdout.strip(), flush=True)
+
+
+def verify_profiles(
+    wheels: list[Path], python: list[str], *, import_timeout: float = 120
+) -> None:
+    """Verify each declared operation profile in a separate clean installation."""
+    targets = {wheel.name.split("-")[0]: wheel for wheel in wheels}
+    for profile in REQUIRED_PROFILES:
+        if profile.package not in targets:
+            raise ValueError("Missing wheel for required profile: " + profile.name)
+        print("Verifying isolated profile " + profile.name, flush=True)
+        verify_wheels(
+            [targets[profile.package]],
+            python,
+            import_timeout=import_timeout,
+            extras=profile.extras,
+            probe_code=profile.code,
+        )
 
 
 def install_and_verify(wheel: Path, python: list[str]) -> None:
@@ -273,6 +335,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build and validate GEO-INFER wheels")
     parser.add_argument("--outdir", type=Path, default=Path("dist"))
     parser.add_argument("--verify", action="store_true", help="isolated venv install")
+    parser.add_argument(
+        "--verify-extras",
+        action="store_true",
+        help="also verify required independent base/extra operation profiles",
+    )
     parser.add_argument(
         "--import-timeout",
         type=float,
@@ -288,13 +355,19 @@ def main() -> int:
     for module_dir in module_dirs():
         result = build_wheel(module_dir, outdir, python)
         summary.results.append(result)
-    if args.verify and not summary.failures:
+    if (args.verify or args.verify_extras) and not summary.failures:
         try:
             verify_wheels(
                 [r.wheel for r in summary.results if r.wheel is not None],
                 python,
                 import_timeout=args.import_timeout,
             )
+            if args.verify_extras:
+                verify_profiles(
+                    [r.wheel for r in summary.results if r.wheel is not None],
+                    python,
+                    import_timeout=args.import_timeout,
+                )
         except (
             OSError,
             ValueError,

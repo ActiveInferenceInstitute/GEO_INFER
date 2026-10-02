@@ -11,9 +11,8 @@ to that drift; this checker closes the gap.
 Resolution is static (no package imports at check time): each import path is
 mapped to its package source tree and each imported name must be either a
 submodule (``x/Y.py`` or ``x/Y/``) or a top-level definition, assignment, or
-``__all__`` re-export in the target module file. Pages that are deliberate
-historical narrative carry the repository's illustrative-example descope
-banner and are skipped (see ``BANNER_MARKER``).
+``__all__`` re-export in the target module file. Exemption banners fail the
+gate: maintained guidance must describe current imports and behavior.
 
 Exit codes: 0 = clean, 1 = at least one unresolvable import.
 """
@@ -29,12 +28,6 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 DOC_GLOB = "GEO-INFER-*/docs"
 
-
-# Pages deliberately holding legacy narrative snippets. These carry the
-# illustrative-example descope banner; keep this list in sync with it.
-LEGACY_NARRATIVE_ALLOWLIST: tuple[str, ...] = (
-    "GEO-INFER-INTRA/docs/guides/MODULE_INTEGRATION_GUIDE.md",
-)
 
 BANNER_MARKER = "Illustrative example notice"
 
@@ -184,9 +177,8 @@ def validate(repo_root: Path) -> tuple[list[str], list[str], int]:
     for page in pages:
         rel = str(page.relative_to(repo_root))
         text = page.read_text(encoding="utf-8", errors="replace")
-        if BANNER_MARKER in text or rel in LEGACY_NARRATIVE_ALLOWLIST:
-            diagnostics.append(f"{rel}: skipped (legacy narrative allowlist)")
-            continue
+        if BANNER_MARKER in text:
+            errors.append(f"{rel}: obsolete illustrative-example exemption")
         pages_checked += 1
         page_errors: list[str] = []
         for _, module, names in extract_imports(page):
@@ -210,7 +202,7 @@ def main() -> int:
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="Emit skip diagnostics as stderr notes (same exit contract).",
+        help="Emit diagnostics as stderr notes (same exit contract).",
     )
     args = parser.parse_args()
 
@@ -225,7 +217,7 @@ def main() -> int:
         return 1
     print(
         f"Documentation import validation passed for {pages_checked} pages "
-        f"({len(diagnostics)} diagnostic notes: legacy-narrative skips)."
+        f"({len(diagnostics)} diagnostic notes)."
     )
     return 0
 

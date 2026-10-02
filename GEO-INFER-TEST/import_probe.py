@@ -4,35 +4,24 @@ from __future__ import annotations
 
 import json
 import math
-import os
 from pathlib import Path
 import secrets
-import signal
+import importlib.util
+import sys
 import subprocess
 
 
-def _terminate_tree(process: subprocess.Popen[str]) -> None:
-    """Kill the probe session on POSIX; require taskkill tree cleanup on Windows."""
-    if os.name == "posix":
-        try:
-            os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-    else:
-        # Windows has no killpg equivalent. Surface failed tree cleanup instead
-        # of claiming descendants were stopped after killing just the parent.
-        try:
-            result = subprocess.run(
-                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                capture_output=True,
-                timeout=10,
-                check=False,
-            )
-            if result.returncode:
-                raise RuntimeError("Windows import-probe process-tree cleanup failed")
-        finally:
-            if process.poll() is None:
-                process.kill()
+# The build-smoke/import-portability lane intentionally has no GEO runtime.
+# Load the owning stdlib-only helper without importing the package __init__.
+_process_spec = importlib.util.spec_from_file_location(
+    "geo_infer_test_process_standalone",
+    Path(__file__).parent / "src" / "geo_infer_test" / "process.py",
+)
+assert _process_spec is not None and _process_spec.loader is not None
+_process = importlib.util.module_from_spec(_process_spec)
+sys.modules[_process_spec.name] = _process
+_process_spec.loader.exec_module(_process)
+run_process = _process.run_process
 
 
 def run_import_probe(
@@ -53,30 +42,8 @@ def run_import_probe(
         raise ValueError("Import timeout must be finite and positive")
     token = secrets.token_hex(24)
     arguments = [*command, token]
-    with subprocess.Popen(
-        arguments,
-        cwd=cwd,
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        start_new_session=os.name == "posix",
-    ) as process:
-        try:
-            stdout, stderr = process.communicate(timeout=timeout)
-        except subprocess.TimeoutExpired as exc:
-            _terminate_tree(process)
-            stdout, stderr = process.communicate(timeout=10)
-            exc.output = stdout.encode()
-            exc.stderr = stderr.encode()
-            raise
-        except BaseException:
-            _terminate_tree(process)
-            process.wait(timeout=10)
-            raise
-        result = subprocess.CompletedProcess(
-            arguments, process.returncode, stdout, stderr
-        )
+    result = run_process(arguments, timeout=timeout, cwd=cwd, env=env)
+    stdout = result.stdout
     result.check_returncode()
     receipts = []
     for line in stdout.splitlines():

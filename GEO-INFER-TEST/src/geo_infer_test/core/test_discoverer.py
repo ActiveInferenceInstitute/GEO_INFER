@@ -11,56 +11,18 @@ import ast
 import re
 import logging
 
+from ..execution import (
+    discover_geo_infer_modules,
+    discover_workspace_test_targets,
+    Module,
+    category_test_paths,
+)
+
 logger = logging.getLogger(__name__)
 
 
 # Canonical list of all GEO-INFER ecosystem modules
-ALL_MODULES = [
-    "ACT",
-    "AG",
-    "AGENT",
-    "AI",
-    "ANT",
-    "API",
-    "APP",
-    "ART",
-    "BAYES",
-    "BIO",
-    "CIV",
-    "CLIMATE",
-    "COG",
-    "COMMS",
-    "DATA",
-    "ECON",
-    "EDU",
-    "EMERGENCY",
-    "ENERGY",
-    "EXAMPLES",
-    "FOREST",
-    "GIT",
-    "HEALTH",
-    "INTRA",
-    "IOT",
-    "LOG",
-    "MARINE",
-    "MATH",
-    "METAGOV",
-    "NORMS",
-    "OPS",
-    "ORG",
-    "PEP",
-    "PLACE",
-    "REQ",
-    "RISK",
-    "SEC",
-    "SIM",
-    "SPACE",
-    "SPM",
-    "TEST",
-    "TIME",
-    "TRANSPORT",
-    "WATER",
-]
+ALL_MODULES = [module.name for module in discover_geo_infer_modules()]
 
 
 class TestDiscoverer:
@@ -71,7 +33,16 @@ class TestDiscoverer:
     multiple test types and frameworks.
     """
 
-    SUPPORTED_TEST_TYPES = ["unit", "integration", "performance", "load", "stress"]
+    SUPPORTED_TEST_TYPES = [
+        "unit",
+        "integration",
+        "system",
+        "performance",
+        "load",
+        "stress",
+        "manuscript",
+        "manuscript-render",
+    ]
     TEST_FILE_PATTERNS = [r"test_.*\.py$", r".*_test\.py$", r"test.*\.py$"]
 
     def __init__(self, base_path: Path | None = None):
@@ -110,20 +81,18 @@ class TestDiscoverer:
 
     def _find_all_modules(self) -> list[str]:
         """Find all available GEO-INFER modules."""
-        modules = []
-
-        # Look for GEO-INFER-* directories
-        for item in self.base_path.iterdir():
-            if item.is_dir() and item.name.startswith("GEO-INFER-"):
-                module_name = item.name.replace("GEO-INFER-", "")
-                modules.append(module_name)
-
-        return sorted(modules)
+        return [
+            module.name for module in discover_workspace_test_targets(self.base_path)
+        ]
 
     def _discover_module_tests(self, module: str) -> dict[str, list[str]]:
         """Discover tests for a specific module."""
         module_tests: dict[str, list[str]] = {}
-        module_path = self.base_path / f"GEO-INFER-{module}"
+        module_path = (
+            self.base_path
+            if module == "ROOT"
+            else self.base_path / f"GEO-INFER-{module}"
+        )
 
         if not module_path.exists():
             return module_tests
@@ -132,20 +101,32 @@ class TestDiscoverer:
         if not tests_path.exists():
             return module_tests
 
-        # Discover tests by type
+        # Use the same owning-module and registered-root boundary as the CLI.
+        descriptor = Module(module, module_path, tests_path, True)
         for test_type in self.SUPPORTED_TEST_TYPES:
-            test_type_path = tests_path / test_type
-            if test_type_path.exists():
-                test_files = self._find_test_files(test_type_path)
-                if test_files:
-                    module_tests[test_type] = test_files
+            files = category_test_paths(descriptor, test_type)
+            base = tests_path / test_type
+            # Direct tests retain the historical "general" reporting bucket;
+            # execution treats that bucket as unit, without double-counting.
+            files = [path for path in files if path.parent != tests_path]
+            if files:
+                module_tests[test_type] = [
+                    str(path.relative_to(base))
+                    if path.is_relative_to(base)
+                    else str(path.relative_to(module_path))
+                    for path in files
+                ]
 
         # Also check for tests directly in the tests directory.
         # GS19-86: this pass is deliberately NON-recursive. The typed buckets
         # above already own every nested file; a recursive scan here
         # re-listed unit/integration/etc. files under "general" and
         # double-counted them in get_test_statistics.
-        root_test_files = self._find_test_files(tests_path, recursive=False)
+        root_test_files = (
+            self._find_test_files(tests_path, recursive=False)
+            if module != "ROOT"
+            else []
+        )
         if root_test_files:
             module_tests["general"] = root_test_files
 

@@ -231,9 +231,8 @@ def test_content_change_still_remeasured(monkeypatch):
     assert module._changed_modules("base", "head") == {"GEO-INFER-AGENT"}
 
 
-def test_failed_suite_measurement_retried_once(monkeypatch, capsys):
-    """GS19-01: one bounded retry of a FAILED-SUITE measurement absorbs a
-    transient flake; a clean retry passes the gate."""
+def test_failed_suite_cannot_be_hidden_by_a_successful_retry(monkeypatch, capsys):
+    """A first assertion failure is authoritative; no implicit retry may hide it."""
     module = _load_module()
     name = _baseline_module()
     calls: list[str] = []
@@ -258,15 +257,19 @@ def test_failed_suite_measurement_retried_once(monkeypatch, capsys):
         }
 
     monkeypatch.setattr(module, "measure_module", fake_measure)
-    assert module.main(["--base", "HEAD", "--head", "HEAD", "--modules", name]) == 0
-    assert len(calls) == 2
+    import pytest
+
+    with pytest.raises(SystemExit) as exc:
+        module.main(["--base", "HEAD", "--head", "HEAD", "--modules", name])
+    assert exc.value.code == 1
+    assert len(calls) == 1
     out = capsys.readouterr().out
-    assert "retrying once" in out
-    assert "FAILED-SUITE" not in out
+    assert "retrying once" not in out
+    assert "FAILED-SUITE" in out
 
 
-def test_failed_suite_retry_exhausted_fails_gate(monkeypatch, capsys):
-    """GS19-01: a measurement that still fails after the retry fails the gate."""
+def test_failed_suite_keeps_first_failure(monkeypatch, capsys):
+    """A failed measurement is attempted once and preserves its original verdict."""
     module = _load_module()
     name = _baseline_module()
     calls: list[str] = []
@@ -289,7 +292,67 @@ def test_failed_suite_retry_exhausted_fails_gate(monkeypatch, capsys):
         assert exc.code == 1
     else:
         raise AssertionError("gate must fail when the retry also fails")
-    assert len(calls) == 2
+    assert len(calls) == 1
     captured = capsys.readouterr()
     assert "FAILED-SUITE" in captured.out
     assert "pytest rc=1 (1 failing tests)" in captured.err
+
+
+def test_deleted_test_triggers_real_git_diff_measurement(tmp_path, monkeypatch):
+    """Deleting the only test cannot bypass the diff-scoped coverage floor."""
+    module = _load_module()
+    monkeypatch.setattr(module, "REPO_ROOT", tmp_path)
+    test = tmp_path / "GEO-INFER-SAMPLE" / "tests" / "unit" / "test_value.py"
+    test.parent.mkdir(parents=True)
+    test.write_text("def test_value(): assert True\n")
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "config", "core.fsmonitor", "false"], cwd=tmp_path, check=True
+    )
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    commit = [
+        "git",
+        "-c",
+        "user.name=Contract Test",
+        "-c",
+        "user.email=contract@example.invalid",
+        "commit",
+        "-qm",
+    ]
+    subprocess.run([*commit, "initial test"], cwd=tmp_path, check=True)
+    test.unlink()
+    subprocess.run(["git", "add", "-u"], cwd=tmp_path, check=True)
+    subprocess.run([*commit, "delete test"], cwd=tmp_path, check=True)
+    assert module._changed_modules("HEAD^", "HEAD") == {"GEO-INFER-SAMPLE"}
+
+
+def test_shared_lock_change_measures_all_modules(monkeypatch):
+    module = _load_module()
+    _fake_git_diff(monkeypatch, "uv.lock\n", "+dependency changed\n")
+    expected = {
+        path.name
+        for path in REPO_ROOT.glob("GEO-INFER-*")
+        if path.is_dir() and (path / "tests").is_dir()
+    }
+    expected.add("ROOT")
+    assert module._changed_modules("base", "head") == expected
+
+
+def test_root_manuscript_source_change_selects_root_profile(monkeypatch):
+    module = _load_module()
+    _fake_git_diff(
+        monkeypatch,
+        "manuscript/generate_research_artifacts.py\n",
+        "+behavior changed\n",
+    )
+    assert module._changed_modules("base", "head") == {"ROOT"}
+
+
+def test_registered_extra_test_root_changes_measure_place(monkeypatch):
+    module = _load_module()
+    _fake_git_diff(
+        monkeypatch,
+        "GEO-INFER-PLACE/locations/cascadia/tests/unit/test_import.py\n",
+        "+assert value\n",
+    )
+    assert module._changed_modules("base", "head") == {"GEO-INFER-PLACE"}

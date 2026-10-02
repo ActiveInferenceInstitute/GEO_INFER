@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-test"
-version = "0.3.0"
+version = "0.4.0"
 description = "Unified testing framework for quality assurance across all GEO-INFER modules with automated testing, performance benchmarks, and integration validation"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"
@@ -93,22 +93,22 @@ docs = [
 ]
 integrations = [
     # Workspace siblings imported by this module's tests (resolved via [tool.uv.sources])
-    "geo-infer-act>=0.3.0",
-    "geo-infer-ag>=0.3.0",
-    "geo-infer-agent>=0.3.0",
-    "geo-infer-ai>=0.3.0",
-    "geo-infer-ant>=0.3.0",
-    "geo-infer-api>=0.3.0",
-    "geo-infer-app>=0.3.0",
-    "geo-infer-bayes>=0.3.0",
-    "geo-infer-data>=0.3.0",
-    "geo-infer-econ>=0.3.0",
-    "geo-infer-health>=0.3.0",
-    "geo-infer-math>=0.3.0",
-    "geo-infer-risk>=0.3.0",
-    "geo-infer-sec>=0.3.0",
-    "geo-infer-space>=0.3.0",
-    "geo-infer-time>=0.3.0",
+    "geo-infer-act>=0.4.0",
+    "geo-infer-ag>=0.4.0",
+    "geo-infer-agent>=0.4.0",
+    "geo-infer-ai>=0.4.0",
+    "geo-infer-ant>=0.4.0",
+    "geo-infer-api>=0.4.0",
+    "geo-infer-app>=0.4.0",
+    "geo-infer-bayes>=0.4.0",
+    "geo-infer-data>=0.4.0",
+    "geo-infer-econ>=0.4.0",
+    "geo-infer-health>=0.4.0",
+    "geo-infer-math>=0.4.0",
+    "geo-infer-risk>=0.4.0",
+    "geo-infer-sec>=0.4.0",
+    "geo-infer-space>=0.4.0",
+    "geo-infer-time>=0.4.0",
 ]
 
 [project.urls]
@@ -122,33 +122,33 @@ Repository = "https://github.com/ActiveInferenceInstitute/GEO_INFER"
 # import sweep in tests/integration/test_module_imports.py covers every member);
 # resolved via [tool.uv.sources]. Test-only, so a group rather than an extra.
 test = [
-    "geo-infer-art>=0.3.0",
-    "geo-infer-bio>=0.3.0",
-    "geo-infer-civ>=0.3.0",
-    "geo-infer-climate>=0.3.0",
-    "geo-infer-cog>=0.3.0",
-    "geo-infer-comms>=0.3.0",
-    "geo-infer-edu>=0.3.0",
-    "geo-infer-emergency>=0.3.0",
-    "geo-infer-energy>=0.3.0",
-    "geo-infer-examples>=0.3.0",
-    "geo-infer-forest>=0.3.0",
-    "geo-infer-git>=0.3.0",
-    "geo-infer-intra>=0.3.0",
-    "geo-infer-iot>=0.3.0",
-    "geo-infer-log>=0.3.0",
-    "geo-infer-marine>=0.3.0",
-    "geo-infer-metagov>=0.3.0",
-    "geo-infer-norms>=0.3.0",
-    "geo-infer-ops>=0.3.0",
-    "geo-infer-org>=0.3.0",
-    "geo-infer-pep>=0.3.0",
-    "geo-infer-place>=0.3.0",
-    "geo-infer-req>=0.3.0",
-    "geo-infer-sim>=0.3.0",
-    "geo-infer-spm>=0.3.0",
-    "geo-infer-transport>=0.3.0",
-    "geo-infer-water>=0.3.0",
+    "geo-infer-art>=0.4.0",
+    "geo-infer-bio>=0.4.0",
+    "geo-infer-civ>=0.4.0",
+    "geo-infer-climate>=0.4.0",
+    "geo-infer-cog>=0.4.0",
+    "geo-infer-comms>=0.4.0",
+    "geo-infer-edu>=0.4.0",
+    "geo-infer-emergency>=0.4.0",
+    "geo-infer-energy>=0.4.0",
+    "geo-infer-examples>=0.4.0",
+    "geo-infer-forest>=0.4.0",
+    "geo-infer-git>=0.4.0",
+    "geo-infer-intra>=0.4.0",
+    "geo-infer-iot>=0.4.0",
+    "geo-infer-log>=0.4.0",
+    "geo-infer-marine>=0.4.0",
+    "geo-infer-metagov>=0.4.0",
+    "geo-infer-norms>=0.4.0",
+    "geo-infer-ops>=0.4.0",
+    "geo-infer-org>=0.4.0",
+    "geo-infer-pep>=0.4.0",
+    "geo-infer-place>=0.4.0",
+    "geo-infer-req>=0.4.0",
+    "geo-infer-sim>=0.4.0",
+    "geo-infer-spm>=0.4.0",
+    "geo-infer-transport>=0.4.0",
+    "geo-infer-water>=0.4.0",
 ]
 
 [tool.uv.sources]
@@ -205,39 +205,6 @@ exclude = ["tests*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.md", "*.txt"]
-
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-
-[[tool.mypy.overrides]]
-module = [
-    "numpy.*",
-    "pandas.*",
-    "geopandas.*",
-    "h3.*",
-    "folium.*",
-    "plotly.*",
-    "matplotlib.*",
-    "scipy.*",
-    "sklearn.*",
-    "tensorflow.*",
-    "torch.*",
-    "pymc.*",
-    "arviz.*",
-]
-ignore_missing_imports = true
 
 [tool.coverage.run]
 source = ["src"]

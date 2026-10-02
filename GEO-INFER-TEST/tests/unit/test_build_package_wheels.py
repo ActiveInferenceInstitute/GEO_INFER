@@ -117,8 +117,11 @@ def test_wheel_import_timeout_includes_stack_diagnostic(tmp_path):
         # Allow cold Windows imports to reach the deliberately blocked package
         # before the halfway-point diagnostic snapshot is taken.
         _driver().verify_wheels([wheel], [sys.executable], import_timeout=3)
-    assert b"Timeout" in error.value.stderr
-    assert b"geo_infer_probe/__init__.py" in error.value.stderr.replace(b"\\", b"/")
+    stderr = error.value.stderr
+    if isinstance(stderr, bytes):
+        stderr = stderr.decode(errors="replace")
+    assert "Timeout" in stderr
+    assert "geo_infer_probe/__init__.py" in stderr.replace("\\", "/")
 
 
 @pytest.mark.parametrize("source", ["raise SystemExit(0)", "import os; os._exit(0)"])
