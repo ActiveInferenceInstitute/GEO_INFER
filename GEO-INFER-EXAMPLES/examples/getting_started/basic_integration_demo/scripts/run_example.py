@@ -59,7 +59,7 @@ def _analyze_temporal_dynamics(
     from geo_infer_time import TemporalStatistics, TimeSeries
 
     rng = np.random.default_rng(42)
-    timestamps = pd.date_range("2026-01-01", periods=90, freq="D")
+    timestamps = pd.date_range("2026-01-01", periods=90, freq="D", tz="UTC")
     stats_engine = TemporalStatistics()
     series_results: dict[str, Any] = {}
 

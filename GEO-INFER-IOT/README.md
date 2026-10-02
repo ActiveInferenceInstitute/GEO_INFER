@@ -21,7 +21,7 @@ IoT sensor networks, real-time geospatial data streams, and sensor data fusion f
 
 - Module: `GEO-INFER-IOT`
 - Package: `geo_infer_iot`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-iot`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module IOT`
 
@@ -29,11 +29,10 @@ IoT sensor networks, real-time geospatial data streams, and sensor data fusion f
 
 - `aiomqtt>=2.4.0`
 - `fastapi>=0.100.0`
-- `folium>=0.12.0`
-- `geo-infer-bayes`
-- `geo-infer-space`
+- `geo-infer-bayes>=0.4.0`
+- `geo-infer-space>=0.4.0`
+- `geo-infer-time>=0.4.0`
 - `h3>=4.5.0,<5`
-- `matplotlib>=3.5.0`
 - `networkx>=2.6`
 - `numpy>=1.20.0`
 - `paho-mqtt>=1.6.0`

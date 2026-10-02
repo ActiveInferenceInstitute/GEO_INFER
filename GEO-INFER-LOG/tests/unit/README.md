@@ -17,6 +17,7 @@ Unit workspace within `GEO-INFER-LOG`.
 - `test_optimization.py`
 - `test_optimization_ortools.py`
 - `test_supply_chain.py`
+- `test_supply_chain_milp_contract.py`
 - `test_transport.py`
 - `test_transport_behavior.py`
 - `test_transport_network_api.py`
@@ -30,7 +31,7 @@ Unit workspace within `GEO-INFER-LOG`.
 
 - Module: `GEO-INFER-LOG`
 - Package: `geo_infer_log`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-log`
 - Tests: `uv run python -m pytest GEO-INFER-LOG/tests/unit`
 

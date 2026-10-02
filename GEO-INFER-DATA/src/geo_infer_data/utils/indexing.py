@@ -16,6 +16,7 @@ from pyproj import Transformer
 from shapely.geometry import Polygon
 from rtree import index as rtree_index_module
 from shapely.ops import transform as transform_geometry
+from .timestamps import normalize_observation_timestamps, normalize_temporal_range
 
 
 logger = logging.getLogger(__name__)
@@ -292,7 +293,13 @@ class TemporalIndexer:
             raise ValueError(f"Time column {time_column} not found in data")
 
         # Sort by time for efficient range queries
-        sorted_data = data.sort_values(time_column).reset_index(drop=True)
+        normalized_data = data.copy()
+        normalized_data[time_column] = normalize_observation_timestamps(
+            data[time_column]
+        )
+        sorted_data = normalized_data.sort_values(
+            time_column, kind="stable"
+        ).reset_index(drop=True)
 
         self.indexes[index_id] = {
             "type": "temporal",
@@ -330,6 +337,7 @@ class TemporalIndexer:
         data = index_data["data"]
 
         # Filter by time range
+        start_time, end_time = normalize_temporal_range((start_time, end_time))
         mask = (data[time_column] >= start_time) & (data[time_column] <= end_time)
         return data[mask]
 
@@ -354,5 +362,6 @@ class TemporalIndexer:
         data = index_data["data"]
 
         # Find exact match or nearest
+        time_point = normalize_observation_timestamps([time_point])[0]
         mask = data[time_column] == time_point
         return data[mask]

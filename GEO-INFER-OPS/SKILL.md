@@ -69,3 +69,7 @@ if deployer.build_docker_image(tag="geo-infer-api:local"):
 - **IOT** → Sensor health monitoring and alerts
 - **LOG** → Logistics operation monitoring
 - **SEC** → Security event aggregation
+
+Metrics servers require `prometheus-client>=0.20.0`; the context manager reports
+the bound port (including a kernel-selected port 0), shuts down and closes the
+server and joins its worker thread on normal or exceptional exit.

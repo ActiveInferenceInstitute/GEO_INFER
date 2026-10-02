@@ -18,13 +18,12 @@ Tests workspace within `GEO-INFER-ART`.
 - `conftest.py:spatial_art_config` (function)
 - `conftest.py:color_palette` (function)
 - `conftest.py:sample_terrain_data` (function)
-- `conftest.py:pytest_collection_modifyitems` (function)
 
 ## Module Metadata
 
 - Module: `GEO-INFER-ART`
 - Package: `geo_infer_art`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-art`
 - Tests: `uv run python -m pytest GEO-INFER-ART/tests`
 

@@ -33,7 +33,7 @@ def _make_temporal_df(n: int = 20) -> pd.DataFrame:
     """Create a test DataFrame with a timestamp column."""
     return pd.DataFrame(
         {
-            "timestamp": pd.date_range("2024-01-01", periods=n, freq="h"),
+            "timestamp": pd.date_range("2024-01-01", periods=n, freq="h", tz="UTC"),
             "value": np.random.rand(n),
         }
     )
@@ -183,8 +183,8 @@ class TestTemporalIndexer:
         index_id = indexer.create_temporal_index(df, "timestamp")
         result = indexer.query_by_time_range(
             index_id,
-            start_time=pd.Timestamp("2024-01-01 05:00"),
-            end_time=pd.Timestamp("2024-01-01 15:00"),
+            start_time=pd.Timestamp("2024-01-01 05:00", tz="UTC"),
+            end_time=pd.Timestamp("2024-01-01 15:00", tz="UTC"),
         )
         assert len(result) == 11  # hours 5 through 15
 
@@ -194,8 +194,8 @@ class TestTemporalIndexer:
         index_id = indexer.create_temporal_index(df, "timestamp")
         result = indexer.query_by_time_range(
             index_id,
-            start_time=pd.Timestamp("2025-01-01"),
-            end_time=pd.Timestamp("2025-12-31"),
+            start_time=pd.Timestamp("2025-01-01", tz="UTC"),
+            end_time=pd.Timestamp("2025-12-31", tz="UTC"),
         )
         assert len(result) == 0
 
@@ -203,21 +203,27 @@ class TestTemporalIndexer:
         indexer = TemporalIndexer()
         with pytest.raises(ValueError, match="not found"):
             indexer.query_by_time_range(
-                "missing", pd.Timestamp("2024-01-01"), pd.Timestamp("2024-12-31")
+                "missing",
+                pd.Timestamp("2024-01-01", tz="UTC"),
+                pd.Timestamp("2024-12-31", tz="UTC"),
             )
 
     def test_query_by_time_point(self):
         indexer = TemporalIndexer()
         df = _make_temporal_df(24)
         index_id = indexer.create_temporal_index(df, "timestamp")
-        result = indexer.query_by_time_point(index_id, pd.Timestamp("2024-01-01 10:00"))
+        result = indexer.query_by_time_point(
+            index_id, pd.Timestamp("2024-01-01 10:00", tz="UTC")
+        )
         assert len(result) == 1
 
     def test_query_by_time_point_no_match(self):
         indexer = TemporalIndexer()
         df = _make_temporal_df(24)
         index_id = indexer.create_temporal_index(df, "timestamp")
-        result = indexer.query_by_time_point(index_id, pd.Timestamp("2025-06-15"))
+        result = indexer.query_by_time_point(
+            index_id, pd.Timestamp("2025-06-15", tz="UTC")
+        )
         assert len(result) == 0
 
     def test_index_sorts_data(self):
@@ -225,7 +231,9 @@ class TestTemporalIndexer:
         indexer = TemporalIndexer()
         df = pd.DataFrame(
             {
-                "timestamp": pd.to_datetime(["2024-03-01", "2024-01-01", "2024-02-01"]),
+                "timestamp": pd.to_datetime(
+                    ["2024-03-01", "2024-01-01", "2024-02-01"], utc=True
+                ),
                 "value": [3, 1, 2],
             }
         )

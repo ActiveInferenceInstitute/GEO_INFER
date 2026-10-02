@@ -4,11 +4,12 @@
 Tests for agent_base module: AgentState and BaseAgent lifecycle.
 """
 
-import asyncio
 import json
 import os
 import tempfile
 import unittest
+
+import pytest
 from datetime import datetime
 
 import numpy as np
@@ -166,48 +167,49 @@ class TestBaseAgentLifecycle(unittest.TestCase):
             os.unlink(filepath)
 
 
-class TestExampleAgentAsync(unittest.TestCase):
+class TestExampleAgentAsync:
     """Tests for ExampleAgent async methods."""
 
-    def test_initialize_sets_beliefs_and_desires(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_initialize_sets_beliefs_and_desires(self) -> None:
         """ExampleAgent.initialize() populates initial beliefs and desires."""
         agent = ExampleAgent()
-        asyncio.get_event_loop().run_until_complete(agent.initialize())
-        self.assertIn("environment_known", agent.state.beliefs)
-        self.assertFalse(agent.state.beliefs["environment_known"])
-        self.assertGreater(len(agent.state.desires), 0)
+        await agent.initialize()
+        unittest.TestCase().assertIn("environment_known", agent.state.beliefs)
+        unittest.TestCase().assertFalse(agent.state.beliefs["environment_known"])
+        unittest.TestCase().assertGreater(len(agent.state.desires), 0)
 
-    def test_perceive_returns_dict(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_perceive_returns_dict(self) -> None:
         """ExampleAgent.perceive() returns a dictionary with expected keys."""
         agent = ExampleAgent()
-        result = asyncio.get_event_loop().run_until_complete(agent.perceive())
-        self.assertIsInstance(result, dict)
-        self.assertIn("current_time", result)
-        self.assertIn("random_observation", result)
+        result = await agent.perceive()
+        unittest.TestCase().assertIsInstance(result, dict)
+        unittest.TestCase().assertIn("current_time", result)
+        unittest.TestCase().assertIn("random_observation", result)
 
-    def test_decide_returns_explore_when_unknown(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_decide_returns_explore_when_unknown(self) -> None:
         """Agent decides to explore when environment_known is False."""
         agent = ExampleAgent()
-        asyncio.get_event_loop().run_until_complete(agent.initialize())
-        action = asyncio.get_event_loop().run_until_complete(agent.decide())
-        self.assertIsNotNone(action)
-        self.assertEqual(action["type"], "explore")
+        await agent.initialize()
+        action = await agent.decide()
+        unittest.TestCase().assertIsNotNone(action)
+        unittest.TestCase().assertEqual(action["type"], "explore")
 
-    def test_decide_returns_none_when_known(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_decide_returns_none_when_known(self) -> None:
         """Agent returns None action after environment is known."""
         agent = ExampleAgent()
-        asyncio.get_event_loop().run_until_complete(agent.initialize())
+        await agent.initialize()
         agent.state.update_belief("environment_known", True)
-        action = asyncio.get_event_loop().run_until_complete(agent.decide())
-        self.assertIsNone(action)
+        action = await agent.decide()
+        unittest.TestCase().assertIsNone(action)
 
-    def test_act_explore_returns_success(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_act_explore_returns_success(self) -> None:
         """Acting on an explore action returns success."""
         agent = ExampleAgent(config={"decision_frequency": 0.01})
         action = {"type": "explore", "target": "environment", "params": {}}
-        result = asyncio.get_event_loop().run_until_complete(agent.act(action))
-        self.assertEqual(result["status"], "success")
-
-
-if __name__ == "__main__":
-    unittest.main()
+        result = await agent.act(action)
+        unittest.TestCase().assertEqual(result["status"], "success")

@@ -17,12 +17,14 @@ TEST_JWT_SECRET = "test-secret-for-pyjwt-hs256-tests-32-bytes"
 
 
 @pytest.fixture
-def mock_config():
+def mock_config(tmp_path):
     """Fixture providing a mock configuration."""
     return Config(
         security=SecurityConfig(
             tls=TLSConfig(
-                enabled=True, cert_file="/tmp/test.crt", key_file="/tmp/test.key"
+                enabled=True,
+                cert_file=str(tmp_path / "test.crt"),
+                key_file=str(tmp_path / "test.key"),
             ),
             auth=AuthConfig(
                 enabled=True, jwt_secret=TEST_JWT_SECRET, token_expiry=3600
@@ -48,8 +50,8 @@ def test_generate_tls_certificate(security_manager, tmp_path):
             common_name="test.example.com", organization="Test Org", country="US"
         )
 
-        assert result["cert_file"] == "/tmp/test.crt"
-        assert result["key_file"] == "/tmp/test.key"
+        assert result["cert_file"] == security_manager.config.security.tls.cert_file
+        assert result["key_file"] == security_manager.config.security.tls.key_file
         assert mock_file.call_count == 2
 
 
@@ -172,7 +174,20 @@ def test_security_disabled(security_manager):
 
 
 def test_load_keys_failure(security_manager):
-    """Test key loading failure."""
+    """Missing configured files fail before any attempt to read keys."""
+    with pytest.raises(
+        FileNotFoundError, match="TLS certificate or key file is missing"
+    ):
+        security_manager._load_keys()
+
+
+def test_load_keys_read_failure(security_manager):
+    """Existing configured files propagate genuine read failures."""
+    from pathlib import Path
+
+    tls = security_manager.config.security.tls
+    Path(tls.cert_file).write_text("test certificate")
+    Path(tls.key_file).write_text("test key")
     with patch("builtins.open", side_effect=OSError("File not found")):
         with pytest.raises(OSError, match="File not found"):
             security_manager._load_keys()

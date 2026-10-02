@@ -8,28 +8,12 @@ faked via monkeypatched sessions — no real network access.
 
 import asyncio
 import time
+import threading
 
 import pytest
 
-from geo_infer_data.connectors.api import APIConnector, STACConnector
+from geo_infer_data.connectors.api import APIConnector, GraphQLConnector, STACConnector
 from geo_infer_data.connectors import api as _api
-
-
-@pytest.fixture(autouse=True)
-def _retry_compat(monkeypatch):
-    """Shim Retry for urllib3 >= 2.0, which removed `method_whitelist`.
-
-    The connector passes the urllib3 1.x keyword; the installed urllib3 no
-    longer accepts it, so the test replaces the Retry symbol used by the api
-    module with one that drops the removed kwarg. Test-side only.
-    """
-    from urllib3.util.retry import Retry as _RealRetry
-
-    def _shim(**kwargs):
-        kwargs.pop("method_whitelist", None)
-        return _RealRetry(**kwargs)
-
-    monkeypatch.setattr(_api, "Retry", _shim)
 
 
 def _run(coro):
@@ -178,7 +162,11 @@ class TestAPIConnectorPagination:
             [{"results": [{"id": 1}], "total_pages": 1}],
         )
         sleeps = []
-        monkeypatch.setattr(time, "sleep", lambda s: sleeps.append(s))
+
+        async def sleep(seconds):
+            sleeps.append(seconds)
+
+        monkeypatch.setattr(_api.asyncio, "sleep", sleep)
 
         results = _run(
             connector.query_geospatial("/stations", pagination={"page": 1, "limit": 1})
@@ -220,7 +208,11 @@ class TestAPIConnectorRateLimiting:
         )
         _fake_session(connector, monkeypatch, [{}, {}])
         sleeps = []
-        monkeypatch.setattr(time, "sleep", lambda s: sleeps.append(s))
+
+        def sleep(seconds):
+            sleeps.append(seconds)
+
+        monkeypatch.setattr(_api.time, "sleep", sleep)
 
         _run(connector.query_endpoint("/a"))
         _run(connector.query_endpoint("/b"))
@@ -228,6 +220,193 @@ class TestAPIConnectorRateLimiting:
         assert connector.request_count == 2
         assert len(sleeps) == 1
         assert sleeps[0] > 0
+
+    @pytest.mark.parametrize("rate", [0, -1, float("nan"), float("inf"), True, "2"])
+    def test_invalid_rate_rejected_before_session(self, rate):
+        with pytest.raises(ValueError, match="finite and positive"):
+            APIConnector(
+                "https://example.invalid", rate_limiting={"requests_per_minute": rate}
+            )
+
+
+def test_real_retry_config_uses_supported_keyword():
+    connector = APIConnector("https://example.invalid")
+    try:
+        retry = connector.session.get_adapter("https://").max_retries
+        assert set(retry.allowed_methods) == {"GET", "HEAD", "OPTIONS"}
+        assert retry.total == 3
+    finally:
+        _run(connector.close())
+
+
+@pytest.mark.parametrize("kind", ["rest", "graphql"])
+async def test_http_worker_does_not_block_event_loop(monkeypatch, kind):
+    connector = (APIConnector if kind == "rest" else GraphQLConnector)(
+        "https://example.invalid"
+    )
+    entered, release = threading.Event(), threading.Event()
+    loop_thread = threading.get_ident()
+    worker_threads = []
+
+    def request(*args, **kwargs):
+        worker_threads.append(threading.get_ident())
+        entered.set()
+        assert release.wait(5), "event loop failed to release HTTP worker"
+        return _FakeResponse({"ok": True} if kind == "rest" else {"data": {"ok": True}})
+
+    monkeypatch.setattr(
+        connector.session, "request" if kind == "rest" else "post", request
+    )
+    task = asyncio.create_task(
+        connector.query_endpoint("/points")
+        if kind == "rest"
+        else connector.execute_query("query { points }")
+    )
+    try:
+        await asyncio.wait_for(asyncio.to_thread(entered.wait, 5), timeout=6)
+        assert entered.is_set()
+        assert len(worker_threads) == 1
+        assert worker_threads[0] != loop_thread
+        release.set()
+        assert await asyncio.wait_for(task, timeout=5) == {"ok": True}
+    finally:
+        release.set()
+        await asyncio.gather(task, return_exceptions=True)
+        await connector.close()
+
+
+async def test_pagination_request_failure_is_fatal(monkeypatch):
+    import requests
+
+    connector = APIConnector("https://example.invalid")
+    calls = []
+
+    def request(**kwargs):
+        calls.append(kwargs)
+        if len(calls) == 1:
+            return _FakeResponse({"results": [{"id": 1}]})
+        raise requests.ConnectionError("failed page")
+
+    monkeypatch.setattr(connector.session, "request", request)
+    try:
+        with pytest.raises(requests.ConnectionError, match="failed page"):
+            await connector.query_geospatial("/points")
+    finally:
+        await connector.close()
+
+
+@pytest.mark.parametrize("kind", ["rest", "graphql"])
+async def test_close_waits_for_inflight_request_without_blocking_loop(
+    monkeypatch, kind
+):
+    connector = (APIConnector if kind == "rest" else GraphQLConnector)(
+        "https://example.invalid"
+    )
+    entered, release, finished, close_waiting = (threading.Event() for _ in range(4))
+    underlying = threading.Lock()
+
+    class ObservedLock:
+        def __enter__(self):
+            if entered.is_set():
+                close_waiting.set()
+            underlying.acquire()
+
+        def __exit__(self, *_):
+            underlying.release()
+
+    def request(*args, **kwargs):
+        entered.set()
+        assert release.wait(5)
+        finished.set()
+        return _FakeResponse({"ok": True} if kind == "rest" else {"data": {"ok": True}})
+
+    def close():
+        assert finished.is_set(), "Session closed while a request was using it"
+
+    connector._session_lock = ObservedLock()
+    monkeypatch.setattr(
+        connector.session, "request" if kind == "rest" else "post", request
+    )
+    monkeypatch.setattr(connector.session, "close", close)
+    request_task = asyncio.create_task(
+        connector.query_endpoint("/points")
+        if kind == "rest"
+        else connector.execute_query("query { points }")
+    )
+    close_task = None
+    try:
+        assert await asyncio.wait_for(asyncio.to_thread(entered.wait, 5), timeout=6)
+        close_task = asyncio.create_task(connector.close())
+        assert await asyncio.wait_for(
+            asyncio.to_thread(close_waiting.wait, 5), timeout=6
+        )
+        assert not close_task.done()
+        release.set()
+        assert await asyncio.wait_for(request_task, timeout=5) == {"ok": True}
+        await asyncio.wait_for(close_task, timeout=5)
+    finally:
+        release.set()
+        await asyncio.gather(
+            *([request_task, close_task] if close_task is not None else [request_task]),
+            return_exceptions=True,
+        )
+
+
+async def test_queued_workers_space_actual_starts_after_long_request(monkeypatch):
+    from types import SimpleNamespace
+
+    connector = APIConnector(
+        "https://example.invalid", rate_limiting={"requests_per_minute": 60}
+    )
+    entered, release, all_arrived = (threading.Event() for _ in range(3))
+    session_lock, state_lock = threading.Lock(), threading.Lock()
+    clock, arrivals, starts = [0.0], [0], []
+
+    class ObservedLock:
+        def __enter__(self):
+            with state_lock:
+                arrivals[0] += 1
+                if arrivals[0] == 3:
+                    all_arrived.set()
+            session_lock.acquire()
+
+        def __exit__(self, *_):
+            session_lock.release()
+
+    def sleep(seconds):
+        clock[0] += seconds
+
+    def request(**kwargs):
+        starts.append(clock[0])
+        if len(starts) == 1:
+            entered.set()
+            assert release.wait(5)
+        return _FakeResponse({"ok": True})
+
+    # Replace only this connector module's clock, leaving asyncio's real
+    # deadlines intact. The virtual ten-second first request adds no real wait.
+    monkeypatch.setattr(
+        _api, "time", SimpleNamespace(monotonic=lambda: clock[0], sleep=sleep)
+    )
+    monkeypatch.setattr(connector.session, "request", request)
+    connector._session_lock = ObservedLock()
+    tasks = [asyncio.create_task(connector.query_endpoint("/first"))]
+    try:
+        assert await asyncio.wait_for(asyncio.to_thread(entered.wait, 5), timeout=6)
+        tasks.extend(
+            asyncio.create_task(connector.query_endpoint(endpoint))
+            for endpoint in ("/second", "/third")
+        )
+        assert await asyncio.wait_for(asyncio.to_thread(all_arrived.wait, 5), timeout=6)
+        clock[0] = 10.0
+        release.set()
+        await asyncio.wait_for(asyncio.gather(*tasks), timeout=5)
+        assert starts == [0.0, 10.0, 11.0]
+        assert connector.request_count == 3
+    finally:
+        release.set()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await connector.close()
 
 
 # ---------------------------------------------------------------------------

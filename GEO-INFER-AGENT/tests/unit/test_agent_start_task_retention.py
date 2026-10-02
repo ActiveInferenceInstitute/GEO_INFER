@@ -1,17 +1,9 @@
-#!/usr/bin/env python3
-
-"""
-Unit tests for AgentInterface.start_agent task retention (GS-260).
-
-The facade schedules registry.start_agent as a fire-and-forget task. The task
-must be retained (strong reference) until completion so the coroutine cannot be
-garbage-collected mid-flight, and any exception inside it must surface in the
-module logger instead of vanishing unobserved.
-"""
+"""Retained facade start tasks finish observably, including failure/cancellation."""
 
 import asyncio
-import unittest
 from unittest import mock
+
+import pytest
 
 from geo_infer_agent.api import interface as interface_module
 from geo_infer_agent.api.interface import (
@@ -22,83 +14,98 @@ from geo_infer_agent.api.interface import (
 from geo_infer_agent.core.agent_registry import agent_registry
 
 
-def _run(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
+@pytest.mark.asyncio(loop_scope="function")
+async def test_start_agent_becomes_running_when_start_task_completes():
+    interface = AgentInterface()
+    agent_id = await interface.create_agent("default", {}, agent_id="start-retain-1")
+    assert await interface.start_agent(agent_id)
+    starts = tuple(_pending_start_tasks)
+    assert len(starts) == 1
+    await asyncio.wait_for(asyncio.gather(*starts), timeout=2)
+    assert agent_registry.is_agent_running(agent_id)
+    assert not _pending_start_tasks
 
 
-class TestStartAgentTaskRetention(unittest.TestCase):
-    """Regression tests for retained start tasks and logged start failures."""
+@pytest.mark.asyncio(loop_scope="function")
+async def test_blocked_start_is_retained_until_completion():
+    interface = AgentInterface()
+    agent_id = await interface.create_agent("default", {}, agent_id="start-blocked")
+    entered, release = asyncio.Event(), asyncio.Event()
 
-    def setUp(self) -> None:
-        self.interface = AgentInterface()
+    async def blocked_start(_agent_id):
+        entered.set()
+        await release.wait()
 
-    def tearDown(self) -> None:
-        interface_module._pending_start_tasks.clear()
-        for agent_id in list(agent_registry.agents):
-            try:
-                _run(agent_registry.stop_agent(agent_id))
-            except KeyError:
-                pass
-            try:
-                agent_registry.remove_agent(agent_id)
-            except RuntimeError:
-                continue
+    with mock.patch.object(agent_registry, "start_agent", side_effect=blocked_start):
+        assert await interface.start_agent(agent_id)
+        await asyncio.wait_for(entered.wait(), timeout=2)
+        starts = tuple(_pending_start_tasks)
+        assert len(starts) == 1
+        assert not starts[0].done()
+        release.set()
+        await asyncio.wait_for(starts[0], timeout=2)
+    assert not _pending_start_tasks
 
-    def test_start_agent_becomes_running_within_tick(self) -> None:
-        agent_id = _run(
-            self.interface.create_agent("default", {}, agent_id="start-retain-1")
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_start_failure_is_logged_and_task_discarded(caplog):
+    interface = AgentInterface()
+    agent_id = await interface.create_agent("default", {}, agent_id="start-fail-1")
+
+    async def exploding_start(_agent_id):
+        raise RuntimeError("boom")
+
+    with (
+        mock.patch.object(agent_registry, "start_agent", side_effect=exploding_start),
+        caplog.at_level("ERROR", logger="geo_infer_agent.api.interface"),
+    ):
+        assert await interface.start_agent(agent_id)
+        starts = tuple(_pending_start_tasks)
+        results = await asyncio.wait_for(
+            asyncio.gather(*starts, return_exceptions=True), timeout=2
         )
-        self.assertTrue(_run(self.interface.start_agent(agent_id)))
-        _run(asyncio.sleep(0.2))
-        self.assertTrue(agent_registry.is_agent_running(agent_id))
-        self.assertEqual(len(_pending_start_tasks), 0)
-
-    def test_start_failure_is_logged_and_task_discarded(self) -> None:
-        agent_id = _run(
-            self.interface.create_agent("default", {}, agent_id="start-fail-1")
-        )
-
-        async def exploding_start(_agent_id: str) -> None:
-            raise RuntimeError("boom")
-
-        with (
-            mock.patch.object(
-                agent_registry, "start_agent", side_effect=exploding_start
-            ),
-            self.assertLogs("geo_infer_agent.api.interface", level="ERROR") as logs,
-        ):
-            self.assertTrue(_run(self.interface.start_agent(agent_id)))
-            _run(asyncio.sleep(0.2))
-
-        self.assertEqual(len(_pending_start_tasks), 0)
-        self.assertTrue(any("boom" in line for line in logs.output))
+    assert isinstance(results[0], RuntimeError)
+    assert not _pending_start_tasks
+    assert "boom" in caplog.text
 
 
-class TestOnStartTaskDone(unittest.TestCase):
-    """Direct checks for the done-callback contract."""
+@pytest.mark.parametrize("failure", [False, True])
+@pytest.mark.asyncio(loop_scope="function")
+async def test_done_callback_discards_task_and_observes_exception(failure, caplog):
+    callback_finished = asyncio.Event()
 
-    def test_callback_discards_task_and_logs_exception(self) -> None:
-        interface_module._pending_start_tasks.clear()
-
-        async def failing() -> None:
+    async def complete():
+        if failure:
             raise RuntimeError("callback-boom")
 
-        task = asyncio.get_event_loop().create_task(failing())
-        _pending_start_tasks.add(task)
-        task.add_done_callback(_on_start_task_done)
-        with self.assertLogs("geo_infer_agent.api.interface", level="ERROR") as logs:
-            _run(asyncio.sleep(0.05))  # let the task fail and callback fire
-        self.assertNotIn(task, _pending_start_tasks)
-        self.assertTrue(any("callback-boom" in line for line in logs.output))
+    def on_done(task):
+        _on_start_task_done(task)
+        callback_finished.set()
 
-    def test_callback_silent_for_clean_completion(self) -> None:
-        interface_module._pending_start_tasks.clear()
+    task = asyncio.create_task(complete())
+    _pending_start_tasks.add(task)
+    task.add_done_callback(on_done)
+    with caplog.at_level("ERROR", logger="geo_infer_agent.api.interface"):
+        await asyncio.wait_for(callback_finished.wait(), timeout=2)
+    assert task.done()
+    assert task not in _pending_start_tasks
+    assert ("callback-boom" in caplog.text) is failure
 
-        async def clean() -> None:
-            return None
 
-        task = asyncio.get_event_loop().create_task(clean())
-        _pending_start_tasks.add(task)
-        task.add_done_callback(_on_start_task_done)
-        _run(asyncio.sleep(0.05))
-        self.assertNotIn(task, _pending_start_tasks)
+@pytest.mark.asyncio(loop_scope="function")
+async def test_cancelled_start_callback_discards_without_error(caplog, managed_task):
+    callback_finished = asyncio.Event()
+
+    def on_done(task):
+        _on_start_task_done(task)
+        callback_finished.set()
+
+    with caplog.at_level("ERROR", logger="geo_infer_agent.api.interface"):
+        async with managed_task(asyncio.Event().wait()) as task:
+            interface_module._pending_start_tasks.add(task)
+            task.add_done_callback(on_done)
+            task.cancel()
+            await asyncio.wait_for(callback_finished.wait(), timeout=2)
+    assert task.cancelled()
+    assert task not in _pending_start_tasks
+    assert not caplog.records

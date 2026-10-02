@@ -20,6 +20,9 @@ Integration Points:
 - GEO-INFER-MONITORING: API usage tracking and analytics
 """
 
+from __future__ import annotations
+from importlib.metadata import version as distribution_version
+
 import logging
 from typing import Any, cast
 from datetime import datetime
@@ -30,7 +33,9 @@ try:
     from flask_cors import CORS  # type: ignore[import-untyped]
 
     FLASK_AVAILABLE = True
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name not in {"flask", "flask_cors"}:
+        raise
     FLASK_AVAILABLE = False
     Flask = None  # type: ignore[misc, assignment]
     request = None  # type: ignore[assignment]
@@ -53,7 +58,7 @@ from ..utils.validation import (
 logger = logging.getLogger(__name__)
 
 
-def create_cog_api_app(config: dict[str, Any] | None = None) -> Flask | None:
+def create_cog_api_app(config: dict[str, Any] | None = None) -> Flask:
     """
     Create and configure the GEO-INFER-COG REST API application.
 
@@ -61,11 +66,12 @@ def create_cog_api_app(config: dict[str, Any] | None = None) -> Flask | None:
         config: Configuration parameters for the API
 
     Returns:
-        Configured Flask application or None if Flask not available
+        Configured Flask application.
     """
     if not FLASK_AVAILABLE:
-        logger.warning("Flask not available - API functionality disabled")
-        return None
+        raise ImportError(
+            "COG REST API requires geo-infer-cog[api] (Flask and Flask-CORS)"
+        )
 
     app: Any = Flask(__name__)
 
@@ -122,7 +128,7 @@ def create_cog_api_app(config: dict[str, Any] | None = None) -> Flask | None:
             {
                 "status": "healthy",
                 "timestamp": datetime.now().isoformat(),
-                "version": getattr(app, "__version__", "1.0.0"),
+                "version": distribution_version("geo-infer-cog"),
                 "components": {
                     "cognitive_engine": app.cognitive_engine is not None,
                     "perception_model": app.perception_model is not None,
@@ -136,7 +142,7 @@ def create_cog_api_app(config: dict[str, Any] | None = None) -> Flask | None:
             }
         )
 
-    return cast(Flask | None, app)
+    return cast(Flask, app)
 
 
 def register_api_routes(app: Any) -> None:
@@ -621,7 +627,7 @@ def register_api_routes(app: Any) -> None:
                         "decision_support": app.decision_support is not None,
                         "profile_manager": app.profile_manager is not None,
                     },
-                    "version": getattr(app, "__version__", "1.0.0"),
+                    "version": distribution_version("geo-infer-cog"),
                 }
             )
 

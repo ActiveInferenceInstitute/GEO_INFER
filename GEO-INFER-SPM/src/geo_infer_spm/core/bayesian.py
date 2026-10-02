@@ -38,7 +38,9 @@ try:  # PyMC >= 5
     import pymc as pm
 
     PYMC_AVAILABLE = True
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "pymc":
+        raise
     PYMC_AVAILABLE = False
     logger.debug("PyMC is unavailable; Bayesian SPM uses empirical Bayes.")
 
@@ -135,6 +137,9 @@ class BayesianSPM:
         n_samples: int = 1000,
         n_tune: int = 1000,
         random_seed: int = 42,
+        *,
+        chains: int = 2,
+        cores: int = 1,
     ) -> SPMResult:
         """
         Fit Bayesian GLM using MCMC sampling.
@@ -146,20 +151,48 @@ class BayesianSPM:
             n_samples: Number of MCMC samples
             n_tune: Number of tuning samples
             random_seed: Seed for the MCMC sampler (deterministic traces)
+            chains: Independent chains, at least two for split R-hat.
+            cores: Concurrent sampling processes; defaults to one so callers can
+                compose module-level parallelism without oversubscribing CPUs.
 
         Returns:
             SPMResult with posterior parameter estimates
         """
+        X = np.asarray(design_matrix, dtype=float)
+        y = np.asarray(data.data, dtype=float).reshape(-1)
+        if (
+            X.ndim != 2
+            or X.shape[0] != y.size
+            or X.shape[1] < 1
+            or y.size == 0
+            or not np.all(np.isfinite(X))
+            or not np.all(np.isfinite(y))
+        ):
+            raise ValueError(
+                "Bayesian GLM requires finite shape-aligned response/design"
+            )
+        for name, value, minimum in (
+            ("n_samples", n_samples, 4),
+            ("n_tune", n_tune, 0),
+            ("chains", chains, 2),
+            ("cores", cores, 1),
+        ):
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, np.integer))
+                or value < minimum
+            ):
+                raise ValueError(f"{name} must be an integer at least {minimum}")
+        if cores > chains:
+            raise ValueError("cores must not exceed chains")
         if priors is None:
-            priors = self._default_priors(design_matrix.shape[1])
+            priors = self._default_priors(X.shape[1])
 
         if PYMC_AVAILABLE and self.model_type != "empirical_bayes":
             return self._fit_pymc_glm(
-                data, design_matrix, priors, n_samples, n_tune, random_seed
+                data, X, priors, n_samples, n_tune, random_seed, chains, cores
             )
-        return self._fit_empirical_bayes_glm(
-            data, design_matrix, priors, random_seed=random_seed
-        )
+        return self._fit_empirical_bayes_glm(data, X, priors, random_seed=random_seed)
 
     def _default_priors(self, n_regressors: int) -> dict[str, Any]:
         """Set default prior distributions."""
@@ -181,6 +214,8 @@ class BayesianSPM:
         n_samples: int,
         n_tune: int,
         random_seed: int = 42,
+        chains: int = 2,
+        cores: int = 1,
     ) -> SPMResult:
         """Fit GLM using PyMC MCMC sampling."""
         y = data.data.flatten() if data.data.ndim > 1 else data.data
@@ -194,14 +229,18 @@ class BayesianSPM:
                 sigma=priors["beta_intercept"]["sigma"],
             )
 
-            beta_other = pm.Normal(
-                "beta_other",
-                mu=priors["beta"]["mu"],
-                sigma=priors["beta"]["sigma"],
-                shape=X.shape[1] - 1,
-            )
-
-            beta = pm.math.concatenate([[beta_intercept], beta_other])
+            if X.shape[1] > 1:
+                beta_other = pm.Normal(
+                    "beta_other",
+                    mu=priors["beta"]["mu"],
+                    sigma=priors["beta"]["sigma"],
+                    shape=X.shape[1] - 1,
+                )
+                beta = pm.math.concatenate([[beta_intercept], beta_other])
+            else:
+                # Do not create an empty stochastic variable: convergence
+                # diagnostics cannot reduce a zero-length coefficient axis.
+                beta = pm.math.stack([beta_intercept])
 
             sigma = pm.HalfNormal("sigma", sigma=priors["sigma"]["sigma"])
 
@@ -215,14 +254,24 @@ class BayesianSPM:
                 tune=n_tune,
                 return_inferencedata=True,
                 random_seed=random_seed,
+                chains=chains,
+                cores=cores,
+                progressbar=False,
             )
 
         # Extract posterior samples
-        beta_samples = np.column_stack(
-            [
-                trace.posterior["beta_intercept"].values.flatten(),
-                trace.posterior["beta_other"].values.reshape(-1, X.shape[1] - 1),
-            ]
+        intercept_samples = trace.posterior["beta_intercept"].values.reshape(-1, 1)
+        beta_samples = (
+            np.column_stack(
+                [
+                    intercept_samples,
+                    trace.posterior["beta_other"].values.reshape(
+                        intercept_samples.shape[0], X.shape[1] - 1
+                    ),
+                ]
+            )
+            if X.shape[1] > 1
+            else intercept_samples
         )
 
         # Compute posterior means and credible intervals
@@ -254,6 +303,8 @@ class BayesianSPM:
                 "method": "Bayesian_GLM_PyMC",
                 "n_samples": n_samples,
                 "n_tune": n_tune,
+                "chains": chains,
+                "cores": cores,
                 "beta_ci_lower": beta_ci_lower,
                 "beta_ci_upper": beta_ci_upper,
                 "r_hat": self._compute_r_hat(trace),

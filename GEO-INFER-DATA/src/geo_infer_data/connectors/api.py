@@ -6,8 +6,11 @@ GraphQL endpoints, and various web services that provide geospatial data.
 """
 
 import logging
-from typing import Any, cast
+import asyncio
+import math
+import threading
 from datetime import datetime
+from typing import Any, cast
 import time
 
 import requests
@@ -70,10 +73,24 @@ class APIConnector:
         self.rate_limiting = rate_limiting or {}
         self.timeout = timeout
         self.retries = retries
+        self._rate_interval = 0.0
+        if "requests_per_minute" in self.rate_limiting:
+            rate = self.rate_limiting["requests_per_minute"]
+            if (
+                isinstance(rate, bool)
+                or not isinstance(rate, (int, float))
+                or not math.isfinite(rate)
+                or rate <= 0
+            ):
+                raise ValueError("requests_per_minute must be finite and positive")
+            self._rate_interval = 60.0 / rate
+        self._next_request_at = 0.0
+        self._rate_lock = threading.Lock()
+        self._session_lock = threading.Lock()
 
         self.session: Any = None
         self.request_count = 0
-        self.last_request_time = datetime.now()
+        self.last_request_time: float | None = None
 
         self._initialize_session()
 
@@ -85,7 +102,7 @@ class APIConnector:
         retry_strategy = Retry(  # type: ignore[call-arg]
             total=self.retries,
             status_forcelist=[429, 500, 502, 503, 504],
-            method_whitelist=["HEAD", "GET", "OPTIONS"],
+            allowed_methods=["HEAD", "GET", "OPTIONS"],
             backoff_factor=1,
         )
 
@@ -115,27 +132,21 @@ class APIConnector:
                     self.session.auth = HTTPBasicAuth(username, password)
 
     def _check_rate_limit(self) -> None:
-        """Check and enforce rate limiting."""
-        if "requests_per_minute" in self.rate_limiting:
-            max_requests = self.rate_limiting["requests_per_minute"]
-            time_window = 60  # seconds
-
-            current_time = datetime.now()
-            time_diff = (current_time - self.last_request_time).total_seconds()
-
-            if (
-                time_diff < time_window / max_requests
-                and self.request_count >= max_requests
-            ):
-                sleep_time = (time_window / max_requests) - time_diff
-                if sleep_time > 0:
-                    logger.debug(
-                        f"Rate limiting: sleeping for {sleep_time:.2f} seconds"
-                    )
-                    time.sleep(sleep_time)
-
+        """Space actual starts under the Session lock, entirely in the worker."""
+        with self._rate_lock:
+            now = time.monotonic()
+            scheduled = max(now, self._next_request_at)
+            if scheduled > now:
+                time.sleep(scheduled - now)
+            self.last_request_time = time.monotonic()
+            self._next_request_at = self.last_request_time + self._rate_interval
             self.request_count += 1
-            self.last_request_time = datetime.now()
+
+    def _request(self, **kwargs: Any) -> requests.Response:
+        """Run blocking HTTP work in a worker; serialize shared Session use."""
+        with self._session_lock:
+            self._check_rate_limit()
+            return self.session.request(**kwargs)
 
     async def query_endpoint(
         self,
@@ -160,11 +171,9 @@ class APIConnector:
         """
         url = f"{self.base_url}{endpoint}"
 
-        # Check rate limiting
-        self._check_rate_limit()
-
         try:
-            response = self.session.request(
+            response = await asyncio.to_thread(
+                self._request,
                 method=method,
                 url=url,
                 params=params,
@@ -279,9 +288,9 @@ class APIConnector:
                     all_results.append(response)  # type: ignore[unreachable]
                     break
 
-            except Exception as e:
+            except requests.exceptions.RequestException as e:
                 logger.error(f"Failed to query page {page}: {e}")
-                break
+                raise
 
         logger.info(f"Retrieved {len(all_results)} geospatial records")
         return all_results
@@ -302,18 +311,20 @@ class APIConnector:
         """
         url = f"{self.base_url}{endpoint}"
 
-        # Check rate limiting
-        self._check_rate_limit()
-
         try:
-            response = self.session.get(
-                url, params=params, timeout=self.timeout, stream=True
-            )
-            response.raise_for_status()
 
-            with open(local_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
+            def download() -> None:
+                with self._session_lock:
+                    self._check_rate_limit()
+                    with self.session.get(
+                        url, params=params, timeout=self.timeout, stream=True
+                    ) as response:
+                        response.raise_for_status()
+                        with open(local_path, "wb") as f:
+                            for chunk in response.iter_content(chunk_size=8192):
+                                f.write(chunk)
+
+            await asyncio.to_thread(download)
 
             logger.info(f"Downloaded file to {local_path}")
             return local_path
@@ -325,7 +336,12 @@ class APIConnector:
     async def close(self) -> None:
         """Close API connection."""
         if self.session:
-            self.session.close()
+
+            def close_session() -> None:
+                with self._session_lock:
+                    self.session.close()
+
+            await asyncio.to_thread(close_session)
         logger.info("API connection closed")
 
 
@@ -347,6 +363,7 @@ class GraphQLConnector:
         self.authentication = authentication
         self.timeout = timeout
         self.session: Any = None
+        self._session_lock = threading.Lock()
 
         self._initialize_session()
 
@@ -383,9 +400,14 @@ class GraphQLConnector:
         payload = {"query": query, "variables": variables or {}}
 
         try:
-            response = self.session.post(
-                self.endpoint, json=payload, timeout=self.timeout
-            )
+
+            def post() -> requests.Response:
+                with self._session_lock:
+                    return self.session.post(
+                        self.endpoint, json=payload, timeout=self.timeout
+                    )
+
+            response = await asyncio.to_thread(post)
             response.raise_for_status()
 
             result = response.json()
@@ -521,7 +543,12 @@ class GraphQLConnector:
     async def close(self) -> None:
         """Close GraphQL connection."""
         if self.session:
-            self.session.close()
+
+            def close_session() -> None:
+                with self._session_lock:
+                    self.session.close()
+
+            await asyncio.to_thread(close_session)
         logger.info("GraphQL connection closed")
 
 

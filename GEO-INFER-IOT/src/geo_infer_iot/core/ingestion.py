@@ -81,7 +81,7 @@ class SensorMeasurement:
             ValueError: If ``timestamp`` is timezone-naive.
         """
         self.timestamp = normalize_timestamp(self.timestamp)
-        if self.h3_index is None and self.latitude and self.longitude:
+        if self.h3_index is None:
             self.h3_index = h3.latlng_to_cell(
                 self.latitude, self.longitude, self.h3_resolution
             )
@@ -397,29 +397,14 @@ class IoTDataIngestion:
     def _get_recent_measurements(
         self, variable: str, hours: float
     ) -> list[SensorMeasurement]:
-        """Get recent measurements for a specific variable.
-
-        Timestamps are normalized to UTC at ingestion time, so naive
-        datetimes are not expected here; measurements constructed directly
-        with naive timestamps are still compared as UTC for consistency.
-        """
+        """Get recent measurements using the strict aware UTC boundary."""
         cutoff_time = datetime.now(UTC) - pd.Timedelta(hours=hours)
-
-        recent = [
-            m
-            for m in self.measurements
-            if (
-                m.variable == variable
-                and (
-                    m.timestamp
-                    if m.timestamp.tzinfo is not None
-                    else m.timestamp.replace(tzinfo=UTC)
-                )
-                > cutoff_time
-            )
+        return [
+            measurement
+            for measurement in self.measurements
+            if measurement.variable == variable
+            and normalize_timestamp(measurement.timestamp) > cutoff_time
         ]
-
-        return recent
 
     def _generate_h3_prediction_grid(
         self, measurement_h3_indices: list[str], resolution: int

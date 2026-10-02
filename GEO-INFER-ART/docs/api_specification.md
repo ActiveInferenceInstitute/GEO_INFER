@@ -143,6 +143,14 @@ save(output_path: str) -> str
 
 Register and execute user-defined procedural algorithms.
 
+Persistence uses JSON schema version 1 containing trusted registry keys and
+metadata. Construct with `CustomAlgorithmFramework(algorithm_registry={"key":
+callable})` before loading custom keys. Builtin keys are `spiral`,
+`cellular_growth` and `fractal_landscape`. Files cannot define or import Python
+code; legacy `source`/`function_name` files must be rebuilt from trusted
+application registrations. Loading validates the entire document before
+changing registrations, and saving rejects callables absent from the registry.
+
 ```python
 register_algorithm(name: str, algorithm_function: Callable,
                    description: str, parameters: dict, ...) -> None
@@ -150,7 +158,7 @@ unregister_algorithm(name: str) -> None
 list_algorithms() -> list[str]
 get_algorithm_info(name: str) -> dict
 execute_algorithm(name: str, data: Any, width: int, height: int,
-                  params: dict) -> Figure
+                  **params: Any) -> Any
 save_algorithms_to_file(filepath: str) -> None
 load_algorithms_from_file(filepath: str) -> None
 ```

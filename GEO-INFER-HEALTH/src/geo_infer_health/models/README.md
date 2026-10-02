@@ -19,7 +19,7 @@ Models workspace within `GEO-INFER-HEALTH`.
 
 - Module: `GEO-INFER-HEALTH`
 - Package: `geo_infer_health`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-health`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module HEALTH`
 

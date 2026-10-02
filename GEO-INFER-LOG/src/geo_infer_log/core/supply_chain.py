@@ -7,17 +7,85 @@ resilience analysis, facility location, and inventory management.
 
 import logging
 import math
+from typing import Any
 import numpy as np
 import pandas as pd
 import geopandas as gpd
 import networkx as nx
 import pulp
+from scipy.optimize import Bounds, LinearConstraint, milp
+from scipy.sparse import coo_matrix
 from shapely.geometry import LineString
 
 from geo_infer_log.models.schemas import SupplyChainNetwork
 from geo_infer_log.utils.geo import haversine_distance
 
 logger = logging.getLogger(__name__)
+
+
+def _flow_upper_bound(capacity: Any) -> float | None:
+    """Represent unlimited flow explicitly and reject invalid capacities."""
+    if capacity is None:
+        return None
+    if isinstance(capacity, (bool, np.bool_)):
+        raise ValueError("link capacity must be nonnegative or unlimited")
+    try:
+        upper_bound = float(capacity)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("link capacity must be nonnegative or unlimited") from exc
+    if math.isnan(upper_bound) or upper_bound < 0:
+        raise ValueError("link capacity must be nonnegative or unlimited")
+    return None if upper_bound == math.inf else upper_bound
+
+
+def _solve_supply_chain_model(model: pulp.LpProblem) -> None:
+    """Solve the PuLP model with SciPy's in-process HiGHS MILP backend.
+
+    Retain the exact objective, variable bounds, integrality, and constraints.
+    CBC's bundled executable is not portable across all supported platforms;
+    solver errors must never turn an exact optimization request into a heuristic.
+    """
+    variables = model.variables()
+    if not variables:
+        raise ValueError("Optimization requires at least one decision variable")
+    indices = {variable: index for index, variable in enumerate(variables)}
+    objective = np.array(
+        [float(model.objective.get(variable, 0)) for variable in variables]
+    )
+    if model.sense == pulp.LpMaximize:
+        objective = -objective
+    rows, columns, coefficients = [], [], []
+    lower, upper = [], []
+    for row, constraint in enumerate(model.constraints.values()):
+        for variable, coefficient in constraint.items():
+            rows.append(row)
+            columns.append(indices[variable])
+            coefficients.append(float(coefficient))
+        bound = -float(constraint.constant)
+        lower.append(bound if constraint.sense >= 0 else -np.inf)
+        upper.append(bound if constraint.sense <= 0 else np.inf)
+    matrix = coo_matrix(
+        (coefficients, (rows, columns)),
+        shape=(len(lower), len(variables)),
+    ).tocsc()
+    result = milp(
+        objective,
+        integrality=np.array(
+            [int(variable.cat == pulp.LpInteger) for variable in variables]
+        ),
+        bounds=Bounds(
+            [v.lowBound if v.lowBound is not None else -np.inf for v in variables],
+            [v.upBound if v.upBound is not None else np.inf for v in variables],
+        ),
+        constraints=LinearConstraint(matrix, lower, upper),
+    )
+    if result.status == 2:
+        raise ValueError("Supply-chain optimization constraints are infeasible")
+    if not result.success or result.x is None:
+        raise RuntimeError(f"Supply-chain optimization failed: {result.message}")
+    for variable, value in zip(variables, result.x):
+        variable.varValue = float(value)
+    model.assignStatus(pulp.LpStatusOptimal, pulp.LpSolutionOptimal)
 
 
 class SupplyChainModel:
@@ -35,9 +103,13 @@ class SupplyChainModel:
     def load_network(self, network: SupplyChainNetwork) -> None:
         """Load a supply chain network.
 
+        Invalid link capacities fail before replacing the current network.
+
         Args:
             network: Supply chain network to load
         """
+        for link in network.links:
+            _flow_upper_bound(link.get("capacity", math.inf))
         self.network = network
         self._build_graph()
 
@@ -78,6 +150,9 @@ class SupplyChainModel:
     ) -> dict:
         """Optimize flow in the supply chain network.
 
+        Missing, None, and positive-infinite link capacities are unlimited.
+        NaN, negative, and boolean capacities are rejected before modeling.
+
         Args:
             demand_points: List of demand points with quantities
             supply_points: List of supply points with quantities
@@ -89,15 +164,20 @@ class SupplyChainModel:
         if not self.graph:
             raise ValueError("Network graph must be built before optimization")
 
+        # Validate all bounds before constructing the optimization model.
+        edges = list(self.graph.edges(data=True))
+        upper_bounds = {
+            (u, v): _flow_upper_bound(data.get("capacity")) for u, v, data in edges
+        }
+
         # Create optimization model
         model = pulp.LpProblem("SupplyChainFlow", pulp.LpMinimize)
 
         # Create decision variables for flow on each edge
-        edges = list(self.graph.edges(data=True))
         flow_vars = {}
-        for u, v, data in edges:
+        for u, v, _data in edges:
             flow_vars[(u, v)] = pulp.LpVariable(
-                f"flow_{u}_{v}", lowBound=0, upBound=data.get("capacity", None)
+                f"flow_{u}_{v}", lowBound=0, upBound=upper_bounds[(u, v)]
             )
 
         # Objective: minimize total cost/time/distance
@@ -122,7 +202,7 @@ class SupplyChainModel:
             model += (inflow + supply - outflow - demand == 0, f"balance_{node}")
 
         # Solve
-        model.solve(pulp.PULP_CBC_CMD(msg=0))
+        _solve_supply_chain_model(model)
 
         # Extract results
         flows = []
@@ -368,6 +448,8 @@ class NetworkOptimizer:
         n_demand = len(demand_points)
         max_facilities = constraints.get("max_facilities", n_locs)
         budget = constraints.get("budget", float("inf"))
+        if np.isnan(budget) or budget < 0:
+            raise ValueError("Facility budget must be nonnegative")
 
         model = pulp.LpProblem("FacilityLocation", pulp.LpMinimize)
 
@@ -406,12 +488,15 @@ class NetworkOptimizer:
             for j in range(n_locs):
                 model += x[i][j] <= y[j]  # only assign to open facility
         model += pulp.lpSum(y) <= max_facilities
-        model += (
-            pulp.lpSum(y[j] * locations[j].get("fixed_cost", 0) for j in range(n_locs))
-            <= budget
-        )
+        if np.isfinite(budget):
+            model += (
+                pulp.lpSum(
+                    y[j] * locations[j].get("fixed_cost", 0) for j in range(n_locs)
+                )
+                <= budget
+            )
 
-        model.solve(pulp.PULP_CBC_CMD(msg=0))
+        _solve_supply_chain_model(model)
 
         selected = [
             locations[j] for j in range(n_locs) if y[j].varValue and y[j].varValue > 0.5
@@ -514,7 +599,23 @@ class FacilityLocator:
         Returns:
             List of selected facility locations
         """
-        # P-median via PuLP MILP
+        if (
+            isinstance(num_facilities, bool)
+            or not isinstance(num_facilities, (int, np.integer))
+            or not 1 <= num_facilities <= len(candidates)
+        ):
+            raise ValueError("num_facilities must be an integer within candidate count")
+        if not demand_points:
+            raise ValueError("At least one demand point is required")
+        if max_distance is not None and (
+            not np.isfinite(max_distance) or max_distance < 0
+        ):
+            raise ValueError("max_distance must be finite and nonnegative")
+        weights = np.asarray([point.get("demand", 1) for point in demand_points])
+        if not np.all(np.isfinite(weights)) or np.any(weights < 0):
+            raise ValueError("Demand weights must be finite and nonnegative")
+
+        # Exact p-median via the shared in-process MILP boundary.
         n_cand = len(candidates)
         n_dem = len(demand_points)
 
@@ -552,27 +653,12 @@ class FacilityLocator:
                         model += x[i][j] == 0
         model += pulp.lpSum(y) == num_facilities
 
-        solver = pulp.PULP_CBC_CMD(msg=0)
-        try:
-            model.solve(solver)
-            self.selected_facilities = [
-                candidates[j]
-                for j in range(n_cand)
-                if y[j].varValue and y[j].varValue > 0.5
-            ]
-        except (OSError, pulp.PulpSolverError):
-            # The bundled CBC executable is platform-specific. Keep this
-            # library path deterministic with a local weighted-distance
-            # selector when that optional binary cannot execute.
-            scores = [
-                sum(
-                    dp.get("demand", 1) * dist[i][j]
-                    for i, dp in enumerate(demand_points)
-                )
-                for j in range(n_cand)
-            ]
-            selected = np.argsort(scores)[:num_facilities]
-            self.selected_facilities = [candidates[int(j)] for j in selected]
+        _solve_supply_chain_model(model)
+        self.selected_facilities = [
+            candidates[j]
+            for j in range(n_cand)
+            if y[j].varValue is not None and y[j].varValue > 0.5
+        ]
         logger.info("Located %d facilities via p-median", len(self.selected_facilities))
         return self.selected_facilities
 

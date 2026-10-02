@@ -8,11 +8,13 @@ patterns, and network management for IoT sensor deployments.
 import logging
 from typing import Any, cast
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
+from pydantic import Field, field_validator
 from enum import StrEnum
 import networkx as nx
 import h3
 import numpy as np
+
+from .timestamps import TimestampModel, utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +43,7 @@ class CommunicationProtocol(StrEnum):
     CUSTOM = "custom"
 
 
-class NetworkNode(BaseModel):
+class NetworkNode(TimestampModel):
     """Network node representing a sensor or gateway."""
 
     node_id: str = Field(..., description="Unique node identifier")
@@ -139,7 +141,7 @@ class NetworkNode(BaseModel):
         return max(0.0, min(1.0, score))
 
 
-class NetworkLink(BaseModel):
+class NetworkLink(TimestampModel):
     """Network link between two nodes."""
 
     link_id: str = Field(..., description="Unique link identifier")
@@ -164,8 +166,8 @@ class NetworkLink(BaseModel):
 
     # Status
     status: str = Field("active", description="Link status")
-    created_at: datetime = Field(default_factory=datetime.now)
-    last_updated: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=utc_now)
+    last_updated: datetime = Field(default_factory=utc_now)
 
     def get_performance_score(self) -> float:
         """Calculate link performance score."""
@@ -177,7 +179,7 @@ class NetworkLink(BaseModel):
         )
 
 
-class NetworkTopology(BaseModel):
+class NetworkTopology(TimestampModel):
     """Complete network topology model."""
 
     topology_id: str = Field(..., description="Unique topology identifier")
@@ -221,8 +223,8 @@ class NetworkTopology(BaseModel):
 
     # Status and metadata
     status: str = Field("active", description="Network status")
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
@@ -429,7 +431,7 @@ class NetworkTopology(BaseModel):
         }
 
 
-class NetworkEvent(BaseModel):
+class NetworkEvent(TimestampModel):
     """Network event for monitoring and debugging."""
 
     event_id: str = Field(..., description="Unique event identifier")
@@ -447,9 +449,7 @@ class NetworkEvent(BaseModel):
     )
 
     # Timing
-    timestamp: datetime = Field(
-        default_factory=datetime.now, description="Event timestamp"
-    )
+    timestamp: datetime = Field(default_factory=utc_now, description="Event timestamp")
     duration_ms: float | None = Field(
         None, description="Event duration in milliseconds"
     )
@@ -469,7 +469,7 @@ class NetworkEvent(BaseModel):
         return v
 
 
-class NetworkConfiguration(BaseModel):
+class NetworkConfiguration(TimestampModel):
     """Network configuration and deployment settings."""
 
     config_id: str = Field(..., description="Unique configuration identifier")
@@ -507,8 +507,8 @@ class NetworkConfiguration(BaseModel):
     # Version and metadata
     version: str = Field("1.0.0", description="Configuration version")
     description: str = Field("", description="Configuration description")
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
 
     @field_validator("deployment_mode")
     def validate_deployment_mode(cls, v: str) -> str:
@@ -521,7 +521,7 @@ class NetworkConfiguration(BaseModel):
         return v
 
 
-class NetworkPerformance(BaseModel):
+class NetworkPerformance(TimestampModel):
     """Network performance metrics and analysis."""
 
     performance_id: str = Field(..., description="Unique performance record ID")
@@ -532,7 +532,7 @@ class NetworkPerformance(BaseModel):
         default_factory=dict, description="Performance metrics"
     )
     timestamp: datetime = Field(
-        default_factory=datetime.now, description="Measurement timestamp"
+        default_factory=utc_now, description="Measurement timestamp"
     )
 
     # Detailed breakdown

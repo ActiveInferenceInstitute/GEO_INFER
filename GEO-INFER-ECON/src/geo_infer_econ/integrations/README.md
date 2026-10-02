@@ -21,7 +21,7 @@ Integrations workspace within `GEO-INFER-ECON`.
 
 - Module: `GEO-INFER-ECON`
 - Package: `geo_infer_econ`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-econ`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module ECON`
 

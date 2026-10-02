@@ -13,7 +13,7 @@ class ValidationError(MathError):
     """Exception for invalid mathematical or geospatial inputs."""
 
 
-class MemoryError(MathError):
+class MemoryConstraintError(MathError):
     """Exception for memory-constrained mathematical operations."""
 
 

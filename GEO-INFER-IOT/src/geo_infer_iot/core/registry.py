@@ -10,8 +10,12 @@ from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime
 import uuid
+import math
 
-import h3
+
+from geo_infer_iot.models.timestamps import utc_now
+from geo_infer_time.core.timestamps import normalize_timestamp
+from geo_infer_iot.models.spatial import sensor_cell
 
 logger = logging.getLogger(__name__)
 
@@ -29,14 +33,17 @@ class SensorMetadata:
     h3_resolution: int = 8
     status: str = "active"
     metadata: dict[str, Any] = field(default_factory=dict)
-    registered_at: datetime = field(default_factory=datetime.now)
+    registered_at: datetime = field(default_factory=utc_now)
     last_seen: datetime | None = None
 
     def __post_init__(self) -> None:
-        if not self.h3_index:
-            self.h3_index = h3.latlng_to_cell(
-                self.latitude, self.longitude, self.h3_resolution
-            )
+        self.registered_at = normalize_timestamp(self.registered_at)
+        if self.last_seen is not None:
+            self.last_seen = normalize_timestamp(self.last_seen)
+        expected = sensor_cell(self.latitude, self.longitude, self.h3_resolution)
+        if self.h3_index and self.h3_index != expected:
+            raise ValueError("h3_index must match sensor coordinates and resolution")
+        self.h3_index = expected
 
 
 @dataclass
@@ -53,7 +60,10 @@ class SensorNetworkRecord:
     spatial_bounds: dict[str, Any]
     sensor_types: list[str]
     sensor_count: int = 0
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=utc_now)
+
+    def __post_init__(self) -> None:
+        self.created_at = normalize_timestamp(self.created_at)
 
 
 class SensorRegistry:
@@ -94,6 +104,8 @@ class SensorRegistry:
     def register_sensor(self, sensor_info: dict) -> SensorMetadata:
         """Register an individual sensor."""
         sensor = SensorMetadata(**sensor_info)
+        if sensor.sensor_id in self.sensors:
+            raise ValueError(f"Sensor '{sensor.sensor_id}' is already registered")
 
         self.sensors[sensor.sensor_id] = sensor
 
@@ -121,67 +133,31 @@ class SensorRegistry:
     def get_sensors_in_area(
         self, bounds: dict, h3_resolution: int = 8
     ) -> list[SensorMetadata]:
-        """Get sensors within geographic bounds using H3 spatial indexing.
+        """Return exact inclusive WGS84 bounds matches in registration order.
 
-        Builds a polygon from the bounding box, maps it to the H3 cells
-        covering it at ``h3_resolution``, and collects sensors registered
-        in those cells plus their ring-1 neighbors (boundary tolerance for
-        sensors whose cell center falls just outside the polygon). An exact
-        bbox check on the candidate set keeps the result identical to a
-        brute-force scan, without scanning the whole registry.
-
-        The documented fallback is a direct bbox scan, used only when the
-        H3 spatial index is empty (nothing has been indexed yet).
-
-        Args:
-            bounds: Mapping with ``lat_min``, ``lat_max``, ``lon_min``,
-                ``lon_max``.
-            h3_resolution: H3 resolution used to discretize the bbox.
-
-        Returns:
-            Sensors whose coordinates lie within the bounds.
+        ``lon_min > lon_max`` denotes a box crossing the antimeridian. The
+        retained H3 resolution hint does not change coordinate membership.
+        An exact scan avoids centroid-cover gaps, tiny-box misses and mixed
+        resolution false negatives while bounding work by the sensor count.
         """
-        lat_min = float(bounds["lat_min"])
-        lat_max = float(bounds["lat_max"])
-        lon_min = float(bounds["lon_min"])
-        lon_max = float(bounds["lon_max"])
+        sensor_cell(0.0, 0.0, h3_resolution)
+        lat_min, lat_max = float(bounds["lat_min"]), float(bounds["lat_max"])
+        lon_min, lon_max = float(bounds["lon_min"]), float(bounds["lon_max"])
+        if not all(
+            math.isfinite(value) for value in (lat_min, lat_max, lon_min, lon_max)
+        ):
+            raise ValueError("Bounds must contain finite coordinates")
+        if not -90 <= lat_min <= lat_max <= 90 or not (
+            -180 <= lon_min <= 180 and -180 <= lon_max <= 180
+        ):
+            raise ValueError("Bounds must contain valid WGS84 coordinates")
 
-        def within_bounds(sensor: SensorMetadata) -> bool:
-            return (
-                lat_min <= sensor.latitude <= lat_max
-                and lon_min <= sensor.longitude <= lon_max
+        def inside(sensor: SensorMetadata) -> bool:
+            longitude_matches = (
+                (lon_min <= sensor.longitude <= lon_max)
+                if lon_min <= lon_max
+                else (sensor.longitude >= lon_min or sensor.longitude <= lon_max)
             )
+            return lat_min <= sensor.latitude <= lat_max and longitude_matches
 
-        if not self.h3_spatial_index:
-            # Fallback: no sensors indexed yet, so the H3 grid cannot
-            # contribute candidates; scan the registry directly.
-            return [s for s in self.sensors.values() if within_bounds(s)]
-
-        polygon = {
-            "type": "Polygon",
-            "coordinates": [
-                [
-                    [lon_min, lat_min],
-                    [lon_max, lat_min],
-                    [lon_max, lat_max],
-                    [lon_min, lat_max],
-                    [lon_min, lat_min],
-                ]
-            ],
-        }
-        cells = h3.geo_to_cells(polygon, h3_resolution)
-        candidate_cells: set[str] = set()
-        for cell in cells:
-            candidate_cells.update(h3.grid_disk(cell, 1))
-
-        matched: list[SensorMetadata] = []
-        seen: set[str] = set()
-        for cell in candidate_cells:
-            for sensor_id in self.h3_spatial_index.get(cell, ()):
-                if sensor_id in seen or sensor_id not in self.sensors:
-                    continue
-                sensor = self.sensors[sensor_id]
-                if within_bounds(sensor):
-                    seen.add(sensor_id)
-                    matched.append(sensor)
-        return matched
+        return [sensor for sensor in self.sensors.values() if inside(sensor)]

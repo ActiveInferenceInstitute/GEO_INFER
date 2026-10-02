@@ -8,6 +8,7 @@ import dataclasses
 import json
 import logging
 import math
+import os
 import re
 import shutil
 import subprocess
@@ -25,22 +26,26 @@ ACT_ROOT = Path(__file__).resolve().parent
 REPO_ROOT = ACT_ROOT.parent
 
 
-def _jsonable(value: Any) -> Any:
+def _jsonable(value: Any, relative_to: Path | None = None) -> Any:
     """Convert numpy, dataclass, and path-rich values into JSON-safe values."""
     if dataclasses.is_dataclass(value):
-        return _jsonable(dataclasses.asdict(value))
+        return _jsonable(dataclasses.asdict(value), relative_to)
     if isinstance(value, np.ndarray):
-        return _jsonable(value.tolist())
+        return _jsonable(value.tolist(), relative_to)
     if isinstance(value, np.integer):
         return int(value)
     if isinstance(value, np.floating):
         return float(value)
     if isinstance(value, Path):
-        return str(value)
+        return (
+            os.path.relpath(value.resolve(), relative_to.resolve())
+            if relative_to
+            else str(value)
+        )
     if isinstance(value, dict):
-        return {str(key): _jsonable(item) for key, item in value.items()}
+        return {str(key): _jsonable(item, relative_to) for key, item in value.items()}
     if isinstance(value, (list, tuple, set)):
-        return [_jsonable(item) for item in value]
+        return [_jsonable(item, relative_to) for item in value]
     if isinstance(value, float) and not math.isfinite(value):
         return str(value)
     try:
@@ -52,7 +57,9 @@ def _jsonable(value: Any) -> Any:
 
 def _write_json(path: Path, payload: Any) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(_jsonable(payload), indent=2, sort_keys=True) + "\n")
+    path.write_text(
+        json.dumps(_jsonable(payload, path.parent), indent=2, sort_keys=True) + "\n"
+    )
     return path
 
 
@@ -539,11 +546,12 @@ def audit_domain_models(output_dir: Path) -> dict[str, Any]:
     from geo_infer_act.runners.h3 import setup_san_francisco_boundary
 
     base_model = BaseActiveInferenceModel({"purpose": "audit"})
-    try:
-        base_model.step()
-        raise AssertionError("BaseActiveInferenceModel.step() must be abstract")
-    except NotImplementedError:
-        pass
+    base_state = base_model.step()
+    if base_state != {"purpose": "audit"} or base_state is base_model.config:
+        raise AssertionError("Base model must return an owned configuration snapshot")
+    base_state["purpose"] = "modified snapshot"
+    if base_model.config["purpose"] != "audit":
+        raise AssertionError("Base snapshot mutation changed the model configuration")
 
     categorical = CategoricalModel(state_dim=3, obs_dim=3)
     categorical.set_preferences(np.array([0.6, 0.3, 0.1]))
@@ -920,7 +928,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=ACT_ROOT / "examples" / "output" / "comprehensive_act_audit",
+        default=REPO_ROOT / "output" / "act_audit",
         help="Logged output directory for data, manifests, visualizations, and audit summaries.",
     )
     parser.add_argument(
@@ -974,7 +982,7 @@ def main(argv: list[str] | None = None) -> int:
         "sections": results,
     }
     _write_json(output_dir / "comprehensive_audit_summary.json", summary)
-    print(json.dumps(_jsonable(summary), indent=2, sort_keys=True))
+    print(json.dumps(_jsonable(summary, output_dir), indent=2, sort_keys=True))
     return 1 if failed else 0
 
 

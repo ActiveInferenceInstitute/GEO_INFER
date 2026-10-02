@@ -30,7 +30,6 @@ from geo_infer_iot.models.measurement import Measurement, MeasurementBatch
 from geo_infer_iot.models.network import NetworkTopology
 from geo_infer_iot.utils.calibration import SensorCalibration
 from geo_infer_iot.utils.interpolation import SpatialInterpolation
-from geo_infer_iot.utils.visualization import IoTVisualization
 from geo_infer_iot.core.systems import (
     AdaptiveSampling,
     GlobalMonitoringSystem,
@@ -39,7 +38,18 @@ from geo_infer_iot.core.systems import (
     PredictiveMaintenance,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
+
+
+def __getattr__(name: str):
+    """Resolve visualization only when requested; core needs no plot extra."""
+    if name == "IoTVisualization":
+        from geo_infer_iot.utils.visualization import IoTVisualization
+
+        globals()[name] = IoTVisualization
+        return IoTVisualization
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 __all__ = [
     # Core functionality (available)

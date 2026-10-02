@@ -4,6 +4,7 @@ Configuration utilities for GEO-INFER-HEALTH module.
 Provides functions for loading, validating, and managing configuration files.
 """
 
+from importlib.metadata import version as distribution_version
 import os
 import json
 import importlib.resources
@@ -368,7 +369,7 @@ def create_default_config(output_path: str | Path) -> None:
     default_config = {
         "module": {
             "name": "GEO-INFER-HEALTH",
-            "version": "1.0.0",
+            "version": distribution_version("geo-infer-health"),
             "description": "Geospatial Applications for Public Health, Epidemiology, and Healthcare Accessibility",
             "author": "GEO-INFER Framework Team",
             "contact": "health@geo-infer.org",

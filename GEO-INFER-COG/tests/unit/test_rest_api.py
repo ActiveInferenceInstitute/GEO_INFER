@@ -182,3 +182,49 @@ class TestPartialInitializationDegradation:
         assert body["components"]["visualizer"] is False
         assert body["components"]["cognitive_engine"] is True
         assert body["components"]["language_processor"] is True
+
+
+@pytest.mark.parametrize("dependency", ["flask", "flask_cors"])
+@pytest.mark.parametrize(
+    "failure", ["native_import_error", "transitive_module_missing"]
+)
+@pytest.mark.parametrize("target", ["geo_infer_cog", "geo_infer_cog.api.rest_api"])
+def test_installed_api_dependency_failure_propagates(
+    tmp_path, dependency, failure, target
+):
+    """An installed but broken API extra must not masquerade as an absent extra."""
+    import subprocess
+    import sys
+
+    script = f"""
+import builtins, importlib
+original = builtins.__import__
+def import_with_failure(name, *args, **kwargs):
+    if name == {dependency!r}:
+        if {failure!r} == 'native_import_error':
+            raise ImportError('installed dependency failed its native import')
+        raise ModuleNotFoundError('installed dependency has a missing transitive module', name='broken_transitive_dependency')
+    return original(name, *args, **kwargs)
+builtins.__import__ = import_with_failure
+try:
+    importlib.import_module({target!r})
+except ImportError as error:
+    assert str(error).startswith('installed dependency'), str(error)
+    if {failure!r} == 'transitive_module_missing':
+        assert isinstance(error, ModuleNotFoundError)
+        assert error.name == 'broken_transitive_dependency'
+    else:
+        assert type(error) is ImportError
+else:
+    raise AssertionError('Installed API dependency failure was suppressed')
+print('original installed-dependency failure propagated')
+"""
+    result = subprocess.run(
+        [sys.executable, "-I", "-c", script],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "original installed-dependency failure propagated" in result.stdout

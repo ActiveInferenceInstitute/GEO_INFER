@@ -7,7 +7,7 @@ measurements to continuous spatial surfaces, with integration to H3 spatial inde
 
 import logging
 from typing import Any, cast
-from datetime import datetime
+from datetime import datetime, UTC
 import numpy as np
 import h3
 
@@ -147,7 +147,7 @@ class SpatialInterpolation:
                 "sensor_count": len(sensor_values),
                 "target_points": len(target_grid),
                 "uncertainty": uncertainty.tolist(),
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:
@@ -449,7 +449,7 @@ class SpatialInterpolation:
                 },
                 "method": interpolation_result["method"],
                 "test_fraction": test_fraction,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:
@@ -527,7 +527,7 @@ class SpatialInterpolation:
                 "distribution_factor": distribution_factor,
                 "coverage_factor": coverage_factor,
                 "issues": issues,
-                "assessment_timestamp": datetime.now().isoformat(),
+                "assessment_timestamp": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:

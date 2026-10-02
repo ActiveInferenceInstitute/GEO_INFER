@@ -57,22 +57,36 @@ class TestGeospatialModelEvaluator:
         assert metrics["mse"] >= 0.0
         assert metrics["rmse"] >= 0.0
 
-    def test_evaluate_spatial_accuracy(
+    def test_evaluate_value_tolerance(
         self, evaluator: GeospatialModelEvaluator
     ) -> None:
         y_true = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
         y_pred = np.array([1.1, 2.3, 2.9, 4.2, 5.1])
-        coords = np.array([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0], [3.0, 3.0], [4.0, 4.0]])
+        metrics = evaluator.evaluate_value_tolerance(y_true, y_pred, tolerance=0.15)
 
-        metrics = evaluator.evaluate_spatial_accuracy(
-            y_true, y_pred, coords, buffer_distance=0.5
-        )
+        assert metrics["mean_absolute_error"] == pytest.approx(0.16)
+        assert metrics["median_absolute_error"] == pytest.approx(0.1)
+        assert metrics["max_absolute_error"] == pytest.approx(0.3)
+        assert metrics["within_tolerance_percentage"] == 60.0
 
-        assert "mean_spatial_error" in metrics
-        assert "median_spatial_error" in metrics
-        assert "max_spatial_error" in metrics
-        assert "within_buffer_percentage" in metrics
-        assert 0.0 <= metrics["within_buffer_percentage"] <= 100.0
+    @pytest.mark.parametrize(
+        "actual,predicted,tolerance",
+        [
+            ([], [], 1),
+            ([1], [1, 2], 1),
+            ([np.nan], [1], 1),
+            ([1], [np.inf], 1),
+            ([1], [1], -1),
+            ([1], [1], np.inf),
+            ([1], [1], True),
+        ],
+    )
+    def test_value_tolerance_rejects_invalid_inputs(
+        self, evaluator, actual, predicted, tolerance
+    ):
+        """Reject invalid scientific inputs before calculating a percentage."""
+        with pytest.raises(ValueError):
+            evaluator.evaluate_value_tolerance(actual, predicted, tolerance)
 
     def test_confusion_matrix(
         self, evaluator: GeospatialModelEvaluator, binary_data: tuple

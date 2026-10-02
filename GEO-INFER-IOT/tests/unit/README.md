@@ -10,6 +10,7 @@ Unit workspace within `GEO-INFER-IOT`.
 - `test_inference_behavior.py`
 - `test_ingest_error_and_latency.py`
 - `test_ingestion.py`
+- `test_optional_visualization.py`
 - `test_performance_monitor.py`
 - `test_quality_control.py`
 - `test_quality_control_history.py`
@@ -18,6 +19,7 @@ Unit workspace within `GEO-INFER-IOT`.
 - `test_sensor_api.py`
 - `test_sensor_data.py`
 - `test_streaming_forward.py`
+- `test_timestamp_spatial_contracts.py`
 - `test_visualization.py`
 
 ## Public Interface
@@ -28,7 +30,7 @@ Unit workspace within `GEO-INFER-IOT`.
 
 - Module: `GEO-INFER-IOT`
 - Package: `geo_infer_iot`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-iot`
 - Tests: `uv run python -m pytest GEO-INFER-IOT/tests/unit`
 
@@ -36,11 +38,10 @@ Unit workspace within `GEO-INFER-IOT`.
 
 - `aiomqtt>=2.4.0`
 - `fastapi>=0.100.0`
-- `folium>=0.12.0`
-- `geo-infer-bayes`
-- `geo-infer-space`
+- `geo-infer-bayes>=0.4.0`
+- `geo-infer-space>=0.4.0`
+- `geo-infer-time>=0.4.0`
 - `h3>=4.5.0,<5`
-- `matplotlib>=3.5.0`
 - `networkx>=2.6`
 - `numpy>=1.20.0`
 - `paho-mqtt>=1.6.0`

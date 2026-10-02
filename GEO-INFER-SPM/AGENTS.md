@@ -26,6 +26,7 @@
 - `examples/`
 - `src/`
 - `tests/`
+- `pytensor_clang++_macos27.py`
 - `SKILL.md`
 - `pyproject.toml`
 

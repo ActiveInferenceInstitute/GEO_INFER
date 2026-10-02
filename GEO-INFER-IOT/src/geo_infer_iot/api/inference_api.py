@@ -7,7 +7,7 @@ including spatial prediction, uncertainty quantification, and model management.
 
 import logging
 from typing import Any
-from datetime import datetime
+from datetime import datetime, UTC
 from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
 
 # BayesianSpatialInference lives in geo_infer_iot.core.inference; a broken
@@ -64,7 +64,7 @@ class BayesianInferenceAPI:
                 "version": "1.0.0",
                 "status": "operational",
                 "inference_available": self.inference_engine is not None,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
         @self.app.post("/inference/spatial")
@@ -107,7 +107,7 @@ class BayesianInferenceAPI:
                     "variable": variable,
                     "spatial_resolution": spatial_resolution,
                     "sensor_count": result.get("sensor_count", 0),
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "result": result,
                     "posterior_map": posterior_map,
                 }
@@ -202,7 +202,7 @@ class BayesianInferenceAPI:
                 # Store in model cache
                 self.model_cache[model_type] = {
                     "config": config,
-                    "last_updated": datetime.now().isoformat(),
+                    "last_updated": datetime.now(UTC).isoformat(),
                 }
 
                 return {
@@ -246,7 +246,7 @@ class BayesianInferenceAPI:
                     "h3_resolution": h3_resolution,
                     "confidence_level": confidence_level,
                     "predictions": posterior_map,
-                    "generated_at": datetime.now().isoformat(),
+                    "generated_at": datetime.now(UTC).isoformat(),
                 }
 
             except Exception as e:
@@ -309,7 +309,7 @@ class BayesianInferenceAPI:
                     [r for r in results if r.get("success", False)]
                 ),
                 "failed_requests": len(errors),
-                "processed_at": datetime.now().isoformat(),
+                "processed_at": datetime.now(UTC).isoformat(),
             }
 
     def get_app(self) -> FastAPI:

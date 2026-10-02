@@ -8,15 +8,22 @@ interpolation results, and real-time monitoring displays.
 import logging
 import math
 from typing import Any
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 import numpy as np
 import h3
 
-import folium
-import matplotlib
-import matplotlib.pyplot as plt
-from folium.plugins import HeatMap, MarkerCluster
+try:
+    import folium
+    import matplotlib
+    import matplotlib.pyplot as plt
+    from folium.plugins import HeatMap, MarkerCluster
+except ModuleNotFoundError as exc:
+    if exc.name not in {"folium", "matplotlib"}:
+        raise
+    raise ImportError(
+        "IoT visualization requires geo-infer-iot[visualization]"
+    ) from exc
 
 logger = logging.getLogger(__name__)
 
@@ -190,7 +197,7 @@ class IoTVisualization:
                 "sensor_count": len(sensors),
                 "measurement_count": len(measurements) if measurements else 0,
                 "center_coordinates": map_center,
-                "generated_at": datetime.now().isoformat(),
+                "generated_at": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:
@@ -393,7 +400,7 @@ class IoTVisualization:
                 "interpolation_points": len(features),
                 "sensor_count": len(sensors) if sensors else 0,
                 "center_coordinates": [center_lat, center_lon],
-                "generated_at": datetime.now().isoformat(),
+                "generated_at": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:
@@ -458,7 +465,7 @@ class IoTVisualization:
                 "plot_file": output_file,
                 "sensor_count": len(sensor_data),
                 "total_data_points": sum(len(data) for data in sensor_data.values()),
-                "generated_at": datetime.now().isoformat(),
+                "generated_at": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:
@@ -496,7 +503,7 @@ class IoTVisualization:
             </head>
             <body>
                 <h1>IoT Network Status Dashboard</h1>
-                <p><strong>Generated:</strong> {datetime.now().isoformat()}</p>
+                <p><strong>Generated:</strong> {datetime.now(UTC).isoformat()}</p>
 
                 <div class="grid">
             """
@@ -594,7 +601,7 @@ class IoTVisualization:
                 "success": True,
                 "dashboard_file": output_file,
                 "sensor_count": len(network_data.get("sensor_assessments", {})),
-                "generated_at": datetime.now().isoformat(),
+                "generated_at": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:
@@ -693,7 +700,7 @@ class IoTVisualization:
                 "heatmap_file": output_file,
                 "data_points": len(values),
                 "bounds": bounds,
-                "generated_at": datetime.now().isoformat(),
+                "generated_at": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:
@@ -711,5 +718,5 @@ class IoTVisualization:
             "supported_formats": ["html", "png", "svg"],
             "cache_size": len(self.maps_cache),
             "default_parameters": self.default_params,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }

@@ -5,11 +5,12 @@ Unit tests for the rule-based agent architecture: Rule, RuleSet,
 RuleBasedState, RuleBasedAgent lifecycle, action handlers, persistence.
 """
 
-import asyncio
 import json
 import os
 import tempfile
 import unittest
+
+import pytest
 
 from geo_infer_agent.models.rule_based import (
     Rule,
@@ -17,10 +18,6 @@ from geo_infer_agent.models.rule_based import (
     RuleBasedState,
     RuleSet,
 )
-
-
-def _run(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
 
 
 class TestRule(unittest.TestCase):
@@ -178,10 +175,11 @@ class TestRuleBasedState(unittest.TestCase):
         self.assertEqual(restored.execution_history[0]["rule_id"], "r1")
 
 
-class TestRuleBasedAgentLifecycle(unittest.TestCase):
+class TestRuleBasedAgentLifecycle:
     """Tests for RuleBasedAgent construction, init, and perception."""
 
-    def test_handlers_registered_and_config_applied(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_handlers_registered_and_config_applied(self) -> None:
         agent = RuleBasedAgent(
             agent_id="rb-1",
             config={"max_history_size": 7, "initial_facts": {"boot": True}},
@@ -196,14 +194,15 @@ class TestRuleBasedAgentLifecycle(unittest.TestCase):
             "disable_rule",
             "query_facts",
         ):
-            self.assertIn(handler, agent.action_handlers)
-        self.assertIn("sensor_data", agent.perception_handlers)
-        self.assertEqual(agent.state.max_history_size, 7)
+            unittest.TestCase().assertIn(handler, agent.action_handlers)
+        unittest.TestCase().assertIn("sensor_data", agent.perception_handlers)
+        unittest.TestCase().assertEqual(agent.state.max_history_size, 7)
 
-        _run(agent.initialize())
-        self.assertTrue(agent.state.get_fact("boot"))
+        await agent.initialize()
+        unittest.TestCase().assertTrue(agent.state.get_fact("boot"))
 
-    def test_initialize_loads_rules_from_config(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_initialize_loads_rules_from_config(self) -> None:
         agent = RuleBasedAgent(
             agent_id="rb-2",
             config={
@@ -218,11 +217,12 @@ class TestRuleBasedAgentLifecycle(unittest.TestCase):
                 ]
             },
         )
-        _run(agent.initialize())
-        self.assertIn("r1", agent.state.rule_set.rules)
-        self.assertNotIn("r2", agent.state.rule_set.rules)
+        await agent.initialize()
+        unittest.TestCase().assertIn("r1", agent.state.rule_set.rules)
+        unittest.TestCase().assertNotIn("r2", agent.state.rule_set.rules)
 
-    def test_initialize_loads_saved_state(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_initialize_loads_saved_state(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "rb_state.json")
             saved_agent = RuleBasedAgent(agent_id="rb-save")
@@ -230,33 +230,35 @@ class TestRuleBasedAgentLifecycle(unittest.TestCase):
             saved_agent._save_state(path)
 
             agent = RuleBasedAgent(agent_id="rb-load", config={"state_path": path})
-            _run(agent.initialize())
-            self.assertEqual(agent.state.get_fact("carry"), "me")
+            await agent.initialize()
+            unittest.TestCase().assertEqual(agent.state.get_fact("carry"), "me")
 
-    def test_update_beliefs_and_perceive(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_update_beliefs_and_perceive(self) -> None:
         agent = RuleBasedAgent(agent_id="rb-3")
-        _run(agent.initialize())
+        await agent.initialize()
         agent.update_beliefs({"temp": 21, "_internal": "skip"})
-        self.assertEqual(agent.state.get_fact("temp"), 21)
-        self.assertNotIn("_internal", agent.state.facts)
-        self.assertIn("_last_perception_time", agent.state.facts)
+        unittest.TestCase().assertEqual(agent.state.get_fact("temp"), 21)
+        unittest.TestCase().assertNotIn("_internal", agent.state.facts)
+        unittest.TestCase().assertIn("_last_perception_time", agent.state.facts)
 
         agent.config["sensor_readings"] = {"temp": 22}
-        perceptions = _run(agent.perceive())
-        self.assertEqual(perceptions["temp"], 22)
-        self.assertEqual(agent.state.get_fact("temp"), 22)
+        perceptions = await agent.perceive()
+        unittest.TestCase().assertEqual(perceptions["temp"], 22)
+        unittest.TestCase().assertEqual(agent.state.get_fact("temp"), 22)
 
 
-class TestRuleBasedAgentDecideAct(unittest.TestCase):
+class TestRuleBasedAgentDecideAct:
     """Tests for the decide/act cycle."""
 
-    def _make(self, config):
+    async def _make(self, config):
         agent = RuleBasedAgent(agent_id="rb-cycle", config=config)
-        _run(agent.initialize())
+        await agent.initialize()
         return agent
 
-    def test_matching_rule_action_carries_rule_id(self) -> None:
-        agent = self._make(
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_matching_rule_action_carries_rule_id(self) -> None:
+        agent = await self._make(
             {
                 "rules": [
                     {
@@ -269,55 +271,63 @@ class TestRuleBasedAgentDecideAct(unittest.TestCase):
                 "initial_facts": {"temp": 30},
             }
         )
-        action = _run(agent.decide())
-        self.assertEqual(action["action_id"], "s1")
-        self.assertEqual(action["_rule_id"], "hot-rule")
+        action = await agent.decide()
+        unittest.TestCase().assertEqual(action["action_id"], "s1")
+        unittest.TestCase().assertEqual(action["_rule_id"], "hot-rule")
 
-        result = _run(agent.act(action))
+        result = await agent.act(action)
         # No handler for "scan" → dispatch error, but still recorded.
-        self.assertEqual(result["status"], "error")
-        self.assertEqual(len(agent.state.execution_history), 1)
-        self.assertEqual(agent.state.execution_history[0]["rule_id"], "hot-rule")
-
-    def test_no_match_uses_default_action_and_copies_it(self) -> None:
-        default = {"action_type": "wait", "parameters": {"duration": 0}}
-        agent = self._make({"default_action": default, "initial_facts": {"cold": True}})
-        action = _run(agent.decide())
-        self.assertEqual(action, default)
-        self.assertIsNot(action, default)
-        self.assertNotIn("_rule_id", action)
-
-    def test_no_match_without_default_returns_none(self) -> None:
-        agent = self._make({})
-        self.assertIsNone(_run(agent.decide()))
-
-    def test_action_result_facts_update_state(self) -> None:
-        agent = self._make({})
-        result = _run(
-            agent.act(
-                {
-                    "action_type": "update_fact",
-                    "parameters": {"key": "zone", "value": "east"},
-                }
-            )
+        unittest.TestCase().assertEqual(result["status"], "error")
+        unittest.TestCase().assertEqual(len(agent.state.execution_history), 1)
+        unittest.TestCase().assertEqual(
+            agent.state.execution_history[0]["rule_id"], "hot-rule"
         )
-        self.assertEqual(result["status"], "success")
-        self.assertEqual(agent.state.get_fact("zone"), "east")
 
-    def test_shutdown_saves_state(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_no_match_uses_default_action_and_copies_it(self) -> None:
+        default = {"action_type": "wait", "parameters": {"duration": 0}}
+        agent = await self._make(
+            {"default_action": default, "initial_facts": {"cold": True}}
+        )
+        action = await agent.decide()
+        unittest.TestCase().assertEqual(action, default)
+        unittest.TestCase().assertIsNot(action, default)
+        unittest.TestCase().assertNotIn("_rule_id", action)
+
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_no_match_without_default_returns_none(self) -> None:
+        agent = await self._make({})
+        unittest.TestCase().assertIsNone(await agent.decide())
+
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_action_result_facts_update_state(self) -> None:
+        agent = await self._make({})
+        result = await agent.act(
+            {
+                "action_type": "update_fact",
+                "parameters": {"key": "zone", "value": "east"},
+            }
+        )
+        unittest.TestCase().assertEqual(result["status"], "success")
+        unittest.TestCase().assertEqual(agent.state.get_fact("zone"), "east")
+
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_shutdown_saves_state(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "final.json")
-            agent = self._make({"state_save_path": path, "initial_facts": {"k": "v"}})
-            _run(agent.shutdown())
+            agent = await self._make(
+                {"state_save_path": path, "initial_facts": {"k": "v"}}
+            )
+            await agent.shutdown()
             with open(path) as handle:
                 saved = json.load(handle)
-            self.assertEqual(saved["facts"]["k"], "v")
+            unittest.TestCase().assertEqual(saved["facts"]["k"], "v")
 
 
-class TestRuleBasedAgentActionHandlers(unittest.TestCase):
+class TestRuleBasedAgentActionHandlers:
     """Tests for the rule agent's built-in action handlers."""
 
-    def _make(self):
+    async def _make(self):
         agent = RuleBasedAgent(
             agent_id="rb-handlers",
             config={
@@ -331,116 +341,119 @@ class TestRuleBasedAgentActionHandlers(unittest.TestCase):
                 "initial_facts": {"temp": 20, "zone": "west"},
             },
         )
-        _run(agent.initialize())
+        await agent.initialize()
         return agent
 
-    def test_update_fact_handler_validation(self) -> None:
-        agent = self._make()
-        ok = _run(
-            agent.act(
-                {
-                    "action_type": "update_fact",
-                    "parameters": {"key": "temp", "value": 25},
-                }
-            )
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_update_fact_handler_validation(self) -> None:
+        agent = await self._make()
+        ok = await agent.act(
+            {
+                "action_type": "update_fact",
+                "parameters": {"key": "temp", "value": 25},
+            }
         )
-        self.assertEqual(ok["status"], "success")
-        self.assertEqual(agent.state.get_fact("temp"), 25)
+        unittest.TestCase().assertEqual(ok["status"], "success")
+        unittest.TestCase().assertEqual(agent.state.get_fact("temp"), 25)
 
-        bad = _run(
-            agent.act({"action_type": "update_fact", "parameters": {"key": "t"}})
+        bad = await agent.act(
+            {"action_type": "update_fact", "parameters": {"key": "t"}}
         )
-        self.assertEqual(bad["status"], "error")
+        unittest.TestCase().assertEqual(bad["status"], "error")
 
-    def test_remove_fact_handler(self) -> None:
-        agent = self._make()
-        ok = _run(
-            agent.act({"action_type": "remove_fact", "parameters": {"key": "temp"}})
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_remove_fact_handler(self) -> None:
+        agent = await self._make()
+        ok = await agent.act(
+            {"action_type": "remove_fact", "parameters": {"key": "temp"}}
         )
-        self.assertEqual(ok["status"], "success")
-        self.assertFalse(agent.state.remove_fact("temp"))
+        unittest.TestCase().assertEqual(ok["status"], "success")
+        unittest.TestCase().assertFalse(agent.state.remove_fact("temp"))
 
-        missing = _run(
-            agent.act({"action_type": "remove_fact", "parameters": {"key": "ghost"}})
+        missing = await agent.act(
+            {"action_type": "remove_fact", "parameters": {"key": "ghost"}}
         )
-        self.assertEqual(missing["status"], "warning")
+        unittest.TestCase().assertEqual(missing["status"], "warning")
 
-        bad = _run(agent.act({"action_type": "remove_fact", "parameters": {}}))
-        self.assertEqual(bad["status"], "error")
+        bad = await agent.act({"action_type": "remove_fact", "parameters": {}})
+        unittest.TestCase().assertEqual(bad["status"], "error")
 
-    def test_add_rule_handler(self) -> None:
-        agent = self._make()
-        ok = _run(
-            agent.act(
-                {
-                    "action_type": "add_rule",
-                    "parameters": {
-                        "id": "new-rule",
-                        "condition": {"b": 2},
-                        "action": {"action_type": "scan"},
-                        "priority": 4,
-                    },
-                }
-            )
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_add_rule_handler(self) -> None:
+        agent = await self._make()
+        ok = await agent.act(
+            {
+                "action_type": "add_rule",
+                "parameters": {
+                    "id": "new-rule",
+                    "condition": {"b": 2},
+                    "action": {"action_type": "scan"},
+                    "priority": 4,
+                },
+            }
         )
-        self.assertEqual(ok["status"], "success")
-        self.assertEqual(agent.state.rule_set.rules["new-rule"].priority, 4)
-
-        bad = _run(
-            agent.act({"action_type": "add_rule", "parameters": {"id": "incomplete"}})
+        unittest.TestCase().assertEqual(ok["status"], "success")
+        unittest.TestCase().assertEqual(
+            agent.state.rule_set.rules["new-rule"].priority, 4
         )
-        self.assertEqual(bad["status"], "error")
 
-    def test_remove_enable_disable_rule_handlers(self) -> None:
-        agent = self._make()
-        ok = _run(
-            agent.act({"action_type": "disable_rule", "parameters": {"id": "existing"}})
+        bad = await agent.act(
+            {"action_type": "add_rule", "parameters": {"id": "incomplete"}}
         )
-        self.assertEqual(ok["status"], "success")
-        self.assertFalse(agent.state.rule_set.rules["existing"].enabled)
+        unittest.TestCase().assertEqual(bad["status"], "error")
 
-        ok = _run(
-            agent.act({"action_type": "enable_rule", "parameters": {"id": "existing"}})
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_remove_enable_disable_rule_handlers(self) -> None:
+        agent = await self._make()
+        ok = await agent.act(
+            {"action_type": "disable_rule", "parameters": {"id": "existing"}}
         )
-        self.assertEqual(ok["status"], "success")
-        self.assertTrue(agent.state.rule_set.rules["existing"].enabled)
+        unittest.TestCase().assertEqual(ok["status"], "success")
+        unittest.TestCase().assertFalse(agent.state.rule_set.rules["existing"].enabled)
 
-        ok = _run(
-            agent.act({"action_type": "remove_rule", "parameters": {"id": "existing"}})
+        ok = await agent.act(
+            {"action_type": "enable_rule", "parameters": {"id": "existing"}}
         )
-        self.assertEqual(ok["status"], "success")
-        self.assertNotIn("existing", agent.state.rule_set.rules)
+        unittest.TestCase().assertEqual(ok["status"], "success")
+        unittest.TestCase().assertTrue(agent.state.rule_set.rules["existing"].enabled)
+
+        ok = await agent.act(
+            {"action_type": "remove_rule", "parameters": {"id": "existing"}}
+        )
+        unittest.TestCase().assertEqual(ok["status"], "success")
+        unittest.TestCase().assertNotIn("existing", agent.state.rule_set.rules)
 
         for handler in ("remove_rule", "enable_rule", "disable_rule"):
-            missing = _run(
-                agent.act({"action_type": handler, "parameters": {"id": "ghost"}})
+            missing = await agent.act(
+                {"action_type": handler, "parameters": {"id": "ghost"}}
             )
-            self.assertEqual(missing["status"], "warning")
-            bad = _run(agent.act({"action_type": handler, "parameters": {}}))
-            self.assertEqual(bad["status"], "error")
+            unittest.TestCase().assertEqual(missing["status"], "warning")
+            bad = await agent.act({"action_type": handler, "parameters": {}})
+            unittest.TestCase().assertEqual(bad["status"], "error")
 
-    def test_query_facts_handler(self) -> None:
-        agent = self._make()
-        some = _run(
-            agent.act(
-                {
-                    "action_type": "query_facts",
-                    "parameters": {"keys": ["temp", "ghost"]},
-                }
-            )
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_query_facts_handler(self) -> None:
+        agent = await self._make()
+        some = await agent.act(
+            {
+                "action_type": "query_facts",
+                "parameters": {"keys": ["temp", "ghost"]},
+            }
         )
-        self.assertEqual(some["facts"], {"temp": 20})
+        unittest.TestCase().assertEqual(some["facts"], {"temp": 20})
 
-        everything = _run(agent.act({"action_type": "query_facts", "parameters": {}}))
-        self.assertEqual(everything["facts"]["zone"], "west")
+        everything = await agent.act({"action_type": "query_facts", "parameters": {}})
+        unittest.TestCase().assertEqual(everything["facts"]["zone"], "west")
 
-    def test_sensor_perceptions_handler(self) -> None:
-        agent = self._make()
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_sensor_perceptions_handler(self) -> None:
+        agent = await self._make()
         agent._handle_sensor_perceptions(agent, {"readings": {"temp": 30}})
-        self.assertEqual(agent.state.get_fact("sensor_temp"), 30)
+        unittest.TestCase().assertEqual(agent.state.get_fact("sensor_temp"), 30)
 
-    def test_load_state_corrupt_file_keeps_state(self) -> None:
-        agent = self._make()
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_load_state_corrupt_file_keeps_state(self) -> None:
+        agent = await self._make()
         with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as handle:
             handle.write("not json")
             path = handle.name
@@ -448,8 +461,4 @@ class TestRuleBasedAgentActionHandlers(unittest.TestCase):
             agent._load_state(path)
         finally:
             os.unlink(path)
-        self.assertEqual(agent.state.get_fact("temp"), 20)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        unittest.TestCase().assertEqual(agent.state.get_fact("temp"), 20)

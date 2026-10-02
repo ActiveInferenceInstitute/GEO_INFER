@@ -9,6 +9,7 @@ import numpy as np
 from typing import Any, cast
 import logging
 import warnings
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
@@ -613,31 +614,43 @@ class GPUAccelerator:
         return results
 
 
-# Global GPU accelerator instance
-gpu_accelerator = GPUAccelerator()
+@lru_cache(maxsize=1)
+def _get_accelerator() -> GPUAccelerator:
+    """Probe accelerator runtimes only when GPU functionality is requested."""
+    return GPUAccelerator()
+
+
+gpu_accelerator: GPUAccelerator
+
+
+def __getattr__(name: str) -> Any:
+    """Retain the public singleton while deferring its expensive initialization."""
+    if name == "gpu_accelerator":
+        return _get_accelerator()
+    raise AttributeError(name)
 
 
 # Convenience functions
 def is_gpu_available() -> bool:
     """Check if GPU acceleration is available."""
-    return gpu_accelerator.gpu_available
+    return _get_accelerator().gpu_available
 
 
 def get_gpu_info() -> dict[str, Any]:
     """Get GPU acceleration information."""
-    return gpu_accelerator.get_performance_info()
+    return _get_accelerator().get_performance_info()
 
 
 def benchmark_gpu_performance(test_data: dict[str, np.ndarray]) -> dict[str, Any]:
     """Benchmark GPU vs CPU performance."""
-    return gpu_accelerator.benchmark_acceleration(test_data)
+    return _get_accelerator().benchmark_acceleration(test_data)
 
 
 # GPU-accelerated versions of common operations
 def gpu_matrix_multiply(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """GPU-accelerated matrix multiplication."""
     matrices: list[np.ndarray] = [a, b]
-    return gpu_accelerator.accelerate_matrix_operations(matrices, "multiply")[0]
+    return _get_accelerator().accelerate_matrix_operations(matrices, "multiply")[0]
 
 
 def gpu_distance_matrix(
@@ -646,10 +659,10 @@ def gpu_distance_matrix(
     """GPU-accelerated distance matrix calculation."""
     if points2 is not None:
         points_list: list[np.ndarray] = [points1, points2]
-        return gpu_accelerator.accelerate_distance_calculations(
+        return _get_accelerator().accelerate_distance_calculations(
             points_list[0], points_list[1]
         )
-    return gpu_accelerator.accelerate_distance_calculations(points1)
+    return _get_accelerator().accelerate_distance_calculations(points1)
 
 
 def gpu_spatial_interpolation(
@@ -660,7 +673,7 @@ def gpu_spatial_interpolation(
     **kwargs: Any,
 ) -> np.ndarray:
     """GPU-accelerated spatial interpolation."""
-    return gpu_accelerator.accelerate_spatial_interpolation(
+    return _get_accelerator().accelerate_spatial_interpolation(
         known_points, known_values, query_points, method, **kwargs
     )
 

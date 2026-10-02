@@ -8,7 +8,7 @@ and profiling capabilities for the GEO-INFER-IOT system.
 import logging
 import time
 from typing import Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass, field
 from collections import deque
 import json
@@ -20,6 +20,9 @@ try:
 except ImportError:
     psutil = None
 
+from geo_infer_iot.models.timestamps import utc_now
+from geo_infer_time.core.timestamps import normalize_timestamp
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,7 +30,7 @@ logger = logging.getLogger(__name__)
 class PerformanceMetrics:
     """Performance metrics data structure."""
 
-    timestamp: datetime = field(default_factory=datetime.now)
+    timestamp: datetime = field(default_factory=utc_now)
     cpu_percent: float = 0.0
     memory_percent: float = 0.0
     memory_mb: float = 0.0
@@ -44,6 +47,9 @@ class PerformanceMetrics:
     error_rate: float = 0.0
     queue_size: int = 0
 
+    def __post_init__(self) -> None:
+        self.timestamp = normalize_timestamp(self.timestamp)
+
 
 @dataclass
 class BenchmarkResult:
@@ -57,6 +63,10 @@ class BenchmarkResult:
     metrics: dict[str, Any]
     success: bool
     error_message: str | None = None
+
+    def __post_init__(self) -> None:
+        self.start_time = normalize_timestamp(self.start_time)
+        self.end_time = normalize_timestamp(self.end_time)
 
 
 class PerformanceMonitor:
@@ -134,11 +144,11 @@ class PerformanceMonitor:
 
     def _monitoring_loop(self) -> None:
         """Main monitoring loop running in background thread."""
-        last_system_check = time.time()
-        last_iot_check = time.time()
+        last_system_check = time.monotonic()
+        last_iot_check = time.monotonic()
 
         while self.is_monitoring:
-            current_time = time.time()
+            current_time = time.monotonic()
 
             # Collect system metrics periodically
             if current_time - last_system_check >= self.system_metrics_interval:
@@ -164,7 +174,7 @@ class PerformanceMonitor:
             network_io = psutil.net_io_counters()
 
             metrics = PerformanceMetrics(
-                timestamp=datetime.now(),
+                timestamp=datetime.now(UTC),
                 cpu_percent=cpu_percent,
                 memory_percent=memory.percent,
                 memory_mb=memory.used / (1024 * 1024),
@@ -197,7 +207,7 @@ class PerformanceMonitor:
 
             # Update measurement throughput
             current_measurements = len(self.iot_system.ingestion.measurements)
-            current_time = time.time()
+            current_time = time.monotonic()
 
             if self.last_measurement_time is not None:
                 time_diff = current_time - self.last_measurement_time
@@ -262,7 +272,7 @@ class PerformanceMonitor:
 
     def get_metrics_history(self, minutes: int = 60) -> list[PerformanceMetrics]:
         """Get performance metrics history for the specified time window."""
-        cutoff_time = datetime.now() - timedelta(minutes=minutes)
+        cutoff_time = datetime.now(UTC) - timedelta(minutes=minutes)
         return [m for m in self.metrics_history if m.timestamp >= cutoff_time]
 
     def get_performance_summary(self, minutes: int = 60) -> dict[str, Any]:
@@ -313,7 +323,7 @@ class PerformanceMonitor:
                 "std": np.std(error_rates),
             },
             "threshold_exceedances": self._count_threshold_exceedances(history),
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
         }
 
         return summary
@@ -361,7 +371,8 @@ class PerformanceMonitor:
         benchmark_id = f"benchmark_{int(time.time())}_{benchmark_type}"
 
         try:
-            start_time = datetime.now()
+            start_time = datetime.now(UTC)
+            started_monotonic = time.perf_counter()
 
             if benchmark_type == "ingestion_throughput":
                 result = self._benchmark_ingestion_throughput(**kwargs)
@@ -372,8 +383,8 @@ class PerformanceMonitor:
             else:
                 raise ValueError(f"Unknown benchmark type: {benchmark_type}")
 
-            end_time = datetime.now()
-            duration = (end_time - start_time).total_seconds()
+            end_time = datetime.now(UTC)
+            duration = time.perf_counter() - started_monotonic
 
             benchmark_result = BenchmarkResult(
                 benchmark_id=benchmark_id,
@@ -389,8 +400,8 @@ class PerformanceMonitor:
             benchmark_result = BenchmarkResult(
                 benchmark_id=benchmark_id,
                 benchmark_type=benchmark_type,
-                start_time=datetime.now(),
-                end_time=datetime.now(),
+                start_time=datetime.now(UTC),
+                end_time=datetime.now(UTC),
                 duration_seconds=0.0,
                 metrics={},
                 success=False,
@@ -408,14 +419,14 @@ class PerformanceMonitor:
             return {"error": "IoT system not available for benchmarking"}
 
         # Simulate data ingestion load
-        start_time = time.time()
+        start_time = time.perf_counter()
 
         # Generate and process test measurements
         test_measurements = []
         for i in range(batch_size):
             test_measurement = {
                 "sensor_id": f"benchmark_sensor_{i}",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "variable": "temperature",
                 "value": 25.0 + i * 0.1,
                 "unit": "celsius",
@@ -436,7 +447,7 @@ class PerformanceMonitor:
             except Exception as e:
                 logger.warning(f"Benchmark measurement failed: {e}")
 
-        end_time = time.time()
+        end_time = time.perf_counter()
         actual_duration = end_time - start_time
         throughput = processed_count / actual_duration if actual_duration > 0 else 0
 
@@ -460,7 +471,7 @@ class PerformanceMonitor:
         for i in range(num_sensors):
             measurement = {
                 "sensor_id": f"benchmark_sensor_{i}",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "variable": "temperature",
                 "value": 20.0 + i * 0.1,
                 "unit": "celsius",
@@ -473,7 +484,7 @@ class PerformanceMonitor:
         inference_times = []
 
         for _ in range(iterations):
-            start_time = time.time()
+            start_time = time.perf_counter()
 
             try:
                 # Run spatial inference
@@ -483,7 +494,7 @@ class PerformanceMonitor:
             except Exception as e:
                 logger.warning(f"Inference benchmark failed: {e}")
 
-            end_time = time.time()
+            end_time = time.perf_counter()
             inference_times.append(end_time - start_time)
 
         avg_inference_time = np.mean(inference_times)
@@ -515,7 +526,7 @@ class PerformanceMonitor:
             for i in range(iterations):
                 test_measurement = {
                     "sensor_id": f"benchmark_sensor_{i}",
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "variable": "temperature",
                     "value": 25.0,
                     "unit": "celsius",
@@ -548,7 +559,7 @@ class PerformanceMonitor:
         """Export performance metrics to file."""
         try:
             export_data = {
-                "export_timestamp": datetime.now().isoformat(),
+                "export_timestamp": datetime.now(UTC).isoformat(),
                 "monitor_config": self.config,
                 "thresholds": self.thresholds,
                 "metrics_history": [m.__dict__ for m in self.metrics_history],
@@ -648,7 +659,7 @@ class PerformanceMonitor:
             recent_benchmarks = [
                 b
                 for b in self.benchmark_history
-                if b.start_time >= datetime.now() - timedelta(hours=hours)
+                if b.start_time >= datetime.now(UTC) - timedelta(hours=hours)
             ]
 
             if recent_benchmarks:
@@ -678,7 +689,7 @@ class PerformanceMonitor:
             ),
             "benchmark_summary": benchmark_summary,
             "thresholds": self.thresholds,
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
         }
 
 

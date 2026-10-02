@@ -26,6 +26,7 @@
 - `examples/`
 - `src/`
 - `tests/`
+- `provision_duckdb_spatial.py`
 - `SKILL.md`
 - `pyproject.toml`
 

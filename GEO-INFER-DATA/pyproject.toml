@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-data"
-version = "0.3.0"
+version = "0.4.0"
 description = "Foundational data backbone providing ETL pipelines, storage optimization, and data quality assurance for geospatial datasets"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"
@@ -37,21 +37,17 @@ classifiers = [
 dependencies = [
     "aiohttp>=3.8.0",
     "aiomqtt>=2.4.0",
-    "boto3>=1.28.0",
     "fastapi>=0.100.0",
     "starlette>=0.27.0",
     "geopandas>=0.13.0",
+    "geo-infer-time>=0.4.0",
     "h3>=4.5.0,<5",
-    "minio>=7.1.0",
     "numpy>=1.24.0",
     "pandas>=2.0.0",
     "psutil>=5.9.0",
-    "psycopg2-binary>=2.9.0",
     "pydantic>=2.0.0",
     "pyproj>=3.5.0",
     "pyyaml>=6.0.0",
-    "rasterio>=1.3.0",
-    "redis>=4.5.0",
     "requests>=2.31.0",
     "rtree>=1.0.0",
     "shapely>=2.0.0",
@@ -61,6 +57,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+postgres = ["psycopg2-binary>=2.9.0", "asyncpg>=0.29.0"]
+s3 = ["boto3>=1.28.0"]
+minio = ["minio>=7.1.0"]
+redis = ["redis>=4.5.0"]
+raster = ["rasterio>=1.3.0"]
 integrations = [
     "duckdb>=0.9.0",
     "pymongo>=4.5.0",
@@ -68,7 +69,7 @@ integrations = [
 ]
 dev = [
     "pytest>=7.4.0",
-    "pytest-asyncio>=0.21.0",
+    "pytest-asyncio>=0.24.0",
     "pytest-cov>=4.1.0",
     "pytest-mock>=3.11.0",
     "httpx>=0.24.0",
@@ -92,45 +93,15 @@ Repository = "https://github.com/ActiveInferenceInstitute/GEO_INFER"
 [tool.setuptools]
 package-dir = {"" = "src"}
 
+[tool.uv.sources]
+geo-infer-time = { workspace = true }
+
 [tool.setuptools.packages.find]
 where = ["src"]
 exclude = ["tests*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.md", "*.txt"]
-
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-
-[[tool.mypy.overrides]]
-module = [
-    "numpy.*",
-    "pandas.*",
-    "geopandas.*",
-    "h3.*",
-    "folium.*",
-    "plotly.*",
-    "matplotlib.*",
-    "scipy.*",
-    "sklearn.*",
-    "tensorflow.*",
-    "torch.*",
-    "pymc.*",
-    "arviz.*",
-]
-ignore_missing_imports = true
 
 [tool.coverage.run]
 source = ["src"]

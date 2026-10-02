@@ -23,6 +23,7 @@
 
 - `api_schema.yaml`
 - `deferred_statistical_methods.md`
+- `native_sampling_profiles.md`
 
 ## Validation
 

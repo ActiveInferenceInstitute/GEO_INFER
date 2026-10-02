@@ -20,6 +20,7 @@ from datetime import datetime, timedelta, UTC
 import hashlib
 import pickle
 from pathlib import Path
+from geo_infer_time.core.timestamps import normalize_timestamp
 
 from .secure_serialization import (
     CONTEXT_CACHE_ENTRY,
@@ -40,12 +41,7 @@ def _normalise_timestamp(value: datetime | None) -> datetime:
     """
     if value is None:
         return datetime.now(UTC)
-    if value.utcoffset() is None:
-        raise ValueError(
-            "cache timestamps must be timezone-aware; naive datetimes are "
-            f"ambiguous (got {value.isoformat()!r}, attach tzinfo such as UTC)"
-        )
-    return value.astimezone(UTC)
+    return normalize_timestamp(value)
 
 
 class CacheEntry:

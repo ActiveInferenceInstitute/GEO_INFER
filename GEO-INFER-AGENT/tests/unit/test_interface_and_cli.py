@@ -5,10 +5,12 @@ Unit tests for the unified AgentInterface (api/interface.py), the CLI module,
 and the JSON-schema models package surface (models/schemas).
 """
 
-import asyncio
 import os
 import tempfile
 import unittest
+
+import pytest
+import pytest_asyncio
 from datetime import datetime, timedelta
 from unittest import mock
 
@@ -28,17 +30,13 @@ from geo_infer_agent.cli import (
 from geo_infer_agent.core.agent_registry import agent_registry
 
 
-def _run(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
-
-
-class TestAgentInterface(unittest.TestCase):
+class TestAgentInterface:
     """Tests for the AgentInterface facade over the registry and services."""
 
-    def setUp(self) -> None:
+    def _set_up(self) -> None:
         self.interface = AgentInterface()
 
-    def tearDown(self) -> None:
+    def _tear_down(self) -> None:
         # The registry is a singleton; drop agents created by each test.
         for agent_id in list(agent_registry.agents):
             try:
@@ -46,92 +44,100 @@ class TestAgentInterface(unittest.TestCase):
             except RuntimeError:
                 continue
 
-    def test_create_list_info_state(self) -> None:
-        agent_id = _run(self.interface.create_agent("default", {}, agent_id="iface-1"))
-        self.assertEqual(agent_id, "iface-1")
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_create_list_info_state(self) -> None:
+        agent_id = await self.interface.create_agent("default", {}, agent_id="iface-1")
+        unittest.TestCase().assertEqual(agent_id, "iface-1")
 
         listed = self.interface.list_agents()
-        self.assertEqual([a["agent_id"] for a in listed], ["iface-1"])
+        unittest.TestCase().assertEqual([a["agent_id"] for a in listed], ["iface-1"])
 
         info = self.interface.get_agent_info("iface-1")
-        self.assertEqual(info["agent_type"], "ExampleAgent")
-        self.assertFalse(info["is_running"])
+        unittest.TestCase().assertEqual(info["agent_type"], "ExampleAgent")
+        unittest.TestCase().assertFalse(info["is_running"])
 
-        state = _run(self.interface.get_agent_state("iface-1"))
-        self.assertEqual(state["agent_id"], "iface-1")
-        self.assertFalse(state["is_running"])
-        self.assertIn("state", state)
+        state = await self.interface.get_agent_state("iface-1")
+        unittest.TestCase().assertEqual(state["agent_id"], "iface-1")
+        unittest.TestCase().assertFalse(state["is_running"])
+        unittest.TestCase().assertIn("state", state)
 
-    def test_create_duplicate_agent_raises_value_error(self) -> None:
-        _run(self.interface.create_agent("default", {}, agent_id="dup"))
-        with self.assertRaises(ValueError):
-            _run(self.interface.create_agent("default", {}, agent_id="dup"))
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_create_duplicate_agent_raises_value_error(self) -> None:
+        await self.interface.create_agent("default", {}, agent_id="dup")
+        with unittest.TestCase().assertRaises(ValueError):
+            await self.interface.create_agent("default", {}, agent_id="dup")
 
-    def test_create_unknown_type_raises(self) -> None:
-        with self.assertRaises(ValueError):
-            _run(self.interface.create_agent("warp_drive", {}))
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_create_unknown_type_raises(self) -> None:
+        with unittest.TestCase().assertRaises(ValueError):
+            await self.interface.create_agent("warp_drive", {})
 
-    def test_region_added_to_config(self) -> None:
-        _run(
-            self.interface.create_agent(
-                "default",
-                {},
-                agent_id="geo-1",
-                region="POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))",
-            )
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_region_added_to_config(self) -> None:
+        await self.interface.create_agent(
+            "default",
+            {},
+            agent_id="geo-1",
+            region="POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))",
         )
         agent = agent_registry.get_agent("geo-1")
-        self.assertEqual(agent.config["region"], "POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))")
+        unittest.TestCase().assertEqual(
+            agent.config["region"], "POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))"
+        )
 
-    def test_stop_and_delete_agent(self) -> None:
-        _run(self.interface.create_agent("default", {}, agent_id="lifecycle"))
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_stop_and_delete_agent(self) -> None:
+        await self.interface.create_agent("default", {}, agent_id="lifecycle")
         # Not running → stop logs a warning but succeeds.
-        self.assertTrue(_run(self.interface.stop_agent("lifecycle")))
-        self.assertTrue(_run(self.interface.delete_agent("lifecycle")))
-        self.assertEqual(agent_registry.agents, {})
+        unittest.TestCase().assertTrue(await self.interface.stop_agent("lifecycle"))
+        unittest.TestCase().assertTrue(await self.interface.delete_agent("lifecycle"))
+        unittest.TestCase().assertEqual(agent_registry.agents, {})
 
-    def test_stop_missing_agent_returns_false(self) -> None:
-        self.assertFalse(_run(self.interface.stop_agent("ghost")))
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_stop_missing_agent_returns_false(self) -> None:
+        unittest.TestCase().assertFalse(await self.interface.stop_agent("ghost"))
 
-    def test_delete_missing_agent_returns_false(self) -> None:
-        self.assertFalse(_run(self.interface.delete_agent("ghost")))
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_delete_missing_agent_returns_false(self) -> None:
+        unittest.TestCase().assertFalse(await self.interface.delete_agent("ghost"))
 
-    def test_perform_action_missing_agent_raises_key_error(self) -> None:
-        with self.assertRaises(KeyError):
-            _run(self.interface.perform_action("ghost", "noop", {}))
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_perform_action_missing_agent_raises_key_error(self) -> None:
+        with unittest.TestCase().assertRaises(KeyError):
+            await self.interface.perform_action("ghost", "noop", {})
 
-    def test_perform_action_unsupported_raises_value_error(self) -> None:
-        _run(self.interface.create_agent("default", {}, agent_id="actor"))
-        with self.assertRaises(ValueError):
-            _run(self.interface.perform_action("actor", "teleport", {"x": 1}))
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_perform_action_unsupported_raises_value_error(self) -> None:
+        await self.interface.create_agent("default", {}, agent_id="actor")
+        with unittest.TestCase().assertRaises(ValueError):
+            await self.interface.perform_action("actor", "teleport", {"x": 1})
 
-    def test_perform_action_supported(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_perform_action_supported(self) -> None:
 
-        _run(
-            self.interface.create_agent(
-                "data_collector",
-                {"data_sources": [{"id": "a", "type": "file"}]},
-                agent_id="collector",
-            )
+        await self.interface.create_agent(
+            "data_collector",
+            {"data_sources": [{"id": "a", "type": "file"}]},
+            agent_id="collector",
         )
-        result = _run(
-            self.interface.perform_action(
-                "collector",
-                "configure_source",
-                {"source_id": "a", "config": {"path": "x"}},
-            )
+        result = await self.interface.perform_action(
+            "collector",
+            "configure_source",
+            {"source_id": "a", "config": {"path": "x"}},
         )
-        self.assertTrue(result["success"])
+        unittest.TestCase().assertTrue(result["success"])
 
-    def test_send_message_between_agents(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_send_message_between_agents(self) -> None:
         for suffix in ("sender", "receiver"):
-            _run(self.interface.create_agent("default", {}, agent_id=suffix))
-        success = _run(self.interface.send_message("sender", "receiver", {"ping": 1}))
-        self.assertTrue(success)
+            await self.interface.create_agent("default", {}, agent_id=suffix)
+        success = await self.interface.send_message("sender", "receiver", {"ping": 1})
+        unittest.TestCase().assertTrue(success)
 
-    def test_broadcast_message_and_channels(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_broadcast_message_and_channels(self) -> None:
         for suffix in ("b1", "b2"):
-            _run(self.interface.create_agent("default", {}, agent_id=suffix))
+            await self.interface.create_agent("default", {}, agent_id=suffix)
         self.interface.subscribe_to_channel("b1", "alerts")
         self.interface.subscribe_to_channel("b2", "alerts")
 
@@ -139,45 +145,59 @@ class TestAgentInterface(unittest.TestCase):
         messaging_service.channels.clear()
         messaging_service.subscribe("b1", "alerts2")
         messaging_service.subscribe("b2", "alerts2")
-        sent = _run(self.interface.broadcast_message("b1", {"alarm": True}, "alerts2"))
-        self.assertEqual(sent, 2)
+        sent = await self.interface.broadcast_message("b1", {"alarm": True}, "alerts2")
+        unittest.TestCase().assertEqual(sent, 2)
 
-    def test_send_message_queues_even_for_unregistered_recipient(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_send_message_queues_even_for_unregistered_recipient(self) -> None:
         # The messaging service queues per-recipient without checking any
         # registry: delivery succeeds and the queue is created lazily.
-        _run(self.interface.create_agent("default", {}, agent_id="lonely"))
+        await self.interface.create_agent("default", {}, agent_id="lonely")
         messaging_service.message_queues.clear()
-        self.assertTrue(_run(self.interface.send_message("lonely", "nobody", {"x": 1})))
-        self.assertIn("nobody", messaging_service.message_queues)
+        unittest.TestCase().assertTrue(
+            await self.interface.send_message("lonely", "nobody", {"x": 1})
+        )
+        unittest.TestCase().assertIn("nobody", messaging_service.message_queues)
 
-    def test_get_agent_metrics_and_health(self) -> None:
-        _run(self.interface.create_agent("default", {}, agent_id="watched"))
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_get_agent_metrics_and_health(self) -> None:
+        await self.interface.create_agent("default", {}, agent_id="watched")
         telemetry_service.update_health("watched", "healthy", {"cpu": 1.0})
-        self.assertEqual(
+        unittest.TestCase().assertEqual(
             self.interface.get_agent_health("watched")["status"], "healthy"
         )
-        self.assertEqual(
+        unittest.TestCase().assertEqual(
             self.interface.get_agent_health("ghost"), {"status": "unknown"}
         )
         # No metrics registered yet → empty mapping for the agent.
-        self.assertEqual(self.interface.get_agent_metrics("watched"), {})
+        unittest.TestCase().assertEqual(self.interface.get_agent_metrics("watched"), {})
 
-    def test_initialize_and_shutdown_services(self) -> None:
-        _run(self.interface.initialize_services(reporting_interval=1))
-        self.assertTrue(messaging_service.running)
-        self.assertTrue(telemetry_service.running)
-        _run(self.interface.shutdown_services())
-        self.assertFalse(messaging_service.running)
-        self.assertFalse(telemetry_service.running)
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_initialize_and_shutdown_services(self) -> None:
+        await self.interface.initialize_services(reporting_interval=1)
+        unittest.TestCase().assertTrue(messaging_service.running)
+        unittest.TestCase().assertTrue(telemetry_service.running)
+        await self.interface.shutdown_services()
+        unittest.TestCase().assertFalse(messaging_service.running)
+        unittest.TestCase().assertFalse(telemetry_service.running)
 
-    def test_expired_message_not_sent(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_expired_message_not_sent(self) -> None:
         expired = Message(
             from_agent_id="a",
             to_agent_id="b",
             content={},
             expires_at=datetime.now() - timedelta(seconds=1),
         )
-        self.assertFalse(_run(messaging_service.send_message(expired)))
+        unittest.TestCase().assertFalse(await messaging_service.send_message(expired))
+
+    @pytest_asyncio.fixture(autouse=True)
+    async def _case_state(self):
+        self._set_up()
+        try:
+            yield
+        finally:
+            self._tear_down()
 
 
 class TestCli(unittest.TestCase):
@@ -296,7 +316,3 @@ class TestSchemasPackage(unittest.TestCase):
         self.assertEqual(GENERATIVE_MODEL_SCHEMA["type"], "object")
         self.assertIn("state_dimensions", GENERATIVE_MODEL_SCHEMA["required"])
         self.assertIn("properties", ACTIVE_INFERENCE_AGENT_SCHEMA)
-
-
-if __name__ == "__main__":
-    unittest.main()

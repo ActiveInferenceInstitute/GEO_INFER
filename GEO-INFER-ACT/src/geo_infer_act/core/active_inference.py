@@ -637,6 +637,7 @@ class ActiveInferenceModel:
         original_policy_evaluation = self.latest_policy_evaluation
         original_policy_selection = self.latest_policy_selection
         original_pymdp_result = self.latest_pymdp_result
+        original_analyzer = self.analyzer
         original_perception_free_energy = self._perception_free_energy
         original_policy_rng_state = copy.deepcopy(
             self.policy_selector.rng.bit_generator.state
@@ -649,7 +650,24 @@ class ActiveInferenceModel:
         history_len = len(self.history)
 
         try:
+            # Scoring is read-only; ordinary step() records analyzer traces.
+            # Suppress that writer for this query and restore it even on error.
+            self.analyzer = None
             for cell in observed_cells:
+                # Each cell is an independent scoring request. A posterior
+                # from the previous cell must not become this cell's prior;
+                # otherwise a permutation of the same grid changes inference.
+                self.current_beliefs = self._clone_beliefs(original_beliefs)
+                self.current_actions = original_actions
+                self.policy_selector.rng.bit_generator.state = copy.deepcopy(
+                    original_policy_rng_state
+                )
+                if self.generative_model is not None:
+                    self.generative_model.beliefs = copy.deepcopy(
+                        original_model_beliefs
+                    )
+                if len(self.history) > history_len:
+                    self.history = self.history[:history_len]
                 obs = observations_by_cell[cell]
                 step_result = cast(
                     ActiveInferenceStepResult, self.step(obs, return_result=True)
@@ -669,6 +687,7 @@ class ActiveInferenceModel:
                     ),
                 }
         finally:
+            self.analyzer = original_analyzer
             self.current_beliefs = original_beliefs
             self.current_observations = original_observations
             self.current_actions = original_actions

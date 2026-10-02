@@ -4,6 +4,7 @@ Unit workspace within `GEO-INFER-ART`.
 
 ## Contents
 
+- `test_algorithm_registry_security.py`
 - `test_cli.py`
 - `test_color_palette.py`
 - `test_cultural_map.py`
@@ -22,7 +23,7 @@ Unit workspace within `GEO-INFER-ART`.
 
 - Module: `GEO-INFER-ART`
 - Package: `geo_infer_art`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-art`
 - Tests: `uv run python -m pytest GEO-INFER-ART/tests/unit`
 

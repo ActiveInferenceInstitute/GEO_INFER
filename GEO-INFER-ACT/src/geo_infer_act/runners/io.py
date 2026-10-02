@@ -91,7 +91,9 @@ def package_version() -> str:
     try:
         return metadata.version("geo-infer-act")
     except metadata.PackageNotFoundError:
-        return "0.2.0"
+        from geo_infer_act import __version__
+
+        return __version__
 
 
 def utc_now() -> str:
@@ -482,7 +484,7 @@ def validate_generated_outputs(
         "status": "failed" if errors else "passed",
         "errors": errors,
         "checked_at": datetime.now(UTC).isoformat(),
-        "output_dir": str(output_dir),
+        "output_dir": ".",
     }
 
 
@@ -520,8 +522,12 @@ def write_suite_manifest(
     scenarios = [
         {
             "scenario": result.scenario,
-            "output_dir": str(result.output_dir),
-            "manifest": str(result.manifest_path),
+            "output_dir": result.output_dir.resolve()
+            .relative_to(output_dir.resolve())
+            .as_posix(),
+            "manifest": result.manifest_path.resolve()
+            .relative_to(output_dir.resolve())
+            .as_posix(),
             "status": result.manifest.get("validation", {}).get("status"),
             "metrics": result.metrics,
         }

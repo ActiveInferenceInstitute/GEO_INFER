@@ -5,4 +5,4 @@ This module provides functionality to clone multiple GitHub repositories
 based on specified users and repository configurations.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"

@@ -24,6 +24,8 @@
 - `measurement.py`
 - `network.py`
 - `sensor.py`
+- `spatial.py`
+- `timestamps.py`
 
 ## Validation
 

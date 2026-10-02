@@ -7,6 +7,7 @@ authentication, validation, and geospatial context handling.
 """
 
 from __future__ import annotations
+from importlib.metadata import version as distribution_version
 import logging
 from typing import Any
 from datetime import datetime, UTC
@@ -65,7 +66,7 @@ class CommunicationAPI:
         self.app = FastAPI(
             title="GEO-INFER-COMMS API",
             description="Geospatial Communications Infrastructure API",
-            version="1.0.0",
+            version=distribution_version("geo-infer-comms"),
             docs_url="/docs",
             redoc_url="/redoc",
         )
@@ -101,7 +102,7 @@ class CommunicationAPI:
             """API root endpoint."""
             return {
                 "name": "GEO-INFER-COMMS API",
-                "version": "1.0.0",
+                "version": distribution_version("geo-infer-comms"),
                 "status": "running",
                 "timestamp": datetime.now(UTC).isoformat(),
             }

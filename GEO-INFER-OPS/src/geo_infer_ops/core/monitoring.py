@@ -168,9 +168,22 @@ def is_port_in_use(port: int) -> bool:
     Returns:
         bool: True if port is in use
     """
+    if port:
+        # macOS can permit a reusable wildcard bind beside a listener bound
+        # to loopback (or vice versa). Detect the actual local listener first.
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener_probe:
+            listener_probe.settimeout(0.2)
+            if listener_probe.connect_ex(("127.0.0.1", port)) == 0:
+                return True
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        # Match the HTTP server's reusable-address bind policy. A completed
+        # request can leave TIME_WAIT sockets after a correctly closed server.
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
-            s.bind(("localhost", port))
+            s.bind(("0.0.0.0", port))
+            # On macOS, reusable sockets can bind beside a listener but a
+            # second listener still fails. Test the actual server operation.
+            s.listen(1)
             return False
         except OSError:
             return True
@@ -193,9 +206,8 @@ def start_metrics_server(port: int = 9090) -> Iterator[int]:
     server = None
     thread = None
     try:
-        handle = prom.start_http_server(port, registry=METRICS_REGISTRY)
-        if isinstance(handle, tuple):
-            server, thread = handle
+        server, thread = prom.start_http_server(port, registry=METRICS_REGISTRY)
+        port = server.server_port
         yield port
     finally:
         if server is not None:

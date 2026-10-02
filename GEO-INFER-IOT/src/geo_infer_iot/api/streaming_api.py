@@ -10,7 +10,7 @@ import asyncio
 import dataclasses
 import json
 from typing import Any
-from datetime import datetime
+from datetime import datetime, UTC
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from geo_infer_iot.core.ingestion import IoTDataIngestion
@@ -65,7 +65,7 @@ class StreamingAPI:
                 "version": "1.0.0",
                 "status": "operational",
                 "websocket_endpoint": "/ws/sensor-stream",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
         @self.app.websocket("/ws/sensor-stream")
@@ -102,7 +102,7 @@ class StreamingAPI:
                             "type": "subscription_confirmed",
                             "sensor_ids": sensor_ids,
                             "h3_indices": h3_indices,
-                            "timestamp": datetime.now().isoformat(),
+                            "timestamp": datetime.now(UTC).isoformat(),
                         }
                     )
                 )
@@ -126,7 +126,7 @@ class StreamingAPI:
                         json.dumps(
                             {
                                 "type": "heartbeat",
-                                "timestamp": datetime.now().isoformat(),
+                                "timestamp": datetime.now(UTC).isoformat(),
                             }
                         )
                     )
@@ -186,7 +186,7 @@ class StreamingAPI:
                     h3_index: len(connections)
                     for h3_index, connections in self.spatial_subscriptions.items()
                 },
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
     async def broadcast_measurement(self, measurement: dict) -> None:
@@ -202,7 +202,7 @@ class StreamingAPI:
             message = {
                 "type": "sensor_measurement",
                 "data": measurement,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
             await self._send_to_all(self.sensor_subscriptions[sensor_id], message)
 
@@ -211,7 +211,7 @@ class StreamingAPI:
                 "type": "spatial_measurement",
                 "data": measurement,
                 "h3_index": h3_index,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
             await self._send_to_all(self.spatial_subscriptions[h3_index], message)
 
@@ -220,7 +220,7 @@ class StreamingAPI:
         message = {
             "type": "spatial_inference",
             "data": inference_result,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         await self._send_to_all(self.active_connections, message)
 
@@ -267,7 +267,7 @@ class StreamingAPI:
                     {
                         "type": "sensor_measurement",
                         "data": self._measurement_payload(measurement),
-                        "timestamp": datetime.now().isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
                 )
             )
@@ -278,7 +278,7 @@ class StreamingAPI:
                         "type": "spatial_measurement",
                         "data": self._measurement_payload(measurement),
                         "h3_index": h3_index,
-                        "timestamp": datetime.now().isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
                 )
             )

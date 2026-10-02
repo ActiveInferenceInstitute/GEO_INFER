@@ -5,18 +5,50 @@ This module defines comprehensive data models for geospatial datasets, metadata,
 quality reports, and ETL processes using Pydantic for runtime validation.
 """
 
-from typing import Any
+from types import UnionType
+from typing import Any, Union, get_args, get_origin
 from datetime import datetime, UTC
 from enum import StrEnum
 import uuid
 
-from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    ConfigDict,
+    field_validator,
+    ValidationInfo,
+)
 from pydantic import computed_field
+from geo_infer_time.core.timestamps import normalize_timestamp
 
 
 def utc_now() -> datetime:
     """Return a timezone-aware UTC timestamp."""
     return datetime.now(UTC)
+
+
+class TimestampModel(BaseModel):
+    """Require UTC-aware instants for all DATA model datetime fields."""
+
+    model_config = ConfigDict(validate_assignment=True)
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def normalize_datetime_fields(cls, value: Any, info: ValidationInfo) -> Any:
+        annotation = cls.model_fields[info.field_name].annotation
+        origin, arguments = get_origin(annotation), get_args(annotation)
+        scalar = annotation is datetime or (
+            origin in (Union, UnionType) and datetime in arguments
+        )
+        timestamp_mapping = origin is dict and arguments == (str, datetime)
+        if value is None or not (scalar or timestamp_mapping):
+            return value
+        try:
+            if timestamp_mapping and isinstance(value, dict):
+                return {key: normalize_timestamp(item) for key, item in value.items()}
+            return normalize_timestamp(value)
+        except TypeError as exc:
+            raise ValueError(str(exc)) from exc
 
 
 class DataType(StrEnum):
@@ -78,7 +110,7 @@ class StorageBackend(StrEnum):
     LOCAL = "local"
 
 
-class CoordinateReferenceSystem(BaseModel):
+class CoordinateReferenceSystem(TimestampModel):
     """Coordinate reference system information."""
 
     epsg_code: str | None = Field(default="EPSG:4326", description="EPSG code")
@@ -88,7 +120,7 @@ class CoordinateReferenceSystem(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class SpatialExtent(BaseModel):
+class SpatialExtent(TimestampModel):
     """Geographic extent of a dataset."""
 
     bbox: list[float] = Field(
@@ -147,7 +179,7 @@ class SpatialExtent(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class TemporalExtent(BaseModel):
+class TemporalExtent(TimestampModel):
     """Temporal extent of a dataset."""
 
     start: datetime = Field(..., description="Start time")
@@ -156,17 +188,22 @@ class TemporalExtent(BaseModel):
         default=None, description="Temporal resolution (ISO 8601 duration)"
     )
 
-    @model_validator(mode="after")
-    def validate_temporal_order(self) -> "TemporalExtent":
-        """Ensure start time is before end time."""
-        if self.start and self.end and self.start > self.end:
+    @field_validator("start", "end")
+    @classmethod
+    def validate_temporal_order(cls, value: datetime, info: ValidationInfo) -> datetime:
+        """Reject reversed intervals before assignment can mutate the model."""
+        counterpart = info.data.get("end" if info.field_name == "start" else "start")
+        start, end = (
+            (value, counterpart) if info.field_name == "start" else (counterpart, value)
+        )
+        if start is not None and end is not None and start > end:
             raise ValueError("Start time must be before or equal to end time")
-        return self
+        return value
 
     model_config = ConfigDict(validate_assignment=True)
 
 
-class DataLineage(BaseModel):
+class DataLineage(TimestampModel):
     """Data provenance and transformation history."""
 
     source: str = Field(..., description="Original data source")
@@ -183,7 +220,7 @@ class DataLineage(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class QualityCheck(BaseModel):
+class QualityCheck(TimestampModel):
     """Individual quality check result."""
 
     score: float = Field(
@@ -200,7 +237,7 @@ class QualityCheck(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class DatasetMetadata(BaseModel):
+class DatasetMetadata(TimestampModel):
     """Comprehensive metadata for a geospatial dataset."""
 
     title: str = Field(..., description="Dataset title")
@@ -228,7 +265,7 @@ class DatasetMetadata(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class DatasetSummary(BaseModel):
+class DatasetSummary(TimestampModel):
     """Summary information for a dataset."""
 
     id: str = Field(..., description="Unique dataset identifier")
@@ -256,7 +293,7 @@ class DatasetSummary(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class Dataset(BaseModel):
+class Dataset(TimestampModel):
     """Complete dataset representation."""
 
     id: str = Field(
@@ -285,7 +322,7 @@ class Dataset(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class DataQualityReport(BaseModel):
+class DataQualityReport(TimestampModel):
     """Comprehensive data quality assessment report."""
 
     dataset_id: str = Field(..., description="Dataset being assessed")
@@ -323,7 +360,7 @@ class DataQualityReport(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class DataSource(BaseModel):
+class DataSource(TimestampModel):
     """Data source configuration for ETL pipelines."""
 
     type: str = Field(..., description="Source type (file, database, api, stream)")
@@ -341,7 +378,7 @@ class DataSource(BaseModel):
     model_config = ConfigDict(validate_assignment=True, populate_by_name=True)
 
 
-class DataDestination(BaseModel):
+class DataDestination(TimestampModel):
     """Data destination configuration for ETL pipelines."""
 
     type: str = Field(
@@ -356,7 +393,7 @@ class DataDestination(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class Transformation(BaseModel):
+class Transformation(TimestampModel):
     """Transformation step in ETL pipeline."""
 
     type: str = Field(..., description="Transformation type")
@@ -369,7 +406,7 @@ class Transformation(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class ETLPipeline(BaseModel):
+class ETLPipeline(TimestampModel):
     """ETL pipeline configuration."""
 
     id: str = Field(
@@ -400,7 +437,7 @@ class ETLPipeline(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class ExecutionStatus(BaseModel):
+class ExecutionStatus(TimestampModel):
     """ETL execution status and progress."""
 
     id: str = Field(
@@ -422,7 +459,7 @@ class ExecutionStatus(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class Pagination(BaseModel):
+class Pagination(TimestampModel):
     """Pagination information for API responses."""
 
     page: int = Field(..., ge=1, description="Current page number")
@@ -434,7 +471,7 @@ class Pagination(BaseModel):
     )
 
 
-class HealthStatus(BaseModel):
+class HealthStatus(TimestampModel):
     """System health status."""
 
     status: str = Field(..., description="Health status")

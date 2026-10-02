@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
 from ..models.schemas import DatasetMetadata
 from ..utils.identifiers import validate_sql_identifier
+from ..utils.dependencies import require_dependency
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,9 @@ class DatabaseConnector:
 
     def _initialize_connection(self) -> None:
         """Initialize database connection."""
+        if self.connection_type == "postgresql":
+            require_dependency("psycopg2", "postgres")
+            require_dependency("asyncpg", "postgres")
         try:
             # Create synchronous engine
             self.engine = create_engine(

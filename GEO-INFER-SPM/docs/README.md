@@ -6,6 +6,7 @@ Docs workspace within `GEO-INFER-SPM`.
 
 - `api_schema.yaml`
 - `deferred_statistical_methods.md`
+- `native_sampling_profiles.md`
 
 ## Public Interface
 
@@ -15,7 +16,7 @@ Docs workspace within `GEO-INFER-SPM`.
 
 - Module: `GEO-INFER-SPM`
 - Package: `geo_infer_spm`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-spm`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module SPM`
 

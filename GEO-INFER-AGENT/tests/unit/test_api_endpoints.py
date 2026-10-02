@@ -16,12 +16,17 @@ from geo_infer_agent.api.agent_endpoints import agent_registry, app
 @pytest.fixture()
 def client():
     """TestClient with a cleaned app registry so tests stay isolated."""
-    agent_registry.agents.clear()
-    agent_registry.running_agents.clear()
+    assert not agent_registry.agents
+    assert not agent_registry.agent_tasks
     with TestClient(app) as test_client:
-        yield test_client
-    agent_registry.agents.clear()
-    agent_registry.running_agents.clear()
+        try:
+            yield test_client
+        finally:
+            for agent_id in tuple(agent_registry.agents):
+                response = test_client.delete(f"/agents/{agent_id}")
+                assert response.status_code == 200, response.text
+            assert not agent_registry.agent_tasks
+            assert not agent_registry.running_agents
 
 
 def _create_agent(client: TestClient, agent_id: str) -> None:

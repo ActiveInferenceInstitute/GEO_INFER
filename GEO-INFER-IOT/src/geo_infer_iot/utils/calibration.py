@@ -7,9 +7,10 @@ and calibration management for IoT sensor networks.
 
 import logging
 from typing import Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import numpy as np
 from dataclasses import dataclass
+from geo_infer_time.core.timestamps import normalize_timestamp
 
 from scipy import stats
 
@@ -26,6 +27,9 @@ class CalibrationResult:
     timestamp: datetime
     method: str
     notes: str = ""
+
+    def __post_init__(self) -> None:
+        self.timestamp = normalize_timestamp(self.timestamp)
 
 
 class SensorCalibration:
@@ -77,7 +81,7 @@ class SensorCalibration:
                     success=False,
                     calibration_parameters={},
                     calibration_error=float("inf"),
-                    timestamp=datetime.now(),
+                    timestamp=datetime.now(UTC),
                     method=calibration_method,
                     notes="Insufficient reference data",
                 )
@@ -117,7 +121,7 @@ class SensorCalibration:
                 success=True,
                 calibration_parameters=calibration_params,
                 calibration_error=calibration_error,
-                timestamp=datetime.now(),
+                timestamp=datetime.now(UTC),
                 method=calibration_method,
                 notes=f"Calibration completed with {len(reference_data)} reference points",
             )
@@ -138,7 +142,7 @@ class SensorCalibration:
                 success=False,
                 calibration_parameters={},
                 calibration_error=float("inf"),
-                timestamp=datetime.now(),
+                timestamp=datetime.now(UTC),
                 method=calibration_method,
                 notes=f"Calibration failed: {str(e)}",
             )
@@ -271,7 +275,7 @@ class SensorCalibration:
                 "recent_std": recent_std,
                 "baseline_std": baseline_std,
                 "threshold": threshold,
-                "analysis_timestamp": datetime.now().isoformat(),
+                "analysis_timestamp": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:
@@ -316,11 +320,11 @@ class SensorCalibration:
                 )
             else:
                 # First calibration - schedule immediately
-                next_calibration = datetime.now()
+                next_calibration = datetime.now(UTC)
 
             # Determine priority based on time since last calibration
             days_since_calibration = (
-                (datetime.now() - last_calibration).days
+                (datetime.now(UTC) - last_calibration).days
                 if last_calibration
                 else float("inf")
             )
@@ -336,7 +340,9 @@ class SensorCalibration:
                     if last_calibration
                     else None,
                     "next_calibration": next_calibration.isoformat(),
-                    "days_until_due": max(0, (next_calibration - datetime.now()).days),
+                    "days_until_due": max(
+                        0, (next_calibration - datetime.now(UTC)).days
+                    ),
                     "priority": priority,
                     "calibration_method": sensor.get("calibration_method", "linear"),
                 }
@@ -428,7 +434,7 @@ class SensorCalibration:
         Returns:
             Comprehensive calibration report
         """
-        cutoff_date = datetime.now() - timedelta(days=time_window_days)
+        cutoff_date = datetime.now(UTC) - timedelta(days=time_window_days)
 
         # Filter calibration history
         relevant_calibrations = []
@@ -473,5 +479,5 @@ class SensorCalibration:
             "calibration_methods_used": list(
                 set(r["result"].method for r in successful_calibrations)
             ),
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
         }

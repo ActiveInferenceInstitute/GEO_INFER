@@ -366,6 +366,7 @@ class MessagingService:
                                     if queued.message_id != message.message_id
                                 ]
                             except Exception as e:
+                                message.delivered = False
                                 logger.error(
                                     f"Error processing message callback for agent {agent_id}: {str(e)}"
                                 )

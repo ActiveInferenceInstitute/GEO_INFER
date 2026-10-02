@@ -68,7 +68,13 @@ data = SPMData(
 - Coordinates must be valid: latitude ∈ [-90, 90], longitude ∈ [-180, 180]
 - GLM implementation is Alpha status — spatial design matrices in progress
 - Time series explorer uses Plotly for interactive mean±SD visualization
-- Test: `uv run --no-sync python -m pytest tests/ -v`
+- Test from the workspace root:
+  `uv run python GEO-INFER-TEST/run_unified_tests.py --module SPM`
+- Native Bayesian fitting uses two chains and one sampling process by default;
+  set `chains` and `cores` explicitly when allocating parallel CPU work.
+- On macOS 27 with Apple Clang, use the explicit native compiler profile in
+  [native sampling profiles](docs/native_sampling_profiles.md). Linux uses the
+  standard compiler profile; both profiles run actual PyMC and CLinker tests.
 
 ### Integrations
 
@@ -77,4 +83,3 @@ data = SPMData(
 - Optional extras: `bayesian` (pymc + arviz enable the full MCMC path in
   `BayesianSPM`; without them it falls back to a logged empirical-Bayes
   approximation).
-

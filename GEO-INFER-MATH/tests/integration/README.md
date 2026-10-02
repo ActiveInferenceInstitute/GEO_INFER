@@ -14,7 +14,7 @@ Integration workspace within `GEO-INFER-MATH`.
 
 - Module: `GEO-INFER-MATH`
 - Package: `geo_infer_math`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-math`
 - Tests: `uv run python -m pytest GEO-INFER-MATH/tests/integration`
 

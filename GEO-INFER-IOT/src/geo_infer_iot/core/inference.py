@@ -7,7 +7,7 @@ modeling when that workspace module is available.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Any
 
 import numpy as np
@@ -127,7 +127,7 @@ class BayesianSpatialInference:
                     "h3_grid": h3_grid,
                     "sensor_coords": coords,
                     "sensor_values": values,
-                    "timestamp": datetime.now(),
+                    "timestamp": datetime.now(UTC),
                     "update_interval": update_interval,
                 }
 

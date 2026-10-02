@@ -1,9 +1,0 @@
-{
-  "final_free_energy": 1.3862943611158907,
-  "finite_metrics": true,
-  "free_energy_change": 0.0,
-  "initial_free_energy": 1.3862943611158907,
-  "mean_expected_free_energy": 1.1090354888927125,
-  "mean_free_energy": 1.3862943611158907,
-  "timesteps": 8
-}

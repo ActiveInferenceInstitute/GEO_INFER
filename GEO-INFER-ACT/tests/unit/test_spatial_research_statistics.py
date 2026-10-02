@@ -5,14 +5,11 @@ from __future__ import annotations
 import math
 
 import numpy as np
+import pytest
 
 from geo_infer_act.core.active_inference import ActiveInferenceModel
 from geo_infer_act.core.generative_model import GenerativeModel
-from geo_infer_act.runners.h3 import (
-    generate_realistic_environmental_observations,
-    h3_cells_for_config,
-    observation_dict_to_vector,
-)
+from geo_infer_act.runners.h3 import h3_cells_for_config
 from geo_infer_act.utils.spatial_research import (
     apply_h3_research_profile,
     build_spatial_research_statistics,
@@ -20,7 +17,8 @@ from geo_infer_act.utils.spatial_research import (
 )
 
 
-def _trace_rows() -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+@pytest.fixture(scope="module")
+def trace_rows() -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     cells = h3_cells_for_config(resolution=8, ring_size=1)
     model = GenerativeModel(
         "categorical",
@@ -41,14 +39,12 @@ def _trace_rows() -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     edge_rows: list[dict[str, object]] = []
     previous_beliefs = {}
     for timestep in range(3):
-        observations = generate_realistic_environmental_observations(
-            cells,
-            timestep=float(timestep),
-            spatial_seed=19,
-        )
+        # Independently scored cells receive different observed states, and
+        # each cell advances through those states over time. This analytical
+        # input exercises real policy switches without carrying another cell's
+        # posterior into the next cell's prior.
         vector_observations = {
-            cell: observation_dict_to_vector(observation)
-            for cell, observation in observations.items()
+            cell: np.eye(4)[(index + timestep) % 4] for index, cell in enumerate(cells)
         }
         grid_result = active.infer_over_h3_grid(
             vector_observations,
@@ -66,8 +62,10 @@ def _trace_rows() -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     return cell_rows, edge_rows
 
 
-def test_spatial_research_statistics_capture_non_degenerate_trace_math() -> None:
-    cell_rows, edge_rows = _trace_rows()
+def test_spatial_research_statistics_capture_non_degenerate_trace_math(
+    trace_rows,
+) -> None:
+    cell_rows, edge_rows = trace_rows
 
     statistics = build_spatial_research_statistics(cell_rows, edge_rows, [])
 
@@ -83,8 +81,10 @@ def test_spatial_research_statistics_capture_non_degenerate_trace_math() -> None
     assert statistics["non_degenerate"]["unique_selected_action_count"] >= 2
 
 
-def test_spatial_research_statistics_nested_residuals_and_summary_rows() -> None:
-    cell_rows, edge_rows = _trace_rows()
+def test_spatial_research_statistics_nested_residuals_and_summary_rows(
+    trace_rows,
+) -> None:
+    cell_rows, edge_rows = trace_rows
     parent_child_rows = [
         {
             "timestep": 0,

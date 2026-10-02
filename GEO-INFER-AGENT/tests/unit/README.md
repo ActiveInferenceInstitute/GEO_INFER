@@ -23,6 +23,7 @@ Unit workspace within `GEO-INFER-AGENT`.
 - `test_messaging.py`
 - `test_package_import_hygiene.py`
 - `test_planning.py`
+- `test_registry_task_lifecycle.py`
 - `test_rl_state_index.py`
 - `test_rl_unit.py`
 - `test_rule_based.py`
@@ -38,7 +39,7 @@ Unit workspace within `GEO-INFER-AGENT`.
 
 - Module: `GEO-INFER-AGENT`
 - Package: `geo_infer_agent`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-agent`
 - Tests: `uv run python -m pytest GEO-INFER-AGENT/tests/unit`
 

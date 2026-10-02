@@ -13,7 +13,7 @@ from unittest.mock import Mock, AsyncMock
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, UTC
 
 from geo_infer_data import (
     MultiSourceDataIngestion,
@@ -233,7 +233,8 @@ class TestStorageBenchmarks:
             description="Benchmark dataset for storage performance testing",
             spatial=SpatialExtent(bbox=[-122.5, 37.6, -122.3, 37.8], crs="EPSG:4326"),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 12, 31)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 12, 31, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="benchmark", process="performance_test", created_by="test"
@@ -375,7 +376,8 @@ class TestValidationBenchmarks:
                 title="Benchmark dataset",
                 spatial=SpatialExtent(bbox=[-122.5, 37.7, -122.3, 37.9]),
                 temporal=TemporalExtent(
-                    start=datetime(2023, 1, 1), end=datetime(2023, 12, 31)
+                    start=datetime(2023, 1, 1, tzinfo=UTC),
+                    end=datetime(2023, 12, 31, tzinfo=UTC),
                 ),
                 lineage=DataLineage(
                     source="benchmark", process="validation", created_by="pytest"
@@ -527,7 +529,8 @@ class TestMemoryBenchmarks:
             title="Memory Test Data",
             spatial=SpatialExtent(bbox=[-122.5, 37.6, -122.3, 37.8]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="memory_test", process="benchmark", created_by="test"
@@ -635,7 +638,8 @@ class TestScalabilityBenchmarks:
                 title=f"Scalability Test {data_size}",
                 spatial=SpatialExtent(bbox=[-122.5, 37.6, -122.3, 37.8]),
                 temporal=TemporalExtent(
-                    start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                    start=datetime(2023, 1, 1, tzinfo=UTC),
+                    end=datetime(2023, 1, 2, tzinfo=UTC),
                 ),
                 lineage=DataLineage(
                     source="scalability_test", process="benchmark", created_by="test"

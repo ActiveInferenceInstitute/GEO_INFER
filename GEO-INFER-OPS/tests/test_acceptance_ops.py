@@ -92,6 +92,17 @@ class TestMetricsServerPortSelection:
         # spurious failure.
         assert _port_released_within(port)
 
+    def test_http_request_then_reopens_exact_port(self):
+        """A real request must not turn closed-server TIME_WAIT into a busy port."""
+        from urllib.request import urlopen
+
+        with start_metrics_server(0) as original:
+            with urlopen(f"http://127.0.0.1:{original}/metrics", timeout=3) as response:
+                assert response.status == 200
+                assert b"# HELP" in response.read()
+        with start_metrics_server(original) as reopened:
+            assert reopened == original
+
     def test_shifts_to_next_port_if_occupied(self):
         """If the requested port is busy, the server moves to the next free one."""
         # Occupy a kernel-assigned port so parallel runs never collide on a

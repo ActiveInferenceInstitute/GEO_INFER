@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-iot"
-version = "0.3.0"
+version = "0.4.0"
 description = "IoT sensor networks, real-time geospatial data streams, and sensor data fusion for environmental monitoring"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"
@@ -37,11 +37,10 @@ classifiers = [
 dependencies = [
     "aiomqtt>=2.4.0",
     "fastapi>=0.100.0",
-    "folium>=0.12.0",
-    "geo-infer-bayes",
-    "geo-infer-space",
+    "geo-infer-bayes>=0.4.0",
+    "geo-infer-space>=0.4.0",
+    "geo-infer-time>=0.4.0",
     "h3>=4.5.0,<5",
-    "matplotlib>=3.5.0",
     "networkx>=2.6",
     "numpy>=1.20.0",
     "paho-mqtt>=1.6.0",
@@ -55,10 +54,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+visualization = ["folium>=0.12.0", "matplotlib>=3.5.0"]
 dev = [
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
-    "pytest-asyncio>=0.20.0",
+    "pytest-asyncio>=0.24.0",
     "ruff>=0.15.6,<0.16",
     "mypy>=0.910",
     # Test-only spatial dependencies (tests/conftest.py)
@@ -109,39 +109,6 @@ exclude = ["tests*"]
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.md", "*.txt"]
 
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-
-[[tool.mypy.overrides]]
-module = [
-    "numpy.*",
-    "pandas.*",
-    "geopandas.*",
-    "h3.*",
-    "folium.*",
-    "plotly.*",
-    "matplotlib.*",
-    "scipy.*",
-    "sklearn.*",
-    "tensorflow.*",
-    "torch.*",
-    "pymc.*",
-    "arviz.*",
-]
-ignore_missing_imports = true
-
 [tool.coverage.run]
 source = ["src"]
 omit = [
@@ -164,3 +131,4 @@ exclude_lines = [
 [tool.uv.sources]
 geo-infer-space = { workspace = true }
 geo-infer-bayes = { workspace = true }
+geo-infer-time = { workspace = true }

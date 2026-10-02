@@ -23,7 +23,7 @@ Api workspace within `GEO-INFER-COMMS`.
 
 - Module: `GEO-INFER-COMMS`
 - Package: `geo_infer_comms`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-comms`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module COMMS`
 

@@ -4,22 +4,20 @@
 Tests for agent-to-agent communication via BaseAgent message queue.
 """
 
-import asyncio
 import unittest
+
+import pytest
 import uuid
 from datetime import datetime
 
 from geo_infer_agent.core.agent_base import ExampleAgent
 
 
-class TestAgentMessagePassing(unittest.TestCase):
+class TestAgentMessagePassing:
     """Tests for message passing between BaseAgent instances."""
 
-    def _run(self, coro):
-        """Helper to run an async coroutine in the test event loop."""
-        return asyncio.get_event_loop().run_until_complete(coro)
-
-    def test_receive_message_enqueues(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_receive_message_enqueues(self) -> None:
         """receive_message puts a message on the agent's internal queue."""
         agent = ExampleAgent(agent_id="receiver")
         msg = {
@@ -29,10 +27,11 @@ class TestAgentMessagePassing(unittest.TestCase):
             "timestamp": datetime.now().isoformat(),
             "message_id": str(uuid.uuid4()),
         }
-        self._run(agent.receive_message(msg))
-        self.assertFalse(agent.message_queue.empty())
+        await agent.receive_message(msg)
+        unittest.TestCase().assertFalse(agent.message_queue.empty())
 
-    def test_process_messages_drains_queue(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_process_messages_drains_queue(self) -> None:
         """process_messages consumes all queued messages."""
         agent = ExampleAgent(agent_id="processor")
         for i in range(3):
@@ -43,13 +42,14 @@ class TestAgentMessagePassing(unittest.TestCase):
                 "timestamp": datetime.now().isoformat(),
                 "message_id": str(uuid.uuid4()),
             }
-            self._run(agent.receive_message(msg))
+            await agent.receive_message(msg)
 
-        self.assertEqual(agent.message_queue.qsize(), 3)
-        self._run(agent.process_messages())
-        self.assertTrue(agent.message_queue.empty())
+        unittest.TestCase().assertEqual(agent.message_queue.qsize(), 3)
+        await agent.process_messages()
+        unittest.TestCase().assertTrue(agent.message_queue.empty())
 
-    def test_message_handling_records_in_memory(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_message_handling_records_in_memory(self) -> None:
         """_handle_message records the message in agent state memory."""
         agent = ExampleAgent(agent_id="mem-agent")
         msg = {
@@ -59,39 +59,39 @@ class TestAgentMessagePassing(unittest.TestCase):
             "timestamp": datetime.now().isoformat(),
             "message_id": str(uuid.uuid4()),
         }
-        self._run(agent.receive_message(msg))
-        self._run(agent.process_messages())
+        await agent.receive_message(msg)
+        await agent.process_messages()
 
         received_entries = [
             m for m in agent.state.memory if m.get("type") == "message_received"
         ]
-        self.assertEqual(len(received_entries), 1)
-        self.assertEqual(received_entries[0]["message"]["from"], "alpha")
+        unittest.TestCase().assertEqual(len(received_entries), 1)
+        unittest.TestCase().assertEqual(received_entries[0]["message"]["from"], "alpha")
 
-    def test_send_message_delivers_to_registered_agent(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_send_message_delivers_to_registered_agent(self) -> None:
         """send_message delivers to a registered recipient's queue and returns True."""
         from geo_infer_agent.core.agent_registry import AgentRegistry
 
         AgentRegistry._instance = None
         registry = AgentRegistry()
         try:
-            self._run(
-                registry.create_agent(
-                    agent_type="default", config={}, agent_id="receiver-x"
-                )
+            await registry.create_agent(
+                agent_type="default", config={}, agent_id="receiver-x"
             )
             sender = ExampleAgent(agent_id="sender-x")
-            result = self._run(sender.send_message("receiver-x", {"command": "start"}))
-            self.assertTrue(result)
+            result = await sender.send_message("receiver-x", {"command": "start"})
+            unittest.TestCase().assertTrue(result)
             receiver = registry.get_agent("receiver-x")
-            self.assertFalse(receiver.message_queue.empty())
+            unittest.TestCase().assertFalse(receiver.message_queue.empty())
             delivered = receiver.message_queue.get_nowait()
-            self.assertEqual(delivered["content"], {"command": "start"})
-            self.assertEqual(delivered["from"], "sender-x")
+            unittest.TestCase().assertEqual(delivered["content"], {"command": "start"})
+            unittest.TestCase().assertEqual(delivered["from"], "sender-x")
         finally:
             AgentRegistry._instance = None
 
-    def test_send_message_to_unknown_agent_returns_false(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_send_message_to_unknown_agent_returns_false(self) -> None:
         """send_message returns False (not a fake success) for an unregistered recipient."""
         from geo_infer_agent.core.agent_registry import AgentRegistry
 
@@ -99,14 +99,15 @@ class TestAgentMessagePassing(unittest.TestCase):
         AgentRegistry()  # ensure a clean, empty registry
         try:
             sender = ExampleAgent(agent_id="sender-y")
-            result = self._run(
-                sender.send_message("nobody-registered", {"command": "start"})
+            result = await sender.send_message(
+                "nobody-registered", {"command": "start"}
             )
-            self.assertFalse(result)
+            unittest.TestCase().assertFalse(result)
         finally:
             AgentRegistry._instance = None
 
-    def test_multiple_agents_communicate(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_multiple_agents_communicate(self) -> None:
         """Two agents can exchange messages through their queues."""
         agent_b = ExampleAgent(agent_id="agent-b")
 
@@ -118,18 +119,16 @@ class TestAgentMessagePassing(unittest.TestCase):
             "timestamp": datetime.now().isoformat(),
             "message_id": str(uuid.uuid4()),
         }
-        self._run(agent_b.receive_message(msg))
+        await agent_b.receive_message(msg)
 
         # Agent B processes messages
-        self._run(agent_b.process_messages())
+        await agent_b.process_messages()
 
         # Verify B recorded the message
         received = [
             m for m in agent_b.state.memory if m.get("type") == "message_received"
         ]
-        self.assertEqual(len(received), 1)
-        self.assertEqual(received[0]["message"]["content"]["task"], "analyze")
-
-
-if __name__ == "__main__":
-    unittest.main()
+        unittest.TestCase().assertEqual(len(received), 1)
+        unittest.TestCase().assertEqual(
+            received[0]["message"]["content"]["task"], "analyze"
+        )

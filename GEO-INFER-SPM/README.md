@@ -9,18 +9,20 @@ Statistical parametric mapping methodology adapted for geospatial analysis to id
 - `examples/`
 - `src/`
 - `tests/`
+- `pytensor_clang++_macos27.py`
 - `SKILL.md`
 - `pyproject.toml`
 
 ## Public Interface
 
-- No public Python symbols are defined directly in this directory.
+- `pytensor_clang++_macos27.py:compiler_arguments` (function)
+- `pytensor_clang++_macos27.py:main` (function)
 
 ## Module Metadata
 
 - Module: `GEO-INFER-SPM`
 - Package: `geo_infer_spm`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-spm`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module SPM`
 

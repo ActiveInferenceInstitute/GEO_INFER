@@ -201,8 +201,8 @@ package layout, not an aspirational API list.
 
 ## Domain Model Methods
 
-- `models.base.BaseActiveInferenceModel.step(actions=None)`: abstract one-step
-  interface; raises `NotImplementedError` until a concrete model overrides it.
+- `models.base.BaseActiveInferenceModel.step(actions=None)`: return a fresh copy
+  of the base configuration; concrete models implement their own inference step.
 - `models.base.BaseActiveInferenceModel.reset()`: base reset interface.
 - `CategoricalModel.set_preferences(...)`: set discrete preference distribution.
 - `CategoricalModel.set_transition_matrix(...)`: set normalized transition
@@ -363,12 +363,12 @@ uv run python GEO-INFER-TEST/validate_active_inference_contract.py
 uv run python GEO-INFER-TEST/validate_act_script_orchestration.py
 uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
 uv run --package geo-infer-act --extra dev python GEO-INFER-ACT/verify_comprehensive.py \
-  --output-dir GEO-INFER-ACT/examples/output/comprehensive_act_audit
+  --output-dir output/act_audit
 uv run --package geo-infer-act --extra dev python -m pytest GEO-INFER-ACT/tests -q
 ```
 
-The comprehensive audit writes a retained evidence bundle to
-`GEO-INFER-ACT/examples/output/comprehensive_act_audit/`. It runs the method
+The comprehensive audit regenerates an ignored evidence bundle in
+`output/act_audit/`. It runs the method
 families listed in this inventory, the scenario suite, visualization helpers,
 README/local-link checks, and Mermaid render checks.
 

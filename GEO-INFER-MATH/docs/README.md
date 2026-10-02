@@ -19,7 +19,7 @@ Docs workspace within `GEO-INFER-MATH`.
 
 - Module: `GEO-INFER-MATH`
 - Package: `geo_infer_math`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-math`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module MATH`
 

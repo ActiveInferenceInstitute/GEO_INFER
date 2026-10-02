@@ -5,11 +5,12 @@ Unit tests for the reinforcement-learning module: Experience, QTable,
 ReplayBuffer, RLState, and RLAgent action handlers / persistence.
 """
 
-import asyncio
 import json
 import os
 import tempfile
 import unittest
+
+import pytest
 
 import numpy as np
 
@@ -20,10 +21,6 @@ from geo_infer_agent.models.rl import (
     RLState,
     ReplayBuffer,
 )
-
-
-def _run(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
 
 
 class TestExperience(unittest.TestCase):
@@ -242,46 +239,51 @@ class TestRLAgentConfig(unittest.TestCase):
         self.assertEqual(agent.train_batch_size, 8)
 
 
-class TestRLAgentBehavior(unittest.TestCase):
+class TestRLAgentBehavior:
     """Tests for RLAgent perception, decision, and action handling."""
 
     def _make_agent(self, **extra) -> RLAgent:
         config = {"state_size": 6, "action_size": 3, "epsilon": 0.0, **extra}
         return RLAgent(agent_id="rl-behave", config=config)
 
-    def test_perceive_extracts_state_and_vector_state(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_perceive_extracts_state_and_vector_state(self) -> None:
         agent = self._make_agent()
-        obs = _run(agent.perceive())
-        self.assertEqual(obs, {})
+        obs = await agent.perceive()
+        unittest.TestCase().assertEqual(obs, {})
         agent.config["sensor_readings"] = {"state": 4}
-        _run(agent.perceive())
-        self.assertEqual(agent.state.current_state, 4)
+        await agent.perceive()
+        unittest.TestCase().assertEqual(agent.state.current_state, 4)
         agent.config["sensor_readings"] = {"vector_state": [1.0, 2.0]}
-        _run(agent.perceive())
+        await agent.perceive()
         np.testing.assert_array_equal(agent.state.current_state, np.array([1.0, 2.0]))
 
-    def test_decide_requires_current_state(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_decide_requires_current_state(self) -> None:
         agent = self._make_agent()
-        self.assertIsNone(_run(agent.decide()))
+        unittest.TestCase().assertIsNone(await agent.decide())
 
-    def test_decide_with_action_mapping(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_decide_with_action_mapping(self) -> None:
         agent = self._make_agent(
             action_mapping={"2": {"action_type": "move", "action_id": "north"}}
         )
         agent.state.current_state = 1
         agent.state.q_table.update_value(agent.state._get_state_index(1), 2, 1.0)
-        action = _run(agent.decide())
-        self.assertEqual(action["action_type"], "move")
-        self.assertEqual(action["selected_idx"], 2)
+        action = await agent.decide()
+        unittest.TestCase().assertEqual(action["action_type"], "move")
+        unittest.TestCase().assertEqual(action["selected_idx"], 2)
 
-    def test_decide_default_action_format(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_decide_default_action_format(self) -> None:
         agent = self._make_agent()
         agent.state.current_state = 0
-        action = _run(agent.decide())
-        self.assertEqual(action["action_type"], "execute")
-        self.assertIn("selected_idx", action)
+        action = await agent.decide()
+        unittest.TestCase().assertEqual(action["action_type"], "execute")
+        unittest.TestCase().assertIn("selected_idx", action)
 
-    def test_act_records_experience_and_learns(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_act_records_experience_and_learns(self) -> None:
         agent = self._make_agent(train_frequency=1, train_batch_size=1)
         agent.state.current_state = 0
         action = {
@@ -289,72 +291,71 @@ class TestRLAgentBehavior(unittest.TestCase):
             "parameters": {"duration": 0},
             "selected_idx": 1,
         }
-        result = _run(agent.act(action))
-        self.assertEqual(result["status"], "success")
-        self.assertEqual(agent.state.training_iterations, 1)
+        result = await agent.act(action)
+        unittest.TestCase().assertEqual(result["status"], "success")
+        unittest.TestCase().assertEqual(agent.state.training_iterations, 1)
         # Replay training re-adds the sampled experience on top of the
         # one recorded by act() itself.
-        self.assertEqual(agent.state.replay_buffer.size(), 2)
+        unittest.TestCase().assertEqual(agent.state.replay_buffer.size(), 2)
 
-    def test_query_state_performance_and_q_values(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_query_state_performance_and_q_values(self) -> None:
         agent = self._make_agent()
         agent.state.record_episode_reward(2.0, episode_done=True)
-        result = _run(
-            agent.act(
-                {
-                    "action_type": "query_state",
-                    "parameters": {"query_type": "performance"},
-                }
-            )
+        result = await agent.act(
+            {
+                "action_type": "query_state",
+                "parameters": {"query_type": "performance"},
+            }
         )
-        self.assertEqual(result["total_episodes"], 1)
-        self.assertAlmostEqual(result["avg_reward_100"], 2.0)
+        unittest.TestCase().assertEqual(result["total_episodes"], 1)
+        unittest.TestCase().assertAlmostEqual(result["avg_reward_100"], 2.0)
 
         agent.state.current_state = 2
-        result = _run(
-            agent.act(
-                {"action_type": "query_state", "parameters": {"query_type": "q_values"}}
-            )
+        result = await agent.act(
+            {"action_type": "query_state", "parameters": {"query_type": "q_values"}}
         )
-        self.assertEqual(result["current_state_idx"], agent.state._get_state_index(2))
-        self.assertEqual(len(result["q_values"]), 3)
+        unittest.TestCase().assertEqual(
+            result["current_state_idx"], agent.state._get_state_index(2)
+        )
+        unittest.TestCase().assertEqual(len(result["q_values"]), 3)
 
-    def test_query_state_unknown_type(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_query_state_unknown_type(self) -> None:
         agent = self._make_agent()
-        result = _run(
-            agent.act(
-                {"action_type": "query_state", "parameters": {"query_type": "bogus"}}
-            )
+        result = await agent.act(
+            {"action_type": "query_state", "parameters": {"query_type": "bogus"}}
         )
-        self.assertEqual(result["status"], "error")
+        unittest.TestCase().assertEqual(result["status"], "error")
 
-    def test_set_learning_params(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_set_learning_params(self) -> None:
         agent = self._make_agent()
-        result = _run(
-            agent.act(
-                {
-                    "action_type": "set_learning_params",
-                    "parameters": {
-                        "learning_rate": 0.9,
-                        "epsilon": 0.5,
-                        "epsilon_decay": 0.8,
-                        "discount_factor": 0.7,
-                    },
-                }
-            )
+        result = await agent.act(
+            {
+                "action_type": "set_learning_params",
+                "parameters": {
+                    "learning_rate": 0.9,
+                    "epsilon": 0.5,
+                    "epsilon_decay": 0.8,
+                    "discount_factor": 0.7,
+                },
+            }
         )
-        self.assertEqual(result["status"], "success")
-        self.assertAlmostEqual(agent.state.learning_rate, 0.9)
-        self.assertAlmostEqual(agent.state.epsilon, 0.5)
+        unittest.TestCase().assertEqual(result["status"], "success")
+        unittest.TestCase().assertAlmostEqual(agent.state.learning_rate, 0.9)
+        unittest.TestCase().assertAlmostEqual(agent.state.epsilon, 0.5)
 
-    def test_set_learning_params_noop(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_set_learning_params_noop(self) -> None:
         agent = self._make_agent()
-        result = _run(
-            agent.act({"action_type": "set_learning_params", "parameters": {}})
+        result = await agent.act(
+            {"action_type": "set_learning_params", "parameters": {}}
         )
-        self.assertEqual(result["status"], "warning")
+        unittest.TestCase().assertEqual(result["status"], "warning")
 
-    def test_initialize_loads_initial_state_and_model(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_initialize_loads_initial_state_and_model(self) -> None:
         agent = self._make_agent()
         agent.state.update_q_values(
             Experience(state=0, action=0, reward=1.0, next_state=1, done=True)
@@ -362,15 +363,15 @@ class TestRLAgentBehavior(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             model_path = os.path.join(tmp, "model.json")
             agent._save_model(model_path)
-            self.assertTrue(os.path.exists(model_path))
+            unittest.TestCase().assertTrue(os.path.exists(model_path))
 
             fresh = self._make_agent(initial_state=7)
             with open(model_path) as handle:
                 saved = json.load(handle)
             fresh.config["model_path"] = model_path
-            _run(fresh.initialize())
-            self.assertEqual(fresh.state.current_state, 7)
-            self.assertAlmostEqual(
+            await fresh.initialize()
+            unittest.TestCase().assertEqual(fresh.state.current_state, 7)
+            unittest.TestCase().assertAlmostEqual(
                 fresh.state.q_table.get_value(0, 0),
                 saved["q_table"]["q_table"][0][0],
             )
@@ -384,16 +385,13 @@ class TestRLAgentBehavior(unittest.TestCase):
             agent._load_model(path)  # logs error, keeps existing state
         finally:
             os.unlink(path)
-        self.assertEqual(agent.state.q_table.state_size, 6)
+        unittest.TestCase().assertEqual(agent.state.q_table.state_size, 6)
 
-    def test_shutdown_saves_model_when_configured(self) -> None:
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_shutdown_saves_model_when_configured(self) -> None:
         agent = self._make_agent()
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "model.json")
             agent.config["model_save_path"] = path
-            _run(agent.shutdown())
-            self.assertTrue(os.path.exists(path))
-
-
-if __name__ == "__main__":
-    unittest.main()
+            await agent.shutdown()
+            unittest.TestCase().assertTrue(os.path.exists(path))

@@ -25,6 +25,7 @@ Unit workspace within `GEO-INFER-ACT`.
 - `test_h3_active_inference.py`
 - `test_h3_adapter.py`
 - `test_h3_adapter_nested_grid_resolution.py`
+- `test_h3_grid_independence.py`
 - `test_h3_validation_logging.py`
 - `test_h3_viz_integration.py`
 - `test_inference_hardening.py`
@@ -54,7 +55,7 @@ Unit workspace within `GEO-INFER-ACT`.
 
 - Module: `GEO-INFER-ACT`
 - Package: `geo_infer_act`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-act`
 - Tests: `uv run python -m pytest GEO-INFER-ACT/tests/unit`
 
@@ -69,7 +70,7 @@ Unit workspace within `GEO-INFER-ACT`.
 - `seaborn>=0.11.0`
 - `inferactively-pymdp==1.0.3`
 - `h3>=4.5.0,<5`
-- `geo-infer-bayes>=0.3.0`
+- `geo-infer-bayes>=0.4.0`
 
 
 ## Validation

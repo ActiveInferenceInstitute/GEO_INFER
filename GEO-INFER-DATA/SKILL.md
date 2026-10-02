@@ -116,3 +116,20 @@ result = await pipeline.execute_workflow(
 - **API** → Data source for spatial query endpoints
 - **IOT** → Sensor data ingestion pipelines
 - **EXAMPLES** → Example ETL workflows
+
+Dataset/model and cache timestamps require explicit timezone offsets and normalize
+to UTC through `geo_infer_time.core.timestamps.normalize_timestamp`. Select backend
+extras explicitly: `postgres` (psycopg2 + asyncpg), `s3` (boto3), `minio`, `redis`,
+and `raster` (rasterio). Base/local operations do not import those clients; an
+unavailable selected backend raises an error naming its installation extra.
+HTTP connector calls and downloads run off the event loop; requests are spaced
+using a monotonic clock, and failed pagination does not return partial success.
+
+### DuckDB Spatial verification
+
+Provision the signed Spatial extension matching the installed DuckDB runtime with
+`uv run python GEO-INFER-DATA/provision_duckdb_spatial.py`. Provisioning failures
+are fatal. `read_cloud_native_vector(path, require_duckdb=True)` requires the
+actual DuckDB path and propagates backend errors. Normal reads load an installed
+extension without downloading one; reader layer/keyword options use GeoPandas
+when they are unsupported by DuckDB.

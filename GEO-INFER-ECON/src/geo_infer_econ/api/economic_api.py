@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
+from importlib.metadata import version as distribution_version
 import logging
 import numpy as np
 import pandas as pd
@@ -135,7 +136,7 @@ class EconomicAnalysisAPI:
         self.app = FastAPI(
             title="GEO-INFER-ECON API",
             description="Advanced Spatial Economic Analysis and Policy Evaluation API",
-            version="1.0.0",
+            version=distribution_version("geo-infer-econ"),
             docs_url="/api/docs",
             redoc_url="/api/redoc",
         )
@@ -302,7 +303,7 @@ class EconomicAnalysisAPI:
             return HealthResponse(
                 success=True,
                 service="GEO-INFER-ECON API",
-                version="1.0.0",
+                version=distribution_version("geo-infer-econ"),
                 uptime=uptime,
                 data={
                     "component_health": component_health,

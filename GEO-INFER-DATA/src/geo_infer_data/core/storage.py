@@ -40,6 +40,11 @@ from pathlib import Path
 
 from ..models.schemas import DatasetMetadata
 from ..utils.identifiers import validate_sql_identifier
+from ..utils.dependencies import require_dependency
+from ..utils.timestamps import (
+    normalize_observation_timestamps,
+    normalize_temporal_range,
+)
 from ..utils.indexing import SpatialIndexer, TemporalIndexer
 from ..utils.compression import DataCompressor
 from ..utils.caching import CacheManager
@@ -179,6 +184,7 @@ class PostgreSQLBackend:
     """PostgreSQL/PostGIS storage backend."""
 
     def __init__(self, config: dict[str, Any]):
+        require_dependency("psycopg2", "postgres")
         self.config = config
         self.connection_string = self._build_connection_string()
         self.spatial_indexer = SpatialIndexer()
@@ -407,7 +413,7 @@ class MinIOBackend:
         assert self.endpoint is not None
         assert self.access_key is not None
         assert self.secret_key is not None
-        from minio import Minio
+        Minio = require_dependency("minio", "minio").Minio
 
         serialized_data = (
             self.compressor.compress_data(data)
@@ -448,7 +454,7 @@ class MinIOBackend:
         assert self.endpoint is not None
         assert self.access_key is not None
         assert self.secret_key is not None
-        from minio import Minio
+        Minio = require_dependency("minio", "minio").Minio
 
         client = Minio(
             self.endpoint,
@@ -480,7 +486,7 @@ class MinIOBackend:
         assert self.endpoint is not None
         assert self.access_key is not None
         assert self.secret_key is not None
-        from minio import Minio
+        Minio = require_dependency("minio", "minio").Minio
 
         client = Minio(
             self.endpoint,
@@ -505,7 +511,7 @@ class RedisBackend:
         self.port = config.get("port", 6379)
         self.db = config.get("db", 0)
         self.signing_key = config.get("signing_key")
-        from redis import Redis
+        Redis = require_dependency("redis", "redis").Redis
 
         self.client = Redis(host=self.host, port=self.port, db=self.db)
 
@@ -741,7 +747,7 @@ class AdaptiveDataStorage:
         >>> # Query with adaptive optimization
         >>> results = await storage.adaptive_query(
         ...     spatial_bounds=[-122.5, 37.7, -122.3, 37.9],
-        ...     temporal_range=(datetime(2023, 6, 1), datetime(2023, 6, 30)),
+        ...     temporal_range=(datetime(2023, 6, 1, tzinfo=UTC), datetime(2023, 6, 30, tzinfo=UTC)),
         ...     optimization_hints={'frequent_queries': True, 'real_time': False}
         ... )
         >>>
@@ -941,8 +947,8 @@ class AdaptiveDataStorage:
             ...         description="Real-time environmental monitoring data",
             ...         spatial=SpatialExtent(bbox=[-122.6, 37.6, -122.2, 38.0]),
             ...         temporal=TemporalExtent(
-            ...             start=datetime(2023, 1, 1),
-            ...             end=datetime(2023, 12, 31)
+            ...             start=datetime(2023, 1, 1, tzinfo=UTC),
+            ...             end=datetime(2023, 12, 31, tzinfo=UTC)
             ...         )
             ...     ),
             ...     access_patterns={
@@ -950,7 +956,7 @@ class AdaptiveDataStorage:
             ...             {'bbox': [-122.5, 37.7, -122.3, 37.9], 'frequency': 'high'}
             ...         ],
             ...         'temporal_queries': [
-            ...             {'start': datetime(2023, 6, 1), 'end': datetime(2023, 8, 31)}
+            ...             {'start': datetime(2023, 6, 1, tzinfo=UTC), 'end': datetime(2023, 8, 31, tzinfo=UTC)}
             ...         ],
             ...         'query_frequency': 'high',
             ...         'peak_hours': [9, 10, 11, 14, 15, 16]
@@ -1003,6 +1009,7 @@ class AdaptiveDataStorage:
         identifiers are delegated to the configured backend; missing data is
         reported rather than replaced with an unrelated query result.
         """
+        temporal_range = normalize_temporal_range(temporal_range)
         if data_id in self._stored_data:
             return self._filter_stored_data(
                 self._stored_data[data_id], spatial_bounds, temporal_range
@@ -1030,6 +1037,7 @@ class AdaptiveDataStorage:
         Non-tabular data is returned unchanged; (Geo)DataFrames are filtered
         by WGS84 bounds (GeoDataFrame only) and by their ``timestamp`` column.
         """
+        temporal_range = normalize_temporal_range(temporal_range)
         if not isinstance(data, (pd.DataFrame, gpd.GeoDataFrame)):
             return data
         if spatial_bounds and isinstance(data, gpd.GeoDataFrame):
@@ -1037,7 +1045,7 @@ class AdaptiveDataStorage:
             data = data.cx[min_lon:max_lon, min_lat:max_lat]  # type: ignore[misc]
         if temporal_range and "timestamp" in data.columns:
             start, end = temporal_range
-            timestamps = pd.to_datetime(data["timestamp"], errors="coerce")
+            timestamps = normalize_observation_timestamps(data["timestamp"])
             data = data.loc[(timestamps >= start) & (timestamps <= end)]
         return data
 
@@ -1085,7 +1093,7 @@ class AdaptiveDataStorage:
             >>> # Spatial query for environmental data
             >>> results = await storage.adaptive_query(
             ...     spatial_bounds=[-122.5, 37.7, -122.3, 37.9],
-            ...     temporal_range=(datetime(2023, 6, 1), datetime(2023, 6, 30)),
+            ...     temporal_range=(datetime(2023, 6, 1, tzinfo=UTC), datetime(2023, 6, 30, tzinfo=UTC)),
             ...     optimization_hints={
             ...         'frequent_queries': True,
             ...         'format': 'geojson',
@@ -1095,7 +1103,7 @@ class AdaptiveDataStorage:
             >>>
             >>> # Real-time sensor query
             >>> realtime_data = await storage.adaptive_query(
-            ...     temporal_range=(datetime.now() - timedelta(hours=1), datetime.now()),
+            ...     temporal_range=(datetime.now(UTC) - timedelta(hours=1), datetime.now(UTC)),
             ...     optimization_hints={
             ...         'real_time': True,
             ...         'batch_processing': False
@@ -1123,8 +1131,7 @@ class AdaptiveDataStorage:
                 -180 <= min_lon < max_lon <= 180 and -90 <= min_lat < max_lat <= 90
             ):
                 raise ValueError("spatial_bounds contain invalid WGS84 coordinates")
-        if temporal_range and temporal_range[0] > temporal_range[1]:
-            raise ValueError("temporal_range start must be before end")
+        temporal_range = normalize_temporal_range(temporal_range)
 
         # Check cache first
         if self.cache_manager:

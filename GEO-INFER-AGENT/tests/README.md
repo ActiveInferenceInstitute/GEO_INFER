@@ -10,13 +10,14 @@ Tests workspace within `GEO-INFER-AGENT`.
 
 ## Public Interface
 
-- `conftest.py:fresh_event_loop` (function)
+- `conftest.py:managed_task` (function)
+- `conftest.py:clean_agent_services` (function)
 
 ## Module Metadata
 
 - Module: `GEO-INFER-AGENT`
 - Package: `geo_infer_agent`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-agent`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module AGENT`
 

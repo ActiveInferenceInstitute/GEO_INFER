@@ -15,6 +15,7 @@ import logging
 from typing import Any
 from datetime import datetime, timedelta, UTC
 from enum import StrEnum
+from geo_infer_time.core.timestamps import normalize_timestamp
 
 from ..models.schemas import DataQualityReport, DatasetMetadata, QualityStatus
 from ..utils.validation import (
@@ -299,9 +300,7 @@ class DataQualityManager:
         cutoff_date = datetime.now(UTC) - timedelta(days=days)
 
         def as_utc(value: datetime) -> datetime:
-            if value.tzinfo is None:
-                return value.replace(tzinfo=UTC)
-            return value.astimezone(UTC)
+            return normalize_timestamp(value)
 
         recent_reports = [
             r for r in self.quality_history if as_utc(r.generated_at) >= cutoff_date

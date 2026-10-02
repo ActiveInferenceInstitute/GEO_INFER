@@ -33,6 +33,7 @@ from ..models.schemas import (
 )
 from ..utils.validation import GeospatialValidator
 from ..utils.performance import PerformanceMonitor
+from ..utils.timestamps import normalize_observation_timestamps
 
 
 logger = logging.getLogger(__name__)
@@ -275,7 +276,7 @@ class TransformationEngine:
             "aggregation", parameters.get("aggregations", "mean")
         )
         frame = data.copy()
-        frame[time_column] = pd.to_datetime(frame[time_column], errors="raise")
+        frame[time_column] = normalize_observation_timestamps(frame[time_column])
         group_by = parameters.get("group_by", [])
         grouped = frame.set_index(time_column)
         if group_by:

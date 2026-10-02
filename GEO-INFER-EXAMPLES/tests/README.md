@@ -17,7 +17,7 @@ Tests workspace within `GEO-INFER-EXAMPLES`.
 
 - Module: `GEO-INFER-EXAMPLES`
 - Package: `geo_infer_examples`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Install: `uv sync --package geo-infer-examples`
 - Tests: `uv run python -m pytest GEO-INFER-EXAMPLES/tests`
 

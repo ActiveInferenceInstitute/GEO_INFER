@@ -15,6 +15,38 @@ from geo_infer_data.utils.duckdb_spatial import (
 )
 
 
+def test_required_duckdb_failure_cannot_run_fallback(geojson_file, monkeypatch):
+    """An explicit backend requirement preserves the original failure boundary."""
+    import geo_infer_data.utils.duckdb_spatial as backend
+
+    def failed_read(*args, **kwargs):
+        raise RuntimeError("backend rejected fixture")
+
+    def forbidden_fallback(*args, **kwargs):
+        raise AssertionError("explicit backend silently fell back")
+
+    monkeypatch.setattr(backend, "_duckdb_read_vector", failed_read)
+    monkeypatch.setattr(backend, "_fallback_read_vector", forbidden_fallback)
+    with pytest.raises(backend.DuckDBSpatialError) as raised:
+        backend.read_cloud_native_vector(geojson_file, require_duckdb=True)
+    assert str(raised.value.__cause__) == "backend rejected fixture"
+
+
+def test_required_duckdb_rejects_absence_and_unsupported_options(
+    geojson_file, monkeypatch
+):
+    """Missing extras and dropped reader parameters must be explicit failures."""
+    import geo_infer_data.utils.duckdb_spatial as backend
+
+    with pytest.raises(ValueError, match="layer"):
+        backend.read_cloud_native_vector(
+            geojson_file, require_duckdb=True, layer="points"
+        )
+    monkeypatch.setattr(backend, "HAS_DUCKDB", False)
+    with pytest.raises(backend.DuckDBSpatialError, match="not installed"):
+        backend.read_cloud_native_vector(geojson_file, require_duckdb=True)
+
+
 @pytest.fixture
 def geojson_file(tmp_path: Path) -> Path:
     """A tiny GeoJSON feature collection on disk."""
@@ -30,7 +62,7 @@ def geojson_file(tmp_path: Path) -> Path:
 
 def test_read_cloud_native_vector_fallback(geojson_file: Path) -> None:
     """Reads a GeoJSON file via the fallback path regardless of duckdb."""
-    gdf = read_cloud_native_vector(geojson_file)
+    gdf = read_cloud_native_vector(geojson_file, use_duckdb=False)
     assert isinstance(gdf, gpd.GeoDataFrame)
     assert len(gdf) == 2
     assert list(gdf.columns) == ["name", "geometry"]
@@ -59,7 +91,7 @@ def test_read_layer_arg(tmp_path: Path) -> None:
     path = tmp_path / "single.geojson"
     gdf.to_file(path, driver="GeoJSON")
     # layer=None is safe on the fallback path.
-    out = read_cloud_native_vector(path, layer=None)
+    out = read_cloud_native_vector(path, use_duckdb=False, layer=None)
     assert len(out) == 1
 
 
@@ -101,7 +133,7 @@ def test_duckdb_and_fallback_agree_on_projected_crs(tmp_path: Path) -> None:
     path = tmp_path / "projected.fgb"
     gdf.to_file(path, driver="FlatGeobuf")
 
-    fast = read_cloud_native_vector(path, use_duckdb=True)
+    fast = read_cloud_native_vector(path, require_duckdb=True)
     slow = read_cloud_native_vector(path, use_duckdb=False)
 
     assert fast.crs == slow.crs
@@ -123,8 +155,50 @@ def test_duckdb_fast_path_reports_wgs84_for_wgs84_file(tmp_path: Path) -> None:
 
     conn = _duckdb.connect()
     try:
-        conn.execute("INSTALL spatial; LOAD spatial;")
+        conn.execute("LOAD spatial;")
         crs = _resolve_crs(conn, path.as_posix())
     finally:
         conn.close()
     assert crs is not None and crs.to_epsg() == 4326
+
+
+@pytest.mark.parametrize(
+    "failure", ["native_import_error", "transitive_module_missing"]
+)
+def test_installed_duckdb_import_failure_propagates(tmp_path, failure):
+    """Only absent DuckDB is optional; failures inside an installed backend are fatal."""
+    import subprocess
+    import sys
+
+    script = f"""
+import builtins, importlib
+original = builtins.__import__
+def import_with_failure(name, *args, **kwargs):
+    if name == 'duckdb':
+        if {failure!r} == 'native_import_error':
+            raise ImportError('installed DuckDB failed its native import')
+        raise ModuleNotFoundError('installed DuckDB has a missing transitive module', name='broken_transitive_dependency')
+    return original(name, *args, **kwargs)
+builtins.__import__ = import_with_failure
+try:
+    importlib.import_module('geo_infer_data.utils.duckdb_spatial')
+except ImportError as error:
+    assert str(error).startswith('installed DuckDB'), str(error)
+    if {failure!r} == 'transitive_module_missing':
+        assert isinstance(error, ModuleNotFoundError)
+        assert error.name == 'broken_transitive_dependency'
+    else:
+        assert type(error) is ImportError
+else:
+    raise AssertionError('Installed DuckDB failure was suppressed')
+print('original installed-DuckDB failure propagated')
+"""
+    result = subprocess.run(
+        [sys.executable, "-I", "-c", script],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "original installed-DuckDB failure propagated" in result.stdout

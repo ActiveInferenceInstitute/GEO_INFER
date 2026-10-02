@@ -8,14 +8,17 @@ and related metadata using Pydantic for validation and type safety.
 import logging
 import math
 from typing import Any
-from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
+from datetime import datetime, UTC
+from pydantic import Field, field_validator
 import h3
+
+from .timestamps import TimestampModel, utc_now
+from geo_infer_time.core.timestamps import normalize_timestamp
 
 logger = logging.getLogger(__name__)
 
 
-class Location(BaseModel):
+class Location(TimestampModel):
     """Geographic location model."""
 
     latitude: float = Field(
@@ -51,7 +54,7 @@ class Location(BaseModel):
         return v
 
 
-class SensorCapabilities(BaseModel):
+class SensorCapabilities(TimestampModel):
     """Sensor measurement capabilities."""
 
     measured_variables: list[str] = Field(
@@ -71,7 +74,7 @@ class SensorCapabilities(BaseModel):
     battery_life_hours: float | None = Field(None, description="Expected battery life")
 
 
-class SensorCalibration(BaseModel):
+class SensorCalibration(TimestampModel):
     """Sensor calibration information."""
 
     last_calibration: datetime | None = Field(
@@ -89,7 +92,7 @@ class SensorCalibration(BaseModel):
     )
 
 
-class Sensor(BaseModel):
+class Sensor(TimestampModel):
     """Complete sensor data model."""
 
     sensor_id: str = Field(..., description="Unique sensor identifier")
@@ -154,10 +157,10 @@ class Sensor(BaseModel):
 
     # Timestamps
     created_at: datetime = Field(
-        default_factory=datetime.now, description="Record creation timestamp"
+        default_factory=utc_now, description="Record creation timestamp"
     )
     updated_at: datetime = Field(
-        default_factory=datetime.now, description="Record last update timestamp"
+        default_factory=utc_now, description="Record last update timestamp"
     )
 
     @field_validator("status")
@@ -176,17 +179,19 @@ class Sensor(BaseModel):
 
     def update_location(self, latitude: float, longitude: float, **kwargs: Any) -> None:
         """Update sensor location and related fields."""
-        self.location.latitude = latitude
-        self.location.longitude = longitude
-
-        # Update H3 index
-        if kwargs.get("h3_resolution"):
-            self.location.h3_resolution = kwargs["h3_resolution"]
-        self.location.h3_index = h3.latlng_to_cell(
-            latitude, longitude, self.location.h3_resolution
+        candidate = Location.model_validate(
+            {
+                **self.location.model_dump(),
+                "latitude": latitude,
+                "longitude": longitude,
+                "h3_resolution": self.location.h3_resolution
+                if kwargs.get("h3_resolution") is None
+                else kwargs["h3_resolution"],
+                "h3_index": None,
+            }
         )
-
-        self.updated_at = datetime.now()
+        self.location = candidate
+        self.updated_at = datetime.now(UTC)
 
     def add_capability(self, variable: str, **kwargs: Any) -> None:
         """Add a measurement capability to the sensor."""
@@ -206,24 +211,18 @@ class Sensor(BaseModel):
                     "max_value"
                 ]
 
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def update_calibration(self, calibration_data: dict[str, Any]) -> None:
         """Update sensor calibration information."""
-        if "last_calibration" in calibration_data:
-            self.calibration.last_calibration = calibration_data["last_calibration"]
-        if "calibration_method" in calibration_data:
-            self.calibration.calibration_method = calibration_data["calibration_method"]
-        if "calibration_parameters" in calibration_data:
-            self.calibration.calibration_parameters.update(
-                calibration_data["calibration_parameters"]
-            )
-        if "next_calibration_due" in calibration_data:
-            self.calibration.next_calibration_due = calibration_data[
-                "next_calibration_due"
-            ]
-
-        self.updated_at = datetime.now()
+        candidate = self.calibration.model_dump()
+        candidate.update(calibration_data)
+        candidate["calibration_parameters"] = {
+            **self.calibration.calibration_parameters,
+            **calibration_data.get("calibration_parameters", {}),
+        }
+        self.calibration = SensorCalibration.model_validate(candidate)
+        self.updated_at = datetime.now(UTC)
 
     def get_health_score(self) -> float:
         """Calculate overall sensor health score."""
@@ -232,7 +231,8 @@ class Sensor(BaseModel):
         # Factor in calibration status
         if self.calibration.last_calibration:
             days_since_calibration = (
-                datetime.now() - self.calibration.last_calibration
+                datetime.now(UTC)
+                - normalize_timestamp(self.calibration.last_calibration)
             ).days
             if days_since_calibration > 365:  # Over a year
                 score *= 0.7
@@ -242,7 +242,7 @@ class Sensor(BaseModel):
         # Factor in communication status
         if self.last_communication:
             minutes_since_communication = (
-                datetime.now() - self.last_communication
+                datetime.now(UTC) - normalize_timestamp(self.last_communication)
             ).total_seconds() / 60
             if minutes_since_communication > 60:  # Over an hour
                 score *= 0.8
@@ -256,7 +256,7 @@ class Sensor(BaseModel):
         return max(0.0, min(1.0, score))
 
 
-class SensorNetwork(BaseModel):
+class SensorNetwork(TimestampModel):
     """Sensor network data model."""
 
     network_id: str = Field(..., description="Unique network identifier")
@@ -300,8 +300,8 @@ class SensorNetwork(BaseModel):
     tags: list[str] = Field(default_factory=list, description="Network tags")
 
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
 
     @field_validator("protocol")
     def validate_protocol(cls, v: str) -> str:
@@ -391,7 +391,7 @@ class SensorNetwork(BaseModel):
         return list(h3.geo_to_cells(polygon, self.h3_resolution))
 
 
-class SensorDeployment(BaseModel):
+class SensorDeployment(TimestampModel):
     """Sensor deployment and installation information."""
 
     deployment_id: str = Field(..., description="Unique deployment identifier")
@@ -437,8 +437,8 @@ class SensorDeployment(BaseModel):
     )
 
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
 
     @field_validator("deployment_method")
     def validate_deployment_method(cls, v: str) -> str:

@@ -7,6 +7,7 @@ This module provides a FastAPI-based REST API that implements the endpoints
 defined in the OpenAPI schema for repository management operations.
 """
 
+from importlib.metadata import version as distribution_version
 import time
 from typing import Any, cast
 from datetime import datetime, UTC
@@ -27,7 +28,7 @@ from .errors import register_error_handlers
 app = FastAPI(
     title="GEO-INFER-GIT API",
     description="Version control integration and repository management system for the GEO-INFER framework",
-    version="1.0.0",
+    version=distribution_version("geo-infer-git"),
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -521,7 +522,7 @@ async def get_system_status() -> SystemStatusResponse:
     records: dict[str, Any] = repo_manager.check_repo_status() if repo_manager else {}
     active_repositories = sum(1 for value in records.values() if "error" not in value)
     return SystemStatusResponse(
-        version="1.0.0",
+        version=distribution_version("geo-infer-git"),
         uptime=0,
         repository_count=active_repositories,
         active_workflows=0,

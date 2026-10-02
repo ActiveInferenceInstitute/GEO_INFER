@@ -27,6 +27,7 @@
 - `test_inference_behavior.py`
 - `test_ingest_error_and_latency.py`
 - `test_ingestion.py`
+- `test_optional_visualization.py`
 - `test_performance_monitor.py`
 - `test_quality_control.py`
 - `test_quality_control_history.py`
@@ -35,6 +36,7 @@
 - `test_sensor_api.py`
 - `test_sensor_data.py`
 - `test_streaming_forward.py`
+- `test_timestamp_spatial_contracts.py`
 - `test_visualization.py`
 
 ## Validation

@@ -107,7 +107,7 @@ class TestTimeIntegration(unittest.TestCase):
         self.time = TimeIntegration()
 
         # Create test time series
-        dates = pd.date_range(start="2020-01-01", periods=24, freq="ME")
+        dates = pd.date_range(start="2020-01-01", periods=24, freq="ME", tz="UTC")
         self.test_series = pd.Series(
             np.random.randn(24).cumsum() * 0.5 + 100, index=dates, name="gdp_growth"
         )
@@ -170,10 +170,10 @@ class TestTimeIntegration(unittest.TestCase):
     def test_align_time_series(self):
         """Test time series alignment"""
         series1 = pd.Series(
-            [1, 2, 3], index=pd.date_range("2020-01-01", periods=3, freq="D")
+            [1, 2, 3], index=pd.date_range("2020-01-01", periods=3, freq="D", tz="UTC")
         )
         series2 = pd.Series(
-            [4, 5], index=pd.date_range("2020-01-02", periods=2, freq="D")
+            [4, 5], index=pd.date_range("2020-01-02", periods=2, freq="D", tz="UTC")
         )
 
         aligned = self.time.align_time_series([series1, series2], method="interpolate")
@@ -257,7 +257,7 @@ class TestIntegratedWorkflow(unittest.TestCase):
             ],
         )
 
-        dates = pd.date_range(start="2020-01-01", periods=12, freq="ME")
+        dates = pd.date_range(start="2020-01-01", periods=12, freq="ME", tz="UTC")
         self.time_series = pd.Series(
             np.random.randn(12).cumsum() * 0.5 + 100, index=dates
         )
@@ -290,3 +290,33 @@ class TestIntegratedWorkflow(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTimeContractFailures:
+    """Installed TIME adapters preserve rejected axes rather than returning None."""
+
+    def test_naive_axis_propagates(self):
+        import pytest
+        from geo_infer_econ.integrations import TimeIntegration
+
+        series = pd.Series(
+            [1.0, 2.0, 3.0], index=pd.date_range("2026-10-01", periods=3)
+        )
+        with pytest.raises(ValueError, match="timezone"):
+            TimeIntegration().detect_trend(series)
+
+    def test_numeric_axis_is_not_an_implicit_epoch(self):
+        import pytest
+        from geo_infer_econ.integrations import TimeIntegration
+
+        with pytest.raises(ValueError, match="timestamp must be"):
+            TimeIntegration().detect_trend(pd.Series([1.0, 2.0, 3.0]))
+
+    def test_decomposition_preserves_observation_axis(self):
+        from geo_infer_econ.integrations import TimeIntegration
+
+        axis = pd.date_range("2026-10-01", periods=24, freq="D", tz="UTC")
+        values = pd.Series(np.tile([1.0, 2.0, 3.0, 2.0, 1.0, 2.0], 4), index=axis)
+        result = TimeIntegration().decompose_time_series(values)
+        assert result
+        assert all(component.index.equals(axis) for component in result.values())

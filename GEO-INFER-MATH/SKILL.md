@@ -106,3 +106,9 @@ print(stats)
 - **SPM** → Statistical parametric map computation
 - **AI** → Spatial feature engineering for ML
 - **EDU** → Spatial statistics teaching exercises
+
+### Memory and accelerator boundaries
+
+Import `MemoryConstraintError` from `geo_infer_math.utils` for module memory-budget
+failures. Python's builtin `MemoryError` is distinct. MATH imports defer GPU runtime
+initialization; explicit accelerator operations perform capability probing.

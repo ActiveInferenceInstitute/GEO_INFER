@@ -7,7 +7,7 @@ Integrates with FastAPI for high-performance web services.
 
 import logging
 from typing import Any
-from datetime import datetime
+from datetime import datetime, UTC
 from fastapi import FastAPI, HTTPException, Query
 import h3
 
@@ -50,7 +50,7 @@ class SensorAPI:
                 "service": "GEO-INFER-IOT Sensor API",
                 "version": "1.0.0",
                 "status": "operational",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "endpoints": ["/sensors", "/measurements", "/networks", "/health"],
             }
 
@@ -304,7 +304,7 @@ class SensorAPI:
             """Health check endpoint."""
             health_status: dict[str, Any] = {
                 "status": "healthy",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "services": {},
             }
 

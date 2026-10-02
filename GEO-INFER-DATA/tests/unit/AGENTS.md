@@ -35,12 +35,14 @@
 - `test_identifiers.py`
 - `test_indexing.py`
 - `test_ingestion.py`
+- `test_optional_backend_boundaries.py`
 - `test_performance.py`
 - `test_pipeline.py`
 - `test_rest_api_error_handling.py`
 - `test_schemas.py`
 - `test_storage.py`
 - `test_stream_connectors.py`
+- `test_timestamp_contracts.py`
 - `test_validation.py`
 
 ## Validation

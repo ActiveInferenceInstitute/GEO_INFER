@@ -8,10 +8,11 @@ AdaptiveSampling, PredictiveMaintenance). They are re-exported from
 """
 
 import asyncio
+import time
 import logging
 import numpy as np
 import h3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Any, cast
 
 from geo_infer_iot.core.ingestion import IoTDataIngestion
@@ -34,7 +35,8 @@ class IoTSystem:
     def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.system_id = f"iot_system_{id(self)}"
-        self.start_time = datetime.now()
+        self.start_time = datetime.now(UTC)
+        self._started_monotonic = time.monotonic()
 
         # Core components
         self.registry = SensorRegistry(config)
@@ -60,7 +62,7 @@ class IoTSystem:
             "networks_registered": 0,
             "errors_encountered": 0,
             "uptime_seconds": 0,
-            "last_update": datetime.now(),
+            "last_update": datetime.now(UTC),
         }
 
         logger.info(f"IoTSystem initialized with ID: {self.system_id}")
@@ -114,9 +116,7 @@ class IoTSystem:
                 "networks_registered": len(self.registry.networks),
                 "sensors_registered": len(self.registry.sensors),
                 "processing_active": self.is_processing,
-                "initialization_time": (
-                    datetime.now() - self.start_time
-                ).total_seconds(),
+                "initialization_time": (time.monotonic() - self._started_monotonic),
             }
 
         except Exception as e:
@@ -126,9 +126,7 @@ class IoTSystem:
             return {
                 "success": False,
                 "error": str(e),
-                "initialization_time": (
-                    datetime.now() - self.start_time
-                ).total_seconds(),
+                "initialization_time": (time.monotonic() - self._started_monotonic),
             }
 
     def _initialize_components(self) -> None:
@@ -291,7 +289,7 @@ class IoTSystem:
             return {
                 "success": True,
                 "message": "Processing started successfully",
-                "start_time": datetime.now().isoformat(),
+                "start_time": datetime.now(UTC).isoformat(),
                 "status": "started",
             }
 
@@ -335,7 +333,7 @@ class IoTSystem:
             return {
                 "success": True,
                 "message": "Processing stopped successfully",
-                "uptime_seconds": (datetime.now() - self.start_time).total_seconds(),
+                "uptime_seconds": (time.monotonic() - self._started_monotonic),
                 "status": "stopped",
             }
 
@@ -397,13 +395,13 @@ class IoTSystem:
         Returns:
             Dictionary with system status information
         """
-        uptime = (datetime.now() - self.start_time).total_seconds()
+        uptime = time.monotonic() - self._started_monotonic
 
         # Update metrics
         self.metrics.update(
             {
                 "uptime_seconds": uptime,
-                "last_update": datetime.now(),
+                "last_update": datetime.now(UTC),
                 "is_initialized": self.is_initialized,
                 "is_processing": self.is_processing,
                 "error_count": self.error_count,
@@ -437,7 +435,7 @@ class IoTSystem:
             "sensors": len(self.registry.sensors),
             "measurements": len(self.ingestion.measurements),
             "last_error": self.last_error,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     def run_diagnostics(self) -> dict[str, Any]:
@@ -498,7 +496,7 @@ class IoTSystem:
                 if (self.error_count == 0 and config_validation["valid"])
                 else "needs_attention"
             ),
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     def export_system_state(self, output_path: str) -> dict[str, Any]:
@@ -530,7 +528,7 @@ class IoTSystem:
                     dataclasses.asdict(m) for m in self.ingestion.measurements
                 ],
                 "metrics": self.metrics,
-                "exported_at": datetime.now().isoformat(),
+                "exported_at": datetime.now(UTC).isoformat(),
             }
 
             import json
@@ -712,7 +710,7 @@ class MultiModalFusion:
                 "total_measurements": len(measurements),
                 "spatial_window": spatial_window,
                 "temporal_window": temporal_window,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
             self.fusion_history.append(fusion_result)
@@ -781,7 +779,7 @@ class AdaptiveSampling:
 
             # Store optimization result
             optimization_result = {
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "current_sensors": len(current_network),
                 "recommended_sensors": len(scored_candidates),
                 "priority_areas_covered": len(priority_areas),
@@ -1072,7 +1070,7 @@ class PredictiveMaintenance:
         return {
             "sensor_assessments": health_assessments,
             "network_summary": network_summary,
-            "assessment_timestamp": datetime.now().isoformat(),
+            "assessment_timestamp": datetime.now(UTC).isoformat(),
         }
 
     def get_maintenance_schedule(
@@ -1295,7 +1293,7 @@ class PredictiveMaintenance:
             schedule_entry: dict[str, Any] = {
                 "sensor_id": candidate["sensor_id"],
                 "scheduled_date": (
-                    datetime.now() + timedelta(days=days_ahead)
+                    datetime.now(UTC) + timedelta(days=days_ahead)
                 ).isoformat(),
                 "priority": candidate["overall_status"],
                 "urgency_score": candidate["urgency_score"],

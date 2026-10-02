@@ -92,3 +92,10 @@ print(f"Passed: {result.passed}, score: {result.quality_score:.2f}, issues: {res
 - **OPS** → Monitoring sensor health and uptime (`PredictiveMaintenance`)
 - **COMMS** → Alert broadcasting on sensor thresholds
 
+
+Sensor, measurement, registry and network timestamps require explicit offsets
+and normalize to UTC through GEO-INFER-TIME. Location updates validate before
+changing state and support H3 resolution 0. Bounds queries use exact inclusive
+WGS84 coordinate membership across mixed resolutions and the antimeridian.
+Install `geo-infer-iot[visualization]` for `IoTVisualization`; its public export
+is resolved lazily. Durations use monotonic clocks rather than wall time.

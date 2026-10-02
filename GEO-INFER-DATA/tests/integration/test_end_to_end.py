@@ -12,7 +12,7 @@ import copy
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, UTC
 
 from geo_infer_data import (
     initialize_data_system,
@@ -82,8 +82,8 @@ class TestEndToEndWorkflows:
             description="Test dataset for integration testing",
             spatial=SpatialExtent(bbox=[-122.6, 37.6, -122.2, 38.0], crs="EPSG:4326"),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1),
-                end=datetime(2023, 12, 31),
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 12, 31, tzinfo=UTC),
                 resolution="PT1H",
             ),
             lineage=DataLineage(
@@ -485,7 +485,8 @@ class TestCrossComponentIntegration:
             title="Test Data Flow",
             spatial=SpatialExtent(bbox=[-122.5, 37.6, -122.3, 37.8]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 5)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 5, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="test", process="integration_test", created_by="test"
@@ -534,7 +535,8 @@ class TestCrossComponentIntegration:
             title="Data with Quality Issues",
             spatial=SpatialExtent(bbox=[-122.5, 37.6, -122.3, 37.8]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="test", process="quality_test", created_by="test"
@@ -646,7 +648,8 @@ class TestDataFlowIntegration:
             title="Geospatial Test Data",
             spatial=SpatialExtent(bbox=[-122.5, 37.6, -122.3, 37.8]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="test", process="geospatial_test", created_by="test"
@@ -693,7 +696,9 @@ class TestDataFlowIntegration:
         metadata = DatasetMetadata(
             title="Time Series Test Data",
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 5), resolution="PT1H"
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 5, tzinfo=UTC),
+                resolution="PT1H",
             ),
             lineage=DataLineage(
                 source="test", process="temporal_test", created_by="test"
@@ -749,7 +754,8 @@ class TestPerformanceIntegration:
             description="Performance test with large dataset",
             spatial=SpatialExtent(bbox=[-122.5, 37.6, -122.3, 37.8]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="performance_test", process="large_data", created_by="test"
@@ -823,7 +829,8 @@ class TestPerformanceIntegration:
             title="Concurrent Test Data",
             spatial=SpatialExtent(bbox=[-122.5, 37.6, -122.3, 37.8]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="concurrent_test", process="parallel", created_by="test"

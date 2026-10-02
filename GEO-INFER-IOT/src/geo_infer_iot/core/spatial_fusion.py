@@ -7,7 +7,7 @@ integrating with GEO-INFER-SPACE for H3 spatial indexing and spatial operations.
 
 import logging
 from typing import Any
-from datetime import datetime
+from datetime import datetime, UTC
 import numpy as np
 import h3
 
@@ -94,7 +94,7 @@ class SpatialDataFusion:
                     "target_variable": target_variable,
                     "measurement_count": len(variable_measurements),
                     "fusion_method": "spatial_interpolation",
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
             )
 

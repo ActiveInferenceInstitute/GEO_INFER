@@ -23,7 +23,7 @@ def _operation() -> dict[str, Any]:
 
     rng = np.random.default_rng(2024)
     n_days = 120
-    timestamps = pd.date_range("2025-01-01", periods=n_days, freq="D")
+    timestamps = pd.date_range("2025-01-01", periods=n_days, freq="D", tz="UTC")
     t = np.arange(n_days, dtype=float)
     values = 10.0 + 0.02 * t + 2.0 * np.sin(2.0 * np.pi * t / 7.0)
     values = values + rng.normal(0.0, 0.5, n_days)

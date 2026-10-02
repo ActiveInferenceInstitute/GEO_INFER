@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-health"
-version = "0.3.0"
+version = "0.4.0"
 description = "Epidemiology, healthcare accessibility analysis, disease surveillance, and spatial health risk assessment"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"
@@ -47,7 +47,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4.0",
-    "pytest-asyncio>=0.21.0",
+    "pytest-asyncio>=0.24.0",
     "pytest-cov>=4.1.0",
     "httpx>=0.25.0",
     "mypy>=0.910",
@@ -64,7 +64,7 @@ docs = [
 ]
 integrations = [
     # Workspace siblings imported by this module's tests (resolved via [tool.uv.sources])
-    "geo-infer-test>=0.3.0",
+    "geo-infer-test>=0.4.0",
 ]
 
 [project.urls]
@@ -94,30 +94,6 @@ exclude = ["tests*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.md", "*.txt"]
-
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-
-[[tool.mypy.overrides]]
-module = [
-    "geopandas.*",
-    "loguru.*",
-    "shapely.*",
-    "pyproj.*",
-]
-ignore_missing_imports = true
 
 [tool.coverage.run]
 source = ["src"]

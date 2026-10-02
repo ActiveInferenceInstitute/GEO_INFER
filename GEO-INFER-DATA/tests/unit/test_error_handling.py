@@ -11,7 +11,7 @@ import asyncio
 from unittest.mock import Mock, AsyncMock, patch
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, UTC
 
 from geo_infer_data import initialize_data_system
 from geo_infer_data.core.ingestion import MultiSourceDataIngestion
@@ -153,7 +153,8 @@ class TestStorageErrorHandling:
                         title="Test",
                         spatial=SpatialExtent(bbox=[0, 0, 1, 1]),
                         temporal=TemporalExtent(
-                            start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                            start=datetime(2023, 1, 1, tzinfo=UTC),
+                            end=datetime(2023, 1, 2, tzinfo=UTC),
                         ),
                         lineage=DataLineage(
                             source="test", process="test", created_by="test"
@@ -188,7 +189,8 @@ class TestStorageErrorHandling:
             title="Very Large Dataset",
             spatial=SpatialExtent(bbox=[0, 0, 1, 1]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="test", process="large_data_test", created_by="test"
@@ -211,7 +213,8 @@ class TestStorageErrorHandling:
                 title=f"Concurrent Test {data_id}",
                 spatial=SpatialExtent(bbox=[0, 0, 1, 1]),
                 temporal=TemporalExtent(
-                    start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                    start=datetime(2023, 1, 1, tzinfo=UTC),
+                    end=datetime(2023, 1, 2, tzinfo=UTC),
                 ),
                 lineage=DataLineage(
                     source="concurrent_test", process="test", created_by="test"
@@ -238,7 +241,8 @@ class TestValidationErrorHandling:
             title=title,
             spatial=SpatialExtent(bbox=[-122.5, 37.7, -122.3, 37.9]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 12, 31)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 12, 31, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="validation_test", process="test", created_by="pytest"
@@ -359,7 +363,8 @@ class TestIntegrationErrorHandling:
             title="Recovery Test",
             spatial=SpatialExtent(bbox=[0, 0, 1, 1]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="recovery_test", process="test", created_by="test"
@@ -385,7 +390,8 @@ class TestIntegrationErrorHandling:
                 title="Resource Test",
                 spatial=SpatialExtent(bbox=[0, 0, 1, 1]),
                 temporal=TemporalExtent(
-                    start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                    start=datetime(2023, 1, 1, tzinfo=UTC),
+                    end=datetime(2023, 1, 2, tzinfo=UTC),
                 ),
                 lineage=DataLineage(
                     source="resource_test", process="test", created_by="test"
@@ -463,7 +469,8 @@ class TestEdgeCaseHandling:
             title="Single Record Test",
             spatial=SpatialExtent(bbox=[-122.5, 37.7, -122.3, 37.9]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 1)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 1, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="single_test", process="test", created_by="test"
@@ -497,7 +504,8 @@ class TestEdgeCaseHandling:
             description="Test data with Unicode and special characters",
             spatial=SpatialExtent(bbox=[0, 0, 1, 1]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="unicode_test", process="test", created_by="test"
@@ -531,7 +539,8 @@ class TestEdgeCaseHandling:
             title="Extreme Values Test",
             spatial=SpatialExtent(bbox=[0, 0, 1, 1]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="extreme_test", process="test", created_by="test"
@@ -563,7 +572,8 @@ class TestEdgeCaseHandling:
             title="Mixed Types Test",
             spatial=SpatialExtent(bbox=[0, 0, 1, 1]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(source="mixed_test", process="test", created_by="test"),
         )

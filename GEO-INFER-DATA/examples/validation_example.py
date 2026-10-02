@@ -15,7 +15,7 @@ Requirements:
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 
 import geopandas as gpd
@@ -163,7 +163,10 @@ async def main():
         title="Valid Environmental Data",
         description="Clean environmental monitoring data",
         spatial=SpatialExtent(bbox=[-122.6, 37.6, -122.2, 38.0], crs="EPSG:4326"),
-        temporal=TemporalExtent(start=datetime(2023, 1, 1), end=datetime(2023, 12, 31)),
+        temporal=TemporalExtent(
+            start=datetime(2023, 1, 1, tzinfo=UTC),
+            end=datetime(2023, 12, 31, tzinfo=UTC),
+        ),
         lineage=DataLineage(
             source="sensors",
             process="automated_collection",

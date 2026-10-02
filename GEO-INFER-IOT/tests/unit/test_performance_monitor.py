@@ -6,7 +6,7 @@ metric history windowing, and the metrics dataclass.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 from geo_infer_iot.performance import PerformanceMetrics, PerformanceMonitor
 
@@ -29,7 +29,7 @@ def _sample(
     timestamp: datetime | None = None,
 ) -> PerformanceMetrics:
     return PerformanceMetrics(
-        timestamp=timestamp or datetime.now(),
+        timestamp=timestamp or datetime.now(UTC),
         cpu_percent=cpu,
         memory_percent=memory,
         processing_latency_ms=latency,
@@ -63,7 +63,7 @@ class TestPerformanceSummary:
         assert "error" in summary
 
     def test_summary_respects_time_window(self) -> None:
-        now = datetime.now()
+        now = datetime.now(UTC)
         old = _sample(timestamp=now - timedelta(minutes=30))
         fresh = _sample(timestamp=now)
         monitor = _monitor_with_history([old, fresh])
@@ -113,7 +113,7 @@ class TestCurrentMetrics:
         assert monitor.get_current_metrics() is None
 
     def test_get_metrics_history_window(self) -> None:
-        now = datetime.now()
+        now = datetime.now(UTC)
         monitor = _monitor_with_history(
             [_sample(timestamp=now - timedelta(minutes=10)), _sample(timestamp=now)]
         )

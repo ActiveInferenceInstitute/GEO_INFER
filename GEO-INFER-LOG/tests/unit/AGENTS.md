@@ -34,6 +34,7 @@
 - `test_optimization.py`
 - `test_optimization_ortools.py`
 - `test_supply_chain.py`
+- `test_supply_chain_milp_contract.py`
 - `test_transport.py`
 - `test_transport_behavior.py`
 - `test_transport_network_api.py`

@@ -9,7 +9,7 @@ import pytest
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, UTC
 from shapely.geometry import Point
 
 from geo_infer_data.core.validation import DataQualityManager
@@ -197,7 +197,8 @@ class TestDataQualityManager:
             description="Test dataset for quality validation",
             spatial=SpatialExtent(bbox=[-122.5, 37.7, -122.3, 37.9], crs="EPSG:4326"),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 12, 31)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 12, 31, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="test_source", process="test_process", created_by="test_system"

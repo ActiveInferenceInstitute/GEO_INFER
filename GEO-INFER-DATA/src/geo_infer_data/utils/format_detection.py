@@ -13,10 +13,10 @@ import zipfile
 
 import geopandas as gpd
 import pandas as pd
-import rasterio
 import numpy as np
 
 from ..models.schemas import DataFormat
+from .dependencies import MissingOptionalDependency, require_dependency
 
 
 logger = logging.getLogger(__name__)
@@ -124,11 +124,14 @@ class FormatDetector:
                                 "File extension suggests GeoJSON but structure is invalid"
                             )
                 elif detected_format == DataFormat.GEOTIFF:
+                    rasterio = require_dependency("rasterio", "raster")
                     with rasterio.open(file_path) as src:
                         _ = src.count  # Opening and reading metadata verifies access.
 
                 return detected_format
 
+            except MissingOptionalDependency:
+                raise
             except Exception as e:
                 logger.warning(f"Format verification failed for {detected_format}: {e}")
                 # Fall back to content-based detection
@@ -153,6 +156,8 @@ class FormatDetector:
             try:
                 if detector_func(file_path):
                     return format_type
+            except MissingOptionalDependency:
+                raise
             except Exception as e:
                 logger.debug(f"Format {format_type} detection failed: {e}")
                 continue
@@ -230,6 +235,10 @@ class FormatDetector:
 
     def _detect_geotiff(self, file_path: Path) -> bool:
         """Detect GeoTIFF format."""
+        with file_path.open("rb") as file:
+            if file.read(4) not in (b"II*\x00", b"MM\x00*", b"II+\x00", b"MM\x00+"):
+                return False
+        rasterio = require_dependency("rasterio", "raster")
         try:
             with rasterio.open(file_path):
                 return True

@@ -3,12 +3,11 @@ Custom algorithm framework for creating user-defined procedural art algorithms.
 """
 
 import logging
-import os
 import inspect
 import json
+import math
 from typing import Any
-from collections.abc import Callable
-import types
+from collections.abc import Callable, Mapping
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -28,8 +27,29 @@ class CustomAlgorithmFramework:
     from geospatial data, with a consistent interface and validation system.
     """
 
-    def __init__(self) -> None:
-        """Initialize the custom algorithm framework."""
+    def __init__(
+        self, algorithm_registry: Mapping[str, Callable] | None = None
+    ) -> None:
+        """Initialize with trusted callables; persisted files contain only keys.
+
+        The builtin keys are ``spiral``, ``cellular_growth`` and
+        ``fractal_landscape``. Applications supply their own stable keys here
+        before loading a file. A file cannot import modules or define code.
+        """
+        self._algorithm_registry = {
+            "spiral": example_spiral_algorithm,
+            "cellular_growth": example_cellular_growth_algorithm,
+            "fractal_landscape": example_fractal_landscape_algorithm,
+        }
+        for key, function in (algorithm_registry or {}).items():
+            if not isinstance(key, str) or not key or not callable(function):
+                raise ValueError("Registry entries require nonempty keys and callables")
+            if (
+                key in self._algorithm_registry
+                and self._algorithm_registry[key] is not function
+            ):
+                raise ValueError(f"Cannot replace builtin registry key '{key}'")
+            self._algorithm_registry[key] = function
         self.registered_algorithms: dict[str, Callable] = {}
         self.algorithm_metadata: dict[str, dict[str, Any]] = {}
 
@@ -54,6 +74,8 @@ class CustomAlgorithmFramework:
         Raises:
             ValueError: If algorithm name already exists or function is invalid
         """
+        if not isinstance(name, str) or not name:
+            raise ValueError("Algorithm name must be a nonempty string")
         if name in self.registered_algorithms:
             raise ValueError(f"Algorithm '{name}' already registered")
 
@@ -67,6 +89,12 @@ class CustomAlgorithmFramework:
         for param in required_params:
             if param not in sig.parameters:
                 raise ValueError(f"Algorithm function must have parameter '{param}'")
+        try:
+            sig.bind(data=None, params={}, width=1, height=1)
+        except TypeError as exc:
+            raise ValueError(
+                "Algorithm must accept data, params, width and height as keywords"
+            ) from exc
 
         self.registered_algorithms[name] = algorithm_function
         self.algorithm_metadata[name] = {
@@ -146,97 +174,106 @@ class CustomAlgorithmFramework:
             raise ValueError(f"Algorithm '{name}' execution failed: {str(e)}") from e
 
     def save_algorithms_to_file(self, filepath: str) -> None:
-        """
-        Save registered algorithms to a JSON file for persistence.
+        """Save registry references and metadata, never function source.
 
-        Args:
-            filepath: Path to save the algorithms
+        Every function must occur in the trusted registry supplied at
+        construction. In-memory callables without a registry key cannot be
+        persisted. Legacy source-bearing files are unsupported.
         """
-        algorithms_data = {}
-
+        algorithms_data: dict[str, dict[str, Any]] = {}
         for name, func in self.registered_algorithms.items():
-            # Get function source code
-            try:
-                source = inspect.getsource(func)
-            except (OSError, TypeError):
-                source = "Function source not available"
-
+            keys = sorted(
+                key
+                for key, function in self._algorithm_registry.items()
+                if function is func
+            )
+            if not keys:
+                raise ValueError(f"Algorithm '{name}' has no trusted registry key")
             algorithms_data[name] = {
                 "metadata": self.algorithm_metadata[name],
-                "source": source,
-                "function_name": getattr(func, "__name__", name),
+                "registry_key": keys[0],
             }
-
-        with open(filepath, "w") as f:
-            json.dump(algorithms_data, f, indent=2)
+        payload = {"schema_version": 1, "algorithms": algorithms_data}
+        serialized = json.dumps(payload, indent=2, allow_nan=False)
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(serialized)
 
     def load_algorithms_from_file(self, filepath: str) -> None:
+        """Load schema version 1 using only the trusted callable registry.
+
+        Validation is atomic: malformed metadata, duplicate names, unsupported
+        versions, source-bearing legacy files and unknown keys raise
+        ``ValueError`` without registering any entries. No persisted value is
+        passed to import, exec or eval.
         """
-        Load algorithms from a JSON file written by :meth:`save_algorithms_to_file`.
 
-        Every entry must carry ``metadata``, ``source`` and ``function_name``;
-        the whole file is validated before any source is executed. Entries
-        whose source fails to compile or does not define ``function_name``
-        are skipped with a warning.
+        def unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+            result: dict[str, Any] = {}
+            for key, value in pairs:
+                if key in result:
+                    raise ValueError(f"Duplicate JSON key '{key}'")
+                result[key] = value
+            return result
 
-        Args:
-            filepath: Path to the algorithms file
+        def reject_constant(value: str) -> Any:
+            raise ValueError(f"Non-finite JSON value '{value}' is unsupported")
 
-        Raises:
-            FileNotFoundError: If file doesn't exist
-            ValueError: If the file is not a mapping of entries in the current
-                format (for example an entry without ``function_name``)
-        """
-        if not os.path.exists(filepath):
-            raise FileNotFoundError(f"Algorithms file not found: {filepath}")
+        def finite_float(value: str) -> float:
+            parsed = float(value)
+            if not math.isfinite(parsed):
+                raise ValueError(f"Non-finite JSON value '{value}' is unsupported")
+            return parsed
 
-        with open(filepath) as f:
-            algorithms_data = json.load(f)
-
-        if not isinstance(algorithms_data, dict):
-            raise ValueError(
-                f"Invalid algorithms file {filepath}: expected a JSON object "
-                "mapping algorithm names to entries"
+        with open(filepath, encoding="utf-8") as f:
+            payload = json.load(
+                f,
+                object_pairs_hook=unique_object,
+                parse_constant=reject_constant,
+                parse_float=finite_float,
             )
-        required_keys = ("metadata", "source", "function_name")
-        for name, data in algorithms_data.items():
-            missing = [
-                key
-                for key in required_keys
-                if not isinstance(data, dict) or key not in data
-            ]
-            if missing:
+        if (
+            not isinstance(payload, dict)
+            or set(payload) != {"schema_version", "algorithms"}
+            or type(payload["schema_version"]) is not int
+            or payload["schema_version"] != 1
+            or not isinstance(payload["algorithms"], dict)
+        ):
+            raise ValueError("Expected registry algorithms file with schema_version 1")
+
+        pending = CustomAlgorithmFramework(self._algorithm_registry)
+        for name, entry in payload["algorithms"].items():
+            if (
+                not isinstance(name, str)
+                or not name
+                or name in self.registered_algorithms
+            ):
                 raise ValueError(
-                    f"Invalid algorithms file {filepath}: entry '{name}' is "
-                    f"missing {', '.join(missing)}"
+                    f"Invalid or already registered algorithm name '{name}'"
                 )
-
-        for name, data in algorithms_data.items():
-            metadata = data["metadata"]
-            source = data["source"]
-            function_name = data["function_name"]
-
-            # Recreate the function from its saved source
-            try:
-                module = types.ModuleType(f"geo_infer_art_loaded_{name}")
-                exec(compile(source, f"<algorithm:{name}>", "exec"), module.__dict__)
-
-                algorithm_function = getattr(module, function_name, None)
-                if not inspect.isfunction(algorithm_function):
-                    raise ValueError(
-                        f"saved source does not define function '{function_name}'"
-                    )
-
-                # Re-register the algorithm
-                self.register_algorithm(
-                    name=name,
-                    algorithm_function=algorithm_function,
-                    description=metadata["description"],
-                    parameters=metadata["parameters"],
-                    example_usage=metadata["example_usage"],
-                )
-            except Exception as e:
-                logger.warning("Could not load algorithm '%s': %s", name, e)
+            if not isinstance(entry, dict) or set(entry) != {
+                "registry_key",
+                "metadata",
+            }:
+                raise ValueError(f"Invalid registry entry '{name}'")
+            key, metadata = entry["registry_key"], entry["metadata"]
+            if not isinstance(key, str) or key not in self._algorithm_registry:
+                raise ValueError(f"Unknown registry key for algorithm '{name}'")
+            if (
+                not isinstance(metadata, dict)
+                or not isinstance(metadata.get("description"), str)
+                or not isinstance(metadata.get("parameters"), dict)
+                or not isinstance(metadata.get("example_usage"), str)
+            ):
+                raise ValueError(f"Invalid metadata for algorithm '{name}'")
+            pending.register_algorithm(
+                name,
+                self._algorithm_registry[key],
+                metadata["description"],
+                metadata["parameters"],
+                metadata["example_usage"],
+            )
+        self.registered_algorithms.update(pending.registered_algorithms)
+        self.algorithm_metadata.update(pending.algorithm_metadata)
 
 
 # Example custom algorithms for demonstration
@@ -332,7 +369,7 @@ def example_cellular_growth_algorithm(
 
         # Draw cell as circle
         circle = plt.Circle(
-            (x, y), radius, color=color, alpha=0.6, edgecolor="white", linewidth=1
+            (x, y), radius, facecolor=color, alpha=0.6, edgecolor="white", linewidth=1
         )
         ax.add_patch(circle)
 

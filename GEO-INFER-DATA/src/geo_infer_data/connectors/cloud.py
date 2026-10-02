@@ -17,7 +17,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-import boto3
+from ..utils.dependencies import require_dependency
 
 
 logger = logging.getLogger(__name__)
@@ -158,6 +158,7 @@ class S3Connector(CloudConnector):
 
     def _create_client(self) -> Any:
         """Create the boto3 S3 client from the connector configuration."""
+        boto3 = require_dependency("boto3", "s3")
         client_kwargs: dict[str, Any] = {"region_name": self.region}
         if self.access_key and self.secret_key:
             client_kwargs["aws_access_key_id"] = self.access_key

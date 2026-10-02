@@ -6,6 +6,7 @@ Provides command-line tools for running health analysis, data processing,
 and API server management.
 """
 
+from importlib.metadata import version as distribution_version
 import argparse
 import csv
 import json
@@ -210,7 +211,7 @@ def run_server(args: argparse.Namespace, config: Any) -> None:
     app = FastAPI(
         title="GEO-INFER-HEALTH API",
         description="Spatial Health Analytics and Epidemiological Intelligence",
-        version="1.0.0",
+        version=distribution_version("geo-infer-health"),
     )
 
     app.add_middleware(
@@ -225,7 +226,10 @@ def run_server(args: argparse.Namespace, config: Any) -> None:
 
     @app.get("/")
     async def root() -> dict[str, str]:
-        return {"message": "GEO-INFER-HEALTH API", "version": "1.0.0"}
+        return {
+            "message": "GEO-INFER-HEALTH API",
+            "version": distribution_version("geo-infer-health"),
+        }
 
     uvicorn.run(
         app,

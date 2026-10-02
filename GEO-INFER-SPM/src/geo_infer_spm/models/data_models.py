@@ -11,7 +11,7 @@ from typing import Any, cast
 from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
-from datetime import datetime
+from datetime import UTC, datetime
 import geopandas as gpd
 
 
@@ -240,7 +240,7 @@ class SPMResult:
 
     def __post_init__(self) -> None:
         """Initialize processing metadata."""
-        self.processing_metadata["timestamp"] = datetime.now().isoformat()
+        self.processing_metadata["timestamp"] = datetime.now(UTC).isoformat()
         self.processing_metadata["n_points"] = self.spm_data.n_points
         self.processing_metadata["n_regressors"] = self.design_matrix.n_regressors
 

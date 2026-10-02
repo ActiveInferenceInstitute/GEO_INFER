@@ -27,13 +27,38 @@ try:  # pragma: no cover - import probe
 
     HAS_DUCKDB: bool = True
     _DUCKDB = _duckdb
-except ImportError:  # pragma: no cover - exercised when duckdb is missing
+except ModuleNotFoundError as exc:  # exercised when duckdb is missing
+    if exc.name != "duckdb":
+        raise
     _DUCKDB = None
     HAS_DUCKDB = False
 
 
 class DuckDBSpatialError(RuntimeError):
     """Raised when an explicit DuckDB-Spatial read fails."""
+
+
+def provision_spatial_extension() -> dict[str, Any]:
+    """Explicitly install and verify the signed extension matching this DuckDB runtime."""
+    if _DUCKDB is None:
+        raise DuckDBSpatialError(
+            "Install geo-infer-data[integrations] before provisioning Spatial"
+        )
+    with _DUCKDB.connect() as conn:
+        conn.execute(
+            "SET custom_extension_repository = 'https://extensions.duckdb.org'"
+        )
+        conn.execute("INSTALL spatial; LOAD spatial;")
+        point = conn.execute("SELECT ST_AsText(ST_Point(1, 2))").fetchone()
+        if point != ("POINT (1 2)",):
+            raise DuckDBSpatialError(
+                "Spatial extension failed its analytical smoke check"
+            )
+    return {
+        "duckdb_version": _DUCKDB.__version__,
+        "extension": "spatial",
+        "status": "verified",
+    }
 
 
 def _fallback_read_vector(
@@ -68,7 +93,7 @@ def _duckdb_read_vector(
         raise DuckDBSpatialError("DuckDB is not installed")
     conn = _DUCKDB.connect()
     try:
-        conn.execute("INSTALL spatial; LOAD spatial;")
+        conn.execute("LOAD spatial;")
         # The path is untrusted input interpolated into SQL, so it is
         # passed as a bound parameter. DuckDB builds that reject parameters
         # inside table functions fall back to standard SQL string-literal
@@ -183,6 +208,7 @@ def read_cloud_native_vector(
     file_path: str | Path,
     *,
     use_duckdb: bool = True,
+    require_duckdb: bool = False,
     layer: str | None = None,
     **kwargs: Any,
 ) -> gpd.GeoDataFrame:
@@ -192,6 +218,8 @@ def read_cloud_native_vector(
         file_path: Path to the vector file.
         use_duckdb: When True (default) and DuckDB+Spatial is installed, use
             the DuckDB fast path; otherwise fall back to GeoPandas/Fiona.
+        require_duckdb: Require the real fast path and propagate backend failures.
+            Provision the matching extension explicitly before calling this mode.
         layer: Optional layer name (fallback path only).
         **kwargs: Extra kwargs forwarded to the reader.
 
@@ -207,10 +235,24 @@ def read_cloud_native_vector(
     if not path.is_file():
         raise FileNotFoundError(f"Not a regular file: {path}")
 
+    if require_duckdb and not use_duckdb:
+        raise ValueError("require_duckdb requires use_duckdb=True")
+    if require_duckdb and not HAS_DUCKDB:
+        raise DuckDBSpatialError(
+            "DuckDB is not installed; use geo-infer-data[integrations]"
+        )
+    if layer is not None or kwargs:
+        if require_duckdb:
+            raise ValueError(
+                "DuckDB Spatial does not support layer or reader keyword arguments"
+            )
+        return _fallback_read_vector(path, layer=layer, **kwargs)
     if use_duckdb and HAS_DUCKDB:
         try:
             return _duckdb_read_vector(path, layer=layer, **kwargs)
         except Exception as exc:  # pragma: no cover - engine dependent
+            if require_duckdb:
+                raise DuckDBSpatialError("Required DuckDB-Spatial read failed") from exc
             logger.warning("DuckDB-Spatial read failed (%s); falling back", exc)
 
     return _fallback_read_vector(path, layer=layer, **kwargs)
@@ -229,6 +271,7 @@ def duckdb_status() -> str:
 __all__ = [
     "HAS_DUCKDB",
     "DuckDBSpatialError",
+    "provision_spatial_extension",
     "read_cloud_native_vector",
     "duckdb_status",
 ]

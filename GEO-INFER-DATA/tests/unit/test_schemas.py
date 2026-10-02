@@ -5,7 +5,7 @@ Validates schema construction, field validation, serialization,
 and constraint enforcement for all core data models.
 """
 
-from datetime import datetime
+from datetime import datetime, UTC
 import pytest
 from pydantic import ValidationError
 
@@ -68,16 +68,16 @@ class TestSpatialExtent:
 class TestTemporalExtent:
     def test_valid_temporal_extent(self):
         te = TemporalExtent(
-            start=datetime(2023, 1, 1),
-            end=datetime(2023, 12, 31),
+            start=datetime(2023, 1, 1, tzinfo=UTC),
+            end=datetime(2023, 12, 31, tzinfo=UTC),
         )
         assert te.start < te.end
 
     def test_invalid_order_raises(self):
         with pytest.raises(ValidationError):
             TemporalExtent(
-                start=datetime(2023, 12, 31),
-                end=datetime(2023, 1, 1),
+                start=datetime(2023, 12, 31, tzinfo=UTC),
+                end=datetime(2023, 1, 1, tzinfo=UTC),
             )
 
 

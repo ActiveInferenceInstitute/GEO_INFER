@@ -192,8 +192,21 @@ class AgentRegistry:
 
         # Mark as running
         self.running_agents.add(agent_id)
+        task.add_done_callback(
+            lambda completed: self._on_agent_task_done(agent_id, completed)
+        )
 
         logger.info(f"Started agent {agent_id}")
+
+    def _on_agent_task_done(self, agent_id: str, task: asyncio.Task) -> None:
+        """Observe completion and release only the matching generation of work."""
+        if self.agent_tasks.get(agent_id) is task:
+            self.agent_tasks.pop(agent_id)
+            self.running_agents.discard(agent_id)
+        if not task.cancelled():
+            error = task.exception()
+            if error is not None:
+                logger.error("Agent %s task failed: %s", agent_id, error)
 
     async def stop_agent(self, agent_id: str) -> None:
         """
@@ -227,10 +240,12 @@ class AgentRegistry:
                 pass
 
             # Clean up
-            del self.agent_tasks[agent_id]
+            if self.agent_tasks.get(agent_id) is task:
+                self.agent_tasks.pop(agent_id)
 
         # Mark as not running
-        self.running_agents.remove(agent_id)
+        if agent_id not in self.agent_tasks:
+            self.running_agents.discard(agent_id)
 
         logger.info(f"Stopped agent {agent_id}")
 

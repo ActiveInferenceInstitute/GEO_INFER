@@ -183,6 +183,7 @@ def test_setup_monitoring():
 def test_start_metrics_server_yields_port_and_cleans_up():
     """Test metrics context manager exposes the selected port and closes handles."""
     server = MagicMock()
+    server.server_port = 9093
     thread = MagicMock()
     thread.is_alive.return_value = True
 

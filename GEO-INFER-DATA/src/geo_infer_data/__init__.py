@@ -10,7 +10,7 @@ Use ``initialize_data_system()`` to set up all components in one call.
 from typing import Any
 import logging
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 from .core.ingestion import MultiSourceDataIngestion
 from .core.pipeline import IntelligentETLPipeline

@@ -8,45 +8,15 @@ including batch processing, quality metadata, and temporal analysis.
 import logging
 from typing import Any
 from datetime import datetime, UTC
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from pydantic import Field, ValidationInfo, field_validator
 import numpy as np
 import h3
 
+from geo_infer_time.core.timestamps import normalize_timestamp
+from .timestamps import TimestampModel
+from .spatial import sensor_cell
+
 logger = logging.getLogger(__name__)
-
-
-def normalize_timestamp(value: datetime | str) -> datetime:
-    """Return a timezone-aware UTC datetime from a datetime or ISO-8601 string.
-
-    Naive values are ambiguous (local wall-clock or UTC) and raise
-    ``ValueError``, matching ``geo_infer_time.core.stream_ingest
-    .normalize_timestamp``; attach an explicit offset (e.g. ``+00:00`` or
-    ``datetime.UTC``). Aware values in any offset are converted to UTC.
-
-    Raises:
-        TypeError: If ``value`` is neither a datetime nor a string.
-        ValueError: If the string is not ISO-8601, the value is NaT, or the
-            value is timezone-naive.
-    """
-    if isinstance(value, str):
-        try:
-            parsed = datetime.fromisoformat(value)
-        except ValueError as exc:
-            raise ValueError(
-                f"timestamp must be an ISO-8601 string, got {value!r}"
-            ) from exc
-    elif isinstance(value, datetime):
-        parsed = value
-    else:
-        raise TypeError("timestamp must be a datetime or an ISO-8601 string")
-    if parsed != parsed:  # Reject pandas NaT, a datetime subclass.
-        raise ValueError("timestamp must not be NaT")
-    if parsed.utcoffset() is None:
-        raise ValueError(
-            "timestamp must be timezone-aware; naive datetimes are ambiguous "
-            f"(got {parsed.isoformat()!r}, attach tzinfo such as UTC)"
-        )
-    return parsed.astimezone(UTC)
 
 
 def _utc_now() -> datetime:
@@ -54,7 +24,7 @@ def _utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-class MeasurementQuality(BaseModel):
+class MeasurementQuality(TimestampModel):
     """Quality metadata for sensor measurements."""
 
     quality_score: float = Field(
@@ -84,7 +54,7 @@ class MeasurementQuality(BaseModel):
         )
 
 
-class Measurement(BaseModel):
+class Measurement(TimestampModel):
     """Individual sensor measurement data model."""
 
     measurement_id: str = Field(..., description="Unique measurement identifier")
@@ -156,7 +126,6 @@ class Measurement(BaseModel):
             self.latitude is not None
             and self.longitude is not None
             and not self.h3_index
-            and self.h3_resolution
         ):
             self.h3_index = h3.latlng_to_cell(
                 self.latitude, self.longitude, self.h3_resolution
@@ -166,13 +135,18 @@ class Measurement(BaseModel):
         self, latitude: float, longitude: float, h3_resolution: int | None = None
     ) -> None:
         """Update measurement location and recalculate H3 index."""
-        self.latitude = latitude
-        self.longitude = longitude
-
-        if h3_resolution:
-            self.h3_resolution = h3_resolution
-
-        self.h3_index = h3.latlng_to_cell(latitude, longitude, self.h3_resolution)
+        resolution = self.h3_resolution if h3_resolution is None else h3_resolution
+        cell = sensor_cell(latitude, longitude, resolution)
+        candidate = type(self).model_validate(
+            {
+                **self.model_dump(),
+                "latitude": latitude,
+                "longitude": longitude,
+                "h3_resolution": resolution,
+                "h3_index": cell,
+            }
+        )
+        self.__dict__.update(candidate.__dict__)
 
     def apply_calibration(self, calibration_params: dict) -> "Measurement":
         """Apply calibration to the measurement value."""
@@ -210,7 +184,7 @@ class Measurement(BaseModel):
         }
 
 
-class MeasurementBatch(BaseModel):
+class MeasurementBatch(TimestampModel):
     """Batch of sensor measurements for efficient processing."""
 
     batch_id: str = Field(..., description="Unique batch identifier")
@@ -424,7 +398,7 @@ class MeasurementBatch(BaseModel):
         }
 
 
-class MeasurementStream(BaseModel):
+class MeasurementStream(TimestampModel):
     """Real-time measurement stream configuration."""
 
     stream_id: str = Field(..., description="Unique stream identifier")
@@ -471,7 +445,7 @@ class MeasurementStream(BaseModel):
             self.variables.remove(variable)
 
 
-class MeasurementValidation(BaseModel):
+class MeasurementValidation(TimestampModel):
     """Measurement validation rules and constraints."""
 
     validation_id: str = Field(..., description="Unique validation rule ID")

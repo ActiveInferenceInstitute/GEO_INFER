@@ -104,3 +104,8 @@ styled.save("stylized.png")
 - No required cross-module dependencies; ART is a leaf module that consumes plain
   GeoDataFrames / numpy arrays.
 - Test: `uv run --no-sync python -m pytest tests/ -v`
+
+Custom algorithm persistence accepts schema version 1 registry references only.
+Supply trusted callables to `CustomAlgorithmFramework(algorithm_registry=...)`;
+legacy source-bearing JSON is rejected before any state change. Direct callable
+registration remains available, but only registry-listed functions can be saved.

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-comms"
-version = "0.3.0"
+version = "0.4.0"
 description = "Communications infrastructure for geospatial systems enabling data exchange, messaging, networking, and outreach across distributed applications"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"
@@ -48,7 +48,7 @@ dependencies = [
 dev = [
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
-    "pytest-asyncio>=0.20.0",
+    "pytest-asyncio>=0.24.0",
     "ruff>=0.15.6,<0.16",
     "mypy>=0.910",
 ]
@@ -74,27 +74,6 @@ exclude = ["tests*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.md", "*.txt"]
-
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-
-[[tool.mypy.overrides]]
-module = [
-    "shapely.*",
-]
-ignore_missing_imports = true
 
 [tool.coverage.run]
 source = ["src"]

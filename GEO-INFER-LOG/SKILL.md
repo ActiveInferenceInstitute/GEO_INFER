@@ -20,7 +20,10 @@ examples_dir: ../GEO-INFER-EXAMPLES/examples/
 
 - **Delivery**: KMeans clustering, Voronoi tessellation, Haversine service areas
 - **Transport**: Dijkstra routing, betweenness centrality, max-flow, emissions
-- **Supply chain**: PuLP MILP optimization, articulation points, EOQ, Monte Carlo
+- **Supply chain**: PuLP models solved by SciPy/HiGHS MILP, articulation points,
+  EOQ, Monte Carlo. Supply flow and facility selection share the exact in-process
+  solver; infeasible constraints raise `ValueError` and solver failures raise
+  `RuntimeError` without substituting a heuristic.
 - **Fleet management**: Vehicle routing, real-time tracking, ETA calculation
 - **Observability**: Enhanced structured logging with spatial context
 
@@ -77,7 +80,7 @@ print(assignment["route"]["distance"])  # km
 
 ## Guidelines
 
-- All implementations are real (KMeans, Dijkstra, PuLP) — no placeholders
+- Supply-chain optimization requires SciPy 1.9 or newer and does not launch CBC
 - Submodules (`api`, `core`, `models`, `utils`) lazy-loaded on attribute access
 - `Vehicle`, `VehicleType`, and `RoutingParameters` are canonical Pydantic models
   in `geo_infer_log.models.schemas` (re-exported from `core.routing`)

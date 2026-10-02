@@ -102,3 +102,10 @@ features = engineer.create_spatial_features(coordinates, include_distances=True)
   counterparts (see `geo_infer_ai.models.predictive` docstring for the
   deliberate API differences)
 - Test: `uv run python GEO-INFER-TEST/run_unified_tests.py --module AI`
+
+### Value-tolerance evaluation
+
+Use `GeospatialModelEvaluator.evaluate_value_tolerance(y_true, y_pred, tolerance)`
+for absolute target-value errors and the percentage within a tolerance expressed
+in target units. It replaces `evaluate_spatial_accuracy`; it accepts no coordinates
+or geographic buffer argument. Inputs must be matching finite nonempty vectors.

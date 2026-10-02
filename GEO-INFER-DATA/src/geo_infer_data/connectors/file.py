@@ -17,10 +17,10 @@ import gzip
 import geopandas as gpd
 import pandas as pd
 import numpy as np
-import rasterio
 
 from ..models.schemas import DatasetMetadata
 from ..utils.format_detection import FormatDetector
+from ..utils.dependencies import require_dependency
 
 
 HAS_FIONA = importlib.util.find_spec("fiona") is not None
@@ -168,6 +168,7 @@ class FileConnector:
         self, file_path: Path, format_type: Any, **kwargs: Any
     ) -> np.ndarray:
         """Read raster file."""
+        rasterio = require_dependency("rasterio", "raster")
         try:
             if format_type.name == "GEOTIFF":
                 with rasterio.open(file_path) as src:
