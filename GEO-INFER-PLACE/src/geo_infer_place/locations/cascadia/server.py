@@ -16,6 +16,8 @@ import json
 import logging
 from pathlib import Path
 
+from geo_infer_place import __version__
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -50,7 +52,7 @@ def create_app(output_dir: Path) -> fastapi.FastAPI:
     app = FastAPI(
         title="Cascadia Bioregion Analysis API",
         description="REST API for Cascadia pipeline outputs, maps, and ecological data.",
-        version="1.0.0",
+        version=__version__,
     )
 
     viz_dir = output_dir / "visualizations" / "interactive"
