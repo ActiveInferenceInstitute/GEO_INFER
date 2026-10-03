@@ -163,10 +163,11 @@ def test_tag_push_diff_gates_resolve_full_tree_not_head_parent():
     for script in gate_scripts:
         assert tag_branch in script, "tag/zero-base branch missing"
         branch_pos = script.index(tag_branch)
-        # Zero-SHA/tag detection precedes both the 40-hex regex that would
-        # otherwise swallow the zero SHA and the HEAD^ fallback.
+        # Missing/invalid dispatch and schedule bases also select the full
+        # tree, rather than silently narrowing coverage to the last commit.
         assert branch_pos < script.index("^[0-9a-f]{40}$")
-        assert branch_pos < script.index(head_fallback)
+        assert head_fallback not in script
+        assert script.count(empty_tree) == 2
         branch_body = script[branch_pos : script.index("elif", branch_pos)]
         assert empty_tree in branch_body
         assert head_fallback not in branch_body

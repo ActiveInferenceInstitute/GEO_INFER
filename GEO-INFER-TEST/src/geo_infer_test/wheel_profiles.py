@@ -22,6 +22,54 @@ class WheelProfile:
 
 REQUIRED_PROFILES = (
     WheelProfile(
+        "geo_infer_act",
+        ("backends",),
+        """
+import numpy as np
+import jax.numpy as jnp
+from geo_infer_act.core.generative_model import GenerativeModel
+model = GenerativeModel('categorical', {'state_dim': 2, 'random_seed': 7})
+result = model.integrate_bayeux(lambda x: -0.5*jnp.sum(((x-1.5)/0.7)**2), {'x':jnp.array([1.5])}, backend='bayeux', n_samples=100, warmup=100)
+assert result['backend'] == 'bayeux' and result['diagnostics']['sampler'] == 'numpyro_nuts'
+samples = result['posterior_samples']['x']
+assert samples.size == 100 and np.isfinite(samples).all()
+np.testing.assert_allclose(samples.mean(), 1.5, atol=.2, rtol=0)
+np.testing.assert_allclose(samples.var(), .49, atol=.2, rtol=0)
+local = model.integrate_rxinfer('', {'observations':[1,2,3], 'prior_mean':4, 'prior_precision':2, 'measurement_precision':.5}, backend='local_gaussian')
+assert local['backend'] == 'local_gaussian'
+np.testing.assert_allclose(local['posterior_marginals']['mean'], 11/3.5, rtol=1e-12)
+np.testing.assert_allclose(local['posterior_marginals']['variance'], 1/3.5, rtol=1e-12)
+""",
+    ),
+    WheelProfile(
+        "geo_infer_time",
+        (),
+        """
+from geo_infer_time.core.visualization import TemporalVisualization
+try:
+    TemporalVisualization().plot_timeseries([0., 2.])
+except RuntimeError as exc:
+    assert 'geo-infer-time[visualization]' in str(exc)
+else:
+    raise AssertionError('Base installation unexpectedly includes matplotlib')
+""",
+    ),
+    WheelProfile(
+        "geo_infer_time",
+        ("visualization",),
+        """
+from pathlib import Path
+import numpy as np
+import matplotlib.pyplot as plt
+from geo_infer_time.core.visualization import TemporalVisualization
+axis = ['2026-10-01T00:00:00Z', '2026-09-30T18:00:00-07:00']
+figure = TemporalVisualization().plot_timeseries([0., 2.], timestamps=axis, save_path=Path('series.png'))
+np.testing.assert_array_equal(figure.axes[0].lines[0].get_ydata(), [0., 2.])
+assert Path('series.png').stat().st_size > 0
+plt.close(figure)
+""",
+    ),
+    WheelProfile(
         "geo_infer_space",
         (),
         """

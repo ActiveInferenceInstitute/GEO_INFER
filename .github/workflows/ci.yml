@@ -99,7 +99,7 @@ jobs:
           if [ "$GITHUB_REF_TYPE" = "tag" ] || [[ "$base_sha" =~ ^0{40}$ ]]; then
             base_sha="$(git hash-object -t tree /dev/null)"
           elif ! [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]] || ! git cat-file -e "$base_sha^{commit}" 2>/dev/null; then
-            base_sha="$(git rev-parse --verify "$HEAD_SHA^" 2>/dev/null || git hash-object -t tree /dev/null)"
+            base_sha="$(git hash-object -t tree /dev/null)"
           fi
 
           # Exclude deleted paths: formatters and linters can only inspect
@@ -188,7 +188,7 @@ jobs:
           if [ "$GITHUB_REF_TYPE" = "tag" ] || [[ "$base_sha" =~ ^0{40}$ ]]; then
             base_sha="$(git hash-object -t tree /dev/null)"
           elif ! [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]] || ! git cat-file -e "$base_sha^{commit}" 2>/dev/null; then
-            base_sha="$(git rev-parse --verify "$HEAD_SHA^" 2>/dev/null || git hash-object -t tree /dev/null)"
+            base_sha="$(git hash-object -t tree /dev/null)"
           fi
           uv run --with pytest-cov python GEO-INFER-TEST/check_coverage_floor.py \
             --base "$base_sha" --head "$HEAD_SHA"
@@ -366,6 +366,12 @@ jobs:
         run: |
           uv run --no-project --with psutil==7.0.0 python GEO-INFER-TEST/build_package_wheels.py \
             --outdir .geo-infer-test-results/wheels --verify --verify-extras
+
+      - name: Validate installed wheel receipts before upload
+        run: |
+          uv run --no-project --with psutil==7.0.0 python GEO-INFER-TEST/validate_wheel_receipt.py \
+            --directory .geo-infer-test-results/wheels --revision "$GITHUB_SHA" \
+            --require-clean --require-imports --require-profiles
 
       - name: Retain installed wheel evidence
         if: always()

@@ -6,6 +6,8 @@ import sys
 import zipfile
 import subprocess
 import time
+import json
+import hashlib
 
 import pytest
 
@@ -59,7 +61,22 @@ def test_wheel_probe_reads_packaged_resources(tmp_path):
         tmp_path,
         'from importlib.resources import files\nassert files(__package__).joinpath("data.json").is_file()\n',
     )
-    _driver().install_and_verify(wheel, [sys.executable])
+    evidence = tmp_path / "evidence" / "probes"
+    receipts = _driver().verify_wheels([wheel], [sys.executable], evidence_dir=evidence)
+    assert len(receipts) == 1
+    receipt = receipts[0]
+    assert receipt["status"] == "ok" and receipt["returncode"] == 0
+    assert receipt["wheel_sha256"] == hashlib.sha256(wheel.read_bytes()).hexdigest()
+    assert "geo_infer_probe/data.json" in receipt["resources"]
+    stdout = next(name for name in receipt["artifacts"] if name.endswith("stdout.log"))
+    assert (
+        json.loads((evidence.parent / stdout).read_text())["probe_token"]
+        == receipt["probe_token"]
+    )
+    for name, digest in receipt["artifacts"].items():
+        assert (
+            hashlib.sha256((evidence.parent / name).read_bytes()).hexdigest() == digest
+        )
 
 
 @pytest.mark.parametrize("defect", ["missing_resource", "wrong_version", "wrong_name"])
@@ -127,9 +144,23 @@ def test_wheel_import_timeout_includes_stack_diagnostic(tmp_path):
 @pytest.mark.parametrize("source", ["raise SystemExit(0)", "import os; os._exit(0)"])
 def test_wheel_import_rejects_early_success_exit(tmp_path, source):
     """A zero exit cannot bypass installed provenance and resource checks."""
-    wheel = _wheel(tmp_path, source)
+    wheel = _wheel(tmp_path, "print('before incomplete exit', flush=True)\n" + source)
+    receipts = []
+    evidence = tmp_path / "evidence" / "probes"
     with pytest.raises(ValueError, match="completion receipt"):
-        _driver().verify_wheels([wheel], [sys.executable], import_timeout=10)
+        _driver().verify_wheels(
+            [wheel],
+            [sys.executable],
+            import_timeout=10,
+            receipts=receipts,
+            evidence_dir=evidence,
+        )
+    assert len(receipts) == 1 and receipts[0]["status"] == "failed"
+    assert receipts[0]["returncode"] == 0
+    stdout = next(
+        name for name in receipts[0]["artifacts"] if name.endswith("stdout.log")
+    )
+    assert "before incomplete exit" in (evidence.parent / stdout).read_text()
 
 
 def test_wheel_import_timeout_stops_descendants(tmp_path):
@@ -220,3 +251,291 @@ def test_wheel_probe_preserves_shared_library_paths(tmp_path, monkeypatch):
         for name, value in values.items()
     )
     _driver().install_and_verify(_wheel(tmp_path, source), [sys.executable])
+
+
+def _receipt_fixture(tmp_path, monkeypatch):
+    """A tiny actual project and Git custody boundary for the wheel CLI."""
+    driver = _driver()
+    from geo_infer_test import execution
+
+    module = tmp_path / "GEO-INFER-PROBE"
+    package = module / "src" / "geo_infer_probe"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text('__version__ = "0.0.1"\n')
+    (package / "data.json").write_text('{"value": 42}')
+    (module / "pyproject.toml").write_text(
+        '[build-system]\nrequires = ["setuptools>=61", "wheel"]\n'
+        'build-backend = "setuptools.build_meta"\n'
+        '[project]\nname = "geo-infer-probe"\nversion = "0.0.1"\n'
+        'requires-python = ">=3.11"\n'
+        '[tool.setuptools.packages.find]\nwhere = ["src"]\n'
+        '[tool.setuptools.package-data]\n"*" = ["*.json"]\n'
+    )
+    (tmp_path / "uv.lock").write_bytes(
+        (execution.PROJECT_ROOT / "uv.lock").read_bytes()
+    )
+    (tmp_path / ".gitignore").write_text("dist/\n*.egg-info/\nbuild/\n")
+    for command in [
+        ["git", "init", "-q"],
+        ["git", "config", "core.fsmonitor", "false"],
+        ["git", "add", "."],
+        [
+            "git",
+            "-c",
+            "user.name=Contract Test",
+            "-c",
+            "user.email=contract@example.invalid",
+            "commit",
+            "-qm",
+            "fixture",
+        ],
+    ]:
+        subprocess.run(command, cwd=tmp_path, check=True)
+    monkeypatch.setattr(execution, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(driver, "module_dirs", lambda: [module])
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["build_package_wheels.py", "--outdir", str(tmp_path / "dist"), "--verify"],
+    )
+    return driver, module
+
+
+def test_cli_seals_actual_installed_wheel_receipt(tmp_path, monkeypatch):
+    """A built/installed wheel is independently validated from retained bytes."""
+    driver, module = _receipt_fixture(tmp_path, monkeypatch)
+    from geo_infer_test.wheel_evidence import validate_wheel_receipt
+
+    assert driver.main() == 0
+    (path,) = (tmp_path / "dist" / "attempts").glob("*/receipt.json")
+    receipt = validate_wheel_receipt(
+        path,
+        modules=[module.name],
+        profiles=[],
+        require_clean=True,
+        require_imports=True,
+    )
+    assert (
+        receipt["selected"]
+        == receipt["executed"]
+        == {"wheels": 1, "imports": 1, "operations": 0}
+    )
+    assert receipt["source"]["revision"] == receipt["final_source"]["revision"]
+    assert not list(path.parent.glob("*.pending.json"))
+    artifact = tmp_path / "dist" / receipt["wheels"][0]["artifact"]
+    artifact.write_bytes(artifact.read_bytes() + b"tampered")
+    with pytest.raises(ValueError, match="hash mismatch"):
+        validate_wheel_receipt(
+            path, modules=[module.name], profiles=[], require_imports=True
+        )
+
+
+def test_cli_retains_failed_build_and_changed_source(tmp_path, monkeypatch):
+    """Changed source prevents a passing receipt even after a real clean build."""
+    driver, module = _receipt_fixture(tmp_path, monkeypatch)
+    original = driver.build_wheel
+
+    def mutate_after_build(*args, **kwargs):
+        result = original(*args, **kwargs)
+        assert result.ok, result.error
+        (module / "src" / "geo_infer_probe" / "__init__.py").write_text(
+            '__version__ = "0.0.2"\n'
+        )
+        return result
+
+    monkeypatch.setattr(driver, "build_wheel", mutate_after_build)
+    assert driver.main() == 1
+    (path,) = (tmp_path / "dist" / "attempts").glob("*/receipt.json")
+    receipt = json.loads(path.read_text())
+    assert receipt["status"] == "failed" and receipt["returncode"] == 1
+    assert receipt["source"]["dirty"] == "" and receipt["final_source"]["dirty"]
+    assert any("Source or lock changed" in error for error in receipt["diagnostics"])
+    assert receipt["executed"]["imports"] == 1
+
+
+@pytest.mark.parametrize(
+    "fault",
+    ["revision", "escape", "empty", "output_identity", "probe_hash", "build_output"],
+)
+def test_wheel_receipt_rejects_false_evidence(tmp_path, monkeypatch, fault):
+    """Independent artifact and inventory defects cannot validate as acceptance."""
+    driver, module = _receipt_fixture(tmp_path, monkeypatch)
+    from geo_infer_test.wheel_evidence import validate_wheel_receipt
+
+    assert driver.main() == 0
+    (path,) = (tmp_path / "dist" / "attempts").glob("*/receipt.json")
+    receipt = json.loads(path.read_text())
+    if fault == "revision":
+        receipt["final_source"]["revision"] = "0" * 40
+    elif fault == "escape":
+        receipt["wheels"][0]["artifact"] = "../outside.whl"
+    elif fault == "empty":
+        receipt["probes"] = []
+    elif fault == "probe_hash":
+        receipt["probes"][0]["probe_sha256"] = "0" * 64
+    elif fault == "build_output":
+        name = next(iter(receipt["wheels"][0]["artifacts"]))
+        (path.parent / name).write_text("replaced build output")
+    else:
+        receipt["probes"][0]["origin"] = "/unverified/origin.py"
+    path.write_text(json.dumps(receipt))
+    with pytest.raises(ValueError):
+        validate_wheel_receipt(
+            path,
+            modules=[module.name],
+            profiles=[],
+            require_clean=True,
+            require_imports=True,
+        )
+
+
+def test_failed_real_build_retains_complete_output(tmp_path):
+    """A real PEP517 failure retains both ends of long native diagnostics."""
+    module = tmp_path / "GEO-INFER-PROBE"
+    module.mkdir()
+    (module / "pyproject.toml").write_text(
+        '[build-system]\nrequires = []\nbuild-backend = "fixture_backend"\nbackend-path = ["."]\n'
+        '[project]\nname = "geo-infer-probe"\nversion = "0.0.1"\n'
+    )
+    (module / "fixture_backend.py").write_text(
+        "import sys\n"
+        "def build_wheel(*args, **kwargs):\n"
+        '    print("BUILD_STDOUT_BEGIN" + "x" * 6000 + "BUILD_STDOUT_END", flush=True)\n'
+        '    print("BUILD_STDERR_BEGIN" + "y" * 6000 + "BUILD_STDERR_END", file=sys.stderr, flush=True)\n'
+        '    raise RuntimeError("actual build failure")\n'
+    )
+    evidence = tmp_path / "evidence"
+    result = _driver().build_wheel(
+        module, tmp_path / "dist", [sys.executable], evidence_dir=evidence
+    )
+    assert not result.ok and result.returncode != 0 and result.duration_seconds > 0
+    assert len(result.error) <= 2000
+    retained = "".join((evidence / name).read_text() for name in result.artifacts)
+    for marker in (
+        "BUILD_STDOUT_BEGIN",
+        "BUILD_STDOUT_END",
+        "BUILD_STDERR_BEGIN",
+        "BUILD_STDERR_END",
+    ):
+        assert marker in retained
+    for name, digest in result.artifacts.items():
+        assert hashlib.sha256((evidence / name).read_bytes()).hexdigest() == digest
+
+
+def test_repeated_cli_attempts_preserve_each_wheel(tmp_path, monkeypatch):
+    """A later actual build cannot overwrite an earlier attempt's proof bytes."""
+    driver, module = _receipt_fixture(tmp_path, monkeypatch)
+    from geo_infer_test.wheel_evidence import validate_wheel_receipt
+
+    assert driver.main() == 0
+    (first,) = (tmp_path / "dist" / "attempts").glob("*/receipt.json")
+    (module / "src" / "geo_infer_probe" / "data.json").write_text('{"value": 43}')
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Contract Test",
+            "-c",
+            "user.email=contract@example.invalid",
+            "commit",
+            "-qm",
+            "second fixture",
+        ],
+        cwd=tmp_path,
+        check=True,
+    )
+    assert driver.main() == 0
+    paths = list((tmp_path / "dist" / "attempts").glob("*/receipt.json"))
+    assert len(paths) == 2
+    receipts = [
+        validate_wheel_receipt(
+            path,
+            modules=[module.name],
+            profiles=[],
+            require_clean=True,
+            require_imports=True,
+        )
+        for path in paths
+    ]
+    assert len({row["source"]["revision"] for row in receipts}) == 2
+    assert len({row["wheels"][0]["artifact"] for row in receipts}) == 2
+    assert len({row["wheels"][0]["sha256"] for row in receipts}) == 2
+    assert first.is_file()
+
+
+def test_operation_code_hash_matches_live_profile(tmp_path, monkeypatch):
+    """A real operation completion must name the exact declared probe body."""
+    driver, module = _receipt_fixture(tmp_path, monkeypatch)
+    from geo_infer_test.wheel_evidence import validate_wheel_receipt
+
+    code = "assert json.loads(importlib.resources.files(package).joinpath('data.json').read_text())['value'] == 42"
+    profile = driver._profiles.WheelProfile("geo_infer_probe", (), code)
+    monkeypatch.setattr(driver, "REQUIRED_PROFILES", (profile,))
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "build_package_wheels.py",
+            "--outdir",
+            str(tmp_path / "dist"),
+            "--verify-extras",
+        ],
+    )
+    assert driver.main() == 0
+    (path,) = (tmp_path / "dist" / "attempts").glob("*/receipt.json")
+    expected = [(profile.package, "base", hashlib.sha256(code.encode()).hexdigest())]
+    validate_wheel_receipt(
+        path, modules=[module.name], profiles=expected, require_profiles=True
+    )
+    receipt = json.loads(path.read_text())
+    operation = next(row for row in receipt["probes"] if row["kind"] == "operation")
+    operation["probe_sha256"] = "0" * 64
+    path.write_text(json.dumps(receipt))
+    with pytest.raises(ValueError, match="probe code"):
+        validate_wheel_receipt(
+            path, modules=[module.name], profiles=expected, require_profiles=True
+        )
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        "root",
+        "source",
+        "counts",
+        "wheels",
+        "wheel_artifacts",
+        "probes",
+        "probe_artifacts",
+    ],
+)
+def test_nested_receipt_shapes_fail_with_controlled_verdict(
+    tmp_path, monkeypatch, fault
+):
+    """Malformed JSON structure fails as evidence, without attribute crashes."""
+    driver, module = _receipt_fixture(tmp_path, monkeypatch)
+    from geo_infer_test.wheel_evidence import validate_wheel_receipt
+
+    assert driver.main() == 0
+    (path,) = (tmp_path / "dist" / "attempts").glob("*/receipt.json")
+    record = json.loads(path.read_text())
+    if fault == "root":
+        record = []
+    elif fault == "source":
+        record["source"] = []
+    elif fault == "counts":
+        record["selected"] = []
+    elif fault == "wheels":
+        record["wheels"] = [[]]
+    elif fault == "wheel_artifacts":
+        record["wheels"][0]["artifacts"] = []
+    elif fault == "probes":
+        record["probes"] = [[]]
+    else:
+        record["probes"][0]["artifacts"] = []
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError):
+        validate_wheel_receipt(
+            path, modules=[module.name], profiles=[], require_imports=True
+        )

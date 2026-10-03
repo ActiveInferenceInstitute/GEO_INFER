@@ -53,14 +53,16 @@ backends = [
     "pymc>=4.0.0",
     "arviz>=0.11.0",
     "bayeux-ml>=0.0.1",
-    "jax>=0.2.0",
+    "flowmc>=0.3.0,<0.4",
+    "jax>=0.4.38,<0.5",
+    "optax>=0.1.7,<0.2.6",
     "networkx>=2.6.0",
     "shapely>=2.0.0",
     "imageio>=2.9.0",
     "plotly>=5.0.0",
 ]
-space = ["geo-infer-space>=0.3.0"]
-gnn = ["geo-infer-time>=0.3.0"]
+space = ["geo-infer-space>=0.4.0"]
+gnn = ["geo-infer-time>=0.4.0"]
 dev = [
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",

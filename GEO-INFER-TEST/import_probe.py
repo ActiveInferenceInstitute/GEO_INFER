@@ -58,5 +58,11 @@ def run_import_probe(
         or receipts[0].get("package") != package
         or receipts[0].get("status") != "ok"
     ):
-        raise ValueError(f"Import probe for {package} omitted its completion receipt")
+        failure = ValueError(
+            f"Import probe for {package} omitted its completion receipt"
+        )
+        failure.output = result.stdout
+        failure.stderr = result.stderr
+        failure.returncode = result.returncode
+        raise failure
     return result

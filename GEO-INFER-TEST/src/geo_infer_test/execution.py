@@ -169,6 +169,10 @@ def runtime_receipt(*, timeout: float = 10) -> dict:
             "modified",
             ["git", "ls-files", "--modified", "--others", "--exclude-standard", "-z"],
         ),
+        (
+            "staged",
+            ["git", "diff", "--cached", "--name-only", "--no-renames", "-z", "HEAD"],
+        ),
     )
     for name, args in commands:
         try:
@@ -181,14 +185,21 @@ def runtime_receipt(*, timeout: float = 10) -> dict:
                 args, cwd=PROJECT_ROOT, env=os.environ.copy(), timeout=remaining
             )
             receipt[name] = (
-                completed.stdout.strip() if completed.returncode == 0 else None
+                (
+                    completed.stdout
+                    if name in {"modified", "staged"}
+                    else completed.stdout.rstrip("\r\n")
+                )
+                if completed.returncode == 0
+                else None
             )
         except (OSError, subprocess.SubprocessError):
             receipt[name] = None
     modified = receipt.pop("modified")
+    staged = receipt.pop("staged")
     hashes = {}
-    if modified is not None:
-        for name in sorted(set(modified.split("\0")) - {""}):
+    if modified is not None and staged is not None:
+        for name in sorted(set((modified + staged).split("\0")) - {""}):
             path = PROJECT_ROOT / name
             if not path.is_file():
                 hashes[name] = None
@@ -203,7 +214,12 @@ def runtime_receipt(*, timeout: float = 10) -> dict:
                     digest.update(chunk)
             hashes[name] = digest.hexdigest()
     receipt["dirty_sha256"] = hashes
-    receipt["custody_complete"] = bool(receipt.get("revision")) and modified is not None
+    receipt["custody_complete"] = (
+        bool(receipt.get("revision"))
+        and receipt.get("dirty") is not None
+        and modified is not None
+        and staged is not None
+    )
     lock = PROJECT_ROOT / "uv.lock"
     receipt["lock_sha256"] = (
         hashlib.sha256(lock.read_bytes()).hexdigest() if lock.is_file() else None

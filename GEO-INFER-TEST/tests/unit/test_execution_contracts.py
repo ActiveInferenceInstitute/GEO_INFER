@@ -53,6 +53,40 @@ def test_validator_failure_without_junit_keeps_receipt(engine) -> None:
     assert len(list(Path(result.receipt).parent.parent.iterdir())) == 1
 
 
+def test_missing_dirty_state_is_incomplete_source_custody(engine, monkeypatch):
+    """A usable revision cannot replace a failed working-tree inventory."""
+    original = engine.run_process
+
+    def failed_status(command, **kwargs):
+        if command[-2:] == ["status", "--porcelain"]:
+            return subprocess.CompletedProcess(command, 1, "", "status unavailable")
+        return original(command, **kwargs)
+
+    monkeypatch.setattr(engine, "run_process", failed_status)
+    receipt = engine.runtime_receipt(timeout=10)
+    assert receipt["revision"] and receipt["dirty"] is None
+    assert receipt["custody_complete"] is False
+
+
+def test_staged_only_source_bytes_are_bound_to_receipt(engine):
+    """Two staged versions cannot share revision/status and source custody."""
+    source = engine.PROJECT_ROOT / " staged source.py"
+    source.write_text("value = 1\n")
+    subprocess.run(
+        ["git", "add", "--", source.name], cwd=engine.PROJECT_ROOT, check=True
+    )
+    first = engine.runtime_receipt(timeout=10)
+    source.write_text("value = 2\n")
+    subprocess.run(
+        ["git", "add", "--", source.name], cwd=engine.PROJECT_ROOT, check=True
+    )
+    second = engine.runtime_receipt(timeout=10)
+    assert first["custody_complete"] and second["custody_complete"]
+    assert first["revision"] == second["revision"] and first["dirty"] == second["dirty"]
+    assert source.name in first["dirty_sha256"]
+    assert first["dirty_sha256"][source.name] != second["dirty_sha256"][source.name]
+
+
 def test_native_invalid_output_bytes_preserve_receipt(engine) -> None:
     result = engine.run_command(
         [
@@ -639,9 +673,39 @@ def test_environment_census_failure_does_not_expose_internal_listing(
     monkeypatch.setattr(process_module, "os", SimpleNamespace(name="posix"))
     monkeypatch.setattr(process_module.subprocess, "run", failed_census)
     census = process_module._DescendantCensus(0, "a" * 32)
-    with pytest.raises(subprocess.TimeoutExpired) as failure:
+    with pytest.raises(process_module.ProcessCensusError) as failure:
         census.refresh(timeout=1)
-    assert failure.value.output is None and failure.value.stderr is None
+    assert failure.value.__cause__.output is None
+    assert failure.value.__cause__.stderr is None
+    assert "inspection budget" in str(failure.value)
+
+
+def test_census_timeout_is_not_reported_as_target_deadline(engine, monkeypatch):
+    """A scanner failure cannot claim the command exhausted its long budget."""
+    import geo_infer_test.process as process_module
+
+    metadata = engine.runtime_receipt(timeout=10)
+    monkeypatch.setattr(engine, "runtime_receipt", lambda **kwargs: metadata)
+
+    def failed_refresh(self, *, timeout):
+        raise process_module.ProcessCensusError(
+            "Owned process census inspection budget"
+        )
+
+    monkeypatch.setattr(process_module._DescendantCensus, "refresh", failed_refresh)
+    result = engine.run_command(
+        [sys.executable, "-c", "print('target completed', flush=True)"],
+        "census infrastructure failure",
+        300,
+    )
+    assert not result.success and result.status == "FAIL"
+    assert result.stdout == "target completed\n"
+    assert result.duration < 10
+    receipt = json.loads(Path(result.receipt).read_text())
+    assert receipt["status"] == "FAIL"
+    diagnostics = (Path(result.receipt).parent / "stderr.log").read_text()
+    assert "ProcessCensusError" in diagnostics
+    assert "Timed out after 300" not in diagnostics
 
 
 def test_cleanup_scanner_failure_retains_target_output(tmp_path, monkeypatch) -> None:

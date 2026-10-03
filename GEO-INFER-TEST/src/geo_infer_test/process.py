@@ -32,6 +32,10 @@ class OwnedProcessLeakError(subprocess.SubprocessError):
         self.stderr = stderr
 
 
+class ProcessCensusError(subprocess.SubprocessError):
+    """Ownership inspection failed independently of the target deadline."""
+
+
 class _DescendantCensus:
     """Retain launch-token ownership and identities across orphaning.
 
@@ -76,6 +80,13 @@ class _DescendantCensus:
                     # Never attach the internal environment census to logs.
                     cast(Any, exc).output = None
                     cast(Any, exc).stderr = None
+                    if (
+                        isinstance(exc, subprocess.TimeoutExpired)
+                        and time.monotonic() < deadline
+                    ):
+                        raise ProcessCensusError(
+                            f"Owned process census exceeded its {min(2, timeout):g}s inspection budget"
+                        ) from exc
                     raise
                 candidates = []
                 pattern = re.compile(
