@@ -427,20 +427,9 @@ class DigitalStigmergy:
                 for trace_id in candidate_trace_ids
                 if self._location_in_bounds(self.digital_traces.get(trace_id), bounds)
             }
-            if self.spatial_indexer:
-                try:
-                    # Use the index as a prefilter, then apply exact bounds
-                    # below to avoid cell-edge false positives.
-                    indexed_ids = {
-                        trace_id
-                        for cell in self._get_spatial_cells(bounds)
-                        for trace_id in self.spatial_index.get(cell, [])
-                    }
-                    spatial_trace_ids &= indexed_ids
-                except Exception as e:
-                    logger.warning(
-                        f"Spatial filtering failed; using exact coordinates: {e}"
-                    )
+            # Cell-center polygon covers are not a complete candidate set:
+            # tiny boxes can cover no center, and large covers exceed budgets.
+            # The coordinate predicate above is exact and allocates no cover.
             candidate_trace_ids = spatial_trace_ids
 
         # Filter by temporal window

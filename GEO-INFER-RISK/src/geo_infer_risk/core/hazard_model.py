@@ -27,18 +27,22 @@ try:
     from geo_infer_space.core.analytics import SpatialAnalyticsInterface
 
     SPACE_AVAILABLE = True
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "geo_infer_space":
+        raise
     SPACE_AVAILABLE = False
     SpatialIndexingInterface = None
     SpatialAnalyticsInterface = None
 
 try:
-    from geo_infer_time.core.temporal_analysis import TemporalAnalysisInterface
+    from geo_infer_time import TemporalAnalyzer
 
     TIME_AVAILABLE = True
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "geo_infer_time":
+        raise
     TIME_AVAILABLE = False
-    TemporalAnalysisInterface = None
+    TemporalAnalyzer = None
 
 try:
     from geo_infer_math.core.spatial_statistics import (  # type: ignore[import-untyped]
@@ -46,7 +50,9 @@ try:
     )
 
     MATH_AVAILABLE = True
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "geo_infer_math":
+        raise
     MATH_AVAILABLE = False
     MoranI = None
 
@@ -128,25 +134,16 @@ class EnhancedHazardModel:
         self.math_interface = None
 
         if SPACE_AVAILABLE:
-            try:
-                self.spatial_interface = SpatialIndexingInterface()
-                self.logger.info("Spatial interface initialized")
-            except Exception as e:
-                self.logger.warning(f"Failed to initialize spatial interface: {e}")
+            self.spatial_interface = SpatialIndexingInterface()
+            self.logger.info("Spatial interface initialized")
 
         if TIME_AVAILABLE:
-            try:
-                self.temporal_interface = TemporalAnalysisInterface()
-                self.logger.info("Temporal interface initialized")
-            except Exception as e:
-                self.logger.warning(f"Failed to initialize temporal interface: {e}")
+            self.temporal_interface = TemporalAnalyzer()
+            self.logger.info("Temporal interface initialized")
 
         if MATH_AVAILABLE:
-            try:
-                self.math_interface = MoranI()
-                self.logger.info("Math interface initialized")
-            except Exception as e:
-                self.logger.warning(f"Failed to initialize math interface: {e}")
+            self.math_interface = MoranI()
+            self.logger.info("Math interface initialized")
 
         # Model state
         self.is_fitted = False

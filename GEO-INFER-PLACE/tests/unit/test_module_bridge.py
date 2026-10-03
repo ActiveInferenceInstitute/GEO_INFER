@@ -57,6 +57,29 @@ class TestPlaceTemporalAnalyzer:
         analyzer = PlaceTemporalAnalyzer()
         assert analyzer is not None
 
+    @pytest.mark.parametrize("threshold,count", [(0.0, 3), (1.0, 1), (2.0, 0)])
+    def test_timestamped_anomaly_threshold_matches_coordinate_free_oracle(
+        self, threshold, count
+    ):
+        """UTC timestamps retain the caller's statistical threshold."""
+        values = [0.0, 0.0, 10.0]
+        analyzer = PlaceTemporalAnalyzer()
+        local = analyzer.detect_anomalies(values, sigma_threshold=threshold)
+        actual = analyzer.detect_anomalies(
+            values,
+            sigma_threshold=threshold,
+            timestamps=[f"2026-10-0{day}T00:00:00Z" for day in range(1, 4)],
+        )
+        assert actual["backend"] == "geo_infer_time"
+        assert len(actual["anomalies"]) == len(local["anomalies"]) == count
+        if threshold == 1.0:
+            assert actual["anomalies"][0]["value"] == 10.0
+
+    @pytest.mark.parametrize("threshold", [float("nan"), float("inf"), -1.0])
+    def test_invalid_anomaly_threshold_fails_before_backend_selection(self, threshold):
+        with pytest.raises(ValueError, match="finite and non-negative"):
+            PlaceTemporalAnalyzer().detect_anomalies([], sigma_threshold=threshold)
+
     def test_detect_trend(self):
         """detect_trend on an increasing series should report positive slope."""
         analyzer = PlaceTemporalAnalyzer()

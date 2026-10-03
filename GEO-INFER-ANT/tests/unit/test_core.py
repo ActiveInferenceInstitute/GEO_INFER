@@ -37,14 +37,14 @@ class TestSwarmAgent:
             position=np.array([37.7749, -122.4194]),
             sensory_range=100.0,
             movement_speed=1.5,
-            active_inference_enabled=True,
+            active_inference_enabled=False,
         )
 
         assert agent.agent_id == "test_agent_001"
         assert np.allclose(agent.position, [37.7749, -122.4194])
         assert agent.sensory_range == 100.0
         assert agent.movement_speed == 1.5
-        assert agent.active_inference_enabled is True
+        assert agent.active_inference_enabled is False
         assert agent.energy_level == 1.0
 
     def test_agent_sensory_processing(self):
@@ -726,7 +726,9 @@ class TestErrorHandling:
 
         # Agent should still function without full integration
         assert agent.agent_id == "test_agent"
-        assert agent.active_inference_enabled is True  # Should default to True
+        assert (
+            agent.active_inference_enabled is False
+        )  # Explicit rule backend is the default
 
 
 if __name__ == "__main__":

@@ -597,7 +597,7 @@ class AgentPopulation:
         base_config: dict[str, Any] = {
             "sensory_range": 100.0,
             "movement_speed": 1.5,
-            "active_inference_enabled": True,
+            "active_inference_enabled": False,
             "spatial_backend": "h3",
         }
 

@@ -11,6 +11,7 @@ the declared TIME dependency; value-only operations use local sequence statistic
 from __future__ import annotations
 
 import logging
+import math
 from datetime import datetime
 from typing import Any
 from geo_infer_time import (
@@ -37,7 +38,9 @@ try:
     )
 
     _HAS_DATA = True
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "geo_infer_data":
+        raise
     logger.info(
         "geo_infer_data not available; PlaceDataManager will use built-in methods"
     )
@@ -294,10 +297,18 @@ class PlaceTemporalAnalyzer:
         """
         import numpy as np
 
+        if isinstance(sigma_threshold, bool) or not isinstance(
+            sigma_threshold, (int, float)
+        ):
+            raise TypeError("sigma_threshold must be a number")
+        if not math.isfinite(sigma_threshold) or sigma_threshold < 0:
+            raise ValueError("sigma_threshold must be finite and non-negative")
         if timestamps is not None:
             ts = TimeSeries(data=np.asarray(values, dtype=float), timestamps=timestamps)
             if self._detector is not None:
-                result = self._detector.detect_anomalies(ts)
+                result = EventDetector(
+                    threshold_multiplier=sigma_threshold
+                ).detect_anomalies(ts)
                 return {**result, "backend": "geo_infer_time"}
 
         arr = np.array(values, dtype=float)

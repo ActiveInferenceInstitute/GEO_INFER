@@ -36,22 +36,25 @@ from scipy.spatial.distance import pdist, squareform
 # GEO-INFER module imports with error handling
 try:
     from geo_infer_space.core.analytics import SpatialAnalyticsInterface
-    from geo_infer_space.core.dispatcher import configure_backends
     from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
 
     SPACE_AVAILABLE = True
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "geo_infer_space":
+        raise
     SPACE_AVAILABLE = False
     SpatialIndexingInterface = None
     SpatialAnalyticsInterface = None
 
 try:
-    from geo_infer_time.core.temporal_analysis import TemporalAnalysisInterface
+    from geo_infer_time import TemporalAnalyzer, ForecastingEngine, TimeSeries
 
     TIME_AVAILABLE = True
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "geo_infer_time":
+        raise
     TIME_AVAILABLE = False
-    TemporalAnalysisInterface = None
+    TemporalAnalyzer = None
 
 try:
     from geo_infer_math.core.interpolation import (  # type: ignore[import-untyped]
@@ -63,7 +66,9 @@ try:
     )
 
     MATH_AVAILABLE = True
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "geo_infer_math":
+        raise
     MATH_AVAILABLE = False
     GearysC = None
     MoranI = None
@@ -75,7 +80,9 @@ try:
     )
 
     BAYES_AVAILABLE = True
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "geo_infer_bayes":
+        raise
     BAYES_AVAILABLE = False
     BayesianInference = None
 
@@ -168,6 +175,12 @@ class EnhancedRiskEngine:
         self.rng: np.random.Generator = resolve_rng(self.random_seed)
         self._file_handler: logging.FileHandler | None = None
         self._closed = False
+        # Initialize installed interfaces before creating log handlers or workers.
+        # Constructor failures describe broken integrations, not absence.
+        self.spatial_interface = None
+        self.spatial_analytics = None
+        self.temporal_interface = None
+        self.integration_status = self._check_module_integrations()
         # Logging needs the output directory before it creates its file handler.
         # Resolve and create it here so initialization is deterministic and the
         # first startup does not emit a misleading "output_dir" warning.
@@ -176,9 +189,6 @@ class EnhancedRiskEngine:
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.cache_dir, exist_ok=True)
         self.logger = self._setup_enhanced_logging()
-
-        # Initialize integration status
-        self.integration_status = self._check_module_integrations()
 
         # Initialize core components
         self._initialize_core_components()
@@ -241,58 +251,31 @@ class EnhancedRiskEngine:
         """Check availability of external module integrations."""
         status = ModelIntegrationStatus()
 
-        # Check SPACE integration
         if SPACE_AVAILABLE:
-            try:
-                # Try to configure backends
-                configure_backends(
-                    {"default_backends": {"indexing": "h3", "analytics": "srai"}}
-                )
-                SpatialIndexingInterface()
-                SpatialAnalyticsInterface()
-                status.spatial_indexing_available = True
-                status.space_integration = True
-            except Exception as e:
-                self.logger.warning(f"SPACE integration check failed: {e}")
-                status.space_integration = False
+            self.spatial_interface = SpatialIndexingInterface()
+            self.spatial_analytics = SpatialAnalyticsInterface(backend="h3")
+            status.spatial_indexing_available = True
+            status.space_integration = True
 
-        # Check TIME integration
         if TIME_AVAILABLE:
-            try:
-                # Try to initialize temporal analysis
-                TemporalAnalysisInterface()
-                status.temporal_analysis_available = True
-                status.time_integration = True
-            except Exception as e:
-                self.logger.warning(f"TIME integration check failed: {e}")
-                status.time_integration = False
+            self.temporal_interface = TemporalAnalyzer()
+            status.temporal_analysis_available = True
+            status.time_integration = True
 
-        # Check MATH integration
         if MATH_AVAILABLE:
-            try:
-                MoranI()
-                InterpolationManager()
-                status.advanced_statistics_available = True
-                status.math_integration = True
-            except Exception as e:
-                self.logger.warning(f"MATH integration check failed: {e}")
-                status.math_integration = False
+            MoranI()
+            InterpolationManager()
+            status.advanced_statistics_available = True
+            status.math_integration = True
 
-        # Check BAYES integration
         if BAYES_AVAILABLE:
-            try:
-                status.bayesian_inference_available = all(
-                    callable(getattr(BayesianInference, method, None))
-                    for method in ("__init__", "run", "update")
-                )
-                if not status.bayesian_inference_available:
-                    raise TypeError(
-                        "BayesianInference does not expose the required API"
-                    )
-                status.bayes_integration = True
-            except Exception as e:
-                self.logger.warning(f"BAYES integration check failed: {e}")
-                status.bayes_integration = False
+            if not all(
+                callable(getattr(BayesianInference, method, None))
+                for method in ("__init__", "run", "update")
+            ):
+                raise TypeError("BayesianInference does not expose the required API")
+            status.bayesian_inference_available = True
+            status.bayes_integration = True
 
         return status
 
@@ -303,31 +286,18 @@ class EnhancedRiskEngine:
         self.insurance_manager = InsuranceManager()
 
         # Initialize spatial and temporal interfaces if available
-        self.spatial_interface = None
-        self.temporal_interface = None
         self.math_interface = None
         self.bayes_interface = None
 
     def _initialize_spatial_interface(self) -> None:
         """Initialize spatial analysis interface."""
         if self.integration_status.space_integration:
-            try:
-                self.spatial_interface = SpatialIndexingInterface()
-                self.spatial_analytics = SpatialAnalyticsInterface()
-                self.logger.info("Spatial interface initialized successfully")
-            except Exception as e:
-                self.logger.error(f"Failed to initialize spatial interface: {e}")
-                self.spatial_interface = None
+            self.logger.info("Spatial interface initialized successfully")
 
     def _initialize_temporal_interface(self) -> None:
-        """Initialize temporal analysis interface."""
+        """Report the validated, retained temporal interface."""
         if self.integration_status.time_integration:
-            try:
-                self.temporal_interface = TemporalAnalysisInterface()
-                self.logger.info("Temporal interface initialized successfully")
-            except Exception as e:
-                self.logger.error(f"Failed to initialize temporal interface: {e}")
-                self.temporal_interface = None
+            self.logger.info("Temporal interface initialized successfully")
 
     def _ensure_open(self) -> None:
         """Reject work submitted after the engine has released its resources."""
@@ -604,58 +574,58 @@ class EnhancedRiskEngine:
             return {}
 
     def _run_temporal_analysis(self, **kwargs: Any) -> dict[str, Any]:
-        """Run temporal analysis using GEO-INFER-TIME."""
+        """Analyze timestamped loss observations through the public TIME API.
+
+        ``time_horizon`` counts future model steps on the historical cadence.
+        Missing values and irregular steps require explicit preparation before
+        forecasting. Timestamps must include their timezone.
+        """
         if not self.temporal_interface:
             return {}
-
-        try:
-            time_horizon = kwargs.get("time_horizon", 50)
-
-            # Analyse loss history to extract seasonal and trend components
-            history = kwargs.get("loss_history", [])
-            if not history:
-                return {
-                    "seasonal_patterns": {},
-                    "trend_analysis": {},
-                    "time_series_decomposition": {},
-                    "forecast_scenarios": [],
-                }
-
-            values = np.array([h.get("value", 0) for h in history], dtype=float)
-            # Trend via simple linear regression
-            x = np.arange(len(values), dtype=float)
-            if len(values) > 1:
-                slope = np.polyfit(x, values, 1)[0]
-            else:
-                slope = 0.0
-
-            # Seasonal: group by month index (mod 12)
-            seasonal: dict[int, list[Any]] = {}
-            for i, v in enumerate(values):
-                month = i % 12
-                seasonal.setdefault(month, []).append(v)
-            seasonal_means = {k: float(np.mean(v)) for k, v in seasonal.items()}
-
+        history = kwargs.get("loss_history", [])
+        if not history:
             return {
-                "seasonal_patterns": seasonal_means,
-                "trend_analysis": {
-                    "slope": float(slope),
-                    "direction": "increasing" if slope > 0 else "decreasing",
-                },
-                "time_series_decomposition": {
-                    "mean": float(np.mean(values)),
-                    "std": float(np.std(values)),
-                },
-                "forecast_scenarios": [
-                    {
-                        "horizon": time_horizon,
-                        "projected_mean": float(np.mean(values) + slope * time_horizon),
-                    }
-                ],
+                "seasonal_patterns": {},
+                "trend_analysis": {},
+                "time_series_decomposition": {},
+                "forecast_scenarios": [],
             }
-        except Exception as e:
-            self.logger.warning(f"Temporal analysis failed: {e}")
-            return {}
+        if any("value" not in row or "timestamp" not in row for row in history):
+            raise ValueError(
+                "Each loss history observation requires value and timestamp"
+            )
+        values = np.asarray([row["value"] for row in history], dtype=float)
+        series = TimeSeries(values, timestamps=[row["timestamp"] for row in history])
+        trend = self.temporal_interface.detect_trend(series, method="linear")
+        horizon = kwargs.get("time_horizon", 50)
+        forecast = ForecastingEngine().forecast_linear(series, horizon=horizon)
+        seasonal: dict[int, list[float]] = {}
+        for timestamp, value in zip(series.timestamps, values):
+            seasonal.setdefault(timestamp.month, []).append(float(value))
+        return {
+            "backend": "geo_infer_time",
+            "seasonal_patterns": {
+                month: float(np.mean(v)) for month, v in seasonal.items()
+            },
+            "trend_analysis": {
+                **trend,
+                "slope": trend["slope_per_sample"],
+                "direction": trend["trend_direction"],
+                "slope_units": "loss per observation",
+            },
+            "time_series_decomposition": {
+                "mean": float(np.mean(values)),
+                "std": float(np.std(values)),
+            },
+            "forecast_scenarios": [
+                {
+                    "horizon": horizon,
+                    "horizon_units": "model steps",
+                    "projected_mean": forecast["forecast"][-1],
+                    "timestamp": forecast["timestamps"][-1],
+                }
+            ],
+        }
 
     def _create_analysis_job(self, job_type: str, **kwargs: Any) -> str:
         """Create a new analysis job."""

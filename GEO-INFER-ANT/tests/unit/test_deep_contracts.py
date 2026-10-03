@@ -94,7 +94,6 @@ def test_abc_honors_constructor_iteration_and_seed_controls():
 
 def test_digital_stigmergy_exact_spatial_filter_and_quality_edge_case():
     digital = DigitalStigmergy()
-    digital.spatial_indexer = None
 
     async def populate():
         inside = await digital.contribute_information(
@@ -106,7 +105,12 @@ def test_digital_stigmergy_exact_spatial_filter_and_quality_edge_case():
         results = await digital.query_stigmergy(
             "reader",
             "sensor",
-            spatial_bounds={"min_lat": -1, "max_lat": 1, "min_lng": -1, "max_lng": 1},
+            spatial_bounds={
+                "min_lat": -1e-9,
+                "max_lat": 1e-9,
+                "min_lng": -1e-9,
+                "max_lng": 1e-9,
+            },
         )
         return inside, results
 

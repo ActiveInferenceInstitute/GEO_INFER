@@ -7,6 +7,7 @@ import sys
 import textwrap
 
 import numpy as np
+import pytest
 
 from geo_infer_ant.core.population import AgentPopulation
 from geo_infer_ant.core.agent_base import SwarmAgent
@@ -25,7 +26,7 @@ def test_package_imports_without_optional_integrations():
                     "geo_infer_space",
                     "geo_infer_agent",
                 }:
-                    raise ImportError(f"{name} intentionally blocked")
+                    raise ModuleNotFoundError(f"{name} intentionally blocked", name=name.split(".")[0])
                 return None
 
         sys.meta_path.insert(0, _BlockIntegrations())
@@ -49,7 +50,7 @@ def test_package_imports_without_optional_integrations():
 def test_perceive_environment_preserves_unconfigured_active_inference_context(
     caplog,
 ):
-    """An unconfigured ACT model stores context without emitting API warnings."""
+    """The explicit rule backend retains sensory context without claiming ACT."""
     agent = SwarmAgent("integration-agent", np.array([37.7, -122.4]))
 
     with caplog.at_level(logging.WARNING):
@@ -59,11 +60,10 @@ def test_perceive_environment_preserves_unconfigured_active_inference_context(
             )
         )
 
-    assert "active_inference_observations" in sensory_input.processed_data
-    assert (
-        sensory_input.processed_data["active_inference_observations"]["temperature"]
-        == 18.0
-    )
+    processed = sensory_input.process()
+    assert processed["env_temperature"] == 18.0
+    assert "active_inference_observations" not in processed
+    assert agent.active_inference_enabled is False
     assert "Active Inference processing failed" not in caplog.text
     assert "Spatial analysis failed" not in caplog.text
 
@@ -81,3 +81,30 @@ def test_population_social_context_counts_nearby_agents_without_cell_api(caplog)
     assert context["nearby_agents"] == 1
     assert context["nearby_agent_types"] == {"worker": 1}
     assert "Spatial neighbor search failed" not in caplog.text
+
+
+def test_enabling_act_requires_a_real_configured_model():
+    """An enable flag cannot manufacture inference from an unconfigured model."""
+    with pytest.raises(ValueError, match="configured active_inference_model"):
+        SwarmAgent("unconfigured", [0, 0], active_inference_enabled=True)
+
+
+def test_internal_optional_import_failure_propagates():
+    """A broken installed integration must not be classified as absent."""
+    probe = textwrap.dedent(
+        """
+        import sys
+        class BrokenIntegration:
+            def find_spec(self, name, path=None, target=None):
+                if name == 'geo_infer_act':
+                    raise ModuleNotFoundError('broken ACT transitive dependency', name='missing_internal_dependency')
+                return None
+        sys.meta_path.insert(0, BrokenIntegration())
+        import geo_infer_ant
+        """
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", probe], capture_output=True, text=True, timeout=120
+    )
+    assert result.returncode != 0
+    assert "broken ACT transitive dependency" in result.stderr

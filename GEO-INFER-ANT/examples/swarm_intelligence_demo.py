@@ -135,7 +135,7 @@ async def demonstrate_swarm_agents():
             agent_id=f"demo_agent_{i}",
             position=np.random.uniform(-10, 10, 2),
             sensory_range=100.0,
-            active_inference_enabled=True,
+            active_inference_enabled=False,
         )
         agents.append(agent)
 

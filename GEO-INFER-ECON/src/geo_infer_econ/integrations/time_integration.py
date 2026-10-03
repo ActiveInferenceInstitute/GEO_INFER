@@ -18,7 +18,9 @@ try:
     from geo_infer_time.models.timeseries import TimeSeries
 
     TIME_AVAILABLE = True
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "geo_infer_time":
+        raise
     TIME_AVAILABLE = False
     TemporalAnalyzer = None
     ForecastingEngine = None

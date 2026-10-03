@@ -35,6 +35,7 @@ from geo_infer_ant.applications import EnvironmentalMonitoringSwarm
 from geo_infer_ant.analysis import SwarmPatternAnalyzer
 from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
 from geo_infer_act.core.active_inference import ActiveInferenceModel
+from geo_infer_act.core.generative_model import GenerativeModel
 from geo_infer_math.core.optimization import Optimizer
 
 
@@ -240,14 +241,77 @@ class TestCrossModuleIntegration:
             assert cell is not None
 
     def test_act_integration(self):
-        """Test integration with GEO-INFER-ACT."""
-        # Test Active Inference model creation
-        model = ActiveInferenceModel(
-            model_type="spatial_temporal", preferences={"forage": 0.8, "rest": 0.6}
+        """Configured ACT performs a real posterior update and ordered action."""
+        model = ActiveInferenceModel(model_type="categorical", random_seed=42)
+        model.set_generative_model(
+            GenerativeModel(
+                model_type="categorical",
+                parameters={
+                    "state_dim": 2,
+                    "obs_dim": 2,
+                    "A": np.array([[0.9, 0.2], [0.1, 0.8]]),
+                    "B": np.stack(
+                        [np.eye(2), np.array([[0.0, 1.0], [1.0, 0.0]])], axis=2
+                    ),
+                    "C": np.array([0.0, 4.0]),
+                    "D": np.array([0.6, 0.4]),
+                },
+            )
         )
-
-        assert model.model_type == "spatial_temporal"
-        assert model.preferences is not None
+        actions = [
+            {"action_type": "rest"},
+            {"action_type": "forage", "parameters": {"success_probability": 1.0}},
+        ]
+        agent = SwarmAgent(
+            "configured-act",
+            np.array([37.7, -122.4]),
+            active_inference_enabled=True,
+            active_inference_model=model,
+            act_observation_encoder=lambda context: np.array(
+                [context["env_food"], 1 - context["env_food"]]
+            ),
+            act_actions=actions,
+        )
+        sensory = asyncio.run(
+            agent.perceive_environment(environmental_signals={"food": 1.0})
+        )
+        assert model.current_observations is None
+        decision = agent.make_decision(sensory)
+        expected = np.array([0.9 * 0.6, 0.2 * 0.4])
+        expected /= expected.sum()
+        np.testing.assert_allclose(
+            model.current_beliefs["states"], expected, atol=2e-6, rtol=0
+        )
+        assert decision.action_type == "forage"
+        assert decision.confidence == pytest.approx(
+            model.latest_policy_evaluation.probability
+        )
+        assert len(model.history) == 1
+        assert (
+            agent.last_active_inference_result.metadata["policy_selection"]["backend"]
+            == "inferactively-pymdp"
+        )
+        assert actions == [
+            {"action_type": "rest"},
+            {"action_type": "forage", "parameters": {"success_probability": 1.0}},
+        ]
+        with pytest.raises(ValueError, match="pending ACT action"):
+            agent.make_decision(sensory)
+        result = asyncio.run(agent.execute_action(decision))
+        assert result["success"] is True
+        np.testing.assert_allclose(
+            model.current_beliefs["states"], expected[::-1], atol=2e-6, rtol=0
+        )
+        assert len(agent.act_prediction_history) == 1
+        assert agent.act_prediction_history[0]["action_index"] == 1
+        next_decision = agent.make_decision(sensory)
+        next_expected = np.array([0.9, 0.2]) * expected[::-1]
+        next_expected /= next_expected.sum()
+        np.testing.assert_allclose(
+            model.current_beliefs["states"], next_expected, atol=2e-6, rtol=0
+        )
+        assert len(model.history) == 2
+        assert next_decision is not decision
 
     def test_math_integration(self):
         """Test integration with GEO-INFER-MATH."""

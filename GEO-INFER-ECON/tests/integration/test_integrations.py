@@ -5,10 +5,49 @@ Tests for integration adapters with GEO-INFER-SPACE, GEO-INFER-TIME, and GEO-INF
 """
 
 import unittest
+import subprocess
+import sys
+from pathlib import Path
+import pytest
 import numpy as np
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
+
+
+@pytest.mark.parametrize("missing", ["geo_infer_time", "broken_time_dependency"])
+def test_time_optional_import_distinguishes_absence_from_breakage(missing):
+    """Only absence of the owning package permits the local ECON path."""
+    source = (
+        Path(__file__).resolve().parents[2]
+        / "src"
+        / "geo_infer_econ"
+        / "integrations"
+        / "time_integration.py"
+    )
+    code = """
+import importlib.util, sys
+class Missing:
+    def find_spec(self, name, path=None, target=None):
+        if name.split('.')[0] == 'geo_infer_time':
+            raise ModuleNotFoundError('declared test boundary', name=sys.argv[2])
+        return None
+sys.meta_path.insert(0, Missing())
+spec = importlib.util.spec_from_file_location('econ_time_probe', sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+assert module.TIME_AVAILABLE is False
+"""
+    result = subprocess.run(
+        [sys.executable, "-I", "-c", code, str(source), missing],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    if missing == "geo_infer_time":
+        assert result.returncode == 0, result.stderr
+    else:
+        assert result.returncode != 0 and "declared test boundary" in result.stderr
 
 
 class TestSpaceIntegration(unittest.TestCase):

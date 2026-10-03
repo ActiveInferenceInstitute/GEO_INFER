@@ -30,7 +30,7 @@ Example:
     ...     agent_id="ant_001",
     ...     position=np.array([37.7749, -122.4194]),
     ...     sensory_range=100.0,
-    ...     active_inference_enabled=True
+    ...     active_inference_enabled=False
     ... )
     >>>
     >>> # Create agent population

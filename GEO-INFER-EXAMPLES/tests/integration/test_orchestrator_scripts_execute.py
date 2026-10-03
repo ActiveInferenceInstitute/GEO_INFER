@@ -27,6 +27,7 @@ _TIMEOUT_SECONDS = 180
 #: Fast, deterministic orchestrators (synthetic data, no network, no heavy
 #: Monte Carlo / optimization loops). Each runs in a few seconds.
 SUBSET = (
+    "ACT",
     "SPACE",
     "TIME",
     "LOG",
@@ -68,3 +69,23 @@ def test_orchestrator_script_exits_zero_with_ok_status(module: str) -> None:
     assert payload["status"] == "ok", f"{module} reported: {payload.get('status')}"
     assert isinstance(payload.get("result"), dict)
     assert payload["duration_seconds"] >= 0.0
+    if module == "ACT":
+        import numpy as np
+
+        prior = np.full(3, 1 / 3)
+        transitions = [
+            np.array([[0.6, 0.1, 0.3], [0.3, 0.6, 0.1], [0.1, 0.3, 0.6]]),
+            np.array([[0.1, 0.3, 0.6], [0.6, 0.1, 0.3], [0.3, 0.6, 0.1]]),
+            np.array([[0.3, 0.6, 0.1], [0.1, 0.3, 0.6], [0.6, 0.1, 0.3]]),
+        ]
+        assert len(payload["result"]["steps"]) == 6
+        for step in payload["result"]["steps"]:
+            likelihood = np.full(3, 0.05)
+            likelihood[step["observation_index"]] = 0.9
+            posterior = prior * likelihood
+            posterior /= posterior.sum()
+            np.testing.assert_allclose(
+                step["posterior_beliefs"], posterior, atol=2e-6, rtol=0
+            )
+            prior = transitions[step["selected_action"]] @ posterior
+            np.testing.assert_allclose(step["next_prior"], prior, atol=2e-6, rtol=0)
