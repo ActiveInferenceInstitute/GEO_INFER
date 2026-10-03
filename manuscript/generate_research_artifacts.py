@@ -15,17 +15,18 @@ as a passing research result.
 from __future__ import annotations
 
 import argparse
+import glob
 import hashlib
 import json
 import os
 import platform
 import re
+import shlex
 import shutil
 import subprocess
 import sys
 import tomllib
 from dataclasses import asdict, dataclass, replace
-from datetime import datetime, UTC
 from math import ceil
 from pathlib import Path
 from typing import Any
@@ -284,6 +285,7 @@ class VerificationResult:
     return_code: int | None
     duration_seconds: float | None
     output_tail: str
+    receipt: str | None = None
 
 
 @dataclass(frozen=True)
@@ -1692,7 +1694,14 @@ def _verification_payload(record: VerificationRecord) -> dict[str, Any]:
     return {
         "schema_version": RESEARCH_SCHEMA,
         "full_validation_requested": record.full_validation_requested,
-        "results": [asdict(result) for result in record.results],
+        "results": [
+            {
+                key: value
+                for key, value in asdict(result).items()
+                if key != "receipt" or value is not None
+            }
+            for result in record.results
+        ],
         "source_commit": record.source_commit,
         "source_hash": record.source_hash,
     }
@@ -1935,26 +1944,95 @@ def resolve_verification(
     )
 
 
+def _verification_argv(command: str, root: Path) -> list[str]:
+    """Parse a trusted command declaration and expand compileall path operands.
+
+    Only compileall paths use globbing. Quoted scripts and other arguments keep
+    their literal content; no shell interprets them or expands substitutions.
+    Missing paths and unmatched patterns are rejected: compileall can print
+    "Can't list" while still exiting successfully. At least one explicit path
+    is required, rather than implicitly compiling the interpreter's sys.path.
+    """
+    argv = shlex.split(command)
+    if not argv:
+        raise ValueError("Verification commands must not be empty")
+    if argv[1:3] != ["-m", "compileall"]:
+        return argv
+    expanded = argv[:3]
+    value_options = {
+        "-r",
+        "-d",
+        "-s",
+        "-p",
+        "-x",
+        "-i",
+        "-j",
+        "--workers",
+        "--invalidation-mode",
+        "-o",
+        "-e",
+    }
+    option_value = False
+    only_paths = False
+    path_count = 0
+    for argument in argv[3:]:
+        if option_value:
+            expanded.append(argument)
+            option_value = False
+            continue
+        if not only_paths and argument.startswith("-"):
+            expanded.append(argument)
+            option_value = argument in value_options
+            only_paths = argument == "--"
+            continue
+        if glob.has_magic(argument):
+            paths = sorted(glob.glob(argument, root_dir=root))
+            if not paths:
+                raise ValueError(
+                    f"Verification compileall path pattern matched no paths: {argument}"
+                )
+        else:
+            paths = [argument]
+        for path in paths:
+            if not ((root / path).is_file() or (root / path).is_dir()):
+                raise ValueError(f"Verification compileall path does not exist: {path}")
+        expanded.extend(paths)
+        path_count += len(paths)
+    if not path_count:
+        raise ValueError(
+            "Verification compileall must select at least one explicit path"
+        )
+    return expanded
+
+
 def run_verification(
     root: Path, *, full_validation: bool = False
 ) -> tuple[VerificationResult, ...]:
     """Run and record the research verification commands.
 
-    Every command gets the same wall-clock envelope as the unified test
-    runners' own ``--timeout``: an unbounded ``subprocess.run`` is how one
-    hung validator stalls the whole CI job (the workflow-level
-    ``timeout-minutes`` guard kills the job but publishes nothing).  A
-    command that exceeds the envelope is recorded as ``status="timeout"``
-    with the elapsed duration rather than aborting the remaining groups, so
-    the record still shows what ran and the publication gate treats the
-    timed-out group exactly like a failed one.
+    Shared execution provides monotonic deadlines, process-tree cleanup and
+    immutable attempts, including retained output and artifact hashes. Each
+    result links to that receipt relative to ``root``; its bounded output tail
+    is a summary. Legacy records without receipt references remain readable.
+    A timeout or ordinary failure is recorded without retrying or aborting the
+    remaining groups. Importing the generator does not initialize execution.
     """
+    from geo_infer_test.execution import run_command
+
     commands = (
         *VERIFICATION_COMMANDS,
         *(FULL_VALIDATION_COMMANDS if full_validation else ()),
     )
+    if not commands:
+        raise ValueError("Verification must select at least one command group")
+    names = [name for name, _command in commands]
+    if any(not name.strip() for name in names) or len(names) != len(set(names)):
+        raise ValueError("Verification command group names must be unique and nonempty")
+    planned_commands = [
+        (name, command, _verification_argv(command, root)) for name, command in commands
+    ]
     results: list[VerificationResult] = []
-    for name, command in commands:
+    for name, command, argv in planned_commands:
         # The bare validators get the same 600s envelope as the unified test
         # runners' own per-command timeout.  The full-validation runner
         # groups aggregate a whole category of per-module commands, so their
@@ -1966,40 +2044,27 @@ def run_verification(
             if name in FULL_VALIDATION_GROUPS
             else VERIFICATION_TIMEOUT_SECONDS
         )
-        started = datetime.now(tz=UTC)
-        try:
-            completed = subprocess.run(
-                command,
-                cwd=root,
-                shell=True,
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=timeout,
-            )
-        except subprocess.TimeoutExpired:
-            elapsed = (datetime.now(tz=UTC) - started).total_seconds()
-            results.append(
-                VerificationResult(
-                    name=name,
-                    command=command,
-                    status="timeout",
-                    return_code=None,
-                    duration_seconds=round(elapsed, 3),
-                    output_tail=f"timed out after {timeout}s and was terminated",
-                )
-            )
-            continue
-        elapsed = (datetime.now(tz=UTC) - started).total_seconds()
+        completed = run_command(argv, name, timeout, cwd=root)
         combined = f"{completed.stdout}\n{completed.stderr}".strip()
         results.append(
             VerificationResult(
                 name=name,
                 command=command,
-                status="passed" if completed.returncode == 0 else "failed",
+                status=(
+                    "timeout"
+                    if completed.status == "TIMEOUT"
+                    else "passed"
+                    if completed.success and completed.status == "PASS"
+                    else "failed"
+                ),
                 return_code=completed.returncode,
-                duration_seconds=round(elapsed, 3),
+                duration_seconds=round(completed.duration, 3),
                 output_tail=combined[-2000:],
+                receipt=(
+                    Path(os.path.relpath(completed.receipt, root)).as_posix()
+                    if completed.receipt
+                    else None
+                ),
             )
         )
     return tuple(results)
