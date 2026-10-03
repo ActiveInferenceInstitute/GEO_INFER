@@ -23,6 +23,7 @@
 
 - `test_analysis.py`
 - `test_api.py`
+- `test_bayeux_import_boundary.py`
 - `test_categorical_regressions.py`
 - `test_civic_intel.py`
 - `test_climate_model.py`
