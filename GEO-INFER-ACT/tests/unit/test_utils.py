@@ -348,15 +348,17 @@ class TestIntegrationUtils(unittest.TestCase):
             self.assertIn("boundary_cells", result["model_config"])
 
     def test_integrate_rxinfer(self):
-        """Run the deterministic local RxInfer-compatible contract."""
+        """Run the deterministic local Gaussian contract."""
         config = {}
         params = {
-            "model_specification": "@model function test() end",
-            "data": {"observations": np.random.randn(5)},
+            "backend": "local_gaussian",
+            "data": {"observations": [1.0, 2.0, 3.0]},
         }
         result = integrate_rxinfer(config, params)
         self.assertEqual(result["status"], "success")
-        self.assertIn(result["backend"], {"rxinfer", "deterministic-local"})
+        self.assertEqual(result["backend"], "local_gaussian")
+        self.assertAlmostEqual(result["posterior_marginals"]["mean"], 1.5)
+        self.assertAlmostEqual(result["posterior_marginals"]["variance"], 0.25)
 
 
 if __name__ == "__main__":

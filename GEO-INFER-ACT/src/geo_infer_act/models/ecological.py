@@ -3,6 +3,7 @@ Ecological model for active inference.
 """
 
 from typing import Any
+import copy
 import numpy as np
 
 from geo_infer_act.core.active_inference import ActiveInferenceModel
@@ -28,7 +29,7 @@ class EcologicalModel(ActiveInferenceModel):
         Args:
             config: Configuration dictionary with optional matrix overrides.
         """
-        config = config or {}
+        config = copy.deepcopy(config or {})
         if random_seed is not None:
             config["random_seed"] = random_seed
 
@@ -47,6 +48,9 @@ class EcologicalModel(ActiveInferenceModel):
         # 3. Define Action Space (Control Factors)
         # Factor 0: Action (0=Wait, 1=Forage, 2=Hide)
         self.num_controls = [3]
+        config.setdefault("state_dim", self.num_states)
+        config.setdefault("obs_dim", self.num_obs)
+        config.setdefault("num_controls", self.num_controls)
 
         # 4. Construct Matrices (if not provided in config)
         if "A" not in config:
@@ -214,14 +218,18 @@ class EcologicalModel(ActiveInferenceModel):
             observation: List of integers [Food_Obs_Idx, Threat_Obs_Idx]
         """
         if observation is None:
-            obs = np.array([0, 0])
+            obs = [0, 0]
         else:
-            obs = np.asarray(observation)
+            obs = observation
 
-        # Perceive
-        beliefs = self.perceive(obs)
+        # Use the shared step so history, diagnostics and action timing agree.
+        result = super().step(obs, **kwargs)
+        if kwargs.get("return_result", False):
+            return result
+        beliefs, action = result
 
-        # Act
-        action = self.act()
-
-        return {"beliefs": beliefs, "action": action, "observation": obs.tolist()}
+        return {
+            "beliefs": beliefs,
+            "action": action,
+            "observation": np.asarray(obs).tolist(),
+        }

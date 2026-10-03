@@ -73,6 +73,7 @@ class SpatialActiveInferenceAgent:
         diffusion_rate: float = 0.1,
         precision_scale: float = 1.0,
         enable_logging: bool = True,
+        max_entries: int = 1_000_000,
     ):
         """
         Initialize the Spatial Active Inference Agent.
@@ -87,10 +88,28 @@ class SpatialActiveInferenceAgent:
             precision_scale: Base precision for observations
             enable_logging: Whether to log inference steps
         """
+        for name, value, minimum, maximum in (
+            ("max_entries", max_entries, 1, None),
+            ("h3_resolution", h3_resolution, 0, 15),
+            ("state_dim", state_dim, 1, max_entries),
+            ("obs_dim", obs_dim, 1, max_entries),
+        ):
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, np.integer))
+                or value < minimum
+                or (maximum is not None and value > maximum)
+            ):
+                raise ValueError(f"{name} must be an integer in its supported range")
+        if not np.isfinite(diffusion_rate) or not 0 <= diffusion_rate <= 1:
+            raise ValueError("diffusion_rate must be finite and between zero and one")
+        if not np.isfinite(precision_scale) or precision_scale <= 0:
+            raise ValueError("precision_scale must be finite and positive")
+        self.max_entries = max_entries
         self.h3_resolution = h3_resolution
         self.state_dim = state_dim
         self.obs_dim = obs_dim
-        self.diffusion_rate = np.clip(diffusion_rate, 0.0, 1.0)
+        self.diffusion_rate = float(diffusion_rate)
         self.precision_scale = precision_scale
         self.enable_logging = enable_logging
 
@@ -99,9 +118,9 @@ class SpatialActiveInferenceAgent:
         self.cell_to_idx: dict[str, int] = {}
         self.neighbor_map: dict[str, list[str]] = {}
 
-        if initial_cells:
+        if initial_cells is not None:
             self._initialize_from_cells(initial_cells)
-        elif boundary:
+        elif boundary is not None:
             self._initialize_from_boundary(boundary)
         else:
             # Default: single cell at null island
@@ -206,27 +225,38 @@ class SpatialActiveInferenceAgent:
 
     def _initialize_from_cells(self, cells: list[str]) -> None:
         """Initialize agent from list of H3 cells."""
-        self.cells = [str(cell) for cell in cells]
         adapter = get_h3_adapter()
-        self.cells = adapter.validate_cells(self.cells)
+        candidate_cells = adapter.validate_cells(cells)
+        if not candidate_cells or any(
+            adapter.get_resolution(cell) != self.h3_resolution
+            for cell in candidate_cells
+        ):
+            raise ValueError("Cells must be nonempty and match h3_resolution")
+        n_cells = len(candidate_cells)
+        if (
+            n_cells * n_cells
+            + n_cells
+            * (
+                self.state_dim
+                + self.obs_dim * self.state_dim
+                + 5 * self.state_dim * self.state_dim
+            )
+            > self.max_entries
+        ):
+            raise ValueError("Spatial agent exceeds max_entries allocation budget")
+        self.cells = candidate_cells
         self.cell_to_idx = {cell: idx for idx, cell in enumerate(self.cells)}
         self._build_neighbor_map()
 
     def _initialize_from_boundary(self, boundary: dict) -> None:
         """Initialize agent from GeoJSON boundary."""
-        try:
-            adapter = get_h3_adapter()
-            cells = adapter.polygon_to_cells(boundary, self.h3_resolution)
-            if cells:
-                self.cells = cells
-            else:
-                self.cells = self._get_default_cells()
-        except Exception as e:
-            logger.warning(f"Could not initialize from boundary: {e}")
-            self.cells = self._get_default_cells()
-
-        self.cell_to_idx = {cell: idx for idx, cell in enumerate(self.cells)}
-        self._build_neighbor_map()
+        adapter = get_h3_adapter()
+        cells = adapter.polygon_to_cells(boundary, self.h3_resolution)
+        if not cells:
+            raise ValueError(
+                "Boundary contains no H3 cell centers at the requested resolution"
+            )
+        self._initialize_from_cells(cells)
 
     def _build_neighbor_map(self) -> None:
         """Build mapping of each cell to its neighbors."""

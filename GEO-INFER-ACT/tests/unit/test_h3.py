@@ -77,9 +77,10 @@ class TestH3Methods(unittest.TestCase):
         self.assertGreater(len(model.h3_cells), 0)
         self.assertIsNotNone(model.spatial_graph)
 
-        # Verify state dimension expansion for spatial modeling
-        expected_dim = 2 * len(model.h3_cells)
-        self.assertEqual(model.state_dim, expected_dim)
+        # Per-cell states remain aligned with the configured A/B matrices.
+        self.assertEqual(model.state_dim, 2)
+        self.assertEqual(model.observation_model.shape, (2, 2))
+        self.assertEqual(model.transition_model.shape, (2, 2))
 
         logger.info(f"H3 spatial enabled with {len(model.h3_cells)} cells")
 
@@ -120,8 +121,8 @@ class TestH3Methods(unittest.TestCase):
 
         logger.info("H3 belief updating test passed")
 
-    def test_expanded_h3_model_accepts_full_grid_observation(self):
-        """The generic update path remains valid after H3 expands state space."""
+    def test_h3_model_rejects_unlabelled_full_grid_observation(self):
+        """Spatial observations must retain their explicit cell identities."""
         model = GenerativeModel("categorical", {"state_dim": 2})
         small_boundary = {
             "type": "Polygon",
@@ -139,10 +140,10 @@ class TestH3Methods(unittest.TestCase):
         observation = np.zeros(model.state_dim)
         observation[0] = 1.0
 
-        beliefs = model.update_beliefs({"observations": observation})["states"]
-
-        self.assertEqual(beliefs.shape, (model.state_dim,))
-        self.assertAlmostEqual(float(np.sum(beliefs)), 1.0, places=6)
+        before = model.beliefs["states"].copy()
+        with self.assertRaisesRegex(ValueError, "explicit cell mappings"):
+            model.update_beliefs({"observations": observation})
+        np.testing.assert_array_equal(model.beliefs["states"], before)
 
     def test_infer_over_h3_grid(self):
         """Test active inference over H3 grid."""

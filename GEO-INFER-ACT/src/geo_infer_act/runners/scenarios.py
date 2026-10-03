@@ -148,19 +148,25 @@ def run_all_scenarios(
     deterministic: bool = True,
     visualizations: bool = True,
     command: list[str] | None = None,
+    config: RunConfig | None = None,
 ) -> SuiteRunResult:
     """Run a suite of scenarios and write a suite manifest."""
     output_dir = ensure_output_tree(output_dir or _default_output_dir("examples"))
     selected = normalize_scenario_list(scenarios)
     results = []
     for scenario in selected:
+        values = (
+            config.__dict__
+            if config is not None
+            else dict(
+                seed=seed,
+                timesteps=timesteps,
+                deterministic=deterministic,
+                visualizations=visualizations,
+            )
+        )
         scenario_config = RunConfig(
-            scenario=scenario,
-            output_dir=output_dir / scenario,
-            seed=seed,
-            timesteps=timesteps,
-            deterministic=deterministic,
-            visualizations=visualizations,
+            **{**values, "scenario": scenario, "output_dir": output_dir / scenario}
         )
         results.append(run_scenario(scenario_config, command=command))
 
@@ -1416,7 +1422,7 @@ def _write_nested_h3_level_map(config: RunConfig, nested_update: Any) -> Path:
         f"<td>{row['resolution']}</td>"
         f"<td>{row['cell_count']}</td>"
         f"<td>{row['edge_count']}</td>"
-        f"<td>{float(row['mean_free_energy']):.6f}</td>"
+        f"<td>{float(row['mean_reference_kl_to_uniform']):.6f}</td>"
         f"<td>{float(row['mean_entropy']):.6f}</td>"
         f"<td>{float(row['coherence']):.6f}</td>"
         "</tr>"
@@ -1444,7 +1450,7 @@ def _write_nested_h3_level_map(config: RunConfig, nested_update: Any) -> Path:
         <th>Resolution</th>
         <th>Cells</th>
         <th>Edges</th>
-        <th>Mean Free Energy</th>
+        <th>Mean KL to Uniform</th>
         <th>Mean Entropy</th>
         <th>Coherence</th>
       </tr>
@@ -1459,12 +1465,12 @@ def _write_nested_h3_level_map(config: RunConfig, nested_update: Any) -> Path:
         "visualizations/nested_h3_level_map.html",
         html,
         title="Nested H3 Level Diagnostics",
-        description="Nested H3 per-resolution cell counts, edge counts, free energy, entropy, and coherence.",
+        description="Nested H3 per-resolution cell counts, edge counts, uniform-reference KL, entropy, and coherence.",
         alt_text="Table of nested H3 diagnostics by H3 resolution.",
         plotted_metrics=[
             "cell_count",
             "edge_count",
-            "mean_free_energy",
+            "mean_reference_kl_to_uniform",
             "mean_entropy",
             "coherence",
         ],

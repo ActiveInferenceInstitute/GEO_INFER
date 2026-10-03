@@ -40,7 +40,11 @@ class MarkovDecisionProcess:
             "n_actions": n_actions,
         }
         for name, value in dimensions.items():
-            if not isinstance(value, (int, np.integer)) or int(value) < 1:
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, np.integer))
+                or int(value) < 1
+            ):
                 raise ValueError(f"{name} must be a positive integer")
 
         self.n_states = n_states
@@ -175,7 +179,9 @@ class MarkovDecisionProcess:
         Returns:
             Distribution over next states
         """
-        return self.transition_prob[state, :, action]
+        state = self._index(state, self.n_states, "state")
+        action = self._index(action, self.n_actions, "action")
+        return self.transition_prob[state, :, action].copy()
 
     def get_observation_prob(self, state: int) -> np.ndarray:
         """
@@ -187,7 +193,34 @@ class MarkovDecisionProcess:
         Returns:
             Distribution over observations
         """
-        return self.observation_prob[:, state]
+        state = self._index(state, self.n_states, "state")
+        return self.observation_prob[:, state].copy()
+
+    @staticmethod
+    def _index(value: int, size: int, name: str) -> int:
+        """Reject implicit, negative and out-of-space indices."""
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, np.integer))
+            or not 0 <= value < size
+        ):
+            raise ValueError(f"{name} index is outside its space")
+        return int(value)
+
+    @staticmethod
+    def _distribution(values: np.ndarray, size: int) -> np.ndarray:
+        """Validate a finite normalized distribution before use or mutation."""
+        vector = np.asarray(values, dtype=float)
+        if (
+            vector.shape != (size,)
+            or not np.all(np.isfinite(vector))
+            or np.any(vector < 0)
+            or not np.isclose(vector.sum(), 1, atol=1e-8, rtol=0)
+        ):
+            raise ValueError(
+                f"Distribution must be finite nonnegative shape ({size},) and sum to 1"
+            )
+        return vector
 
     def transition(self, state: int, action: int) -> int:
         """
@@ -201,7 +234,7 @@ class MarkovDecisionProcess:
             Next state index
         """
         # Get transition distribution for the current state and action
-        transition_dist = self.transition_prob[state, :, action]
+        transition_dist = self.get_transition_prob(state, action)
 
         # Sample next state
         next_state = self.rng.choice(self.n_states, p=transition_dist)
@@ -219,7 +252,7 @@ class MarkovDecisionProcess:
             Observation index
         """
         # Get observation distribution for the current state
-        observation_dist = self.observation_prob[:, state]
+        observation_dist = self.get_observation_prob(state)
 
         # Sample observation
         observation = self.rng.choice(self.n_observations, p=observation_dist)
@@ -243,8 +276,16 @@ class MarkovDecisionProcess:
         Returns:
             Tuple of (state_trajectory, observation_trajectory)
         """
+        initial_state = self._index(initial_state, self.n_states, "state")
+        policy = [self._index(action, self.n_actions, "action") for action in policy]
+        if not isinstance(stochastic, bool):
+            raise ValueError("stochastic must be a boolean")
         state_trajectory = [initial_state]
-        observation_trajectory = [self.observe(initial_state)]
+        observation_trajectory = [
+            self.observe(initial_state)
+            if stochastic
+            else int(np.argmax(self.get_observation_prob(initial_state)))
+        ]
 
         current_state = initial_state
 
@@ -285,6 +326,8 @@ class MarkovDecisionProcess:
         """
         # For each possible current state, compute distribution over next states
         # and weight by current belief
+        belief = self._distribution(belief, self.n_states)
+        action = self._index(action, self.n_actions, "action")
         predictive_state = np.zeros(self.n_states)
 
         for s in range(self.n_states):
@@ -306,6 +349,7 @@ class MarkovDecisionProcess:
         """
         # For each possible state, compute distribution over observations
         # and weight by state probability
+        state_dist = self._distribution(state_dist, self.n_states)
         predictive_obs = np.zeros(self.n_observations)
 
         for s in range(self.n_states):
@@ -333,8 +377,10 @@ class MarkovDecisionProcess:
             )
         if not np.all(np.isfinite(prior_belief)) or np.any(prior_belief < 0):
             raise ValueError("Prior belief must be finite and non-negative")
-        if not isinstance(observation, (int, np.integer)) or not (
-            0 <= int(observation) < self.n_observations
+        if (
+            isinstance(observation, bool)
+            or not isinstance(observation, (int, np.integer))
+            or not (0 <= int(observation) < self.n_observations)
         ):
             raise ValueError("Observation index is outside the observation space")
 
@@ -363,16 +409,9 @@ class MarkovDecisionProcess:
             action: Action index
             distribution: Distribution over next states (must sum to 1)
         """
-        if distribution.shape != (self.n_states,):
-            raise ValueError(
-                f"Distribution shape should be ({self.n_states},), got {distribution.shape}"
-            )
-
-        if not np.isclose(np.sum(distribution), 1.0, rtol=1e-5):
-            raise ValueError(
-                f"Distribution should sum to 1, got {np.sum(distribution)}"
-            )
-
+        state = self._index(state, self.n_states, "state")
+        action = self._index(action, self.n_actions, "action")
+        distribution = self._distribution(distribution, self.n_states)
         self.transition_prob[state, :, action] = distribution
 
     def set_observation_matrix(self, state: int, distribution: np.ndarray) -> None:
@@ -383,14 +422,6 @@ class MarkovDecisionProcess:
             state: State index
             distribution: Distribution over observations (must sum to 1)
         """
-        if distribution.shape != (self.n_observations,):
-            raise ValueError(
-                f"Distribution shape should be ({self.n_observations},), got {distribution.shape}"
-            )
-
-        if not np.isclose(np.sum(distribution), 1.0, rtol=1e-5):
-            raise ValueError(
-                f"Distribution should sum to 1, got {np.sum(distribution)}"
-            )
-
+        state = self._index(state, self.n_states, "state")
+        distribution = self._distribution(distribution, self.n_observations)
         self.observation_prob[:, state] = distribution

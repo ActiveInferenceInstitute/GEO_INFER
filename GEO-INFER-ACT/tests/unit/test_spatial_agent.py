@@ -12,6 +12,7 @@ Tests cover:
 """
 
 import numpy as np
+import pytest
 import json
 import tempfile
 from pathlib import Path
@@ -65,13 +66,11 @@ class TestSpatialActiveInferenceAgentInit:
         assert agent.cells == cells
         assert all(c in agent.cell_to_idx for c in cells)
 
-    def test_diffusion_rate_clamping(self):
-        """Test diffusion rate is clamped to [0, 1]."""
-        agent1 = SpatialActiveInferenceAgent(diffusion_rate=-0.5)
-        agent2 = SpatialActiveInferenceAgent(diffusion_rate=1.5)
-
-        assert agent1.diffusion_rate == 0.0
-        assert agent2.diffusion_rate == 1.0
+    def test_diffusion_rate_rejects_invalid_values(self):
+        """Invalid diffusion settings fail before creating a spatial model."""
+        for value in (-0.5, 1.5, np.nan, np.inf):
+            with pytest.raises(ValueError, match="diffusion_rate"):
+                SpatialActiveInferenceAgent(diffusion_rate=value)
 
     def test_uniform_initial_beliefs(self):
         """Test beliefs are initially uniform."""

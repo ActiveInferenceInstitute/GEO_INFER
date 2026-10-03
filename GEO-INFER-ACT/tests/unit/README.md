@@ -9,6 +9,7 @@ Unit workspace within `GEO-INFER-ACT`.
 - `test_categorical_regressions.py`
 - `test_civic_intel.py`
 - `test_climate_model.py`
+- `test_comprehensive_audit_contracts.py`
 - `test_continuous_efe.py`
 - `test_continuous_pomdp_filter.py`
 - `test_core.py`
@@ -31,6 +32,7 @@ Unit workspace within `GEO-INFER-ACT`.
 - `test_inference_hardening.py`
 - `test_markov_decision_process.py`
 - `test_math_and_correlation_contracts.py`
+- `test_method_scan_contracts.py`
 - `test_model_contracts.py`
 - `test_models.py`
 - `test_nested_h3_active_inference.py`

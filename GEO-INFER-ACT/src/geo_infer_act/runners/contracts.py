@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import copy
 from pathlib import Path
 from typing import Any
 from collections.abc import Iterable, Sequence
@@ -57,14 +58,44 @@ class RunConfig:
         self.scenario = normalize_scenario_name(self.scenario)
         if self.output_dir is not None:
             self.output_dir = Path(self.output_dir)
-        self.seed = int(self.seed)
-        self.timesteps = int(self.timesteps)
-        self.h3_resolution = int(self.h3_resolution)
-        self.h3_ring_size = int(self.h3_ring_size)
-        if self.timesteps < 1:
-            raise ValueError("timesteps must be at least 1")
-        if self.h3_ring_size < 0:
-            raise ValueError("h3_ring_size must be nonnegative")
+        for name, minimum, maximum in (
+            ("seed", 0, None),
+            ("timesteps", 1, None),
+            ("h3_resolution", 0, 15),
+            ("h3_ring_size", 0, None),
+        ):
+            value = getattr(self, name)
+            if (
+                type(value) is not int
+                or value < minimum
+                or (maximum is not None and value > maximum)
+            ):
+                raise ValueError(f"{name} must be an integer in its supported range")
+        if (
+            type(self.deterministic) is not bool
+            or type(self.visualizations) is not bool
+        ):
+            raise ValueError("deterministic and visualizations must be booleans")
+        if self.schema_version != "geo-infer-act-run-config/v1":
+            raise ValueError("Unsupported run configuration schema_version")
+        if not isinstance(self.parameters, dict):
+            raise ValueError("parameters must be a mapping")
+        if self.output_formats != ["json", "csv", "png"]:
+            raise ValueError(
+                "output_formats must declare the supported json/csv/png bundle; use visualizations=False to omit images"
+            )
+        self.parameters = copy.deepcopy(self.parameters)
+        self.output_formats = list(self.output_formats)
+        if self.h3_cells is not None:
+            from geo_infer_act.utils.h3_adapter import get_h3_adapter
+
+            adapter = get_h3_adapter()
+            self.h3_cells = adapter.validate_cells(self.h3_cells)
+            if not self.h3_cells or any(
+                adapter.get_resolution(cell) != self.h3_resolution
+                for cell in self.h3_cells
+            ):
+                raise ValueError("h3_cells must be nonempty and match h3_resolution")
 
     def to_manifest_dict(self) -> dict[str, Any]:
         """Return a JSON-compatible configuration snapshot."""
@@ -77,9 +108,9 @@ class RunConfig:
             "visualizations": self.visualizations,
             "h3_resolution": self.h3_resolution,
             "h3_ring_size": self.h3_ring_size,
-            "h3_cells": self.h3_cells,
+            "h3_cells": copy.deepcopy(self.h3_cells),
             "output_formats": list(self.output_formats),
-            "parameters": dict(self.parameters),
+            "parameters": copy.deepcopy(self.parameters),
         }
 
 
@@ -120,6 +151,10 @@ def normalize_scenario_list(names: Iterable[str] | None) -> Sequence[str]:
     if names is None:
         return SCENARIO_NAMES
     selected = [normalize_scenario_name(name) for name in names]
+    if not selected or len(set(selected)) != len(selected):
+        raise ValueError(
+            "Scenario selection must be nonempty and contain no duplicates"
+        )
     if "all" in selected:
         return SCENARIO_NAMES
     return selected

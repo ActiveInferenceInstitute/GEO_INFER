@@ -74,6 +74,7 @@ dev = [
     "geopandas>=0.13.0",
     "hypothesis>=6.0.0",
     "pillow>=8.3.0",
+    "psutil>=7.0.0",
 ]
 docs = [
     "sphinx>=4.2.0",

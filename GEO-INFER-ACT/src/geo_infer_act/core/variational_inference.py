@@ -23,7 +23,11 @@ from typing import Any
 from collections.abc import Callable
 import logging
 
-from geo_infer_act.core.free_energy import validate_spd_precision
+from geo_infer_act.core.free_energy import (
+    FreeEnergyCalculator,
+    _coerce_probability_vector,
+    validate_spd_precision,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +50,8 @@ def _normalize_message(values: Any, dimension: int) -> np.ndarray:
     if not np.all(np.isfinite(message)) or np.any(message < 0):
         raise ValueError("factor messages must be finite and non-negative")
     total = float(np.sum(message))
-    if total <= 0:
-        return np.ones(dimension, dtype=float) / dimension
+    if not np.isfinite(total) or total <= 0:
+        raise ValueError("Factor message has zero or nonfinite support")
     return message / total
 
 
@@ -214,8 +218,9 @@ class VariationalInference:
             )
         if "mean" in prior and "precision" in prior:
             return self._gaussian_mean_field_update(prior, likelihood, observations)
-        # Default update
-        return prior.copy()
+        raise ValueError(
+            "Unsupported prior: require Dirichlet concentration or Gaussian mean/precision"
+        )
 
     @staticmethod
     def _dirichlet_mean_field_update(
@@ -572,8 +577,9 @@ class VariationalInference:
         q_params: dict[str, np.ndarray] = {}
         for var_name, dimension in dimensions.items():
             if var_name in observations:
-                # Preserve clamped values in the public result.
-                q_params[var_name] = np.asarray(observations[var_name]).copy()
+                q_params[var_name] = _normalize_message(
+                    observations[var_name], dimension
+                )
             else:
                 prior = variables[var_name].get("prior", np.ones(dimension))
                 q_params[var_name] = _normalize_message(prior, dimension)
@@ -662,20 +668,53 @@ class VariationalInference:
         Returns:
             Approximate posterior statistics
         """
-        # Generate samples from prior
+        if (
+            isinstance(n_samples, bool)
+            or not isinstance(n_samples, (int, np.integer))
+            or n_samples < 2
+        ):
+            raise ValueError("n_samples must be an integer greater than one")
+        if not callable(likelihood_fn):
+            raise ValueError("likelihood_fn must be callable")
+        observations = np.asarray(observations, dtype=float)
+        if not np.all(np.isfinite(observations)):
+            raise ValueError("observations must be finite")
+        # Generate samples from the explicitly declared proposal/prior.
         if "mean" in prior and "covariance" in prior:
             # Gaussian prior
-            samples = self.rng.multivariate_normal(
-                prior["mean"], prior["covariance"], n_samples
-            )
+            mean = np.asarray(prior["mean"], dtype=float)
+            covariance = np.asarray(prior["covariance"], dtype=float)
+            if (
+                mean.ndim != 1
+                or not len(mean)
+                or not np.all(np.isfinite(mean))
+                or covariance.shape != (len(mean), len(mean))
+            ):
+                raise ValueError(
+                    "Gaussian prior mean/covariance shapes must agree and be finite"
+                )
+            validate_spd_precision("prior covariance", covariance)
+            samples = self.rng.multivariate_normal(mean, covariance, n_samples)
         else:
             # Standard normal proposal when only a dimension is supplied.
             dim = len(prior.get("mean", [0, 0]))
             samples = self.rng.normal(size=(n_samples, dim))
 
         # Compute importance weights
-        weights = np.array([likelihood_fn(sample, observations) for sample in samples])
-        weights = weights / (np.sum(weights) + 1e-8)
+        weights = np.asarray(
+            [likelihood_fn(sample, observations) for sample in samples], dtype=float
+        )
+        if (
+            weights.shape != (n_samples,)
+            or not np.all(np.isfinite(weights))
+            or np.any(weights < 0)
+            or weights.max() <= 0
+        ):
+            raise ValueError(
+                "Importance likelihood weights must be finite nonnegative scalars with positive support"
+            )
+        weights = weights / weights.max()
+        weights = weights / weights.sum()
 
         # Compute weighted statistics
         posterior_mean = np.sum(samples * weights[:, np.newaxis], axis=0)
@@ -712,76 +751,51 @@ class VariationalInference:
         likelihood: dict[str, np.ndarray],
         observations: np.ndarray,
     ) -> float:
+        """Compute an actual Gaussian or categorical ELBO.
+
+        Gaussian mappings declare precision matrices. Their expected likelihood
+        includes observation normalization and posterior covariance. Categorical
+        mappings declare mean probability vectors; observations supplies a
+        state-aligned likelihood vector. Zero likelihood/prior support returns
+        negative infinity when positive posterior mass is impossible.
+        Unsupported or singular distributions fail without surrogate scores.
         """
-        Compute Evidence Lower BOund (ELBO).
-
-        Args:
-            posterior: Posterior distribution parameters
-            prior: Prior distribution parameters
-            likelihood: Likelihood parameters
-            observations: Observed data
-
-        Returns:
-            ELBO value
-
-        Notes:
-            When the Gaussian KL divergence cannot be evaluated because the
-            prior or posterior precision is singular or otherwise fails a
-            linear solve (``numpy.linalg.LinAlgError``), the KL term falls
-            back to the squared-mean-difference proxy
-            ``0.5 * ||post_mean - prior_mean||^2``.  The proxy omits the
-            trace and log-determinant terms, so the returned value is a
-            pessimistic lower surrogate of the true ELBO (it subtracts a
-            smaller KL), not the exact evidence bound.  The substitution is
-            logged as a warning; treat the score as degenerate when it
-            appears.
-        """
-        # Expected log likelihood term
-        if "mean" in posterior:
-            # Gaussian case
-            residual = observations - posterior["mean"]
-            precision = likelihood.get("precision", np.eye(len(observations)))
-            exp_log_lik = -0.5 * residual.T @ precision @ residual
-        else:
-            # Categorical case.
-            exp_log_lik = np.sum(
-                posterior.get("mean", posterior.get("concentration", observations))
-                * np.log(observations + 1e-8)
+        if any("precision" in value for value in (posterior, prior, likelihood)):
+            mean = np.asarray(posterior["mean"], dtype=float).reshape(-1)
+            observation = np.asarray(observations, dtype=float).reshape(-1)
+            return -FreeEnergyCalculator().compute_gaussian_free_energy(
+                mean,
+                posterior.get("precision", np.eye(len(mean))),
+                observation,
+                prior["mean"],
+                prior.get("precision", np.eye(len(mean))),
+                observation_matrix=likelihood.get("observation_matrix"),
+                observation_precision=likelihood.get(
+                    "precision", np.eye(len(observation))
+                ),
             )
-
-        # KL divergence term
-        if "mean" in posterior and "mean" in prior:
-            # Gaussian KL divergence
-            post_mean = posterior["mean"]
-            post_prec = posterior.get("precision", np.eye(len(post_mean)))
-            prior_mean = prior["mean"]
-            prior_prec = prior.get("precision", np.eye(len(prior_mean)))
-
-            try:
-                kl_div = 0.5 * (
-                    np.trace(np.linalg.solve(prior_prec, post_prec))
-                    + (post_mean - prior_mean).T @ prior_prec @ (post_mean - prior_mean)
-                    - len(post_mean)
-                    + np.log(np.linalg.det(prior_prec) / np.linalg.det(post_prec))
+        q = _coerce_probability_vector(posterior["mean"])
+        p = _coerce_probability_vector(prior["mean"], len(q))
+        likelihood_values = np.asarray(observations, dtype=float)
+        if (
+            likelihood_values.shape != q.shape
+            or not np.all(np.isfinite(likelihood_values))
+            or np.any(likelihood_values < 0)
+            or np.any(likelihood_values > 1)
+        ):
+            raise ValueError(
+                "Categorical likelihood must be state-aligned probabilities"
+            )
+        positive = q > 0
+        if np.any((p[positive] == 0) | (likelihood_values[positive] == 0)):
+            return -np.inf
+        return float(
+            np.sum(
+                q[positive]
+                * (
+                    np.log(likelihood_values[positive])
+                    + np.log(p[positive])
+                    - np.log(q[positive])
                 )
-            except np.linalg.LinAlgError as exc:
-                logger.warning(
-                    "Gaussian ELBO KL term degraded to the squared-mean-difference "
-                    "proxy because the precision matrices are not jointly solvable "
-                    "(%s); the returned value omits the trace and log-determinant "
-                    "terms of the true KL divergence.",
-                    exc,
-                )
-                kl_div = 0.5 * np.sum((post_mean - prior_mean) ** 2)
-        else:
-            # Categorical KL divergence.
-            post_probs = posterior.get(
-                "mean", np.ones(len(observations)) / len(observations)
             )
-            prior_probs = prior.get("mean", np.ones_like(post_probs) / len(post_probs))
-            kl_div = np.sum(
-                post_probs * np.log(post_probs / (prior_probs + 1e-8) + 1e-8)
-            )
-
-        elbo = exp_log_lik - kl_div
-        return float(elbo)
+        )

@@ -39,9 +39,12 @@ package layout, not an aspirational API list.
 - `perceive(observation)`: update posterior beliefs from one observation vector.
 - `act(available_actions=None)`: for supported categorical models, select an
   action through the `inferactively-pymdp==1.0.3` adapter and expose posterior,
-  negative-EFE, and VFE metadata; unsupported diagnostic fallback remains
-  explicit.
-- `update_observations(observations)`: replace the current observation store.
+  negative-EFE, and VFE metadata. Gaussian policy selection requires the
+  explicit control model in `ContinuousPOMDPActiveInference` or Gaussian GNN.
+- `update_observations(observations)`: own a copy of the current observation store.
+- `predict_beliefs(action_index=None)`: advance one explicit flat categorical
+  interval using B in `(next, current[, action])` order; action-conditioned B
+  requires the executed action index. No observation or history step is invented.
 - `update_preferences(preferences)`: replace the current prior preferences.
 - `update_with_outcome(decision, outcome)`: record a decision/outcome pair and
   close the perception-action loop when the outcome contains an observation.
@@ -85,14 +88,19 @@ package layout, not an aspirational API list.
   grid-based spatial navigation mode.
 - `GenerativeModel.enable_h3_spatial(h3_resolution, boundary)`: build a real
   `h3>=4.5.0,<5` cell set and neighbor graph for the supplied boundary.
-- `GenerativeModel.integrate_rxinfer(model_spec=None)`: attach an optional
-  RxInfer-style integration object when available.
-- `GenerativeModel.integrate_bayeux(target_log_prob=None)`: attach an optional
-  Bayeux-style integration object when available.
-- `GenerativeModel.diffuse_beliefs(diffusion_rate=0.1)`: diffuse spatial
-  beliefs over the configured neighbor graph.
-- `GenerativeModel.aggregate_beliefs_to_resolution(target_resolution)`: aggregate
-  H3 cell beliefs to parent cells.
+- `GenerativeModel.integrate_rxinfer(model_specification, data, backend="rxinfer")`:
+  run the supplied Julia model; `backend="local_gaussian"` explicitly chooses
+  the declared scalar conjugate model and does not execute Julia source.
+- `GenerativeModel.integrate_bayeux(log_density_fn, test_point,
+  backend="numpy_metropolis", n_samples=1000, warmup=100, transform_fn=None)`:
+  run the declared NumPy Metropolis chain or real Bayeux NumPyro NUTS. The
+  density accepts keyword parameters; Bayeux requires a JAX-traceable scalar
+  density. Transforms require Bayeux. Backend/caller failures propagate.
+- `GenerativeModel.diffuse_beliefs(beliefs, diffusion_rate=0.1)`: convexly blend
+  each posterior with the equal-weight mean of its observed graph neighbors.
+- `GenerativeModel.aggregate_beliefs_to_resolution(beliefs, target_resolution)`:
+  compute equal-cell posterior means under H3 parents; reject invalid cells,
+  mixed input resolutions, and refinement.
 - `GenerativeModel.set_preferences(preferences)`: replace model preferences.
 - `GenerativeModel.get_model_summary()`: summarize dimensions, mode flags,
   beliefs, and integration state.
@@ -179,8 +187,9 @@ package layout, not an aspirational API list.
   noise.
 - `DynamicCausalModel.generate_observations(...)`: simulate observations from a
   trajectory.
-- `DynamicCausalModel.estimate_parameters(...)`: estimate A, B, and C matrices
-  from observations and inputs.
+- `DynamicCausalModel.estimate_parameters(observations, inputs, time_points)`:
+  fit continuous-time derivatives on the supplied increasing time axis; these
+  A/B coefficients are derivative parameters, not discrete transition matrices.
 - `DynamicCausalModel.set_parameters(A, B, C)`: replace dynamics matrices.
 - `DynamicCausalModel.set_noise_parameters(Q, R)`: replace noise matrices.
 - `MarkovDecisionProcess.get_transition_prob(...)`: transition distribution for
@@ -220,8 +229,11 @@ package layout, not an aspirational API list.
 - `GaussianModel.update_beliefs(...)`: Kalman belief update.
 - `GaussianModel.step(action=None)`: Gaussian prediction step.
 - `GaussianModel.reset()`: restore zero mean and identity covariance.
-- `ClimateModel.step(observation=None)`: one climate active-inference step.
-- `EcologicalModel.step(observation=None)`: one ecological active-inference step.
+- `ClimateModel.step(observation)`: condition explicit integer modality indices,
+  evaluate the joint factored policy posterior, and propagate its selected controls.
+- `EcologicalModel.step(observation)`: perform the same factored inference
+  contract with ecological modality and factor definitions. Missing observations
+  require an explicit supported prediction path, not a fabricated sensor reading.
 - `MultiAgentModel.step(actions=None)`: advance multi-agent observable state.
 - `MultiAgentModel.enable_h3_spatial(...)`: instantiate one categorical agent per
   H3 cell.
@@ -235,6 +247,10 @@ package layout, not an aspirational API list.
 - `ResourceModel.reset()`: reset resources and history.
 - `ResourceModel.get_allocation_scores()`: compute allocation priority scores.
 - `UrbanModel.step(input_actions=None)`: advance urban agents and environment.
+  `planning_horizon` selects an exact bounded sequence of stationary policies;
+  the default is two, horizon lies in 1..8, and the factored artifact work
+  budget limits joint inference. Default policies hold one joint control for
+  the horizon; changing controls mid-policy requires explicit policy sequences.
 - `UrbanModel.run_simulation(n_steps=10)`: run repeated urban-planning steps.
 
 ## Output and Visualization Methods
@@ -367,8 +383,11 @@ uv run --package geo-infer-act --extra dev python GEO-INFER-ACT/verify_comprehen
 uv run --package geo-infer-act --extra dev python -m pytest GEO-INFER-ACT/tests -q
 ```
 
+For the full source scan, precise proof levels, backend limits, and migration
+changes, see [the 0.4.0 method review](0_4_method_review.md).
+
 The comprehensive audit regenerates an ignored evidence bundle in
-`output/act_audit/`. It runs the method
+`output/act_audit/`. It exercises representative methods from the
 families listed in this inventory, the scenario suite, visualization helpers,
 README/local-link checks, and Mermaid render checks.
 

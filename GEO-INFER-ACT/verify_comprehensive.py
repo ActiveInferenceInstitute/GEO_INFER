@@ -93,7 +93,7 @@ def _section(
     func: Callable[[Path], dict[str, Any]],
     output_dir: Path,
 ) -> dict[str, Any]:
-    start = time.time()
+    start = time.monotonic()
     section_dir = output_dir / "method_audit" / name
     section_dir.mkdir(parents=True, exist_ok=True)
     logging.info("Starting section %s", name)
@@ -102,14 +102,14 @@ def _section(
         result = {
             "name": name,
             "status": "passed",
-            "duration_seconds": round(time.time() - start, 4),
+            "duration_seconds": round(time.monotonic() - start, 4),
             "payload": payload,
         }
     except Exception as exc:  # pragma: no cover - audit reporting path
         result = {
             "name": name,
             "status": "failed",
-            "duration_seconds": round(time.time() - start, 4),
+            "duration_seconds": round(time.monotonic() - start, 4),
             "error": str(exc),
             "traceback": traceback.format_exc(),
         }
@@ -840,6 +840,8 @@ def audit_scenario_outputs(output_dir: Path) -> dict[str, Any]:
 
 
 def audit_docs_and_mermaid(output_dir: Path) -> dict[str, Any]:
+    from geo_infer_test.process import run_process
+
     markdown_files = sorted(
         path for path in ACT_ROOT.rglob("*.md") if ".pytest_cache" not in path.parts
     )
@@ -869,23 +871,56 @@ def audit_docs_and_mermaid(output_dir: Path) -> dict[str, Any]:
                 "source": source,
                 "renderer": mmdc,
             }
+            stdout_path = mermaid_dir / f"{safe_name}_{index}.stdout.log"
+            stderr_path = mermaid_dir / f"{safe_name}_{index}.stderr.log"
+            stdout, stderr = "", ""
+            rendered.unlink(missing_ok=True)
             if mmdc:
-                proc = subprocess.run(
-                    [mmdc, "-i", str(source), "-o", str(rendered), "-b", "transparent"],
-                    capture_output=True,
-                    text=True,
-                    timeout=45,
-                )
-                entry["status"] = "passed" if proc.returncode == 0 else "failed"
-                entry["rendered"] = rendered if proc.returncode == 0 else None
-                entry["stderr"] = proc.stderr[-1000:] if proc.returncode != 0 else ""
-                if proc.returncode != 0:
+                try:
+                    proc = run_process(
+                        [
+                            mmdc,
+                            "-i",
+                            str(source),
+                            "-o",
+                            str(rendered),
+                            "-b",
+                            "transparent",
+                        ],
+                        timeout=45,
+                        cwd=REPO_ROOT,
+                    )
+                    stdout, stderr = proc.stdout, proc.stderr
+                    entry["return_code"] = proc.returncode
+                    valid_output = rendered.is_file() and rendered.stat().st_size > 0
+                    entry["status"] = (
+                        "passed" if proc.returncode == 0 and valid_output else "failed"
+                    )
+                    entry["rendered"] = (
+                        rendered if entry["status"] == "passed" else None
+                    )
+                except (subprocess.SubprocessError, OSError) as exc:
+                    entry["status"] = "failed"
+                    entry["error"] = f"{type(exc).__name__}: {exc}"
+                    stdout = getattr(exc, "output", "") or ""
+                    stderr = getattr(exc, "stderr", "") or ""
+                if entry["status"] == "failed":
                     local_link_errors.append(
-                        f"Mermaid render failed for {markdown_file}:{index}: {proc.stderr[-300:]}"
+                        f"Mermaid render failed for {markdown_file}:{index}: "
+                        f"{entry.get('error', stderr[-300:] or 'missing or empty SVG')}"
                     )
             else:
-                entry["status"] = "skipped"
-                entry["reason"] = "mmdc not found"
+                entry["status"] = "failed"
+                entry["error"] = "mmdc not found; install the declared Mermaid renderer"
+                local_link_errors.append(entry["error"])
+            stdout_path.write_text(
+                stdout.decode(errors="replace") if isinstance(stdout, bytes) else stdout
+            )
+            stderr_path.write_text(
+                stderr.decode(errors="replace") if isinstance(stderr, bytes) else stderr
+            )
+            entry["stdout_log"] = stdout_path
+            entry["stderr_log"] = stderr_path
             mermaid_results.append(entry)
 
         for match in re.finditer(r"\[[^\]]+\]\((?!https?://|mailto:|#)([^)]+)\)", text):
@@ -956,7 +991,7 @@ def main(argv: list[str] | None = None) -> int:
         ],
     )
 
-    start = time.time()
+    start = time.monotonic()
     sections = [
         ("active_inference_model", audit_active_inference_model),
         ("generative_model", audit_generative_model),
@@ -975,7 +1010,7 @@ def main(argv: list[str] | None = None) -> int:
         "schema_version": "geo-infer-act-comprehensive-audit/v1",
         "status": "failed" if failed else "passed",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "duration_seconds": round(time.time() - start, 4),
+        "duration_seconds": round(time.monotonic() - start, 4),
         "output_dir": output_dir,
         "section_count": len(results),
         "failed_sections": [item["name"] for item in failed],

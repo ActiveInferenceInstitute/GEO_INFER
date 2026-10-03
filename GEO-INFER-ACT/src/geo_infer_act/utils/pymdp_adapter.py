@@ -79,11 +79,10 @@ def _normalize_distribution(values: Any) -> np.ndarray:
         raise ValueError("pymdp distributions must not be empty")
     if not np.all(np.isfinite(array)):
         raise ValueError("pymdp distributions must contain finite values")
-    array = np.maximum(array, 0.0)
-    total = float(np.sum(array))
-    if total <= 1e-12:
-        return np.ones_like(array) / array.size
-    return array / total
+    if np.any(array < 0) or not np.any(array > 0):
+        raise ValueError("pymdp distributions must be nonnegative with positive mass")
+    scaled = array / np.max(array)
+    return scaled / scaled.sum()
 
 
 def _normalize_likelihood(matrix: Any) -> np.ndarray:
@@ -92,7 +91,10 @@ def _normalize_likelihood(matrix: Any) -> np.ndarray:
         raise ValueError(f"Observation model must be 2D, got shape {array.shape}")
     if not np.all(np.isfinite(array)):
         raise ValueError("Observation model must contain finite values")
-    array = np.maximum(array, 1e-12)
+    if np.any(array < 0) or np.any(array.sum(axis=0) <= 0):
+        raise ValueError(
+            "Observation model columns must be nonnegative with positive mass"
+        )
     col_sums = np.sum(array, axis=0, keepdims=True)
     res = array / np.maximum(col_sums, 1e-12)
     return np.asarray(res, dtype=float)
@@ -105,16 +107,13 @@ def _normalize_transition(tensor: Any, state_dim: int, action_count: int) -> np.
     elif array.ndim != 3:
         raise ValueError(f"Transition model must be 2D or 3D, got shape {array.shape}")
     if array.shape[0] != state_dim or array.shape[1] != state_dim:
-        array = np.repeat(np.eye(state_dim)[:, :, None], action_count, axis=2)
+        raise ValueError("Transition dimensions must match configured state dimension")
     if array.shape[2] != action_count:
-        if array.shape[2] > action_count:
-            array = array[:, :, :action_count]
-        else:
-            repeats = [array[:, :, idx % array.shape[2]] for idx in range(action_count)]
-            array = np.stack(repeats, axis=2)
+        raise ValueError("Action count must match configured transition controls")
     if not np.all(np.isfinite(array)):
         raise ValueError("Transition model must contain finite values")
-    array = np.maximum(array, 1e-12)
+    if np.any(array < 0) or np.any(array.sum(axis=0) <= 0):
+        raise ValueError("Transition columns must be nonnegative with positive mass")
     sums = np.sum(array, axis=0, keepdims=True)
     res = array / np.maximum(sums, 1e-12)
     return np.asarray(res, dtype=float)
@@ -125,9 +124,11 @@ def _preferences_vector(values: Any, obs_dim: int) -> np.ndarray:
         values = values.get("observations", np.ones(obs_dim) / obs_dim)
     vector = np.asarray(values, dtype=float).reshape(-1)
     if vector.size != obs_dim:
-        vector = np.resize(vector, obs_dim)
+        raise ValueError(
+            "Preference dimension must match configured observation dimension"
+        )
     if not np.all(np.isfinite(vector)):
-        vector = np.zeros(obs_dim, dtype=float)
+        raise ValueError("Preferences must contain finite values")
     return vector.astype(float)
 
 
@@ -136,7 +137,7 @@ def _belief_vector(values: Any, state_dim: int) -> np.ndarray:
         values = values.get("states", np.ones(state_dim) / state_dim)
     vector = np.asarray(values, dtype=float).reshape(-1)
     if vector.size != state_dim:
-        vector = np.ones(state_dim, dtype=float) / state_dim
+        raise ValueError("Prior dimension must match configured state dimension")
     return _normalize_distribution(vector)
 
 
@@ -147,7 +148,10 @@ def _coerce_action_count(value: Any, default: int = 3) -> int:
     array = np.asarray(value)
     if array.size != 1:
         raise ValueError("action_count must be a scalar or a single-item sequence")
-    count = int(array.reshape(-1)[0])
+    item = array.reshape(-1)[0]
+    if isinstance(item, (bool, np.bool_)) or not isinstance(item, (int, np.integer)):
+        raise ValueError("action_count must contain an integer")
+    count = int(item)
     if count < 1:
         raise ValueError("action_count must be positive")
     return count
@@ -157,7 +161,10 @@ def _model_num_controls(model: Any, default: int = 3) -> int:
     """Read and normalize a model's pymdp-style control-count value."""
     value = getattr(model, "num_controls", None)
     if value is None:
-        value = getattr(model, "parameters", {}).get("num_controls", default)
+        value = getattr(model, "parameters", {}).get("num_controls")
+    if value is None:
+        transition = np.asarray(getattr(model, "transition_model", None))
+        value = transition.shape[2] if transition.ndim == 3 else default
     return _coerce_action_count(value, default=default)
 
 
@@ -261,15 +268,10 @@ def run_pymdp_step(
         obs_model = _normalize_likelihood(observation_model)
         obs_dim, state_dim = obs_model.shape
         if observation_vector.size != obs_dim:
-            if observation_vector.size == state_dim or obs_dim == 1:
-                state_dim = int(observation_vector.size)
-                obs_dim = int(observation_vector.size)
-                obs_model = np.eye(state_dim, dtype=float)
-            else:
-                raise ValueError(
-                    "Observation dimension does not match pymdp observation model: "
-                    f"{observation_vector.size} != {obs_dim}"
-                )
+            raise ValueError(
+                "Observation dimension does not match pymdp observation model: "
+                f"{observation_vector.size} != {obs_dim}"
+            )
         trans_model = _normalize_transition(transition_model, state_dim, action_count)
         preference_vector = _preferences_vector(preferences, obs_dim)
         prior_vector = _belief_vector(prior, state_dim)

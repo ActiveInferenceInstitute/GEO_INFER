@@ -40,13 +40,17 @@ preferences change. Repeated `act` calls neither advance time nor alter beliefs.
 This backend normalizes observation vectors to frequencies before
 conditioning, so `[8, 2]` and `[0.8, 0.2]` have the same effect. Unlike
 `GenerativeModel.update_beliefs`, it does not propagate B before the next
-observation. B supplies prospective transitions for policy evaluation. Use the
-[GNN interchange runner](gnn_interchange.md) when each selected action must
-propagate the posterior exactly once on an explicit observation schedule.
+observation. B supplies prospective transitions for policy evaluation. Call
+`predict_beliefs(executed_action_index)` once for each actual interval, including
+intervals without a measurement. Action-independent B uses `predict_beliefs()`.
+The [GNN interchange runner](gnn_interchange.md) also records the selected action
+and next prior on its explicit observation schedule.
 
 The tuple return from `step`, typed step results, arbitrary action labels,
-scalar/list control counts, history, and optional local fallback remain
-supported. Replacing the generative model clears observations and inference
+integer scalar/single-item control counts, history, and explicitly enabled local
+fallback remain supported. Action labels must preserve the configured B control
+axis, and their count must match action-conditioned B. Dimension mismatches,
+negative observations, and empty observation mass fail before inference. Replacing the generative model clears observations and inference
 diagnostics from the old model; `reset` also restores the initial beliefs.
 Grid inference saves and restores the perception diagnostic with the rest of
 the agent state. A backend that recovers after local perception receives the
@@ -76,3 +80,10 @@ Then run the ACT unit suite and the repository contract checks:
 uv run python GEO-INFER-TEST/run_unified_tests.py --module ACT
 uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language
 ```
+
+H3 scoring preserves the configured per-cell A/B dimensions. `enable_h3_spatial`
+and `enable_nested_h3_spatial` keep `state_dim` as the number of states per cell;
+`h3_cells` carries the separate ordered spatial axis. Use `update_h3_beliefs`
+for identified cell observations, or the SPACE/TIME composition and GNN runners
+for a global cell-state transition model. Generic unlabelled `update_beliefs`
+arrays are rejected on an H3-enabled model.

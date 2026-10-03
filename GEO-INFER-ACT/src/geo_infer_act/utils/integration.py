@@ -6,6 +6,8 @@ Active Inference frameworks based on Active Inference Institute resources.
 """
 
 from typing import Any
+from collections.abc import Callable
+import copy
 import importlib
 import logging
 import numpy as np
@@ -14,7 +16,9 @@ from geo_infer_act.utils.config import get_config_value
 
 try:
     import geo_infer_space as space_h3
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "geo_infer_space":
+        raise
     space_h3 = None
 
 
@@ -45,7 +49,7 @@ class ModernToolsIntegration:
         Args:
             config: Configuration dictionary
         """
-        self.config = config or {}
+        self.config = copy.deepcopy(config or {})
         self.available_tools = self._check_available_tools()
         logger.info(f"Available tools: {list(self.available_tools.keys())}")
 
@@ -53,7 +57,7 @@ class ModernToolsIntegration:
         self, source: str, namespace: dict[str, Any], description: str
     ) -> dict[str, Any]:
         """Execute optional model source only after explicit caller opt-in."""
-        if not self.config.get("allow_dynamic_code", False):
+        if self.config.get("allow_dynamic_code") is not True:
             raise RuntimeError(
                 f"{description} requires config['allow_dynamic_code']=True"
             )
@@ -101,177 +105,73 @@ class ModernToolsIntegration:
         return tools
 
     def create_rxinfer_model(
-        self, model_spec: str, data: dict[str, Any]
+        self, model_spec: str, data: dict[str, Any], *, backend: str = "rxinfer"
     ) -> dict[str, Any]:
+        """Run the declared Julia model or an explicitly chosen local Gaussian.
+
+        The local Gaussian backend conditions a scalar normal prior on the
+        supplied observations. It does not execute the Julia specification.
+        Backend errors propagate and never select a different model.
         """
-        Create and run RxInfer model for constrained Bayesian inference.
-
-        Args:
-            model_spec: Julia model specification string
-            data: Data for inference
-
-        Returns:
-            Inference results
-        """
-        if not self.available_tools.get("rxinfer", False):
-            if not self.config.get("allow_local_fallback", False):
-                raise RuntimeError(
-                    "RxInfer not available. Please install Julia, PyJulia, and RxInfer"
-                )
-            observations = np.asarray(data.get("observations", []), dtype=float)
-            if observations.size == 0 or not np.isfinite(observations).all():
-                raise ValueError("RxInfer data must contain finite observations")
-            return {
-                "status": "success",
-                "backend": "deterministic-local",
-                "posterior_marginals": {
-                    "mean": float(np.mean(observations)),
-                    "variance": float(np.var(observations)),
-                },
-                "iterations": int(observations.size),
-                "tool": "rxinfer-compatible",
-            }
-
-        try:
-            import julia
-
-            j = julia.Julia(compiled_modules=False)
-            j.eval("using RxInfer, Rocket, GraphPPL")
-
-            # Execute model specification
-            j.eval(model_spec)
-
-            # Prepare data
-            for key, value in data.items():
-                if isinstance(value, np.ndarray):
-                    j.eval(f"{key} = {value.tolist()}")
-                else:
-                    j.eval(f"{key} = {value}")
-
-            # Run inference
-            inference_code = """
-            result = infer(
-                model = model,
-                data = (y = observations,),
-                iterations = 100,
-                options = (
-                    schedule = :parallel,
-                    addons = AddonLogScale()
-                )
+        if "allow_local_fallback" in self.config:
+            raise ValueError(
+                "allow_local_fallback was removed; choose backend='local_gaussian' explicitly"
             )
-            """
-            j.eval(inference_code)
+        from geo_infer_act.core.generative_model import GenerativeModel
 
-            # Extract results
-            posterior_marginals = j.eval("result.posteriors")
-            model_evidence = j.eval("result.free_energy")
-
-            return {
-                "status": "success",
-                "posterior_marginals": posterior_marginals,
-                "model_evidence": float(model_evidence),
-                "tool": "rxinfer",
-            }
-
-        except Exception as e:
-            logger.error(f"RxInfer integration failed: {e}")
-            return {"status": "error", "message": str(e), "tool": "rxinfer"}
+        result = GenerativeModel("categorical", {"state_dim": 1}).integrate_rxinfer(
+            model_spec, data, backend=backend
+        )
+        return {**result, "tool": result["backend"]}
 
     def create_bayeux_model(
         self,
-        log_density_fn: str,
+        log_density_fn: str | Callable,
         test_point: dict[str, Any],
-        transform_fn: str | None = None,
+        transform_fn: str | Callable | None = None,
+        *,
+        n_samples: int = 1000,
+        warmup: int = 100,
     ) -> dict[str, Any]:
+        """Run real Bayeux NumPyro NUTS for a mapping-valued parameter point.
+
+        Density and transform callables receive the parameter mapping. Python
+        source strings require ``allow_dynamic_code=True`` and are evaluated
+        in a fresh namespace. No optimizer or other sampler is substituted.
         """
-        Create and optimize Bayeux model for scalable inference.
-
-        Args:
-            log_density_fn: Python function string for log density
-            test_point: Test point for model validation
-            transform_fn: Optional transformation function
-
-        Returns:
-            Optimization results
-        """
-        if not self.available_tools.get("bayeux", False):
-            raise RuntimeError(
-                "Bayeux not available. Please install: uv pip install bayeux-ml"
+        namespace = {"__name__": "geo_infer_act.dynamic.bayeux"}
+        if isinstance(log_density_fn, str):
+            namespace = self._execute_dynamic_source(
+                log_density_fn, namespace, "Bayeux log-density source"
             )
-
-        try:
-            import bayeux as bx
-
-            # Execute user-provided sources in a per-call namespace.  Dynamic
-            # model code is opt-in through ``allow_dynamic_code``.
-            source_namespace = self._execute_dynamic_source(
-                log_density_fn,
-                {"__name__": "geo_infer_act.dynamic.bayeux"},
-                "Bayeux log-density source",
+            density = namespace.get("log_density")
+        else:
+            density = log_density_fn
+        if not callable(density):
+            raise ValueError("log_density_fn must be callable or define 'log_density'")
+        if isinstance(transform_fn, str):
+            namespace = self._execute_dynamic_source(
+                transform_fn, namespace, "Bayeux transform source"
             )
-            log_density = source_namespace.get("log_density")
+            transform = namespace.get("transform_fn")
+        else:
+            transform = transform_fn
+        if transform_fn is not None and not callable(transform):
+            raise ValueError("transform_fn must be callable or define 'transform_fn'")
+        from geo_infer_act.core.generative_model import GenerativeModel
 
-            if transform_fn:
-                source_namespace = self._execute_dynamic_source(
-                    transform_fn,
-                    source_namespace,
-                    "Bayeux transform source",
-                )
-                transform_function = source_namespace.get("transform_fn")
-            else:
-                transform_function = None
-
-            if not callable(log_density):
-                raise ValueError(
-                    "Log-density source must define callable 'log_density'"
-                )
-            if transform_fn and not callable(transform_function):
-                raise ValueError("Transform source must define callable 'transform_fn'")
-
-            # Create Bayeux model
-            model = bx.Model(
-                log_density=log_density,
-                test_point=test_point,
-                transform_fn=transform_function,
-            )
-
-            # Optimize using different methods
-            methods = ["optax_adam", "nuts"]
-            results = {}
-
-            for method in methods:
-                try:
-                    if method == "optax_adam":
-                        result = model.optimize.optax_adam(seed=42, num_iters=1000)
-                    elif method == "nuts":
-                        result = model.mcmc.nuts(
-                            seed=42, num_samples=1000, num_chains=4
-                        )
-
-                    results[method] = {
-                        "params": (
-                            result.params if hasattr(result, "params") else result
-                        ),
-                        "success": True,
-                    }
-
-                except Exception as e:
-                    results[method] = {"error": str(e), "success": False}
-
-            # Report per-method results; the top-level status reflects whether
-            # each requested method succeeded, not just that the fan-out ran.
-            all_ok = bool(results) and all(
-                r.get("success", False) for r in results.values()
-            )
-            return {
-                "status": "success" if all_ok else "partial",
-                "results": results,
-                "tool": "bayeux",
-            }
-
-        except Exception as e:
-            logger.error(f"Bayeux integration failed: {e}")
-            return {"status": "error", "message": str(e), "tool": "bayeux"}
+        result = GenerativeModel(
+            "categorical",
+            {"state_dim": 1, "random_seed": self.config.get("random_seed", 0)},
+        ).integrate_bayeux(
+            lambda **point: density(point),
+            test_point,
+            backend="bayeux",
+            n_samples=n_samples,
+            warmup=warmup,
+            transform_fn=transform,
+        )
+        return {**result, "tool": "bayeux"}
 
     def create_pymdp_agent(
         self,
@@ -496,90 +396,36 @@ class ModernToolsIntegration:
 def integrate_rxinfer(
     config: dict[str, Any], model_params: dict[str, Any]
 ) -> dict[str, Any]:
-    """Integrate with RxInfer for scalable nested inference."""
-    integration_config = dict(config or {})
-    integration_config.setdefault("allow_local_fallback", True)
-    integration_hub = ModernToolsIntegration(integration_config)
-
-    # Default RxInfer model for spatial inference
-    default_model = """
-    @model function spatial_active_inference(n_states, n_obs)
-        # Define priors
-        μ ~ NormalMeanVariance(0.0, 1.0)
-        τ ~ Gamma(1.0, 1.0)
-
-        # State transitions with spatial structure
-        x = Vector{Random.Variable}(undef, n_states)
-        for i in 1:n_states
-            if i == 1
-                x[i] ~ NormalMeanPrecision(μ, τ)
-            else
-                x[i] ~ NormalMeanPrecision(x[i-1], τ)  # Spatial continuity
-            end
-        end
-
-        # Observations
-        y = Vector{Random.Variable}(undef, n_obs)
-        for i in 1:n_obs
-            state_idx = min(i, n_states)
-            y[i] ~ NormalMeanPrecision(x[state_idx], 1.0)
-        end
-    end
-
-    model = spatial_active_inference
-    """
-
-    model_spec = model_params.get("model_specification", default_model)
-    data = model_params.get(
-        "data",
-        {
-            "observations": np.random.default_rng(config.get("random_seed", 0)).normal(
-                size=10
-            )
-        },
+    """Run the explicit backend and supplied observations; never invent data."""
+    if "data" not in model_params:
+        raise ValueError("RxInfer integration requires explicit data")
+    backend = model_params.get("backend", "rxinfer")
+    if backend == "rxinfer" and "model_specification" not in model_params:
+        raise ValueError("RxInfer integration requires explicit model_specification")
+    integration_hub = ModernToolsIntegration(config)
+    return integration_hub.create_rxinfer_model(
+        model_params.get("model_specification", ""),
+        model_params["data"],
+        backend=backend,
     )
-
-    return integration_hub.create_rxinfer_model(model_spec, data)
 
 
 def integrate_bayeux(
     config: dict[str, Any], model_params: dict[str, Any]
 ) -> dict[str, Any]:
-    """Integrate with Bayeux for JAX-based scalable inference."""
+    """Run Bayeux NUTS on the caller's explicit density and parameter point."""
+    if not {"log_density", "test_point"} <= model_params.keys():
+        raise ValueError(
+            "Bayeux integration requires explicit log_density and test_point"
+        )
     integration_hub = ModernToolsIntegration(config)
-
-    # Default log density for spatial model
-    default_log_density = """
-def log_density(params):
-    import jax.numpy as jnp
-
-    # Spatial prior
-    spatial_prior = -0.5 * jnp.sum(params['location']**2)
-
-    # Observation likelihood
-    observations = jnp.array([1.0, 2.0, 1.5])
-    predicted = params['location'][0] + params['scale'] * jnp.array([0, 1, 0.5])
-    likelihood = -0.5 * jnp.sum((observations - predicted)**2)
-
-    return spatial_prior + likelihood
-"""
-
-    default_transform = """
-def transform_fn(params):
-    import jax.numpy as jnp
-    return {
-        'location': params['location'],
-        'scale': jnp.exp(params['scale_log'])  # Ensure positive scale
-    }
-"""
-
-    log_density_fn = model_params.get("log_density", default_log_density)
-    test_point = model_params.get(
-        "test_point", {"location": np.zeros(2), "scale_log": 0.0}
+    return integration_hub.create_bayeux_model(
+        model_params["log_density"],
+        model_params["test_point"],
+        model_params.get("transform_fn"),
+        n_samples=model_params.get("n_samples", 1000),
+        warmup=model_params.get("warmup", 100),
     )
-    transform_fn = model_params.get("transform_fn", default_transform)
-
-    return integration_hub.create_bayeux_model(log_density_fn, test_point, transform_fn)
 
 
 def integrate_pymdp(
@@ -805,14 +651,22 @@ def create_h3_spatial_model(
     """
     try:
         settings = config or {}
-        max_cells = int(settings.get("max_cells", 100_000))
-        if max_cells < 1:
+        max_cells = settings.get("max_cells", 100_000)
+        if (
+            isinstance(max_cells, bool)
+            or not isinstance(max_cells, (int, np.integer))
+            or max_cells < 1
+        ):
             raise ValueError("max_cells must be at least 1")
         from geo_infer_act.utils.h3_adapter import get_h3_adapter
 
         adapter = get_h3_adapter()
 
-        if not 0 <= h3_resolution <= 15:
+        if (
+            isinstance(h3_resolution, bool)
+            or not isinstance(h3_resolution, (int, np.integer))
+            or not 0 <= h3_resolution <= 15
+        ):
             raise ValueError("h3_resolution must be between 0 and 15")
         if hasattr(boundary, "__geo_interface__"):
             boundary = boundary.__geo_interface__

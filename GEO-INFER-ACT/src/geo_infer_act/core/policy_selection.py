@@ -262,10 +262,20 @@ class PolicySelector:
             if precision is not None
             else float(self.compute_policy_precision(scores))
         )
-        logits = -gamma * scores
-        if prior is not None:
-            logits = logits + np.log(np.clip(prior, EPSILON, 1.0)) / prior_temperature
-        posterior = softmax(logits, temperature=1.0)
+        if not np.isfinite(gamma) or gamma <= 0:
+            raise ValueError("precision must be finite and positive")
+        if not np.isfinite(prior_temperature) or prior_temperature <= 0:
+            raise ValueError("prior_temperature must be finite and positive")
+        supported = np.ones(len(scores), dtype=bool) if prior is None else prior > 0
+        try:
+            with np.errstate(over="raise", invalid="raise"):
+                logits = -gamma * scores[supported]
+                if prior is not None:
+                    logits = logits + np.log(prior[supported]) / prior_temperature
+                posterior = np.zeros(len(scores))
+                posterior[supported] = softmax(logits, temperature=1.0)
+        except FloatingPointError as exc:
+            raise ValueError("Policy posterior exceeds finite numeric range") from exc
         return {
             "posterior": posterior,
             "precision": float(gamma),

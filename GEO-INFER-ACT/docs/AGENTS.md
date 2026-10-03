@@ -21,6 +21,7 @@
 
 ## Local Contents
 
+- `0_4_method_review.md`
 - `active_inference_overview.md`
 - `api_schema.yaml`
 - `categorical_inference.md`

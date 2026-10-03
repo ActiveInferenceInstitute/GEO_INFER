@@ -37,7 +37,11 @@ class DynamicCausalModel:
             ("input_dim", input_dim),
             ("output_dim", output_dim),
         ):
-            if isinstance(value, bool) or int(value) != value or value <= 0:
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, np.integer))
+                or value <= 0
+            ):
                 raise ValueError(f"{name} must be a positive integer")
         if not np.isfinite(dt) or dt <= 0:
             raise ValueError("dt must be finite and strictly positive")
@@ -131,6 +135,8 @@ class DynamicCausalModel:
             raise ValueError(f"initial_state must have shape ({self.state_dim},)")
         if inputs.ndim != 2 or inputs.shape[1] != self.input_dim:
             raise ValueError(f"inputs must have shape (n, {self.input_dim})")
+        if len(inputs) < max(0, len(time_points) - 1):
+            raise ValueError("inputs must contain one row per integration interval")
         if time_points.ndim != 1 or time_points.size == 0:
             raise ValueError("time_points must be a non-empty one-dimensional array")
         if not np.all(np.isfinite(initial_state)) or not np.all(np.isfinite(inputs)):
@@ -146,9 +152,7 @@ class DynamicCausalModel:
 
         for i in range(1, n_timesteps):
             dt = time_points[i] - time_points[i - 1]
-            current_input = (
-                inputs[i - 1] if i - 1 < len(inputs) else np.zeros(self.input_dim)
-            )
+            current_input = inputs[i - 1]
 
             # Simple Euler integration
             dxdt = self.state_equation(current_state, time_points[i - 1], current_input)
@@ -172,6 +176,15 @@ class DynamicCausalModel:
         Returns:
             Observation trajectory
         """
+        state_trajectory = np.asarray(state_trajectory, dtype=float)
+        if (
+            state_trajectory.ndim != 2
+            or state_trajectory.shape[1] != self.state_dim
+            or not np.all(np.isfinite(state_trajectory))
+        ):
+            raise ValueError(
+                "state_trajectory must be a finite (timesteps, states) matrix"
+            )
         n_timesteps = state_trajectory.shape[0]
         observations = np.zeros((n_timesteps, self.output_dim))
 
@@ -216,6 +229,15 @@ class DynamicCausalModel:
             raise ValueError(f"inputs must have shape (n, {self.input_dim})")
         if initial_state.shape != (self.state_dim,):
             raise ValueError(f"initial_state must have shape ({self.state_dim},)")
+        if not all(
+            np.all(np.isfinite(value))
+            for value in (observations, inputs, time_points, initial_state)
+        ):
+            raise ValueError("Estimation inputs must be finite")
+        if np.any(np.diff(time_points) <= 0):
+            raise ValueError("time_points must be strictly increasing")
+        if len(inputs) < len(observations) - 1:
+            raise ValueError("inputs must contain at least n_observations - 1 rows")
 
         # Simplified parameter estimation using least squares
         # In practice, would use more sophisticated methods like EM algorithm
@@ -232,10 +254,12 @@ class DynamicCausalModel:
             raise ValueError("inputs must contain at least n_observations - 1 rows")
         U = inputs[: len(X)]
 
-        # Solve: X_next = X*A.T + U*B.T
+        # Euler dynamics: (X_next - X) / dt = X*A.T + U*B.T.
+        # A and B remain continuous-time generators on irregular time axes.
         if len(X) > 0:
             XU = np.hstack([X, U])
-            AB = np.linalg.lstsq(XU, X_next, rcond=None)[0]
+            derivatives = (X_next - X) / np.diff(time_points)[:, None]
+            AB = np.linalg.lstsq(XU, derivatives, rcond=None)[0]
 
             estimated_A = AB[: self.state_dim].T
             estimated_B = AB[self.state_dim :].T if self.input_dim > 0 else self.B
@@ -284,23 +308,14 @@ class DynamicCausalModel:
         current_state = initial_state.copy()
         current_cov = np.eye(self.state_dim)
 
-        states[0] = current_state
-
-        for i in range(1, n_timesteps):
-            dt = (
-                time_points[i] - time_points[i - 1] if i < len(time_points) else self.dt
-            )
-            current_input = (
-                inputs[i - 1] if i - 1 < len(inputs) else np.zeros(self.input_dim)
-            )
-
-            # Prediction step
-            pred_state = current_state + dt * self.state_equation(
-                current_state, time_points[i - 1], current_input
-            )
-            if dt <= 0:
-                raise ValueError("time_points must be strictly increasing")
-            pred_cov = current_cov + self.Q * dt
+        for i in range(n_timesteps):
+            if i == 0:
+                pred_state, pred_cov = current_state, current_cov
+            else:
+                dt = time_points[i] - time_points[i - 1]
+                transform = np.eye(self.state_dim) + dt * self.A
+                pred_state = transform @ current_state + dt * self.B @ inputs[i - 1]
+                pred_cov = transform @ current_cov @ transform.T + self.Q * dt
 
             # Update step
             innovation = observations[i] - self.C @ pred_state

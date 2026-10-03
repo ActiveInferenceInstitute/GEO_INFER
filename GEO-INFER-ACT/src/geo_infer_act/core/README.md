@@ -9,6 +9,7 @@ Core workspace within `GEO-INFER-ACT`.
 - `belief_updating.py`
 - `civic_intel.py`
 - `dynamic_causal_model.py`
+- `factored_runtime.py`
 - `free_energy.py`
 - `generative_model.py`
 - `gnn_contract.py`
@@ -32,6 +33,9 @@ Core workspace within `GEO-INFER-ACT`.
 - `civic_intel.py:parse_crescent_city_intel` (function)
 - `civic_intel.py:hazard_policy_prior` (function)
 - `dynamic_causal_model.py:DynamicCausalModel` (class)
+- `factored_runtime.py:is_factored_model` (function)
+- `factored_runtime.py:build_runtime_artifact` (function)
+- `factored_runtime.py:marginal_beliefs` (function)
 - `free_energy.py:validate_spd_precision` (function)
 - `free_energy.py:compute_policy_expected_free_energy` (function)
 - `free_energy.py:FreeEnergyCalculator` (class)
@@ -39,9 +43,6 @@ Core workspace within `GEO-INFER-ACT`.
 - `generative_model.py:HierarchicalLevel` (class)
 - `generative_model.py:GenerativeModel` (class)
 - `gnn_contract.py:GNNArtifact` (class)
-- `gnn_contract.py:run_gnn_inference` (function)
-- `gnn_factored_contract.py:validate_factored_artifact` (function)
-- `gnn_factored_contract.py:FactoredGNNArtifact` (class)
 
 ## Module Metadata
 

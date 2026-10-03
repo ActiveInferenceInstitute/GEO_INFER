@@ -2,8 +2,9 @@
 Configuration utilities for GEO-INFER-ACT.
 """
 
+import copy
 import os
-from typing import Any, cast
+from typing import Any
 import yaml
 
 
@@ -25,7 +26,9 @@ def load_config(path: str) -> dict[str, Any]:
 
     if config is None:
         return {}
-    return cast(dict[str, Any], config)
+    if not isinstance(config, dict):
+        raise ValueError("Configuration must contain a YAML mapping")
+    return config
 
 
 def save_config(config: dict[str, Any], path: str) -> None:
@@ -58,14 +61,14 @@ def merge_configs(
     Returns:
         Merged configuration
     """
-    merged = base_config.copy()
+    merged = copy.deepcopy(base_config)
 
     def _merge_dicts(base: dict[str, Any], override: dict[str, Any]) -> None:
         for key, value in override.items():
             if key in base and isinstance(base[key], dict) and isinstance(value, dict):
                 _merge_dicts(base[key], value)
             else:
-                base[key] = value
+                base[key] = copy.deepcopy(value)
 
     _merge_dicts(merged, override_config)
     return merged

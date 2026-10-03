@@ -49,6 +49,11 @@ class ActiveInferenceInterface:
         """
         from geo_infer_act.core.active_inference import ActiveInferenceModel
 
+        if not isinstance(model_id, str) or not model_id.strip():
+            raise ValueError("model_id must be a non-empty string")
+        if model_id in self.models:
+            raise ValueError(f"Model {model_id} already exists")
+
         # Enhanced parameters with more dynamic defaults
         enhanced_params = {
             "learning_rate": 0.1,
@@ -105,19 +110,14 @@ class ActiveInferenceInterface:
             raise ValueError(f"Model {model_id} not found")
 
         agent = self.models[model_id]
-        obs_data = observations.get("observations")
-
-        if obs_data is None:
-            numeric_values = [
-                float(value)
-                for key, value in sorted(observations.items())
-                if key != "observations" and isinstance(value, (int, float))
-            ]
-            if not numeric_values:
-                raise ValueError(
-                    "observations must include an 'observations' vector or numeric values"
-                )
-            obs_data = np.asarray(numeric_values, dtype=float)
+        if (
+            not isinstance(observations, dict)
+            or observations.get("observations") is None
+        ):
+            raise ValueError(
+                "observations must include an explicit 'observations' vector"
+            )
+        obs_data = observations["observations"]
 
         updated_beliefs = agent.perceive(obs_data)
 

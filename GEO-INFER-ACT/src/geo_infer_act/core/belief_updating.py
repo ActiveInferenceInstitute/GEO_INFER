@@ -98,6 +98,8 @@ class BayesianBeliefUpdate:
             raise ValueError(
                 f"observation_matrix must have shape ({observation.size}, {state_dim})"
             )
+        if not np.all(np.isfinite(observation_matrix)):
+            raise ValueError("observation_matrix must be finite")
         if prior_precision.shape != (state_dim, state_dim):
             raise ValueError(
                 f"prior_precision must have shape ({state_dim}, {state_dim})"

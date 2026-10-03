@@ -3,7 +3,8 @@ API client for an externally deployed GEO-INFER-ACT model service.
 """
 
 from typing import Any, cast
-from urllib.parse import quote
+import math
+from urllib.parse import quote, urlsplit
 import requests
 
 
@@ -21,8 +22,22 @@ class Client:
     def __init__(
         self, base_url: str = "http://localhost:8000", timeout: float = 10.0
     ) -> None:
-        if timeout <= 0:
-            raise ValueError("timeout must be greater than zero")
+        if isinstance(timeout, bool) or not math.isfinite(timeout) or timeout <= 0:
+            raise ValueError("timeout must be finite and greater than zero")
+        if not isinstance(base_url, str):
+            raise ValueError("base_url must be an HTTP(S) URL")
+        parsed = urlsplit(base_url)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError(
+                "base_url must be an HTTP(S) URL without credentials, query or fragment"
+            )
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
 
@@ -35,7 +50,10 @@ class Client:
             **kwargs,
         )
         response.raise_for_status()
-        return cast(dict[str, Any], response.json())
+        result = response.json()
+        if not isinstance(result, dict):
+            raise ValueError("ACT service must return a JSON object")
+        return cast(dict[str, Any], result)
 
     def create_model(self, model_config: dict[str, Any]) -> dict[str, Any]:
         """Create a new model via API."""

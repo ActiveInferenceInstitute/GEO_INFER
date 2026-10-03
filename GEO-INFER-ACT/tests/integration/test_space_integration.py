@@ -167,15 +167,15 @@ class TestModernToolsIntegration:
         for key in expected_keys:
             assert key in hub.available_tools
 
-    def test_rxinfer_local_fallback_contract(self) -> None:
-        """Test deterministic local RxInfer-compatible behavior without Julia."""
+    def test_rxinfer_explicit_local_gaussian_contract(self) -> None:
+        """Test deterministic local Gaussian behavior without Julia."""
         from geo_infer_act.utils.integration import ModernToolsIntegration
 
-        hub = ModernToolsIntegration({"allow_local_fallback": True})
-        if not hub.available_tools.get("rxinfer", False):
-            result = hub.create_rxinfer_model(
-                "", {"observations": np.array([1.0, 2.0, 3.0])}
-            )
-            assert result["status"] == "success"
-            assert result["backend"] == "deterministic-local"
-            assert np.isfinite(result["posterior_marginals"]["mean"])
+        hub = ModernToolsIntegration()
+        result = hub.create_rxinfer_model(
+            "", {"observations": np.array([1.0, 2.0, 3.0])}, backend="local_gaussian"
+        )
+        assert result["status"] == "success"
+        assert result["backend"] == "local_gaussian"
+        assert result["posterior_marginals"]["mean"] == 1.5
+        assert result["posterior_marginals"]["variance"] == 0.25

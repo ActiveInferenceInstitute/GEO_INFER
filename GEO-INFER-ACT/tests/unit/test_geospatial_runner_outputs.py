@@ -378,8 +378,27 @@ def test_geospatial_visualizations_have_metadata_and_data_sidecars(
 @pytest.mark.parametrize("scenario", ["h3", "spatial"])
 @pytest.mark.slow
 def test_research_profile_produces_non_degenerate_spatial_statistics(
-    scenario: str, tmp_path: Path
+    scenario: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # A short environmental sample can legitimately prefer one action. Supply
+    # independently identified, cycling observations so this artifact test
+    # actually exercises policy diversity without sharing cell posteriors.
+    def varied_observations(cells, timestep, **_):
+        observations = {}
+        for index, cell in enumerate(cells):
+            state = (index + int(timestep)) % 4
+            observations[cell] = {
+                "air_quality": 0.0 if state == 0 else 1.0,
+                "water_stress": float(state == 1),
+                "vegetation_density": float(state == 2),
+                "carbon_flux": 40.0 if state == 3 else -40.0,
+            }
+        return observations
+
+    monkeypatch.setattr(
+        "geo_infer_act.runners.scenarios.generate_realistic_environmental_observations",
+        varied_observations,
+    )
     result = run_scenario(
         RunConfig(
             scenario=scenario,

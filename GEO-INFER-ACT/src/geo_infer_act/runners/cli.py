@@ -115,6 +115,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             deterministic=config.deterministic,
             visualizations=config.visualizations,
             command=command,
+            config=config,
         )
         payload = {"manifest": str(suite.manifest_path)}
         message = f"Suite manifest: {suite.manifest_path}"

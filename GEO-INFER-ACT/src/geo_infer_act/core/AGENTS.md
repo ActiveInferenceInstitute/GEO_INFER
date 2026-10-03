@@ -26,6 +26,7 @@
 - `belief_updating.py`
 - `civic_intel.py`
 - `dynamic_causal_model.py`
+- `factored_runtime.py`
 - `free_energy.py`
 - `generative_model.py`
 - `gnn_contract.py`

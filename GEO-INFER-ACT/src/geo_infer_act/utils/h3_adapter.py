@@ -34,7 +34,9 @@ class H3Adapter:
 
                 self.space_indexer = SpatialIndexingInterface(backend="h3")
                 self.source = "geo_infer_space"
-            except Exception:
+            except ModuleNotFoundError as exc:
+                if exc.name != "geo_infer_space":
+                    raise
                 self.space_indexer = None
 
         version = tuple(
@@ -68,14 +70,7 @@ class H3Adapter:
     def polygon_to_cells(self, polygon: dict[str, Any], resolution: int) -> list[str]:
         """Convert a GeoJSON-like polygon to H3 cells."""
         if self.space_indexer is not None:
-            try:
-                cells = self.space_indexer.polygon_to_cells(polygon, resolution)
-                if cells:
-                    return list(cells)
-            except Exception:
-                logger.debug(
-                    "SPACE polygon_to_cells failed; using direct h3", exc_info=True
-                )
+            return list(self.space_indexer.polygon_to_cells(polygon, resolution))
 
         if hasattr(polygon, "__geo_interface__"):
             polygon = polygon.__geo_interface__
@@ -144,6 +139,8 @@ class H3Adapter:
         invalid = [cell for cell in normalized if not self.is_valid_cell(cell)]
         if invalid:
             raise ValueError(f"Invalid H3 cell identifiers: {invalid[:5]}")
+        if len(set(normalized)) != len(normalized):
+            raise ValueError("Duplicate H3 cell identifiers")
         return normalized
 
 

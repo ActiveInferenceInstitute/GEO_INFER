@@ -338,7 +338,7 @@ class NestedH3LevelSummary:
     resolution: int
     cell_count: int
     edge_count: int
-    mean_free_energy: float
+    mean_reference_kl_to_uniform: float
     mean_entropy: float
     coherence: float
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -349,7 +349,7 @@ class NestedH3LevelSummary:
             "resolution": self.resolution,
             "cell_count": self.cell_count,
             "edge_count": self.edge_count,
-            "mean_free_energy": self.mean_free_energy,
+            "mean_reference_kl_to_uniform": self.mean_reference_kl_to_uniform,
             "mean_entropy": self.mean_entropy,
             "coherence": self.coherence,
             **self.metadata,

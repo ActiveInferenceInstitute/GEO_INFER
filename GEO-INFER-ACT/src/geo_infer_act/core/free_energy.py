@@ -45,24 +45,22 @@ def _coerce_probability_vector(
     """Return a finite normalized probability vector with optional alignment."""
     vector = np.asarray(values, dtype=float).reshape(-1)
 
+    if vector.size == 0 or not np.all(np.isfinite(vector)):
+        raise ValueError("Probability vectors must be nonempty and finite")
     if target_length is not None and len(vector) != target_length:
-        if len(vector) < target_length:
-            vector = np.pad(vector, (0, target_length - len(vector)), mode="constant")
-        else:
-            vector = vector[:target_length]
+        raise ValueError(f"Probability vector must have length {target_length}")
 
     if use_softmax:
         vector = softmax(vector)
     else:
-        vector = np.nan_to_num(vector, nan=0.0, posinf=0.0, neginf=0.0)
-        vector = np.clip(vector, EPSILON, None)
+        if np.any(vector < 0):
+            raise ValueError("Probability vectors must be nonnegative")
         total = float(np.sum(vector))
-        if total <= EPSILON:
-            vector = np.ones_like(vector, dtype=float) / max(len(vector), 1)
-        else:
-            vector = vector / total
+        if not np.isfinite(total) or total <= 0:
+            raise ValueError("Probability vectors must have finite positive mass")
+        vector = vector / total
 
-    return np.clip(vector, EPSILON, 1.0)
+    return vector
 
 
 def validate_spd_precision(name: str, matrix: np.ndarray) -> None:
@@ -155,6 +153,8 @@ def compute_policy_expected_free_energy(
     """
     if "expected_free_energy" in policy:
         expected_free_energy = float(policy["expected_free_energy"])
+        if not np.isfinite(expected_free_energy):
+            raise ValueError("expected_free_energy must be finite")
         if return_breakdown:
             return FreeEnergyBreakdown(
                 free_energy=expected_free_energy,
@@ -213,6 +213,11 @@ def compute_policy_expected_free_energy(
     risk_preference = float(policy.get("risk_preference", 0.0))
     temporal_discount = float(policy.get("temporal_discount", 1.0))
     ambiguity = float(policy.get("ambiguity", 0.0))
+    if not all(
+        np.isfinite(value)
+        for value in (exploration_bonus, risk_preference, temporal_discount, ambiguity)
+    ):
+        raise ValueError("Policy weights must be finite")
 
     risk = float(risk_preference * np.var(predictive))
     expected_free_energy = float(
@@ -361,6 +366,9 @@ class FreeEnergyCalculator:
         observations: np.ndarray,
         prior_mean: np.ndarray | None = None,
         prior_precision: np.ndarray | None = None,
+        *,
+        observation_matrix: np.ndarray | None = None,
+        observation_precision: np.ndarray | None = None,
     ) -> float:
         """
         Compute free energy for Gaussian models.
@@ -378,10 +386,8 @@ class FreeEnergyCalculator:
         mean = np.asarray(mean, dtype=float).reshape(-1)
         precision = np.asarray(precision, dtype=float)
         observations = np.asarray(observations, dtype=float).reshape(-1)
-        if mean.size == 0 or observations.shape != mean.shape:
-            raise ValueError(
-                "mean and observations must be non-empty vectors with the same shape"
-            )
+        if mean.size == 0 or observations.size == 0:
+            raise ValueError("mean and observations must be non-empty vectors")
         if precision.shape != (mean.size, mean.size):
             raise ValueError("precision must be square with one row per state")
         if prior_mean is None:
@@ -401,8 +407,32 @@ class FreeEnergyCalculator:
             ("prior_precision", prior_precision),
         ):
             validate_spd_precision(name, matrix)
-        if not np.all(np.isfinite(mean)) or not np.all(np.isfinite(observations)):
-            raise ValueError("mean and observations must be finite")
+        if not all(
+            np.all(np.isfinite(value)) for value in (mean, observations, prior_mean)
+        ):
+            raise ValueError("mean, prior_mean and observations must be finite")
+        observation_matrix = np.asarray(
+            np.eye(observations.size, mean.size)
+            if observation_matrix is None
+            else observation_matrix,
+            dtype=float,
+        )
+        observation_precision = np.asarray(
+            np.eye(observations.size)
+            if observation_precision is None
+            else observation_precision,
+            dtype=float,
+        )
+        if observation_matrix.shape != (observations.size, mean.size) or not np.all(
+            np.isfinite(observation_matrix)
+        ):
+            raise ValueError(
+                "observation_matrix must be finite with shape (observations, states)"
+            )
+        if observation_precision.shape != (observations.size, observations.size):
+            raise ValueError("observation_precision must match observations")
+        validate_spd_precision("observation_precision", observation_precision)
+        covariance = np.linalg.solve(precision, np.eye(mean.size))
 
         # Complexity term (KL divergence from prior), using log-determinants
         # instead of determinants so well-conditioned large matrices remain
@@ -410,16 +440,26 @@ class FreeEnergyCalculator:
         _, logdet_prior = np.linalg.slogdet(prior_precision)
         _, logdet_precision = np.linalg.slogdet(precision)
         complexity = 0.5 * (
-            np.trace(np.linalg.solve(prior_precision, precision))
+            np.trace(prior_precision @ covariance)
             + (mean - prior_mean).T @ prior_precision @ (mean - prior_mean)
             - len(mean)
-            + logdet_prior
-            - logdet_precision
+            + logdet_precision
+            - logdet_prior
         )
 
-        # Accuracy term (negative log likelihood)
-        residual = observations - mean
-        accuracy = 0.5 * residual.T @ precision @ residual
+        # Expected negative log likelihood includes posterior uncertainty.
+        residual = observations - observation_matrix @ mean
+        accuracy = 0.5 * (
+            observations.size * np.log(2 * np.pi)
+            - np.linalg.slogdet(observation_precision)[1]
+            + residual.T @ observation_precision @ residual
+            + np.trace(
+                observation_precision
+                @ observation_matrix
+                @ covariance
+                @ observation_matrix.T
+            )
+        )
 
         free_energy = float(complexity + accuracy)
         self.last_computed_energy = free_energy

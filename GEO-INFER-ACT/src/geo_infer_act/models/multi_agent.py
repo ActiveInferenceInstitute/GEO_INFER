@@ -3,6 +3,7 @@ Multi-agent model for active inference.
 """
 
 from typing import Any
+import copy
 from collections.abc import Callable
 import numpy as np
 import logging
@@ -13,6 +14,7 @@ from geo_infer_act.utils.h3_adapter import (
     get_nested_h3_grid_class,
     normalize_belief_vector,
 )
+from geo_infer_act.utils.math import categorical_posterior
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +43,11 @@ class MultiAgentModel(BaseActiveInferenceModel):
             ("n_locations", n_locations),
             ("planning_horizon", planning_horizon),
         ):
-            if isinstance(value, bool) or int(value) != value or value < 0:
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, np.integer))
+                or value < 0
+            ):
                 raise ValueError(f"{name} must be a non-negative integer")
         if n_resources == 0 or n_locations == 0:
             raise ValueError("n_resources and n_locations must be positive")
@@ -149,12 +155,55 @@ class MultiAgentModel(BaseActiveInferenceModel):
         for position, action in enumerate(actions or []):
             if not isinstance(action, dict):
                 raise ValueError("each multi-agent action must be a mapping")
-            agent_id = int(action.get("agent_id", position))
+            agent_id = action.get("agent_id", position)
+            if isinstance(agent_id, bool) or not isinstance(
+                agent_id, (int, np.integer)
+            ):
+                raise ValueError("agent_id must be an integer")
             if agent_id < 0 or agent_id >= len(self.agent_models):
                 raise ValueError(
                     f"agent_id {agent_id} is outside the active agent range"
                 )
-            action_by_agent[agent_id] = dict(action)
+            if agent_id in action_by_agent:
+                raise ValueError("Duplicate actions for the same agent")
+            action = copy.deepcopy(action)
+            requested_location = action.get("location", action.get("move_to"))
+            if requested_location is not None and (
+                isinstance(requested_location, bool)
+                or not isinstance(requested_location, (int, np.integer))
+                or not 0 <= requested_location < self.n_locations
+            ):
+                raise ValueError(
+                    "location must be an integer inside the location space"
+                )
+            resource = action.get("resource")
+            if resource is not None:
+                if (
+                    isinstance(resource, bool)
+                    or not isinstance(resource, (int, np.integer))
+                    or not 0 <= resource < self.n_resources
+                ):
+                    raise ValueError(
+                        "resource must be an integer inside the resource space"
+                    )
+                amount = float(action.get("amount", action.get("harvest", 0.0)))
+                if not np.isfinite(amount) or amount < 0:
+                    raise ValueError("harvest amount must be finite and non-negative")
+            action_by_agent[agent_id] = action
+
+        # Validate every perception before committing any agent or resource mutation.
+        posteriors = []
+        for agent_id, agent in enumerate(self.agent_models):
+            observation = action_by_agent.get(agent_id, {}).get("observation")
+            if observation is None:
+                observation = self._observation_for_location(
+                    int(self.agent_locations[agent_id])
+                )
+            posteriors.append(
+                categorical_posterior(
+                    agent._predict_beliefs(), observation, agent.likelihood_matrix
+                )
+            )
 
         harvest_yield = np.zeros_like(self.resource_distribution, dtype=float)
         beliefs = []
@@ -172,7 +221,8 @@ class MultiAgentModel(BaseActiveInferenceModel):
                 raise ValueError(
                     f"agent {agent_id} observation must have shape ({agent.obs_dim},)"
                 )
-            updated = agent.update_beliefs(observation)
+            updated = posteriors[agent_id]
+            agent.beliefs = updated.copy()
             beliefs.append(updated.copy())
             free_energies.append(float(agent.compute_free_energy()))
 
@@ -216,14 +266,14 @@ class MultiAgentModel(BaseActiveInferenceModel):
             "total_resources": float(np.sum(self.resource_distribution)),
             "step": self.step_count,
         }
-        self.history.append(state)
+        self.history.append(copy.deepcopy(state))
         done = self.planning_horizon > 0 and self.step_count >= self.planning_horizon
         return state, done
 
     def _observation_for_location(self, location: int) -> np.ndarray:
         """Build a normalized four-state observation from local resources."""
         if not 0 <= location < self.resource_distribution.shape[1]:
-            return np.ones(4, dtype=float) / 4.0
+            raise ValueError("Agent location lies outside the resource grid")
         resource_level = float(np.mean(self.resource_distribution[:, location]))
         resource_level = float(np.clip(resource_level, 0.0, 1.0))
         observation = np.array(
@@ -318,6 +368,7 @@ class MultiAgentModel(BaseActiveInferenceModel):
                 self.agent_locations = np.zeros(len(self.agent_models), dtype=int)
                 for agent in self.agent_models:
                     agent.location = 0
+                self._reset_spatial_resource_state()
 
                 logger.info(
                     f"Enabled H3 spatial mode with {self.n_locations} cells and {len(self.agent_models)} agents"
@@ -390,7 +441,21 @@ class MultiAgentModel(BaseActiveInferenceModel):
         self.agent_locations = np.zeros(len(self.agent_models), dtype=int)
         for agent in self.agent_models:
             agent.location = 0
+        self._reset_spatial_resource_state()
         return dict(hierarchy)
+
+    def _reset_spatial_resource_state(self) -> None:
+        """Keep resource axes and reset snapshots aligned with new leaf agents."""
+        self.n_agents = len(self.agent_models)
+        self.resource_distribution = self.rng.random(
+            (self.n_resources, self.n_locations)
+        )
+        self.agent_preferences = self.rng.random((self.n_agents, self.n_resources))
+        self.location_connectivity = np.eye(self.n_locations)
+        self._initial_resource_distribution = self.resource_distribution.copy()
+        self._initial_agent_preferences = self.agent_preferences.copy()
+        self.step_count = 0
+        self.history = []
 
     def _create_spatial_coordination_graph(self) -> None:
         """Create coordination graph between spatially neighboring agents."""
@@ -403,17 +468,11 @@ class MultiAgentModel(BaseActiveInferenceModel):
 
         for i, cell in enumerate(self.h3_cells):
             neighbors = []
-            try:
-                h3_neighbors = adapter.grid_ring(cell, 1)
-                valid_neighbors = set(h3_neighbors) & set(cell_indices)
-
-                for neighbor_cell in valid_neighbors:
-                    if neighbor_cell in cell_indices:
-                        neighbor_idx = cell_indices[neighbor_cell]
-                        neighbors.append(neighbor_idx)
-
-            except Exception as e:
-                logger.debug("Failed to get H3 neighbors for cell %s: %s", cell, e)
+            h3_neighbors = adapter.grid_ring(cell, 1)
+            valid_neighbors = set(h3_neighbors) & set(cell_indices)
+            for neighbor_cell in sorted(valid_neighbors):
+                neighbor_idx = cell_indices[neighbor_cell]
+                neighbors.append(neighbor_idx)
 
             self.spatial_graph[i] = neighbors
 
