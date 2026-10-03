@@ -40,7 +40,7 @@ class TestIngestionBenchmarks:
             {
                 "sensor_id": [f"sensor_{i % 100}" for i in range(n_records)],
                 "timestamp": pd.date_range(
-                    "2023-01-01", periods=n_records, freq="1min"
+                    "2023-01-01", periods=n_records, freq="1min", tz="UTC"
                 ),
                 "temperature": np.random.normal(20, 5, n_records),
                 "humidity": np.random.normal(60, 10, n_records),
@@ -215,7 +215,7 @@ class TestStorageBenchmarks:
                 "temperature": np.random.normal(20, 5, n_records),
                 "humidity": np.random.normal(60, 10, n_records),
                 "timestamp": pd.date_range(
-                    "2023-01-01", periods=n_records, freq="1min"
+                    "2023-01-01", periods=n_records, freq="1min", tz="UTC"
                 ),
             },
             geometry=gpd.points_from_xy(
@@ -310,11 +310,17 @@ class TestStorageBenchmarks:
             for _ in range(10):
                 start_time = time.time()
                 results = await storage.adaptive_query(
-                    temporal_range=(datetime(2023, 1, 1), datetime(2023, 1, 2)),
+                    temporal_range=(
+                        datetime(2023, 1, 1, tzinfo=UTC),
+                        datetime(2023, 1, 2, tzinfo=UTC),
+                    ),
                     optimization_hints={"real_time": False},
                 )
                 query_time = time.time() - start_time
                 temporal_times.append(query_time)
+                # One-minute observations include both endpoints: 24*60+1.
+                assert results["id"].tolist() == list(range(1441))
+                assert str(results["timestamp"].dt.tz) == "UTC"
 
             avg_spatial_time = sum(spatial_times) / len(spatial_times)
             avg_temporal_time = sum(temporal_times) / len(temporal_times)
@@ -354,7 +360,9 @@ class TestValidationBenchmarks:
         return pd.DataFrame(
             {
                 "id": range(n_records),
-                "timestamp": pd.date_range("2023-01-01", periods=n_records, freq="30s"),
+                "timestamp": pd.date_range(
+                    "2023-01-01", periods=n_records, freq="30s", tz="UTC"
+                ),
                 "temperature": np.random.normal(20, 5, n_records),
                 "humidity": np.random.normal(60, 10, n_records),
                 "latitude": np.random.normal(37.7749, 0.05, n_records),
@@ -575,7 +583,7 @@ class TestScalabilityBenchmarks:
             test_data = pd.DataFrame(
                 {
                     "timestamp": pd.date_range(
-                        "2023-01-01", periods=n_records, freq="1min"
+                        "2023-01-01", periods=n_records, freq="1min", tz="UTC"
                     ),
                     "temperature": np.random.normal(20, 5, n_records),
                     "latitude": np.random.normal(37.7, 0.1, n_records),

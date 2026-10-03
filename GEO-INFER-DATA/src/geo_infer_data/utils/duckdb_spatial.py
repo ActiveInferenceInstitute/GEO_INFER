@@ -15,10 +15,18 @@ from __future__ import annotations
 
 import json
 import logging
+import hashlib
+import math
+import re
+import tempfile
+import time
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
 import geopandas as gpd
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -38,17 +46,150 @@ class DuckDBSpatialError(RuntimeError):
     """Raised when an explicit DuckDB-Spatial read fails."""
 
 
-def provision_spatial_extension() -> dict[str, Any]:
-    """Explicitly install and verify the signed extension matching this DuckDB runtime."""
+def _download_extension(
+    url: str, target: Path, *, deadline: float, max_bytes: int
+) -> dict[str, Any]:
+    """Bound DNS, TLS, headers, body and decompression in one owned child."""
+    from ._duckdb_extension_worker import validate_extension_url
+
+    validate_extension_url(url)
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise DuckDBSpatialError("DuckDB extension download deadline exceeded")
+    command = [
+        sys.executable,
+        "-I",
+        str(Path(__file__).with_name("_duckdb_extension_worker.py")),
+        url,
+        str(target),
+        str(remaining),
+        str(max_bytes),
+    ]
+    try:
+        result = subprocess.run(
+            command,
+            timeout=remaining,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        # subprocess.run kills and waits for this worker before raising. The
+        # stdlib-only worker spawns no descendants, including during DNS/TLS.
+        diagnostics = exc.stderr or b""
+        if isinstance(diagnostics, bytes):
+            diagnostics = diagnostics.decode("utf-8", errors="replace")
+        raise DuckDBSpatialError(
+            "DuckDB extension download deadline exceeded; worker reaped\n" + diagnostics
+        ) from exc
+    if result.returncode != 0:
+        raise DuckDBSpatialError(
+            f"DuckDB extension download failed (exit {result.returncode}):\n"
+            + result.stderr
+        )
+    try:
+        evidence = json.loads(result.stdout)
+    except (ValueError, TypeError) as exc:
+        raise DuckDBSpatialError("Extension worker returned invalid evidence") from exc
+    if (
+        not isinstance(evidence, dict)
+        or evidence.get("download_url") != url
+        or type(evidence.get("bytes")) is not int
+        or not 0 < evidence["bytes"] <= max_bytes
+        or not isinstance(evidence.get("sha256"), str)
+        or not re.fullmatch(r"[a-f0-9]{64}", evidence["sha256"])
+    ):
+        raise DuckDBSpatialError("Extension worker returned inconsistent evidence")
+    digest = hashlib.sha256()
+    size = 0
+    with target.open("rb") as archive:
+        while chunk := archive.read(64 * 1024):
+            size += len(chunk)
+            if size > max_bytes:
+                raise DuckDBSpatialError("Extension output exceeds byte budget")
+            digest.update(chunk)
+            if time.monotonic() >= deadline:
+                raise DuckDBSpatialError("DuckDB extension download deadline exceeded")
+    if time.monotonic() >= deadline:
+        raise DuckDBSpatialError("DuckDB extension download deadline exceeded")
+    if size != evidence["bytes"] or digest.hexdigest() != evidence["sha256"]:
+        raise DuckDBSpatialError("Extension worker output does not match its evidence")
+    return evidence
+
+
+def provision_spatial_extension(
+    *, download_timeout: float = 120.0, max_extension_bytes: int = 512 * 1024 * 1024
+) -> dict[str, Any]:
+    """Install official signed HTTPFS and Spatial for the actual runtime ABI.
+
+    Download through Python HTTPS before local installation: a fresh DuckDB
+    cannot bootstrap its HTTPS repository without HTTPFS already installed.
+    Both archives must download before installation begins. Network, archive,
+    signature and analytical failures propagate; no fallback certifies them.
+    The shared download deadline and compressed/decompressed byte budgets are
+    explicit. DuckDB enforces signatures with unsigned extensions disabled.
+    """
+    if (
+        isinstance(download_timeout, bool)
+        or not isinstance(download_timeout, (int, float))
+        or not math.isfinite(download_timeout)
+        or download_timeout <= 0
+    ):
+        raise ValueError("download_timeout must be finite and positive")
+    if type(max_extension_bytes) is not int or max_extension_bytes <= 0:
+        raise ValueError("max_extension_bytes must be a positive integer")
     if _DUCKDB is None:
         raise DuckDBSpatialError(
             "Install geo-infer-data[integrations] before provisioning Spatial"
         )
-    with _DUCKDB.connect() as conn:
-        conn.execute(
-            "SET custom_extension_repository = 'https://extensions.duckdb.org'"
-        )
-        conn.execute("INSTALL spatial; LOAD spatial;")
+    with (
+        _DUCKDB.connect(
+            config={
+                "allow_unsigned_extensions": False,
+                "autoinstall_known_extensions": False,
+                "autoload_known_extensions": False,
+            }
+        ) as conn,
+        tempfile.TemporaryDirectory(prefix="geo-infer-duckdb-") as temporary,
+    ):
+        version = conn.execute("SELECT version()").fetchone()[0]
+        platform = conn.execute("PRAGMA platform").fetchone()[0]
+        if not isinstance(version, str) or not re.fullmatch(
+            r"v[0-9]+\.[0-9]+\.[0-9]+", version
+        ):
+            raise DuckDBSpatialError(
+                "Official provisioning requires a stable DuckDB runtime"
+            )
+        if not isinstance(platform, str) or not re.fullmatch(r"[a-z0-9_]+", platform):
+            raise DuckDBSpatialError(
+                "DuckDB reported an unsupported extension platform"
+            )
+        deadline = time.monotonic() + download_timeout
+        extensions = []
+        for name in ("httpfs", "spatial"):
+            target = Path(temporary) / f"{name}.duckdb_extension"
+            try:
+                evidence = _download_extension(
+                    f"https://extensions.duckdb.org/{version}/{platform}/{target.name}.gz",
+                    target,
+                    deadline=deadline,
+                    max_bytes=max_extension_bytes,
+                )
+            except DuckDBSpatialError as exc:
+                exc.runtime_version = version
+                exc.platform = platform
+                raise
+            extensions.append({"extension": name, **evidence})
+        if time.monotonic() >= deadline:
+            raise DuckDBSpatialError("DuckDB extension download deadline exceeded")
+        for evidence in extensions:
+            name = evidence["extension"]
+            conn.install_extension(
+                str(Path(temporary) / f"{name}.duckdb_extension"), force_install=True
+            )
+            conn.load_extension(name)
         point = conn.execute("SELECT ST_AsText(ST_Point(1, 2))").fetchone()
         if point != ("POINT (1 2)",):
             raise DuckDBSpatialError(
@@ -56,7 +197,11 @@ def provision_spatial_extension() -> dict[str, Any]:
             )
     return {
         "duckdb_version": _DUCKDB.__version__,
+        "runtime_version": version,
+        "platform": platform,
         "extension": "spatial",
+        "extensions": extensions,
+        "signature_verification": "duckdb-enforced",
         "status": "verified",
     }
 
@@ -67,6 +212,13 @@ def _fallback_read_vector(
     **kwargs: Any,
 ) -> gpd.GeoDataFrame:
     """Read a vector file through GeoPandas/Fiona (always available)."""
+    if file_path.suffix.lower() in (".parquet", ".pq"):
+        from .dependencies import require_dependency
+
+        require_dependency("pyarrow", "integrations")
+        if layer is not None:
+            raise ValueError("GeoParquet does not accept a layer parameter")
+        return gpd.read_parquet(str(file_path), **kwargs)
     if layer:
         return gpd.read_file(str(file_path), layer=layer, **kwargs)
     return gpd.read_file(str(file_path), **kwargs)
@@ -79,9 +231,9 @@ def _duckdb_read_vector(
 ) -> gpd.GeoDataFrame:
     """Read a cloud-native vector file through DuckDB Spatial.
 
-    GeoParquet and FlatGeobuf are read natively by DuckDB Spatial's ``ST_Read``
-    and returned as a GeoDataFrame. ``layer``/extra kwargs are only supported
-    by the fallback path.
+    GeoParquet uses native ``read_parquet`` with declared WKB geometry columns;
+    other formats use Spatial's ``ST_Read``. ``layer``/extra kwargs are only
+    supported by the fallback path.
 
     The CRS is taken from the file itself — GeoParquet key-value metadata when
     present (defaulting to OGC:CRS84 / EPSG:4326 only when the spec-default
@@ -99,6 +251,8 @@ def _duckdb_read_vector(
         # inside table functions fall back to standard SQL string-literal
         # escaping, where a doubled quote can never terminate the literal.
         posix_path = file_path.as_posix()
+        if file_path.suffix.lower() in (".parquet", ".pq"):
+            return _duckdb_read_geoparquet(conn, posix_path)
         try:
             rel = conn.execute("SELECT * FROM ST_Read(?)", [posix_path])
         except _DUCKDB.Error:
@@ -110,15 +264,158 @@ def _duckdb_read_vector(
         df = df.drop(columns=["OGC_FID"], errors="ignore")
         # Some DuckDB versions materialise BLOB columns as bytearray objects,
         # which shapely's from_wkb rejects; normalise every element to bytes.
-        geometry_column = df.pop("geom").map(
-            lambda blob: bytes(blob) if not isinstance(blob, bytes) else blob
-        )
+        geometry_column = df.pop("geom").map(_wkb_bytes)
         geometry = gpd.GeoSeries.from_wkb(geometry_column)
         return gpd.GeoDataFrame(
             df, geometry=geometry, crs=_resolve_crs(conn, posix_path)
         )
     finally:
         conn.close()
+
+
+def _wkb_bytes(blob: Any) -> bytes | None:
+    """Normalize DuckDB BLOB/GEOMETRY and its pandas null representation."""
+    if blob is None or blob is pd.NA or (isinstance(blob, float) and math.isnan(blob)):
+        return None
+    return bytes(blob)
+
+
+def _duckdb_read_geoparquet(conn: Any, path: str) -> gpd.GeoDataFrame:
+    """Read declared WKB columns through Parquet, without depending on GDAL.
+
+    Geometry names remain DataFrame labels, never SQL identifiers. DuckDB's
+    native GEOMETRY conversion and older BLOB readers both expose WKB bytes.
+    Original Arrow fields repair native type changes (notably TIMESTAMPTZ's
+    microsecond precision), and pandas metadata restores index and field dtypes.
+    Geometry and compatible fields still come from the native DuckDB reader.
+    All declared geometry columns retain their own CRS; null CRS stays unknown.
+    """
+    rows = conn.execute(
+        "SELECT key, value FROM parquet_kv_metadata(?)", [path]
+    ).fetchall()
+    metadata = None
+    for key, value in rows:
+        if (key.encode() if isinstance(key, str) else bytes(key)) == b"geo":
+            if metadata is not None:
+                raise DuckDBSpatialError("GeoParquet has duplicate geo metadata")
+            metadata = json.loads(value)
+    if not isinstance(metadata, dict):
+        raise DuckDBSpatialError("GeoParquet requires geo metadata")
+    primary = metadata.get("primary_column")
+    columns = metadata.get("columns")
+    if (
+        not isinstance(primary, str)
+        or not isinstance(columns, dict)
+        or primary not in columns
+    ):
+        raise DuckDBSpatialError(
+            "GeoParquet requires a declared primary geometry column"
+        )
+    df = _lossless_parquet_frame(conn, path, set(columns))
+    for name, properties in columns.items():
+        if (
+            not isinstance(name, str)
+            or name not in df
+            or not isinstance(properties, dict)
+        ):
+            raise DuckDBSpatialError(
+                "GeoParquet geometry metadata does not match its columns"
+            )
+        if properties.get("encoding") != "WKB":
+            raise DuckDBSpatialError(
+                "DuckDB GeoParquet reader supports declared WKB encoding"
+            )
+        crs = properties.get("crs", "default")
+        resolved = (
+            "OGC:CRS84"
+            if crs == "default"
+            else None
+            if crs is None
+            else _crs_from_declared(crs)
+        )
+        geometry = df[name].map(_wkb_bytes)
+        df[name] = gpd.GeoSeries.from_wkb(geometry, crs=resolved)
+    return gpd.GeoDataFrame(df, geometry=primary)
+
+
+def _lossless_parquet_frame(
+    conn: Any, path: str, geometry_columns: set[str]
+) -> pd.DataFrame:
+    """Combine native fields with exact original index/type compatibility reads.
+
+    A single-file Parquet scan preserves insertion order explicitly. Original
+    fields are selected only for physical indexes or changed Arrow types; the
+    original schema's pandas metadata reconstructs labels, ranges, categories,
+    nullable dtypes and timestamp zones without lossy pandas casts.
+    """
+    from .dependencies import require_dependency
+
+    arrow = require_dependency("pyarrow", "integrations")
+    parquet = require_dependency("pyarrow.parquet", "integrations")
+    with parquet.ParquetFile(path) as original:
+        schema = original.schema_arrow
+        conn.execute("SET preserve_insertion_order = true")
+        result = conn.execute("SELECT * FROM read_parquet(?)", [path]).arrow()
+        native = result.read_all() if hasattr(result, "read_all") else result
+        if (
+            native.column_names != schema.names
+            or len(set(schema.names)) != len(schema.names)
+            or native.num_rows != original.metadata.num_rows
+        ):
+            raise DuckDBSpatialError(
+                "Native and original Parquet rows/fields do not align"
+            )
+        pandas_metadata = schema.pandas_metadata
+        indexes = (
+            [] if pandas_metadata is None else pandas_metadata.get("index_columns", [])
+        )
+        if not isinstance(indexes, list):
+            raise DuckDBSpatialError("Unsupported Parquet pandas index metadata")
+        physical_indexes = set()
+        for index in indexes:
+            if (
+                isinstance(index, str)
+                and index in schema.names
+                and index not in geometry_columns
+            ):
+                physical_indexes.add(index)
+            elif (
+                isinstance(index, dict)
+                and len(indexes) == 1
+                and index.get("kind") == "range"
+            ):
+                start, stop, step = (
+                    index.get(name) for name in ("start", "stop", "step")
+                )
+                if (
+                    any(type(value) is not int for value in (start, stop, step))
+                    or step == 0
+                    or len(range(start, stop, step)) != native.num_rows
+                ):
+                    raise DuckDBSpatialError(
+                        "Parquet RangeIndex metadata does not match its rows"
+                    )
+            else:
+                raise DuckDBSpatialError("Unsupported Parquet pandas index metadata")
+        selected = [
+            field.name
+            for field in schema
+            if field.name in physical_indexes
+            or (
+                field.name not in geometry_columns
+                and field.type != native.schema.field(field.name).type
+            )
+        ]
+        exact = original.read(columns=selected) if selected else None
+        if exact is not None and exact.num_rows != native.num_rows:
+            raise DuckDBSpatialError(
+                "Original Parquet compatibility fields do not align"
+            )
+        arrays = [
+            exact[field.name] if field.name in selected else native[field.name]
+            for field in schema
+        ]
+        return arrow.Table.from_arrays(arrays, schema=schema).to_pandas()
 
 
 def _resolve_crs(conn: Any, posix_path: str) -> Any:
@@ -134,7 +431,9 @@ def _resolve_crs(conn: Any, posix_path: str) -> Any:
         # GeoParquet spec: a column without an explicit "crs" entry defaults
         # to OGC:CRS84 (WGS84 lon/lat).
         return (
-            _PyprojCRS(4326) if crs_meta == "default" else _crs_from_declared(crs_meta)
+            _PyprojCRS("OGC:CRS84")
+            if crs_meta == "default"
+            else _crs_from_declared(crs_meta)
         )
     geometry_crs = _geometry_crs(conn, posix_path)
     if geometry_crs is not None:

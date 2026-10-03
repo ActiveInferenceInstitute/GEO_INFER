@@ -198,6 +198,20 @@ actual = read_cloud_native_vector('observations.fgb', require_duckdb=True).sort_
 expected = source.sort_values('identity').reset_index(drop=True)
 assert actual.identity.tolist() == [3, 7] and actual.value.tolist() == [-2., 0.]
 assert actual.crs == expected.crs and actual.geometry.equals(expected.geometry)
+import pandas as pd
+import geo_infer_data.utils.duckdb_spatial as backend
+def forbidden_fallback(*args, **kwargs):
+    raise AssertionError('installed native acceptance entered fallback')
+backend._fallback_read_vector = forbidden_fallback
+axis = pd.DatetimeIndex(['2026-11-01T08:30:00.123456789Z', '2026-11-01T09:30:00.123456790Z', '2026-11-01T09:30:00.123456791Z'])
+index = pd.Index(['sensor-z', 'sensor-a', 'sensor-q'], name='observation_identity')
+source = gpd.GeoDataFrame({'value': [0., -2., 7.], 'timestamp': axis, 'local': axis.tz_convert('America/Los_Angeles'), 'category': pd.Categorical(['z', 'a', 'z'], categories=['unused', 'z', 'a'], ordered=True), 'label': pd.array(['first', None, 'last'], dtype='string'), 'nullable': pd.array([0., None, 7.], dtype='Float64')}, geometry=[Point(500000, 4649776), None, Point(500100, 4649800)], crs='EPSG:32610', index=index).rename_geometry('shape"; DROP TABLE pretend; --')
+source.to_parquet('observations.parquet')
+actual = read_cloud_native_vector('observations.parquet', require_duckdb=True)
+pd.testing.assert_frame_equal(actual, source)
+assert actual.timestamp.iloc[2].value - actual.timestamp.iloc[1].value == 1
+actual.iloc[0, 0] = 99.
+pd.testing.assert_frame_equal(read_cloud_native_vector('observations.parquet', require_duckdb=True), source)
 """,
     ),
     WheelProfile(

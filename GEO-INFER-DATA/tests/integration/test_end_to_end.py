@@ -62,7 +62,9 @@ class TestEndToEndWorkflows:
         # Create realistic environmental data
         data = {
             "sensor_id": [f"sensor_{i % 10}" for i in range(n_records)],
-            "timestamp": pd.date_range("2023-01-01", periods=n_records, freq="h"),
+            "timestamp": pd.date_range(
+                "2023-01-01", periods=n_records, freq="h", tz="UTC"
+            ),
             "temperature": np.random.normal(20, 5, n_records),
             "humidity": np.random.normal(60, 10, n_records),
             "air_quality": np.random.normal(50, 15, n_records),
@@ -141,9 +143,18 @@ class TestEndToEndWorkflows:
         assert 0.0 <= quality_report["overall_score"] <= 1.0
         assert "recommendations" in quality_report
 
-        # Step 4: Store data
+        # Step 4: Store the same observations with explicit WGS84 geometry;
+        # spatial filtering is defined for GeoDataFrames, not plain tables.
+        observations = gpd.GeoDataFrame(
+            mock_environmental_data.copy(),
+            geometry=gpd.points_from_xy(
+                mock_environmental_data["longitude"],
+                mock_environmental_data["latitude"],
+            ),
+            crs="EPSG:4326",
+        )
         dataset_id = await storage.store_geospatial_data(
-            mock_environmental_data,
+            observations,
             mock_metadata,
             access_patterns={
                 "query_frequency": "high",
@@ -158,13 +169,28 @@ class TestEndToEndWorkflows:
         # Step 5: Query stored data
         query_results = await storage.adaptive_query(
             spatial_bounds=[-122.5, 37.7, -122.3, 37.9],
-            temporal_range=(datetime(2023, 1, 1), datetime(2023, 1, 31)),
+            temporal_range=(
+                datetime(2023, 1, 1, tzinfo=UTC),
+                datetime(2023, 1, 31, tzinfo=UTC),
+            ),
             optimization_hints={"frequent_queries": True},
         )
 
         # Verify query results
         assert isinstance(query_results, (pd.DataFrame, gpd.GeoDataFrame))
         assert len(query_results) > 0
+        expected = mock_environmental_data.loc[
+            mock_environmental_data["longitude"].between(-122.5, -122.3)
+            & mock_environmental_data["latitude"].between(37.7, 37.9)
+            & mock_environmental_data["timestamp"].between(
+                pd.Timestamp("2023-01-01T00:00:00Z"),
+                pd.Timestamp("2023-01-31T00:00:00Z"),
+            )
+        ]
+        pd.testing.assert_frame_equal(
+            query_results[mock_environmental_data.columns].reset_index(drop=True),
+            expected.reset_index(drop=True),
+        )
 
         # Step 6: Validate stored dataset
         quality_manager.register_dataset(
@@ -218,7 +244,9 @@ class TestEndToEndWorkflows:
             {
                 "measurements": pd.DataFrame(
                     {
-                        "timestamp": pd.date_range("2023-01-01", periods=2, freq="h"),
+                        "timestamp": pd.date_range(
+                            "2023-01-01", periods=2, freq="h", tz="UTC"
+                        ),
                         "temperature": [20.0, 21.0],
                         "latitude": [37.7, 37.71],
                         "longitude": [-122.4, -122.41],
@@ -230,7 +258,9 @@ class TestEndToEndWorkflows:
             {
                 "reports": pd.DataFrame(
                     {
-                        "timestamp": pd.date_range("2023-01-01", periods=2, freq="h"),
+                        "timestamp": pd.date_range(
+                            "2023-01-01", periods=2, freq="h", tz="UTC"
+                        ),
                         "latitude": [37.7, 37.71],
                         "longitude": [-122.4, -122.41],
                         "category": ["environment", "environment"],
@@ -372,7 +402,9 @@ class TestEndToEndWorkflows:
             {
                 "measurements": pd.DataFrame(
                     {
-                        "timestamp": pd.date_range("2023-01-01", periods=2, freq="h"),
+                        "timestamp": pd.date_range(
+                            "2023-01-01", periods=2, freq="h", tz="UTC"
+                        ),
                         "temperature": [20.0, 21.0],
                         "latitude": [37.7, 37.71],
                         "longitude": [-122.4, -122.41],
@@ -474,7 +506,9 @@ class TestCrossComponentIntegration:
         # Create test data
         test_data = pd.DataFrame(
             {
-                "timestamp": pd.date_range("2023-01-01", periods=100, freq="h"),
+                "timestamp": pd.date_range(
+                    "2023-01-01", periods=100, freq="h", tz="UTC"
+                ),
                 "temperature": np.random.normal(20, 5, 100),
                 "latitude": np.random.normal(37.7, 0.1, 100),
                 "longitude": np.random.normal(-122.4, 0.1, 100),
@@ -687,7 +721,9 @@ class TestDataFlowIntegration:
         # Create time series data
         ts_data = pd.DataFrame(
             {
-                "timestamp": pd.date_range("2023-01-01", periods=1000, freq="h"),
+                "timestamp": pd.date_range(
+                    "2023-01-01", periods=1000, freq="h", tz="UTC"
+                ),
                 "temperature": np.random.normal(20, 5, 1000),
                 "humidity": np.random.normal(60, 10, 1000),
             }
@@ -711,14 +747,22 @@ class TestDataFlowIntegration:
 
         # Test temporal queries
         temporal_results = await system["storage"].adaptive_query(
-            temporal_range=(datetime(2023, 1, 1), datetime(2023, 1, 2))
+            temporal_range=(
+                datetime(2023, 1, 1, tzinfo=UTC),
+                datetime(2023, 1, 2, tzinfo=UTC),
+            )
         )
 
         # Test quality validation
         quality_report = await system["quality_manager"].validate_dataset(dataset_id)
 
         # Verify results
-        assert len(temporal_results) > 0
+        # Closed Jan1 midnight through Jan2 midnight contains 25 hourly steps.
+        assert len(temporal_results) == 25
+        pd.testing.assert_frame_equal(
+            temporal_results[ts_data.columns].reset_index(drop=True), ts_data.iloc[:25]
+        )
+        assert str(temporal_results["timestamp"].dt.tz) == "UTC"
         assert quality_report.overall_score >= 0.0
 
         print("✅ Temporal data pipeline test passed")
@@ -740,7 +784,7 @@ class TestPerformanceIntegration:
             {
                 "id": range(n_records),
                 "timestamp": pd.date_range(
-                    "2023-01-01", periods=n_records, freq="1min"
+                    "2023-01-01", periods=n_records, freq="1min", tz="UTC"
                 ),
                 "temperature": np.random.normal(20, 5, n_records),
                 "humidity": np.random.normal(60, 10, n_records),
