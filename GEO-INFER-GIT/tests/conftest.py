@@ -12,6 +12,16 @@ from shapely.geometry import Point
 from pathlib import Path
 from typing import Any
 import subprocess
+import os
+
+
+@pytest.fixture(autouse=True)
+def isolated_git_monitor_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep temporary repositories from starting user-configured Git daemons."""
+    count = int(os.environ.get("GIT_CONFIG_COUNT", "0"))
+    monkeypatch.setenv("GIT_CONFIG_COUNT", str(count + 1))
+    monkeypatch.setenv(f"GIT_CONFIG_KEY_{count}", "core.fsmonitor")
+    monkeypatch.setenv(f"GIT_CONFIG_VALUE_{count}", "false")
 
 
 @pytest.fixture(scope="session")

@@ -48,7 +48,7 @@ def test_validator_failure_without_junit_keeps_receipt(engine) -> None:
     )
     assert not result.success
     assert result.returncode == 7
-    receipt = json.loads(Path(result.receipt).read_text())
+    receipt = json.loads(Path(result.receipt).read_text(encoding="utf-8"))
     assert receipt["returncode"] == 7
     assert len(list(Path(result.receipt).parent.parent.iterdir())) == 1
 
@@ -101,8 +101,50 @@ def test_native_invalid_output_bytes_preserve_receipt(engine) -> None:
     assert result.stdout == "valid stdout\n\ufffd\n"
     assert result.stderr == "valid stderr\n\ufffd\n"
     attempt = Path(result.receipt).parent
-    assert (attempt / "stdout.log").read_text() == result.stdout
-    assert (attempt / "stderr.log").read_text() == result.stderr
+    assert (attempt / "stdout.log").read_text(encoding="utf-8") == result.stdout
+    assert (attempt / "stderr.log").read_text(encoding="utf-8") == result.stderr
+
+
+def test_restricted_console_preserves_unicode_failure_and_summary(engine, monkeypatch):
+    """A strict Windows-style console cannot prevent retaining a failed attempt."""
+    import hashlib
+    import io
+
+    displayed = io.BytesIO()
+    console = io.TextIOWrapper(displayed, encoding="cp1252", write_through=True)
+    with monkeypatch.context() as scope:
+        scope.setattr(sys, "stdout", console)
+        result = engine.run_command(
+            [
+                sys.executable,
+                "-c",
+                "import os; os.write(1, b'original\\xff'); "
+                "os.write(2, bytes.fromhex('e6b8ace5ae9a')); raise SystemExit(7)",
+            ],
+            "Unicode failure \u0394",
+            5,
+        )
+        engine.write_summary(engine.SuiteReport([result]), show_failures=True)
+    assert result.returncode == 7 and result.status == "FAIL"
+    assert result.stdout == "original\ufffd" and result.stderr == "\u6e2c\u5b9a"
+    receipt_path = Path(result.receipt)
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    for filename, expected in (
+        ("stdout.log", result.stdout),
+        ("stderr.log", result.stderr),
+    ):
+        artifact = receipt_path.parent / filename
+        assert artifact.read_text(encoding="utf-8") == expected
+        assert (
+            receipt["artifacts"][filename]
+            == hashlib.sha256(artifact.read_bytes()).hexdigest()
+        )
+    summary = json.loads(
+        (engine.RESULTS_DIR / "summary.json").read_text(encoding="utf-8")
+    )
+    assert not summary["success"] and summary["results"][0]["returncode"] == 7
+    assert "\\ufffd" in displayed.getvalue().decode("cp1252")
+    assert "\\u0394" in displayed.getvalue().decode("cp1252")
 
 
 def test_large_real_timeout_retains_both_ends_of_output(engine) -> None:
@@ -118,7 +160,7 @@ def test_large_real_timeout_retains_both_ends_of_output(engine) -> None:
     result = engine.run_command([sys.executable, "-c", code], "large timeout", 3.5)
     assert result.status == "TIMEOUT" and not result.success
     receipt_path = Path(result.receipt)
-    receipt = json.loads(receipt_path.read_text())
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     for name, prefix, suffix, retained in (
         ("stdout.log", "STDOUT_HEAD", "STDOUT_TAIL", result.stdout),
         ("stderr.log", "STDERR_HEAD", "STDERR_TAIL", result.stderr),
@@ -126,7 +168,7 @@ def test_large_real_timeout_retains_both_ends_of_output(engine) -> None:
         artifact = receipt_path.parent / name
         assert retained.startswith(prefix) and suffix in retained
         assert len(retained) > 1_050_000
-        assert artifact.read_text() == retained
+        assert artifact.read_text(encoding="utf-8") == retained
         assert (
             receipt["artifacts"][name]
             == hashlib.sha256(artifact.read_bytes()).hexdigest()
@@ -155,8 +197,8 @@ def test_large_process_exception_retains_full_decoded_output(
     assert result.stderr.startswith("ERROR_HEAD")
     assert "\ufffdERROR_TAIL" in result.stderr
     attempt = Path(result.receipt).parent
-    assert (attempt / "stdout.log").read_text() == result.stdout
-    assert (attempt / "stderr.log").read_text() == result.stderr
+    assert (attempt / "stdout.log").read_text(encoding="utf-8") == result.stdout
+    assert (attempt / "stderr.log").read_text(encoding="utf-8") == result.stderr
 
 
 @pytest.mark.parametrize("kind", ["runtime", "value", "process-access"])
@@ -184,7 +226,7 @@ def test_unexpected_process_failure_retains_failed_receipt(
         [sys.executable, "-c", "pass"], "unexpected child failure", 10
     )
     assert not result.success and result.status == "FAIL"
-    receipt = json.loads(Path(result.receipt).read_text())
+    receipt = json.loads(Path(result.receipt).read_text(encoding="utf-8"))
     assert receipt["success"] is False and receipt["returncode"] is None
     assert result.stdout == "retained target output"
     assert "retained target diagnostics" in result.stderr
@@ -210,7 +252,7 @@ def test_zero_exit_needs_current_nonempty_valid_junit(
         [sys.executable, "-c", body, f"--junitxml={stale}"], "missing evidence", 5
     )
     assert not result.success
-    assert stale.read_text().find('name="old"') >= 0
+    assert stale.read_text(encoding="utf-8").find('name="old"') >= 0
     assert Path(result.receipt).is_file()
 
 
@@ -317,7 +359,7 @@ def _assert_recorded_process_dead(pidfile: Path) -> None:
 
     assert pidfile.is_file(), "the parent must have launched the real descendant"
     try:
-        child = psutil.Process(int(pidfile.read_text()))
+        child = psutil.Process(int(pidfile.read_text(encoding="utf-8")))
         assert not child.is_running() or child.status() == psutil.STATUS_ZOMBIE
     except psutil.NoSuchProcess:
         pass
@@ -381,12 +423,16 @@ class TestFigurePathLiterals:
     assert len(engine.module_test_files(root)) == 2
     ordinary = engine.run_module_category_tests("manuscript", 30, workers=1)
     assert ordinary.success and sum(result.executed for result in ordinary.results) == 1
-    ordinary_receipt = json.loads(Path(ordinary.results[0].receipt).read_text())
+    ordinary_receipt = json.loads(
+        Path(ordinary.results[0].receipt).read_text(encoding="utf-8")
+    )
     assert len(ordinary_receipt["selection"]["deselected"]) == 1
     (tmp_path / "render-ready").touch()
     rendered = engine.run_module_category_tests("manuscript-render", 30, workers=1)
     assert rendered.success and sum(result.executed for result in rendered.results) == 2
-    rendered_receipt = json.loads(Path(rendered.results[0].receipt).read_text())
+    rendered_receipt = json.loads(
+        Path(rendered.results[0].receipt).read_text(encoding="utf-8")
+    )
     assert len(rendered_receipt["selection"]["deselected"]) == 1
 
 
@@ -407,7 +453,7 @@ def test_xdist_cannot_hide_worker_collection_removal(engine, tmp_path) -> None:
         [*command, "-n", "2", "-p", "xdist.plugin"], "worker silently omitted", 30
     )
     assert not result.success
-    receipt = json.loads(Path(result.receipt).read_text())
+    receipt = json.loads(Path(result.receipt).read_text(encoding="utf-8"))
     assert len(receipt["selection"]["collected"]) == 2
     assert len(receipt["selection"]["workers"]) == 2
     assert len(receipt["selection"]["unaccounted"]) == 1
@@ -427,7 +473,7 @@ def test_xdist_marker_deselection_is_explicit_and_complete(engine, tmp_path) -> 
         30,
     )
     assert result.success and result.executed == 1
-    receipt = json.loads(Path(result.receipt).read_text())
+    receipt = json.loads(Path(result.receipt).read_text(encoding="utf-8"))
     assert len(receipt["selection"]["collected"]) == 2
     assert len(receipt["selection"]["deselected"]) == 1
     assert receipt["selection"]["unaccounted"] == []
@@ -451,7 +497,7 @@ def test_coverage_report_bytes_belong_to_attempt_receipt(engine, tmp_path) -> No
         30,
     )
     assert result.success
-    receipt = json.loads(Path(result.receipt).read_text())
+    receipt = json.loads(Path(result.receipt).read_text(encoding="utf-8"))
     assert receipt["artifacts"]["coverage.json"]
     assert not (tmp_path / "unbound.json").exists()
 
@@ -666,8 +712,8 @@ def test_keyboard_interrupt_retains_real_output_and_receipt(
     assert result.status == "INTERRUPTED" and not result.success
     assert "before interrupt" in result.stdout
     assert "interrupt stderr" in result.stderr
-    assert (
-        "before interrupt" in (Path(result.receipt).parent / "stdout.log").read_text()
+    assert "before interrupt" in (Path(result.receipt).parent / "stdout.log").read_text(
+        encoding="utf-8"
     )
 
 
@@ -885,9 +931,11 @@ def test_census_timeout_is_not_reported_as_target_deadline(engine, monkeypatch):
     assert not result.success and result.status == "FAIL"
     assert result.stdout == "target completed\n"
     assert result.duration < 10
-    receipt = json.loads(Path(result.receipt).read_text())
+    receipt = json.loads(Path(result.receipt).read_text(encoding="utf-8"))
     assert receipt["status"] == "FAIL"
-    diagnostics = (Path(result.receipt).parent / "stderr.log").read_text()
+    diagnostics = (Path(result.receipt).parent / "stderr.log").read_text(
+        encoding="utf-8"
+    )
     assert "ProcessCensusError" in diagnostics
     assert "Timed out after 300" not in diagnostics
 
@@ -1085,7 +1133,9 @@ def test_validator_retains_successful_terminal_completion_evidence(engine) -> No
         completion_token="expected",
     )
     assert result.success
-    assert json.loads(Path(result.receipt).read_text())["completion"] == {
+    assert json.loads(Path(result.receipt).read_text(encoding="utf-8"))[
+        "completion"
+    ] == {
         "completion_token": "expected",
         "status": "ok",
     }

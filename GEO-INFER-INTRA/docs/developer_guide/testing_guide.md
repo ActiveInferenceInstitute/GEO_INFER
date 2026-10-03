@@ -65,8 +65,10 @@ uv run python -m pytest -c pyproject.toml -W error GEO-INFER-SPACE/tests/unit -q
 # generated docs and structural contracts
 uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check
 uv run python GEO-INFER-TEST/validate_documentation.py --strict
-uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language
-uv run python GEO-INFER-TEST/validate_skills.py --check-xrefs
+uv run python GEO-INFER-TEST/validate_doc_examples.py
+uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language --strict-import-smoke
+uv run python GEO-INFER-TEST/validate_packaging.py --strict
+uv run python GEO-INFER-TEST/validate_skills.py --check-xrefs --warnings-fatal
 uv run python GEO-INFER-TEST/validate_test_contracts.py --strict
 
 # syntax, models, and runtime hygiene
@@ -77,8 +79,10 @@ uv run --with 'ruff>=0.15.6,<0.16' ruff check .
 
 # behavioral suites
 uv run python GEO-INFER-TEST/run_unified_tests.py --category unit
+uv run python GEO-INFER-TEST/run_unified_tests.py --category slow
 uv run python GEO-INFER-TEST/run_unified_tests.py --category integration
 uv run python GEO-INFER-TEST/run_unified_tests.py --category performance
+uv run python GEO-INFER-TEST/run_unified_tests.py --category system
 uv run python GEO-INFER-TEST/run_unified_tests.py --h3-migration
 ```
 
@@ -91,7 +95,8 @@ flags.
 The maintained workflow is
 [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml). It runs on
 pushes and pull requests targeting `main` or `develop`, and can also be
-started with `workflow_dispatch`. Each Python matrix entry is evaluated
+started with `workflow_dispatch`. Tag and scheduled runs use the same category
+matrix. Each Python matrix entry is evaluated
 independently (`fail-fast: false`) so a failure on one interpreter does not
 hide the result from the other. Superseded runs for the same branch or pull
 request are cancelled through workflow concurrency.
@@ -104,10 +109,10 @@ On every outcome, `.geo-infer-test-results/` is uploaded as a short-lived CI
 artifact when available; this includes the unified summary and JUnit reports
 needed to diagnose a failure. Deleted Python paths are excluded from the
 changed-file formatter/linter step because they are not present in the
-checkout. Changed-file Ruff checks only runtime-invalid constructs
-(`F821`, `F823`, `E721`, and `E722`); repository-wide source hygiene owns the
-same critical rules across every module, and `ruff format --check` is the
-formatting gate.
+checkout. Changed-file and repository-wide Ruff checks use the root lint
+configuration; `ruff format --check` is the formatting gate. Coverage change
+selection includes deleted source/test paths, dependency files and shared
+configuration. Coverage uses the same registered test roots as execution.
 
 When local and hosted results differ, first compare Python versions and the
 native-only dependency exclusions, then inspect the uploaded summary and
@@ -121,17 +126,39 @@ The unified runner supports:
 | Command | Scope |
 | --- | --- |
 | `--module ACT` | all discoverable tests for one module |
-| `--category unit` | canonical unit directories across modules |
+| `--category unit` | unit and direct module tests, excluding declared slow cases |
+| `--category slow` | explicitly marked slow cases in registered test roots |
 | `--category integration` | canonical integration directories |
 | `--category performance` | canonical performance directories |
+| `--category system` | canonical system directories |
 | `--category coverage` | coverage analysis |
 | `--h3-migration` | ACT/SPACE H3 contract validators |
 | `--list-modules` | discovered module names |
 | `--timeout 600` | per-command timeout override |
 
-Every run writes a summary under `.geo-infer-test-results/summary.json` and
-JUnit reports under the same directory. The runner rejects pytest exit code 5
-(no tests collected) and skipped or xfailed testcases in JUnit output.
+Discovery includes all 45 modules, PLACE's registered Cascadia tests and the
+root manuscript tests. Explicit backend profiles install their dependencies and
+record the selected, deselected and executed inventory. Tests for absent extras
+remain separate from tests that exercise installed backend behavior.
+
+Every execution preserves an immutable attempt directory containing receipts,
+complete UTF-8 logs and applicable JUnit under `.geo-infer-test-results/runs/`.
+The summary path is a latest-run pointer. Receipts bind revision, dirty source
+bytes, interpreter, lock and artifact hashes. Missing, stale, malformed or empty
+JUnit reports fail pytest attempts; ordinary validators record their failure
+without requiring JUnit. Planned empty module selections are recorded, while an
+entirely empty lane fails. Assertion failures are not automatically retried.
+
+Monotonic deadlines bound the command and ownership census. Cleanup terminates
+and waits for descendants that inherit the launch environment, including detached
+children. Native POSIX inspection supports both BSD and GNU `ps`; Windows uses
+process identities. Console text escapes characters a restricted encoding cannot
+represent; retained UTF-8 artifacts preserve the original decoded output. Read
+those artifacts with `encoding="utf-8"` independently of the machine's locale.
+
+Temporary Git fixtures override inherited `core.fsmonitor` configuration so they
+cannot launch persistent user-configured monitor daemons. This isolation applies
+to test repositories; production Git behavior remains caller-configured.
 
 ## Writing strong tests
 

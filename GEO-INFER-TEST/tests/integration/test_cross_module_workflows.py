@@ -752,6 +752,7 @@ class TestPerformanceIntegration:
     def test_small_spatial_temporal_reference(self):
         """Keep an analytical reference in integration, with real H3 indexing."""
         from geo_infer_space import H3StateSpace, align_h3_observations
+        from geo_infer_time import TimeSeries
         from geo_infer_time.core.analysis import TemporalAnalyzer
 
         center = h3.latlng_to_cell(37.8, -122.4, 8)
@@ -770,9 +771,16 @@ class TestPerformanceIntegration:
             series.data.to_numpy(),
             np.arange(len(cells))[None, :] + 3 * np.arange(4)[:, None],
         )
-        trend = TemporalAnalyzer().detect_trend(series)
-        assert trend["trend_direction"] == "increasing"
-        np.testing.assert_allclose(trend["slope_per_sample"], 3.0, atol=1e-12)
+        for cell in cells:
+            trend = TemporalAnalyzer().detect_trend(
+                TimeSeries(
+                    series.data[[cell]],
+                    spatial_location={"cell": cell},
+                    metadata=series.metadata,
+                )
+            )
+            assert trend["trend_direction"] == "increasing"
+            np.testing.assert_allclose(trend["slope_per_sample"], 3.0, atol=1e-12)
 
 
 if __name__ == "__main__":

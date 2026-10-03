@@ -69,6 +69,18 @@ def current_branch(repo_dir) -> str:
     return result.stdout.strip()
 
 
+def test_temporary_repository_disables_inherited_background_monitor(clean_repo):
+    """Read Git's effective setting, including command-environment overrides."""
+    result = subprocess.run(
+        ["git", "config", "--get", "core.fsmonitor"],
+        cwd=clean_repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert result.stdout.strip() == "false"
+
+
 def init_repo(repo_dir, file_name: str = "README.md", content: str = "# Test\n"):
     """Create an isolated git repository with one commit.
 

@@ -381,6 +381,17 @@ def result_failure_names(result: CommandResult) -> list[str]:
     return junit_failure_names(junit_path(result.command))
 
 
+def _console_print(value: str, *, flush: bool = False) -> None:
+    """Display diagnostics on restricted consoles without changing UTF-8 artifacts."""
+    try:
+        print(value, flush=flush)
+    except UnicodeEncodeError as exc:
+        escaped = value.encode(exc.encoding, errors="backslashreplace").decode(
+            exc.encoding
+        )
+        print(escaped, flush=flush)
+
+
 def print_failure_details(report: SuiteReport) -> None:
     """Print failing test names per failed suite for ``--show-failures`` verdicts.
 
@@ -389,20 +400,20 @@ def print_failure_details(report: SuiteReport) -> None:
     back to a bounded tail of their captured output so the verdict stays
     self-sufficient without opening the per-suite logs.
     """
-    print("\n== Failing tests")
+    _console_print("\n== Failing tests")
     for result in report.results:
         if result.success:
             continue
-        print(f"-- {result.name}")
+        _console_print(f"-- {result.name}")
         names = result_failure_names(result)
         if names:
             for name in names:
-                print(f"  FAILED {name}")
+                _console_print(f"  FAILED {name}")
             continue
         tail = _text_tail(result.stderr or result.stdout, limit=1200).strip()
         if tail:
             for line in tail.splitlines()[-12:]:
-                print(f"  {line}")
+                _console_print(f"  {line}")
 
 
 def run_command(
@@ -440,8 +451,8 @@ def run_command(
         else arg
         for arg in command
     ]
-    print(f"\n== {name}")
-    print("$ " + " ".join(command), flush=True)
+    _console_print(f"\n== {name}")
+    _console_print("$ " + " ".join(command), flush=True)
     env = build_subprocess_env()
     if env_overrides:
         env.update(env_overrides)
@@ -580,9 +591,9 @@ def run_command(
     with (attempt_dir / "receipt.json").open("x", encoding="utf-8") as out:
         json.dump(receipt, out, indent=2, allow_nan=False)
         out.write("\n")
-    print(f"{status} in {duration:.2f}s ({executed} testcases)", flush=True)
+    _console_print(f"{status} in {duration:.2f}s ({executed} testcases)", flush=True)
     if not success:
-        print("\n".join(part[-4000:] for part in (stdout, stderr) if part))
+        _console_print("\n".join(part[-4000:] for part in (stdout, stderr) if part))
     return result
 
 
@@ -1112,16 +1123,16 @@ def write_summary(report: SuiteReport, show_failures: bool = False) -> None:
         1 for result in report.results if result.success and result.status != "EMPTY"
     )
     empty = sum(result.status == "EMPTY" for result in report.results)
-    print("\n== Summary")
-    print(f"Passed: {passed}/{total}; empty selections: {empty}")
+    _console_print("\n== Summary")
+    _console_print(f"Passed: {passed}/{total}; empty selections: {empty}")
     if show_failures and not report.success:
         print_failure_details(report)
     budget_lines = category_budget_lines(report)
     if budget_lines:
-        print("\n== Per-category timeout budget")
+        _console_print("\n== Per-category timeout budget")
         for line in budget_lines:
-            print(line)
-    print(f"Summary: {RESULTS_DIR / 'summary.json'}")
+            _console_print(line)
+    _console_print(f"Summary: {RESULTS_DIR / 'summary.json'}")
 
 
 def record_validation_main(argv: list[str] | None = None) -> int:
@@ -1224,7 +1235,7 @@ def main() -> int:
 
     if args.list_modules:
         for module in discover_geo_infer_modules():
-            print(module.name)
+            _console_print(module.name)
         return 0
 
     report = SuiteReport()

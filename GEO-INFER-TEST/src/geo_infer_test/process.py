@@ -78,7 +78,7 @@ class _DescendantCensus:
                 # unrelated PIDs. Only matches receive identity verification.
                 try:
                     listing = subprocess.run(
-                        ["ps", "eww", "-axo", "pid=,command="],
+                        ["ps", "axeww", "-o", "pid=,command="],
                         capture_output=True,
                         text=True,
                         errors="replace",
