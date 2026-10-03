@@ -47,6 +47,22 @@ Python 3.11 and 3.12. Results include immutable attempt receipts under
 interpreter and source custody. A missing optional dependency must be addressed by
 the declared package extra rather than by omitting its tests.
 
+The system lane exercises three small public workflows with six identified
+observations: real loopback HTTP ingestion, a fresh reader of local Parquet,
+SPACE H3 indexing/alignment, and TIME aggregation with exact UTC nanoseconds.
+Its analytical matrices distinguish absent observations from observed zero and
+preserve caller state order, source/unit metadata and owned nested provenance.
+The DATA-to-API workflow sends those actual stored
+rows through `geo_infer_api.app.create_app()` using ASGI requests, checking
+creation, retrieval, bounding-box selection, conflict, deletion and missing-item
+responses. The API currently uses its declared process-local polygon store;
+these tests establish local endpoint behavior, not a deployed service or a
+persistent API database. Run them with:
+
+```bash
+uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --category system --timeout 600 --show-failures
+```
+
 ## Source and examples
 
 - [Owning package](../../../GEO-INFER-INTRA/src/geo_infer_intra/README.md)
