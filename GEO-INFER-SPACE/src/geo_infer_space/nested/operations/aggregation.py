@@ -8,7 +8,7 @@ hierarchical data processing.
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
 from typing import Any
 from collections.abc import Callable
@@ -210,7 +210,7 @@ class AggregationResult:
     rules_failed: int = 0
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     processing_time: float = 0.0
 
 
@@ -242,8 +242,8 @@ class H3AggregationEngine:
         self.operation_stats: dict[str, int] = defaultdict(int)
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def add_rule(self, rule: AggregationRule) -> str:
         """
@@ -256,7 +256,7 @@ class H3AggregationEngine:
             Rule ID
         """
         self.rules[rule.rule_id] = rule
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
         return rule.rule_id
 
     def remove_rule(self, rule_id: str) -> bool:
@@ -271,7 +271,7 @@ class H3AggregationEngine:
         """
         if rule_id in self.rules:
             del self.rules[rule_id]
-            self.updated_at = datetime.now()
+            self.updated_at = datetime.now(UTC)
             return True
         return False
 
@@ -294,7 +294,7 @@ class H3AggregationEngine:
         Returns:
             AggregationResult instance
         """
-        start_time = datetime.now()
+        start_time = datetime.now(UTC)
         operation_id = f"agg_{uuid.uuid4().hex[:8]}"
 
         # Get cells to aggregate
@@ -358,7 +358,7 @@ class H3AggregationEngine:
                 continue
 
         # Calculate processing time
-        processing_time = (datetime.now() - start_time).total_seconds()
+        processing_time = (datetime.now(UTC) - start_time).total_seconds()
 
         # Create result
         result = AggregationResult(
@@ -383,7 +383,7 @@ class H3AggregationEngine:
         # Store result
         self.aggregation_results[operation_id] = result
         self.operation_stats["total_operations"] += 1
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return result
 

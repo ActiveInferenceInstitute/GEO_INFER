@@ -6,7 +6,7 @@ with hierarchical relationships, boundary management, and system-level operation
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
 from typing import Any
 from collections.abc import Callable
@@ -97,8 +97,8 @@ class NestedCell:
     flow_variables: dict[str, float] = field(default_factory=dict)
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
-    updated_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def __post_init__(self) -> None:
         """Initialize nested cell after creation."""
@@ -107,7 +107,7 @@ class NestedCell:
             self._update_neighbors()
 
             # Set initial state
-            self.updated_at = datetime.now()
+            self.updated_at = datetime.now(UTC)
 
     @property
     def index(self) -> str:
@@ -152,21 +152,18 @@ class NestedCell:
         if not self.h3_cell:
             return
 
-        try:
-            neighbors = neighbor_cells(self.h3_cell.index)
-            self.neighbor_cells = set(neighbors)
-        except Exception as e:
-            logger.warning(f"Failed to update neighbors for {self.index}: {e}")
+        neighbors = neighbor_cells(self.h3_cell.index)
+        self.neighbor_cells = set(neighbors)
 
     def add_parent(self, parent_index: str) -> None:
         """Add a parent cell relationship."""
         self.parent_cells.add(parent_index)
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def add_child(self, child_index: str) -> None:
         """Add a child cell relationship."""
         self.child_cells.add(child_index)
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def set_boundary(self, boundary_id: str, strength: float = 1.0) -> None:
         """Mark cell as boundary with specified strength."""
@@ -174,30 +171,30 @@ class NestedCell:
         self.boundary_ids.add(boundary_id)
         self.boundary_strength = max(self.boundary_strength, strength)
         self.cell_type = NestedCellType.BOUNDARY
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def add_message(self, message: Any) -> None:
         """Add message to the cell's queue."""
         self.message_queue.append(message)
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def process_messages(self) -> list[Any]:
         """Process and return all queued messages."""
         messages = self.message_queue.copy()
         self.message_history.extend(messages)
         self.message_queue.clear()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
         return messages
 
     def update_state(self, variable: str, value: Any) -> None:
         """Update a state variable."""
         self.state_variables[variable] = value
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def update_flow(self, variable: str, value: float) -> None:
         """Update a flow variable."""
         self.flow_variables[variable] = value
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def get_connectivity_degree(self) -> int:
         """Get the connectivity degree (number of connections)."""
@@ -275,8 +272,8 @@ class NestedSystem:
         self.flow_balance: dict[str, float] = {}
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def add_cell(self, cell: NestedCell) -> None:
         """Add a cell to the system."""
@@ -284,7 +281,7 @@ class NestedSystem:
         cell.hierarchy_level = self.hierarchy_level
         self.cells[cell.index] = cell
         self._update_system_metrics()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def remove_cell(self, cell_index: str) -> bool:
         """Remove a cell from the system."""
@@ -292,7 +289,7 @@ class NestedSystem:
             del self.cells[cell_index]
             self.boundary_cells.discard(cell_index)
             self._update_system_metrics()
-            self.updated_at = datetime.now()
+            self.updated_at = datetime.now(UTC)
             return True
         return False
 
@@ -301,14 +298,14 @@ class NestedSystem:
         subsystem.parent_system = self
         subsystem.hierarchy_level = self.hierarchy_level + 1
         self.subsystems[subsystem.system_id] = subsystem
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def remove_subsystem(self, system_id: str) -> bool:
         """Remove a subsystem."""
         if system_id in self.subsystems:
             self.subsystems[system_id].parent_system = None
             del self.subsystems[system_id]
-            self.updated_at = datetime.now()
+            self.updated_at = datetime.now(UTC)
             return True
         return False
 
@@ -347,7 +344,7 @@ class NestedSystem:
                 cell.set_boundary(f"{self.system_id}_boundary")
                 self.boundary_cells.add(cell_index)
 
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def calculate_connectivity(self) -> dict[str, Any]:
         """Calculate system connectivity metrics."""
@@ -512,8 +509,8 @@ class NestedH3Grid:
         self.bounding_box: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def add_cell(
         self, h3_cell: H3Cell | NestedCell, system_id: str | None = None
@@ -528,7 +525,7 @@ class NestedH3Grid:
         self.cells[nested_cell.index] = nested_cell
         self.resolutions.add(nested_cell.resolution)
         self._update_grid_metrics()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
         return nested_cell
 
     def build_h3_hierarchy_from_boundary(
@@ -636,7 +633,7 @@ class NestedH3Grid:
         }
         hierarchy["validation"] = self.validate_h3_hierarchy(hierarchy)
         self.h3_hierarchy = hierarchy
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
         return hierarchy
 
     def validate_h3_hierarchy(
@@ -658,7 +655,7 @@ class NestedH3Grid:
                 "parent_count": 0,
                 "child_count": 0,
                 "multi_child_parent": False,
-                "validated_at": datetime.now().isoformat(),
+                "validated_at": datetime.now(UTC).isoformat(),
             }
 
         issues: list[str] = []
@@ -751,7 +748,7 @@ class NestedH3Grid:
             "parent_count": parent_count,
             "child_count": child_count,
             "multi_child_parent": multi_child_parent,
-            "validated_at": datetime.now().isoformat(),
+            "validated_at": datetime.now(UTC).isoformat(),
         }
 
     def get_h3_parent_child_map(self) -> dict[str, list[str]]:
@@ -950,7 +947,7 @@ class NestedH3Grid:
             self.root_systems.add(system_id)
 
         system.detect_boundaries()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return system
 
@@ -1010,7 +1007,7 @@ class NestedH3Grid:
         """Detect boundaries for all systems in the grid."""
         for system in self.systems.values():
             system.detect_boundaries()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def get_system_by_id(self, system_id: str) -> NestedSystem | None:
         """Get system by ID."""
@@ -1040,7 +1037,7 @@ class NestedH3Grid:
         del self.systems[system_id1]
         del self.systems[system_id2]
 
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
         return merged_system
 
     def split_system(
@@ -1060,7 +1057,7 @@ class NestedH3Grid:
         for split_system in split_systems:
             self.systems[split_system.system_id] = split_system
 
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
         return split_systems
 
     def _update_grid_metrics(self) -> None:

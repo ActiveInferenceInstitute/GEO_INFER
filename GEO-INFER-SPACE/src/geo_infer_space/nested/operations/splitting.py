@@ -8,7 +8,7 @@ and adaptive subdivision.
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
 from typing import Any, cast
 from collections.abc import Callable
@@ -139,7 +139,7 @@ class SplittingResult:
     expansion_ratio: float = 0.0
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     processing_time: float = 0.0
 
     def __post_init__(self) -> None:
@@ -180,8 +180,8 @@ class H3SplittingEngine:
         self.operation_stats: dict[str, int] = defaultdict(int)
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def add_rule(self, rule: SplittingRule) -> str:
         """
@@ -194,7 +194,7 @@ class H3SplittingEngine:
             Rule ID
         """
         self.rules[rule.rule_id] = rule
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
         return rule.rule_id
 
     def remove_rule(self, rule_id: str) -> bool:
@@ -209,7 +209,7 @@ class H3SplittingEngine:
         """
         if rule_id in self.rules:
             del self.rules[rule_id]
-            self.updated_at = datetime.now()
+            self.updated_at = datetime.now(UTC)
             return True
         return False
 
@@ -232,7 +232,7 @@ class H3SplittingEngine:
         Returns:
             SplittingResult instance
         """
-        start_time = datetime.now()
+        start_time = datetime.now(UTC)
         operation_id = f"split_{uuid.uuid4().hex[:8]}"
 
         # Get cells to split
@@ -269,7 +269,7 @@ class H3SplittingEngine:
             split_cells = self._split_by_resolution(cells, **kwargs)
 
         # Calculate processing time
-        processing_time = (datetime.now() - start_time).total_seconds()
+        processing_time = (datetime.now(UTC) - start_time).total_seconds()
 
         # Create result
         result = SplittingResult(
@@ -288,7 +288,7 @@ class H3SplittingEngine:
         # Store result
         self.splitting_results[operation_id] = result
         self.operation_stats[strategy.value] += 1
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return result
 

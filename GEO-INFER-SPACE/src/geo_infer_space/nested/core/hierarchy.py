@@ -7,7 +7,7 @@ level management, and hierarchical operations.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
 from typing import Any, cast
 from enum import Enum
@@ -49,7 +49,7 @@ class HierarchicalRelationship:
     relationship_type: RelationshipType
     strength: float = 1.0
     properties: dict[str, Any] = field(default_factory=dict)
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def __post_init__(self) -> None:
         """Validate relationship after creation."""
@@ -107,8 +107,8 @@ class HierarchyManager:
         self.hierarchy_graph: nx.DiGraph = nx.DiGraph()
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def add_system(self, system_id: str, level: int | None = None) -> None:
         """Add a system to the hierarchy."""
@@ -120,7 +120,7 @@ class HierarchyManager:
         self.hierarchy_graph.add_node(system_id)
 
         self._update_system_classification()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def remove_system(self, system_id: str) -> None:
         """Remove a system from the hierarchy."""
@@ -167,7 +167,7 @@ class HierarchyManager:
             self.hierarchy_graph.remove_node(system_id)
 
         self._update_system_classification()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def add_relationship(
         self,
@@ -214,7 +214,7 @@ class HierarchyManager:
         )
 
         self._update_system_classification()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return rel_id
 
@@ -243,7 +243,7 @@ class HierarchyManager:
 
         del self.relationships[rel_id]
         self._update_system_classification()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def set_system_level(self, system_id: str, level: int) -> None:
         """Set the hierarchical level of a system."""
@@ -260,7 +260,7 @@ class HierarchyManager:
         self.levels[level].add(system_id)
         self.max_level = max(self.max_level, level)
 
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def get_children(self, system_id: str) -> set[str]:
         """Get direct children of a system."""
@@ -459,7 +459,7 @@ class HierarchyManager:
             "is_valid": len(issues) == 0,
             "issues": issues,
             "warnings": warnings,
-            "validation_timestamp": datetime.now().isoformat(),
+            "validation_timestamp": datetime.now(UTC).isoformat(),
         }
 
     def export_hierarchy(self) -> dict[str, Any]:

@@ -17,7 +17,7 @@ from geo_infer_time import normalize_timestamp
 class _UTCMetadataModel(BaseModel):
     model_config = ConfigDict(validate_assignment=True, validate_default=True)
 
-    @field_validator("created_at", "updated_at", check_fields=False)
+    @field_validator("created_at", "updated_at", check_fields=False, mode="before")
     @classmethod
     def normalize_metadata_time(cls, value: datetime | None) -> datetime | None:
         return None if value is None else normalize_timestamp(value)

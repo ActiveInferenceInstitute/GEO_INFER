@@ -7,6 +7,7 @@ and operates on standard data structures.
 """
 
 import logging
+import math
 from typing import Any
 from datetime import datetime
 
@@ -61,6 +62,12 @@ class TemporalAnalyzer:
                 val = record[value_column]
 
                 if ts_val is not None and val is not None:
+                    if (
+                        isinstance(val, (bool, str, bytes))
+                        or not isinstance(val, (int, float))
+                        or not math.isfinite(val)
+                    ):
+                        raise ValueError("Observed values must be finite numbers")
                     timestamp = self._parse_timestamp(ts_val)
                     if timestamp:
                         temporal_data.append(
@@ -131,6 +138,8 @@ class TemporalAnalyzer:
                 "sum": float(np.sum(values)),
                 "count": len(values),
                 "std": float(np.std(values)),
+                "min": float(np.min(values)),
+                "max": float(np.max(values)),
             }
             result[key] = stats
 
@@ -161,11 +170,24 @@ class TemporalAnalyzer:
         if not aggregated_data:
             return {}
 
-        all_means = [d["mean"] for d in aggregated_data.values()]
-
+        buckets = list(aggregated_data.values())
+        count = sum(bucket["count"] for bucket in buckets)
+        total = math.fsum(bucket["sum"] for bucket in buckets)
+        mean = total / count
+        variance = (
+            math.fsum(
+                bucket["count"] * (bucket["std"] ** 2 + (bucket["mean"] - mean) ** 2)
+                for bucket in buckets
+            )
+            / count
+        )
         return {
-            "overall_mean": float(np.mean(all_means)),
-            "overall_std": float(np.std(all_means)),
-            "min_mean": float(np.min(all_means)),
-            "max_mean": float(np.max(all_means)),
+            "overall_mean": mean,
+            "overall_std": math.sqrt(variance),
+            "min_mean": min(bucket["mean"] for bucket in buckets),
+            "max_mean": max(bucket["mean"] for bucket in buckets),
+            "overall_min": min(bucket["min"] for bucket in buckets),
+            "overall_max": max(bucket["max"] for bucket in buckets),
+            "total_observations": count,
+            "total_value": total,
         }

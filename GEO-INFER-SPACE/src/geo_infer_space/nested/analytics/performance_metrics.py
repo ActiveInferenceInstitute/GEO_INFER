@@ -12,7 +12,7 @@ import time
 import psutil
 import threading
 from types import TracebackType
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass, field
 from typing import Any, cast
 from collections.abc import Callable
@@ -76,7 +76,7 @@ class PerformanceMeasurement:
     system_context: dict[str, Any] = field(default_factory=dict)
 
     # Timing
-    timestamp: datetime = field(default_factory=datetime.now)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     duration: timedelta | None = None
 
     # Metadata
@@ -124,7 +124,7 @@ class BenchmarkResult:
     test_config: dict[str, Any] = field(default_factory=dict)
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     duration: timedelta = field(default_factory=lambda: timedelta(0))
 
     def add_measurement(self, measurement: PerformanceMeasurement) -> None:
@@ -182,8 +182,8 @@ class PerformanceProfile:
     recommendations: list[str] = field(default_factory=list)
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
-    last_updated: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    last_updated: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def update_metrics(self, metrics: dict[PerformanceMetric, float]) -> None:
         """Update current metrics and trends."""
@@ -199,7 +199,7 @@ class PerformanceProfile:
             if len(self.performance_trends[metric]) > 100:
                 self.performance_trends[metric] = self.performance_trends[metric][-100:]
 
-        self.last_updated = datetime.now()
+        self.last_updated = datetime.now(UTC)
 
 
 class PerformanceMonitor:
@@ -316,8 +316,8 @@ class H3PerformanceAnalyzer:
         self.analysis_stats: dict[str, int] = defaultdict(int)
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def record_measurement(
         self,
@@ -354,7 +354,7 @@ class H3PerformanceAnalyzer:
 
         self.measurements.append(measurement)
         self.analysis_stats["measurements_recorded"] += 1
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         # Clean up old measurements
         self._cleanup_old_measurements()
@@ -392,7 +392,7 @@ class H3PerformanceAnalyzer:
         Returns:
             BenchmarkResult instance
         """
-        start_time = datetime.now()
+        start_time = datetime.now(UTC)
         benchmark_id = f"benchmark_{uuid.uuid4().hex[:8]}"
 
         result = BenchmarkResult(
@@ -436,12 +436,12 @@ class H3PerformanceAnalyzer:
         result.efficiency_score = self._calculate_efficiency_score(result)
         result.scalability_score = self._calculate_scalability_score(result)
 
-        result.duration = datetime.now() - start_time
+        result.duration = datetime.now(UTC) - start_time
 
         # Store result
         self.benchmark_results[benchmark_id] = result
         self.analysis_stats["benchmarks_run"] += 1
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return result
 
@@ -469,7 +469,7 @@ class H3PerformanceAnalyzer:
         )
 
         self.performance_profiles[profile_id] = profile
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return profile
 
@@ -492,7 +492,7 @@ class H3PerformanceAnalyzer:
         # Generate recommendations
         profile.recommendations = self._generate_performance_recommendations(profile)
 
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def start_monitoring(self) -> None:
         """Start real-time performance monitoring."""
@@ -525,7 +525,7 @@ class H3PerformanceAnalyzer:
 
                 # Store monitoring data
                 self.monitoring_data.append(
-                    {"timestamp": datetime.now(), "metrics": system_metrics}
+                    {"timestamp": datetime.now(UTC), "metrics": system_metrics}
                 )
 
                 time.sleep(self.config["monitoring_interval"])
@@ -715,7 +715,7 @@ class H3PerformanceAnalyzer:
 
     def _cleanup_old_measurements(self) -> None:
         """Clean up old measurements."""
-        cutoff_date = datetime.now() - timedelta(
+        cutoff_date = datetime.now(UTC) - timedelta(
             days=self.config["measurement_retention_days"]
         )
 
@@ -745,7 +745,7 @@ class H3PerformanceAnalyzer:
             ]
 
         if time_window:
-            cutoff_time = datetime.now() - time_window
+            cutoff_time = datetime.now(UTC) - time_window
             filtered_measurements = [
                 m for m in filtered_measurements if m.timestamp > cutoff_time
             ]

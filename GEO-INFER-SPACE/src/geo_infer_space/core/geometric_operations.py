@@ -233,7 +233,7 @@ class GeometricOperationsInterface:
         """
         return cast(
             dict[str, Any],
-            self.dispatcher.dispatch_indexing_operation(
+            self.dispatcher.dispatch_geometric_operation(
                 "transform_geometry",
                 geometry,
                 from_crs,

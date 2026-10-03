@@ -151,20 +151,19 @@ class TestBoundaryManagement:
         assert hasattr(manager, "boundaries")
         assert hasattr(manager, "flows")
 
-    def test_boundary_detection_mock(self):
-        """Test boundary detection with mock data."""
+    def test_boundary_detection_real_h3(self):
+        """Test boundary detection with real H3 cells."""
         grid = create_nested_system("boundary_test")
 
         # Add test cells to grid first
         test_cells = []
-        for i in range(10):
-            cell_idx = f"cell_{i}"
+        indexes = sorted(h3.grid_disk(h3.latlng_to_cell(37.7, -122.4, 9), 2))[:10]
+        for i, cell_idx in enumerate(indexes):
             cell = create_test_cell(cell_idx, resolution=9, system_id="test_system")
             cell.state_variables["value"] = i
-            # Mock neighbor relationships
-            cell.neighbor_cells = [
-                f"cell_{j}" for j in range(max(0, i - 2), min(10, i + 3)) if j != i
-            ]
+            cell.neighbor_cells = (set(h3.grid_disk(cell_idx, 1)) & set(indexes)) - {
+                cell_idx
+            }
             grid.add_cell(cell)
             test_cells.append(cell_idx)
 
@@ -174,12 +173,8 @@ class TestBoundaryManagement:
         # Test boundary detection
         manager = H3BoundaryManager()
 
-        try:
-            boundaries = manager.detect_boundaries(grid)
-            assert isinstance(boundaries, dict)
-        except Exception as e:
-            # May fail without proper H3 setup, but should handle gracefully
-            print(f"Boundary detection test note: {e}")
+        boundaries = manager.detect_boundaries(grid)
+        assert isinstance(boundaries, dict)
 
     def test_boundary_types(self):
         """Test boundary type enumeration."""
@@ -342,26 +337,23 @@ class TestAnalytics:
 class TestIntegration:
     """Test integration between different nested module components."""
 
-    def test_full_workflow_mock(self):
-        """Test a complete workflow with mock data."""
+    def test_full_workflow_real_h3(self):
+        """Test a complete workflow with real H3 cells."""
         # Create nested system
         grid = create_nested_system("integration_test")
 
         # Add test cells with relationships to grid first
         test_cells = []
         cells_data = []
-        for i in range(20):
-            cell_idx = f"cell_{i:02d}"
+        indexes = sorted(h3.grid_disk(h3.latlng_to_cell(37.7, -122.4, 9), 3))[:20]
+        for i, cell_idx in enumerate(indexes):
             cell = create_test_cell(cell_idx, resolution=9, system_id="main_system")
             cell.state_variables.update(
                 {"value": i * 5, "load": i * 0.1, "category": "A" if i < 10 else "B"}
             )
-            # Mock neighbor relationships
-            neighbors = []
-            for j in range(max(0, i - 2), min(20, i + 3)):
-                if j != i:
-                    neighbors.append(f"cell_{j:02d}")
-            cell.neighbor_cells = neighbors
+            cell.neighbor_cells = (set(h3.grid_disk(cell_idx, 1)) & set(indexes)) - {
+                cell_idx
+            }
 
             grid.add_cell(cell)
             test_cells.append(cell_idx)
@@ -376,26 +368,20 @@ class TestIntegration:
 
         # Test boundary detection
         boundary_manager = H3BoundaryManager()
-        try:
-            boundaries = boundary_manager.detect_boundaries(grid)
-            print(f"Detected {len(boundaries)} boundary systems")
-        except Exception as e:
-            print(f"Boundary detection note: {e}")
+        boundaries = boundary_manager.detect_boundaries(grid)
+        print(f"Detected {len(boundaries)} boundary systems")
 
         # Test operations if available
         # Test lumping
         lumping_engine = H3LumpingEngine()
-        try:
-            lump_result = lumping_engine.lump_cells(
-                grid,
-                strategy=LumpingStrategy.ATTRIBUTE_BASED,
-                system_id="main_system",
-                grouping_field="category",
-            )
-            assert lump_result.num_input_cells == 20
-            print(f"Lumping created {lump_result.num_output_lumps} lumps")
-        except Exception as e:
-            print(f"Lumping test note: {e}")
+        lump_result = lumping_engine.lump_cells(
+            grid,
+            strategy=LumpingStrategy.ATTRIBUTE_BASED,
+            system_id="main_system",
+            grouping_field="category",
+        )
+        assert lump_result.num_input_cells == 20
+        print(f"Lumping created {lump_result.num_output_lumps} lumps")
 
         # Test aggregation
         aggregation_engine = H3AggregationEngine()
@@ -414,14 +400,9 @@ class TestIntegration:
         )
         aggregation_engine.add_rule(rule)
 
-        try:
-            agg_result = aggregation_engine.aggregate_data(
-                grid, system_id="main_system"
-            )
-            assert agg_result.cells_processed == 20
-            print(f"Aggregation processed {agg_result.cells_processed} cells")
-        except Exception as e:
-            print(f"Aggregation test note: {e}")
+        agg_result = aggregation_engine.aggregate_data(grid, system_id="main_system")
+        assert agg_result.cells_processed == 20
+        print(f"Aggregation processed {agg_result.cells_processed} cells")
 
         # Test messaging if available
         broker = H3MessageBroker()

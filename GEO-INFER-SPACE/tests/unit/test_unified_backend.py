@@ -6,17 +6,35 @@ import tempfile
 import shutil
 import json
 import pytest
+import h3
 
 
 class MockModule(BaseAnalysisModule):
     def acquire_raw_data(self) -> Path:
-        temp_file = Path(tempfile.NamedTemporaryFile(suffix=".json", delete=False).name)
+        temp_file = self.output_dir / "observations.geojson"
         with open(temp_file, "w") as f:
-            json.dump({"test": "data"}, f)
+            json.dump(
+                {
+                    "type": "FeatureCollection",
+                    "features": [
+                        {
+                            "type": "Feature",
+                            "properties": {"value": 42},
+                            "geometry": {
+                                "type": "Polygon",
+                                "coordinates": [
+                                    [[0, 0], [0.02, 0], [0.02, 0.02], [0, 0.02], [0, 0]]
+                                ],
+                            },
+                        }
+                    ],
+                },
+                f,
+            )
         return temp_file
 
     def run_final_analysis(self, h3_data: dict) -> dict:
-        return {"mock_hex": {"value": 42}}
+        return {cell: {"value": 42} for cell in h3_data}
 
 
 @pytest.mark.core
@@ -33,7 +51,9 @@ class TestUnifiedH3Backend(unittest.TestCase):
                     "properties": {"area": "TestRegion", "subarea": "all"},
                     "geometry": {
                         "type": "Polygon",
-                        "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]],
+                        "coordinates": [
+                            [[0, 0], [0.02, 0], [0.02, 0.02], [0, 0.02], [0, 0]]
+                        ],
                     },
                 }
             ],
@@ -42,7 +62,9 @@ class TestUnifiedH3Backend(unittest.TestCase):
             json.dump(sample_geojson, f)
         self.geojson_path = config_path
         self.backend_instance = UnifiedH3Backend(modules={}, resolution=8)
-        self.modules = {"mock": MockModule("mock")}
+        self.modules = {
+            "mock": MockModule("mock", output_dir=self._config_dir / "cache")
+        }
         self.backend = UnifiedH3Backend(
             modules=self.modules,
             resolution=8,
@@ -62,7 +84,7 @@ class TestUnifiedH3Backend(unittest.TestCase):
         geojson_polygon = {
             "type": "Polygon",
             "coordinates": [
-                [[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]]
+                [[0.0, 0.0], [0.0, 0.02], [0.02, 0.02], [0.02, 0.0], [0.0, 0.0]]
             ],
         }
         test_geom = {"TestArea": {"all": geojson_polygon}}
@@ -83,10 +105,11 @@ class TestUnifiedH3Backend(unittest.TestCase):
 
     def test_run_comprehensive_analysis(self):
         """Test full analysis with small real data."""
-        self.backend.target_hexagons = ["mock_hex"]
-        self.backend.modules["mock"].run_analysis = lambda: {"mock_hex": {"value": 42}}
+        cell = h3.latlng_to_cell(0.01, 0.01, 8)
+        self.backend.target_hexagons = [cell]
+        self.backend.modules["mock"].run_analysis = lambda: {cell: {"value": 42}}
         self.backend.run_comprehensive_analysis()
-        self.assertIn("mock", self.backend.unified_data.get("mock_hex", {}))
+        self.assertEqual(self.backend.unified_data[cell]["mock"]["value"], 42)
 
     def test_get_comprehensive_summary(self):
         """Test summary generation."""
@@ -113,4 +136,6 @@ class TestUnifiedH3Backend(unittest.TestCase):
         temp_html = Path(tempfile.NamedTemporaryFile(suffix=".html", delete=False).name)
         self.backend.generate_interactive_dashboard(str(temp_html))
         self.assertTrue(temp_html.exists())
+        self.assertGreater(len(self.backend.unified_data), 0)
+        self.assertIn("42", temp_html.read_text())
         temp_html.unlink()

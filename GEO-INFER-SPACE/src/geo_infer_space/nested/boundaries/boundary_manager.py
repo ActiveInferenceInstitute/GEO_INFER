@@ -8,7 +8,7 @@ geospatial systems.
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
 from typing import (
     TYPE_CHECKING,
@@ -76,8 +76,8 @@ class BoundaryFlow:
     min_flow_rate: float | None = None
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
-    last_updated: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    last_updated: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def update_flow(
         self,
@@ -96,7 +96,7 @@ class BoundaryFlow:
         if flow_data:
             self.flow_data.update(flow_data)
 
-        self.last_updated = datetime.now()
+        self.last_updated = datetime.now(UTC)
 
 
 @dataclass
@@ -180,8 +180,8 @@ class H3BoundaryManager:
         self.flow_history: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def detect_boundaries(
         self,
@@ -209,7 +209,7 @@ class H3BoundaryManager:
                 self.system_boundaries[system_id].add(segment.segment_id)
                 self.boundary_systems[segment.segment_id].add(system_id)
 
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
         return detected
 
     def get_shared_boundaries(
@@ -449,7 +449,7 @@ class H3BoundaryManager:
         # Record flow history
         self.flow_history[flow_id].append(
             {
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "old_rate": flow.flow_rate,
                 "new_rate": new_rate,
                 "flow_data": flow_data,
@@ -586,7 +586,7 @@ class H3BoundaryManager:
             "num_nodes": num_nodes,
             "connectivity": total_flows / num_nodes if num_nodes > 0 else 0,
             "bottlenecks": bottlenecks,
-            "analysis_timestamp": datetime.now().isoformat(),
+            "analysis_timestamp": datetime.now(UTC).isoformat(),
         }
 
     def get_boundary_statistics(self) -> dict[str, Any]:
@@ -666,7 +666,7 @@ class H3BoundaryManager:
         record = {
             "operation": operation.value,
             "details": details,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         # Add to relevant boundary histories

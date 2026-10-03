@@ -27,6 +27,7 @@ from .schemas import (
     H3AnalysisRequest,
     ErrorResponse,
 )
+from .. import __version__
 
 from ..analytics import (
     proximity_analysis,
@@ -54,7 +55,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="GEO-INFER-SPACE API",
     description="Advanced spatial analysis and processing services",
-    version="0.1.0",
+    version=__version__,
     docs_url="/docs",
     redoc_url="/redoc",
 )

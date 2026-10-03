@@ -30,7 +30,9 @@ try:
     SRAI_AVAILABLE = True
     SRAI_VERSION = getattr(srai, "__version__", "unknown")
     logger.info(f"SRAI library v{SRAI_VERSION} is available")
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "srai":
+        raise
     SRAI_AVAILABLE = False
     SRAI_VERSION = None
     srai = None

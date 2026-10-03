@@ -14,6 +14,7 @@ from .core import H3Grid, H3Cell
 
 import h3
 import numpy as np
+from geo_infer_time import normalize_datetime_index
 
 logger = logging.getLogger(__name__)
 
@@ -57,15 +58,18 @@ class H3MLFeatureEngine:
             >>> features = engine.create_spatial_features('demand', neighbor_rings=2)
             >>> print(f"Created features for {len(features['features'])} cells")
         """
+        from ...core.spatial_methods import SpatialMethods
+
+        SpatialMethods._integer(neighbor_rings, "neighbor_rings")
         if not self.grid.cells:
             return {"error": "No cells in grid"}
 
         features = []
 
         for cell in self.grid.cells:
-            if target_column not in cell.properties:
+            if cell.properties.get(target_column) is None:
                 continue
-
+            SpatialMethods._number(cell.properties[target_column], "target value")
             cell_features = self._extract_cell_features(
                 cell, target_column, neighbor_rings
             )
@@ -100,21 +104,17 @@ class H3MLFeatureEngine:
         }
 
         # Basic cell properties
-        try:
-            # Cell area and geometry features
-            features["cell_area_km2"] = h3.cell_area(cell.index, "km^2")
-            features["cell_area_m2"] = h3.cell_area(cell.index, "m^2")
+        features["cell_area_km2"] = h3.cell_area(cell.index, "km^2")
+        features["cell_area_m2"] = h3.cell_area(cell.index, "m^2")
 
-            # Cell coordinates
-            lat, lng = h3.cell_to_latlng(cell.index)
-            features["cell_lat"] = lat
-            features["cell_lng"] = lng
+        # Cell coordinates
+        lat, lng = h3.cell_to_latlng(cell.index)
+        features["cell_lat"] = lat
+        features["cell_lng"] = lng
 
-            # Distance from equator and prime meridian
-            features["distance_from_equator"] = abs(lat)
-            features["distance_from_prime_meridian"] = abs(lng)
-        except Exception as e:
-            logger.warning(f"Failed to extract basic features for {cell.index}: {e}")
+        # Distance from equator and prime meridian
+        features["distance_from_equator"] = abs(lat)
+        features["distance_from_prime_meridian"] = abs(lng)
 
         # Neighbor-based features
         neighbor_features = self._extract_neighbor_features(
@@ -145,65 +145,56 @@ class H3MLFeatureEngine:
         """
         neighbor_features = {}
 
-        try:
-            # Get neighbors at different ring distances
-            for ring in range(1, neighbor_rings + 1):
-                ring_cells = h3.grid_ring(cell.index, ring)
+        for ring in range(1, neighbor_rings + 1):
+            ring_cells = h3.grid_ring(cell.index, ring)
 
-                # Find corresponding cells in grid
-                ring_values = []
-                for ring_cell_idx in ring_cells:
-                    for grid_cell in self.grid.cells:
-                        if grid_cell.index == ring_cell_idx:
-                            if target_column in grid_cell.properties:
-                                ring_values.append(grid_cell.properties[target_column])
-                            break
-
-                if ring_values:
-                    neighbor_features[f"ring_{ring}_mean"] = float(np.mean(ring_values))
-                    neighbor_features[f"ring_{ring}_std"] = float(np.std(ring_values))
-                    neighbor_features[f"ring_{ring}_max"] = float(np.max(ring_values))
-                    neighbor_features[f"ring_{ring}_min"] = float(np.min(ring_values))
-
-                    neighbor_features[f"ring_{ring}_count"] = len(ring_values)
-                else:
-                    # No neighbors found at this ring
-                    neighbor_features[f"ring_{ring}_mean"] = 0.0
-                    neighbor_features[f"ring_{ring}_std"] = 0.0
-                    neighbor_features[f"ring_{ring}_max"] = 0.0
-                    neighbor_features[f"ring_{ring}_min"] = 0.0
-                    neighbor_features[f"ring_{ring}_count"] = 0
-
-            # Overall neighbor statistics
-            all_neighbor_values = []
-            all_neighbors = list(h3.grid_disk(cell.index, neighbor_rings))
-            if cell.index in all_neighbors:
-                all_neighbors.remove(cell.index)  # Remove self
-
-            for neighbor_idx in all_neighbors:
+            # Find corresponding cells in grid
+            ring_values = []
+            for ring_cell_idx in ring_cells:
                 for grid_cell in self.grid.cells:
-                    if grid_cell.index == neighbor_idx:
-                        if target_column in grid_cell.properties:
-                            all_neighbor_values.append(
-                                grid_cell.properties[target_column]
-                            )
+                    if grid_cell.index == ring_cell_idx:
+                        if grid_cell.properties.get(target_column) is not None:
+                            ring_values.append(grid_cell.properties[target_column])
                         break
 
-            if all_neighbor_values:
-                neighbor_features["neighbor_density"] = (
-                    len(all_neighbor_values) / len(all_neighbors)
-                    if all_neighbors
-                    else 0
-                )
-                neighbor_features["neighbor_total"] = float(np.sum(all_neighbor_values))
-                neighbor_features["neighbor_avg"] = float(np.mean(all_neighbor_values))
-            else:
-                neighbor_features["neighbor_density"] = 0.0
-                neighbor_features["neighbor_total"] = 0.0
-                neighbor_features["neighbor_avg"] = 0.0
+            if ring_values:
+                neighbor_features[f"ring_{ring}_mean"] = float(np.mean(ring_values))
+                neighbor_features[f"ring_{ring}_std"] = float(np.std(ring_values))
+                neighbor_features[f"ring_{ring}_max"] = float(np.max(ring_values))
+                neighbor_features[f"ring_{ring}_min"] = float(np.min(ring_values))
 
-        except Exception as e:
-            logger.warning(f"Failed to extract neighbor features for {cell.index}: {e}")
+                neighbor_features[f"ring_{ring}_count"] = len(ring_values)
+            else:
+                # No neighbors found at this ring
+                neighbor_features[f"ring_{ring}_mean"] = float("nan")
+                neighbor_features[f"ring_{ring}_std"] = float("nan")
+                neighbor_features[f"ring_{ring}_max"] = float("nan")
+                neighbor_features[f"ring_{ring}_min"] = float("nan")
+                neighbor_features[f"ring_{ring}_count"] = 0
+
+        # Overall neighbor statistics
+        all_neighbor_values = []
+        all_neighbors = list(h3.grid_disk(cell.index, neighbor_rings))
+        if cell.index in all_neighbors:
+            all_neighbors.remove(cell.index)  # Remove self
+
+        for neighbor_idx in all_neighbors:
+            for grid_cell in self.grid.cells:
+                if grid_cell.index == neighbor_idx:
+                    if grid_cell.properties.get(target_column) is not None:
+                        all_neighbor_values.append(grid_cell.properties[target_column])
+                    break
+
+        if all_neighbor_values:
+            neighbor_features["neighbor_density"] = (
+                len(all_neighbor_values) / len(all_neighbors) if all_neighbors else 0
+            )
+            neighbor_features["neighbor_total"] = float(np.sum(all_neighbor_values))
+            neighbor_features["neighbor_avg"] = float(np.mean(all_neighbor_values))
+        else:
+            neighbor_features["neighbor_density"] = 0.0
+            neighbor_features["neighbor_total"] = 0.0
+            neighbor_features["neighbor_avg"] = float("nan")
 
         return neighbor_features
 
@@ -219,72 +210,42 @@ class H3MLFeatureEngine:
         """
         temporal_features: dict[str, Any] = {}
 
-        try:
-            timestamp_str = str(cell.properties["timestamp"])
-            timestamp = self._parse_timestamp(timestamp_str)
+        timestamp = self._parse_timestamp(cell.properties["timestamp"])
+        if timestamp:
+            temporal_features["hour"] = timestamp.hour
+            temporal_features["day_of_week"] = timestamp.weekday()
+            temporal_features["day_of_month"] = timestamp.day
+            temporal_features["month"] = timestamp.month
+            temporal_features["quarter"] = (timestamp.month - 1) // 3 + 1
+            temporal_features["is_weekend"] = 1 if timestamp.weekday() >= 5 else 0
+            temporal_features["is_business_hour"] = (
+                1 if 9 <= timestamp.hour <= 17 else 0
+            )
+            temporal_features["is_rush_hour"] = (
+                1 if timestamp.hour in [7, 8, 9, 17, 18, 19] else 0
+            )
 
-            if timestamp:
-                temporal_features["hour"] = timestamp.hour
-                temporal_features["day_of_week"] = timestamp.weekday()
-                temporal_features["day_of_month"] = timestamp.day
-                temporal_features["month"] = timestamp.month
-                temporal_features["quarter"] = (timestamp.month - 1) // 3 + 1
-                temporal_features["is_weekend"] = 1 if timestamp.weekday() >= 5 else 0
-                temporal_features["is_business_hour"] = (
-                    1 if 9 <= timestamp.hour <= 17 else 0
-                )
-                temporal_features["is_rush_hour"] = (
-                    1 if timestamp.hour in [7, 8, 9, 17, 18, 19] else 0
-                )
-
-                # Cyclical encoding for temporal features
-                temporal_features["hour_sin"] = math.sin(
-                    2 * math.pi * timestamp.hour / 24
-                )
-                temporal_features["hour_cos"] = math.cos(
-                    2 * math.pi * timestamp.hour / 24
-                )
-                temporal_features["day_sin"] = math.sin(
-                    2 * math.pi * timestamp.weekday() / 7
-                )
-                temporal_features["day_cos"] = math.cos(
-                    2 * math.pi * timestamp.weekday() / 7
-                )
-                temporal_features["month_sin"] = math.sin(
-                    2 * math.pi * timestamp.month / 12
-                )
-                temporal_features["month_cos"] = math.cos(
-                    2 * math.pi * timestamp.month / 12
-                )
-
-        except Exception as e:
-            logger.warning(f"Failed to extract temporal features: {e}")
+            # Cyclical encoding for temporal features
+            temporal_features["hour_sin"] = math.sin(2 * math.pi * timestamp.hour / 24)
+            temporal_features["hour_cos"] = math.cos(2 * math.pi * timestamp.hour / 24)
+            temporal_features["day_sin"] = math.sin(
+                2 * math.pi * timestamp.weekday() / 7
+            )
+            temporal_features["day_cos"] = math.cos(
+                2 * math.pi * timestamp.weekday() / 7
+            )
+            temporal_features["month_sin"] = math.sin(
+                2 * math.pi * timestamp.month / 12
+            )
+            temporal_features["month_cos"] = math.cos(
+                2 * math.pi * timestamp.month / 12
+            )
 
         return temporal_features
 
-    def _parse_timestamp(self, timestamp_str: str) -> datetime | None:
-        """Parse timestamp string into datetime object."""
-        try:
-            # Try common timestamp formats
-            formats = [
-                "%Y-%m-%d %H:%M:%S",
-                "%Y-%m-%d %H:%M:%S.%f",
-                "%Y-%m-%dT%H:%M:%S",
-                "%Y-%m-%dT%H:%M:%S.%f",
-                "%Y-%m-%d",
-            ]
-
-            for fmt in formats:
-                try:
-                    return datetime.strptime(timestamp_str, fmt)
-                except ValueError:
-                    continue
-
-            # Try parsing as ISO format
-            return datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
-
-        except Exception:
-            return None
+    def _parse_timestamp(self, timestamp: datetime | str) -> datetime:
+        """Require an aware instant and normalize features to UTC."""
+        return normalize_datetime_index([timestamp])[0]
 
     def _get_feature_names(self, neighbor_rings: int) -> list[str]:
         """Get list of feature names."""

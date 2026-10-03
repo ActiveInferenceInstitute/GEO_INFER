@@ -102,7 +102,7 @@ def test_non_positive_variance_returns_error_not_clamp():
     assert morans_i_variance(np.asarray(values), weights) < 0
 
     stats = FixedMatrixStats()
-    result = stats.moran_i(["a", "b", "c", "d"], values)
+    result = stats.moran_i(_adjacent_cells()[:4], values)
 
     assert "error" in result
     assert "non-positive" in result["error"]

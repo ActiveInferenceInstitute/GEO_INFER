@@ -24,6 +24,7 @@ Unit workspace within `GEO-INFER-SPACE`.
 - `test_h3_policy.py`
 - `test_h3_predicate_logging.py`
 - `test_io_modules.py`
+- `test_method_contracts.py`
 - `test_ml_integration_tables.py`
 - `test_morans_i_variance_parity.py`
 - `test_nested_analytics.py`
@@ -41,6 +42,7 @@ Unit workspace within `GEO-INFER-SPACE`.
 - `test_spatiotemporal.py`
 - `test_spatiotemporal_alignment.py`
 - `test_state_space.py`
+- `test_statistics_failure_contracts.py`
 - `test_temporal_analytics.py`
 - `test_unified_backend.py`
 - `test_unified_backend_geojson_seam.py`

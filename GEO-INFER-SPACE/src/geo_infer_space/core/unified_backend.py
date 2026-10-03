@@ -8,7 +8,7 @@ through H3 spatial indexing, enabling general geospatial analysis.
 
 import json
 from typing import Any
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 import logging
 import numpy as np
@@ -384,7 +384,7 @@ class UnifiedH3Backend:
             "h3_resolution": self.resolution,
             "total_hexagons": len(self.target_hexagons),
             "modules_analyzed": list(self.modules.keys()),
-            "analysis_timestamp": datetime.now().isoformat(),
+            "analysis_timestamp": datetime.now(UTC).isoformat(),
             "analysis_potential": {
                 "mean_score": round(np.mean(scores), 3) if scores else 0,
                 "median_score": round(np.median(scores), 3) if scores else 0,

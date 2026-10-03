@@ -1,194 +1,96 @@
 #!/usr/bin/env python3
+"""Run a small native H3/UTC composition example with explicit invariants.
+
+The historical filename is retained for command compatibility. This example
+checks the operations below; it is not an all-method or optional-backend audit.
 """
-Comprehensive Demonstration of GEO-INFER-SPACE Capabilities.
 
-This script demonstrates all spatial analysis and statistics
-methods to verify they are functional and produce accurate outputs.
-"""
+from __future__ import annotations
 
-import numpy as np
-import sys
-from datetime import datetime
+import argparse
+import json
+import math
+from datetime import UTC, datetime, timedelta
 
 
-# Colored output
-def success(msg):
-    print(f"✅ {msg}")
+def run_demo(*, resolution: int = 8, max_cells: int = 100) -> dict:
+    """Check real H3 topology, extensive aggregation and ordered UTC alignment."""
+    import numpy as np
+    import pandas as pd
+
+    from geo_infer_space import H3StateSpace, align_h3_observations
+    from geo_infer_space.backends.h3.core import H3Cell, H3Grid
+    from geo_infer_space.core.spatial_methods import SpatialMethods
+
+    cell = H3Cell.from_coordinates(37.7749, -122.4194, resolution)
+    if resolution == 15:
+        raise ValueError("The aggregation example requires resolution below fifteen")
+    children = cell.children(max_cells=max_cells)
+    grid = H3Grid(children, name="owned_demo")
+    methods = SpatialMethods()
+    disaggregated = methods.disaggregate_to_cells(
+        [cell.index], [42.0], resolution + 1, max_cells=max_cells
+    )["disaggregated"]
+    aggregated = methods.aggregate_to_region(
+        list(disaggregated), list(disaggregated.values()), resolution, "sum"
+    )["aggregated"][cell.index]["value"]
+    if not math.isclose(aggregated, 42.0, rel_tol=1e-12):
+        raise AssertionError("Extensive aggregation did not conserve the total")
+
+    # Deliberately preserve a nonlexical state order and a missing observation.
+    domain = H3StateSpace(
+        list(reversed([child.index for child in children])), max_cells=max_cells
+    )
+    start = datetime(2024, 1, 1, tzinfo=UTC)
+    axis = [start, start + timedelta(hours=1)]
+    source = pd.DataFrame(
+        {
+            "cell": [domain.cells[0], domain.cells[-1]],
+            "timestamp": ["2023-12-31T16:00:00-08:00", axis[1]],
+            "value": [0.0, 4.0],
+        }
+    )
+    aligned = align_h3_observations(source, state_space=domain, timestamps=axis)
+    if tuple(aligned.data.columns) != domain.cells:
+        raise AssertionError("Alignment changed state order")
+    if aligned.data.iloc[0, 0] != 0 or not math.isnan(aligned.data.iloc[0, -1]):
+        raise AssertionError("Observed zero and missing observations were confused")
+    stay, diffuse = domain.transitions()
+    if not np.allclose(np.asarray(diffuse.sum(axis=0)), 1):
+        raise AssertionError("Transition probabilities did not conserve mass")
+    return {
+        "backend": "native_h3_cpu",
+        "checks": [
+            "real_children",
+            "extensive_total",
+            "utc_alignment",
+            "state_order",
+            "missing_and_zero",
+            "stochastic_transitions",
+        ],
+        "resolution": resolution,
+        "child_count": len(grid),
+        "total": aggregated,
+        "state_order": list(domain.cells),
+        "timestamps": [instant.isoformat() for instant in aligned.timestamps],
+        "observed_count": int(aligned.data.notna().sum().sum()),
+        "missing_count": int(aligned.data.isna().sum().sum()),
+        "transition_shapes": [list(stay.shape), list(diffuse.shape)],
+    }
 
 
-def info(msg):
-    print(f"📊 {msg}")
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--resolution", type=int, default=8)
+    parser.add_argument("--max-cells", type=int, default=100)
+    args = parser.parse_args(argv)
+    print(
+        json.dumps(
+            run_demo(resolution=args.resolution, max_cells=args.max_cells), indent=2
+        )
+    )
+    return 0
 
 
-def section(msg):
-    print(f"\n{'=' * 60}\n{msg}\n{'=' * 60}")
-
-
-section("GEO-INFER-SPACE COMPREHENSIVE DEMONSTRATION")
-print(f"Timestamp: {datetime.now().isoformat()}")
-
-# ==============================================================================
-# 1. IMPORTS
-# ==============================================================================
-section("1. MODULE IMPORTS")
-
-try:
-    from geo_infer_space.core import SpatialStatistics
-    from geo_infer_space.backends.h3.h3_backend import H3Backend
-
-    success("Core modules imported successfully")
-except ImportError as e:
-    print(f"❌ Import error: {e}")
-    sys.exit(1)
-
-# ==============================================================================
-# 2. H3 BACKEND INITIALIZATION
-# ==============================================================================
-section("2. H3 BACKEND")
-
-h3 = H3Backend()
-info(f"H3 backend type: {type(h3).__name__}")
-success("H3 backend initialized")
-
-# ==============================================================================
-# 3. SPATIAL INDEXING OPERATIONS
-# ==============================================================================
-section("3. SPATIAL INDEXING OPERATIONS")
-
-# Test location: San Francisco
-lat, lng = 37.7749, -122.4194
-resolution = 8
-
-# 3.1 Convert lat/lng to H3 cell
-cell = h3.latlng_to_cell(lat, lng, resolution)
-info(f"Cell at ({lat}, {lng}) res={resolution}: {cell}")
-success("latlng_to_cell")
-
-# 3.2 Convert cell back to lat/lng
-center = h3.cell_to_latlng(cell)
-info(f"Cell center: ({center[0]:.6f}, {center[1]:.6f})")
-success("cell_to_latlng")
-
-# 3.3 Get cell neighbors
-neighbors = h3.get_cell_neighbors(cell, k=1)
-info(f"Neighbors (ring 1): {len(neighbors)} cells")
-success("get_cell_neighbors")
-
-# 3.4 Get cell parent
-parent = h3.get_cell_parent(cell, 5)
-info(f"Parent cell (res 5): {parent}")
-success("get_cell_parent")
-
-# 3.5 Get cell children
-children = h3.get_cell_children(cell, 10)
-info(f"Children cells (res 10): {len(children)} cells")
-success("get_cell_children")
-
-# 3.6 Compact/Uncompact
-all_cells = [cell] + list(neighbors)
-compacted = h3.compact_cells(all_cells)
-info(f"Compacted {len(all_cells)} cells to {len(compacted)} cells")
-success("compact_cells")
-
-uncompacted = h3.uncompact_cells(compacted, resolution)
-info(f"Uncompacted back to {len(uncompacted)} cells")
-success("uncompact_cells")
-
-# ==============================================================================
-# 4. H3 GEOMETRIC OPERATIONS
-# ==============================================================================
-section("4. H3 GEOMETRIC OPERATIONS")
-
-# 4.1 Cell Distance
-dist = h3.get_cell_distance(all_cells[0], all_cells[1])
-info(f"Cell distance: {dist} steps")
-success("get_cell_distance")
-
-# 4.2 Cell Resolution
-res = h3.get_cell_resolution(cell)
-info(f"Cell resolution: {res}")
-success("get_cell_resolution")
-
-# 4.3 Cell Boundary
-boundary = h3.get_cell_boundary(cell)
-info(f"Boundary points: {len(boundary)}")
-success("get_cell_boundary")
-
-# 4.4 Cell Area
-area = h3.get_cell_area(cell)
-info(f"Cell area: {area:.2f} m²")
-success("get_cell_area")
-
-# ==============================================================================
-# 5. SPATIAL STATISTICS (NEW MODULE)
-# ==============================================================================
-section("5. SPATIAL STATISTICS METHODS (NEW)")
-
-stats = SpatialStatistics()
-info("Testing SpatialStatistics methods...")
-
-# Create test data
-test_cells = all_cells[:7]
-np.random.seed(42)
-test_values = list(np.random.uniform(10, 100, len(test_cells)))
-
-# 5.1 Moran's I
-result = stats.moran_i(test_cells, test_values, weight_type="queen")
-if "error" not in result and result.get("moran_i") is not None:
-    info(f"Moran's I: {result['moran_i']:.4f}")
-    info(f"Interpretation: {result.get('interpretation', 'N/A')[:60]}...")
-success("moran_i")
-
-# 5.2 Getis-Ord G*
-result = stats.getis_ord_g(test_cells, test_values, distance=1)
-info(f"G* hotspots: {result.get('num_hotspots', 0)}")
-info(f"G* coldspots: {result.get('num_coldspots', 0)}")
-success("getis_ord_g")
-
-# 5.3 Nearest Neighbor Index
-result = stats.nearest_neighbor_index(test_cells)
-if "error" not in result:
-    info(f"NNI: {result.get('nni', 'N/A')}")
-    info(f"Pattern: {result.get('pattern', 'N/A')}")
-success("nearest_neighbor_index")
-
-# 5.4 Variance-Mean Ratio
-result = stats.variance_mean_ratio(test_values)
-info(f"VMR: {result['vmr']:.4f}")
-info(f"Pattern: {result['pattern']}")
-success("variance_mean_ratio")
-
-# 5.5 Summary Statistics
-result = stats.calculate_summary_statistics(test_values)
-info(f"Mean: {result['mean']:.2f}")
-info(f"Std: {result['std']:.2f}")
-info(f"Skewness: {result['skewness']:.4f}")
-success("calculate_summary_statistics")
-
-# 5.6 Quadrat Count
-result = stats.quadrat_count(test_cells, quadrat_size=1)
-if "error" not in result:
-    info(f"Quadrats: {result.get('num_quadrats', 0)}")
-    info(f"Mean count: {result.get('mean_count', 0):.2f}")
-success("quadrat_count")
-
-# ==============================================================================
-# SUMMARY
-# ==============================================================================
-section("VERIFICATION COMPLETE")
-
-print("""
-┌─────────────────────────────────────────────────────────────┐
-│                   GEO-INFER-SPACE SUMMARY                   │
-├─────────────────────────────────────────────────────────────┤
-│  Module                    │ Methods Tested │ Status        │
-├────────────────────────────┼────────────────┼───────────────┤
-│  H3 Indexing Operations    │       7        │ ✅ PASS       │
-│  H3 Geometric Operations   │       5        │ ✅ PASS       │
-│  SpatialStatistics (NEW)   │       6        │ ✅ PASS       │
-├────────────────────────────┼────────────────┼───────────────┤
-│  TOTAL                     │      18        │ ✅ ALL PASS   │
-└─────────────────────────────────────────────────────────────┘
-""")
-
-print("All GEO-INFER-SPACE methods are analytically complete and functional.")
+if __name__ == "__main__":
+    raise SystemExit(main())

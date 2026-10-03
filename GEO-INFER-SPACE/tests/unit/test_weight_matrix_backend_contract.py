@@ -27,67 +27,45 @@ def test_unregistered_backend_raises_not_fully_connected():
     stats = SpatialStatistics(backend="definitely-not-a-backend")
     with pytest.raises(ValueError, match="not available"):
         stats.moran_i(
-            ["8928308280fffff", "8928308283fffff", "8928308285fffff"],
+            ["8928308280fffff", "89283082803ffff", "89283082807ffff"],
             [1.0, 2.0, 3.0],
         )
 
 
-def test_moran_i_failing_neighbor_lookups_degrade_with_warning(caplog):
-    """Per-cell neighbor lookup failures are logged, not silently swallowed,
-    and isolated cells yield the zero-weight error instead of a p-value."""
+def test_moran_i_failing_neighbor_lookup_propagates(monkeypatch):
+    """A failed neighbor lookup cannot produce a valid analytic weight matrix."""
     stats = SpatialStatistics()
 
     class FailingBackend:
         def get_cell_neighbors(self, cell, k=1):
             raise ValueError("neighborhood unavailable")
 
-    stats.dispatcher.get_backend = lambda name: FailingBackend()
-
-    cells = [
-        "8928308280fffff",
-        "8928308283fffff",
-        "8928308285fffff",
-        "8928308287fffff",
-    ]
-    with caplog.at_level("WARNING", logger="geo_infer_space.core.statistics"):
-        result = stats.moran_i(cells, [1.0, 2.0, 3.0, 4.0])
-
-    assert any(
-        "Neighbor lookup failed" in record.message and "isolated" in record.message
-        for record in caplog.records
-    )
-    assert "error" in result
-    assert "z_score" not in result
-    assert "p_value" not in result
+    monkeypatch.setattr(stats.dispatcher, "get_backend", lambda name: FailingBackend())
+    cells = ["8928308280fffff", "89283082803ffff", "89283082807ffff", "8928308280bffff"]
+    with pytest.raises(ValueError, match="neighborhood unavailable"):
+        stats.moran_i(cells, [1.0, 2.0, 3.0, 4.0])
 
 
-def test_getis_ord_unregistered_backend_returns_error_key():
-    """getis_ord_g with an unregistered backend surfaces an error key, not
-    a silently degraded hotspot list."""
+def test_getis_ord_unregistered_backend_raises():
+    """An unregistered backend raises before any hotspot output."""
     stats = SpatialStatistics(backend="definitely-not-a-backend")
-    result = stats.getis_ord_g(
-        ["8928308280fffff", "8928308283fffff", "8928308285fffff"],
-        [1.0, 2.0, 3.0],
-    )
-    assert "error" in result
-    assert "not available" in result["error"]
-    assert result.get("g_stars") is None
+    with pytest.raises(ValueError, match="not available"):
+        stats.getis_ord_g(
+            ["8928308280fffff", "89283082803ffff", "89283082807ffff"],
+            [1.0, 2.0, 3.0],
+        )
 
 
 def test_nearest_neighbor_unregistered_backend_returns_error_key():
     """nearest_neighbor_index with an unregistered backend surfaces an
     error key, not fabricated distances."""
     stats = SpatialStatistics(backend="definitely-not-a-backend")
-    result = stats.nearest_neighbor_index(["8928308280fffff", "8928308283fffff"])
-    assert "error" in result
-    assert "not available" in result["error"]
+    with pytest.raises(ValueError, match="not available"):
+        stats.nearest_neighbor_index(["8928308280fffff", "89283082803ffff"])
 
 
-def test_quadrat_count_unregistered_backend_returns_error_key():
-    """quadrat_count with an unregistered backend surfaces an error key."""
+def test_quadrat_count_unregistered_backend_raises():
+    """An unregistered backend cannot produce partial quadrat counts."""
     stats = SpatialStatistics(backend="definitely-not-a-backend")
-    result = stats.quadrat_count(
-        ["8928308280fffff", "8928308283fffff", "8928308285fffff"]
-    )
-    assert "error" in result
-    assert "not available" in result["error"]
+    with pytest.raises(ValueError, match="not available"):
+        stats.quadrat_count(["8928308280fffff", "89283082803ffff", "89283082807ffff"])

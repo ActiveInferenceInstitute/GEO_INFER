@@ -114,6 +114,15 @@ print(f"UTM Zone 10N: ({x:.0f}, {y:.0f})")
 
 - **MATH** → Spatial weights for statistics
 - **TIME** → Spatio-temporal analysis
+- Follow [method contracts](docs/METHOD_CONTRACTS.md) for topology failure
+  propagation, bounded expansion, configuration ownership and statistical
+  reference assumptions.
+- `SpatialStatistics.nearest_neighbor_index` reports geodesic distances; pass
+  the real `study_area_km2` to request a spatial-randomness reference score.
+- `BaseAnalysisModule` accepts explicit JSON/YAML `config_path` and `output_dir`;
+  constructor `h3_resolution` overrides the configuration default.
+- H3 ML empty neighbor statistics remain NaN with explicit zero counts; choose
+  missing-value preprocessing before fitting an estimator.
 - `align_h3_observations` maps finite records into explicit `H3StateSpace`
   columns and ordered UTC timestamps. It rejects unknown cells/times and
   duplicate pairs; absent observations stay NaN.

@@ -33,43 +33,26 @@ class SpatialBackendDispatcher:
 
     def _load_backends(self) -> None:
         """Load available spatial backends."""
-        # Load H3 backend if available
-        try:
-            h3_backend = self._load_h3_backend()
-            if h3_backend and h3_backend.is_available():
-                self.register_backend("h3", h3_backend)
-                for operation_type in self._STANDARD_OPERATION_TYPES:
-                    self.default_backends.setdefault(operation_type, "h3")
-                logger.info("H3 backend loaded successfully")
-        except Exception as e:
-            logger.warning(f"Failed to load H3 backend: {e}")
+        h3_backend = self._load_h3_backend()
+        if h3_backend.is_available():
+            self.register_backend("h3", h3_backend)
+            for operation_type in self._STANDARD_OPERATION_TYPES:
+                self.default_backends.setdefault(operation_type, "h3")
+            logger.info("H3 backend loaded successfully")
+        srai_backend = self._load_srai_backend()
+        self.register_backend("srai", srai_backend)
 
-        # Load SRAI backend if available
-        try:
-            srai_backend = self._load_srai_backend()
-            if srai_backend:
-                self.register_backend("srai", srai_backend)
-                logger.info("SRAI backend loaded successfully")
-        except Exception as e:
-            logger.warning(f"Failed to load SRAI backend: {e}")
+    def _load_h3_backend(self) -> SpatialBackendProtocol:
+        """Load the required H3 implementation; internal failures propagate."""
+        from ..backends.h3 import H3Backend
 
-    def _load_h3_backend(self) -> SpatialBackendProtocol | None:
-        """Load H3 backend implementation."""
-        try:
-            from ..backends.h3 import H3Backend
+        return H3Backend()
 
-            return H3Backend()
-        except ImportError:
-            return None
+    def _load_srai_backend(self) -> SpatialBackendProtocol:
+        """Load the SRAI interface, which reports an absent extra explicitly."""
+        from ..backends.srai import SraiBackend
 
-    def _load_srai_backend(self) -> SpatialBackendProtocol | None:
-        """Load SRAI backend implementation."""
-        try:
-            from ..backends.srai import SraiBackend
-
-            return SraiBackend()
-        except ImportError:
-            return None
+        return SraiBackend()
 
     def register_backend(self, name: str, backend: SpatialBackendProtocol) -> None:
         """Register a spatial backend."""

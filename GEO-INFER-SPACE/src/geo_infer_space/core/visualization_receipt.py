@@ -35,7 +35,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any
 from collections.abc import Mapping
@@ -121,7 +121,7 @@ def write_visualization_receipt(
 
     manifest: dict[str, Any] = {
         "schema_version": schema_version,
-        "generated_at": generated_at or datetime.now().isoformat(),
+        "generated_at": generated_at or datetime.now(UTC).isoformat(),
         "input_sha256": _input_digest(input_payload),
         "h3_version": _H3_VERSION,
         "artifacts": [

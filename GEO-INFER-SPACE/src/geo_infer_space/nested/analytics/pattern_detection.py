@@ -7,7 +7,7 @@ spatial, temporal, and structural patterns in nested geospatial systems.
 
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass, field
 from typing import Any
 from collections.abc import Callable
@@ -97,7 +97,7 @@ class Pattern:
     max_value: float | None = None
 
     # Metadata
-    detected_at: datetime = field(default_factory=datetime.now)
+    detected_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     detection_context: dict[str, Any] = field(default_factory=dict)
 
     def get_pattern_summary(self) -> dict[str, Any]:
@@ -139,7 +139,7 @@ class PatternDetectionResult:
     )
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     processing_time: float = 0.0
     cells_analyzed: int = 0
 
@@ -186,8 +186,8 @@ class H3PatternDetector:
         self.detection_stats: dict[str, int] = defaultdict(int)
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def register_custom_detector(self, name: str, detector_function: Callable) -> None:
         """
@@ -198,7 +198,7 @@ class H3PatternDetector:
             detector_function: Function that takes (cells, config) and returns patterns
         """
         self.custom_detectors[name] = detector_function
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def detect_patterns(
         self,
@@ -221,7 +221,7 @@ class H3PatternDetector:
         Returns:
             PatternDetectionResult instance
         """
-        start_time = datetime.now()
+        start_time = datetime.now(UTC)
         analysis_id = f"pattern_detection_{uuid.uuid4().hex[:8]}"
 
         # Get cells to analyze
@@ -310,7 +310,7 @@ class H3PatternDetector:
         ) / len(cells)
 
         # Create result
-        processing_time = (datetime.now() - start_time).total_seconds()
+        processing_time = (datetime.now(UTC) - start_time).total_seconds()
 
         result = PatternDetectionResult(
             analysis_id=analysis_id,
@@ -330,7 +330,7 @@ class H3PatternDetector:
             self.pattern_history[pattern.pattern_type.value].append(pattern)
 
         self.detection_stats["analyses_performed"] += 1
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return result
 

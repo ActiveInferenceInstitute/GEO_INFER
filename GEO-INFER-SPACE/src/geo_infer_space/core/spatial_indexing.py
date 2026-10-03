@@ -67,6 +67,8 @@ class SpatialIndexingInterface:
         position: tuple[float, float],
         radius: float,
         resolution: int = 9,
+        *,
+        max_cells: int = 1_000_000,
     ) -> list[str]:
         """
         Get neighboring spatial cells within a radius.
@@ -82,10 +84,25 @@ class SpatialIndexingInterface:
         """
         if len(position) != 2:
             raise ValueError("position must be a (latitude, longitude) pair")
-        if radius <= 0:
-            raise ValueError("radius must be positive")
-        if not 0 <= resolution <= 15:
-            raise ValueError("resolution must be between 0 and 15")
+        if (
+            isinstance(radius, bool)
+            or not isinstance(radius, (int, float))
+            or not math.isfinite(radius)
+            or radius <= 0
+        ):
+            raise ValueError("radius must be finite and positive")
+        if (
+            isinstance(resolution, bool)
+            or not isinstance(resolution, int)
+            or not 0 <= resolution <= 15
+        ):
+            raise ValueError("resolution must be an integer between 0 and 15")
+        if (
+            isinstance(max_cells, bool)
+            or not isinstance(max_cells, int)
+            or max_cells < 1
+        ):
+            raise ValueError("max_cells must be a positive integer")
 
         cell = self.latlng_to_cell(position[0], position[1], resolution)
         backend_name = self.backend or self.dispatcher.get_default_backend("indexing")
@@ -99,6 +116,8 @@ class SpatialIndexingInterface:
         if not math.isfinite(edge_m) or edge_m <= 0:
             raise ValueError("backend returned an invalid average cell edge length")
         ring_distance = max(1, math.ceil(radius / edge_m))
+        if 1 + 3 * ring_distance * (ring_distance + 1) > max_cells:
+            raise ValueError("Neighborhood allocation exceeds max_cells")
         return cast(
             list[str],
             self.dispatcher.dispatch_indexing_operation(

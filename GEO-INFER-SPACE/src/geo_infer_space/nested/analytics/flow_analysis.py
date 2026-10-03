@@ -8,7 +8,7 @@ nested geospatial systems.
 
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass, field
 from typing import Any, cast
 from enum import Enum
@@ -74,7 +74,7 @@ class FlowVector:
     flow_data: dict[str, Any] = field(default_factory=dict)
 
     # Temporal properties
-    timestamp: datetime = field(default_factory=datetime.now)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     duration: timedelta | None = None
 
     # Quality metrics
@@ -110,8 +110,8 @@ class FlowField:
     cell_count: int = 0
 
     # Temporal properties
-    created_at: datetime = field(default_factory=datetime.now)
-    last_updated: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    last_updated: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     # Pattern analysis
     detected_patterns: list[FlowPattern] = field(default_factory=list)
@@ -121,7 +121,7 @@ class FlowField:
         """Add a flow vector to the field."""
         key = (vector.source_cell, vector.target_cell)
         self.vectors[key] = vector
-        self.last_updated = datetime.now()
+        self.last_updated = datetime.now(UTC)
         self._update_field_properties()
 
     def _update_field_properties(self) -> None:
@@ -175,7 +175,7 @@ class FlowAnalysisResult:
     flow_stability: float = 0.0
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     processing_time: float = 0.0
 
 
@@ -218,8 +218,8 @@ class H3FlowAnalyzer:
         self.analysis_stats: dict[str, int] = defaultdict(int)
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def create_flow_field(self, field_id: str, flow_type: FlowType) -> FlowField:
         """
@@ -235,7 +235,7 @@ class H3FlowAnalyzer:
         flow_field = FlowField(field_id=field_id, flow_type=flow_type)
 
         self.flow_fields[field_id] = flow_field
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return flow_field
 
@@ -295,7 +295,7 @@ class H3FlowAnalyzer:
         Returns:
             FlowAnalysisResult instance
         """
-        start_time = datetime.now()
+        start_time = datetime.now(UTC)
         analysis_id = f"flow_analysis_{uuid.uuid4().hex[:8]}"
 
         if field_id not in self.flow_fields:
@@ -321,7 +321,7 @@ class H3FlowAnalyzer:
         )
 
         # Create result
-        processing_time = (datetime.now() - start_time).total_seconds()
+        processing_time = (datetime.now(UTC) - start_time).total_seconds()
 
         result = FlowAnalysisResult(
             analysis_id=analysis_id,
@@ -339,7 +339,7 @@ class H3FlowAnalyzer:
         # Store result
         self.analysis_results[analysis_id] = result
         self.analysis_stats["patterns_analyzed"] += 1
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return result
 

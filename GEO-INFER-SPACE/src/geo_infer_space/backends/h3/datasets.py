@@ -2,7 +2,7 @@
 
 import logging
 from typing import Any
-from datetime import datetime
+from datetime import datetime, UTC
 import json
 
 from .core import H3Grid, H3Cell
@@ -28,7 +28,7 @@ class H3Dataset:
         """
         self.grid = grid
         self.metadata = metadata or {}
-        self.created_at = datetime.now()
+        self.created_at = datetime.now(UTC)
 
     def add_metadata(self, key: str, value: Any) -> None:
         """Add metadata entry."""

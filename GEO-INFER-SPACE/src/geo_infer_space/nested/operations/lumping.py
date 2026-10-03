@@ -7,7 +7,7 @@ units based on various criteria such as similarity, proximity, and constraints.
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
 from typing import Any, cast
 from collections.abc import Callable
@@ -120,7 +120,7 @@ class LumpingResult:
     reduction_ratio: float = 0.0
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     processing_time: float = 0.0
 
     def __post_init__(self) -> None:
@@ -159,8 +159,8 @@ class H3LumpingEngine:
         self.operation_stats: dict[str, int] = defaultdict(int)
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def add_criterion(self, criterion: LumpingCriterion) -> str:
         """
@@ -173,7 +173,7 @@ class H3LumpingEngine:
             Criterion ID
         """
         self.criteria[criterion.criterion_id] = criterion
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
         return criterion.criterion_id
 
     def remove_criterion(self, criterion_id: str) -> bool:
@@ -188,7 +188,7 @@ class H3LumpingEngine:
         """
         if criterion_id in self.criteria:
             del self.criteria[criterion_id]
-            self.updated_at = datetime.now()
+            self.updated_at = datetime.now(UTC)
             return True
         return False
 
@@ -211,7 +211,7 @@ class H3LumpingEngine:
         Returns:
             LumpingResult instance
         """
-        start_time = datetime.now()
+        start_time = datetime.now(UTC)
         operation_id = f"lump_{uuid.uuid4().hex[:8]}"
 
         # Get cells to lump
@@ -248,7 +248,7 @@ class H3LumpingEngine:
             lumps = self._lump_by_similarity(cells, **kwargs)
 
         # Calculate processing time
-        processing_time = (datetime.now() - start_time).total_seconds()
+        processing_time = (datetime.now(UTC) - start_time).total_seconds()
 
         # Create result
         result = LumpingResult(
@@ -267,7 +267,7 @@ class H3LumpingEngine:
         # Store result
         self.lumping_results[operation_id] = result
         self.operation_stats[strategy.value] += 1
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return result
 

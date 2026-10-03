@@ -7,7 +7,7 @@ and classifying boundaries in nested geospatial systems.
 
 import logging
 import math
-from datetime import datetime
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
 from typing import Any, TYPE_CHECKING
 from enum import Enum
@@ -68,7 +68,7 @@ class BoundarySegment:
     connected_segments: set[str] = field(default_factory=set)
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def __post_init__(self) -> None:
         """Calculate geometric properties after creation."""
@@ -195,8 +195,8 @@ class BoundaryDetector:
         self.boundary_statistics: dict[str, dict[str, Any]] = {}
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def detect_boundaries(
         self,
@@ -249,7 +249,7 @@ class BoundaryDetector:
 
         self.detected_boundaries.update(detected_boundaries)
         self._calculate_boundary_statistics()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return detected_boundaries
 

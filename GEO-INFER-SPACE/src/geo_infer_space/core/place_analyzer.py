@@ -11,7 +11,7 @@ import json
 import pandas as pd
 import geopandas as gpd
 from typing import Any
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from shapely.geometry import shape
 from geo_infer_space.core.spatial_processor import SpatialProcessor
@@ -176,7 +176,7 @@ class WorkspacePlaceAnalyzer:
         """
         report: dict[str, Any] = {
             "place": self.place_name,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "data_summary": {
                 "total_features": len(self.integrated_data),
                 "sources": (

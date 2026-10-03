@@ -21,6 +21,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from collections.abc import Callable, Iterator, Mapping, Sequence
 import builtins
+import math
 
 
 @dataclass(frozen=True)
@@ -162,7 +163,7 @@ def _reference_bounds(context: ProcessingContext) -> Any:
     xs: list[float] = []
     ys: list[float] = []
     for feature in (geojson or {}).get("features", []):
-        coords = _walk_coordinates(feature.get("geometry", {}))
+        coords = _walk_coordinates(feature.get("geometry") or {})
         for x, y in coords:
             xs.append(x)
             ys.append(y)
@@ -195,11 +196,13 @@ def _walk_coordinates(geometry: Mapping[str, Any]) -> list[tuple[float, float]]:
 def _collect(geometry: Mapping[str, Any], out: list[tuple[float, float]]) -> None:
     geom_type = geometry.get("type")
     coords = geometry.get("coordinates")
-    if geom_type in ("Point", "MultiPoint"):
-        for item in _flatten_points(coords):
-            if _is_point(item):
-                out.append((float(item[0]), float(item[1])))
+    if geom_type == "GeometryCollection":
+        for child in geometry.get("geometries", []):
+            if child:
+                _collect(child, out)
     elif geom_type in (
+        "Point",
+        "MultiPoint",
         "LineString",
         "MultiLineString",
         "Polygon",
@@ -225,26 +228,25 @@ def _flatten_points(coords: Any) -> list[Any]:
 
 
 def _iter_positions(coords: Any) -> Iterator[list[Any]]:
-    if not isinstance(coords, list):
+    if not isinstance(coords, (list, tuple)):
         return
-    for ring_or_line in coords:
-        if not isinstance(ring_or_line, list):
-            continue
-        for position in ring_or_line:
-            if (
-                isinstance(position, list)
-                and position
-                and isinstance(position[0], (int, float))
-            ):
-                yield position
+    if _is_point(coords):
+        if not all(math.isfinite(value) for value in coords[:2]):
+            raise ValueError("GeoJSON positions must be finite")
+        yield coords
+    else:
+        for item in coords:
+            yield from _iter_positions(item)
 
 
 def _is_point(item: Any) -> bool:
     return (
-        isinstance(item, list)
+        isinstance(item, (list, tuple))
         and len(item) >= 2
         and isinstance(item[0], (int, float))
         and isinstance(item[1], (int, float))
+        and not isinstance(item[0], bool)
+        and not isinstance(item[1], bool)
     )
 
 

@@ -26,9 +26,8 @@ Examples workspace within `GEO-INFER-SPACE`.
 - `california_multilayer_demo.py:add_h3_layer_to_map` (function)
 - `california_multilayer_demo.py:add_point_layer_to_map` (function)
 - `california_multilayer_demo.py:main` (function)
-- `demo_all_methods.py:success` (function)
-- `demo_all_methods.py:info` (function)
-- `demo_all_methods.py:section` (function)
+- `demo_all_methods.py:run_demo` (function)
+- `demo_all_methods.py:main` (function)
 - `h3_advanced_applications.py:example_demand_forecasting_ml` (function)
 - `h3_advanced_applications.py:example_disaster_response_system` (function)
 - `h3_advanced_applications.py:example_performance_optimization` (function)
@@ -37,6 +36,7 @@ Examples workspace within `GEO-INFER-SPACE`.
 - `h3_comprehensive_examples.py:example_1_basic_h3_operations` (function)
 - `h3_comprehensive_examples.py:example_2_city_coverage_analysis` (function)
 - `h3_comprehensive_examples.py:example_3_transportation_corridor` (function)
+- `h3_comprehensive_examples.py:example_4_retail_catchment_analysis` (function)
 
 ## Module Metadata
 

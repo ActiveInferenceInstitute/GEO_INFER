@@ -12,7 +12,7 @@ import json
 import folium
 import h3
 import geopandas as gpd
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any, cast
 from folium.plugins import MarkerCluster
@@ -182,7 +182,7 @@ class InteractiveVisualizationEngine:
         folium.LayerControl().add_to(m)
 
         # Save dashboard
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         dashboard_path = self.output_dir / (
             output_name or f"comprehensive_dashboard_{timestamp}.html"
         )
@@ -194,7 +194,7 @@ class InteractiveVisualizationEngine:
             ).hexdigest()
             manifest = {
                 "schema_version": "geo-infer-space-visualization/v1",
-                "generated_at": generated_at or datetime.now().isoformat(),
+                "generated_at": generated_at or datetime.now(UTC).isoformat(),
                 "input_sha256": input_digest,
                 "h3_version": h3.__version__,
                 "artifacts": [
@@ -223,7 +223,7 @@ class InteractiveVisualizationEngine:
     def _create_dashboard_title(self, generated_at: str | None = None) -> str:
         """Create professional dashboard title."""
         location_name = self.location_config.get("location", {}).get("name", "Location")
-        rendered_at = generated_at or datetime.now().strftime("%Y-%m-%d %H:%M")
+        rendered_at = generated_at or datetime.now(UTC).strftime("%Y-%m-%d %H:%M")
 
         title_html = f"""
         <div style="position: fixed; 

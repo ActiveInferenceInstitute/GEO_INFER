@@ -13,6 +13,7 @@ from .core import H3Grid, H3Cell
 
 import h3
 import numpy as np
+from geo_infer_time import normalize_datetime_index
 
 logger = logging.getLogger(__name__)
 
@@ -98,14 +99,8 @@ class H3SpatialAnalyzer:
         weights = {}
 
         for cell in self.grid.cells:
-            try:
-                neighbors = h3.grid_disk(cell.index, 1)
-                # Remove self from neighbors
-                neighbors = [n for n in neighbors if n != cell.index]
-                weights[cell.index] = neighbors
-            except Exception as e:
-                logger.warning(f"Failed to get neighbors for cell {cell.index}: {e}")
-                weights[cell.index] = []
+            neighbors = h3.grid_disk(cell.index, 1)
+            weights[cell.index] = [n for n in neighbors if n != cell.index]
 
         return weights
 
@@ -245,14 +240,7 @@ class H3SpatialAnalyzer:
             # Get neighbors including self. h3-py 4.x raises ValueError for
             # malformed indices and h3.H3BaseException subclasses for library
             # errors (there is no h3.CellError in this version).
-            try:
-                neighbors = h3.grid_disk(cell.index, 1)
-            except (ValueError, h3.H3BaseException) as e:
-                logger.warning(
-                    f"grid_disk failed for {cell.index}; using self-only neighborhood "
-                    f"in Getis-Ord Gi*: {e}"
-                )
-                neighbors = [cell.index]
+            neighbors = h3.grid_disk(cell.index, 1)
 
             # Calculate local sum and count
             local_sum = 0
@@ -269,8 +257,15 @@ class H3SpatialAnalyzer:
                 # Calculate Gi* statistic
                 expected_sum = local_count * mean_val
                 if std_val > 0:
-                    gi_star = (local_sum - expected_sum) / (
-                        std_val * math.sqrt(local_count)
+                    n = len(valid_data)
+                    variance_factor = (
+                        local_count * (n - local_count) / (n - 1) if n > 1 else 0
+                    )
+                    gi_star = (
+                        (local_sum - expected_sum)
+                        / (std_val * math.sqrt(variance_factor))
+                        if variance_factor > 0
+                        else 0.0
                     )
                 else:
                     gi_star = 0
@@ -332,15 +327,7 @@ class H3SpatialAnalyzer:
             # Get neighbors. h3-py 4.x raises ValueError for malformed indices
             # and h3.H3BaseException subclasses for library errors (there is no
             # h3.CellError in this version).
-            try:
-                neighbors = h3.grid_disk(cell.index, 1)
-                neighbors = [n for n in neighbors if n != cell.index]  # Exclude self
-            except (ValueError, h3.H3BaseException) as e:
-                logger.warning(
-                    f"grid_disk failed for {cell.index}; using empty neighborhood in "
-                    f"Local Moran's I; results may be degraded: {e}"
-                )
-                neighbors = []
+            neighbors = [n for n in h3.grid_disk(cell.index, 1) if n != cell.index]
 
             # Calculate local Moran's I
             neighbor_values = []
@@ -591,14 +578,9 @@ class H3ClusterAnalyzer:
         """
         neighbors = []
 
-        try:
-            neighbor_set = h3.grid_disk(cell_index, rings)
-            # Remove self and filter to valid cells
-            neighbors = [
-                n for n in neighbor_set if n != cell_index and n in cell_value_map
-            ]
-        except Exception as e:
-            logger.warning(f"Failed to get neighbors for {cell_index}: {e}")
+        neighbor_set = h3.grid_disk(cell_index, rings)
+        # Remove self and filter to valid cells
+        neighbors = [n for n in neighbor_set if n != cell_index and n in cell_value_map]
 
         return neighbors
 
@@ -795,12 +777,7 @@ class H3ClusterAnalyzer:
         Returns:
             Grid distance (normalized)
         """
-        try:
-            return float(h3.grid_distance(cell1, cell2))
-        except Exception as e:
-            logger.warning(f"Failed to calculate H3 distance: {e}")
-
-        return 1.0  # Default distance
+        return float(h3.grid_distance(cell1, cell2))
 
     def _simple_hierarchical_clustering(
         self, valid_data: list[dict], distance_matrix: list[list[float]]
@@ -1095,12 +1072,7 @@ class H3DensityAnalyzer:
         Returns:
             Distance in rings
         """
-        try:
-            return cast(int, h3.grid_distance(cell1, cell2))
-        except Exception as e:
-            logger.warning(f"Failed to calculate ring distance: {e}")
-
-        return 0 if cell1 == cell2 else 1
+        return cast(int, h3.grid_distance(cell1, cell2))
 
     def _kernel_function(
         self, distance: int, bandwidth: int, kernel_type: str
@@ -1262,15 +1234,7 @@ class H3DensityAnalyzer:
         # Get neighbors. h3-py 4.x raises ValueError for malformed indices and
         # h3.H3BaseException subclasses for library errors (there is no
         # h3.CellError in this version).
-        try:
-            neighbors = h3.grid_disk(cell_index, 1)
-            neighbors = [n for n in neighbors if n != cell_index]
-        except (ValueError, h3.H3BaseException) as e:
-            logger.warning(
-                f"grid_disk failed for {cell_index}; using empty neighborhood in "
-                f"spatial lag (local gradient); results may be degraded: {e}"
-            )
-            neighbors = []
+        neighbors = [n for n in h3.grid_disk(cell_index, 1) if n != cell_index]
 
         # Calculate average neighbor value
         neighbor_values = []
@@ -1846,37 +1810,35 @@ class H3TemporalAnalyzer:
             >>> patterns = analyzer.analyze_temporal_patterns('timestamp', 'trip_count')
             >>> print(f"Peak hour: {patterns['peak_periods'][0]['period']}")
         """
-        if not self.grid.cells:
+        if temporal_resolution not in {"hour", "day", "week", "month"}:
+            raise ValueError("temporal_resolution must be hour, day, week or month")
+        if not [cell for grid in self.grids for cell in grid.cells]:
             return {"error": "No cells in grid"}
 
         # Extract temporal data
         temporal_data: list[dict[str, Any]] = []
 
-        for cell in self.grid.cells:
+        for cell in [cell for grid in self.grids for cell in grid.cells]:
             if (
                 timestamp_column in cell.properties
                 and value_column in cell.properties
                 and cell.properties[timestamp_column] is not None
                 and cell.properties[value_column] is not None
             ):
-                try:
-                    # Parse timestamp
-                    timestamp_str = str(cell.properties[timestamp_column])
-                    timestamp = self._parse_timestamp(timestamp_str)
+                # Parse timestamp
+                timestamp_str = str(cell.properties[timestamp_column])
+                timestamp = self._parse_timestamp(timestamp_str)
 
-                    if timestamp:
-                        temporal_data.append(
-                            {
-                                "cell_index": cell.index,
-                                "timestamp": timestamp,
-                                "value": float(cell.properties[value_column]),
-                            }
-                        )
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to parse temporal data for cell {cell.index}: {e}"
+                if timestamp:
+                    temporal_data.append(
+                        {
+                            "cell_index": cell.index,
+                            "timestamp": timestamp,
+                            "value": self._finite_observation(
+                                cell.properties[value_column]
+                            ),
+                        }
                     )
-
         if not temporal_data:
             return {"error": "No valid temporal data found"}
 
@@ -1901,40 +1863,18 @@ class H3TemporalAnalyzer:
             "reference": "https://towardsdatascience.com/exploring-location-data-using-a-hexagon-grid-3509b68b04a2",
         }
 
-    def _parse_timestamp(self, timestamp_str: str) -> datetime | None:
-        """
-        Parse timestamp string into datetime object.
+    @staticmethod
+    def _finite_observation(value: Any) -> float:
+        if isinstance(value, (bool, str, bytes)):
+            raise ValueError("Observed values must be finite numbers")
+        result = float(value)
+        if not math.isfinite(result):
+            raise ValueError("Observed values must be finite numbers")
+        return result
 
-        Args:
-            timestamp_str: Timestamp string
-
-        Returns:
-            Parsed datetime object or None
-        """
-        try:
-            # Try common timestamp formats
-            formats = [
-                "%Y-%m-%d %H:%M:%S",
-                "%Y-%m-%d %H:%M:%S.%f",
-                "%Y-%m-%dT%H:%M:%S",
-                "%Y-%m-%dT%H:%M:%S.%f",
-                "%Y-%m-%d",
-                "%m/%d/%Y %H:%M:%S",
-                "%d/%m/%Y %H:%M:%S",
-            ]
-
-            for fmt in formats:
-                try:
-                    return datetime.strptime(timestamp_str, fmt)
-                except ValueError:
-                    continue
-
-            # Try parsing as ISO format
-            return datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
-
-        except Exception as e:
-            logger.warning(f"Failed to parse timestamp '{timestamp_str}': {e}")
-            return None
+    def _parse_timestamp(self, timestamp: datetime | str) -> datetime:
+        """Require an aware instant and preserve UTC fractional precision."""
+        return normalize_datetime_index([timestamp])[0]
 
     def _aggregate_by_temporal_resolution(
         self, temporal_data: list[dict], resolution: str
@@ -1979,6 +1919,8 @@ class H3TemporalAnalyzer:
                 "sum": float(np.sum(values)),
                 "count": len(values),
                 "std": float(np.std(values)),
+                "min": float(np.min(values)),
+                "max": float(np.max(values)),
             }
 
         return aggregated
@@ -2159,22 +2101,24 @@ class H3TemporalAnalyzer:
         if not aggregated_data:
             return {}
 
-        all_values = []
-        total_count = 0
-        total_sum = 0
-
-        for stats in aggregated_data.values():
-            all_values.append(stats["mean"])
-            total_count += stats["count"]
-            total_sum += stats["sum"]
-
+        buckets = list(aggregated_data.values())
+        count = sum(bucket["count"] for bucket in buckets)
+        total = math.fsum(bucket["sum"] for bucket in buckets)
+        mean = total / count
+        variance = (
+            math.fsum(
+                bucket["count"] * (bucket["std"] ** 2 + (bucket["mean"] - mean) ** 2)
+                for bucket in buckets
+            )
+            / count
+        )
         return {
-            "overall_mean": float(np.mean(all_values)),
-            "overall_std": float(np.std(all_values)),
-            "overall_min": float(np.min(all_values)),
-            "overall_max": float(np.max(all_values)),
-            "total_observations": total_count,
-            "total_value": total_sum,
+            "overall_mean": mean,
+            "overall_std": math.sqrt(variance),
+            "overall_min": min(bucket["min"] for bucket in buckets),
+            "overall_max": max(bucket["max"] for bucket in buckets),
+            "total_observations": count,
+            "total_value": total,
         }
 
     def detect_temporal_anomalies(
@@ -2200,36 +2144,32 @@ class H3TemporalAnalyzer:
             >>> anomalies = analyzer.detect_temporal_anomalies('timestamp', 'activity_level')
             >>> print(f"Found {len(anomalies['anomalies'])} temporal anomalies")
         """
-        if not self.grid.cells:
+        if not [cell for grid in self.grids for cell in grid.cells]:
             return {"error": "No cells in grid"}
 
         # Extract temporal data
         temporal_data: list[dict[str, Any]] = []
 
-        for cell in self.grid.cells:
+        for cell in [cell for grid in self.grids for cell in grid.cells]:
             if (
                 timestamp_column in cell.properties
                 and value_column in cell.properties
                 and cell.properties[timestamp_column] is not None
                 and cell.properties[value_column] is not None
             ):
-                try:
-                    timestamp_str = str(cell.properties[timestamp_column])
-                    timestamp = self._parse_timestamp(timestamp_str)
+                timestamp_str = str(cell.properties[timestamp_column])
+                timestamp = self._parse_timestamp(timestamp_str)
 
-                    if timestamp:
-                        temporal_data.append(
-                            {
-                                "cell_index": cell.index,
-                                "timestamp": timestamp,
-                                "value": float(cell.properties[value_column]),
-                            }
-                        )
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to parse temporal data for cell {cell.index}: {e}"
+                if timestamp:
+                    temporal_data.append(
+                        {
+                            "cell_index": cell.index,
+                            "timestamp": timestamp,
+                            "value": self._finite_observation(
+                                cell.properties[value_column]
+                            ),
+                        }
                     )
-
         if len(temporal_data) < 10:
             return {"error": "Insufficient data for anomaly detection"}
 
@@ -2338,15 +2278,21 @@ class H3TemporalAnalyzer:
     in H3 hexagonal grid data over time.
     """
 
-    def __init__(self, grids: list[H3Grid]) -> None:  # type: ignore[no-redef]
+    def __init__(self, grids: H3Grid | list[H3Grid]) -> None:  # type: ignore[no-redef]
         """
         Initialize temporal analyzer for multiple H3Grids.
 
         Args:
             grids: List of H3Grid instances representing time series
         """
-        self.grids = grids
-        self.timestamps = [grid.created_at for grid in grids]
+        self.grids = [grids] if isinstance(grids, H3Grid) else list(grids)
+        if any(not isinstance(grid, H3Grid) for grid in self.grids):
+            raise TypeError("grids must contain H3Grid instances")
+        self.timestamps = normalize_datetime_index(
+            [grid.created_at for grid in self.grids]
+        )
+        if not self.timestamps.is_unique or not self.timestamps.is_monotonic_increasing:
+            raise ValueError("Grid time axis must be unique and increasing")
 
     def analyze_temporal_trends(self, value_column: str) -> dict[str, Any]:
         """
@@ -2361,7 +2307,7 @@ class H3TemporalAnalyzer:
         if not self.grids:
             return {"error": "No grids for temporal analysis"}
 
-        # Track values over time for each cell position
+        # Track only observed values; an absent property is not an observed zero.
         temporal_data: dict[str, list[dict[str, Any]]] = {}
 
         for i, grid in enumerate(self.grids):
@@ -2369,7 +2315,10 @@ class H3TemporalAnalyzer:
 
             for cell in grid.cells:
                 cell_key = cell.index
-                value = cell.properties.get(value_column, 0)
+                raw_value = cell.properties.get(value_column)
+                if raw_value is None:
+                    continue
+                value = self._finite_observation(raw_value)
 
                 if cell_key not in temporal_data:
                     temporal_data[cell_key] = []
@@ -2402,7 +2351,7 @@ class H3TemporalAnalyzer:
                 "trend": trend,
                 "change": last_value - first_value,
                 "percent_change": (
-                    ((last_value - first_value) / first_value * 100)
+                    ((last_value - first_value) / abs(first_value) * 100)
                     if first_value != 0
                     else 0
                 ),
@@ -2450,7 +2399,10 @@ class H3TemporalAnalyzer:
         all_values = []
         for grid in self.grids:
             for cell in grid.cells:
-                value = cell.properties.get(value_column, 0)
+                raw_value = cell.properties.get(value_column)
+                if raw_value is None:
+                    continue
+                value = self._finite_observation(raw_value)
                 all_values.append(value)
 
         if not all_values:
@@ -2472,7 +2424,10 @@ class H3TemporalAnalyzer:
             timestamp = self.timestamps[i]
 
             for cell in grid.cells:
-                value = cell.properties.get(value_column, 0)
+                raw_value = cell.properties.get(value_column)
+                if raw_value is None:
+                    continue
+                value = self._finite_observation(raw_value)
 
                 if value > upper_threshold or value < lower_threshold:
                     anomalies.append(

@@ -6,7 +6,7 @@ message exchanges in nested geospatial systems.
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass, field
 from typing import Any, cast
 from enum import Enum
@@ -88,7 +88,7 @@ class MessageProtocol(ABC):
         """
         self.protocol_id = protocol_id
         self.config = config
-        self.created_at = datetime.now()
+        self.created_at = datetime.now(UTC)
         self.message_broker: Any = None  # Set externally
 
         # Protocol state
@@ -156,8 +156,8 @@ class MessageProtocol(ABC):
 
         self.active_sessions[session_id] = {
             "participants": participants,
-            "created_at": datetime.now(),
-            "last_activity": datetime.now(),
+            "created_at": datetime.now(UTC),
+            "last_activity": datetime.now(UTC),
             "message_count": 0,
             "custom_data": kwargs,
         }
@@ -230,8 +230,8 @@ class RequestResponseProtocol(MessageProtocol):
         self.pending_requests[message_id] = {
             "sender_id": sender_id,
             "recipient_id": recipient_id,
-            "sent_at": datetime.now(),
-            "timeout_at": datetime.now()
+            "sent_at": datetime.now(UTC),
+            "timeout_at": datetime.now(UTC)
             + (self.config.timeout or timedelta(seconds=30)),
         }
 
@@ -262,7 +262,7 @@ class RequestResponseProtocol(MessageProtocol):
 
     def cleanup_expired_requests(self) -> None:
         """Clean up expired requests."""
-        now = datetime.now()
+        now = datetime.now(UTC)
         expired = [
             msg_id
             for msg_id, req in self.pending_requests.items()
@@ -444,7 +444,7 @@ class StreamingProtocol(MessageProtocol):
         self.streams[stream_id] = {
             "sender_id": sender_id,
             "recipient_id": recipient_id,
-            "created_at": datetime.now(),
+            "created_at": datetime.now(UTC),
             "message_count": 0,
             "buffer": [],
             "buffer_size": self.config.buffer_size or 1000,
@@ -472,7 +472,7 @@ class StreamingProtocol(MessageProtocol):
         stream["buffer"].append(
             {
                 "payload": payload,
-                "timestamp": datetime.now(),
+                "timestamp": datetime.now(UTC),
                 "sequence": stream["message_count"],
             }
         )
@@ -560,24 +560,24 @@ class BatchProtocol(MessageProtocol):
         if batch_key not in self.batches:
             self.batches[batch_key] = {
                 "messages": [],
-                "created_at": datetime.now(),
-                "last_added": datetime.now(),
+                "created_at": datetime.now(UTC),
+                "last_added": datetime.now(UTC),
             }
 
         batch = self.batches[batch_key]
         batch["messages"].append(
             {
                 "payload": payload,
-                "timestamp": datetime.now(),
+                "timestamp": datetime.now(UTC),
                 "metadata": kwargs.get("metadata", {}),
             }
         )
-        batch["last_added"] = datetime.now()
+        batch["last_added"] = datetime.now(UTC)
 
         # Check if batch should be sent
         should_send = len(batch["messages"]) >= (self.config.batch_size or 10) or (
             self.config.batch_timeout
-            and datetime.now() - batch["created_at"] >= self.config.batch_timeout
+            and datetime.now(UTC) - batch["created_at"] >= self.config.batch_timeout
         )
 
         if should_send:
@@ -599,7 +599,7 @@ class BatchProtocol(MessageProtocol):
 
         # Send batch
         batch_payload = {
-            "batch_id": f"batch_{datetime.now().timestamp()}",
+            "batch_id": f"batch_{datetime.now(UTC).timestamp()}",
             "message_count": len(batch["messages"]),
             "messages": batch["messages"].copy(),
         }

@@ -15,6 +15,7 @@ it stays importable in any environment.
 
 from __future__ import annotations
 
+import math
 from typing import TypedDict
 
 # Official average hexagonal cell area (km^2) at each H3 resolution 0..15.
@@ -60,6 +61,26 @@ class ResolutionSuggestion(TypedDict):
     within_target: bool
 
 
+def _nonnegative_finite(value: float, name: str) -> None:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        or value < 0
+    ):
+        raise ValueError(f"{name} must be finite and non-negative")
+
+
+def _resolution(value: int, name: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 15:
+        raise ValueError(f"{name} must be an integer between 0 and 15")
+
+
+def _positive_integer(value: int, name: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise ValueError(f"{name} must be a positive integer")
+
+
 def estimate_cell_count(area_km2: float, resolution: int) -> float:
     """Estimate the number of H3 cells covering ``area_km2`` at ``resolution``.
 
@@ -74,10 +95,8 @@ def estimate_cell_count(area_km2: float, resolution: int) -> float:
         ValueError: If ``area_km2`` is negative or ``resolution`` is out of
             range.
     """
-    if area_km2 < 0:
-        raise ValueError("area_km2 must be non-negative")
-    if not H3_RESOLUTION_MIN <= resolution <= H3_RESOLUTION_MAX:
-        raise ValueError(f"resolution must be between 0 and 15, got {resolution}")
+    _nonnegative_finite(area_km2, "area_km2")
+    _resolution(resolution, "resolution")
     return area_km2 / H3_AVG_AREA_KM2[resolution]
 
 
@@ -89,7 +108,7 @@ def suggest_h3_resolution(
     """Suggest the finest H3 resolution whose cell estimate stays <= target.
 
     Scans resolutions from ``max_res`` down to 0 and returns the finest one
-    whose estimated cell count is at most ``target_cells``. For a very small
+    whose estimated cell count is at most ``target_cells``. For a very large
     area even resolution 0 may exceed the target; in that case resolution 0 is
     returned with ``estimate_cells`` reported honestly (never fabricated as
     within target).
@@ -107,12 +126,9 @@ def suggest_h3_resolution(
         ValueError: If ``area_km2`` is negative, or ``target_cells`` or
             ``max_res`` are outside their valid ranges.
     """
-    if area_km2 < 0:
-        raise ValueError("area_km2 must be non-negative")
-    if target_cells <= 0:
-        raise ValueError("target_cells must be positive")
-    if not H3_RESOLUTION_MIN <= max_res <= H3_RESOLUTION_MAX:
-        raise ValueError(f"max_res must be between 0 and 15, got {max_res}")
+    _nonnegative_finite(area_km2, "area_km2")
+    _positive_integer(target_cells, "target_cells")
+    _resolution(max_res, "max_res")
 
     chosen = H3_RESOLUTION_MIN
     within = False
@@ -147,8 +163,8 @@ def check_cell_budget(
         ValueError: If ``estimated_cells`` is negative.
         H3HardCapExceededError: If ``estimated_cells`` exceeds ``hard_cap``.
     """
-    if estimated_cells < 0:
-        raise ValueError("estimated_cells must be non-negative")
+    _nonnegative_finite(estimated_cells, "estimated_cells")
+    _positive_integer(hard_cap, "hard_cap")
     if estimated_cells > hard_cap:
         raise H3HardCapExceededError(
             f"H3 grid estimate {estimated_cells:g} exceeds hard cap {hard_cap:g}"

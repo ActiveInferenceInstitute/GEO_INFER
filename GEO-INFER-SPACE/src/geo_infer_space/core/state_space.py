@@ -42,7 +42,11 @@ class H3StateSpace:
     def locate(self, latitude: float, longitude: float) -> int:
         """Return the state for a WGS84 point; outside-domain points raise."""
         if (
-            not math.isfinite(latitude)
+            isinstance(latitude, bool)
+            or isinstance(longitude, bool)
+            or not isinstance(latitude, (int, float))
+            or not isinstance(longitude, (int, float))
+            or not math.isfinite(latitude)
             or not math.isfinite(longitude)
             or not -90 <= latitude <= 90
             or not -180 <= longitude <= 180
@@ -65,8 +69,13 @@ class H3StateSpace:
         rows, columns, weights = [], [], []
         for column, cell in enumerate(self.cells):
             neighbors = sorted(set(h3.grid_disk(cell, 1)) - {cell})
-            if not neighbors:
-                neighbors = [cell]
+            if not neighbors or any(
+                not h3.is_valid_cell(neighbor)
+                or h3.get_resolution(neighbor) != h3.get_resolution(cell)
+                or not h3.are_neighbor_cells(cell, neighbor)
+                for neighbor in neighbors
+            ):
+                raise ValueError("H3 topology returned an invalid neighbor domain")
             for neighbor in neighbors:
                 rows.append(index.get(neighbor, column))
                 columns.append(column)

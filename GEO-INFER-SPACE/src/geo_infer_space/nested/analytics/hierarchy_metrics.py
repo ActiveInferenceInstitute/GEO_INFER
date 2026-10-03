@@ -8,7 +8,7 @@ balance metrics, and structural properties.
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
 from typing import Any
 from enum import Enum
@@ -124,7 +124,7 @@ class HierarchyMetrics:
     spatial_coherence: float = 0.0
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     calculation_time: float = 0.0
 
 
@@ -152,7 +152,7 @@ class HierarchyAnalysisResult:
     optimization_suggestions: list[str] = field(default_factory=list)
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     processing_time: float = 0.0
 
 
@@ -194,8 +194,8 @@ class H3HierarchyAnalyzer:
         self.analysis_stats: dict[str, int] = defaultdict(int)
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def create_hierarchy(self, hierarchy_id: str) -> dict[str, HierarchyNode]:
         """
@@ -208,7 +208,7 @@ class H3HierarchyAnalyzer:
             Empty hierarchy dictionary
         """
         self.hierarchies[hierarchy_id] = {}
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
         return self.hierarchies[hierarchy_id]
 
     def add_node(
@@ -262,7 +262,7 @@ class H3HierarchyAnalyzer:
         if parent_id and parent_id in hierarchy:
             hierarchy[parent_id].add_child(node_id)
 
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
         return node
 
     def analyze_hierarchy(
@@ -278,7 +278,7 @@ class H3HierarchyAnalyzer:
         Returns:
             HierarchyAnalysisResult instance
         """
-        start_time = datetime.now()
+        start_time = datetime.now(UTC)
         analysis_id = f"hierarchy_analysis_{uuid.uuid4().hex[:8]}"
 
         if hierarchy_id not in self.hierarchies:
@@ -312,7 +312,7 @@ class H3HierarchyAnalyzer:
         suggestions = self._generate_optimization_suggestions(hierarchy, metrics)
 
         # Create result
-        processing_time = (datetime.now() - start_time).total_seconds()
+        processing_time = (datetime.now(UTC) - start_time).total_seconds()
 
         result = HierarchyAnalysisResult(
             analysis_id=analysis_id,
@@ -329,7 +329,7 @@ class H3HierarchyAnalyzer:
         # Store result
         self.analysis_results[analysis_id] = result
         self.analysis_stats["hierarchies_analyzed"] += 1
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return result
 
@@ -337,7 +337,7 @@ class H3HierarchyAnalyzer:
         self, hierarchy_id: str, hierarchy: dict[str, HierarchyNode]
     ) -> HierarchyMetrics:
         """Calculate comprehensive hierarchy metrics."""
-        start_time = datetime.now()
+        start_time = datetime.now(UTC)
 
         metrics = HierarchyMetrics(hierarchy_id=hierarchy_id)
 
@@ -399,7 +399,7 @@ class H3HierarchyAnalyzer:
         )
         metrics.spatial_coherence = self._calculate_spatial_coherence(hierarchy)
 
-        metrics.calculation_time = (datetime.now() - start_time).total_seconds()
+        metrics.calculation_time = (datetime.now(UTC) - start_time).total_seconds()
 
         return metrics
 

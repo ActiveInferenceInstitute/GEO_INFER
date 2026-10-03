@@ -7,7 +7,7 @@ across boundaries and hierarchies in nested geospatial systems.
 
 import logging
 import heapq
-from datetime import datetime
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
 from typing import Any
 from enum import Enum
@@ -60,7 +60,7 @@ class RouteSegment:
     boundary_type: str | None = None
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass
@@ -87,7 +87,7 @@ class Route:
     is_valid: bool = True
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     last_used: datetime | None = None
     use_count: int = 0
 
@@ -177,8 +177,8 @@ class MessageRouter:
         self.routing_stats: dict[str, int] = defaultdict(int)
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def add_node(
         self,
@@ -199,7 +199,7 @@ class MessageRouter:
         else:
             self.node_properties.setdefault(node_id, {})
 
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def add_edge(
         self,
@@ -262,7 +262,7 @@ class MessageRouter:
 
         # Clear route cache as topology changed
         self.route_cache.clear()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def remove_edge(
         self,
@@ -281,7 +281,7 @@ class MessageRouter:
 
         # Clear route cache
         self.route_cache.clear()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def find_route(
         self,
@@ -309,7 +309,7 @@ class MessageRouter:
         if use_cache and cache_key in self.route_cache:
             self.cache_hits += 1
             cached_route = self.route_cache[cache_key]
-            cached_route.last_used = datetime.now()
+            cached_route.last_used = datetime.now(UTC)
             cached_route.use_count += 1
             return cached_route
 
@@ -432,7 +432,7 @@ class MessageRouter:
                 segments.append(edge)
 
         route = Route(
-            route_id=f"route_{source}_{destination}_{datetime.now().timestamp()}",
+            route_id=f"route_{source}_{destination}_{datetime.now(UTC).timestamp()}",
             source=source,
             destination=destination,
             segments=segments,
@@ -589,7 +589,7 @@ class MessageRouter:
                 segments.append(edge)
 
         route = Route(
-            route_id=f"route_{source}_{destination}_{datetime.now().timestamp()}",
+            route_id=f"route_{source}_{destination}_{datetime.now(UTC).timestamp()}",
             source=source,
             destination=destination,
             segments=segments,

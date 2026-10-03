@@ -7,6 +7,7 @@ require the H3 library to be installed - no simulated implementations.
 """
 
 import logging
+import math
 from functools import wraps
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 from collections.abc import Callable
@@ -23,6 +24,34 @@ logger = logging.getLogger(__name__)
 MIN_H3_VERSION = (4, 5, 0)
 MAX_H3_MAJOR = 5
 F = TypeVar("F", bound=Callable[..., Any])
+
+
+def _integer(value: int, name: str, minimum: int, maximum: int | None = None) -> None:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int)
+        or value < minimum
+        or (maximum is not None and value > maximum)
+    ):
+        raise ValueError(f"{name} must be an integer in the supported range")
+
+
+def _cell(cell: str) -> None:
+    if (
+        not isinstance(cell, str)
+        or not h3.is_valid_cell(cell)
+        or h3.int_to_str(h3.str_to_int(cell)) != cell
+    ):
+        raise ValueError("Expected a canonical H3 cell string")
+
+
+def _disk_budget(cell: str, k: int, max_cells: int, *, minimum: int = 0) -> None:
+    """Reject oversized native disk allocation before entering H3."""
+    _cell(cell)
+    _integer(k, "k", minimum)
+    _integer(max_cells, "max_cells", 1)
+    if 1 + 3 * k * (k + 1) > max_cells:
+        raise ValueError("Neighborhood allocation exceeds max_cells")
 
 
 def _version_tuple(version: str) -> tuple[int, int, int] | None:
@@ -169,6 +198,23 @@ class H3Backend:
             ValueError: If coordinates or resolution are invalid
         """
         logger.debug(f"Converting ({lat}, {lng}) to H3 cell at resolution {resolution}")
+        if (
+            isinstance(lat, bool)
+            or isinstance(lng, bool)
+            or not isinstance(lat, (int, float))
+            or not isinstance(lng, (int, float))
+            or not math.isfinite(lat)
+            or not math.isfinite(lng)
+            or not -90 <= lat <= 90
+            or not -180 <= lng <= 180
+        ):
+            raise ValueError("Expected finite WGS84 latitude/longitude")
+        if (
+            isinstance(resolution, bool)
+            or not isinstance(resolution, int)
+            or not 0 <= resolution <= 15
+        ):
+            raise ValueError("resolution must be an integer between 0 and 15")
         return cast(str, self.h3.latlng_to_cell(lat, lng, resolution))
 
     @_require_h3("cell_to_latlng")
@@ -252,7 +298,9 @@ class H3Backend:
             raise ValueError(f"H3 polygon conversion failed: {e}") from e
 
     @_require_h3("get_cell_neighbors")
-    def get_cell_neighbors(self, cell: str, k: int = 1) -> list[str]:
+    def get_cell_neighbors(
+        self, cell: str, k: int = 1, *, max_cells: int = 1_000_000
+    ) -> list[str]:
         """
         Get neighboring cells around a given cell.
 
@@ -268,8 +316,7 @@ class H3Backend:
             ValueError: If cell identifier is invalid
         """
         logger.debug(f"Getting k={k} neighbors for cell {cell}")
-        if not isinstance(k, int) or k < 1:
-            raise ValueError("k must be a positive integer")
+        _disk_budget(cell, k, max_cells, minimum=1)
         # grid_disk is defined for pentagons, while grid_ring can raise for
         # them. Removing the inner disk gives the same exact-ring semantics.
         disk = set(self.h3.grid_disk(cell, k))
@@ -277,10 +324,11 @@ class H3Backend:
         return sorted(disk - inner_disk)
 
     @_require_h3("get_cells_within_radius")
-    def get_cells_within_radius(self, cell: str, k: int = 1) -> list[str]:
+    def get_cells_within_radius(
+        self, cell: str, k: int = 1, *, max_cells: int = 1_000_000
+    ) -> list[str]:
         """Return every cell within ``k`` H3 grid rings, excluding ``cell``."""
-        if not isinstance(k, int) or k < 0:
-            raise ValueError("k must be a non-negative integer")
+        _disk_budget(cell, k, max_cells)
         return sorted(set(self.h3.grid_disk(cell, k)) - {cell})
 
     @_require_h3("get_cell_distance")
@@ -422,7 +470,13 @@ class H3Backend:
         return result
 
     @_require_h3("uncompact_cells")
-    def uncompact_cells(self, compacted_cells: list[str], resolution: int) -> list[str]:
+    def uncompact_cells(
+        self,
+        compacted_cells: list[str],
+        resolution: int,
+        *,
+        max_cells: int = 1_000_000,
+    ) -> list[str]:
         """
         Uncompact cells back to individual cell identifiers.
 
@@ -439,6 +493,28 @@ class H3Backend:
         logger.debug(
             f"Uncompacting {len(compacted_cells)} cells to resolution {resolution}"
         )
+        _integer(resolution, "resolution", 0, 15)
+        _integer(max_cells, "max_cells", 1)
+        for cell in compacted_cells:
+            _cell(cell)
+            if h3.get_resolution(cell) > resolution:
+                raise ValueError(
+                    "Target resolution cannot be coarser than a source cell"
+                )
+        if len(set(compacted_cells)) != len(compacted_cells):
+            raise ValueError("Compacted cells must be unique")
+        ancestors = set(compacted_cells)
+        for cell in compacted_cells:
+            if any(
+                h3.cell_to_parent(cell, level) in ancestors
+                for level in range(h3.get_resolution(cell))
+            ):
+                raise ValueError("Compacted cells cannot overlap their ancestors")
+        if (
+            sum(h3.cell_to_children_size(cell, resolution) for cell in compacted_cells)
+            > max_cells
+        ):
+            raise ValueError("Uncompact allocation exceeds max_cells")
         result = list(self.h3.uncompact_cells(compacted_cells, resolution))
         logger.debug(f"Uncompacted to {len(result)} cells")
         return result
@@ -466,7 +542,9 @@ class H3Backend:
             raise ValueError(f"Failed to get parent: {e}") from e
 
     @_require_h3("get_cell_children")
-    def get_cell_children(self, cell: str, resolution: int) -> list[str]:
+    def get_cell_children(
+        self, cell: str, resolution: int, *, max_cells: int = 1_000_000
+    ) -> list[str]:
         """
         Get children of a cell at a finer resolution.
 
@@ -482,10 +560,14 @@ class H3Backend:
             ValueError: If resolutions are incompatible
         """
         logger.debug(f"Getting children of {cell} at resolution {resolution}")
-        try:
-            return list(self.h3.cell_to_children(cell, resolution))
-        except Exception as e:
-            raise ValueError(f"Failed to get children: {e}") from e
+        _cell(cell)
+        _integer(resolution, "resolution", 0, 15)
+        _integer(max_cells, "max_cells", 1)
+        if resolution < h3.get_resolution(cell):
+            raise ValueError("Child resolution cannot be coarser than the source cell")
+        if h3.cell_to_children_size(cell, resolution) > max_cells:
+            raise ValueError("Children allocation exceeds max_cells")
+        return list(self.h3.cell_to_children(cell, resolution))
 
     @_require_h3("get_cell_path")
     def get_cell_path(self, start_cell: str, end_cell: str) -> list[str]:
@@ -511,7 +593,9 @@ class H3Backend:
             raise ValueError(f"Failed to calculate path: {e}") from e
 
     @_require_h3("get_cell_ring")
-    def get_cell_ring(self, cell: str, k: int) -> list[str]:
+    def get_cell_ring(
+        self, cell: str, k: int, *, max_cells: int = 1_000_000
+    ) -> list[str]:
         """
         Get the ring of cells at distance k.
 
@@ -527,10 +611,12 @@ class H3Backend:
             ValueError: If cell or k matches invalid
         """
         logger.debug(f"Getting ring k={k} for {cell}")
-        try:
-            return list(self.h3.grid_ring(cell, k))
-        except Exception as e:
-            raise ValueError(f"Failed to get ring: {e}") from e
+        _cell(cell)
+        _integer(k, "k", 0)
+        _integer(max_cells, "max_cells", 1)
+        if max(1, 6 * k) > max_cells:
+            raise ValueError("Ring allocation exceeds max_cells")
+        return list(self.h3.grid_ring(cell, k))
 
     # SpatialAnalyticsBackend implementation
     @_require_h3("analyze_hotspots")
@@ -904,30 +990,45 @@ class H3Backend:
             f"Finding clusters in {len(cells)} cells with min_size={min_cluster_size}"
         )
 
+        from ...core.state_space import H3StateSpace
+
+        if cells:
+            H3StateSpace(cells)
+        if (
+            isinstance(min_cluster_size, bool)
+            or not isinstance(min_cluster_size, int)
+            or min_cluster_size < 1
+        ):
+            raise ValueError("min_cluster_size must be a positive integer")
+        if (
+            isinstance(distance_threshold, bool)
+            or not isinstance(distance_threshold, int)
+            or distance_threshold < 0
+        ):
+            raise ValueError("distance_threshold must be a non-negative integer")
+        if any(
+            isinstance(value, (bool, str, bytes)) or not math.isfinite(value)
+            for value in values
+        ):
+            raise ValueError("values must be finite numbers")
+
         # Create cell-value mapping
         cell_values = dict(zip(cells, values))
         cell_set = set(cells)
         visited = set()
+        assigned = set()
         clusters: list[dict[str, Any]] = []
         noise = []
 
         def get_neighbors_in_set(cell: str) -> list[str]:
             """Get neighbors of a cell that are in our cell set."""
-            try:
-                neighbors = list(self.h3.grid_disk(cell, distance_threshold))
-                return [n for n in neighbors if n in cell_set and n != cell]
-            except (ValueError, self.h3.H3BaseException) as e:
-                # h3-py 4.x raises ValueError for malformed indices and
-                # H3BaseException subclasses for library errors (no CellError).
-                logger.warning(
-                    f"grid_disk failed for cell {cell}; cluster expansion may "
-                    f"degrade around it: {e}"
-                )
-                return []
+            neighbors = self.h3.grid_disk(cell, distance_threshold)
+            return [n for n in neighbors if n in cell_set and n != cell]
 
         def expand_cluster(cell: str, neighbors: list[str], cluster: list[str]) -> None:
             """Expand cluster from seed cell."""
             cluster.append(cell)
+            assigned.add(cell)
             i = 0
             while i < len(neighbors):
                 neighbor = neighbors[i]
@@ -938,8 +1039,9 @@ class H3Backend:
                         neighbors.extend(
                             [n for n in new_neighbors if n not in neighbors]
                         )
-                if neighbor not in cluster:
+                if neighbor not in assigned:
                     cluster.append(neighbor)
+                    assigned.add(neighbor)
                 i += 1
 
         # Main clustering loop
@@ -969,6 +1071,7 @@ class H3Backend:
                 else:
                     noise.extend(cluster)
 
+        noise = [cell for cell in cells if cell not in assigned]
         logger.info(f"Found {len(clusters)} clusters, {len(noise)} noise cells")
 
         return {
@@ -1032,6 +1135,11 @@ class H3Backend:
         Returns:
             Dictionary with density values and statistics
         """
+        from ...core.spatial_methods import SpatialMethods
+
+        cells = SpatialMethods._cells(cells)
+        SpatialMethods._values(cells, values)
+        SpatialMethods._integer(kernel_radius, "kernel_radius")
         if len(cells) != len(values):
             raise ValueError(
                 f"Cells ({len(cells)}) and values ({len(values)}) must have the same length"
@@ -1047,10 +1155,7 @@ class H3Backend:
 
         for cell in cells:
             # Get neighbors within kernel radius
-            try:
-                neighborhood = list(self.h3.grid_disk(cell, kernel_radius))
-            except Exception:
-                neighborhood = [cell]
+            neighborhood = list(self.h3.grid_disk(cell, kernel_radius))
 
             # Calculate weighted average (IDW with distance weights)
             total_weight = 0.0
@@ -1058,14 +1163,11 @@ class H3Backend:
 
             for neighbor in neighborhood:
                 if neighbor in cell_set:
-                    try:
-                        distance = self.h3.grid_distance(cell, neighbor)
-                        # Inverse distance weight (avoid div by zero)
-                        weight = 1.0 / (distance + 1)
-                        weighted_sum += cell_values[neighbor] * weight
-                        total_weight += weight
-                    except Exception:
-                        continue
+                    distance = self.h3.grid_distance(cell, neighbor)
+                    # Inverse distance weight (avoid div by zero)
+                    weight = 1.0 / (distance + 1)
+                    weighted_sum += cell_values[neighbor] * weight
+                    total_weight += weight
 
             densities[cell] = weighted_sum / total_weight if total_weight > 0 else 0.0
 
@@ -1135,6 +1237,14 @@ class H3Backend:
         Returns:
             Dictionary with interpolated values and metadata
         """
+        from ...core.spatial_methods import SpatialMethods
+
+        cells = SpatialMethods._cells(cells)
+        SpatialMethods._values(cells, values)
+        target_cells = SpatialMethods._cells(target_cells)
+        SpatialMethods._cells(list(dict.fromkeys((*cells, *target_cells))))
+        if target_cells and not cells:
+            raise ValueError("Interpolation requires observed source cells")
         if len(cells) != len(values):
             raise ValueError(
                 f"Cells ({len(cells)}) and values ({len(values)}) must have the same length"
@@ -1164,13 +1274,10 @@ class H3Backend:
                 min_distance = float("inf")
                 nearest_value = 0.0
                 for source, value in cell_values.items():
-                    try:
-                        dist = self.h3.grid_distance(target, source)
-                        if dist < min_distance:
-                            min_distance = dist
-                            nearest_value = value
-                    except Exception:
-                        continue
+                    dist = self.h3.grid_distance(target, source)
+                    if dist < min_distance:
+                        min_distance = dist
+                        nearest_value = value
                 interpolated[target] = nearest_value
 
             elif method == "idw" or method == "linear":
@@ -1180,17 +1287,14 @@ class H3Backend:
                 power = 2.0 if method == "idw" else 1.0
 
                 for source, value in cell_values.items():
-                    try:
-                        dist = self.h3.grid_distance(target, source)
-                        if dist == 0:
-                            weighted_sum = value
-                            total_weight = 1.0
-                            break
-                        weight = 1.0 / (dist**power)
-                        weighted_sum += value * weight
-                        total_weight += weight
-                    except Exception:
-                        continue
+                    dist = self.h3.grid_distance(target, source)
+                    if dist == 0:
+                        weighted_sum = value
+                        total_weight = 1.0
+                        break
+                    weight = 1.0 / (dist**power)
+                    weighted_sum += value * weight
+                    total_weight += weight
 
                 interpolated[target] = (
                     weighted_sum / total_weight if total_weight > 0 else 0.0
@@ -1247,7 +1351,11 @@ class H3Backend:
         Returns:
             Dictionary with validation result and details
         """
-        is_valid = isinstance(resolution, int) and 0 <= resolution <= 15
+        is_valid = (
+            not isinstance(resolution, bool)
+            and isinstance(resolution, int)
+            and 0 <= resolution <= 15
+        )
         return {
             "valid": is_valid,
             "resolution": resolution,
@@ -1271,8 +1379,18 @@ class H3Backend:
         Returns:
             Dictionary with validation result and details
         """
-        lat_valid = isinstance(lat, (int, float)) and -90 <= lat <= 90
-        lng_valid = isinstance(lng, (int, float)) and -180 <= lng <= 180
+        lat_valid = (
+            not isinstance(lat, bool)
+            and isinstance(lat, (int, float))
+            and math.isfinite(lat)
+            and -90 <= lat <= 90
+        )
+        lng_valid = (
+            not isinstance(lng, bool)
+            and isinstance(lng, (int, float))
+            and math.isfinite(lng)
+            and -180 <= lng <= 180
+        )
 
         errors = []
         if not lat_valid:

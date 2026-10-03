@@ -8,7 +8,7 @@ across boundaries and hierarchies in nested geospatial systems.
 import logging
 import uuid
 from types import TracebackType
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass, field
 from typing import Any
 from collections.abc import Callable
@@ -17,6 +17,8 @@ from collections import defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor
 import threading
 import queue
+
+from geo_infer_time import normalize_timestamp
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +83,7 @@ class Message:
 
     # Status tracking
     status: MessageStatus = MessageStatus.PENDING
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     delivered_at: datetime | None = None
     expires_at: datetime | None = None
 
@@ -92,13 +94,20 @@ class Message:
 
     def __post_init__(self) -> None:
         """Set expiration time if TTL is specified."""
-        if self.ttl:
+        self.created_at = normalize_timestamp(self.created_at)
+        if self.delivered_at is not None:
+            self.delivered_at = normalize_timestamp(self.delivered_at)
+        if self.expires_at is not None:
+            self.expires_at = normalize_timestamp(self.expires_at)
+        if self.ttl is not None:
+            if not isinstance(self.ttl, timedelta) or self.ttl.total_seconds() < 0:
+                raise ValueError("ttl must be a non-negative timedelta")
             self.expires_at = self.created_at + self.ttl
 
     def is_expired(self) -> bool:
         """Check if message has expired."""
         if self.expires_at:
-            return datetime.now() > self.expires_at
+            return datetime.now(UTC) > self.expires_at
         return False
 
     def can_retry(self) -> bool:
@@ -212,7 +221,7 @@ class H3MessageBroker:
         self.message_history: deque = deque(maxlen=10000)
 
         # Created timestamp
-        self.created_at = datetime.now()
+        self.created_at = datetime.now(UTC)
 
     def start(self) -> None:
         """Start the message broker."""
@@ -540,7 +549,7 @@ class H3MessageBroker:
             "active_handlers": len(self.handlers),
             "registered_systems": len(self.system_handlers),
             "running": self.running,
-            "uptime": (datetime.now() - self.created_at).total_seconds(),
+            "uptime": (datetime.now(UTC) - self.created_at).total_seconds(),
         }
 
     def _queue_message(self, message: Message) -> None:
@@ -605,7 +614,7 @@ class H3MessageBroker:
                 return
 
             # Process with handlers
-            delivery_start = datetime.now()
+            delivery_start = datetime.now(UTC)
 
             for handler in handlers:
                 try:
@@ -624,7 +633,7 @@ class H3MessageBroker:
 
             # Mark as delivered
             message.status = MessageStatus.DELIVERED
-            message.delivered_at = datetime.now()
+            message.delivered_at = datetime.now(UTC)
 
             # Record delivery time
             delivery_time = (message.delivered_at - delivery_start).total_seconds()
