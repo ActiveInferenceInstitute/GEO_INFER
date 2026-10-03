@@ -62,6 +62,19 @@ class _DescendantCensus:
             return self.token in process.environ().get(_OWNERSHIP_ENV, "").split(":")
         except self.psutil.NoSuchProcess:
             return False
+        except self.psutil.AccessDenied:
+            # Linux may deny a same-user zombie's /proc/<pid>/environ.
+            # Only positively stopped identities can be excluded; a live or
+            # uninspectable candidate remains an ownership-inspection failure.
+            try:
+                if (
+                    not process.is_running()
+                    or process.status() == self.psutil.STATUS_ZOMBIE
+                ):
+                    return False
+            except self.psutil.NoSuchProcess:
+                return False
+            raise
 
     def refresh(self, *, timeout: float) -> None:
         if not math.isfinite(timeout) or timeout <= 0:

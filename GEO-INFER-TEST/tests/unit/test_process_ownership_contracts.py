@@ -1,0 +1,269 @@
+"""Process ownership remains strict for live or uninspectable candidates."""
+
+import os
+import subprocess
+from types import SimpleNamespace
+
+import psutil
+import pytest
+
+
+from geo_infer_test import process as module
+
+
+TOKEN = "a" * 32
+
+
+class BoundaryProcess:
+    pid = 4321
+
+    def __init__(self, *, environment=None, running=True, status=psutil.STATUS_RUNNING):
+        self.environment = environment
+        self.running = running
+        self.state = status
+        self.calls = []
+
+    def environ(self):
+        self.calls.append("environ")
+        if isinstance(self.environment, BaseException):
+            raise self.environment
+        return self.environment or {}
+
+    def is_running(self):
+        self.calls.append("is_running")
+        if isinstance(self.running, BaseException):
+            raise self.running
+        return self.running
+
+    def status(self):
+        self.calls.append("status")
+        if isinstance(self.state, BaseException):
+            raise self.state
+        return self.state
+
+    def create_time(self):
+        self.calls.append("create_time")
+        return 123.0
+
+
+def census():
+    return module._DescendantCensus(9999, TOKEN)
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        (TOKEN, True),
+        ("", False),
+        ("b" * 32, False),
+        ("b" * 32 + ":" + TOKEN, True),
+        (TOKEN + "0", False),
+        ("0" + TOKEN, False),
+    ],
+)
+def test_readable_environment_preserves_exact_token(value, expected):
+    child = BoundaryProcess(
+        environment={module._OWNERSHIP_ENV: value},
+        status=RuntimeError("must not inspect"),
+    )
+    assert census()._owned(child) is expected
+    assert child.calls == ["environ"]
+
+
+def test_environment_no_such_process_is_positive_exit():
+    child = BoundaryProcess(environment=psutil.NoSuchProcess(4321))
+    assert census()._owned(child) is False
+    assert child.calls == ["environ"]
+
+
+@pytest.mark.parametrize(
+    "running,state,expected_calls",
+    [
+        (False, RuntimeError("must not inspect reused PID"), ["environ", "is_running"]),
+        (True, psutil.STATUS_ZOMBIE, ["environ", "is_running", "status"]),
+        (
+            psutil.NoSuchProcess(4321),
+            RuntimeError("must not inspect exited PID"),
+            ["environ", "is_running"],
+        ),
+        (True, psutil.NoSuchProcess(4321), ["environ", "is_running", "status"]),
+    ],
+)
+def test_denied_environment_excludes_only_positive_stopped_identity(
+    running, state, expected_calls
+):
+    child = BoundaryProcess(
+        environment=psutil.AccessDenied(4321), running=running, status=state
+    )
+    assert census()._owned(child) is False
+    assert child.calls == expected_calls
+
+
+@pytest.mark.parametrize(
+    "state",
+    [
+        psutil.STATUS_RUNNING,
+        psutil.STATUS_SLEEPING,
+        psutil.STATUS_STOPPED,
+        psutil.STATUS_TRACING_STOP,
+        psutil.STATUS_DEAD,
+        "unknown",
+    ],
+)
+def test_denied_live_or_unknown_state_remains_fatal(state):
+    error = psutil.AccessDenied(4321)
+    child = BoundaryProcess(environment=error, status=state)
+    with pytest.raises(psutil.AccessDenied) as caught:
+        census()._owned(child)
+    assert caught.value is error
+    assert child.calls == ["environ", "is_running", "status"]
+
+
+@pytest.mark.parametrize(
+    "step,error",
+    [
+        ("running", psutil.AccessDenied(4321)),
+        ("running", RuntimeError("identity unavailable")),
+        ("status", psutil.AccessDenied(4321)),
+        ("status", RuntimeError("state unavailable")),
+    ],
+)
+def test_identity_or_status_inspection_failure_remains_fatal(step, error):
+    denied = psutil.AccessDenied(4321)
+    child = BoundaryProcess(
+        environment=denied,
+        running=error if step == "running" else True,
+        status=error if step == "status" else psutil.STATUS_ZOMBIE,
+    )
+    with pytest.raises(type(error)) as caught:
+        census()._owned(child)
+    assert caught.value is error
+    assert caught.value.__context__ is denied
+
+
+def native_listing(child):
+    return subprocess.CompletedProcess(
+        ["ps"],
+        0,
+        f"{child.pid} command {module._OWNERSHIP_ENV}={TOKEN} PRIVATE_SENTINEL=do-not-retain\n",
+        "",
+    )
+
+
+def posix_boundary(monkeypatch, child):
+    owned = census()
+    monkeypatch.setattr(module, "os", SimpleNamespace(name="posix"))
+    monkeypatch.setattr(
+        module.subprocess, "run", lambda *args, **kwargs: native_listing(child)
+    )
+    monkeypatch.setattr(owned.psutil, "Process", lambda pid: child)
+    return owned
+
+
+def test_positive_zombie_native_candidate_is_excluded(monkeypatch):
+    child = BoundaryProcess(
+        environment=psutil.AccessDenied(4321), status=psutil.STATUS_ZOMBIE
+    )
+    owned = posix_boundary(monkeypatch, child)
+    owned.refresh(timeout=1)
+    assert owned.processes == {}
+    assert child.calls == ["create_time", "environ", "is_running", "status"]
+
+
+@pytest.mark.parametrize(
+    "state",
+    [
+        psutil.STATUS_RUNNING,
+        psutil.AccessDenied(4321),
+        RuntimeError("state unavailable"),
+    ],
+)
+def test_positive_native_candidate_with_denied_live_or_unknown_state_fails_closed(
+    monkeypatch, state
+):
+    child = BoundaryProcess(environment=psutil.AccessDenied(4321), status=state)
+    owned = posix_boundary(monkeypatch, child)
+    with pytest.raises(
+        type(state) if isinstance(state, BaseException) else psutil.AccessDenied
+    ) as caught:
+        owned.refresh(timeout=1)
+    assert "PRIVATE_SENTINEL" not in str(caught.value)
+    assert "do-not-retain" not in str(caught.value)
+    assert owned.processes == {}
+
+
+def test_readable_detached_live_candidate_is_retained(monkeypatch):
+    child = BoundaryProcess(environment={module._OWNERSHIP_ENV: TOKEN})
+    owned = posix_boundary(monkeypatch, child)
+    owned.refresh(timeout=1)
+    assert owned.processes == {4321: child}
+    assert owned.live() == [4321]
+
+
+def test_zombie_positive_status_cannot_extend_refresh_deadline(monkeypatch):
+    now = [0.0]
+    child = BoundaryProcess(
+        environment=psutil.AccessDenied(4321), status=psutil.STATUS_ZOMBIE
+    )
+    original_status = child.status
+
+    def late_status():
+        now[0] = 2.0
+        return original_status()
+
+    child.status = late_status
+    owned = posix_boundary(monkeypatch, child)
+    monkeypatch.setattr(module, "time", SimpleNamespace(monotonic=lambda: now[0]))
+    with pytest.raises(subprocess.TimeoutExpired):
+        owned.refresh(timeout=1)
+    assert owned.processes == {}
+
+
+def test_successful_owned_cleanup_still_kills_and_waits_identity(monkeypatch):
+    child = BoundaryProcess(environment={module._OWNERSHIP_ENV: TOKEN})
+    calls = []
+    child.kill = lambda: (
+        calls.append("kill"),
+        setattr(child, "state", psutil.STATUS_ZOMBIE),
+    )
+    owned = census()
+    owned.processes[child.pid] = child
+    monkeypatch.setattr(
+        owned.psutil,
+        "wait_procs",
+        lambda children, timeout: calls.append(("wait", tuple(children), timeout)),
+    )
+    owned.kill()
+    assert calls == ["kill", ("wait", (child,), module._DESCENDANT_REAP_SECONDS)]
+    assert owned.live() == []
+
+
+def test_arbitrary_environment_error_is_not_reclassified():
+    error = RuntimeError("environment failure")
+    child = BoundaryProcess(environment=error, status=psutil.STATUS_ZOMBIE)
+    with pytest.raises(RuntimeError) as caught:
+        census()._owned(child)
+    assert caught.value is error
+    assert child.calls == ["environ"]
+
+
+def test_real_psutil_cached_create_time_mismatch_excludes_reused_identity(monkeypatch):
+    """Exercise real psutil identity comparison without killing a foreign PID."""
+    identity = psutil.Process(os.getpid())
+    actual_creation = identity.create_time()
+    # Represent a retained older identity for this currently live numeric PID.
+    # The kernel PID itself is not reused or modified by this private oracle.
+    identity._ident = (identity.pid, actual_creation - 1.0)
+
+    def denied():
+        raise psutil.AccessDenied(identity.pid)
+
+    def must_not_inspect_status():
+        raise AssertionError("Reused identity must short-circuit status inspection")
+
+    monkeypatch.setattr(identity, "environ", denied)
+    monkeypatch.setattr(identity, "status", must_not_inspect_status)
+    assert census()._owned(identity) is False
+    assert identity.is_running() is False
+    current = psutil.Process(os.getpid())
+    assert current.is_running() is True and current.create_time() == actual_creation
