@@ -40,6 +40,7 @@ Unit workspace within `GEO-INFER-ACT`.
 - `test_policy_decomposition.py`
 - `test_policy_selection.py`
 - `test_pymdp_h3_backend.py`
+- `test_research_policy_contracts.py`
 - `test_runner_contracts.py`
 - `test_spatial_agent.py`
 - `test_spatial_grid_scoring.py`

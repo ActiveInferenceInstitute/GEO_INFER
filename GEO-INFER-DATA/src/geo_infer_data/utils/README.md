@@ -4,6 +4,7 @@ Utils workspace within `GEO-INFER-DATA`.
 
 ## Contents
 
+- `_duckdb_extension_worker.py`
 - `caching.py`
 - `compression.py`
 - `dependencies.py`

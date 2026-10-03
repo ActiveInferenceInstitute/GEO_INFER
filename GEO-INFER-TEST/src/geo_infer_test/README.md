@@ -7,6 +7,7 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `core/`
 - `models/`
 - `__init__.py`
+- `act_research_oracles.py`
 - `coverage.py`
 - `doc_examples.py`
 - `execution.py`
@@ -18,6 +19,10 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 
 ## Public Interface
 
+- `act_research_oracles.py:research_profile_reference` (function)
+- `act_research_oracles.py:research_posterior_reference` (function)
+- `act_research_oracles.py:research_policy_reference` (function)
+- `act_research_oracles.py:assert_research_policy` (function)
 - `coverage.py:measure_module` (function)
 - `coverage.py:junit_failure_names` (function)
 - `coverage.py:junit_failure_details` (function)
@@ -34,10 +39,6 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `execution.py:profile_selection_args` (function)
 - `execution.py:ensure_results_dir` (function)
 - `execution.py:run_results_dir` (function)
-- `execution.py:runtime_receipt` (function)
-- `execution.py:workspace_src_paths` (function)
-- `execution.py:build_subprocess_env` (function)
-- `execution.py:junit_path` (function)
 
 ## Module Metadata
 

@@ -15,7 +15,7 @@ Foundational data backbone providing ETL pipelines, storage optimization, and da
 
 ## Public Interface
 
-- No public Python symbols are defined directly in this directory.
+- `provision_duckdb_spatial.py:main` (function)
 
 ## Module Metadata
 

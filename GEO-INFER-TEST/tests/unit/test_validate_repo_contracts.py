@@ -37,6 +37,24 @@ def load_rewriter_module():
     return module
 
 
+def test_signpost_public_interfaces_exclude_private_modules(tmp_path):
+    (tmp_path / "_worker.py").write_text("def launch():\n    pass\n", encoding="utf-8")
+    (tmp_path / "test_example.py").write_text(
+        "def scenario():\n    pass\n", encoding="utf-8"
+    )
+    (tmp_path / "__init__.py").write_text(
+        "def supported_api():\n    pass\n", encoding="utf-8"
+    )
+    (tmp_path / "public.py").write_text(
+        "class PublicModel:\n    pass\ndef _private_helper():\n    pass\n",
+        encoding="utf-8",
+    )
+    assert load_rewriter_module().public_symbols(tmp_path) == [
+        "`__init__.py:supported_api` (function)",
+        "`public.py:PublicModel` (class)",
+    ]
+
+
 def test_signpost_inventory_includes_new_files_and_excludes_deletions(
     tmp_path, monkeypatch
 ):

@@ -15,7 +15,6 @@ Hydrography workspace within `GEO-INFER-PLACE`.
 
 ## Public Interface
 
-- `__main__.py:main` (function)
 - `data_sources.py:load_flowlines` (function)
 - `data_sources.py:sample_flowlines` (function)
 - `data_sources.py:CascadianSurfaceWaterDataSources` (class)

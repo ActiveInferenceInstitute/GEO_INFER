@@ -24,6 +24,7 @@
 - `core/`
 - `models/`
 - `__init__.py`
+- `act_research_oracles.py`
 - `coverage.py`
 - `doc_examples.py`
 - `execution.py`

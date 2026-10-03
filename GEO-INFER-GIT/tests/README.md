@@ -10,6 +10,7 @@ Tests workspace within `GEO-INFER-GIT`.
 
 ## Public Interface
 
+- `conftest.py:isolated_git_monitor_configuration` (function)
 - `conftest.py:sample_coordinates` (function)
 - `conftest.py:sample_geodataframe` (function)
 - `conftest.py:tmp_output_dir` (function)

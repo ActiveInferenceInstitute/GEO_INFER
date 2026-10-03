@@ -27,6 +27,7 @@
 - `test_caching.py`
 - `test_cloud_connectors.py`
 - `test_compression.py`
+- `test_duckdb_provisioning.py`
 - `test_duckdb_spatial.py`
 - `test_error_handling.py`
 - `test_file_connector.py`

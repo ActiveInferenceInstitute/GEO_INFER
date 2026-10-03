@@ -190,7 +190,9 @@ def direct_contents(directory: Path) -> tuple[list[str], list[str], list[str]]:
 def public_symbols(directory: Path) -> list[str]:
     symbols: list[str] = []
     for py_file in sorted(directory.glob("*.py")):
-        if py_file.name.startswith("test_"):
+        if py_file.name.startswith("test_") or (
+            py_file.name.startswith("_") and py_file.name != "__init__.py"
+        ):
             continue
         try:
             with warnings.catch_warnings():

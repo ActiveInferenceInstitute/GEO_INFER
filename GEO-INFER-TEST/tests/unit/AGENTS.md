@@ -21,6 +21,7 @@
 
 ## Local Contents
 
+- `test_act_research_oracles.py`
 - `test_build_package_wheels.py`
 - `test_check_coverage_floor_gate.py`
 - `test_ci_workflow_contracts.py`
