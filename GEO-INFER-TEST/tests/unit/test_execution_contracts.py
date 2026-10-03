@@ -105,6 +105,60 @@ def test_native_invalid_output_bytes_preserve_receipt(engine) -> None:
     assert (attempt / "stderr.log").read_text() == result.stderr
 
 
+def test_large_real_timeout_retains_both_ends_of_output(engine) -> None:
+    """Timeout logs must preserve diagnostics beyond the displayed tail limit."""
+    import hashlib
+
+    code = (
+        "import sys,time; "
+        "print('STDOUT_HEAD' + 'x'*1_050_000 + 'STDOUT_TAIL', flush=True); "
+        "print('STDERR_HEAD' + 'y'*1_050_000 + 'STDERR_TAIL', file=sys.stderr, flush=True); "
+        "time.sleep(30)"
+    )
+    result = engine.run_command([sys.executable, "-c", code], "large timeout", 3.5)
+    assert result.status == "TIMEOUT" and not result.success
+    receipt_path = Path(result.receipt)
+    receipt = json.loads(receipt_path.read_text())
+    for name, prefix, suffix, retained in (
+        ("stdout.log", "STDOUT_HEAD", "STDOUT_TAIL", result.stdout),
+        ("stderr.log", "STDERR_HEAD", "STDERR_TAIL", result.stderr),
+    ):
+        artifact = receipt_path.parent / name
+        assert retained.startswith(prefix) and suffix in retained
+        assert len(retained) > 1_050_000
+        assert artifact.read_text() == retained
+        assert (
+            receipt["artifacts"][name]
+            == hashlib.sha256(artifact.read_bytes()).hexdigest()
+        )
+
+
+@pytest.mark.parametrize("interrupted", [False, True])
+def test_large_process_exception_retains_full_decoded_output(
+    engine, monkeypatch, interrupted
+) -> None:
+    """Error and interruption artifacts share the full-output retention contract."""
+    metadata = engine.runtime_receipt(timeout=10)
+    monkeypatch.setattr(engine, "runtime_receipt", lambda **kwargs: metadata)
+    error = KeyboardInterrupt() if interrupted else RuntimeError("process failure")
+    error.output = b"OUTPUT_HEAD" + b"x" * 1_050_000 + b"\xffOUTPUT_TAIL"
+    error.stderr = b"ERROR_HEAD" + b"y" * 1_050_000 + b"\xfeERROR_TAIL"
+
+    def fail_process(*args, **kwargs):
+        raise error
+
+    monkeypatch.setattr(engine, "run_process", fail_process)
+    result = engine.run_command([sys.executable, "-c", "pass"], "large error", 10)
+    assert result.status == ("INTERRUPTED" if interrupted else "FAIL")
+    assert result.stdout.startswith("OUTPUT_HEAD")
+    assert "\ufffdOUTPUT_TAIL" in result.stdout
+    assert result.stderr.startswith("ERROR_HEAD")
+    assert "\ufffdERROR_TAIL" in result.stderr
+    attempt = Path(result.receipt).parent
+    assert (attempt / "stdout.log").read_text() == result.stdout
+    assert (attempt / "stderr.log").read_text() == result.stderr
+
+
 @pytest.mark.parametrize("kind", ["runtime", "value", "process-access"])
 def test_unexpected_process_failure_retains_failed_receipt(
     engine, monkeypatch, kind

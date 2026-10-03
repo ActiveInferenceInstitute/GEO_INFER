@@ -466,13 +466,13 @@ def run_command(
         rc, stdout, stderr = completed.returncode, completed.stdout, completed.stderr
     except subprocess.TimeoutExpired as exc:
         stdout, stderr = (
-            _text_tail(exc.stdout, 1_000_000),
-            _text_tail(exc.stderr, 1_000_000),
+            _text(exc.stdout),
+            _text(exc.stderr),
         )
         errors.append(
             f"Timed out after {timeout}s; "
             + (
-                "process tree terminated"
+                "process-tree cleanup attempted; see retained diagnostics"
                 if launched
                 else "setup deadline exhausted before command launch"
             )
@@ -480,18 +480,22 @@ def run_command(
         status = "TIMEOUT"
     except Exception as exc:
         stdout, stderr = (
-            _text_tail(getattr(exc, "output", None), 1_000_000),
-            _text_tail(getattr(exc, "stderr", None), 1_000_000),
+            _text(getattr(exc, "output", None)),
+            _text(getattr(exc, "stderr", None)),
         )
         errors.append(f"Command could not complete: {type(exc).__name__}: {exc}")
     except KeyboardInterrupt as exc:
         stdout, stderr = (
-            _text_tail(getattr(exc, "output", None), 1_000_000),
-            _text_tail(getattr(exc, "stderr", None), 1_000_000),
+            _text(getattr(exc, "output", None)),
+            _text(getattr(exc, "stderr", None)),
         )
         errors.append(
             "Command interrupted; "
-            + ("process tree terminated" if launched else "command was not launched")
+            + (
+                "process-tree cleanup attempted; see retained diagnostics"
+                if launched
+                else "command was not launched"
+            )
         )
         status = "INTERRUPTED"
     completion = None
@@ -992,8 +996,8 @@ def run_all_modules(timeout: int, fail_fast: bool = False) -> SuiteReport:
     return execute_module_tasks(tasks, workers=DEFAULT_WORKERS, fail_fast=fail_fast)
 
 
-def _text_tail(value: object, limit: int = 2000) -> str:
-    """Return a JSON-safe tail for subprocess output.
+def _text(value: object) -> str:
+    """Decode subprocess output without discarding retained diagnostics.
 
     ``subprocess.TimeoutExpired`` can expose captured output as ``bytes`` even
     when ``text=True`` was requested.  Normalizing at the report boundary keeps
@@ -1006,7 +1010,12 @@ def _text_tail(value: object, limit: int = 2000) -> str:
         value = value.decode("utf-8", errors="replace")
     elif not isinstance(value, str):
         value = str(value)
-    return value[-limit:]
+    return value
+
+
+def _text_tail(value: object, limit: int = 2000) -> str:
+    """Bound displayed summaries while immutable attempt logs retain all output."""
+    return _text(value)[-limit:]
 
 
 def category_budget_lines(report: SuiteReport) -> list[str]:
