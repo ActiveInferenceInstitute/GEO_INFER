@@ -409,7 +409,7 @@ class TestDetectFrequency:
         assert freq is None
 
     def test_irregular_fallback(self):
-        """Irregular timestamps fall back to median-based detection."""
+        """Irregular timestamps do not receive a guessed cadence."""
         # Roughly daily but with noise
         np.random.seed(42)
         base = pd.Timestamp("2024-01-01", tz="UTC")
@@ -420,8 +420,8 @@ class TestDetectFrequency:
         df = pd.DataFrame({"value": range(30)}, index=pd.DatetimeIndex(timestamps))
         ts = TimeSeries(data=df)
         freq = detect_frequency(ts)
-        # Should still detect roughly daily
-        assert freq is not None
+        # Caller must select a regularization grid explicitly.
+        assert freq is None
 
 
 class TestFillGaps:
@@ -474,17 +474,10 @@ class TestFillGaps:
 
     def test_fill_no_freq_raises(self):
         """ValueError when frequency cannot be determined and not provided."""
-        # Two points 1 second apart followed by 1 year -- too irregular
-        dates = pd.to_datetime(["2024-01-01", "2025-07-01"], utc=True)
-        df = pd.DataFrame({"value": [1.0, 2.0]}, index=dates)
-        ts = TimeSeries(data=df)
-        # detect_frequency may still return something; if not, this raises
-        # Use explicit freq=None to force auto-detection which might fail
-        # This is a best-effort edge case test
-        try:
+        dates = pd.to_datetime(["2024-01-01", "2024-01-02", "2024-01-04"], utc=True)
+        ts = TimeSeries(pd.Series([1.0, 2.0, 4.0], index=dates))
+        with pytest.raises(ValueError, match="Pass freq explicitly"):
             fill_gaps(ts, method="linear", freq=None)
-        except ValueError:
-            pass  # Expected path when frequency cannot be determined
 
 
 class TestAlignTimeseries:

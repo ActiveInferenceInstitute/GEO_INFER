@@ -53,5 +53,5 @@ def test_zero_slope_is_distinct_from_fit_quality():
 
 @pytest.mark.parametrize("values", [[1], [1, np.nan], [1, np.inf]])
 def test_insufficient_or_missing_observations_fail_explicitly(values):
-    with pytest.raises(ValueError, match="at least two finite observations"):
+    with pytest.raises(ValueError, match="finite|at least 2"):
         analyze(values)

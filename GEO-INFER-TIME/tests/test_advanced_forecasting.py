@@ -78,8 +78,8 @@ class TestEngineInit:
         assert engine.config == {}
 
     def test_custom_config(self):
-        """Custom config is stored."""
-        cfg = {"max_iter": 500, "method": "css"}
+        """Declared backend fit configuration is stored."""
+        cfg = {"arima_fit_kwargs": {"method_kwargs": {"maxiter": 500}}}
         eng = AdvancedForecastingEngine(config=cfg)
         assert eng.config == cfg
 

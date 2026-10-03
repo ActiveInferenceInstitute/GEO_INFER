@@ -9,6 +9,8 @@ import logging
 from typing import Any
 import numpy as np
 from scipy import stats
+from geo_infer_time.core._validation import finite_vector, positive_integer
+from geo_infer_time.core.timestamps import normalize_datetime_index
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +41,11 @@ class TemporalStatistics:
         Returns:
             Dictionary with comprehensive summary statistics
         """
-        values_arr = np.array(values)
+        values_arr = finite_vector(values)
         n = len(values_arr)
+        if timestamps is not None:
+            if len(normalize_datetime_index(timestamps)) != n:
+                raise ValueError("timestamps must have one instant per value")
 
         if n == 0:
             return {"error": "No values provided"}
@@ -49,19 +54,21 @@ class TemporalStatistics:
 
         mean = np.mean(values_arr)
         median = np.median(values_arr)
-        std = np.std(values_arr, ddof=1) if n > 1 else 0.0
-        variance = np.var(values_arr, ddof=1) if n > 1 else 0.0
+        scale = np.max(np.abs(values_arr))
+        scaled_values = values_arr / scale if scale else values_arr
+        std = scale * np.std(scaled_values, ddof=1) if n > 1 else 0.0
+        variance = std**2
 
         # Standard error
         se = std / np.sqrt(n) if n > 0 else 0.0
 
         # Coefficient of variation
-        cv = (std / abs(mean) * 100) if mean != 0 else 0.0
+        cv = (std / abs(mean) * 100) if mean != 0 else None
 
         # Higher moments
-        if n > 2 and not np.isclose(std, 0.0):
-            skewness = stats.skew(values_arr)
-            kurtosis = stats.kurtosis(values_arr)
+        if n > 2 and std > 0:
+            skewness = stats.skew(scaled_values)
+            kurtosis = stats.kurtosis(scaled_values)
         else:
             skewness = 0.0
             kurtosis = 0.0
@@ -112,7 +119,7 @@ class TemporalStatistics:
                 "std": float(std),
                 "variance": float(variance),
                 "se": float(se),
-                "cv": float(cv),
+                "cv": float(cv) if cv is not None else None,
                 "range": float(range_val),
                 "iqr": float(iqr),
             },
@@ -147,9 +154,12 @@ class TemporalStatistics:
         Returns:
             Dictionary with differenced series and statistics
         """
-        values_arr = np.array(values)
+        values_arr = finite_vector(values)
         n = len(values_arr)
 
+        positive_integer(order, "order", minimum=0)
+        if seasonal_period is not None:
+            positive_integer(seasonal_period, "seasonal_period")
         if n <= order:
             return {"error": f"Series too short for order {order} differencing"}
 
@@ -201,17 +211,19 @@ class TemporalStatistics:
         Returns:
             Dictionary with test results
         """
-        values_arr = np.array(values)
+        values_arr = finite_vector(values)
         n = len(values_arr)
 
+        positive_integer(lags, "lags")
         if n <= lags:
             return {"error": "Series too short for specified lags"}
 
         logger.info(f"Performing Ljung-Box test with {lags} lags")
 
         # Calculate autocorrelations
-        mean = np.mean(values_arr)
-        deviations = values_arr - mean
+        scale = np.max(np.abs(values_arr))
+        scaled = values_arr / scale if scale else values_arr
+        deviations = scaled - np.mean(scaled)
         var = np.sum(deviations**2) / n
 
         if var == 0:
@@ -230,7 +242,7 @@ class TemporalStatistics:
         lb_stat *= n * (n + 2)
 
         # P-value from chi-square distribution
-        p_value = 1 - stats.chi2.cdf(lb_stat, lags)
+        p_value = stats.chi2.sf(lb_stat, lags)
 
         return {
             "lb_statistic": float(lb_stat),
@@ -258,7 +270,7 @@ class TemporalStatistics:
         Returns:
             Dictionary with test results
         """
-        values_arr = np.array(values)
+        values_arr = finite_vector(values)
         n = len(values_arr)
 
         if n < 3:
@@ -267,18 +279,21 @@ class TemporalStatistics:
         logger.info("Performing Jarque-Bera normality test")
 
         # Calculate skewness and kurtosis
-        if np.isclose(np.std(values_arr), 0.0):
-            skewness = 0.0
-            kurtosis = 0.0
-        else:
-            skewness = stats.skew(values_arr)
-            kurtosis = stats.kurtosis(values_arr)  # Excess kurtosis
+        scale = np.max(np.abs(values_arr))
+        standardized = values_arr / scale if scale else values_arr
+        if np.std(standardized) == 0:
+            return {
+                "error": "Zero variance; normality test is undefined",
+                "is_normal": False,
+            }
+        skewness = stats.skew(standardized)
+        kurtosis = stats.kurtosis(standardized)  # Excess kurtosis
 
         # Jarque-Bera statistic
         jb_stat = (n / 6) * (skewness**2 + (kurtosis**2) / 4)
 
         # P-value from chi-square distribution with 2 df
-        p_value = 1 - stats.chi2.cdf(jb_stat, 2)
+        p_value = stats.chi2.sf(jb_stat, 2)
 
         return {
             "jb_statistic": float(jb_stat),
@@ -309,7 +324,7 @@ class TemporalStatistics:
         Returns:
             Dictionary with test results
         """
-        residuals_arr = np.array(residuals)
+        residuals_arr = finite_vector(residuals, "residuals")
         n = len(residuals_arr)
 
         if n < 2:
@@ -318,8 +333,12 @@ class TemporalStatistics:
         logger.info("Calculating Durbin-Watson statistic")
 
         # DW = sum((e_t - e_{t-1})^2) / sum(e_t^2)
-        diff_residuals = np.diff(residuals_arr)
-        dw = np.sum(diff_residuals**2) / (np.sum(residuals_arr**2) + 1e-10)
+        scale = np.max(np.abs(residuals_arr))
+        if scale == 0:
+            return {"error": "Zero residual energy; Durbin-Watson is undefined"}
+        scaled = residuals_arr / scale
+        diff_residuals = np.diff(scaled)
+        dw = np.sum(diff_residuals**2) / np.sum(scaled**2)
 
         # Approximate rho (first-order autocorrelation)
         rho = 1 - dw / 2
@@ -362,7 +381,7 @@ class TemporalStatistics:
         Returns:
             Dictionary with Hurst exponent
         """
-        values_arr = np.array(values)
+        values_arr = finite_vector(values)
         n = len(values_arr)
 
         if n < 10:
@@ -371,8 +390,11 @@ class TemporalStatistics:
         if max_lag is None:
             max_lag = n // 4
 
+        positive_integer(max_lag, "max_lag", minimum=2)
         logger.info("Calculating Hurst exponent")
 
+        scale = np.max(np.abs(values_arr))
+        values_arr = values_arr / scale if scale else values_arr
         # R/S analysis
         lags = []
         rs_values = []
@@ -381,7 +403,7 @@ class TemporalStatistics:
             rs_sum = 0
             count = 0
 
-            for start in range(0, n - lag, lag):
+            for start in range(0, n - lag + 1, lag):
                 segment = values_arr[start : start + lag]
                 if len(segment) < lag:
                     continue
@@ -438,9 +460,11 @@ class TemporalStatistics:
         Returns:
             Dictionary with AIC, BIC, and other criteria
         """
-        residuals_arr = np.array(residuals)
+        residuals_arr = finite_vector(residuals, "residuals")
         n = len(residuals_arr)
-        k = num_params
+        k = positive_integer(num_params, "num_params", minimum=0)
+        if log_likelihood is not None and not np.isfinite(log_likelihood):
+            raise ValueError("log_likelihood must be finite")
 
         if n <= k:
             return {"error": "More parameters than observations"}
@@ -452,9 +476,13 @@ class TemporalStatistics:
         # Estimate log-likelihood from residuals if not provided
         if log_likelihood is None:
             # Assuming normal distribution
-            rss = np.sum(residuals_arr**2)
-            sigma2 = rss / n
-            log_likelihood = -n / 2 * (np.log(2 * np.pi) + np.log(sigma2) + 1)
+            scale = np.max(np.abs(residuals_arr))
+            if scale == 0:
+                return {"error": "Zero residual variance; likelihood is undefined"}
+            log_sigma2 = 2 * np.log(scale) + np.log(
+                np.mean((residuals_arr / scale) ** 2)
+            )
+            log_likelihood = -n / 2 * (np.log(2 * np.pi) + log_sigma2 + 1)
 
         # AIC (Akaike Information Criterion)
         aic = -2 * log_likelihood + 2 * k
@@ -495,8 +523,14 @@ class TemporalStatistics:
         Returns:
             Dictionary with comprehensive diagnostics
         """
-        residuals_arr = np.array(residuals)
+        residuals_arr = finite_vector(residuals, "residuals")
 
+        scale = np.max(np.abs(residuals_arr)) if len(residuals_arr) else 0
+        scaled = residuals_arr / scale if scale else residuals_arr
+        if len(residuals_arr) < 4 or np.std(scaled) == 0:
+            return {
+                "error": "Residual diagnostics require at least four nonconstant finite residuals"
+            }
         logger.info("Running comprehensive residual diagnostics")
 
         # Summary statistics
@@ -512,17 +546,19 @@ class TemporalStatistics:
         # Mean zero test
         from scipy.stats import ttest_1samp
 
-        t_stat, p_value = ttest_1samp(residuals_arr, 0)
+        t_stat, p_value = ttest_1samp(scaled, 0)
         mean_zero = p_value > 0.05
 
         # Constant variance (simple test)
         n = len(residuals_arr)
         half = n // 2
         if half > 1:
-            var1 = np.var(residuals_arr[:half], ddof=1)
-            var2 = np.var(residuals_arr[half:], ddof=1)
-            var_ratio = max(var1, var2) / (min(var1, var2) + 1e-10)
-            homoscedastic = var_ratio < 2.0
+            var1 = np.var(scaled[:half], ddof=1)
+            var2 = np.var(scaled[half:], ddof=1)
+            var_ratio = (
+                max(var1, var2) / min(var1, var2) if min(var1, var2) > 0 else None
+            )
+            homoscedastic = var_ratio < 2.0 if var_ratio is not None else None
         else:
             var_ratio = 1.0
             homoscedastic = True
@@ -533,7 +569,9 @@ class TemporalStatistics:
             issues.append("Non-normal distribution")
         if not mean_zero:
             issues.append("Mean significantly different from zero")
-        if not homoscedastic:
+        if homoscedastic is None:
+            issues.append("Variance comparison undefined for a zero-variance segment")
+        elif not homoscedastic:
             issues.append("Possible heteroscedasticity")
         if lb.get("significant", False):
             issues.append("Significant autocorrelation")
@@ -548,7 +586,7 @@ class TemporalStatistics:
                 "mean_is_zero": mean_zero,
             },
             "variance_test": {
-                "variance_ratio": float(var_ratio),
+                "variance_ratio": float(var_ratio) if var_ratio is not None else None,
                 "homoscedastic": homoscedastic,
             },
             "overall": {

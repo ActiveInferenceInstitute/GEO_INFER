@@ -6,6 +6,7 @@ temporal geospatial data with metadata and analysis capabilities.
 """
 
 import logging
+from copy import deepcopy
 from typing import Any
 from datetime import datetime
 import pandas as pd
@@ -70,7 +71,10 @@ class TimeSeries:
         self.spatial_location = (
             dict(spatial_location) if spatial_location is not None else None
         )
-        self.metadata = dict(metadata) if metadata is not None else {}
+        self.metadata = deepcopy(metadata) if metadata is not None else {}
+
+        if not self.data.columns.is_unique:
+            raise ValueError("TimeSeries value columns must be unique")
 
         self.data.index = normalize_datetime_index(self.data.index)
 
@@ -107,10 +111,11 @@ class TimeSeries:
     @property
     def frequency(self) -> str | None:
         """Get inferred frequency."""
+        index = normalize_datetime_index(self.data.index)
         try:
-            freq = pd.infer_freq(self.data.index)
+            freq = pd.infer_freq(index)
             return str(freq) if freq is not None else None
-        except Exception:
+        except ValueError:
             return None
 
     def resample(self, frequency: str, method: str = "mean") -> "TimeSeries":
@@ -127,7 +132,7 @@ class TimeSeries:
         if method == "mean":
             resampled_data = self.data.resample(frequency).mean()
         elif method == "sum":
-            resampled_data = self.data.resample(frequency).sum()
+            resampled_data = self.data.resample(frequency).sum(min_count=1)
         elif method == "max":
             resampled_data = self.data.resample(frequency).max()
         elif method == "min":
@@ -145,7 +150,7 @@ class TimeSeries:
             metadata={**self.metadata, "resampled_from": self.frequency},
         )
 
-    def interpolate(self, method: str = "linear") -> "TimeSeries":
+    def interpolate(self, method: str = "linear", **kwargs: Any) -> "TimeSeries":
         """
         Interpolate missing values.
 
@@ -155,7 +160,7 @@ class TimeSeries:
         Returns:
             Interpolated TimeSeries
         """
-        interpolated_data = self.data.interpolate(method=method)
+        interpolated_data = self.data.interpolate(method=method, **kwargs)
 
         return TimeSeries(
             data=interpolated_data,

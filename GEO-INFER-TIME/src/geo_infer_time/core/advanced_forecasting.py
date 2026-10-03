@@ -10,6 +10,7 @@ statsmodels is a declared hard dependency (see pyproject.toml) and is imported
 unconditionally; there is no optional-fallback path.
 """
 
+from copy import deepcopy
 import logging
 import warnings
 from typing import Any
@@ -20,6 +21,12 @@ from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tools.sm_exceptions import ConvergenceWarning
+from geo_infer_time.core._validation import (
+    finite_vector,
+    positive_integer,
+    regular_frequency,
+)
+from geo_infer_time.core.timestamps import normalize_datetime_index
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +36,7 @@ def fit_arima_forecast(
     order: tuple[int, int, int] = (1, 1, 1),
     seasonal: tuple[int, int, int, int] | None = None,
     forecast_steps: int = 10,
+    fit_kwargs: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Fit an ARIMA (or SARIMAX when a seasonal order is given) model and
@@ -47,12 +55,33 @@ def fit_arima_forecast(
         Dict with ``forecast``, ``lower_bound``, ``upper_bound``, and the
         fitted ``model``
     """
+    positive_integer(forecast_steps, "forecast_steps")
+    checked = finite_vector(values)
+    if len(checked) < 2:
+        raise ValueError("Forecasting requires at least two finite observations")
+    if isinstance(values, pd.Series) and isinstance(values.index, pd.DatetimeIndex):
+        values = values.copy()
+        values.index = normalize_datetime_index(values.index)
+        values = values.asfreq(regular_frequency(values.index))
+    else:
+        values = checked
+    if not isinstance(order, tuple) or len(order) != 3:
+        raise ValueError("order must contain three non-negative integers")
+    for component in order:
+        positive_integer(component, "order component", minimum=0)
     if seasonal is not None:
+        if not isinstance(seasonal, tuple) or len(seasonal) != 4:
+            raise ValueError("seasonal must contain four non-negative integers")
+        for component in seasonal:
+            positive_integer(component, "seasonal component", minimum=0)
+        if seasonal[3] == 1:
+            raise ValueError("seasonal period must be zero or at least two")
         model = SARIMAX(values, order=order, seasonal_order=seasonal)
     else:
         model = ARIMA(values, order=order)
     try:
-        with warnings.catch_warnings():
+        with warnings.catch_warnings(record=True) as fit_warnings:
+            warnings.simplefilter("always", ConvergenceWarning)
             warnings.filterwarnings(
                 "ignore",
                 message="Non-stationary starting autoregressive parameters found.*",
@@ -63,8 +92,7 @@ def fit_arima_forecast(
                 message="Non-invertible starting MA parameters found.*",
                 category=UserWarning,
             )
-            warnings.filterwarnings("ignore", category=ConvergenceWarning)
-            fitted_model = model.fit()
+            fitted_model = model.fit(**(fit_kwargs or {}))
         forecast = fitted_model.forecast(steps=forecast_steps)
         if not isinstance(forecast, pd.Series):
             forecast = pd.Series(np.asarray(forecast))
@@ -79,6 +107,10 @@ def fit_arima_forecast(
             "lower_bound": conf_int.iloc[:, 0],
             "upper_bound": conf_int.iloc[:, 1],
             "model": fitted_model,
+            "converged": bool(
+                getattr(fitted_model, "mle_retvals", {}).get("converged", True)
+            ),
+            "fit_warnings": [str(item.message) for item in fit_warnings],
         }
     except Exception as e:
         logger.error(f"ARIMA fitting failed: {e}")
@@ -92,6 +124,7 @@ def fit_exponential_smoothing_forecast(
     seasonal_periods: int | None = None,
     alpha: float | None = None,
     forecast_steps: int = 10,
+    fit_kwargs: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Fit a Holt-Winters exponential smoothing model and forecast.
@@ -113,6 +146,25 @@ def fit_exponential_smoothing_forecast(
     Raises:
         ValueError: If ``seasonal`` is set without ``seasonal_periods``
     """
+    positive_integer(forecast_steps, "forecast_steps")
+    checked = finite_vector(values)
+    if len(checked) < 2:
+        raise ValueError("Forecasting requires at least two finite observations")
+    if isinstance(values, pd.Series) and isinstance(values.index, pd.DatetimeIndex):
+        values = values.copy()
+        values.index = normalize_datetime_index(values.index)
+        values = values.asfreq(regular_frequency(values.index))
+    else:
+        values = checked
+    if alpha is not None and (
+        isinstance(alpha, bool)
+        or not isinstance(alpha, (int, float))
+        or not np.isfinite(alpha)
+        or not 0 <= alpha <= 1
+    ):
+        raise ValueError("alpha must be finite and between 0 and 1")
+    if seasonal_periods is not None:
+        positive_integer(seasonal_periods, "seasonal_periods", minimum=2)
     if seasonal is not None and seasonal_periods is None:
         raise ValueError(
             "seasonal_periods is required when seasonal smoothing is enabled"
@@ -125,9 +177,9 @@ def fit_exponential_smoothing_forecast(
     )
     try:
         if alpha is not None:
-            fitted_model = model.fit(smoothing_level=alpha)
+            fitted_model = model.fit(smoothing_level=alpha, **(fit_kwargs or {}))
         else:
-            fitted_model = model.fit()
+            fitted_model = model.fit(**(fit_kwargs or {}))
         forecast = fitted_model.forecast(steps=forecast_steps)
         return {"forecast": forecast, "model": fitted_model}
     except Exception as e:
@@ -142,7 +194,23 @@ class AdvancedForecastingEngine:
 
     def __init__(self, config: dict | None = None):
         """Initialize advanced forecasting engine."""
-        self.config = config or {}
+        if config is not None and not isinstance(config, dict):
+            raise TypeError("config must be a dictionary")
+        self.config = deepcopy(config or {})
+        unknown = set(self.config) - {
+            "arima_fit_kwargs",
+            "smoothing_fit_kwargs",
+            "seasonal_period",
+        }
+        if unknown:
+            raise ValueError(f"Unknown forecasting configuration: {sorted(unknown)}")
+        for name in ("arima_fit_kwargs", "smoothing_fit_kwargs"):
+            if name in self.config and not isinstance(self.config[name], dict):
+                raise TypeError(f"{name} must be a dictionary")
+        if "seasonal_period" in self.config:
+            positive_integer(
+                self.config["seasonal_period"], "seasonal_period", minimum=2
+            )
 
     def forecast_arima(
         self,
@@ -168,6 +236,7 @@ class AdvancedForecastingEngine:
             order=order,
             seasonal=seasonal,
             forecast_steps=forecast_steps,
+            fit_kwargs=self.config.get("arima_fit_kwargs"),
         )
 
     def forecast_exponential_smoothing(
@@ -201,11 +270,13 @@ class AdvancedForecastingEngine:
             seasonal=seasonal,
             seasonal_periods=seasonal_periods,
             forecast_steps=forecast_steps,
+            fit_kwargs=self.config.get("smoothing_fit_kwargs"),
         )
 
     def detect_trend_seasonality(
         self,
         time_series: pd.Series,
+        period: int | None = None,
     ) -> dict[str, Any]:
         """
         Detect trend and seasonality in time series.
@@ -216,18 +287,40 @@ class AdvancedForecastingEngine:
         Returns:
             Trend and seasonality analysis
         """
+        values = finite_vector(time_series)
+        if not len(values):
+            raise ValueError("Seasonal decomposition requires observations")
+        time_series = time_series.copy()
+        time_series.index = normalize_datetime_index(time_series.index)
+        regular_frequency(time_series.index)
+        if period is None:
+            period = self.config.get("seasonal_period")
+        if period is None:
+            from geo_infer_time.core.analysis import TemporalAnalyzer
+
+            period = TemporalAnalyzer._infer_seasonal_period(
+                regular_frequency(time_series.index)
+            )
+        positive_integer(period, "period", minimum=2)
+        if len(values) < 2 * period:
+            raise ValueError(
+                "Seasonal decomposition requires at least two complete cycles"
+            )
         decomposition = seasonal_decompose(
             time_series,
             model="additive",
-            period=12 if len(time_series) > 24 else None,
+            period=period,
         )
 
         # Calculate trend strength
-        trend_strength = np.var(decomposition.trend.dropna()) / np.var(time_series)
+        variance = np.var(values)
+        trend_strength = (
+            np.var(decomposition.trend.dropna()) / variance if variance > 0 else 0.0
+        )
 
         # Calculate seasonality strength
-        seasonal_strength = np.var(decomposition.seasonal.dropna()) / np.var(
-            time_series
+        seasonal_strength = (
+            np.var(decomposition.seasonal.dropna()) / variance if variance > 0 else 0.0
         )
 
         return {
@@ -238,4 +331,5 @@ class AdvancedForecastingEngine:
             "seasonal_strength": float(seasonal_strength),
             "has_trend": trend_strength > 0.1,
             "has_seasonality": seasonal_strength > 0.1,
+            "period": period,
         }

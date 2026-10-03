@@ -28,7 +28,10 @@ def inference_schedule(
         raise ValueError("step_seconds must be finite and positive")
     if isinstance(max_steps, bool) or not isinstance(max_steps, int) or max_steps < 1:
         raise ValueError("max_steps must be a positive integer")
-    interval = timedelta(seconds=step_seconds)
+    try:
+        interval = timedelta(seconds=step_seconds)
+    except OverflowError as exc:
+        raise ValueError("step_seconds exceeds the supported datetime range") from exc
     if interval.total_seconds() != step_seconds:
         raise ValueError("step_seconds must be representable at microsecond precision")
     result = []

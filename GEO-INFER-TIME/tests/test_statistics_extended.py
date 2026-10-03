@@ -486,8 +486,8 @@ class TestEdgeCases:
     def test_constant_series_jarque_bera(self, stats, constant_values):
         """Jarque-Bera on constant series."""
         result = stats.jarque_bera_test(constant_values)
-        # All values equal -> skewness=0, kurtosis might be unusual
-        assert "jb_statistic" in result
+        assert "Zero variance" in result["error"]
+        assert result["is_normal"] is False
 
     def test_short_series_summary(self, stats, short_values):
         """Summary works on very short series."""

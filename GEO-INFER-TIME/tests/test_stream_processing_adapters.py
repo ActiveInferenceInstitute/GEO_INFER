@@ -140,7 +140,11 @@ class TestReplayIngest:
         processor = StreamProcessor(window_size=timedelta(minutes=1))
         records = [{"timestamp": index, "value": index} for index in range(3)]
         assert (
-            asyncio_run(processor.ingest_adapter_stream(ReplayIngestAdapter(records)))
+            asyncio_run(
+                processor.ingest_adapter_stream(
+                    ReplayIngestAdapter(records, {"timestamp_unit": "s"})
+                )
+            )
             == 3
         )
         assert processor.get_stats()["total_points"] == 3
@@ -150,7 +154,8 @@ class TestReplayIngest:
         records = [{"timestamp": index, "value": index} for index in range(2)]
         asyncio_run(
             processor.ingest_adapter_stream(
-                ReplayIngestAdapter(records), auto_process_windows=True
+                ReplayIngestAdapter(records, {"timestamp_unit": "s"}),
+                auto_process_windows=True,
             )
         )
         assert processor.get_stats()["total_windows"] == 2
@@ -351,7 +356,9 @@ def test_real_websocket_normalizes_records_and_injected_adapter_owns_url():
 
         async with serve(handler, "127.0.0.1", 0) as server:
             port = server.sockets[0].getsockname()[1]
-            adapter = WebSocketIngestAdapter({"url": f"ws://127.0.0.1:{port}"})
+            adapter = WebSocketIngestAdapter(
+                {"url": f"ws://127.0.0.1:{port}", "timestamp_unit": "s"}
+            )
             records = [record async for record in adapter.stream_data()]
             assert [record["value"] for record in records] == [0.0, 1.0, 2.0]
             assert [record["sensor"] for record in records] == ["ws-0", "ws-1", "ws-2"]

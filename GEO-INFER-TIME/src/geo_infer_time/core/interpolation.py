@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 
 from ..models.timeseries import TimeSeries
+from geo_infer_time.core._validation import bounded_date_range, positive_integer
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,8 @@ class TemporalInterpolator:
         Returns:
             Interpolated TimeSeries
         """
+        if limit is not None:
+            positive_integer(limit, "limit")
         data = timeseries.to_dataframe()
 
         method_map = {
@@ -170,7 +173,15 @@ class TemporalInterpolator:
         Returns:
             Interpolated TimeSeries with seasonal awareness
         """
+        positive_integer(period, "period", minimum=2)
+        if limit is not None:
+            positive_integer(limit, "limit")
         data = timeseries.to_dataframe()
+        from geo_infer_time.core._validation import regular_frequency
+
+        regular_frequency(data.index)
+        if period > len(data):
+            raise ValueError("period must not exceed the number of observations")
         result = data.copy()
         missing_before = int(data.isna().sum().sum())
 
@@ -243,6 +254,9 @@ class TemporalInterpolator:
         Returns:
             TimeSeries with only small gaps filled
         """
+        positive_integer(max_gap_size, "max_gap_size")
+        if method not in {"linear", "time", "nearest", "cubic"}:
+            raise ValueError(f"Unknown gap-aware interpolation method: {method}")
         data = timeseries.to_dataframe()
         result = data.copy()
         filled_total = 0
@@ -267,26 +281,15 @@ class TemporalInterpolator:
                     start_idx = series.index.get_loc(gap_indices[0])
                     end_idx = series.index.get_loc(gap_indices[-1])
 
-                    # Get context window around the gap
-                    context_start = max(0, start_idx - 1)
-                    context_end = min(len(series), end_idx + 2)
-                    segment = series.iloc[context_start:context_end]
-
-                    if method == "linear":
-                        filled_segment = segment.interpolate(method="linear")
-                    elif method == "nearest":
-                        filled_segment = segment.interpolate(method="nearest")
-                    elif method == "cubic":
-                        filled_segment = segment.interpolate(method="cubic")
-                    else:
-                        filled_segment = segment.interpolate(method="linear")
-
+                    # Interpolation needs both bounding observations. Use all
+                    # observed context so cubic has enough anchors when present.
+                    if start_idx == 0 or end_idx == len(series) - 1:
+                        continue
+                    filled = series.interpolate(method=method, limit_area="inside")
                     for idx in gap_indices:
-                        loc = series.index.get_loc(idx)
-                        if context_start <= loc < context_end:
-                            relative_loc = loc - context_start
-                            new_val = filled_segment.iloc[relative_loc]
-                            result.iloc[loc, result.columns.get_loc(col)] = new_val
+                        new_val = filled.loc[idx]
+                        if pd.notna(new_val):
+                            result.loc[idx, col] = new_val
                             filled_total += 1
 
         logger.info(
@@ -312,6 +315,8 @@ class TemporalInterpolator:
         timeseries: TimeSeries,
         target_freq: str,
         method: str = "linear",
+        *,
+        max_points: int = 1_000_000,
     ) -> TimeSeries:
         """
         Resample to a target frequency and interpolate new points.
@@ -320,26 +325,37 @@ class TemporalInterpolator:
             timeseries: TimeSeries object
             target_freq: Target pandas frequency string (e.g. 'h', '30min', 'D')
             method: Interpolation method for new data points
+            max_points: Allocation budget for the output time grid.
 
         Returns:
             Resampled and interpolated TimeSeries
         """
+        positive_integer(max_points, "max_points")
         data = timeseries.to_dataframe()
         original_len = len(data)
+        if method not in {"linear", "time", "nearest", "zero", "cubic"}:
+            raise ValueError(f"Unknown resampling interpolation method: {method}")
+
+        if data.empty:
+            return TimeSeries(
+                data,
+                spatial_location=timeseries.spatial_location,
+                metadata=timeseries.metadata,
+            )
 
         # Create target index spanning the original range
-        target_index = pd.date_range(
-            start=data.index.min(),
-            end=data.index.max(),
-            freq=target_freq,
+        target_index = bounded_date_range(
+            data.index.min(), data.index.max(), target_freq, max_points
         )
 
         # Reindex to target frequency (introduces NaN at new positions)
-        resampled = data.reindex(target_index)
+        # Retain off-grid observed anchors until interpolation completes. A
+        # direct reindex to target_index would discard those measured values.
+        resampled = data.reindex(data.index.union(target_index).sort_values())
 
         # Interpolate the new NaN positions
         if method == "linear":
-            resampled = resampled.interpolate(method="linear")
+            resampled = resampled.interpolate(method="time")
         elif method == "time":
             resampled = resampled.interpolate(method="time")
         elif method == "cubic":
@@ -348,6 +364,7 @@ class TemporalInterpolator:
             resampled = resampled.interpolate(method="nearest")
         else:
             resampled = resampled.interpolate(method=method)
+        resampled = resampled.reindex(target_index)
 
         logger.info(
             "Resampled from %d to %d points at freq='%s'",
@@ -390,6 +407,12 @@ class TemporalInterpolator:
         """
         orig_df = original.to_dataframe()
         interp_df = interpolated.to_dataframe()
+        if not orig_df.index.equals(interp_df.index) or not orig_df.columns.equals(
+            interp_df.columns
+        ):
+            raise ValueError(
+                "Interpolation quality requires identical timestamp and column axes"
+            )
 
         metrics: dict[str, Any] = {
             "columns": {},
@@ -416,8 +439,8 @@ class TemporalInterpolator:
             mean_similarity = max(0.0, 1.0 - mean_diff / mean_scale)
 
             # Standard deviation preservation
-            orig_std = float(orig_col.std())
-            interp_std = float(interp_col.std())
+            orig_std = float(orig_col.std()) if len(orig_col) > 1 else 0.0
+            interp_std = float(interp_col.std()) if len(interp_col) > 1 else 0.0
             std_diff = abs(interp_std - orig_std)
             std_scale = orig_std + 1e-10
             std_similarity = max(0.0, 1.0 - std_diff / std_scale)
@@ -426,7 +449,11 @@ class TemporalInterpolator:
             common_idx = (
                 orig_df[col].dropna().index.intersection(interp_df[col].dropna().index)
             )
-            if len(common_idx) > 2:
+            if (
+                len(common_idx) > 2
+                and orig_df.loc[common_idx, col].std() > 0
+                and interp_df.loc[common_idx, col].std() > 0
+            ):
                 correlation = float(
                     np.corrcoef(
                         orig_df.loc[common_idx, col].values,

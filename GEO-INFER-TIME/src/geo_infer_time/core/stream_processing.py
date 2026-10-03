@@ -9,6 +9,7 @@ alerts, and stream ingest adapters for WebSocket and Kafka sources.
 
 import logging
 import math
+from copy import deepcopy
 from bisect import bisect_right
 from collections import deque
 from contextlib import aclosing
@@ -45,6 +46,7 @@ class StreamProcessor:
         watermark_delay: timedelta | None = None,
         max_buffer_points: int = 10000,
         max_history_windows: int = 1000,
+        max_window_evaluations: int = 10000,
     ) -> None:
         """
         Initialize the stream processor.
@@ -58,6 +60,7 @@ class StreamProcessor:
             max_buffer_points: Capacity of each active and late-data buffer.
                 Exhaustion raises BufferError before accepting another point.
             max_history_windows: Number of processed summaries to retain.
+            max_window_evaluations: Maximum sliding positions evaluated per call.
         """
         if not isinstance(window_size, timedelta):
             raise TypeError("window_size must be a timedelta")
@@ -77,6 +80,7 @@ class StreamProcessor:
         for name, limit in (
             ("max_buffer_points", max_buffer_points),
             ("max_history_windows", max_history_windows),
+            ("max_window_evaluations", max_window_evaluations),
         ):
             if isinstance(limit, bool) or not isinstance(limit, int):
                 raise TypeError(f"{name} must be an integer")
@@ -84,6 +88,7 @@ class StreamProcessor:
                 raise ValueError(f"{name} must be positive")
         self.max_buffer_points = max_buffer_points
         self.max_history_windows = max_history_windows
+        self.max_window_evaluations = max_window_evaluations
         self.window_size = window_size
         self.slide_interval = (
             slide_interval if slide_interval is not None else window_size
@@ -139,7 +144,7 @@ class StreamProcessor:
         point = {
             "timestamp": timestamp,
             "value": numeric_value,
-            "metadata": dict(metadata) if metadata is not None else {},
+            "metadata": deepcopy(metadata) if metadata is not None else {},
         }
 
         # Evict by event time before checking capacity. Buffer ordering is stable
@@ -280,23 +285,12 @@ class StreamProcessor:
             return None
 
         window_data = list(self.buffer)
-        values = [point["value"] for point in window_data]
-
-        result = {
-            "window_start": window_data[0]["timestamp"].isoformat(),
-            "window_end": window_data[-1]["timestamp"].isoformat(),
-            "count": len(window_data),
-            "aggregated_value": float(self.aggregation_func(values)),
-            "min": float(np.min(values)),
-            "max": float(np.max(values)),
-            "std": float(np.std(values)) if len(values) > 1 else 0.0,
-            "median": float(np.median(values)),
-        }
+        result = self._aggregate_points(window_data)
 
         self.windows.append(result)
         del self.windows[: -self.max_history_windows]
         self._stats["total_windows"] += 1
-        return result
+        return deepcopy(result)
 
     def get_recent_windows(self, count: int = 10) -> list[dict[str, Any]]:
         """
@@ -314,7 +308,7 @@ class StreamProcessor:
             raise ValueError("count must be non-negative")
         if count == 0:
             return []
-        return self.windows[-count:]
+        return deepcopy(self.windows[-count:])
 
     def process_tumbling_windows(self) -> list[dict[str, Any]]:
         """
@@ -374,6 +368,7 @@ class StreamProcessor:
         results: list[dict[str, Any]] = []
         window_start = all_points[0]["timestamp"]
         stream_end = all_points[-1]["timestamp"]
+        self._check_window_budget(window_start, stream_end)
 
         while window_start <= stream_end:
             window_end = window_start + self.window_size
@@ -518,6 +513,7 @@ class StreamProcessor:
         all_points = sorted(self.buffer, key=lambda p: p["timestamp"])
         window_start = all_points[0]["timestamp"]
         stream_end = all_points[-1]["timestamp"]
+        self._check_window_budget(window_start, stream_end)
         alerts: list[dict[str, Any]] = []
 
         while window_start <= stream_end:
@@ -531,7 +527,7 @@ class StreamProcessor:
                 mean = float(np.mean(vals))
                 std = float(np.std(vals))
 
-                if std > 1e-10:
+                if std > 0:
                     for pt in window_pts:
                         z_val = abs(pt["value"] - mean) / std
                         if z_val > z_threshold:
@@ -547,7 +543,7 @@ class StreamProcessor:
                                 "window_mean": round(mean, 4),
                                 "window_std": round(std, 4),
                                 "window_points_count": len(window_pts),
-                                "metadata": pt.get("metadata", {}),
+                                "metadata": deepcopy(pt.get("metadata", {})),
                             }
                             alerts.append(alert)
                             self._stats["anomaly_alerts"] += 1
@@ -667,7 +663,7 @@ class StreamProcessor:
         mean = float(np.mean(values))
         std = float(np.std(values))
 
-        if std < 1e-10:
+        if std == 0:
             return []
 
         anomalies: list[dict[str, Any]] = []
@@ -711,7 +707,7 @@ class StreamProcessor:
         Returns:
             List of data points that arrived after the watermark.
         """
-        return list(self._late_data)
+        return deepcopy(self._late_data)
 
     def flush_late_data(self) -> list[dict[str, Any]]:
         """
@@ -738,7 +734,7 @@ class StreamProcessor:
                 "window_end": None,
                 "watermark": self._watermark.isoformat() if self._watermark else None,
                 "watermark_delay_seconds": self.watermark_delay.total_seconds()
-                if self.watermark_delay
+                if self.watermark_delay is not None
                 else None,
             }
 
@@ -752,7 +748,7 @@ class StreamProcessor:
             "max": round(float(np.max(values)), 4),
             "watermark": self._watermark.isoformat() if self._watermark else None,
             "watermark_delay_seconds": self.watermark_delay.total_seconds()
-            if self.watermark_delay
+            if self.watermark_delay is not None
             else None,
             "late_data_count": len(self._late_data),
         }
@@ -796,13 +792,22 @@ class StreamProcessor:
             Aggregated window result dict.
         """
         values = [p["value"] for p in points]
+        aggregated = float(self.aggregation_func(values))
+        if not math.isfinite(aggregated):
+            raise ValueError("aggregation_func must return a finite numeric value")
         return {
             "window_start": points[0]["timestamp"].isoformat(),
             "window_end": points[-1]["timestamp"].isoformat(),
             "count": len(points),
-            "aggregated_value": float(self.aggregation_func(values)),
+            "aggregated_value": aggregated,
             "min": float(np.min(values)),
             "max": float(np.max(values)),
             "std": float(np.std(values)) if len(values) > 1 else 0.0,
             "median": float(np.median(values)),
         }
+
+    def _check_window_budget(self, start: datetime, end: datetime) -> None:
+        """Bound sliding work before allocating results or invoking handlers."""
+        evaluations = (end - start) // self.slide_interval + 1
+        if evaluations > self.max_window_evaluations:
+            raise ValueError("Sliding evaluation exceeds max_window_evaluations")

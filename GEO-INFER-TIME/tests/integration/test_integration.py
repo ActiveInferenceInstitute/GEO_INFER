@@ -18,7 +18,11 @@ class TestTimeIntegration:
         alerts = []
         processor.register_anomaly_alert_handler(alerts.append)
         assert (
-            asyncio.run(processor.ingest_adapter_stream(ReplayIngestAdapter(records)))
+            asyncio.run(
+                processor.ingest_adapter_stream(
+                    ReplayIngestAdapter(records, {"timestamp_unit": "s"})
+                )
+            )
             == 20
         )
         processor.process_sliding_window_anomaly_alerts(z_threshold=3)

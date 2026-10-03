@@ -358,7 +358,7 @@ class TestDecompose:
         )
         ts = TimeSeries(data=pd.Series(np.arange(8.0), index=dates))
         assert ts.frequency is None
-        with pytest.raises(ValueError, match="pass period explicitly"):
+        with pytest.raises(ValueError, match="regular cadence"):
             analyzer.decompose(ts)
 
     def test_period_too_large_raises(self, analyzer, sample_timeseries):
@@ -368,5 +368,5 @@ class TestDecompose:
 
     def test_period_too_small_raises(self, analyzer, sample_timeseries):
         """A period below 2 is invalid and must raise."""
-        with pytest.raises(ValueError, match="invalid for a series of length"):
+        with pytest.raises(ValueError, match="period must be an integer >= 2"):
             analyzer.decompose(sample_timeseries, period=1)

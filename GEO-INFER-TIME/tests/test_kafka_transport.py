@@ -58,7 +58,9 @@ def message(value=7, offset=4, partition=2):
         topic="events",
         partition=partition,
         offset=offset,
-        value=json.dumps({"timestamp": 0, "value": value}).encode(),
+        value=json.dumps(
+            {"timestamp": "1970-01-01T00:00:00Z", "value": value}
+        ).encode(),
     )
 
 
@@ -241,7 +243,7 @@ def test_broker_timestamp_is_explicit_milliseconds_and_normalized(
 @pytest.mark.parametrize("alias", ["timestamp", "time", "datetime"])
 def test_payload_timestamp_precedes_broker_timestamp(kafka_client, alias):
     msg = message()
-    msg.value = json.dumps({alias: 0, "value": 7}).encode()
+    msg.value = json.dumps({alias: "1970-01-01T00:00:00Z", "value": 7}).encode()
     msg.timestamp = 1704067200000
     kafka_client.records.append(msg)
     processor = StreamProcessor(timedelta(seconds=10))

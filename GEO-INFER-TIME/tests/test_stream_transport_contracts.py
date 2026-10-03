@@ -10,7 +10,9 @@ from geo_infer_time import ReplayIngestAdapter, StreamIngestAdapter, StreamProce
 
 
 def test_epoch_zero_is_preserved():
-    timestamp, _, _ = ReplayIngestAdapter([]).parse_record({"timestamp": 0, "value": 1})
+    timestamp, _, _ = ReplayIngestAdapter([], {"timestamp_unit": "s"}).parse_record(
+        {"timestamp": 0, "value": 1}
+    )
     assert timestamp == datetime(1970, 1, 1, tzinfo=UTC)
 
 
@@ -57,7 +59,9 @@ def test_explicit_replay_and_zero_limit():
 
     async def run():
         processor = StreamProcessor(timedelta(seconds=10))
-        adapter = ReplayIngestAdapter([{"timestamp": 0, "value": 2}])
+        adapter = ReplayIngestAdapter(
+            [{"timestamp": 0, "value": 2}], {"timestamp_unit": "s"}
+        )
         assert await processor.ingest_adapter_stream(adapter, max_messages=0) == 0
         assert await processor.ingest_adapter_stream(adapter) == 1
         assert not adapter.is_connected
@@ -71,7 +75,9 @@ def test_actual_local_websocket_and_cleanup():
 
     async def run():
         async def handler(connection):
-            await connection.send(json.dumps({"timestamp": 0, "value": 7}))
+            await connection.send(
+                json.dumps({"timestamp": "1970-01-01T00:00:00Z", "value": 7})
+            )
             await connection.wait_closed()
 
         async with serve(handler, "127.0.0.1", 0) as server:
@@ -96,7 +102,9 @@ def test_invalid_timestamps_rejected(timestamp):
 @pytest.mark.parametrize("value", [True, float("nan"), float("inf"), "bad"])
 def test_nonfinite_values_rejected(value):
     with pytest.raises((TypeError, ValueError)):
-        ReplayIngestAdapter([]).parse_record({"timestamp": 0, "value": value})
+        ReplayIngestAdapter([]).parse_record(
+            {"timestamp": "1970-01-01T00:00:00Z", "value": value}
+        )
 
 
 def test_buffer_capacity_does_not_partially_accept_record():
@@ -228,7 +236,7 @@ def test_websocket_reconnect_and_finite_retry_budget():
             if connections == 1:
                 await connection.close(code=1011)
             else:
-                await connection.send('{"timestamp":0,"value":9}')
+                await connection.send('{"timestamp":"1970-01-01T00:00:00Z","value":9}')
                 await connection.wait_closed()
 
         async with serve(handler, "127.0.0.1", 0) as server:
@@ -294,7 +302,7 @@ def test_processor_limit_and_cleanup_apply_to_custom_adapters():
         async def stream_data(self, max_messages=None):
             try:
                 while True:
-                    yield {"timestamp": 0, "value": 1}
+                    yield {"timestamp": "1970-01-01T00:00:00Z", "value": 1}
             finally:
                 self.closed = True
 

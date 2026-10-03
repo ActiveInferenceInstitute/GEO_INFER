@@ -63,6 +63,9 @@ class StreamIngestAdapter(ABC):
         self.config = dict(config or {})
         if "simulated_records" in self.config:
             raise TypeError("Use ReplayIngestAdapter(records) for offline input")
+        self.timestamp_unit = self.config.get("timestamp_unit")
+        if self.timestamp_unit not in (None, "s", "ms"):
+            raise ValueError("timestamp_unit must be 's', 'ms', or None")
         self.is_connected = False
 
     @abstractmethod
@@ -101,8 +104,8 @@ class StreamIngestAdapter(ABC):
         """Parse UTC event time and a finite value, retaining other metadata.
 
         String and datetime timestamps must carry a UTC offset (ISO 8601 ``Z``
-        or ``+HH:MM``); naive values raise ValueError. Numeric timestamps are seconds,
-        or milliseconds when their absolute value exceeds 1e11. Event time must
+        or ``+HH:MM``); naive values raise ValueError. Numeric timestamps require
+        an explicit ``timestamp_unit`` of ``s`` or ``ms`` in adapter config. Event time must
         be supplied explicitly; wall-clock time is never substituted.
         """
         data = _decode(record)
@@ -123,9 +126,16 @@ class StreamIngestAdapter(ABC):
         elif isinstance(raw_ts, (int, float)):
             if not math.isfinite(raw_ts):
                 raise ValueError("timestamp must be finite")
-            timestamp = datetime.fromtimestamp(
-                raw_ts / 1000 if abs(raw_ts) > 1e11 else raw_ts, tz=UTC
-            )
+            if self.timestamp_unit is None:
+                raise ValueError("Numeric timestamps require explicit timestamp_unit")
+            try:
+                timestamp = datetime.fromtimestamp(
+                    raw_ts / 1000 if self.timestamp_unit == "ms" else raw_ts, tz=UTC
+                )
+            except (ValueError, OverflowError, OSError) as exc:
+                raise ValueError(
+                    "timestamp is outside the supported datetime range"
+                ) from exc
         elif isinstance(raw_ts, str):
             timestamp = datetime.fromisoformat(raw_ts)
         else:

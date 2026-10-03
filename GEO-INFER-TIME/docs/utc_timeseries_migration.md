@@ -40,7 +40,9 @@ assert series.resample("2h").to_dataframe().iloc[0, 0] == 3.0
   precision.
 - IO, factories and store query bounds use the same UTC rules. CSV writers
   provide a named time index; CSV/JSON/Parquet readers reject ambiguous time.
-  JSON writers use nanosecond ISO timestamps by default.
+  JSON writers serialize UTC index strings directly to preserve nanoseconds,
+  including identities pandas would otherwise truncate to microseconds. Metadata
+  sidecars are restored on reading unless callers explicitly override them.
 
 ## Explicit schedules and missing observations
 
@@ -60,8 +62,10 @@ including negative values. `trend_strength` remains the absolute slope per
 observation; `slope_per_sample` gives its sign, and `r_squared` describes fit
 quality separately. These quantities use sample position, so elapsed-time
 rates require an explicit regular grid or a separate elapsed-time regression.
-Linear analysis requires at least two finite observations. Select observed
-values explicitly before analyzing a series with missing observations.
+Linear analysis requires at least two finite observations. Forecasting and sample-lag analyses require a complete regular axis;
+resample or interpolate explicitly before fitting. Select one value column before
+univariate analysis. See [method contracts](method_contracts.md) for holdout,
+entropy, configuration, transport unit, and visualization migrations.
 
 ## Verification
 

@@ -11,6 +11,7 @@ from typing import Any
 import numpy as np
 
 from ..models.timeseries import TimeSeries
+from geo_infer_time.core._validation import finite_vector
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +70,10 @@ class EventDetector:
         data = timeseries.to_dataframe()
         if data.empty or data.shape[1] == 0:
             return {"method": method, "anomalies": [], "count": 0}
+        if data.shape[1] != 1:
+            raise ValueError("Select exactly one value column before anomaly detection")
         values = data.iloc[:, 0].dropna().values
+        values = finite_vector(values)
         timestamps = data.index[~data.iloc[:, 0].isna()]
 
         if len(values) == 0:
@@ -158,13 +162,17 @@ class EventDetector:
         data = timeseries.to_dataframe()
         if data.empty or data.shape[1] == 0:
             return {"changepoints": [], "count": 0}
-        values = data.iloc[:, 0].dropna().values
-        timestamps = data.index[~data.iloc[:, 0].isna()]
+        if data.shape[1] != 1:
+            raise ValueError(
+                "Select exactly one value column before changepoint detection"
+            )
+        values = finite_vector(data.iloc[:, 0].to_numpy())
+        timestamps = data.index
 
         changepoints = []
 
         # Simple changepoint detection using moving window statistics
-        for i in range(self.window_size, len(values) - self.window_size):
+        for i in range(self.window_size, len(values) - self.window_size + 1):
             window_before = values[i - self.window_size : i]
             window_after = values[i : i + self.window_size]
 

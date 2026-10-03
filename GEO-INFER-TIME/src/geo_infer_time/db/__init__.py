@@ -171,9 +171,13 @@ class InMemoryStore(TimeSeriesStore):
 
         if start is not None:
             start = normalize_datetime_index([start])[0]
-            df = df.loc[df.index >= start]
         if end is not None:
             end = normalize_datetime_index([end])[0]
+        if start is not None and end is not None and start > end:
+            raise ValueError("query start must not be after end")
+        if start is not None:
+            df = df.loc[df.index >= start]
+        if end is not None:
             df = df.loc[df.index <= end]
 
         logger.debug(

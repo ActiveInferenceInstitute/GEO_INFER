@@ -90,6 +90,21 @@ class TimeSeriesReader:
 
         df = self._set_time_index(df, time_column)
 
+        meta_path = path.with_suffix(".meta.json")
+        if meta_path.exists():
+            sidecar = json.loads(meta_path.read_text())
+            if not isinstance(sidecar, dict) or set(sidecar) - {
+                "metadata",
+                "spatial_location",
+            }:
+                raise ValueError("Invalid TimeSeries metadata sidecar")
+            if any(not isinstance(item, dict) for item in sidecar.values()):
+                raise ValueError("Metadata sidecar entries must be dictionaries")
+            if metadata is None:
+                metadata = sidecar.get("metadata")
+            if spatial_location is None:
+                spatial_location = sidecar.get("spatial_location")
+
         logger.info(
             "Loaded %d rows x %d columns from %s",
             len(df),
@@ -116,7 +131,11 @@ class TimeSeriesReader:
     @staticmethod
     def _read_json(path: Path, **kwargs: Any) -> pd.DataFrame:
         """Read JSON (records or table orientation)."""
-        kwargs.setdefault("convert_dates", True)
+        # Timestamp validation must see raw records; pandas' eager conversion
+        # would silently interpret numeric epochs before the TIME boundary.
+        kwargs.setdefault("convert_dates", False)
+        kwargs.setdefault("convert_axes", False)
+        kwargs.setdefault("date_unit", "ns")
         return pd.read_json(path, **kwargs)
 
     @staticmethod
@@ -197,6 +216,8 @@ class TimeSeriesWriter:
             path: Destination file path.
             write_metadata: If True and the TimeSeries has metadata or
                 spatial_location, write a sidecar ``.meta.json`` file.
+                Otherwise remove an existing sidecar so overwritten data
+                cannot inherit the previous series' provenance.
             **kwargs: Additional keyword arguments forwarded to the
                 underlying pandas write function.
 
@@ -226,6 +247,14 @@ class TimeSeriesWriter:
         elif suffix == ".json":
             kwargs.setdefault("date_format", "iso")
             kwargs.setdefault("date_unit", "ns")
+            # pandas' timezone-aware ISO index conversion can truncate to
+            # microseconds even with date_unit='ns', collapsing distinct keys.
+            # Serialize the validated UTC identities as strings ourselves.
+            df.index = pd.Index(
+                [stamp.isoformat() for stamp in df.index], name=df.index.name
+            )
+            if kwargs.get("orient") == "records":
+                df = df.reset_index(names=df.index.name or "timestamp")
             df.to_json(path, **kwargs)
         elif suffix in (".parquet", ".pq"):
             df.to_parquet(path, **kwargs)
@@ -240,6 +269,8 @@ class TimeSeriesWriter:
                 meta["spatial_location"] = ts.spatial_location
             meta_path.write_text(json.dumps(meta, indent=2, default=str))
             logger.debug("Wrote metadata sidecar to %s", meta_path)
+        else:
+            path.with_suffix(".meta.json").unlink(missing_ok=True)
 
         return path
 
