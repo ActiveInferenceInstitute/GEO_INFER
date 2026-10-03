@@ -21,6 +21,8 @@ _CANCELLED = threading.Event()
 
 
 _OWNERSHIP_ENV = "GEO_INFER_PROCESS_TOKENS"
+_CENSUS_BUDGET_SECONDS = 5
+_DESCENDANT_REAP_SECONDS = 2
 
 
 class OwnedProcessLeakError(subprocess.SubprocessError):
@@ -53,7 +55,7 @@ class _DescendantCensus:
         self.pid = pid
         self.token = token
         self.processes: dict[int, Any] = {}
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
 
     def _owned(self, process: Any) -> bool:
         try:
@@ -62,8 +64,15 @@ class _DescendantCensus:
             return False
 
     def refresh(self, *, timeout: float) -> None:
+        if not math.isfinite(timeout) or timeout <= 0:
+            raise ValueError("Census timeout must be finite and positive")
         deadline = time.monotonic() + timeout
-        with self.lock:
+        if not self.lock.acquire(timeout=timeout):
+            raise subprocess.TimeoutExpired("owned process census", timeout)
+        try:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired("owned process census", timeout)
             if os.name == "posix":
                 # One native scan avoids per-process environment reads for
                 # unrelated PIDs. Only matches receive identity verification.
@@ -73,7 +82,7 @@ class _DescendantCensus:
                         capture_output=True,
                         text=True,
                         errors="replace",
-                        timeout=min(2, timeout),
+                        timeout=min(_CENSUS_BUDGET_SECONDS, remaining),
                         check=True,
                     )
                 except subprocess.SubprocessError as exc:
@@ -85,9 +94,11 @@ class _DescendantCensus:
                         and time.monotonic() < deadline
                     ):
                         raise ProcessCensusError(
-                            f"Owned process census exceeded its {min(2, timeout):g}s inspection budget"
+                            f"Owned process census exceeded its {min(_CENSUS_BUDGET_SECONDS, timeout):g}s inspection budget"
                         ) from exc
                     raise
+                if time.monotonic() >= deadline:
+                    raise subprocess.TimeoutExpired("owned process census", timeout)
                 candidates = []
                 pattern = re.compile(
                     r"(?:^|\s)" + _OWNERSHIP_ENV + r"=([0-9a-f:]+)(?:\s|$)"
@@ -109,6 +120,8 @@ class _DescendantCensus:
                             self.processes[pid] = child
                     except self.psutil.NoSuchProcess:
                         pass
+                if time.monotonic() >= deadline:
+                    raise subprocess.TimeoutExpired("owned process census", timeout)
                 return
             for child in self.psutil.process_iter():
                 if time.monotonic() >= deadline:
@@ -122,6 +135,10 @@ class _DescendantCensus:
                 except (self.psutil.NoSuchProcess, self.psutil.AccessDenied):
                     # System-owned processes cannot belong to this launch.
                     continue
+            if time.monotonic() >= deadline:
+                raise subprocess.TimeoutExpired("owned process census", timeout)
+        finally:
+            self.lock.release()
 
     def live(self) -> list[int]:
         with self.lock:
@@ -140,13 +157,35 @@ class _DescendantCensus:
     def kill(self) -> None:
         failures = []
         with self.lock:
-            for child in reversed(tuple(self.processes.values())):
+            children = tuple(self.processes.values())
+            for child in reversed(children):
                 try:
                     child.kill()
                 except self.psutil.NoSuchProcess:
                     pass
                 except Exception as exc:
                     failures.append(exc)
+            # Sending SIGKILL does not establish that an orphan has stopped.
+            # Output pipes may close before its process status changes, so wait
+            # for the owned identities within a separate, finite cleanup budget.
+            if children:
+                try:
+                    self.psutil.wait_procs(children, timeout=_DESCENDANT_REAP_SECONDS)
+                except Exception as exc:
+                    failures.append(exc)
+                # A non-child zombie has stopped even if its platform reaper
+                # has not removed the PID yet; ownership liveness excludes it.
+                try:
+                    survivors = self.live()
+                except Exception as exc:
+                    failures.append(exc)
+                else:
+                    if survivors:
+                        failures.append(
+                            RuntimeError(
+                                f"Owned descendants survived cleanup: {survivors}"
+                            )
+                        )
         if failures:
             raise ExceptionGroup("Owned descendant cleanup failed", failures)
 
@@ -187,7 +226,7 @@ def terminate_tree(process: subprocess.Popen[str]) -> None:
                 # The last pre-deadline snapshot may precede an immediate
                 # spawn-and-detach. Cleanup gets one bounded ownership scan
                 # after the deadline, independently of the original PPID.
-                census.refresh(timeout=2)
+                census.refresh(timeout=_CENSUS_BUDGET_SECONDS)
             finally:
                 census.kill()
 

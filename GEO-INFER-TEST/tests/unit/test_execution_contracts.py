@@ -495,6 +495,60 @@ def test_immediate_parent_exit_cannot_hide_detached_pipe_holder(tmp_path) -> Non
     _assert_recorded_process_dead(pidfile)
 
 
+def test_owned_cleanup_waits_for_real_process_exit(tmp_path, monkeypatch) -> None:
+    """Cleanup must establish process exit, beyond requesting termination."""
+    import psutil
+    import geo_infer_test.process as process_module
+
+    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    census = process_module._DescendantCensus(0, "a" * 32)
+    census.processes[child.pid] = psutil.Process(child.pid)
+    original = psutil.wait_procs
+    waited = []
+
+    def observe_wait(processes, *, timeout):
+        waited.append((tuple(process.pid for process in processes), timeout))
+        return original(processes, timeout=timeout)
+
+    monkeypatch.setattr(psutil, "wait_procs", observe_wait)
+    try:
+        census.kill()
+        assert waited == [((child.pid,), process_module._DESCENDANT_REAP_SECONDS)]
+        assert child.poll() is not None
+    finally:
+        if child.poll() is None:
+            child.kill()
+        child.wait(timeout=5)
+
+
+def test_owned_cleanup_preserves_signal_wait_and_status_errors(monkeypatch) -> None:
+    """A later inspection error cannot erase earlier cleanup failures."""
+    from types import SimpleNamespace
+    import geo_infer_test.process as process_module
+
+    def fail_signal():
+        raise OSError("signal failure")
+
+    def fail_wait(*args, **kwargs):
+        raise TimeoutError("wait failure")
+
+    def fail_status():
+        raise PermissionError("status failure")
+
+    census = process_module._DescendantCensus(0, "a" * 32)
+    census.processes[1] = SimpleNamespace(
+        pid=1, kill=fail_signal, is_running=lambda: True, status=fail_status
+    )
+    monkeypatch.setattr(census.psutil, "wait_procs", fail_wait)
+    with pytest.raises(ExceptionGroup) as failure:
+        census.kill()
+    assert [str(error) for error in failure.value.exceptions] == [
+        "signal failure",
+        "wait failure",
+        "status failure",
+    ]
+
+
 def test_nominal_success_with_detached_background_process_fails_and_cleans(
     tmp_path,
 ) -> None:
@@ -699,6 +753,61 @@ def test_running_census_frequency_is_bounded(tmp_path, monkeypatch):
     assert len(scans) >= 2
     # Completion gets an immediate final scan; every running scan waits.
     assert all(right - left >= 0.20 for left, right in zip(scans, scans[1:-1]))
+
+
+def test_census_lock_contention_obeys_deadline(monkeypatch):
+    """A real lock holder cannot extend the census deadline or launch a late scan."""
+    import threading
+    import geo_infer_test.process as process_module
+
+    census = process_module._DescendantCensus(0, "a" * 32)
+    entered, release = threading.Event(), threading.Event()
+
+    def hold_lock():
+        with census.lock:
+            entered.set()
+            release.wait(timeout=5)
+
+    def unexpected_scan(*args, **kwargs):
+        raise AssertionError("Expired census launched a native scan")
+
+    monkeypatch.setattr(process_module.subprocess, "run", unexpected_scan)
+    holder = threading.Thread(target=hold_lock)
+    holder.start()
+    try:
+        assert entered.wait(timeout=5)
+        started = time.monotonic()
+        with pytest.raises(subprocess.TimeoutExpired):
+            census.refresh(timeout=0.05)
+        assert time.monotonic() - started < 1
+    finally:
+        release.set()
+        holder.join(timeout=5)
+        assert not holder.is_alive()
+
+
+def test_late_empty_native_census_cannot_report_success(monkeypatch):
+    """Even empty output must fail when a real producer returns after the deadline."""
+    from types import SimpleNamespace
+    import geo_infer_test.process as process_module
+
+    original = subprocess.run
+
+    def late_scan(*args, **kwargs):
+        return original(
+            [sys.executable, "-c", "import time; time.sleep(0.06)"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
+        )
+
+    # Exercise the POSIX scan boundary without changing the platform's global os.
+    monkeypatch.setattr(process_module, "os", SimpleNamespace(name="posix"))
+    monkeypatch.setattr(process_module.subprocess, "run", late_scan)
+    census = process_module._DescendantCensus(0, "a" * 32)
+    with pytest.raises(subprocess.TimeoutExpired):
+        census.refresh(timeout=0.03)
 
 
 def test_census_timeout_is_not_reported_as_target_deadline(engine, monkeypatch):
