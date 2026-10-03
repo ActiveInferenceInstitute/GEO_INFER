@@ -14,7 +14,6 @@ import numpy as np
 from dataclasses import dataclass, field
 import logging
 import copy
-import warnings
 
 from geo_infer_act.core.free_energy import FreeEnergyCalculator, validate_spd_precision
 from geo_infer_act.core.types import (
@@ -25,6 +24,7 @@ from geo_infer_act.core.types import (
     NestedH3LevelSummary,
     SpatialInferenceTrace,
 )
+from geo_infer_act.utils.bayeux_backend import _import_bayeux
 from geo_infer_act.utils.h3_adapter import (
     edge_count_from_graph,
     get_h3_adapter,
@@ -1420,13 +1420,7 @@ class GenerativeModel:
         if not all(np.all(np.isfinite(value)) for value in test_point.values()):
             raise ValueError("test_point values must be finite")
         if backend == "bayeux":
-            with warnings.catch_warnings():
-                warnings.filterwarnings(
-                    "ignore",
-                    message=r"jax\.interpreters\.xla\.pytype_aval_mappings",
-                    category=DeprecationWarning,
-                )
-                import bayeux as bx
+            bx = _import_bayeux()
             import jax
 
             model_kwargs = (

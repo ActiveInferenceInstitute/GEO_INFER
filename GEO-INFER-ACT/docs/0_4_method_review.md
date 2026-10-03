@@ -1,7 +1,7 @@
 # ACT 0.4.0 method review and interface migration
 
-The source inventory covers all 47 Python files in `src/geo_infer_act`, including
-656 functions and methods, internal helpers, asynchronous methods, and runner
+The source inventory covers all 48 Python files in `src/geo_infer_act`, including
+657 functions and methods, internal helpers, asynchronous methods, and runner
 orchestration. Definitions and callers were reviewed together with configuration,
 tests, public exports, and documentation. This scope count is an inventory of
 reviewed source, not a claim that every branch has an independent numerical oracle.
@@ -22,6 +22,13 @@ The proof levels remain separate:
   runs real NumPyro NUTS through Bayeux on a scalar Gaussian target, with 100 warmup
   iterations and 100 retained draws. The Monte Carlo tolerances verify this small
   target; they do not certify all densities or convergence.
+  A separate cold subprocess uses a new bytecode lookup prefix, strict warnings,
+  an external temporary working directory, and both public interfaces. The owning
+  import helper covers only the exact jaxopt 0.8.3 OSQP source hash and its known
+  invalid `\mu` docstring escape at the CPython 3.11/3.12 compiler locations.
+  Other compile/runtime warnings and backend import failures retain caller policy;
+  changed dependency source is outside this exception. The helper neither retries
+  an interrupted import nor replaces the declared backend.
 - **Artifact acceptance:** `verify_comprehensive.py` executes ten representative
   method, model, runner, visualization, API, and documentation sections. It does
   not exhaust every callable in the inventory.
@@ -170,6 +177,7 @@ of an internal helper alone does not establish exhaustive runtime coverage.
 | [runners/wrapper.py](../src/geo_infer_act/runners/wrapper.py) | 1 |
 | [utils/__init__.py](../src/geo_infer_act/utils/__init__.py) | 0 |
 | [utils/analysis.py](../src/geo_infer_act/utils/analysis.py) | 42 |
+| [utils/bayeux_backend.py](../src/geo_infer_act/utils/bayeux_backend.py) | 1 |
 | [utils/config.py](../src/geo_infer_act/utils/config.py) | 5 |
 | [utils/h3_adapter.py](../src/geo_infer_act/utils/h3_adapter.py) | 16 |
 | [utils/integration.py](../src/geo_infer_act/utils/integration.py) | 24 |
