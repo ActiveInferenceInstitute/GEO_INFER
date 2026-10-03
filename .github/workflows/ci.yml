@@ -16,6 +16,16 @@ on:
 permissions:
   contents: read
 
+# Each isolated module process has a bounded native CPU budget. The runner
+# already bounds module-process concurrency; implicit BLAS/OpenMP pools must
+# not multiply that budget or change deterministic numerical feedback.
+env:
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+  VECLIB_MAXIMUM_THREADS: "1"
+  NUMEXPR_NUM_THREADS: "1"
+
 concurrency:
   group: geo-infer-ci-${{ github.workflow }}-${{ github.event_name == 'schedule' && 'scheduled' || (github.event.pull_request.number || github.ref) }}
   cancel-in-progress: true
@@ -165,7 +175,8 @@ jobs:
         # policy; allowlists are file- and rule-scoped with written
         # justifications (GEO-INFER-TEST/docs/secret_scan_policy.md).
         run: |
-          gitleaks detect --source . --config .gitleaks.toml --redact --verbose
+          uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 1200 -- \
+            gitleaks detect --source . --config .gitleaks.toml --redact --verbose
 
       - name: Enforce module coverage floors
         env:
@@ -190,7 +201,8 @@ jobs:
           elif ! [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]] || ! git cat-file -e "$base_sha^{commit}" 2>/dev/null; then
             base_sha="$(git hash-object -t tree /dev/null)"
           fi
-          uv run --with pytest-cov python GEO-INFER-TEST/check_coverage_floor.py \
+          uv run --with pytest-cov python GEO-INFER-TEST/record_validation.py --timeout 3600 -- \
+            python GEO-INFER-TEST/check_coverage_floor.py \
             --base "$base_sha" --head "$HEAD_SHA"
 
       - name: Retain validation and model audit receipts

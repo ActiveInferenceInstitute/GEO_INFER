@@ -100,6 +100,9 @@ matrix. Each Python matrix entry is evaluated
 independently (`fail-fast: false`) so a failure on one interpreter does not
 hide the result from the other. Superseded runs for the same branch or pull
 request are cancelled through workflow concurrency.
+CPU CI sets BLAS/OpenMP libraries to one thread per isolated module process;
+the runner defaults to two module workers. Local runs can set the native thread
+environment variables and `--workers` explicitly for their available resources.
 
 The workflow uses uv 0.10.7 with the locked `uv.lock` resolution, caches uv
 artifacts per Python version, and pins third-party Actions to reviewed commit
