@@ -11,9 +11,7 @@ Examples workspace within `GEO-INFER-TIME`.
 
 - `basic_temporal_analysis.py:generate_sample_timeseries` (function)
 - `basic_temporal_analysis.py:main` (function)
-- `demo_all_methods.py:success` (function)
-- `demo_all_methods.py:info` (function)
-- `demo_all_methods.py:section` (function)
+- `demo_all_methods.py:main` (function)
 
 ## Module Metadata
 

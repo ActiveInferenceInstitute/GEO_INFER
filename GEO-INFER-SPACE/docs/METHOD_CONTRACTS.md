@@ -155,13 +155,16 @@ distance. Its binary neighborhood includes the focal cell. Undefined G* scores
 are `None`, with per-cell reasons in `undefined`: too few observations, zero
 global variance, or a neighborhood covering the entire observed domain. These
 cells do not become hotspots or coldspots. Backend and topology failures raise.
+Hotspot thresholds use an unadjusted normal-score reference; multiple testing
+is not corrected.
 
 `variance_mean_ratio(values)` accepts nonnegative finite counts or intensities.
 Fewer than two values or a zero mean produce `None` for the ratio, chi-square,
 p-value and pattern, with an explicit `undefined` reason. Fractional intensities
 receive a descriptive ratio and `reference_tested=False`. Integer counts use a
-two-sided chi-square reference with the stated assumption of independent Poisson
-counts and equal exposure.
+two-sided approximate chi-square reference with the stated assumption of
+independent Poisson counts and equal exposure. The calculation alone does not
+establish calibration for sparse or small real datasets.
 
 `quadrat_count(cells, values=None, quadrat_size=2)` uses integer parent-resolution
 steps from zero through the common input resolution. Zero retains exact cell

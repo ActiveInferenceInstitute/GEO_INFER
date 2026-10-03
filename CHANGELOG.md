@@ -26,6 +26,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   real compiled backend with an explicit macOS 27 compiler profile.
 - Execute maintained documentation examples, test all 45 installed wheels outside
   the checkout, and provision DuckDB Spatial explicitly for actual fast-path proof.
+- Review SPACE, TIME and ACT method surfaces; correct H3 identity, owned caches,
+  CRS processing, undefined spatial statistics, forecast cadence and options,
+  missing-data aggregation, stream budgets, Gaussian measurement free energy,
+  factored domain inference and elapsed-time causal dynamics.
+- Bind ANT physical actions to real ACT transitions, preserve prediction retries
+  without repeated physical work, and route RISK, PLACE and ECON through explicit
+  temporal interfaces and failure boundaries.
+- Retain full wheel build/probe logs and immutable wheel copies, validate operation
+  code hashes, include staged bytes in source custody, and widen dispatch/scheduled
+  diff gates to the complete tree.
 
 
 ### Post-0.3.0 waves (2026-09-26 .. 2026-09-28, PRs #40-#60)

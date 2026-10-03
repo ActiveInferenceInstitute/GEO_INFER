@@ -22,6 +22,7 @@
 ## Local Contents
 
 - `action_observation_schedule.md`
+- `method_contracts.md`
 - `streaming_migration.md`
 - `utc_timeseries_migration.md`
 

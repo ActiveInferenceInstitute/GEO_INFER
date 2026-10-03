@@ -13,6 +13,7 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `process.py`
 - `selection.py`
 - `testing.py`
+- `wheel_evidence.py`
 - `wheel_profiles.py`
 
 ## Public Interface

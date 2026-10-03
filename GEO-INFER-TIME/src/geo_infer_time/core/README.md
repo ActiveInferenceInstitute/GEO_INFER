@@ -5,6 +5,7 @@ Core workspace within `GEO-INFER-TIME`.
 ## Contents
 
 - `__init__.py`
+- `_validation.py`
 - `action_schedule.py`
 - `advanced_forecasting.py`
 - `analysis.py`
@@ -20,6 +21,13 @@ Core workspace within `GEO-INFER-TIME`.
 
 ## Public Interface
 
+- `_validation.py:positive_integer` (function)
+- `_validation.py:finite_vector` (function)
+- `_validation.py:root_mean_square` (function)
+- `_validation.py:bounded_date_range` (function)
+- `_validation.py:univariate_series` (function)
+- `_validation.py:regular_frequency` (function)
+- `_validation.py:paired_series` (function)
 - `action_schedule.py:ScheduledObservation` (class)
 - `action_schedule.py:action_observation_schedule` (function)
 - `advanced_forecasting.py:fit_arima_forecast` (function)
@@ -33,13 +41,6 @@ Core workspace within `GEO-INFER-TIME`.
 - `inference_schedule.py:inference_schedule` (function)
 - `interpolation.py:TemporalInterpolator` (class)
 - `statistics.py:TemporalStatistics` (class)
-- `stream_ingest.py:StreamIngestAdapter` (class)
-- `stream_ingest.py:ReplayIngestAdapter` (class)
-- `stream_ingest.py:WebSocketIngestAdapter` (class)
-- `stream_ingest.py:KafkaIngestAdapter` (class)
-- `stream_processing.py:StreamProcessor` (class)
-- `timestamps.py:normalize_timestamp` (function)
-- `timestamps.py:normalize_datetime_index` (function)
 
 ## Module Metadata
 

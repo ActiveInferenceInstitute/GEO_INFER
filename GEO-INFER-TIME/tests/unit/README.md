@@ -9,6 +9,7 @@ Unit workspace within `GEO-INFER-TIME`.
 - `test_inference_schedule.py`
 - `test_lazy_public_imports.py`
 - `test_linear_trend_contract.py`
+- `test_method_contracts.py`
 - `test_timestamps.py`
 
 ## Public Interface

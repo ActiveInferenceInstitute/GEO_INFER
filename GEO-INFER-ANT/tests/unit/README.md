@@ -4,6 +4,7 @@ Unit workspace within `GEO-INFER-ANT`.
 
 ## Contents
 
+- `test_act_action_ownership.py`
 - `test_algorithms.py`
 - `test_analysis.py`
 - `test_applications.py`

@@ -114,13 +114,13 @@ class TestActiveInferenceModel(unittest.TestCase):
 
     def test_act_accepts_scalar_num_controls_in_local_backend(self):
         """The local action path accepts scalar and sequence control counts."""
-        gen_model = GenerativeModel("gaussian", {"state_dim": 3})
-        gen_model.num_controls = 2
-        self.model.model_type = "gaussian"
+        gen_model = GenerativeModel("categorical", {"state_dim": 3})
         self.model.set_generative_model(gen_model)
         self.model.current_beliefs = np.ones(3) / 3
 
-        assert self.model.act() in {0, 1}
+        for controls in (2, [2]):
+            gen_model.num_controls = controls
+            assert self.model.act() in {0, 1}
 
     def test_step(self):
         gen_model = GenerativeModel("categorical", self.gen_params)
