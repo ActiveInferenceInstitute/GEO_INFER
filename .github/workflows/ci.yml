@@ -50,6 +50,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Provision PyTensor BLAS
+        uses: ./.github/actions/provision-pytensor-blas
+
       - name: Set up Python 3.11
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -326,6 +329,7 @@ jobs:
               command = [sys.executable, '-m', 'pytest', '--noconftest', '-p',
                          'geo_infer_test.selection', '-c', str(config),
                          str(root / 'GEO-INFER-TEST/tests/unit/test_execution_contracts.py'),
+                         str(root / 'GEO-INFER-TEST/tests/unit/test_process_ownership_contracts.py'),
                          '-k', 'not (runtime_registry or programmatic_discovery or xdist or coverage_report)',
                          '--junitxml=windows-process.xml']
               result = run_command(command, 'Windows process contracts', timeout=300)
@@ -358,6 +362,9 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
+
+      - name: Provision PyTensor BLAS
+        uses: ./.github/actions/provision-pytensor-blas
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -441,6 +448,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Provision PyTensor BLAS
+        uses: ./.github/actions/provision-pytensor-blas
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -535,6 +545,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Provision PyTensor BLAS
+        uses: ./.github/actions/provision-pytensor-blas
 
       - name: Set up Python 3.11
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0

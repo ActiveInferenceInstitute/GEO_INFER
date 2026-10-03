@@ -1,0 +1,11 @@
+name: Provision PyTensor BLAS
+description: Install and explicitly select the Linux reference BLAS runtime.
+runs:
+  using: composite
+  steps:
+    - name: Install reference BLAS
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends libblas-dev
+        echo 'PYTENSOR_FLAGS=blas__ldflags=-lblas' >> "$GITHUB_ENV"

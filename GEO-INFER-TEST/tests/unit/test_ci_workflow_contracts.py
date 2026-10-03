@@ -40,6 +40,37 @@ def test_ci_runs_on_release_tags_for_the_release_gate():
     assert push["tags"] == ["v*"]
 
 
+def test_linux_numerical_jobs_provision_blas_before_backend_execution():
+    """Cold PyTensor must link its declared BLAS without warning suppression."""
+    jobs = _load("ci.yml")["jobs"]
+    for name in ("validate", "build-smoke", "test", "manuscript"):
+        job = jobs[name]
+        assert job["runs-on"] == "ubuntu-latest"
+        steps = job["steps"]
+        indices = [
+            index
+            for index, step in enumerate(steps)
+            if step.get("uses") == "./.github/actions/provision-pytensor-blas"
+        ]
+        assert len(indices) == 1
+        assert indices[0] < next(
+            index for index, step in enumerate(steps) if "run" in step
+        )
+    assert "./.github/actions/provision-pytensor-blas" not in _dump(
+        jobs["process-contracts-windows"]
+    )
+    action = yaml.safe_load(
+        (REPO_ROOT / ".github/actions/provision-pytensor-blas/action.yml").read_text(
+            encoding="utf-8"
+        )
+    )
+    script = action["runs"]["steps"][0]["run"]
+    assert "libblas-dev" in script
+    assert "PYTENSOR_FLAGS=blas__ldflags=-lblas" in script
+    assert "GITHUB_ENV" in script
+    assert "filterwarnings" not in script
+
+
 def test_release_requires_ci_gate_and_always_verifies_wheels():
     """GS-002: the release job is gated on CI success and tag builds verify."""
     release = _load("release.yml")
@@ -554,6 +585,7 @@ def test_process_tree_contract_has_real_hosted_windows_execution():
     job = _load("ci.yml")["jobs"]["process-contracts-windows"]
     assert job["runs-on"] == "windows-latest"
     assert "test_execution_contracts.py" in _dump(job)
+    assert "test_process_ownership_contracts.py" in _dump(job)
     assert (
         "timeout_terminates" not in _dump(job).split("'-k',")[1].split("--junitxml")[0]
     )

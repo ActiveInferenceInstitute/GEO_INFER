@@ -55,9 +55,11 @@ class ModelExplainer:
             Dictionary of feature importances
         """
         if method == "permutation":
-            # Permutation importance
+            # Keep work inside the caller's module process. Joblib's default
+            # process backend can retain workers and resource trackers after
+            # this method returns, multiplying outer orchestration budgets.
             result = permutation_importance(
-                self.model, X, y, n_repeats=10, random_state=42, n_jobs=-1
+                self.model, X, y, n_repeats=10, random_state=42, n_jobs=1
             )
             importances = result.importances_mean
         elif method == "coefficient":

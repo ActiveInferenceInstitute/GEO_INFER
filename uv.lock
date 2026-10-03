@@ -2872,6 +2872,7 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
+    { name = "geo-infer-test" },
     { name = "matplotlib" },
     { name = "mypy" },
     { name = "pytest" },
@@ -2891,6 +2892,7 @@ mlops = [
 
 [package.metadata]
 requires-dist = [
+    { name = "geo-infer-test", marker = "extra == 'dev'", editable = "GEO-INFER-TEST" },
     { name = "h3", specifier = ">=4.5.0,<5" },
     { name = "matplotlib", marker = "extra == 'dev'", specifier = ">=3.5.0" },
     { name = "mlflow", marker = "extra == 'mlops'", specifier = ">=2.0.0" },
