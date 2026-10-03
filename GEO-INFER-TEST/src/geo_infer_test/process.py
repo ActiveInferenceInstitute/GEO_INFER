@@ -317,7 +317,11 @@ def run_process(
                 try:
                     with process_lock:
                         stdout, stderr = process.communicate(
-                            timeout=min(0.05, remaining)
+                            # A native ownership census reads the complete
+                            # process listing. Bound its frequency under module
+                            # concurrency while still scanning immediately on
+                            # exit and during deadline cleanup.
+                            timeout=min(0.25, remaining)
                         )
                     census.refresh(timeout=max(0.001, deadline - time.monotonic()))
                     leaks = census.live()

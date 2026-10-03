@@ -680,6 +680,27 @@ def test_environment_census_failure_does_not_expose_internal_listing(
     assert "inspection budget" in str(failure.value)
 
 
+def test_running_census_frequency_is_bounded(tmp_path, monkeypatch):
+    """A real running child cannot trigger a native census every 50 ms."""
+    import geo_infer_test.process as process_module
+
+    scans = []
+
+    def measured_scan(self, *, timeout):
+        scans.append(time.monotonic())
+
+    monkeypatch.setattr(process_module._DescendantCensus, "refresh", measured_scan)
+    completed = run_process(
+        [sys.executable, "-c", "import time; time.sleep(0.8); print('complete')"],
+        timeout=10,
+        cwd=tmp_path,
+    )
+    assert completed.stdout == "complete\n" and completed.returncode == 0
+    assert len(scans) >= 2
+    # Completion gets an immediate final scan; every running scan waits.
+    assert all(right - left >= 0.20 for left, right in zip(scans, scans[1:-1]))
+
+
 def test_census_timeout_is_not_reported_as_target_deadline(engine, monkeypatch):
     """A scanner failure cannot claim the command exhausted its long budget."""
     import geo_infer_test.process as process_module
