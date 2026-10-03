@@ -46,6 +46,9 @@ dev = [
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
     "pytest-asyncio>=0.24.0",
+    "httpx>=0.26.0",
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
     "ruff>=0.15.6,<0.16",
     "mypy>=0.910",
     # Test-only dependencies (imported by tests/, not by src/)
@@ -59,9 +62,11 @@ docs = [
 ]
 integrations = [
     # Workspace siblings imported by this module's tests (resolved via [tool.uv.sources])
-    "geo-infer-data>=0.4.0",
+    "geo-infer-api>=0.4.0",
+    "geo-infer-data[integrations]>=0.4.0",
     "geo-infer-space>=0.4.0",
     "geo-infer-test>=0.4.0",
+    "geo-infer-time>=0.4.0",
 ]
 
 [project.urls]
@@ -71,9 +76,11 @@ Repository = "https://github.com/ActiveInferenceInstitute/GEO_INFER"
 "Bug Tracker" = "https://github.com/ActiveInferenceInstitute/GEO_INFER/issues"
 
 [tool.uv.sources]
+geo-infer-api = { workspace = true }
 geo-infer-data = { workspace = true }
 geo-infer-space = { workspace = true }
 geo-infer-test = { workspace = true }
+geo-infer-time = { workspace = true }
 
 [tool.setuptools]
 package-dir = {"" = "src"}

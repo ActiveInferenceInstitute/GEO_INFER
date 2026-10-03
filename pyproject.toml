@@ -115,6 +115,14 @@ climate = [
     "xclim>=0.40.0",
 ]
 
+# Native columnar data integrations
+data = [
+    "duckdb>=0.9.0",
+    "pyarrow>=14.0.0",
+    "pymongo>=4.5.0",
+    "xarray>=2023.1.0",
+]
+
 # Performance optimization
 performance = [
     "numba>=0.54.0",
@@ -189,6 +197,11 @@ all = [
     "cf-units>=3.0.0",
     "cdo>=1.5.0",
     "xclim>=0.40.0",
+    # data
+    "duckdb>=0.9.0",
+    "pyarrow>=14.0.0",
+    "pymongo>=4.5.0",
+    "xarray>=2023.1.0",
     # performance
     "numba>=0.54.0",
     "cupy>=9.4.0; sys_platform != 'darwin'",
@@ -204,7 +217,7 @@ all = [
     "hypothesis>=6.0.0",
     "ruptures>=1.1.9",
     "srai>=0.10.2",
-        # docs
+    # docs
     "sphinx>=4.2.0",
     "sphinx-rtd-theme>=1.0.0",
     "nbsphinx>=0.8.0",
