@@ -67,6 +67,15 @@ even when a cell fails. The legacy polygon integration helper's `max_cells`
 limits accepted output cardinality after native H3 coverage; it does not bound
 that native polygon allocation.
 
+Research profiles specify A/B/C and initial beliefs; they do not guarantee
+multiple selected actions for arbitrary observations. A nearby environmental
+sample can share one analytically optimal policy. Diversity acceptance uses a
+declared categorical fixture covering three known policy regions, checked with
+independent posterior, negative-EFE, softmax and selection calculations. Gallery
+outputs separately verify the scores, softmax and selection against the recorded
+policy input. Retained `policy_beliefs` metadata identifies the local posterior used
+for policy evaluation before later spatial or nested belief blending.
+
 Climate and ecological models consume explicit integer modality indices through
 the joint factored runtime. The correlated joint posterior is retained rather
 than reconstructed from marginal products, policy temperature and zero policy

@@ -356,7 +356,17 @@ Research-profile H3 runs are opt-in through
 `RunConfig.parameters["research_profile"] = True` or
 `geo-infer-act-run --research-profile`. They keep public method names and the
 real H3/pymdp runtime, but use deterministic likelihood, preference, and
-action-conditioned transition matrices for non-collapsed trace diagnostics.
+action-conditioned transition matrices for informative trace diagnostics.
+Distinct selected actions are not guaranteed: nearby observations can share
+one optimal action. The H3 validator checks policy diversity only on an explicit
+seven-cell categorical fixture, with independently calculated posteriors,
+one-step negative EFE, policy probabilities, and selected actions. Gallery runs
+retain their environmental inputs and check those actual policy quantities.
+
+Pymdp metadata retains `policy_beliefs`, the local posterior used to score
+future actions. Flat diagnostic tables expose `policy_belief_<state>` columns.
+Spatial diffusion or nested blending can subsequently change the displayed
+cell belief; those blended values are distinct from the recorded policy input.
 
 The deterministic gallery command writes flat H3, nested H3, flat spatial-agent,
 and nested spatial-agent runs with linked visualization sidecars:

@@ -600,6 +600,7 @@ def validate_research_statistics(
 def validate_gallery_outputs(tmp_dir: Path) -> None:
     """Validate the deterministic four-run visualization gallery contract."""
     from geo_infer_act.runners import run_spatial_active_inference_gallery
+    from geo_infer_test.act_research_oracles import assert_research_policy
 
     output_dir = tmp_dir / "spatial_gallery"
     manifest = run_spatial_active_inference_gallery(
@@ -637,8 +638,28 @@ def validate_gallery_outputs(tmp_dir: Path) -> None:
             json.loads(
                 (run_dir / "data" / "spatial_inference_trace.json").read_text()
             ).get("research_statistics", {}),
-            require_non_degenerate=True,
+            # Ambient samples need not visit distinct optimal policy regions.
+            # Verify every actual score and selection below instead of treating
+            # legitimate shared actions as a model failure.
+            require_non_degenerate=False,
         )
+        policy_rows = json.loads(
+            (run_dir / "data" / "pymdp_h3_diagnostics.json").read_text(encoding="utf-8")
+        )
+        if not policy_rows:
+            fail(f"gallery run {run['name']} has no policy rows")
+        for row in policy_rows:
+            assert_research_policy(
+                beliefs=[row[f"policy_belief_{index}"] for index in range(4)],
+                action_posterior=[
+                    row[f"policy_posterior_{index}"] for index in range(4)
+                ],
+                negative_expected_free_energy=[
+                    row[f"negative_expected_free_energy_{index}"] for index in range(4)
+                ],
+                selected_action_index=row["selected_action_index"],
+                label=f"gallery {run['name']} {row['cell']} at {row['timestep']}",
+            )
 
 
 def validate_visualization_metadata(

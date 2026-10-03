@@ -34,6 +34,9 @@ class PymdpStepResult:
             "pymdp_version": self.metadata.get("pymdp_version", EXPECTED_PYMDP_VERSION),
             "h3_version": self.metadata.get("h3_version"),
             "selected_action_index": int(self.selected_action_index),
+            # Keep the exact local posterior used by policy inference. Spatial
+            # orchestration can subsequently blend its displayed beliefs.
+            "policy_beliefs": self.beliefs.astype(float).tolist(),
             "action_posterior": self.policy_posterior.astype(float).tolist(),
             "negative_expected_free_energy": self.negative_expected_free_energy.astype(
                 float

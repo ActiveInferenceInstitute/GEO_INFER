@@ -19,13 +19,15 @@ def apply_h3_research_profile(
     action_count: int = 4,
 ) -> None:
     """
-    Configure a categorical H3 model for non-degenerate research diagnostics.
+    Configure a categorical H3 model with informative research diagnostics.
 
     The default categorical model intentionally starts with uniform likelihoods,
     transitions, and preferences. That is useful as a neutral baseline, but it
     makes flat H3 traces visually uninformative. This opt-in profile keeps real
     H3 cells and real pymdp inference while installing a soft identity
     likelihood, asymmetric preferences, and action-conditioned transitions.
+    Policy diversity depends on the observed evidence: a short environmental
+    sample can legitimately select one optimal action at every cell.
     """
     state_dim = int(getattr(model, "parameters", {}).get("state_dim", 4))
     obs_dim = int(getattr(model, "parameters", {}).get("obs_dim", state_dim))

@@ -343,13 +343,16 @@ def _validate_act_h3_runtime(cells: list[str]) -> None:
         validate_pymdp_version,
     )
     from geo_infer_act.runners.h3 import (
-        generate_realistic_environmental_observations,
         h3_cells_for_config,
-        observation_dict_to_vector,
     )
     from geo_infer_act.utils.spatial_research import (
         apply_h3_research_profile,
         build_spatial_research_statistics,
+    )
+    from geo_infer_test.act_research_oracles import (
+        assert_research_policy,
+        research_posterior_reference,
+        research_profile_reference,
     )
     from geo_infer_space.nested import NestedH3Grid
 
@@ -449,23 +452,47 @@ def _validate_act_h3_runtime(cells: list[str]) -> None:
     )
     research_model.set_generative_model(research_gen)
     apply_h3_research_profile(research_gen, research_model)
+    expected_a, expected_b, expected_c, expected_d = research_profile_reference()
+    for actual, expected in (
+        (research_gen.observation_model, expected_a),
+        (research_gen.transition_model, expected_b),
+        (research_gen.preferences["observations"], expected_c),
+        (research_model.current_beliefs["states"], expected_d),
+    ):
+        np.testing.assert_allclose(actual, expected, rtol=0, atol=1e-12)
     cell_rows: list[dict[str, Any]] = []
     edge_rows: list[dict[str, Any]] = []
     previous_research_beliefs: dict[str, Any] = {}
     for timestep in range(3):
-        env = generate_realistic_environmental_observations(
-            research_cells,
-            timestep=float(timestep),
-            spatial_seed=41,
-        )
+        # Deliberately visit known policy regions. A nearby environmental
+        # sample may correctly share one optimum and cannot promise diversity.
         vector_observations = {
-            cell: observation_dict_to_vector(observation)
-            for cell, observation in env.items()
+            cell: np.eye(4)[(index + timestep) % 4]
+            for index, cell in enumerate(research_cells)
         }
         research_grid = research_model.infer_over_h3_grid(
             vector_observations,
             return_result=True,
         )
+        for cell, step in research_grid.cell_results.items():
+            expected_posterior = research_posterior_reference(vector_observations[cell])
+            np.testing.assert_allclose(
+                step.beliefs["states"], expected_posterior, rtol=0, atol=1e-6
+            )
+            metadata = step.metadata["pymdp"]
+            np.testing.assert_allclose(
+                metadata["policy_beliefs"],
+                expected_posterior,
+                rtol=0,
+                atol=1e-6,
+            )
+            assert_research_policy(
+                beliefs=expected_posterior,
+                action_posterior=metadata["action_posterior"],
+                negative_expected_free_energy=metadata["negative_expected_free_energy"],
+                selected_action_index=metadata["selected_action_index"],
+                label=f"diagnostic H3 {cell} at {timestep}",
+            )
         research_trace = research_model.trace_over_h3_grid(
             vector_observations,
             timestep=timestep,
@@ -482,7 +509,7 @@ def _validate_act_h3_runtime(cells: list[str]) -> None:
     assert non_degenerate["entropy_std"] > 1e-3
     assert non_degenerate["selected_action_probability_std"] > 1e-4
     assert non_degenerate["belief_flux_divergence_std"] > 1e-4
-    assert non_degenerate["unique_selected_action_count"] >= 2
+    assert non_degenerate["unique_selected_action_count"] == 3
 
     spatial_agent = SpatialActiveInferenceAgent(
         initial_cells=selected_cells,

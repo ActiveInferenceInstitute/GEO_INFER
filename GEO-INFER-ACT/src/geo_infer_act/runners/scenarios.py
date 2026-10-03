@@ -1208,6 +1208,8 @@ def _pymdp_records_from_grid_result(
         }
         for index, value in enumerate(posterior):
             record[f"policy_posterior_{index}"] = float(value)
+        for index, value in enumerate(pymdp.get("policy_beliefs", [])):
+            record[f"policy_belief_{index}"] = float(value)
         for index, value in enumerate(neg_efe):
             record[f"negative_expected_free_energy_{index}"] = float(value)
         records.append(record)
