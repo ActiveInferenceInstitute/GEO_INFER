@@ -29,6 +29,8 @@ def align_h3_observations(
     Absent cell/time pairs remain NaN. Duplicate normalized pairs, unknown
     cells/times, and nonfinite observations raise; no filling or averaging is
     performed. Check the output allocation budget before constructing its array.
+    Frame attributes are retained as owned metadata. The structural
+    ``spatial_index`` and ``crs`` fields describe the aligned H3 axis.
     """
     if not isinstance(data, pd.DataFrame):
         raise TypeError("data must be a pandas DataFrame")
@@ -88,5 +90,5 @@ def align_h3_observations(
         values[row, column] = value
     return TimeSeries(
         pd.DataFrame(values, index=time_axis, columns=state_space.cells),
-        metadata={"spatial_index": "h3", "crs": "EPSG:4326"},
+        metadata={**data.attrs, "spatial_index": "h3", "crs": "EPSG:4326"},
     )

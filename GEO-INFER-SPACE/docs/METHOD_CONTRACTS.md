@@ -77,6 +77,12 @@ assert abs(back["aggregated"][parent]["value"] - 42.0) < 1e-12
 
 ## Time, observations and metadata
 
+`align_h3_observations` preserves DataFrame attributes in an owned TIME metadata
+snapshot, including nested source provenance and measurement units. Its
+`spatial_index="h3"` and `crs="EPSG:4326"` fields describe the aligned output
+and take precedence over same-named input attributes. TIME resampling preserves
+those fields and independently owns nested metadata.
+
 Generic and H3 temporal pattern analyzers require explicitly aware instants
 and normalize to UTC through TIME. Their hour/day/week/month pattern buckets
 are cyclic calendar components, not chronological resampling bins. Overall

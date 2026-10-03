@@ -91,6 +91,11 @@ def test_data_transport_storage_alignment_and_actual_act_trace(tmp_path: Path) -
     frame["timestamp"] = pd.to_datetime(
         frame["timestamp"].map(normalize_timestamp), utc=True
     )
+    frame.attrs = {
+        "source": "localhost-fixture",
+        "measurement_unit": "analytical-units",
+        "lineage": {"record_ids": ["r3", "r0", "r2", "r1"]},
+    }
     metadata = DatasetMetadata(
         title="Local composition fixture",
         lineage=DataLineage(
@@ -105,6 +110,7 @@ def test_data_transport_storage_alignment_and_actual_act_trace(tmp_path: Path) -
     reader = LocalFileBackend({"base_path": str(tmp_path / "storage")})
     retrieved = asyncio.run(reader.retrieve(identifier, {}))
     pd.testing.assert_frame_equal(retrieved, frame)
+    assert retrieved.attrs == frame.attrs
     with pytest.raises(FileNotFoundError):
         asyncio.run(reader.retrieve("missing-dataset", {}))
 
@@ -114,6 +120,19 @@ def test_data_transport_storage_alignment_and_actual_act_trace(tmp_path: Path) -
     np.testing.assert_array_equal(series.data.to_numpy(), [[0.0, 3.0], [4.0, 6.0]])
     assert series.start_time == pd.Timestamp(axis[0])
     assert series.duration.total_seconds() == 60
+    assert series.metadata == {
+        **frame.attrs,
+        "spatial_index": "h3",
+        "crs": "EPSG:4326",
+    }
+    aggregated = series.resample("2min", method="mean")
+    np.testing.assert_array_equal(aggregated.data.to_numpy(), [[2.0, 4.5]])
+    assert aggregated.metadata["lineage"] == frame.attrs["lineage"]
+    aggregated.metadata["lineage"]["record_ids"][0] = "changed"
+    assert series.metadata["lineage"]["record_ids"][0] == "r3"
+    series.metadata["lineage"]["record_ids"][0] = "changed-series"
+    assert retrieved.attrs["lineage"]["record_ids"][0] == "r3"
+    assert frame.attrs["lineage"]["record_ids"][0] == "r3"
 
     transition = space.dense_transition_tensor()
     artifact = GNNArtifact.from_dict(
