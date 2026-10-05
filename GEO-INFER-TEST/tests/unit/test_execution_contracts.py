@@ -148,32 +148,127 @@ def test_restricted_console_preserves_unicode_failure_and_summary(engine, monkey
     assert "\\u0394" in displayed.getvalue().decode("cp1252")
 
 
-def test_large_real_timeout_retains_both_ends_of_output(engine) -> None:
-    """Timeout logs must preserve diagnostics beyond the displayed tail limit."""
+def _assert_large_timeout_output_retention(
+    engine, monkeypatch, *, emission_delay: float = 0.0
+):
+    """Witness complete emission inside the one real command deadline."""
     import hashlib
+    import threading
+    import uuid
 
-    code = (
-        "import sys,time; "
-        "print('STDOUT_HEAD' + 'x'*1_050_000 + 'STDOUT_TAIL', flush=True); "
-        "print('STDERR_HEAD' + 'y'*1_050_000 + 'STDERR_TAIL', file=sys.stderr, flush=True); "
-        "time.sleep(30)"
+    import geo_infer_test.process as process_module
+    import psutil
+
+    ready_file = engine.RESULTS_DIR / f"large-output-ready-{uuid.uuid4().hex}.json"
+    expected_stdout = "STDOUT_HEAD" + "x" * 1_050_000 + "STDOUT_TAIL\n"
+    expected_stderr = "STDERR_HEAD" + "y" * 1_050_000 + "STDERR_TAIL\n"
+    command_deadline, readiness_budget = 10, 8
+    code = f"""
+import json, os, sys, threading, time
+from pathlib import Path
+delay = {emission_delay!r}
+if delay:
+    threading.Event().wait(delay)
+print('STDOUT_HEAD' + 'x'*1_050_000 + 'STDOUT_TAIL', flush=True)
+print('STDERR_HEAD' + 'y'*1_050_000 + 'STDERR_TAIL', file=sys.stderr, flush=True)
+ready = Path({str(ready_file)!r})
+partial = ready.with_suffix('.partial')
+partial.write_text(json.dumps({{'pid': os.getpid(), 'ready_at': time.monotonic(), 'status': 'both-streams-flushed', 'tokens': os.environ[{process_module._OWNERSHIP_ENV!r}].split(':')}}))
+partial.replace(ready)
+threading.Event().wait(30)
+"""
+    command = [sys.executable, "-c", code]
+    primaries = []
+    original_spawn = process_module.subprocess.Popen
+
+    def record_primary(arguments, *args, **kwargs):
+        process = original_spawn(arguments, *args, **kwargs)
+        if arguments == command:
+            # Observe the real handle without delaying registration or changing
+            # the command, ownership chain, pipe behavior, or deadline.
+            primaries.append((process, kwargs["env"][process_module._OWNERSHIP_ENV]))
+        return process
+
+    monkeypatch.setattr(process_module.subprocess, "Popen", record_primary)
+    started = time.monotonic()
+    stop = threading.Event()
+    observations, observer_errors, owned_processes = [], [], []
+
+    def observe_ready():
+        try:
+            while not stop.is_set():
+                remaining = started + readiness_budget - time.monotonic()
+                assert remaining > 0, (
+                    "Emitter did not complete both streams within 8 seconds"
+                )
+                if ready_file.is_file() and primaries:
+                    ready = json.loads(ready_file.read_text(encoding="utf-8"))
+                    primary, tokens = primaries[0]
+                    assert ready["pid"] == primary.pid and primary.poll() is None
+                    assert ready["tokens"] == tokens.split(":")
+                    process = psutil.Process(primary.pid)
+                    assert process.environ()[process_module._OWNERSHIP_ENV] == tokens
+                    assert (
+                        process.ppid() == os.getpid()
+                        and process.is_running()
+                        and process.status() != psutil.STATUS_ZOMBIE
+                    )
+                    owned_processes.append(process)
+                    observations.append(ready)
+                    return
+                if stop.wait(min(0.01, remaining)):
+                    return
+        except Exception as exc:
+            observer_errors.append(f"{type(exc).__name__}: {exc}")
+
+    observer = threading.Thread(
+        target=observe_ready, name="large-output-ready", daemon=True
     )
-    result = engine.run_command([sys.executable, "-c", code], "large timeout", 3.5)
-    assert result.status == "TIMEOUT" and not result.success
-    receipt_path = Path(result.receipt)
-    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-    for name, prefix, suffix, retained in (
-        ("stdout.log", "STDOUT_HEAD", "STDOUT_TAIL", result.stdout),
-        ("stderr.log", "STDERR_HEAD", "STDERR_TAIL", result.stderr),
-    ):
-        artifact = receipt_path.parent / name
-        assert retained.startswith(prefix) and suffix in retained
-        assert len(retained) > 1_050_000
-        assert artifact.read_text(encoding="utf-8") == retained
-        assert (
-            receipt["artifacts"][name]
-            == hashlib.sha256(artifact.read_bytes()).hexdigest()
+    observer.start()
+    try:
+        result = engine.run_command(command, "large timeout", command_deadline)
+        elapsed = time.monotonic() - started
+        assert result.status == "TIMEOUT" and not result.success
+        assert command_deadline <= elapsed < command_deadline + 10
+        assert len(primaries) == 1, "The fixture must launch exactly one attempt"
+        assert primaries[0][0].poll() is not None
+        assert not observer_errors, observer_errors
+        assert observations, "Emitter did not complete both streams within 8 seconds"
+        assert observations[0]["status"] == "both-streams-flushed"
+        assert started <= observations[0]["ready_at"] < started + readiness_budget
+        assert not owned_processes[0].is_running()
+        assert result.stdout == expected_stdout
+        assert result.stderr == (
+            expected_stderr
+            + "\nTimed out after 10s; process-tree cleanup attempted; see retained diagnostics"
         )
+        receipt_path = Path(result.receipt)
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        for name, prefix, suffix, retained in (
+            ("stdout.log", "STDOUT_HEAD", "STDOUT_TAIL", result.stdout),
+            ("stderr.log", "STDERR_HEAD", "STDERR_TAIL", result.stderr),
+        ):
+            artifact = receipt_path.parent / name
+            assert retained.startswith(prefix) and suffix in retained
+            assert len(retained) > 1_050_000
+            assert artifact.read_text(encoding="utf-8") == retained
+            assert (
+                receipt["artifacts"][name]
+                == hashlib.sha256(artifact.read_bytes()).hexdigest()
+            )
+    finally:
+        stop.set()
+        observer.join(timeout=2)
+        for primary, _ in primaries:
+            if primary.poll() is None:
+                primary.kill()
+                primary.wait(timeout=2)
+        assert not observer.is_alive(), "Emission observer failed its bounded join"
+
+
+def test_large_real_timeout_retains_both_ends_of_output(engine, monkeypatch) -> None:
+    """Timeout logs must preserve completely emitted diagnostic payloads."""
+    _assert_large_timeout_output_retention(engine, monkeypatch)
 
 
 @pytest.mark.parametrize("interrupted", [False, True])

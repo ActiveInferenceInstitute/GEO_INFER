@@ -46,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   validation before the early runtime fixtures.
 - Observe real descendant readiness and identity in cleanup regressions, retaining
   actual deadlines, immediate parent exit, and captured output under coverage.
+- Require completed stream emission before timeout-retention assertions, checking
+  exact payloads, receipt hashes, and the original command deadline.
 - Index signpost directory facts once per render, restore caller state on failure,
   and exclude ignored scratch source files from generated public exports.
 - Validate mixed ISO timestamp formats per record, count distinct invalid rows,
