@@ -1,5 +1,6 @@
 [
   "GEO-INFER-EXAMPLES/docs/INTEGRATION_GUIDE.md",
+  "GEO-INFER-INTRA/docs/active_inference_guide.md",
   "GEO-INFER-INTRA/docs/advanced/custom_models.md",
   "GEO-INFER-INTRA/docs/advanced/performance_optimization.md",
   "GEO-INFER-INTRA/docs/advanced/production_architecture.md",
@@ -61,6 +62,7 @@
   "GEO-INFER-INTRA/docs/modules/geo-infer-water.md",
   "GEO-INFER-INTRA/docs/ontology/spatial_concepts.md",
   "GEO-INFER-INTRA/docs/support/faq.md",
+  "GEO-INFER-INTRA/docs/temporal_analysis_guide.md",
   "GEO-INFER-INTRA/docs/user_guide/active_inference_principles.md",
   "GEO-INFER-INTRA/docs/user_guide/cookbook.md"
 ]

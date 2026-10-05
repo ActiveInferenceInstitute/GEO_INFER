@@ -14,10 +14,14 @@ measured module, the declared theme it belongs to, a one-line purpose taken
 from the module's own `README.md`, its counted non-empty Python source
 lines, and its test-file count. The entries that follow the table expand
 each row into prose; they are authored from the module's public interface —
-the symbols its package exports in `__init__.py` — its test census, and its
-declared theme role. They reference no figures, and every quantity the
-catalog states is measured by the same inventory pass that produces this
-manuscript's other numbers.
+package exports and explicitly named owning submodules — its verification surfaces,
+and its declared theme role. Volatile source and test counts appear only in
+this generated index rather than being copied into each authored entry.
+These counts describe inventory, while command receipts record collection,
+execution and results. Neither inventory size nor a module's theme establishes
+method correctness, security, field calibration or operational effectiveness.
+For the tracked checkout's current inventory and verification commands, use
+the [root README Module Index](../README.md#module-index).
 
 {{GEO_MODULE_TABLE}}
 

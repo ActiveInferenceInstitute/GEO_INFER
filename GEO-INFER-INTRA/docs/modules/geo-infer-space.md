@@ -15,8 +15,8 @@ The package exports these interfaces and helpers from `geo_infer_space`:
 - `latlng_to_cell`, `cell_to_latlng`, and `polygon_to_cells`
 - `get_backend_dispatcher` and `configure_backends`
 - `UnsupportedSpatialOperationError`
-- Optional `PlaceAnalyzer`, `SpatialUtils`, and `GISManager` imports (these are
-  `None` when their optional dependencies are unavailable)
+- `PlaceAnalyzer`, `SpatialUtils`, and `GISManager`; their required dependency
+  imports propagate failures rather than exporting `None`
 
 The H3 implementation uses the native H3 v4 API. Keep H3 cell IDs real and
 validate resolution and coordinate order at module boundaries.

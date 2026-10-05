@@ -193,14 +193,17 @@ The per-module entries of the Supplemental Module Catalog
 ([@sec:module_catalog]) are authored, one file per module under
 `manuscript/sections/`, named by the module's lowercase slug. Each entry is
 verified against three surfaces rather than written from memory: the public
-interface is read from the symbols the package exports in its
-`__init__.py`, the test census is taken from the module's `tests/` tree,
-and the theme role restates the declared grouping the generator enforces.
+interface is read from package exports in `__init__.py` and, where imports are
+submodule-specific, the owning implementation. Verification surfaces are checked
+against the module's test tree, and the theme role restates the declared grouping
+the generator enforces.
 Entries are plain prose — one `##` heading naming the module, then
 paragraphs — and carry no tokens, labels, figures, or raw LaTeX, because
 the render combines them from the tracked source after the generator's
 token substitution has run; a quantity that belongs in the catalog belongs
-in its generated index table instead.
+in its generated index table instead. Authored entries do not duplicate source
+or test counts, rank suite quality by file counts, or treat local software
+fixtures as field validation.
 
 The render wiring is deliberate and fail-closed: `S02_module_catalog.md`
 is a published section whose position in the section order is fixed in

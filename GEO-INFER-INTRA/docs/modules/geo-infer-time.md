@@ -28,7 +28,7 @@ assert np.isclose(result["r_squared"], 1.0)
 ## Public components and composition
 
 Public exports include `TimeSeries`, `TemporalAnalyzer`, `ForecastingEngine`,
-`AdvancedForecastingEngine`, `TemporalInterpolation`, `TemporalStatistics`,
+`AdvancedForecastingEngine`, `TemporalInterpolator`, `TemporalStatistics`,
 `TemporalVisualization`, `EventDetector`, `StreamProcessor`, and transport adapters
 such as `ReplayIngestAdapter`. Root/core imports resolve analytical components
 lazily; accessing one loads its owning implementation and propagates import errors.

@@ -1,526 +1,207 @@
-# Temporal Analysis Guide
+# Temporal analysis and SPACE/TIME composition
 
-This guide covers temporal data handling and analysis within the GEO-INFER framework. It focuses on the `geo_infer_time` module's capabilities for time series decomposition, changepoint detection, stream processing, and integration with spatial analysis and Active Inference.
+TIME owns timestamp normalization, `TimeSeries`, temporal analysis, forecasting,
+stream processing, and model schedules. SPACE owns ordered H3 domains and the
+`align_h3_observations` adapter. Application scripts select these interfaces and
+configuration; numerical implementations belong in the owning packages.
 
-## Temporal Data Types in GEO-INFER
+## Install and choose an interface
 
-GEO-INFER handles three categories of temporal data:
+Use the root uv workspace and lock when developing in this checkout. Installed
+applications can depend on `geo-infer-time` and `geo-infer-space`. Add TIME's
+`visualization` extra for matplotlib and `streaming` extra for WebSocket/Kafka
+clients. Importing a transport client does not establish a live service connection.
 
-| Data Type | Description | Example | Module |
-|-----------|-------------|---------|--------|
-| **Time series** | Regular or irregular measurements over time | Daily temperature at a weather station | `geo_infer_time.core.analysis` |
-| **Event sequences** | Timestamped discrete events | Earthquake occurrences, fire ignitions | `geo_infer_time.core.event_detection` |
-| **Trajectories** | Sequences of (time, location) pairs | Vehicle GPS tracks, animal movement | `geo_infer_time` + `geo_infer_space` |
+| Interface | Purpose and assumptions |
+| --- | --- |
+| `TimeSeries` | Owned tabular observations and metadata with a unique, increasing UTC axis; missing values are allowed. |
+| `TemporalAnalyzer` | Univariate trend, seasonality, decomposition, anomaly and change-point analysis. Individual methods declare finite-data and regular-cadence requirements. |
+| `ForecastingEngine` | Linear, moving-average, ARIMA and Holt–Winters forecasts on complete, regular univariate observations. |
+| `AdvancedForecastingEngine` | Explicit statsmodels fitting options and seasonal periods; unknown top-level configuration keys fail. |
+| `TemporalInterpolator` | Explicit gap filling or resampling; imputed data carry interpolation metadata. |
+| `EventDetector` | Observed-value anomaly detection and complete-series change-point windows. |
+| `StreamProcessor` | Bounded event-time buffers, watermark policies, window aggregation and handlers. |
+| `inference_schedule` | Fixed-step validation with no inferred predictions or actions. |
+| `action_observation_schedule` | Observation gaps with exactly the supplied intervening action history. |
 
-## GEO-INFER-TIME Module Capabilities
+## UTC identity at the boundary
 
-The module is organized into core components:
-
-| Component | File | Purpose |
-|-----------|------|---------|
-| `TemporalAnalyzer` | `core/analysis.py` | Trend detection, seasonality, decomposition |
-| `StreamProcessor` | `core/stream_processing.py` | Real-time windowed processing |
-| `EventDetector` | `core/event_detection.py` | Anomaly and event detection |
-| `Forecaster` | `core/forecasting.py` | Time series forecasting |
-| `AdvancedForecaster` | `core/advanced_forecasting.py` | Ensemble and multi-model forecasting |
-| `TemporalInterpolator` | `core/interpolation.py` | Gap filling in time series |
-| `TemporalStatistics` | `core/statistics.py` | Statistical tests and summaries |
-
-## Time Zone Handling and UTC Normalization
-
-All internal timestamps in GEO-INFER use UTC. Convert at the boundary (input/output), not inside analysis code.
-
-```python
-from datetime import datetime, timezone
-import pandas as pd
-
-# Input: convert local time to UTC
-local_time = datetime(2025, 6, 15, 14, 30, tzinfo=timezone.utc)
-
-# For pandas, use tz_localize then tz_convert
-ts = pd.Timestamp("2025-06-15 14:30", tz="America/Los_Angeles")
-ts_utc = ts.tz_convert("UTC")
-
-# For a DataFrame with a datetime column
-df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
-
-# When displaying results, convert back to local time
-df["local_time"] = df["timestamp"].dt.tz_convert("America/Los_Angeles")
-```
-
-**Rules:**
-- Store and compute in UTC
-- Convert to local time only for display
-- Always use timezone-aware datetime objects (never naive datetimes with assumed timezone)
-
-## Trend Detection
-
-The `TemporalAnalyzer` detects trends using linear regression, polynomial fitting, or moving average smoothing.
+Supply an offset or an aware datetime. Never pass a naive local wall clock through
+`pd.to_datetime(..., utc=True)` to guess its timezone. Localize the source timezone
+explicitly, resolve ambiguous/nonexistent daylight-saving times deliberately, and
+then call TIME's helper. Numeric transport epochs require an explicit unit at the
+transport adapter; the scalar normalization helper rejects them.
 
 ```python
-from geo_infer_time.core.analysis import TemporalAnalyzer
-from geo_infer_time.models.timeseries import TimeSeries
-import numpy as np
-import pandas as pd
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from geo_infer_time import normalize_datetime_index, normalize_timestamp
 
-# Create a time series with an upward trend and noise
-dates = pd.date_range("2020-01-01", periods=365, freq="D")
-values = np.linspace(10, 20, 365) + np.random.default_rng(42).normal(0, 1, 365)
-ts = TimeSeries(timestamps=dates.tolist(), values=values.tolist())
-
-analyzer = TemporalAnalyzer()
-
-# Linear trend detection
-trend_info = analyzer.detect_trend(ts, method="linear")
-print(f"Direction: {trend_info['direction']}")       # "increasing"
-print(f"Slope: {trend_info['slope']:.4f}")           # ~0.027 per day
-print(f"R-squared: {trend_info['r_squared']:.4f}")   # strength of trend
-```
-
-## Seasonal Decomposition
-
-Decompose a time series into trend, seasonal, and residual components. Requires `statsmodels`.
-
-```python
-# Decompose monthly temperature data
-monthly_dates = pd.date_range("2015-01-01", periods=96, freq="M")
-seasonal_pattern = 10 * np.sin(2 * np.pi * np.arange(96) / 12)
-trend_component = np.linspace(15, 17, 96)
-noise = np.random.default_rng(42).normal(0, 0.5, 96)
-monthly_values = trend_component + seasonal_pattern + noise
-
-ts = TimeSeries(timestamps=monthly_dates.tolist(), values=monthly_values.tolist())
-
-decomp = analyzer.decompose(ts, period=12, model="additive")
-# Returns: trend, seasonal, residual components
-print(f"Seasonal amplitude: {decomp['seasonal'].max() - decomp['seasonal'].min():.2f}")
-```
-
-## Changepoint Detection
-
-Detect points where the statistical properties of a time series change.
-
-```python
-def detect_changepoints(values: np.ndarray, min_segment: int = 20,
-                         penalty: float = 3.0) -> list:
-    """Detect changepoints using CUSUM (cumulative sum) method.
-
-    Args:
-        values: Time series values.
-        min_segment: Minimum segment length between changepoints.
-        penalty: Penalty factor for adding a changepoint (higher = fewer).
-
-    Returns:
-        List of changepoint indices.
-    """
-    n = len(values)
-    cumsum = np.cumsum(values - np.mean(values))
-    changepoints = []
-
-    def _find_changepoint(start: int, end: int):
-        if end - start < 2 * min_segment:
-            return
-        segment = cumsum[start:end] - np.linspace(cumsum[start], cumsum[end - 1], end - start)
-        max_diff = np.max(np.abs(segment))
-        if max_diff > penalty * np.std(values[start:end]) * np.sqrt(end - start):
-            cp = start + np.argmax(np.abs(segment))
-            changepoints.append(cp)
-            _find_changepoint(start, cp)
-            _find_changepoint(cp, end)
-
-    _find_changepoint(0, n)
-    return sorted(changepoints)
-
-
-# Example: detect regime change
-values = np.concatenate([
-    np.random.default_rng(0).normal(5, 1, 100),
-    np.random.default_rng(1).normal(8, 1, 100),
-    np.random.default_rng(2).normal(5, 1, 100),
+assert normalize_timestamp("2024-01-01T00:00:00Z") == normalize_timestamp(
+    "2023-12-31T16:00:00-08:00"
+)
+local_zone = ZoneInfo("America/Los_Angeles")
+fold_axis = normalize_datetime_index([
+    datetime(2024, 11, 3, 1, 30, tzinfo=local_zone, fold=0),
+    datetime(2024, 11, 3, 1, 30, tzinfo=local_zone, fold=1),
 ])
-cps = detect_changepoints(values)
-print(f"Changepoints at indices: {cps}")  # near 100 and 200
+assert (fold_axis[1] - fold_axis[0]).total_seconds() == 3600
+assert str(fold_axis.tz) == "UTC"
 ```
 
-## Spatio-Temporal Autocorrelation
+`normalize_datetime_index` preserves pandas nanoseconds. It rejects normalized
+duplicates, reversed instants, NaT and numeric epochs rather than sorting,
+coalescing or repairing the input. `TimeSeries` constructors, IO and query bounds
+use this contract. Convert UTC to a local timezone only when displaying results.
 
-Measure how spatial and temporal proximity jointly affect correlation.
+## A trend and forecast with explicit units
 
-```python
-def spatiotemporal_autocorrelation(
-    locations: np.ndarray,
-    times: np.ndarray,
-    values: np.ndarray,
-    spatial_lag: float,
-    temporal_lag: float,
-) -> float:
-    """Compute spatio-temporal Moran's I for a given lag pair.
-
-    Args:
-        locations: shape (n, 2) spatial coordinates.
-        times: shape (n,) timestamps as floats (e.g., days since epoch).
-        values: shape (n,) observed values.
-        spatial_lag: max spatial distance for neighbors.
-        temporal_lag: max temporal distance for neighbors.
-    """
-    n = len(values)
-    z = values - values.mean()
-
-    numerator = 0.0
-    w_sum = 0.0
-
-    for i in range(n):
-        for j in range(i + 1, n):
-            spatial_dist = np.sqrt(np.sum((locations[i] - locations[j]) ** 2))
-            temporal_dist = abs(times[i] - times[j])
-
-            if spatial_dist <= spatial_lag and temporal_dist <= temporal_lag:
-                w = 1.0
-                numerator += w * z[i] * z[j]
-                w_sum += w
-
-    if w_sum == 0:
-        return 0.0
-
-    denominator = np.sum(z ** 2) / n
-    return (n * numerator) / (w_sum * denominator * n)
-```
-
-## Sliding Window Analysis
-
-The `StreamProcessor` handles sliding, tumbling, and session windows for real-time data.
+Linear trends count samples. A slope for quarter-hour measurements is a change
+per quarter-hour sample; dividing by 900 converts that rate to units per second.
+The reported `r_squared` describes the fitted data, without establishing future
+forecast accuracy.
 
 ```python
-from geo_infer_time.core.stream_processing import StreamProcessor
-from datetime import datetime, timedelta
+import numpy as np
+import pandas as pd
+from geo_infer_time import ForecastingEngine, TemporalAnalyzer, TimeSeries
 
-# 5-minute windows sliding every 1 minute
-processor = StreamProcessor(
-    window_size=timedelta(minutes=5),
-    slide_interval=timedelta(minutes=1),
+axis = pd.date_range("2024-01-01", periods=8, freq="15min", tz="UTC")
+series = TimeSeries(
+    -5.0 + 0.25 * np.arange(8), timestamps=axis,
+    metadata={"measurement_unit": "degC", "source": "analytical-fixture"},
 )
-
-# Feed data points
-import numpy as np
-base_time = datetime(2025, 6, 15, 12, 0, 0)
-for i in range(60):
-    t = base_time + timedelta(seconds=i * 10)
-    v = 20.0 + np.sin(i / 10) + np.random.default_rng(i).normal(0, 0.1)
-    processor.add_data_point(timestamp=t, value=v)
-
-# Retrieve computed windows
-stats = processor.get_statistics()
-print(f"Total points processed: {stats['total_points']}")
-print(f"Windows computed: {stats['total_windows']}")
+trend = TemporalAnalyzer().detect_trend(series, method="linear")
+assert trend["trend_direction"] == "increasing"
+assert np.isclose(trend["slope_per_sample"], 0.25)
+assert np.isclose(trend["r_squared"], 1.0)
+rate_degC_per_second = trend["slope_per_sample"] / 900.0
+assert np.isclose(rate_degC_per_second, 1.0 / 3600.0)
+forecast = ForecastingEngine().forecast_linear(series, horizon=2)
+np.testing.assert_allclose(forecast["forecast"], [-3.0, -2.75])
+assert pd.Timestamp(forecast["timestamps"][0]) == axis[-1] + pd.Timedelta(minutes=15)
 ```
 
-### Incremental Statistics
+Seasonal periods and forecast horizons count samples. FFT frequencies are cycles
+per sample. Use a chronological holdout to evaluate a fitted forecast; TIME's
+forecast validator refits the same declared model on a prefix and scores the
+untouched suffix. ARIMA convergence diagnostics and forecast intervals are
+backend/model-specific results, not universal guarantees.
 
-For streaming data, compute statistics incrementally to avoid re-scanning the buffer:
+## Missing observations and ordered spatial columns
+
+Long-form observations use the same explicit axis and H3 state order everywhere.
+An observed zero and an absent observation have different meanings. Metadata
+such as source and measurement unit follows the returned owned series.
 
 ```python
-class IncrementalStats:
-    """Welford's online algorithm for running mean and variance."""
+import h3
+from geo_infer_space import H3StateSpace, align_h3_observations
 
-    def __init__(self):
-        self.n = 0
-        self.mean = 0.0
-        self.m2 = 0.0
-
-    def update(self, value: float) -> None:
-        self.n += 1
-        delta = value - self.mean
-        self.mean += delta / self.n
-        delta2 = value - self.mean
-        self.m2 += delta * delta2
-
-    @property
-    def variance(self) -> float:
-        return self.m2 / self.n if self.n > 1 else 0.0
-
-    @property
-    def std(self) -> float:
-        return np.sqrt(self.variance)
+center = h3.latlng_to_cell(41.75, -124.2, 8)
+neighbor = sorted(set(h3.grid_disk(center, 1)) - {center})[0]
+state_space = H3StateSpace([neighbor, center])
+times = ["2024-01-01T00:00:00Z", "2024-01-01T00:01:00Z", "2024-01-01T00:02:00Z"]
+records = pd.DataFrame([
+    {"cell": center, "timestamp": times[1], "value": 4.0},
+    {"cell": neighbor, "timestamp": times[0], "value": 0.0},
+    {"cell": center, "timestamp": "2023-12-31T16:00:00-08:00", "value": 2.0},
+])
+records.attrs = {"source": "analytical-fixture", "measurement_unit": "degC"}
+aligned = align_h3_observations(
+    records, state_space=state_space, timestamps=times, max_entries=6,
+)
+assert list(aligned.data.columns) == [neighbor, center]
+np.testing.assert_allclose(aligned.data.to_numpy(), [[0.0, 2.0], [np.nan, 4.0], [np.nan, np.nan]], equal_nan=True)
+assert aligned.metadata["measurement_unit"] == "degC"
+minute_sums = aligned.resample("1min", method="sum")
+assert minute_sums.data.iloc[0, 0] == 0.0
+assert np.isnan(minute_sums.data.iloc[1, 0])
+assert minute_sums.data.iloc[2].isna().all()
 ```
 
-## Trajectory Analysis
+The adapter rejects duplicate cell/time pairs, unknown cells/times, mixed
+resolutions and nonfinite observed values before constructing the bounded matrix.
+TIME's univariate analytical engines require a selected column. Choose and record
+an interpolation policy before invoking methods requiring complete data;
+`TemporalInterpolator.interpolate(..., method="time")` uses elapsed-time spacing,
+whereas `method="linear"` uses positional spacing. Interpolation is a modeling
+choice, not an observed measurement. `align_timeseries` defaults to forward
+filling, so pass `fill_method=None` when retaining missingness is required.
 
-For moving objects (vehicles, wildlife, ships), combine temporal and spatial analysis.
+## Bounded replay and live delivery
 
-```python
-import numpy as np
-from dataclasses import dataclass
-
-@dataclass
-class TrajectoryPoint:
-    timestamp: float  # seconds since epoch
-    lat: float
-    lng: float
-
-def compute_trajectory_metrics(points: list[TrajectoryPoint]) -> dict:
-    """Compute speed, distance, and bearing for a trajectory."""
-    total_distance = 0.0
-    speeds = []
-    bearings = []
-
-    for i in range(1, len(points)):
-        dt = points[i].timestamp - points[i - 1].timestamp
-        if dt <= 0:
-            continue
-
-        # Haversine distance (approximate for short distances)
-        dlat = np.radians(points[i].lat - points[i - 1].lat)
-        dlng = np.radians(points[i].lng - points[i - 1].lng)
-        lat1 = np.radians(points[i - 1].lat)
-        lat2 = np.radians(points[i].lat)
-
-        a = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlng / 2) ** 2
-        c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
-        dist_m = 6371000 * c
-
-        total_distance += dist_m
-        speeds.append(dist_m / dt)
-
-        # Bearing
-        y = np.sin(dlng) * np.cos(lat2)
-        x = np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(dlng)
-        bearing = np.degrees(np.arctan2(y, x)) % 360
-        bearings.append(bearing)
-
-    return {
-        "total_distance_m": total_distance,
-        "mean_speed_ms": np.mean(speeds) if speeds else 0.0,
-        "max_speed_ms": np.max(speeds) if speeds else 0.0,
-        "mean_bearing_deg": np.mean(bearings) if bearings else 0.0,
-        "duration_s": points[-1].timestamp - points[0].timestamp if len(points) > 1 else 0.0,
-    }
-```
-
-## Real-Time Stream Processing Patterns
-
-### Pattern: Sensor Network Aggregation
+Replay is an explicit offline source. Live adapters open actual services and
+propagate failures. Window values use the configured aggregation callback;
+active buffers, late buffers, retained history and sliding work each have limits.
 
 ```python
-from geo_infer_time.core.stream_processing import StreamProcessor
+import asyncio
 from datetime import timedelta
-from collections import defaultdict
+from geo_infer_time import ReplayIngestAdapter, StreamProcessor
 
-class SpatioTemporalAggregator:
-    """Aggregate streaming sensor data by H3 cell and time window."""
+processor = StreamProcessor(timedelta(minutes=1), max_buffer_points=10)
+replay = ReplayIngestAdapter([
+    {"timestamp": "2024-01-01T00:00:00Z", "value": 2.0},
+    {"timestamp": "2024-01-01T00:00:20Z", "value": 4.0},
+])
 
-    def __init__(self, window_minutes: int = 5, h3_resolution: int = 7):
-        self.h3_res = h3_resolution
-        self.processors: dict = defaultdict(
-            lambda: StreamProcessor(
-                window_size=timedelta(minutes=window_minutes),
-                slide_interval=timedelta(minutes=1),
-            )
-        )
+async def ingest_replay():
+    async with asyncio.timeout(5):
+        return await processor.ingest_adapter_stream(replay)
 
-    def ingest(self, timestamp, lat: float, lng: float, value: float):
-        """Route a sensor reading to the appropriate cell processor."""
-        import h3
-        cell = h3.latlng_to_cell(lat, lng, self.h3_res)
-        self.processors[cell].add_data_point(
-            timestamp=timestamp, value=value, metadata={"cell": cell}
-        )
-
-    def get_cell_summary(self, cell: str) -> dict:
-        if cell in self.processors:
-            return self.processors[cell].get_statistics()
-        return {}
+assert asyncio.run(ingest_replay()) == 2
+window = processor.process_window()
+assert window["aggregated_value"] == 3.0
+assert processor.get_stats()["total_points"] == 2
 ```
 
-### Pattern: Alerting on Anomalies
+Configure lateness and watermark behavior explicitly. Kafka acknowledgement
+occurs only after successful downstream processing. Client-boundary tests do not
+replace a disposable live-broker acceptance check.
+
+## Model time and action histories
+
+General observations may be irregular, but a discrete model's transition step is
+an explicit physical duration. A missing observation does not remove an elapsed
+transition. Supply the actions taken during the gap; schedules validate them and
+do not choose policies or insert observations.
 
 ```python
-from geo_infer_time.core.analysis import TemporalAnalyzer, AnomalyType
+from geo_infer_time.core.inference_schedule import inference_schedule
+from geo_infer_time.core.action_schedule import action_observation_schedule
 
-def check_for_alerts(values: np.ndarray, timestamps: list,
-                      threshold_sigma: float = 3.0) -> list:
-    """Check recent values for anomalies using z-score method."""
-    if len(values) < 10:
-        return []
-
-    mean = np.mean(values[:-1])
-    std = np.std(values[:-1])
-    if std < 1e-8:
-        return []
-
-    latest = values[-1]
-    z_score = abs(latest - mean) / std
-
-    alerts = []
-    if z_score > threshold_sigma:
-        alerts.append({
-            "timestamp": timestamps[-1],
-            "value": float(latest),
-            "expected": float(mean),
-            "z_score": float(z_score),
-            "severity": "high" if z_score > 5 else "medium",
-        })
-    return alerts
+regular = inference_schedule(times[:2], step_seconds=60)
+assert len(regular) == 2
+schedule = action_observation_schedule([
+    {"timestamp": times[0], "actions": []},
+    {"timestamp": times[2], "actions": [0, 1]},
+], step_seconds=60, num_actions=2)
+assert schedule[1].prediction_count == 2
+assert schedule[1].prediction_timestamps[-1] == pd.Timestamp(times[2])
 ```
 
-## Forecasting with Active Inference Priors
+For BAYES, declare centroid coordinate order and coordinate scale, apply the
+observed-value mask, and derive elapsed seconds from the UTC axis. For ACT,
+preserve the H3 order in priors, likelihoods and transitions; measurements must
+be mapped through a declared observation model rather than treated as posterior
+probabilities. See [the composition contract](../../GEO-INFER-SPACE/docs/CROSS_MODULE_COMPOSITION.md),
+[the TIME method contracts](../../GEO-INFER-TIME/docs/method_contracts.md),
+[the action schedule](../../GEO-INFER-TIME/docs/action_observation_schedule.md),
+and [the Active Inference guide](active_inference_guide.md).
 
-Active Inference provides a principled way to incorporate prior beliefs into forecasting. The generative model predicts future observations, and prediction errors update the model.
+## Verification
 
-```python
-from geo_infer_act.core.free_energy import FreeEnergyCalculator
-import numpy as np
+From the repository root, run the narrow numerical and composition tests first:
 
-def forecast_with_prior(historical_values: np.ndarray,
-                         prior_mean: float,
-                         prior_precision: float,
-                         horizon: int = 10) -> np.ndarray:
-    """Forecast using a simple Active Inference generative model.
-
-    Combines observed trend with prior beliefs about expected values.
-
-    Args:
-        historical_values: Past observations.
-        prior_mean: Prior belief about the expected value.
-        prior_precision: Confidence in the prior (higher = more weight on prior).
-        horizon: Number of steps to forecast.
-    """
-    # Estimate trend from data
-    n = len(historical_values)
-    t = np.arange(n)
-    slope, intercept = np.polyfit(t, historical_values, 1)
-    data_precision = 1.0 / max(np.var(historical_values - (slope * t + intercept)), 1e-8)
-
-    forecasts = np.empty(horizon)
-    for h in range(horizon):
-        future_t = n + h
-        data_prediction = slope * future_t + intercept
-
-        # Bayesian combination: weighted average of data trend and prior
-        combined_precision = data_precision + prior_precision
-        forecasts[h] = (
-            data_precision * data_prediction + prior_precision * prior_mean
-        ) / combined_precision
-
-    return forecasts
-
-
-# Example: temperature forecast with seasonal prior
-winter_temps = np.array([2.0, 1.5, 3.0, 2.5, 1.0, 2.0, 3.5, 2.0])
-# Prior: expect temperatures around 2 degrees in winter
-forecasts = forecast_with_prior(
-    winter_temps, prior_mean=2.0, prior_precision=2.0, horizon=5
-)
-print(f"Forecasts: {forecasts}")
+```bash
+uv run python -m pytest GEO-INFER-TIME/tests/unit/test_method_contracts.py
+uv run python -m pytest GEO-INFER-TEST/tests/integration/test_space_time_composition_contract.py
+uv run python GEO-INFER-TEST/run_unified_tests.py --module TIME
+uv run python GEO-INFER-TEST/validate_doc_examples.py
 ```
 
-## Integration: GEO-INFER-TIME + GEO-INFER-SPACE
-
-### Spatio-Temporal Interpolation
-
-Combine spatial GP interpolation with temporal trend models:
-
-```python
-from geo_infer_bayes.api.tfp_interface import TFPInterface
-from geo_infer_time.core.analysis import TemporalAnalyzer
-from geo_infer_time.models.timeseries import TimeSeries
-import numpy as np
-
-def spatiotemporal_interpolation(
-    locations: np.ndarray,
-    timestamps: np.ndarray,
-    values: np.ndarray,
-    query_location: np.ndarray,
-    query_time: float,
-) -> dict:
-    """Interpolate a value at a given location and time.
-
-    Strategy: fit GP spatially at the query time's temporal neighborhood,
-    using temporally-detrended values.
-    """
-    analyzer = TemporalAnalyzer()
-
-    # Step 1: Detrend at each location
-    unique_locs = np.unique(locations, axis=0)
-    detrended = np.copy(values)
-    trend_at_query_time = {}
-
-    for loc in unique_locs:
-        mask = np.all(locations == loc, axis=1)
-        loc_times = timestamps[mask]
-        loc_values = values[mask]
-
-        if len(loc_values) < 3:
-            continue
-
-        # Simple linear detrend
-        coeffs = np.polyfit(loc_times, loc_values, 1)
-        trend = np.polyval(coeffs, loc_times)
-        detrended[mask] = loc_values - trend
-        trend_at_query_time[tuple(loc)] = np.polyval(coeffs, query_time)
-
-    # Step 2: Spatial GP on detrended values
-    gp = TFPInterface(model_config={"lengthscale": 2.0, "variance": 1.0, "noise": 0.05})
-    gp.create_spatial_gp_model(locations, detrended)
-
-    from geo_infer_bayes.api.tfp_interface import _squared_exponential_kernel
-    from scipy import linalg
-
-    K_star = _squared_exponential_kernel(
-        query_location.reshape(1, -1), gp._X, gp._lengthscale, gp._variance
-    )
-    spatial_residual = float(K_star @ gp._alpha)
-
-    # Step 3: Combine spatial residual with temporal trend
-    # Use nearest location's trend if query location is not in training set
-    nearest_idx = np.argmin(np.sum((unique_locs - query_location) ** 2, axis=1))
-    nearest_loc = tuple(unique_locs[nearest_idx])
-    temporal_trend = trend_at_query_time.get(nearest_loc, np.mean(values))
-
-    return {
-        "predicted_value": temporal_trend + spatial_residual,
-        "temporal_trend": temporal_trend,
-        "spatial_residual": spatial_residual,
-    }
-```
-
-### Time-Varying Spatial Fields
-
-For data that changes over both space and time (e.g., air quality, temperature fields):
-
-```python
-def animate_spatial_field(timestamps: list,
-                           locations: np.ndarray,
-                           values_by_time: dict,
-                           grid_resolution: int = 50):
-    """Generate spatial field snapshots for each timestamp.
-
-    Returns a list of (timestamp, grid_predictions) pairs for visualization.
-    """
-    gp = TFPInterface(model_config={"lengthscale": 3.0, "variance": 1.0, "noise": 0.1})
-
-    x_range = np.linspace(locations[:, 0].min(), locations[:, 0].max(), grid_resolution)
-    y_range = np.linspace(locations[:, 1].min(), locations[:, 1].max(), grid_resolution)
-    grid = np.array(np.meshgrid(x_range, y_range)).reshape(2, -1).T
-
-    snapshots = []
-    for t in timestamps:
-        if t not in values_by_time:
-            continue
-        y = values_by_time[t]
-        gp.create_spatial_gp_model(locations, y)
-
-        from geo_infer_bayes.api.tfp_interface import _squared_exponential_kernel
-        K_star = _squared_exponential_kernel(grid, gp._X, gp._lengthscale, gp._variance)
-        predictions = K_star @ gp._alpha
-
-        snapshots.append((t, predictions.reshape(grid_resolution, grid_resolution)))
-
-    return snapshots
-```
-
-## See Also
-
-- [Bayesian Inference Guide](bayesian_inference_guide.md) -- GP models for spatial interpolation
-- [Active Inference Guide](active_inference_guide.md) -- Active Inference fundamentals
-- [Performance Optimization](advanced/performance_optimization.md) -- optimizing temporal computations
-- [Custom Models](advanced/custom_models.md) -- building custom spatio-temporal models
+Plotting requires TIME's visualization extra. Forecast dashboards accept the
+`ForecastingEngine` result directly and require forecast timestamps to follow the
+historical axis. Rendered figures and live services need their own retained
+acceptance; file inventory or client construction cannot establish those outcomes.
