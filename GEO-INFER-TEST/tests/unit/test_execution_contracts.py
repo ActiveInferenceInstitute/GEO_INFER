@@ -366,15 +366,184 @@ def _assert_recorded_process_dead(pidfile: Path) -> None:
         pass
 
 
-def test_timeout_terminates_real_descendant(tmp_path) -> None:
-    pidfile = tmp_path / "descendant.pid"
-    child = "import time; time.sleep(30)"
-    parent = f"from pathlib import Path; import subprocess,sys,time; child = subprocess.Popen([sys.executable,'-c',{child!r}]); Path({str(pidfile)!r}).write_text(str(child.pid)); time.sleep(30)"
+def _assert_real_descendant_timeout(
+    tmp_path,
+    monkeypatch,
+    *,
+    detached=False,
+    parent_exit="never",
+    startup_delay=0,
+) -> None:
+    """Observe startup inside one real deadline, then verify owned cleanup.
+
+    Coverage can instrument both newly launched interpreters. Their startup
+    belongs to the five-second command deadline; readiness never resets it.
+    The three-second observer allowance makes missing startup an explicit
+    failure. A delayed-startup boundary can use ``startup_delay`` without
+    replacing any clock, census, communicate call, or termination operation.
+    """
+    import threading
+
+    import psutil
+    import geo_infer_test.process as process_module
+
+    assert parent_exit in {"never", "released", "immediate"}
+    ready = tmp_path / "descendant-ready.json"
+    release = tmp_path / "release-parent"
+    child = f"""import json, os, sys, threading
+from pathlib import Path
+print("real descendant stdout", flush=True)
+print("real descendant stderr", file=sys.stderr, flush=True)
+ready = Path({str(ready)!r})
+pending = ready.with_suffix(".pending")
+pending.write_text(json.dumps({{
+    "pid": os.getpid(), "parent_pid": int(sys.argv[1]),
+    "tokens": os.environ[{process_module._OWNERSHIP_ENV!r}].split(":"),
+}}), encoding="utf-8")
+pending.replace(ready)
+threading.Event().wait(30)
+"""
+    parent = f"""import os, subprocess, sys, threading, time
+from pathlib import Path
+print("real parent stdout", flush=True)
+print("real parent stderr", file=sys.stderr, flush=True)
+threading.Event().wait({startup_delay!r})
+subprocess.Popen([sys.executable, "-c", {child!r}, str(os.getpid())],
+                 start_new_session={detached!r} and os.name == "posix")
+"""
+    if parent_exit == "released":
+        parent += f"""deadline = time.monotonic() + 5
+poll = threading.Event()
+while not Path({str(release)!r}).exists() and time.monotonic() < deadline:
+    poll.wait(0.01)
+assert Path({str(release)!r}).exists(), "Parent release was not observed"
+print("parent exited", flush=True)
+"""
+    elif parent_exit == "immediate":
+        # No readiness wait: the descendant may still be starting as its
+        # original parent exits and it becomes an orphan/pipe holder.
+        parent += 'print("parent exited", flush=True)\n'
+    else:
+        parent += "threading.Event().wait(30)\n"
+    command = [sys.executable, "-c", parent]
+    primaries, startup_errors = [], []
+    observed = {}
+    stopped = threading.Event()
+    original_spawn = process_module.subprocess.Popen
+
+    def record_primary(arguments, *args, **kwargs):
+        process = original_spawn(arguments, *args, **kwargs)
+        if arguments == command:
+            # Only observe the real launch; do not block registration or
+            # rewrite its deadline, command, environment, or pipe behavior.
+            primaries.append((process, kwargs["env"][process_module._OWNERSHIP_ENV]))
+        return process
+
+    monkeypatch.setattr(process_module.subprocess, "Popen", record_primary)
     started = time.monotonic()
-    with pytest.raises(subprocess.TimeoutExpired):
-        run_process([sys.executable, "-c", parent], timeout=0.3, cwd=tmp_path)
-    assert time.monotonic() - started < 5
-    _assert_recorded_process_dead(pidfile)
+
+    def observe_readiness():
+        deadline = started + 3
+        try:
+            while not stopped.is_set() and (not ready.exists() or not primaries):
+                remaining = deadline - time.monotonic()
+                assert remaining > 0, "Descendant did not publish output-ready identity"
+                stopped.wait(min(0.01, remaining))
+            assert ready.exists() and primaries, (
+                "Command ended before descendant startup"
+            )
+            identity = json.loads(ready.read_text(encoding="utf-8"))
+            primary, tokens = primaries[0]
+            assert identity["parent_pid"] == primary.pid
+            assert identity["tokens"] == tokens.split(":")
+            descendant = psutil.Process(identity["pid"])
+            assert descendant.environ()[process_module._OWNERSHIP_ENV] == tokens
+            assert (
+                descendant.is_running() and descendant.status() != psutil.STATUS_ZOMBIE
+            )
+            observed["descendant"] = descendant
+            if os.name == "posix":
+                expected_session = descendant.pid if detached else primary.pid
+                assert os.getsid(descendant.pid) == expected_session
+            if parent_exit != "never":
+                if parent_exit == "released":
+                    release.touch()
+                while primary.poll() is None and not stopped.is_set():
+                    remaining = deadline - time.monotonic()
+                    assert remaining > 0, (
+                        "Primary did not exit before the command deadline"
+                    )
+                    stopped.wait(min(0.01, remaining))
+                assert primary.returncode == 0, "Primary did not exit normally"
+                assert (
+                    descendant.is_running()
+                    and descendant.status() != psutil.STATUS_ZOMBIE
+                )
+                observed["early_parent_exit"] = True
+            else:
+                assert primary.poll() is None, "Primary exited before the real timeout"
+            observed["ready_elapsed"] = time.monotonic() - started
+        except BaseException as error:
+            startup_errors.append(f"{type(error).__name__}: {error}")
+
+    watcher = threading.Thread(target=observe_readiness, daemon=True)
+    watcher.start()
+    try:
+        try:
+            with pytest.raises(subprocess.TimeoutExpired) as failure:
+                run_process(command, timeout=5, cwd=tmp_path)
+        finally:
+            stopped.set()
+            watcher.join(timeout=1)
+        assert not watcher.is_alive(), "Readiness observer outlived bounded cleanup"
+        assert not startup_errors, startup_errors
+        assert len(primaries) == 1, "The fixture must launch exactly one attempt"
+        assert 0 <= observed["ready_elapsed"] < 3
+        assert 5 <= time.monotonic() - started < 10
+        # The same command deadline can expire during its native ownership
+        # census. Its TimeoutExpired may identify that inspection command;
+        # elapsed time and retained target output establish this boundary.
+        assert "real parent stdout" in failure.value.output
+        assert "real parent stderr" in failure.value.stderr
+        assert "real descendant stdout" in failure.value.output
+        assert "real descendant stderr" in failure.value.stderr
+        assert primaries[0][0].poll() is not None
+        if parent_exit != "never":
+            assert observed["early_parent_exit"]
+            assert "parent exited" in failure.value.output
+        descendant = observed["descendant"]
+        try:
+            assert (
+                not descendant.is_running()
+                or descendant.status() == psutil.STATUS_ZOMBIE
+            )
+        except psutil.NoSuchProcess:
+            pass
+    finally:
+        # Preserve assertion/cleanup failures while preventing this owned
+        # fixture from leaving native processes behind. These handles retain
+        # the launch or birth identity; a PID file cannot authorize cleanup.
+        stopped.set()
+        watcher.join(timeout=1)
+        descendant = observed.get("descendant")
+        if descendant is not None:
+            try:
+                if (
+                    descendant.is_running()
+                    and descendant.status() != psutil.STATUS_ZOMBIE
+                ):
+                    descendant.kill()
+                    psutil.wait_procs([descendant], timeout=2)
+            except psutil.NoSuchProcess:
+                pass
+        for primary, _tokens in primaries:
+            if primary.poll() is None:
+                primary.kill()
+                primary.wait(timeout=2)
+
+
+def test_timeout_terminates_real_descendant(tmp_path, monkeypatch) -> None:
+    _assert_real_descendant_timeout(tmp_path, monkeypatch)
 
 
 def test_runtime_registry_covers_every_workspace_module() -> None:
@@ -560,40 +729,27 @@ def test_setup_and_child_share_one_command_deadline(
     assert "tree terminated" not in result.stderr
 
 
-def test_timeout_terminates_descendant_that_creates_its_own_session(tmp_path) -> None:
-    pidfile = tmp_path / "escaped.pid"
-    child = "import time; time.sleep(30)"
-    parent = f"from pathlib import Path; import os,subprocess,sys,time; child = subprocess.Popen([sys.executable,'-c',{child!r}], start_new_session=os.name=='posix'); Path({str(pidfile)!r}).write_text(str(child.pid)); time.sleep(30)"
-    with pytest.raises(subprocess.TimeoutExpired):
-        run_process([sys.executable, "-c", parent], timeout=0.3, cwd=tmp_path)
-    _assert_recorded_process_dead(pidfile)
+def test_timeout_terminates_descendant_that_creates_its_own_session(
+    tmp_path, monkeypatch
+) -> None:
+    _assert_real_descendant_timeout(tmp_path, monkeypatch, detached=True)
 
 
-def test_timeout_terminates_detached_pipe_holder_after_parent_exit(tmp_path) -> None:
+def test_timeout_terminates_detached_pipe_holder_after_parent_exit(
+    tmp_path, monkeypatch
+) -> None:
     """A retained descendant remains owned after its PPID and session change."""
-    pidfile = tmp_path / "orphan.pid"
-    child = "import time; print('detached child', flush=True); time.sleep(30)"
-    parent = (
-        "from pathlib import Path; import os,subprocess,sys,time; "
-        f"child = subprocess.Popen([sys.executable,'-c',{child!r}], start_new_session=os.name=='posix'); Path({str(pidfile)!r}).write_text(str(child.pid)); "
-        "print('parent exited', flush=True); time.sleep(0.3)"
+    _assert_real_descendant_timeout(
+        tmp_path, monkeypatch, detached=True, parent_exit="released"
     )
-    started = time.monotonic()
-    with pytest.raises(subprocess.TimeoutExpired) as failure:
-        run_process([sys.executable, "-c", parent], timeout=0.6, cwd=tmp_path)
-    assert time.monotonic() - started < 5
-    assert "parent exited" in failure.value.output
-    assert "detached child" in failure.value.output
-    _assert_recorded_process_dead(pidfile)
 
 
-def test_immediate_parent_exit_cannot_hide_detached_pipe_holder(tmp_path) -> None:
-    pidfile = tmp_path / "early-orphan.pid"
-    child = "import time; time.sleep(30)"
-    parent = f"from pathlib import Path; import os,subprocess,sys; child = subprocess.Popen([sys.executable,'-c',{child!r}], start_new_session=os.name=='posix'); Path({str(pidfile)!r}).write_text(str(child.pid))"
-    with pytest.raises(subprocess.TimeoutExpired):
-        run_process([sys.executable, "-c", parent], timeout=0.3, cwd=tmp_path)
-    _assert_recorded_process_dead(pidfile)
+def test_immediate_parent_exit_cannot_hide_detached_pipe_holder(
+    tmp_path, monkeypatch
+) -> None:
+    _assert_real_descendant_timeout(
+        tmp_path, monkeypatch, detached=True, parent_exit="immediate"
+    )
 
 
 def test_nested_native_observers_preserve_target_tokens_and_detached_cleanup(

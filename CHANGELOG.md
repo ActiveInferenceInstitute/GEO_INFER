@@ -44,6 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   retaining target ancestry, bounded inspection and fail-closed access errors.
 - Declare the Windows process profile explicitly and run strict test-contract
   validation before the early runtime fixtures.
+- Observe real descendant readiness and identity in cleanup regressions, retaining
+  actual deadlines, immediate parent exit, and captured output under coverage.
+- Index signpost directory facts once per render, restore caller state on failure,
+  and exclude ignored scratch source files from generated public exports.
 - Validate mixed ISO timestamp formats per record, count distinct invalid rows,
   and distinguish absent optional civic-intelligence packages from broken imports.
 - Replace stale Active Inference and temporal tutorials with executable public

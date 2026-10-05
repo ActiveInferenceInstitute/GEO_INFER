@@ -36,6 +36,41 @@ class ModuleInfo:
     test_files: int
 
 
+@dataclass
+class _DirectoryIndex:
+    root: Path
+    files: dict[Path, list[Path]]
+    children: dict[Path, set[Path]]
+
+
+_DIRECTORY_INDEX: _DirectoryIndex | None = None
+
+
+def _build_directory_index(inventory: set[Path] | frozenset[Path]) -> _DirectoryIndex:
+    """Index each file and distinct ancestor once, without inventory rescans."""
+    files: dict[Path, list[Path]] = {}
+    children: dict[Path, set[Path]] = {}
+    indexed: set[Path] = set()
+    for path in inventory:
+        directory = path.parent
+        files.setdefault(directory, []).append(path)
+        while directory not in indexed:
+            indexed.add(directory)
+            parent = directory.parent
+            if parent == directory:
+                break
+            children.setdefault(parent, set()).add(directory)
+            directory = parent
+    return _DirectoryIndex(REPO_ROOT, files, children)
+
+
+def _directory_index() -> _DirectoryIndex:
+    """Reuse only a render's snapshot; standalone calls see current set edits."""
+    if _DIRECTORY_INDEX is not None and _DIRECTORY_INDEX.root == REPO_ROOT:
+        return _DIRECTORY_INDEX
+    return _build_directory_index(tracked_files())
+
+
 def git_ls_files() -> list[Path]:
     result = subprocess.run(
         ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
@@ -161,25 +196,21 @@ def repository_doc_files() -> tuple[list[Path], list[Path]]:
 
 
 def direct_contents(directory: Path) -> tuple[list[str], list[str], list[str]]:
-    tracked = tracked_files()
+    index = _directory_index()
+    direct_files = index.files.get(directory, ())
+    child_directories = index.children.get(directory, ())
     dirs = sorted(
         child.name + "/"
         for child in directory.iterdir()
         if child.is_dir()
         and child.name not in {".git", ".venv", "__pycache__"}
-        and any(child in path.parents for path in tracked)
+        and child in child_directories
     )
-    py_files = sorted(
-        path.name
-        for path in tracked
-        if path.parent == directory and path.suffix == ".py"
-    )
+    py_files = sorted(path.name for path in direct_files if path.suffix == ".py")
     other_files = sorted(
         path.name
-        for path in tracked
-        if path.parent == directory
-        and path.name not in {"README.md", "AGENTS.md"}
-        and path.suffix != ".py"
+        for path in direct_files
+        if path.name not in {"README.md", "AGENTS.md"} and path.suffix != ".py"
     )
     # Signposts are generated from the complete tracked directory contents.
     # Truncating this inventory made valid files disappear from AGENTS.md and
@@ -188,8 +219,14 @@ def direct_contents(directory: Path) -> tuple[list[str], list[str], list[str]]:
 
 
 def public_symbols(directory: Path) -> list[str]:
+    """Read public APIs, respecting the non-ignored snapshot during rendering."""
     symbols: list[str] = []
-    for py_file in sorted(directory.glob("*.py")):
+    candidates = (
+        _directory_index().files.get(directory, ())
+        if _DIRECTORY_INDEX is not None and _DIRECTORY_INDEX.root == REPO_ROOT
+        else directory.glob("*.py")
+    )
+    for py_file in sorted(path for path in candidates if path.suffix == ".py"):
         if py_file.name.startswith("test_") or (
             py_file.name.startswith("_") and py_file.name != "__init__.py"
         ):
@@ -232,9 +269,8 @@ def test_command(path: Path, module: ModuleInfo | None) -> str:
     if "tests" in path.parent.parts:
         test_files = [
             candidate
-            for candidate in tracked_files()
-            if candidate.parent == path.parent
-            and candidate.suffix == ".py"
+            for candidate in _directory_index().files.get(path.parent, ())
+            if candidate.suffix == ".py"
             and (
                 candidate.name.startswith("test_")
                 or candidate.name.endswith("_test.py")
@@ -1248,23 +1284,31 @@ def render_agents(
 
 def expected_doc_files() -> list[tuple[Path, str]]:
     """Return tracked documentation files and their generated contents."""
-    modules = discover_modules()
-    readmes, agents = repository_doc_files()
-    expected: list[tuple[Path, str]] = []
+    global _DIRECTORY_INDEX
+    previous_index = _DIRECTORY_INDEX
+    _DIRECTORY_INDEX = _build_directory_index(frozenset(tracked_files()))
+    try:
+        modules = discover_modules()
+        readmes, agents = repository_doc_files()
+        expected: list[tuple[Path, str]] = []
 
-    for readme in readmes:
-        expected.append(
-            (readme, render_readme(readme, module_for(readme, modules), modules))
-        )
-    for agents_file in agents:
-        expected.append(
-            (
-                agents_file,
-                render_agents(agents_file, module_for(agents_file, modules), modules),
+        for readme in readmes:
+            expected.append(
+                (readme, render_readme(readme, module_for(readme, modules), modules))
             )
-        )
+        for agents_file in agents:
+            expected.append(
+                (
+                    agents_file,
+                    render_agents(
+                        agents_file, module_for(agents_file, modules), modules
+                    ),
+                )
+            )
 
-    return expected
+        return expected
+    finally:
+        _DIRECTORY_INDEX = previous_index
 
 
 def check_docs_current() -> list[Path]:
