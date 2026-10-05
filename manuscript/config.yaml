@@ -10,7 +10,7 @@ paper:
     image: "output/figures/graphical_abstract.png"
     alt: "Graphical abstract: modules grouped into themes composing into geospatial and inference models, verified by an evidence loop into executable claims."
   version: "0.4.0"  # generator-owned (PROJECT_VERSION)
-  date: "2026-10-05T10:59:55-07:00"  # generator-owned (MANUSCRIPT_SOURCE_DATE)
+  date: "2026-10-05T12:34:28-07:00"  # generator-owned (MANUSCRIPT_SOURCE_DATE)
 
 authors:
   - name: "Daniel Ari Friedman"
