@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   alignment, retaining explicit gaps and state identities across composition.
 - Retain immutable execution attempts and require fresh JUnit/receipts; preserve
   all category lanes, add required slow tests and paired GNN interchange.
+- Require owned JUnit reports for pytest console and Python module entry points,
+  retaining both report aliases, split operands, and ordinary validator arguments.
+  Negative report checks require the actual child exit and specific report
+  diagnostic, so setup failures cannot satisfy them.
 - Repair DATA async transport and optional integrations, IOT timestamp and bounds
   semantics, ART registry-only persistence, and OPS metrics lifecycle.
 - Consolidate Cascadia inside PLACE, defer GPU probing, rename misleading AI

@@ -249,13 +249,123 @@ def build_subprocess_env() -> dict[str, str]:
     return env
 
 
+def _is_pytest_command(command: list[str]) -> bool:
+    """Recognize public pytest entry points without inspecting script arguments."""
+    if not command:
+        return False
+    executable = command[0].replace("\\", "/").rsplit("/", 1)[-1].lower()
+    if executable in {"pytest", "pytest.exe", "py.test", "py.test.exe"}:
+        return True
+    if not re.fullmatch(
+        r"(?:pythonw?(?:\d+(?:\.\d+)*)?d?|pypy(?:\d+(?:\.\d+)*)?)(?:\.exe)?",
+        executable,
+    ):
+        return False
+    index = 1
+    while index < len(command):
+        argument = command[index]
+        if argument == "--check-hash-based-pycs":
+            index += 2
+            continue
+        if argument.startswith("--check-hash-based-pycs="):
+            index += 1
+            continue
+        if argument in {"-", "--"} or not argument.startswith("-"):
+            return False
+        options = argument[1:]
+        for position, option in enumerate(options):
+            if option in {"c", "h", "V"}:
+                return False
+            if option == "m":
+                module = options[position + 1 :]
+                if not module and index + 1 < len(command):
+                    module = command[index + 1]
+                return module == "pytest"
+            if option in {"W", "X"}:
+                if position + 1 == len(options):
+                    index += 1
+                break
+            if option not in "bBdEiIOPqRsSuvx":
+                return False
+        index += 1
+    return False
+
+
+def _junit_arguments(
+    command: list[str],
+) -> tuple[list[tuple[int, int, str]], list[str]]:
+    """Parse report operands before ``--`` in pytest's last-option-wins order."""
+    reports: list[tuple[int, int, str]] = []
+    errors: list[str] = []
+    index = 0
+    while index < len(command):
+        argument = command[index]
+        if argument == "--":
+            break
+        option, separator, value = argument.partition("=")
+        if option not in {"--junitxml", "--junit-xml"}:
+            index += 1
+            continue
+        stop = index + 1
+        if not separator:
+            if stop == len(command):
+                errors.append(f"JUnit report option {option} omitted its path")
+                index = stop
+                continue
+            value = command[stop]
+            # argparse treats a lone dash and negative numbers as operands.
+            if (
+                value.startswith("-")
+                and value != "-"
+                and not re.fullmatch(r"-\d+|-\d*\.\d+", value)
+            ):
+                errors.append(f"JUnit report option {option} omitted its path")
+                index = stop
+                continue
+            stop += 1
+        if value:
+            reports.append((index, stop, value))
+        else:
+            errors.append(f"JUnit report option {option} requires a nonempty path")
+        index = stop
+    return reports, errors
+
+
 def junit_path(command: list[str]) -> Path | None:
-    """Return the JUnit path embedded in a pytest command, if present."""
-    prefix = "--junitxml="
-    for argument in command:
-        if argument.startswith(prefix):
-            return Path(argument.removeprefix(prefix))
-    return None
+    """Return the final valid report operand, respecting aliases and ``--``."""
+    reports, _ = _junit_arguments(command)
+    return Path(reports[-1][2]) if reports else None
+
+
+def _bind_junit_report(
+    command: list[str], owned_path: Path, cwd: Path
+) -> tuple[list[str], list[str]]:
+    """Bind valid promises to one fresh report while retaining invalid arguments."""
+    reports, errors = _junit_arguments(command)
+    operands = {}
+    for start, stop, value in reports:
+        path = Path(value)
+        if not path.is_absolute():
+            path = cwd / path
+        try:
+            if path.is_dir():
+                errors.append("JUnit report path must be a file, not a directory")
+                continue
+        except (OSError, ValueError):
+            errors.append("JUnit report path could not be inspected")
+            continue
+        operands[start] = stop
+    bound: list[str] = []
+    index = 0
+    while index < len(command):
+        stop = operands.get(index)
+        if stop is not None:
+            bound.append(f"--junitxml={owned_path}")
+            index = stop
+        else:
+            bound.append(command[index])
+            index += 1
+    return bound, errors
 
 
 def junit_contract_errors(path: Path | None, *, allow_empty: bool = False) -> list[str]:
@@ -441,12 +551,14 @@ def run_command(
     ensure_results_dir()
     attempt_dir = run_results_dir() / "attempts" / uuid.uuid4().hex
     attempt_dir.mkdir(parents=True)
+    is_pytest = _is_pytest_command(command)
     promised_junit = junit_path(command)
     has_coverage_report = any(arg.startswith("--cov-report=json:") for arg in command)
+    owned_junit = attempt_dir / "junit.xml"
+    command, report_argument_errors = _bind_junit_report(command, owned_junit, cwd)
+    report_path = owned_junit if f"--junitxml={owned_junit}" in command else None
     command = [
-        f"--junitxml={attempt_dir / 'junit.xml'}"
-        if arg.startswith("--junitxml=")
-        else f"--cov-report=json:{attempt_dir / 'coverage.json'}"
+        f"--cov-report=json:{attempt_dir / 'coverage.json'}"
         if arg.startswith("--cov-report=json:")
         else arg
         for arg in command
@@ -463,7 +575,7 @@ def run_command(
     rc = None
     stdout = stderr = ""
     status = "FAIL"
-    errors: list[str] = []
+    errors: list[str] = report_argument_errors.copy()
     launched = False
     try:
         if metadata_error is not None:
@@ -522,8 +634,8 @@ def run_command(
         except (ValueError, IndexError) as exc:
             errors.append(f"missing or invalid terminal completion receipt: {exc}")
     empty = allow_empty and rc == PYTEST_NO_TESTS_EXIT_CODE
-    errors.extend(junit_contract_errors(junit_path(command), allow_empty=empty))
-    if "pytest" in command and promised_junit is None:
+    errors.extend(junit_contract_errors(report_path, allow_empty=empty))
+    if is_pytest and promised_junit is None:
         errors.append("pytest command omitted its required JUnit report")
     selected: dict = {}
     if "geo_infer_test.selection" in command:
@@ -538,7 +650,7 @@ def run_command(
                 errors.append("pytest executed no tests")
             if rc == 0 and set(selected["selected"]) != set(selected["executed"]):
                 errors.append("pytest did not execute every selected test")
-            errors.extend(junit_selection_errors(junit_path(command), selected))
+            errors.extend(junit_selection_errors(report_path, selected))
         except (OSError, ValueError, KeyError, TypeError) as exc:
             errors.append(f"missing or invalid test selection receipt: {exc}")
     if rc == PYTEST_NO_TESTS_EXIT_CODE and not allow_empty:
@@ -548,7 +660,7 @@ def run_command(
         status = "EMPTY" if empty else "PASS"
     stderr = "\n".join(part for part in [stderr, *errors] if part)
     duration = time.monotonic() - started
-    path = junit_path(command)
+    path = report_path
     executed = (
         len(list(ET.parse(path).getroot().iter("testcase")))
         if path and path.is_file() and not any("invalid JUnit" in e for e in errors)

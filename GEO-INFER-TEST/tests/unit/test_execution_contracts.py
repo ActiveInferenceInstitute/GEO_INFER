@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import sysconfig
 import time
 
 import pytest
@@ -330,10 +331,18 @@ def test_unexpected_process_failure_retains_failed_receipt(
 
 
 @pytest.mark.parametrize(
-    "content", [None, "<broken>", '<testsuites><testsuite tests="0"/></testsuites>']
+    "content, diagnostic",
+    [
+        (None, "pytest produced no JUnit report"),
+        ("<broken>", "invalid JUnit report"),
+        (
+            '<testsuites><testsuite tests="0"/></testsuites>',
+            "pytest JUnit report contains no testcases",
+        ),
+    ],
 )
 def test_zero_exit_needs_current_nonempty_valid_junit(
-    engine, tmp_path, content
+    engine, tmp_path, content, diagnostic
 ) -> None:
     stale = tmp_path / "junit.xml"
     stale.write_text(
@@ -345,29 +354,202 @@ def test_zero_exit_needs_current_nonempty_valid_junit(
         else f"import pathlib,sys; pathlib.Path(sys.argv[1].split('=',1)[1]).write_text({content!r})"
     )
     result = engine.run_command(
-        [sys.executable, "-c", body, f"--junitxml={stale}"], "missing evidence", 5
+        [sys.executable, "-c", body, f"--junitxml={stale}"], "missing evidence", 20
     )
-    assert not result.success
+    assert result.returncode == 0 and result.status == "FAIL" and not result.success
+    assert diagnostic in result.stderr
     assert stale.read_text(encoding="utf-8").find('name="old"') >= 0
     assert Path(result.receipt).is_file()
 
 
-def _pytest_command(tmp_path: Path, body: str) -> list[str]:
+def _pytest_command(tmp_path: Path, body: str, *, selection: bool = True) -> list[str]:
     config = tmp_path / "pytest.ini"
     config.write_text("[pytest]\nfilterwarnings = error\n")
     test = tmp_path / "test_child.py"
     test.write_text(body)
-    return [
+    command = [
         sys.executable,
         "-m",
         "pytest",
-        "-p",
-        "geo_infer_test.selection",
+    ]
+    if selection:
+        command.extend(["-p", "geo_infer_test.selection"])
+    return [
+        *command,
         "-c",
         str(config),
         str(test),
         f"--junitxml={tmp_path / 'junit.xml'}",
     ]
+
+
+def _pytest_console(entrypoint: str) -> str:
+    executable = Path(sysconfig.get_path("scripts")) / (
+        entrypoint + (".exe" if os.name == "nt" else "")
+    )
+    assert executable.is_file(), "The active pytest installation lacks its entrypoint"
+    return str(executable)
+
+
+@pytest.mark.parametrize("entrypoint", ["pytest", "py.test"])
+@pytest.mark.parametrize(
+    "report_form", [None, "--junitxml=", "--junit-xml=", "--junitxml", "--junit-xml"]
+)
+def test_real_pytest_console_requires_owned_junit(
+    engine, tmp_path, entrypoint, report_form
+) -> None:
+    caller_report = tmp_path / "caller.xml"
+    old_report = '<testsuites><testsuite tests="1"><testcase name="old"/></testsuite></testsuites>'
+    caller_report.write_text(old_report)
+    module_command = _pytest_command(tmp_path, "def test_one(): assert 2 + 3 == 5\n")
+    command = [_pytest_console(entrypoint), *module_command[3:-1]]
+    if report_form is not None:
+        command.extend(
+            [report_form + str(caller_report)]
+            if report_form.endswith("=")
+            else [report_form, str(caller_report)]
+        )
+    original_command = command.copy()
+    result = engine.run_command(command, "real pytest console", 20)
+    assert result.returncode == 0
+    assert command == original_command
+    assert caller_report.read_text() == old_report
+    receipt = json.loads(Path(result.receipt).read_text())
+    if report_form is None:
+        assert not result.success and result.status == "FAIL"
+        assert "1 passed" in result.stdout
+        assert "omitted its required JUnit" in result.stderr
+        assert result.executed == 0 and "junit.xml" not in receipt["artifacts"]
+    else:
+        assert result.success and result.executed == 1
+        assert engine.junit_path(result.command) == Path(result.receipt).with_name(
+            "junit.xml"
+        )
+        assert receipt["selection"]["collected"] == receipt["selection"]["executed"]
+        assert len(receipt["selection"]["executed"]) == 1
+        assert "junit.xml" in receipt["artifacts"]
+
+
+@pytest.mark.parametrize(
+    "interpreter_options", [["-m", "pytest"], ["-I", "-m", "pytest"], ["-Impytest"]]
+)
+@pytest.mark.parametrize("with_report", [False, True])
+def test_real_python_module_pytest_requires_junit(
+    engine, tmp_path, interpreter_options, with_report
+) -> None:
+    original = _pytest_command(
+        tmp_path, "def test_one(): assert True\n", selection=False
+    )
+    command = [sys.executable, *interpreter_options, *original[3:]]
+    if not with_report:
+        command.pop()
+    result = engine.run_command(command, "real Python module", 20)
+    assert result.returncode == 0
+    assert result.success is with_report
+    assert result.executed == int(with_report)
+    if not with_report:
+        assert "1 passed" in result.stdout
+        assert "omitted its required JUnit" in result.stderr
+
+
+@pytest.mark.parametrize("entrypoint", [None, "pytest"])
+def test_real_pytest_duplicate_reports_preserve_caller_files(
+    engine, tmp_path, entrypoint
+) -> None:
+    first = tmp_path / "first.xml"
+    last = tmp_path / "last.xml"
+    first.write_text("first caller report")
+    last.write_text("last caller report")
+    command = _pytest_command(tmp_path, "def test_one(): assert True\n")[:-1]
+    if entrypoint:
+        command = [_pytest_console(entrypoint), *command[3:]]
+    command.extend([f"--junitxml={first}", "--junit-xml", str(last)])
+    assert engine.junit_path(command) == last
+    original_command = command.copy()
+    result = engine.run_command(command, "duplicate report options", 20)
+    assert result.success and result.executed == 1
+    assert command == original_command
+    assert first.read_text() == "first caller report"
+    assert last.read_text() == "last caller report"
+    owned = Path(result.receipt).with_name("junit.xml")
+    assert result.command.count(f"--junitxml={owned}") == 2
+
+
+@pytest.mark.parametrize(
+    "invalid_report",
+    [
+        ["--junitxml"],
+        ["--junit-xml", ""],
+        ["--junitxml="],
+        ["--junit-xml", "--capture=no"],
+        ["--junitxml", "--"],
+    ],
+)
+def test_invalid_report_operands_cannot_be_repaired_into_success(
+    engine, tmp_path, invalid_report
+) -> None:
+    command = _pytest_command(tmp_path, "def test_one(): assert True\n")[:-1]
+    command = [_pytest_console("pytest"), *command[3:], *invalid_report]
+    original_command = command.copy()
+    result = engine.run_command(command, "invalid report operand", 20)
+    assert not result.success and result.status == "FAIL"
+    if "" in invalid_report or invalid_report == ["--junitxml="]:
+        assert result.returncode == 0 and "1 passed" in result.stdout
+    else:
+        assert result.returncode == 4
+    assert command == original_command
+    assert result.command[-len(invalid_report) :] == invalid_report
+    assert "JUnit report option" in result.stderr
+    assert not Path(result.receipt).with_name("junit.xml").exists()
+
+
+@pytest.mark.parametrize("relative", [False, True])
+def test_existing_report_directory_keeps_real_pytest_configuration_failure(
+    engine, tmp_path, relative
+) -> None:
+    child_cwd = tmp_path / "child"
+    directory = child_cwd / "existing"
+    directory.mkdir(parents=True)
+    command = _pytest_command(tmp_path, "def test_one(): assert True\n")[:-1]
+    operand = directory.name if relative else str(directory)
+    command = [_pytest_console("pytest"), *command[3:], "--junit-xml", operand]
+    original_command = command.copy()
+    result = engine.run_command(command, "directory report operand", 20, cwd=child_cwd)
+    assert not result.success and result.status == "FAIL" and result.returncode == 4
+    assert result.executed == 0
+    assert command == original_command and result.command[-2:] == command[-2:]
+    assert "must be a filename" in result.stderr
+    assert "file, not a directory" in result.stderr
+    assert directory.is_dir() and not list(directory.iterdir())
+    assert not Path(result.receipt).with_name("junit.xml").exists()
+
+
+@pytest.mark.parametrize(
+    "arguments", [["pytest"], ["-m", "pytest"], ["--", "--junitxml=unpromised.xml"]]
+)
+def test_validator_arguments_do_not_advertise_pytest_or_report_promises(
+    engine, arguments
+) -> None:
+    result = engine.run_command(
+        [sys.executable, "-Ic", "print('ordinary validator')", *arguments],
+        "ordinary validator arguments",
+        5,
+    )
+    assert result.success and result.returncode == 0 and result.executed == 0
+    assert result.stdout == "ordinary validator\n" and not result.stderr
+    assert not Path(result.receipt).with_name("junit.xml").exists()
+
+
+def test_python_script_named_pytest_remains_an_ordinary_validator(
+    engine, tmp_path
+) -> None:
+    validator = tmp_path / "pytest"
+    validator.write_text("print('ordinary script')\n")
+    result = engine.run_command(
+        [sys.executable, str(validator), "-m", "pytest"], "ordinary script", 5
+    )
+    assert result.success and result.returncode == 0 and not result.stderr
+    assert result.stdout == "ordinary script\n" and result.executed == 0
 
 
 def test_real_pytest_records_selection_and_immutable_attempts(engine, tmp_path) -> None:
