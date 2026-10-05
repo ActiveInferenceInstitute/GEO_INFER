@@ -40,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   subprocess regression fixtures with bounded readiness handshakes.
 - Stabilize compressed HTTP fixtures and their parameter identities across
   independent test-category collections.
+- Exclude internal native census observers from inherited launch ownership while
+  retaining target ancestry, bounded inspection and fail-closed access errors.
 - Validate mixed ISO timestamp formats per record, count distinct invalid rows,
   and distinguish absent optional civic-intelligence packages from broken imports.
 - Replace stale Active Inference and temporal tutorials with executable public

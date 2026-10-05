@@ -39,6 +39,12 @@ class ProcessCensusError(subprocess.SubprocessError):
     """Ownership inspection failed independently of the target deadline."""
 
 
+def _annotate_ownership_denial(error: Any, *, pid: int, phase: str) -> None:
+    """Retain failure type and identity without process names or environment."""
+    error.name = None
+    error.msg = f"Owned PID {pid}: {phase} inspection denied"
+
+
 class _DescendantCensus:
     """Retain launch-token ownership and identities across orphaning.
 
@@ -63,7 +69,10 @@ class _DescendantCensus:
             return self.token in process.environ().get(_OWNERSHIP_ENV, "").split(":")
         except self.psutil.NoSuchProcess:
             return False
-        except self.psutil.AccessDenied:
+        except self.psutil.AccessDenied as error:
+            # A later identity/status failure retains this exception as its
+            # context. Sanitize it before those inspections can raise.
+            _annotate_ownership_denial(error, pid=process.pid, phase="environment")
             # Linux can remove an exiting task's environment before marking
             # it as a zombie. Observe that same identity for at most 50 ms,
             # within the caller's existing census deadline. Only a positive
@@ -75,14 +84,20 @@ class _DescendantCensus:
                 else time.monotonic()
             )
             while True:
+                phase = "identity"
                 try:
-                    if (
-                        not process.is_running()
-                        or process.status() == self.psutil.STATUS_ZOMBIE
-                    ):
+                    if not process.is_running():
+                        return False
+                    phase = "status"
+                    if process.status() == self.psutil.STATUS_ZOMBIE:
                         return False
                 except self.psutil.NoSuchProcess:
                     return False
+                except self.psutil.AccessDenied as inspection_error:
+                    _annotate_ownership_denial(
+                        inspection_error, pid=process.pid, phase=phase
+                    )
+                    raise
                 remaining = stop - time.monotonic()
                 if remaining <= 0:
                     break
@@ -102,12 +117,18 @@ class _DescendantCensus:
             if os.name == "posix":
                 # One native scan avoids per-process environment reads for
                 # unrelated PIDs. Only matches receive identity verification.
+                # This synchronous observer must not become an owned target
+                # of an outer, nested census while its short-lived PID exits.
+                # Ordinary child launches retain the complete token chain.
+                scanner_env = os.environ.copy()
+                scanner_env.pop(_OWNERSHIP_ENV, None)
                 try:
                     listing = subprocess.run(
                         ["ps", "axeww", "-o", "pid=,command="],
                         capture_output=True,
                         text=True,
                         errors="replace",
+                        env=scanner_env,
                         timeout=min(_CENSUS_BUDGET_SECONDS, remaining),
                         check=True,
                     )
@@ -140,8 +161,12 @@ class _DescendantCensus:
                     if pid == self.pid:
                         continue
                     try:
-                        child = self.psutil.Process(pid)
-                        child.create_time()
+                        try:
+                            child = self.psutil.Process(pid)
+                            child.create_time()
+                        except self.psutil.AccessDenied as error:
+                            _annotate_ownership_denial(error, pid=pid, phase="identity")
+                            raise
                         if self._owned(child, deadline=deadline):
                             self.processes[pid] = child
                     except self.psutil.NoSuchProcess:

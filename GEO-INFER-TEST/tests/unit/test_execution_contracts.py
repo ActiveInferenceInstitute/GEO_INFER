@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -595,6 +596,112 @@ def test_immediate_parent_exit_cannot_hide_detached_pipe_holder(tmp_path) -> Non
     _assert_recorded_process_dead(pidfile)
 
 
+@pytest.mark.skipif(os.name != "posix", reason="POSIX native observer boundary")
+def test_nested_native_observers_preserve_target_tokens_and_detached_cleanup(
+    tmp_path,
+) -> None:
+    """A real nested owner excludes its observer while still reaping user work."""
+    import geo_infer_test.process as process_module
+
+    parent_environment = os.environ.copy()
+    pidfile = tmp_path / "nested-descendant.pid"
+    identity_file = tmp_path / "nested-descendant.json"
+    descendant = f"""import json, os, threading
+from pathlib import Path
+Path({str(pidfile)!r}).write_text(str(os.getpid()), encoding="utf-8")
+identity = Path({str(identity_file)!r})
+pending = identity.with_suffix(".pending")
+print("nested descendant output", flush=True)
+pending.write_text(json.dumps({{
+    "tokens": os.environ["GEO_INFER_PROCESS_TOKENS"].split(":"),
+    "control": os.environ["GEO_INFER_OBSERVER_CONTROL"],
+}}), encoding="utf-8")
+pending.replace(identity)
+threading.Event().wait(30)
+"""
+    inner_parent = f"""import os, subprocess, sys, threading, time
+from pathlib import Path
+print("nested parent output", flush=True)
+print("nested parent stderr", file=sys.stderr, flush=True)
+subprocess.Popen([sys.executable, "-c", {descendant!r}], start_new_session=True)
+deadline = time.monotonic() + 5
+while not Path({str(identity_file)!r}).exists() and time.monotonic() < deadline:
+    time.sleep(0.001)
+assert Path({str(identity_file)!r}).exists(), "Nested descendant did not start"
+threading.Event().wait(30)
+"""
+    worker = tmp_path / "nested-owner.py"
+    worker.write_text(
+        f"""import json, os, signal, subprocess, sys, threading, time
+from pathlib import Path
+from geo_infer_test import process as module
+parent_environment = os.environ.copy()
+parent_tokens = parent_environment[module._OWNERSHIP_ENV].split(":")
+original = subprocess.run
+scans = []
+def observe(command, **kwargs):
+    if command[:1] == ["ps"]:
+        assert module._OWNERSHIP_ENV not in kwargs["env"]
+        assert kwargs["env"] == {{key: value for key, value in parent_environment.items()
+                                  if key != module._OWNERSHIP_ENV}}
+        scans.append(1)
+    return original(command, **kwargs)
+module.subprocess.run = observe
+finished = threading.Event()
+startup_errors = []
+def interrupt_after_ready():
+    deadline = time.monotonic() + 5
+    while not Path({str(identity_file)!r}).exists():
+        if finished.wait(0.001):
+            return
+        if time.monotonic() >= deadline:
+            startup_errors.append("Nested descendant did not publish output-ready identity")
+            return
+    if not finished.is_set():
+        os.kill(os.getpid(), signal.SIGINT)
+watcher = threading.Thread(target=interrupt_after_ready)
+watcher.start()
+try:
+    module.run_process([sys.executable, "-c", {inner_parent!r}],
+                       timeout=10, cwd=Path({str(tmp_path)!r}))
+except KeyboardInterrupt as error:
+    assert "nested descendant output" in error.output
+    assert "nested parent output" in error.output
+    assert "nested parent stderr" in error.stderr
+else:
+    raise AssertionError("The live nested target was not interrupted")
+finally:
+    finished.set()
+    watcher.join(timeout=2)
+    assert not watcher.is_alive(), "Output-ready watcher outlived bounded cleanup"
+    assert not startup_errors, startup_errors
+assert os.environ == parent_environment
+assert scans, "The nested owner never performed a real native census"
+identity = json.loads(Path({str(identity_file)!r}).read_text(encoding="utf-8"))
+assert identity["tokens"][:-1] == parent_tokens
+assert identity["control"] == "preserved"
+print(json.dumps({{"parent_tokens": parent_tokens, "descendant": identity,
+                  "scans": len(scans)}}), flush=True)
+""",
+        encoding="utf-8",
+    )
+    env = execution.build_subprocess_env()
+    env["GEO_INFER_OBSERVER_CONTROL"] = "preserved"
+    completed = run_process(
+        [sys.executable, str(worker)], timeout=20, cwd=tmp_path, env=env
+    )
+    assert completed.returncode == 0, completed.stderr
+    observed = json.loads(completed.stdout)
+    inherited = env.get(process_module._OWNERSHIP_ENV, "").split(":")
+    inherited = [token for token in inherited if token]
+    assert observed["parent_tokens"][:-1] == inherited
+    tokens = observed["descendant"]["tokens"]
+    assert len(tokens) == len(inherited) + 2
+    assert len(set(tokens)) == len(tokens)
+    assert os.environ == parent_environment
+    _assert_recorded_process_dead(pidfile)
+
+
 def test_owned_cleanup_waits_for_real_process_exit(tmp_path, monkeypatch) -> None:
     """Cleanup must establish process exit, beyond requesting termination."""
     import psutil
@@ -824,7 +931,9 @@ def test_environment_census_failure_does_not_expose_internal_listing(
             command, 0.1, output="PRIVATE_ENV_VALUE", stderr="PRIVATE_ENV_ERROR"
         )
 
-    monkeypatch.setattr(process_module, "os", SimpleNamespace(name="posix"))
+    monkeypatch.setattr(
+        process_module, "os", SimpleNamespace(name="posix", environ=os.environ)
+    )
     monkeypatch.setattr(process_module.subprocess, "run", failed_census)
     census = process_module._DescendantCensus(0, "a" * 32)
     with pytest.raises(process_module.ProcessCensusError) as failure:
@@ -903,7 +1012,9 @@ def test_late_empty_native_census_cannot_report_success(monkeypatch):
         )
 
     # Exercise the POSIX scan boundary without changing the platform's global os.
-    monkeypatch.setattr(process_module, "os", SimpleNamespace(name="posix"))
+    monkeypatch.setattr(
+        process_module, "os", SimpleNamespace(name="posix", environ=os.environ)
+    )
     monkeypatch.setattr(process_module.subprocess, "run", late_scan)
     census = process_module._DescendantCensus(0, "a" * 32)
     with pytest.raises(subprocess.TimeoutExpired):

@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import traceback
 from types import SimpleNamespace
 
 import psutil
@@ -152,12 +153,41 @@ def native_listing(child):
 
 def posix_boundary(monkeypatch, child):
     owned = census()
-    monkeypatch.setattr(module, "os", SimpleNamespace(name="posix"))
+    monkeypatch.setattr(module, "os", SimpleNamespace(name="posix", environ=os.environ))
     monkeypatch.setattr(
         module.subprocess, "run", lambda *args, **kwargs: native_listing(child)
     )
     monkeypatch.setattr(owned.psutil, "Process", lambda pid: child)
     return owned
+
+
+@pytest.mark.parametrize("chain", [TOKEN, "b" * 32 + ":" + TOKEN])
+def test_native_observer_has_no_target_tokens_and_preserves_parent_environment(
+    monkeypatch, chain
+):
+    """Outer owners must never claim their nested, synchronous native observer."""
+    monkeypatch.setenv(module._OWNERSHIP_ENV, chain)
+    monkeypatch.setenv("GEO_INFER_OBSERVER_CONTROL", "preserved")
+    environment_before = os.environ.copy()
+    calls = []
+
+    def inspect_scanner(command, **kwargs):
+        assert command == ["ps", "axeww", "-o", "pid=,command="]
+        assert module._OWNERSHIP_ENV not in kwargs["env"]
+        assert kwargs["env"] == {
+            key: value
+            for key, value in environment_before.items()
+            if key != module._OWNERSHIP_ENV
+        }
+        assert 0 < kwargs["timeout"] <= module._CENSUS_BUDGET_SECONDS
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(module, "os", SimpleNamespace(name="posix", environ=os.environ))
+    monkeypatch.setattr(module.subprocess, "run", inspect_scanner)
+    census().refresh(timeout=1)
+    assert len(calls) == 1
+    assert os.environ == environment_before
 
 
 def test_positive_zombie_native_candidate_is_excluded(monkeypatch):
@@ -190,6 +220,68 @@ def test_positive_native_candidate_with_denied_live_or_unknown_state_fails_close
     assert "PRIVATE_SENTINEL" not in str(caught.value)
     assert "do-not-retain" not in str(caught.value)
     assert owned.processes == {}
+
+
+@pytest.mark.parametrize("phase", ["identity", "environment", "status"])
+def test_native_denial_retains_failure_identity_with_sanitized_phase(
+    monkeypatch, phase
+):
+    error = psutil.AccessDenied(4321, name="PRIVATE_PROCESS", msg="PRIVATE_MESSAGE")
+    child = BoundaryProcess(
+        environment=error if phase == "environment" else psutil.AccessDenied(4321),
+        status=error if phase == "status" else psutil.STATUS_RUNNING,
+    )
+    if phase == "identity":
+
+        def denied_identity():
+            raise error
+
+        child.create_time = denied_identity
+    owned = posix_boundary(monkeypatch, child)
+    with pytest.raises(psutil.AccessDenied) as caught:
+        owned.refresh(timeout=1)
+    assert caught.value is error
+    assert error.pid == 4321
+    assert error.name is None
+    assert error.msg == f"Owned PID 4321: {phase} inspection denied"
+    assert "PRIVATE_PROCESS" not in str(error)
+    assert "PRIVATE_MESSAGE" not in str(error)
+    assert owned.processes == {}
+
+
+@pytest.mark.parametrize("phase", ["identity", "status", "unknown-status"])
+def test_distinct_inspection_failure_preserves_sanitized_exception_chain(phase):
+    native_cause = PermissionError("native environment read denied")
+    denied = psutil.AccessDenied(
+        4321, name="PRIVATE_ENVIRONMENT_NAME", msg="PRIVATE_ENVIRONMENT_MESSAGE"
+    )
+    denied.__cause__ = native_cause
+    inspection_error = (
+        RuntimeError("state unavailable")
+        if phase == "unknown-status"
+        else psutil.AccessDenied(
+            4321, name="PRIVATE_INSPECTION_NAME", msg="PRIVATE_INSPECTION_MESSAGE"
+        )
+    )
+    child = BoundaryProcess(
+        environment=denied,
+        running=inspection_error if phase == "identity" else True,
+        status=inspection_error,
+    )
+    with pytest.raises(type(inspection_error)) as caught:
+        census()._owned(child)
+    assert caught.value is inspection_error
+    assert inspection_error.__context__ is denied
+    assert denied.__cause__ is native_cause
+    assert denied.pid == 4321
+    assert denied.name is None
+    assert denied.msg == "Owned PID 4321: environment inspection denied"
+    formatted = "".join(traceback.format_exception(caught.value))
+    assert "PRIVATE_ENVIRONMENT_NAME" not in formatted
+    assert "PRIVATE_ENVIRONMENT_MESSAGE" not in formatted
+    assert "PRIVATE_INSPECTION_NAME" not in formatted
+    assert "PRIVATE_INSPECTION_MESSAGE" not in formatted
+    assert "Owned PID 4321: environment inspection denied" in formatted
 
 
 def test_readable_detached_live_candidate_is_retained(monkeypatch):
