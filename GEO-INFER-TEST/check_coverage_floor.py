@@ -25,9 +25,12 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
 
-from geo_infer_test.coverage import measure_module, MAX_MODULE_WORKERS
+from geo_infer_test.coverage import (
+    measure_module,
+    MAX_MODULE_WORKERS,
+    run_coverage_measurements,
+)
 from geo_infer_test.execution import discover_workspace_test_targets
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -128,6 +131,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--head", required=True)
     parser.add_argument("--modules", default="", help="force a module set")
     parser.add_argument(
+        "--json", default="", help="retain complete measurement dispositions"
+    )
+    parser.add_argument(
         "--workers",
         type=int,
         default=MAX_MODULE_WORKERS,
@@ -177,29 +183,21 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     selected = sorted(modules & known)
-    with ThreadPoolExecutor(max_workers=args.workers) as pool:
-        futures = {
-            module: pool.submit(measure_module, module)
-            for module in selected
-            if module != "ROOT"
-        }
-        results = {}
-        for module, future in futures.items():
-            try:
-                results[module] = future.result()
-            except Exception as exc:
-                results[module] = {
-                    "status": "error",
-                    "reason": f"{type(exc).__name__}: {exc}",
-                }
-    if "ROOT" in selected:
-        try:
-            results["ROOT"] = measure_module("ROOT")
-        except Exception as exc:
-            results["ROOT"] = {
-                "status": "error",
-                "reason": f"{type(exc).__name__}: {exc}",
-            }
+    results, interrupted = run_coverage_measurements(
+        selected, workers=args.workers, measurement=measure_module
+    )
+    if args.json:
+        Path(args.json).write_text(
+            json.dumps([results[name] for name in selected], indent=2, sort_keys=True)
+            + "\n",
+            encoding="utf-8",
+        )
+    if interrupted:
+        print(
+            "coverage floor gate interrupted; failed dispositions retained",
+            file=sys.stderr,
+        )
+        return 130
     violations: list[str] = []
     for module in selected:
         floor = entries[module]["floor_percent"] if module != "ROOT" else None

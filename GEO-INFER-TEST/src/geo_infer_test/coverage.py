@@ -39,7 +39,8 @@ import math
 import os
 import time
 import xml.etree.ElementTree as ET
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
+from collections.abc import Callable
 from pathlib import Path
 
 from .execution import (
@@ -50,6 +51,8 @@ from .execution import (
     pytest_base_args,
     discover_workspace_test_targets,
     profile_selection_args,
+    CommandResult,
+    execute_module_tasks,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -135,6 +138,7 @@ def measure_module(module: str) -> dict:
     receipt = {
         "module": module,
         "pytest_rc": result.returncode,
+        "command_status": result.status,
         "seconds": round(time.monotonic() - started, 1),
         "receipt": result.receipt,
         "pytest_tail": result.stdout[-2000:],
@@ -241,6 +245,82 @@ def junit_failure_details(path: Path) -> list[dict[str, str]]:
     return details
 
 
+def run_coverage_measurements(
+    modules: list[str],
+    *,
+    workers: int,
+    measurement: Callable[[str], dict] | None = None,
+) -> tuple[dict[str, dict], bool]:
+    """Measure isolated modules through canonical cancellation and receipts.
+
+    ROOT runs after package measurements and never after interruption. Every
+    selected module retains a disposition, including queued work that could
+    not start. Cleanup failures remain failed fleet diagnostics in the records.
+    """
+    if not modules or len(modules) != len(set(modules)):
+        raise ValueError("coverage modules must be nonempty and unique")
+    measurement = measurement or measure_module
+    records: dict[str, dict] = {}
+    record_lock = Lock()
+    include_root = "ROOT" in modules
+
+    def task(module: str):
+        def measure() -> CommandResult:
+            try:
+                result = measurement(module)
+            except Exception as exc:
+                result = {
+                    "module": module,
+                    "status": "error",
+                    "reason": f"{type(exc).__name__}: {exc}",
+                }
+            with record_lock:
+                records[module] = result
+                print(json.dumps(result), flush=True)
+            return CommandResult(
+                module,
+                result["status"] == "measured" and result.get("pytest_rc") == 0,
+                result.get("seconds", 0),
+                [],
+                status=result.get("command_status", "PASS"),
+                receipt=result.get("receipt", ""),
+            )
+
+        return measure
+
+    report = execute_module_tasks(
+        [task(module) for module in modules if module != "ROOT"],
+        workers=workers,
+        fail_fast=False,
+    )
+    interrupted = any(result.status == "INTERRUPTED" for result in report.results)
+    if include_root and not interrupted:
+        root_report = execute_module_tasks([task("ROOT")], workers=1, fail_fast=False)
+        report.results.extend(root_report.results)
+        interrupted = any(
+            result.status == "INTERRUPTED" for result in root_report.results
+        )
+    diagnostics = [
+        {"name": result.name, "status": result.status, "stderr": result.stderr}
+        for result in report.results
+        if not result.success and result.stderr
+    ]
+    for module in modules:
+        if module not in records:
+            result = {
+                "module": module,
+                "status": "error",
+                "reason": "coverage fleet interrupted before measurement completed",
+            }
+            records[module] = result
+            print(json.dumps(result), flush=True)
+    if diagnostics:
+        for result in records.values():
+            result["fleet_diagnostics"] = diagnostics
+        print(json.dumps({"fleet_diagnostics": diagnostics}), file=sys.stderr)
+    return records, interrupted
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--modules", default="", help="comma-separated subset")
@@ -272,41 +352,17 @@ def main(argv: list[str] | None = None) -> int:
     }
     if unknown := sorted(set(modules) - known):
         parser.error(f"unknown coverage modules: {unknown}")
-    results: list[dict] = []
-    include_root = "ROOT" in modules
-    with ThreadPoolExecutor(max_workers=args.workers) as pool:
-        futures = {
-            pool.submit(measure_module, module): module
-            for module in modules
-            if module != "ROOT"
-        }
-        for future in as_completed(futures):
-            try:
-                result = future.result()
-            except Exception as exc:
-                result = {
-                    "module": futures[future],
-                    "status": "error",
-                    "reason": f"{type(exc).__name__}: {exc}",
-                }
-            results.append(result)
-            print(json.dumps(result), flush=True)
-    if include_root:
-        try:
-            result = measure_module("ROOT")
-        except Exception as exc:
-            result = {
-                "module": "ROOT",
-                "status": "error",
-                "reason": f"{type(exc).__name__}: {exc}",
-            }
-        results.append(result)
-        print(json.dumps(result), flush=True)
-    results.sort(key=lambda entry: entry["module"])
+    if len(modules) != len(set(modules)):
+        parser.error("coverage modules must be unique")
+    records, interrupted = run_coverage_measurements(modules, workers=args.workers)
+    results = sorted(records.values(), key=lambda entry: entry["module"])
     if args.json:
         Path(args.json).write_text(
             json.dumps(results, indent=1, sort_keys=True), encoding="utf-8"
         )
+    if interrupted:
+        print("coverage sweep interrupted; dispositions retained", file=sys.stderr)
+        return 130
     failures = [
         entry
         for entry in results

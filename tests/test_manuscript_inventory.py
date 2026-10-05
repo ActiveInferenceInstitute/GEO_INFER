@@ -10,6 +10,23 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 from types import ModuleType
+from types import SimpleNamespace
+
+import pytest
+
+
+def test_generator_rejects_catalog_drift(generator, tmp_path):
+    """Generation checks its measured inventory before accepting narrative counts."""
+    sections = tmp_path / "manuscript" / "sections"
+    sections.mkdir(parents=True)
+    (sections / "space.md").write_text("The module has 7 test files.")
+    inventory = SimpleNamespace(
+        modules=[SimpleNamespace(name="GEO-INFER-SPACE", test_files=2)]
+    )
+    with pytest.raises(ValueError, match="measured count is 2"):
+        generator.audit_module_census(tmp_path, inventory)
+    (sections / "space.md").write_text("See the generated inventory table.")
+    generator.audit_module_census(tmp_path, inventory)
 
 
 def _find_h3_test_files(repo_root: Path) -> int:

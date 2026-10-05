@@ -286,6 +286,9 @@ jobs:
             GEO-INFER-TEST/tests/unit/test_run_unified_tests.py \
             GEO-INFER-TEST/tests/unit/test_ci_workflow_contracts.py \
             GEO-INFER-TEST/tests/unit/test_check_coverage_floor_gate.py \
+            GEO-INFER-TEST/tests/unit/test_documentation_census.py \
+            GEO-INFER-TEST/tests/unit/test_process_ownership_contracts.py \
+            GEO-INFER-TEST/tests/unit/test_measure_module_coverage.py \
             GEO-INFER-TEST/tests/integration/test_space_time_composition_contract.py
       - name: Retain fast contract receipts
         if: always()
@@ -330,6 +333,7 @@ jobs:
                          'geo_infer_test.selection', '-c', str(config),
                          str(root / 'GEO-INFER-TEST/tests/unit/test_execution_contracts.py'),
                          str(root / 'GEO-INFER-TEST/tests/unit/test_process_ownership_contracts.py'),
+                         str(root / 'GEO-INFER-TEST/tests/unit/test_measure_module_coverage.py'),
                          '-k', 'not (runtime_registry or programmatic_discovery or xdist or coverage_report)',
                          '--junitxml=windows-process.xml']
               result = run_command(command, 'Windows process contracts', timeout=300)

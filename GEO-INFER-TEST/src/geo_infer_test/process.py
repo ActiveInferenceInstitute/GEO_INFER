@@ -23,6 +23,7 @@ _CANCELLED = threading.Event()
 _OWNERSHIP_ENV = "GEO_INFER_PROCESS_TOKENS"
 _CENSUS_BUDGET_SECONDS = 5
 _DESCENDANT_REAP_SECONDS = 2
+_EXIT_OBSERVATION_SECONDS = 0.05
 
 
 class OwnedProcessLeakError(subprocess.SubprocessError):
@@ -57,23 +58,35 @@ class _DescendantCensus:
         self.processes: dict[int, Any] = {}
         self.lock = threading.RLock()
 
-    def _owned(self, process: Any) -> bool:
+    def _owned(self, process: Any, *, deadline: float | None = None) -> bool:
         try:
             return self.token in process.environ().get(_OWNERSHIP_ENV, "").split(":")
         except self.psutil.NoSuchProcess:
             return False
         except self.psutil.AccessDenied:
-            # Linux may deny a same-user zombie's /proc/<pid>/environ.
-            # Only positively stopped identities can be excluded; a live or
-            # uninspectable candidate remains an ownership-inspection failure.
-            try:
-                if (
-                    not process.is_running()
-                    or process.status() == self.psutil.STATUS_ZOMBIE
-                ):
+            # Linux can remove an exiting task's environment before marking
+            # it as a zombie. Observe that same identity for at most 50 ms,
+            # within the caller's existing census deadline. Only a positive
+            # exit/zombie result excludes it; persistent denial or an unknown
+            # status remains fatal. No environment read or command is retried.
+            stop = (
+                min(deadline, time.monotonic() + _EXIT_OBSERVATION_SECONDS)
+                if deadline is not None
+                else time.monotonic()
+            )
+            while True:
+                try:
+                    if (
+                        not process.is_running()
+                        or process.status() == self.psutil.STATUS_ZOMBIE
+                    ):
+                        return False
+                except self.psutil.NoSuchProcess:
                     return False
-            except self.psutil.NoSuchProcess:
-                return False
+                remaining = stop - time.monotonic()
+                if remaining <= 0:
+                    break
+                time.sleep(min(0.001, remaining))
             raise
 
     def refresh(self, *, timeout: float) -> None:
@@ -129,7 +142,7 @@ class _DescendantCensus:
                     try:
                         child = self.psutil.Process(pid)
                         child.create_time()
-                        if self._owned(child):
+                        if self._owned(child, deadline=deadline):
                             self.processes[pid] = child
                     except self.psutil.NoSuchProcess:
                         pass

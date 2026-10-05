@@ -247,6 +247,84 @@ def test_arbitrary_environment_error_is_not_reclassified():
     assert child.calls == ["environ"]
 
 
+def observation_clock(monkeypatch):
+    now = [0.0]
+    sleeps = []
+
+    def sleep(seconds):
+        sleeps.append(seconds)
+        now[0] += seconds
+
+    monkeypatch.setattr(
+        module, "time", SimpleNamespace(monotonic=lambda: now[0], sleep=sleep)
+    )
+    return now, sleeps
+
+
+@pytest.mark.parametrize("exit_kind", ["zombie", "gone", "reused"])
+def test_exiting_denied_identity_requires_positive_stop(monkeypatch, exit_kind):
+    now, sleeps = observation_clock(monkeypatch)
+    child = BoundaryProcess(environment=psutil.AccessDenied(4321))
+
+    def running():
+        if exit_kind == "reused" and now[0] >= 0.003:
+            return False
+        return True
+
+    def status():
+        if now[0] >= 0.003:
+            if exit_kind == "gone":
+                raise psutil.NoSuchProcess(child.pid)
+            return psutil.STATUS_ZOMBIE
+        return psutil.STATUS_RUNNING
+
+    child.is_running = running
+    child.status = status
+    assert census()._owned(child, deadline=1) is False
+    assert now[0] == pytest.approx(0.003)
+    assert sleeps and child.calls == ["environ"]
+
+
+@pytest.mark.parametrize("deadline", [0.003, 10])
+def test_persistent_live_denial_respects_existing_deadline_and_grace(
+    monkeypatch, deadline
+):
+    now, sleeps = observation_clock(monkeypatch)
+    error = psutil.AccessDenied(4321)
+    child = BoundaryProcess(environment=error)
+    with pytest.raises(psutil.AccessDenied) as caught:
+        census()._owned(child, deadline=deadline)
+    assert caught.value is error
+    assert now[0] == pytest.approx(min(deadline, module._EXIT_OBSERVATION_SECONDS))
+    assert sleeps and max(sleeps) <= 0.001
+    assert child.calls.count("environ") == 1
+
+
+def test_unknown_status_during_exit_observation_stays_fatal(monkeypatch):
+    now, _ = observation_clock(monkeypatch)
+    child = BoundaryProcess(environment=psutil.AccessDenied(4321))
+
+    def status():
+        if now[0] >= 0.002:
+            raise RuntimeError("status inspection failed")
+        return psutil.STATUS_RUNNING
+
+    child.status = status
+    with pytest.raises(RuntimeError, match="status inspection failed"):
+        census()._owned(child, deadline=1)
+    assert now[0] == pytest.approx(0.002)
+
+
+def test_posix_refresh_observes_exit_without_extending_deadline(monkeypatch):
+    now, _ = observation_clock(monkeypatch)
+    child = BoundaryProcess(environment=psutil.AccessDenied(4321))
+    owned = posix_boundary(monkeypatch, child)
+    with pytest.raises(psutil.AccessDenied):
+        owned.refresh(timeout=0.004)
+    assert now[0] == pytest.approx(0.004)
+    assert owned.processes == {}
+
+
 def test_real_psutil_cached_create_time_mismatch_excludes_reused_identity(monkeypatch):
     """Exercise real psutil identity comparison without killing a foreign PID."""
     identity = psutil.Process(os.getpid())

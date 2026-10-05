@@ -732,6 +732,22 @@ def execute_module_tasks(
         raise ValueError("workers must be an integer between 1 and 16")
     reset_process_cancellation()
     report = SuiteReport()
+
+    def cancel_process_trees() -> None:
+        """Retain cleanup failure without losing the fleet interruption report."""
+        try:
+            terminate_running_processes()
+        except Exception as exc:
+            report.add(
+                CommandResult(
+                    "fleet cleanup failed",
+                    False,
+                    0,
+                    [],
+                    stderr=f"{type(exc).__name__}: {exc}",
+                )
+            )
+
     if workers == 1:
         try:
             for task in tasks:
@@ -745,7 +761,7 @@ def execute_module_tasks(
                 if result.status == "INTERRUPTED" or (fail_fast and not result.success):
                     break
         except KeyboardInterrupt:
-            terminate_running_processes()
+            cancel_process_trees()
             report.add(
                 CommandResult(
                     "fleet interrupted",
@@ -753,15 +769,17 @@ def execute_module_tasks(
                     0,
                     [],
                     status="INTERRUPTED",
-                    stderr="Running module process trees terminated",
+                    stderr="Fleet cancellation requested; cleanup failures retained separately",
                 )
             )
         finally:
             reset_process_cancellation()
         return report
     executor = ThreadPoolExecutor(max_workers=workers)
-    futures = [executor.submit(task) for task in tasks]
+    futures = []
     try:
+        for task in tasks:
+            futures.append(executor.submit(task))
         for future in as_completed(futures):
             if future.cancelled():
                 continue
@@ -775,12 +793,12 @@ def execute_module_tasks(
             if result.status == "INTERRUPTED" or (fail_fast and not result.success):
                 for pending in futures:
                     pending.cancel()
-                terminate_running_processes()
+                cancel_process_trees()
                 break
     except KeyboardInterrupt:
         for future in futures:
             future.cancel()
-        terminate_running_processes()
+        cancel_process_trees()
         report.add(
             CommandResult(
                 "fleet interrupted",
@@ -788,7 +806,7 @@ def execute_module_tasks(
                 0,
                 [],
                 status="INTERRUPTED",
-                stderr="Running module process trees terminated",
+                stderr="Fleet cancellation requested; cleanup failures retained separately",
             )
         )
     finally:
