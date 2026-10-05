@@ -143,7 +143,3 @@ No hard dependency is declared.
 3. **Register status callbacks** instead of polling.
 4. **Treat `docs/api_schema.yaml` as a design spec** — it describes a future
    REST layer, not running code.
-
----
-
-**Last Updated**: 2026-09-04

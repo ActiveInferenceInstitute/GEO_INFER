@@ -47,7 +47,6 @@ next steps.
 | ID | Area / status | Bounded next step | Acceptance evidence / dependencies |
 | --- | --- | --- | --- |
 | **TEST-04** | TEST / advisor review repeat | [DEFERRED-VERIFY] The configured advisor exited with an error during the September GNN campaign so no advisor review ran (gnn_space_time_2026_09.md): repeat the advisor review when the service is available. | 2026-09-10 probe: the configured advisor is Cato via Codex CLI 0.153.2; ChatGPT-account auth rejects the gpt-5.2 slug (HTTP 400) and no OPENAI_API_KEY is configured, so no review could run — probe appended to the continuation receipt. Unblocking is an account-level auth decision (codex login --with-api-key). 2026-09-11 re-check: environment still exposes no OPENAI_API_KEY and the CLI auth state is unchanged — remains blocked on the account-level decision. 2026-09-15 re-check: environment still exposes no OPENAI_API_KEY — remains blocked, unchanged. |
-| **DOC-09** | Fleet docs / other-date stamp families | Bold-format `**Last Updated**: <date>` stamps survive with 10 OTHER dates (2026-05-18..2026-09-08) across 11 docs files (ACT ×6, APP, ART api_specification, BIO index, AGENT active_inference, API geojson_api); plus YAML front-matter `last_updated:` fields with 2025 dates in INTRA templates — found by the t-0008 fleet sweep, reported not edited. | Same honest per-file rule as PR #50: stamp = last meaningful commit date; drop or correct per git log. INTRA front-matter is a different mechanism — check for a generator first. Probe: grep the dates → zero stamps inconsistent with git log. Effort M. [SCOPE-2026-09-27.md](SCOPE-2026-09-27.md) |
 
 ## Completed-record reset (2026-09-11)
 
@@ -283,3 +282,13 @@ prioritized next steps with file paths in [HANDOFF-2026-10-01.md](HANDOFF-2026-1
 **Still open:** DOC-09 (other-date
 stamps), and the externally blocked Major/Medium rows.
 
+## DOC-09 closure (2026-10-05)
+
+Removed the 11 manually maintained `Last Updated` footers named in DOC-09.
+Seven were stale after meaningful content changes; the other four were removed
+to avoid maintaining dates separately from Git history. Narrative content,
+examples, citations and links remain unchanged.
+
+The INTRA template `last_updated` fields had already been removed in the
+2026-10-01 documentation cleanup; those templates required no further change.
+The October 1 open-status note above is retained as a historical statement.

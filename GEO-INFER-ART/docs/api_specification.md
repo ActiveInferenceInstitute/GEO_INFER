@@ -186,7 +186,3 @@ create_performance_report() -> dict
 
 All optional backends are imported in guarded try/except blocks and raise
 informative errors when missing; core functionality works without them.
-
----
-
-**Last Updated**: 2026-09-04

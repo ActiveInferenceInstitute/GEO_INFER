@@ -137,7 +137,3 @@ flowchart LR
 ## References
 
 See [references.md](./references.md) for academic citations.
-
----
-
-**Last Updated**: 2026-05-18

@@ -93,7 +93,3 @@ correspond to `fep_lean` constructs as follows:
 - [References](./references.md) — full citations for the literature above
 - `fep_lean/specs/geo-infer-notation-bridge/data/notation-map.yaml` — canonical mapping artifact (in the `fep_lean` checkout, prose path)
 - `fep_lean/docs/design/gnn-bridge/bridge-contract.md` — bridge contract including the evidence firewall (in the `fep_lean` checkout, prose path)
-
----
-
-**Last Updated**: 2026-09-08

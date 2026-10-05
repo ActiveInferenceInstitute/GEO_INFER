@@ -152,7 +152,3 @@ app = graphql_api.app  # GraphQL playground at /graphql
 ```
 
 Queries: `analyzeSequence`, `analyzeFile`, `visualizeSpatial`, `healthCheck`.
-
----
-
-**Last Updated**: 2026-09-04

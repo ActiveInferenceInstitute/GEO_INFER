@@ -439,5 +439,3 @@ uv run --package geo-infer-act --extra dev geo-infer-act-run \
 - [Free Energy Principle](./free_energy_principle.md)
 - [Mathematical Framework](./mathematical_framework.md)
 - [References](./references.md)
-
-**Last Updated**: 2026-05-19
