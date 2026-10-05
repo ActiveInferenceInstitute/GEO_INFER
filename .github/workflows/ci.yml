@@ -289,6 +289,11 @@ jobs:
           assert receipt['status'] == 'verified' and receipt['extension'] == 'spatial'
           PY
 
+      - name: Validate strict test contracts before runtime fixtures
+        run: |
+          uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 120 -- \
+            python GEO-INFER-TEST/validate_test_contracts.py --strict
+
       - name: Run execution and SPACE TIME composition contracts
         id: fast_tests
         run: |
@@ -345,7 +350,10 @@ jobs:
                          str(root / 'GEO-INFER-TEST/tests/unit/test_execution_contracts.py'),
                          str(root / 'GEO-INFER-TEST/tests/unit/test_process_ownership_contracts.py'),
                          str(root / 'GEO-INFER-TEST/tests/unit/test_measure_module_coverage.py'),
-                         '-k', 'not (runtime_registry or programmatic_discovery or xdist or coverage_report)',
+                         # The native POSIX observer case runs in Linux contracts
+                         # and module suites; Windows uses an explicit selection.
+                         '-k', ('not (runtime_registry or programmatic_discovery or xdist or coverage_report '
+                                'or nested_native_observers_preserve_target_tokens_and_detached_cleanup)'),
                          '--junitxml=windows-process.xml']
               result = run_command(command, 'Windows process contracts', timeout=300)
               write_summary(SuiteReport([result]), show_failures=True)

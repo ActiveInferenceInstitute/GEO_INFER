@@ -42,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   independent test-category collections.
 - Exclude internal native census observers from inherited launch ownership while
   retaining target ancestry, bounded inspection and fail-closed access errors.
+- Declare the Windows process profile explicitly and run strict test-contract
+  validation before the early runtime fixtures.
 - Validate mixed ISO timestamp formats per record, count distinct invalid rows,
   and distinguish absent optional civic-intelligence packages from broken imports.
 - Replace stale Active Inference and temporal tutorials with executable public

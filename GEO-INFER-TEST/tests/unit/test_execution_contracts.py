@@ -596,7 +596,6 @@ def test_immediate_parent_exit_cannot_hide_detached_pipe_holder(tmp_path) -> Non
     _assert_recorded_process_dead(pidfile)
 
 
-@pytest.mark.skipif(os.name != "posix", reason="POSIX native observer boundary")
 def test_nested_native_observers_preserve_target_tokens_and_detached_cleanup(
     tmp_path,
 ) -> None:
