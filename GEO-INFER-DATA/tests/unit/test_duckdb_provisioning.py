@@ -192,7 +192,7 @@ def test_open_identifies_product_and_keeps_default_tls(monkeypatch):
 @pytest.mark.parametrize("mode", ["headers", "body"])
 def test_actual_stalled_transport_has_total_deadline(http_boundary, tmp_path, mode):
     routes, requested, _, _ = http_boundary
-    route(routes, "httpfs", gzip.compress(b"x" * 100), mode=mode)
+    route(routes, "httpfs", gzip.compress(b"x" * 100, mtime=0), mode=mode)
     started = time.monotonic()
     with pytest.raises(backend.DuckDBSpatialError, match="deadline exceeded"):
         backend._download_extension(
@@ -207,7 +207,7 @@ def test_actual_stalled_transport_has_total_deadline(http_boundary, tmp_path, mo
 
 def test_actual_gzip_header_parser_has_total_deadline(http_boundary, tmp_path):
     routes, _, _, gzip_marker = http_boundary
-    archive = gzip.compress(b"valid")
+    archive = gzip.compress(b"valid", mtime=0)
     # Valid gzip FNAME header parsing reads each byte separately. This long
     # filename exercises real decompression work, not a substituted sleep.
     payload = (
@@ -229,16 +229,33 @@ def test_actual_gzip_header_parser_has_total_deadline(http_boundary, tmp_path):
 @pytest.mark.parametrize(
     "first,second,budget,diagnostic",
     [
-        (b"not-gzip", gzip.compress(b"x"), 10_000, "Not a gzipped file"),
-        (gzip.compress(b""), gzip.compress(b"x"), 10_000, "no extension bytes"),
-        (b"x" * 101, gzip.compress(b"x"), 100, "archive exceeds"),
+        (b"not-gzip", gzip.compress(b"x", mtime=0), 10_000, "Not a gzipped file"),
         (
-            gzip.compress(b"x" * 101),
-            gzip.compress(b"x"),
+            gzip.compress(b"", mtime=0),
+            gzip.compress(b"x", mtime=0),
+            10_000,
+            "no extension bytes",
+        ),
+        (b"x" * 101, gzip.compress(b"x", mtime=0), 100, "archive exceeds"),
+        (
+            gzip.compress(b"x" * 101, mtime=0),
+            gzip.compress(b"x", mtime=0),
             100,
             "decompressed byte budget",
         ),
-        (gzip.compress(b"httpfs"), b"invalid-spatial", 10_000, "Not a gzipped file"),
+        (
+            gzip.compress(b"httpfs", mtime=0),
+            b"invalid-spatial",
+            10_000,
+            "Not a gzipped file",
+        ),
+    ],
+    ids=[
+        "invalid-httpfs",
+        "empty-httpfs",
+        "archive-budget",
+        "decompressed-budget",
+        "invalid-spatial",
     ],
 )
 def test_incomplete_archives_never_install(
@@ -271,8 +288,8 @@ def test_real_engine_rejects_unsigned_native_payload_after_both_downloads(
     import duckdb
 
     routes, requested, _, _ = http_boundary
-    route(routes, "httpfs", gzip.compress(b"hostile arbitrary native bytes"))
-    route(routes, "spatial", gzip.compress(b"another unsigned payload"))
+    route(routes, "httpfs", gzip.compress(b"hostile arbitrary native bytes", mtime=0))
+    route(routes, "spatial", gzip.compress(b"another unsigned payload", mtime=0))
     with pytest.raises(duckdb.Error):
         backend.provision_spatial_extension()
     assert requested == ["/httpfs.duckdb_extension.gz", "/spatial.duckdb_extension.gz"]
@@ -282,7 +299,7 @@ def test_real_engine_rejects_unsigned_native_payload_after_both_downloads(
 def test_real_worker_returns_independently_hashed_archive(http_boundary, tmp_path):
     routes, _, _, _ = http_boundary
     content = b"independently known extension bytes" * 100
-    route(routes, "httpfs", gzip.compress(content))
+    route(routes, "httpfs", gzip.compress(content, mtime=0))
     url = "https://extensions.duckdb.org/v1.5.5/linux_amd64/httpfs.duckdb_extension.gz"
     target = tmp_path / "archive"
     result = backend._download_extension(

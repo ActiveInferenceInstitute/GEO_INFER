@@ -910,29 +910,91 @@ def test_late_empty_native_census_cannot_report_success(monkeypatch):
         census.refresh(timeout=0.03)
 
 
-def test_census_timeout_is_not_reported_as_target_deadline(engine, monkeypatch):
+@pytest.mark.parametrize("target_exits", [False, True])
+def test_census_timeout_is_not_reported_as_target_deadline(
+    engine, monkeypatch, target_exits
+):
     """A scanner failure cannot claim the command exhausted its long budget."""
+    import threading
+
+    import psutil
     import geo_infer_test.process as process_module
 
     metadata = engine.runtime_receipt(timeout=10)
     monkeypatch.setattr(engine, "runtime_receipt", lambda **kwargs: metadata)
+    census_entered = engine.PROJECT_ROOT / "census-entered"
+    output_ready = engine.PROJECT_ROOT / "target-output-ready"
+    target_processes = []
+    poll = threading.Event()
 
     def failed_refresh(self, *, timeout):
+        if not target_processes:
+            target_processes.append(psutil.Process(self.pid))
+        census_entered.touch()
+        deadline = time.monotonic() + min(timeout, 5)
+        while not output_ready.exists() and time.monotonic() < deadline:
+            poll.wait(min(0.01, max(0, deadline - time.monotonic())))
+        assert output_ready.exists(), (
+            "Target did not flush output within startup deadline"
+        )
+        if target_exits:
+            target = target_processes[0]
+
+            def exited():
+                try:
+                    return (
+                        not target.is_running()
+                        or target.status() == psutil.STATUS_ZOMBIE
+                    )
+                except psutil.NoSuchProcess:
+                    return True
+
+            while not exited() and time.monotonic() < deadline:
+                poll.wait(min(0.01, max(0, deadline - time.monotonic())))
+            assert exited(), "Target did not exit within startup deadline"
         raise process_module.ProcessCensusError(
             "Owned process census inspection budget"
         )
 
     monkeypatch.setattr(process_module._DescendantCensus, "refresh", failed_refresh)
+    # Hold the real target before output until the first census begins. This
+    # exercises slow startup deterministically, then publishes readiness only
+    # after both streams are flushed. Census failure must retain that output
+    # and reap either the still-running target or the target that has exited.
+    code = f"""
+import os, sys, threading, time
+from pathlib import Path
+deadline = time.monotonic() + 5
+poll = threading.Event()
+while not Path({str(census_entered)!r}).exists() and time.monotonic() < deadline:
+    poll.wait(min(0.01, max(0, deadline - time.monotonic())))
+assert Path({str(census_entered)!r}).exists(), "Census did not release target startup"
+print('target completed', flush=True)
+print('target stderr', file=sys.stderr, flush=True)
+ready = Path({str(output_ready)!r})
+pending = ready.with_suffix('.pending')
+pending.write_text(str(os.getpid()), encoding='utf-8')
+pending.replace(ready)
+if not {target_exits!r}:
+    threading.Event().wait(30)
+"""
     result = engine.run_command(
-        [sys.executable, "-c", "print('target completed', flush=True)"],
+        [sys.executable, "-c", code],
         "census infrastructure failure",
         300,
     )
     assert not result.success and result.status == "FAIL"
     assert result.stdout == "target completed\n"
+    assert "target stderr\n" in result.stderr
+    assert len(target_processes) == 1
+    assert int(output_ready.read_text(encoding="utf-8")) == target_processes[0].pid
+    assert not target_processes[0].is_running()
     assert result.duration < 10
     receipt = json.loads(Path(result.receipt).read_text(encoding="utf-8"))
     assert receipt["status"] == "FAIL"
+    assert (Path(result.receipt).parent / "stdout.log").read_text(
+        encoding="utf-8"
+    ) == result.stdout
     diagnostics = (Path(result.receipt).parent / "stderr.log").read_text(
         encoding="utf-8"
     )

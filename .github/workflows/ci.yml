@@ -181,6 +181,16 @@ jobs:
           uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 1200 -- \
             gitleaks detect --source . --config .gitleaks.toml --redact --verbose
 
+      - name: Prepare verified manuscript artifacts for ROOT coverage
+        # ROOT's ordinary profile reads the published bundle and copies it
+        # into an isolated hydration checkout. output/ is ignored, so every
+        # fresh validation checkout must run its owning producer first.
+        run: |
+          uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 1800 -- \
+            python manuscript/generate_research_artifacts.py --verify --rerun-verification
+          uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 600 -- \
+            python manuscript/generate_research_artifacts.py --check
+
       - name: Enforce module coverage floors
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
@@ -206,7 +216,8 @@ jobs:
           fi
           uv run --with pytest-cov python GEO-INFER-TEST/record_validation.py --timeout 3600 -- \
             python GEO-INFER-TEST/check_coverage_floor.py \
-            --base "$base_sha" --head "$HEAD_SHA"
+            --base "$base_sha" --head "$HEAD_SHA" \
+            --json .geo-infer-test-results/coverage-floors.json
 
       - name: Retain validation and model audit receipts
         if: always()
