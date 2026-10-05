@@ -412,15 +412,15 @@ class DelNorteComprehensiveDashboard:
         The sibling packages (RISK / BAYES / ACT) are not hard dependencies of
         the PLACE dashboard; when one is missing the dashboard must keep
         rendering the raw civic-intel surface and record the module result as
-        ``unavailable`` rather than crash the map.
+        ``unavailable`` rather than crash the map. Broken installed imports
+        propagate so a packaging failure cannot masquerade as an absent extra.
         """
-        import importlib
+        import importlib.util
 
-        try:
-            return importlib.import_module(dotted_name)
-        except ImportError:
+        if importlib.util.find_spec(dotted_name.split(".", 1)[0]) is None:
             logger.warning("Civic-intel helper module %s unavailable", dotted_name)
             return None
+        return importlib.import_module(dotted_name)
 
     def enrich_civic_intel_with_module_results(
         self,

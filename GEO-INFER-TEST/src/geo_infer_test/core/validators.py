@@ -69,183 +69,188 @@ class DataQualityValidator(BaseValidator):
         ]
 
     def validate(self, data: pd.DataFrame | list[dict] | dict) -> dict[str, Any]:
-        """Validate data quality."""
-        start_time = time.time()
+        """Validate each record without mutating inputs or hiding rule failures.
 
+        Required fields must exist and be non-null. ISO timestamps may have
+        differing timezone offsets and fractional precision; this is a format
+        check, not timestamp normalization or a TIME model-axis check. Numeric
+        values must be finite real numbers and cannot be booleans. Each erroneous row counts
+        once; warning-only rows count as half an issue. Field quality is the
+        fraction of records satisfying every rule for that field.
+        """
+        start_time = time.monotonic()
         if isinstance(data, dict):
             df = pd.DataFrame([data])
         elif isinstance(data, list):
             df = pd.DataFrame.from_records(data)
-        else:
+        elif isinstance(data, pd.DataFrame):
             df = data.copy()
+        else:
+            raise TypeError("data must be a DataFrame, a record, or a list of records")
+        if not df.columns.is_unique:
+            raise ValueError("data columns must be unique")
 
         errors_out: list[dict[str, Any]] = []
         warnings_out: list[dict[str, Any]] = []
         field_quality_out: dict[str, float] = {}
-        validation_results: dict[str, Any] = {
-            "total_records": len(df),
-            "valid_records": 0,
+        count = len(df)
+        error_rows = np.zeros(count, dtype=bool)
+        warning_rows = np.zeros(count, dtype=bool)
+        field_failures: dict[str, np.ndarray] = {}
+        handlers = {
+            "range": self._validate_range,
+            "format": self._validate_format,
+            "custom": self._validate_custom,
+        }
+        for rule in self.validation_rules:
+            if rule.rule_type not in handlers:
+                raise ValueError(f"unsupported validation rule type: {rule.rule_type}")
+            if rule.severity not in {"error", "warning", "info"}:
+                raise ValueError(f"unsupported validation severity: {rule.severity}")
+            result = handlers[rule.rule_type](df, rule)
+            failed_rows = result["_failed_rows"]
+            if not result["passed"]:
+                entry = {
+                    "rule": rule.name,
+                    "field": rule.field,
+                    "message": result["message"],
+                    "affected_records": result["affected_records"],
+                }
+                if rule.severity == "error":
+                    errors_out.append(entry)
+                    error_rows |= failed_rows
+                elif rule.severity == "warning":
+                    warnings_out.append(entry)
+                    warning_rows |= failed_rows
+            if rule.field != "*":
+                field_failures.setdefault(rule.field, np.zeros(count, dtype=bool))
+                field_failures[rule.field] |= failed_rows
+
+        for field, failed_rows in field_failures.items():
+            field_quality_out[field] = (
+                1.0 - int(failed_rows.sum()) / count if count else 1.0
+            )
+
+        issues = int(error_rows.sum()) + 0.5 * int((warning_rows & ~error_rows).sum())
+        score = 1.0 - issues / count if count else 1.0
+        self.logger.info("Data quality validation complete: %.2f score", score)
+        return {
+            "total_records": count,
+            "valid_records": count - int(error_rows.sum()),
             "validation_errors": errors_out,
             "warnings": warnings_out,
-            "quality_score": 0.0,
+            "quality_score": score,
             "field_quality": field_quality_out,
-            "validation_time": 0.0,
+            "validation_time": time.monotonic() - start_time,
         }
 
-        if len(df) == 0:
-            validation_results["quality_score"] = 1.0
-            validation_results["validation_time"] = time.time() - start_time
-            return validation_results
-
-        error_count = 0
-        warning_count = 0
-
-        # Apply validation rules
-        for rule in self.validation_rules:
-            try:
-                if rule.rule_type == "range":
-                    result = self._validate_range(df, rule)
-                elif rule.rule_type == "format":
-                    result = self._validate_format(df, rule)
-                elif rule.rule_type == "custom":
-                    result = self._validate_custom(df, rule)
-                else:
-                    continue
-
-                if not result["passed"]:
-                    if rule.severity == "error":
-                        errors_out.append(
-                            {
-                                "rule": rule.name,
-                                "field": rule.field,
-                                "message": result["message"],
-                                "affected_records": result.get("affected_records", 0),
-                            }
-                        )
-                        error_count += result.get("affected_records", 0)
-                    elif rule.severity == "warning":
-                        warnings_out.append(
-                            {
-                                "rule": rule.name,
-                                "field": rule.field,
-                                "message": result["message"],
-                                "affected_records": result.get("affected_records", 0),
-                            }
-                        )
-                        warning_count += result.get("affected_records", 0)
-
-                # Track field-level quality
-                if rule.field != "*":
-                    field_quality_out[rule.field] = result.get("quality_score", 1.0)
-
-            except Exception as e:
-                self.logger.error(f"Error applying validation rule {rule.name}: {e}")
-
-        # Calculate overall quality score
-        total_issues = (
-            error_count + warning_count * 0.5
-        )  # Warnings count as half errors
-        validation_results["quality_score"] = max(0.0, 1.0 - (total_issues / len(df)))
-        validation_results["valid_records"] = len(df) - error_count
-        validation_results["validation_time"] = time.time() - start_time
-
-        self.logger.info(
-            f"Data quality validation complete: {validation_results['quality_score']:.2f} score"
-        )
-
-        return validation_results
-
-    def _validate_range(self, df: pd.DataFrame, rule: ValidationRule) -> dict[str, Any]:
-        """Validate value ranges."""
-        field = rule.field
-        if field not in df.columns:
-            return {"passed": True, "message": f"Field {field} not found"}
-
-        min_val = rule.parameters.get("min")
-        max_val = rule.parameters.get("max")
-
-        mask = pd.Series([True] * len(df))
-        if min_val is not None:
-            mask &= df[field] >= min_val
-        if max_val is not None:
-            mask &= df[field] <= max_val
-
-        failed_count = (~mask).sum()
-
+    @staticmethod
+    def _rule_result(failed_rows: np.ndarray, message: str) -> dict[str, Any]:
+        """Keep positional row masks internal; report exact per-rule counts."""
+        failed_count = int(failed_rows.sum())
+        count = len(failed_rows)
         return {
             "passed": failed_count == 0,
-            "message": f"{failed_count} records in {field} outside range [{min_val}, {max_val}]",
+            "message": message,
             "affected_records": failed_count,
-            "quality_score": mask.sum() / len(df),
+            "quality_score": 1.0 - failed_count / count if count else 1.0,
+            "_failed_rows": failed_rows,
         }
+
+    @staticmethod
+    def _finite_numeric(value: Any) -> float | None:
+        """Convert a real numeric scalar; ordinary data errors are invalid values."""
+        if isinstance(
+            value, (bool, np.bool_, complex, np.complexfloating)
+        ) or not np.isscalar(value):
+            return None
+        try:
+            number = float(value)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        return number if np.isfinite(number) else None
+
+    def _validate_range(self, df: pd.DataFrame, rule: ValidationRule) -> dict[str, Any]:
+        """Validate finite numeric ranges by position, preserving any row index."""
+        bounds = []
+        for name in ("min", "max"):
+            raw = rule.parameters.get(name)
+            bound = None if raw is None else self._finite_numeric(raw)
+            if raw is not None and bound is None:
+                raise ValueError(f"range {name} must be a finite number")
+            bounds.append(bound)
+        minimum, maximum = bounds
+        if minimum is not None and maximum is not None and minimum > maximum:
+            raise ValueError("range min must not exceed max")
+        values = df[rule.field].tolist() if rule.field in df else [None] * len(df)
+        failed_rows = np.asarray(
+            [
+                number is None
+                or (minimum is not None and number < minimum)
+                or (maximum is not None and number > maximum)
+                for number in map(self._finite_numeric, values)
+            ],
+            dtype=bool,
+        )
+        return self._rule_result(
+            failed_rows,
+            f"{int(failed_rows.sum())} records in {rule.field} outside finite range [{minimum}, {maximum}]",
+        )
+
+    @staticmethod
+    def _is_iso_timestamp(value: Any) -> bool:
+        """Check ISO syntax independently of neighboring records' formats."""
+        if isinstance(value, str):
+            try:
+                datetime.fromisoformat(value)
+            except ValueError:
+                return False
+            return True
+        return isinstance(value, datetime) and not pd.isna(value)
 
     def _validate_format(
         self, df: pd.DataFrame, rule: ValidationRule
     ) -> dict[str, Any]:
-        """Validate data formats."""
-        field = rule.field
-        if field not in df.columns:
-            return {"passed": True, "message": f"Field {field} not found"}
-
-        format_type = rule.parameters.get("format")
-        failed_count = 0
-
-        if format_type == "iso":
-            # Validate ISO timestamp format
-            try:
-                pd.to_datetime(df[field], errors="raise")
-                failed_count = 0
-            except Exception:
-                failed_count = len(df)
-
-        return {
-            "passed": failed_count == 0,
-            "message": f"{failed_count} records in {field} with invalid {format_type} format",
-            "affected_records": failed_count,
-            "quality_score": (len(df) - failed_count) / len(df),
-        }
+        """Validate ISO syntax without inferred batch formats or numeric epochs."""
+        if rule.parameters.get("format") != "iso":
+            raise ValueError("unsupported timestamp format; expected iso")
+        values = df[rule.field].tolist() if rule.field in df else [None] * len(df)
+        failed_rows = np.asarray(
+            [not self._is_iso_timestamp(value) for value in values], dtype=bool
+        )
+        return self._rule_result(
+            failed_rows,
+            f"{int(failed_rows.sum())} records in {rule.field} with invalid ISO format",
+        )
 
     def _validate_custom(
         self, df: pd.DataFrame, rule: ValidationRule
     ) -> dict[str, Any]:
-        """Apply custom validation logic."""
+        """Apply declared required-field and finite numeric record checks."""
         if rule.name == "no_nulls_in_required_fields":
-            required_fields = rule.parameters.get("required_fields", [])
-            failed_count = 0
-
-            for field in required_fields:
-                if field in df.columns:
-                    failed_count += df[field].isnull().sum()
-
-            return {
-                "passed": failed_count == 0,
-                "message": f"{failed_count} null values in required fields",
-                "affected_records": failed_count,
-                "quality_score": (len(df) * len(required_fields) - failed_count)
-                / (len(df) * len(required_fields)),
-            }
-
-        elif rule.name == "numeric_values":
-            field = rule.field
-            if field not in df.columns:
-                return {"passed": True, "message": f"Field {field} not found"}
-
-            try:
-                pd.to_numeric(df[field], errors="raise")
-                failed_count = 0
-            except Exception:
-                failed_count = (
-                    len(df) - pd.to_numeric(df[field], errors="coerce").notna().sum()
+            fields = rule.parameters.get("required_fields", [])
+            if not isinstance(fields, (list, tuple)) or any(
+                not isinstance(field, str) or not field for field in fields
+            ):
+                raise ValueError(
+                    "required_fields must be a sequence of nonempty column names"
                 )
-
-            return {
-                "passed": failed_count == 0,
-                "message": f"{failed_count} non-numeric values in {field}",
-                "affected_records": failed_count,
-                "quality_score": (len(df) - failed_count) / len(df),
-            }
-
-        return {"passed": True, "message": "Unknown custom rule"}
+            failed_rows = np.zeros(len(df), dtype=bool)
+            for field in fields:
+                if field not in df:
+                    failed_rows[:] = True
+                else:
+                    failed_rows |= df[field].isna().to_numpy(dtype=bool)
+            message = f"{int(failed_rows.sum())} records with missing required values"
+        elif rule.name == "numeric_values":
+            values = df[rule.field].tolist() if rule.field in df else [None] * len(df)
+            failed_rows = np.asarray(
+                [self._finite_numeric(value) is None for value in values], dtype=bool
+            )
+            message = f"{int(failed_rows.sum())} records in {rule.field} without finite numeric values"
+        else:
+            raise ValueError(f"unsupported custom validation rule: {rule.name}")
+        return self._rule_result(failed_rows, message)
 
 
 class SpatialValidator(BaseValidator):

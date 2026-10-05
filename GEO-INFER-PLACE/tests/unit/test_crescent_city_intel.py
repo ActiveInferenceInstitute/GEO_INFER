@@ -14,7 +14,10 @@ All tests use the real mapper + the packaged (committed) seed; no mocks.
 """
 
 import json
+import subprocess
 import sys
+import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 from typing import Any
@@ -452,31 +455,45 @@ class TestModuleEnrichment(unittest.TestCase):
         assert first["actPolicy"] == second["actPolicy"]
 
     def test_enrich_degrades_gracefully_on_missing_module(self) -> None:
-        """A missing sibling module records ``unavailable`` and the rest compute."""
-        # geo-infer-act declares geo-infer-bayes as a hard dependency, so an
-        # environment without BAYES has no ACT either; both are blocked.
-        blocked = (
-            "geo_infer_bayes",
-            "geo_infer_bayes.civic_intel",
-            "geo_infer_act.core.civic_intel",
-        )
-        originals = {key: sys.modules.get(key) for key in blocked}
-        try:
-            # Simulate absent packages via the real import machinery: a
-            # ``None`` sys.modules entry makes ``importlib.import_module`` raise
-            # ImportError, exercising the same defensive path as an
-            # uninstalled dependency (not a stubbed result).
-            for key in blocked:
-                sys.modules[key] = None  # type: ignore[assignment]
-            enriched = self._enrich()
-        finally:
-            for key, value in originals.items():
-                if value is None:
-                    sys.modules.pop(key, None)
-                else:
-                    sys.modules[key] = value
+        """Cold missing siblings leave the real RISK weighting available."""
+        # The import boundary models an absent installation in a fresh process;
+        # cached child modules or sys.modules=None entries cannot change it.
+        code = textwrap.dedent("""
+            import importlib.util
+            import json
+            from pathlib import Path
+            import sys
 
+            blocked = {"geo_infer_bayes", "geo_infer_act"}
+            assert not any(name.split(".", 1)[0] in blocked for name in sys.modules)
+            for root in blocked:
+                spec = importlib.util.find_spec(root)
+                assert spec is not None and spec.origin is not None
+                source_parent = Path(spec.origin).parent.parent.resolve()
+                sys.path = [path for path in sys.path if Path(path).resolve() != source_parent]
+            importlib.invalidate_caches()
+            assert all(importlib.util.find_spec(root) is None for root in blocked)
+            from geo_infer_place.locations.del_norte_county.comprehensive_dashboard import (
+                DelNorteComprehensiveDashboard,
+            )
+            with open(sys.argv[1], encoding="utf-8") as stream:
+                contract = json.load(stream)
+            result = DelNorteComprehensiveDashboard().enrich_civic_intel_with_module_results(
+                {"status": "ok"}, contract=contract,
+            )
+            print(json.dumps(result))
+        """)
+        completed = subprocess.run(
+            [sys.executable, "-I", "-Werror", "-c", code, str(_PACKAGED_SEED)],
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=45,
+        )
+        enriched = json.loads(completed.stdout)
         assert enriched["moduleResults"]["status"] == "ok"
+        assert enriched["moduleResults"]["sources"]["risk"] == "ok"
         assert enriched["moduleResults"]["sources"]["bayes"] == "unavailable"
         assert enriched["bayesPriors"]["status"] == "unavailable"
         assert enriched["moduleResults"]["sources"]["act"] == "unavailable"
@@ -484,6 +501,101 @@ class TestModuleEnrichment(unittest.TestCase):
         # RISK does not depend on BAYES and still computes, so the map keeps
         # its hazard weighting without the missing modules.
         assert "tsunami" in enriched["riskWeights"]
+        self.assertAlmostEqual(float(enriched["riskWeights"]["tsunami"]), 1.0)
+
+    def test_missing_requested_root_is_the_only_optional_import_fallback(self) -> None:
+        """Absent roots degrade, while installed broken imports fail visibly."""
+        code = textwrap.dedent("""
+            import importlib.util
+            from pathlib import Path
+            import sys
+
+            from geo_infer_place.locations.del_norte_county.comprehensive_dashboard import (
+                DelNorteComprehensiveDashboard,
+            )
+
+            requested, failure, temporary = sys.argv[1:]
+            root = requested.split(".", 1)[0]
+            assert root not in sys.modules
+            original_spec = importlib.util.find_spec(root)
+            assert original_spec is not None and original_spec.origin is not None
+            if failure == "absent":
+                source_parent = Path(original_spec.origin).parent.parent.resolve()
+                sys.path = [path for path in sys.path if Path(path).resolve() != source_parent]
+                importlib.invalidate_caches()
+                assert importlib.util.find_spec(root) is None
+            else:
+                sys.path.insert(0, temporary)
+                assert Path(importlib.util.find_spec(root).origin).is_relative_to(Path(temporary))
+            dashboard = DelNorteComprehensiveDashboard()
+            try:
+                result = dashboard._import_civic_intel_module(requested)
+            except ModuleNotFoundError as exc:
+                assert failure in {"dependency", "nested", "installed_root"}
+                expected = ("civic_boundary_missing_dependency" if failure == "dependency"
+                            else root if failure == "installed_root" else requested)
+                assert exc.name == expected
+            except ImportError as exc:
+                assert failure == "export" and str(exc) == "broken installed export"
+            else:
+                assert failure == "absent" and result is None
+        """)
+        for requested in (
+            "geo_infer_risk.civic_intel",
+            "geo_infer_bayes.civic_intel",
+            "geo_infer_act.core.civic_intel",
+        ):
+            for failure in (
+                "absent",
+                "dependency",
+                "nested",
+                "export",
+                "installed_root",
+            ):
+                with (
+                    self.subTest(requested=requested, failure=failure),
+                    tempfile.TemporaryDirectory(
+                        prefix="civic_import_boundary_"
+                    ) as temporary,
+                ):
+                    parts = requested.split(".")
+                    for i in range(1, len(parts)):
+                        directory = Path(temporary).joinpath(*parts[:i])
+                        directory.mkdir(parents=True, exist_ok=True)
+                        (directory / "__init__.py").write_text("", encoding="utf-8")
+                    target = Path(temporary).joinpath(*parts).with_suffix(".py")
+                    if failure == "installed_root":
+                        (Path(temporary) / parts[0] / "__init__.py").write_text(
+                            f"raise ModuleNotFoundError('installed root failed', name={parts[0]!r})\n",
+                            encoding="utf-8",
+                        )
+                    elif failure == "dependency":
+                        target.write_text(
+                            "import civic_boundary_missing_dependency\n",
+                            encoding="utf-8",
+                        )
+                    elif failure == "export":
+                        target.write_text(
+                            "raise ImportError('broken installed export')\n",
+                            encoding="utf-8",
+                        )
+                    subprocess.run(
+                        [
+                            sys.executable,
+                            "-I",
+                            "-Werror",
+                            "-c",
+                            code,
+                            requested,
+                            failure,
+                            temporary,
+                        ],
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                        encoding="utf-8",
+                        timeout=45,
+                    )
 
     def test_module_popup_block_escapes_hostile_tags(self) -> None:
         """The pre-built module popup block HTML-escapes contract-derived tags.

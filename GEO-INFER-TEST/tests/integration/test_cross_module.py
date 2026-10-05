@@ -8,7 +8,6 @@ from the geo_infer_test package — no mocks.
 import pytest
 import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta, UTC
 
 # Real imports from the testing library
 from geo_infer_test import (
@@ -33,20 +32,24 @@ from geo_infer_test.core.log_integration import (
 
 @pytest.fixture
 def sensor_dataframe():
-    """Real IoT sensor dataframe with timestamps, IDs, and radiation readings."""
-    now = datetime.now(UTC)
+    """Four deterministic records constructed through the public IoT model."""
+    from geo_infer_iot import Measurement
+
     records = []
-    for i in range(20):
-        records.append(
-            {
-                "sensor_id": f"sensor_{i}",
-                "timestamp": (now - timedelta(hours=i)).isoformat(),
-                "radiation_level": float(np.random.uniform(0.5, 15.0)),
-                "latitude": float(np.random.uniform(37.0, 38.0)),
-                "longitude": float(np.random.uniform(-123.0, -122.0)),
-                "value": float(np.random.uniform(10, 100)),
-            }
+    for i in range(4):
+        measurement = Measurement(
+            measurement_id=f"measurement_{i}",
+            sensor_id=f"sensor_{i}",
+            variable="radiation_level",
+            value=float(i),
+            unit="uSv/h",
+            timestamp=f"2026-01-01T0{i}:00:00+00:00",
+            latitude=37.0 + i / 10,
+            longitude=-123.0 + i / 10,
         )
+        row = measurement.model_dump(mode="json")
+        row["radiation_level"] = measurement.value
+        records.append(row)
     return pd.DataFrame(records)
 
 
@@ -69,7 +72,7 @@ def spatial_dataframe():
                 "latitude": lat,
                 "longitude": lon,
                 "h3_index": h3.latlng_to_cell(lat, lon, 7),
-                "value": float(np.random.uniform(1, 100)),
+                "value": float(len(records)),
             }
         )
     return pd.DataFrame(records)
@@ -77,10 +80,10 @@ def spatial_dataframe():
 
 @pytest.fixture
 def bayesian_results():
-    """Realistic Bayesian inference results dict."""
+    """Deterministic result record for Bayesian validator integration."""
     n = 50
-    predictions = np.random.normal(10.0, 2.0, n).tolist()
-    uncertainty = np.abs(np.random.normal(0.5, 0.1, n)).tolist()
+    predictions = np.linspace(8.0, 12.0, n).tolist()
+    uncertainty = np.full(n, 0.5).tolist()
     return {
         "converged": True,
         "predictions": predictions,
@@ -104,21 +107,27 @@ class TestCrossModuleDataFlow:
         dq = DataQualityValidator(config={}, logger=None)
         dq_results = dq.validate(sensor_dataframe)
 
-        assert dq_results["total_records"] == 20
-        assert dq_results["quality_score"] > 0.0
+        assert dq_results["total_records"] == 4
+        assert dq_results["valid_records"] == 4
+        assert dq_results["quality_score"] == 1.0
+        assert dq_results["validation_errors"] == []
 
         sv = SpatialValidator(config={}, logger=None)
         sv_results = sv.validate(sensor_dataframe)
 
-        assert sv_results["total_records"] == 20
+        assert sv_results["total_records"] == 4
         assert "coordinate_validity" in sv_results["spatial_validation"]
         valid_coords = sv_results["spatial_validation"]["coordinate_validity"][
             "valid_coordinates"
         ]
-        assert valid_coords == 20
+        assert valid_coords == 4
+        assert (
+            sv_results["spatial_validation"]["h3_validation"]["valid_h3_indices"] == 4
+        )
+        assert sensor_dataframe["value"].tolist() == [0.0, 1.0, 2.0, 3.0]
 
     def test_bayesian_validation(self, bayesian_results):
-        """Validate real Bayesian inference outputs."""
+        """Validate a complete Bayesian result record."""
         bv = BayesianValidator(config={}, logger=None)
         results = bv.validate(bayesian_results)
 
@@ -176,7 +185,8 @@ class TestCrossModuleLogging:
         with log.test_context("xmod_001", "IOT", "test_sensor_quality"):
             dq = DataQualityValidator(config={}, logger=None)
             result = dq.validate(sensor_dataframe)
-            assert result["quality_score"] > 0.0
+            assert result["quality_score"] == 1.0
+            assert result["valid_records"] == 4
 
         assert len(log.test_entries) == 1
         assert log.test_entries[0].status == "PASS"

@@ -33,6 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bind ANT physical actions to real ACT transitions, preserve prediction retries
   without repeated physical work, and route RISK, PLACE and ECON through explicit
   temporal interfaces and failure boundaries.
+- Preserve coverage interruption and cleanup diagnostics, recognize positively
+  stopped Linux process identities within bounded census deadlines, and check
+  manuscript census drift in the early documentation gate.
+- Validate mixed ISO timestamp formats per record, count distinct invalid rows,
+  and distinguish absent optional civic-intelligence packages from broken imports.
+- Replace stale Active Inference and temporal tutorials with executable public
+  interface examples and centralize manuscript inventory measurements.
 - Retain full wheel build/probe logs and immutable wheel copies, validate operation
   code hashes, include staged bytes in source custody, and widen dispatch/scheduled
   diff gates to the complete tree.

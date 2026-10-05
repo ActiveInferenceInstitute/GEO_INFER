@@ -14,16 +14,18 @@ import json
 import math
 import os
 from collections.abc import Mapping, Sequence
+from importlib.util import find_spec
 from pathlib import Path
 from typing import TypeAlias, TypedDict
 
 # Shared civic-intel ingestion core: the canonical contract loader and schema
 # constant live in GEO-INFER-BAYES, so every consumer resolves the SAME
 # objects and reads the ONE reviewed crescent-city-geo-intel.json copy.
-# The import is guarded: when the sibling is absent this module still imports
+# Resolve the sibling before import: when absent this module still imports
 # and its module-specific hazard-weight surface keeps working (cross-module
-# identity tests pin object identity when the sibling IS importable).
-try:
+# identity tests pin object identity when the sibling IS importable). A resolved
+# package's import failures must propagate, including root-named failures.
+if find_spec("geo_infer_bayes") is not None:
     from geo_infer_bayes.civic_intel import (
         CRESCENT_CITY_INTEL_SCHEMA,
         load_crescent_city_contract,
@@ -32,7 +34,7 @@ try:
         CRESCENT_CITY_OBSERVATIONS_SCHEMA,
         load_crescent_city_geo_observations,
     )
-except ImportError:  # pragma: no cover - sibling-absent degradation path
+else:
     CRESCENT_CITY_INTEL_SCHEMA = "crescent-city-geo-intel/v1"
     CRESCENT_CITY_OBSERVATIONS_SCHEMA = "crescent-city-geo-observations/v1"
 
