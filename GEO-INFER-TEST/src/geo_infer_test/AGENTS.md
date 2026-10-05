@@ -27,6 +27,7 @@
 - `act_research_oracles.py`
 - `coverage.py`
 - `doc_examples.py`
+- `documentation_contracts.py`
 - `execution.py`
 - `process.py`
 - `selection.py`

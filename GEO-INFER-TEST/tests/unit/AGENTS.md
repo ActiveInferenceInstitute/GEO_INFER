@@ -29,7 +29,9 @@
 - `test_crescent_city_civic_intel_demo.py`
 - `test_crescent_city_geo_intel_contract_sync.py`
 - `test_data_domains.py`
+- `test_data_quality_contract.py`
 - `test_doc_examples.py`
+- `test_documentation_census.py`
 - `test_execution_contracts.py`
 - `test_gnn_interchange_receipts.py`
 - `test_log_integration.py`

@@ -10,6 +10,7 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `act_research_oracles.py`
 - `coverage.py`
 - `doc_examples.py`
+- `documentation_contracts.py`
 - `execution.py`
 - `process.py`
 - `selection.py`
@@ -26,19 +27,19 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `coverage.py:measure_module` (function)
 - `coverage.py:junit_failure_names` (function)
 - `coverage.py:junit_failure_details` (function)
+- `coverage.py:run_coverage_measurements` (function)
 - `coverage.py:main` (function)
 - `doc_examples.py:load_manifest` (function)
 - `doc_examples.py:example_code` (function)
 - `doc_examples.py:verify_page` (function)
 - `doc_examples.py:main` (function)
+- `documentation_contracts.py:module_catalog_census_errors` (function)
 - `execution.py:CommandResult` (class)
 - `execution.py:Module` (class)
 - `execution.py:SuiteReport` (class)
 - `execution.py:discover_geo_infer_modules` (function)
 - `execution.py:discover_workspace_test_targets` (function)
 - `execution.py:profile_selection_args` (function)
-- `execution.py:ensure_results_dir` (function)
-- `execution.py:run_results_dir` (function)
 
 ## Module Metadata
 
