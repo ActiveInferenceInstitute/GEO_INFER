@@ -363,7 +363,46 @@ def run_process(
     """
     if not math.isfinite(timeout) or timeout <= 0:
         raise ValueError("Process timeout must be finite and positive")
-    deadline = time.monotonic() + timeout
+    started = time.monotonic()
+    deadline = started + timeout
+    # Constant-size, content-free evidence separates target observation from
+    # ownership inspection and post-deadline cleanup. An observed zero exit
+    # never overrides a failed census or an exhausted attempt deadline.
+    evidence: dict[str, Any] = {
+        "target_completed_seconds": None,
+        "target_returncode": None,
+        "census_seconds": 0.0,
+        "census_calls": 0,
+        "cleanup_seconds": 0.0,
+        "failure_phase": None,
+    }
+    phase = "launch"
+
+    def refresh_census() -> None:
+        nonlocal phase
+        phase = "census"
+        scan_started = time.monotonic()
+        evidence["census_calls"] += 1
+        try:
+            remaining = deadline - scan_started
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired("owned process census", timeout)
+            census.refresh(timeout=remaining)
+        finally:
+            evidence["census_seconds"] += time.monotonic() - scan_started
+
+    def capture_failure(error: BaseException) -> None:
+        evidence["failure_phase"] = phase
+        cleanup_started = time.monotonic()
+        try:
+            stdout, stderr = _capture_after_cleanup(process, process_lock)
+            cast(Any, error).output = stdout
+            cast(Any, error).stderr = stderr
+        finally:
+            evidence["cleanup_seconds"] = time.monotonic() - cleanup_started
+            evidence["process_seconds"] = time.monotonic() - started
+            cast(Any, error).process_evidence = evidence
+
     token = uuid.uuid4().hex
     child_env = dict(os.environ if env is None else env)
     inherited = [
@@ -401,39 +440,42 @@ def run_process(
     with process:
         try:
             while True:
+                phase = "target"
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     raise subprocess.TimeoutExpired(command, timeout)
                 try:
                     with process_lock:
                         stdout, stderr = process.communicate(
-                            # A native ownership census reads the complete
-                            # process listing. Bound its frequency under module
-                            # concurrency while still scanning immediately on
-                            # exit and during deadline cleanup.
+                            # Bound scan frequency while retaining ownership
+                            # identities between pipe polls.
                             timeout=min(0.25, remaining)
                         )
-                    census.refresh(timeout=max(0.001, deadline - time.monotonic()))
-                    leaks = census.live()
-                    if leaks:
-                        census.kill()
-                        raise OwnedProcessLeakError(leaks, stdout, stderr)
-                    break
                 except subprocess.TimeoutExpired:
                     if time.monotonic() >= deadline:
                         raise
-                    # Tiny commands need one final ownership scan, while a
-                    # running command retains identities between pipe polls.
-                    census.refresh(timeout=deadline - time.monotonic())
-        except subprocess.TimeoutExpired as exc:
-            stdout, stderr = _capture_after_cleanup(process, process_lock)
-            cast(Any, exc).output = stdout
-            cast(Any, exc).stderr = stderr
-            raise
+                    refresh_census()
+                    continue
+                evidence["target_completed_seconds"] = time.monotonic() - started
+                evidence["target_returncode"] = process.returncode
+                # Census failures propagate once; they are never mistaken for
+                # an incomplete pipe poll or retried inside the target loop.
+                refresh_census()
+                phase = "ownership"
+                if time.monotonic() >= deadline:
+                    raise subprocess.TimeoutExpired("owned process liveness", timeout)
+                leaks = census.live()
+                # A completed observation does not establish timely ownership
+                # verification. Keep the original attempt deadline even when
+                # the target's zero exit has already been observed.
+                if time.monotonic() >= deadline:
+                    raise subprocess.TimeoutExpired("owned process liveness", timeout)
+                if leaks:
+                    census.kill()
+                    raise OwnedProcessLeakError(leaks, stdout, stderr)
+                break
         except BaseException as exc:
-            stdout, stderr = _capture_after_cleanup(process, process_lock)
-            cast(Any, exc).output = stdout
-            cast(Any, exc).stderr = stderr
+            capture_failure(exc)
             raise
         finally:
             with _ACTIVE_LOCK:
@@ -443,6 +485,8 @@ def run_process(
         result = subprocess.CompletedProcess(
             command, process.returncode, stdout, stderr
         )
+    evidence["process_seconds"] = time.monotonic() - started
+    cast(Any, result).process_evidence = evidence
     if check:
         result.check_returncode()
     return result

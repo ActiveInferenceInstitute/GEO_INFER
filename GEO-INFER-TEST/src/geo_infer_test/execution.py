@@ -577,6 +577,9 @@ def run_command(
     status = "FAIL"
     errors: list[str] = report_argument_errors.copy()
     launched = False
+    process_evidence = {}
+    process_started = time.monotonic()
+    setup_seconds = process_started - started
     try:
         if metadata_error is not None:
             status = "METADATA_ERROR"
@@ -586,8 +589,10 @@ def run_command(
             raise subprocess.TimeoutExpired(command, timeout)
         launched = True
         completed = run_process(command, cwd=cwd, env=env, timeout=remaining)
+        process_evidence = getattr(completed, "process_evidence", {})
         rc, stdout, stderr = completed.returncode, completed.stdout, completed.stderr
     except subprocess.TimeoutExpired as exc:
+        process_evidence = getattr(exc, "process_evidence", {})
         stdout, stderr = (
             _text(exc.stdout),
             _text(exc.stderr),
@@ -602,12 +607,14 @@ def run_command(
         )
         status = "TIMEOUT"
     except Exception as exc:
+        process_evidence = getattr(exc, "process_evidence", {})
         stdout, stderr = (
             _text(getattr(exc, "output", None)),
             _text(getattr(exc, "stderr", None)),
         )
         errors.append(f"Command could not complete: {type(exc).__name__}: {exc}")
     except KeyboardInterrupt as exc:
+        process_evidence = getattr(exc, "process_evidence", {})
         stdout, stderr = (
             _text(getattr(exc, "output", None)),
             _text(getattr(exc, "stderr", None)),
@@ -621,6 +628,7 @@ def run_command(
             )
         )
         status = "INTERRUPTED"
+    process_finished = time.monotonic()
     completion = None
     if completion_token is not None and rc == 0:
         try:
@@ -679,6 +687,7 @@ def run_command(
         executed,
         str(attempt_dir / "receipt.json"),
     )
+    artifact_started = time.monotonic()
     (attempt_dir / "stdout.log").write_text(stdout, encoding="utf-8")
     (attempt_dir / "stderr.log").write_text(stderr, encoding="utf-8")
     receipt = {
@@ -694,12 +703,21 @@ def run_command(
         "executed": executed,
         "selection": selected,
         "completion": completion,
+        "process_evidence": process_evidence,
+        "timing": {
+            "setup_seconds": setup_seconds,
+            "process_seconds": process_finished - process_started,
+            "validation_seconds": artifact_started - process_finished,
+        },
         "artifacts": {
             p.name: hashlib.sha256(p.read_bytes()).hexdigest()
             for p in attempt_dir.iterdir()
             if p.is_file()
         },
     }
+    # This boundary includes log writing and artifact hashing. Receipt
+    # serialization itself is excluded to avoid a self-referential rewrite.
+    receipt["timing"]["artifact_seconds"] = time.monotonic() - artifact_started
     with (attempt_dir / "receipt.json").open("x", encoding="utf-8") as out:
         json.dump(receipt, out, indent=2, allow_nan=False)
         out.write("\n")

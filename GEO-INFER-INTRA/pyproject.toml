@@ -97,7 +97,6 @@ geo_infer_intra = ["data/*.json"]
 source = ["src"]
 omit = [
     "*/tests/*",
-    "*/test_*",
     "*/__pycache__/*",
 ]
 

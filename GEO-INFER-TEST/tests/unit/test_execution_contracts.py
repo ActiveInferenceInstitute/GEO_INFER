@@ -537,6 +537,13 @@ def test_validator_arguments_do_not_advertise_pytest_or_report_promises(
     )
     assert result.success and result.returncode == 0 and result.executed == 0
     assert result.stdout == "ordinary validator\n" and not result.stderr
+    receipt = json.loads(Path(result.receipt).read_text(encoding="utf-8"))
+    evidence = receipt["process_evidence"]
+    assert evidence["target_returncode"] == 0 and evidence["failure_phase"] is None
+    assert evidence["target_completed_seconds"] > 0
+    assert evidence["census_calls"] >= 1 and evidence["census_seconds"] > 0
+    assert evidence["cleanup_seconds"] == 0
+    assert all(value >= 0 for value in receipt["timing"].values())
     assert not Path(result.receipt).with_name("junit.xml").exists()
 
 
@@ -1744,3 +1751,141 @@ def test_validator_retains_successful_terminal_completion_evidence(engine) -> No
         "completion_token": "expected",
         "status": "ok",
     }
+
+
+def test_exited_target_census_deadline_retains_distinct_phase_evidence(
+    engine, monkeypatch
+):
+    """Zero exit before a late ownership scan cannot make a timeout pass."""
+    import threading
+    import geo_infer_test.process as process_module
+
+    metadata = engine.runtime_receipt(timeout=10)
+    monkeypatch.setattr(engine, "runtime_receipt", lambda **kwargs: metadata)
+    original = process_module._DescendantCensus.refresh
+    calls = []
+
+    def late_refresh(self, *, timeout):
+        calls.append(timeout)
+        if len(calls) == 1:
+            # run_process only reaches this scan after communicate established
+            # target exit. Consume the existing budget, never extend it.
+            threading.Event().wait(timeout + 0.02)
+            raise subprocess.TimeoutExpired("owned process census", timeout)
+        return original(self, timeout=timeout)
+
+    monkeypatch.setattr(process_module._DescendantCensus, "refresh", late_refresh)
+    result = engine.run_command(
+        [sys.executable, "-Ic", "print('ordinary validator')", "-m", "pytest"],
+        "exited target late census",
+        1,
+    )
+    assert not result.success and result.status == "TIMEOUT"
+    assert result.returncode is None and result.executed == 0
+    assert result.stdout == "ordinary validator\n"
+    assert "Timed out after 1s" in result.stderr
+    receipt = json.loads(Path(result.receipt).read_text())
+    evidence = receipt["process_evidence"]
+    assert evidence["target_returncode"] == 0
+    assert 0 < evidence["target_completed_seconds"] < 1
+    assert evidence["failure_phase"] == "census"
+    assert evidence["census_calls"] == 1 and len(calls) == 2  # final cleanup scan
+    assert evidence["census_seconds"] > calls[0]
+    assert evidence["cleanup_seconds"] > 0
+    assert evidence["process_seconds"] >= (
+        evidence["target_completed_seconds"]
+        + evidence["census_seconds"]
+        + evidence["cleanup_seconds"]
+    )
+    timing = receipt["timing"]
+    assert all(value >= 0 for value in timing.values())
+    assert timing["process_seconds"] >= evidence["process_seconds"]
+    assert not Path(result.receipt).with_name("junit.xml").exists()
+
+
+def test_post_census_liveness_deadline_rejects_observed_zero_exit(engine, monkeypatch):
+    """Native liveness finishing at the deadline cannot accept target success."""
+    from types import SimpleNamespace
+    import geo_infer_test.process as process_module
+
+    metadata = engine.runtime_receipt(timeout=10)
+    monkeypatch.setattr(engine, "runtime_receipt", lambda **kwargs: metadata)
+    native_refresh = process_module._DescendantCensus.refresh
+    native_live = process_module._DescendantCensus.live
+    monotonic = time.monotonic
+    offset = 0.0
+    scans = []
+    observations = []
+
+    def record_refresh(self, *, timeout):
+        scans.append(timeout)
+        return native_refresh(self, timeout=timeout)
+
+    def boundary_live(self):
+        nonlocal offset
+        leaks = native_live(self)
+        observations.append(leaks)
+        # Advance only this module's clock after the real target and native
+        # census/liveness completed. Cross the original one-second deadline
+        # deterministically, without sleeping, replacing census, or recharging
+        # the attempt budget. Cleanup continues on the same shifted clock.
+        offset += 1.0
+        return leaks
+
+    monkeypatch.setattr(
+        process_module, "time", SimpleNamespace(monotonic=lambda: monotonic() + offset)
+    )
+    monkeypatch.setattr(process_module._DescendantCensus, "refresh", record_refresh)
+    monkeypatch.setattr(process_module._DescendantCensus, "live", boundary_live)
+    result = engine.run_command(
+        [sys.executable, "-Ic", "print('ownership boundary')"],
+        "post-census liveness deadline",
+        1,
+    )
+    assert observations == [[]]
+    assert not result.success and result.status == "TIMEOUT"
+    assert result.returncode is None and result.executed == 0
+    assert result.stdout == "ownership boundary\n"
+    receipt = json.loads(Path(result.receipt).read_text())
+    evidence = receipt["process_evidence"]
+    assert evidence["target_returncode"] == 0
+    assert 0 < evidence["target_completed_seconds"] < 1
+    assert evidence["failure_phase"] == "ownership"
+    assert evidence["census_calls"] == 1
+    assert len(scans) == 2  # one attempt scan, then separate cleanup
+    assert 0 < scans[0] < 1
+    assert evidence["census_seconds"] > 0
+    assert evidence["cleanup_seconds"] > 0
+    assert evidence["process_seconds"] >= 1
+    assert not Path(result.receipt).with_name("junit.xml").exists()
+    assert not process_module._ACTIVE_PROCESSES
+
+
+def test_census_timeout_is_not_retried_as_an_incomplete_target_poll(
+    tmp_path, monkeypatch
+):
+    """An early inspection failure propagates once, with cleanup kept separate."""
+    import geo_infer_test.process as process_module
+
+    original = process_module._DescendantCensus.refresh
+    calls = []
+
+    def failed_refresh(self, *, timeout):
+        calls.append(timeout)
+        if len(calls) == 1:
+            raise subprocess.TimeoutExpired("owned process census", timeout)
+        return original(self, timeout=timeout)
+
+    monkeypatch.setattr(process_module._DescendantCensus, "refresh", failed_refresh)
+    with pytest.raises(subprocess.TimeoutExpired) as caught:
+        run_process(
+            [sys.executable, "-Ic", "print('ordinary validator')", "-m", "pytest"],
+            cwd=tmp_path,
+            timeout=5,
+        )
+    evidence = caught.value.process_evidence
+    assert caught.value.output == "ordinary validator\n"
+    assert evidence["target_returncode"] == 0
+    assert evidence["failure_phase"] == "census"
+    assert evidence["census_calls"] == 1
+    assert len(calls) == 2  # failed scan and explicit cleanup, no target-loop retry

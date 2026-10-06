@@ -1,6 +1,6 @@
 # GEO-INFER Open Task & Backlog Ledger
 
-> Last reviewed: 2026-10-01
+> Last reviewed: 2026-10-05
 > Scope: Multi-package repository (`GEO-INFER`) across workspace packages and 45 domain modules.
 > Centralization Rule: All planned, open, or deferred engineering work across all modules is tracked exclusively in this ledger. Module source code and tests must never carry local task markers (`TODO`, `FIXME`, `XXX`, `HACK`).
 > History note (2026-09-07): the published history was rewritten to re-attribute
@@ -25,6 +25,81 @@ bounded single-session change. Re-tiered 2026-09-07 from a nine-scout ledger
 audit: the previously open rows verified current against the tree, delivered
 claims were spot-checked, and module/package surfaces were swept for untracked
 next steps.
+
+### 0.4.0 continuation — current scope (2026-10-05)
+
+**Execution resumed:** on 2026-10-05 the owner authorized comprehensive issue
+fixes, verification and an ordinary main push. Candidate acceptance remains
+required before integration. Tagging, release attachments, registry publication
+and deployment retain their separate authorization boundary; accounts,
+credentials, configured models and hooks remain under human control.
+
+The preparation branch is `codex/0.4-readiness`, last pushed at
+`2fdd67ff4e56ddfd33e1114dad41059faac28a7d`; remote `main` remains
+`510f1008e698b45aedc4306d65caf898da6cda04`. The local legacy sweep ancestor
+`cbe6b9c59975254487452d697c2ea961a19f2286` must be preserved. **Readiness is
+NO GO.** The last candidate's hosted TEST coverage was 72.22955% against the
+unchanged 85% floor; other successes remain bound to their original revision.
+
+At implementation resume there were 39 pending implementation paths: root and 36 member coverage
+configurations, the TEST tracing regression, and the owning testing guide.
+Their correction removes only the erroneous `*/test_*` source omission.
+The 37-configuration × three-filename matrix passed 111 cases in each of two
+narrow recording profiles. The original narrow inner SQLite traces were not
+retained; the later whole TEST diagnostic retained all 111 fresh traces.
+
+The whole diagnostic **completed naturally with FAIL**, before a requested stop
+could be sent: **1,815 passed / one failed / 1,816 executed**. The ordinary
+validator control
+`test_validator_arguments_do_not_advertise_pytest_or_report_promises[arguments1]`
+recorded a real TIMEOUT (5-second envelope, 5.799 seconds elapsed, return code
+`None`) despite emitting its expected output. This establishes a timeout to
+investigate, not a classifier defect or an environmental cause. Independently,
+raw coverage was **2,529/3,032 = 83.41029%**, still below 85%. The attempt is
+diagnostic evidence, not accepted TEST/floor evidence. No signal was issued;
+the observed owned processes were absent after completion. Original manuscript
+output remains an older failed-candidate bundle.
+
+Continuation repairs now separate census failures from pipe polling, enforce the
+original deadline around final ownership inspection, retain admitted parallel
+worker outcomes through repeated shutdown interruption, and reject empty runner
+selections. Focused regressions establish these defects independently of the
+historical timeout, whose cause remains unresolved. The manuscript custody path
+now rejects root/directory/file replacement during validation; its focused
+independent review accepted the declared boundary. Native Windows PLACE workflow
+implementation is present, with hosted runtime acceptance still pending. These
+are implementation and narrow-test results; whole-package coverage and final
+candidate acceptance remain required.
+
+The [readiness tracker (#61)](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/61)
+links the complete next-work graph. Dependencies govern completion; preparation
+may overlap after a stable source freeze with bounded resources and explicit
+source/output ownership. Resumed work starts with the two independent blockers
+below; their historical failed evidence remains unchanged.
+
+| ID | Owning area / status | Complete bounded next step | Acceptance / dependencies |
+| --- | --- | --- | --- |
+| **R04-00** | Repository / NO GO tracker | [#61: exact-candidate readiness](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/61) coordinates every required child and separate deferred scope. | One clean revision binds local, hosted, wheel, paired, security and manuscript evidence; successful required children precede main integration. |
+| **R04-01** | TEST / demonstrated timeout, cause unresolved | [#62: ordinary-validator timeout](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/62): inspect actual child/parent timing, ownership census, cleanup and receipts; repair only a demonstrated contract problem. | Real command outcomes, fresh nonzero JUnit where promised, validators without JUnit, invalid/empty selections, POSIX/Windows descendants and interruption; no automatic retries, suppressed errors or production-budget workaround. Fresh independent shared-infrastructure review. |
+| **R04-02** | TEST / source omission fixed locally; coverage below floor | [#63: real runner behavior and 85% floor](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/63): review policy fix; add meaningful public runner/error/cancellation behavior coverage. | Preserve the 116 existing core behavior identities and 111 policy controls; fully passing whole TEST measurement with genuine raw coverage ≥85%. Complete all 46 final package/ROOT dispositions and inventory reconciliation. Depends on R04-01. |
+| **R04-03** | Repository, SPACE/TIME/ACT and connected modules / final local proof pending | [#64: strict and analytical acceptance](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/64): freeze reviewed source and complete all declared local contracts/categories, real composition oracles, security and reproducibility; reduce measured fixture/setup cost without losing coverage. | UTC/DST/ns/step/gap/order/ownership/allocation contracts; real DATA→SPACE→TIME, BAYES/ACT permutations, seven-cell/pentagon transitions/posteriors/policy, IOT coordinate oracle, ART hostile input, OPS port cleanup and async lifecycle. Strict repository/package/docs/skills/test/model/logging/lint/format/workflow/secret gates. Depends on R04-01/R04-02. |
+| **R04-04** | Packaging and GNN / fresh exact-candidate proof pending | [#65: all wheels, optional boundaries and paired interchange](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/65). | 45 wheels, 45 base and 20 operation profiles outside checkout on 3.11/3.12; metadata/resources/extra parity, real signed DuckDB fast path; exact pinned GNN four-family/exporter/replay evidence. Stable candidate from R04-03. |
+| **R04-05 / CODE-01** | Documentation, manuscript, index / convergence and full proof pending | [#66: executable docs and manuscript](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/66): finish truthful API/migration/configuration guidance, generated signposts, 0.4.0 parity, Git-derived metadata fixed point and source-current GitNexus. | Coordinator-only full eleven-group producer, independent whole-output custody/snapshot, real native PDF/figure inspection, generator drift checks and fresh ROOT inventory (currently 142+7). Retain producer manifest/inventory/variables/figure-registry JSON or state hosted upload limits. No old-output or default-seven-tier passing claim. Depends on stable R04-03 source. |
+| **R04-06** | CI / fresh corrected-candidate evidence pending | [#67: complete hosted evidence](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/67): run declared workflows once on the reviewed candidate and audit actual receipts/artifact bytes. | Required unit/integration/performance/system/slow/H3 matrix on 3.11/3.12, native Windows and early contracts; actual profile/inventory reconciliation, all 46 floors, wheels/paired/ROOT/models/security and complete uploaded artifacts. Derive fresh counts; preserve failures. Depends on R04-01 through R04-05. |
+| **R04-07** | Git/main / held, not integrated | [#68: accepted main integration](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/68): when implementation is resumed and candidate GO exists, recheck remote/protection/ancestry, integrate ordinarily and verify exact published/main-triggered evidence. | No force-push, ancestry rewrite, stale-SHA acceptance or protection bypass; preserve rollback and unrelated work. Main SHA parity plus actual same-SHA hosted results. Depends on R04-03 through R04-06. |
+| **SPACE-01** | SPACE / deferred hardware | [#69: physical backend validation](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/69). | Real supported device/driver/backend numerical parity, failure/precision/chunk boundaries, memory and cold/warm timings; H3 remains host CPU. No CPU-fallback hardware claim. |
+| **PLACE-V14** | PLACE / deferred licensed data | [#70: complete Cascadia boundary](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/70). | Authorized source/license/extent/resource budget, provenance/checksum/WGS84/stable identities and real renderer/integration; missing layer remains explicit and fail-closed. |
+| **PLACE-04** | PLACE / deferred native Windows worker proof | [#71: real Windows download worker](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/71). | Locked PLACE runtime, stalled-header/slow-drip deadlines, termination/pipe closure, batch failure and replay. Shared-process Windows CI does not close this separate item. |
+| **TEST-GNN-01** | SPACE/TIME/ACT / historical cause unresolved | [#72: PROJ SQLite I/O causality](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/72). | Bounded evidence-driven reproduction with version/import/file state; respect prior negative lock probes and distinguish non-recurrence from explanation. Do not suppress CRS tests. |
+| **TEST-04** | TEST / deferred configured-advisor review | [#73: advisor review](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/73). | Human-owned account/authentication decisions; actual configured-service review bound to the candidate when available. No auth/key/model/billing/hook changes or review claim from service errors. |
+| **REL-04 / REL-01** | Release / separate future authorization | [#74: 0.4.0 release decision and execution](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/74). | Explicit tag/release/attachment/registry authorization after exact-main readiness; verify destination bytes and retain rollback. Main preparation does not authorize publication or deployment. |
+| **ACT-MATH-58** | ACT/MATH / separate future feature | [Existing #58: reviewed skew/circulation/Helmholtz constructs](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/58). | Scope actual numerical APIs, transition/rate/current conventions and independent mathematical fixtures before notation-bridge symbol binding. Current diagnostics/internal symmetrization do not establish those APIs. Not a required 0.4.0 dependency. |
+
+Implemented preparation changes remain recorded in [CHANGELOG.md](CHANGELOG.md);
+do not reopen completed work without a concrete source/behavior finding.
+The older standing rows below retain their historical evidence. The current
+CODE-01 next step is R04-05; the current release boundary is R04-07/REL-04,
+not the historical 0.2.x/0.3.x actions described in REL-01.
 
 ### Major — external resources or release-scale decisions
 

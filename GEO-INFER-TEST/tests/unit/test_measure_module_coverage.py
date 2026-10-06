@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import runpy
 import subprocess
 import sys
 import os
+import tomllib
 from pathlib import Path
 
 import psutil
@@ -73,6 +75,72 @@ def write_fake_reports(command: list[str], junit_text: str, coverage: float) -> 
     Path(report_args[0].removeprefix("--cov-report=json:")).write_text(
         json.dumps({"totals": {"percent_covered": coverage}}), encoding="utf-8"
     )
+
+
+def coverage_configuration_paths() -> list[Path]:
+    """Use the tracked lock's explicit workspace inventory for collection."""
+    root_configuration = REPO_ROOT / "pyproject.toml"
+    root_name = tomllib.loads(root_configuration.read_text())["project"]["name"]
+    members = tomllib.loads((REPO_ROOT / "uv.lock").read_text())["manifest"]["members"]
+    candidates = [root_configuration] + [
+        REPO_ROOT / name.upper() / "pyproject.toml"
+        for name in sorted(members)
+        if name != root_name
+    ]
+    return [
+        path
+        for path in candidates
+        if "run" in tomllib.loads(path.read_text()).get("tool", {}).get("coverage", {})
+    ]
+
+
+@pytest.mark.parametrize(
+    "configuration",
+    coverage_configuration_paths(),
+    ids=lambda path: str(path.relative_to(REPO_ROOT)),
+)
+@pytest.mark.parametrize(
+    "filename", ["test_discoverer.py", "test_orchestrator.py", "test_runner.py"]
+)
+def test_root_and_member_coverage_report_traces_owning_test_named_modules(
+    tmp_path, monkeypatch, configuration, filename
+):
+    """Owning source is measured even when its filename starts with ``test_``."""
+    from coverage import Coverage
+
+    module_root = tmp_path / "GEO-INFER-SAMPLE"
+    source = module_root / "src" / "geo_infer_sample" / filename
+    test = module_root / "tests" / filename
+    code = (
+        "def selected_modules(enabled):\n"
+        "    return [name for name, selected in enabled.items() if selected]\n"
+        "\n"
+        "result = selected_modules({'SPACE': True, 'TIME': False})\n"
+    )
+    for path in (source, test):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(code, encoding="utf-8")
+
+    monkeypatch.chdir(module_root)
+    parent_collector = Coverage.current()
+    collector = Coverage(
+        config_file=str(configuration),
+        data_file=str(tmp_path / "trace.coverage"),
+        source=[str(module_root)],
+    )
+    collector.start()
+    try:
+        assert runpy.run_path(str(source))["result"] == ["SPACE"]
+        assert runpy.run_path(str(test))["result"] == ["SPACE"]
+    finally:
+        collector.stop()
+
+    assert Coverage.current() is parent_collector
+    collector.save()
+    data = collector.get_data()
+    assert set(data.measured_files()) == {str(source.resolve())}
+    assert set(data.lines(str(source.resolve()))) == {1, 2, 4}
+    assert data.lines(str(test.resolve())) is None
 
 
 def test_junit_failure_names_extracts_failures_and_errors(tmp_path):

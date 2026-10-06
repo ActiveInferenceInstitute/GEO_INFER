@@ -279,6 +279,44 @@ def test_manuscript_jobs_use_registered_root_profiles_and_receipts():
     assert upload["with"]["if-no-files-found"] == "error"
 
 
+def test_manuscript_retains_bounded_producer_evidence_before_later_gates():
+    """A render failure must preserve the producer's actual attribution tier."""
+    steps = _load("ci.yml")["jobs"]["manuscript"]["steps"]
+    names = [step.get("name", "") for step in steps]
+    retained = names.index("Retain generated research evidence")
+    validated = names.index("Validate bounded research evidence custody")
+    custody = names.index("Retain research custody result")
+    assert names.index("Generate research artifacts") < validated < custody < retained
+    assert retained < names.index("Check published artifacts converge")
+    validation = steps[validated]
+    assert validation["id"] == "research_evidence"
+    assert validation["if"] == "always()"
+    assert "validate_research_evidence.py" in validation["run"]
+    assert (
+        "--receipt-path .geo-infer-test-results/research-custody.json"
+        in validation["run"]
+    )
+    assert steps[custody]["if"] == "always()"
+    assert (
+        steps[custody]["with"]["path"]
+        == ".geo-infer-test-results/research-custody.json"
+    )
+    assert steps[custody]["with"]["if-no-files-found"] == "error"
+    upload = steps[retained]
+    assert (
+        upload["if"]
+        == "${{ always() && steps.research_evidence.outcome == 'success' }}"
+    )
+    assert upload["with"]["if-no-files-found"] == "error"
+    assert set(upload["with"]["path"].splitlines()) == {
+        "output/data/research_manifest.json",
+        "output/data/research_inventory.json",
+        "output/data/research_verification.json",
+        "output/data/manuscript_variables.json",
+        "output/figures/figure_registry.json",
+    }
+
+
 def test_standalone_import_probes_install_locked_process_dependency():
     steps = _load("import-probes.yml")["jobs"]["probes"]["steps"]
     resolve = next(step["run"] for step in steps if step.get("id") == "locked_tools")

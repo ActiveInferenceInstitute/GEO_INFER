@@ -85,7 +85,6 @@ geo-infer-test = { workspace = true }
 source = ["src"]
 omit = [
     "*/tests/*",
-    "*/test_*",
     "*/__pycache__/*",
 ]
 

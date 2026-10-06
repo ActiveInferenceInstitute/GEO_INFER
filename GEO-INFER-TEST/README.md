@@ -39,6 +39,7 @@ Unified testing framework for quality assurance across all GEO-INFER modules wit
 - `validate_model_contracts.py`
 - `validate_packaging.py`
 - `validate_repo_contracts.py`
+- `validate_research_evidence.py`
 - `validate_skills.py`
 - `validate_test_contracts.py`
 - `validate_wheel_receipt.py`

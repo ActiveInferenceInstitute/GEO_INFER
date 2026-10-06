@@ -10,7 +10,7 @@ import math
 import os
 import uuid
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -171,7 +171,7 @@ class GeoInferTestRunner:
         self._command_results = {}
         start_time = time.monotonic()
         self._deadline = start_time + self.config.timeout_seconds
-        if not self.discovered_tests:
+        if not any(self.discovered_tests.values()):
             raise ValueError("No tests discovered for the requested modules/categories")
 
         if self.log_integration:
@@ -198,51 +198,116 @@ class GeoInferTestRunner:
         """Execute tests in parallel using a thread pool.
 
         Each test runs in its own subprocess (``_run_pytest_test``), so
-        concurrent execution is safe. ``as_completed`` applies a global wall
-        clock deadline instead of recharging the full per-test timeout for
-        every future, and worker failures are recorded as ERROR results
-        instead of being silently dropped from the report.
+        concurrent execution is safe. Admission is bounded by ``max_workers``
+        and subprocesses share the run deadline. Worker failures are recorded
+        as ERROR results instead of being silently dropped from the report.
         """
         reset_process_cancellation()
         executor = ThreadPoolExecutor(max_workers=self.config.max_workers)
-        futures = {
-            executor.submit(self._execute_single_test, module, test): (module, test)
+        selections = iter(
+            (module, test)
             for module, tests in self.discovered_tests.items()
             for test in tests
-        }
+        )
+        futures = {}
+        abort_requested = {}
+        stopped = False
+
+        def collect(future, module, test):
+            try:
+                result = future.result()
+            except BaseException as exc:
+                result = TestResult(
+                    uuid.uuid4().hex,
+                    module,
+                    test,
+                    "ERROR",
+                    0.0,
+                    str(exc) or type(exc).__name__,
+                    {
+                        "error": str(exc) or type(exc).__name__,
+                        "exception_type": type(exc).__name__,
+                    },
+                )
+            if result is None:
+                result = TestResult(
+                    uuid.uuid4().hex,
+                    module,
+                    test,
+                    "ERROR",
+                    0.0,
+                    "Worker returned no test result",
+                    {"error": "Worker returned no test result"},
+                )
+            if future in abort_requested:
+                # Record the stop request without replacing the worker's
+                # actual outcome or claiming it caused an unrelated error.
+                result.details["abort_requested"] = abort_requested[future]
+            self.test_results.append(result)
+            return result
+
+        def stop(reason):
+            nonlocal stopped
+            stopped = True
+            for pending in futures:
+                if not pending.cancel() and not pending.done():
+                    abort_requested[pending] = reason
+            terminate_running_processes()
+
         try:
-            for future in as_completed(futures):
+            while True:
+                # Bound admitted work as well as active threads. Refill only
+                # after a completion so fail-fast cannot queue the entire suite.
+                while len(futures) < self.config.max_workers:
+                    selection = next(selections, None)
+                    if selection is None:
+                        break
+                    module, test = selection
+                    futures[
+                        executor.submit(self._execute_single_test, module, test)
+                    ] = (module, test)
+                if not futures:
+                    break
+                future = next(as_completed(futures))
                 module, test = futures[future]
-                try:
-                    result = future.result()
-                except Exception as exc:
-                    result = TestResult(
-                        uuid.uuid4().hex,
-                        module,
-                        test,
-                        "ERROR",
-                        0.0,
-                        str(exc),
-                        {"error": str(exc)},
-                    )
-                if result is not None:
-                    self.test_results.append(result)
+                result = collect(future, module, test)
+                del futures[future]
                 if (
                     self.config.fail_fast
                     and result is not None
                     and result.status != "PASS"
                 ):
-                    for pending in futures:
-                        pending.cancel()
+                    stop("fail_fast")
                     break
-        except KeyboardInterrupt:
-            for pending in futures:
-                pending.cancel()
-            terminate_running_processes()
+        except BaseException as exc:
+            if not stopped:
+                stop(
+                    "interruption"
+                    if isinstance(exc, KeyboardInterrupt)
+                    else "runner_error"
+                )
             raise
         finally:
-            executor.shutdown(wait=True, cancel_futures=True)
+            cleanup_interruption = None
+            while True:
+                try:
+                    executor.shutdown(wait=True, cancel_futures=True)
+                    # An interrupted thread join can appear complete before
+                    # its worker exits. Futures also fence worker-owned state.
+                    wait([future for future in futures if not future.cancelled()])
+                    break
+                except (KeyboardInterrupt, SystemExit) as exc:
+                    cleanup_interruption = exc
+                    if not stopped:
+                        stop("interruption")
+            # Retain every admitted worker that actually ran, including
+            # receipts and exceptions produced during stop, before reuse.
+            for future, (module, test) in futures.items():
+                if not future.cancelled():
+                    collect(future, module, test)
             reset_process_cancellation()
+            if cleanup_interruption is not None:
+                raise cleanup_interruption
 
     def _run_tests_sequential(self) -> None:
         """Execute tests sequentially."""
@@ -357,6 +422,7 @@ class GeoInferTestRunner:
                 "receipt": result.receipt,
                 "testcases": result.executed,
                 "returncode": result.returncode,
+                "command_status": result.status,
             }
             if result
             else {}
@@ -477,6 +543,7 @@ class GeoInferTestRunner:
 
         # Temporarily modify config to test only this module
         original_modules = self.config.modules_to_test
+        original_discovered = self.discovered_tests
         self.config.modules_to_test = [module]
 
         try:
@@ -487,6 +554,7 @@ class GeoInferTestRunner:
         finally:
             # Restore original configuration
             self.config.modules_to_test = original_modules
+            self.discovered_tests = original_discovered
 
     def run_cross_module_tests(self) -> dict[str, Any]:
         """Run canonical integration discovery without losing nested test roots."""

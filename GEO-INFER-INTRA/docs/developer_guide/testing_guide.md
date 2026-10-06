@@ -110,17 +110,43 @@ SHAs. The
 checkout has read-only repository permissions and does not persist credentials.
 On every outcome, `.geo-infer-test-results/` is uploaded as a short-lived CI
 artifact when available; this includes the unified summary and JUnit reports
-needed to diagnose a failure. Deleted Python paths are excluded from the
+needed to diagnose a failure. The manuscript job separately retains the five
+producer JSON records (manifest, inventory, verification, variables and figure
+registry) before convergence or rendering gates. The custody validator requires
+all five regular files, strict JSON, at most 5 MiB per file and 20 MiB total.
+It rejects root, directory or file replacement detected during validation.
+The bounded custody receipt is retained on every outcome; source records upload
+only after custody validation succeeds. Custody success preserves producer
+failure records and does not establish freshness or verification success.
+The validator requires POSIX no-follow filesystem operations; unsupported
+platforms fail with sanitized diagnostics. Keep producer output quiescent through
+validation and upload.
+These records identify the
+actual source and verification tier; hosted default-tier evidence does not
+establish full eleven-group local acceptance. Deleted Python paths are excluded from the
 changed-file formatter/linter step because they are not present in the
 checkout. Changed-file and repository-wide Ruff checks use the root lint
 configuration; `ruff format --check` is the formatting gate. Coverage change
 selection includes deleted source/test paths, dependency files and shared
 configuration. Coverage uses the same registered test roots as execution.
+Root and member coverage configurations exclude test directories while measuring
+owning production modules, including source files named `test_discoverer.py`,
+`test_orchestrator.py`, or `test_runner.py`. Their names do not make them test
+fixtures.
 
 When local and hosted results differ, first compare Python versions and the
 native-only dependency exclusions, then inspect the uploaded summary and
 JUnit artifacts. Do not relax strict warnings, skips, empty selections, or
 reproducibility gates to accommodate a single environment difference.
+
+The separate [PLACE Windows workflow](../../../.github/workflows/place-download-windows.yml)
+uses native Python 3.11/3.12 with locked PLACE `dev` and `integrations` extras and
+no default groups. It runs both complete regional worker/acquisition test files,
+including loopback deadlines, termination, batch rollback and captured-source
+replay, through canonical TEST execution. It retains platform, import, dependency,
+worker and receipt evidence on every outcome. This editable-package profile
+does not cover Cascadia/full extras or installed wheels; native acceptance
+requires the actual hosted results and artifact audit.
 
 ## Test categories
 
@@ -152,12 +178,27 @@ JUnit reports fail pytest attempts; ordinary validators record their failure
 without requiring JUnit. Planned empty module selections are recorded, while an
 entirely empty lane fails. Assertion failures are not automatically retried.
 
+The programmatic `GeoInferTestRunner` rejects empty selections and restores its
+discovered inventory after a module-scoped run. Parallel admission is bounded by
+`max_workers`; fail-fast cancels pending work and terminates active commands.
+Reports account for selected tests that did not run.
+Repeated interruption during shutdown keeps cancellation asserted until admitted
+workers finish and their outcomes are retained, then propagates the interruption.
+Cancellation uses a shared process fleet within an interpreter; run independent
+runner instances in separate processes.
+
 Monotonic deadlines bound the command and ownership census. Cleanup terminates
 and waits for descendants that inherit the launch environment, including detached
 children. Native POSIX inspection supports both BSD and GNU `ps`; Windows uses
 process identities. Console text escapes characters a restricted encoding cannot
 represent; retained UTF-8 artifacts preserve the original decoded output. Read
 those artifacts with `encoding="utf-8"` independently of the machine's locale.
+
+Receipts include `process_evidence` for observed target completion and return
+code, census calls and elapsed time, cleanup time and failure phase. The separate
+`timing` fields measure setup, process, validation and artifact work; artifact time
+excludes receipt serialization. A zero target exit cannot make a census timeout
+pass. Census failures propagate without retrying the target observation loop.
 
 Temporary Git fixtures override inherited `core.fsmonitor` configuration so they
 cannot launch persistent user-configured monitor daemons. This isolation applies

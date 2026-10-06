@@ -89,7 +89,6 @@ exclude = ["tests*"]
 source = ["src"]
 omit = [
     "*/tests/*",
-    "*/test_*",
     "*/__pycache__/*",
 ]
 

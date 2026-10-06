@@ -1,0 +1,296 @@
+name: PLACE native Windows downloads
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  place-download:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12"]
+    env:
+      UV_PYTHON: ${{ matrix.python }}
+      UV_PYTHON_DOWNLOADS: never
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      NUMEXPR_NUM_THREADS: "1"
+      MPLBACKEND: Agg
+      PLACE_EVIDENCE: place-windows-evidence
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.10.7"
+          enable-cache: false
+      - name: Bind platform, candidate, lock and source inventory
+        shell: python
+        run: |
+          import hashlib
+          import json
+          import os
+          import platform
+          import shutil
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          root = Path.cwd()
+          evidence = root / os.environ["PLACE_EVIDENCE"]
+          evidence.mkdir(exist_ok=False)
+          paths = [Path(p) for p in subprocess.check_output(
+              ["git", "ls-files"], text=True, timeout=30).splitlines()]
+          inventory = {p.as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                       for p in paths if p.is_file()}
+          data = dict(platform=platform.platform(), os_name=os.name,
+                      python=sys.version, executable=sys.executable,
+                      revision=subprocess.check_output(
+                          ["git", "rev-parse", "HEAD"], text=True, timeout=30).strip(),
+                      run_id=os.environ["GITHUB_RUN_ID"],
+                      run_attempt=os.environ["GITHUB_RUN_ATTEMPT"],
+                      lock_sha256=inventory["uv.lock"], inventory=inventory)
+          (evidence / "candidate.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
+          shutil.copyfile("uv.lock", evidence / "uv.lock")
+          for name in ("pyproject.toml", "GEO-INFER-PLACE/pyproject.toml",
+                       "GEO-INFER-SPACE/pyproject.toml", "GEO-INFER-TIME/pyproject.toml",
+                       "GEO-INFER-TEST/pyproject.toml"):
+              target = evidence / "metadata" / name
+              target.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(name, target)
+          assert os.name == "nt", data
+
+      - name: Install the declared locked PLACE acceptance profile
+        # PLACE base -> SPACE/TIME; PLACE integrations -> TEST base tooling.
+        # Extras belong to the selected package; sibling extras/groups are not selected.
+        # This is neither Cascadia/full extras nor installed-wheel acceptance.
+        timeout-minutes: 15
+        run: >-
+          uv sync --locked --package geo-infer-place
+          --extra dev --extra integrations --no-default-groups
+
+      - name: Verify isolated imports and retain the installed inventory
+        shell: pwsh
+        run: |
+          @'
+          import hashlib
+          import importlib
+          import importlib.metadata
+          import json
+          import os
+          import platform
+          import sys
+          from pathlib import Path
+
+          root = Path.cwd()
+          evidence = root / os.environ["PLACE_EVIDENCE"]
+          data = dict(platform=platform.platform(), python=sys.version,
+                      executable=sys.executable, imports={},
+                      distributions=sorted(
+                          [dict(name=d.metadata["Name"], version=d.version)
+                           for d in importlib.metadata.distributions()], key=lambda d: d["name"]))
+          try:
+              assert os.name == "nt"
+              for name in ("geo_infer_place.core.regional_layers",
+                           "geo_infer_place.core._regional_download_worker",
+                           "geo_infer_place.core.bioregion_visualization",
+                           "geo_infer_space", "geo_infer_time", "geo_infer_test.execution",
+                           "geo_infer_test.selection", "geo_infer_test.testing",
+                           "pytest", "requests", "shapely", "h3", "folium", "yaml", "psutil"):
+                  module = importlib.import_module(name)
+                  origin = Path(module.__file__).resolve()
+                  data["imports"][name] = dict(origin=str(origin),
+                      sha256=hashlib.sha256(origin.read_bytes()).hexdigest())
+                  if name.startswith("geo_infer_"):
+                      owner = "GEO-INFER-" + name.split(".")[0].removeprefix("geo_infer_").upper()
+                      assert origin.is_relative_to(root / owner / "src"), (name, origin)
+              candidate = json.loads((evidence / "candidate.json").read_text(encoding="utf-8"))
+              assert hashlib.sha256(Path("uv.lock").read_bytes()).hexdigest() == candidate["lock_sha256"]
+              data["status"] = "PASS"
+          finally:
+              (evidence / "runtime.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
+          '@ | .venv\Scripts\python.exe -I -
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Prepare loopback guard and real worker observations
+        shell: python
+        run: |
+          import os
+          from pathlib import Path
+
+          evidence = Path(os.environ["PLACE_EVIDENCE"]).resolve()
+          plugin = r'''
+          import hashlib
+          import ipaddress
+          import json
+          import os
+          import subprocess
+          import time
+          from pathlib import Path
+          from urllib.parse import urlsplit
+
+          import pytest
+          import requests
+          from geo_infer_place.core import regional_layers
+
+          WORKERS = []
+          ORIGINAL_POPEN = subprocess.Popen
+          ORIGINAL_SEND = requests.sessions.Session.send
+          ORIGINAL_DOWNLOAD = regional_layers._download
+          LOG = Path(os.environ["PLACE_EVIDENCE"]) / "workers.jsonl"
+          NODEID = None
+
+          def loopback(url):
+              parts = urlsplit(url)
+              assert parts.scheme == "http" and ipaddress.ip_address(parts.hostname).is_loopback, url
+
+          def send(session, request, **kwargs):
+              loopback(request.url)
+              return ORIGINAL_SEND(session, request, **kwargs)
+
+          def popen(args, *positional, **kwargs):
+              is_worker = isinstance(args, (list, tuple)) and any(
+                  Path(str(arg)).name == "_regional_download_worker.py" for arg in args)
+              if is_worker:
+                  assert args[1] == "-I", args
+                  loopback(args[3])
+              process = ORIGINAL_POPEN(args, *positional, **kwargs)
+              if is_worker:
+                  WORKERS.append(process)
+              return process
+
+          def download(*args, **kwargs):
+              start = time.monotonic()
+              index = len(WORKERS)
+              event = dict(test=NODEID, start_monotonic=start)
+              try:
+                  result = ORIGINAL_DOWNLOAD(*args, **kwargs)
+                  event.update(status="returned", output_bytes=len(result),
+                               output_sha256=hashlib.sha256(result).hexdigest())
+                  return result
+              except Exception as exc:
+                  event.update(status="raised", error_type=type(exc).__name__)
+                  raise
+              finally:
+                  event.update(elapsed_seconds=time.monotonic() - start, workers=[
+                      dict(command=list(p.args), pid=p.pid, returncode=p.poll(),
+                           stdout_closed=p.stdout.closed, stderr_closed=p.stderr.closed)
+                      for p in WORKERS[index:]])
+                  with LOG.open("a", encoding="utf-8") as out:
+                      out.write(json.dumps(event, allow_nan=False) + "\n")
+
+          def pytest_configure(config):
+              subprocess.Popen = popen
+              requests.sessions.Session.send = send
+              regional_layers._download = download
+
+          def pytest_runtest_setup(item):
+              global NODEID
+              NODEID = item.nodeid
+
+          def pytest_sessionfinish(session, exitstatus):
+              if session.config.option.collectonly:
+                  return
+              # Observations never replace the real supervision/reaping path.
+              assert WORKERS, "No real worker ran"
+              assert all(p.poll() is not None and p.stdout.closed and p.stderr.closed for p in WORKERS)
+          '''
+          # Keep the temporary pytest plugin outside tracked source.
+          import textwrap
+          (evidence / "place_windows_observer.py").write_text(textwrap.dedent(plugin), encoding="utf-8")
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as out:
+              out.write(f"PYTHONPATH={evidence}\n")
+              out.write("PYTEST_PLUGINS=pytest_asyncio.plugin,place_windows_observer\n")
+
+      - name: Run canonical worker, batch and exact offline replay acceptance
+        timeout-minutes: 7
+        env:
+          NO_PROXY: "127.0.0.1,::1"
+          HTTP_PROXY: ""
+          HTTPS_PROXY: ""
+          ALL_PROXY: ""
+        # No -k exclusions, platform mocks, skip accommodations or external downloads.
+        # The observer rejects non-loopback requests and actual worker targets.
+        run: >-
+          .venv\Scripts\python.exe GEO-INFER-TEST/run_unified_tests.py
+          --paths GEO-INFER-PLACE/tests/integration/test_regional_download_worker.py
+          GEO-INFER-PLACE/tests/integration/test_regional_layer_acquisition.py
+          --workers 1 --timeout 300 --show-failures
+          --results-dir place-windows-evidence/receipts
+
+      - name: Require fresh canonical custody and real worker evidence
+        shell: python
+        run: |
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          evidence = Path(os.environ["PLACE_EVIDENCE"])
+          receipts = list((evidence / "receipts").glob("runs/*/attempts/*/receipt.json"))
+          assert len(receipts) == 1, receipts
+          receipt = json.loads(receipts[0].read_text(encoding="utf-8"))
+          assert receipt["success"] and receipt["status"] == "PASS" and receipt["executed"] > 0
+          candidate = json.loads((evidence / "candidate.json").read_text(encoding="utf-8"))
+          assert receipt["custody_complete"] and receipt["revision"] == candidate["revision"]
+          assert receipt["lock_sha256"] == candidate["lock_sha256"]
+          for name in ("junit.xml", "selection.json", "stdout.log", "stderr.log"):
+              artifact = receipts[0].parent / name
+              assert artifact.is_file(), name
+              assert hashlib.sha256(artifact.read_bytes()).hexdigest() == receipt["artifacts"][name], name
+          selection = json.loads((receipts[0].parent / "selection.json").read_text(encoding="utf-8"))
+          assert not selection["unaccounted"]
+          assert any("test_captured_sources_rebuild_exact_layer_bytes" in node for node in selection["executed"])
+          events = [json.loads(line) for line in (evidence / "workers.jsonl").read_text(encoding="utf-8").splitlines()]
+          workers = [worker for event in events for worker in event["workers"]]
+          assert workers and all(worker["returncode"] is not None and worker["stdout_closed"]
+                                 and worker["stderr_closed"] for worker in workers)
+          for case in ("test_parent_deadline_stops_and_reaps_real_worker[drip]",
+                       "test_parent_deadline_stops_and_reaps_real_worker[headers]",
+                       "test_batch_deadline_preserves_existing_artifacts_after_prior_download"):
+              assert any(case in event["test"] and event["workers"] for event in events), case
+
+      - name: Seal retained evidence and recheck lock custody
+        if: always()
+        shell: python
+        run: |
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          evidence = Path(os.environ["PLACE_EVIDENCE"])
+          candidate = json.loads((evidence / "candidate.json").read_text(encoding="utf-8"))
+          current = hashlib.sha256(Path("uv.lock").read_bytes()).hexdigest()
+          files = {p.relative_to(evidence).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                   for p in evidence.rglob("*") if p.is_file() and "__pycache__" not in p.parts}
+          (evidence / "artifact-inventory.json").write_text(
+              json.dumps(dict(files=files, lock_unchanged=current == candidate["lock_sha256"]), indent=2),
+              encoding="utf-8")
+          assert current == candidate["lock_sha256"], "Lock changed during acceptance"
+
+      - name: Retain this job's evidence including failed attempts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: place-windows-${{ matrix.python }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: place-windows-evidence/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14

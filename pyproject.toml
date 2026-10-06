@@ -373,7 +373,6 @@ filterwarnings = ["error"]
 source = ["GEO-INFER-*/src"]
 omit = [
     "*/tests/*",
-    "*/test_*",
     "*/__pycache__/*",
     "*/venv/*",
     "*/env/*",
