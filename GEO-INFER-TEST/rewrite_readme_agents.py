@@ -1095,6 +1095,7 @@ uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check
 
 - Use root `pyproject.toml`, `uv.lock`, and `.python-version` as the shared uv environment contract.
 - Preserve `uv.lock` LF bytes through root `.gitattributes`; receipt custody uses raw file hashes on every platform.
+- Preserve captured Cascadia publisher bytes and LF replay outputs through the exact paths in root `.gitattributes`; do not normalize hash-bound archives.
 - Sync the shared workspace with `uv sync --all-packages --all-extras --all-groups`.
 - Keep module behavior in the owning `GEO-INFER-*` package under `src/`; keep scripts and examples as orchestration surfaces.
 - Treat `manuscript/generate_research_artifacts.py` as the only producer of manuscript variables, figure captions, figure registries, and resolved manuscript copies; never hand-edit ignored `output/`.

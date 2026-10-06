@@ -1,2 +1,13 @@
 # Bind receipt hashes to the same lock bytes on POSIX and Windows checkouts.
 /uv.lock text eol=lf
+
+# Preserve captured publisher bytes used by regional source SHA-256 contracts.
+/GEO-INFER-PLACE/locations/cascadia/config/cascadia_volcanoes.source.json -text
+/GEO-INFER-PLACE/locations/cascadia/config/cascadia_watersheds.source.json -text
+/GEO-INFER-PLACE/locations/cascadia/config/cascadia_tectonics.source.json -text
+/GEO-INFER-PLACE/locations/cascadia/config/cascadia_tectonics.metadata.xml -text
+
+# Exact offline replay emits these normalized layer bytes with LF endings.
+/GEO-INFER-PLACE/locations/cascadia/config/cascadia_volcanoes.geojson text eol=lf
+/GEO-INFER-PLACE/locations/cascadia/config/cascadia_major_watersheds.geojson text eol=lf
+/GEO-INFER-PLACE/locations/cascadia/config/cascadia_subduction_zone.geojson text eol=lf

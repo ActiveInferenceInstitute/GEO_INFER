@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -27,25 +28,80 @@ CONFIG = Path(__file__).resolve().parents[2] / "locations/cascadia/config"
 
 
 def test_captured_sources_rebuild_exact_layer_bytes(tmp_path):
-    receipt = json.loads((CONFIG / "cascadia_layers.provenance.json").read_text())
+    _assert_captured_replay(CONFIG, tmp_path)
+
+
+def _assert_captured_replay(config, output_dir):
+    receipt = json.loads(
+        (config / "cascadia_layers.provenance.json").read_text(encoding="utf-8")
+    )
     total = 0
     for kind, spec in SOURCES.items():
-        raw = (CONFIG / spec["raw"]).read_bytes()
-        total += len(raw) + (CONFIG / spec["output"]).stat().st_size
+        raw = (config / spec["raw"]).read_bytes()
+        total += len(raw) + (config / spec["output"]).stat().st_size
         assert (
             hashlib.sha256(raw).hexdigest() == receipt["layers"][kind]["source_sha256"]
         )
-        shutil.copy2(CONFIG / spec["raw"], tmp_path / spec["raw"])
+        shutil.copy2(config / spec["raw"], output_dir / spec["raw"])
     assert total < MAX_BYTES
-    rebuilt = acquire_regional_layers(tmp_path, offline=True)
+    rebuilt = acquire_regional_layers(output_dir, offline=True)
     for kind, spec in SOURCES.items():
-        assert (tmp_path / spec["output"]).read_bytes() == (
-            CONFIG / spec["output"]
+        assert (output_dir / spec["output"]).read_bytes() == (
+            config / spec["output"]
         ).read_bytes()
         assert (
             rebuilt["layers"][kind]["output_sha256"]
             == receipt["layers"][kind]["output_sha256"]
         )
+
+
+def test_autocrlf_checkout_preserves_captured_hashes_and_exact_replay(tmp_path):
+    root = Path(__file__).resolve().parents[3]
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+
+    def git(*args):
+        return subprocess.run(
+            ["git", "-c", "core.fsmonitor=false", "-C", str(checkout), *args],
+            check=True,
+            capture_output=True,
+        )
+
+    git("init")
+    git("config", "core.autocrlf", "false")
+    git("config", "core.eol", "lf")
+    shutil.copy2(root / ".gitattributes", checkout / ".gitattributes")
+    config = checkout / CONFIG.relative_to(root)
+    config.mkdir(parents=True)
+    metadata = json.loads(
+        (CONFIG / "cascadia_regional_source_metadata.json").read_text(encoding="utf-8")
+    )["tectonics"]
+    names = [spec[key] for spec in SOURCES.values() for key in ("raw", "output")]
+    names += [metadata["metadata_file"], "cascadia_layers.provenance.json"]
+    for name in names:
+        shutil.copy2(CONFIG / name, config / name)
+    control = checkout / "unprotected.txt"
+    control.write_bytes(b"checkout control\n")
+    git("add", ".")
+    git("config", "core.autocrlf", "true")
+    git("config", "core.eol", "crlf")
+    for name in names:
+        (config / name).unlink()
+    control.unlink()
+    git("checkout-index", "--all", "--force")
+    assert control.read_bytes() == b"checkout control\r\n"
+    protected_names = [
+        name for name in names if name != "cascadia_layers.provenance.json"
+    ]
+    for name in protected_names:
+        assert (config / name).read_bytes() == (CONFIG / name).read_bytes(), name
+    assert (
+        hashlib.sha256((config / metadata["metadata_file"]).read_bytes()).hexdigest()
+        == metadata["metadata_sha256"]
+    )
+    replay = tmp_path / "replay"
+    replay.mkdir()
+    _assert_captured_replay(config, replay)
 
 
 @pytest.mark.parametrize("kind", list(SOURCES))
@@ -64,14 +120,30 @@ def test_real_geometry_ids_bounds_and_renderer_loader(kind):
     assert not data["provenance"]["whole_cascadia_bioregion"]
 
 
-def test_real_renderer_reports_only_missing_bioregion_boundary(tmp_path):
+def test_real_renderer_reports_only_missing_bioregion_boundary(tmp_path, monkeypatch):
+    original_open = Path.open
+
+    def cp1252_open(
+        path, mode="r", buffering=-1, encoding=None, errors=None, newline=None
+    ):
+        # Model the Windows text default at the actual Path IO boundary.
+        if "b" not in mode and encoding in (None, "locale"):
+            encoding = "cp1252"
+        return original_open(path, mode, buffering, encoding, errors, newline)
+
+    monkeypatch.setattr(Path, "open", cp1252_open)
     output = tmp_path / "regional.html"
     create_bioregion_map(CONFIG, {}, output, allow_missing_layers=True)
-    html = output.read_text()
+    with pytest.raises(UnicodeDecodeError):
+        output.read_text()
+    html = output.read_text(encoding="utf-8")
+    assert "🌲 Cascadia Bioregion — Ecological Overview" in html
     assert "Cascadia Subduction Zone" in html and "Major Watersheds" in html
     assert "Mount St. Helens" in html and "Willamette" in html
     assert "Unavailable layers: cascadia_bioregion_boundary.geojson" in html
-    manifest = json.loads(output.with_suffix(".layers.json").read_text())
+    manifest = json.loads(
+        output.with_suffix(".layers.json").read_text(encoding="utf-8")
+    )
     assert manifest["status"] == "partial"
     assert sum(item["status"] == "loaded" for item in manifest["layers"].values()) == 3
     assert "37%" not in html

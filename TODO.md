@@ -94,6 +94,33 @@ an explicit LF attribute and real Git checkout regression preserve raw lock
 custody. The updated workflow/metadata suite passed 68 tests. Fresh native receipt
 hashes must still be checked on the renewed candidate.
 
+The next whole TEST attempt completed all 1,953 selected cases with source
+unchanged and all 111 policy traces retained: 1,951 passed and two deadline/census
+controls failed. Raw coverage was 2,921/3,325 = 87.84962%, above the unchanged
+85% floor, but failed tests still reject the measurement. The controls assumed
+the child exited before its first 250 ms pipe poll. Their correction observes
+actual target completion, distinguishes preliminary/final/cleanup scans and
+forces a real incomplete poll; production deadlines remain unchanged. All four
+focused cases passed canonical receipt acceptance. Fresh independent review
+accepted the repair and confirmed that a retry mutation fails both parameter
+cases. Renewed whole TEST proof remains required.
+
+The next native Windows PLACE legs reached all 51 cases on Python 3.11/3.12:
+48 passed and three failed on converted fixture bytes or default text decoding.
+Both sealed artifacts reconciled with no hash errors and the exact raw lock;
+all ten observed workers per leg were reaped with closed streams. Exact archived
+source attributes and LF replay attributes preserve the existing hash contracts;
+the renderer test now reads UTF-8 explicitly and exercises a cp1252 default.
+Local testcases passed, but canonical acceptance rejected an owned-process leak
+in the new temporary Git checkout regression. A focused diagnostic identified
+the inherited Git fsmonitor setting: the test started an owned background daemon.
+Command-local fsmonitor disabling in this temporary checkout preserved real
+autocrlf conversion and passed canonical acceptance with no owned processes or
+daemon artifacts. Final local locked-profile acceptance passed all 52 cases
+with sealed receipt hashes and all ten observed workers reaped with closed
+streams. Fresh final independent review accepted the scoped repair; renewed
+native Windows acceptance remains required.
+
 The [readiness tracker (#61)](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/61)
 links the complete next-work graph. Dependencies govern completion; preparation
 may overlap after a stable source freeze with bounded resources and explicit

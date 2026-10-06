@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Propagate ownership census timeouts separately from target pipe polling and
   retain target, census, cleanup and receipt timing evidence. Avoid regex scans
   of token-negative native rows while preserving exact ownership verification.
+- Preserve exact Cascadia publisher bytes and LF replay outputs through Windows
+  checkout, and exercise explicit UTF-8 renderer reads under a cp1252 default.
+- Synchronize deadline regression injections with real target completion and
+  distinguish preliminary, final and cleanup scans, including a real forced
+  incomplete poll without changing production deadlines.
 - Reject empty programmatic runner selections, restore discovery after scoped
   runs, and bound parallel admission so fail-fast stops queued work. Retain
   admitted worker outcomes through repeated shutdown interruption before reuse.
