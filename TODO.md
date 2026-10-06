@@ -121,6 +121,17 @@ with sealed receipt hashes and all ten observed workers reaped with closed
 streams. Fresh final independent review accepted the scoped repair; renewed
 native Windows acceptance remains required.
 
+On clean candidate `69ed0121601f026bc16debbe736d657199468de9`, whole TEST
+passed all 1,954 cases with 2,922/3,325 = 87.879699% raw coverage, all 111 policy
+traces, historical inventory retention and unchanged source. Both native Windows
+PLACE legs also passed. Their artifact reconciliation remains separate. Full CI
+exposed one forced-poll process-control assertion requiring a remaining budget
+strictly below the original budget; the preliminary scan can occur before the
+monotonic clock advances. Its test-only correction permits equality while still
+rejecting budget extension. All four focused cases passed canonical acceptance.
+Fresh independent review accepted the scoped bound and confirmed prior retry
+mutation evidence still applies. Renewed exact-candidate acceptance remains required.
+
 The [readiness tracker (#61)](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/61)
 links the complete next-work graph. Dependencies govern completion; preparation
 may overlap after a stable source freeze with bounded resources and explicit

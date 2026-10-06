@@ -1858,7 +1858,9 @@ class _CensusPhaseProbe:
         assert self.scans[-1]["completed"]
         assert evidence["census_calls"] == len(preliminary) + 1
         assert len(self.scans) == len(preliminary) + 2
-        assert all(0 < s["timeout"] < attempt_budget for s in self.scans[:-1])
+        # A preliminary poll can finish before the monotonic clock advances.
+        # Its remaining budget may equal, but must never exceed, the original.
+        assert all(0 < s["timeout"] <= attempt_budget for s in self.scans[:-1])
         assert self.scans[-1]["timeout"] == process_module._CENSUS_BUDGET_SECONDS
         assert self.target_completed and self.target.returncode == 0
         attempt_calls = [c for c in self.target_calls if c["phase"] == "attempt"]
