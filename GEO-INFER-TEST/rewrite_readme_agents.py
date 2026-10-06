@@ -969,6 +969,7 @@ the exact reproducible exception list.
 ## Modular Hygiene
 
 - Root `pyproject.toml`, `uv.lock`, and `.python-version` are the canonical uv environment surfaces.
+- Keep `uv.lock` as LF text through root `.gitattributes` so raw receipt hashes agree across platforms.
 - Sync the full workspace with `uv sync --all-packages --all-extras --all-groups` before repo-wide validation.
 - Each module owns importable behavior under `src/` and keeps at least four pytest files under `tests/`.
 - Planned work belongs in root `TODO.md` or a tracked issue, not source or test task markers.
@@ -1093,6 +1094,7 @@ uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check
 ## Modular Hygiene Contract
 
 - Use root `pyproject.toml`, `uv.lock`, and `.python-version` as the shared uv environment contract.
+- Preserve `uv.lock` LF bytes through root `.gitattributes`; receipt custody uses raw file hashes on every platform.
 - Sync the shared workspace with `uv sync --all-packages --all-extras --all-groups`.
 - Keep module behavior in the owning `GEO-INFER-*` package under `src/`; keep scripts and examples as orchestration surfaces.
 - Treat `manuscript/generate_research_artifacts.py` as the only producer of manuscript variables, figure captions, figure registries, and resolved manuscript copies; never hand-edit ignored `output/`.

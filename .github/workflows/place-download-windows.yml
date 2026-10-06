@@ -92,6 +92,7 @@ jobs:
           import hashlib
           import importlib
           import importlib.metadata
+          import importlib.util
           import json
           import os
           import platform
@@ -107,6 +108,14 @@ jobs:
                            for d in importlib.metadata.distributions()], key=lambda d: d["name"]))
           try:
               assert os.name == "nt"
+              # These absences are the exact negative-control preconditions.
+              installed = {d["name"].lower().replace("_", "-") for d in data["distributions"]}
+              data["optional_absence"] = {}
+              for distribution, module in (("geo-infer-data", "geo_infer_data"),
+                                           ("sqlalchemy", "sqlalchemy")):
+                  absent = distribution not in installed and importlib.util.find_spec(module) is None
+                  data["optional_absence"][module] = absent
+                  assert absent, (distribution, module, "minimal profile changed")
               for name in ("geo_infer_place.core.regional_layers",
                            "geo_infer_place.core._regional_download_worker",
                            "geo_infer_place.core.bioregion_visualization",
@@ -218,6 +227,94 @@ jobs:
               out.write(f"PYTHONPATH={evidence}\n")
               out.write("PYTEST_PLUGINS=pytest_asyncio.plugin,place_windows_observer\n")
 
+      - name: Require canonical optional sibling poisoning negative control
+        timeout-minutes: 2
+        env:
+          NO_PROXY: "127.0.0.1,::1"
+          HTTP_PROXY: ""
+          HTTPS_PROXY: ""
+          ALL_PROXY: ""
+        # Expected failure receipts stay outside the one-attempt acceptance directory.
+        shell: pwsh
+        run: |
+          @'
+          import hashlib
+          import importlib.metadata
+          import importlib.util
+          import json
+          import os
+          import shutil
+          from pathlib import Path
+          from geo_infer_test import execution
+
+          root = Path.cwd().resolve()
+          evidence = (root / os.environ["PLACE_EVIDENCE"]).resolve()
+          assert execution.PROJECT_ROOT.resolve() == root
+          assert (evidence / "place_windows_observer.py").is_file()
+          paths = [
+              root / "GEO-INFER-PLACE/tests/integration/test_regional_download_worker.py",
+              root / "GEO-INFER-PLACE/tests/integration/test_regional_layer_acquisition.py",
+          ]
+          assert all(p.is_file() and p.is_relative_to(root) for p in paths)
+
+          # Fresh -I parent, real installed profile; no shared-environment changes.
+          for distribution, module in (("geo-infer-data", "geo_infer_data"),
+                                       ("sqlalchemy", "sqlalchemy")):
+              try:
+                  importlib.metadata.distribution(distribution)
+              except importlib.metadata.PackageNotFoundError:
+                  pass
+              else:
+                  raise AssertionError(f"Unexpected installed optional dependency: {distribution}")
+              assert importlib.util.find_spec(module) is None, module
+          negative = evidence / "isolation-negative"
+          negative.mkdir(exist_ok=False)
+          shutil.copyfile(evidence / "place_windows_observer.py", negative / "place_windows_observer.py")
+          # Keep ambient observer lookup in the builder; replace only the log destination.
+          built = execution.build_subprocess_env()
+          builder_paths = [Path(p).resolve() for p in built["PYTHONPATH"].split(os.pathsep) if p]
+          assert root / "GEO-INFER-DATA/src" in builder_paths, builder_paths
+          assert evidence in builder_paths, builder_paths
+          (negative / "preconditions.json").write_text(json.dumps(dict(
+              optional_absence={"geo_infer_data": True, "sqlalchemy": True},
+              builder_pythonpath=built["PYTHONPATH"],
+              observer_source=str(evidence / "place_windows_observer.py")), indent=2), encoding="utf-8")
+          execution.RESULTS_DIR = negative / "receipts"
+          report = execution.SuiteReport()
+          result = execution.run_command(
+              [*execution.pytest_base_args(), *map(str, paths),
+               f"--junitxml={execution.run_results_dir() / 'contracts.xml'}"],
+              "expected optional sibling poisoning",
+              timeout=60,
+              cwd=root,
+              env_overrides={"PLACE_EVIDENCE": str(negative)},
+          )
+          report.add(result)
+          execution.write_summary(report, show_failures=True)
+          # A timeout, empty selection, or unrelated failure cannot satisfy this control.
+          assert not result.success and result.status == "FAIL" and result.returncode not in (None, 0)
+          assert result.executed == 0
+          assert "Error importing plugin" in result.stderr and "place_windows_observer" in result.stderr
+          assert "No module named 'sqlalchemy'" in result.stderr
+          assert "geo_infer_data" in result.stderr and "module_bridge.py" in result.stderr
+          assert "GEO-INFER-DATA/src/geo_infer_data/core/pipeline.py" in result.stderr.replace("\\", "/")
+          assert not (negative / "workers.jsonl").exists(), "Negative control unexpectedly ran a worker"
+          receipts = list((negative / "receipts").glob("runs/*/attempts/*/receipt.json"))
+          assert len(receipts) == 1 and receipts[0].resolve() == Path(result.receipt).resolve()
+          receipt = json.loads(receipts[0].read_text(encoding="utf-8"))
+          assert not receipt["success"] and receipt["status"] == "FAIL" and receipt["executed"] == 0
+          for name in ("stdout.log", "stderr.log"):
+              artifact = receipts[0].parent / name
+              assert hashlib.sha256(artifact.read_bytes()).hexdigest() == receipt["artifacts"][name], name
+          candidate = json.loads((evidence / "candidate.json").read_text(encoding="utf-8"))
+          assert receipt["custody_complete"] and receipt["revision"] == candidate["revision"]
+          assert receipt["lock_sha256"] == candidate["lock_sha256"]
+          (negative / "expected-failure.json").write_text(json.dumps(dict(
+              status="EXPECTED_FAILURE", receipt=str(receipts[0].relative_to(evidence)),
+              reason="canonical sibling injection exposes DATA without sqlalchemy"), indent=2), encoding="utf-8")
+          '@ | .venv\Scripts\python.exe -I -
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Run canonical worker, batch and exact offline replay acceptance
         timeout-minutes: 7
         env:
@@ -225,14 +322,37 @@ jobs:
           HTTP_PROXY: ""
           HTTPS_PROXY: ""
           ALL_PROXY: ""
-        # No -k exclusions, platform mocks, skip accommodations or external downloads.
-        # The observer rejects non-loopback requests and actual worker targets.
-        run: >-
-          .venv\Scripts\python.exe GEO-INFER-TEST/run_unified_tests.py
-          --paths GEO-INFER-PLACE/tests/integration/test_regional_download_worker.py
-          GEO-INFER-PLACE/tests/integration/test_regional_layer_acquisition.py
-          --workers 1 --timeout 300 --show-failures
-          --results-dir place-windows-evidence/receipts
+        # Both whole files, strict root config/plugins, real workers and observer-only PYTHONPATH.
+        shell: pwsh
+        run: |
+          @'
+          import os
+          from pathlib import Path
+          from geo_infer_test import execution
+
+          root = Path.cwd().resolve()
+          evidence = (root / os.environ["PLACE_EVIDENCE"]).resolve()
+          assert execution.PROJECT_ROOT.resolve() == root
+          assert (evidence / "place_windows_observer.py").is_file()
+          paths = [
+              root / "GEO-INFER-PLACE/tests/integration/test_regional_download_worker.py",
+              root / "GEO-INFER-PLACE/tests/integration/test_regional_layer_acquisition.py",
+          ]
+          assert all(p.is_file() and p.is_relative_to(root) for p in paths)
+          execution.RESULTS_DIR = evidence / "receipts"
+          report = execution.SuiteReport()
+          report.add(execution.run_command(
+              [*execution.pytest_base_args(), *map(str, paths),
+               f"--junitxml={execution.run_results_dir() / 'contracts.xml'}"],
+              "contract selection",
+              timeout=300,
+              cwd=root,
+              env_overrides={"PYTHONPATH": str(evidence)},
+          ))
+          execution.write_summary(report, show_failures=True)
+          raise SystemExit(0 if report.success else 1)
+          '@ | .venv\Scripts\python.exe -I -
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Require fresh canonical custody and real worker evidence
         shell: python
@@ -241,8 +361,10 @@ jobs:
           import json
           import os
           from pathlib import Path
+          import xml.etree.ElementTree as ET
 
           evidence = Path(os.environ["PLACE_EVIDENCE"])
+          assert (evidence / "isolation-negative/expected-failure.json").is_file()
           receipts = list((evidence / "receipts").glob("runs/*/attempts/*/receipt.json"))
           assert len(receipts) == 1, receipts
           receipt = json.loads(receipts[0].read_text(encoding="utf-8"))
@@ -255,7 +377,16 @@ jobs:
               assert artifact.is_file(), name
               assert hashlib.sha256(artifact.read_bytes()).hexdigest() == receipt["artifacts"][name], name
           selection = json.loads((receipts[0].parent / "selection.json").read_text(encoding="utf-8"))
-          assert not selection["unaccounted"]
+          assert not selection["unaccounted"] and not selection["deselected"]
+          assert set(selection["collected"]) == set(selection["selected"]) == set(selection["executed"])
+          assert {node.split("::", 1)[0].replace("\\", "/") for node in selection["executed"]} == {
+              "GEO-INFER-PLACE/tests/integration/test_regional_download_worker.py",
+              "GEO-INFER-PLACE/tests/integration/test_regional_layer_acquisition.py",
+          }
+          cases = list(ET.parse(receipts[0].parent / "junit.xml").getroot().iter("testcase"))
+          assert len(cases) == receipt["executed"] == len(selection["executed"])
+          assert all(not any(case.find(tag) is not None for tag in ("skipped", "failure", "error"))
+                     for case in cases), "Skipped/xfail or failed testcase in acceptance"
           assert any("test_captured_sources_rebuild_exact_layer_bytes" in node for node in selection["executed"])
           events = [json.loads(line) for line in (evidence / "workers.jsonl").read_text(encoding="utf-8").splitlines()]
           workers = [worker for event in events for worker in event["workers"]]

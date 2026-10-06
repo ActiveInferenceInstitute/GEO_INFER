@@ -1,6 +1,7 @@
 """Structural acceptance for the dedicated native Windows PLACE lane.
 
-These checks do not run PLACE processes or establish native Windows behavior.
+These checks validate orchestration and custody structure. The native lane runs
+the real minimal-profile negative control and both full acceptance files.
 """
 
 from __future__ import annotations
@@ -8,11 +9,8 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
-import os
 from pathlib import Path
 import re
-import subprocess
-import sys
 import textwrap
 
 import yaml
@@ -33,6 +31,15 @@ def step(name):
         for s in workflow()["jobs"]["place-download"]["steps"]
         if s.get("name") == name
     )
+
+
+def embedded_python(entry):
+    if entry.get("shell") == "python":
+        return entry["run"]
+    assert entry["shell"] == "pwsh"
+    assert "'@ | .venv\\Scripts\\python.exe -I -" in entry["run"]
+    assert "if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }" in entry["run"]
+    return entry["run"].split("@'\n", 1)[1].split("\n'@", 1)[0]
 
 
 def test_native_matrix_triggers_and_bounded_readonly_execution():
@@ -102,25 +109,61 @@ def test_profile_is_locked_selected_place_with_declared_test_tooling():
         assert f'"{module}"' in isolated
     assert "origin.is_relative_to" in isolated
     assert "importlib.metadata.distributions()" in isolated
+    for required in (
+        "importlib.util.find_spec(module) is None",
+        "geo-infer-data",
+        "sqlalchemy",
+        "optional_absence",
+        "assert absent",
+    ):
+        assert required in isolated
     assert "finally:" in isolated and '"runtime.json"' in isolated
 
 
 def test_acceptance_uses_both_whole_files_and_fresh_canonical_runner():
     acceptance = step("Run canonical worker, batch and exact offline replay acceptance")
-    assert acceptance["run"].split() == [
-        ".venv\\Scripts\\python.exe",
-        "GEO-INFER-TEST/run_unified_tests.py",
-        "--paths",
+    code = embedded_python(acceptance)
+    tree = ast.parse(code)
+    calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call)]
+    runs = [
+        n
+        for n in calls
+        if isinstance(n.func, ast.Attribute)
+        and ast.unparse(n.func) == "execution.run_command"
+    ]
+    assert len(runs) == 1
+    keywords = {kw.arg: ast.unparse(kw.value) for kw in runs[0].keywords}
+    assert keywords == {
+        "timeout": "300",
+        "cwd": "root",
+        "env_overrides": "{'PYTHONPATH': str(evidence)}",
+    }
+    assert "execution.pytest_base_args()" in ast.unparse(runs[0].args[0])
+    assert "--junitxml=" in code and "execution.run_results_dir()" in code
+    paths = next(
+        n
+        for n in tree.body
+        if isinstance(n, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "paths"
+            for target in n.targets
+        )
+    )
+    assert [n.right.value for n in paths.value.elts] == [
         "GEO-INFER-PLACE/tests/integration/test_regional_download_worker.py",
         "GEO-INFER-PLACE/tests/integration/test_regional_layer_acquisition.py",
-        "--workers",
-        "1",
-        "--timeout",
-        "300",
-        "--show-failures",
-        "--results-dir",
-        "place-windows-evidence/receipts",
     ]
+    for required in (
+        'execution.RESULTS_DIR = evidence / "receipts"',
+        "execution.PROJECT_ROOT.resolve() == root",
+        "execution.SuiteReport()",
+        "report.add(execution.run_command(",
+        "execution.write_summary(report, show_failures=True)",
+        "raise SystemExit(0 if report.success else 1)",
+    ):
+        assert required in code
+    assert "-I" not in ast.unparse(runs[0].args[0])
+    assert "--collect-only" not in code and "-k" not in code and "-n" not in code
     assert acceptance["timeout-minutes"] == 7
     assert acceptance["env"] == {
         "NO_PROXY": "127.0.0.1,::1",
@@ -136,6 +179,11 @@ def test_acceptance_uses_both_whole_files_and_fresh_canonical_runner():
         "stderr.log",
         "lock_sha256",
         "unaccounted",
+        "deselected",
+        'selection["collected"]',
+        'selection["selected"]',
+        "skipped",
+        "isolation-negative/expected-failure.json",
         "test_captured_sources_rebuild_exact_layer_bytes",
         "test_parent_deadline_stops_and_reaps_real_worker[drip]",
         "test_parent_deadline_stops_and_reaps_real_worker[headers]",
@@ -146,12 +194,8 @@ def test_acceptance_uses_both_whole_files_and_fresh_canonical_runner():
 
 def test_embedded_python_and_observer_parse_without_executing_imports_or_processes():
     for entry in workflow()["jobs"]["place-download"]["steps"]:
-        if entry.get("shell") == "python":
-            ast.parse(entry["run"])
-    powershell = step("Verify isolated imports and retain the installed inventory")[
-        "run"
-    ]
-    ast.parse(powershell.split("@'\n", 1)[1].split("\n'@", 1)[0])
+        if entry.get("shell") in {"python", "pwsh"}:
+            ast.parse(embedded_python(entry))
     tree = ast.parse(step("Prepare loopback guard and real worker observations")["run"])
     plugin = next(
         node.value.value
@@ -181,65 +225,95 @@ def test_embedded_python_and_observer_parse_without_executing_imports_or_process
         "output_sha256",
     ):
         assert field in observer
+    preparation = step("Prepare loopback guard and real worker observations")["run"]
+    assert "PYTEST_PLUGINS=pytest_asyncio.plugin,place_windows_observer" in preparation
+    assert "PYTHONPATH={evidence}" in preparation
     assert "os.name =" not in observer and "killpg =" not in observer
 
 
-def test_declared_plugins_collect_real_place_inventory_with_strict_root_config(
-    tmp_path,
-):
-    """Exercise the workflow's actual plugin configuration without worker bodies."""
-    tree = ast.parse(step("Prepare loopback guard and real worker observations")["run"])
-    plugin = next(
-        node.value.value
-        for node in tree.body
-        if isinstance(node, ast.Assign)
+def test_native_negative_control_uses_real_builder_and_separate_failed_receipts():
+    """The exact missing-dependency reproduction belongs to the minimal Windows profile."""
+    control = step("Require canonical optional sibling poisoning negative control")
+    code = embedded_python(control)
+    names = [s.get("name") for s in workflow()["jobs"]["place-download"]["steps"]]
+    assert names.index(control["name"]) < names.index(
+        "Run canonical worker, batch and exact offline replay acceptance"
+    )
+    assert control["timeout-minutes"] == 2
+    assert (
+        control["env"]
+        == step("Run canonical worker, batch and exact offline replay acceptance")[
+            "env"
+        ]
+    )
+    tree = ast.parse(code)
+    runs = [
+        n
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Call) and ast.unparse(n.func) == "execution.run_command"
+    ]
+    assert len(runs) == 1
+    keywords = {kw.arg: ast.unparse(kw.value) for kw in runs[0].keywords}
+    assert keywords == {
+        "timeout": "60",
+        "cwd": "root",
+        "env_overrides": "{'PLACE_EVIDENCE': str(negative)}",
+    }
+    for required in (
+        "importlib.metadata.distribution(distribution)",
+        "importlib.metadata.PackageNotFoundError",
+        "importlib.util.find_spec(module) is None",
+        '(("geo-infer-data", "geo_infer_data"),',
+        '("sqlalchemy", "sqlalchemy"))',
+        "execution.build_subprocess_env()",
+        'root / "GEO-INFER-DATA/src" in builder_paths',
+        "assert evidence in builder_paths",
+        'execution.RESULTS_DIR = negative / "receipts"',
+        "execution.pytest_base_args()",
+        "--junitxml=",
+        "timeout=60",
+        "execution.write_summary(report, show_failures=True)",
+        'result.status == "FAIL"',
+        "result.returncode not in (None, 0)",
+        "result.executed == 0",
+        "Error importing plugin",
+        "place_windows_observer",
+        "No module named 'sqlalchemy'",
+        "geo_infer_data",
+        "module_bridge.py",
+        "GEO-INFER-DATA/src/geo_infer_data/core/pipeline.py",
+        'assert not receipt["success"]',
+        'receipt["artifacts"][name]',
+        'assert not (negative / "workers.jsonl").exists()',
+        'receipt["custody_complete"]',
+        'receipt["lock_sha256"]',
+        '"expected-failure.json"',
+        '"preconditions.json"',
+    ):
+        assert required in code
+    paths = next(
+        n
+        for n in tree.body
+        if isinstance(n, ast.Assign)
         and any(
-            isinstance(target, ast.Name) and target.id == "plugin"
-            for target in node.targets
+            isinstance(target, ast.Name) and target.id == "paths"
+            for target in n.targets
         )
     )
-    (tmp_path / "place_windows_observer.py").write_text(textwrap.dedent(plugin))
-    assignment = next(
-        node.value
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Constant)
-        and isinstance(node.value, str)
-        and node.value.startswith("PYTEST_PLUGINS=")
-    )
-    environment = dict(
-        os.environ,
-        PYTEST_DISABLE_PLUGIN_AUTOLOAD="1",
-        PYTEST_PLUGINS=assignment.split("=", 1)[1].strip(),
-        PYTEST_ADDOPTS="",
-        PYTHONPATH=str(tmp_path),
-        PLACE_EVIDENCE=str(tmp_path),
-    )
-    command = [
-        sys.executable,
-        "-m",
-        "pytest",
-        "-p",
-        "geo_infer_test.selection",
-        "-c",
-        str(ROOT / "pyproject.toml"),
-        "-p",
-        "no:cacheprovider",
-        "--collect-only",
-        str(
-            ROOT / "GEO-INFER-PLACE/tests/integration/test_regional_download_worker.py"
-        ),
-        str(
-            ROOT
-            / "GEO-INFER-PLACE/tests/integration/test_regional_layer_acquisition.py"
-        ),
+    assert [n.right.value for n in paths.value.elts] == [
+        "GEO-INFER-PLACE/tests/integration/test_regional_download_worker.py",
+        "GEO-INFER-PLACE/tests/integration/test_regional_layer_acquisition.py",
     ]
-    result = subprocess.run(
-        command, cwd=ROOT, env=environment, capture_output=True, text=True, timeout=60
+    # No overriding PYTHONPATH, simulated imports, reduced selection, or direct subprocess bypass.
+    assert "--collect-only" not in code and "subprocess.run" not in code
+    assert not any(
+        isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and isinstance(n.func.value, ast.Name)
+        and n.func.value.id == "pytest"
+        and n.func.attr in {"skip", "xfail"}
+        for n in ast.walk(tree)
     )
-    assert result.returncode == 0, result.stdout + result.stderr
-    assert "test_parent_deadline_stops_and_reaps_real_worker[drip]" in result.stdout
-    assert "test_captured_sources_rebuild_exact_layer_bytes" in result.stdout
-    assert not (tmp_path / "workers.jsonl").exists()
 
 
 def test_failure_evidence_upload_is_job_owned_with_lock_and_byte_inventory():
@@ -284,6 +358,11 @@ def test_failure_evidence_upload_is_job_owned_with_lock_and_byte_inventory():
         "revision_mismatch",
         "incomplete_custody",
         "altered_artifact",
+        "missing_negative_control",
+        "deselected",
+        "inventory_loss",
+        "missing_worker_file",
+        "skipped",
     ],
 )
 def test_custody_gate_accepts_canonical_layout_and_rejects_incomplete_evidence(
@@ -294,29 +373,51 @@ def test_custody_gate_accepts_canonical_layout_and_rejects_incomplete_evidence(
     attempt = evidence / "receipts/runs/run-id/attempts/attempt-id"
     attempt.mkdir(parents=True)
     monkeypatch.setenv("PLACE_EVIDENCE", str(evidence))
+    if failure != "missing_negative_control":
+        negative = evidence / "isolation-negative"
+        negative.mkdir()
+        (negative / "expected-failure.json").write_text(
+            '{"status": "EXPECTED_FAILURE"}'
+        )
     (evidence / "candidate.json").write_text(
         json.dumps({"lock_sha256": "lock", "revision": "candidate"})
     )
     receipt = {
         "success": True,
         "status": "PASS",
-        "executed": 1,
+        "executed": 2,
         "custody_complete": failure != "incomplete_custody",
         "revision": "other" if failure == "revision_mismatch" else "candidate",
         "lock_sha256": "other" if failure == "lock_mismatch" else "lock",
     }
+    nodes = [
+        "GEO-INFER-PLACE/tests/integration/test_regional_download_worker.py::test_worker_ignores_parent_pythonpath",
+        "GEO-INFER-PLACE/tests/integration/test_regional_layer_acquisition.py::test_captured_sources_rebuild_exact_layer_bytes",
+    ]
+    if failure == "missing_replay":
+        nodes[1] = nodes[1].replace(
+            "test_captured_sources_rebuild_exact_layer_bytes", "test_other"
+        )
+    if failure == "missing_worker_file":
+        nodes[0] = nodes[0].replace(
+            "test_regional_download_worker.py", "test_regional_layer_acquisition.py"
+        )
     selected = {
         "unaccounted": ["lost"] if failure == "unaccounted" else [],
-        "executed": []
-        if failure == "missing_replay"
-        else [
-            "test_regional_layer_acquisition.py::test_captured_sources_rebuild_exact_layer_bytes"
-        ],
+        "deselected": ["removed"] if failure == "deselected" else [],
+        "collected": nodes + (["lost"] if failure == "inventory_loss" else []),
+        "selected": nodes,
+        "executed": nodes,
     }
     (attempt / "selection.json").write_text(json.dumps(selected))
-    for name in ("junit.xml", "stdout.log", "stderr.log"):
-        if failure != "missing_junit" or name != "junit.xml":
-            (attempt / name).write_text("retained")
+    if failure != "missing_junit":
+        skipped = '<skipped type="expected-failure"/>' if failure == "skipped" else ""
+        (attempt / "junit.xml").write_text(
+            f'<testsuites><testsuite><testcase name="worker">{skipped}</testcase>'
+            '<testcase name="replay"/></testsuite></testsuites>'
+        )
+    for name in ("stdout.log", "stderr.log"):
+        (attempt / name).write_text("retained")
     receipt["artifacts"] = {
         p.name: hashlib.sha256(p.read_bytes()).hexdigest()
         for p in attempt.iterdir()

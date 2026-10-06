@@ -161,6 +161,45 @@ def posix_boundary(monkeypatch, child):
     return owned
 
 
+@pytest.mark.parametrize(
+    "field,expected",
+    [
+        (f"{module._OWNERSHIP_ENV}={TOKEN}", True),
+        (f"{module._OWNERSHIP_ENV}={'b' * 32}:{TOKEN}", True),
+        (f"{module._OWNERSHIP_ENV}={TOKEN}0", False),
+        (f"{module._OWNERSHIP_ENV}=0{TOKEN}", False),
+        (f"OTHER={TOKEN}", False),
+        (f"PREFIX_{module._OWNERSHIP_ENV}={TOKEN}", False),
+        (f"{module._OWNERSHIP_ENV}={TOKEN}INVALID", False),
+        (f"{module._OWNERSHIP_ENV}={'b' * 32}", False),
+    ],
+)
+def test_native_long_listing_retains_only_exact_owned_candidates(
+    monkeypatch, field, expected
+):
+    child = BoundaryProcess(environment={module._OWNERSHIP_ENV: TOKEN})
+    owned = posix_boundary(monkeypatch, child)
+    inspected = []
+
+    def identity(pid):
+        inspected.append(pid)
+        return child
+
+    monkeypatch.setattr(owned.psutil, "Process", identity)
+    # Public synthetic rows exercise long negative input and token lookalikes;
+    # native text remains only a filter before actual environment verification.
+    listing = "1 command PUBLIC=" + "x" * 100_000 + "\n"
+    listing += f"{child.pid} command {field}\n"
+    monkeypatch.setattr(
+        module.subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(["ps"], 0, listing, ""),
+    )
+    owned.refresh(timeout=2)
+    assert inspected == ([child.pid] if expected else [])
+    assert list(owned.processes) == ([child.pid] if expected else [])
+
+
 @pytest.mark.parametrize("chain", [TOKEN, "b" * 32 + ":" + TOKEN])
 def test_native_observer_has_no_target_tokens_and_preserves_parent_environment(
     monkeypatch, chain

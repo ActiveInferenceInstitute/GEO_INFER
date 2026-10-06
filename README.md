@@ -147,6 +147,7 @@ the exact reproducible exception list.
 ## Modular Hygiene
 
 - Root `pyproject.toml`, `uv.lock`, and `.python-version` are the canonical uv environment surfaces.
+- Keep `uv.lock` as LF text through root `.gitattributes` so raw receipt hashes agree across platforms.
 - Sync the full workspace with `uv sync --all-packages --all-extras --all-groups` before repo-wide validation.
 - Each module owns importable behavior under `src/` and keeps at least four pytest files under `tests/`.
 - Planned work belongs in root `TODO.md` or a tracked issue, not source or test task markers.

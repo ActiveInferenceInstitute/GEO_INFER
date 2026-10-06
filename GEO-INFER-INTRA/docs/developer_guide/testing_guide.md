@@ -144,8 +144,15 @@ uses native Python 3.11/3.12 with locked PLACE `dev` and `integrations` extras a
 no default groups. It runs both complete regional worker/acquisition test files,
 including loopback deadlines, termination, batch rollback and captured-source
 replay, through canonical TEST execution. It retains platform, import, dependency,
-worker and receipt evidence on every outcome. This editable-package profile
-does not cover Cascadia/full extras or installed wheels; native acceptance
+worker and receipt evidence on every outcome. The editable-package profile
+replaces the pytest child's `PYTHONPATH` with the temporary observer directory
+through `run_command(env_overrides=...)`; installed packages supply the selected
+runtime. A separate bounded negative control retains the canonical sibling-source
+injection failure before the positive whole-file attempt. Its DATA/SQLAlchemy
+absence preconditions deliberately fail if the declared profile changes.
+The API's 300-second budget covers setup and child supervision; summary and
+artifact processing remain within the seven-minute workflow step boundary.
+It does not cover Cascadia/full extras or installed wheels; native acceptance
 requires the actual hosted results and artifact audit.
 
 ## Test categories
@@ -193,6 +200,8 @@ children. Native POSIX inspection supports both BSD and GNU `ps`; Windows uses
 process identities. Console text escapes characters a restricted encoding cannot
 represent; retained UTF-8 artifacts preserve the original decoded output. Read
 those artifacts with `encoding="utf-8"` independently of the machine's locale.
+Token-negative native rows avoid regex scanning; exact token-chain membership
+and live identity/environment checks still determine ownership.
 
 Receipts include `process_evidence` for observed target completion and return
 code, census calls and elapsed time, cleanup time and failure phase. The separate

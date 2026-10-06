@@ -34,8 +34,8 @@ required before integration. Tagging, release attachments, registry publication
 and deployment retain their separate authorization boundary; accounts,
 credentials, configured models and hooks remain under human control.
 
-The preparation branch is `codex/0.4-readiness`, last pushed at
-`2fdd67ff4e56ddfd33e1114dad41059faac28a7d`; remote `main` remains
+At the resumed verification checkpoint, preparation branch `codex/0.4-readiness`
+was pushed at `a254a2856e4c1489ee31ea6c0183542d5db18967`; remote `main` remains
 `510f1008e698b45aedc4306d65caf898da6cda04`. The local legacy sweep ancestor
 `cbe6b9c59975254487452d697c2ea961a19f2286` must be preserved. **Readiness is
 NO GO.** The last candidate's hosted TEST coverage was 72.22955% against the
@@ -71,6 +71,29 @@ implementation is present, with hosted runtime acceptance still pending. These
 are implementation and narrow-test results; whole-package coverage and final
 candidate acceptance remain required.
 
+The resumed clean-candidate whole TEST attempt reached its 1,800-second deadline
+without final JUnit or raw coverage output. Source stayed fixed, all 111 policy
+traces were retained, and its owned processes exited. This is failed acceptance;
+the progress stream contains failures whose complete dispositions require fresh
+diagnosis. Aggregate native census time was 1,517 seconds over 1,107 calls.
+A synthetic parser assessment demonstrated avoidable token-negative regex work;
+the resulting prefilter passed 53 focused ownership tests and independent
+review; renewed whole-package acceptance is still required. These observations
+do not establish the historical ordinary-validator timeout's cause.
+
+Both initial native Windows PLACE legs failed before collection because the
+canonical runner injected uninstalled optional DATA source into the minimal
+PLACE profile, exposing its absent SQLAlchemy dependency. The corrected workflow
+uses the existing execution API with observer-only `PYTHONPATH`, a separate real
+poisoning negative control and both complete acceptance files. Its 22 structural
+and custody tests passed. The separate locked macOS Python 3.12 profile reproduced
+the negative failure and passed all 51 positive cases plus custody. Independent
+source review accepted both scoped repairs; native runtime proof remains pending.
+Hosted artifact reconciliation also identified Windows LF-to-CRLF lock conversion;
+an explicit LF attribute and real Git checkout regression preserve raw lock
+custody. The updated workflow/metadata suite passed 68 tests. Fresh native receipt
+hashes must still be checked on the renewed candidate.
+
 The [readiness tracker (#61)](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/61)
 links the complete next-work graph. Dependencies govern completion; preparation
 may overlap after a stable source freeze with bounded resources and explicit
@@ -87,7 +110,7 @@ below; their historical failed evidence remains unchanged.
 | **R04-05 / CODE-01** | Documentation, manuscript, index / convergence and full proof pending | [#66: executable docs and manuscript](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/66): finish truthful API/migration/configuration guidance, generated signposts, 0.4.0 parity, Git-derived metadata fixed point and source-current GitNexus. | Coordinator-only full eleven-group producer, independent whole-output custody/snapshot, real native PDF/figure inspection, generator drift checks and fresh ROOT inventory (currently 142+7). Retain producer manifest/inventory/variables/figure-registry JSON or state hosted upload limits. No old-output or default-seven-tier passing claim. Depends on stable R04-03 source. |
 | **R04-06** | CI / fresh corrected-candidate evidence pending | [#67: complete hosted evidence](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/67): run declared workflows once on the reviewed candidate and audit actual receipts/artifact bytes. | Required unit/integration/performance/system/slow/H3 matrix on 3.11/3.12, native Windows and early contracts; actual profile/inventory reconciliation, all 46 floors, wheels/paired/ROOT/models/security and complete uploaded artifacts. Derive fresh counts; preserve failures. Depends on R04-01 through R04-05. |
 | **R04-07** | Git/main / held, not integrated | [#68: accepted main integration](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/68): when implementation is resumed and candidate GO exists, recheck remote/protection/ancestry, integrate ordinarily and verify exact published/main-triggered evidence. | No force-push, ancestry rewrite, stale-SHA acceptance or protection bypass; preserve rollback and unrelated work. Main SHA parity plus actual same-SHA hosted results. Depends on R04-03 through R04-06. |
-| **SPACE-01** | SPACE / deferred hardware | [#69: physical backend validation](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/69). | Real supported device/driver/backend numerical parity, failure/precision/chunk boundaries, memory and cold/warm timings; H3 remains host CPU. No CPU-fallback hardware claim. |
+| **SPACE-01** | SPACE / owner-deferred GPU work | [#69: physical backend validation](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/69). GPU experiments are on hold; future work must be usable from a Mac laptop. | Establish a backend compatible with the Mac target and the declared precision contract before physical numerical parity, failure/chunk boundaries, memory and cold/warm timings. Preserve laptop CPU operation; H3 remains host CPU. No CPU-fallback hardware claim. |
 | **PLACE-V14** | PLACE / deferred licensed data | [#70: complete Cascadia boundary](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/70). | Authorized source/license/extent/resource budget, provenance/checksum/WGS84/stable identities and real renderer/integration; missing layer remains explicit and fail-closed. |
 | **PLACE-04** | PLACE / deferred native Windows worker proof | [#71: real Windows download worker](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/71). | Locked PLACE runtime, stalled-header/slow-drip deadlines, termination/pipe closure, batch failure and replay. Shared-process Windows CI does not close this separate item. |
 | **TEST-GNN-01** | SPACE/TIME/ACT / historical cause unresolved | [#72: PROJ SQLite I/O causality](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/72). | Bounded evidence-driven reproduction with version/import/file state; respect prior negative lock probes and distinguish non-recurrence from explanation. Do not suppress CRS tests. |
@@ -105,7 +128,7 @@ not the historical 0.2.x/0.3.x actions described in REL-01.
 
 | ID | Area / status | Bounded next step | Acceptance evidence / dependencies |
 | --- | --- | --- | --- |
-| **SPACE-01** | SPACE / deferred hardware verification | [DEFERRED-VERIFY] On supported physical hardware, run numeric distance and grouped-reduction parity for each backend claimed as supported (CuPy, Torch, JAX), including empty inputs, float64 precision, chunk boundaries and allocation failure. Keep H3 topology labeled as host CPU. | Record device/driver/library versions, actual backend diagnostics, CPU-reference tolerances, peak memory and separate cold/warm timings. Publish speed claims only for measured workloads; do not infer support from CPU fallback. Requires hardware. [Guide](GEO-INFER-SPACE/docs/GPU_ACCELERATION.md). 2026-09-15 scope pass: guide path verified present at `GEO-INFER-SPACE/docs/GPU_ACCELERATION.md`; remains open, hardware-blocked. |
+| **SPACE-01** | SPACE / owner-deferred GPU verification | [DEFERRED-VERIFY] GPU work is on hold by owner direction (2026-10-06). Future design must be runnable from a Mac laptop, retaining CPU operation. First establish a compatible backend and precision contract; then run numeric distance and grouped-reduction parity for each backend claimed as supported, including empty inputs, float64 precision, chunk boundaries and allocation failure. Keep H3 topology labeled as host CPU. | Record device/driver/library versions, actual backend diagnostics, CPU-reference tolerances, peak memory and separate cold/warm timings. Publish speed claims only for measured workloads; do not infer support from CPU fallback or claim Apple GPU float64 support without evidence. [Guide](GEO-INFER-SPACE/docs/GPU_ACCELERATION.md). No external GPU machine or budget is requested while work is on hold. |
 | **PLACE-V14** | PLACE / regional layer acquisition open | Three source-backed layers are delivered (13 HU4 display polygons, 24 volcanoes, one convergent boundary). Obtain the remaining complete licensed `cascadia_bioregion_boundary.geojson`; retain the documented per-layer extent and interpretation. | Validate WGS84, required geometry types, stable feature identifiers, provenance and checksums; run actual-data renderer/integration checks (missing-layer behavior is fail-closed and pinned at `test_regional_layer_acquisition.py:73,81`). Keep missing-layer behavior explicit until data exists. Do not restore the former 12-volcano or earthquake-probability claims without evidence. 2026-09-15 scope pass: fail-closed pin re-verified — the assertions now sit at `GEO-INFER-PLACE/tests/integration/test_regional_layer_acquisition.py:76-80` (this row's `:73,81` citation has drifted); boundary geojson still absent from the repo; remains open on licensed-data acquisition. |
 | **PLACE-04** | PLACE / deferred Windows verification | [DEFERRED-VERIFY] Run the real regional download-worker loopback tests on Windows with the locked PLACE runtime. | Prove stalled-header/slow-drip deadlines, native process termination, pipe closure, batch failure preservation and exact replay on Windows; retain interpreter/OS versions. POSIX termination is verified and the worker starts no child processes. 2026-09-15 scope pass: POSIX worker surfaces verified present (`GEO-INFER-PLACE/tests/integration/test_regional_download_worker.py`); remains open, Windows-runtime-blocked. |
 | **CODE-01** | Repository / recurring index refresh | [REFRESHED 2026-09-15] Incremental `node .gitnexus/run.cjs analyze` on `main` at `0e6a47d4` (~100 s, incremental path healthy this time — no invalid-UTF-8 failure, no forced rebuild): index updated in the worktree `.gitnexus/` store (gitignored; 67,245 nodes, 96,848 edges, 1,824 clusters, 300 flows, no embeddings; same three files skipped >512 KB) with `.gitnexus/meta.json` `lastCommit` now at the tip. The analyze's block injection into root `AGENTS.md` was again stripped by hand per the cadence note, and `CLAUDE.md`'s committed block was count-refreshed only (65872/93811 → 67245/96848). | Indexed/current-commit parity plus correct explicit-file Gaussian-contract (the GNN-repo exporter is outside this index) and sparse-transition lookups verified at the receipt SHA as recorded; direct source/caller review remains the documented fallback while no index exists. Recurring cadence: re-run `gitnexus analyze .` after major refactors or when `gitnexus status` reports stale, restoring generator-owned AGENTS.md/CLAUDE.md afterwards. 2026-09-15 scope pass: freshness residual — the tip has advanced 9 commits past the indexed `0e6a47d4` (`git rev-list --count 0e6a47d4..HEAD`), including ErrorHandlerMiddleware source in DATA/NORMS/GIT/PEP (`3f67344b`, `2cbb6782`, `aff9776e`), starlette dependency declarations (`1037bc7b`), LOG endpoint tests (`ef3db992`) and two test-flake repairs (`8d3cb5e2`, `f5e5baf1`), so the index no longer reflects the source surface; refresh due before the next index-reliant task. |

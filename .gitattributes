@@ -1,0 +1,2 @@
+# Bind receipt hashes to the same lock bytes on POSIX and Windows checkouts.
+/uv.lock text eol=lf

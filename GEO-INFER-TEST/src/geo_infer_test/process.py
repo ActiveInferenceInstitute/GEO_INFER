@@ -151,6 +151,10 @@ class _DescendantCensus:
                     r"(?:^|\s)" + _OWNERSHIP_ENV + r"=([0-9a-f:]+)(?:\s|$)"
                 )
                 for line in listing.stdout.splitlines():
+                    # Exact membership below remains the ownership boundary;
+                    # token-negative rows cannot contain an owned candidate.
+                    if self.token not in line:
+                        continue
                     match = pattern.search(line)
                     if match and self.token in match.group(1).split(":"):
                         candidates.append(int(line.split(None, 1)[0]))
