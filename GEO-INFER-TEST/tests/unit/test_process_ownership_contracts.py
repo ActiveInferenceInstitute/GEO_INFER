@@ -15,6 +15,12 @@ from geo_infer_test import process as module
 TOKEN = "a" * 32
 
 
+@pytest.fixture(autouse=True)
+def unobservable_kernel_exit(monkeypatch):
+    """Fake PIDs must never read an unrelated real task's kernel flags."""
+    monkeypatch.setattr(module, "_kernel_exiting", lambda pid: None)
+
+
 class BoundaryProcess:
     pid = 4321
 
@@ -476,3 +482,75 @@ def test_real_psutil_cached_create_time_mismatch_excludes_reused_identity(monkey
     assert identity.is_running() is False
     current = psutil.Process(os.getpid())
     assert current.is_running() is True and current.create_time() == actual_creation
+
+
+def _stat_line(*, comm: str, flags: int) -> str:
+    # pid (comm) state ppid pgrp session tty_nr tpgid flags ...
+    return f"4321 ({comm}) R 1 1 1 0 -1 {flags} 0 0 0 0\n"
+
+
+@pytest.mark.parametrize(
+    "comm,flags,expected",
+    [
+        ("python3", 0x00400100, False),
+        ("python3", 0x00400104, True),
+        # A task may rename itself; only the last ")" delimits comm.
+        ("x) R 1 1 1 0 -1 4 (y", 0x00400100, False),
+        ("x) R 1 1 1 0 -1 0 (y", 0x00400104, True),
+    ],
+)
+def test_kernel_stat_exit_flag_is_parsed_after_the_final_comm_delimiter(
+    comm, flags, expected
+):
+    assert module._stat_reports_exiting(_stat_line(comm=comm, flags=flags)) is expected
+
+
+@pytest.mark.parametrize("text", ["", "4321 (python3", "4321 (python3) R 1 1"])
+def test_unparseable_kernel_stat_is_unknown_not_exited(text):
+    assert module._stat_reports_exiting(text) is None
+
+
+def test_denied_environment_of_kernel_exiting_task_is_positive_exit(monkeypatch):
+    """Linux releases an exiting task's mm before it becomes a zombie.
+
+    During that window /proc/<pid>/environ is denied while status still
+    reads as running. PF_EXITING is the kernel's positive exit observation.
+    """
+    now, _ = observation_clock(monkeypatch)
+    child = BoundaryProcess(environment=psutil.AccessDenied(4321))
+    observed = []
+
+    def exiting(pid):
+        observed.append(pid)
+        return now[0] >= 0.003
+
+    monkeypatch.setattr(module, "_kernel_exiting", exiting)
+    assert census()._owned(child, deadline=1) is False
+    assert now[0] == pytest.approx(0.003)
+    assert set(observed) == {4321}
+    assert child.calls.count("environ") == 1
+
+
+@pytest.mark.parametrize("flag", [False, None])
+def test_live_or_unobservable_kernel_flags_keep_denial_fatal(monkeypatch, flag):
+    now, _ = observation_clock(monkeypatch)
+    error = psutil.AccessDenied(4321)
+    child = BoundaryProcess(environment=error)
+    monkeypatch.setattr(module, "_kernel_exiting", lambda pid: flag)
+    with pytest.raises(psutil.AccessDenied) as caught:
+        census()._owned(child, deadline=1)
+    assert caught.value is error
+    assert now[0] == pytest.approx(module._EXIT_OBSERVATION_SECONDS)
+
+
+def test_real_kernel_observation_of_this_live_process(monkeypatch):
+    """Linux procfs reports this live task as not exiting; elsewhere unknown."""
+    monkeypatch.undo()
+    procfs = os.path.exists(f"/proc/{os.getpid()}/stat")
+    assert module._kernel_exiting(os.getpid()) is (False if procfs else None)
+
+
+def test_missing_procfs_entry_is_unobservable(tmp_path, monkeypatch):
+    monkeypatch.undo()
+    monkeypatch.setattr(module, "_PROCFS", tmp_path)
+    assert module._kernel_exiting(4321) is None

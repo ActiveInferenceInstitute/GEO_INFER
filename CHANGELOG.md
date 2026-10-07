@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Propagate ownership census timeouts separately from target pipe polling and
   retain target, census, cleanup and receipt timing evidence. Avoid regex scans
   of token-negative native rows while preserving exact ownership verification.
+- Treat the Linux `PF_EXITING` kernel flag as a positive exit observation when
+  an owned task's environment is denied after `exit_mm()` but before it is a
+  zombie. Under hosted load that window outlasted the 50 ms observation budget
+  and failed the GEO-INFER-SPACE coverage measurement after all 814 tests
+  passed. Persistent denial of a live or unobservable task remains fatal.
 - Preserve exact Cascadia publisher bytes and LF replay outputs through Windows
   checkout, and exercise explicit UTF-8 renderer reads under a cp1252 default.
 - Synchronize deadline regression injections with real target completion and

@@ -24,6 +24,10 @@ _OWNERSHIP_ENV = "GEO_INFER_PROCESS_TOKENS"
 _CENSUS_BUDGET_SECONDS = 5
 _DESCENDANT_REAP_SECONDS = 2
 _EXIT_OBSERVATION_SECONDS = 0.05
+_PROCFS = Path("/proc")
+# include/linux/sched.h: set by do_exit() before exit_mm() releases the
+# address space, and retained until the task is reaped.
+_PF_EXITING = 0x00000004
 
 
 class OwnedProcessLeakError(subprocess.SubprocessError):
@@ -43,6 +47,35 @@ def _annotate_ownership_denial(error: Any, *, pid: int, phase: str) -> None:
     """Retain failure type and identity without process names or environment."""
     error.name = None
     error.msg = f"Owned PID {pid}: {phase} inspection denied"
+
+
+def _stat_reports_exiting(text: str) -> bool | None:
+    """Return PF_EXITING from one /proc/<pid>/stat line, or None if unparseable."""
+    # comm is caller-controlled and may contain ")" or spaces; the last ")"
+    # ends it. The remaining fields start at state (3); flags is field 9.
+    _, delimiter, rest = text.rpartition(")")
+    fields = rest.split()
+    if not delimiter or len(fields) < 7:
+        return None
+    try:
+        flags = int(fields[6])
+    except ValueError:
+        return None
+    return bool(flags & _PF_EXITING)
+
+
+def _kernel_exiting(pid: int) -> bool | None:
+    """Observe Linux PF_EXITING for ``pid``; None where it cannot be observed.
+
+    After exit_mm() procfs reassigns the task's 0400 ``environ`` inode to
+    root, so it is denied while status is not yet zombie; the 0444 ``stat``
+    inode stays world-readable.
+    """
+    try:
+        text = (_PROCFS / str(pid) / "stat").read_text(encoding="latin-1")
+    except OSError:
+        return None
+    return _stat_reports_exiting(text)
 
 
 class _DescendantCensus:
@@ -76,8 +109,8 @@ class _DescendantCensus:
             # Linux can remove an exiting task's environment before marking
             # it as a zombie. Observe that same identity for at most 50 ms,
             # within the caller's existing census deadline. Only a positive
-            # exit/zombie result excludes it; persistent denial or an unknown
-            # status remains fatal. No environment read or command is retried.
+            # exit/zombie/PF_EXITING result excludes it; persistent denial or
+            # an unknown status remains fatal. No environment read or command is retried.
             stop = (
                 min(deadline, time.monotonic() + _EXIT_OBSERVATION_SECONDS)
                 if deadline is not None
@@ -90,6 +123,11 @@ class _DescendantCensus:
                         return False
                     phase = "status"
                     if process.status() == self.psutil.STATUS_ZOMBIE:
+                        return False
+                    # Between exit_mm() and exit_notify() the environment is
+                    # denied but the task is not yet a zombie; under load
+                    # that window can outlast the observation budget.
+                    if _kernel_exiting(process.pid) is True:
                         return False
                 except self.psutil.NoSuchProcess:
                     return False
