@@ -328,15 +328,18 @@ class TestMCMCHelpers:
     def test_metropolis_hastings(self):
         from geo_infer_math.integration.bayes.mcmc_helpers import MCMCHelpers
 
-        mcmc = MCMCHelpers(n_samples=200, burn_in=50, proposal_std=0.5)
+        # Determinism pin: the 200-sample chain is too short for an unseeded
+        # tolerance bound (CI 3.12 drew 1.177- and 1.035-off means). The
+        # sampler draws from its own generator, so the legacy global
+        # np.random.seed never reached it; seed the owning rng instead.
+        mcmc = MCMCHelpers(
+            n_samples=200, burn_in=50, proposal_std=0.5, rng=np.random.default_rng(0)
+        )
 
         # Sample from N(3, 1)
         def log_posterior(x):
             return -0.5 * np.sum((x - 3.0) ** 2)
 
-        # Determinism pin: the 200-sample chain is too short for an
-        # unseeded tolerance bound (CI 3.12 drew a 1.177-off mean).
-        np.random.seed(0)
         result = mcmc.mcmc_sample(log_posterior, np.array([0.0]))
         assert result["samples"].shape[0] == 200
         assert 0 < result["acceptance_rate"] < 1
