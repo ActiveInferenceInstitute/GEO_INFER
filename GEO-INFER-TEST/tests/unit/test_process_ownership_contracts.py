@@ -580,15 +580,16 @@ def test_denial_facts_are_content_free_kernel_observations(tmp_path, monkeypatch
         status=(
             "Name:\tPRIVATE_NAME\n"
             "Uid:\t1000\t1000\t1000\t1000\n"
+            "Gid:\t1000\t1000\t1000\t1000\n"
             "Threads:\t3\nNoNewPrivs:\t0\nSeccomp:\t2\n"
         ),
         attr="/usr/bin/PRIVATE_PROFILE (enforce)\n",
     )
     owner = os.stat(task / "environ").st_uid
-    facts = module._kernel_denial_facts(4321, uid=owner)
+    facts = module._kernel_denial_facts(4321, uid=owner, gid=1000)
     assert facts == (
         "state=R flags=0x400100 environ_owner=self "
-        f"uid_match={owner == 1000} "
+        f"uid_match={owner == 1000} gid_match=True "
         "threads=3 no_new_privs=0 seccomp=2 lsm=confined(enforce)"
     )
     assert "PRIVATE" not in facts
@@ -610,7 +611,7 @@ def test_denial_facts_report_foreign_environ_owner_and_unconfined(
     facts = module._kernel_denial_facts(4321, uid=owner + 1)
     assert facts == (
         f"state=R flags=0x4 environ_owner={owner} uid_match={owner + 1 == 7} "
-        "lsm=unconfined"
+        "gid_match=unavailable lsm=unconfined"
     )
 
 
@@ -647,3 +648,60 @@ def test_persistent_denial_retains_kernel_facts_in_sanitized_message(monkeypatch
     # Observed at the denial, before a short-lived task can disappear.
     assert observed_at == [0.0]
     assert "PRIVATE" not in str(error)
+
+
+@pytest.mark.parametrize(
+    ("gids", "expected"),
+    [
+        ("7 7 7 7", "True"),
+        ("7 7 8 7", "False"),
+        ("7 7 7", "unavailable"),
+        ("7 7 invalid 7", "unavailable"),
+        ("", "unavailable"),
+    ],
+)
+def test_denial_gid_equality_requires_all_four_kernel_credentials(
+    tmp_path, monkeypatch, gids, expected
+):
+    monkeypatch.undo()
+    monkeypatch.setattr(module, "_PROCFS", tmp_path)
+    _fake_task(
+        tmp_path,
+        4321,
+        stat=_stat_line(comm="private", flags=0),
+        status=f"Gid: {gids}\n",
+    )
+    facts = module._kernel_denial_facts(4321, uid=7, gid=7)
+    assert f"gid_match={expected}" in facts
+    assert "invalid" not in facts
+
+
+@pytest.mark.parametrize("mode", ["PRIVATEPROFILE", "enforce)secret", "", "audit"])
+def test_denial_lsm_suffix_cannot_disclose_arbitrary_profile_text(
+    tmp_path, monkeypatch, mode
+):
+    monkeypatch.undo()
+    monkeypatch.setattr(module, "_PROCFS", tmp_path)
+    _fake_task(
+        tmp_path,
+        4321,
+        stat=_stat_line(comm="private", flags=0),
+        status="",
+        attr=f"PRIVATE_PROFILE ({mode})\n",
+    )
+    facts = module._kernel_denial_facts(4321, uid=7, gid=7)
+    assert facts.endswith("lsm=confined")
+    assert "PRIVATE" not in facts
+
+
+def test_denial_gid_without_platform_credentials_is_unavailable(tmp_path, monkeypatch):
+    monkeypatch.undo()
+    monkeypatch.setattr(module, "_PROCFS", tmp_path)
+    monkeypatch.setattr(module, "os", SimpleNamespace(stat=os.stat))
+    _fake_task(
+        tmp_path,
+        4321,
+        stat=_stat_line(comm="private", flags=0),
+        status="Gid: 7 7 7 7\n",
+    )
+    assert "gid_match=unavailable" in module._kernel_denial_facts(4321, uid=7)

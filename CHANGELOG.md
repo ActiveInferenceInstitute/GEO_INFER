@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 0.4.0 candidate preparation
 
+- Complete content-free Linux process-denial diagnostics with all-four GID
+  equality; report missing credentials explicitly and restrict LSM mode output
+  to known values, preventing arbitrary profile suffix disclosure. Keep ownership
+  inspection fail-closed and historical denial causality unresolved.
+- Reconcile tracked readiness documentation with accepted main PR #81 and closed
+  issues #61–68; preserve the six unmet issue requirements and bounded next steps.
+
 - Load SPACE's optional SRAI backend only on request or explicit discovery;
   default H3 operations no longer import its numerical/ML dependency stack.
   Preserve installed dependency failures when SRAI is requested. Measure ANT's

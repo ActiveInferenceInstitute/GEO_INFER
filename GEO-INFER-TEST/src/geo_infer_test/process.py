@@ -78,7 +78,9 @@ def _kernel_exiting(pid: int) -> bool | None:
     return _stat_reports_exiting(text)
 
 
-def _kernel_denial_facts(pid: int, *, uid: int | None = None) -> str | None:
+def _kernel_denial_facts(
+    pid: int, *, uid: int | None = None, gid: int | None = None
+) -> str | None:
     """Summarize why ``pid``'s environment may be denied, without its content.
 
     Only kernel state is reported: run state and flags, whether procfs made
@@ -91,6 +93,9 @@ def _kernel_denial_facts(pid: int, *, uid: int | None = None) -> str | None:
         if getuid is None:
             return None
         uid = getuid()
+    if gid is None:
+        getgid = getattr(os, "getgid", None)
+        gid = getgid() if getgid is not None else None
     task = _PROCFS / str(pid)
     try:
         stat = (task / "stat").read_text(encoding="latin-1")
@@ -108,11 +113,20 @@ def _kernel_denial_facts(pid: int, *, uid: int | None = None) -> str | None:
     else:
         owner_fact = "self" if owner == uid else str(owner)
     uids = lines.get("Uid", "").split()
+    gids = lines.get("Gid", "").split()
+    gid_match = (
+        str(all(value == str(gid) for value in gids))
+        if gid is not None
+        and len(gids) == 4
+        and all(value.isdecimal() for value in gids)
+        else "unavailable"
+    )
     facts = [
         f"state={fields[0]}",
         f"flags={int(fields[6]):#x}",
         f"environ_owner={owner_fact}",
         f"uid_match={bool(uids) and all(value == str(uid) for value in uids)}",
+        f"gid_match={gid_match}",
     ]
     for key, label in (
         ("Threads", "threads"),
@@ -132,7 +146,7 @@ def _kernel_denial_facts(pid: int, *, uid: int | None = None) -> str | None:
             "lsm=unconfined"
             if label_text == "unconfined"
             else f"lsm=confined({mode})"
-            if mode.isalpha()
+            if mode in {"enforce", "complain", "kill"}
             else "lsm=confined"
         )
     return " ".join(facts)
