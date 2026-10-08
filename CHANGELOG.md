@@ -9,10 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 0.4.0 candidate preparation
 
-- Validate graph face-boundary directions independently of column magnitude;
+- Validate an orthonormal basis of the graph face-boundary numerical span;
   tiny invalid faces cannot pass the chain check and produce divergent curl
   projections. Analytical regressions cover tiny and large valid/invalid faces
-  and zero face columns. Refresh readiness records to distinguish verified
+  zero and dependent valid columns, and near-dependent invalid columns. Refresh readiness records to distinguish verified
   candidate evidence from historical failures and pending main publication.
 
 - Make the non-pytest exit-code regression launch a real child and assert its

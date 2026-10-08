@@ -172,8 +172,8 @@ def graph_hodge_decomposition(
     """Split real edge flow into gradient, face curl and harmonic remainder.
 
     B (nodes x edges) has exactly one -1 source and +1 target per column.
-    C (edges x faces), when supplied, must satisfy B C = 0 after each nonzero
-    column is scaled to unit maximum magnitude for the tolerance check.
+    C (edges x faces), when supplied, must have a numerical column space in
+    ker(B), checked on its orthonormal basis using atol.
     Projections use
     least squares onto range(B.T) and range(C); the remainder lies in ker(B)
     and ker(C.T), up to numerical error. Disconnected graphs are supported.
@@ -200,22 +200,32 @@ def graph_hodge_decomposition(
     )
     if faces.shape[0] != edges:
         raise ValueError("face_boundary must match incidence edge count")
-    # A tiny invalid column still spans an invalid direction: least squares
-    # cancels its magnitude. Validate directions rather than raw magnitudes.
-    scales = np.max(np.abs(faces), axis=0, initial=0)
-    normalized_faces = np.divide(
-        faces, scales, out=np.zeros_like(faces), where=scales != 0
+    # Validate the span, not individual columns: nearly dependent columns
+    # can amplify a tiny invalid residual into a non-cycle direction.
+    face_scale = np.max(np.abs(faces), initial=0)
+    scaled_faces = np.divide(
+        faces, face_scale, out=np.zeros_like(faces), where=face_scale != 0
     )
+    left, singular, right = np.linalg.svd(scaled_faces, full_matrices=False)
+    cutoff = (
+        np.finfo(float).eps * max(faces.shape) * singular[0] if singular.size else 0
+    )
+    retained = singular > cutoff
+    face_basis = left[:, retained]
     with np.errstate(over="ignore", invalid="ignore"):
-        chain = boundary @ normalized_faces
+        chain = boundary @ face_basis
     if not np.isfinite(chain).all() or not np.allclose(
         chain, 0, rtol=0, atol=tolerance
     ):
         raise ValueError("face_boundary must satisfy incidence @ face_boundary = 0")
     node_potential = np.linalg.lstsq(boundary.T, edge_flow, rcond=None)[0]
     gradient = boundary.T @ node_potential
-    face_potential = np.linalg.lstsq(faces, edge_flow - gradient, rcond=None)[0]
-    solenoidal = faces @ face_potential
+    coefficients = face_basis.T @ (edge_flow - gradient)
+    solenoidal = face_basis @ coefficients
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        face_potential = right[retained].T @ (coefficients / singular[retained])
+        if face_scale:
+            face_potential = face_potential / face_scale
     harmonic = edge_flow - gradient - solenoidal
     if not all(
         np.isfinite(part).all()

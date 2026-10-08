@@ -118,6 +118,24 @@ def test_zero_face_columns_are_preserved():
     assert_allclose(result.harmonic, [2, 2, 2])
 
 
+def test_nearly_dependent_faces_cannot_hide_noncycle_direction():
+    boundary = np.array(
+        [[-1, 0, 1, -1, 0], [1, -1, 0, 0, 0], [0, 1, -1, 0, 1], [0, 0, 0, 1, -1]]
+    )
+    cycle = np.array([1.0, 1.0, 1.0, 0.0, 0.0])
+    faces = np.column_stack((cycle, cycle + 1e-13 * np.array([0, 0, 0, 1, 0])))
+    with pytest.raises(ValueError, match="incidence @ face_boundary"):
+        graph_hodge_decomposition(boundary, [0, 0, 1, 1, 1], faces)
+
+
+def test_dependent_valid_faces_preserve_minimum_norm_potential():
+    faces = np.column_stack((np.ones(3), 2 * np.ones(3)))
+    result = graph_hodge_decomposition(TRIANGLE, [2, 2, 2], faces)
+    assert_allclose(result.face_potential, [0.4, 0.8])
+    assert_allclose(faces @ result.face_potential, [2, 2, 2])
+    assert_allclose(TRIANGLE @ result.solenoidal, 0, atol=1e-14)
+
+
 @pytest.mark.parametrize(
     "matrix", [[], [[1, 2]], [[1, np.nan], [0, 1]], [[1j]], [[True]], [["1"]]]
 )
