@@ -60,6 +60,13 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module SPACE
 
 ## Implemented Nested H3 Contracts
 
+- Default H3 dispatch loads only H3. SRAI initializes on an explicit request,
+  default selection, or full backend inspection. Missing SRAI is reported by
+  its interface; broken installed dependencies propagate when it is loaded.
+- `dispatcher.backends` contains realized implementations. Use
+  `get_available_backends()` or `get_backend_info()` for full discovery.
+
+
 - `geo_infer_space.nested.NestedH3Grid` builds real `h3>=4.5.0,<5`
   hierarchies from seed cells or boundary vertices across ordered resolutions.
 - Hierarchy outputs include deterministic `parent_child_map`,

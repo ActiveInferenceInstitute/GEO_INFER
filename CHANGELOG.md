@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 0.4.0 candidate preparation
 
+- Load SPACE's optional SRAI backend only on request or explicit discovery;
+  default H3 operations no longer import its numerical/ML dependency stack.
+  Preserve installed dependency failures when SRAI is requested. Measure ANT's
+  unchanged 100-agent/200 MB memory contract in an owned fresh process, avoiding
+  prior-suite resident allocations; preserve the earlier failure as unexplained.
+- Document the existing native macOS 27 PyTensor compiler profile in root agent
+  commands, retaining actual C compilation rather than a numerical fallback.
+
 - Let manuscript sections flow across pages, removing unconditional section
   breaks that stranded short tails on otherwise empty pages. Retain the
   declared section order and native readability/layout acceptance.

@@ -453,3 +453,61 @@ class TestEndToEndDispatchWorkflow:
         for cell in cells[:2]:
             boundary = dispatcher.dispatch_indexing_operation("get_cell_boundary", cell)
             assert len(boundary) >= 6  # Hexagon has at least 6 vertices
+
+
+class TestOptionalBackendAdmission:
+    """Default H3 operations do not import unrelated optional libraries."""
+
+    def test_h3_cold_process_does_not_import_srai(self):
+        import subprocess
+        import sys
+
+        script = """
+import sys
+from geo_infer_space.core.dispatcher import SpatialBackendDispatcher
+assert 'srai' not in sys.modules
+dispatcher = SpatialBackendDispatcher()
+cell = dispatcher.dispatch_indexing_operation('latlng_to_cell', 37.7, -122.4, 8)
+assert dispatcher.get_backend('h3').is_valid_cell(cell)
+assert 'srai' not in sys.modules
+assert 'torch' not in sys.modules
+"""
+        with subprocess.Popen(
+            [sys.executable, "-c", script], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        ) as process:
+            try:
+                stdout, stderr = process.communicate(timeout=60)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.communicate()
+                raise
+            assert process.returncode == 0, (stdout, stderr)
+
+    def test_broken_optional_backend_propagates_only_when_requested(self, monkeypatch):
+        def broken_loader(self):
+            raise ModuleNotFoundError("broken installed SRAI dependency", name="torch")
+
+        monkeypatch.setattr(SpatialBackendDispatcher, "_load_srai_backend", broken_loader)
+        dispatcher = SpatialBackendDispatcher()
+        assert dispatcher.dispatch_indexing_operation('latlng_to_cell', 37.7, -122.4, 8)
+        with pytest.raises(ModuleNotFoundError, match="broken installed SRAI"):
+            dispatcher.get_backend("srai")
+        with pytest.raises(ModuleNotFoundError, match="broken installed SRAI"):
+            dispatcher.get_available_backends()
+
+    def test_optional_backend_realized_once_with_real_capabilities(self, monkeypatch):
+        original_loader = SpatialBackendDispatcher._load_srai_backend
+        calls = []
+
+        def counted_loader(self):
+            calls.append("srai")
+            return original_loader(self)
+
+        monkeypatch.setattr(SpatialBackendDispatcher, "_load_srai_backend", counted_loader)
+        dispatcher = SpatialBackendDispatcher()
+        assert calls == []
+        backend = dispatcher.get_backend("srai")
+        assert dispatcher.get_backend("srai") is backend
+        assert "srai" in dispatcher.get_backend_info()
+        assert dispatcher.backend_capabilities["srai"] == backend.get_capabilities()
+        assert calls == ["srai"]

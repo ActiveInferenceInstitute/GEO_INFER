@@ -7,6 +7,7 @@ to the appropriate backend (H3, SRAI, etc.) based on configuration and operation
 
 import logging
 from typing import Any
+from collections.abc import Callable
 
 from .interfaces import (
     SpatialBackendProtocol,
@@ -27,6 +28,7 @@ class SpatialBackendDispatcher:
         self.backends: dict[str, SpatialBackendProtocol] = {}
         self.default_backends: dict[str, str] = {}
         self.backend_capabilities: dict[str, dict[str, Any]] = {}
+        self._backend_loaders: dict[str, Callable[[], SpatialBackendProtocol]] = {}
         self._load_backends()
 
     _STANDARD_OPERATION_TYPES = ("indexing", "geometric", "analytics")
@@ -39,8 +41,7 @@ class SpatialBackendDispatcher:
             for operation_type in self._STANDARD_OPERATION_TYPES:
                 self.default_backends.setdefault(operation_type, "h3")
             logger.info("H3 backend loaded successfully")
-        srai_backend = self._load_srai_backend()
-        self.register_backend("srai", srai_backend)
+        self._backend_loaders["srai"] = self._load_srai_backend
 
     def _load_h3_backend(self) -> SpatialBackendProtocol:
         """Load the required H3 implementation; internal failures propagate."""
@@ -56,23 +57,30 @@ class SpatialBackendDispatcher:
 
     def register_backend(self, name: str, backend: SpatialBackendProtocol) -> None:
         """Register a spatial backend."""
+        capabilities = backend.get_capabilities()
+        self._backend_loaders.pop(name, None)
         self.backends[name] = backend
-        self.backend_capabilities[name] = backend.get_capabilities()
+        self.backend_capabilities[name] = capabilities
         logger.info(f"Registered spatial backend: {name}")
 
     def get_backend(self, name: str) -> SpatialBackendProtocol | None:
-        """Get a specific backend by name."""
+        """Load a requested backend once; installed dependency failures propagate."""
+        loader = self._backend_loaders.get(name)
+        if loader is not None:
+            self.register_backend(name, loader())
         return self.backends.get(name)
 
     def get_available_backends(self) -> list[str]:
-        """Get list of available backend names."""
+        """Inspect all supported backends, including optional implementations."""
+        for name in tuple(self._backend_loaders):
+            self.get_backend(name)
         return [
             name for name, backend in self.backends.items() if backend.is_available()
         ]
 
     def set_default_backend(self, operation_type: str, backend_name: str) -> None:
         """Set the default backend for a specific operation type."""
-        if backend_name not in self.backends:
+        if self.get_backend(backend_name) is None:
             raise ValueError(f"Backend '{backend_name}' is not registered")
         self.default_backends[operation_type] = backend_name
 
@@ -97,14 +105,15 @@ class SpatialBackendDispatcher:
                 The message always lists the currently available backends.
         """
         backend_name = backend or self.get_default_backend(operation_type)
-        available = ", ".join(self.get_available_backends()) or "none"
         if backend_name is None:
+            available = ", ".join(self.get_available_backends()) or "none"
             raise ValueError(
                 f"No default backend registered for {operation_type!r} "
                 f"operations and no explicit backend given; "
                 f"available backends: {available}"
             )
-        if backend_name not in self.backends:
+        if self.get_backend(backend_name) is None:
+            available = ", ".join(self.get_available_backends()) or "none"
             raise ValueError(
                 f"Backend '{backend_name}' is not available; "
                 f"available backends: {available}"
@@ -235,7 +244,8 @@ class SpatialBackendDispatcher:
         return method(*args, **kwargs)
 
     def get_backend_info(self) -> dict[str, Any]:
-        """Get information about all registered backends."""
+        """Inspect all supported backends and their actual capabilities."""
+        self.get_available_backends()
         return {
             name: {
                 "available": backend.is_available(),

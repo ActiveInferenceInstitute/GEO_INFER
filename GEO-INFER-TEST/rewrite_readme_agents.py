@@ -428,6 +428,13 @@ uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
         return """
 ## Implemented Nested H3 Contracts
 
+- Default H3 dispatch loads only H3. SRAI initializes on an explicit request,
+  default selection, or full backend inspection. Missing SRAI is reported by
+  its interface; broken installed dependencies propagate when it is loaded.
+- `dispatcher.backends` contains realized implementations. Use
+  `get_available_backends()` or `get_backend_info()` for full discovery.
+
+
 - `geo_infer_space.nested.NestedH3Grid` builds real `h3>=4.5.0,<5`
   hierarchies from seed cells or boundary vertices across ordered resolutions.
 - Hierarchy outputs include deterministic `parent_child_map`,
@@ -660,6 +667,13 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
     if module.name == "GEO-INFER-SPACE":
         return """
 ## Current Nested H3 Contracts
+
+- Default H3 dispatch loads only H3. SRAI initializes on an explicit request,
+  default selection, or full backend inspection. Missing SRAI is reported by
+  its interface; broken installed dependencies propagate when it is loaded.
+- `dispatcher.backends` contains realized implementations. Use
+  `get_available_backends()` or `get_backend_info()` for full discovery.
+
 
 - `NestedH3Grid` owns H3 parent/child closure, validation, same-resolution
   neighbor maps, and child-to-parent aggregation.
@@ -1115,6 +1129,12 @@ uv run --with 'ruff>=0.15.6,<0.16' ruff check .
 gitleaks detect --source . --config .gitleaks.toml --redact --verbose
 uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check
 ```
+
+On macOS 27, native PyMC checks require the explicit repository compiler
+profile described in [SPM native sampling profiles](GEO-INFER-SPM/docs/native_sampling_profiles.md).
+Prefix validation commands with
+`PYTENSOR_FLAGS="cxx=$PWD/GEO-INFER-SPM/pytensor_clang++_macos27.py"`.
+Keep native compilation enabled and retain the chosen profile in evidence.
 
 ## Modular Hygiene Contract
 

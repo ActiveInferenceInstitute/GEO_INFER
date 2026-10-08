@@ -51,6 +51,12 @@ gitleaks detect --source . --config .gitleaks.toml --redact --verbose
 uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check
 ```
 
+On macOS 27, native PyMC checks require the explicit repository compiler
+profile described in [SPM native sampling profiles](GEO-INFER-SPM/docs/native_sampling_profiles.md).
+Prefix validation commands with
+`PYTENSOR_FLAGS="cxx=$PWD/GEO-INFER-SPM/pytensor_clang++_macos27.py"`.
+Keep native compilation enabled and retain the chosen profile in evidence.
+
 ## Modular Hygiene Contract
 
 - Use root `pyproject.toml`, `uv.lock`, and `.python-version` as the shared uv environment contract.

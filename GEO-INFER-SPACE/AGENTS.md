@@ -41,6 +41,13 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module SPACE
 
 ## Current Nested H3 Contracts
 
+- Default H3 dispatch loads only H3. SRAI initializes on an explicit request,
+  default selection, or full backend inspection. Missing SRAI is reported by
+  its interface; broken installed dependencies propagate when it is loaded.
+- `dispatcher.backends` contains realized implementations. Use
+  `get_available_backends()` or `get_backend_info()` for full discovery.
+
+
 - `NestedH3Grid` owns H3 parent/child closure, validation, same-resolution
   neighbor maps, and child-to-parent aggregation.
 - Build hierarchies with ordered real `h3>=4.5.0,<5` resolutions and

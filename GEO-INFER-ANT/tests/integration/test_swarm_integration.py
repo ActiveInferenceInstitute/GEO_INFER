@@ -356,24 +356,39 @@ class TestPerformanceIntegration:
         asyncio.run(large_scale_test())
 
     def test_memory_efficiency(self):
-        """Test memory efficiency of large simulations."""
-        import psutil
-        import os
+        """Measure the same cold workload without prior-suite resident allocations."""
+        import subprocess
+        import sys
 
-        # Get initial memory
-        process = psutil.Process(os.getpid())
-        initial_memory = process.memory_info().rss / 1024 / 1024  # MB
+        script = """
+import json
+import os
+import psutil
+from geo_infer_ant.core import AgentPopulation
+process = psutil.Process(os.getpid())
+initial_memory = process.memory_info().rss / 1024 / 1024
+population = AgentPopulation(population_size=100)
+agents = population.create_agents()
+environment = population.initialize_environment()
+final_memory = process.memory_info().rss / 1024 / 1024
+assert len(agents) == 100
+assert environment is population.environment
+print(json.dumps({"initial_mb": initial_memory, "final_mb": final_memory,
+                  "increase_mb": final_memory - initial_memory}))
+"""
+        with subprocess.Popen(
+            [sys.executable, "-c", script], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        ) as process:
+            try:
+                stdout, stderr = process.communicate(timeout=60)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.communicate()
+                raise
+            assert process.returncode == 0, (stdout, stderr)
+        measurements = json.loads(stdout)
+        assert measurements["increase_mb"] < 200, measurements
 
-        # Create and run simulation
-        population = AgentPopulation(population_size=100)
-        _agents = population.create_agents()
-        _environment = population.initialize_environment()
-
-        # Check memory usage
-        final_memory = process.memory_info().rss / 1024 / 1024  # MB
-        memory_increase = final_memory - initial_memory
-
-        assert memory_increase < 200  # Should use less than 200MB additional memory
 
 
 class TestEmergentBehavior:
