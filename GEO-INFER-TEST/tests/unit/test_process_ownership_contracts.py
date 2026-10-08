@@ -19,6 +19,7 @@ TOKEN = "a" * 32
 def unobservable_kernel_exit(monkeypatch):
     """Fake PIDs must never read an unrelated real task's kernel flags."""
     monkeypatch.setattr(module, "_kernel_exiting", lambda pid: None)
+    monkeypatch.setattr(module, "_kernel_denial_facts", lambda pid: None)
 
 
 class BoundaryProcess:
@@ -554,3 +555,85 @@ def test_missing_procfs_entry_is_unobservable(tmp_path, monkeypatch):
     monkeypatch.undo()
     monkeypatch.setattr(module, "_PROCFS", tmp_path)
     assert module._kernel_exiting(4321) is None
+
+
+def _fake_task(root, pid, *, stat, status, environ_mode=0o400, attr=None):
+    task = root / str(pid)
+    task.mkdir()
+    (task / "stat").write_text(stat)
+    (task / "status").write_text(status)
+    (task / "environ").write_bytes(b"")
+    (task / "environ").chmod(environ_mode)
+    if attr is not None:
+        (task / "attr").mkdir()
+        (task / "attr" / "current").write_text(attr)
+    return task
+
+
+def test_denial_facts_are_content_free_kernel_observations(tmp_path, monkeypatch):
+    monkeypatch.undo()
+    monkeypatch.setattr(module, "_PROCFS", tmp_path)
+    uid = os.getuid()
+    _fake_task(
+        tmp_path,
+        4321,
+        stat=_stat_line(comm="PRIVATE_COMM", flags=0x00400100),
+        status=(
+            "Name:\tPRIVATE_NAME\n"
+            f"Uid:\t{uid}\t{uid}\t{uid}\t{uid}\n"
+            "Threads:\t3\nNoNewPrivs:\t0\nSeccomp:\t2\n"
+        ),
+        attr="/usr/bin/PRIVATE_PROFILE (enforce)\n",
+    )
+    facts = module._kernel_denial_facts(4321)
+    assert facts == (
+        "state=R flags=0x400100 environ_owner=self uid_match=True "
+        "threads=3 no_new_privs=0 seccomp=2 lsm=confined(enforce)"
+    )
+    assert "PRIVATE" not in facts
+
+
+def test_denial_facts_report_foreign_environ_owner_and_unconfined(
+    tmp_path, monkeypatch
+):
+    monkeypatch.undo()
+    monkeypatch.setattr(module, "_PROCFS", tmp_path)
+    task = _fake_task(
+        tmp_path,
+        4321,
+        stat=_stat_line(comm="x", flags=0x4),
+        status="Uid:\t1\t1\t1\t1\n",
+        attr="unconfined\n",
+    )
+    monkeypatch.setattr(
+        module.os,
+        "stat",
+        lambda path, *a, **k: (
+            SimpleNamespace(st_uid=0)
+            if str(path) == str(task / "environ")
+            else os.stat(path, *a, **k)
+        ),
+    )
+    facts = module._kernel_denial_facts(4321)
+    assert facts.startswith("state=R flags=0x4 environ_owner=0 uid_match=False")
+    assert facts.endswith("lsm=unconfined")
+
+
+def test_missing_task_has_no_denial_facts(tmp_path, monkeypatch):
+    monkeypatch.undo()
+    monkeypatch.setattr(module, "_PROCFS", tmp_path)
+    assert module._kernel_denial_facts(4321) is None
+
+
+def test_persistent_denial_retains_kernel_facts_in_sanitized_message(monkeypatch):
+    now, _ = observation_clock(monkeypatch)
+    error = psutil.AccessDenied(4321, name="PRIVATE_NAME", msg="PRIVATE_MESSAGE")
+    child = BoundaryProcess(environment=error)
+    monkeypatch.setattr(module, "_kernel_denial_facts", lambda pid: "state=S flags=0x0")
+    with pytest.raises(psutil.AccessDenied) as caught:
+        census()._owned(child, deadline=1)
+    assert caught.value is error
+    assert error.msg == (
+        "Owned PID 4321: environment inspection denied (state=S flags=0x0)"
+    )
+    assert "PRIVATE" not in str(error)

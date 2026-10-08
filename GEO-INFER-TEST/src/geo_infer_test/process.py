@@ -78,6 +78,61 @@ def _kernel_exiting(pid: int) -> bool | None:
     return _stat_reports_exiting(text)
 
 
+def _kernel_denial_facts(pid: int) -> str | None:
+    """Summarize why ``pid``'s environment may be denied, without its content.
+
+    Only kernel state is reported: run state and flags, whether procfs made
+    ``environ`` root-owned (a non-dumpable or mm-less task), credential
+    equality, seccomp/no_new_privs and whether an LSM confines the task. Names,
+    command lines, environment and LSM profile names are never read into it.
+    """
+    task = _PROCFS / str(pid)
+    try:
+        stat = (task / "stat").read_text(encoding="latin-1")
+        status = (task / "status").read_text(encoding="latin-1")
+    except OSError:
+        return None
+    fields = stat.rpartition(")")[2].split()
+    if len(fields) < 7 or not fields[6].isdigit():
+        return None
+    lines = dict(line.split(":", 1) for line in status.splitlines() if ":" in line)
+    try:
+        owner = os.stat(task / "environ").st_uid
+    except OSError:
+        owner_fact = "unavailable"
+    else:
+        owner_fact = "self" if owner == os.getuid() else str(owner)
+    uids = lines.get("Uid", "").split()
+    facts = [
+        f"state={fields[0]}",
+        f"flags={int(fields[6]):#x}",
+        f"environ_owner={owner_fact}",
+        f"uid_match={bool(uids) and all(uid == str(os.getuid()) for uid in uids)}",
+    ]
+    for key, label in (
+        ("Threads", "threads"),
+        ("NoNewPrivs", "no_new_privs"),
+        ("Seccomp", "seccomp"),
+    ):
+        value = lines.get(key, "").strip()
+        if value.isdigit():
+            facts.append(f"{label}={value}")
+    try:
+        label_text = (task / "attr" / "current").read_text(encoding="latin-1").strip()
+    except OSError:
+        label_text = ""
+    if label_text:
+        mode = label_text.rpartition("(")[2].rstrip(")") if "(" in label_text else ""
+        facts.append(
+            "lsm=unconfined"
+            if label_text == "unconfined"
+            else f"lsm=confined({mode})"
+            if mode.isalpha()
+            else "lsm=confined"
+        )
+    return " ".join(facts)
+
+
 class _DescendantCensus:
     """Retain launch-token ownership and identities across orphaning.
 
@@ -140,6 +195,9 @@ class _DescendantCensus:
                 if remaining <= 0:
                     break
                 time.sleep(min(0.001, remaining))
+            facts = _kernel_denial_facts(process.pid)
+            if facts:
+                error.msg = f"{error.msg} ({facts})"
             raise
 
     def refresh(self, *, timeout: float) -> None:
