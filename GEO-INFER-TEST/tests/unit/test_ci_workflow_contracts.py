@@ -7,7 +7,9 @@ depend on, the same way the acceptance probes grep the workflow sources.
 
 from __future__ import annotations
 
+import copy
 import importlib.util
+from functools import cache
 import re
 import sys
 from pathlib import Path
@@ -18,10 +20,17 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 
 
-def _load(name: str) -> dict:
+@cache
+def _parsed_workflow(name: str) -> dict:
     document = yaml.safe_load((WORKFLOWS / name).read_text(encoding="utf-8"))
     assert isinstance(document, dict)
     return document
+
+
+def _load(name: str) -> dict:
+    # Parse each immutable workflow once per test process. Return an independent
+    # copy so a test cannot mutate the document seen by another contract.
+    return copy.deepcopy(_parsed_workflow(name))
 
 
 def _trigger(document: dict) -> dict:
@@ -498,10 +507,11 @@ def test_workspace_syncs_install_every_dependency_group():
     commands = [
         command
         for workflow in sorted(WORKFLOWS.glob("*.yml"))
+        + sorted((REPO_ROOT / ".github/actions").glob("*/action.yml"))
         for command in _workspace_sync_commands(workflow.read_text(encoding="utf-8"))
         if "--all-packages" in command
     ]
-    assert len(commands) >= 6
+    assert len(commands) >= 3
     for command in commands:
         tokens = command.split()
         assert {"--locked", "--all-extras", "--all-groups"} <= set(tokens), command
@@ -616,7 +626,7 @@ def test_fast_and_validation_jobs_retain_full_attempt_artifacts():
     assert "needs" not in jobs["fast-contracts"]
     fast = _dump(jobs["fast-contracts"])
     assert "--paths" in fast and "test_space_time_composition_contract.py" in fast
-    assert "uv sync --locked" in fast and "--all-extras" in fast
+    assert "./.github/actions/sync-cpu-workspace" in fast
 
 
 def test_process_tree_contract_has_real_hosted_windows_execution():
@@ -683,3 +693,51 @@ def test_cpu_jobs_explicitly_provision_real_duckdb_spatial_runtime():
 def test_called_and_standalone_pair_jobs_have_distinct_concurrency_groups():
     group = _load("gnn-interchange.yml")["concurrency"]["group"]
     assert "github.workflow" in group and "github.event_name" in group
+
+
+def test_cpu_workspace_setup_is_shared_and_remains_fail_closed():
+    jobs = _load("ci.yml")["jobs"]
+    for name in ("validate", "fast-contracts", "test", "manuscript"):
+        steps = jobs[name]["steps"]
+        sync = [
+            step
+            for step in steps
+            if step.get("uses") == "./.github/actions/sync-cpu-workspace"
+        ]
+        assert len(sync) == 1, name
+        assert "continue-on-error" not in sync[0]
+        assert not _workspace_sync_commands(_dump(jobs[name]))
+        setup_index = next(
+            i
+            for i, step in enumerate(steps)
+            if step.get("uses", "").startswith("astral-sh/setup-uv@")
+        )
+        assert steps.index(sync[0]) > setup_index
+
+
+def test_cpu_cache_has_one_writer_per_interpreter_and_no_environment_reuse():
+    jobs = _load("ci.yml")["jobs"]
+    for name in ("validate", "fast-contracts", "test", "manuscript"):
+        setup = next(
+            step
+            for step in jobs[name]["steps"]
+            if step.get("uses", "").startswith("astral-sh/setup-uv@")
+        )["with"]
+        expected = (
+            "cpu-workspace-py${{ matrix.python-version }}"
+            if name == "test"
+            else "cpu-workspace-py3.11"
+        )
+        assert setup["cache-suffix"] == expected
+        assert setup["enable-cache"] is True
+        assert setup["save-cache"] == (
+            "${{ matrix.category == 'unit' }}" if name == "test" else False
+        )
+        assert setup["cache-dependency-glob"].splitlines() == [
+            "**/pyproject.toml",
+            "**/uv.lock",
+            ".python-version",
+        ]
+        # Only the uv package download/build cache is reused; the composite
+        # action still constructs and synchronizes each job's environment.
+        assert ".venv" not in setup.get("cache-local-path", "")

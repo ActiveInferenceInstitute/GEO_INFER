@@ -63,26 +63,15 @@ jobs:
         with:
           version: "0.10.7"
           enable-cache: true
-          cache-suffix: validate
+          cache-suffix: cpu-workspace-py3.11
+          save-cache: false
           cache-dependency-glob: |
             **/pyproject.toml
             **/uv.lock
             .python-version
 
-      - name: Install locked dependencies
-        run: |
-          # CuPy requires a CUDA toolchain when no compatible wheel is
-          # available; the hosted CPU runners do not provide one. Keep the
-          # performance extra available to developers while excluding it from
-          # this CPU-only validation environment.
-          # Mayavi is an optional Python <3.12 3-D extra whose source build is
-          # incompatible with the hosted runner's VTK dependency; no CI test
-          # requires that optional backend.
-          # Vaex is an optional Python <3.12 performance extra whose C++
-          # extension does not build against the hosted runner toolchain.
-          uv sync --locked --python "$(command -v python)" --all-packages --all-extras --all-groups \
-            --no-install-package cupy --no-install-package mayavi \
-            --no-install-package vaex --no-install-package vaex-core
+      - name: Install locked workspace dependencies
+        uses: ./.github/actions/sync-cpu-workspace
 
       - name: Provision compatible DuckDB Spatial runtime
         run: |
@@ -256,26 +245,15 @@ jobs:
         with:
           version: "0.10.7"
           enable-cache: true
-          cache-suffix: fast-contracts
+          cache-suffix: cpu-workspace-py3.11
+          save-cache: false
           cache-dependency-glob: |
             **/pyproject.toml
             **/uv.lock
             .python-version
 
-      - name: Install locked dependencies
-        run: |
-          # CuPy requires a CUDA toolchain when no compatible wheel is
-          # available; the hosted CPU runners do not provide one. Keep the
-          # performance extra available to developers while excluding it from
-          # this CPU-only validation environment.
-          # Mayavi is an optional Python <3.12 3-D extra whose source build is
-          # incompatible with the hosted runner's VTK dependency; no CI test
-          # requires that optional backend.
-          # Vaex is an optional Python <3.12 performance extra whose C++
-          # extension does not build against the hosted runner toolchain.
-          uv sync --locked --python "$(command -v python)" --all-packages --all-extras --all-groups \
-            --no-install-package cupy --no-install-package mayavi \
-            --no-install-package vaex --no-install-package vaex-core
+      - name: Install locked workspace dependencies
+        uses: ./.github/actions/sync-cpu-workspace
 
       - name: Provision compatible DuckDB Spatial runtime
         run: |
@@ -485,26 +463,17 @@ jobs:
         with:
           version: "0.10.7"
           enable-cache: true
-          cache-suffix: py${{ matrix.python-version }}-${{ matrix.category }}
+          cache-suffix: cpu-workspace-py${{ matrix.python-version }}
+          # One complete workspace writer per interpreter; other categories
+          # restore the same lock-bound download cache without save races.
+          save-cache: ${{ matrix.category == 'unit' }}
           cache-dependency-glob: |
             **/pyproject.toml
             **/uv.lock
             .python-version
 
-      - name: Install locked dependencies
-        run: |
-          # CuPy requires a CUDA toolchain when no compatible wheel is
-          # available; the hosted CPU runners do not provide one. Keep the
-          # performance extra available to developers while excluding it from
-          # this CPU-only validation environment.
-          # Mayavi is an optional Python <3.12 3-D extra whose source build is
-          # incompatible with the hosted runner's VTK dependency; no CI test
-          # requires that optional backend.
-          # Vaex is an optional Python <3.12 performance extra whose C++
-          # extension does not build against the hosted runner toolchain.
-          uv sync --locked --python "$(command -v python)" --all-packages --all-extras --all-groups \
-            --no-install-package cupy --no-install-package mayavi \
-            --no-install-package vaex --no-install-package vaex-core
+      - name: Install locked workspace dependencies
+        uses: ./.github/actions/sync-cpu-workspace
 
       - name: Provision compatible DuckDB Spatial runtime
         run: |
@@ -582,13 +551,15 @@ jobs:
         with:
           version: "0.10.7"
           enable-cache: true
-          cache-suffix: manuscript
+          cache-suffix: cpu-workspace-py3.11
+          save-cache: false
+          cache-dependency-glob: |
+            **/pyproject.toml
+            **/uv.lock
+            .python-version
 
       - name: Install locked workspace dependencies
-        run: |
-          uv sync --locked --python "$(command -v python)" --all-packages --all-extras --all-groups \
-            --no-install-package cupy --no-install-package mayavi \
-            --no-install-package vaex --no-install-package vaex-core
+        uses: ./.github/actions/sync-cpu-workspace
 
       - name: Generate research artifacts
         run: |

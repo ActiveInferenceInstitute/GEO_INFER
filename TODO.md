@@ -56,7 +56,10 @@ The modernization pass replaces obsolete H3 setup guidance with supported APIs,
 corrects RNG documentation, and repairs SPM helper input rejection, silently
 omitted formula interactions, nonfinite degenerate bases and the default
 polynomial basis's nonterminating expansion. Migration guidance records the
-new polynomial ordering and explicit supported formula grammar. Working public
+new polynomial ordering and explicit supported formula grammar. CI now shares a
+locked CPU workspace sync and per-interpreter uv package cache, with one writer
+per key and isolated job environments. Workflow tests reuse parsed YAML through
+independent copies; the full 35-contract selection passed. Working public
 API names, security rejection tests, publisher URLs and hash-bound historical
 identities remain meaningful contracts rather than removal targets.
 

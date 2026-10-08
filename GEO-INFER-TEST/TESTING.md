@@ -52,3 +52,25 @@ Model checks require finite outputs, declared shapes and dtypes, normalized prob
   suite's failing test names in the final summary verdict (summary.json
   records them regardless), and inspect the corresponding JUnit XML and
   `summary.json` under `.geo-infer-test-results/`.
+
+## CI setup and timing
+
+The CPU validation, fast-contract, category and manuscript jobs use
+`.github/actions/sync-cpu-workspace/action.yml` for the same locked workspace
+sync. It installs all members, extras and dependency groups with the four
+explicit hosted CPU exclusions (CuPy, Mayavi, Vaex and Vaex Core). Each job
+constructs its own environment; a cache hit never replaces `uv sync --locked`.
+
+These jobs share the uv download/build cache per Python interpreter, keyed by
+all workspace manifests, the lock and `.python-version`. Only each interpreter's
+unit job saves that key; the other jobs restore it without competing uploads.
+The installed-wheel job retains its separate cache and installation isolation.
+
+The baseline green run [37734618009](https://github.com/ActiveInferenceInstitute/GEO_INFER/actions/runs/37734618009)
+spent 65–106 seconds in each category's dependency sync. System tests took
+15–16 seconds and unit tests 494–525 seconds. Compare the same step timings in
+the next green run before claiming a speedup. A new cache key still starts cold;
+no jobs wait for another category to populate it. Workflow contracts parse each
+workflow once and return independent document copies to prevent test coupling.
+Per-module execution receipts and `--durations=10` retain expensive runtime paths
+for subsequent profiling without narrowing selections or relaxing deadlines.

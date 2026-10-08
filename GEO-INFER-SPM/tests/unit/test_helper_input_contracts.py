@@ -2,6 +2,7 @@
 
 import subprocess
 import sys
+import inspect
 
 import numpy as np
 import pytest
@@ -73,23 +74,36 @@ def test_basis_count_is_positive_integer(count):
 
 
 def test_polynomial_default_terminates_and_matches_total_degree_oracle():
-    # A bounded real child protects the suite against the former infinite loop
-    # for the public default n_basis=10.
+    # Execute the production function's definition with real NumPy in a bounded
+    # child. Importing the entire SPM package in that child would also initialize
+    # optional samplers, conflating their startup with this algorithm's budget.
     code = """
 import numpy as np
-from geo_infer_spm.utils.helpers import create_spatial_basis_functions
+import sys
+namespace = {"np": np}
+exec("from __future__ import annotations\\n" + sys.argv[1], namespace)
 coords = np.array([[-1., -2.], [0., 0.], [1., 2.]])
 x, y = ((coords - coords.mean(axis=0)) / coords.std(axis=0)).T
 expected = np.column_stack([np.ones(3), y, x, y*y, x*y, x*x, y**3, x*y*y, x*x*y, x**3])
-actual = create_spatial_basis_functions(coords, method="polynomial")
+actual = namespace["create_spatial_basis_functions"](coords, method="polynomial")
 np.testing.assert_allclose(actual, expected)
 """
-    subprocess.run(
-        [sys.executable, "-c", code],
-        check=True,
+    completed = subprocess.run(
+        [sys.executable, "-c", code, inspect.getsource(create_spatial_basis_functions)],
         timeout=20,
         capture_output=True,
         text=True,
+    )
+    assert completed.returncode == 0, completed.stderr or completed.stdout
+    # The public module path is already imported in the parent; check its actual
+    # callable as well as the bounded production-definition execution above.
+    coords = np.array([[-1.0, -2.0], [0.0, 0.0], [1.0, 2.0]])
+    x, y = ((coords - coords.mean(axis=0)) / coords.std(axis=0)).T
+    expected = np.column_stack(
+        [np.ones(3), y, x, y * y, x * y, x * x, y**3, x * y * y, x * x * y, x**3]
+    )
+    np.testing.assert_allclose(
+        create_spatial_basis_functions(coords, method="polynomial"), expected
     )
 
 
