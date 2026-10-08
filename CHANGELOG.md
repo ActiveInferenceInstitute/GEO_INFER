@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 0.4.0 candidate preparation
 
+- Validate graph face-boundary directions independently of column magnitude;
+  tiny invalid faces cannot pass the chain check and produce divergent curl
+  projections. Analytical regressions cover tiny and large valid/invalid faces
+  and zero face columns. Refresh readiness records to distinguish verified
+  candidate evidence from historical failures and pending main publication.
+
 - Make the non-pytest exit-code regression launch a real child and assert its
   exit code, output, failure classification and complete receipt custody;
   a metadata failure can no longer satisfy the test. Limit allowed-empty

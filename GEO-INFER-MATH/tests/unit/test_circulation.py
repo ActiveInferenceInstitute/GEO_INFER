@@ -96,6 +96,28 @@ def test_disconnected_graph_gauge_and_edgeless_graph():
     assert_array_equal(empty.node_potential, [0, 0])
 
 
+@pytest.mark.parametrize("scale", [1e-300, 1e-13, 1.0, 1e300])
+def test_face_chain_validation_is_independent_of_column_scale(scale):
+    with pytest.raises(ValueError, match="incidence @ face_boundary"):
+        graph_hodge_decomposition(
+            TRIANGLE, [2, 2, 2], scale * np.array([[1], [0], [0]])
+        )
+    faces = scale * np.ones((3, 1))
+    result = graph_hodge_decomposition(TRIANGLE, [2, 2, 2], faces)
+    assert_allclose(result.solenoidal, [2, 2, 2], atol=1e-14)
+    assert_allclose(TRIANGLE @ result.solenoidal, 0, atol=1e-14)
+    assert_allclose(TRIANGLE @ result.harmonic, 0, atol=1e-14)
+    assert_allclose(result.gradient + result.solenoidal + result.harmonic, [2, 2, 2])
+    assert_allclose(faces @ result.face_potential, result.solenoidal)
+
+
+def test_zero_face_columns_are_preserved():
+    result = graph_hodge_decomposition(TRIANGLE, [2, 2, 2], np.zeros((3, 2)))
+    assert_array_equal(result.face_potential, [0, 0])
+    assert_array_equal(result.solenoidal, [0, 0, 0])
+    assert_allclose(result.harmonic, [2, 2, 2])
+
+
 @pytest.mark.parametrize(
     "matrix", [[], [[1, 2]], [[1, np.nan], [0, 1]], [[1j]], [[True]], [["1"]]]
 )

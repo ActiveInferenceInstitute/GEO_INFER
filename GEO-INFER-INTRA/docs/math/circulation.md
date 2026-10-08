@@ -45,7 +45,9 @@ assert np.allclose(parts.harmonic, 0)
 
 The unweighted discrete graph contract uses incidence `B` (nodes by edges), with
 one -1 source and +1 target per edge. Optional face boundary `C` (edges by faces)
-must satisfy `B @ C = 0`. Least-squares projections return gradient in
+must satisfy `B @ C = 0`. Validation applies `atol` after scaling each nonzero
+face column to unit maximum magnitude, so tiny invalid directions are rejected
+just like unit-size directions. Zero columns remain valid. Least-squares projections return gradient in
 `range(B.T)`, face-curl (`solenoidal`) in `range(C)` and the explicit harmonic
 remainder. The remainder lies in `ker(B)` and `ker(C.T)` up to numerical error.
 Node and face potentials use the minimum-norm gauge. Disconnected and edgeless

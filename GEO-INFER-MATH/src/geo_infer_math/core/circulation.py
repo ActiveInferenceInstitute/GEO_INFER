@@ -172,7 +172,9 @@ def graph_hodge_decomposition(
     """Split real edge flow into gradient, face curl and harmonic remainder.
 
     B (nodes x edges) has exactly one -1 source and +1 target per column.
-    C (edges x faces), when supplied, must satisfy B C = 0. Projections use
+    C (edges x faces), when supplied, must satisfy B C = 0 after each nonzero
+    column is scaled to unit maximum magnitude for the tolerance check.
+    Projections use
     least squares onto range(B.T) and range(C); the remainder lies in ker(B)
     and ker(C.T), up to numerical error. Disconnected graphs are supported.
     This is an unweighted finite graph/complex contract, not a PDE solver.
@@ -198,8 +200,14 @@ def graph_hodge_decomposition(
     )
     if faces.shape[0] != edges:
         raise ValueError("face_boundary must match incidence edge count")
+    # A tiny invalid column still spans an invalid direction: least squares
+    # cancels its magnitude. Validate directions rather than raw magnitudes.
+    scales = np.max(np.abs(faces), axis=0, initial=0)
+    normalized_faces = np.divide(
+        faces, scales, out=np.zeros_like(faces), where=scales != 0
+    )
     with np.errstate(over="ignore", invalid="ignore"):
-        chain = boundary @ faces
+        chain = boundary @ normalized_faces
     if not np.isfinite(chain).all() or not np.allclose(
         chain, 0, rtol=0, atol=tolerance
     ):
