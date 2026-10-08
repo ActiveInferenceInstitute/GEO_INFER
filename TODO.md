@@ -28,6 +28,9 @@ next steps.
 
 ### 0.4.0 continuation — current scope (2026-10-08)
 
+See the [issue reconciliation ledger](GEO-INFER-INTRA/docs/releases/issue_reconciliation_2026_10.md)
+for current evidence and explicitly unmet acceptance across all open issues.
+
 The owner authorized repo-wide modernization, verification and an ordinary main
 push on 2026-10-08. Release tags, registry publication, deployment, licensed data,
 external hardware and account changes remain separately scoped.

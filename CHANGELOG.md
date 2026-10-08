@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 0.4.0 candidate preparation
 
+- Add MATH finite-real skew decomposition, transition/rate probability currents,
+  detailed-balance checks and discrete graph Hodge projections with an explicit
+  harmonic remainder. Analytical tests cover nonuniform stationary measures,
+  irreversible cycles, face/no-face topology, disconnected gauges and invalid
+  inputs; these numerical anchors do not claim external formal proof acceptance.
+- Repair SPM formula rejection, degenerate radial/Gaussian bases and the default
+  polynomial basis expansion; document supported grammar and polynomial order.
+- Share locked CPU workspace installation and interpreter-specific uv package
+  caches across CI jobs, with one cache writer per interpreter. Cache parsed
+  workflow fixtures while returning independent copies to each contract test.
+- Stop manuscript verification admission after interruption, retaining the
+  interrupted attempt and explicit not-run groups.
+- Replace obsolete H3 installation/API examples and unsupported RNG docstrings
+  with current uv, H3 v4 and generator contracts.
+
 - Measure owning TEST source files named `test_*` instead of excluding them by
   filename, with regression coverage for each declared coverage configuration.
 - Propagate ownership census timeouts separately from target pipe polling and

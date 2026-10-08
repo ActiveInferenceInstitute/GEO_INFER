@@ -34,6 +34,7 @@
 - `integration/`
 - `knowledge_base/`
 - `materiality/`
+- `math/`
 - `modules/`
 - `ontology/`
 - `realms/`

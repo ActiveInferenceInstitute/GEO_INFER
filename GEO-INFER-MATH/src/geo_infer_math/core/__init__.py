@@ -10,6 +10,7 @@ top-level API lives in :mod:`geo_infer_math`.
 """
 
 from geo_infer_math.core import (
+    circulation,
     geometry,
     gpu_acceleration,
     graph_theory,
@@ -25,6 +26,7 @@ from geo_infer_math.core import (
 )
 
 __all__ = [
+    "circulation",
     "spatial_statistics",
     "interpolation",
     "optimization",

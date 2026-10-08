@@ -6,6 +6,7 @@ Unit workspace within `GEO-INFER-MATH`.
 
 - `test_ai_convenience.py`
 - `test_bayes_convenience.py`
+- `test_circulation.py`
 - `test_clustering.py`
 - `test_config_contract.py`
 - `test_convenience_api.py`

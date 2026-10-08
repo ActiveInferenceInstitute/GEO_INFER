@@ -7,6 +7,7 @@ Core workspace within `GEO-INFER-MATH`.
 - `information_theory/`
 - `theorem_proving/`
 - `__init__.py`
+- `circulation.py`
 - `geometry.py`
 - `gpu_acceleration.py`
 - `graph_theory.py`
@@ -20,6 +21,13 @@ Core workspace within `GEO-INFER-MATH`.
 
 ## Public Interface
 
+- `circulation.py:skew_part` (function)
+- `circulation.py:probability_current` (function)
+- `circulation.py:circulation_part` (function)
+- `circulation.py:current_divergence` (function)
+- `circulation.py:satisfies_detailed_balance` (function)
+- `circulation.py:GraphHodgeDecomposition` (class)
+- `circulation.py:graph_hodge_decomposition` (function)
 - `geometry.py:Point` (class)
 - `geometry.py:LineString` (class)
 - `geometry.py:Polygon` (class)
@@ -33,13 +41,6 @@ Core workspace within `GEO-INFER-MATH`.
 - `geometry.py:line_intersection` (function)
 - `geometry.py:polygon_area_spherical` (function)
 - `geometry.py:great_circle_distance` (function)
-- `gpu_acceleration.py:GPUAccelerator` (class)
-- `gpu_acceleration.py:is_gpu_available` (function)
-- `gpu_acceleration.py:get_gpu_info` (function)
-- `gpu_acceleration.py:benchmark_gpu_performance` (function)
-- `gpu_acceleration.py:gpu_matrix_multiply` (function)
-- `gpu_acceleration.py:gpu_distance_matrix` (function)
-- `gpu_acceleration.py:gpu_spatial_interpolation` (function)
 
 ## Module Metadata
 
