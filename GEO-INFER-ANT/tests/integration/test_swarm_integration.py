@@ -377,7 +377,9 @@ print(json.dumps({"initial_mb": initial_memory, "final_mb": final_memory,
                   "increase_mb": final_memory - initial_memory}))
 """
         with subprocess.Popen(
-            [sys.executable, "-c", script], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            [sys.executable, "-c", script],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         ) as process:
             try:
                 stdout, stderr = process.communicate(timeout=60)
@@ -388,7 +390,6 @@ print(json.dumps({"initial_mb": initial_memory, "final_mb": final_memory,
             assert process.returncode == 0, (stdout, stderr)
         measurements = json.loads(stdout)
         assert measurements["increase_mb"] < 200, measurements
-
 
 
 class TestEmergentBehavior:

@@ -473,7 +473,9 @@ assert 'srai' not in sys.modules
 assert 'torch' not in sys.modules
 """
         with subprocess.Popen(
-            [sys.executable, "-c", script], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            [sys.executable, "-c", script],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         ) as process:
             try:
                 stdout, stderr = process.communicate(timeout=60)
@@ -487,9 +489,11 @@ assert 'torch' not in sys.modules
         def broken_loader(self):
             raise ModuleNotFoundError("broken installed SRAI dependency", name="torch")
 
-        monkeypatch.setattr(SpatialBackendDispatcher, "_load_srai_backend", broken_loader)
+        monkeypatch.setattr(
+            SpatialBackendDispatcher, "_load_srai_backend", broken_loader
+        )
         dispatcher = SpatialBackendDispatcher()
-        assert dispatcher.dispatch_indexing_operation('latlng_to_cell', 37.7, -122.4, 8)
+        assert dispatcher.dispatch_indexing_operation("latlng_to_cell", 37.7, -122.4, 8)
         with pytest.raises(ModuleNotFoundError, match="broken installed SRAI"):
             dispatcher.get_backend("srai")
         with pytest.raises(ModuleNotFoundError, match="broken installed SRAI"):
@@ -503,7 +507,9 @@ assert 'torch' not in sys.modules
             calls.append("srai")
             return original_loader(self)
 
-        monkeypatch.setattr(SpatialBackendDispatcher, "_load_srai_backend", counted_loader)
+        monkeypatch.setattr(
+            SpatialBackendDispatcher, "_load_srai_backend", counted_loader
+        )
         dispatcher = SpatialBackendDispatcher()
         assert calls == []
         backend = dispatcher.get_backend("srai")
