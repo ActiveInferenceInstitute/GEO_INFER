@@ -573,21 +573,22 @@ def _fake_task(root, pid, *, stat, status, environ_mode=0o400, attr=None):
 def test_denial_facts_are_content_free_kernel_observations(tmp_path, monkeypatch):
     monkeypatch.undo()
     monkeypatch.setattr(module, "_PROCFS", tmp_path)
-    uid = os.getuid()
-    _fake_task(
+    task = _fake_task(
         tmp_path,
         4321,
         stat=_stat_line(comm="PRIVATE_COMM", flags=0x00400100),
         status=(
             "Name:\tPRIVATE_NAME\n"
-            f"Uid:\t{uid}\t{uid}\t{uid}\t{uid}\n"
+            "Uid:\t1000\t1000\t1000\t1000\n"
             "Threads:\t3\nNoNewPrivs:\t0\nSeccomp:\t2\n"
         ),
         attr="/usr/bin/PRIVATE_PROFILE (enforce)\n",
     )
-    facts = module._kernel_denial_facts(4321)
+    owner = os.stat(task / "environ").st_uid
+    facts = module._kernel_denial_facts(4321, uid=owner)
     assert facts == (
-        "state=R flags=0x400100 environ_owner=self uid_match=True "
+        "state=R flags=0x400100 environ_owner=self "
+        f"uid_match={owner == 1000} "
         "threads=3 no_new_privs=0 seccomp=2 lsm=confined(enforce)"
     )
     assert "PRIVATE" not in facts
@@ -602,38 +603,47 @@ def test_denial_facts_report_foreign_environ_owner_and_unconfined(
         tmp_path,
         4321,
         stat=_stat_line(comm="x", flags=0x4),
-        status="Uid:\t1\t1\t1\t1\n",
+        status="Uid:\t7\t7\t7\t7\n",
         attr="unconfined\n",
     )
-    monkeypatch.setattr(
-        module.os,
-        "stat",
-        lambda path, *a, **k: (
-            SimpleNamespace(st_uid=0)
-            if str(path) == str(task / "environ")
-            else os.stat(path, *a, **k)
-        ),
+    owner = os.stat(task / "environ").st_uid
+    facts = module._kernel_denial_facts(4321, uid=owner + 1)
+    assert facts == (
+        f"state=R flags=0x4 environ_owner={owner} uid_match={owner + 1 == 7} "
+        "lsm=unconfined"
     )
-    facts = module._kernel_denial_facts(4321)
-    assert facts.startswith("state=R flags=0x4 environ_owner=0 uid_match=False")
-    assert facts.endswith("lsm=unconfined")
+
+
+def test_denial_facts_need_posix_credentials(tmp_path, monkeypatch):
+    monkeypatch.undo()
+    monkeypatch.setattr(module, "_PROCFS", tmp_path)
+    monkeypatch.setattr(module, "os", SimpleNamespace(stat=os.stat))
+    assert module._kernel_denial_facts(4321) is None
 
 
 def test_missing_task_has_no_denial_facts(tmp_path, monkeypatch):
     monkeypatch.undo()
     monkeypatch.setattr(module, "_PROCFS", tmp_path)
-    assert module._kernel_denial_facts(4321) is None
+    assert module._kernel_denial_facts(4321, uid=1000) is None
 
 
 def test_persistent_denial_retains_kernel_facts_in_sanitized_message(monkeypatch):
     now, _ = observation_clock(monkeypatch)
     error = psutil.AccessDenied(4321, name="PRIVATE_NAME", msg="PRIVATE_MESSAGE")
     child = BoundaryProcess(environment=error)
-    monkeypatch.setattr(module, "_kernel_denial_facts", lambda pid: "state=S flags=0x0")
+    observed_at = []
+
+    def facts(pid):
+        observed_at.append(now[0])
+        return "state=S flags=0x0"
+
+    monkeypatch.setattr(module, "_kernel_denial_facts", facts)
     with pytest.raises(psutil.AccessDenied) as caught:
         census()._owned(child, deadline=1)
     assert caught.value is error
     assert error.msg == (
         "Owned PID 4321: environment inspection denied (state=S flags=0x0)"
     )
+    # Observed at the denial, before a short-lived task can disappear.
+    assert observed_at == [0.0]
     assert "PRIVATE" not in str(error)

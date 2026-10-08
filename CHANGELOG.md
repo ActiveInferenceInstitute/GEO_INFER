@@ -19,10 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   zombie. Under hosted load that window outlasted the 50 ms observation budget
   and failed the GEO-INFER-SPACE coverage measurement after all 814 tests
   passed. Persistent denial of a live or unobservable task remains fatal.
-- Append content-free kernel facts to a persistent owned-process environment
-  denial (run state, flags, `environ` inode owner, credential equality,
-  thread count, no_new_privs, seccomp and LSM confinement without profile
-  names) so the remaining live-task denial class (#78) can be identified.
+- Append content-free kernel facts, observed at the moment of denial, to a
+  persistent owned-process environment denial (run state, flags, `environ`
+  inode owner, credential equality, thread count, no_new_privs, seccomp and
+  LSM confinement without profile names) so the remaining short-lived
+  live-task denial class (#78) can be identified. Platforms without POSIX
+  credentials report no facts.
 - Seed the MATH Metropolis-Hastings integration chain through its owning `rng`
   parameter. The sampler draws from its own generator, so the legacy global
   `np.random.seed` never reached it and the 200-sample mean tolerance stayed

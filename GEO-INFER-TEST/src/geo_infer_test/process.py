@@ -78,7 +78,7 @@ def _kernel_exiting(pid: int) -> bool | None:
     return _stat_reports_exiting(text)
 
 
-def _kernel_denial_facts(pid: int) -> str | None:
+def _kernel_denial_facts(pid: int, *, uid: int | None = None) -> str | None:
     """Summarize why ``pid``'s environment may be denied, without its content.
 
     Only kernel state is reported: run state and flags, whether procfs made
@@ -86,6 +86,11 @@ def _kernel_denial_facts(pid: int) -> str | None:
     equality, seccomp/no_new_privs and whether an LSM confines the task. Names,
     command lines, environment and LSM profile names are never read into it.
     """
+    if uid is None:
+        getuid = getattr(os, "getuid", None)
+        if getuid is None:
+            return None
+        uid = getuid()
     task = _PROCFS / str(pid)
     try:
         stat = (task / "stat").read_text(encoding="latin-1")
@@ -101,13 +106,13 @@ def _kernel_denial_facts(pid: int) -> str | None:
     except OSError:
         owner_fact = "unavailable"
     else:
-        owner_fact = "self" if owner == os.getuid() else str(owner)
+        owner_fact = "self" if owner == uid else str(owner)
     uids = lines.get("Uid", "").split()
     facts = [
         f"state={fields[0]}",
         f"flags={int(fields[6]):#x}",
         f"environ_owner={owner_fact}",
-        f"uid_match={bool(uids) and all(uid == str(os.getuid()) for uid in uids)}",
+        f"uid_match={bool(uids) and all(value == str(uid) for value in uids)}",
     ]
     for key, label in (
         ("Threads", "threads"),
@@ -161,6 +166,9 @@ class _DescendantCensus:
             # A later identity/status failure retains this exception as its
             # context. Sanitize it before those inspections can raise.
             _annotate_ownership_denial(error, pid=process.pid, phase="environment")
+            # Observe the denied state now: a short-lived task may be gone
+            # by the time the bounded observation below ends.
+            facts = _kernel_denial_facts(process.pid)
             # Linux can remove an exiting task's environment before marking
             # it as a zombie. Observe that same identity for at most 50 ms,
             # within the caller's existing census deadline. Only a positive
@@ -195,7 +203,6 @@ class _DescendantCensus:
                 if remaining <= 0:
                     break
                 time.sleep(min(0.001, remaining))
-            facts = _kernel_denial_facts(process.pid)
             if facts:
                 error.msg = f"{error.msg} ({facts})"
             raise
