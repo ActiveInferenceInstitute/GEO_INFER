@@ -162,23 +162,30 @@ def test_pytest_no_tests_exit_is_a_failure(tmp_path, monkeypatch):
 
 def test_non_pytest_no_tests_exit_remains_failure(tmp_path, monkeypatch):
     runner = load_runner_module()
-    monkeypatch.setattr(runner, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(runner, "RESULTS_DIR", tmp_path / "results")
 
-    def fake_run(command, **kwargs):
-        return subprocess.CompletedProcess(
-            command,
-            runner.PYTEST_NO_TESTS_EXIT_CODE,
-            stdout="",
-            stderr="",
+    for allow_empty in (False, True):
+        result = runner.run_command(
+            [
+                sys.executable,
+                "-c",
+                "print('non-pytest-executed', flush=True); raise SystemExit(5)",
+            ],
+            "non-pytest exit-code contract",
+            timeout=10,
+            cwd=tmp_path,
+            allow_empty=allow_empty,
         )
 
-    monkeypatch.setattr(runner, "run_process", fake_run)
-
-    result = runner.run_command(
-        ["python", "script.py"], "script", timeout=10, cwd=tmp_path
-    )
-
-    assert result.success is False
+        assert result.success is False
+        assert result.status == "FAIL"
+        assert result.returncode == runner.PYTEST_NO_TESTS_EXIT_CODE
+        assert result.stdout.strip() == "non-pytest-executed"
+        assert "pytest collected no tests" not in result.stderr
+        receipt = json.loads(Path(result.receipt).read_text())
+        assert receipt["status"] == "FAIL"
+        assert receipt["returncode"] == 5
+        assert receipt["custody_complete"] is True
 
 
 def test_write_summary_decodes_timeout_output_bytes(tmp_path, monkeypatch):

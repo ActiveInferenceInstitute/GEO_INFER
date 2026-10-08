@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 0.4.0 candidate preparation
 
+- Make the non-pytest exit-code regression launch a real child and assert its
+  exit code, output, failure classification and complete receipt custody;
+  a metadata failure can no longer satisfy the test. Limit allowed-empty
+  exit-code handling and pytest diagnostics to actual pytest entry points;
+  ordinary commands returning code 5 remain failures even with allow_empty.
+
 - Add MATH finite-real skew decomposition, transition/rate probability currents,
   detailed-balance checks and discrete graph Hodge projections with an explicit
   harmonic remainder. Analytical tests cover nonuniform stationary measures,

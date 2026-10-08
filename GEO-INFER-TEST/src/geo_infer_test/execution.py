@@ -641,7 +641,7 @@ def run_command(
                 raise ValueError("terminal token/status mismatch")
         except (ValueError, IndexError) as exc:
             errors.append(f"missing or invalid terminal completion receipt: {exc}")
-    empty = allow_empty and rc == PYTEST_NO_TESTS_EXIT_CODE
+    empty = is_pytest and allow_empty and rc == PYTEST_NO_TESTS_EXIT_CODE
     errors.extend(junit_contract_errors(report_path, allow_empty=empty))
     if is_pytest and promised_junit is None:
         errors.append("pytest command omitted its required JUnit report")
@@ -661,7 +661,7 @@ def run_command(
             errors.extend(junit_selection_errors(report_path, selected))
         except (OSError, ValueError, KeyError, TypeError) as exc:
             errors.append(f"missing or invalid test selection receipt: {exc}")
-    if rc == PYTEST_NO_TESTS_EXIT_CODE and not allow_empty:
+    if is_pytest and rc == PYTEST_NO_TESTS_EXIT_CODE and not allow_empty:
         errors.append("pytest collected no tests (exit code 5)")
     success = (rc == 0 or empty) and not errors
     if success:
