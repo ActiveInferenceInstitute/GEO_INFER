@@ -74,7 +74,7 @@ class TemporalAnalyzer:
 
         Returns:
             Dictionary with trend information. Linear ``slope_per_sample``
-            and the legacy ``trend_strength`` describe change per observation;
+            and ``trend_strength`` describe change per observation;
             ``r_squared`` measures fit quality. Numerical constants are stable.
         """
         if method not in {"linear", "polynomial", "moving_average"}:

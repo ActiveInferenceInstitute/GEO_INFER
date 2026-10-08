@@ -55,7 +55,7 @@ def _disk_budget(cell: str, k: int, max_cells: int, *, minimum: int = 0) -> None
 
 
 def _version_tuple(version: str) -> tuple[int, int, int] | None:
-    """Parse a semantic H3 version without accepting a legacy major release."""
+    """Parse a semantic H3 version without accepting an unsupported major release."""
     try:
         parts = version.lstrip("v").split(".")
         return cast(

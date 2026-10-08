@@ -202,7 +202,7 @@ class CustomAlgorithmFramework:
         """Load schema version 1 using only the trusted callable registry.
 
         Validation is atomic: malformed metadata, duplicate names, unsupported
-        versions, source-bearing legacy files and unknown keys raise
+        versions, source-bearing files and unknown keys raise
         ``ValueError`` without registering any entries. No persisted value is
         passed to import, exec or eval.
         """
