@@ -46,8 +46,8 @@ through PR #81. All required readiness issues #61–68 are closed. Exact-main
 local eleven-group validation, 45 unit suites / 10,883 cases, separate 144+7
 ROOT/native tests, and fresh independent source, hosted and output-custody
 reviews passed. All 22 main CI jobs and four supplementary workflows passed;
-32 raw archives, all 46 coverage dispositions and both interpreters' 45-wheel /
-65-operation-profile inventories were independently audited. TEST main coverage
+32 raw archives, all 46 coverage dispositions and both interpreters' 45-wheel,
+45-base-import and 20-operation-profile inventories were independently audited. TEST main coverage
 is 2,976/3,383 lines (87.9693%); the unchanged floor is 85%.
 The current four figures and 30-page native manuscript passed independent
 scientific/readability review. Evidence remains bound to that accepted revision;
