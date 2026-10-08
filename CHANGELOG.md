@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   parameter. The sampler draws from its own generator, so the legacy global
   `np.random.seed` never reached it and the 200-sample mean tolerance stayed
   unseeded (hosted Python 3.12 drew a 1.035-off mean).
+- Exclude the reserved `ROOT` and `ALL` selectors from the discoverer's
+  generated module names. Hypothesis drew `ROOT`, which correctly resolves to
+  the repository root rather than a `GEO-INFER-ROOT` directory; both
+  selector meanings are now pinned by explicit tests.
 - Preserve exact Cascadia publisher bytes and LF replay outputs through Windows
   checkout, and exercise explicit UTF-8 renderer reads under a cp1252 default.
 - Synchronize deadline regression injections with real target completion and

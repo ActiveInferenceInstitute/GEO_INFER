@@ -205,6 +205,27 @@ class TestTestDiscovererParametric:
 # ============================================================================
 
 
+# Selectors with fixed meaning: ROOT is the repository root, ALL expands to
+# every owning module. Hypothesis can draw either from the uppercase alphabet.
+RESERVED_SELECTORS = frozenset({"ROOT", "ALL"})
+
+
+def test_root_selector_never_reads_a_module_directory_named_root(tmp_path):
+    """ROOT is the repository root, whose tests are manuscript-only categories."""
+    base = _make_repo(tmp_path, ["ROOT"])
+    assert (base / "GEO-INFER-ROOT" / "tests" / "unit" / "test_root.py").is_file()
+    results = _TestDiscoverer(base_path=base).discover_all_tests(["ROOT"])
+    assert "test_root.py" not in str(results)
+    assert results.get("ROOT", {}).get("unit") is None
+
+
+def test_all_selector_expands_to_owning_modules(tmp_path):
+    base = _make_repo(tmp_path, ["ALPHA", "BETA"])
+    results = _TestDiscoverer(base_path=base).discover_all_tests(["ALL"])
+    assert "ALL" not in results
+    assert {"ALPHA", "BETA"} <= set(results)
+
+
 class TestHypothesisTestDiscoverer:
     """Fuzzing tests for TestDiscoverer."""
 
@@ -235,14 +256,18 @@ class TestHypothesisTestDiscoverer:
                 min_size=1,
                 max_size=8,
                 alphabet=st.characters(whitelist_categories=("Lu",)),
-            ),
+            ).filter(lambda name: name not in RESERVED_SELECTORS),
             min_size=1,
             max_size=10,
             unique=True,
         )
     )
     def test_discover_all_returns_all(self, module_names):
-        """All requested modules should appear in discovery results."""
+        """All requested owning modules should appear in discovery results.
+
+        ``ROOT`` and ``ALL`` are selectors, not ``GEO-INFER-*`` directories;
+        their meaning is pinned separately below.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             base = _make_repo(Path(tmp), module_names)
             d = _TestDiscoverer(base_path=base)
