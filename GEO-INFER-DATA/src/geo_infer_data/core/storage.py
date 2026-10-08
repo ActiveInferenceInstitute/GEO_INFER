@@ -200,7 +200,7 @@ class PostgreSQLBackend:
     async def store(self, data: Any, metadata: DatasetMetadata) -> str:
         """Store data in PostgreSQL."""
         # Implementation for PostgreSQL storage
-        data_id = f"pg_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
+        data_id = f"pg_{uuid.uuid4().hex}"
 
         if isinstance(data, (gpd.GeoDataFrame, pd.DataFrame)):
             # Store tabular data
@@ -218,22 +218,22 @@ class PostgreSQLBackend:
         # Create table and store data
         table_name = validate_sql_identifier(f"dataset_{data_id.replace('-', '_')}")
 
-        # Convert to SQL and execute
-        if isinstance(df, gpd.GeoDataFrame):
-            # Handle geospatial data
-            df.to_postgis(table_name, self.connection_string, if_exists="replace")
-        else:
-            df.to_sql(table_name, self.connection_string, if_exists="replace")
+        from sqlalchemy import create_engine
 
-        # Create spatial index if geospatial data
-        if isinstance(df, gpd.GeoDataFrame) and df.crs:
-            self.spatial_indexer.create_spatial_index(
-                table_name, self.connection_string
-            )
+        engine = create_engine(self.connection_string)
+        try:
+            with engine.begin() as conn:
+                if isinstance(df, gpd.GeoDataFrame):
+                    # GeoPandas/GeoAlchemy2 create the database spatial index.
+                    df.to_postgis(table_name, conn, if_exists="fail", index=False)
+                else:
+                    df.to_sql(table_name, conn, if_exists="fail", index=False)
+        finally:
+            engine.dispose()
 
     async def _retrieve_dataframe(
         self, data_id: str, query: dict[str, Any]
-    ) -> pd.DataFrame:
+    ) -> Any:
         """Retrieve a stored table from PostgreSQL/PostGIS."""
         from sqlalchemy import create_engine, inspect as sqlalchemy_inspect, text
 
@@ -241,6 +241,16 @@ class PostgreSQLBackend:
         engine = create_engine(self.connection_string)
         try:
             if not sqlalchemy_inspect(engine).has_table(table_name):
+                if sqlalchemy_inspect(engine).has_table("generic_data_store"):
+                    with engine.connect() as conn:
+                        row = conn.execute(
+                            text("SELECT payload FROM generic_data_store WHERE data_id = :data_id"),
+                            {"data_id": data_id},
+                        ).first()
+                    if row is not None:
+                        if query:
+                            raise ValueError("Generic PostgreSQL values do not support table queries")
+                        return self.decode_generic_payload(row[0])
                 raise FileNotFoundError(f"PostgreSQL dataset {data_id!r} was not found")
             if query.get("spatial"):
                 min_lon, min_lat, max_lon, max_lat = query["spatial"]
@@ -315,10 +325,12 @@ class PostgreSQLBackend:
             from sqlalchemy import create_engine, text as sa_text
 
             engine = create_engine(self.connection_string)
-            with engine.begin() as conn:
-                conn.execute(sa_text(create_stmt))
-                conn.execute(sa_text(insert_stmt), params)
-            engine.dispose()
+            try:
+                with engine.begin() as conn:
+                    conn.execute(sa_text(create_stmt))
+                    conn.execute(sa_text(insert_stmt), params)
+            finally:
+                engine.dispose()
             logger.info("Stored generic data %s in %s", data_id, table_name)
         except Exception as e:
             logger.error("Failed to store generic data %s: %s", data_id, e)
@@ -372,7 +384,14 @@ class PostgreSQLBackend:
         engine = create_engine(self.connection_string)
         try:
             if not sqlalchemy_inspect(engine).has_table(table_name):
-                return False
+                if not sqlalchemy_inspect(engine).has_table("generic_data_store"):
+                    return False
+                with engine.begin() as conn:
+                    result = conn.execute(
+                        text("DELETE FROM generic_data_store WHERE data_id = :data_id"),
+                        {"data_id": data_id},
+                    )
+                return result.rowcount > 0
             with engine.begin() as conn:
                 conn.execute(text(f"DROP TABLE {table_name}"))
             return True

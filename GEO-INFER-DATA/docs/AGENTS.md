@@ -22,6 +22,7 @@
 ## Local Contents
 
 - `api_schema.yaml`
+- `storage_contracts.md`
 
 ## Validation
 

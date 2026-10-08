@@ -181,13 +181,11 @@ def _rewrite_image_targets(text: str) -> str:
 def _combine_sections() -> Path:
     """Write the combined document in the published section order."""
     parts: list[str] = []
-    for index, name in enumerate(SECTION_ORDER):
+    for name in SECTION_ORDER:
         text = (RESOLVED_DIR / name).read_text(encoding="utf-8")
         if name == MODULE_CATALOG_ENTRY:
             text = text.rstrip("\n") + "\n\n" + _module_catalog_sections()
         parts.append(text.rstrip("\n"))
-        if index < len(SECTION_ORDER) - 1:
-            parts.append("\\newpage")
     combined = "\n\n".join(parts) + "\n"
     combined = _rewrite_image_targets(combined)
     PDF_DIR.mkdir(parents=True, exist_ok=True)

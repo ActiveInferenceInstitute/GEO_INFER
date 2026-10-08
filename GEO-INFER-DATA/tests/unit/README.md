@@ -22,6 +22,7 @@ Unit workspace within `GEO-INFER-DATA`.
 - `test_optional_backend_boundaries.py`
 - `test_performance.py`
 - `test_pipeline.py`
+- `test_postgresql_roundtrip.py`
 - `test_rest_api_error_handling.py`
 - `test_schemas.py`
 - `test_storage.py`

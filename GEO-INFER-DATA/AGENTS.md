@@ -46,6 +46,14 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module DATA
   preserve this round-trip behavior when changing serializers.
 - Temporal validators accept both timezone-naive and timezone-aware pandas
   datetime columns without mixing comparison timezones.
+- Spatial indexes identify observations by row position, preserving duplicate
+  and string labels and retaining an owned frame snapshot. Empty queries retain
+  columns and CRS; H3 queries use resolution-9 centroid cells.
+- PostgreSQL writes use unique IDs and transactions without replacing existing
+  tables. Generic values support public retrieval and deletion through the
+  metadata table; authenticated payload verification precedes unpickling.
+- Install the `postgres` extra for GeoAlchemy2-backed PostGIS writes.
+  GeoPandas creates the database spatial index; the in-memory indexer does not.
 
 ## Integration Notes
 

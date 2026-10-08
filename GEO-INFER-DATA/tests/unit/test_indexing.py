@@ -66,13 +66,12 @@ class TestSpatialIndexer:
         result = indexer.query_by_bounds(index_id, bbox=[-122.6, 37.4, -122.2, 37.8])
         assert sorted(result["id"]) == [0, 1, 2, 3]
 
-    def test_create_rtree_index_fallback(self):
+    def test_create_rtree_index_native(self):
         indexer = SpatialIndexer()
         gdf = _make_gdf()
-        # rtree may or may not be installed; both outcomes are valid
         index_id = indexer.create_spatial_index(gdf, strategy="rtree")
         assert index_id in indexer.indexes
-        assert indexer.indexes[index_id]["type"] in ("rtree", "rtree_mock")
+        assert indexer.indexes[index_id]["type"] == "rtree"
 
     def test_create_h3_index_uses_native_h3(self):
         indexer = SpatialIndexer()
@@ -240,3 +239,23 @@ class TestTemporalIndexer:
         index_id = indexer.create_temporal_index(df, "timestamp")
         sorted_data = indexer.indexes[index_id]["data"]
         assert sorted_data["value"].tolist() == [1, 2, 3]
+
+
+@pytest.mark.parametrize("strategy", ["h3", "rtree"])
+@pytest.mark.parametrize("labels", [[7, 7], ["first", "second"], [0, 1]])
+def test_spatial_queries_preserve_observations_and_labels(strategy, labels):
+    frame = gpd.GeoDataFrame(
+        {"value": [3, 9]}, index=labels,
+        geometry=[Point(-122.42, 37.77), Point(-122.41, 37.78)], crs="EPSG:4326",
+    )
+    indexer = SpatialIndexer()
+    index_id = indexer.create_spatial_index(frame, strategy)
+    result = indexer.query_by_bounds(index_id, [-122.45, 37.74, -122.38, 37.81])
+    assert result["value"].tolist() == [3, 9]
+    assert result.index.tolist() == labels
+    frame.loc[:, "value"] = 100
+    assert indexer.query_by_bounds(index_id, [-122.45, 37.74, -122.38, 37.81])["value"].tolist() == [3, 9]
+    empty = indexer.query_by_bounds(index_id, [0, 0, 0.001, 0.001])
+    assert empty.empty
+    assert empty.columns.tolist() == result.columns.tolist()
+    assert empty.crs == result.crs

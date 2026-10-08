@@ -3501,6 +3501,7 @@ minio = [
 ]
 postgres = [
     { name = "asyncpg" },
+    { name = "geoalchemy2" },
     { name = "psycopg2-binary" },
 ]
 raster = [
@@ -3523,6 +3524,7 @@ requires-dist = [
     { name = "duckdb", marker = "extra == 'integrations'", specifier = ">=0.9.0" },
     { name = "fastapi", specifier = ">=0.100.0" },
     { name = "geo-infer-time", editable = "GEO-INFER-TIME" },
+    { name = "geoalchemy2", marker = "extra == 'postgres'", specifier = ">=0.14.0" },
     { name = "geopandas", specifier = ">=0.13.0" },
     { name = "h3", specifier = ">=4.5.0,<5" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.24.0" },
@@ -5934,6 +5936,19 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 test = [{ name = "pytest", specifier = ">=6.2.0" }]
+
+[[package]]
+name = "geoalchemy2"
+version = "0.20.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "sqlalchemy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/63/74/6cb1ef591bf47d28f41aa770f2f3a91c0a570aee0a4083bed7f8c533d8df/geoalchemy2-0.20.0.tar.gz", hash = "sha256:450f427f4bc3cf2d5ddee0af3763aed0f3eea2384e7c9a99798d8f1508279322", size = 280805, upload-time = "2026-05-12T14:50:26.132Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4e/08/b66ad4239f592e05202e25925c08cdd04cc14c3994000ec70ec61fea202c/geoalchemy2-0.20.0-py3-none-any.whl", hash = "sha256:1489a1d106519542a79c97cd0b4c537d80462c353610ebc2429cf2c43daac717", size = 96467, upload-time = "2026-05-12T14:50:24.998Z" },
+]
 
 [[package]]
 name = "geographiclib"

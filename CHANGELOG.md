@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 0.4.0 candidate preparation
 
+- Let manuscript sections flow across pages, removing unconditional section
+  breaks that stranded short tails on otherwise empty pages. Retain the
+  declared section order and native readability/layout acceptance.
+
+- Correct DATA PostgreSQL generic retrieval/deletion and same-second identifier
+  collisions. Write tables transactionally without replacing existing data;
+  delegate PostGIS indexing to GeoPandas/GeoAlchemy2 and declare the required
+  extra. Preserve observation identity for H3 and R-tree indexes with duplicate
+  or string labels, retain schema/CRS on empty results, and isolate indexed data
+  from caller mutation. Actual SQLite regressions cover SQL routing; native
+  PostgreSQL service verification remains a separate acceptance requirement.
+
 - Validate an orthonormal basis of the graph face-boundary numerical span;
   tiny invalid faces cannot pass the chain check and produce divergent curl
   projections. Analytical regressions cover tiny and large valid/invalid faces

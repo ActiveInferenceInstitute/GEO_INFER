@@ -5,6 +5,7 @@ Docs workspace within `GEO-INFER-DATA`.
 ## Contents
 
 - `api_schema.yaml`
+- `storage_contracts.md`
 
 ## Public Interface
 

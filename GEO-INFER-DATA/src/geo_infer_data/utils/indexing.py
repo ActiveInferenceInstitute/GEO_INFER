@@ -117,7 +117,7 @@ class SpatialIndexer:
 
         h3_indexes = {}
 
-        for idx, row in indexed_data.iterrows():
+        for position, (_, row) in enumerate(indexed_data.iterrows()):
             geom = row.geometry
             if geom is not None and not geom.is_empty and geom.is_valid:
                 # Get centroid
@@ -133,27 +133,27 @@ class SpatialIndexer:
 
                 # Create H3 index at resolution 9 (city level)
                 h3_index = h3.latlng_to_cell(lat, lon, 9)
-                h3_indexes[str(idx)] = h3_index
+                h3_indexes[position] = h3_index
 
         return {
             "type": "h3",
             "resolution": 9,
             "crs": "EPSG:4326",
             "indexes": h3_indexes,
-            "data": data,
+            "data": data.copy(),
         }
 
     def _create_rtree_index(self, data: gpd.GeoDataFrame) -> dict[str, Any]:
         """Create R-tree spatial index."""
         idx = rtree_index_module.Index()
 
-        for i, row in data.iterrows():
-            geom = row.geometry
-            if geom and geom.is_valid:
+        for position, geom in enumerate(data.geometry):
+            if geom is not None and not geom.is_empty and geom.is_valid:
                 bounds = geom.bounds  # (min_lon, min_lat, max_lon, max_lat)
-                idx.insert(i, bounds)
+                if all(math.isfinite(value) for value in bounds):
+                    idx.insert(position, bounds)
 
-        return {"type": "rtree", "index": idx, "data": data}
+        return {"type": "rtree", "index": idx, "data": data.copy()}
 
     def query_by_bounds(self, index_id: str, bbox: list[float]) -> gpd.GeoDataFrame:
         """
@@ -205,10 +205,7 @@ class SpatialIndexer:
             idx for idx, h3_idx in index_data["indexes"].items() if h3_idx in cells
         ]
 
-        if matching_indexes:
-            return index_data["data"].loc[matching_indexes]
-        else:
-            return gpd.GeoDataFrame()
+        return index_data["data"].iloc[matching_indexes].copy()
 
     def _query_rtree_bounds(
         self, index_data: dict[str, Any], bbox: list[float]
@@ -220,9 +217,7 @@ class SpatialIndexer:
         """
         rtree_index = index_data["index"]
         candidate_ids = sorted(rtree_index.intersection(tuple(bbox)))
-        if not candidate_ids:
-            return gpd.GeoDataFrame()
-        return index_data["data"].loc[candidate_ids]
+        return index_data["data"].iloc[candidate_ids].copy()
 
     def latlng_to_cell(self, lat: float, lng: float, resolution: int = 9) -> str:
         """
