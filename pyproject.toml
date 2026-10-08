@@ -104,7 +104,7 @@ bio = [
 # Health applications
 health = [
     "lifelines>=0.26.0",
-    # migrate from pymc3 (theano-pymc) to pymc>=4 (aesara/aeppl stack)
+    # PyMC 5 uses the PyTensor runtime pinned by the bayesian profile.
     "pymc>=5.0.0",
 ]
 

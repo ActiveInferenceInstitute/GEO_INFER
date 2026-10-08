@@ -107,21 +107,25 @@ def reduce_memory(df):
     return df
 ```
 
-### H3 API Compatibility
+### H3 runtime contract
 
-GEO-INFER-SPACE uses H3 v4. The v3 to v4 API changed function names.
+GEO-INFER-SPACE uses the locked H3 4.x runtime. Use these supported operations:
 
-| v3 Function | v4 Function |
-|-------------|-------------|
-| `h3.geo_to_h3(lat, lng, res)` | `h3.latlng_to_cell(lat, lng, res)` |
-| `h3.h3_to_geo(cell)` | `h3.cell_to_latlng(cell)` |
-| `h3.h3_to_geo_boundary(cell)` | `h3.cell_to_boundary(cell)` |
-| `h3.k_ring(cell, k)` | `h3.grid_disk(cell, k)` |
-| `h3.h3_get_resolution(cell)` | `h3.get_resolution(cell)` |
-| `h3.h3_to_parent(cell, res)` | `h3.cell_to_parent(cell, res)` |
-| `h3.h3_to_children(cell, res)` | `h3.cell_to_children(cell, res)` |
+| Operation | Function |
+|-----------|----------|
+| Latitude/longitude to cell | `h3.latlng_to_cell(lat, lng, resolution)` |
+| Cell centroid | `h3.cell_to_latlng(cell)` |
+| Cell boundary | `h3.cell_to_boundary(cell)` |
+| Neighborhood | `h3.grid_disk(cell, radius)` |
+| Resolution | `h3.get_resolution(cell)` |
+| Parent | `h3.cell_to_parent(cell, resolution)` |
+| Children | `h3.cell_to_children(cell, resolution)` |
 
-If you see `AttributeError: module 'h3' has no attribute 'geo_to_h3'`, you have H3 v4 installed but are calling v3 functions.
+For a missing H3 attribute, verify the installed package with `uv pip show h3`,
+restore the locked environment, and check the supported operation above.
+The repository wrappers enforce identity, resolution and allocation contracts;
+run `uv run python GEO-INFER-TEST/run_unified_tests.py --h3-migration` to verify
+composition with ACT.
 
 ### Dependency Conflicts
 

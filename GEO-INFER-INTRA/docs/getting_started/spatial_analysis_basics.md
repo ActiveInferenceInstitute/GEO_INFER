@@ -103,8 +103,7 @@ print(f"Cell + neighbors: {len(neighbors)} cells")
 ```
 
 **H3 v4 API note**: GEO-INFER uses the H3 v4 Python bindings. The function
-names are `latlng_to_cell` and `cell_to_latlng` (not the legacy v3 names
-`geo_to_h3` / `h3_to_geo`). All GEO-INFER documentation and code follows the
+names are `latlng_to_cell` and `cell_to_latlng`. All GEO-INFER documentation and code follows the
 v4 convention.
 
 ## Core Spatial Operations

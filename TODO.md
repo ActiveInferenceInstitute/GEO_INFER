@@ -1,6 +1,6 @@
 # GEO-INFER Open Task & Backlog Ledger
 
-> Last reviewed: 2026-10-05
+> Last reviewed: 2026-10-08
 > Scope: Multi-package repository (`GEO-INFER`) across workspace packages and 45 domain modules.
 > Centralization Rule: All planned, open, or deferred engineering work across all modules is tracked exclusively in this ledger. Module source code and tests must never carry local task markers (`TODO`, `FIXME`, `XXX`, `HACK`).
 > History note (2026-09-07): the published history was rewritten to re-attribute
@@ -26,111 +26,46 @@ audit: the previously open rows verified current against the tree, delivered
 claims were spot-checked, and module/package surfaces were swept for untracked
 next steps.
 
-### 0.4.0 continuation — current scope (2026-10-05)
+### 0.4.0 continuation — current scope (2026-10-08)
 
-**Execution resumed:** on 2026-10-05 the owner authorized comprehensive issue
-fixes, verification and an ordinary main push. Candidate acceptance remains
-required before integration. Tagging, release attachments, registry publication
-and deployment retain their separate authorization boundary; accounts,
-credentials, configured models and hooks remain under human control.
+The owner authorized repo-wide modernization, verification and an ordinary main
+push on 2026-10-08. Release tags, registry publication, deployment, licensed data,
+external hardware and account changes remain separately scoped.
 
-At the resumed verification checkpoint, preparation branch `codex/0.4-readiness`
-was pushed at `a254a2856e4c1489ee31ea6c0183542d5db18967`; remote `main` remains
-`510f1008e698b45aedc4306d65caf898da6cda04`. The local legacy sweep ancestor
-`cbe6b9c59975254487452d697c2ea961a19f2286` must be preserved. **Readiness is
-NO GO.** The last candidate's hosted TEST coverage was 72.22955% against the
-unchanged 85% floor; other successes remain bound to their original revision.
+The verified starting checkout is clean at
+`6781c75ed56de99790a35bd815d7b39054c44444`, matching remote `main` and the
+preparation branch. Main integration has occurred. The earlier statement that
+main remained at `510f1008e698b45aedc4306d65caf898da6cda04` is superseded.
+The preserved sweep ancestor is `cbe6b9c59975254487452d697c2ea961a19f2286`.
+Historical failed attempts remain in immutable receipt directories and Git
+history; they are not current acceptance verdicts.
 
-At implementation resume there were 39 pending implementation paths: root and 36 member coverage
-configurations, the TEST tracing regression, and the owning testing guide.
-Their correction removes only the erroneous `*/test_*` source omission.
-The 37-configuration × three-filename matrix passed 111 cases in each of two
-narrow recording profiles. The original narrow inner SQLite traces were not
-retained; the later whole TEST diagnostic retained all 111 fresh traces.
+At this exact starting revision, [main CI](https://github.com/ActiveInferenceInstitute/GEO_INFER/actions/runs/37734618009)
+completed all 21 jobs successfully, including Python 3.11/3.12 unit, slow,
+integration, system, performance and H3 categories, installed wheels, paired
+interchange, manuscript and validation. [Native Windows PLACE](https://github.com/ActiveInferenceInstitute/GEO_INFER/actions/runs/37734617885),
+[portability](https://github.com/ActiveInferenceInstitute/GEO_INFER/actions/runs/37736394591),
+[formatting](https://github.com/ActiveInferenceInstitute/GEO_INFER/actions/runs/37736398107)
+and [standalone interchange](https://github.com/ActiveInferenceInstitute/GEO_INFER/actions/runs/37736401172)
+also passed. These are live workflow conclusions, not a fresh independent audit
+of every uploaded artifact. The issue tracker has not yet been reconciled with
+these results: required issues #61–68 remain open. Their original bodies describe
+older checkpoints and must not override live Git and workflow evidence.
 
-The whole diagnostic **completed naturally with FAIL**, before a requested stop
-could be sent: **1,815 passed / one failed / 1,816 executed**. The ordinary
-validator control
-`test_validator_arguments_do_not_advertise_pytest_or_report_promises[arguments1]`
-recorded a real TIMEOUT (5-second envelope, 5.799 seconds elapsed, return code
-`None`) despite emitting its expected output. This establishes a timeout to
-investigate, not a classifier defect or an environmental cause. Independently,
-raw coverage was **2,529/3,032 = 83.41029%**, still below 85%. The attempt is
-diagnostic evidence, not accepted TEST/floor evidence. No signal was issued;
-the observed owned processes were absent after completion. Original manuscript
-output remains an older failed-candidate bundle.
+The modernization pass replaces obsolete H3 setup guidance with supported APIs,
+corrects RNG documentation, and repairs SPM helper input rejection, silently
+omitted formula interactions, nonfinite degenerate bases and the default
+polynomial basis's nonterminating expansion. Migration guidance records the
+new polynomial ordering and explicit supported formula grammar. Working public
+API names, security rejection tests, publisher URLs and hash-bound historical
+identities remain meaningful contracts rather than removal targets.
 
-Continuation repairs now separate census failures from pipe polling, enforce the
-original deadline around final ownership inspection, retain admitted parallel
-worker outcomes through repeated shutdown interruption, and reject empty runner
-selections. Focused regressions establish these defects independently of the
-historical timeout, whose cause remains unresolved. The manuscript custody path
-now rejects root/directory/file replacement during validation; its focused
-independent review accepted the declared boundary. Native Windows PLACE workflow
-implementation is present, with hosted runtime acceptance still pending. These
-are implementation and narrow-test results; whole-package coverage and final
-candidate acceptance remain required.
-
-The resumed clean-candidate whole TEST attempt reached its 1,800-second deadline
-without final JUnit or raw coverage output. Source stayed fixed, all 111 policy
-traces were retained, and its owned processes exited. This is failed acceptance;
-the progress stream contains failures whose complete dispositions require fresh
-diagnosis. Aggregate native census time was 1,517 seconds over 1,107 calls.
-A synthetic parser assessment demonstrated avoidable token-negative regex work;
-the resulting prefilter passed 53 focused ownership tests and independent
-review; renewed whole-package acceptance is still required. These observations
-do not establish the historical ordinary-validator timeout's cause.
-
-Both initial native Windows PLACE legs failed before collection because the
-canonical runner injected uninstalled optional DATA source into the minimal
-PLACE profile, exposing its absent SQLAlchemy dependency. The corrected workflow
-uses the existing execution API with observer-only `PYTHONPATH`, a separate real
-poisoning negative control and both complete acceptance files. Its 22 structural
-and custody tests passed. The separate locked macOS Python 3.12 profile reproduced
-the negative failure and passed all 51 positive cases plus custody. Independent
-source review accepted both scoped repairs; native runtime proof remains pending.
-Hosted artifact reconciliation also identified Windows LF-to-CRLF lock conversion;
-an explicit LF attribute and real Git checkout regression preserve raw lock
-custody. The updated workflow/metadata suite passed 68 tests. Fresh native receipt
-hashes must still be checked on the renewed candidate.
-
-The next whole TEST attempt completed all 1,953 selected cases with source
-unchanged and all 111 policy traces retained: 1,951 passed and two deadline/census
-controls failed. Raw coverage was 2,921/3,325 = 87.84962%, above the unchanged
-85% floor, but failed tests still reject the measurement. The controls assumed
-the child exited before its first 250 ms pipe poll. Their correction observes
-actual target completion, distinguishes preliminary/final/cleanup scans and
-forces a real incomplete poll; production deadlines remain unchanged. All four
-focused cases passed canonical receipt acceptance. Fresh independent review
-accepted the repair and confirmed that a retry mutation fails both parameter
-cases. Renewed whole TEST proof remains required.
-
-The next native Windows PLACE legs reached all 51 cases on Python 3.11/3.12:
-48 passed and three failed on converted fixture bytes or default text decoding.
-Both sealed artifacts reconciled with no hash errors and the exact raw lock;
-all ten observed workers per leg were reaped with closed streams. Exact archived
-source attributes and LF replay attributes preserve the existing hash contracts;
-the renderer test now reads UTF-8 explicitly and exercises a cp1252 default.
-Local testcases passed, but canonical acceptance rejected an owned-process leak
-in the new temporary Git checkout regression. A focused diagnostic identified
-the inherited Git fsmonitor setting: the test started an owned background daemon.
-Command-local fsmonitor disabling in this temporary checkout preserved real
-autocrlf conversion and passed canonical acceptance with no owned processes or
-daemon artifacts. Final local locked-profile acceptance passed all 52 cases
-with sealed receipt hashes and all ten observed workers reaped with closed
-streams. Fresh final independent review accepted the scoped repair; renewed
-native Windows acceptance remains required.
-
-On clean candidate `69ed0121601f026bc16debbe736d657199468de9`, whole TEST
-passed all 1,954 cases with 2,922/3,325 = 87.879699% raw coverage, all 111 policy
-traces, historical inventory retention and unchanged source. Both native Windows
-PLACE legs also passed. Their artifact reconciliation remains separate. Full CI
-exposed one forced-poll process-control assertion requiring a remaining budget
-strictly below the original budget; the preliminary scan can occur before the
-monotonic clock advances. Its test-only correction permits equality while still
-rejecting budget extension. All four focused cases passed canonical acceptance.
-Fresh independent review accepted the scoped bound and confirmed prior retry
-mutation evidence still applies. Renewed exact-candidate acceptance remains required.
+Final acceptance for this pass requires focused SPM numerical/rejection tests,
+generated-signpost review, every strict repository gate and broad module
+categories. New results remain bound to their measured source; the starting
+revision's green hosted results cannot be relabeled as new-revision acceptance.
+See [current candidate verification](GEO-INFER-INTRA/docs/releases/0.4.0_readiness.md)
+for the retained evidence boundaries and next acceptance steps.
 
 The [readiness tracker (#61)](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/61)
 links the complete next-work graph. Dependencies govern completion; preparation
@@ -140,17 +75,17 @@ below; their historical failed evidence remains unchanged.
 
 | ID | Owning area / status | Complete bounded next step | Acceptance / dependencies |
 | --- | --- | --- | --- |
-| **R04-00** | Repository / NO GO tracker | [#61: exact-candidate readiness](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/61) coordinates every required child and separate deferred scope. | One clean revision binds local, hosted, wheel, paired, security and manuscript evidence; successful required children precede main integration. |
+| **R04-00** | Repository / acceptance reconciliation open | [#61: exact-candidate readiness](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/61) coordinates every required child and separate deferred scope. | One clean revision binds local, hosted, wheel, paired, security and manuscript evidence; successful required children precede main integration. |
 | **R04-01** | TEST / demonstrated timeout, cause unresolved | [#62: ordinary-validator timeout](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/62): inspect actual child/parent timing, ownership census, cleanup and receipts; repair only a demonstrated contract problem. | Real command outcomes, fresh nonzero JUnit where promised, validators without JUnit, invalid/empty selections, POSIX/Windows descendants and interruption; no automatic retries, suppressed errors or production-budget workaround. Fresh independent shared-infrastructure review. |
-| **R04-02** | TEST / source omission fixed locally; coverage below floor | [#63: real runner behavior and 85% floor](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/63): review policy fix; add meaningful public runner/error/cancellation behavior coverage. | Preserve the 116 existing core behavior identities and 111 policy controls; fully passing whole TEST measurement with genuine raw coverage ≥85%. Complete all 46 final package/ROOT dispositions and inventory reconciliation. Depends on R04-01. |
-| **R04-03** | Repository, SPACE/TIME/ACT and connected modules / final local proof pending | [#64: strict and analytical acceptance](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/64): freeze reviewed source and complete all declared local contracts/categories, real composition oracles, security and reproducibility; reduce measured fixture/setup cost without losing coverage. | UTC/DST/ns/step/gap/order/ownership/allocation contracts; real DATA→SPACE→TIME, BAYES/ACT permutations, seven-cell/pentagon transitions/posteriors/policy, IOT coordinate oracle, ART hostile input, OPS port cleanup and async lifecycle. Strict repository/package/docs/skills/test/model/logging/lint/format/workflow/secret gates. Depends on R04-01/R04-02. |
-| **R04-04** | Packaging and GNN / fresh exact-candidate proof pending | [#65: all wheels, optional boundaries and paired interchange](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/65). | 45 wheels, 45 base and 20 operation profiles outside checkout on 3.11/3.12; metadata/resources/extra parity, real signed DuckDB fast path; exact pinned GNN four-family/exporter/replay evidence. Stable candidate from R04-03. |
-| **R04-05 / CODE-01** | Documentation, manuscript, index / convergence and full proof pending | [#66: executable docs and manuscript](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/66): finish truthful API/migration/configuration guidance, generated signposts, 0.4.0 parity, Git-derived metadata fixed point and source-current GitNexus. | Coordinator-only full eleven-group producer, independent whole-output custody/snapshot, real native PDF/figure inspection, generator drift checks and fresh ROOT inventory (currently 142+7). Retain producer manifest/inventory/variables/figure-registry JSON or state hosted upload limits. No old-output or default-seven-tier passing claim. Depends on stable R04-03 source. |
-| **R04-06** | CI / fresh corrected-candidate evidence pending | [#67: complete hosted evidence](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/67): run declared workflows once on the reviewed candidate and audit actual receipts/artifact bytes. | Required unit/integration/performance/system/slow/H3 matrix on 3.11/3.12, native Windows and early contracts; actual profile/inventory reconciliation, all 46 floors, wheels/paired/ROOT/models/security and complete uploaded artifacts. Derive fresh counts; preserve failures. Depends on R04-01 through R04-05. |
-| **R04-07** | Git/main / held, not integrated | [#68: accepted main integration](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/68): when implementation is resumed and candidate GO exists, recheck remote/protection/ancestry, integrate ordinarily and verify exact published/main-triggered evidence. | No force-push, ancestry rewrite, stale-SHA acceptance or protection bypass; preserve rollback and unrelated work. Main SHA parity plus actual same-SHA hosted results. Depends on R04-03 through R04-06. |
+| **R04-02** | TEST / hosted coverage gate passed; final receipt reconciliation open | [#63: real runner behavior and 85% floor](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/63): review policy fix; add meaningful public runner/error/cancellation behavior coverage. | Preserve the 116 existing core behavior identities and 111 policy controls; fully passing whole TEST measurement with genuine raw coverage ≥85%. Complete all 46 final package/ROOT dispositions and inventory reconciliation. Depends on R04-01. |
+| **R04-03** | Repository and connected modules / fresh modernization proof required | [#64: strict and analytical acceptance](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/64): freeze reviewed source and complete all declared local contracts/categories, real composition oracles, security and reproducibility; reduce measured fixture/setup cost without losing coverage. | UTC/DST/ns/step/gap/order/ownership/allocation contracts; real DATA→SPACE→TIME, BAYES/ACT permutations, seven-cell/pentagon transitions/posteriors/policy, IOT coordinate oracle, ART hostile input, OPS port cleanup and async lifecycle. Strict repository/package/docs/skills/test/model/logging/lint/format/workflow/secret gates. Depends on R04-01/R04-02. |
+| **R04-04** | Packaging and GNN / starting-main hosted profiles passed | [#65: all wheels, optional boundaries and paired interchange](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/65). | 45 wheels, 45 base and 20 operation profiles outside checkout on 3.11/3.12; metadata/resources/extra parity, real signed DuckDB fast path; exact pinned GNN four-family/exporter/replay evidence. Stable candidate from R04-03. |
+| **R04-05 / CODE-01** | Documentation, manuscript, index / current status reconciliation | [#66: executable docs and manuscript](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/66): finish truthful API/migration/configuration guidance, generated signposts, 0.4.0 parity, Git-derived metadata fixed point and source-current GitNexus. | Coordinator-only full eleven-group producer, independent whole-output custody/snapshot, real native PDF/figure inspection, generator drift checks and fresh ROOT inventory (currently 142+7). Retain producer manifest/inventory/variables/figure-registry JSON or state hosted upload limits. No old-output or default-seven-tier passing claim. Depends on stable R04-03 source. |
+| **R04-06** | CI / starting-main workflows passed; artifact audit separate | [#67: complete hosted evidence](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/67): run declared workflows once on the reviewed candidate and audit actual receipts/artifact bytes. | Required unit/integration/performance/system/slow/H3 matrix on 3.11/3.12, native Windows and early contracts; actual profile/inventory reconciliation, all 46 floors, wheels/paired/ROOT/models/security and complete uploaded artifacts. Derive fresh counts; preserve failures. Depends on R04-01 through R04-05. |
+| **R04-07** | Git/main / integrated; verify modernization publication | [#68: accepted main integration](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/68): when implementation is resumed and candidate GO exists, recheck remote/protection/ancestry, integrate ordinarily and verify exact published/main-triggered evidence. | No force-push, ancestry rewrite, stale-SHA acceptance or protection bypass; preserve rollback and unrelated work. Main SHA parity plus actual same-SHA hosted results. Depends on R04-03 through R04-06. |
 | **SPACE-01** | SPACE / owner-deferred GPU work | [#69: physical backend validation](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/69). GPU experiments are on hold; future work must be usable from a Mac laptop. | Establish a backend compatible with the Mac target and the declared precision contract before physical numerical parity, failure/chunk boundaries, memory and cold/warm timings. Preserve laptop CPU operation; H3 remains host CPU. No CPU-fallback hardware claim. |
 | **PLACE-V14** | PLACE / deferred licensed data | [#70: complete Cascadia boundary](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/70). | Authorized source/license/extent/resource budget, provenance/checksum/WGS84/stable identities and real renderer/integration; missing layer remains explicit and fail-closed. |
-| **PLACE-04** | PLACE / deferred native Windows worker proof | [#71: real Windows download worker](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/71). | Locked PLACE runtime, stalled-header/slow-drip deadlines, termination/pipe closure, batch failure and replay. Shared-process Windows CI does not close this separate item. |
+| **PLACE-04** | PLACE / native Windows workflow passed; retained receipt audit separate | [#71: real Windows download worker](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/71). | Locked PLACE runtime, stalled-header/slow-drip deadlines, termination/pipe closure, batch failure and replay. Shared-process Windows CI does not close this separate item. |
 | **TEST-GNN-01** | SPACE/TIME/ACT / historical cause unresolved | [#72: PROJ SQLite I/O causality](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/72). | Bounded evidence-driven reproduction with version/import/file state; respect prior negative lock probes and distinguish non-recurrence from explanation. Do not suppress CRS tests. |
 | **TEST-04** | TEST / deferred configured-advisor review | [#73: advisor review](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/73). | Human-owned account/authentication decisions; actual configured-service review bound to the candidate when available. No auth/key/model/billing/hook changes or review claim from service errors. |
 | **REL-04 / REL-01** | Release / separate future authorization | [#74: 0.4.0 release decision and execution](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/74). | Explicit tag/release/attachment/registry authorization after exact-main readiness; verify destination bytes and retain rollback. Main preparation does not authorize publication or deployment. |

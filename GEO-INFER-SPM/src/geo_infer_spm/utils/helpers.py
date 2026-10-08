@@ -6,6 +6,7 @@ generating coordinates, and other common SPM analysis tasks.
 """
 
 from typing import Any
+from numbers import Real
 
 import numpy as np
 from scipy import stats
@@ -92,10 +93,12 @@ def _parse_formula(
 ) -> tuple[np.ndarray, list[str]]:
     """Parse formula string to create design matrix (see register: "Formula parser")."""
     # Deferred: see docs/deferred_statistical_methods.md ("Formula parser").
-    if "~" not in formula:
-        raise ValueError("Formula must contain '~' separator")
+    if formula.count("~") != 1:
+        raise ValueError("Formula must contain exactly one '~' separator")
 
     response, predictors = formula.split("~", 1)
+    if not response.strip() or not predictors.strip():
+        raise ValueError("Formula needs a response and predictor terms")
 
     # Parse predictors
     terms = [term.strip() for term in predictors.split("+")]
@@ -120,13 +123,16 @@ def _parse_formula(
             # Interaction term (see register: "Formula parser").
             var1, var2 = term.split("*", 1)
             var1, var2 = var1.strip(), var2.strip()
-            if var1 in covariates_map and var2 in covariates_map:
-                interaction = covariates_map[var1] * covariates_map[var2]
-                design_components.append(interaction)
-                names.append(f"{var1}:{var2}")
+            if var1 not in covariates_map or var2 not in covariates_map:
+                raise ValueError(f"Unknown interaction in formula: {term}")
+            interaction = covariates_map[var1] * covariates_map[var2]
+            design_components.append(interaction)
+            names.append(f"{var1}:{var2}")
         else:
             raise ValueError(f"Unknown term in formula: {term}")
 
+    if not design_components:
+        raise ValueError("Formula must select at least one regressor")
     return np.column_stack(design_components), names
 
 
@@ -134,6 +140,12 @@ def _create_dummy_variables(values: np.ndarray, levels: list[str]) -> np.ndarray
     """Create dummy variables for categorical factor."""
     n_points = len(values)
     n_levels = len(levels)
+    if not levels or len(set(levels)) != n_levels:
+        raise ValueError("Factor levels must be nonempty and unique")
+    if np.asarray(values).ndim != 1:
+        raise ValueError("Factor values must be one-dimensional")
+    if any(value not in levels for value in values):
+        raise ValueError("Factor values must belong to the declared levels")
 
     # Map string levels to indices
     level_to_idx = {level: i for i, level in enumerate(levels)}
@@ -164,9 +176,8 @@ def generate_coordinates(
         grid_type: Type of coordinate grid ('regular', 'random', 'clustered')
         n_points: Number of coordinate points to generate
         bounds: Spatial bounds (min_lon, max_lon, min_lat, max_lat)
-        random_seed: Optional seed for reproducible random/clustered grids.
-            When ``None`` (default) the legacy global ``np.random`` state is
-            used, preserving existing behaviour.
+        random_seed: Seed or generator for reproducible random/clustered grids.
+            ``None`` draws fresh OS entropy without changing global random state.
         **kwargs: Additional parameters for grid generation
 
     Returns:
@@ -182,12 +193,39 @@ def generate_coordinates(
         >>> # Reproducible random coordinates
         >>> coords = generate_coordinates('random', n_points=50, random_seed=7)
     """
-    rng = resolve_rng(random_seed)
-
+    if (
+        isinstance(n_points, (bool, np.bool_))
+        or not isinstance(n_points, (int, np.integer))
+        or n_points <= 0
+    ):
+        raise ValueError("n_points must be a positive integer")
+    if grid_type not in {"regular", "random", "clustered"}:
+        raise ValueError(f"Unknown grid type: {grid_type}")
     if bounds is None:
         bounds = (-180, 180, -90, 90)  # Global bounds
 
-    min_lon, max_lon, min_lat, max_lat = bounds
+    bounds_array = np.asarray(bounds, dtype=float)
+    if bounds_array.shape != (4,) or not np.isfinite(bounds_array).all():
+        raise ValueError("bounds must contain four finite values")
+    min_lon, max_lon, min_lat, max_lat = bounds_array
+    if min_lon > max_lon or min_lat > max_lat:
+        raise ValueError("bounds minima must not exceed maxima")
+    if grid_type == "clustered":
+        n_clusters = kwargs.get("n_clusters", 3)
+        cluster_std = kwargs.get("cluster_std", 5.0)
+        if (
+            isinstance(n_clusters, (bool, np.bool_))
+            or not isinstance(n_clusters, (int, np.integer))
+            or n_clusters <= 0
+        ):
+            raise ValueError("n_clusters must be a positive integer")
+        if (
+            not isinstance(cluster_std, Real)
+            or not np.isfinite(cluster_std)
+            or cluster_std < 0
+        ):
+            raise ValueError("cluster_std must be finite and nonnegative")
+    rng = resolve_rng(random_seed)
 
     if grid_type == "regular":
         # Create regular grid
@@ -275,6 +313,14 @@ def generate_synthetic_data(
         >>> data = generate_synthetic_data(coords, effects={'trend': 'north_south'})
     """
     rng = resolve_rng(random_seed)
+    coordinates = np.asarray(coordinates, dtype=float)
+    if (
+        coordinates.ndim != 2
+        or coordinates.shape[1] != 2
+        or not len(coordinates)
+        or not np.isfinite(coordinates).all()
+    ):
+        raise ValueError("coordinates must be a nonempty finite (n_points, 2) array")
     n_points = len(coordinates)
 
     if effects is None:
@@ -307,7 +353,7 @@ def generate_synthetic_data(
             # Radial pattern from center
             center = np.mean(coordinates, axis=0)
             distances = np.linalg.norm(coordinates - center, axis=1)
-            dist_norm = distances / np.max(distances)
+            dist_norm = distances / (np.max(distances) or 1.0)
             signal += 5 * (1 - dist_norm)  # Higher values near center
 
     # Spatial clusters
@@ -395,7 +441,9 @@ def create_spatial_basis_functions(
     Args:
         coordinates: Spatial coordinates (n_points, 2)
         n_basis: Number of basis functions
-        method: Basis function method ('gaussian', 'polynomial', 'fourier')
+        method: Basis function method ('gaussian', 'polynomial', 'fourier').
+            Polynomial columns follow increasing total degree, starting with
+            the intercept, latitude, longitude, then quadratic terms.
         random_seed: Optional seed for reproducible Gaussian center selection.
             When ``None``, center selection uses a fresh entropy-backed
             generator without mutating the global ``np.random`` state.
@@ -403,6 +451,20 @@ def create_spatial_basis_functions(
     Returns:
         Basis function matrix (n_points, n_basis)
     """
+    coordinates = np.asarray(coordinates, dtype=float)
+    if (
+        coordinates.ndim != 2
+        or coordinates.shape[1] != 2
+        or not len(coordinates)
+        or not np.isfinite(coordinates).all()
+    ):
+        raise ValueError("coordinates must be a nonempty finite (n_points, 2) array")
+    if (
+        isinstance(n_basis, (bool, np.bool_))
+        or not isinstance(n_basis, (int, np.integer))
+        or n_basis <= 0
+    ):
+        raise ValueError("n_basis must be a positive integer")
     n_points = len(coordinates)
 
     if method == "gaussian":
@@ -418,7 +480,7 @@ def create_spatial_basis_functions(
             coordinates[:, np.newaxis] - centers[np.newaxis, :], axis=2
         )
         median_dist = np.median(distances)
-        width = median_dist / np.sqrt(n_basis)
+        width = (median_dist or 1.0) / np.sqrt(n_basis)
 
         basis = np.zeros((n_points, n_basis))
         for i in range(n_basis):
@@ -432,8 +494,8 @@ def create_spatial_basis_functions(
         lon, lat = coordinates[:, 0], coordinates[:, 1]
 
         # Normalize coordinates
-        lon_norm = (lon - np.mean(lon)) / np.std(lon)
-        lat_norm = (lat - np.mean(lat)) / np.std(lat)
+        lon_norm = (lon - np.mean(lon)) / (np.std(lon) or 1.0)
+        lat_norm = (lat - np.mean(lat)) / (np.std(lat) or 1.0)
 
         basis_list = [np.ones(n_points)]  # Constant
 
@@ -441,8 +503,9 @@ def create_spatial_basis_functions(
         while len(basis_list) < n_basis:
             for i in range(degree + 1):
                 j = degree - i
-                if i <= 2 and j <= 2:  # Limit to degree 2 to avoid overfitting
-                    basis_list.append(lon_norm**i * lat_norm**j)
+                basis_list.append(lon_norm**i * lat_norm**j)
+                if len(basis_list) == n_basis:
+                    break
 
             degree += 1
 

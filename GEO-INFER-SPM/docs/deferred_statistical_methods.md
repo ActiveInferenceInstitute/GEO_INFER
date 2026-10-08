@@ -119,7 +119,8 @@ of carrying unexplained deferral text.
 ### Formula parser
 - **Site:** `utils/helpers.py` `_parse_formula`
 - **Ships today:** `~` / `+` / `*` grammar over covariates, intercept
-  suppression via `0`.
+  suppression via `0`. Unknown interaction operands, empty terms and empty
+  designs are rejected; factor values must belong to nonempty unique levels.
 - **Full estimator requires:** patsy-style grammar: `-` term removal, `:`
   pure interactions, `I()` transforms, polynomial/spline term functions, and
   factor-level encoding inside formulas.

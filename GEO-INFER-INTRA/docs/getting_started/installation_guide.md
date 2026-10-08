@@ -76,13 +76,11 @@ For a complete pre-merge check, use the command list in the root
 - If an import resolves from an unexpected interpreter, use `uv run python` and
   inspect `python -c "import sys; print(sys.executable)"`.
 
-## Do not use these legacy setup paths
+## Environment ownership
 
-- Do not install an unrelated PyPI package named `geo-infer` and assume it is
-  this checkout.
-- Do not reintroduce `setup.py` or `requirements.txt` mirrors; modules build
-  from `pyproject.toml` and the root `uv.lock` pins resolution.
-- Do not run examples with a system interpreter that bypasses the uv lockfile.
+Install workspace packages from their `pyproject.toml` metadata and retain the
+root `uv.lock`. Run examples through `uv run` from the checkout. A similarly named
+package from a registry does not establish that this workspace is installed.
 
 ## Next step
 

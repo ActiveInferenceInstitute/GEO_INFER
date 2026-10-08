@@ -99,11 +99,20 @@ class TestDesignMatrixCreation:
 
     def test_formula_based_design(self):
         """Test formula-based design matrix creation."""
-        # This would require implementing formula parsing
-        # For now, test basic functionality
-        design = create_design_matrix(self.spm_data, covariates=["elevation"])
-
-        assert design is not None
+        design = create_design_matrix(
+            self.spm_data, formula="response ~ elevation + temperature"
+        )
+        assert design.names == ["intercept", "elevation", "temperature"]
+        np.testing.assert_array_equal(
+            design.matrix,
+            np.column_stack(
+                [
+                    np.ones(50),
+                    self.covariates["elevation"],
+                    self.covariates["temperature"],
+                ]
+            ),
+        )
 
 
 class TestCoordinateGeneration:

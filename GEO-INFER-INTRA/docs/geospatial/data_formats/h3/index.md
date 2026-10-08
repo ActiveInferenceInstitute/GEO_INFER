@@ -63,14 +63,7 @@ use, and output schemas.
   construction.
 - Treat pentagons and antimeridian-crossing geometries as explicit edge cases.
 
-## Common migration mistakes
-
-The following v3 names are not supported in GEO-INFER documentation or runtime
-paths:
-
-```python
-# Removed v3 names: geo_to_h3, h3_to_geo, h3_to_geo_boundary, k_ring
-```
+## Verify the supported runtime
 
 Use the v4 table above. The repository H3 contract gate is:
 

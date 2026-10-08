@@ -63,7 +63,7 @@ def resolve_rng(seed: SeedLike = None) -> np.random.Generator:
     Raises
     ------
     TypeError
-        If ``seed`` cannot produce a generator (including the legacy
+        If ``seed`` cannot produce a generator (including unsupported
         ``numpy.random.RandomState`` and the ``numpy.random`` module).
 
     Examples
