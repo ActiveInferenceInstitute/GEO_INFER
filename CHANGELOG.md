@@ -17,7 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Repair SPM formula rejection, degenerate radial/Gaussian bases and the default
   polynomial basis expansion; document supported grammar and polynomial order.
 - Share locked CPU workspace installation and interpreter-specific uv package
-  caches across CI jobs, with one cache writer per interpreter. Cache parsed
+  caches across CI jobs, with one cache writer per interpreter. Prune only
+  those cache writers; readers skip cleanup of caches they never save. Cache parsed
   workflow fixtures while returning independent copies to each contract test.
 - Stop manuscript verification admission after interruption, retaining the
   interrupted attempt and explicit not-run groups.

@@ -741,3 +741,18 @@ def test_cpu_cache_has_one_writer_per_interpreter_and_no_environment_reuse():
         # Only the uv package download/build cache is reused; the composite
         # action still constructs and synchronizes each job's environment.
         assert ".venv" not in setup.get("cache-local-path", "")
+
+
+def test_cpu_cache_readers_do_not_prune_unsaved_cache():
+    jobs = _load("ci.yml")["jobs"]
+    for name in ("validate", "fast-contracts", "manuscript"):
+        assert not any(
+            "uv cache prune" in step.get("run", "") for step in jobs[name]["steps"]
+        )
+    pruning = [
+        step
+        for step in jobs["test"]["steps"]
+        if "uv cache prune" in step.get("run", "")
+    ]
+    assert len(pruning) == 1
+    assert pruning[0]["if"] == "always() && matrix.category == 'unit'"

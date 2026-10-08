@@ -218,10 +218,6 @@ jobs:
           include-hidden-files: true
           retention-days: 14
 
-      - name: Prune uv cache
-        if: always()
-        continue-on-error: true
-        run: uv cache prune --ci
 
   fast-contracts:
     # Early feedback is independent of the full, required category matrix.
@@ -518,7 +514,8 @@ jobs:
           retention-days: 14
 
       - name: Prune uv cache
-        if: always()
+        # Readers do not save a cache; prune only the selected cache writer.
+        if: always() && matrix.category == 'unit'
         continue-on-error: true
         run: uv cache prune --ci
 
