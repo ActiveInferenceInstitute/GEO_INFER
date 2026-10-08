@@ -299,6 +299,19 @@ def validation_commands(path: Path, module: ModuleInfo | None) -> str:
 
 def module_readme_notes(path: Path, module: ModuleInfo | None) -> str:
     """Return implemented module-specific README notes for module roots."""
+    if path.parent == REPO_ROOT / "manuscript":
+        return """
+## Research Verification
+
+- `uv run python manuscript/generate_research_artifacts.py --verify` runs the
+  producer's verification groups and retains immutable execution receipts.
+- Ordinary failures and timeouts continue the diagnostic sweep. An interruption
+  retains its failed attempt and stops admission; later groups remain visibly
+  not run. An incomplete sweep cannot establish acceptance.
+- Add `--full-validation` for the unit, integration, performance and H3 groups.
+  Run ROOT manuscript and manuscript-render profiles separately; the render
+  profile requires the actual generated PDF.
+"""
     if not module or path.parent != module.path:
         return ""
     if module.name == "GEO-INFER-TEST":
@@ -566,6 +579,8 @@ uv run python GEO-INFER-TEST/validate_h3_active_inference_contract.py
 
 def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
     """Return implemented module-specific AGENTS notes for module roots."""
+    if path.parent == REPO_ROOT / "manuscript":
+        return module_readme_notes(path, module)
     if not module or path.parent != module.path:
         return ""
     if module.name == "GEO-INFER-TEST":

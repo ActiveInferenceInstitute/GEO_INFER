@@ -2018,9 +2018,11 @@ def run_verification(
     Shared execution provides monotonic deadlines, process-tree cleanup and
     immutable attempts, including retained output and artifact hashes. Each
     result links to that receipt relative to ``root``; its bounded output tail
-    is a summary. Legacy records without receipt references remain readable.
+    is a summary. Earlier records without receipt references remain readable.
     A timeout or ordinary failure is recorded without retrying or aborting the
-    remaining groups. Importing the generator does not initialize execution.
+    remaining groups. An interrupted attempt retains its failure and stops
+    admission; the remaining groups are reported as not run. Importing the
+    generator does not initialize execution.
     """
     from geo_infer_test.execution import run_command
 
@@ -2072,6 +2074,8 @@ def run_verification(
                 ),
             )
         )
+        if completed.status == "INTERRUPTED":
+            break
     return tuple(results)
 
 

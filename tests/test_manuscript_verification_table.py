@@ -435,6 +435,39 @@ class TestRunVerification:
         assert results[1].status == "passed"
         assert results[1].return_code == 0
 
+    def test_interruption_retains_failure_and_leaves_later_groups_not_run(
+        self, generator: ModuleType, tmp_path: Path, monkeypatch
+    ) -> None:
+        monkeypatch.setattr(
+            generator,
+            "VERIFICATION_COMMANDS",
+            (("cancelled", "true"), ("must-not-launch", "true")),
+        )
+        admitted = []
+
+        def interrupted(command, name, timeout, **_kwargs):
+            admitted.append(name)
+            assert name == "cancelled", "interruption admitted another group"
+            return execution.CommandResult(
+                name,
+                False,
+                1.0,
+                command,
+                status="INTERRUPTED",
+                stderr="interrupted; cleanup receipt retained",
+                returncode=None,
+                receipt=str(tmp_path / "attempt" / "receipt.json"),
+            )
+
+        monkeypatch.setattr(execution, "run_command", interrupted)
+        results = generator.run_verification(tmp_path)
+        assert admitted == ["cancelled"]
+        assert len(results) == 1 and results[0].status == "failed"
+        assert results[0].receipt == "attempt/receipt.json"
+        assert "cleanup receipt retained" in results[0].output_tail
+        table = generator._verification_table(results, full_validation=False)
+        assert "| `must-not-launch` | `true` | not run |" in table
+
     def test_compilation_expands_only_its_paths_against_execution_root(
         self, generator: ModuleType, tmp_path: Path
     ) -> None:
