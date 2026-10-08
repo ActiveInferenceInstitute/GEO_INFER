@@ -670,3 +670,93 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 14
+
+  optional-data-services:
+    # Real disposable service operations complement the installed-wheel profiles.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgis:
+        image: postgis/postgis:16-3.5
+        env:
+          POSTGRES_USER: geo_test
+          POSTGRES_PASSWORD: disposable-test-only
+          POSTGRES_DB: geo_test
+        ports:
+          - 127.0.0.1:15432:5432
+        options: >-
+          --health-cmd "pg_isready -U geo_test -d geo_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+      redis:
+        image: redis:7.4.11-alpine3.21
+        ports:
+          - 127.0.0.1:16379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.10.7"
+          enable-cache: true
+          save-cache: false
+          cache-suffix: cpu-workspace-py3.12
+          cache-dependency-glob: |
+            **/pyproject.toml
+            **/uv.lock
+            .python-version
+      - uses: ./.github/actions/provision-pytensor-blas
+      - uses: ./.github/actions/sync-cpu-workspace
+      - name: Build pinned official MinIO source
+        run: |
+          mkdir -p .geo-infer-test-results/services/bin
+          go version > .geo-infer-test-results/services/go-version.txt
+          docker image inspect postgis/postgis:16-3.5 redis:7.4.11-alpine3.21 \
+            --format '{{json .RepoDigests}}' > .geo-infer-test-results/services/container-digests.txt
+          GOBIN="$PWD/.geo-infer-test-results/services/bin" go install github.com/minio/minio@RELEASE.2025-10-15T17-29-55Z
+      - name: Verify real storage services
+        env:
+          MINIO_ROOT_USER: geo_test
+          MINIO_ROOT_PASSWORD: disposable-test-only
+          AWS_EC2_METADATA_DISABLED: "true"
+        run: |
+          set -euo pipefail
+          .geo-infer-test-results/services/bin/minio server .geo-infer-test-results/services/minio-data \
+            --address 127.0.0.1:19000 --console-address 127.0.0.1:19001 \
+            > .geo-infer-test-results/services/minio.log 2>&1 &
+          MINIO_TEST_PID=$!
+          trap 'kill "$MINIO_TEST_PID" 2>/dev/null || true; wait "$MINIO_TEST_PID" 2>/dev/null || true' EXIT
+          .geo-infer-test-results/services/bin/minio --version > .geo-infer-test-results/services/minio-version.txt
+          sha256sum .geo-infer-test-results/services/bin/minio > .geo-infer-test-results/services/minio-sha256.txt
+          go version -m .geo-infer-test-results/services/bin/minio > .geo-infer-test-results/services/minio-build.txt
+          # Retry readiness only; operation failures below are never retried.
+          for _ in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:19000/minio/health/ready > /dev/null; then
+              break
+            fi
+            kill -0 "$MINIO_TEST_PID"
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:19000/minio/health/ready > /dev/null
+          uv run --no-sync python GEO-INFER-DATA/tests/service_contract_probe.py \
+            > .geo-infer-test-results/services/contracts.json 2> .geo-infer-test-results/services/contracts.stderr
+      - name: Upload service operation receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: geo-infer-optional-data-service-contracts
+          path: |
+            .geo-infer-test-results/services/contracts.json
+            .geo-infer-test-results/services/contracts.stderr
+            .geo-infer-test-results/services/*-version.txt
+            .geo-infer-test-results/services/*-digests.txt
+            .geo-infer-test-results/services/*-sha256.txt
+            .geo-infer-test-results/services/*-build.txt
+          if-no-files-found: error
+          retention-days: 14

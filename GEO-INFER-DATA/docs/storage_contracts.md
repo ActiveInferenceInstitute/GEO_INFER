@@ -9,7 +9,9 @@ Authenticated serialized envelopes are verified before unpickling.
 
 Install the owning `postgres` extra for PostgreSQL/PostGIS operations. It includes
 GeoAlchemy2, which GeoPandas requires for `GeoDataFrame.to_postgis`. GeoPandas
-creates the database spatial index. `SpatialIndexer` builds an in-memory index
+creates the database spatial index. Retrieval preserves the declared geometry
+column and CRS, including custom names and projected coordinates; spatial query
+bounds are WGS84 and are transformed to the stored geometry SRID. `SpatialIndexer` builds an in-memory index
 from a GeoDataFrame and does not create database indexes.
 
 Spatial indexes use row positions internally, preserving duplicate and string
@@ -31,3 +33,12 @@ collision protection. Its patched geospatial writer checks the transaction
 interface. These tests do not establish live PostgreSQL/PostGIS acceptance.
 `tests/unit/test_indexing.py` runs native H3 and R-tree queries against duplicate,
 string and integer labels, mutation isolation and empty-result schema/CRS.
+
+The CI `optional-data-services` job explicitly runs
+`tests/service_contract_probe.py` against disposable loopback PostGIS and Redis
+containers and a pinned official MinIO source build. It checks projected/custom
+geometry queries, generic values, signed-payload tamper rejection and
+S3-compatible byte operations. It uses test credentials only, never AWS account
+access, and retains its operation receipt. Readiness polling is bounded; failed
+operations fail the job without retries. This is S3 protocol acceptance against
+MinIO, not live AWS account acceptance.

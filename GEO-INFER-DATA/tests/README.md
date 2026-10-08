@@ -9,6 +9,7 @@ Tests workspace within `GEO-INFER-DATA`.
 - `performance/`
 - `unit/`
 - `conftest.py`
+- `service_contract_probe.py`
 
 ## Public Interface
 
@@ -19,6 +20,12 @@ Tests workspace within `GEO-INFER-DATA`.
 - `conftest.py:sample_csv_path` (function)
 - `conftest.py:sample_geojson_path` (function)
 - `conftest.py:data_source_config` (function)
+- `service_contract_probe.py:metadata` (function)
+- `service_contract_probe.py:postgres_contract` (function)
+- `service_contract_probe.py:redis_contract` (function)
+- `service_contract_probe.py:object_contract` (function)
+- `service_contract_probe.py:source_identity` (function)
+- `service_contract_probe.py:main` (function)
 
 ## Module Metadata
 

@@ -5,29 +5,34 @@ integration into main. Closing an issue means its actual requirements are met;
 the owner explicitly requested that unmet issues remain open. Deferral does
 not constitute technical acceptance.
 
-The earlier readiness issues describe pre-integration checkpoints. Main
-`c1027a9d538f4656ed854f2735874f0e0782686c` incorporates the accepted GNN 4.1.0
-pin; the modernization branch preserves that ancestry. Successful hosted CI is
-useful current evidence but does not resolve historical causal questions,
-independent review, local native acceptance or external prerequisites.
+Main `42d2964b4a3919f3865b2b41a69acbe100b97c7c` incorporated the reviewed
+modernization through [PR #80](https://github.com/ActiveInferenceInstitute/GEO_INFER/pull/80),
+preserving the accepted GNN 4.1.0 ancestry. Its same-SHA main CI and supplementary
+checks, local full-eleven producer, all-45-wheel inventories and independent
+source/hosted/output-custody review passed. Evidence remains bound to that revision.
 
-| Issue | Implemented work / current evidence | Remaining acceptance |
+A subsequent DATA review found PostgreSQL routing/indexing defects and spatial
+row-identity defects. The continuation corrects them and adds a disposable hosted
+service lane. Its focused tests and independent source review pass; final local,
+installed-wheel, native and hosted evidence must be renewed before integration.
+
+| Issue | Verified work / evidence | Remaining acceptance |
 | --- | --- | --- |
-| #58 | MATH `core.circulation`: skew part, transition/rate currents, detailed balance, incoming divergence, finite graph Hodge projections and explicit harmonic remainder; 28 analytical cases and 351 MATH unit cases pass locally. | Candidate hosted checks passed; main integration remains the closure gate. External formal-repository bridge edits are separate. |
-| #61 | Starting main and intermediate modernization candidates have green hosted gates; obsolete pre-integration status is superseded. | Required child acceptance and exact final main evidence. |
-| #62 | Phase-aware deadline and census diagnostics are implemented; hosted ordinary TEST succeeds on recent candidates. | Historical timeout attribution and fresh independent infrastructure review remain unresolved; recurrence-free runs alone are not causal proof. |
-| #63 | Genuine TEST coverage is included in the unchanged 85% floor gate; recent hosted validation succeeds. | All 46 candidate dispositions are audited; TEST measures 87.9988% against the unchanged 85% floor. Historical #62 causality remains separate. |
-| #64 | Analytical runtime changes are implemented, focused oracles and broad hosted matrix run. | All 45 strict imports and the local full-eleven producer passed on b3a5ed2f4. Retained earlier failures remain diagnostic evidence. Independent review and final main evidence are separate gates. |
-| #65 | Two-interpreter installed-wheel and paired interchange lanes execute; GNN pin is the accepted 4.1.0 source, superseding the issue's older pin. | Both candidate wheel/profile archives and paired evidence are audited. Independent optional-boundary review remains distinct. |
-| #66 | Executable docs, generated signposts, changelog and producer cancellation handling updated. | Local full-eleven producer, 2,038-file byte-custody snapshot, current index and 144+7 ROOT/native profile cases pass at b3a5ed2f4. Independent scientific review of every existing output remains unclaimed. |
-| #67 | Recent candidate hosted matrix and native Windows/portability/interchange lanes pass. | All 29 candidate checks and separate formatting pass; all 23 main-CI archives plus supplementary archives are audited. Fresh independent hosted review and same-SHA main evidence remain distinct. |
-| #68 | Concurrent GNN pin is incorporated through an ordinary merge; published ancestry preserved. | Final integration and same-SHA main workflows; independent GO is not claimed. |
-| #69 | CPU path and documented optional GPU boundary preserved. | Actual physical GPU execution, device/version evidence, cold/warm timings and memory require hardware. |
-| #70 | Existing captured layers/replay preserved. | Complete bioregion acquisition still requires a declared source, license, extent and resource budget. |
-| #72 | Historical PROJ evidence and negative induced-lock result retained. | Historical SQLite I/O cause remains UNKNOWN; newer green runs do not identify it. |
-| #73 | Account/configuration boundaries preserved. | Configured advisor review requires account-level remedy; no advisor result is claimed. |
-| #74 | Source remains uniformly 0.4.0. | Release decision, tag and registry/release publication remain separately authorized actions. Main integration is not a release. |
-| #78 | Content-free live owned-process denial facts are retained; recent hosted runs pass. | Historical Linux live-task denial class is not identified. No census weakening or automatic retry was added. |
+| #58 (closed) | MATH circulation/skew/Hodge APIs and analytical oracles were integrated through PR #80. | External formal-repository bridge edits are separate scope. |
+| #61 | Published main has reviewed source and hosted evidence. | Renew acceptance for the DATA continuation and complete required children. |
+| #62 | Retained timing separates actual child completion from census; demonstrated census-error propagation is fixed without budget changes or retries. | Renew complete TEST and independent evidence. Conclusive historical environmental attribution is not an additional criterion; its UNKNOWN status remains retained. |
+| #63 | Main TEST measures 2,977/3,383 lines (87.9988%) against the unchanged 85% floor; all 46 dispositions audited. | Renew final-candidate measurement and complete #62. |
+| #64 | Main strict/analytical and full-eleven gates pass. | Renew gates for changed source. Earlier failures remain diagnostic evidence. |
+| #65 | Independent review exposed and verified corrections for PostgreSQL routing/indexing and H3/R-tree observation identity. | Real PostGIS/Redis/MinIO/S3-compatible service operations, fresh two-interpreter wheels/profiles and pinned paired interchange must pass on the final revision. |
+| #66 | Independent scientific/readability review passed all four current figures and the actual 35-page native manuscript at main/source hash 7d76fd470a2bec35. | Renew producer, native render, source/receipt/figure/model provenance, generated docs/index, ROOT tests and whole-output byte snapshot for changed source. Historical output files are retained evidence; scientific acceptance of every historical file is not an issue criterion. |
+| #67 | Main CI and supplementary artifacts received fresh independent archive/receipt audits. | Renew exact-candidate hosted artifacts, including the new service lane. |
+| #68 | Ordinary main integration at 42d2964b4 is verified. | Integrate the new reviewed candidate ordinarily and verify same-SHA main results. |
+| #69 | Local diagnostics report no usable CuPy, Torch CUDA or JAX GPU backend; CPU operation preserved. | Supported physical hardware and precision/parity/timing/memory evidence. |
+| #70 | Captured layers and replay preserved. | Complete bioregion acquisition needs a declared source, license, extent and resource budget. |
+| #72 | Original PROJ I/O evidence and negative lock/content fault controls retained. | Historical cause remains UNKNOWN; successful CRS tests do not explain it. |
+| #73 | Native independent review is available and used. | Actual configured advisor review requires account-level remedy; native review does not substitute for that named service. |
+| #74 | Version parity remains 0.4.0. | Explicit release/version decision after readiness, then specifically authorized tag/assets/registry publication and destination verification. |
+| #78 | Fail-closed owned-process observation retains content-free Linux denial facts. | Identify the historical live-task denial class; a nonrecurrence is not identification. |
 
 Completed implementation, hosted receipts, historical failed attempts and
 unmet acceptance criteria must remain distinguishable. Public issue comments

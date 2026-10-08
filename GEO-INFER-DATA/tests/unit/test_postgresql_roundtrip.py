@@ -1,4 +1,5 @@
 """Actual SQL routing regressions; SQLite exercises SQL without claiming PostGIS acceptance."""
+
 from datetime import datetime, UTC
 
 import pandas as pd
@@ -6,21 +7,39 @@ import pytest
 from sqlalchemy import create_engine, inspect, text
 
 from geo_infer_data.core.storage import PostgreSQLBackend
-from geo_infer_data.models.schemas import DatasetMetadata, SpatialExtent, TemporalExtent, DataLineage
+from geo_infer_data.models.schemas import (
+    DatasetMetadata,
+    SpatialExtent,
+    TemporalExtent,
+    DataLineage,
+)
 
 
 @pytest.fixture
 def backend(tmp_path):
-    backend = PostgreSQLBackend({"host": "localhost", "port": 5432, "user": "test", "password": "test", "database": "test"})
+    backend = PostgreSQLBackend(
+        {
+            "host": "localhost",
+            "port": 5432,
+            "user": "test",
+            "password": "test",
+            "database": "test",
+        }
+    )
     backend.connection_string = f"sqlite:///{tmp_path / 'storage.sqlite'}"
     return backend
 
 
 @pytest.fixture
 def metadata():
-    return DatasetMetadata(title="SQL roundtrip", spatial=SpatialExtent(bbox=[0, 0, 1, 1]),
-                           temporal=TemporalExtent(start=datetime(2023, 1, 1, tzinfo=UTC), end=datetime(2023, 1, 2, tzinfo=UTC)),
-                           lineage=DataLineage(source="test", process="roundtrip", created_by="test"))
+    return DatasetMetadata(
+        title="SQL roundtrip",
+        spatial=SpatialExtent(bbox=[0, 0, 1, 1]),
+        temporal=TemporalExtent(
+            start=datetime(2023, 1, 1, tzinfo=UTC), end=datetime(2023, 1, 2, tzinfo=UTC)
+        ),
+        lineage=DataLineage(source="test", process="roundtrip", created_by="test"),
+    )
 
 
 @pytest.mark.asyncio
@@ -61,8 +80,12 @@ async def test_generic_decode_rejects_corruption(backend, metadata):
     engine = create_engine(backend.connection_string)
     try:
         with engine.begin() as connection:
-            connection.execute(text("UPDATE generic_data_store SET payload = :payload WHERE data_id = :data_id"),
-                               {"payload": "not valid JSON", "data_id": data_id})
+            connection.execute(
+                text(
+                    "UPDATE generic_data_store SET payload = :payload WHERE data_id = :data_id"
+                ),
+                {"payload": "not valid JSON", "data_id": data_id},
+            )
         assert inspect(engine).has_table("generic_data_store")
     finally:
         engine.dispose()
@@ -71,7 +94,9 @@ async def test_generic_decode_rejects_corruption(backend, metadata):
 
 
 @pytest.mark.asyncio
-async def test_geospatial_write_uses_transaction_without_in_memory_index(backend, metadata, monkeypatch):
+async def test_geospatial_write_uses_transaction_without_in_memory_index(
+    backend, metadata, monkeypatch
+):
     import geopandas as gpd
     from shapely.geometry import Point
 

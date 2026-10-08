@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   breaks that stranded short tails on otherwise empty pages. Retain the
   declared section order and native readability/layout acceptance.
 
+- Add a hosted disposable-service acceptance job for real PostGIS, Redis and
+  MinIO/S3-compatible operations, including projected/custom geometry and signed
+  payload tamper rejection; retain receipts separately from installed clients.
 - Correct DATA PostgreSQL generic retrieval/deletion and same-second identifier
   collisions. Write tables transactionally without replacing existing data;
   delegate PostGIS indexing to GeoPandas/GeoAlchemy2 and declare the required

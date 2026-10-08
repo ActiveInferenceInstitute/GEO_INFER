@@ -245,8 +245,10 @@ class TestTemporalIndexer:
 @pytest.mark.parametrize("labels", [[7, 7], ["first", "second"], [0, 1]])
 def test_spatial_queries_preserve_observations_and_labels(strategy, labels):
     frame = gpd.GeoDataFrame(
-        {"value": [3, 9]}, index=labels,
-        geometry=[Point(-122.42, 37.77), Point(-122.41, 37.78)], crs="EPSG:4326",
+        {"value": [3, 9]},
+        index=labels,
+        geometry=[Point(-122.42, 37.77), Point(-122.41, 37.78)],
+        crs="EPSG:4326",
     )
     indexer = SpatialIndexer()
     index_id = indexer.create_spatial_index(frame, strategy)
@@ -254,7 +256,9 @@ def test_spatial_queries_preserve_observations_and_labels(strategy, labels):
     assert result["value"].tolist() == [3, 9]
     assert result.index.tolist() == labels
     frame.loc[:, "value"] = 100
-    assert indexer.query_by_bounds(index_id, [-122.45, 37.74, -122.38, 37.81])["value"].tolist() == [3, 9]
+    assert indexer.query_by_bounds(index_id, [-122.45, 37.74, -122.38, 37.81])[
+        "value"
+    ].tolist() == [3, 9]
     empty = indexer.query_by_bounds(index_id, [0, 0, 0.001, 0.001])
     assert empty.empty
     assert empty.columns.tolist() == result.columns.tolist()

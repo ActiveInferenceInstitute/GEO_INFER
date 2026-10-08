@@ -700,6 +700,8 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
   metadata table; authenticated payload verification precedes unpickling.
 - Install the `postgres` extra for GeoAlchemy2-backed PostGIS writes.
   GeoPandas creates the database spatial index; the in-memory indexer does not.
+- The explicit CI service probe uses disposable loopback PostGIS, Redis and
+  MinIO, retaining source/lock/runtime identity and failed-operation evidence.
 """
     if module.name == "GEO-INFER-API":
         return """

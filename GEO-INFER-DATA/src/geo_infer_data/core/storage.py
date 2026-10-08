@@ -185,6 +185,7 @@ class PostgreSQLBackend:
 
     def __init__(self, config: dict[str, Any]):
         require_dependency("psycopg2", "postgres")
+        require_dependency("geoalchemy2", "postgres")
         self.config = config
         self.connection_string = self._build_connection_string()
         self.spatial_indexer = SpatialIndexer()
@@ -231,9 +232,7 @@ class PostgreSQLBackend:
         finally:
             engine.dispose()
 
-    async def _retrieve_dataframe(
-        self, data_id: str, query: dict[str, Any]
-    ) -> Any:
+    async def _retrieve_dataframe(self, data_id: str, query: dict[str, Any]) -> Any:
         """Retrieve a stored table from PostgreSQL/PostGIS."""
         from sqlalchemy import create_engine, inspect as sqlalchemy_inspect, text
 
@@ -244,20 +243,40 @@ class PostgreSQLBackend:
                 if sqlalchemy_inspect(engine).has_table("generic_data_store"):
                     with engine.connect() as conn:
                         row = conn.execute(
-                            text("SELECT payload FROM generic_data_store WHERE data_id = :data_id"),
+                            text(
+                                "SELECT payload FROM generic_data_store WHERE data_id = :data_id"
+                            ),
                             {"data_id": data_id},
                         ).first()
                     if row is not None:
                         if query:
-                            raise ValueError("Generic PostgreSQL values do not support table queries")
+                            raise ValueError(
+                                "Generic PostgreSQL values do not support table queries"
+                            )
                         return self.decode_generic_payload(row[0])
                 raise FileNotFoundError(f"PostgreSQL dataset {data_id!r} was not found")
+            geometry_columns = [
+                validate_sql_identifier(column["name"])
+                for column in sqlalchemy_inspect(engine).get_columns(table_name)
+                if str(column["type"]).lower().startswith("geometry")
+            ]
+            geometry_column = geometry_columns[0] if geometry_columns else None
+            geometry_expression = (
+                engine.dialect.identifier_preparer.quote(geometry_column)
+                if geometry_column is not None
+                else None
+            )
             if query.get("spatial"):
+                if geometry_column is None:
+                    raise ValueError(
+                        "Spatial queries require a PostGIS geometry column"
+                    )
                 min_lon, min_lat, max_lon, max_lat = query["spatial"]
                 sql = text(
                     f"SELECT * FROM {table_name} "
-                    "WHERE ST_Intersects(geometry, ST_MakeEnvelope(:min_lon, :min_lat, "
-                    ":max_lon, :max_lat, 4326))"
+                    f"WHERE ST_Intersects({geometry_expression}, ST_Transform("
+                    "ST_MakeEnvelope(:min_lon, :min_lat, :max_lon, :max_lat, 4326), "
+                    f"ST_SRID({geometry_expression})))"
                 )
                 return gpd.read_postgis(
                     sql,
@@ -268,7 +287,13 @@ class PostgreSQLBackend:
                         "max_lon": max_lon,
                         "max_lat": max_lat,
                     },
-                    geom_col="geometry",
+                    geom_col=geometry_column,
+                )
+            if geometry_column is not None:
+                return gpd.read_postgis(
+                    text(f"SELECT * FROM {table_name}"),
+                    engine,
+                    geom_col=geometry_column,
                 )
             return pd.read_sql_table(table_name, engine)
         finally:

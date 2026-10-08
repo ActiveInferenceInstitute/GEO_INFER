@@ -26,6 +26,7 @@
 - `performance/`
 - `unit/`
 - `conftest.py`
+- `service_contract_probe.py`
 
 ## Validation
 
