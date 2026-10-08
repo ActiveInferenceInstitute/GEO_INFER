@@ -431,10 +431,15 @@ def _nonempty_lines(path: Path) -> int:
     )
 
 
+# Read-only git queries must not start Git's optional persistent daemon: a
+# user-level core.fsmonitor=true would otherwise leave one running per tree.
+_GIT = ("git", "-c", "core.fsmonitor=false")
+
+
 def _run_git(root: Path, *args: str, default: str = "unavailable") -> str:
     try:
         result = subprocess.run(
-            ["git", "-C", str(root), *args],
+            [*_GIT, "-C", str(root), *args],
             check=True,
             capture_output=True,
             text=True,
@@ -458,7 +463,7 @@ def _dirty_file_count(root: Path) -> int:
     """
     try:
         result = subprocess.run(
-            ["git", "-C", str(root), "status", "--porcelain"],
+            [*_GIT, "-C", str(root), "status", "--porcelain"],
             check=True,
             capture_output=True,
             text=True,

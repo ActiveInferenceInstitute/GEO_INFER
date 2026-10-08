@@ -33,6 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   generated module names. Hypothesis drew `ROOT`, which correctly resolves to
   the repository root rather than a `GEO-INFER-ROOT` directory; both
   selector meanings are now pinned by explicit tests.
+- Run the manuscript generator's and ROOT tests' git commands with
+  `core.fsmonitor=false`, matching the existing custody reads. A user-level
+  `core.fsmonitor=true` made each shim-worktree `git status` start a detached
+  daemon that outlived the worktree and failed ROOT acceptance as a leaked
+  owned process.
 - Preserve exact Cascadia publisher bytes and LF replay outputs through Windows
   checkout, and exercise explicit UTF-8 renderer reads under a cp1252 default.
 - Synchronize deadline regression injections with real target completion and

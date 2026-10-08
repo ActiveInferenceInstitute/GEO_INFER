@@ -344,9 +344,14 @@ def _variables(root: Path) -> dict:
     )
 
 
+# Test checkouts must not start Git's persistent fsmonitor daemon, which
+# outlives the worktree and is reported as a leaked owned process.
+_GIT = ("git", "-c", "core.fsmonitor=false")
+
+
 def _git(repo_root: Path, *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        ["git", "-C", str(repo_root), *args],
+        [*_GIT, "-C", str(repo_root), *args],
         capture_output=True,
         text=True,
         check=False,
@@ -411,7 +416,7 @@ def shim_checkout(
         yield copy
     finally:
         subprocess.run(
-            ["git", "-C", str(repo_root), "worktree", "remove", "--force", str(copy)],
+            [*_GIT, "-C", str(repo_root), "worktree", "remove", "--force", str(copy)],
             capture_output=True,
             check=False,
         )
@@ -420,7 +425,7 @@ def shim_checkout(
         # later ``worktree add`` and the repo's own status noisier.  Prune is
         # the cheap backstop that clears stale registrations.
         subprocess.run(
-            ["git", "-C", str(repo_root), "worktree", "prune"],
+            [*_GIT, "-C", str(repo_root), "worktree", "prune"],
             capture_output=True,
             check=False,
         )
