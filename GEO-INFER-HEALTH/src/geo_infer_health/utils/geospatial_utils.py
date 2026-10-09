@@ -35,6 +35,8 @@ def haversine_distance(loc1: Location, loc2: Location) -> float:
         math.sin(dlat / 2) ** 2
         + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2) ** 2
     )
+    # Valid antipodal coordinates can round a fraction above one.
+    a = min(max(a, 0.0), 1.0)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
     distance = EARTH_RADIUS_KM * c
@@ -99,11 +101,3 @@ def create_bounding_box(
         Location(latitude=min_lat, longitude=min_lon, crs=center_loc.crs),
         Location(latitude=max_lat, longitude=max_lon, crs=center_loc.crs),
     )
-
-
-# Baseline for more advanced geo-utils, e.g., using geopandas or shapely if available
-# def project_to_utm(location: Location) -> Tuple[float, float, str]:
-#     pass
-
-# def buffer_point(location: Location, radius_meters: float) -> Any:
-#     pass # Returns a geometry object

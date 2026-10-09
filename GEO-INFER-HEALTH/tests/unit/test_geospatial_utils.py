@@ -7,6 +7,7 @@ import math
 
 from geo_infer_health.models import Location
 from geo_infer_health.utils.geospatial_utils import (
+    EARTH_RADIUS_KM,
     haversine_distance,
     create_bounding_box,
 )
@@ -14,6 +15,21 @@ from geo_infer_health.utils.geospatial_utils import (
 
 class TestHaversineDistance:
     """Test cases for haversine distance calculation."""
+
+    @pytest.mark.parametrize("latitude", [-87.5, 87.5])
+    def test_antipodal_roundoff_stays_in_real_domain(self, latitude):
+        first = Location(latitude=latitude, longitude=12.3)
+        second = Location(latitude=-latitude, longitude=-167.7)
+
+        assert haversine_distance(first, second) == math.pi * EARTH_RADIUS_KM
+        assert haversine_distance(second, first) == math.pi * EARTH_RADIUS_KM
+
+    def test_mutated_nan_coordinate_does_not_become_zero_distance(self):
+        first = Location(latitude=0, longitude=0)
+        second = Location(latitude=0, longitude=0)
+        first.latitude = float("nan")
+
+        assert math.isnan(haversine_distance(first, second))
 
     def test_same_location_distance(self):
         """Test distance between identical locations."""

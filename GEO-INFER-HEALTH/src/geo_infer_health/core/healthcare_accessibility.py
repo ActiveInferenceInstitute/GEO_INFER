@@ -13,7 +13,6 @@ class HealthcareAccessibilityAnalyzer:
     ):
         self.facilities = facilities
         self.population_data = population_data if population_data else []
-        # Potential pre-processing: create a spatial index for facilities
 
     def _calculate_distance(self, loc1: Location, loc2: Location) -> float:
         """Calculate distance in kilometers between two locations."""
@@ -27,25 +26,22 @@ class HealthcareAccessibilityAnalyzer:
         required_services: list[str] | None = None,
     ) -> list[HealthFacility]:
         """Finds health facilities within a given radius, optionally filtering by type and services."""
-        nearby_facilities = []
+        nearby_facilities: list[tuple[float, HealthFacility]] = []
+        normalized_type = facility_type.lower() if facility_type else None
         for facility in self.facilities:
+            if normalized_type and facility.facility_type.lower() != normalized_type:
+                continue
+            if required_services and not all(
+                service in facility.services_offered for service in required_services
+            ):
+                continue
             distance = haversine_distance(facility.location, center_loc)
             if distance <= radius_km:
-                if (
-                    facility_type
-                    and facility.facility_type.lower() != facility_type.lower()
-                ):
-                    continue
-                if required_services:
-                    if not all(
-                        service in facility.services_offered
-                        for service in required_services
-                    ):
-                        continue
-                nearby_facilities.append(facility)
-        return sorted(
-            nearby_facilities, key=lambda f: haversine_distance(f.location, center_loc)
-        )
+                nearby_facilities.append((distance, facility))
+        return [
+            facility
+            for _, facility in sorted(nearby_facilities, key=lambda item: item[0])
+        ]
 
     def get_nearest_facility(
         self,
@@ -84,41 +80,41 @@ class HealthcareAccessibilityAnalyzer:
 
     def calculate_facility_to_population_ratio(
         self,
-        area_id: str,  # Assuming population data is per area_id
+        area_id: str,
         facility_type: str | None = None,
-        # More complex: consider facilities within/near the area_id's geometry
     ) -> dict[str, Any] | None:
-        """Calculates a simple ratio of facilities to population for a given area.
-        This is a naive implementation if area geometries are not used.
+        """Count caller-supplied facilities relative to a population area's count.
+
+        The caller supplies facilities for the region of interest; this method
+        applies the type filter but does not clip facilities to area geometry.
+        A zero population retains an infinite ratio and the filtered count.
         """
         target_pop_data = next(
             (p for p in self.population_data if p.area_id == area_id), None
         )
         if not target_pop_data:
-            return None  # Or raise error
+            return None
 
         population = target_pop_data.population_count
+        relevant_facilities = self.facilities
+        if facility_type:
+            normalized_type = facility_type.lower()
+            relevant_facilities = [
+                f
+                for f in relevant_facilities
+                if f.facility_type.lower() == normalized_type
+            ]
+        facility_count = len(relevant_facilities)
+
         if population == 0:
             return {
                 "area_id": area_id,
                 "facility_type_filter": facility_type,
                 "ratio_per_1000_pop": float("inf"),
-                "facility_count": len(self.facilities),
+                "facility_count": facility_count,
                 "population": 0,
                 "message": "Population is zero.",
             }
-
-        # Count facilities; the caller supplies facilities for the full region of interest
-        # A real implementation would filter facilities within the specific area_id's geometry.
-        relevant_facilities = self.facilities
-        if facility_type:
-            relevant_facilities = [
-                f
-                for f in relevant_facilities
-                if f.facility_type.lower() == facility_type.lower()
-            ]
-
-        facility_count = len(relevant_facilities)
 
         if facility_count == 0:
             return {
@@ -140,17 +136,3 @@ class HealthcareAccessibilityAnalyzer:
             "facility_count": facility_count,
             "population": population,
         }
-
-    # Baseline for more advanced accessibility analyses
-    # def calculate_travel_time_to_nearest_facility(self, loc: Location, mode: str = 'driving'):
-    #     # This would typically require an external routing API (e.g., OSRM, Google Maps, Mapbox)
-    #     # or a local road network graph (e.g., OSMnx + NetworkX).
-    #     pass
-
-    # def assess_service_area_coverage(self, facility_ids: List[str], travel_time_threshold_minutes: int):
-    #     # Calculates the population covered by given facilities within a travel time.
-    #     pass
-
-    # def identify_underserved_areas(self, accessibility_threshold: float, metric: str = 'distance_to_nearest'):
-    #     # Identifies areas/populations with low accessibility based on a chosen metric.
-    #     pass

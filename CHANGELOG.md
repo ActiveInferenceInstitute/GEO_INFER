@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 0.4.0 candidate preparation
 
+- Apply HEALTH facility-type filtering to zero-population counts, bound valid
+  antipodal haversine roundoff, and calculate radius-query distances once per
+  eligible facility while preserving tie order. Remove stale commented-out API
+  stubs and document current query and spherical-distance contracts.
+
 - Complete content-free Linux process-denial diagnostics with all-four GID
   equality; report missing credentials explicitly and restrict LSM mode output
   to known values, preventing arbitrary profile suffix disclosure. Keep ownership

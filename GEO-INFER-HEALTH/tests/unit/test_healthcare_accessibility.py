@@ -10,6 +10,79 @@ from geo_infer_health.core.healthcare_accessibility import (
 from geo_infer_health.models import HealthFacility, Location, PopulationData
 
 
+@pytest.mark.parametrize(
+    "population, facility_type, expected_count",
+    [(0, None, 2), (0, "hOSPiTaL", 1), (0, "Absent", 0), (1000, "Hospital", 1)],
+)
+def test_ratio_count_respects_filter_even_with_zero_population(
+    population, facility_type, expected_count
+):
+    facilities = [
+        HealthFacility(
+            facility_id=kind,
+            name=kind,
+            facility_type=kind,
+            location=Location(latitude=0, longitude=0),
+        )
+        for kind in ("Hospital", "Clinic")
+    ]
+    analyzer = HealthcareAccessibilityAnalyzer(
+        facilities,
+        [PopulationData(area_id="region", population_count=population)],
+    )
+
+    result = analyzer.calculate_facility_to_population_ratio("region", facility_type)
+
+    assert result["facility_count"] == expected_count
+    assert result["facility_type_filter"] == facility_type
+    assert result["ratio_per_1000_pop"] == (
+        float("inf") if population == 0 else expected_count / population * 1000
+    )
+
+
+def test_radius_search_measures_each_eligible_facility_once_and_keeps_ties(monkeypatch):
+    from geo_infer_health.core import healthcare_accessibility as module
+
+    def facility(identifier, latitude, kind="Hospital", services=("Emergency",)):
+        return HealthFacility(
+            facility_id=identifier,
+            name=identifier,
+            facility_type=kind,
+            location=Location(latitude=latitude, longitude=0),
+            services_offered=list(services),
+        )
+
+    eligible = [
+        facility("outside", 1),
+        facility("tie_first", 0),
+        facility("near", 0.01),
+        facility("tie_second", 0),
+    ]
+    facilities = eligible + [
+        facility("clinic", 0, "Clinic"),
+        facility("no_service", 0, services=()),
+    ]
+    calls = []
+    original = module.haversine_distance
+
+    def measured(first, second):
+        calls.append(id(first))
+        return original(first, second)
+
+    monkeypatch.setattr(module, "haversine_distance", measured)
+    analyzer = HealthcareAccessibilityAnalyzer(facilities)
+
+    found = analyzer.find_facilities_in_radius(
+        Location(latitude=0, longitude=0),
+        2,
+        facility_type="hospital",
+        required_services=["Emergency"],
+    )
+
+    assert [item.facility_id for item in found] == ["tie_first", "tie_second", "near"]
+    assert calls == [id(item.location) for item in eligible]
+
+
 class TestHealthcareAccessibilityAnalyzer:
     """Test cases for HealthcareAccessibilityAnalyzer class."""
 

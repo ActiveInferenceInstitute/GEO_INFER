@@ -9,7 +9,6 @@ class EnvironmentalHealthAnalyzer:
 
     def __init__(self, environmental_readings: list[EnvironmentalData]):
         self.readings = sorted(environmental_readings, key=lambda r: r.timestamp)
-        # Potential pre-processing: spatial/temporal indexing for readings
 
     def _calculate_distance(self, loc1: Location, loc2: Location) -> float:
         """Calculate distance in kilometers between two locations."""
@@ -87,11 +86,3 @@ class EnvironmentalHealthAnalyzer:
                 avg_value = total_value / len(relevant_readings)
                 avg_exposure_results[key_for(loc)] = avg_value
         return avg_exposure_results
-
-    # Baseline for more complex exposure modeling
-    # def estimate_cumulative_exposure(self, person_trajectory: List[Tuple[Location, datetime]], parameter: str):
-    #     pass
-
-    # Baseline for linking environmental data to health outcomes
-    # def correlate_env_health(self, disease_reports: List[DiseaseReport], env_parameter: str, lag_time_days: int):
-    #     pass

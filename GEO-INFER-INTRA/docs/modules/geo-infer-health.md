@@ -32,6 +32,28 @@ optional backends, and result shapes belong to the referenced source and tests.
 Cross-module callers should pass explicit spatial state ordering and timezone-aware
 instants when those fields are part of their data contract.
 
+## Healthcare query contracts
+
+`find_facilities_in_radius` takes a radius in kilometers and returns facilities
+in ascending distance order. Equal distances preserve input order. Type and
+service filters select eligible facilities before distance calculation; each
+eligible facility is measured once, including candidates outside the radius.
+
+`calculate_facility_to_population_ratio` counts the caller-supplied facilities
+for the selected population area. Supply facilities for the intended region;
+the method does not clip them to an area geometry. Type filtering applies even
+when the population is zero: the result retains an infinite ratio and reports
+the filtered facility count. An unknown population area returns `None`.
+
+`haversine_distance` interprets latitude and longitude as degrees on a sphere
+with a 6,371 km radius; it does not transform CRS metadata or compute an
+ellipsoidal geodesic. Valid antipodal coordinates remain in the real numerical
+domain despite floating-point roundoff.
+
+These contracts are exercised in
+[healthcare accessibility tests](../../../GEO-INFER-HEALTH/tests/unit/test_healthcare_accessibility.py)
+and [geospatial utility tests](../../../GEO-INFER-HEALTH/tests/unit/test_geospatial_utils.py).
+
 ## Verification
 
 From the repository root:

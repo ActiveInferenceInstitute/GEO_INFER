@@ -97,6 +97,12 @@ geo-infer-health serve --host 0.0.0.0 --port 8000
 ## Guidelines
 
 - All analytics run on plain Pydantic models — no external geospatial services required.
+- Supply facilities for the intended population region before calculating ratios;
+  the analyzer applies type filters but does not clip to area geometry. A zero
+  population retains an infinite ratio and reports the filtered facility count.
+- Radius queries use kilometers, filter by type and services, and preserve input
+  order for equal distances. Haversine utilities use degree-valued coordinates
+  on a 6,371 km sphere and do not transform CRS metadata.
 - `calculate_local_incidence_rate` returns raw case counts in the rate slot (flagged via
   `population_estimated=False`) when no population data is available.
 
