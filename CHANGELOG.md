@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 0.4.0 candidate preparation
 
+- Make INSURANCE queue timing tests deterministic with controlled timestamps,
+  exact running-mean assertions and legitimate zero waits, removing dependence
+  on wall-clock resolution without changing production queue behavior.
+
 - Apply HEALTH facility-type filtering to zero-population counts, bound valid
   antipodal haversine roundoff, and calculate radius-query distances once per
   eligible facility while preserving tie order. Remove stale commented-out API

@@ -5,9 +5,8 @@ description: Underwriting, policy, claims, and pricing operations for geospatial
 
 # GEO-INFER-INSURANCE
 
-Insurance operations layer for GEO-INFER. The module packages the underwriting
-subsystem (previously shipped inside GEO-INFER-RISK) as an independently
-installable workspace module.
+Insurance operations layer for GEO-INFER, packaging its underwriting subsystem
+as an independently installable workspace module.
 
 ## Instructions
 
@@ -91,6 +90,9 @@ pricing = PricingEngine()
 
 ## Guidelines
 
+- Control queue-test timestamps and assert exact known durations and running
+  means, including legitimate zero waits; avoid sleeps and assumptions that
+  immediate operations must advance the wall clock.
 - Run the module suite with the shared workspace venv:
   `uv run python GEO-INFER-TEST/run_unified_tests.py --module INSURANCE --timeout=300`.
 - Cross-module scoring imports are guarded: the module works without the
