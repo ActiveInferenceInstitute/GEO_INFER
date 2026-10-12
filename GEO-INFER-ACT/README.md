@@ -155,6 +155,20 @@ uv run python GEO-INFER-TEST/validate_h3_active_inference_contract.py
 uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
 ```
 
+## Cascadia River Homing Example
+
+- `examples/cascadia/cascadia_homing.py` compiles the retained NHDPlus HR
+  lower Smith River lines into a typed H3 resolution-8 network
+  (`geo_infer_act.core.h3_flow_network.H3FlowNetwork`), compiles exact dyadic
+  A-E matrices (`geo_infer_act.models.river_homing`), renders GNN v1 Markdown
+  (`geo_infer_act.core.gnn_spec.CategoricalGNNSpec`), and runs a closed loop
+  through `run_gnn_inference` (`geo_infer_act.runners.closed_loop`).
+- `examples/cascadia/data/` holds the rendered GNN source, state IDs, typed
+  network sidecar, the artifact exported by GNN's strict exporter, and its
+  export provenance; runs without `--gnn-repo` refuse stale fixtures.
+- `geo_infer_act.core.efe_decomposition` evaluates risk and ambiguity and the
+  exact relation to pymdp 1.0.3's score; see `docs/cascadia_river_homing.md`.
+
 ## Documentation Notes
 
 This README describes current repository state only. Keep examples and claims tied to importable code, tracked files, or validation commands.

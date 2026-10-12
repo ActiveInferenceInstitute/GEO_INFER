@@ -98,6 +98,17 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module ACT
 - H3 visualization writers must create output directories and handle constant
   metric ranges without emitting invalid colorbar limits.
 
+## Cascadia Example Contracts
+
+- Keep every river-homing probability an exact dyadic fraction; floats and
+  non-dyadic fractions are rejected so GNN, ACT and the fep_lean slice read
+  identical numbers.
+- After changing the network selection, model, or GNN rendering, rerun
+  `examples/cascadia/cascadia_homing.py` with `--gnn-repo`, `--gnn-python` and
+  `--refresh-fixtures`, then refresh the fep_lean slice fixtures.
+- `run_closed_loop` must keep replaying the full record through
+  `run_gnn_inference` and raise on any disagreement.
+
 ## Integration Notes
 
 - Update this AGENTS.md and the sibling README.md when commands, exports, dependencies, or generated outputs change.

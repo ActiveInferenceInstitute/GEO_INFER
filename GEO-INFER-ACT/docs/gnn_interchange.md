@@ -92,6 +92,15 @@ pymdp traces, and builds a seven-cell H3 model in SPACE. It passes that model
 through the GNN exporter and verifies exact state order and transition values
 before executing spatial inference. Both paths use real code in each environment.
 
+## Worked H3 example: Cascadia river homing
+
+[Cascadia river homing](cascadia_river_homing.md) exercises this contract on
+real geometry: GEO-INFER-ACT compiles a typed 26-cell H3 network from the
+retained NHDPlus HR lower Smith River lines, renders exact dyadic A–E as GNN
+v1 Markdown, exports it through GNN's strict `gnn.export.geo_infer` with
+`--space-kind h3`, and runs the closed loop through `run_gnn_inference`. The
+same artifact is the input of a Lean 4 instance in the fep_lean checkout.
+
 ## Continuous inference correction
 
 `ContinuousPOMDPActiveInference` now reports `F = complexity - accuracy`, where

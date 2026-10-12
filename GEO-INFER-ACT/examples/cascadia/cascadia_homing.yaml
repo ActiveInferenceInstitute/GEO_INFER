@@ -1,0 +1,65 @@
+# Cascadia river homing: typed geospatial active inference on the lower Smith River.
+#
+# Paths are relative to this file. Every probability is an exact dyadic fraction
+# written as a string; the compiled GNN source, the gnn-geo-infer/1 artifact and
+# the fep_lean proof slice read the same numbers. Habitat classes, odor levels,
+# movement probabilities and preferences are declared modeling assumptions
+# applied to real NHDPlus HR geometry, not parameters fitted to fish tracks.
+schema_version: geo-infer-act/cascadia-homing/1
+model_name: Smith River salmon homing (Cascadia, H3 res 8)
+
+data:
+  # Measured USGS NHDPlus HR lower Smith River excerpt (HUC8 18010101), retained
+  # by GEO-INFER-PLACE with a manifest digest checked before use.
+  flowlines: ../../../GEO-INFER-PLACE/src/geo_infer_place/hydrography/data/smith_expanded/flowlines.geojson
+  manifest: ../../../GEO-INFER-PLACE/src/geo_infer_place/hydrography/data/smith_expanded/manifest.json
+  # Source-backed regional display layers (USGS WBD HU4, USGS volcanoes,
+  # Cascadia convergent boundary) and the Del Norte County outline.
+  regional_layers: ../../../GEO-INFER-PLACE/locations/cascadia/config
+  fixtures: data
+
+network:
+  resolution: 8
+  natal_stream: Rowdy Creek
+  natal_cells: 4
+  side_channel_cells: 3
+  slough_hops: 2
+  main_stem_min_discharge: 1000.0
+  seaward: west
+  sea_label: Pacific Ocean
+  main_label: Smith River
+
+parameters:
+  estuary_hops: 2
+  strong_plume_hops: 1
+  # Rows: true habitat (marine, estuary, river, creek); columns: observed habitat.
+  habitat_likelihood:
+    - ["3/4", "1/4", "0", "0"]
+    - ["1/8", "3/4", "1/8", "0"]
+    - ["0", "1/8", "3/4", "1/8"]
+    - ["0", "0", "1/4", "3/4"]
+  # Rows: true odor level (none, faint, strong); columns: observed odor level.
+  odor_likelihood:
+    - ["7/8", "1/8", "0"]
+    - ["1/8", "3/4", "1/8"]
+    - ["0", "1/8", "7/8"]
+  hold_drift: "1/4"
+  downstream_move: "3/4"
+  upstream_move: "1/2"
+  turn_move: "1/2"
+  # Log preferences (nats) by observed odor level; creek + strong odor is home.
+  odor_preference: [-2.0, 1.0, 2.0]
+  home_preference: 4.0
+  initial_sea: "3/4"
+  # Habit prior over (hold, downstream, upstream, turn): upstream-biased migration.
+  habit: ["1/8", "1/8", "1/2", "1/4"]
+  step_seconds: 21600
+
+simulation:
+  steps: 48
+  process_seed: 7
+  agent_seed: 0
+  start: "2026-10-01T00:00:00+00:00"
+  initial_state: sea
+  snapshot_steps: [0, 8, 16, 24, 47]
+  efe_steps: [0, 12, 20, 30]

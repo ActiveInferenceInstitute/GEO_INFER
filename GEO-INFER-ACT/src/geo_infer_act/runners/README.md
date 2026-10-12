@@ -6,6 +6,7 @@ Runners workspace within `GEO-INFER-ACT`.
 
 - `__init__.py`
 - `cli.py`
+- `closed_loop.py`
 - `contracts.py`
 - `gallery.py`
 - `h3.py`
@@ -19,6 +20,9 @@ Runners workspace within `GEO-INFER-ACT`.
 - `cli.py:config_from_args` (function)
 - `cli.py:main` (function)
 - `cli.py:run_all_main` (function)
+- `closed_loop.py:ClosedLoopResult` (class)
+- `closed_loop.py:run_closed_loop` (function)
+- `closed_loop.py:trace_diagnostics` (function)
 - `contracts.py:RunConfig` (class)
 - `contracts.py:ScenarioRunResult` (class)
 - `contracts.py:SuiteRunResult` (class)
@@ -32,9 +36,6 @@ Runners workspace within `GEO-INFER-ACT`.
 - `h3.py:create_h3_model` (function)
 - `h3.py:run_h3_active_inference` (function)
 - `io.py:to_jsonable` (function)
-- `io.py:package_version` (function)
-- `io.py:utc_now` (function)
-- `io.py:ensure_output_tree` (function)
 
 ## Module Metadata
 

@@ -23,6 +23,7 @@
 
 - `__init__.py`
 - `cli.py`
+- `closed_loop.py`
 - `contracts.py`
 - `gallery.py`
 - `h3.py`

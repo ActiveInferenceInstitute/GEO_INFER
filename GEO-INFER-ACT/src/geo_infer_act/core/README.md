@@ -9,11 +9,14 @@ Core workspace within `GEO-INFER-ACT`.
 - `belief_updating.py`
 - `civic_intel.py`
 - `dynamic_causal_model.py`
+- `efe_decomposition.py`
 - `free_energy.py`
 - `generative_model.py`
 - `gnn_contract.py`
 - `gnn_factored_contract.py`
 - `gnn_gaussian_contract.py`
+- `gnn_spec.py`
+- `h3_flow_network.py`
 - `markov_decision_process.py`
 - `policy_selection.py`
 - `spatial_agent.py`
@@ -32,16 +35,16 @@ Core workspace within `GEO-INFER-ACT`.
 - `civic_intel.py:parse_crescent_city_intel` (function)
 - `civic_intel.py:hazard_policy_prior` (function)
 - `dynamic_causal_model.py:DynamicCausalModel` (class)
+- `efe_decomposition.py:log_partition` (function)
+- `efe_decomposition.py:preference_law` (function)
+- `efe_decomposition.py:entropy` (function)
+- `efe_decomposition.py:PolicyTerms` (class)
+- `efe_decomposition.py:one_step_policy_terms` (function)
+- `efe_decomposition.py:support` (function)
+- `efe_decomposition.py:light_cone_violations` (function)
 - `free_energy.py:validate_spd_precision` (function)
 - `free_energy.py:compute_policy_expected_free_energy` (function)
 - `free_energy.py:FreeEnergyCalculator` (class)
-- `generative_model.py:MarkovBlanket` (class)
-- `generative_model.py:HierarchicalLevel` (class)
-- `generative_model.py:GenerativeModel` (class)
-- `gnn_contract.py:GNNArtifact` (class)
-- `gnn_contract.py:run_gnn_inference` (function)
-- `gnn_factored_contract.py:validate_factored_artifact` (function)
-- `gnn_factored_contract.py:FactoredGNNArtifact` (class)
 
 ## Module Metadata
 

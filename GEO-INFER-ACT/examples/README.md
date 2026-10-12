@@ -4,6 +4,7 @@ Examples workspace within `GEO-INFER-ACT`.
 
 ## Contents
 
+- `cascadia/`
 - `output/`
 - `__init__.py`
 - `ecological_model.py`

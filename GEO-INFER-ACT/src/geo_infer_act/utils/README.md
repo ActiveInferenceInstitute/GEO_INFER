@@ -7,6 +7,7 @@ Utils workspace within `GEO-INFER-ACT`.
 - `__init__.py`
 - `analysis.py`
 - `config.py`
+- `flow_network_visualization.py`
 - `h3_adapter.py`
 - `integration.py`
 - `math.py`
@@ -27,16 +28,16 @@ Utils workspace within `GEO-INFER-ACT`.
 - `config.py:save_config` (function)
 - `config.py:merge_configs` (function)
 - `config.py:get_config_value` (function)
+- `flow_network_visualization.py:draw_network` (function)
+- `flow_network_visualization.py:save_network_figure` (function)
+- `flow_network_visualization.py:save_belief_snapshots` (function)
+- `flow_network_visualization.py:save_trace_figure` (function)
+- `flow_network_visualization.py:save_efe_figure` (function)
+- `flow_network_visualization.py:save_light_cone_figure` (function)
+- `flow_network_visualization.py:save_belief_animation` (function)
 - `h3_adapter.py:H3Adapter` (class)
 - `h3_adapter.py:get_h3_adapter` (function)
 - `h3_adapter.py:get_nested_h3_grid_class` (function)
-- `h3_adapter.py:normalize_belief_vector` (function)
-- `h3_adapter.py:edge_count_from_graph` (function)
-- `integration.py:initialize_logger` (function)
-- `integration.py:ModernToolsIntegration` (class)
-- `integration.py:integrate_rxinfer` (function)
-- `integration.py:integrate_bayeux` (function)
-- `integration.py:integrate_pymdp` (function)
 
 ## Module Metadata
 

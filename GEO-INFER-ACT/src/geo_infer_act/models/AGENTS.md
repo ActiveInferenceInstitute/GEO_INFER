@@ -28,6 +28,7 @@
 - `ecological.py`
 - `multi_agent.py`
 - `resource.py`
+- `river_homing.py`
 - `urban.py`
 
 ## Validation

@@ -21,6 +21,7 @@
 
 ## Local Contents
 
+- `cascadia/`
 - `output/`
 - `__init__.py`
 - `ecological_model.py`

@@ -68,6 +68,23 @@ correspond to `fep_lean` constructs as follows:
 | Markov blanket four-block partition with conditional-independence check | [`core/generative_model.py`](../src/geo_infer_act/core/generative_model.py) `MarkovBlanket` | `fep-005` (four-block state partition) and `fep-009` (conditional independence laws) as the exact finite analogues; `fep-017` (posterior kernel reconstruction) for the belief-update side. The correspondence is of the partition and conditional-independence constructs only: `fep-005` deliberately does not identify any block as a learned Markov blanket. Canonical machine-checked row for this symbol: `fep-079`. The canonical yaml additionally anchors `HierarchicalLevel` as `fep-081`, which has no page-level row yet (page-level correspondences pending yaml growth). | Friston 2010; Parr, Pezzulo & Friston 2022 (ch. 3) |
 | Precision as inverse covariance / inverse temperature | [`core/free_energy.py`](../src/geo_infer_act/core/free_energy.py) Gaussian precision arguments; `PolicySelector.temperature` | `fep-031` (finite Boltzmann–Gibbs weights: positive exponential weights with an attained Gibbs optimizer), `fep-012` (temperature in the entropy-regularized objective) | Friston 2010 |
 
+## Rows for the Cascadia example constructs
+
+The canonical yaml also anchors three constructs added with the
+[Cascadia river homing](cascadia_river_homing.md) example:
+
+| GEO-INFER-ACT construct | Implementation | `fep_lean` counterpart |
+| --- | --- | --- |
+| Risk as KL divergence of predicted outcomes from `softmax(C)` | `core/efe_decomposition.py` `one_step_policy_terms()` | `fep-014` (KL nonnegativity and zero characterization) |
+| Preference law from log-preferences | `core/efe_decomposition.py` `preference_law()` | `fep-031` (finite Boltzmann–Gibbs weights normalize) |
+| Deterministic choice of the best one-step policy | `runners/closed_loop.py` `run_closed_loop()` | `fep-008` (a finite nonempty policy set attains a minimum) |
+
+Separately from these catalogue rows, the fep_lean slice
+`fep_lean/specs/cascadia-geo-act-proof/` (prose path) proves instance-level
+theorems about the Cascadia artifact itself, including the exact identity
+between risk plus ambiguity and pymdp 1.0.3's score. Those theorems concern
+the exported finite model only; they do not verify any GEO-INFER code path.
+
 ## Explicit non-claims
 
 1. No GEO-INFER-ACT implementation is verified, proved or certified by any
@@ -96,4 +113,4 @@ correspond to `fep_lean` constructs as follows:
 
 ---
 
-**Last Updated**: 2026-09-08
+**Last Updated**: 2026-10-12

@@ -11,6 +11,7 @@ Models workspace within `GEO-INFER-ACT`.
 - `ecological.py`
 - `multi_agent.py`
 - `resource.py`
+- `river_homing.py`
 - `urban.py`
 
 ## Public Interface
@@ -23,6 +24,9 @@ Models workspace within `GEO-INFER-ACT`.
 - `ecological.py:EcologicalModel` (class)
 - `multi_agent.py:MultiAgentModel` (class)
 - `resource.py:ResourceModel` (class)
+- `river_homing.py:RiverHomingParameters` (class)
+- `river_homing.py:RiverHomingModel` (class)
+- `river_homing.py:compile_river_homing` (function)
 - `urban.py:UrbanModel` (class)
 
 ## Module Metadata

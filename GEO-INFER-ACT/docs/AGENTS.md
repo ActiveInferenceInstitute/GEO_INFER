@@ -23,6 +23,7 @@
 
 - `active_inference_overview.md`
 - `api_schema.yaml`
+- `cascadia_river_homing.md`
 - `categorical_inference.md`
 - `fep_lean_notation_bridge.md`
 - `free_energy_principle.md`

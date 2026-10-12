@@ -31,6 +31,7 @@
 - `test_core.py`
 - `test_dynamic_causal_model.py`
 - `test_ecological_model.py`
+- `test_efe_decomposition.py`
 - `test_free_energy.py`
 - `test_gaussian_contract.py`
 - `test_generative_efe.py`
@@ -38,10 +39,12 @@
 - `test_gnn_contract.py`
 - `test_gnn_factored_contract.py`
 - `test_gnn_gaussian_contract.py`
+- `test_gnn_spec.py`
 - `test_h3.py`
 - `test_h3_active_inference.py`
 - `test_h3_adapter.py`
 - `test_h3_adapter_nested_grid_resolution.py`
+- `test_h3_flow_network.py`
 - `test_h3_validation_logging.py`
 - `test_h3_viz_integration.py`
 - `test_inference_hardening.py`
