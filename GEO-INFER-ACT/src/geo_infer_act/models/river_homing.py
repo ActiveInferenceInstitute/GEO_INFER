@@ -26,7 +26,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from fractions import Fraction
 from math import lcm
-from typing import Any, Mapping, Sequence
+from typing import Any
+from collections.abc import Mapping, Sequence
 
 import h3
 

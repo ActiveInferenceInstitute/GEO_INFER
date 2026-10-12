@@ -14,7 +14,8 @@ import math
 from pathlib import Path
 import shutil
 import subprocess
-from typing import Any, Mapping, Sequence
+from typing import Any
+from collections.abc import Mapping, Sequence
 
 import h3
 import numpy as np

@@ -12,7 +12,7 @@ action and belief exactly; any disagreement raises.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from typing import Any
 
 import numpy as np
@@ -67,7 +67,7 @@ def run_closed_loop(
         raise ValueError("steps must be a positive integer")
     if not 0 <= initial_state < states:
         raise ValueError("initial_state is out of range")
-    start = start or datetime(2026, 10, 1, tzinfo=timezone.utc)
+    start = start or datetime(2026, 10, 1, tzinfo=UTC)
     if start.tzinfo is None:
         raise ValueError("start must be timezone-aware")
     seconds = data["time"]["step_seconds"]

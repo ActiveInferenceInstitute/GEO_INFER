@@ -38,7 +38,8 @@ import platform
 import subprocess
 import sys
 import tempfile
-from typing import Any, Mapping, Sequence
+from typing import Any
+from collections.abc import Mapping, Sequence
 
 import h3
 import numpy as np

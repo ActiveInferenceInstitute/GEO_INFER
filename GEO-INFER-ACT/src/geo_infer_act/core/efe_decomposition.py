@@ -21,7 +21,8 @@ for finite laws; this module evaluates both sides numerically.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Iterable, Sequence
+from typing import Any
+from collections.abc import Iterable, Sequence
 
 import numpy as np
 

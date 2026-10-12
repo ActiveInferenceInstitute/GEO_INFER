@@ -27,7 +27,8 @@ from dataclasses import dataclass
 import hashlib
 import json
 import math
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
+from collections.abc import Iterable, Mapping, Sequence
 
 import h3
 

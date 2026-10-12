@@ -16,7 +16,7 @@ from decimal import Decimal, localcontext
 from fractions import Fraction
 import hashlib
 import math
-from typing import Mapping, Sequence
+from collections.abc import Mapping, Sequence
 
 DEFAULT_ONTOLOGY = {
     "A": "LikelihoodMatrix",
