@@ -399,7 +399,15 @@ class H3FlowNetwork:
         return frozenset(frontier)
 
     def to_dict(self) -> dict[str, Any]:
-        """Return a JSON-safe description in state order."""
+        """Return a JSON-safe description in state order.
+
+        Only exact, typed data is serialized: H3 identifiers, roles, labels and
+        relations. Cell coordinates are not, because ``h3.cell_to_latlng``
+        evaluates trigonometry whose last digits depend on the platform's math
+        library, which would make the committed domain and :attr:`digest`
+        differ between operating systems. Callers that need coordinates derive
+        them from the identifiers.
+        """
         return {
             "resolution": self.resolution,
             "cells": [
@@ -410,7 +418,6 @@ class H3FlowNetwork:
                     "successor": self.successor[cell],
                     "upstream": self.upstream[cell],
                     "side": self.side[cell],
-                    "latlng": list(h3.cell_to_latlng(cell)),
                 }
                 for cell in self.cells
             ],

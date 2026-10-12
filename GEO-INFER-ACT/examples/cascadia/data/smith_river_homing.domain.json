@@ -4739,10 +4739,6 @@
    {
     "cell": "88281c3663fffff",
     "label": "Pacific Ocean",
-    "latlng": [
-     41.947102937797794,
-     -124.21728863682725
-    ],
     "role": "sea",
     "side": null,
     "successor": null,
@@ -4751,10 +4747,6 @@
    {
     "cell": "88281c3667fffff",
     "label": "Smith River",
-    "latlng": [
-     41.949698217278474,
-     -124.2066252107493
-    ],
     "role": "main",
     "side": null,
     "successor": "88281c3663fffff",
@@ -4763,10 +4755,6 @@
    {
     "cell": "88281c3665fffff",
     "label": "Smith River",
-    "latlng": [
-     41.94432572385697,
-     -124.19893091079379
-    ],
     "role": "main",
     "side": "88281cadb3fffff",
     "successor": "88281c3667fffff",
@@ -4775,10 +4763,6 @@
    {
     "cell": "88281c366dfffff",
     "label": "Smith River",
-    "latlng": [
-     41.93635824274211,
-     -124.2019008565779
-    ],
     "role": "main",
     "side": "88281cadbbfffff",
     "successor": "88281c3665fffff",
@@ -4787,10 +4771,6 @@
    {
     "cell": "88281cad97fffff",
     "label": "Smith River",
-    "latlng": [
-     41.928390190882155,
-     -124.20487024453904
-    ],
     "role": "main",
     "side": null,
     "successor": "88281c366dfffff",
@@ -4799,10 +4779,6 @@
    {
     "cell": "88281cad95fffff",
     "label": "Smith River",
-    "latlng": [
-     41.92301578209832,
-     -124.19717766702307
-    ],
     "role": "main",
     "side": null,
     "successor": "88281cad97fffff",
@@ -4811,10 +4787,6 @@
    {
     "cell": "88281cad91fffff",
     "label": "Smith River",
-    "latlng": [
-     41.92042156858931,
-     -124.20783907481844
-    ],
     "role": "main",
     "side": null,
     "successor": "88281cad95fffff",
@@ -4823,10 +4795,6 @@
    {
     "cell": "88281cad9dfffff",
     "label": "Smith River",
-    "latlng": [
-     41.91504675409441,
-     -124.20014713252031
-    ],
     "role": "main",
     "side": null,
     "successor": "88281cad91fffff",
@@ -4835,10 +4803,6 @@
    {
     "cell": "88281cad8bfffff",
     "label": "Smith River",
-    "latlng": [
-     41.90967083637586,
-     -124.19245564171833
-    ],
     "role": "main",
     "side": "88281cadd5fffff",
     "successor": "88281cad9dfffff",
@@ -4847,10 +4811,6 @@
    {
     "cell": "88281cad81fffff",
     "label": "Smith River",
-    "latlng": [
-     41.91226365457016,
-     -124.18179386727698
-    ],
     "role": "main",
     "side": null,
     "successor": "88281cad8bfffff",
@@ -4859,10 +4819,6 @@
    {
     "cell": "88281cad85fffff",
     "label": "Smith River",
-    "latlng": [
-     41.91485561020359,
-     -124.17113071756357
-    ],
     "role": "main",
     "side": "88281cada9fffff",
     "successor": "88281cad81fffff",
@@ -4871,10 +4827,6 @@
    {
     "cell": "88281cade3fffff",
     "label": "Smith River",
-    "latlng": [
-     41.90947719392494,
-     -124.16343931367132
-    ],
     "role": "main",
     "side": null,
     "successor": "88281cad85fffff",
@@ -4883,10 +4835,6 @@
    {
     "cell": "88281cade1fffff",
     "label": "Smith River",
-    "latlng": [
-     41.90409767462775,
-     -124.15574836259819
-    ],
     "role": "main",
     "side": null,
     "successor": "88281cade3fffff",
@@ -4895,10 +4843,6 @@
    {
     "cell": "88281cade9fffff",
     "label": "Smith River",
-    "latlng": [
-     41.89612719016693,
-     -124.15872155943353
-    ],
     "role": "main",
     "side": null,
     "successor": "88281cade1fffff",
@@ -4907,10 +4851,6 @@
    {
     "cell": "88281cad17fffff",
     "label": "Smith River",
-    "latlng": [
-     41.89074616301504,
-     -124.15103169557476
-    ],
     "role": "main",
     "side": null,
     "successor": "88281cade9fffff",
@@ -4919,10 +4859,6 @@
    {
     "cell": "88281cad15fffff",
     "label": "Smith River",
-    "latlng": [
-     41.8853640332211,
-     -124.14334228482228
-    ],
     "role": "main",
     "side": null,
     "successor": "88281cad17fffff",
@@ -4931,10 +4867,6 @@
    {
     "cell": "88281cad03fffff",
     "label": "Smith River",
-    "latlng": [
-     41.879980800905436,
-     -124.13565332741301
-    ],
     "role": "main",
     "side": null,
     "successor": "88281cad15fffff",
@@ -4943,10 +4875,6 @@
    {
     "cell": "88281cadb3fffff",
     "label": "Smith River slough channel",
-    "latlng": [
-     41.938952126684434,
-     -124.19123706265717
-    ],
     "role": "slough",
     "side": null,
     "successor": "88281c3665fffff",
@@ -4955,10 +4883,6 @@
    {
     "cell": "88281cadbbfffff",
     "label": "Smith River slough channel",
-    "latlng": [
-     41.930984239732446,
-     -124.19420764378242
-    ],
     "role": "slough",
     "side": null,
     "successor": "88281c366dfffff",
@@ -4967,10 +4891,6 @@
    {
     "cell": "88281cadd5fffff",
     "label": "Tryon Creek",
-    "latlng": [
-     41.90170083280301,
-     -124.19542518458299
-    ],
     "role": "tributary",
     "side": null,
     "successor": "88281cad8bfffff",
@@ -4979,10 +4899,6 @@
    {
     "cell": "88281cad89fffff",
     "label": "Tryon Creek",
-    "latlng": [
-     41.90429381555292,
-     -124.18476460264982
-    ],
     "role": "tributary",
     "side": null,
     "successor": "88281cadd5fffff",
@@ -4991,10 +4907,6 @@
    {
     "cell": "88281cad8dfffff",
     "label": "Tryon Creek",
-    "latlng": [
-     41.906885936064334,
-     -124.17410264552178
-    ],
     "role": "tributary",
     "side": null,
     "successor": "88281cad89fffff",
@@ -5003,10 +4915,6 @@
    {
     "cell": "88281cada9fffff",
     "label": "Rowdy Creek",
-    "latlng": [
-     41.917446702863764,
-     -124.16046619305081
-    ],
     "role": "natal",
     "side": null,
     "successor": "88281cad85fffff",
@@ -5015,10 +4923,6 @@
    {
     "cell": "88281cadadfffff",
     "label": "Rowdy Creek",
-    "latlng": [
-     41.9200369321385,
-     -124.14980029421183
-    ],
     "role": "natal",
     "side": null,
     "successor": "88281cada9fffff",
@@ -5027,10 +4931,6 @@
    {
     "cell": "88281c32d3fffff",
     "label": "Rowdy Creek",
-    "latlng": [
-     41.92262629761561,
-     -124.13913302152031
-    ],
     "role": "natal",
     "side": null,
     "successor": "88281cadadfffff",
@@ -5039,10 +4939,6 @@
    {
     "cell": "88281cada5fffff",
     "label": "Rowdy Creek",
-    "latlng": [
-     41.928005704563176,
-     -124.14682542237843
-    ],
     "role": "natal",
     "side": null,
     "successor": "88281c32d3fffff",
@@ -5062,7 +4958,7 @@
   "side_channel_cells": 3,
   "slough_hops": 2
  },
- "network_sha256": "8573b7c46154d0285c21c8209ac0ae02dd6406912b4fcd6be8007be77de30cae",
+ "network_sha256": "2a200489e8660d86aefa38072251bb3dfeb3be6e30bc92da5c4e4816b102b9db",
  "observation_labels": [
   "marine|none",
   "marine|faint",

@@ -100,6 +100,40 @@ def test_network_round_trip_and_digest_match_committed_domain(
     assert [row["cell"] for row in domain["network"]["cells"]] == list(network.cells)
 
 
+def _floats(value: object, path: str = "") -> list[str]:
+    """Paths of every float in a JSON-like value."""
+    if isinstance(value, float):
+        return [path]
+    if isinstance(value, dict):
+        return [
+            hit for key, item in value.items() for hit in _floats(item, f"{path}.{key}")
+        ]
+    if isinstance(value, list):
+        return [
+            hit for k, item in enumerate(value) for hit in _floats(item, f"{path}[{k}]")
+        ]
+    return []
+
+
+def test_serialized_network_and_domain_are_platform_independent(
+    network: H3FlowNetwork,
+) -> None:
+    """Committed bytes and digests carry no value computed by the platform's math library.
+
+    The network serializes only identifiers, roles, labels and relations. In the
+    committed domain only declared inputs carry floats: the preference vector C
+    and the two selection records read from configuration. Every other value is
+    an identifier, an integer or an exact fraction, so a computed float, such as
+    a cell coordinate, cannot reach the fixture.
+    """
+    assert _floats(network.to_dict()) == []
+    domain = json.loads(DOMAIN.read_text(encoding="utf-8"))
+    declared = (".C[", ".flowlines.selection.", ".network_selection.")
+    paths = _floats(domain)
+    assert paths and all(path.startswith(declared) for path in paths)
+    assert all(float(value).is_integer() for value in domain["C"])
+
+
 def test_validation_rejects_a_non_neighbor_relation(network: H3FlowNetwork) -> None:
     """Pointing a successor at a distant cell fails validation."""
     data = network.to_dict()

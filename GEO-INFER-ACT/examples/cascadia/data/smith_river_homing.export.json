@@ -16,7 +16,7 @@
  "gnn_dirty": false,
  "gnn_h3": "4.5.0",
  "gnn_python": "3.11.15",
- "gnn_revision": "9255e19f951d4c9c1461514464d420bd3fc8b912",
+ "gnn_revision": "d20b76a5486592b1e7ee8a36029cea0f14c4f052",
  "producer_module": "gnn.export.geo_infer",
  "source_sha256": "3ec03c4d1deb89e3d603395596db4b366b208fa090d0012cd0b3c048c4e7c399"
 }
