@@ -709,9 +709,12 @@ def run(
         "gnn_export": export_record
         or json.loads((fixtures / FIXTURE_NAMES["export"]).read_text(encoding="utf-8")),
         "fixtures_fresh": not problems,
+        # pymdp scores policies in JAX float32, so the JAX build is part of a run's identity.
         "versions": {
             "python": platform.python_version(),
             "inferactively-pymdp": version("inferactively-pymdp"),
+            "jax": version("jax"),
+            "jaxlib": version("jaxlib"),
             "h3": h3.__version__,
             "numpy": np.__version__,
         },

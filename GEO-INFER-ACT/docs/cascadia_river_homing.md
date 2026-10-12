@@ -123,7 +123,11 @@ Without `--gnn-repo` the run refuses stale fixtures: the compiled source,
 state IDs and sidecar must match the committed bytes, and the artifact must
 carry the source digest and exactly the compiled matrices. Outputs go to
 `GEO-INFER-ACT/examples/outputs/cascadia_homing/` (ignored by Git) with a
-`run_manifest.json` listing every file's SHA-256.
+`run_manifest.json` listing every file's SHA-256 and the Python, pymdp, JAX,
+jaxlib, h3 and NumPy versions that produced them. pymdp scores policies in
+JAX float32, so a different JAX build can move the float diagnostics by about
+1e-7 while the exact first update, the discrete trajectory and the homing
+events stay identical.
 
 `run_closed_loop` samples observations and true moves from the artifact's own
 A and B. Each step runs the public `run_gnn_inference` contract on that step

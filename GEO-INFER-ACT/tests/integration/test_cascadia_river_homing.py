@@ -137,6 +137,7 @@ def test_run_manifest_hashes_written_files(manifest, tmp_path) -> None:
     }
     assert all(len(digest) == 64 for digest in manifest["files"].values())
     assert manifest["versions"]["inferactively-pymdp"] == "1.0.3"
+    assert {"jax", "jaxlib", "h3", "numpy", "python"} <= set(manifest["versions"])
 
 
 def test_figures_and_animation_are_rendered(example, tmp_path) -> None:
