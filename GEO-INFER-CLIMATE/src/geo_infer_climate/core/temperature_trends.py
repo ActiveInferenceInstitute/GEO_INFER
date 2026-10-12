@@ -5,7 +5,7 @@ trend test for detecting monotonic trends in temperature time series.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 from scipy import stats as scipy_stats
@@ -20,7 +20,7 @@ class TemperatureTrendAnalyzer:
     along with Sen's slope estimator for robust trend magnitude.
     """
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         """Initialize temperature trend analyzer.
 
         Args:
@@ -31,8 +31,8 @@ class TemperatureTrendAnalyzer:
     def linear_trend(
         self,
         time_series: np.ndarray,
-        years: Optional[np.ndarray] = None,
-    ) -> Dict[str, float]:
+        years: np.ndarray | None = None,
+    ) -> dict[str, float]:
         """Calculate linear trend via ordinary least squares regression.
 
         Args:
@@ -90,7 +90,7 @@ class TemperatureTrendAnalyzer:
         self,
         time_series: np.ndarray,
         alpha: float = 0.05,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform Mann-Kendall trend test.
 
         Non-parametric test for detecting monotonic trends.
@@ -178,7 +178,7 @@ class TemperatureTrendAnalyzer:
     def sens_slope(
         self,
         time_series: np.ndarray,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate Sen's slope estimator.
 
         Robust, non-parametric estimate of the trend magnitude.
@@ -258,7 +258,7 @@ class TemperatureTrendAnalyzer:
     def detect_changepoint(
         self,
         time_series: np.ndarray,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Detect a single changepoint using cumulative sum method.
 
         Finds the point that maximizes the absolute difference between
@@ -302,7 +302,7 @@ class TemperatureTrendAnalyzer:
         self,
         urban_temps: np.ndarray,
         rural_temps: np.ndarray,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate urban heat island intensity.
 
         UHI = T_urban - T_rural

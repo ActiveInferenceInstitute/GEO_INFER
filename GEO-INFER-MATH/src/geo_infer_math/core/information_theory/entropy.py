@@ -7,7 +7,7 @@ entropy measures.
 """
 
 import numpy as np
-from typing import Union, Optional, Tuple, Any
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -179,10 +179,10 @@ def tsallis_entropy(
 
 def spatial_entropy(
     coordinates: np.ndarray,
-    values: Optional[np.ndarray] = None,
+    values: np.ndarray | None = None,
     method: str = "shannon",
-    bins: Optional[Union[int, Tuple[int, int]]] = None,
-    bandwidth: Optional[float] = None,
+    bins: int | tuple[int, int] | None = None,
+    bandwidth: float | None = None,
     base: float = 2.0,
 ) -> float:
     """
@@ -384,7 +384,7 @@ class EntropyCalculator:
     def spatial_entropy(
         self,
         coordinates: np.ndarray,
-        values: Optional[np.ndarray] = None,
+        values: np.ndarray | None = None,
         method: str = "shannon",
         **kwargs: Any,
     ) -> float:

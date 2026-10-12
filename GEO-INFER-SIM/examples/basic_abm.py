@@ -43,7 +43,7 @@ def main() -> None:
     engine.initialize(abm.get_state())
     results = engine.run(step_func)
 
-    print(f"\nSimulation Results:")
+    print("\nSimulation Results:")
     print(f"  Status: {results['status']}")
     print(f"  Final time: {results['final_time']}")
     print(f"  Duration: {results['duration_seconds']:.2f}s")

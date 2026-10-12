@@ -10,7 +10,6 @@ import inspect
 import json
 import math
 import re
-import sys
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -21,7 +20,6 @@ from PIL import Image
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ACT_ROOT = REPO_ROOT / "GEO-INFER-ACT"
 ACT_SRC = ACT_ROOT / "src"
-sys.path.insert(0, str(ACT_SRC))
 
 REQUIRED_GEOSPATIAL_FILES = {
     "data/full_history.json",
@@ -164,10 +162,9 @@ def validate_docstrings() -> None:
 
 
 def validate_packaging() -> None:
-    setup_text = (ACT_ROOT / "setup.py").read_text()
+    if (ACT_ROOT / "setup.py").exists():
+        fail("setup.py is retired; ACT packaging is pyproject-only")
     pyproject_text = (ACT_ROOT / "pyproject.toml").read_text()
-    if "h3>=3.7.0" in setup_text:
-        fail("setup.py still advertises h3>=3.7.0")
     if "h3>=4.5.0,<5" not in pyproject_text:
         fail("pyproject.toml does not require h3>=4.5.0,<5")
     if "inferactively-pymdp==1.0.3" not in pyproject_text:
@@ -541,12 +538,12 @@ def validate_lattice_animation_payload(
             fail(f"{scenario} frame has no cell metrics")
         for cell_id, cell_data in metrics.items():
             if not isinstance(cell_data, dict):
-                fail(f"{scenario} cell metric is not a dict")
+                fail(f"{scenario} cell metric for {cell_id} is not a dict")
             if "free_energy" not in cell_data and "entropy" not in cell_data:
-                fail(f"{scenario} cell metric missing free_energy or entropy")
+                fail(f"{scenario} cell {cell_id} missing free_energy or entropy")
             for value in cell_data.values():
                 if isinstance(value, (int, float)) and not math.isfinite(value):
-                    fail(f"{scenario} non-finite cell metric value")
+                    fail(f"{scenario} non-finite metric value for cell {cell_id}")
 
 
 def validate_research_statistics(
@@ -603,6 +600,7 @@ def validate_research_statistics(
 def validate_gallery_outputs(tmp_dir: Path) -> None:
     """Validate the deterministic four-run visualization gallery contract."""
     from geo_infer_act.runners import run_spatial_active_inference_gallery
+    from geo_infer_test.act_research_oracles import assert_research_policy
 
     output_dir = tmp_dir / "spatial_gallery"
     manifest = run_spatial_active_inference_gallery(
@@ -640,8 +638,28 @@ def validate_gallery_outputs(tmp_dir: Path) -> None:
             json.loads(
                 (run_dir / "data" / "spatial_inference_trace.json").read_text()
             ).get("research_statistics", {}),
-            require_non_degenerate=True,
+            # Ambient samples need not visit distinct optimal policy regions.
+            # Verify every actual score and selection below instead of treating
+            # legitimate shared actions as a model failure.
+            require_non_degenerate=False,
         )
+        policy_rows = json.loads(
+            (run_dir / "data" / "pymdp_h3_diagnostics.json").read_text(encoding="utf-8")
+        )
+        if not policy_rows:
+            fail(f"gallery run {run['name']} has no policy rows")
+        for row in policy_rows:
+            assert_research_policy(
+                beliefs=[row[f"policy_belief_{index}"] for index in range(4)],
+                action_posterior=[
+                    row[f"policy_posterior_{index}"] for index in range(4)
+                ],
+                negative_expected_free_energy=[
+                    row[f"negative_expected_free_energy_{index}"] for index in range(4)
+                ],
+                selected_action_index=row["selected_action_index"],
+                label=f"gallery {run['name']} {row['cell']} at {row['timestep']}",
+            )
 
 
 def validate_visualization_metadata(

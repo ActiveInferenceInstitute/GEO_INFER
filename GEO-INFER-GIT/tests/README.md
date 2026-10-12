@@ -10,6 +10,7 @@ Tests workspace within `GEO-INFER-GIT`.
 
 ## Public Interface
 
+- `conftest.py:isolated_git_monitor_configuration` (function)
 - `conftest.py:sample_coordinates` (function)
 - `conftest.py:sample_geodataframe` (function)
 - `conftest.py:tmp_output_dir` (function)
@@ -21,8 +22,8 @@ Tests workspace within `GEO-INFER-GIT`.
 
 - Module: `GEO-INFER-GIT`
 - Package: `geo_infer_git`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-GIT`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-git`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module GIT`
 
 ## Dependencies
@@ -49,7 +50,7 @@ Tests workspace within `GEO-INFER-GIT`.
   `geo_infer_test.testing` fixtures for deterministic RNG, filesystem, HTTP,
   SQLite, service, model, and artifact boundaries.
 - Dependencies: required test/runtime dependencies are installed by
-  `uv sync --all-packages --all-extras`; missing backends are failures.
+  `uv sync --all-packages --all-extras --all-groups`; missing backends are failures.
 - Expected artifacts: JUnit XML under `.geo-infer-test-results/`; model and
   visualization outputs require finite statistics, sidecars, hashes, and a
   manifest.

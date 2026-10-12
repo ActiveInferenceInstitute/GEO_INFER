@@ -8,11 +8,12 @@ coordination with geospatial context and filtering capabilities.
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Callable, Any, Set, cast
+from typing import Any, cast
+from collections.abc import Callable
 import logging
 import threading
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass, field
 import uuid
 import queue
@@ -28,7 +29,7 @@ from geo_infer_comms.models.spatial import GeospatialPoint, SpatialIndex
 from geo_infer_comms.utils.validation import validate_event_type, validate_url
 
 
-def _extract_geospatial_coord(ctx: Any, key: str) -> Optional[float]:
+def _extract_geospatial_coord(ctx: Any, key: str) -> float | None:
     """Extract a latitude/longitude from geospatial context.
 
     Accepts either a flat dict ``{key: value}``, a dict with a nested
@@ -39,11 +40,11 @@ def _extract_geospatial_coord(ctx: Any, key: str) -> Optional[float]:
         value = ctx.get(key)
         if value is None and isinstance(ctx.get("location"), dict):
             value = ctx["location"].get(key)
-        return cast(Optional[float], value)
-    return cast(Optional[float], getattr(ctx, key, None))
+        return cast(float | None, value)
+    return cast(float | None, getattr(ctx, key, None))
 
 
-def _event_location_from_context(ctx: Any) -> Optional[GeospatialPoint]:
+def _event_location_from_context(ctx: Any) -> GeospatialPoint | None:
     """Extract a :class:`GeospatialPoint` from an event geospatial context.
 
     Accepts both a flat dict ``{"latitude": ..., "longitude": ...}`` and a
@@ -90,30 +91,30 @@ class EventManager:
         self,
         max_events: int = 10000,
         enable_persistence: bool = True,
-        persistence_path: Optional[str] = None,
+        persistence_path: str | None = None,
     ):
         self.max_events = max_events
         self.enable_persistence = enable_persistence
         self.persistence_path = persistence_path
 
         # Event storage and processing
-        self.events: Dict[str, EventPublishResponse] = {}
+        self.events: dict[str, EventPublishResponse] = {}
         self.event_queue: queue.PriorityQueue = queue.PriorityQueue(maxsize=max_events)
         self.spatial_index = SpatialIndex()
 
         # Subscription management
-        self.subscriptions: Dict[str, EventSubscriptionResponse] = {}
-        self.subscriber_callbacks: Dict[str, List[Callable]] = {}
-        self.subscription_callbacks: Dict[str, Callable] = {}
-        self.event_type_subscribers: Dict[str, Set[str]] = {}
+        self.subscriptions: dict[str, EventSubscriptionResponse] = {}
+        self.subscriber_callbacks: dict[str, list[Callable]] = {}
+        self.subscription_callbacks: dict[str, Callable] = {}
+        self.event_type_subscribers: dict[str, set[str]] = {}
 
         # Event processing
-        self.event_processors: Dict[str, EventProcessor] = {}
-        self.event_history: List[EventPublishResponse] = []
+        self.event_processors: dict[str, EventProcessor] = {}
+        self.event_history: list[EventPublishResponse] = []
 
         # Threading and concurrency
         self._lock = threading.RLock()
-        self._processing_thread: Optional[threading.Thread] = None
+        self._processing_thread: threading.Thread | None = None
         self._running = False
 
         # Metrics and monitoring
@@ -281,12 +282,12 @@ class EventManager:
 
     def get_events(
         self,
-        event_type: Optional[str] = None,
-        source: Optional[str] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
+        event_type: str | None = None,
+        source: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
         limit: int = 100,
-    ) -> List[EventPublishResponse]:
+    ) -> list[EventPublishResponse]:
         """
         Get events with filtering.
 
@@ -322,10 +323,10 @@ class EventManager:
         filtered_events.sort(key=lambda e: e.timestamp, reverse=True)
         return filtered_events[:limit]
 
-    def get_event_statistics(self) -> Dict[str, Any]:
+    def get_event_statistics(self) -> dict[str, Any]:
         """Get event system statistics."""
         with self._lock:
-            event_type_counts: Dict[str, int] = {}
+            event_type_counts: dict[str, int] = {}
             for event in self.events.values():
                 event_type_counts[event.event_type] = (
                     event_type_counts.get(event.event_type, 0) + 1
@@ -432,11 +433,11 @@ class EventMetrics:
     processing_failures: int = 0
     subscriptions_created: int = 0
     subscriptions_removed: int = 0
-    start_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    start_time: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert metrics to dictionary."""
-        uptime = datetime.now(timezone.utc) - self.start_time
+        uptime = datetime.now(UTC) - self.start_time
         return {
             "events_published": self.events_published,
             "events_processed": self.events_processed,
@@ -458,7 +459,7 @@ class EventMetrics:
         self.processing_failures = 0
         self.subscriptions_created = 0
         self.subscriptions_removed = 0
-        self.start_time = datetime.now(timezone.utc)
+        self.start_time = datetime.now(UTC)
 
 
 class EventProcessor(ABC):
@@ -555,7 +556,7 @@ class EventFilter:
 
     def __init__(self, event_manager: EventManager):
         self.event_manager = event_manager
-        self.custom_filters: Dict[str, Callable] = {}
+        self.custom_filters: dict[str, Callable] = {}
 
         self.logger = logging.getLogger(__name__)
 
@@ -565,7 +566,7 @@ class EventFilter:
         self.logger.info(f"Registered custom filter: {filter_name}")
 
     def apply_filters(
-        self, event: EventPublishResponse, filters: List[Dict[str, Any]]
+        self, event: EventPublishResponse, filters: list[dict[str, Any]]
     ) -> bool:
         """Apply multiple filters to an event."""
         for filter_config in filters:
@@ -574,7 +575,7 @@ class EventFilter:
         return True
 
     def _apply_single_filter(
-        self, event: EventPublishResponse, filter_config: Dict[str, Any]
+        self, event: EventPublishResponse, filter_config: dict[str, Any]
     ) -> bool:
         """Apply a single filter to an event."""
         filter_type = filter_config.get("type", "basic")
@@ -592,7 +593,7 @@ class EventFilter:
             return True
 
     def _apply_basic_filter(
-        self, event: EventPublishResponse, filter_config: Dict[str, Any]
+        self, event: EventPublishResponse, filter_config: dict[str, Any]
     ) -> bool:
         """Apply basic event filters."""
         # Filter by event type
@@ -616,7 +617,7 @@ class EventFilter:
         return True
 
     def _apply_geospatial_filter(
-        self, event: EventPublishResponse, filter_config: Dict[str, Any]
+        self, event: EventPublishResponse, filter_config: dict[str, Any]
     ) -> bool:
         """Apply geospatial filters to events using bounding-box and radius checks.
 
@@ -659,7 +660,7 @@ class EventFilter:
         return True
 
     def _apply_temporal_filter(
-        self, event: EventPublishResponse, filter_config: Dict[str, Any]
+        self, event: EventPublishResponse, filter_config: dict[str, Any]
     ) -> bool:
         """Apply temporal filters to events."""
         # Filter by time range
@@ -681,7 +682,7 @@ class EventFilter:
         return True
 
     def _apply_custom_filter(
-        self, event: EventPublishResponse, filter_config: Dict[str, Any]
+        self, event: EventPublishResponse, filter_config: dict[str, Any]
     ) -> bool:
         """Apply custom filters."""
         filter_name = filter_config.get("filter_name")
@@ -702,10 +703,10 @@ class EventScheduler:
 
     def __init__(self, event_manager: EventManager):
         self.event_manager = event_manager
-        self.scheduled_events: Dict[str, ScheduledEvent] = {}
-        self.recurring_events: Dict[str, RecurringEvent] = {}
+        self.scheduled_events: dict[str, ScheduledEvent] = {}
+        self.recurring_events: dict[str, RecurringEvent] = {}
 
-        self._scheduler_thread: Optional[threading.Thread] = None
+        self._scheduler_thread: threading.Thread | None = None
         self._running = False
 
         self.logger = logging.getLogger(__name__)
@@ -733,7 +734,7 @@ class EventScheduler:
         self,
         event_request: EventPublishRequest,
         schedule_time: datetime,
-        schedule_id: Optional[str] = None,
+        schedule_id: str | None = None,
     ) -> str:
         """Schedule an event for future publication."""
         if schedule_id is None:
@@ -754,8 +755,8 @@ class EventScheduler:
     def schedule_recurring_event(
         self,
         event_request: EventPublishRequest,
-        schedule_config: Dict[str, Any],
-        recurring_id: Optional[str] = None,
+        schedule_config: dict[str, Any],
+        recurring_id: str | None = None,
     ) -> str:
         """Schedule a recurring event."""
         if recurring_id is None:
@@ -793,7 +794,7 @@ class EventScheduler:
         """Background thread to process scheduled events."""
         while self._running:
             try:
-                current_time = datetime.now(timezone.utc)
+                current_time = datetime.now(UTC)
 
                 # Process scheduled events
                 for schedule_id, scheduled_event in list(self.scheduled_events.items()):
@@ -844,7 +845,7 @@ class ScheduledEvent:
     event_request: EventPublishRequest
     schedule_time: datetime
     status: str = "scheduled"
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass
@@ -853,10 +854,10 @@ class RecurringEvent:
 
     recurring_id: str
     event_request: EventPublishRequest
-    schedule_config: Dict[str, Any]
+    schedule_config: dict[str, Any]
     status: str = "active"
-    last_triggered: Optional[datetime] = None
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    last_triggered: datetime | None = None
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def _should_trigger_recurring(self, current_time: datetime) -> bool:
         """Check if recurring event should be triggered."""
@@ -887,8 +888,8 @@ class EventWebhookManager:
 
     def __init__(self, event_manager: EventManager):
         self.event_manager = event_manager
-        self.webhooks: Dict[str, WebhookConfig] = {}
-        self.webhook_history: List[WebhookDelivery] = []
+        self.webhooks: dict[str, WebhookConfig] = {}
+        self.webhook_history: list[WebhookDelivery] = []
 
         self.logger = logging.getLogger(__name__)
 
@@ -925,7 +926,7 @@ class EventWebhookManager:
                 webhook_id=webhook_id,
                 event_id=event.event_id,
                 status="delivered",
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )
 
             self.webhook_history.append(delivery)
@@ -941,7 +942,7 @@ class EventWebhookManager:
                 event_id=event.event_id,
                 status="failed",
                 error=str(e),
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )
 
             self.webhook_history.append(delivery)
@@ -953,10 +954,10 @@ class WebhookConfig:
     """Configuration for a webhook."""
 
     url: str
-    event_types: List[str] = field(default_factory=list)
-    headers: Dict[str, str] = field(default_factory=dict)
-    secret: Optional[str] = None
-    retry_policy: Dict[str, Any] = field(default_factory=dict)
+    event_types: list[str] = field(default_factory=list)
+    headers: dict[str, str] = field(default_factory=dict)
+    secret: str | None = None
+    retry_policy: dict[str, Any] = field(default_factory=dict)
     enabled: bool = True
 
 
@@ -967,5 +968,5 @@ class WebhookDelivery:
     webhook_id: str
     event_id: str
     status: str
-    error: Optional[str] = None
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    error: str | None = None
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))

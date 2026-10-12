@@ -61,9 +61,10 @@ def test_phantom_imports_flagged_and_real_imports_pass(tmp_path):
     assert any("bad.md" in e and "SpatialAnalyzer" in e for e in errors)
     assert any("multiline.md" in e and "Missing" in e for e in errors)
     assert not any("good.md" in e for e in errors)
-    # legacy banner page is exempt, and checked-page count excludes it
-    assert any("legacy.md" in d for d in diagnostics)
-    assert pages_checked == 3
+    assert any("legacy.md" in e and "exemption" in e for e in errors)
+    assert any("legacy.md" in e and "SpatialAnalyzer" in e for e in errors)
+    assert diagnostics == []
+    assert pages_checked == 4
 
 
 def test_midline_and_second_statement_imports_are_extracted(tmp_path):

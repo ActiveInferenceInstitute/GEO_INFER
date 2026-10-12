@@ -7,7 +7,7 @@ is inferred. Raw responses and source IDs are retained beside derived layers.
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 import hashlib
 import json
 import math
@@ -353,7 +353,7 @@ def acquire_regional_layers(output_dir: str | Path, *, offline: bool = False) ->
     files = {}
     receipt = dict(
         schema_version="geo-infer-place/regional-layers/1",
-        generated_at=datetime.now(timezone.utc).isoformat(),
+        generated_at=datetime.now(UTC).isoformat(),
         study_bounds=list(BOUNDS),
         max_bytes=MAX_BYTES,
         max_features_per_source=MAX_FEATURES,

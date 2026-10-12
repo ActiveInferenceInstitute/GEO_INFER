@@ -6,8 +6,8 @@ including spatial prediction, uncertainty quantification, and model management.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
-from datetime import datetime
+from typing import Any
+from datetime import datetime, UTC
 from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
 
 # BayesianSpatialInference lives in geo_infer_iot.core.inference; a broken
@@ -29,7 +29,7 @@ class BayesianInferenceAPI:
     - Real-time inference updates
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.app = FastAPI(
             title="GEO-INFER-IOT Bayesian Inference API", version="1.0.0"
@@ -37,7 +37,7 @@ class BayesianInferenceAPI:
 
         # Initialize the inference engine. The import above fails loudly when
         # the package is broken, so the engine is always available here.
-        self.inference_engine: Optional[Any] = BayesianSpatialInference(
+        self.inference_engine: Any | None = BayesianSpatialInference(
             variable="default",
             spatial_resolution=8,
             temporal_window="1h",
@@ -45,8 +45,8 @@ class BayesianInferenceAPI:
         )
 
         # Inference cache and history
-        self.inference_history: List[Dict[str, Any]] = []
-        self.model_cache: Dict[str, Any] = {}
+        self.inference_history: list[dict[str, Any]] = []
+        self.model_cache: dict[str, Any] = {}
 
         # Setup API routes
         self._setup_routes()
@@ -57,27 +57,27 @@ class BayesianInferenceAPI:
         """Setup API routes and endpoints."""
 
         @self.app.get("/")
-        async def root() -> Dict[str, Any]:
+        async def root() -> dict[str, Any]:
             """API root endpoint."""
             return {
                 "service": "GEO-INFER-IOT Bayesian Inference API",
                 "version": "1.0.0",
                 "status": "operational",
                 "inference_available": self.inference_engine is not None,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
         @self.app.post("/inference/spatial")
         async def run_spatial_inference(
-            sensor_data: List[Dict],
+            sensor_data: list[dict],
             variable: str = Query(..., description="Variable to infer"),
             spatial_resolution: int = Query(
                 8, description="H3 resolution for inference"
             ),
-            confidence_levels: List[float] = Query(
+            confidence_levels: list[float] = Query(
                 [0.68, 0.95], description="Confidence levels"
             ),
-        ) -> Dict[str, Any]:
+        ) -> dict[str, Any]:
             """Run Bayesian spatial inference on sensor data."""
             if self.inference_engine is None:
                 raise HTTPException(
@@ -107,7 +107,7 @@ class BayesianInferenceAPI:
                     "variable": variable,
                     "spatial_resolution": spatial_resolution,
                     "sensor_count": result.get("sensor_count", 0),
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "result": result,
                     "posterior_map": posterior_map,
                 }
@@ -123,10 +123,10 @@ class BayesianInferenceAPI:
                 logger.error(f"Error in spatial inference: {e}")
                 raise HTTPException(
                     status_code=500, detail=f"Inference failed: {str(e)}"
-                )
+                ) from e
 
         @self.app.get("/inference/{inference_id}")
-        async def get_inference_result(inference_id: int) -> Dict[str, Any]:
+        async def get_inference_result(inference_id: int) -> dict[str, Any]:
             """Get results of a specific inference operation."""
             if inference_id >= len(self.inference_history) or inference_id < 0:
                 raise HTTPException(
@@ -141,8 +141,8 @@ class BayesianInferenceAPI:
         @self.app.get("/inference/history")
         async def get_inference_history(
             limit: int = Query(50, description="Maximum history entries to return"),
-            variable: Optional[str] = Query(None, description="Filter by variable"),
-        ) -> Dict[str, Any]:
+            variable: str | None = Query(None, description="Filter by variable"),
+        ) -> dict[str, Any]:
             """Get history of inference operations."""
             history = self.inference_history
 
@@ -161,7 +161,7 @@ class BayesianInferenceAPI:
             }
 
         @self.app.get("/models")
-        async def list_models() -> Dict[str, Any]:
+        async def list_models() -> dict[str, Any]:
             """List available inference models."""
             models = {
                 "bayesian_spatial": {
@@ -182,8 +182,8 @@ class BayesianInferenceAPI:
 
         @self.app.post("/models/{model_type}/configure")
         async def configure_model(
-            model_type: str, config: Dict, background_tasks: BackgroundTasks
-        ) -> Dict[str, Any]:
+            model_type: str, config: dict, background_tasks: BackgroundTasks
+        ) -> dict[str, Any]:
             """Configure an inference model."""
             if model_type != "bayesian_spatial":
                 raise HTTPException(
@@ -202,7 +202,7 @@ class BayesianInferenceAPI:
                 # Store in model cache
                 self.model_cache[model_type] = {
                     "config": config,
-                    "last_updated": datetime.now().isoformat(),
+                    "last_updated": datetime.now(UTC).isoformat(),
                 }
 
                 return {
@@ -215,14 +215,14 @@ class BayesianInferenceAPI:
                 logger.error(f"Error configuring model: {e}")
                 raise HTTPException(
                     status_code=500, detail=f"Model configuration failed: {str(e)}"
-                )
+                ) from e
 
         @self.app.get("/predictions/spatial")
         async def get_spatial_predictions(
             variable: str = Query(..., description="Variable for predictions"),
             h3_resolution: int = Query(8, description="H3 resolution"),
             confidence_level: float = Query(0.95, description="Confidence level"),
-        ) -> Dict[str, Any]:
+        ) -> dict[str, Any]:
             """Get current spatial predictions for a variable."""
             if self.inference_engine is None:
                 raise HTTPException(
@@ -246,27 +246,27 @@ class BayesianInferenceAPI:
                     "h3_resolution": h3_resolution,
                     "confidence_level": confidence_level,
                     "predictions": posterior_map,
-                    "generated_at": datetime.now().isoformat(),
+                    "generated_at": datetime.now(UTC).isoformat(),
                 }
 
             except Exception as e:
                 logger.error(f"Error getting spatial predictions: {e}")
                 raise HTTPException(
                     status_code=500, detail=f"Prediction retrieval failed: {str(e)}"
-                )
+                ) from e
 
         @self.app.post("/inference/batch")
         async def run_batch_inference(
-            inference_requests: List[Dict], background_tasks: BackgroundTasks
-        ) -> Dict[str, Any]:
+            inference_requests: list[dict], background_tasks: BackgroundTasks
+        ) -> dict[str, Any]:
             """Run multiple inference operations in batch."""
             if self.inference_engine is None:
                 raise HTTPException(
                     status_code=503, detail="Bayesian inference not available"
                 )
 
-            results: List[Dict[str, Any]] = []
-            errors: List[Dict[str, Any]] = []
+            results: list[dict[str, Any]] = []
+            errors: list[dict[str, Any]] = []
 
             for request in inference_requests:
                 try:
@@ -309,7 +309,7 @@ class BayesianInferenceAPI:
                     [r for r in results if r.get("success", False)]
                 ),
                 "failed_requests": len(errors),
-                "processed_at": datetime.now().isoformat(),
+                "processed_at": datetime.now(UTC).isoformat(),
             }
 
     def get_app(self) -> FastAPI:

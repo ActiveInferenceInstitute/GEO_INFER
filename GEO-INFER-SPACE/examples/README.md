@@ -4,6 +4,7 @@ Examples workspace within `GEO-INFER-SPACE`.
 
 ## Contents
 
+- `california_multilayer_demo.py`
 - `demo_all_methods.py`
 - `h3_advanced_applications.py`
 - `h3_comprehensive_examples.py`
@@ -16,9 +17,17 @@ Examples workspace within `GEO-INFER-SPACE`.
 
 ## Public Interface
 
-- `demo_all_methods.py:success` (function)
-- `demo_all_methods.py:info` (function)
-- `demo_all_methods.py:section` (function)
+- `california_multilayer_demo.py:configure_logging` (function)
+- `california_multilayer_demo.py:generate_zoning_geojson` (function)
+- `california_multilayer_demo.py:generate_water_geojson` (function)
+- `california_multilayer_demo.py:generate_climate_geojson` (function)
+- `california_multilayer_demo.py:geojson_to_h3_polygons` (function)
+- `california_multilayer_demo.py:cell_to_latlngjson_polygons` (function)
+- `california_multilayer_demo.py:add_h3_layer_to_map` (function)
+- `california_multilayer_demo.py:add_point_layer_to_map` (function)
+- `california_multilayer_demo.py:main` (function)
+- `demo_all_methods.py:run_demo` (function)
+- `demo_all_methods.py:main` (function)
 - `h3_advanced_applications.py:example_demand_forecasting_ml` (function)
 - `h3_advanced_applications.py:example_disaster_response_system` (function)
 - `h3_advanced_applications.py:example_performance_optimization` (function)
@@ -28,25 +37,18 @@ Examples workspace within `GEO-INFER-SPACE`.
 - `h3_comprehensive_examples.py:example_2_city_coverage_analysis` (function)
 - `h3_comprehensive_examples.py:example_3_transportation_corridor` (function)
 - `h3_comprehensive_examples.py:example_4_retail_catchment_analysis` (function)
-- `h3_comprehensive_examples.py:example_5_environmental_monitoring` (function)
-- `h3_comprehensive_examples.py:example_6_disaster_response_planning` (function)
-- `h3_comprehensive_examples.py:example_7_visualization_showcase` (function)
-- `h3_comprehensive_examples.py:example_8_performance_benchmarks` (function)
-- `h3_comprehensive_examples.py:main` (function)
-- `h3_integration_examples.py:example_h3_vector_integration` (function)
-- `h3_integration_examples.py:example_h3_density_clustering` (function)
-- `h3_integration_examples.py:example_h3_temporal_analysis` (function)
 
 ## Module Metadata
 
 - Module: `GEO-INFER-SPACE`
 - Package: `geo_infer_space`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-SPACE`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-space`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module SPACE`
 
 ## Dependencies
 
+- `geo-infer-time>=0.4.0`
 - `fastapi>=0.100.0`
 - `fiona>=1.8.0`
 - `geojson-pydantic>=2.0.0`

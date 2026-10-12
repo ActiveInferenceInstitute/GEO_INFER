@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, patch
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, UTC
 
 from geo_infer_data.core.storage import (
     AdaptiveDataStorage,
@@ -61,7 +61,8 @@ class TestAdaptiveDataStorage:
             description="Test dataset for unit tests",
             spatial=SpatialExtent(bbox=[-122.5, 37.7, -122.3, 37.9], crs="EPSG:4326"),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 12, 31)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 12, 31, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="test_source", process="test_process", created_by="test_system"
@@ -88,7 +89,9 @@ class TestAdaptiveDataStorage:
         """Create mock DataFrame."""
         return pd.DataFrame(
             {
-                "timestamp": pd.date_range("2023-01-01", periods=1000, freq="h"),
+                "timestamp": pd.date_range(
+                    "2023-01-01", periods=1000, freq="h", tz="UTC"
+                ),
                 "value": np.random.normal(100, 15, 1000),
             }
         )
@@ -253,7 +256,8 @@ class TestPostgreSQLBackend:
             title="Test Data",
             spatial=SpatialExtent(bbox=[0, 0, 1, 1]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(source="test", process="test", created_by="test"),
         )
@@ -310,7 +314,8 @@ class TestMinIOBackend:
             title="Test Data",
             spatial=SpatialExtent(bbox=[0, 0, 1, 1]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(source="test", process="test", created_by="test"),
         )
@@ -348,7 +353,8 @@ class TestLocalFileBackend:
             title="Test Data",
             spatial=SpatialExtent(bbox=[0, 0, 1, 1]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(source="test", process="test", created_by="test"),
         )
@@ -375,7 +381,8 @@ class TestLocalFileBackend:
             title="Test Data",
             spatial=SpatialExtent(bbox=[0, 0, 1, 1]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(source="test", process="test", created_by="test"),
         )
@@ -398,7 +405,8 @@ class TestLocalFileBackend:
             title="Test Data",
             spatial=SpatialExtent(bbox=[0, 0, 1, 1]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(source="test", process="test", created_by="test"),
         )

@@ -9,7 +9,6 @@ import logging
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +46,8 @@ class CostBenefitItem:
     is_benefit: bool
     probability: float = 1.0
     time_horizon_years: int = 1
-    category: Optional[str] = None
-    description: Optional[str] = None
+    category: str | None = None
+    description: str | None = None
 
 
 @dataclass
@@ -75,7 +74,7 @@ class CostBenefitResult:
     internal_rate_of_return: float
     payback_period_years: float
     risk_adjusted_npv: float
-    category_breakdown: Dict[str, Dict[str, float]]
+    category_breakdown: dict[str, dict[str, float]]
 
 
 @dataclass
@@ -84,10 +83,10 @@ class EquityScore:
 
     overall_equity_score: float
     gini_coefficient: float
-    impact_distribution: Dict[str, float]
+    impact_distribution: dict[str, float]
     most_impacted_group: str
     least_impacted_group: str
-    disparate_impact_flags: List[str]
+    disparate_impact_flags: list[str]
 
 
 class CostBenefitAnalyzer:
@@ -108,7 +107,7 @@ class CostBenefitAnalyzer:
         if not (0.0 <= discount_rate < 1.0):
             raise ValueError("discount_rate must be in [0, 1)")
         self._discount_rate = discount_rate
-        self._items: List[CostBenefitItem] = []
+        self._items: list[CostBenefitItem] = []
 
     def add_item(self, item: CostBenefitItem) -> None:
         """
@@ -119,7 +118,7 @@ class CostBenefitAnalyzer:
         """
         self._items.append(item)
 
-    def add_items(self, items: List[CostBenefitItem]) -> None:
+    def add_items(self, items: list[CostBenefitItem]) -> None:
         """
         Add multiple cost-benefit items.
 
@@ -160,7 +159,7 @@ class CostBenefitAnalyzer:
         payback = self._compute_payback_period()
 
         # Category breakdown
-        categories: Dict[str, Dict[str, float]] = {}
+        categories: dict[str, dict[str, float]] = {}
         for item in self._items:
             cat = item.category or "uncategorized"
             if cat not in categories:
@@ -185,7 +184,7 @@ class CostBenefitAnalyzer:
             category_breakdown=categories,
         )
 
-    def _sum_discounted(self, items: List[CostBenefitItem]) -> float:
+    def _sum_discounted(self, items: list[CostBenefitItem]) -> float:
         """Sum items with time-value discounting."""
         total = 0.0
         for item in items:
@@ -195,7 +194,7 @@ class CostBenefitAnalyzer:
             total += discounted
         return total
 
-    def _sum_risk_adjusted(self, items: List[CostBenefitItem]) -> float:
+    def _sum_risk_adjusted(self, items: list[CostBenefitItem]) -> float:
         """Sum items adjusted for probability of occurrence."""
         total = 0.0
         for item in items:
@@ -239,8 +238,8 @@ class CostBenefitAnalyzer:
         Returns ``float("inf")`` when the cumulative net position never
         reaches zero within the modeled horizon.
         """
-        costs_by_year: Dict[int, float] = {}
-        benefits_by_year: Dict[int, float] = {}
+        costs_by_year: dict[int, float] = {}
+        benefits_by_year: dict[int, float] = {}
 
         for item in self._items:
             year = item.time_horizon_years
@@ -284,7 +283,7 @@ class StakeholderImpactAnalyzer:
     """
 
     def __init__(self) -> None:
-        self._impacts: List[StakeholderImpact] = []
+        self._impacts: list[StakeholderImpact] = []
 
     def add_impact(self, impact: StakeholderImpact) -> None:
         """
@@ -295,7 +294,7 @@ class StakeholderImpactAnalyzer:
         """
         self._impacts.append(impact)
 
-    def add_impacts(self, impacts: List[StakeholderImpact]) -> None:
+    def add_impacts(self, impacts: list[StakeholderImpact]) -> None:
         """
         Add multiple stakeholder impact assessments.
 
@@ -304,7 +303,7 @@ class StakeholderImpactAnalyzer:
         """
         self._impacts.extend(impacts)
 
-    def compute_impact_matrix(self) -> Dict[str, Dict[str, float]]:
+    def compute_impact_matrix(self) -> dict[str, dict[str, float]]:
         """
         Compute the full stakeholder impact matrix.
 
@@ -320,7 +319,7 @@ class StakeholderImpactAnalyzer:
         if not self._impacts:
             raise ValueError("No stakeholder impacts to analyze")
 
-        per_group: Dict[str, List[Tuple[Dict[str, float], int]]] = {}
+        per_group: dict[str, list[tuple[dict[str, float], int]]] = {}
         for impact in self._impacts:
             scores = {
                 "overall_impact": impact.impact_level.value / 2.0,
@@ -346,7 +345,7 @@ class StakeholderImpactAnalyzer:
                 ", ".join(duplicated),
             )
 
-        matrix: Dict[str, Dict[str, float]] = {}
+        matrix: dict[str, dict[str, float]] = {}
         for group, entries in per_group.items():
             total_pop = sum(pop for _, pop in entries)
             if total_pop > 0:
@@ -398,7 +397,7 @@ class StakeholderImpactAnalyzer:
 
         return round(weighted_sum / total_pop, 4)
 
-    def find_most_affected(self) -> Tuple[str, str]:
+    def find_most_affected(self) -> tuple[str, str]:
         """
         Find the most positively and negatively affected groups.
 
@@ -431,8 +430,8 @@ class EquityAnalyzer:
     """
 
     def __init__(self) -> None:
-        self._group_impacts: Dict[str, float] = {}
-        self._group_populations: Dict[str, int] = {}
+        self._group_impacts: dict[str, float] = {}
+        self._group_populations: dict[str, int] = {}
 
     def set_group_impact(
         self, group_name: str, impact_value: float, population: int
@@ -514,7 +513,7 @@ class EquityAnalyzer:
         )
 
     @staticmethod
-    def _compute_gini(values: List[float]) -> float:
+    def _compute_gini(values: list[float]) -> float:
         """Compute Gini coefficient from a list of non-negative values."""
         n = len(values)
         if n == 0:
@@ -535,9 +534,9 @@ class EquityAnalyzer:
 
     @staticmethod
     def _check_disparate_impact(
-        impacts: Dict[str, float],
-        populations: Dict[str, int],
-    ) -> List[str]:
+        impacts: dict[str, float],
+        populations: dict[str, int],
+    ) -> list[str]:
         """
         Check for disparate impact using the 4/5ths rule analog on
         per-capita impact rates.
@@ -546,11 +545,11 @@ class EquityAnalyzer:
         group's per-capita rate is less than 80% of the highest rate,
         flag it.
         """
-        flags: List[str] = []
+        flags: list[str] = []
         if not impacts:
             return flags
 
-        rates: Dict[str, float] = {
+        rates: dict[str, float] = {
             group: impact / populations[group] for group, impact in impacts.items()
         }
 

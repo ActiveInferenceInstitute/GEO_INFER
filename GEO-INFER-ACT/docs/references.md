@@ -72,7 +72,3 @@
 
 - [Website](https://www.fil.ion.ucl.ac.uk/spm/)
 - Statistical Parametric Mapping software
-
----
-
-**Last Updated**: 2026-06-20

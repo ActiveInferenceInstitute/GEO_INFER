@@ -6,15 +6,15 @@ This module provides RBAC (Role-Based Access Control) and ABAC
 """
 
 import logging
-from typing import Dict, List, Optional, Any
-from enum import Enum
+from typing import Any
+from enum import StrEnum
 
 from .access_control import GeospatialAccessManager, Role, SpatialPermission
 
 logger = logging.getLogger(__name__)
 
 
-class PermissionType(str, Enum):
+class PermissionType(StrEnum):
     """Types of permissions."""
 
     READ = "read"
@@ -34,8 +34,8 @@ class AuthorizationManager:
 
     def __init__(
         self,
-        access_manager: Optional[GeospatialAccessManager] = None,
-        secret_key: Optional[str] = None,
+        access_manager: GeospatialAccessManager | None = None,
+        secret_key: str | None = None,
     ) -> None:
         """
         Initialize the authorization manager.
@@ -65,7 +65,7 @@ class AuthorizationManager:
         user_id: str,
         resource: str,
         permission: PermissionType,
-        attributes: Optional[Dict[str, Any]] = None,
+        attributes: dict[str, Any] | None = None,
     ) -> bool:
         """
         Check if a user has permission to perform an action on a resource.
@@ -140,7 +140,7 @@ class AuthorizationManager:
         user_id: str,
         resource: str,
         permission: PermissionType,
-        spatial_bounds: Optional[Any] = None,
+        spatial_bounds: Any | None = None,
     ) -> bool:
         """
         Grant a permission to a user.
@@ -208,7 +208,7 @@ class AuthorizationManager:
         )
         return True
 
-    def list_user_permissions(self, user_id: str) -> List[Dict[str, Any]]:
+    def list_user_permissions(self, user_id: str) -> list[dict[str, Any]]:
         """
         List all permissions for a user.
 

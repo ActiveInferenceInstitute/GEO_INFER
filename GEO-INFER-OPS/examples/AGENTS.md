@@ -22,8 +22,6 @@
 ## Local Contents
 
 - `demo_framework.py`
-- `geo_infer_paths.py`
-- `setup_framework.py`
 
 ## Validation
 

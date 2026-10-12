@@ -3,7 +3,8 @@
 import logging
 import socket
 from contextlib import contextmanager
-from typing import Optional, Dict, Any, Iterator
+from typing import Any
+from collections.abc import Iterator
 
 import prometheus_client as prom
 from prometheus_client import Counter, Gauge, Histogram, REGISTRY
@@ -38,7 +39,7 @@ CACHE_SIZE = Gauge(
 QUEUE_SIZE = Gauge("queue_size", "Current number of items in the queue", ["queue_name"])
 
 _STATIC_METRICS = [REQUEST_COUNT, REQUEST_LATENCY, ERROR_COUNT, CACHE_SIZE, QUEUE_SIZE]
-_CUSTOM_METRICS: Dict[str, Any] = {}
+_CUSTOM_METRICS: dict[str, Any] = {}
 
 
 def reset_metrics() -> None:
@@ -83,7 +84,7 @@ def record_metric(
     name: str,
     value: float,
     metric_type: str = "counter",
-    labels: Optional[Dict[str, str]] = None,
+    labels: dict[str, str] | None = None,
 ) -> None:
     """Record a metric value.
 
@@ -129,7 +130,7 @@ def record_metric(
         raise ValueError(f"Invalid metric type: {metric_type}")
 
 
-def get_metric_value(name: str, labels: Optional[Dict[str, str]] = None) -> float:
+def get_metric_value(name: str, labels: dict[str, str] | None = None) -> float:
     """Get the value of a metric.
 
     Args:
@@ -167,11 +168,24 @@ def is_port_in_use(port: int) -> bool:
     Returns:
         bool: True if port is in use
     """
+    if port:
+        # macOS can permit a reusable wildcard bind beside a listener bound
+        # to loopback (or vice versa). Detect the actual local listener first.
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener_probe:
+            listener_probe.settimeout(0.2)
+            if listener_probe.connect_ex(("127.0.0.1", port)) == 0:
+                return True
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        # Match the HTTP server's reusable-address bind policy. A completed
+        # request can leave TIME_WAIT sockets after a correctly closed server.
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
-            s.bind(("localhost", port))
+            s.bind(("0.0.0.0", port))
+            # On macOS, reusable sockets can bind beside a listener but a
+            # second listener still fails. Test the actual server operation.
+            s.listen(1)
             return False
-        except socket.error:
+        except OSError:
             return True
 
 
@@ -192,9 +206,8 @@ def start_metrics_server(port: int = 9090) -> Iterator[int]:
     server = None
     thread = None
     try:
-        handle = prom.start_http_server(port, registry=METRICS_REGISTRY)
-        if isinstance(handle, tuple):
-            server, thread = handle
+        server, thread = prom.start_http_server(port, registry=METRICS_REGISTRY)
+        port = server.server_port
         yield port
     finally:
         if server is not None:
@@ -225,8 +238,8 @@ def instrument_app(app: Any, metrics_path: str = "/metrics") -> None:
 
 
 def setup_monitoring(
-    app: Optional[Any] = None,
-    port: Optional[int] = None,
+    app: Any | None = None,
+    port: int | None = None,
     metrics_path: str = "/metrics",
 ) -> None:
     """Set up monitoring.

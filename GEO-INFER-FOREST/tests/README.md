@@ -22,8 +22,8 @@ Tests workspace within `GEO-INFER-FOREST`.
 
 - Module: `GEO-INFER-FOREST`
 - Package: `geo_infer_forest`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-FOREST`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-forest`
 - Tests: `uv run python -m pytest GEO-INFER-FOREST/tests`
 
 ## Dependencies
@@ -43,7 +43,7 @@ Tests workspace within `GEO-INFER-FOREST`.
   `geo_infer_test.testing` fixtures for deterministic RNG, filesystem, HTTP,
   SQLite, service, model, and artifact boundaries.
 - Dependencies: required test/runtime dependencies are installed by
-  `uv sync --all-packages --all-extras`; missing backends are failures.
+  `uv sync --all-packages --all-extras --all-groups`; missing backends are failures.
 - Expected artifacts: JUnit XML under `.geo-infer-test-results/`; model and
   visualization outputs require finite statistics, sidecars, hashes, and a
   manifest.

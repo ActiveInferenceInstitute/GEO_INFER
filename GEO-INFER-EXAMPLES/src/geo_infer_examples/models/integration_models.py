@@ -6,7 +6,7 @@ Comprehensive data models for cross-module integrations, workflow definitions,
 execution contexts, and standardized result structures.
 """
 
-from typing import Dict, List, Any, Optional, Union, Tuple
+from typing import Any
 from dataclasses import dataclass, field
 from enum import Enum
 import json
@@ -63,15 +63,15 @@ class ModuleSpec:
     module_type: ModuleType
     api_base_url: str
     version: str
-    capabilities: List[str] = field(default_factory=list)
-    supported_formats: List[DataFormat] = field(default_factory=list)
-    dependencies: List[str] = field(default_factory=list)
-    optional_dependencies: List[str] = field(default_factory=list)
-    configuration: Dict[str, Any] = field(default_factory=dict)
+    capabilities: list[str] = field(default_factory=list)
+    supported_formats: list[DataFormat] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
+    optional_dependencies: list[str] = field(default_factory=list)
+    configuration: dict[str, Any] = field(default_factory=dict)
     health_endpoint: str = "/health"
-    documentation_url: Optional[str] = None
+    documentation_url: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "name": self.name,
@@ -88,7 +88,7 @@ class ModuleSpec:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ModuleSpec":
+    def from_dict(cls, data: dict[str, Any]) -> "ModuleSpec":
         """Create from dictionary representation."""
         return cls(
             name=data["name"],
@@ -116,12 +116,12 @@ class ModuleConnection:
     pattern: IntegrationPattern
     data_format: DataFormat
     endpoint: str
-    transformation: Optional[str] = None  # Data transformation function
-    validation: Optional[str] = None  # Validation rules
-    retry_policy: Optional[Dict[str, Any]] = None
-    timeout: Optional[int] = None
+    transformation: str | None = None  # Data transformation function
+    validation: str | None = None  # Validation rules
+    retry_policy: dict[str, Any] | None = None
+    timeout: int | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "source_module": self.source_module,
@@ -143,22 +143,22 @@ class WorkflowStep:
     name: str
     module: str
     endpoint: str
-    dependencies: List[str] = field(default_factory=list)
-    input_mapping: Optional[Dict[str, str]] = None
-    output_mapping: Optional[Dict[str, str]] = None
-    condition: Optional[str] = None
-    timeout: Optional[int] = None
+    dependencies: list[str] = field(default_factory=list)
+    input_mapping: dict[str, str] | None = None
+    output_mapping: dict[str, str] | None = None
+    condition: str | None = None
+    timeout: int | None = None
     retry_count: int = 0
     optional: bool = False
 
     # Event-driven properties
-    trigger_events: List[str] = field(default_factory=list)
-    emits_events: List[str] = field(default_factory=list)
+    trigger_events: list[str] = field(default_factory=list)
+    emits_events: list[str] = field(default_factory=list)
 
     # Feedback loop properties
-    feedback_mapping: Optional[Dict[str, str]] = None
+    feedback_mapping: dict[str, str] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "name": self.name,
@@ -177,7 +177,7 @@ class WorkflowStep:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "WorkflowStep":
+    def from_dict(cls, data: dict[str, Any]) -> "WorkflowStep":
         """Create from dictionary representation."""
         return cls(**data)
 
@@ -189,17 +189,17 @@ class WorkflowDefinition:
     id: str
     name: str
     description: str
-    steps: List[WorkflowStep]
+    steps: list[WorkflowStep]
     execution_strategy: str = "sequential"
-    max_iterations: Optional[int] = None  # For feedback loops
-    convergence_threshold: Optional[float] = None  # For feedback loops
-    timeout: Optional[int] = None
-    retry_policy: Optional[Dict[str, Any]] = None
+    max_iterations: int | None = None  # For feedback loops
+    convergence_threshold: float | None = None  # For feedback loops
+    timeout: int | None = None
+    retry_policy: dict[str, Any] | None = None
     version: str = "1.0.0"
-    tags: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    tags: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "id": self.id,
@@ -217,7 +217,7 @@ class WorkflowDefinition:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "WorkflowDefinition":
+    def from_dict(cls, data: dict[str, Any]) -> "WorkflowDefinition":
         """Create from dictionary representation."""
         return cls(
             id=data["id"],
@@ -243,30 +243,30 @@ class WorkflowDefinition:
 class ExecutionContext:
     """Context for workflow execution."""
 
-    user_id: Optional[str] = None
-    session_id: Optional[str] = None
+    user_id: str | None = None
+    session_id: str | None = None
     priority: int = 5  # 1-10 scale
     resilience_mode: bool = False
     debug_mode: bool = False
-    resource_limits: Optional[Dict[str, Any]] = None
+    resource_limits: dict[str, Any] | None = None
     environment: str = "production"
-    custom_config: Dict[str, Any] = field(default_factory=dict)
-    tags: List[str] = field(default_factory=list)
+    custom_config: dict[str, Any] = field(default_factory=dict)
+    tags: list[str] = field(default_factory=list)
 
 
 @dataclass
 class SpatialTemporalData:
     """Standardized spatial-temporal data structure."""
 
-    features: List[Dict[str, Any]]
-    temporal_range: Tuple[datetime, datetime]
-    spatial_bounds: Tuple[float, float, float, float]  # minx, miny, maxx, maxy
+    features: list[dict[str, Any]]
+    temporal_range: tuple[datetime, datetime]
+    spatial_bounds: tuple[float, float, float, float]  # minx, miny, maxx, maxy
     coordinate_system: str = "EPSG:4326"
-    temporal_resolution: Optional[str] = None
-    spatial_resolution: Optional[float] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    temporal_resolution: str | None = None
+    spatial_resolution: float | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_geojson(self) -> Dict[str, Any]:
+    def to_geojson(self) -> dict[str, Any]:
         """Convert to GeoJSON format."""
         return {
             "type": "FeatureCollection",
@@ -289,16 +289,16 @@ class SpatialTemporalData:
 class AnalysisResult:
     """Standardized analysis result structure."""
 
-    data: Dict[str, Any]
-    confidence: Optional[float] = None
-    uncertainty: Optional[Dict[str, Any]] = None
-    method: Optional[str] = None
-    parameters: Dict[str, Any] = field(default_factory=dict)
-    performance_metrics: Dict[str, Any] = field(default_factory=dict)
-    validation_results: Optional[Dict[str, Any]] = None
+    data: dict[str, Any]
+    confidence: float | None = None
+    uncertainty: dict[str, Any] | None = None
+    method: str | None = None
+    parameters: dict[str, Any] = field(default_factory=dict)
+    performance_metrics: dict[str, Any] = field(default_factory=dict)
+    validation_results: dict[str, Any] | None = None
     timestamp: datetime = field(default_factory=datetime.now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "data": self.data,
@@ -317,14 +317,14 @@ class IntegrationResult:
     """Result of cross-module integration."""
 
     success: bool
-    data: Dict[str, Any]
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    execution_time: Optional[float] = None
-    module_results: Dict[str, AnalysisResult] = field(default_factory=dict)
+    data: dict[str, Any]
+    metadata: dict[str, Any] = field(default_factory=dict)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    execution_time: float | None = None
+    module_results: dict[str, AnalysisResult] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "success": self.success,
@@ -340,7 +340,7 @@ class IntegrationResult:
         """Add result from a specific module."""
         self.module_results[module_name] = result
 
-    def get_module_result(self, module_name: str) -> Optional[AnalysisResult]:
+    def get_module_result(self, module_name: str) -> AnalysisResult | None:
         """Get result from a specific module."""
         return self.module_results.get(module_name)
 
@@ -349,13 +349,13 @@ class IntegrationResult:
 class HealthSurveillanceData(SpatialTemporalData):
     """Specialized data structure for health surveillance."""
 
-    case_data: List[Dict[str, Any]] = field(default_factory=list)
-    demographic_data: List[Dict[str, Any]] = field(default_factory=list)
-    environmental_factors: Dict[str, Any] = field(default_factory=dict)
-    disease_type: Optional[str] = None
-    severity_levels: Optional[List[str]] = None
+    case_data: list[dict[str, Any]] = field(default_factory=list)
+    demographic_data: list[dict[str, Any]] = field(default_factory=list)
+    environmental_factors: dict[str, Any] = field(default_factory=dict)
+    disease_type: str | None = None
+    severity_levels: list[str] | None = None
 
-    def to_health_geojson(self) -> Dict[str, Any]:
+    def to_health_geojson(self) -> dict[str, Any]:
         """Convert to health-specific GeoJSON format."""
         geojson = self.to_geojson()
         geojson["metadata"].update(
@@ -374,14 +374,14 @@ class HealthSurveillanceData(SpatialTemporalData):
 class AgriculturalData(SpatialTemporalData):
     """Specialized data structure for agricultural applications."""
 
-    field_boundaries: List[Dict[str, Any]] = field(default_factory=list)
-    crop_types: List[str] = field(default_factory=list)
-    growth_stages: Dict[str, Any] = field(default_factory=dict)
-    weather_data: List[Dict[str, Any]] = field(default_factory=list)
-    soil_properties: Dict[str, Any] = field(default_factory=dict)
-    management_practices: List[Dict[str, Any]] = field(default_factory=list)
+    field_boundaries: list[dict[str, Any]] = field(default_factory=list)
+    crop_types: list[str] = field(default_factory=list)
+    growth_stages: dict[str, Any] = field(default_factory=dict)
+    weather_data: list[dict[str, Any]] = field(default_factory=list)
+    soil_properties: dict[str, Any] = field(default_factory=dict)
+    management_practices: list[dict[str, Any]] = field(default_factory=list)
 
-    def to_agricultural_geojson(self) -> Dict[str, Any]:
+    def to_agricultural_geojson(self) -> dict[str, Any]:
         """Convert to agriculture-specific GeoJSON format."""
         geojson = self.to_geojson()
         geojson["metadata"].update(
@@ -400,14 +400,14 @@ class AgriculturalData(SpatialTemporalData):
 class UrbanPlanningData(SpatialTemporalData):
     """Specialized data structure for urban planning."""
 
-    zoning_data: List[Dict[str, Any]] = field(default_factory=list)
-    infrastructure: Dict[str, Any] = field(default_factory=dict)
-    demographic_data: List[Dict[str, Any]] = field(default_factory=list)
-    land_use: Dict[str, Any] = field(default_factory=dict)
-    community_input: List[Dict[str, Any]] = field(default_factory=list)
-    regulatory_constraints: Dict[str, Any] = field(default_factory=dict)
+    zoning_data: list[dict[str, Any]] = field(default_factory=list)
+    infrastructure: dict[str, Any] = field(default_factory=dict)
+    demographic_data: list[dict[str, Any]] = field(default_factory=list)
+    land_use: dict[str, Any] = field(default_factory=dict)
+    community_input: list[dict[str, Any]] = field(default_factory=list)
+    regulatory_constraints: dict[str, Any] = field(default_factory=dict)
 
-    def to_urban_geojson(self) -> Dict[str, Any]:
+    def to_urban_geojson(self) -> dict[str, Any]:
         """Convert to urban planning-specific GeoJSON format."""
         geojson = self.to_geojson()
         geojson["metadata"].update(
@@ -425,16 +425,16 @@ class UrbanPlanningData(SpatialTemporalData):
 class ClimateData(SpatialTemporalData):
     """Specialized data structure for climate applications."""
 
-    variables: List[str] = field(
+    variables: list[str] = field(
         default_factory=list
     )  # temperature, precipitation, etc.
-    scenarios: List[str] = field(default_factory=list)  # RCP scenarios
-    models: List[str] = field(default_factory=list)  # Climate models used
+    scenarios: list[str] = field(default_factory=list)  # RCP scenarios
+    models: list[str] = field(default_factory=list)  # Climate models used
     ensemble_data: bool = False
-    downscaling_method: Optional[str] = None
-    bias_correction: Optional[str] = None
+    downscaling_method: str | None = None
+    bias_correction: str | None = None
 
-    def to_climate_geojson(self) -> Dict[str, Any]:
+    def to_climate_geojson(self) -> dict[str, Any]:
         """Convert to climate-specific GeoJSON format."""
         geojson = self.to_geojson()
         geojson["metadata"].update(
@@ -625,8 +625,8 @@ class DataFormatConverter:
 
     @staticmethod
     def convert_to_standard_format(
-        data: Dict[str, Any], source_format: DataFormat, target_format: DataFormat
-    ) -> Dict[str, Any]:
+        data: dict[str, Any], source_format: DataFormat, target_format: DataFormat
+    ) -> dict[str, Any]:
         """Convert data between different standardized formats."""
         if source_format == target_format:
             return data
@@ -653,7 +653,7 @@ class DataFormatConverter:
             )
 
     @staticmethod
-    def _geojson_to_spatial_temporal(data: Dict[str, Any]) -> Dict[str, Any]:
+    def _geojson_to_spatial_temporal(data: dict[str, Any]) -> dict[str, Any]:
         """Convert GeoJSON to spatial-temporal format."""
         # Implementation for GeoJSON to spatial-temporal conversion
         return {
@@ -664,7 +664,7 @@ class DataFormatConverter:
         }
 
     @staticmethod
-    def _spatial_temporal_to_geojson(data: Dict[str, Any]) -> Dict[str, Any]:
+    def _spatial_temporal_to_geojson(data: dict[str, Any]) -> dict[str, Any]:
         """Convert spatial-temporal format to GeoJSON."""
         # Implementation for spatial-temporal to GeoJSON conversion
         return {
@@ -678,11 +678,11 @@ class DataFormatConverter:
         }
 
 
-def load_workflow_from_file(file_path: Union[str, Path]) -> WorkflowDefinition:
+def load_workflow_from_file(file_path: str | Path) -> WorkflowDefinition:
     """Load workflow definition from YAML or JSON file."""
     file_path = Path(file_path)
 
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         if file_path.suffix.lower() in [".yaml", ".yml"]:
             data = yaml.safe_load(f)
         elif file_path.suffix.lower() == ".json":
@@ -694,7 +694,7 @@ def load_workflow_from_file(file_path: Union[str, Path]) -> WorkflowDefinition:
 
 
 def save_workflow_to_file(
-    workflow: WorkflowDefinition, file_path: Union[str, Path], format: str = "yaml"
+    workflow: WorkflowDefinition, file_path: str | Path, format: str = "yaml"
 ) -> None:
     """Save workflow definition to YAML or JSON file."""
     file_path = Path(file_path)

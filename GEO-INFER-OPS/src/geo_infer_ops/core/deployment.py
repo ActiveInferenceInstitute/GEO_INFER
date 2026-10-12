@@ -7,7 +7,7 @@ import os
 
 import subprocess
 from pathlib import Path
-from typing import Any, Optional, Dict, List
+from typing import Any
 
 import yaml
 from kubernetes import client, config
@@ -22,7 +22,7 @@ logger = get_logger(__name__)
 class DeploymentManager:
     """Manages deployment operations for GEO-INFER-OPS."""
 
-    def __init__(self, namespace: Optional[str | Config] = None):
+    def __init__(self, namespace: str | Config | None = None):
         """
         Initialize deployment manager.
 
@@ -63,7 +63,7 @@ class DeploymentManager:
         with importlib.resources.as_file(resources) as path:
             return str(path)
 
-    def build_docker_image(self, tag: Optional[str] = None) -> bool:
+    def build_docker_image(self, tag: str | None = None) -> bool:
         """
         Build Docker image for GEO-INFER-OPS.
 
@@ -87,7 +87,7 @@ class DeploymentManager:
             logger.error("docker_build_failed", error=str(e))
             return False
 
-    def push_docker_image(self, registry: Optional[str] = None) -> bool:
+    def push_docker_image(self, registry: str | None = None) -> bool:
         """
         Push Docker image to registry.
 
@@ -114,7 +114,7 @@ class DeploymentManager:
             return False
 
     def deploy_kubernetes(
-        self, manifest_path: Optional[str | Dict[str, Any]] = None
+        self, manifest_path: str | dict[str, Any] | None = None
     ) -> bool:
         """
         Deploy to Kubernetes using manifests.
@@ -156,7 +156,7 @@ class DeploymentManager:
             logger.error("kubernetes_deployment_failed", error=str(e))
             return False
 
-    def _apply_manifest(self, manifest: Dict[str, Any]) -> None:
+    def _apply_manifest(self, manifest: dict[str, Any]) -> None:
         """Apply a supported Kubernetes manifest dictionary."""
         kind = manifest["kind"]
         if kind == "Deployment":
@@ -174,7 +174,7 @@ class DeploymentManager:
         else:
             raise ValueError(f"Unsupported manifest kind: {kind}")
 
-    def _apply_deployment(self, manifest: Dict) -> None:
+    def _apply_deployment(self, manifest: dict) -> None:
         """Apply Kubernetes Deployment manifest."""
         apps_v1 = client.AppsV1Api()
         try:
@@ -193,7 +193,7 @@ class DeploymentManager:
             else:
                 raise
 
-    def _apply_service(self, manifest: Dict) -> None:
+    def _apply_service(self, manifest: dict) -> None:
         """Apply Kubernetes Service manifest."""
         core_v1 = client.CoreV1Api()
         try:
@@ -210,7 +210,7 @@ class DeploymentManager:
             else:
                 raise
 
-    def _apply_configmap(self, manifest: Dict) -> None:
+    def _apply_configmap(self, manifest: dict) -> None:
         """Apply Kubernetes ConfigMap manifest."""
         core_v1 = client.CoreV1Api()
         try:
@@ -229,7 +229,7 @@ class DeploymentManager:
             else:
                 raise
 
-    def _apply_secret(self, manifest: Dict) -> None:
+    def _apply_secret(self, manifest: dict) -> None:
         """Apply Kubernetes Secret manifest."""
         core_v1 = client.CoreV1Api()
         try:
@@ -246,7 +246,7 @@ class DeploymentManager:
             else:
                 raise
 
-    def get_deployment_status(self, name: str) -> Dict:
+    def get_deployment_status(self, name: str) -> dict:
         """
         Get status of a Kubernetes deployment.
 
@@ -304,7 +304,7 @@ class DeploymentManager:
             logger.error("deployment_scale_failed", name=name, error=str(e))
             return False
 
-    def get_pods(self, label_selector: Optional[str] = None) -> List[Dict]:
+    def get_pods(self, label_selector: str | None = None) -> list[dict]:
         """
         Get pods in the namespace.
 
@@ -362,7 +362,7 @@ class DeploymentManager:
             logger.error("pod_delete_failed", name=name, error=str(e))
             return False
 
-    def recreate_pod(self, name: str, body: Optional[Dict[str, Any]] = None) -> bool:
+    def recreate_pod(self, name: str, body: dict[str, Any] | None = None) -> bool:
         """Create a replacement pod using a minimal or supplied manifest."""
         core_v1 = client.CoreV1Api()
         pod_body = body or {
@@ -447,7 +447,7 @@ class DeploymentManager:
             logger.error("resource_quota_apply_failed", error=str(e))
             return False
 
-    def check_pod_health(self, name: str) -> Dict[str, bool]:
+    def check_pod_health(self, name: str) -> dict[str, bool]:
         """Return readiness and initialization diagnostics for a pod."""
         core_v1 = client.CoreV1Api()
         try:
@@ -467,7 +467,7 @@ class DeploymentManager:
             logger.error("pod_health_check_failed", name=name, error=str(e))
             return {"healthy": False, "ready": False, "initialized": False}
 
-    def apply_network_policy(self, manifest: Dict[str, Any]) -> bool:
+    def apply_network_policy(self, manifest: dict[str, Any]) -> bool:
         """Apply a Kubernetes NetworkPolicy manifest."""
         networking_v1 = client.NetworkingV1Api()
         try:
@@ -495,7 +495,7 @@ class DeploymentManager:
             logger.error("network_policy_delete_failed", name=name, error=str(e))
             return False
 
-    def validate_network_policy(self, manifest: Dict[str, Any]) -> bool:
+    def validate_network_policy(self, manifest: dict[str, Any]) -> bool:
         """Validate required NetworkPolicy fields."""
         return (
             manifest.get("kind") == "NetworkPolicy"
@@ -523,7 +523,7 @@ class DeploymentManager:
             return False
 
     def recover_evicted_pod(
-        self, name: str, body: Optional[Dict[str, Any]] = None
+        self, name: str, body: dict[str, Any] | None = None
     ) -> bool:
         """Recover an evicted pod by creating a replacement manifest."""
         return self.recreate_pod(name, body=body)

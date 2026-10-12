@@ -36,6 +36,41 @@ class ModuleInfo:
     test_files: int
 
 
+@dataclass
+class _DirectoryIndex:
+    root: Path
+    files: dict[Path, list[Path]]
+    children: dict[Path, set[Path]]
+
+
+_DIRECTORY_INDEX: _DirectoryIndex | None = None
+
+
+def _build_directory_index(inventory: set[Path] | frozenset[Path]) -> _DirectoryIndex:
+    """Index each file and distinct ancestor once, without inventory rescans."""
+    files: dict[Path, list[Path]] = {}
+    children: dict[Path, set[Path]] = {}
+    indexed: set[Path] = set()
+    for path in inventory:
+        directory = path.parent
+        files.setdefault(directory, []).append(path)
+        while directory not in indexed:
+            indexed.add(directory)
+            parent = directory.parent
+            if parent == directory:
+                break
+            children.setdefault(parent, set()).add(directory)
+            directory = parent
+    return _DirectoryIndex(REPO_ROOT, files, children)
+
+
+def _directory_index() -> _DirectoryIndex:
+    """Reuse only a render's snapshot; standalone calls see current set edits."""
+    if _DIRECTORY_INDEX is not None and _DIRECTORY_INDEX.root == REPO_ROOT:
+        return _DIRECTORY_INDEX
+    return _build_directory_index(tracked_files())
+
+
 def git_ls_files() -> list[Path]:
     result = subprocess.run(
         ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
@@ -161,25 +196,21 @@ def repository_doc_files() -> tuple[list[Path], list[Path]]:
 
 
 def direct_contents(directory: Path) -> tuple[list[str], list[str], list[str]]:
-    tracked = tracked_files()
+    index = _directory_index()
+    direct_files = index.files.get(directory, ())
+    child_directories = index.children.get(directory, ())
     dirs = sorted(
         child.name + "/"
         for child in directory.iterdir()
         if child.is_dir()
         and child.name not in {".git", ".venv", "__pycache__"}
-        and any(child in path.parents for path in tracked)
+        and child in child_directories
     )
-    py_files = sorted(
-        path.name
-        for path in tracked
-        if path.parent == directory and path.suffix == ".py"
-    )
+    py_files = sorted(path.name for path in direct_files if path.suffix == ".py")
     other_files = sorted(
         path.name
-        for path in tracked
-        if path.parent == directory
-        and path.name not in {"README.md", "AGENTS.md"}
-        and path.suffix != ".py"
+        for path in direct_files
+        if path.name not in {"README.md", "AGENTS.md"} and path.suffix != ".py"
     )
     # Signposts are generated from the complete tracked directory contents.
     # Truncating this inventory made valid files disappear from AGENTS.md and
@@ -188,9 +219,17 @@ def direct_contents(directory: Path) -> tuple[list[str], list[str], list[str]]:
 
 
 def public_symbols(directory: Path) -> list[str]:
+    """Read public APIs, respecting the non-ignored snapshot during rendering."""
     symbols: list[str] = []
-    for py_file in sorted(directory.glob("*.py")):
-        if py_file.name.startswith("test_"):
+    candidates = (
+        _directory_index().files.get(directory, ())
+        if _DIRECTORY_INDEX is not None and _DIRECTORY_INDEX.root == REPO_ROOT
+        else directory.glob("*.py")
+    )
+    for py_file in sorted(path for path in candidates if path.suffix == ".py"):
+        if py_file.name.startswith("test_") or (
+            py_file.name.startswith("_") and py_file.name != "__init__.py"
+        ):
             continue
         try:
             with warnings.catch_warnings():
@@ -230,9 +269,8 @@ def test_command(path: Path, module: ModuleInfo | None) -> str:
     if "tests" in path.parent.parts:
         test_files = [
             candidate
-            for candidate in tracked_files()
-            if candidate.parent == path.parent
-            and candidate.suffix == ".py"
+            for candidate in _directory_index().files.get(path.parent, ())
+            if candidate.suffix == ".py"
             and (
                 candidate.name.startswith("test_")
                 or candidate.name.endswith("_test.py")
@@ -254,13 +292,26 @@ def validation_commands(path: Path, module: ModuleInfo | None) -> str:
     """Return the validation command block for a documentation file."""
     commands: list[str] = []
     if module and module.name == "GEO-INFER-TEST":
-        commands.append("uv sync --all-packages --all-extras")
+        commands.append("uv sync --all-packages --all-extras --all-groups")
     commands.append(test_command(path, module))
     return "\n".join(commands)
 
 
 def module_readme_notes(path: Path, module: ModuleInfo | None) -> str:
     """Return implemented module-specific README notes for module roots."""
+    if path.parent == REPO_ROOT / "manuscript":
+        return """
+## Research Verification
+
+- `uv run python manuscript/generate_research_artifacts.py --verify` runs the
+  producer's verification groups and retains immutable execution receipts.
+- Ordinary failures and timeouts continue the diagnostic sweep. An interruption
+  retains its failed attempt and stops admission; later groups remain visibly
+  not run. An incomplete sweep cannot establish acceptance.
+- Add `--full-validation` for the unit, integration, performance and H3 groups.
+  Run ROOT manuscript and manuscript-render profiles separately; the render
+  profile requires the actual generated PDF.
+"""
     if not module or path.parent != module.path:
         return ""
     if module.name == "GEO-INFER-TEST":
@@ -390,6 +441,13 @@ uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
     if module.name == "GEO-INFER-SPACE":
         return """
 ## Implemented Nested H3 Contracts
+
+- Default H3 dispatch loads only H3. SRAI initializes on an explicit request,
+  default selection, or full backend inspection. Missing SRAI is reported by
+  its interface; broken installed dependencies propagate when it is loaded.
+- `dispatcher.backends` contains realized implementations. Use
+  `get_available_backends()` or `get_backend_info()` for full discovery.
+
 
 - `geo_infer_space.nested.NestedH3Grid` builds real `h3>=4.5.0,<5`
   hierarchies from seed cells or boundary vertices across ordered resolutions.
@@ -542,6 +600,8 @@ uv run python GEO-INFER-TEST/validate_h3_active_inference_contract.py
 
 def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
     """Return implemented module-specific AGENTS notes for module roots."""
+    if path.parent == REPO_ROOT / "manuscript":
+        return module_readme_notes(path, module)
     if not module or path.parent != module.path:
         return ""
     if module.name == "GEO-INFER-TEST":
@@ -633,6 +693,13 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
         return """
 ## Current Nested H3 Contracts
 
+- Default H3 dispatch loads only H3. SRAI initializes on an explicit request,
+  default selection, or full backend inspection. Missing SRAI is reported by
+  its interface; broken installed dependencies propagate when it is loaded.
+- `dispatcher.backends` contains realized implementations. Use
+  `get_available_backends()` or `get_backend_info()` for full discovery.
+
+
 - `NestedH3Grid` owns H3 parent/child closure, validation, same-resolution
   neighbor maps, and child-to-parent aggregation.
 - Build hierarchies with ordered real `h3>=4.5.0,<5` resolutions and
@@ -664,6 +731,16 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
   preserve this round-trip behavior when changing serializers.
 - Temporal validators accept both timezone-naive and timezone-aware pandas
   datetime columns without mixing comparison timezones.
+- Spatial indexes identify observations by row position, preserving duplicate
+  and string labels and retaining an owned frame snapshot. Empty queries retain
+  columns and CRS; H3 queries use resolution-9 centroid cells.
+- PostgreSQL writes use unique IDs and transactions without replacing existing
+  tables. Generic values support public retrieval and deletion through the
+  metadata table; authenticated payload verification precedes unpickling.
+- Install the `postgres` extra for GeoAlchemy2-backed PostGIS writes.
+  GeoPandas creates the database spatial index; the in-memory indexer does not.
+- The explicit CI service probe uses disposable loopback PostGIS, Redis and
+  MinIO, retaining source/lock/runtime identity and failed-operation evidence.
 """
     if module.name == "GEO-INFER-API":
         return """
@@ -823,6 +900,7 @@ def render_root_readme(
         (
             "🏛️ Governance, Risk & Domain",
             [
+                "RISK",
                 "INSURANCE",
                 "METAGOV",
                 "NORMS",
@@ -842,6 +920,14 @@ def render_root_readme(
         ),
     ]
     name_set = {m.name for m in modules.values()}
+    themed = [f"GEO-INFER-{n}" for _, group in theme_groups for n in group]
+    unthemed = sorted(name_set - set(themed))
+    duplicated = sorted({n for n in themed if themed.count(n) > 1})
+    if unthemed or duplicated:
+        raise ValueError(
+            "README theme groups must list every module exactly once; "
+            f"missing={unthemed} duplicated={duplicated}"
+        )
     theme_rows = []
     for icon, group in theme_groups:
         present = [f"GEO-INFER-{n}" for n in group if f"GEO-INFER-{n}" in name_set]
@@ -887,7 +973,7 @@ domain modeling, agent workflows, and reproducible repository validation in one
 ## Quick Start
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
 uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language --strict-import-smoke
 uv run python GEO-INFER-TEST/validate_documentation.py --strict
@@ -921,7 +1007,7 @@ The repository is a uv workspace. Use the full sync when working across module
 boundaries, or sync a single package when developing one module:
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv sync --package geo-infer-act
 uv sync --package geo-infer-space
 uv sync --package geo-infer-ant
@@ -947,7 +1033,8 @@ the exact reproducible exception list.
 ## Modular Hygiene
 
 - Root `pyproject.toml`, `uv.lock`, and `.python-version` are the canonical uv environment surfaces.
-- Sync the full workspace with `uv sync --all-packages --all-extras` before repo-wide validation.
+- Keep `uv.lock` as LF text through root `.gitattributes` so raw receipt hashes agree across platforms.
+- Sync the full workspace with `uv sync --all-packages --all-extras --all-groups` before repo-wide validation.
 - Each module owns importable behavior under `src/` and keeps at least four pytest files under `tests/`.
 - Planned work belongs in root `TODO.md` or a tracked issue, not source or test task markers.
 - Importable libraries use `logging.getLogger(__name__)`; process-wide logging configuration belongs in CLI entrypoints.
@@ -968,7 +1055,7 @@ the exact reproducible exception list.
 - Test contract: `uv run python GEO-INFER-TEST/validate_test_contracts.py --strict`
 - Model contract: `uv run python GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42`
 - Reproducible model audit: `uv run python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible`
-- Source runtime hygiene: `uv run --with 'ruff>=0.15.6,<0.16' ruff check GEO-INFER-*/src --select F821,F823,E721,E722`
+- Lint contract: `uv run --with 'ruff>=0.15.6,<0.16' ruff check .`
 - Manuscript variables, figures, captions, and resolved copies: `uv run python manuscript/generate_research_artifacts.py`
 
 ## Repo-wide Change Workflow
@@ -1049,7 +1136,7 @@ New to this repo? In order:
 ## Standard Commands
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
 uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language --strict-import-smoke
 uv run python GEO-INFER-TEST/validate_logging_hygiene.py
@@ -1063,15 +1150,23 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --h3-migration
 uv run python GEO-INFER-TEST/validate_test_contracts.py --strict
 uv run python GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42
 uv run python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible
-uv run --with 'ruff>=0.15.6,<0.16' ruff check GEO-INFER-*/src --select F821,F823,E721,E722
+uv run --with 'ruff>=0.15.6,<0.16' ruff check .
 gitleaks detect --source . --config .gitleaks.toml --redact --verbose
 uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check
 ```
 
+On macOS 27, native PyMC checks require the explicit repository compiler
+profile described in [SPM native sampling profiles](GEO-INFER-SPM/docs/native_sampling_profiles.md).
+Prefix validation commands with
+`PYTENSOR_FLAGS="cxx=$PWD/GEO-INFER-SPM/pytensor_clang++_macos27.py"`.
+Keep native compilation enabled and retain the chosen profile in evidence.
+
 ## Modular Hygiene Contract
 
 - Use root `pyproject.toml`, `uv.lock`, and `.python-version` as the shared uv environment contract.
-- Sync the shared workspace with `uv sync --all-packages --all-extras`.
+- Preserve `uv.lock` LF bytes through root `.gitattributes`; receipt custody uses raw file hashes on every platform.
+- Preserve captured Cascadia publisher bytes and LF replay outputs through the exact paths in root `.gitattributes`; do not normalize hash-bound archives.
+- Sync the shared workspace with `uv sync --all-packages --all-extras --all-groups`.
 - Keep module behavior in the owning `GEO-INFER-*` package under `src/`; keep scripts and examples as orchestration surfaces.
 - Treat `manuscript/generate_research_artifacts.py` as the only producer of manuscript variables, figure captions, figure registries, and resolved manuscript copies; never hand-edit ignored `output/`.
 - Keep every module's local test inventory above the minimum release gate of four pytest files.
@@ -1126,7 +1221,7 @@ def render_readme(
             "\n".join(f"- `{dep}`" for dep in module.dependencies)
             or "- Dependencies are declared in `pyproject.toml` or inherited from the workspace."
         )
-        install = f"uv pip install -e ./{module.name}"
+        install = f"uv sync --package {module.package.replace('_', '-')}"
         module_lines = f"""
 ## Module Metadata
 
@@ -1154,7 +1249,7 @@ def render_readme(
   `geo_infer_test.testing` fixtures for deterministic RNG, filesystem, HTTP,
   SQLite, service, model, and artifact boundaries.
 - Dependencies: required test/runtime dependencies are installed by
-  `uv sync --all-packages --all-extras`; missing backends are failures.
+  `uv sync --all-packages --all-extras --all-groups`; missing backends are failures.
 - Expected artifacts: JUnit XML under `.geo-infer-test-results/`; model and
   visualization outputs require finite statistics, sidecars, hashes, and a
   manifest.
@@ -1262,23 +1357,31 @@ def render_agents(
 
 def expected_doc_files() -> list[tuple[Path, str]]:
     """Return tracked documentation files and their generated contents."""
-    modules = discover_modules()
-    readmes, agents = repository_doc_files()
-    expected: list[tuple[Path, str]] = []
+    global _DIRECTORY_INDEX
+    previous_index = _DIRECTORY_INDEX
+    _DIRECTORY_INDEX = _build_directory_index(frozenset(tracked_files()))
+    try:
+        modules = discover_modules()
+        readmes, agents = repository_doc_files()
+        expected: list[tuple[Path, str]] = []
 
-    for readme in readmes:
-        expected.append(
-            (readme, render_readme(readme, module_for(readme, modules), modules))
-        )
-    for agents_file in agents:
-        expected.append(
-            (
-                agents_file,
-                render_agents(agents_file, module_for(agents_file, modules), modules),
+        for readme in readmes:
+            expected.append(
+                (readme, render_readme(readme, module_for(readme, modules), modules))
             )
-        )
+        for agents_file in agents:
+            expected.append(
+                (
+                    agents_file,
+                    render_agents(
+                        agents_file, module_for(agents_file, modules), modules
+                    ),
+                )
+            )
 
-    return expected
+        return expected
+    finally:
+        _DIRECTORY_INDEX = previous_index
 
 
 def check_docs_current() -> list[Path]:

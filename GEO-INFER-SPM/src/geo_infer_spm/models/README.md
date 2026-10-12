@@ -18,8 +18,8 @@ Models workspace within `GEO-INFER-SPM`.
 
 - Module: `GEO-INFER-SPM`
 - Package: `geo_infer_spm`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-SPM`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-spm`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module SPM`
 
 ## Dependencies

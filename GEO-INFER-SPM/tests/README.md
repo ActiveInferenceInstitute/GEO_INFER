@@ -25,8 +25,8 @@ Tests workspace within `GEO-INFER-SPM`.
 
 - Module: `GEO-INFER-SPM`
 - Package: `geo_infer_spm`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-SPM`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-spm`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module SPM`
 
 ## Dependencies
@@ -53,7 +53,7 @@ Tests workspace within `GEO-INFER-SPM`.
   `geo_infer_test.testing` fixtures for deterministic RNG, filesystem, HTTP,
   SQLite, service, model, and artifact boundaries.
 - Dependencies: required test/runtime dependencies are installed by
-  `uv sync --all-packages --all-extras`; missing backends are failures.
+  `uv sync --all-packages --all-extras --all-groups`; missing backends are failures.
 - Expected artifacts: JUnit XML under `.geo-infer-test-results/`; model and
   visualization outputs require finite statistics, sidecars, hashes, and a
   manifest.

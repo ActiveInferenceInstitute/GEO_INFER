@@ -19,8 +19,8 @@ Tests workspace within `GEO-INFER-PLACE`.
 
 - Module: `GEO-INFER-PLACE`
 - Package: `geo_infer_place`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-PLACE`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-place`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module PLACE`
 
 ## Dependencies
@@ -38,7 +38,8 @@ Tests workspace within `GEO-INFER-PLACE`.
 - `matplotlib>=3.5.0`
 - `branca>=0.6.0`
 - `requests>=2.28.0`
-- `geo-infer-space`
+- `geo-infer-space>=0.4.0`
+- `geo-infer-time>=0.4.0`
 
 
 ## Strict Test Inventory
@@ -51,7 +52,7 @@ Tests workspace within `GEO-INFER-PLACE`.
   `geo_infer_test.testing` fixtures for deterministic RNG, filesystem, HTTP,
   SQLite, service, model, and artifact boundaries.
 - Dependencies: required test/runtime dependencies are installed by
-  `uv sync --all-packages --all-extras`; missing backends are failures.
+  `uv sync --all-packages --all-extras --all-groups`; missing backends are failures.
 - Expected artifacts: JUnit XML under `.geo-infer-test-results/`; model and
   visualization outputs require finite statistics, sidecars, hashes, and a
   manifest.

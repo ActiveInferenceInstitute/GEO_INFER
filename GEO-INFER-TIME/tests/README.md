@@ -31,8 +31,8 @@ Tests workspace within `GEO-INFER-TIME`.
 
 - Module: `GEO-INFER-TIME`
 - Package: `geo_infer_time`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-TIME`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-time`
 - Tests: `uv run python -m pytest GEO-INFER-TIME/tests`
 
 ## Dependencies
@@ -54,7 +54,7 @@ Tests workspace within `GEO-INFER-TIME`.
   `geo_infer_test.testing` fixtures for deterministic RNG, filesystem, HTTP,
   SQLite, service, model, and artifact boundaries.
 - Dependencies: required test/runtime dependencies are installed by
-  `uv sync --all-packages --all-extras`; missing backends are failures.
+  `uv sync --all-packages --all-extras --all-groups`; missing backends are failures.
 - Expected artifacts: JUnit XML under `.geo-infer-test-results/`; model and
   visualization outputs require finite statistics, sidecars, hashes, and a
   manifest.

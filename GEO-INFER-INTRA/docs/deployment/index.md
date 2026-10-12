@@ -8,7 +8,7 @@ topology.
 ## Reproducible environment
 
 `bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
 uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language
 `

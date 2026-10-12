@@ -3,7 +3,7 @@ Unit tests for environmental health functionality.
 """
 
 import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, UTC
 
 from geo_infer_health.core.environmental_health import EnvironmentalHealthAnalyzer
 from geo_infer_health.models import EnvironmentalData, Location
@@ -31,7 +31,7 @@ class TestEnvironmentalHealthAnalyzer:
     def test_analyzer_creation_single_reading(self):
         """Test creating analyzer with single reading."""
         location = Location(latitude=34.0522, longitude=-118.2437)
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
 
         reading = EnvironmentalData(
             data_id="single_reading",
@@ -92,7 +92,7 @@ class TestEnvironmentalReadingsQuery:
         center = sample_locations[0]
         radius_km = 1000.0
 
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
         start_time = base_time - timedelta(hours=2)
         end_time = base_time + timedelta(hours=1)
 
@@ -389,7 +389,7 @@ class TestPerformance:
         readings = []
         locations = []
 
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         for i in range(200):  # 200 readings
             lat = 30 + (i % 14) * 0.5
@@ -431,7 +431,7 @@ class TestPerformance:
 
         # Create dataset
         readings = []
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         for i in range(100):
             reading = EnvironmentalData(
@@ -494,7 +494,7 @@ class TestEdgeCases:
     def test_single_reading_analysis(self):
         """Test analysis with single reading."""
         location = Location(latitude=34.0522, longitude=-118.2437)
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
 
         reading = EnvironmentalData(
             data_id="single_env_reading",
@@ -525,7 +525,7 @@ class TestEdgeCases:
     def test_identical_reading_locations(self):
         """Test handling of readings at identical locations."""
         location = Location(latitude=34.0522, longitude=-118.2437)
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
 
         readings = []
         for i in range(3):
@@ -567,9 +567,7 @@ class TestEdgeCases:
 
         # Age all readings to 10 years ago; exposure is anchored to the
         # latest reading, so a 1-day window still includes them.
-        past_time = datetime.now(timezone.utc) - timedelta(
-            days=365 * 10
-        )  # 10 years ago
+        past_time = datetime.now(UTC) - timedelta(days=365 * 10)  # 10 years ago
         for reading in analyzer.readings:
             reading.timestamp = past_time
 

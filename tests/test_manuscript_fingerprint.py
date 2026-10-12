@@ -125,7 +125,7 @@ class TestConfigDateIsSettleable:
     def _commit(self, root: Path, message: str, env: dict[str, str]) -> None:
         for args in (["add", "-A"], ["commit", "-q", "-m", message]):
             subprocess.run(
-                ["git", "-C", str(root), *args],
+                ["git", "-c", "core.fsmonitor=false", "-C", str(root), *args],
                 check=True,
                 env=env,
                 capture_output=True,
@@ -311,3 +311,40 @@ class TestPublishedCountsAgainstRecord:
             VERIFICATION_RECORD_SOURCE_HASH=payload["source_hash"],
         )
         assert generator.check_published_artifacts(manuscript_tree) == ()
+
+
+class TestGitReadsStartNoDaemon:
+    """Generator git reads must not leave Git's fsmonitor daemon behind.
+
+    A user-level ``core.fsmonitor=true`` makes ordinary ``git status`` start a
+    detached daemon that outlives the generator, and the test harness then
+    reports it as a leaked owned background process.
+    """
+
+    def test_status_and_revision_reads_leave_no_watching_daemon(
+        self,
+        generator: ModuleType,
+        git_repo: Path,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        global_config = tmp_path / "user.gitconfig"
+        global_config.write_text("[core]\n\tfsmonitor = true\n", encoding="utf-8")
+        monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(global_config))
+        status = ["git", "-c", "core.fsmonitor=false", "-C", str(git_repo)]
+        try:
+            assert generator._dirty_file_count(git_repo) == 0
+            assert generator._run_git(git_repo, "rev-parse", "HEAD") != "unavailable"
+            watching = subprocess.run(
+                [*status, "fsmonitor--daemon", "status"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            assert watching.returncode != 0, watching.stdout
+        finally:
+            subprocess.run(
+                [*status, "fsmonitor--daemon", "stop"],
+                capture_output=True,
+                check=False,
+            )

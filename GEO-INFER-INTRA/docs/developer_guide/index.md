@@ -30,7 +30,7 @@ cross-module policy, architecture, and user guidance belong in
 ```bash
 # inspect before editing
 git status --short
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 
 # run the narrowest check first
 uv run python -m pytest GEO-INFER-MODULE/tests/unit -q

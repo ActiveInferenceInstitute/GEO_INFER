@@ -6,11 +6,9 @@ Examples workspace within `GEO-INFER-PLACE`.
 
 - `demo_output/`
 - `del_norte_county_demo.py`
-- `del_norte_demo.log`
 
 ## Public Interface
 
-- `del_norte_county_demo.py:check_dependencies` (function)
 - `del_norte_county_demo.py:load_api_keys` (function)
 - `del_norte_county_demo.py:demonstrate_data_sources` (function)
 - `del_norte_county_demo.py:demonstrate_api_connections` (function)
@@ -23,8 +21,8 @@ Examples workspace within `GEO-INFER-PLACE`.
 
 - Module: `GEO-INFER-PLACE`
 - Package: `geo_infer_place`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-PLACE`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-place`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module PLACE`
 
 ## Dependencies
@@ -42,7 +40,8 @@ Examples workspace within `GEO-INFER-PLACE`.
 - `matplotlib>=3.5.0`
 - `branca>=0.6.0`
 - `requests>=2.28.0`
-- `geo-infer-space`
+- `geo-infer-space>=0.4.0`
+- `geo-infer-time>=0.4.0`
 
 
 ## Validation

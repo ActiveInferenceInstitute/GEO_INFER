@@ -8,7 +8,7 @@ Desires represent goals that the agent wants to achieve. This module provides:
 - Geospatial desires with location-specific goals
 """
 
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any
 import datetime
 import logging
 from dataclasses import dataclass, field
@@ -53,15 +53,15 @@ class Desire:
     description: str
     priority: float = 1.0
     state: DesireState = DesireState.ACTIVE
-    deadline: Optional[datetime.datetime] = None
-    conditions: Dict[str, Any] = field(default_factory=dict)
-    preconditions: Dict[str, Any] = field(default_factory=dict)
-    success_conditions: Dict[str, Any] = field(default_factory=dict)
-    failure_conditions: Dict[str, Any] = field(default_factory=dict)
-    spatial_reference: Optional[Dict[str, float]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    deadline: datetime.datetime | None = None
+    conditions: dict[str, Any] = field(default_factory=dict)
+    preconditions: dict[str, Any] = field(default_factory=dict)
+    success_conditions: dict[str, Any] = field(default_factory=dict)
+    failure_conditions: dict[str, Any] = field(default_factory=dict)
+    spatial_reference: dict[str, float] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
     achieved: bool = False
-    achieved_at: Optional[datetime.datetime] = None
+    achieved_at: datetime.datetime | None = None
 
     def set_achieved(self, achieved: bool) -> None:
         """
@@ -145,7 +145,7 @@ class Desire:
         self.state = DesireState.FAILED
         logger.debug(f"Marked desire as failed: {self.name}")
 
-    def check_preconditions(self, belief_values: Dict[str, Any]) -> bool:
+    def check_preconditions(self, belief_values: dict[str, Any]) -> bool:
         """
         Check if the preconditions for this desire are met.
 
@@ -161,7 +161,7 @@ class Desire:
 
         return True
 
-    def check_success(self, belief_values: Dict[str, Any]) -> bool:
+    def check_success(self, belief_values: dict[str, Any]) -> bool:
         """
         Check if the success conditions for this desire are met.
 
@@ -177,7 +177,7 @@ class Desire:
 
         return True
 
-    def check_failure(self, belief_values: Dict[str, Any]) -> bool:
+    def check_failure(self, belief_values: dict[str, Any]) -> bool:
         """
         Check if the failure conditions for this desire are met.
 
@@ -193,7 +193,7 @@ class Desire:
 
         return False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert this desire to a dictionary representation.
 
@@ -217,7 +217,7 @@ class Desire:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Desire":
+    def from_dict(cls, data: dict[str, Any]) -> "Desire":
         """
         Create a Desire instance from a dictionary.
 
@@ -275,7 +275,7 @@ class DesireSet:
 
     def __init__(self) -> None:
         """Initialize an empty desire set."""
-        self._desires: Dict[str, Desire] = {}
+        self._desires: dict[str, Desire] = {}
 
     def add(self, desire: Desire) -> None:
         """
@@ -339,7 +339,7 @@ class DesireSet:
         """
         return name in self._desires
 
-    def get_all(self) -> Dict[str, Desire]:
+    def get_all(self) -> dict[str, Desire]:
         """
         Get all desires in the desire set.
 
@@ -348,7 +348,7 @@ class DesireSet:
         """
         return dict(self._desires)
 
-    def get_active(self) -> Dict[str, Desire]:
+    def get_active(self) -> dict[str, Desire]:
         """
         Get all active desires in the desire set.
 
@@ -359,7 +359,7 @@ class DesireSet:
             name: desire for name, desire in self._desires.items() if desire.is_active()
         }
 
-    def get_achieved(self) -> Dict[str, Desire]:
+    def get_achieved(self) -> dict[str, Desire]:
         """
         Get all achieved desires in the desire set.
 
@@ -372,7 +372,7 @@ class DesireSet:
             if desire.is_achieved()
         }
 
-    def get_failed(self) -> Dict[str, Desire]:
+    def get_failed(self) -> dict[str, Desire]:
         """
         Get all failed desires in the desire set.
 
@@ -383,7 +383,7 @@ class DesireSet:
             name: desire for name, desire in self._desires.items() if desire.is_failed()
         }
 
-    def select_desires(self, max_count: Optional[int] = None) -> List[Desire]:
+    def select_desires(self, max_count: int | None = None) -> list[Desire]:
         """
         Select desires based on priority.
 
@@ -406,8 +406,8 @@ class DesireSet:
         return active_desires
 
     def update_states(
-        self, belief_values: Dict[str, Any]
-    ) -> Tuple[List[str], List[str]]:
+        self, belief_values: dict[str, Any]
+    ) -> tuple[list[str], list[str]]:
         """
         Update the states of all desires based on the current beliefs.
 
@@ -440,7 +440,7 @@ class DesireSet:
 
         return achieved, failed
 
-    def query_spatial(self, center: Dict[str, float], radius: float) -> List[Desire]:
+    def query_spatial(self, center: dict[str, float], radius: float) -> list[Desire]:
         """
         Query desires by spatial reference within a radius of a center point.
 
@@ -461,7 +461,7 @@ class DesireSet:
 
         return results
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert the desire set to a dictionary representation.
 
@@ -475,7 +475,7 @@ class DesireSet:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "DesireSet":
+    def from_dict(cls, data: dict[str, Any]) -> "DesireSet":
         """
         Create a DesireSet instance from a dictionary.
 
@@ -496,7 +496,7 @@ class DesireSet:
 
     @staticmethod
     def _is_in_radius(
-        location: Dict[str, float], center: Dict[str, float], radius: float
+        location: dict[str, float], center: dict[str, float], radius: float
     ) -> bool:
         """
         Check if a location is within a radius of a center point.

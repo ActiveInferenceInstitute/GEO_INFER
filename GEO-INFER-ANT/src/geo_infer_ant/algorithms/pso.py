@@ -17,7 +17,8 @@ Key Features:
 
 import numpy as np
 import logging
-from typing import Dict, List, Any, Optional, Tuple, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 from datetime import datetime
 from dataclasses import dataclass, field
 
@@ -39,7 +40,7 @@ class PSOParameters:
 
     swarm_size: int = 100
     dimensions: int = 2
-    bounds: List[Tuple[float, float]] = field(
+    bounds: list[tuple[float, float]] = field(
         default_factory=lambda: [(-10, 10), (-10, 10)]
     )
     inertia_weight: float = 0.7
@@ -104,15 +105,15 @@ class Particle:
 
     def update_velocity(
         self,
-        global_best_position: Optional[np.ndarray],
+        global_best_position: np.ndarray | None,
         inertia_weight: float,
         cognitive_acceleration: float,
         social_acceleration: float,
-        neighborhood_best_position: Optional[np.ndarray] = None,
-        rng: Optional[np.random.Generator] = None,
+        neighborhood_best_position: np.ndarray | None = None,
+        rng: np.random.Generator | None = None,
         velocity_clamping: bool = True,
-        max_velocity: Optional[float] = None,
-        min_velocity: Optional[float] = None,
+        max_velocity: float | None = None,
+        min_velocity: float | None = None,
     ) -> None:
         """
         Update particle velocity using PSO formula.
@@ -159,7 +160,7 @@ class Particle:
             lower = -upper if min_velocity is None else min_velocity
             np.clip(self.velocity, lower, upper, out=self.velocity)
 
-    def update_position(self, bounds: List[Tuple[float, float]]) -> None:
+    def update_position(self, bounds: list[tuple[float, float]]) -> None:
         """Update particle position based on velocity."""
         self.position += self.velocity
 
@@ -189,13 +190,13 @@ class ParticleSwarmOptimization:
         self,
         swarm_size: int = 100,
         dimensions: int = 2,
-        bounds: Optional[List[Tuple[float, float]]] = None,
+        bounds: list[tuple[float, float]] | None = None,
         inertia_weight: float = 0.7,
         cognitive_acceleration: float = 1.5,
         social_acceleration: float = 1.5,
         max_velocity: float = 3.0,
         max_iterations: int = 200,
-        spatial_constraints: Optional[Dict[str, Any]] = None,
+        spatial_constraints: dict[str, Any] | None = None,
         **kwargs: Any,
     ):
         """
@@ -245,24 +246,24 @@ class ParticleSwarmOptimization:
         self.rng = np.random.default_rng(seed)
 
         # Swarm state
-        self.swarm: List[Particle] = []
-        self.global_best_position: Optional[np.ndarray] = None
+        self.swarm: list[Particle] = []
+        self.global_best_position: np.ndarray | None = None
         self.global_best_fitness: float = float("inf")
 
         # Neighborhood structure (for local topology)
-        self.neighborhoods: Dict[int, List[int]] = {}
+        self.neighborhoods: dict[int, list[int]] = {}
 
         # History tracking
-        self.convergence_history: List[float] = []
-        self.diversity_history: List[float] = []
-        self.parameter_history: List[Dict[str, float]] = []
+        self.convergence_history: list[float] = []
+        self.diversity_history: list[float] = []
+        self.parameter_history: list[dict[str, float]] = []
 
         # Integration components
         self.spatial_indexer = None
         self.spatial_analytics = None
 
         # Performance tracking
-        self.iteration_times: List[float] = []
+        self.iteration_times: list[float] = []
         self.function_evaluations: int = 0
 
         # Initialize integrations
@@ -288,7 +289,7 @@ class ParticleSwarmOptimization:
             except Exception as e:
                 logger.warning(f"Failed to initialize spatial analytics: {e}")
 
-    def initialize_swarm(self, initial_positions: Optional[np.ndarray] = None) -> None:
+    def initialize_swarm(self, initial_positions: np.ndarray | None = None) -> None:
         """
         Initialize the particle swarm.
 
@@ -368,9 +369,9 @@ class ParticleSwarmOptimization:
     def optimize(
         self,
         objective_function: Callable[[np.ndarray], float],
-        initial_positions: Optional[np.ndarray] = None,
-        velocity_bounds: Optional[Tuple[float, float]] = None,
-        convergence_criteria: Optional[Dict[str, Any]] = None,
+        initial_positions: np.ndarray | None = None,
+        velocity_bounds: tuple[float, float] | None = None,
+        convergence_criteria: dict[str, Any] | None = None,
     ) -> np.ndarray:
         """
         Optimize the objective function using PSO.
@@ -573,7 +574,7 @@ class ParticleSwarmOptimization:
             # Update position
             particle.update_position(self.parameters.bounds)
 
-    def _get_neighborhood_best(self, particle_idx: int) -> Optional[np.ndarray]:
+    def _get_neighborhood_best(self, particle_idx: int) -> np.ndarray | None:
         """Get best position in particle's neighborhood."""
         if self.parameters.neighborhood_topology == "global":
             return self.global_best_position
@@ -668,11 +669,11 @@ class ParticleSwarmOptimization:
 
     def coordinate_swarms(
         self,
-        sub_swarms: List["ParticleSwarmOptimization"],
+        sub_swarms: list["ParticleSwarmOptimization"],
         communication_topology: str = "hierarchical",
         information_sharing: str = "best_positions",
-        objective_function: Optional[Callable[[np.ndarray], float]] = None,
-    ) -> Dict[str, Any]:
+        objective_function: Callable[[np.ndarray], float] | None = None,
+    ) -> dict[str, Any]:
         """
         Coordinate multiple PSO swarms for complex optimization.
 
@@ -690,7 +691,7 @@ class ParticleSwarmOptimization:
             raise ValueError("Unsupported information sharing mode")
         logger.info(f"Coordinating {len(sub_swarms)} PSO swarms")
 
-        coordination_results: Dict[str, Any] = {
+        coordination_results: dict[str, Any] = {
             "topology": communication_topology,
             "information_sharing": information_sharing,
             "sub_swarm_results": [],
@@ -736,7 +737,7 @@ class ParticleSwarmOptimization:
         return coordination_results
 
     def _hierarchical_communication(
-        self, sub_swarms: List["ParticleSwarmOptimization"], results: Dict[str, Any]
+        self, sub_swarms: list["ParticleSwarmOptimization"], results: dict[str, Any]
     ) -> None:
         """Implement hierarchical communication between swarms."""
         # Find best sub-swarm
@@ -760,7 +761,7 @@ class ParticleSwarmOptimization:
                     swarm.global_best_fitness = results["combined_best_fitness"]
 
     def _ring_communication(
-        self, sub_swarms: List["ParticleSwarmOptimization"], results: Dict[str, Any]
+        self, sub_swarms: list["ParticleSwarmOptimization"], results: dict[str, Any]
     ) -> None:
         """Implement ring topology communication between swarms."""
         n_swarms = len(sub_swarms)
@@ -786,10 +787,10 @@ class ParticleSwarmOptimization:
 
     def adapt_parameters(
         self,
-        performance_history: List[Dict[str, Any]],
-        environmental_changes: Dict[str, Any],
+        performance_history: list[dict[str, Any]],
+        environmental_changes: dict[str, Any],
         adaptation_strategy: str = "self_tuning",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Adapt PSO parameters based on performance and environmental changes.
 
@@ -803,7 +804,7 @@ class ParticleSwarmOptimization:
         """
         logger.info(f"Adapting PSO parameters using {adaptation_strategy} strategy")
 
-        adaptation_results: Dict[str, Any] = {
+        adaptation_results: dict[str, Any] = {
             "strategy": adaptation_strategy,
             "changes_applied": [],
             "parameters_updated": {},
@@ -884,7 +885,7 @@ class ParticleSwarmOptimization:
         )
         return adaptation_results
 
-    def get_optimization_statistics(self) -> Dict[str, Any]:
+    def get_optimization_statistics(self) -> dict[str, Any]:
         """Get comprehensive optimization statistics."""
         stats = {
             "algorithm": "Particle Swarm Optimization",
@@ -998,7 +999,7 @@ class ParticleSwarmOptimization:
         try:
             import json
 
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 state = json.load(f)
 
             # Restore parameters

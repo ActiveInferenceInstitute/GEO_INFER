@@ -128,7 +128,7 @@ class TestSpatialAgentVisualization:
         """get_diagnostics returns spatial coherence metrics."""
         adapter = get_h3_adapter()
         center = adapter.latlng_to_cell(37.7749, -122.4194, 9)
-        cells = [center, *adapter.grid_disk(center, 1)][:4]
+        cells = [center, *sorted(set(adapter.grid_disk(center, 1)) - {center})][:4]
         agent = SpatialActiveInferenceAgent(initial_cells=cells)
         for _ in range(3):
             agent.step({cells[0]: np.random.rand(4)})
@@ -141,7 +141,7 @@ class TestSpatialAgentVisualization:
         """export_results produces valid JSON with history."""
         adapter = get_h3_adapter()
         center = adapter.latlng_to_cell(37.7749, -122.4194, 9)
-        cells = [center, *adapter.grid_disk(center, 1)][:3]
+        cells = [center, *sorted(set(adapter.grid_disk(center, 1)) - {center})][:3]
         agent = SpatialActiveInferenceAgent(initial_cells=cells)
         agent.step({cells[0]: np.array([1.0, 0.0, 0.0, 0.0])})
         agent.step({cells[0]: np.array([0.0, 1.0, 0.0, 0.0])})
@@ -157,7 +157,7 @@ class TestSpatialAgentVisualization:
         """step with return_result=True returns H3GridInferenceResult."""
         adapter = get_h3_adapter()
         center = adapter.latlng_to_cell(37.7749, -122.4194, 9)
-        cells = [center, *adapter.grid_disk(center, 1)][:2]
+        cells = [center, *sorted(set(adapter.grid_disk(center, 1)) - {center})][:2]
         agent = SpatialActiveInferenceAgent(initial_cells=cells)
         result = agent.step(
             {cells[0]: np.array([1.0, 0.0, 0.0, 0.0])}, return_result=True

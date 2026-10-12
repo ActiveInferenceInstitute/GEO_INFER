@@ -40,6 +40,7 @@
 - `test_messaging.py`
 - `test_package_import_hygiene.py`
 - `test_planning.py`
+- `test_registry_task_lifecycle.py`
 - `test_rl_state_index.py`
 - `test_rl_unit.py`
 - `test_rule_based.py`

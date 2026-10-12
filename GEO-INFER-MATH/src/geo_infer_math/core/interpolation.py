@@ -6,7 +6,7 @@ analysis in the GEO-INFER framework.
 """
 
 import numpy as np
-from typing import Dict, Optional, Tuple, Any
+from typing import Any
 from dataclasses import dataclass
 import logging
 from abc import ABC, abstractmethod
@@ -42,7 +42,7 @@ class InterpolationConfig:
 class SpatialInterpolator(ABC):
     """Abstract base class for spatial interpolators."""
 
-    def __init__(self, config: Optional[InterpolationConfig] = None):
+    def __init__(self, config: InterpolationConfig | None = None):
         """
         Initialize spatial interpolator.
 
@@ -65,7 +65,7 @@ class SpatialInterpolator(ABC):
 
     def cross_validate(
         self, coordinates: np.ndarray, values: np.ndarray, n_folds: int = 5
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Perform cross-validation.
 
@@ -116,10 +116,10 @@ class SpatialInterpolator(ABC):
 class IDWInterpolator(SpatialInterpolator):
     """Inverse Distance Weighting interpolator."""
 
-    def __init__(self, config: Optional[InterpolationConfig] = None):
+    def __init__(self, config: InterpolationConfig | None = None):
         super().__init__(config)
-        self.training_coords: Optional[np.ndarray] = None
-        self.training_values: Optional[np.ndarray] = None
+        self.training_coords: np.ndarray | None = None
+        self.training_values: np.ndarray | None = None
 
     def fit(self, coordinates: np.ndarray, values: np.ndarray) -> "IDWInterpolator":
         """
@@ -192,13 +192,13 @@ class IDWInterpolator(SpatialInterpolator):
 class KrigingInterpolator(SpatialInterpolator):
     """Ordinary Kriging interpolator."""
 
-    def __init__(self, config: Optional[InterpolationConfig] = None):
+    def __init__(self, config: InterpolationConfig | None = None):
         super().__init__(config)
-        self.training_coords: Optional[np.ndarray] = None
-        self.training_values: Optional[np.ndarray] = None
-        self.kriging_weights: Optional[np.ndarray] = None
-        self.kriging_variance: Optional[float] = None
-        self._extended_matrix: Optional[np.ndarray] = None
+        self.training_coords: np.ndarray | None = None
+        self.training_values: np.ndarray | None = None
+        self.kriging_weights: np.ndarray | None = None
+        self.kriging_variance: float | None = None
+        self._extended_matrix: np.ndarray | None = None
 
     def fit(self, coordinates: np.ndarray, values: np.ndarray) -> "KrigingInterpolator":
         """
@@ -360,7 +360,7 @@ class KrigingInterpolator(SpatialInterpolator):
 class RBFInterpolator(SpatialInterpolator):
     """Radial Basis Function interpolator."""
 
-    def __init__(self, config: Optional[InterpolationConfig] = None):
+    def __init__(self, config: InterpolationConfig | None = None):
         super().__init__(config)
         self.rbf_model: Any = None
 
@@ -428,10 +428,10 @@ class RBFInterpolator(SpatialInterpolator):
 class LinearInterpolator(SpatialInterpolator):
     """Linear interpolation using scipy's griddata."""
 
-    def __init__(self, config: Optional[InterpolationConfig] = None):
+    def __init__(self, config: InterpolationConfig | None = None):
         super().__init__(config)
-        self.training_coords: Optional[np.ndarray] = None
-        self.training_values: Optional[np.ndarray] = None
+        self.training_coords: np.ndarray | None = None
+        self.training_values: np.ndarray | None = None
 
     def fit(self, coordinates: np.ndarray, values: np.ndarray) -> "LinearInterpolator":
         """
@@ -497,10 +497,10 @@ class LinearInterpolator(SpatialInterpolator):
 class CubicInterpolator(SpatialInterpolator):
     """Cubic interpolation using scipy's griddata."""
 
-    def __init__(self, config: Optional[InterpolationConfig] = None):
+    def __init__(self, config: InterpolationConfig | None = None):
         super().__init__(config)
-        self.training_coords: Optional[np.ndarray] = None
-        self.training_values: Optional[np.ndarray] = None
+        self.training_coords: np.ndarray | None = None
+        self.training_values: np.ndarray | None = None
 
     def fit(self, coordinates: np.ndarray, values: np.ndarray) -> "CubicInterpolator":
         """
@@ -567,7 +567,7 @@ class CubicInterpolator(SpatialInterpolator):
 class InterpolationManager:
     """Manager for multiple interpolation methods."""
 
-    def __init__(self, config: Optional[InterpolationConfig] = None):
+    def __init__(self, config: InterpolationConfig | None = None):
         """
         Initialize interpolation manager.
 
@@ -575,7 +575,7 @@ class InterpolationManager:
             config: Configuration for interpolation methods
         """
         self.config = config or InterpolationConfig()
-        self.interpolators: Dict[str, SpatialInterpolator] = {}
+        self.interpolators: dict[str, SpatialInterpolator] = {}
         self._initialize_interpolators()
 
     def _initialize_interpolators(self) -> None:
@@ -595,7 +595,7 @@ class InterpolationManager:
         coordinates: np.ndarray,
         values: np.ndarray,
         prediction_coords: np.ndarray,
-        method: Optional[str] = None,
+        method: str | None = None,
     ) -> np.ndarray:
         """
         Perform spatial interpolation.
@@ -622,9 +622,9 @@ class InterpolationManager:
         self,
         coordinates: np.ndarray,
         values: np.ndarray,
-        test_coordinates: Optional[np.ndarray] = None,
-        test_values: Optional[np.ndarray] = None,
-    ) -> Dict[str, Dict[str, float]]:
+        test_coordinates: np.ndarray | None = None,
+        test_values: np.ndarray | None = None,
+    ) -> dict[str, dict[str, float]]:
         """
         Compare different interpolation methods.
 
@@ -669,8 +669,8 @@ class InterpolationManager:
         return results
 
     def create_interpolation_grid(
-        self, bounds: Dict[str, float], resolution: Optional[float] = None
-    ) -> Tuple[np.ndarray, Dict[str, Any]]:
+        self, bounds: dict[str, float], resolution: float | None = None
+    ) -> tuple[np.ndarray, dict[str, Any]]:
         """
         Create a regular grid for interpolation.
 
@@ -711,10 +711,10 @@ class InterpolationManager:
         self,
         coordinates: np.ndarray,
         values: np.ndarray,
-        bounds: Dict[str, float],
-        method: Optional[str] = None,
-        resolution: Optional[float] = None,
-    ) -> Tuple[np.ndarray, np.ndarray, Dict[str, Any]]:
+        bounds: dict[str, float],
+        method: str | None = None,
+        resolution: float | None = None,
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
         """
         Interpolate data to a regular grid.
 
@@ -739,7 +739,7 @@ class InterpolationManager:
 
 # Convenience functions
 def create_interpolation_manager(
-    config: Optional[InterpolationConfig] = None,
+    config: InterpolationConfig | None = None,
 ) -> InterpolationManager:
     """Create a new interpolation manager."""
     return InterpolationManager(config)
@@ -758,7 +758,7 @@ def interpolate_spatial_data(
 
 
 def create_interpolation_grid(
-    bounds: Dict[str, float], resolution: float = 0.01
+    bounds: dict[str, float], resolution: float = 0.01
 ) -> np.ndarray:
     """Create a regular interpolation grid."""
     config = InterpolationConfig(resolution=resolution)

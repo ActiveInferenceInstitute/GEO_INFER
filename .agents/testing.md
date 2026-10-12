@@ -5,8 +5,8 @@
 - Test all public methods and functions
 - Use real data fixtures, never mock internal logic
 - Test mathematical correctness of algorithms
-- Achieve ≥80% coverage per module
-- Run tests with `uv run pytest`
+- Keep each module at or above its recorded coverage floor
+- Run tests with `uv run python -m pytest` or the unified runner
 
 ## Test Organisation
 
@@ -85,11 +85,17 @@ Target ≥10 modules with property-based tests, prioritising:
 
 ## Coverage Requirements
 
-| Module Type | Minimum Coverage |
-|------------|-----------------|
-| Analytical Core (MATH, ACT, BAYES, AI) | 90% |
-| Domain modules | 80% |
-| Utility/Operations | 70% |
+Each module has a line-coverage floor in
+`GEO-INFER-TEST/coverage_baseline.json` (measured coverage rounded down to the
+nearest 5%). CI re-measures every module whose `src/` or `tests/` changed and
+fails when it drops below its floor:
+
+```bash
+uv run --with pytest-cov python GEO-INFER-TEST/check_coverage_floor.py \
+    --base main --head HEAD
+```
+
+There is no single repository-wide percentage threshold.
 
 ## Fixtures and Test Data
 
@@ -117,49 +123,55 @@ def risk_config():
 
 ## Configuration
 
-In `pyproject.toml`:
+Pytest and coverage are configured once in the root `pyproject.toml`
+(`[tool.pytest.ini_options]`, `[tool.coverage.run]`, `[tool.coverage.report]`);
+modules do not carry their own copies. Key settings:
 
 ```toml
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = "--strict-markers -v"
+addopts = ["-ra", "-q", "--strict-markers", "--strict-config",
+           "--import-mode=importlib", "-W", "error"]
+testpaths = ["GEO-INFER-*/tests", "tests", ...]
+markers = ["slow: ...", "integration: ...", "unit: ...", ...]
+filterwarnings = ["error"]
 
 [tool.coverage.run]
-source = ["src/geo_infer_module"]
-omit = ["tests/*", "*/migrations/*"]
-
-[tool.coverage.report]
-fail_under = 80
-show_missing = true
+source = ["GEO-INFER-*/src"]
 ```
+
+Warnings are errors, and every marker must be declared in the root list.
 
 ## Running Tests
 
 ```bash
-# All tests
-uv run pytest tests/
+# One module
+uv run python -m pytest GEO-INFER-MODULE/tests/
 
 # Specific test file
-uv run pytest tests/unit/test_core.py
+uv run python -m pytest GEO-INFER-MODULE/tests/unit/test_core.py
 
 # With coverage
-uv run pytest tests/ --cov=src/geo_infer_module --cov-report=html
+uv run python -m pytest GEO-INFER-MODULE/tests/ \
+    --cov=GEO-INFER-MODULE/src --cov-report=html
 
-# Property-based tests only
-uv run pytest tests/ -m hypothesis
+# By marker (markers are declared in the root pyproject.toml)
+uv run python -m pytest GEO-INFER-MODULE/tests/ -m "unit and not slow"
 
-# Performance benchmarks
-uv run pytest tests/performance/ --benchmark-only
+# Unified runner: one module or one category across all modules
+uv run python GEO-INFER-TEST/run_unified_tests.py --module MODULE
+uv run python GEO-INFER-TEST/run_unified_tests.py --category performance
 ```
 
 ## CI Integration
 
 Tests run automatically on every PR via GitHub Actions (`.github/workflows/ci.yml`). The CI pipeline:
 
-1. Runs `uv run pytest` across all modules
-2. Enforces coverage thresholds
-3. Runs `ruff check` and `black --check`
-4. Runs `mypy --strict` on core modules
+1. Runs `uv run python GEO-INFER-TEST/run_unified_tests.py` per category
+   (unit, integration, performance, system, H3) on Python 3.11 and 3.12
+2. Re-measures coverage for touched modules with
+   `GEO-INFER-TEST/check_coverage_floor.py` against `coverage_baseline.json`
+3. Runs `ruff check` + `ruff format --check` on changed files and
+   `ruff check .` over the whole tree under the root `[tool.ruff.lint]` contract
+4. Runs `GEO-INFER-TEST/validate_test_contracts.py --strict`
+
+See `workflow.md` for the full gate table.

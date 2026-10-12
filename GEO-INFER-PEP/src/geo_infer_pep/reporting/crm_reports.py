@@ -1,7 +1,7 @@
 """CRM Reporting functions."""
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any
 from ..models.crm_models import Customer
 from ..crm.transformer import (
     convert_customers_to_dataframe,
@@ -10,7 +10,7 @@ from ..crm.transformer import (
 logger = logging.getLogger(__name__)
 
 
-def generate_customer_segmentation_report(customers: List[Customer]) -> Dict[str, Any]:
+def generate_customer_segmentation_report(customers: list[Customer]) -> dict[str, Any]:
     """
     Generates a report on customer segmentation.
     Example: Counts customers by status, source, or custom tags.
@@ -52,7 +52,7 @@ def generate_customer_segmentation_report(customers: List[Customer]) -> Dict[str
     return report
 
 
-def generate_lead_conversion_report(customers: List[Customer]) -> Dict[str, Any]:
+def generate_lead_conversion_report(customers: list[Customer]) -> dict[str, Any]:
     """
     Generates a report on lead conversion rates.
     Requires 'status' and potentially 'created_at' or 'updated_at' fields.
@@ -91,8 +91,8 @@ def generate_lead_conversion_report(customers: List[Customer]) -> Dict[str, Any]
 
 
 def get_quarterly_metrics(
-    quarter: str, year: int, customers: Optional[List[Customer]] = None
-) -> Dict[str, Any]:
+    quarter: str, year: int, customers: list[Customer] | None = None
+) -> dict[str, Any]:
     """Calculate CRM quarterly metrics from customer records."""
     if not customers:
         return {

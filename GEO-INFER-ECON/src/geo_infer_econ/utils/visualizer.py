@@ -2,7 +2,7 @@
 Results visualization utilities for economic analysis.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any
 import json
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -13,7 +13,7 @@ from pathlib import Path
 import logging
 
 
-def _require_frame(data: pd.DataFrame, required: List[str], name: str) -> pd.DataFrame:
+def _require_frame(data: pd.DataFrame, required: list[str], name: str) -> pd.DataFrame:
     """Validate a nonempty tabular visualization input."""
     if not isinstance(data, pd.DataFrame):
         raise TypeError(f"{name} must be a pandas DataFrame")
@@ -37,7 +37,7 @@ def _finite_values(values: Any, name: str) -> np.ndarray:
 
 
 def _save_figure(
-    fig: plt.Figure, save_path: Optional[Path], logger: logging.Logger
+    fig: plt.Figure, save_path: Path | None, logger: logging.Logger
 ) -> None:
     """Save a figure to a nested path without changing global plot state."""
     if save_path is not None:
@@ -63,7 +63,7 @@ class ResultsVisualizer:
     Provides methods for creating charts, maps, and interactive visualizations.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the ResultsVisualizer.
 
@@ -78,9 +78,9 @@ class ResultsVisualizer:
     def plot_economic_indicators(
         self,
         data: pd.DataFrame,
-        indicators: List[str],
+        indicators: list[str],
         title: str = "Economic Indicators",
-        save_path: Optional[Path] = None,
+        save_path: Path | None = None,
     ) -> plt.Figure:
         """
         Plot economic indicators over time or across regions.
@@ -120,7 +120,7 @@ class ResultsVisualizer:
         value_column: str,
         title: str = "Choropleth Map",
         cmap: str = "viridis",
-        save_path: Optional[Path] = None,
+        save_path: Path | None = None,
     ) -> plt.Figure:
         """
         Create a choropleth map for spatial economic data.
@@ -157,10 +157,10 @@ class ResultsVisualizer:
 
     def plot_policy_comparison(
         self,
-        comparison_data: Dict[str, Dict[str, float]],
-        metrics: List[str],
+        comparison_data: dict[str, dict[str, float]],
+        metrics: list[str],
         title: str = "Policy Comparison",
-        save_path: Optional[Path] = None,
+        save_path: Path | None = None,
     ) -> plt.Figure:
         """
         Create a comparison chart for policy scenarios.
@@ -204,9 +204,9 @@ class ResultsVisualizer:
 
     def plot_distributional_effects(
         self,
-        effects: Dict[str, float],
+        effects: dict[str, float],
         title: str = "Distributional Effects",
-        save_path: Optional[Path] = None,
+        save_path: Path | None = None,
     ) -> plt.Figure:
         """
         Plot distributional effects across income quintiles or regions.
@@ -251,7 +251,7 @@ class ResultsVisualizer:
         data: pd.DataFrame,
         value_column: str,
         title: str = "Spatial Heatmap",
-        save_path: Optional[Path] = None,
+        save_path: Path | None = None,
     ) -> plt.Figure:
         """
         Create a spatial heatmap visualization.
@@ -304,7 +304,7 @@ class ResultsVisualizer:
         time_series: pd.Series,
         decomposition_type: str = "additive",
         title: str = "Time Series Decomposition",
-        save_path: Optional[Path] = None,
+        save_path: Path | None = None,
     ) -> plt.Figure:
         """
         Plot time series decomposition (trend, seasonal, residual).
@@ -368,9 +368,9 @@ class ResultsVisualizer:
 
     def create_model_diagnostics_plot(
         self,
-        model_results: Dict[str, Any],
+        model_results: dict[str, Any],
         title: str = "Model Diagnostics",
-        save_path: Optional[Path] = None,
+        save_path: Path | None = None,
     ) -> plt.Figure:
         """
         Create comprehensive model diagnostics visualization.
@@ -447,7 +447,7 @@ class ResultsVisualizer:
         variable: str,
         spatial_weights: np.ndarray,
         title: str = "Spatial Autocorrelation",
-        save_path: Optional[Path] = None,
+        save_path: Path | None = None,
     ) -> plt.Figure:
         """
         Plot spatial autocorrelation analysis including Moran's I scatterplot.
@@ -522,9 +522,9 @@ class ResultsVisualizer:
 
     def create_interactive_dashboard(
         self,
-        data_dict: Dict[str, Any],
+        data_dict: dict[str, Any],
         dashboard_type: str = "economic_overview",
-        output_path: Optional[Path] = None,
+        output_path: Path | None = None,
     ) -> str:
         """
         Create interactive dashboard (simplified - would use Plotly/Dash in practice).

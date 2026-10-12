@@ -5,7 +5,7 @@ Health check endpoints for the GEO-INFER-API.
 import logging
 import os
 import time
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends
 
@@ -45,7 +45,7 @@ def _get_memory_mb() -> float:
 
 
 @router.get("/health", summary="Health check")
-async def health_check(settings: Settings = Depends(get_settings)) -> Dict[str, Any]:
+async def health_check(settings: Settings = Depends(get_settings)) -> dict[str, Any]:
     """
     Simple health check endpoint.
 
@@ -61,7 +61,7 @@ async def health_check(settings: Settings = Depends(get_settings)) -> Dict[str, 
 @router.get("/health/detailed", summary="Detailed health check")
 async def detailed_health_check(
     settings: Settings = Depends(get_settings),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Detailed health check with real component status information.
 

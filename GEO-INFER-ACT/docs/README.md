@@ -4,6 +4,7 @@ Docs workspace within `GEO-INFER-ACT`.
 
 ## Contents
 
+- `0_4_method_review.md`
 - `active_inference_overview.md`
 - `api_schema.yaml`
 - `cascadia_river_homing.md`
@@ -26,8 +27,8 @@ Docs workspace within `GEO-INFER-ACT`.
 
 - Module: `GEO-INFER-ACT`
 - Package: `geo_infer_act`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-ACT`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-act`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module ACT`
 
 ## Dependencies
@@ -41,7 +42,7 @@ Docs workspace within `GEO-INFER-ACT`.
 - `seaborn>=0.11.0`
 - `inferactively-pymdp==1.0.3`
 - `h3>=4.5.0,<5`
-- `geo-infer-bayes>=0.3.0`
+- `geo-infer-bayes>=0.4.0`
 
 
 ## Validation

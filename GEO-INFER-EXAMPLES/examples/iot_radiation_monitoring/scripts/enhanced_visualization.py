@@ -4,29 +4,14 @@ GEO-INFER Examples: Enhanced IoT Radiation Monitoring with Interactive Visualiza
 Generates interactive H3 visualization dashboard with Bayesian posterior overlays.
 """
 
-import os
-import sys
 import json
-import folium
-import pandas as pd
-import numpy as np
+from datetime import UTC, datetime
 from pathlib import Path
-from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional
 
-# Add parent directories to path for imports
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-
-try:
-    import h3
-    import geopandas as gpd
-    from shapely.geometry import Point
-
-    print("✓ Successfully imported spatial dependencies")
-except ImportError as e:
-    print(f"✗ Error importing spatial dependencies: {e}")
-    print("Please install: uv pip install h3 geopandas shapely folium")
-    sys.exit(1)
+import folium
+import h3
+import numpy as np
+import pandas as pd
 
 
 class InteractiveRadiationDashboard:
@@ -82,7 +67,7 @@ class InteractiveRadiationDashboard:
 
         sensor_group.add_to(self.map)
 
-    def add_h3_prediction_layer(self, prediction_data: Dict):
+    def add_h3_prediction_layer(self, prediction_data: dict):
         """Add H3 cells with Bayesian posterior predictions"""
         h3_group = folium.FeatureGroup(name="Bayesian Radiation Predictions")
 
@@ -138,7 +123,7 @@ class InteractiveRadiationDashboard:
 
         h3_group.add_to(self.map)
 
-    def add_anomaly_layer(self, anomaly_data: Dict):
+    def add_anomaly_layer(self, anomaly_data: dict):
         """Add anomaly markers"""
         anomaly_group = folium.FeatureGroup(name="Radiation Anomalies")
 
@@ -205,7 +190,7 @@ class InteractiveRadiationDashboard:
         print(f"✓ Interactive dashboard saved to: {output_path}")
 
 
-def create_geojson_with_features(prediction_data: Dict, output_path: str):
+def create_geojson_with_features(prediction_data: dict, output_path: str):
     """Create a proper GeoJSON file with H3 cell features"""
     features = []
 
@@ -256,7 +241,7 @@ def create_geojson_with_features(prediction_data: Dict, output_path: str):
         "type": "FeatureCollection",
         "features": features,
         "metadata": {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "h3_resolution": 5,  # Default resolution
             "total_features": len(features),
             "inference_method": "variational_bayesian",
@@ -270,7 +255,7 @@ def create_geojson_with_features(prediction_data: Dict, output_path: str):
     return geojson_data
 
 
-def generate_time_series_plot_html(anomaly_data: Dict, output_path: str):
+def generate_time_series_plot_html(anomaly_data: dict, output_path: str):
     """Generate HTML with time series plots"""
     html_content = f"""
     <!DOCTYPE html>
@@ -300,15 +285,15 @@ def generate_time_series_plot_html(anomaly_data: Dict, output_path: str):
                     <p>Total Anomalies</p>
                 </div>
                 <div class="stat-box">
-                    <h3>{anomaly_data["summary"]["critical"]}</h3>
+                    <h3>{anomaly_data["by_severity"]["critical"]}</h3>
                     <p>Critical Alerts</p>
                 </div>
                 <div class="stat-box">
-                    <h3>{anomaly_data["summary"]["severe"]}</h3>
+                    <h3>{anomaly_data["by_severity"]["severe"]}</h3>
                     <p>Severe Alerts</p>
                 </div>
                 <div class="stat-box">
-                    <h3>{anomaly_data["summary"]["mild"]}</h3>
+                    <h3>{anomaly_data["by_severity"]["mild"]}</h3>
                     <p>Mild Alerts</p>
                 </div>
             </div>
@@ -414,13 +399,10 @@ def main():
 
     # Load existing results
     try:
-        with open("output/sensor_summary.json", "r") as f:
-            sensor_summary = json.load(f)
-
-        with open("output/anomaly_report.json", "r") as f:
+        with open("output/anomaly_report.json") as f:
             anomaly_data = json.load(f)
 
-        with open("output/performance_metrics.json", "r") as f:
+        with open("output/performance_metrics.json") as f:
             performance_data = json.load(f)
 
         print("✓ Loaded existing analysis results")
@@ -518,7 +500,7 @@ def main():
 
     # Create summary report
     summary_report = {
-        "generation_timestamp": datetime.now(timezone.utc).isoformat(),
+        "generation_timestamp": datetime.now(UTC).isoformat(),
         "visualizations_created": [
             "radiation_dashboard.html",
             "enhanced_radiation_map.geojson",

@@ -2,7 +2,7 @@
 Economic indicators calculation utilities.
 """
 
-from typing import Dict, Any, List, Optional, Union
+from typing import Any
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -16,7 +16,7 @@ class EconomicIndicators:
     Provides methods for computing standard economic measures and indices.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the EconomicIndicators calculator.
 
@@ -28,10 +28,10 @@ class EconomicIndicators:
 
     def calculate_growth_rate(
         self,
-        values: Union[pd.Series, np.ndarray],
+        values: pd.Series | np.ndarray,
         periods: int = 1,
         method: str = "simple",
-    ) -> Union[pd.Series, np.ndarray]:
+    ) -> pd.Series | np.ndarray:
         """
         Calculate growth rates for time series data.
 
@@ -70,7 +70,7 @@ class EconomicIndicators:
 
         # Calculate Gini coefficient
         cumulative_values = np.cumsum(sorted_values)
-        gini = (2 * np.sum((np.arange(1, n + 1) * sorted_values))) / (
+        gini = (2 * np.sum(np.arange(1, n + 1) * sorted_values)) / (
             n * cumulative_values[-1]
         ) - (n + 1) / n
 
@@ -96,9 +96,9 @@ class EconomicIndicators:
 
     def calculate_unemployment_rate(
         self,
-        unemployed: Union[float, np.ndarray],
-        labor_force: Union[float, np.ndarray],
-    ) -> Union[float, np.ndarray]:
+        unemployed: float | np.ndarray,
+        labor_force: float | np.ndarray,
+    ) -> float | np.ndarray:
         """
         Calculate unemployment rate.
 
@@ -112,8 +112,8 @@ class EconomicIndicators:
         return (unemployed / labor_force) * 100
 
     def calculate_inflation_rate(
-        self, prices: Union[pd.Series, np.ndarray], base_period: int = 0
-    ) -> Union[pd.Series, np.ndarray]:
+        self, prices: pd.Series | np.ndarray, base_period: int = 0
+    ) -> pd.Series | np.ndarray:
         """
         Calculate inflation rate from price index.
 
@@ -132,8 +132,8 @@ class EconomicIndicators:
             return ((prices / base_price) - 1) * 100
 
     def calculate_gdp_per_capita(
-        self, gdp: Union[float, np.ndarray], population: Union[float, np.ndarray]
-    ) -> Union[float, np.ndarray]:
+        self, gdp: float | np.ndarray, population: float | np.ndarray
+    ) -> float | np.ndarray:
         """
         Calculate GDP per capita.
 
@@ -176,8 +176,8 @@ class EconomicIndicators:
             return self.calculate_growth_rate(tfp)
 
     def calculate_economic_complexity_index(
-        self, exports_matrix: np.ndarray, countries: List[str], products: List[str]
-    ) -> Dict[str, float]:
+        self, exports_matrix: np.ndarray, countries: list[str], products: list[str]
+    ) -> dict[str, float]:
         """
         Calculate Economic Complexity Index (ECI) for countries.
 
@@ -222,7 +222,7 @@ class EconomicIndicators:
 
     def calculate_regional_convergence(
         self, regional_data: pd.DataFrame, value_column: str, time_column: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate regional convergence indicators.
 
@@ -273,10 +273,10 @@ class EconomicIndicators:
 
     def calculate_economic_distance(
         self,
-        region1_data: Dict[str, float],
-        region2_data: Dict[str, float],
+        region1_data: dict[str, float],
+        region2_data: dict[str, float],
         method: str = "euclidean",
-        weights: Optional[Dict[str, float]] = None,
+        weights: dict[str, float] | None = None,
     ) -> float:
         """
         Calculate economic distance between regions with advanced weighting.
@@ -348,7 +348,7 @@ class EconomicIndicators:
 
     def calculate_spatial_economic_indicators(
         self, regional_data: pd.DataFrame, spatial_weights: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate spatial economic indicators including spatial autocorrelation and clustering.
 
@@ -408,8 +408,8 @@ class EconomicIndicators:
             return "random_pattern"
 
     def calculate_economic_resilience(
-        self, time_series_data: pd.DataFrame, shock_period: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, time_series_data: pd.DataFrame, shock_period: str | None = None
+    ) -> dict[str, Any]:
         """
         Calculate economic resilience indicators from time series data.
 
@@ -484,7 +484,7 @@ class EconomicIndicators:
 
     def calculate_sectoral_composition(
         self, sectoral_data: pd.DataFrame, classification: str = "standard"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate sectoral composition and diversity indicators.
 
@@ -524,8 +524,8 @@ class EconomicIndicators:
         }
 
     def calculate_trade_integration(
-        self, trade_data: pd.DataFrame, regions: List[str]
-    ) -> Dict[str, Any]:
+        self, trade_data: pd.DataFrame, regions: list[str]
+    ) -> dict[str, Any]:
         """
         Calculate trade integration and connectivity indicators.
 
@@ -569,7 +569,7 @@ class EconomicIndicators:
 
     def _identify_top_partners(
         self, trade_matrix: pd.DataFrame, top_n: int = 5
-    ) -> Dict[str, List[str]]:
+    ) -> dict[str, list[str]]:
         """Identify top trading partners for each region."""
         top_partners = {}
 
@@ -581,8 +581,8 @@ class EconomicIndicators:
         return top_partners
 
     def calculate_human_development_index(
-        self, data: Dict[str, pd.DataFrame], weights: Optional[Dict[str, float]] = None
-    ) -> Dict[str, Any]:
+        self, data: dict[str, pd.DataFrame], weights: dict[str, float] | None = None
+    ) -> dict[str, Any]:
         """
         Calculate Human Development Index (HDI) components and overall index.
 
@@ -597,7 +597,7 @@ class EconomicIndicators:
         default_weights = {"health": 1 / 3, "education": 1 / 3, "income": 1 / 3}
         weights = weights or default_weights
 
-        hdi_components: Dict[str, float] = {}
+        hdi_components: dict[str, float] = {}
 
         # Health index (life expectancy)
         if "life_expectancy" in data:

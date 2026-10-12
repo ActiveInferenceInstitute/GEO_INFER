@@ -7,7 +7,7 @@ geospatial data for use with Bayesian models.
 
 import numpy as np
 import pandas as pd
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 from pathlib import Path
 import logging
 import json
@@ -17,13 +17,13 @@ logger = logging.getLogger(__name__)
 
 
 def prepare_spatial_data(
-    data: Union[pd.DataFrame, np.ndarray],
+    data: pd.DataFrame | np.ndarray,
     lat_col: str = "lat",
     lon_col: str = "lon",
-    value_col: Optional[str] = None,
-    time_col: Optional[str] = None,
+    value_col: str | None = None,
+    time_col: str | None = None,
     **kwargs: Any,
-) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Dict[str, Any]]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray | None, dict[str, Any]]:
     """
     Prepare spatial data for Bayesian inference.
 
@@ -106,7 +106,7 @@ def prepare_spatial_data(
 
 
 def load_geospatial_data(
-    file_path: Union[str, Path], file_format: Optional[str] = None, **kwargs: Any
+    file_path: str | Path, file_format: str | None = None, **kwargs: Any
 ) -> pd.DataFrame:
     """
     Load geospatial data from various file formats.
@@ -175,7 +175,7 @@ def _detect_file_format(file_path: Path) -> str:
 
 def _load_json_data(file_path: Path, **kwargs: Any) -> pd.DataFrame:
     """Load data from JSON or GeoJSON files."""
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         data = json.load(f)
 
     # Handle GeoJSON format
@@ -191,7 +191,7 @@ def _load_json_data(file_path: Path, **kwargs: Any) -> pd.DataFrame:
             raise ValueError("Unsupported JSON format")
 
 
-def _parse_geojson(geojson_data: Dict[str, Any]) -> pd.DataFrame:
+def _parse_geojson(geojson_data: dict[str, Any]) -> pd.DataFrame:
     """Parse GeoJSON data into a DataFrame."""
     features = geojson_data.get("features", [])
 
@@ -248,8 +248,8 @@ def _process_temporal_data(temporal_data: pd.Series) -> np.ndarray:
 def validate_spatial_data(
     spatial_coords: np.ndarray,
     values: np.ndarray,
-    temporal_coords: Optional[np.ndarray] = None,
-) -> Dict[str, Any]:
+    temporal_coords: np.ndarray | None = None,
+) -> dict[str, Any]:
     """
     Validate spatial data for Bayesian inference.
 
@@ -263,9 +263,9 @@ def validate_spatial_data(
     Returns:
         Validation results dictionary
     """
-    errors: List[str] = []
-    warnings: List[str] = []
-    validation_results: Dict[str, Any] = {
+    errors: list[str] = []
+    warnings: list[str] = []
+    validation_results: dict[str, Any] = {
         "is_valid": True,
         "warnings": warnings,
         "errors": errors,
@@ -319,8 +319,8 @@ def validate_spatial_data(
 
 
 def create_spatial_grid(
-    bounds: Dict[str, float], resolution: float = 0.1, grid_type: str = "regular"
-) -> Tuple[np.ndarray, Dict[str, Any]]:
+    bounds: dict[str, float], resolution: float = 0.1, grid_type: str = "regular"
+) -> tuple[np.ndarray, dict[str, Any]]:
     """
     Create a spatial grid for prediction.
 
@@ -369,7 +369,7 @@ def sample_spatial_data(
     method: str = "random",
     random_seed: SeedLike = None,
     **kwargs: Any,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Sample spatial data for training/validation.
 
@@ -404,7 +404,7 @@ def sample_spatial_data(
         n_strata = kwargs.get("n_strata", 5)
         quantiles = np.percentile(values, np.linspace(0, 100, n_strata + 1))
 
-        stratified_indices: List[int] = []
+        stratified_indices: list[int] = []
         samples_per_stratum = n_samples // n_strata
 
         for i in range(n_strata):
@@ -442,7 +442,7 @@ def sample_spatial_data(
 
 def save_processed_data(
     data: pd.DataFrame,
-    output_path: Union[str, Path],
+    output_path: str | Path,
     format: str = "csv",
     **kwargs: Any,
 ) -> None:

@@ -13,7 +13,7 @@ Key Features:
 - Search and rescue mission planning
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Development Team"
 
 from .core.coordinator import EmergencyCoordinator

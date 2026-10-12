@@ -2,8 +2,8 @@
 """DOCS-03 assessment-artifact banner metric for GEO-INFER.
 
 The DOCS-03 ledger row requires every assessment artifact to carry a
-visible historical-artifact banner (or be regenerated), so a stale
-point-in-time snapshot cannot read as live guidance.  This script is the
+visible historical-artifact banner (or be regenerated or deleted), so a
+stale point-in-time snapshot cannot read as live guidance.  This script is the
 benchmark instrument: it walks the assessment-artifact locations, counts
 the tracked ``.md``/``.json`` files missing their banner marker, and
 reports the count.
@@ -77,9 +77,9 @@ def _artifact_files() -> list[Path]:
 
 
 def main() -> int:
+    # Retired snapshots are deleted rather than bannered, so an empty
+    # inventory is the fully-resolved state, not a measurement failure.
     artifacts = _artifact_files()
-    if not artifacts:
-        _fail("no assessment artifacts found")
     stale = [path for path in artifacts if _missing_banner(path)]
 
     print(f"METRIC stale_assessment_artifacts={len(stale)}")

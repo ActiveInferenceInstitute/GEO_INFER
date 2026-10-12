@@ -3,7 +3,7 @@ Integration tests for full GEO-INFER-HEALTH workflows.
 """
 
 import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, UTC
 
 from geo_infer_health.core import (
     DiseaseHotspotAnalyzer,
@@ -25,7 +25,7 @@ class TestDiseaseSurveillanceWorkflow:
     def test_complete_disease_analysis_workflow(self):
         """Test end-to-end disease surveillance analysis."""
         # Create comprehensive test dataset
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
         center_location = Location(latitude=34.0522, longitude=-118.2437)
 
         # Create disease reports around center
@@ -106,7 +106,7 @@ class TestDiseaseSurveillanceWorkflow:
 
         reports = []
         base_location = Location(latitude=34.0522, longitude=-118.2437)
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         for i in range(40):
             location = Location(
@@ -300,7 +300,7 @@ class TestEnvironmentalHealthWorkflow:
         """Test end-to-end environmental health analysis."""
         # Create comprehensive environmental dataset
         base_location = Location(latitude=34.0522, longitude=-118.2437)
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         readings = []
         parameters = ["PM2.5", "PM10", "NO2", "Temperature", "Humidity"]
@@ -390,7 +390,7 @@ class TestEnvironmentalHealthWorkflow:
     def test_environmental_temporal_analysis(self):
         """Test environmental data temporal analysis."""
         base_location = Location(latitude=34.0522, longitude=-118.2437)
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         # Create readings over time
         readings = []
@@ -452,7 +452,7 @@ class TestCrossModuleIntegration:
     def test_disease_and_environmental_integration(self):
         """Test integration between disease surveillance and environmental health."""
         base_location = Location(latitude=34.0522, longitude=-118.2437)
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         # Create disease reports
         disease_reports = []
@@ -575,7 +575,7 @@ class TestCrossModuleIntegration:
             (base_location.latitude + 0.005, base_location.longitude - 0.005),
         ]
 
-        for i, (lat, lon) in enumerate(area_centers):
+        for i in range(len(area_centers)):
             pop_data = PopulationData(
                 area_id=f"area_{i}",
                 population_count=50000 + i * 25000,
@@ -594,10 +594,9 @@ class TestCrossModuleIntegration:
 
         # Test accessibility analysis for different population areas
         accessibility_results = {}
-        for pop_area in population_data:
-            # Use area center as proxy for population location
-            # In real implementation, would use actual population-weighted centroids
-            area_center = Location(latitude=34.0522, longitude=-118.2437)  # Simplified
+        for pop_area, (lat, lon) in zip(population_data, area_centers, strict=True):
+            # The area center stands in for the population-weighted centroid.
+            area_center = Location(latitude=lat, longitude=lon)
 
             nearest = analyzer.get_nearest_facility(loc=area_center)
             if nearest:
@@ -611,7 +610,7 @@ class TestCrossModuleIntegration:
         # Verify results
         assert len(accessibility_results) == len(population_data)
 
-        for area_id, result in accessibility_results.items():
+        for result in accessibility_results.values():
             assert result["distance_km"] >= 0
             assert result["population"] > 0
             assert result["facility_type"] in ["Hospital", "Clinic"]
@@ -666,7 +665,7 @@ class TestPerformanceIntegration:
 
         # Create large integrated dataset
         base_location = Location(latitude=34.0522, longitude=-118.2437)
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         # Generate disease reports
         disease_reports = []

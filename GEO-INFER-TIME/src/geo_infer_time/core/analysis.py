@@ -6,13 +6,22 @@ seasonality analysis, decomposition, and statistical analysis.
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Tuple
+import math
+from typing import Any
 from dataclasses import dataclass
 from enum import Enum
 import pandas as pd
 import numpy as np
 
 from ..models.timeseries import TimeSeries
+from geo_infer_time.core._validation import (
+    finite_vector,
+    paired_series,
+    positive_integer,
+    regular_frequency,
+    root_mean_square,
+    univariate_series,
+)
 
 
 from statsmodels.tsa.seasonal import seasonal_decompose
@@ -55,7 +64,7 @@ class TemporalAnalyzer:
 
     def detect_trend(
         self, timeseries: TimeSeries, method: str = "linear"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect trend in time series.
 
@@ -64,48 +73,94 @@ class TemporalAnalyzer:
             method: Trend detection method ('linear', 'polynomial', 'moving_average')
 
         Returns:
-            Dictionary with trend information
+            Dictionary with trend information. Linear ``slope_per_sample``
+            and ``trend_strength`` describe change per observation;
+            ``r_squared`` measures fit quality. Numerical constants are stable.
         """
-        data = timeseries.to_dataframe()
-        values = data.iloc[:, 0].values
+        if method not in {"linear", "polynomial", "moving_average"}:
+            raise ValueError(f"Unknown trend detection method: {method}")
+        series = univariate_series(timeseries, minimum=2)
+        values = series.to_numpy()
         time_points = np.arange(len(values))
 
         if method == "linear":
-            # Linear regression for trend
-            coeffs = np.polyfit(time_points, values, 1)
-            trend_line = np.polyval(coeffs, time_points)
-            trend_direction = "increasing" if coeffs[0] > 0 else "decreasing"
-            trend_strength = abs(coeffs[0])
+            if len(values) < 2 or not np.isfinite(values).all():
+                raise ValueError(
+                    "Linear trend requires at least two finite observations"
+                )
+            # Centering avoids a large constant offset contaminating the slope.
+            centered_time = time_points - time_points.mean()
+            scale = max(float(np.abs(values).max()), np.finfo(float).tiny)
+            scaled_values = values / scale
+            scaled_mean = scaled_values.mean()
+            centered_values = scaled_values - scaled_mean
+            scaled_slope = float(
+                np.dot(centered_time, centered_values)
+                / np.dot(centered_time, centered_time)
+            )
+            if abs(scaled_slope) * (len(values) - 1) <= 8 * np.finfo(float).eps:
+                scaled_slope = 0.0
+                slope = 0.0
+                trend_direction = "stable"
+            else:
+                slope = scaled_slope * scale
+                trend_direction = "increasing" if slope > 0 else "decreasing"
+            scaled_trend = scaled_mean + scaled_slope * centered_time
+            trend_line = scale * scaled_trend
+            total_variation = float(np.dot(centered_values, centered_values))
+            residuals = scaled_values - scaled_trend
+            r_squared = (
+                max(0.0, 1 - float(np.dot(residuals, residuals)) / total_variation)
+                if total_variation
+                else 1.0
+            )
+            trend_strength = abs(slope)
 
         elif method == "polynomial":
+            if len(values) < 3:
+                raise ValueError(
+                    "Polynomial trend requires at least three observations"
+                )
             # Polynomial trend
             coeffs = np.polyfit(time_points, values, 2)
             trend_line = np.polyval(coeffs, time_points)
             trend_direction = "non-linear"
-            trend_strength = np.std(trend_line) / np.std(values)
+            trend_strength = (
+                np.std(trend_line) / np.std(values) if np.std(values) else 0.0
+            )
 
         elif method == "moving_average":
             # Moving average trend
-            window = min(30, len(values) // 10)
+            window = min(len(values), max(2, min(30, len(values) // 10)))
             trend_line = (
-                pd.Series(values).rolling(window=window, center=True).mean().values
+                pd.Series(values)
+                .rolling(window=window, center=True, min_periods=1)
+                .mean()
+                .values
             )
             trend_direction = "variable"
-            trend_strength = np.corrcoef(values, trend_line)[0, 1]
+            trend_strength = (
+                np.corrcoef(values, trend_line)[0, 1]
+                if np.std(values) and np.std(trend_line)
+                else 0.0
+            )
 
         else:
             raise ValueError(f"Unknown trend detection method: {method}")
 
-        return {
+        result = {
             "method": method,
             "trend_direction": trend_direction,
             "trend_strength": float(trend_strength),
             "trend_values": trend_line.tolist(),
         }
+        if method == "linear":
+            result.update(slope_per_sample=slope, r_squared=r_squared)
+        return result
 
     def detect_seasonality(
         self, timeseries: TimeSeries, max_periods: int = 12
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect seasonality in time series.
 
@@ -116,21 +171,24 @@ class TemporalAnalyzer:
         Returns:
             Dictionary with seasonality information
         """
-        data = timeseries.to_dataframe()
-        values = data.iloc[:, 0].values
+        positive_integer(max_periods, "max_periods", minimum=2)
+        series = univariate_series(timeseries, minimum=2)
+        regular_frequency(series.index)
+        values = series.to_numpy()
 
         # Use autocorrelation to detect seasonality
         autocorr = []
-        for lag in range(1, min(max_periods + 1, len(values) // 2)):
+        for lag in range(2, min(max_periods, len(values) // 2) + 1):
             if len(values) > lag:
-                corr = np.corrcoef(values[:-lag], values[lag:])[0, 1]
-                autocorr.append({"lag": lag, "correlation": float(corr)})
+                if np.std(values[:-lag]) and np.std(values[lag:]):
+                    corr = np.corrcoef(values[:-lag], values[lag:])[0, 1]
+                    autocorr.append({"lag": lag, "correlation": float(corr)})
 
         # Find strongest seasonal pattern
         if autocorr:
-            strongest = max(autocorr, key=lambda x: abs(x["correlation"]))
+            strongest = max(autocorr, key=lambda x: x["correlation"])
             period = strongest["lag"]
-            strength = abs(strongest["correlation"])
+            strength = max(0.0, strongest["correlation"])
         else:
             period = None
             strength = 0.0
@@ -143,7 +201,7 @@ class TemporalAnalyzer:
         }
 
     @staticmethod
-    def _infer_seasonal_period(frequency: Optional[str]) -> int:
+    def _infer_seasonal_period(frequency: str | pd.DateOffset | None) -> int:
         """
         Infer a seasonal period in samples from a pandas frequency alias.
 
@@ -197,8 +255,8 @@ class TemporalAnalyzer:
         self,
         timeseries: TimeSeries,
         model: str = "additive",
-        period: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        period: int | None = None,
+    ) -> dict[str, Any]:
         """
         Decompose time series into trend, seasonal, and residual components.
 
@@ -217,11 +275,13 @@ class TemporalAnalyzer:
             ValueError: If no period is given and none can be inferred, or if
                 the period is unsuitable for the series length
         """
-        data = timeseries.to_dataframe()
-        series = data.iloc[:, 0]
+        series = univariate_series(timeseries, minimum=4)
+        frequency = regular_frequency(series.index)
 
         if period is None:
-            period = self._infer_seasonal_period(timeseries.frequency)
+            period = self._infer_seasonal_period(frequency)
+
+        positive_integer(period, "period", minimum=2)
 
         if period < 2 or period > len(series) // 2:
             raise ValueError(
@@ -241,7 +301,7 @@ class TemporalAnalyzer:
             "period": period,
         }
 
-    def test_stationarity(self, timeseries: TimeSeries) -> Dict[str, Any]:
+    def test_stationarity(self, timeseries: TimeSeries) -> dict[str, Any]:
         """
         Test time series stationarity using Augmented Dickey-Fuller test.
 
@@ -251,8 +311,9 @@ class TemporalAnalyzer:
         Returns:
             Dictionary with stationarity test results
         """
-        data = timeseries.to_dataframe()
-        values = data.iloc[:, 0].dropna().values
+        series = univariate_series(timeseries, minimum=2)
+        regular_frequency(series.index)
+        values = series.to_numpy()
 
         try:
             result = adfuller(values)
@@ -263,7 +324,7 @@ class TemporalAnalyzer:
                 "p_value": float(result[1]),
                 "critical_values": {k: float(v) for k, v in result[4].items()},
             }
-        except Exception as e:
+        except ValueError as e:
             logger.error(f"Stationarity test failed: {e}")
             return {
                 "is_stationary": False,
@@ -275,8 +336,8 @@ class TemporalAnalyzer:
         timeseries: TimeSeries,
         method: str = "zscore",
         threshold: float = 3.0,
-        window_size: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        window_size: int | None = None,
+    ) -> dict[str, Any]:
         """
         Detect anomalies in time series.
 
@@ -289,16 +350,27 @@ class TemporalAnalyzer:
         Returns:
             Anomaly detection results
         """
-        data = timeseries.to_dataframe()
-        values = data.iloc[:, 0].values
-        timestamps = data.index.astype(str).tolist()
+        if method not in {"zscore", "iqr", "rolling_zscore", "isolation"}:
+            raise ValueError(f"Unknown anomaly detection method: {method}")
+        if (
+            isinstance(threshold, bool)
+            or not isinstance(threshold, (int, float))
+            or not math.isfinite(threshold)
+            or threshold < 0
+        ):
+            raise ValueError("threshold must be finite and non-negative")
+        if window_size is not None:
+            positive_integer(window_size, "window_size", minimum=2)
+        series = univariate_series(timeseries)
+        values = series.to_numpy()
+        timestamps = [stamp.isoformat() for stamp in series.index]
 
         anomalies = []
 
         if method == "zscore":
             mean = np.mean(values)
             std = np.std(values)
-            z_scores = (values - mean) / (std + 1e-10)
+            z_scores = (values - mean) / std if std > 0 else np.zeros(len(values))
 
             for i, (z, val) in enumerate(zip(z_scores, values)):
                 if abs(z) > threshold:
@@ -343,7 +415,7 @@ class TemporalAnalyzer:
             rolling_mean = series.rolling(window=window, center=True).mean()
             rolling_std = series.rolling(window=window, center=True).std()
 
-            z_scores = (series - rolling_mean) / (rolling_std + 1e-10)
+            z_scores = (series - rolling_mean) / rolling_std.where(rolling_std > 0)
 
             for i, (z, val) in enumerate(zip(z_scores.values, values)):
                 if not np.isnan(z) and abs(z) > threshold:
@@ -359,6 +431,25 @@ class TemporalAnalyzer:
                             severity=severity,
                         )
                     )
+
+        elif method == "isolation":
+            from sklearn.ensemble import IsolationForest
+
+            model = IsolationForest(contamination=0.05, random_state=42)
+            predictions = model.fit_predict(values.reshape(-1, 1))
+            scores = model.decision_function(values.reshape(-1, 1))
+            for i in np.flatnonzero(predictions == -1):
+                anomalies.append(
+                    Anomaly(
+                        index=int(i),
+                        timestamp=timestamps[i],
+                        value=float(values[i]),
+                        expected_value=float(np.median(values)),
+                        deviation=float(scores[i]),
+                        anomaly_type=AnomalyType.POINT,
+                        severity="medium",
+                    )
+                )
 
         return {
             "method": method,
@@ -385,7 +476,7 @@ class TemporalAnalyzer:
         timeseries: TimeSeries,
         method: str = "cusum",
         min_segment_length: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect change points (structural breaks) in time series.
 
@@ -397,11 +488,11 @@ class TemporalAnalyzer:
         Returns:
             Change point detection results
         """
-        data = timeseries.to_dataframe()
-        values = data.iloc[:, 0].values
+        positive_integer(min_segment_length, "min_segment_length", minimum=2)
+        values = univariate_series(timeseries).to_numpy()
         n = len(values)
 
-        change_points: List[Dict[str, Any]] = []
+        change_points: list[dict[str, Any]] = []
 
         if method == "cusum":
             # CUSUM-based change point detection
@@ -415,7 +506,7 @@ class TemporalAnalyzer:
             std = np.std(values)
 
             # Find points where CUSUM changes significantly
-            for i in range(min_segment_length, n - min_segment_length):
+            for i in range(min_segment_length, n - min_segment_length + 1):
                 left_mean = prefix[i] / i
                 right_mean = (total - prefix[i]) / (n - i)
                 diff = abs(right_mean - left_mean)
@@ -445,7 +536,7 @@ class TemporalAnalyzer:
 
         elif method == "binary_segmentation":
             # Simplified binary segmentation
-            def find_change_point(start: int, end: int) -> Optional[Dict[str, Any]]:
+            def find_change_point(start: int, end: int) -> dict[str, Any] | None:
                 if end - start < 2 * min_segment_length:
                     return None
 
@@ -453,7 +544,9 @@ class TemporalAnalyzer:
                 best_idx = None
                 segment = values[start:end]
 
-                for i in range(min_segment_length, len(segment) - min_segment_length):
+                for i in range(
+                    min_segment_length, len(segment) - min_segment_length + 1
+                ):
                     left = segment[:i]
                     right = segment[i:]
                     cost = np.var(left) * len(left) + np.var(right) * len(right)
@@ -504,7 +597,7 @@ class TemporalAnalyzer:
 
     def calculate_cross_correlation(
         self, timeseries1: TimeSeries, timeseries2: TimeSeries, max_lag: int = 20
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate cross-correlation between two time series.
 
@@ -516,13 +609,13 @@ class TemporalAnalyzer:
         Returns:
             Cross-correlation analysis
         """
-        data1 = timeseries1.to_dataframe().iloc[:, 0].values
-        data2 = timeseries2.to_dataframe().iloc[:, 0].values
-
-        # Align lengths
-        min_len = min(len(data1), len(data2))
-        data1 = data1[:min_len]
-        data2 = data2[:min_len]
+        positive_integer(max_lag, "max_lag", minimum=0)
+        first, second = paired_series(timeseries1, timeseries2)
+        data1, data2 = first.to_numpy(), second.to_numpy()
+        min_len = len(data1)
+        max_lag = min(max_lag, min_len - 2)
+        if np.std(data1) == 0 or np.std(data2) == 0:
+            raise ValueError("Cross-correlation requires nonconstant paired series")
 
         # Calculate cross-correlation
         correlations = []
@@ -563,10 +656,10 @@ class TemporalAnalyzer:
 
     def validate_forecast(
         self,
-        actual: List[float],
-        predicted: List[float],
-        confidence_intervals: Optional[List[Tuple[float, float]]] = None,
-    ) -> Dict[str, Any]:
+        actual: list[float],
+        predicted: list[float],
+        confidence_intervals: list[tuple[float, float]] | None = None,
+    ) -> dict[str, Any]:
         """
         Validate forecast accuracy with multiple metrics.
 
@@ -578,24 +671,42 @@ class TemporalAnalyzer:
         Returns:
             Forecast validation metrics
         """
-        actual_arr = np.array(actual)
-        predicted_arr = np.array(predicted)
+        actual_arr = finite_vector(actual, "actual")
+        predicted_arr = finite_vector(predicted, "predicted")
+        if not len(actual_arr) or len(actual_arr) != len(predicted_arr):
+            raise ValueError("actual and predicted must have equal nonzero lengths")
+        if confidence_intervals is not None:
+            bounds = np.asarray(confidence_intervals, dtype=float)
+            if (
+                bounds.shape != (len(actual_arr), 2)
+                or not np.isfinite(bounds).all()
+                or np.any(bounds[:, 0] > bounds[:, 1])
+            ):
+                raise ValueError(
+                    "confidence_intervals require ordered finite bounds for every observation"
+                )
 
         n = len(actual_arr)
         errors = actual_arr - predicted_arr
         abs_errors = np.abs(errors)
-        pct_errors = np.abs(errors / (actual_arr + 1e-10)) * 100
 
         # Core metrics
         mae = float(np.mean(abs_errors))
         mse = float(np.mean(errors**2))
-        rmse = float(np.sqrt(mse))
-        mape = float(np.mean(pct_errors))
+        rmse = root_mean_square(errors)
+        mape = (
+            float(np.mean(np.abs(errors / actual_arr)) * 100)
+            if np.all(actual_arr != 0)
+            else None
+        )
 
         # Symmetric MAPE
+        denominator = np.abs(actual_arr) + np.abs(predicted_arr)
         smape = float(
             np.mean(
-                2 * abs_errors / (np.abs(actual_arr) + np.abs(predicted_arr) + 1e-10)
+                np.divide(
+                    2 * abs_errors, denominator, out=np.zeros(n), where=denominator != 0
+                )
             )
             * 100
         )
@@ -611,7 +722,7 @@ class TemporalAnalyzer:
             directional_accuracy = None
 
         # Confidence interval coverage
-        if confidence_intervals:
+        if confidence_intervals is not None:
             coverage = (
                 sum(
                     1
@@ -627,7 +738,7 @@ class TemporalAnalyzer:
         # Theil's U statistic
         naive_errors = np.abs(np.diff(actual_arr))
         if len(naive_errors) > 0 and np.mean(naive_errors) > 0:
-            theil_u = rmse / np.sqrt(np.mean(naive_errors**2))
+            theil_u = rmse / root_mean_square(naive_errors)
         else:
             theil_u = None
 
@@ -644,11 +755,13 @@ class TemporalAnalyzer:
                 "confidence_coverage": coverage,
             },
             "interpretation": {
-                "rmse_vs_std": rmse / np.std(actual_arr)
-                if np.std(actual_arr) > 0
+                "rmse_vs_std": rmse / root_mean_square(actual_arr - np.mean(actual_arr))
+                if root_mean_square(actual_arr - np.mean(actual_arr)) > 0
                 else None,
                 "forecast_quality": (
-                    "Excellent"
+                    "Undefined for zero actual observations"
+                    if mape is None
+                    else "Excellent"
                     if mape < 10
                     else "Good"
                     if mape < 20
@@ -667,7 +780,7 @@ class TemporalAnalyzer:
 
     def calculate_autocorrelation(
         self, timeseries: TimeSeries, max_lag: int = 40
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate autocorrelation function.
 
@@ -678,8 +791,12 @@ class TemporalAnalyzer:
         Returns:
             Autocorrelation analysis
         """
-        data = timeseries.to_dataframe()
-        values = data.iloc[:, 0].dropna().values
+        positive_integer(max_lag, "max_lag", minimum=0)
+        series = univariate_series(timeseries, minimum=2)
+        regular_frequency(series.index)
+        values = series.to_numpy()
+        if np.std(values) == 0:
+            raise ValueError("Autocorrelation requires nonconstant observations")
 
         # Calculate ACF
         nlags = min(max_lag, len(values) // 2)
@@ -706,14 +823,14 @@ class TemporalAnalyzer:
             "max_lag": nlags,
             "confidence_bound": float(conf_bound),
             "acf_values": [float(a) for a in acf_values],
-            "significant_lags": [l for l in significant_lags if l["significant"]],
+            "significant_lags": [lag for lag in significant_lags if lag["significant"]],
             "detected_periods": peaks[:5] if peaks else [],
             "summary": {
                 "first_significant_lag": next(
-                    (l["lag"] for l in significant_lags if l["significant"]), None
+                    (lag["lag"] for lag in significant_lags if lag["significant"]), None
                 ),
                 "number_significant": sum(
-                    1 for l in significant_lags if l["significant"]
+                    1 for lag in significant_lags if lag["significant"]
                 ),
             },
         }
@@ -722,8 +839,8 @@ class TemporalAnalyzer:
         self,
         timeseries: TimeSeries,
         window: int = 10,
-        statistics: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        statistics: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Calculate rolling statistics over a time series.
 
@@ -737,7 +854,10 @@ class TemporalAnalyzer:
         Returns:
             Dictionary with rolling statistics for each requested statistic
         """
+        positive_integer(window, "window")
         data = timeseries.to_dataframe()
+        if data.empty or data.shape[1] != 1:
+            raise ValueError("Rolling statistics require a nonempty univariate series")
         values = data.iloc[:, 0]
 
         available_stats = {
@@ -752,6 +872,8 @@ class TemporalAnalyzer:
 
         if statistics is None:
             statistics = list(available_stats.keys())
+        if any(name not in available_stats for name in statistics):
+            raise ValueError("Unknown rolling statistic")
 
         results = {}
         for stat_name in statistics:
@@ -759,6 +881,9 @@ class TemporalAnalyzer:
                 stat_values = available_stats[stat_name](values)
                 results[stat_name] = {
                     "values": stat_values.dropna().tolist(),
+                    "timestamps": [
+                        stamp.isoformat() for stamp in stat_values.dropna().index
+                    ],
                     "latest": float(stat_values.iloc[-1])
                     if not pd.isna(stat_values.iloc[-1])
                     else None,
@@ -772,9 +897,17 @@ class TemporalAnalyzer:
             std_vals = pd.Series(values).rolling(window=window).std()
             results["bollinger_upper"] = {
                 "values": (mean_vals + 2 * std_vals).dropna().tolist(),
+                "timestamps": [
+                    stamp.isoformat()
+                    for stamp in (mean_vals + 2 * std_vals).dropna().index
+                ],
             }
             results["bollinger_lower"] = {
                 "values": (mean_vals - 2 * std_vals).dropna().tolist(),
+                "timestamps": [
+                    stamp.isoformat()
+                    for stamp in (mean_vals - 2 * std_vals).dropna().index
+                ],
             }
 
         return {
@@ -783,13 +916,15 @@ class TemporalAnalyzer:
             "statistics": results,
             "summary": {
                 "statistics_calculated": list(results.keys()),
-                "valid_observations": len(values) - window + 1,
+                "valid_observations": int(
+                    values.rolling(window=window).count().eq(window).sum()
+                ),
             },
         }
 
     def detect_periodicity(
         self, timeseries: TimeSeries, max_period: int = 60
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect periodicity in time series using FFT-based spectral analysis.
 
@@ -800,8 +935,10 @@ class TemporalAnalyzer:
         Returns:
             Dictionary with periodicity analysis results
         """
-        data = timeseries.to_dataframe()
-        values = data.iloc[:, 0].dropna().values
+        positive_integer(max_period, "max_period", minimum=2)
+        series = univariate_series(timeseries, minimum=2)
+        regular_frequency(series.index)
+        values = series.to_numpy()
         n = len(values)
 
         if n < 4:
@@ -880,7 +1017,7 @@ class TemporalAnalyzer:
 
     def calculate_granger_causality(
         self, timeseries1: TimeSeries, timeseries2: TimeSeries, max_lag: int = 5
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Test for Granger causality between two time series.
 
@@ -896,20 +1033,17 @@ class TemporalAnalyzer:
         """
         from scipy import stats
 
-        data1 = timeseries1.to_dataframe().iloc[:, 0].dropna().values
-        data2 = timeseries2.to_dataframe().iloc[:, 0].dropna().values
+        positive_integer(max_lag, "max_lag")
+        first, second = paired_series(timeseries1, timeseries2)
+        data1, data2 = first.to_numpy(), second.to_numpy()
+        min_len = len(data1)
 
-        # Align lengths
-        min_len = min(len(data1), len(data2))
-        data1 = data1[:min_len]
-        data2 = data2[:min_len]
-
-        tests: Dict[str, Any] = {}
+        tests: dict[str, Any] = {}
         results = {"series_length": min_len, "max_lag": max_lag, "tests": tests}
 
-        def test_granger(y: np.ndarray, x: np.ndarray, lag: int) -> Dict[str, Any]:
+        def test_granger(y: np.ndarray, x: np.ndarray, lag: int) -> dict[str, Any]:
             """Simple F-test for Granger causality."""
-            if len(y) <= lag + 1:
+            if len(y) - lag <= 2 * lag + 1:
                 return {"error": "Insufficient data for lag"}
 
             # Create lagged variables
@@ -927,6 +1061,10 @@ class TemporalAnalyzer:
 
                 # Unrestricted model (y and x lags)
                 X_u = np.column_stack([np.ones(len(y_lagged)), y_lags, x_lags])
+                if np.linalg.matrix_rank(X_u) < X_u.shape[1]:
+                    return {
+                        "error": "Singular lagged design; causality is not identifiable"
+                    }
                 beta_u = np.linalg.lstsq(X_u, y_lagged, rcond=None)[0]
                 residuals_u = y_lagged - X_u @ beta_u
                 rss_u = np.sum(residuals_u**2)
@@ -937,10 +1075,9 @@ class TemporalAnalyzer:
 
                 if rss_u > 0:
                     f_stat = ((rss_r - rss_u) / lag) / (rss_u / (n - k_u))
-                    p_value = 1 - stats.f.cdf(f_stat, lag, n - k_u)
+                    p_value = stats.f.sf(max(0.0, f_stat), lag, n - k_u)
                 else:
-                    f_stat = float("inf")
-                    p_value = 0.0
+                    return {"error": "Zero residual variance; F test is undefined"}
 
                 return {
                     "f_statistic": float(f_stat),
@@ -948,7 +1085,7 @@ class TemporalAnalyzer:
                     "significant": p_value < 0.05,
                     "lag": lag,
                 }
-            except Exception as e:
+            except np.linalg.LinAlgError as e:
                 return {"error": str(e)}
 
         # Test if series1 Granger-causes series2
@@ -991,115 +1128,117 @@ class TemporalAnalyzer:
         return results
 
     def compute_temporal_entropy(
-        self, timeseries: TimeSeries, bins: int = 10, method: str = "shannon"
-    ) -> Dict[str, Any]:
-        """
-        Compute entropy measures for a time series.
+        self,
+        timeseries: TimeSeries,
+        bins: int = 10,
+        method: str = "shannon",
+        *,
+        embedding_dim: int = 2,
+        tolerance: float | None = None,
+        max_points: int = 2000,
+    ) -> dict[str, Any]:
+        """Compute histogram Shannon, sample, or approximate entropy.
 
-        Args:
-            timeseries: TimeSeries object
-            bins: Number of bins for histogram-based entropy
-            method: Entropy method ('shannon', 'sample', 'approximate')
-
-        Returns:
-            Dictionary with entropy measures
+        Sample entropy excludes self-matches and compares the same template
+        starting positions at dimensions m and m+1. Approximate entropy
+        includes self-matches and averages log match frequencies separately.
+        Matching uses Chebyshev distance <= tolerance. The default tolerance
+        is 0.2 times population standard deviation. Pairwise work is bounded
+        by max_points; large callers must explicitly choose their budget.
         """
-        data = timeseries.to_dataframe()
-        values = data.iloc[:, 0].dropna().values
+        if method not in {"shannon", "sample", "approximate"}:
+            raise ValueError(f"Unknown entropy method: {method}")
+        positive_integer(bins, "bins")
+        positive_integer(embedding_dim, "embedding_dim")
+        positive_integer(max_points, "max_points")
+        series = univariate_series(timeseries)
+        values = series.to_numpy()
         n = len(values)
-
-        results = {
+        counts, _ = np.histogram(values, bins=bins)
+        probabilities = counts[counts > 0] / n
+        shannon = float(-np.dot(probabilities, np.log2(probabilities)))
+        normalized = shannon / np.log2(bins) if bins > 1 else 0.0
+        results: dict[str, Any] = {
             "series_length": n,
             "method": method,
+            "shannon_entropy": {
+                "value": shannon,
+                "bins": bins,
+                "normalized": float(normalized),
+            },
         }
+        if method != "shannon":
+            regular_frequency(series.index)
+            if n > max_points:
+                raise ValueError(
+                    "Entropy calculation exceeds max_points pairwise-work budget"
+                )
+            if n <= embedding_dim + 1:
+                raise ValueError(
+                    "Entropy requires more than embedding_dim + 1 observations"
+                )
+            if tolerance is None:
+                tolerance = 0.2 * float(np.std(values))
+            if (
+                isinstance(tolerance, bool)
+                or not isinstance(tolerance, (int, float))
+                or not math.isfinite(tolerance)
+                or tolerance < 0
+            ):
+                raise ValueError("tolerance must be finite and non-negative")
 
-        # Shannon entropy (histogram-based)
-        hist, _ = np.histogram(values, bins=bins, density=True)
-        hist = hist[hist > 0]  # Remove zeros
-        if len(hist) > 0:
-            # Normalize to probabilities
-            probs = hist / np.sum(hist)
-            shannon_entropy = -np.sum(probs * np.log2(probs))
-        else:
-            shannon_entropy = 0.0
+            def templates(length: int) -> np.ndarray:
+                return np.lib.stride_tricks.sliding_window_view(values, length)
 
-        results["shannon_entropy"] = {
-            "value": float(shannon_entropy),
-            "bins": bins,
-            "normalized": float(shannon_entropy / np.log2(bins)) if bins > 1 else 0.0,
-        }
+            def pairs(array: np.ndarray) -> int:
+                return sum(
+                    int(
+                        np.count_nonzero(
+                            np.max(np.abs(array[i + 1 :] - row), axis=1) <= tolerance
+                        )
+                    )
+                    for i, row in enumerate(array[:-1])
+                )
 
-        # Sample entropy (approximation)
-        if method in ("sample", "approximate") and n > 10:
-            m = 2  # Embedding dimension
-            r = 0.2 * np.std(values)  # Tolerance
+            # Both counts compare exactly the same N-m starting positions.
+            b = pairs(templates(embedding_dim)[:-1])
+            a = pairs(templates(embedding_dim + 1))
+            results["sample_entropy"] = {
+                "value": float(-np.log(a / b)) if a and b else None,
+                "embedding_dim": embedding_dim,
+                "tolerance": float(tolerance),
+                "matching_pairs": b,
+                "matching_extensions": a,
+            }
+            if method == "approximate":
 
-            def count_matches(template_length: int) -> int:
-                count = 0
-                templates = []
-                for i in range(n - template_length):
-                    templates.append(values[i : i + template_length])
+                def phi(length: int) -> float:
+                    array = templates(length)
+                    frequencies = [
+                        np.count_nonzero(
+                            np.max(np.abs(array - row), axis=1) <= tolerance
+                        )
+                        / len(array)
+                        for row in array
+                    ]
+                    return float(np.mean(np.log(frequencies)))
 
-                for i, t1 in enumerate(templates):
-                    for t2 in templates[i + 1 :]:
-                        if np.max(np.abs(t1 - t2)) < r:
-                            count += 1
-                return count
-
-            try:
-                b_m = count_matches(m)
-                a_m = count_matches(m + 1)
-
-                if b_m > 0 and a_m > 0:
-                    sample_entropy = -np.log(a_m / b_m)
-                else:
-                    sample_entropy = None
-
-                results["sample_entropy"] = {
-                    "value": float(sample_entropy) if sample_entropy else None,
-                    "embedding_dim": m,
-                    "tolerance": float(r),
-                }
-            except Exception as e:
-                results["sample_entropy"] = {"error": str(e)}
-
-        # Approximate entropy
-        if method == "approximate" and n > 10:
-            # Use sample entropy result for approximation
-            sample_ent = results.get("sample_entropy")
-            if isinstance(sample_ent, dict) and sample_ent.get("value"):
                 results["approximate_entropy"] = {
-                    "value": sample_ent["value"],
-                    "note": "Approximated using sample entropy",
+                    "value": phi(embedding_dim) - phi(embedding_dim + 1),
+                    "embedding_dim": embedding_dim,
+                    "tolerance": float(tolerance),
                 }
-
-        # Interpretation
-        shannon_ent = results["shannon_entropy"]
-        norm_entropy = (
-            shannon_ent["normalized"] if isinstance(shannon_ent, dict) else 0.0
-        )
         results["interpretation"] = {
-            "complexity": (
-                "High"
-                if norm_entropy > 0.8
-                else "Medium"
-                if norm_entropy > 0.5
-                else "Low"
-            ),
-            "predictability": (
-                "Low"
-                if norm_entropy > 0.8
-                else "Medium"
-                if norm_entropy > 0.5
-                else "High"
-            ),
-            "description": (
-                "Series appears random/complex"
-                if norm_entropy > 0.8
-                else "Series has moderate regularity"
-                if norm_entropy > 0.5
-                else "Series has high regularity/predictability"
-            ),
+            "complexity": "High"
+            if normalized > 0.8
+            else "Medium"
+            if normalized > 0.5
+            else "Low",
+            "predictability": "Low"
+            if normalized > 0.8
+            else "Medium"
+            if normalized > 0.5
+            else "High",
+            "description": "Histogram diversity describes marginal values, not a forecast accuracy guarantee",
         }
-
         return results

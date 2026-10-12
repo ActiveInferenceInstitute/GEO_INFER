@@ -27,10 +27,8 @@
 - `src/`
 - `tests/`
 - `tools/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Validation
 

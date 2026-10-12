@@ -32,12 +32,8 @@
 - `cascadia_server.py`
 - `cleanup_data.py`
 - `.gitignore`
-- `.python-version`
 - `DATA_STRUCTURE.md`
-- `pyproject.toml`
-- `requirements.txt`
 - `run_analysis.sh`
-- `uv.lock`
 
 ## Validation
 

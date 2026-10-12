@@ -5,7 +5,7 @@ Tests for the GEO-INFER-TIME forecasting module.
 import pytest
 import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 from geo_infer_time.core.forecasting import ForecastingEngine
 
@@ -16,14 +16,16 @@ class MockTimeSeries:
     def __init__(self, values, frequency="D"):
         self.values = values
         self.frequency = frequency
-        self._start = datetime(2024, 1, 1)
+        self._start = datetime(2024, 1, 1, tzinfo=UTC)
 
     @property
     def end_time(self):
         return self._start + timedelta(days=len(self.values) - 1)
 
     def to_dataframe(self):
-        dates = pd.date_range("2024-01-01", periods=len(self.values), freq="D")
+        dates = pd.date_range(
+            "2024-01-01", periods=len(self.values), freq="D", tz="UTC"
+        )
         return pd.DataFrame({"value": self.values}, index=dates)
 
 

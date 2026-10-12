@@ -5,13 +5,13 @@ Tests workspace within `GEO-INFER-TEST`.
 ## Contents
 
 - `integration/`
+- `performance/`
 - `unit/`
 - `conftest.py`
 
 ## Public Interface
 
 - `conftest.py:PerformanceMonitor` (class)
-- `conftest.py:h3_legacy_test_compatibility` (function)
 - `conftest.py:test_data_dir` (function)
 - `conftest.py:sample_geojson` (function)
 - `conftest.py:sample_h3_indices` (function)
@@ -25,7 +25,6 @@ Tests workspace within `GEO-INFER-TEST`.
 - `conftest.py:sample_bioinformatics_data` (function)
 - `conftest.py:performance_monitor` (function)
 - `conftest.py:test_config` (function)
-- `conftest.py:mock_external_apis` (function)
 - `conftest.py:spatial_test_data` (function)
 - `conftest.py:temporal_test_data` (function)
 - `conftest.py:pytest_terminal_summary` (function)
@@ -35,8 +34,8 @@ Tests workspace within `GEO-INFER-TEST`.
 
 - Module: `GEO-INFER-TEST`
 - Package: `geo_infer_test`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-TEST`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-test`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module TEST`
 
 ## Dependencies
@@ -69,7 +68,7 @@ Tests workspace within `GEO-INFER-TEST`.
   `geo_infer_test.testing` fixtures for deterministic RNG, filesystem, HTTP,
   SQLite, service, model, and artifact boundaries.
 - Dependencies: required test/runtime dependencies are installed by
-  `uv sync --all-packages --all-extras`; missing backends are failures.
+  `uv sync --all-packages --all-extras --all-groups`; missing backends are failures.
 - Expected artifacts: JUnit XML under `.geo-infer-test-results/`; model and
   visualization outputs require finite statistics, sidecars, hashes, and a
   manifest.
@@ -80,7 +79,7 @@ Tests workspace within `GEO-INFER-TEST`.
 ## Validation
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python GEO-INFER-TEST/run_unified_tests.py --module TEST
 ```
 

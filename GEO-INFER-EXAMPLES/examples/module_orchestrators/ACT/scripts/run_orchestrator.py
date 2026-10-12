@@ -12,19 +12,13 @@ the real ``geo_infer_act`` public API.
 from __future__ import annotations
 
 import sys
-from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     import numpy as np
-
     from geo_infer_act import ActiveInferenceModel, GenerativeModel
 
     n_states, n_obs, n_actions = 3, 3, 3
@@ -33,11 +27,12 @@ def _operation() -> Dict[str, Any]:
     A = 0.85 * np.eye(n_obs) + 0.15 / n_obs
     # Transition model B (next state x current state): column-stochastic,
     # with a stay-put bias under the stay action.
-    B = np.zeros((n_states, n_states))
+    stay = np.zeros((n_states, n_states))
     for current in range(n_states):
-        B[current, current] += 0.6
-        B[(current + 1) % n_states, current] += 0.3
-        B[(current + 2) % n_states, current] += 0.1
+        stay[current, current] += 0.6
+        stay[(current + 1) % n_states, current] += 0.3
+        stay[(current + 2) % n_states, current] += 0.1
+    B = np.stack([np.roll(stay, action, axis=0) for action in range(n_actions)], axis=2)
 
     # Prior preferences C: favor observation 2 (the "goal" observation).
     C = {"observations": np.array([0.15, 0.15, 0.70])}
@@ -58,32 +53,37 @@ def _operation() -> Dict[str, Any]:
     )
     agent = ActiveInferenceModel(
         model_type="categorical",
-        allow_local_pymdp_fallback=True,
+        allow_local_pymdp_fallback=False,
         random_seed=7,
     )
     agent.set_generative_model(generative_model)
 
     rng = np.random.default_rng(7)
-    available_actions: List[int] = list(range(n_actions))
-    steps: List[Dict[str, Any]] = []
+    available_actions: list[int] = list(range(n_actions))
+    steps: list[dict[str, Any]] = []
+    true_state = int(rng.choice(n_states, p=D))
     for _ in range(6):
-        true_state = int(rng.integers(0, n_states))
+        observation_index = int(rng.choice(n_obs, p=A[:, true_state]))
         observation = np.zeros(n_obs, dtype=float)
-        observation[true_state] = 1.0
+        observation[observation_index] = 1.0
         result = agent.step(
             observation,
             available_actions=available_actions,
             return_result=True,
         )
         beliefs = np.asarray(result.beliefs["states"], dtype=float).reshape(-1)
+        next_prior = agent.predict_beliefs(int(result.action))["states"]
         steps.append(
             {
                 "observation_state": true_state,
+                "observation_index": observation_index,
                 "selected_action": int(result.action),
                 "free_energy": float(result.free_energy),
                 "posterior_beliefs": [float(b) for b in beliefs],
+                "next_prior": next_prior.tolist(),
             }
         )
+        true_state = int(rng.choice(n_states, p=B[:, true_state, int(result.action)]))
 
     final_beliefs = np.asarray(agent.current_beliefs["states"], dtype=float).reshape(-1)
     return {

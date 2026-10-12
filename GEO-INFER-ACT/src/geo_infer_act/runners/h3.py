@@ -5,7 +5,8 @@ from __future__ import annotations
 import math
 import time
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Optional, cast
+from typing import Any, cast
+from collections.abc import Iterable, Mapping
 
 import numpy as np
 
@@ -18,7 +19,7 @@ from geo_infer_act.runners.io import write_csv, write_json
 from geo_infer_act.utils.h3_adapter import get_h3_adapter, normalize_belief_vector
 
 
-def setup_san_francisco_boundary() -> Dict[str, Any]:
+def setup_san_francisco_boundary() -> dict[str, Any]:
     """Return a compact San Francisco GeoJSON polygon for H3 examples."""
     return {
         "type": "Polygon",
@@ -37,8 +38,8 @@ def setup_san_francisco_boundary() -> Dict[str, Any]:
 def h3_cells_for_config(
     resolution: int = 8,
     ring_size: int = 1,
-    cells: Optional[Iterable[str]] = None,
-) -> List[str]:
+    cells: Iterable[str] | None = None,
+) -> list[str]:
     """Return validated H3 cells for a compact San Francisco scenario."""
     adapter = get_h3_adapter()
     if cells:
@@ -50,9 +51,9 @@ def h3_cells_for_config(
 def generate_realistic_environmental_observations(
     h3_cells: Iterable[str],
     timestep: float,
-    base_patterns: Optional[Mapping[str, Mapping[str, Any]]] = None,
-    spatial_seed: Optional[int] = None,
-) -> Dict[str, Dict[str, float]]:
+    base_patterns: Mapping[str, Mapping[str, Any]] | None = None,
+    spatial_seed: int | None = None,
+) -> dict[str, dict[str, float]]:
     """Generate deterministic environmental observations for real H3 cells."""
     adapter = get_h3_adapter()
     rng = np.random.default_rng(spatial_seed)
@@ -92,13 +93,13 @@ def generate_realistic_environmental_observations(
             },
         }
     )
-    observations: Dict[str, Dict[str, float]] = {}
+    observations: dict[str, dict[str, float]] = {}
     for index, cell in enumerate(h3_cells):
         lat, lng = adapter.cell_to_latlng(str(cell))
         phase = (lat * 3.1) + (lng * 2.7) + (index * 0.17)
         if spatial_seed is not None:
             phase += float(rng.normal(0.0, 0.015))
-        cell_observations: Dict[str, float] = {}
+        cell_observations: dict[str, float] = {}
         for name, pattern in patterns.items():
             base = float(pattern.get("base", 0.5))
             amplitude = float(pattern.get("amplitude", 0.1))
@@ -132,7 +133,7 @@ def observation_dict_to_vector(observation: Mapping[str, float]) -> np.ndarray:
     return cast(np.ndarray, normalize_belief_vector(vector))
 
 
-def create_h3_model(cells: List[str]) -> tuple[GenerativeModel, ActiveInferenceModel]:
+def create_h3_model(cells: list[str]) -> tuple[GenerativeModel, ActiveInferenceModel]:
     """Create ACT generative and active-inference models for H3 cells."""
     generative_model = GenerativeModel(
         "categorical",
@@ -157,8 +158,8 @@ def run_h3_active_inference(
     h3_resolution: int = 8,
     timesteps: int = 10,
     n_agents: int = 3,
-    spatial_seed: Optional[int] = 42,
-) -> Dict[str, Any]:
+    spatial_seed: int | None = 42,
+) -> dict[str, Any]:
     """Run a deterministic H3 Active Inference simulation."""
     start_time = time.perf_counter()
     output_dir = Path(output_dir)
@@ -167,11 +168,11 @@ def run_h3_active_inference(
     generative_model, active_model = create_h3_model(cells)
     active_model.parameters["random_seed"] = spatial_seed
 
-    history: List[Dict[str, Any]] = []
-    environmental_history: List[Dict[str, Dict[str, float]]] = []
-    coordination_history: List[Dict[str, Any]] = []
-    free_energy_evolution: List[float] = []
-    step_rows: List[Dict[str, Any]] = []
+    history: list[dict[str, Any]] = []
+    environmental_history: list[dict[str, dict[str, float]]] = []
+    coordination_history: list[dict[str, Any]] = []
+    free_energy_evolution: list[float] = []
+    step_rows: list[dict[str, Any]] = []
 
     for timestep in range(timesteps):
         env_obs = generate_realistic_environmental_observations(

@@ -64,3 +64,22 @@ class TestGPUHelpers:
 
     def test_package_exports_match(self):
         assert _GPUAccelerator is GPUAccelerator
+
+
+def test_math_import_defers_gpu_runtime_initialization():
+    """Core spatial math imports do not probe accelerator backends."""
+    import subprocess
+    import sys
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-c",
+            "import sys; import geo_infer_math; assert 'tensorflow' not in sys.modules; assert 'torch' not in sys.modules; assert 'cupy' not in sys.modules",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=45,
+    )
+    assert result.returncode == 0, result.stderr

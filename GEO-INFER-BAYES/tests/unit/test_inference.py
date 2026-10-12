@@ -7,12 +7,8 @@ routes to the right sampler, and that run() produces sample dictionaries.
 
 import numpy as np
 import pytest
-from typing import Any, Dict
+from typing import Any
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from geo_infer_bayes.models.base import BayesianModel
 
@@ -25,12 +21,12 @@ class _SimpleModel(BayesianModel):
             "mu": {"prior": "normal", "hyperparams": {"mu": 0.0, "sigma": 1.0}},
         }
 
-    def log_likelihood(self, theta: Dict[str, Any], data: Any) -> float:
+    def log_likelihood(self, theta: dict[str, Any], data: Any) -> float:
         obs = np.asarray(data)
         mu = theta["mu"]
         return float(-0.5 * np.sum((obs - mu) ** 2))
 
-    def log_prior(self, theta: Dict[str, Any]) -> float:
+    def log_prior(self, theta: dict[str, Any]) -> float:
         mu = theta["mu"]
         return float(-0.5 * mu**2)
 

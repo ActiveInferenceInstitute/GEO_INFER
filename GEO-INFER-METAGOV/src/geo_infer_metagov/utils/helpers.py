@@ -1,7 +1,7 @@
 """Utility helper functions for METAGOV module."""
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Any
 from datetime import datetime
 import json
 
@@ -131,7 +131,7 @@ def validate_decision_domains(decision_domains: Any) -> bool:
     return True
 
 
-def calculate_collaboration_potential(stakeholders: List[Dict[str, Any]]) -> float:
+def calculate_collaboration_potential(stakeholders: list[dict[str, Any]]) -> float:
     """
     Calculate collaboration potential based on stakeholder interests.
 
@@ -169,8 +169,8 @@ def calculate_collaboration_potential(stakeholders: List[Dict[str, Any]]) -> flo
 
 
 def calculate_power_concentration(
-    stakeholders: List[Dict[str, Any]],
-) -> Tuple[float, str]:
+    stakeholders: list[dict[str, Any]],
+) -> tuple[float, str]:
     """
     Calculate power concentration among stakeholders.
 
@@ -213,7 +213,7 @@ def calculate_power_concentration(
     return concentration, assessment
 
 
-def extract_governance_metrics(governance_structure: Any) -> Dict[str, Any]:
+def extract_governance_metrics(governance_structure: Any) -> dict[str, Any]:
     """
     Extract key metrics from governance structure.
 
@@ -246,7 +246,7 @@ def extract_governance_metrics(governance_structure: Any) -> Dict[str, Any]:
 
 
 def generate_governance_report(
-    governance_structure: Any, title: Optional[str] = None
+    governance_structure: Any, title: str | None = None
 ) -> str:
     """
     Generate a governance structure report.
@@ -331,7 +331,7 @@ def format_governance_output(data: Any, format_type: str = "json") -> str:
 
 def merge_governance_structures(
     structure1: Any, structure2: Any, strategy: str = "union"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Merge two governance structures.
 
@@ -366,7 +366,7 @@ def merge_governance_structures(
     return result
 
 
-def validate_ostrom_principles(principles: List[str]) -> Tuple[bool, List[str]]:
+def validate_ostrom_principles(principles: list[str]) -> tuple[bool, list[str]]:
     """
     Validate Ostrom design principles.
 
@@ -408,7 +408,7 @@ def validate_ostrom_principles(principles: List[str]) -> Tuple[bool, List[str]]:
     return is_valid, validated
 
 
-def calculate_governance_health_score(metrics: Dict[str, float]) -> float:
+def calculate_governance_health_score(metrics: dict[str, float]) -> float:
     """
     Calculate overall governance health score.
 

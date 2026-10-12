@@ -7,7 +7,7 @@ Physical, Digital, and Cognitive security domains.
 
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Any, Union
+from typing import Any
 from dataclasses import dataclass, field
 import json
 
@@ -42,13 +42,13 @@ class SecurityEvent:
     event_type: str
     category: SecurityEventCategory = SecurityEventCategory.SYSTEM_ACTIVITY
     timestamp: datetime = field(default_factory=datetime.now)
-    source: Optional[str] = None
-    target: Optional[str] = None
+    source: str | None = None
+    target: str | None = None
     severity: ThreatLevel = ThreatLevel.MEDIUM
     description: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert event to dictionary."""
         return {
             "event_id": self.event_id,
@@ -63,7 +63,7 @@ class SecurityEvent:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SecurityEvent":
+    def from_dict(cls, data: dict[str, Any]) -> "SecurityEvent":
         """Create event from dictionary."""
         return cls(
             event_id=data["event_id"],
@@ -87,18 +87,18 @@ class SecurityAlert:
     description: str
     severity: ThreatLevel
     category: SecurityEventCategory
-    source_events: List[str] = field(default_factory=list)
-    affected_assets: List[str] = field(default_factory=list)
-    threat_indicators: List[str] = field(default_factory=list)
-    recommended_actions: List[str] = field(default_factory=list)
+    source_events: list[str] = field(default_factory=list)
+    affected_assets: list[str] = field(default_factory=list)
+    threat_indicators: list[str] = field(default_factory=list)
+    recommended_actions: list[str] = field(default_factory=list)
     status: str = "open"  # open, investigating, resolved, false_positive
-    assigned_to: Optional[str] = None
+    assigned_to: str | None = None
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
-    resolved_at: Optional[datetime] = None
+    resolved_at: datetime | None = None
     resolution_notes: str = ""
     confidence_score: float = 1.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def update_status(self, new_status: str, notes: str = "") -> None:
         """Update alert status."""
@@ -123,9 +123,9 @@ class ThreatIntelligence:
     description: str
     first_seen: datetime
     last_seen: datetime
-    tags: List[str] = field(default_factory=list)
-    related_indicators: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    tags: list[str] = field(default_factory=list)
+    related_indicators: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -138,16 +138,16 @@ class SecurityAsset:
     description: str
     criticality: ThreatLevel
     owner: str
-    location: Optional[str] = None
-    ip_addresses: List[str] = field(default_factory=list)
-    mac_addresses: List[str] = field(default_factory=list)
-    operating_system: Optional[str] = None
-    installed_software: List[Dict[str, str]] = field(default_factory=list)
-    security_controls: List[str] = field(default_factory=list)
-    vulnerabilities: List[str] = field(default_factory=list)
-    last_scan: Optional[datetime] = None
-    compliance_status: Dict[str, bool] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    location: str | None = None
+    ip_addresses: list[str] = field(default_factory=list)
+    mac_addresses: list[str] = field(default_factory=list)
+    operating_system: str | None = None
+    installed_software: list[dict[str, str]] = field(default_factory=list)
+    security_controls: list[str] = field(default_factory=list)
+    vulnerabilities: list[str] = field(default_factory=list)
+    last_scan: datetime | None = None
+    compliance_status: dict[str, bool] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -158,18 +158,18 @@ class SecurityPolicy:
     name: str
     description: str
     policy_type: str  # access_control, data_protection, network_security, etc.
-    scope: List[str]  # Which assets/systems it applies to
-    rules: List[Dict[str, Any]]
+    scope: list[str]  # Which assets/systems it applies to
+    rules: list[dict[str, Any]]
     enforcement_level: str  # enforcing, permissive, monitoring
-    exceptions: List[Dict[str, Any]] = field(default_factory=list)
+    exceptions: list[dict[str, Any]] = field(default_factory=list)
     owner: str = ""
     version: str = "1.0"
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
-    effective_date: Optional[datetime] = None
-    expiry_date: Optional[datetime] = None
-    compliance_frameworks: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    effective_date: datetime | None = None
+    expiry_date: datetime | None = None
+    compliance_frameworks: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -179,16 +179,16 @@ class SecurityCompliance:
     compliance_id: str
     framework: str  # NIST, ISO27001, PCI-DSS, HIPAA, etc.
     version: str
-    scope: List[str]
+    scope: list[str]
     assessment_date: datetime
     assessor: str
     overall_score: float  # 0-100
-    control_results: Dict[str, Dict[str, Any]]  # control_id -> result
-    findings: List[Dict[str, Any]]
-    recommendations: List[str]
-    next_assessment: Optional[datetime] = None
+    control_results: dict[str, dict[str, Any]]  # control_id -> result
+    findings: list[dict[str, Any]]
+    recommendations: list[str]
+    next_assessment: datetime | None = None
     certification_status: str = "pending"  # pending, certified, non_compliant
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -198,17 +198,17 @@ class SecurityMetrics:
     metric_id: str
     metric_name: str
     metric_type: str  # count, percentage, score, duration
-    value: Union[int, float, str]
+    value: int | float | str
     unit: str
     measurement_time: datetime
     time_period: str  # daily, weekly, monthly, etc.
     source: str
     category: str  # availability, integrity, confidentiality, etc.
-    target_value: Optional[Union[int, float]] = None
-    threshold_critical: Optional[Union[int, float]] = None
-    threshold_warning: Optional[Union[int, float]] = None
+    target_value: int | float | None = None
+    threshold_critical: int | float | None = None
+    threshold_warning: int | float | None = None
     trend: str = "stable"  # improving, declining, stable
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -228,15 +228,15 @@ class RiskAssessmentRecord:
     likelihood_score: float  # 1-5
     risk_score: float  # impact * likelihood
     risk_level: ThreatLevel
-    current_controls: List[str]
+    current_controls: list[str]
     control_effectiveness: float  # 0-1
     residual_risk_score: float
     risk_owner: str
-    mitigation_plan: List[Dict[str, Any]]
+    mitigation_plan: list[dict[str, Any]]
     assessment_date: datetime
-    next_review: Optional[datetime] = None
+    next_review: datetime | None = None
     status: str = "active"  # active, mitigated, accepted, transferred
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -247,18 +247,18 @@ class SecurityIncidentWorkflow:
     incident_id: str
     workflow_name: str
     current_stage: str
-    stages: List[Dict[str, Any]]  # stage definitions
-    stage_history: List[Dict[str, Any]]  # completed stages
+    stages: list[dict[str, Any]]  # stage definitions
+    stage_history: list[dict[str, Any]]  # completed stages
     assigned_team: str
-    escalation_rules: List[Dict[str, Any]]
-    automation_rules: List[Dict[str, Any]]
-    sla_requirements: Dict[str, Any]
-    communication_plan: List[Dict[str, Any]]
-    evidence_chain: List[str]
-    lessons_learned: List[str] = field(default_factory=list)
+    escalation_rules: list[dict[str, Any]]
+    automation_rules: list[dict[str, Any]]
+    sla_requirements: dict[str, Any]
+    communication_plan: list[dict[str, Any]]
+    evidence_chain: list[str]
+    lessons_learned: list[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -269,16 +269,16 @@ class SecurityConfiguration:
     config_name: str
     config_type: str  # system, application, network, security_tool
     target_asset: str
-    configuration_items: Dict[str, Any]
-    baseline_config: Dict[str, Any]
-    security_requirements: List[str]
-    compliance_mappings: Dict[str, List[str]]  # framework -> controls
-    change_history: List[Dict[str, Any]]
+    configuration_items: dict[str, Any]
+    baseline_config: dict[str, Any]
+    security_requirements: list[str]
+    compliance_mappings: dict[str, list[str]]  # framework -> controls
+    change_history: list[dict[str, Any]]
     approved_by: str
-    implementation_date: Optional[datetime] = None
-    review_date: Optional[datetime] = None
+    implementation_date: datetime | None = None
+    review_date: datetime | None = None
     status: str = "draft"  # draft, approved, implemented, deprecated
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 # Utility functions for model operations
@@ -319,8 +319,8 @@ class SecurityModelUtils:
 
     @staticmethod
     def merge_metadata(
-        base_metadata: Dict[str, Any], additional_metadata: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        base_metadata: dict[str, Any], additional_metadata: dict[str, Any]
+    ) -> dict[str, Any]:
         """Safely merge metadata dictionaries."""
         merged = base_metadata.copy()
         merged.update(additional_metadata)
@@ -328,17 +328,17 @@ class SecurityModelUtils:
 
     @staticmethod
     def filter_events_by_timeframe(
-        events: List[SecurityEvent], start_time: datetime, end_time: datetime
-    ) -> List[SecurityEvent]:
+        events: list[SecurityEvent], start_time: datetime, end_time: datetime
+    ) -> list[SecurityEvent]:
         """Filter events by time frame."""
         return [event for event in events if start_time <= event.timestamp <= end_time]
 
     @staticmethod
     def group_events_by_category(
-        events: List[SecurityEvent],
-    ) -> Dict[str, List[SecurityEvent]]:
+        events: list[SecurityEvent],
+    ) -> dict[str, list[SecurityEvent]]:
         """Group events by category."""
-        grouped: Dict[str, List[SecurityEvent]] = {}
+        grouped: dict[str, list[SecurityEvent]] = {}
         for event in events:
             category = event.category.value
             if category not in grouped:
@@ -348,7 +348,7 @@ class SecurityModelUtils:
 
     @staticmethod
     def calculate_confidence_score(
-        indicators: List[str], evidence_strength: Dict[str, float]
+        indicators: list[str], evidence_strength: dict[str, float]
     ) -> float:
         """Calculate confidence score based on indicators and evidence."""
         if not indicators:

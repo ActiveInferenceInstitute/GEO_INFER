@@ -35,61 +35,30 @@ def compute_risk(
 
 Every public function/method must include: `Args`, `Returns`, `Raises`, and `Example`.
 
-## YAML Front Matter
+## Generated README.md and AGENTS.md
 
-All module READMEs must start with:
+Module and directory `README.md`/`AGENTS.md` files are generated signposts
+(contents, public interface, module metadata, dependencies, validation
+commands). Regenerate them with
+`uv run python GEO-INFER-TEST/rewrite_readme_agents.py` and never edit them by
+hand; CI runs `rewrite_readme_agents.py --check`. Conceptual guidance,
+tutorials and integration notes belong in `GEO-INFER-INTRA/docs/` or a
+module's `docs/` directory.
 
-```yaml
----
-title: GEO-INFER-MODULE
-description: One-line module description
-purpose: What this module does and why
-module_type: core | domain | application | operations
-status: alpha | beta | stable
-version: 0.2.0
-last_updated: 2026-02-25
-dependencies:
-  - GEO-INFER-MATH
-  - GEO-INFER-SPACE
-tags:
-  - geospatial
-  - active-inference
----
-```
+## SKILL.md
 
-## README Sections (required)
+Each module's hand-written `SKILL.md` starts with YAML front matter (required
+`name` and `description`; optional `prerequisites`) and must contain `## Instructions`,
+`## Examples` and `## Guidelines` with an `### Integrations` subsection.
+Validate with:
 
-1. **Overview** — module purpose and scope
-2. **Core Features** — capabilities list (not "Key Features")
-3. **API Reference** — core classes with signatures
-4. **Integration** — how it connects to other modules
-5. **Getting Started** — installation and basic usage
-6. **Examples** — working code that actually runs
-7. **Troubleshooting** — common issues and solutions
-
-## AGENTS.md
-
-Every module must have an `AGENTS.md` file that helps AI agents navigate:
-
-```markdown
-# GEO-INFER-MODULE Agent Guide
-
-## Key Files
-- `src/geo_infer_module/core/engine.py` — Main engine class
-- `src/geo_infer_module/api/rest_api.py` — API endpoints
-
-## Common Tasks
-- Adding a new analysis type: extend `Engine.run_analysis()`
-- Adding an API endpoint: add route in `rest_api.py`
-
-## Gotchas
-- Always validate input data before processing
-- Use H3 v4 API methods (not v3)
+```bash
+uv run python GEO-INFER-TEST/validate_skills.py --check-xrefs --warnings-fatal
 ```
 
 ## CHANGELOG.md
 
-Follow [Keep a Changelog](https://keepachangelog.com/) format:
+The root `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/):
 
 ```markdown
 # Changelog

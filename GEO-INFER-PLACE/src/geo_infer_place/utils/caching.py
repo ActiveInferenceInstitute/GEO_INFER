@@ -12,7 +12,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class CachedAPIWrapper:
 
     def __init__(
         self,
-        cache_dir: Optional[Path] = None,
+        cache_dir: Path | None = None,
         cache_ttl: timedelta = timedelta(hours=24),
     ) -> None:
         self.cache_dir = cache_dir or DEFAULT_CACHE_DIR
@@ -50,14 +50,14 @@ class CachedAPIWrapper:
         key_str = json.dumps(key_data, sort_keys=True, default=str)
         return hashlib.md5(key_str.encode()).hexdigest()
 
-    def _read_cache(self, cache_key: str) -> Optional[Any]:
+    def _read_cache(self, cache_key: str) -> Any | None:
         """Return cached data if present and not expired, else ``None``."""
         cache_file = self.cache_dir / f"{cache_key}.json"
         if not cache_file.exists():
             return None
 
         try:
-            with open(cache_file, "r") as f:
+            with open(cache_file) as f:
                 envelope = json.load(f)
 
             cached_at = datetime.fromisoformat(envelope["timestamp"])

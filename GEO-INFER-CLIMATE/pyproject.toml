@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=77.0", "wheel"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-climate"
-version = "0.3.0"
+version = "0.4.0"
 description = "Climate modeling, weather analysis, and climate change impact assessment for geospatial systems"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"
@@ -71,10 +71,3 @@ exclude = ["tests*"]
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.md", "*.txt"]
 
-[tool.black]
-line-length = 88
-target-version = ['py311', 'py312']
-
-[tool.isort]
-profile = "black"
-line_length = 88

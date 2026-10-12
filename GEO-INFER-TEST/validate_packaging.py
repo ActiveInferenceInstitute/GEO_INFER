@@ -25,13 +25,6 @@ across all ``GEO-INFER-*`` modules:
   file matching no glob (a resource that would silently miss the wheel) is
   an error, and per-module deviations from the canonical pattern set are
   surfaced.
-- Requirements parity: every runtime dependency declared in a module's
-  ``[project.dependencies]`` must appear in the module's
-  ``requirements.txt`` (the module's own distribution name is exempt), and
-  every ``requirements.txt`` entry must be declared by the module in
-  ``[project.dependencies]``, any ``[project.optional-dependencies]`` group,
-  or a legacy ``setup.py`` ``install_requires``. Names compare normalized
-  (lowercase, ``_`` == ``-``) with version specifiers and extras stripped.
 - Out-of-package source traversal is reported as a diagnostic so authors can
   migrate ``Path(__file__).parent...`` config lookups to an installed-wheel
   safe discovery mechanism when publishing wheels. Modules migrated to
@@ -44,11 +37,11 @@ from __future__ import annotations
 import argparse
 import ast
 import fnmatch
+import importlib.metadata
 import re
 from collections import Counter
 from pathlib import Path
 import sys
-from typing import List, Optional
 
 from _validator_common import (
     ContractReport,
@@ -57,9 +50,8 @@ from _validator_common import (
     distribution_name,
     internal_requirement_names,
     package_name_from_distribution,
-    parse_requirements_names,
-    parse_setup_py_requires,
     pyproject_dependency_names,
+    pyproject_group_names,
     pyproject_optional_names,
     read_pyproject as parse_pyproject,
     read_toml,
@@ -108,7 +100,7 @@ MIGRATED_SOURCE_TRAVERSAL_MODULES = frozenset(
 _PACKAGE_DATA_EXCLUDED_DIRS = ("__pycache__",)
 
 
-def module_dirs() -> List[Path]:
+def module_dirs() -> list[Path]:
     """Return ``GEO-INFER-*`` module directories in stable order."""
     return discover_module_dirs(REPO_ROOT)
 
@@ -132,12 +124,12 @@ def wheel_filename_is_valid(built_name: str, expected_distribution: str) -> bool
     return built_name.startswith(f"{normalized}-")
 
 
-def _package_data_patterns(pyproject: dict) -> List[str] | None:
+def _package_data_patterns(pyproject: dict) -> list[str] | None:
     """Return the union of [tool.setuptools.package-data] globs, or None."""
     table = pyproject.get("tool", {}).get("setuptools", {}).get("package-data")
     if not isinstance(table, dict) or not table:
         return None
-    patterns: List[str] = []
+    patterns: list[str] = []
     for patterns_by_key in table.values():
         if not isinstance(patterns_by_key, list):
             continue
@@ -219,7 +211,7 @@ def _development_status(pyproject: dict) -> str | None:
 
 
 def validate_version_uniformity(
-    inventories: List[tuple[str, dict]], report: ContractReport
+    inventories: list[tuple[str, dict]], report: ContractReport
 ) -> None:
     """Member pyprojects must agree on ``[project].version``."""
     versions = {
@@ -248,12 +240,90 @@ def validate_version_uniformity(
             )
 
 
+def validate_release_metadata(
+    repo_root: Path,
+    inventories: list[tuple[str, dict]],
+    report: ContractReport,
+) -> None:
+    """Bind the virtual root, member metadata, and public runtime version literals."""
+    root_project = read_toml(repo_root / "pyproject.toml")
+    expected = root_project.get("project", {}).get("version")
+    if not isinstance(expected, str) or not expected:
+        report.error("root pyproject.toml: missing release version")
+        return
+    if root_project.get("tool", {}).get("uv", {}).get("package") is not False:
+        report.error(
+            "root pyproject.toml: the workspace must remain virtual (tool.uv.package=false)"
+        )
+    for module_name, project in inventories:
+        version = project.get("project", {}).get("version")
+        if version != expected:
+            report.error(
+                f"{module_name}: member version {version!r} differs from root {expected!r}"
+            )
+        package_name = package_name_from_distribution(distribution_name(project) or "")
+        source = repo_root / module_name / "src" / package_name
+        public_init = source / "__init__.py"
+        has_public_version = False
+        for path in sorted(source.rglob("*.py")):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for statement in tree.body:
+                if not isinstance(statement, ast.Assign):
+                    continue
+                if not any(
+                    isinstance(t, ast.Name) and t.id == "__version__"
+                    for t in statement.targets
+                ):
+                    continue
+                if path == public_init:
+                    has_public_version = True
+                value = (
+                    statement.value.value
+                    if isinstance(statement.value, ast.Constant)
+                    else None
+                )
+                if value != expected:
+                    report.error(
+                        f"{path.relative_to(repo_root)}: runtime version {value!r} differs from root {expected!r}"
+                    )
+        if not has_public_version:
+            report.error(
+                f"{module_name}: public package has no static __version__ release metadata"
+            )
+
+
+def validate_aggregate_extras(
+    project: dict, label: str, report: ContractReport
+) -> None:
+    """Expanded 'all' extras must include every declared optional requirement."""
+    extras = project.get("project", {}).get("optional-dependencies", {})
+    if "all" not in extras:
+        return
+    from packaging.requirements import Requirement
+
+    all_requirements = {str(Requirement(value)) for value in extras["all"]}
+    required = {
+        str(Requirement(value))
+        for name, values in extras.items()
+        if name != "all"
+        for value in values
+    }
+    self_name = project.get("project", {}).get("name", "").lower().replace("_", "-")
+    for value in extras["all"]:
+        if Requirement(value).name.lower().replace("_", "-") == self_name:
+            report.error(
+                f"{label}: aggregate extras must be expanded; self-reference {value!r}"
+            )
+    for missing in sorted(required - all_requirements):
+        report.error(f"{label}: all extra omits optional requirement {missing!r}")
+
+
 _CITATION_VERSION_RE = re.compile(
     r"""^version:[ \t]*["']?([^"'\s]+)["']?[ \t]*$""", re.MULTILINE
 )
 
 
-def citation_cff_version(citation_path: Path) -> Optional[str]:
+def citation_cff_version(citation_path: Path) -> str | None:
     """Return the top-level ``version`` field of a CITATION.cff, or None."""
     if not citation_path.is_file():
         return None
@@ -266,9 +336,9 @@ def citation_cff_version(citation_path: Path) -> Optional[str]:
 
 
 def validate_citation_version(
-    inventories: List[tuple[str, dict]],
+    inventories: list[tuple[str, dict]],
     report: ContractReport,
-    citation_path: Optional[Path] = None,
+    citation_path: Path | None = None,
 ) -> None:
     """CITATION.cff must cite the fleet-majority member version (CI-03).
 
@@ -305,7 +375,7 @@ def validate_citation_version(
 
 
 def validate_classifier_consistency(
-    inventories: List[tuple[str, dict]], report: ContractReport
+    inventories: list[tuple[str, dict]], report: ContractReport
 ) -> None:
     """Warn on module Development Status outliers; root asymmetry is a note."""
     statuses = {
@@ -356,7 +426,7 @@ trove_top_level_categories = {
 
 
 def validate_classifier_validity(
-    inventories: List[tuple[str, dict]], report: ContractReport
+    inventories: list[tuple[str, dict]], report: ContractReport
 ) -> None:
     """Reject trove classifiers PyPI would refuse on upload.
 
@@ -411,52 +481,6 @@ def validate_module(module_dir: Path, pyproject: dict, report: ContractReport) -
     validate_package_data(module_dir, pyproject, report)
 
 
-def validate_requirements_parity(
-    module_dir: Path, pyproject: dict, report: ContractReport
-) -> None:
-    """Enforce two-way parity between [project.dependencies] and requirements.txt.
-
-    Forward direction: every runtime dependency declared in
-    ``[project.dependencies]`` must appear in the module's
-    ``requirements.txt``. The module's own distribution name (a
-    self-dependency such as ``geo-infer-x`` inside GEO-INFER-X) is exempt.
-
-    Reverse direction: every ``requirements.txt`` entry must be declared by
-    the module — in ``[project.dependencies]``, any
-    ``[project.optional-dependencies]`` group, or a legacy ``setup.py``
-    ``install_requires``. Modules whose ``setup.py`` feeds
-    ``install_requires`` from ``requirements.txt`` are treated as
-    requirements-authoritative and are exempt from the reverse direction.
-    """
-    label = module_dir.name
-    distribution = distribution_name(pyproject)
-    required = pyproject_dependency_names(pyproject)
-    optional = pyproject_optional_names(pyproject)
-    declared = required | optional
-    listed = parse_requirements_names(module_dir / "requirements.txt")
-    setup_names, setup_reads_requirements = parse_setup_py_requires(module_dir)
-
-    for dep in sorted(required):
-        if dep == distribution:
-            continue
-        if dep not in listed:
-            report.errors.append(
-                f"{label}: requirements.txt missing runtime dependency "
-                f"{dep!r} declared in [project.dependencies]"
-            )
-
-    if setup_reads_requirements:
-        return
-    accepted = declared | (setup_names or set())
-    for name in sorted(set(listed)):
-        if name not in accepted:
-            report.errors.append(
-                f"{label}: requirements.txt lists {name!r} which is not "
-                "declared in [project.dependencies], "
-                "[project.optional-dependencies] or setup.py install_requires"
-            )
-
-
 def validate_source_traversal(module_dir: Path, report: ContractReport) -> None:
     """Flag source files that reach outside the module package for resources."""
     src_dir = module_dir / "src"
@@ -505,7 +529,24 @@ IMPORT_ROOT_ALIASES = {
     "jwt": "pyjwt",
     "jose": "python-jose",
     "strawberry": "strawberry-graphql",
+    "_pytest": "pytest",
+    "pymdp": "inferactively-pymdp",
 }
+
+# Installed import-root -> distribution map, so aliases above only need to
+# cover roots whose distribution is not installed in the validating env.
+_INSTALLED_ROOT_DISTRIBUTIONS = importlib.metadata.packages_distributions()
+
+
+def distribution_for_import_root(root: str) -> str:
+    """Return the normalized distribution name that provides ``root``."""
+    if root in IMPORT_ROOT_ALIASES:
+        return IMPORT_ROOT_ALIASES[root]
+    installed = _INSTALLED_ROOT_DISTRIBUTIONS.get(root)
+    if installed and len(installed) == 1:
+        return installed[0].lower().replace("_", "-").replace(".", "-")
+    return root.lower().replace("_", "-")
+
 
 # Complete standard-library root set for the running interpreter; the
 # hand-maintained STDLIB_REQUIREMENT_NAMES stays as a belt-and-braces floor.
@@ -518,7 +559,7 @@ def _handles_import_error(handler: ast.ExceptHandler) -> bool:
     """True when the handler catches ImportError (bare, tuple, or catch-all)."""
     if handler.type is None:
         return True
-    names: List[str] = []
+    names: list[str] = []
     if isinstance(handler.type, ast.Name):
         names = [handler.type.id]
     elif isinstance(handler.type, ast.Tuple):
@@ -592,7 +633,10 @@ def module_import_roots(module_dir: Path) -> dict:
 
 
 def validate_import_parity(
-    module_dir: Path, pyproject: dict, report: ContractReport
+    module_dir: Path,
+    pyproject: dict,
+    report: ContractReport,
+    workspace_distributions: set[str] | None = None,
 ) -> None:
     """Compare top-level third-party import roots against declared dependencies.
 
@@ -608,14 +652,18 @@ def validate_import_parity(
             pyproject_dependency_names(pyproject) | pyproject_optional_names(pyproject)
         )
     }
-    declared |= internal_requirement_names(REPO_ROOT)
+    declared |= (
+        workspace_distributions
+        if workspace_distributions is not None
+        else internal_requirement_names(REPO_ROOT)
+    )
     for roots in module_import_roots(module_dir).values():
         for root in sorted(roots):
             if root in _STDLIB_ROOTS:
                 continue
             if root == "src":
                 continue
-            dist = IMPORT_ROOT_ALIASES.get(root, root.lower().replace("_", "-"))
+            dist = distribution_for_import_root(root)
             if dist in declared:
                 continue
             rel = None
@@ -633,11 +681,174 @@ def validate_import_parity(
             )
 
 
-def validate_all(target_dirs: Optional[List[Path]] = None) -> ContractReport:
+# Call targets that import the module named by their first argument; a
+# string literal there is a dynamic test import that counts toward parity.
+_DYNAMIC_IMPORT_CALLS = frozenset(
+    {"import_module", "importorskip", "__import__", "find_spec"}
+)
+
+_DOTTED_MODULE_PATH = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$")
+
+
+def _dynamic_import_call(node: ast.Call) -> bool:
+    """True for ``import_module(...)``-style calls, by bare or attribute name."""
+    func = node.func
+    name = func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", None)
+    return name in _DYNAMIC_IMPORT_CALLS and bool(node.args)
+
+
+def _literal_import_root(node: ast.Call) -> str | None:
+    """Root of a dynamic import call whose first argument is a string literal."""
+    first = node.args[0]
+    if not isinstance(first, ast.Constant) or not isinstance(first.value, str):
+        return None
+    if not _DOTTED_MODULE_PATH.fullmatch(first.value):
+        return None
+    return first.value.split(".")[0]
+
+
+def all_import_roots(
+    tree: ast.Module, workspace_packages: frozenset[str] = frozenset()
+) -> set[str]:
+    """Every absolute import root in a module, wherever it appears.
+
+    Unlike ``_top_level_import_roots`` this includes function-local imports,
+    imports under try/except ImportError guards, ``if`` and ``if
+    TYPE_CHECKING:`` branches, and string-literal dynamic imports
+    (``importlib.import_module``, ``pytest.importorskip``, ``__import__``,
+    ``importlib.util.find_spec``): a test suite must declare everything it
+    can import. When the module also performs a dynamic import with a
+    computed argument (``import_module(name)`` over a parametrized list),
+    every dotted-path string literal rooted at a ``workspace_packages`` name
+    counts as imported too, because the call's argument cannot be resolved
+    statically and workspace package names are unambiguous.
+    """
+    roots: set[str] = set()
+    computed_dynamic_import = False
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            roots.update(alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            roots.add(node.module.split(".")[0])
+        elif isinstance(node, ast.Call) and _dynamic_import_call(node):
+            root = _literal_import_root(node)
+            if root is None:
+                computed_dynamic_import = True
+            else:
+                roots.add(root)
+    if computed_dynamic_import and workspace_packages:
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Constant)
+                and isinstance(node.value, str)
+                and _DOTTED_MODULE_PATH.fullmatch(node.value)
+                and (root := node.value.split(".")[0]) in workspace_packages
+            ):
+                roots.add(root)
+    return roots
+
+
+def _local_import_roots(module_dir: Path, tests_dir: Path) -> set[str]:
+    """Import roots that resolve to files inside the module itself.
+
+    Covers the module's own ``src/`` packages, the ``src``/``tests`` roots,
+    module-root packages and scripts (e.g. TEST's ``demo`` package and
+    ``run_unified_tests.py``), and test helper modules or packages under
+    ``tests/`` that pytest's rootdir-relative ``sys.path`` insertion makes
+    importable by bare name. Plain directories without ``__init__.py`` are
+    not import roots and are not exempted.
+    """
+    local: set[str] = {"src", "tests"}
+    src_dir = module_dir / "src"
+    if src_dir.is_dir():
+        local.update(path.name for path in src_dir.iterdir() if path.is_dir())
+    candidates = [*module_dir.iterdir(), *tests_dir.rglob("*")]
+    for path in candidates:
+        if "__pycache__" in path.parts:
+            continue
+        if path.is_dir() and (path / "__init__.py").is_file():
+            local.add(path.name)
+        elif path.is_file() and path.suffix == ".py":
+            local.add(path.stem)
+    return local
+
+
+def workspace_package_names(repo_root: Path) -> frozenset[str]:
+    """Importable package names of every workspace member (``geo_infer_*``)."""
+    return frozenset(
+        package_name_from_distribution(name)
+        for name in internal_requirement_names(repo_root)
+    )
+
+
+def collect_test_import_roots(
+    module_dir: Path, workspace_packages: frozenset[str] = frozenset()
+) -> dict[str, Path]:
+    """Map each absolute import root used under ``tests/`` to its first file."""
+    tests_dir = module_dir / "tests"
+    roots: dict[str, Path] = {}
+    if not tests_dir.is_dir():
+        return roots
+    for path in sorted(tests_dir.rglob("*.py")):
+        if "__pycache__" in path.parts:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8", errors="ignore"))
+        for root in sorted(all_import_roots(tree, workspace_packages)):
+            roots.setdefault(root, path.relative_to(module_dir))
+    return roots
+
+
+def validate_test_import_parity(
+    module_dir: Path,
+    pyproject: dict,
+    report: ContractReport,
+    workspace_packages: frozenset[str] | None = None,
+) -> None:
+    """Every third-party or sibling import under ``tests/`` must be declared.
+
+    A test import is satisfied by a runtime dependency, any optional extra,
+    or any PEP 735 ``[dependency-groups]`` group (convention: ``test``).
+    Sibling ``geo_infer_*`` packages are NOT exempt here, unlike the runtime
+    import check: a test suite importing a sibling must declare it (with a
+    ``[tool.uv.sources]`` workspace source) or it only resolves through a
+    workspace-wide sync. Standard-library roots and roots resolving to the
+    module's own files are exempt; guarded and function-local imports count.
+    """
+    tests_dir = module_dir / "tests"
+    if not tests_dir.is_dir():
+        return
+    if workspace_packages is None:
+        workspace_packages = workspace_package_names(REPO_ROOT)
+    declared = {
+        name.rstrip(".")
+        for name in (
+            pyproject_dependency_names(pyproject)
+            | pyproject_optional_names(pyproject)
+            | pyproject_group_names(pyproject)
+        )
+    }
+    local = _local_import_roots(module_dir, tests_dir)
+    roots = collect_test_import_roots(module_dir, workspace_packages)
+    for root, first in sorted(roots.items()):
+        if root not in IMPORT_ROOT_ALIASES and (root in _STDLIB_ROOTS or root in local):
+            continue
+        dist = distribution_for_import_root(root)
+        if dist in declared:
+            continue
+        report.error(
+            f"{module_dir.name}: test import '{root}' (distribution {dist!r}) is "
+            "not declared in dependencies, an extra, or a dependency group "
+            f"(first: {first})"
+        )
+
+
+def validate_all(target_dirs: list[Path] | None = None) -> ContractReport:
     report = ContractReport()
     if target_dirs is None:
         target_dirs = module_dirs()
-    inventories: List[tuple[str, dict]] = []
+    inventories: list[tuple[str, dict]] = []
+    workspace_packages = workspace_package_names(REPO_ROOT)
+    workspace_distributions = internal_requirement_names(REPO_ROOT)
     for module_dir in target_dirs:
         pyproject = parse_pyproject(module_dir)
         if not pyproject:
@@ -645,10 +856,13 @@ def validate_all(target_dirs: Optional[List[Path]] = None) -> ContractReport:
             continue
         inventories.append((module_dir.name, pyproject))
         validate_module(module_dir, pyproject, report)
-        validate_requirements_parity(module_dir, pyproject, report)
-        validate_import_parity(module_dir, pyproject, report)
+        validate_import_parity(module_dir, pyproject, report, workspace_distributions)
+        validate_test_import_parity(module_dir, pyproject, report, workspace_packages)
         validate_source_traversal(module_dir, report)
+        validate_aggregate_extras(pyproject, module_dir.name, report)
     validate_version_uniformity(inventories, report)
+    validate_release_metadata(REPO_ROOT, inventories, report)
+    validate_aggregate_extras(read_toml(REPO_ROOT / "pyproject.toml"), "root", report)
     validate_citation_version(inventories, report)
     validate_classifier_consistency(inventories, report)
     validate_classifier_validity(inventories, report)

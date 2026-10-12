@@ -20,7 +20,7 @@ from geo_infer_data.connectors.file import (
 def _run(coro):
     import asyncio
 
-    return asyncio.get_event_loop().run_until_complete(coro)
+    return asyncio.run(coro)
 
 
 def _evil_zip(path):

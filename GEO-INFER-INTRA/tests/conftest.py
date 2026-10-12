@@ -7,7 +7,8 @@ import tempfile
 import logging
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Dict, Optional, Any, Generator
+from typing import Any
+from collections.abc import Generator
 from geo_infer_intra.utils.config import load_default_config
 
 # List of all GEO-INFER modules
@@ -49,7 +50,7 @@ GEO_INFER_MODULES = [
 class LoggingConfig:
     level: str
     format: str
-    file: Optional[str] = None
+    file: str | None = None
 
 
 @dataclass
@@ -57,10 +58,10 @@ class Config:
     environment: str
     debug: bool
     logging: LoggingConfig
-    module: Optional[str] = None
+    module: str | None = None
 
     @classmethod
-    def from_dict(cls, config_dict: Dict[str, Any]) -> "Config":
+    def from_dict(cls, config_dict: dict[str, Any]) -> "Config":
         """Create a Config object from a dictionary."""
         return cls(
             environment=config_dict.get("environment", "development"),
@@ -82,7 +83,7 @@ def load_config(path: str) -> Config:
 
 
 def setup_logging(
-    log_level: str, json_format: bool = False, log_file: Optional[str] = None
+    log_level: str, json_format: bool = False, log_file: str | None = None
 ):
     """Set up logging with the specified configuration."""
     handlers = []
@@ -113,7 +114,7 @@ def setup_logging(
 
 
 @pytest.fixture(scope="session")
-def test_env() -> Generator[Dict[str, str], None, None]:
+def test_env() -> Generator[dict[str, str], None, None]:
     """Set up test environment variables for all modules."""
     env_vars = {
         "GEO_INFER_ENV": "test",
@@ -339,7 +340,7 @@ def data_config_file(test_config_file_factory):
 def assert_valid_geojson():
     """Fixture for validating GeoJSON objects."""
 
-    def _assert_valid_geojson(geojson_obj: Dict[str, Any]) -> bool:
+    def _assert_valid_geojson(geojson_obj: dict[str, Any]) -> bool:
         """
         Validates that a dictionary conforms to GeoJSON standards.
 

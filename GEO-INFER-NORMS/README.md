@@ -8,10 +8,8 @@ Social-technical compliance modeling with deterministic and probabilistic analys
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -21,8 +19,8 @@ Social-technical compliance modeling with deterministic and probabilistic analys
 
 - Module: `GEO-INFER-NORMS`
 - Package: `geo_infer_norms`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-NORMS`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-norms`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module NORMS`
 
 ## Dependencies

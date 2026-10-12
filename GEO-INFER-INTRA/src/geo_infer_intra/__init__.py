@@ -10,7 +10,7 @@ from geo_infer_intra.core.documentation.visual_preview import (
     render_svg_card,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Team"
 __email__ = "info@geo-infer.org"
 __license__ = "CC-BY-NC-SA-4.0"

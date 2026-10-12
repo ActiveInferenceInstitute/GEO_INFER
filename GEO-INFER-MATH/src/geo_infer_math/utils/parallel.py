@@ -8,7 +8,8 @@ of geospatial data and mathematical operations.
 import multiprocessing as mp
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 import numpy as np
-from typing import Any, Callable, List, Optional, Union, Iterable, cast
+from typing import Any, cast
+from collections.abc import Callable, Iterable
 import logging
 import time
 from functools import partial
@@ -23,13 +24,13 @@ MEMORY_THRESHOLD_MB = 1000  # Memory threshold for adaptive chunk sizing
 
 def parallel_compute(
     func: Callable,
-    data: Union[List, np.ndarray],
-    num_workers: Optional[int] = None,
-    chunk_size: Optional[int] = None,
+    data: list | np.ndarray,
+    num_workers: int | None = None,
+    chunk_size: int | None = None,
     use_processes: bool = True,
-    max_memory_mb: Optional[float] = None,
+    max_memory_mb: float | None = None,
     **kwargs: Any,
-) -> List[Any]:
+) -> list[Any]:
     """
     Apply a function to data in parallel with adaptive chunk sizing and memory monitoring.
 
@@ -53,7 +54,7 @@ def parallel_compute(
         chunk_size = _calculate_optimal_chunk_size(data, num_workers, max_memory_mb)
 
     # Convert to list if necessary
-    data_list: List[Any]
+    data_list: list[Any]
     if isinstance(data, np.ndarray):
         data_list = data.tolist()
     else:
@@ -118,9 +119,9 @@ def parallel_compute(
 
 
 def _calculate_optimal_chunk_size(
-    data: Union[List, np.ndarray],
+    data: list | np.ndarray,
     num_workers: int,
-    max_memory_mb: Optional[float] = None,
+    max_memory_mb: float | None = None,
 ) -> int:
     """Calculate optimal chunk size based on data size and memory constraints."""
     data_size = len(data)
@@ -148,8 +149,8 @@ def _calculate_optimal_chunk_size(
 
 
 def _create_memory_aware_chunks(
-    data: List, chunk_size: int, max_memory_mb: Optional[float] = None
-) -> List[List]:
+    data: list, chunk_size: int, max_memory_mb: float | None = None
+) -> list[list]:
     """Create chunks that respect memory constraints."""
     if not data:
         return []
@@ -170,9 +171,9 @@ def _create_memory_aware_chunks(
 def parallel_map(
     func: Callable,
     iterable: Iterable,
-    num_workers: Optional[int] = None,
+    num_workers: int | None = None,
     use_processes: bool = True,
-) -> List[Any]:
+) -> list[Any]:
     """
     Parallel version of map function.
 
@@ -198,9 +199,9 @@ def parallel_map(
 
 def parallel_matrix_operation(
     matrix_a: np.ndarray,
-    matrix_b: Optional[np.ndarray] = None,
+    matrix_b: np.ndarray | None = None,
     operation: str = "multiply",
-    num_workers: Optional[int] = None,
+    num_workers: int | None = None,
 ) -> np.ndarray:
     """
     Perform parallel matrix operations.
@@ -244,7 +245,7 @@ def parallel_matrix_operation(
 
 
 def parallel_matrix_multiply(
-    matrix_a: np.ndarray, matrix_b: np.ndarray, num_workers: Optional[int] = None
+    matrix_a: np.ndarray, matrix_b: np.ndarray, num_workers: int | None = None
 ) -> np.ndarray:
     """
     Parallel matrix multiplication.
@@ -293,9 +294,9 @@ def parallel_matrix_multiply(
 
 def parallel_distance_matrix(
     points_a: np.ndarray,
-    points_b: Optional[np.ndarray] = None,
+    points_b: np.ndarray | None = None,
     metric: str = "euclidean",
-    num_workers: Optional[int] = None,
+    num_workers: int | None = None,
 ) -> np.ndarray:
     """
     Compute distance matrix in parallel.
@@ -353,7 +354,7 @@ def parallel_spatial_interpolation(
     known_values: np.ndarray,
     query_points: np.ndarray,
     method: str = "idw",
-    num_workers: Optional[int] = None,
+    num_workers: int | None = None,
     **kwargs: Any,
 ) -> np.ndarray:
     """
@@ -417,7 +418,7 @@ def parallel_spatial_interpolation(
 def parallel_statistical_analysis(
     data: np.ndarray,
     analysis_func: Callable,
-    num_workers: Optional[int] = None,
+    num_workers: int | None = None,
     **kwargs: Any,
 ) -> Any:
     """
@@ -490,11 +491,11 @@ def get_optimal_worker_count(
 
 
 def parallel_file_processing(
-    file_list: List[str],
+    file_list: list[str],
     processing_func: Callable,
-    num_workers: Optional[int] = None,
+    num_workers: int | None = None,
     file_batch_size: int = 1,
-) -> List[Any]:
+) -> list[Any]:
     """
     Process multiple files in parallel.
 
@@ -516,7 +517,7 @@ def parallel_file_processing(
         for i in range(0, len(file_list), file_batch_size)
     ]
 
-    def process_batch(batch: List[str]) -> List[Any]:
+    def process_batch(batch: list[str]) -> list[Any]:
         return [processing_func(file_path) for file_path in batch]
 
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
@@ -532,10 +533,10 @@ def parallel_file_processing(
 
 def memory_efficient_parallel(
     func: Callable,
-    data: Union[List, np.ndarray],
+    data: list | np.ndarray,
     max_memory_mb: float = 1000.0,
-    num_workers: Optional[int] = None,
-) -> List[Any]:
+    num_workers: int | None = None,
+) -> list[Any]:
     """
     Memory-efficient parallel processing.
 

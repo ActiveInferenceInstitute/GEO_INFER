@@ -5,6 +5,7 @@ Integration workspace within `GEO-INFER-ACT`.
 ## Contents
 
 - `test_active_sensing_trajectories.py`
+- `test_bayeux_backend.py`
 - `test_cascadia_river_homing.py`
 - `test_h3_example_smoke.py`
 - `test_integration.py`
@@ -19,8 +20,8 @@ Integration workspace within `GEO-INFER-ACT`.
 
 - Module: `GEO-INFER-ACT`
 - Package: `geo_infer_act`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-ACT`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-act`
 - Tests: `uv run python -m pytest GEO-INFER-ACT/tests/integration`
 
 ## Dependencies
@@ -34,7 +35,7 @@ Integration workspace within `GEO-INFER-ACT`.
 - `seaborn>=0.11.0`
 - `inferactively-pymdp==1.0.3`
 - `h3>=4.5.0,<5`
-- `geo-infer-bayes>=0.3.0`
+- `geo-infer-bayes>=0.4.0`
 
 
 ## Validation

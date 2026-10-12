@@ -18,10 +18,7 @@ Tests cover:
 import pytest
 
 # Import modules to test
-from geo_infer_ant.analysis.metrics import (
-    SwarmPerformanceMetrics,
-    PerformanceConfiguration,  # noqa: F401
-)  # noqa: F401
+from geo_infer_ant.analysis.metrics import SwarmPerformanceMetrics
 
 
 class TestPerformanceMetrics:

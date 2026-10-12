@@ -7,12 +7,15 @@ and solving differential equations.
 """
 
 import numpy as np
-from typing import Union, List, Tuple, Dict, Optional, Any, Callable
+from typing import Any
+from collections.abc import Callable
 from dataclasses import dataclass
 from scipy.optimize import minimize_scalar, root_scalar
-from scipy.integrate import solve_ivp, quad, simpson as scipy_simpson
+from scipy.integrate import solve_ivp, quad, simpson as scipy_simpson, trapezoid
 from scipy.interpolate import interp1d, RBFInterpolator
 import logging
+
+from geo_infer_math.utils.rng import SeedLike, resolve_rng
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +26,8 @@ class InterpolationResult:
 
     values: np.ndarray
     method: str
-    parameters: Dict[str, Any]
-    error_estimate: Optional[np.ndarray] = None
+    parameters: dict[str, Any]
+    error_estimate: np.ndarray | None = None
 
 
 @dataclass
@@ -67,9 +70,9 @@ class SpatialInterpolator:
             )
         self.method = method
         self.trained = False
-        self.training_points: Optional[np.ndarray] = None
-        self.training_values: Optional[np.ndarray] = None
-        self.parameters: Dict[str, Any] = {}
+        self.training_points: np.ndarray | None = None
+        self.training_values: np.ndarray | None = None
+        self.parameters: dict[str, Any] = {}
 
     def fit(
         self, points: np.ndarray, values: np.ndarray, **kwargs: Any
@@ -296,8 +299,8 @@ class SpatialInterpolator:
         return np.array(predictions)
 
     def _rbf_function(
-        self, r: Union[float, np.ndarray], epsilon: float, function: str
-    ) -> Union[float, np.ndarray]:
+        self, r: float | np.ndarray, epsilon: float, function: str
+    ) -> float | np.ndarray:
         """Radial basis function kernel values."""
         r_arr = np.asarray(r, dtype=np.float64)
         if function == "multiquadric":
@@ -326,14 +329,14 @@ class SpatialOptimizer:
             method: Optimization method
         """
         self.method = method
-        self.objective_function: Optional[Callable[..., Any]] = None
-        self.constraints: List[Any] = []
+        self.objective_function: Callable[..., Any] | None = None
+        self.constraints: list[Any] = []
 
     def minimize(
         self,
         objective: Callable,
-        bounds: List[Tuple[float, float]],
-        initial_guess: Optional[np.ndarray] = None,
+        bounds: list[tuple[float, float]],
+        initial_guess: np.ndarray | None = None,
         **kwargs: Any,
     ) -> OptimizationResult:
         """
@@ -343,7 +346,8 @@ class SpatialOptimizer:
             objective: Objective function to minimize
             bounds: Parameter bounds
             initial_guess: Initial parameter values
-            **kwargs: Method-specific parameters
+            **kwargs: Method-specific parameters (``simulated_annealing``
+                accepts ``seed`` for reproducible proposals).
 
         Returns:
             Optimization result
@@ -365,12 +369,12 @@ class SpatialOptimizer:
     def _gradient_descent(
         self,
         objective: Callable,
-        bounds: List[Tuple[float, float]],
+        bounds: list[tuple[float, float]],
         x0: np.ndarray,
         max_iter: int = 1000,
         learning_rate: float = 0.01,
         tolerance: float = 1e-6,
-        gradient_function: Optional[Callable] = None,
+        gradient_function: Callable | None = None,
     ) -> OptimizationResult:
         """Gradient descent optimization."""
         x = x0.copy()
@@ -419,7 +423,7 @@ class SpatialOptimizer:
     def _newton_method(
         self,
         objective: Callable,
-        bounds: List[Tuple[float, float]],
+        bounds: list[tuple[float, float]],
         x0: np.ndarray,
         max_iter: int = 100,
     ) -> OptimizationResult:
@@ -474,13 +478,19 @@ class SpatialOptimizer:
     def _simulated_annealing(
         self,
         objective: Callable,
-        bounds: List[Tuple[float, float]],
+        bounds: list[tuple[float, float]],
         x0: np.ndarray,
         max_iter: int = 1000,
         initial_temp: float = 100.0,
         cooling_rate: float = 0.95,
+        seed: SeedLike = None,
     ) -> OptimizationResult:
-        """Simulated annealing optimization."""
+        """Simulated annealing optimization.
+
+        ``seed`` drives candidate proposals and acceptance draws; see
+        :func:`geo_infer_math.utils.rng.resolve_rng`.
+        """
+        rng = resolve_rng(seed)
         x = x0.copy()
         current_energy = objective(x)
         best_x = x.copy()
@@ -488,9 +498,9 @@ class SpatialOptimizer:
         temperature = initial_temp
         n_evaluations = 1
 
-        for iteration in range(max_iter):
+        for _ in range(max_iter):
             # Generate candidate solution
-            candidate = x + np.random.normal(0, temperature / 10, size=len(x))
+            candidate = x + rng.normal(0, temperature / 10, size=len(x))
 
             # Apply bounds
             candidate = np.clip(
@@ -504,9 +514,7 @@ class SpatialOptimizer:
             # Accept or reject candidate
             delta_energy = candidate_energy - current_energy
 
-            if delta_energy < 0 or np.random.random() < np.exp(
-                -delta_energy / temperature
-            ):
+            if delta_energy < 0 or rng.random() < np.exp(-delta_energy / temperature):
                 x = candidate
                 current_energy = candidate_energy
 
@@ -591,9 +599,9 @@ class ODESolver:
     def solve(
         self,
         ode_function: Callable,
-        t_span: Tuple[float, float],
+        t_span: tuple[float, float],
         y0: np.ndarray,
-        t_eval: Optional[np.ndarray] = None,
+        t_eval: np.ndarray | None = None,
         **kwargs: Any,
     ) -> ODEsolution:
         """
@@ -700,7 +708,7 @@ class PDEsolver:
         time_steps: int,
         dt: float,
         dx: float,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Solve 1D wave equation using finite differences.
 
@@ -774,7 +782,7 @@ def numerical_integration(
     if method == "trapezoidal":
         x = np.linspace(a, b, n_points)
         y = np.array([func(xi) for xi in x])
-        return float(np.trapz(y, x))
+        return float(trapezoid(y, x))
 
     elif method == "simpson":
         x = np.linspace(a, b, n_points)
@@ -790,7 +798,7 @@ def numerical_integration(
 
 
 def find_root(
-    func: Callable, bracket: Tuple[float, float], method: str = "brentq", **kwargs: Any
+    func: Callable, bracket: tuple[float, float], method: str = "brentq", **kwargs: Any
 ) -> float:
     """
     Find root of a function.
@@ -816,7 +824,7 @@ def find_root(
 
 
 def minimize_scalar_function(
-    func: Callable, bounds: Tuple[float, float], method: str = "bounded", **kwargs: Any
+    func: Callable, bounds: tuple[float, float], method: str = "bounded", **kwargs: Any
 ) -> float:
     """
     Minimize a scalar function.

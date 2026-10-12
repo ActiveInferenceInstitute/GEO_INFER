@@ -662,7 +662,7 @@ class TestAlgorithmIntegration:
         def constrained_objective(x):
             # Add penalty for going outside spatial bounds
             penalty = 0
-            for i, (val, (min_b, max_b)) in enumerate(zip(x, pso.parameters.bounds)):
+            for val, (min_b, max_b) in zip(x, pso.parameters.bounds, strict=True):
                 if val < min_b or val > max_b:
                     penalty += 100
 

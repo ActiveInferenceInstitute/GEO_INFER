@@ -29,7 +29,7 @@ class TestLogIntegration:
         )
 
         assert len(selected) == 1
-        # The p-median (or its deterministic fallback) must pick a candidate
+        # The exact p-median must pick a candidate
         # within the max_distance constraint of the clustered demand points.
         facility = selected[0]
         assert all(

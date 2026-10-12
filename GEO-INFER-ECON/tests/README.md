@@ -21,8 +21,8 @@ Tests workspace within `GEO-INFER-ECON`.
 
 - Module: `GEO-INFER-ECON`
 - Package: `geo_infer_econ`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-ECON`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-econ`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module ECON`
 
 ## Dependencies
@@ -49,7 +49,7 @@ Tests workspace within `GEO-INFER-ECON`.
   `geo_infer_test.testing` fixtures for deterministic RNG, filesystem, HTTP,
   SQLite, service, model, and artifact boundaries.
 - Dependencies: required test/runtime dependencies are installed by
-  `uv sync --all-packages --all-extras`; missing backends are failures.
+  `uv sync --all-packages --all-extras --all-groups`; missing backends are failures.
 - Expected artifacts: JUnit XML under `.geo-infer-test-results/`; model and
   visualization outputs require finite statistics, sidecars, hashes, and a
   manifest.

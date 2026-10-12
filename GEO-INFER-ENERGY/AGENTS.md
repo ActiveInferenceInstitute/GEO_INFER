@@ -25,11 +25,9 @@
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Validation
 

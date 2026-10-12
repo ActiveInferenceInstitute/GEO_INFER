@@ -9,7 +9,7 @@ This module provides:
 - Intention scheduling for execution prioritization
 """
 
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any
 import datetime
 import logging
 from dataclasses import dataclass, field
@@ -53,10 +53,10 @@ class Intention:
     plan: Plan
     status: IntentionStatus = IntentionStatus.ACTIVE
     creation_time: datetime.datetime = field(default_factory=datetime.datetime.now)
-    deadline: Optional[datetime.datetime] = None
+    deadline: datetime.datetime | None = None
     priority: float = 1.0
     progress: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate intention after initialization."""
@@ -175,7 +175,7 @@ class Intention:
 
         return datetime.datetime.now() > self.deadline
 
-    def should_reconsider(self, belief_values: Dict[str, Any]) -> bool:
+    def should_reconsider(self, belief_values: dict[str, Any]) -> bool:
         """
         Check if this intention should be reconsidered based on current beliefs.
 
@@ -199,7 +199,7 @@ class Intention:
 
         return False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert this intention to a dictionary representation.
 
@@ -219,7 +219,7 @@ class Intention:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Intention":
+    def from_dict(cls, data: dict[str, Any]) -> "Intention":
         """
         Create an Intention instance from a dictionary.
 
@@ -264,7 +264,7 @@ class IntentionStructure:
 
     def __init__(self) -> None:
         """Initialize an empty intention structure."""
-        self._intentions: Dict[str, Intention] = {}
+        self._intentions: dict[str, Intention] = {}
 
     def add(self, intention: Intention) -> None:
         """
@@ -344,7 +344,7 @@ class IntentionStructure:
 
         return False
 
-    def get_all(self) -> Dict[str, Intention]:
+    def get_all(self) -> dict[str, Intention]:
         """
         Get all intentions in the intention structure.
 
@@ -353,7 +353,7 @@ class IntentionStructure:
         """
         return dict(self._intentions)
 
-    def get_active(self) -> Dict[str, Intention]:
+    def get_active(self) -> dict[str, Intention]:
         """
         Get all active intentions in the intention structure.
 
@@ -366,7 +366,7 @@ class IntentionStructure:
             if intention.is_active()
         }
 
-    def get_suspended(self) -> Dict[str, Intention]:
+    def get_suspended(self) -> dict[str, Intention]:
         """
         Get all suspended intentions in the intention structure.
 
@@ -379,7 +379,7 @@ class IntentionStructure:
             if intention.is_suspended()
         }
 
-    def get_achieved(self) -> Dict[str, Intention]:
+    def get_achieved(self) -> dict[str, Intention]:
         """
         Get all achieved intentions in the intention structure.
 
@@ -392,7 +392,7 @@ class IntentionStructure:
             if intention.is_achieved()
         }
 
-    def get_failed(self) -> Dict[str, Intention]:
+    def get_failed(self) -> dict[str, Intention]:
         """
         Get all failed intentions in the intention structure.
 
@@ -405,7 +405,7 @@ class IntentionStructure:
             if intention.is_failed()
         }
 
-    def get_by_goal(self, goal: str) -> List[Intention]:
+    def get_by_goal(self, goal: str) -> list[Intention]:
         """
         Get all intentions for a specific goal.
 
@@ -421,7 +421,7 @@ class IntentionStructure:
             if intention.goal == goal
         ]
 
-    def select_intention(self, max_count: Optional[int] = None) -> List[Intention]:
+    def select_intention(self, max_count: int | None = None) -> list[Intention]:
         """
         Select intentions for execution based on priority.
 
@@ -444,8 +444,8 @@ class IntentionStructure:
         return active_intentions
 
     def reconsider_intentions(
-        self, belief_values: Dict[str, Any]
-    ) -> Tuple[List[str], List[str]]:
+        self, belief_values: dict[str, Any]
+    ) -> tuple[list[str], list[str]]:
         """
         Reconsider intentions based on current beliefs.
 
@@ -516,7 +516,7 @@ class IntentionStructure:
 
         return len(to_remove)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert the intention structure to a dictionary representation.
 
@@ -530,7 +530,7 @@ class IntentionStructure:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "IntentionStructure":
+    def from_dict(cls, data: dict[str, Any]) -> "IntentionStructure":
         """
         Create an IntentionStructure instance from a dictionary.
 

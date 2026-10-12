@@ -25,7 +25,6 @@
 - `logs/`
 - `visualizations/`
 - `zoning/`
-- `cascadia_analysis.log`
 - `cascadia_analysis_report_20260125_134422.md`
 - `cascadia_data_provenance_20260125_134421.json`
 - `cascadia_deepscatter_visualization.html`

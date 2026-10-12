@@ -20,7 +20,8 @@ References:
 
 import logging
 import numpy as np
-from typing import Any, Dict, Iterable, List, Optional, Union, cast
+from typing import Any, cast
+from collections.abc import Iterable
 from datetime import datetime
 import json
 
@@ -65,13 +66,14 @@ class SpatialActiveInferenceAgent:
     def __init__(
         self,
         h3_resolution: int = 9,
-        boundary: Optional[Dict[str, Any]] = None,
-        initial_cells: Optional[List[str]] = None,
+        boundary: dict[str, Any] | None = None,
+        initial_cells: list[str] | None = None,
         state_dim: int = 4,
         obs_dim: int = 4,
         diffusion_rate: float = 0.1,
         precision_scale: float = 1.0,
         enable_logging: bool = True,
+        max_entries: int = 1_000_000,
     ):
         """
         Initialize the Spatial Active Inference Agent.
@@ -86,21 +88,39 @@ class SpatialActiveInferenceAgent:
             precision_scale: Base precision for observations
             enable_logging: Whether to log inference steps
         """
+        for name, value, minimum, maximum in (
+            ("max_entries", max_entries, 1, None),
+            ("h3_resolution", h3_resolution, 0, 15),
+            ("state_dim", state_dim, 1, max_entries),
+            ("obs_dim", obs_dim, 1, max_entries),
+        ):
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, np.integer))
+                or value < minimum
+                or (maximum is not None and value > maximum)
+            ):
+                raise ValueError(f"{name} must be an integer in its supported range")
+        if not np.isfinite(diffusion_rate) or not 0 <= diffusion_rate <= 1:
+            raise ValueError("diffusion_rate must be finite and between zero and one")
+        if not np.isfinite(precision_scale) or precision_scale <= 0:
+            raise ValueError("precision_scale must be finite and positive")
+        self.max_entries = max_entries
         self.h3_resolution = h3_resolution
         self.state_dim = state_dim
         self.obs_dim = obs_dim
-        self.diffusion_rate = np.clip(diffusion_rate, 0.0, 1.0)
+        self.diffusion_rate = float(diffusion_rate)
         self.precision_scale = precision_scale
         self.enable_logging = enable_logging
 
         # Initialize cells
-        self.cells: List[str] = []
-        self.cell_to_idx: Dict[str, int] = {}
-        self.neighbor_map: Dict[str, List[str]] = {}
+        self.cells: list[str] = []
+        self.cell_to_idx: dict[str, int] = {}
+        self.neighbor_map: dict[str, list[str]] = {}
 
-        if initial_cells:
+        if initial_cells is not None:
             self._initialize_from_cells(initial_cells)
-        elif boundary:
+        elif boundary is not None:
             self._initialize_from_boundary(boundary)
         else:
             # Default: single cell at null island
@@ -128,14 +148,14 @@ class SpatialActiveInferenceAgent:
 
         # History tracking
         self.step_count = 0
-        self.free_energy_history: List[float] = []
-        self.belief_history: List[np.ndarray] = []
-        self.action_history: List[Dict] = []
-        self.observation_history: List[Dict] = []
-        self.latest_pymdp_cell_metadata: Dict[str, Dict[str, Any]] = {}
+        self.free_energy_history: list[float] = []
+        self.belief_history: list[np.ndarray] = []
+        self.action_history: list[dict] = []
+        self.observation_history: list[dict] = []
+        self.latest_pymdp_cell_metadata: dict[str, dict[str, Any]] = {}
 
         # Logging
-        self.log_entries: List[Dict] = []
+        self.log_entries: list[dict] = []
 
         if self.enable_logging:
             logger.info(
@@ -145,11 +165,11 @@ class SpatialActiveInferenceAgent:
 
     def enable_nested_h3_spatial(
         self,
-        resolutions: List[int],
-        boundary: Optional[Dict[str, Any]] = None,
-        cells: Optional[List[str]] = None,
+        resolutions: list[int],
+        boundary: dict[str, Any] | None = None,
+        cells: list[str] | None = None,
         top_down_weight: float = 0.15,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Reconfigure the agent to operate on the leaf cells of a nested H3 grid.
 
@@ -185,9 +205,9 @@ class SpatialActiveInferenceAgent:
         self.transition_model = self._initialize_transition_model()
         self.preferences = np.zeros((n_cells, self.obs_dim))
         self.preferences[:, 0] = 1.0
-        return cast(Dict[str, Any], hierarchy)
+        return cast(dict[str, Any], hierarchy)
 
-    def _get_default_cells(self) -> List[str]:
+    def _get_default_cells(self) -> list[str]:
         """Generate default H3 cells for testing."""
         try:
             # San Francisco Bay area center
@@ -203,29 +223,40 @@ class SpatialActiveInferenceAgent:
                 "SpatialActiveInferenceAgent requires GEO-INFER-SPACE or h3-py"
             ) from exc
 
-    def _initialize_from_cells(self, cells: List[str]) -> None:
+    def _initialize_from_cells(self, cells: list[str]) -> None:
         """Initialize agent from list of H3 cells."""
-        self.cells = [str(cell) for cell in cells]
         adapter = get_h3_adapter()
-        self.cells = adapter.validate_cells(self.cells)
+        candidate_cells = adapter.validate_cells(cells)
+        if not candidate_cells or any(
+            adapter.get_resolution(cell) != self.h3_resolution
+            for cell in candidate_cells
+        ):
+            raise ValueError("Cells must be nonempty and match h3_resolution")
+        n_cells = len(candidate_cells)
+        if (
+            n_cells * n_cells
+            + n_cells
+            * (
+                self.state_dim
+                + self.obs_dim * self.state_dim
+                + 5 * self.state_dim * self.state_dim
+            )
+            > self.max_entries
+        ):
+            raise ValueError("Spatial agent exceeds max_entries allocation budget")
+        self.cells = candidate_cells
         self.cell_to_idx = {cell: idx for idx, cell in enumerate(self.cells)}
         self._build_neighbor_map()
 
-    def _initialize_from_boundary(self, boundary: Dict) -> None:
+    def _initialize_from_boundary(self, boundary: dict) -> None:
         """Initialize agent from GeoJSON boundary."""
-        try:
-            adapter = get_h3_adapter()
-            cells = adapter.polygon_to_cells(boundary, self.h3_resolution)
-            if cells:
-                self.cells = cells
-            else:
-                self.cells = self._get_default_cells()
-        except Exception as e:
-            logger.warning(f"Could not initialize from boundary: {e}")
-            self.cells = self._get_default_cells()
-
-        self.cell_to_idx = {cell: idx for idx, cell in enumerate(self.cells)}
-        self._build_neighbor_map()
+        adapter = get_h3_adapter()
+        cells = adapter.polygon_to_cells(boundary, self.h3_resolution)
+        if not cells:
+            raise ValueError(
+                "Boundary contains no H3 cell centers at the requested resolution"
+            )
+        self._initialize_from_cells(cells)
 
     def _build_neighbor_map(self) -> None:
         """Build mapping of each cell to its neighbors."""
@@ -288,8 +319,8 @@ class SpatialActiveInferenceAgent:
         return B
 
     def spatial_perception(
-        self, observations: Dict[str, np.ndarray], propagate_beliefs: bool = True
-    ) -> Dict[str, np.ndarray]:
+        self, observations: dict[str, np.ndarray], propagate_beliefs: bool = True
+    ) -> dict[str, np.ndarray]:
         """
         Update beliefs based on spatial observations with neighbor propagation.
 
@@ -412,7 +443,7 @@ class SpatialActiveInferenceAgent:
         self.beliefs = new_beliefs
 
     def _compute_spatial_free_energy(
-        self, observations: Dict[str, np.ndarray]
+        self, observations: dict[str, np.ndarray]
     ) -> float:
         """
         Compute variational free energy across spatial domain.
@@ -450,7 +481,7 @@ class SpatialActiveInferenceAgent:
 
         return total_fe
 
-    def spatial_action(self) -> Dict[str, Any]:
+    def spatial_action(self) -> dict[str, Any]:
         """
         Select action based on expected free energy minimization.
 
@@ -518,7 +549,7 @@ class SpatialActiveInferenceAgent:
         efe_per_action = np.zeros(self.n_actions)
         cell_efe = np.zeros((len(self.cells), self.n_actions))
 
-        for c_idx, cell_id in enumerate(self.cells):
+        for c_idx in range(len(self.cells)):
             for a in range(self.n_actions):
                 # Predict next state: P(s'|s,a)
                 B_a = self.transition_model[c_idx, :, :, a]
@@ -584,10 +615,10 @@ class SpatialActiveInferenceAgent:
 
     def step(
         self,
-        observations: Dict[str, np.ndarray],
+        observations: dict[str, np.ndarray],
         propagate_beliefs: bool = True,
         return_result: bool = False,
-    ) -> Union[Dict[str, Any], H3GridInferenceResult]:
+    ) -> dict[str, Any] | H3GridInferenceResult:
         """
         Execute one full perception-action cycle.
 
@@ -648,12 +679,12 @@ class SpatialActiveInferenceAgent:
 
     def trace_step(
         self,
-        observations: Dict[str, np.ndarray],
+        observations: dict[str, np.ndarray],
         *,
         propagate_beliefs: bool = True,
-        grid_result: Optional[H3GridInferenceResult] = None,
-        timestep: Optional[int] = None,
-        previous_beliefs: Optional[Dict[str, Any]] = None,
+        grid_result: H3GridInferenceResult | None = None,
+        timestep: int | None = None,
+        previous_beliefs: dict[str, Any] | None = None,
     ) -> SpatialInferenceTrace:
         """
         Return typed research diagnostics for one spatial H3 agent step.
@@ -685,11 +716,11 @@ class SpatialActiveInferenceAgent:
 
     def step_nested(
         self,
-        observations: Dict[str, np.ndarray],
+        observations: dict[str, np.ndarray],
         propagate_beliefs: bool = True,
         return_result: bool = False,
-        top_down_weight: Optional[float] = None,
-    ) -> Union[Dict[str, Any], NestedH3GridInferenceResult]:
+        top_down_weight: float | None = None,
+    ) -> dict[str, Any] | NestedH3GridInferenceResult:
         """
         Execute one nested H3 perception-action cycle on hierarchy leaf cells.
 
@@ -753,13 +784,13 @@ class SpatialActiveInferenceAgent:
 
     def trace_nested_step(
         self,
-        observations: Dict[str, np.ndarray],
+        observations: dict[str, np.ndarray],
         *,
         propagate_beliefs: bool = True,
-        grid_result: Optional[NestedH3GridInferenceResult] = None,
-        timestep: Optional[int] = None,
-        previous_beliefs: Optional[Dict[str, Any]] = None,
-        top_down_weight: Optional[float] = None,
+        grid_result: NestedH3GridInferenceResult | None = None,
+        timestep: int | None = None,
+        previous_beliefs: dict[str, Any] | None = None,
+        top_down_weight: float | None = None,
     ) -> SpatialInferenceTrace:
         """
         Return typed research diagnostics for one nested spatial H3 agent step.
@@ -796,8 +827,8 @@ class SpatialActiveInferenceAgent:
         )
 
     def _validate_observations(
-        self, observations: Dict[str, np.ndarray]
-    ) -> Dict[str, np.ndarray]:
+        self, observations: dict[str, np.ndarray]
+    ) -> dict[str, np.ndarray]:
         """Validate observation cell IDs and normalize keys to strings."""
         normalized = {str(cell): value for cell, value in observations.items()}
         unknown = sorted(set(normalized) - set(self.cell_to_idx))
@@ -810,7 +841,7 @@ class SpatialActiveInferenceAgent:
             adapter.validate_cells(normalized.keys())
         return normalized
 
-    def set_preferences(self, preferences: Dict[str, np.ndarray]) -> None:
+    def set_preferences(self, preferences: dict[str, np.ndarray]) -> None:
         """Set preferred observations per cell."""
         for cell_id, pref in preferences.items():
             if cell_id in self.cell_to_idx:
@@ -842,7 +873,7 @@ class SpatialActiveInferenceAgent:
             idx = self.cell_to_idx[cell_id]
             self.precision[idx, idx] = precision
 
-    def get_diagnostics(self) -> Dict[str, Any]:
+    def get_diagnostics(self) -> dict[str, Any]:
         """
         Get comprehensive diagnostics for the agent.
 
@@ -898,7 +929,7 @@ class SpatialActiveInferenceAgent:
         else:
             return "stable"
 
-    def _compute_spatial_coherence(self) -> Dict[str, float]:
+    def _compute_spatial_coherence(self) -> dict[str, float]:
         """Compute spatial coherence metrics."""
         coherences = []
         for cell_id in self.cells:
@@ -920,9 +951,9 @@ class SpatialActiveInferenceAgent:
 
     def score_spatial_information_gain(
         self,
-        target_resolution: Optional[int] = None,
-        beliefs: Optional[Dict[str, np.ndarray]] = None,
-    ) -> Dict[str, Any]:
+        target_resolution: int | None = None,
+        beliefs: dict[str, np.ndarray] | None = None,
+    ) -> dict[str, Any]:
         """
         Score H3 cells by information gain (expected uncertainty reduction)
         for active-sensing / where-to-look-next decisions.
@@ -950,7 +981,7 @@ class SpatialActiveInferenceAgent:
             if beliefs is not None
             else {self.cells[i]: self.beliefs[i] for i in range(n_cells)}
         )
-        scores: Dict[str, float] = {}
+        scores: dict[str, float] = {}
         max_entropy = float(np.log(self.state_dim)) if self.state_dim > 1 else 1.0
         for cell in self.cells:
             value = working.get(cell)
@@ -966,7 +997,7 @@ class SpatialActiveInferenceAgent:
                 scores[cell] = 0.0
 
         if target_resolution is not None and scores:
-            parent_scores: Dict[str, List[float]] = {}
+            parent_scores: dict[str, list[float]] = {}
             try:
                 adapter = get_h3_adapter()
                 for cell, score in scores.items():
@@ -1007,7 +1038,7 @@ class SpatialActiveInferenceAgent:
         }
 
     def _compute_h3_result_consistency(
-        self, beliefs: Dict[str, np.ndarray]
+        self, beliefs: dict[str, np.ndarray]
     ) -> H3SpatialConsistency:
         """Compute typed H3 spatial consistency for current cell beliefs."""
         if not beliefs:
@@ -1046,16 +1077,16 @@ class SpatialActiveInferenceAgent:
             neighbor_correlations=neighbor_correlations,
             cell_count=len(normalized),
             edge_count=edge_count_from_graph(
-                cast(Dict[str, Iterable[str]], self.neighbor_map)
+                cast(dict[str, Iterable[str]], self.neighbor_map)
             ),
         )
 
-    def _compute_action_distribution(self) -> Dict[str, int]:
+    def _compute_action_distribution(self) -> dict[str, int]:
         """Compute distribution of selected actions."""
         if not self.action_history:
             return {}
 
-        action_counts: Dict[str, int] = {}
+        action_counts: dict[str, int] = {}
         for entry in self.action_history:
             name = entry.get("action_name", "unknown")
             action_counts[name] = action_counts.get(name, 0) + 1

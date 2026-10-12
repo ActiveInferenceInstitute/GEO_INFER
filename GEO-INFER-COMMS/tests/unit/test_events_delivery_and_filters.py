@@ -7,7 +7,7 @@ Covers:
 - get_events filtering and event statistics.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 import pytest
 
@@ -21,7 +21,7 @@ from geo_infer_comms.models.message import (
 )
 
 
-UTC = timezone.utc
+UTC = UTC
 
 
 @pytest.fixture()

@@ -30,7 +30,7 @@ Example:
     ...     agent_id="ant_001",
     ...     position=np.array([37.7749, -122.4194]),
     ...     sensory_range=100.0,
-    ...     active_inference_enabled=True
+    ...     active_inference_enabled=False
     ... )
     >>>
     >>> # Create agent population
@@ -44,19 +44,9 @@ Example:
 import json
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Any
 
 import yaml
-
-# Set up logging
-logger = logging.getLogger(__name__)
-
-# Version information
-__version__ = "0.3.0"
-__author__ = "GEO-INFER Development Team"
-__description__ = (
-    "Swarm Intelligence and Complex Adaptive Systems for Geospatial Analysis"
-)
 
 # Public components are required package dependencies and are imported directly.
 from .core.agent_base import SwarmAgent
@@ -75,9 +65,18 @@ from .utils.config import config_to_dict, load_config, validate_config
 from .utils.logging import setup_logging
 from .utils.integration import IntegrationManager
 
+logger = logging.getLogger(__name__)
+
+# Version information
+__version__ = "0.4.0"
+__author__ = "GEO-INFER Development Team"
+__description__ = (
+    "Swarm Intelligence and Complex Adaptive Systems for Geospatial Analysis"
+)
+
 
 # Configuration and setup
-def setup_ant_module(config_path: Optional[str] = None) -> Dict[str, Any]:
+def setup_ant_module(config_path: str | None = None) -> dict[str, Any]:
     """
     Set up the GEO-INFER-ANT module with configuration.
 
@@ -90,7 +89,7 @@ def setup_ant_module(config_path: Optional[str] = None) -> Dict[str, Any]:
     """
     logger.info("Setting up GEO-INFER-ANT module")
 
-    config: Dict[str, Any] = {}
+    config: dict[str, Any] = {}
 
     if config_path:
         try:
@@ -121,7 +120,7 @@ def setup_ant_module(config_path: Optional[str] = None) -> Dict[str, Any]:
     return config
 
 
-def get_available_components() -> Dict[str, List[str]]:
+def get_available_components() -> dict[str, list[str]]:
     """
     Get information about available components in the ANT module.
 
@@ -131,7 +130,7 @@ def get_available_components() -> Dict[str, List[str]]:
     Returns:
         Dictionary with component availability information
     """
-    components: Dict[str, List[str]] = {
+    components: dict[str, list[str]] = {
         "core": [],
         "algorithms": [],
         "applications": [],

@@ -7,7 +7,6 @@ different anonymization methods to point data.
 """
 
 import numpy as np
-import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
 import matplotlib.pyplot as plt
@@ -89,7 +88,7 @@ def demonstrate_location_perturbation(gdf):
 
         # Calculate the actual displacement distances
         distances = []
-        for i, (orig, pert) in enumerate(zip(gdf.geometry, perturbed.geometry)):
+        for orig, pert in zip(gdf.geometry, perturbed.geometry, strict=True):
             # Convert degrees to approximate meters (rough approximation)
             lat_meters = 111000  # 1 degree latitude ≈ 111 km
             lon_meters = 111000 * np.cos(

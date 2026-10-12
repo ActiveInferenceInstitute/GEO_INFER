@@ -1,120 +1,63 @@
 # GEO-INFER-RISK: Risk Assessment
 
-> **Illustrative example notice.** This page contains historical or
-> conceptual integration sketches. Names such as `SpatialAnalyzer` and
-> domain-specific facade classes are not public GEO-INFER exports in the
-> current checkout; verify imports against each module's `src/` package
-> and use the module README/tests for executable examples.
+`GEO-INFER-RISK` owns the `geo_infer_risk` package under `GEO-INFER-RISK/src/`.
+GEO-INFER-RISK: Geospatial Risk Analysis and Catastrophe Modeling Framework
 
+## Public import surface
 
-> **Explanation**: Understanding Risk Assessment in GEO-INFER
->
-> This module provides risk assessment and management capabilities for geospatial applications, including risk modeling, vulnerability analysis, and risk mitigation strategies.
+These names are exported by the current owning package:
 
-## 🎯 What is GEO-INFER-RISK?
-Note: Code examples are illustrative; see `GEO-INFER-RISK/examples` for runnable scripts.
+- `geo_infer_risk.CRESCENT_CITY_GEO_INTEL_SCHEMA`
+- `geo_infer_risk.CivicHazardDomain`
+- `geo_infer_risk.CrescentCityAnchor`
+- `geo_infer_risk.CrescentCityBounds`
+- `geo_infer_risk.CrescentCityHazardIntel`
+- `geo_infer_risk.MunicipalCodeSection`
+- `geo_infer_risk.EnhancedRiskEngine`
+- `geo_infer_risk.RiskModel`
 
-### Links
-- Module README: [Module README](../../../GEO-INFER-RISK/README.md) GEO-INFER-RISK is the risk assessment engine that provides risk modeling and analysis capabilities for geospatial information systems. It enables:
+The small example below verifies the installed import contract. It does not infer
+scientific validity or service availability from successful imports; the owning
+regression tests exercise behavior with concrete inputs.
 
-- **Risk Modeling**: Model and analyze various types of risks - **Vulnerability Analysis**: Analyze vulnerabilities and exposure - **Risk Assessment**: Assess risk levels and impacts - **Mitigation Strategies**: Develop risk mitigation strategies - **Risk Monitoring**: Monitor and track risk changes
-
-### Key Concepts
-
-#### Risk Modeling
-The module provides risk modeling capabilities:
-
-```
-python from geo_infer_risk import RiskModeler # Create risk modeler risk_modeler = RiskModeler( modeling_parameters={ 'risk_identification': True, 'risk_quantification': True, 'scenario_analysis': True } ) # Model risks risk_result = risk_modeler.model_risks( risk_data=risk_information, scenario_data=risk_scenarios, impact_data=impact_assessments )
-```
- #### Vulnerability Analysis Analyze vulnerabilities and exposure:
-```
-python from geo_infer_risk.vulnerability import VulnerabilityAnalyzer # Create vulnerability analyzer vulnerability_analyzer = VulnerabilityAnalyzer( analysis_parameters={ 'exposure_assessment': True, 'vulnerability_mapping': True, 'resilience_analysis': True } ) # Analyze vulnerabilities vulnerability_result = vulnerability_analyzer.analyze_vulnerabilities( vulnerability_data=vulnerability_information, exposure_data=exposure_characteristics, resilience_data=resilience_factors )
-```
- ## 📚 Core Features ### 1. Multi-Hazard Risk Modeling Engine **Purpose**: Model multiple hazards and their combined effects.
 ```python
- from geo_infer_risk.hazards import MultiHazardRiskEngine # Initialize multi-hazard risk engine hazard_engine = MultiHazardRiskEngine() # Define hazard modeling parameters hazard_config = hazard_engine.configure_hazard_modeling({ 'natural_hazards': True, 'technological_hazards': True, 'climate_hazards': True, 'social_hazards': True, 'compound_hazards': True }) # Model multi-hazard risks hazard_result = hazard_engine.model_multi_hazard_risks( hazard_data=hazard_information, spatial_data=geographic_boundaries, temporal_data=time_series_data, hazard_config=hazard_config )
+import geo_infer_risk
+from geo_infer_risk import CRESCENT_CITY_GEO_INTEL_SCHEMA, CivicHazardDomain, CrescentCityAnchor, CrescentCityBounds
+assert all(value is not None for value in (CRESCENT_CITY_GEO_INTEL_SCHEMA, CivicHazardDomain, CrescentCityAnchor, CrescentCityBounds,))
+assert geo_infer_risk.__version__ == "0.4.0"
 ```
- ### 2. Vulnerability Assessment Engine **Purpose**: Assess vulnerability of populations and infrastructure.
-```python
- from geo_infer_risk.vulnerability import VulnerabilityAssessmentEngine # Initialize vulnerability assessment engine vulnerability_engine = VulnerabilityAssessmentEngine() # Define vulnerability assessment parameters vulnerability_config = vulnerability_engine.configure_vulnerability_assessment({ 'social_vulnerability': True, 'physical_vulnerability': True, 'economic_vulnerability': True, 'environmental_vulnerability': True, 'institutional_vulnerability': True }) # Assess vulnerability vulnerability_result = vulnerability_engine.assess_vulnerability( population_data=demographic_data, infrastructure_data=built_environment, economic_data=economic_indicators, vulnerability_config=vulnerability_config )
-```
- ### 3. Risk Communication Engine **Purpose**: Communicate risk information effectively to stakeholders.
-```python
- from geo_infer_risk.communication import RiskCommunicationEngine # Initialize risk communication engine communication_engine = RiskCommunicationEngine() # Define communication parameters communication_config = communication_engine.configure_risk_communication({ 'stakeholder_analysis': True, 'message_development': True, 'channel_selection': True, 'effectiveness_evaluation': True, 'feedback_mechanisms': True }) # Communicate risk information communication_result = communication_engine.communicate_risk_information( risk_data=risk_assessment_results, stakeholder_data=stakeholder_information, communication_config=communication_config )
-```
- ### 4. Scenario Analysis Engine **Purpose**: Analyze different risk scenarios and their impacts.
-```
-python from geo_infer_risk.scenarios import ScenarioAnalysisEngine # Initialize scenario analysis engine scenario_engine = ScenarioAnalysisEngine() # Define scenario analysis parameters scenario_config = scenario_engine.configure_scenario_analysis({ 'scenario_development': True, 'impact_modeling': True, 'probability_assessment': True, 'consequence_analysis': True, 'uncertainty_quantification': True }) # Analyze risk scenarios scenario_result = scenario_engine.analyze_risk_scenarios( scenario_data=scenario_definitions, risk_data=risk_models, scenario_config=scenario_config )
-```
- ### 5. Insurance and Underwriting **Purpose**: Insurance pricing, underwriting decisions, claims, and exposure management. The underwriting subsystem moved out of GEO-INFER-RISK into the dedicated GEO-INFER-INSURANCE module; use its public surface `geo_infer_insurance`:
-```
-python from geo_infer_insurance import (create_underwriting_system, underwrite_insurance_policy, process_insurance_claim) # Create the underwriting system underwriting_system = create_underwriting_system() # Underwrite a policy decision = underwrite_insurance_policy(application_data=insurance_application) # Process a claim claim_result = process_insurance_claim(claim_data=claim)
-```
- ## 🔧 API Reference ### RiskFramework The core risk framework class.
-```
-python class RiskFramework: def __init__(self, risk_parameters): """ Initialize risk framework. Args: risk_parameters (dict): Risk configuration parameters """ def model_risk_systems(self, geospatial_data, hazard_data, vulnerability_data, exposure_data): """Model risk systems for geospatial analysis.""" def assess_risk_levels(self, hazard_data, vulnerability_data, exposure_data): """Assess risk levels and probabilities.""" def communicate_risk_information(self, risk_data, stakeholder_data): """Communicate risk information to stakeholders.""" def analyze_risk_scenarios(self, scenario_data, risk_models): """Analyze different risk scenarios and impacts."""
-```
- ### MultiHazardRiskEngine Engine for multi-hazard risk modeling.
-```
-python class MultiHazardRiskEngine: def __init__(self): """Initialize multi-hazard risk engine.""" def configure_hazard_modeling(self, modeling_parameters): """Configure hazard modeling parameters.""" def model_multi_hazard_risks(self, hazard_data, spatial_data, temporal_data): """Model multiple hazards and their combined effects.""" def assess_hazard_probabilities(self, hazard_data, historical_data): """Assess probabilities of different hazard events.""" def model_compound_hazards(self, hazard_data, interaction_data): """Model compound hazard effects and interactions."""
-```
- ### VulnerabilityAssessmentEngine Engine for vulnerability assessment.
-```
-python class VulnerabilityAssessmentEngine: def __init__(self): """Initialize vulnerability assessment engine.""" def configure_vulnerability_assessment(self, assessment_parameters): """Configure vulnerability assessment parameters.""" def assess_vulnerability(self, population_data, infrastructure_data, economic_data): """Assess vulnerability of populations and infrastructure.""" def map_vulnerability_indicators(self, vulnerability_data, spatial_data): """Map vulnerability indicators across geographic areas.""" def analyze_vulnerability_trends(self, vulnerability_data, temporal_data): """Analyze vulnerability trends over time."""
-```
- ## 🎯 Use Cases ### 1. Natural Disaster Risk Assessment **Problem**: Assess risks from natural disasters and climate events. **Solution**: Use multi-hazard risk modeling framework.
-```
-python from geo_infer_risk import NaturalDisasterRiskFramework # Initialize natural disaster risk framework natural_risk = NaturalDisasterRiskFramework() # Define natural disaster risk parameters natural_config = natural_risk.configure_natural_disaster_risk({ 'hazard_modeling': 'comprehensive', 'vulnerability_assessment': 'detailed', 'exposure_analysis': 'spatial', 'scenario_analysis': 'multiple', 'communication_framework': True }) # Assess natural disaster risks natural_result = natural_risk.assess_natural_disaster_risks( natural_disaster_system=disaster_system, natural_config=natural_config, hazard_data=natural_hazard_data )
-```
- ### 2. Climate Risk Assessment **Problem**: Assess climate change risks and adaptation needs. **Solution**: Use climate risk assessment framework.
-```
-python from geo_infer_risk.climate import ClimateRiskFramework # Initialize climate risk framework climate_risk = ClimateRiskFramework() # Define climate risk parameters climate_config = climate_risk.configure_climate_risk({ 'temperature_risks': 'detailed', 'precipitation_risks': 'comprehensive', 'sea_level_risks': 'spatial', 'extreme_weather': 'modeled', 'adaptation_assessment': True }) # Assess climate risks climate_result = climate_risk.assess_climate_risks( climate_system=climate_system, climate_config=climate_config, climate_data=climate_indicators )
-```
- ### 3. Insurance Risk Modeling **Problem**: Model insurance risks, underwriting decisions, and pricing for geospatial applications. **Solution**: Use the GEO-INFER-INSURANCE underwriting module (underwriting moved out of GEO-INFER-RISK).
-```
-python from geo_infer_insurance import underwrite_insurance_policy, calculate_premium # Assess an insurance application decision = underwrite_insurance_policy(application_data=insurance_application) # Price a policy premium = calculate_premium(policy_data=policy)
-```
- ## 🔗 Integration with Other Modules ### GEO-INFER-SPACE Integration
-```
-python from geo_infer_risk import RiskFramework from geo_infer_space import SpatialAnalysisEngine # Combine risk assessment with spatial analysis risk_framework = RiskFramework(risk_parameters) spatial_engine = SpatialAnalysisEngine() # Integrate risk assessment with spatial analysis spatial_risk_system = risk_framework.integrate_with_spatial_analysis( spatial_engine=spatial_engine, risk_config=risk_config )
-```
- ### GEO-INFER-TIME Integration
-```
-python from geo_infer_risk import TemporalRiskEngine from geo_infer_time import TemporalAnalysisEngine # Combine risk assessment with temporal analysis temporal_risk_engine = TemporalRiskEngine() temporal_engine = TemporalAnalysisEngine() # Integrate risk assessment with temporal analysis temporal_risk_system = temporal_risk_engine.integrate_with_temporal_analysis( temporal_engine=temporal_engine, temporal_config=temporal_config )
-```
- ### GEO-INFER-ECON Integration
-```
-python from geo_infer_risk import EconomicRiskEngine from geo_infer_econ import EconomicFramework # Combine risk assessment with economic analysis economic_risk_engine = EconomicRiskEngine() econ_framework = EconomicFramework() # Integrate risk assessment with economic analysis economic_risk_system = economic_risk_engine.integrate_with_economic_analysis( econ_framework=econ_framework, economic_config=economic_config )
-```
- ## 🚨 Troubleshooting ### Common Issues **Hazard modeling problems:**
-```
-python # Improve hazard modeling hazard_engine.configure_hazard_modeling({ 'natural_hazards': 'comprehensive', 'technological_hazards': 'detailed', 'climate_hazards': 'advanced', 'social_hazards': 'modeled', 'compound_hazards': 'interactive' }) # Add hazard modeling diagnostics hazard_engine.enable_hazard_modeling_diagnostics( diagnostics=['hazard_probability', 'spatial_accuracy', 'temporal_trends'] )
-```
- **Vulnerability assessment issues:**
-```
-python # Improve vulnerability assessment vulnerability_engine.configure_vulnerability_assessment({ 'social_vulnerability': 'comprehensive', 'physical_vulnerability': 'detailed', 'economic_vulnerability': 'advanced', 'environmental_vulnerability': 'spatial', 'institutional_vulnerability': 'modeled' }) # Enable vulnerability monitoring vulnerability_engine.enable_vulnerability_monitoring( monitoring=['vulnerability_trends', 'spatial_patterns', 'social_indicators'] )
-```
- **Risk communication issues:**
-```
-python # Improve risk communication communication_engine.configure_risk_communication({ 'stakeholder_analysis': 'comprehensive', 'message_development': 'tailored', 'channel_selection': 'optimal', 'effectiveness_evaluation': 'continuous', 'feedback_mechanisms': 'robust' }) # Enable communication monitoring communication_engine.enable_communication_monitoring( monitoring=['message_effectiveness', 'stakeholder_engagement', 'communication_reach'] )
-```
- ## 📊 Performance Optimization ### Efficient Risk Processing
-```
-python # Enable parallel risk processing risk_framework.enable_parallel_processing(n_workers=8) # Enable risk caching risk_framework.enable_risk_caching( cache_size=10000, cache_ttl=1800 ) # Enable adaptive risk systems risk_framework.enable_adaptive_risk_systems( adaptation_rate=0.1, adaptation_threshold=0.05 )
-```
- ### Scenario Analysis Optimization
-```
-python # Enable efficient scenario analysis scenario_engine.enable_efficient_scenario_analysis( analysis_strategy='ensemble_scenarios', impact_modeling=True, uncertainty_quantification=True ) # Enable risk intelligence scenario_engine.enable_risk_intelligence( intelligence_sources=['historical_data', 'expert_knowledge', 'model_outputs'], update_frequency='continuous' )
-```
- ## 🔗 Related Documentation ### Tutorials - **[Risk Assessment Basics](geo-infer-risk.md)** - Learn risk assessment fundamentals - **[Multi-Hazard Modeling Tutorial](../getting_started/index.md)** - Build your first multi-hazard risk system ### How-to Guides - **[Natural Disaster Risk Assessment](../examples_gallery.md)** - Implement natural disaster risk assessment - **[Climate Risk Assessment](../examples_gallery.md)** - Conduct climate risk analysis ### Technical Reference - **[Risk Assessment API Reference](../api/reference.md)** - risk assessment API documentation - **[Multi-Hazard Patterns](../api/reference.md)** - Multi-hazard risk patterns and best practices ### Explanations - **Risk Assessment Theory** - Deep dive into risk concepts - **Vulnerability Assessment Principles** - Understanding vulnerability foundations ### Related Modules - **[GEO-INFER-SPACE](../modules/geo-infer-space.md)** - Spatial analysis capabilities - **[GEO-INFER-TIME](../modules/geo-infer-time.md)** - Temporal analysis capabilities - **[GEO-INFER-ECON](../modules/geo-infer-econ.md)** - Economic analysis capabilities - **[GEO-INFER-DATA](../modules/geo-infer-data.md)** - Data management capabilities --- **Ready to get started?** Check out the **[Risk Assessment Basics Tutorial](geo-infer-risk.md)** or explore **[Natural Disaster Risk Assessment Examples](../examples_gallery.md)**!
 
-## 🗺️ Interactive Spatial Preview
+Run examples in the shared, locked workspace environment. Constructor inputs,
+optional backends, and result shapes belong to the referenced source and tests.
+Cross-module callers should pass explicit spatial state ordering and timezone-aware
+instants when those fields are part of their data contract.
 
-Pre-rendered spatial snapshot for **GEO-INFER-RISK** (*Risk Assessment*). Reproducible preview cards are generated by `geo_infer_intra.core.documentation.visual_preview`.
+## Verification
 
-| Preview | Widget |
-| --- | --- |
-| ![GEO-INFER-RISK Leaflet Preview](previews/geo-infer-risk_preview.svg) | [Interactive map](previews/geo-infer-risk_preview.html) · [PNG](previews/geo-infer-risk_preview.png) |
+From the repository root:
 
-> **Reproducible contract:** each map ships as `geo-infer-risk_preview.html`, `geo-infer-risk_preview.svg`, `geo-infer-risk_preview.png`, and `geo-infer-risk_preview.manifest.json` beneath `previews/`. The receipt records geometry provenance and artifact SHA-256 hashes. Values are illustrative, not observations.
+```bash
+uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --module RISK --timeout 600 --workers 2
+```
+
+The module command includes its owned test files and registered nested test roots.
+The fleet's separate unit and slow categories cover complementary marker selections;
+release CI requires unit, slow, integration, performance, system, and H3 lanes on
+Python 3.11 and 3.12. Results include immutable attempt receipts under
+`.geo-infer-test-results/runs/`, with logs, current JUnit, selection inventories,
+interpreter and source custody. A missing optional dependency must be addressed by
+the declared package extra rather than by omitting its tests.
+
+## Source and examples
+
+- [Owning package](../../../GEO-INFER-RISK/src/geo_infer_risk/README.md)
+- [Module inventory and dependencies](../../../GEO-INFER-RISK/README.md)
+- [Module operating contract](../../../GEO-INFER-RISK/AGENTS.md)
+- [Regression: test_integration.py](../../../GEO-INFER-RISK/tests/integration/test_integration.py)
+- [Regression: test_aal_exposure_years.py](../../../GEO-INFER-RISK/tests/unit/test_aal_exposure_years.py)
+- [Regression: test_aep_pml_curve.py](../../../GEO-INFER-RISK/tests/unit/test_aep_pml_curve.py)
+- [Example source: basic_risk_assessment.py](../../../GEO-INFER-RISK/examples/basic_risk_assessment.py)
+- [Example source: comprehensive_risk_assessment.py](../../../GEO-INFER-RISK/examples/comprehensive_risk_assessment.py)
+
+See the [cross-module integration guide](../../../GEO-INFER-EXAMPLES/docs/INTEGRATION_GUIDE.md)
+for actual DATA, SPACE, TIME, BAYES, and ACT composition checks.

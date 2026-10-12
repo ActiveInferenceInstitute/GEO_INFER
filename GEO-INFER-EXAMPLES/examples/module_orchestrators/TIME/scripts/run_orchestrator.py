@@ -11,25 +11,19 @@ real ``geo_infer_time`` public API.
 from __future__ import annotations
 
 import sys
-from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     import numpy as np
     import pandas as pd
-
     from geo_infer_time import TemporalAnalyzer, TemporalStatistics, TimeSeries
 
     rng = np.random.default_rng(2024)
     n_days = 120
-    timestamps = pd.date_range("2025-01-01", periods=n_days, freq="D")
+    timestamps = pd.date_range("2025-01-01", periods=n_days, freq="D", tz="UTC")
     t = np.arange(n_days, dtype=float)
     values = 10.0 + 0.02 * t + 2.0 * np.sin(2.0 * np.pi * t / 7.0)
     values = values + rng.normal(0.0, 0.5, n_days)

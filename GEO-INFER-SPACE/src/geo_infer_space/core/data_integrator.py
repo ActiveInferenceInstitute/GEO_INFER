@@ -9,7 +9,6 @@ into a unified geospatial dataset.
 import logging
 import pandas as pd
 import geopandas as gpd
-from typing import Dict, List
 from pathlib import Path
 from pyproj import CRS, Transformer
 from shapely.ops import transform as shapely_transform
@@ -34,7 +33,7 @@ class DataIntegrator:
     Integrates data from multiple sources into a unified geospatial dataset.
     """
 
-    def __init__(self, sources: List[Dict[str, str]]) -> None:
+    def __init__(self, sources: list[dict[str, str]]) -> None:
         """
         Initialize the integrator with data sources.
 

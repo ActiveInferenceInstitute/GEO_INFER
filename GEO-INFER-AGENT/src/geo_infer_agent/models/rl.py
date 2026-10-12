@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Reinforcement Learning Agent.
@@ -16,7 +15,7 @@ import logging
 import asyncio
 import numpy as np
 import random
-from typing import Dict, List, Any, Optional, cast
+from typing import Any, cast
 import json
 from collections import deque
 
@@ -49,7 +48,7 @@ class Experience:
         self.next_state = next_state
         self.done = done
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "state": (
@@ -66,7 +65,7 @@ class Experience:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Experience":
+    def from_dict(cls, data: dict[str, Any]) -> "Experience":
         """Create from dictionary representation."""
         state = (
             np.array(data["state"])
@@ -152,7 +151,7 @@ class QTable:
 
         return cast(int, np.argmax(self.q_table[state]))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         q_table_list = self.q_table.tolist()
 
@@ -163,7 +162,7 @@ class QTable:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "QTable":
+    def from_dict(cls, data: dict[str, Any]) -> "QTable":
         """Create from dictionary representation."""
         q_table = cls(state_size=data["state_size"], action_size=data["action_size"])
 
@@ -196,7 +195,7 @@ class ReplayBuffer:
         """
         self.buffer.append(experience)
 
-    def sample(self, batch_size: int) -> List[Experience]:
+    def sample(self, batch_size: int) -> list[Experience]:
         """
         Sample a batch of experiences.
 
@@ -213,7 +212,7 @@ class ReplayBuffer:
         """Get current size of buffer."""
         return len(self.buffer)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "capacity": self.capacity,
@@ -221,7 +220,7 @@ class ReplayBuffer:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ReplayBuffer":
+    def from_dict(cls, data: dict[str, Any]) -> "ReplayBuffer":
         """Create from dictionary representation."""
         buffer = cls(capacity=data["capacity"])
 
@@ -263,10 +262,10 @@ class RLState(AgentState):
         self.batch_size = 32
 
         # Current state and episode info
-        self.current_state: Optional[Any] = None
+        self.current_state: Any | None = None
         self.current_episode = 0
         self.total_reward = 0.0
-        self.episode_rewards: List[float] = []
+        self.episode_rewards: list[float] = []
 
         # Performance tracking
         self.last_100_rewards: deque[float] = deque(maxlen=100)
@@ -377,7 +376,7 @@ class RLState(AgentState):
             self.current_episode += 1
             self.total_reward = 0.0
 
-    def train_from_buffer(self, batch_size: Optional[int] = None) -> None:
+    def train_from_buffer(self, batch_size: int | None = None) -> None:
         """
         Train from replay buffer.
 
@@ -399,7 +398,7 @@ class RLState(AgentState):
 
         self.training_iterations += 1
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "q_table": self.q_table.to_dict(),
@@ -418,7 +417,7 @@ class RLState(AgentState):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RLState":
+    def from_dict(cls, data: dict[str, Any]) -> "RLState":
         """Create from dictionary representation."""
         q_table_data = data["q_table"]
         buffer_data = data["replay_buffer"]
@@ -456,7 +455,7 @@ class RLAgent(BaseAgent):
 
     state: RLState
 
-    def __init__(self, agent_id: Optional[str] = None, config: Optional[Dict] = None):
+    def __init__(self, agent_id: str | None = None, config: dict | None = None):
         """
         Initialize RL agent.
 
@@ -525,7 +524,7 @@ class RLAgent(BaseAgent):
 
         logger.info("RL agent %s initialization complete", self.agent_id)
 
-    async def perceive(self) -> Dict[str, Any]:
+    async def perceive(self) -> dict[str, Any]:
         """
         Perceive the environment.
 
@@ -543,14 +542,14 @@ class RLAgent(BaseAgent):
 
         return observations
 
-    def update_beliefs(self, perception: Dict[str, Any]) -> None:
+    def update_beliefs(self, perception: dict[str, Any]) -> None:
         """Update the RL state from a perception dict (mirrors perceive())."""
         if "state" in perception:
             self.state.current_state = perception["state"]
         elif "vector_state" in perception:
             self.state.current_state = np.array(perception["vector_state"])
 
-    async def decide(self) -> Optional[Dict[str, Any]]:
+    async def decide(self) -> dict[str, Any] | None:
         """
         Decide on the next action.
 
@@ -572,7 +571,7 @@ class RLAgent(BaseAgent):
 
         return action
 
-    def _convert_action_index_to_action(self, action_idx: int) -> Dict[str, Any]:
+    def _convert_action_index_to_action(self, action_idx: int) -> dict[str, Any]:
         """
         Convert action index to action dictionary.
 
@@ -587,7 +586,7 @@ class RLAgent(BaseAgent):
 
         if str(action_idx) in action_mapping:
             # Use predefined mapping
-            return cast(Dict[str, Any], action_mapping[str(action_idx)])
+            return cast(dict[str, Any], action_mapping[str(action_idx)])
         else:
             # Default action format
             return {
@@ -596,7 +595,7 @@ class RLAgent(BaseAgent):
                 "parameters": {"index": action_idx},
             }
 
-    async def act(self, action: Dict[str, Any]) -> Dict[str, Any]:
+    async def act(self, action: dict[str, Any]) -> dict[str, Any]:
         """
         Execute an action.
 
@@ -663,8 +662,8 @@ class RLAgent(BaseAgent):
         self.register_action_handler("set_learning_params", self._handle_set_params)
 
     async def _handle_wait_action(
-        self, agent: "RLAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "RLAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle a wait action.
 
@@ -690,8 +689,8 @@ class RLAgent(BaseAgent):
         }
 
     async def _handle_query_state(
-        self, agent: "RLAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "RLAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle state query action.
 
@@ -747,8 +746,8 @@ class RLAgent(BaseAgent):
             }
 
     async def _handle_set_params(
-        self, agent: "RLAgent", action: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent: "RLAgent", action: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Handle setting learning parameters.
 
@@ -819,7 +818,7 @@ class RLAgent(BaseAgent):
             path: Path to load model from
         """
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 model_data = json.load(f)
 
             self.state = RLState.from_dict(model_data)

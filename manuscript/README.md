@@ -53,6 +53,17 @@ uv run python GEO-INFER-TEST/validate_repo_contracts.py --skip-import-smoke
 ```
 
 
+## Research Verification
+
+- `uv run python manuscript/generate_research_artifacts.py --verify` runs the
+  producer's verification groups and retains immutable execution receipts.
+- Ordinary failures and timeouts continue the diagnostic sweep. An interruption
+  retains its failed attempt and stops admission; later groups remain visibly
+  not run. An incomplete sweep cannot establish acceptance.
+- Add `--full-validation` for the unit, integration, performance and H3 groups.
+  Run ROOT manuscript and manuscript-render profiles separately; the render
+  profile requires the actual generated PDF.
+
 ## Documentation Notes
 
 This README describes current repository state only. Keep examples and claims tied to importable code, tracked files, or validation commands.

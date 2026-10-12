@@ -94,7 +94,7 @@ class TestMoranI:
 
     def test_moran_i_too_few_observations(self, stats):
         """Test handling of too few observations."""
-        result = stats.moran_i(["cell1", "cell2"], [1.0, 2.0])
+        result = stats.moran_i(["8928308280fffff", "89283082803ffff"], [1.0, 2.0])
         assert "error" in result or result.get("moran_i") is not None
 
 
@@ -140,7 +140,7 @@ class TestNearestNeighborIndex:
 
     def test_nni_structure(self, stats, sample_cells):
         """Test that NNI returns expected structure."""
-        result = stats.nearest_neighbor_index(sample_cells)
+        result = stats.nearest_neighbor_index(sample_cells, study_area_km2=100)
 
         if "error" not in result:
             assert "nni" in result
@@ -150,7 +150,7 @@ class TestNearestNeighborIndex:
 
     def test_nni_pattern_interpretation(self, stats, sample_cells):
         """Test NNI pattern interpretation."""
-        result = stats.nearest_neighbor_index(sample_cells)
+        result = stats.nearest_neighbor_index(sample_cells, study_area_km2=100)
 
         if "pattern" in result:
             valid_patterns = [
@@ -164,7 +164,7 @@ class TestNearestNeighborIndex:
 
     def test_nni_too_few_cells(self, stats):
         """Test error handling for too few cells."""
-        result = stats.nearest_neighbor_index(["cell1"])
+        result = stats.nearest_neighbor_index(["8928308280fffff"])
         assert "error" in result
 
 

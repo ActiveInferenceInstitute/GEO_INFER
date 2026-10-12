@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from itertools import islice
 import json
 import re
-from typing import Any, Iterable
+from typing import Any
+from collections.abc import Iterable
 
 import numpy as np
 

@@ -6,7 +6,7 @@ regulations across entities and jurisdictions.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Union
+from typing import Any
 import datetime
 import uuid
 
@@ -27,11 +27,11 @@ class ComplianceStatus:
     compliance_level: float  # 0.0 to 1.0
     timestamp: datetime.datetime
     notes: str = ""
-    evaluated_by: Optional[str] = None
-    evaluation_method: Optional[str] = None
-    metric_results: Optional[List[Dict[str, Any]]] = None
-    evidence: Optional[Dict[str, Any]] = None
-    attributes: Dict[str, Any] = field(default_factory=dict)
+    evaluated_by: str | None = None
+    evaluation_method: str | None = None
+    metric_results: list[dict[str, Any]] | None = None
+    evidence: dict[str, Any] | None = None
+    attributes: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def create(
@@ -41,11 +41,11 @@ class ComplianceStatus:
         is_compliant: bool,
         compliance_level: float,
         notes: str = "",
-        evaluated_by: Optional[str] = None,
-        evaluation_method: Optional[str] = None,
-        metric_results: Optional[List[Dict[str, Any]]] = None,
-        evidence: Optional[Dict[str, Any]] = None,
-        attributes: Optional[Dict[str, Any]] = None,
+        evaluated_by: str | None = None,
+        evaluation_method: str | None = None,
+        metric_results: list[dict[str, Any]] | None = None,
+        evidence: dict[str, Any] | None = None,
+        attributes: dict[str, Any] | None = None,
     ) -> "ComplianceStatus":
         """
         Create a new ComplianceStatus with a generated UUID.
@@ -114,7 +114,7 @@ class ComplianceStatus:
 
         self.evidence[key] = value
 
-    def add_metric_result(self, metric_result: Dict[str, Any]) -> None:
+    def add_metric_result(self, metric_result: dict[str, Any]) -> None:
         """
         Add a metric result to the compliance status.
 
@@ -155,16 +155,16 @@ class ComplianceMetric:
     regulation_id: str
     evaluation_type: str  # e.g., 'threshold', 'range', 'boolean', 'composite'
     primary_field: str
-    required_fields: List[str] = field(default_factory=list)
-    threshold_value: Optional[Union[float, int, str]] = None
-    comparison: Optional[str] = None  # e.g., 'greater_than', 'less_than', 'equal'
-    range_min: Optional[float] = None
-    range_max: Optional[float] = None
+    required_fields: list[str] = field(default_factory=list)
+    threshold_value: float | int | str | None = None
+    comparison: str | None = None  # e.g., 'greater_than', 'less_than', 'equal'
+    range_min: float | None = None
+    range_max: float | None = None
     weight: float = 1.0  # For composite metrics
-    sub_metrics: List[str] = field(
+    sub_metrics: list[str] = field(
         default_factory=list
     )  # IDs of sub-metrics for composite metrics
-    attributes: Dict[str, Any] = field(default_factory=dict)
+    attributes: dict[str, Any] = field(default_factory=dict)
     created_at: datetime.datetime = field(default_factory=datetime.datetime.now)
     updated_at: datetime.datetime = field(default_factory=datetime.datetime.now)
 
@@ -176,14 +176,14 @@ class ComplianceMetric:
         regulation_id: str,
         evaluation_type: str,
         primary_field: str,
-        required_fields: Optional[List[str]] = None,
-        threshold_value: Optional[Union[float, int, str]] = None,
-        comparison: Optional[str] = None,
-        range_min: Optional[float] = None,
-        range_max: Optional[float] = None,
+        required_fields: list[str] | None = None,
+        threshold_value: float | int | str | None = None,
+        comparison: str | None = None,
+        range_min: float | None = None,
+        range_max: float | None = None,
         weight: float = 1.0,
-        sub_metrics: Optional[List[str]] = None,
-        attributes: Optional[Dict[str, Any]] = None,
+        sub_metrics: list[str] | None = None,
+        attributes: dict[str, Any] | None = None,
     ) -> "ComplianceMetric":
         """
         Create a new ComplianceMetric with a generated UUID.
@@ -259,7 +259,7 @@ class ComplianceMetric:
             self.sub_metrics.append(sub_metric_id)
             self.updated_at = datetime.datetime.now()
 
-    def set_threshold(self, value: Union[float, int, str], comparison: str) -> None:
+    def set_threshold(self, value: float | int | str, comparison: str) -> None:
         """
         Set the threshold value and comparison for the metric.
 

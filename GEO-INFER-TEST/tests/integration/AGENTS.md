@@ -30,12 +30,13 @@
 - `test_h3_space_time_bayes_risk_act_composition.py`
 - `test_module_imports.py`
 - `test_sec_api_app_security.py`
+- `test_space_time_composition_contract.py`
 - `test_space_time_data_integration.py`
 
 ## Validation
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python -m pytest GEO-INFER-TEST/tests/integration
 ```
 

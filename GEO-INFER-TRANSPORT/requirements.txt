@@ -1,2 +1,0 @@
-# GEO-INFER-TRANSPORT runtime requirements (matches pyproject [project.dependencies])
-networkx>=2.6.0

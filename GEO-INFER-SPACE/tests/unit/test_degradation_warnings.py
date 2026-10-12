@@ -1,6 +1,6 @@
 """
 Tests for the geo_infer_space package import contract and the local
-statistics degradation fallback.
+statistics failure boundary.
 
 The package __init__ imports PlaceAnalyzer, SpatialUtils, and GISManager
 unconditionally (RISK-policy fail-fast, GS19-82): these components depend
@@ -8,9 +8,8 @@ only on declared hard dependencies, so a broken internal import is a
 packaging bug that must propagate instead of silently nulling the public
 API. On a healthy install the package must resolve every declared export.
 
-The neighbor-lookup fallback in geo_infer_space.core.statistics still
-degrades gracefully: a failing backend warns and computes a self-only
-neighborhood.
+Neighbor lookup failures return explicit error diagnostics without fabricated
+self-only neighborhoods or partial statistics.
 """
 
 import importlib
@@ -84,28 +83,21 @@ class TestPackageImportContract:
         assert getattr(geo_infer_space, attr) is not None
 
 
-class TestNeighborLookupDegradation:
-    """Tests for the neighbor-lookup fallback in local statistics."""
+class TestNeighborLookupFailure:
+    """Statistics propagate a failed topology boundary."""
 
-    def test_getis_ord_warns_and_falls_back_to_self(self, caplog):
-        """Failing neighbor lookups warn and still compute self-only G*."""
+    def test_getis_ord_failure_propagates_without_partial_statistics(self, monkeypatch):
         stats = SpatialStatistics()
 
         class FailingBackend:
             def get_cell_neighbors(self, cell, k=1):
                 raise ValueError("neighborhood unavailable")
 
-        stats.dispatcher.get_backend = lambda name: FailingBackend()
-
-        cells = ["8928308280fffff", "8928308283fffff", "8928308285fffff"]
-        values = [1.0, 2.0, 3.0]
-
-        with caplog.at_level("WARNING", logger="geo_infer_space.core.statistics"):
-            result = stats.getis_ord_g(cells, values)
-
-        assert any(
-            "Neighbor lookup failed" in record.message and "self-only" in record.message
-            for record in caplog.records
+        monkeypatch.setattr(
+            stats.dispatcher, "get_backend", lambda name: FailingBackend()
         )
-        assert "g_stars" in result
-        assert set(result["g_stars"].keys()) == set(cells)
+        with pytest.raises(ValueError, match="neighborhood unavailable"):
+            stats.getis_ord_g(
+                ["8928308280fffff", "89283082803ffff", "89283082807ffff"],
+                [1.0, 2.0, 3.0],
+            )

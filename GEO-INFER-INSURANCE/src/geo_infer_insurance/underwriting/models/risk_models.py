@@ -7,7 +7,7 @@ This module provides data models for risk profiles including:
 - Risk scoring and assessment models
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 from datetime import datetime
 from dataclasses import dataclass, field
 from enum import Enum
@@ -44,7 +44,7 @@ class RiskProfile:
     # Risk scores
     overall_risk_score: float = 0.0
     risk_level: RiskLevel = RiskLevel.MEDIUM
-    risk_categories: Dict[RiskCategory, float] = field(default_factory=dict)
+    risk_categories: dict[RiskCategory, float] = field(default_factory=dict)
 
     # Risk factors
     location_risk: float = 0.0
@@ -60,10 +60,10 @@ class RiskProfile:
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
     assessment_method: str = "comprehensive"
-    data_sources: List[str] = field(default_factory=list)
+    data_sources: list[str] = field(default_factory=list)
 
     def calculate_weighted_risk_score(
-        self, weights: Optional[Dict[str, float]] = None
+        self, weights: dict[str, float] | None = None
     ) -> float:
         """Calculate weighted risk score."""
         if weights is None:
@@ -94,7 +94,7 @@ class RiskProfile:
         else:
             self.risk_level = RiskLevel.CRITICAL
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert risk profile to dictionary."""
         return {
             "profile_id": self.profile_id,
@@ -130,17 +130,17 @@ class ExposureProfile:
     market_value: float = 0.0
 
     # Spatial information
-    location: Dict[str, float] = field(default_factory=dict)
+    location: dict[str, float] = field(default_factory=dict)
     area: float = 0.0
     elevation: float = 0.0
 
     # Temporal information
-    time_variants: Dict[str, float] = field(default_factory=dict)
-    seasonality_factors: Dict[str, float] = field(default_factory=dict)
+    time_variants: dict[str, float] = field(default_factory=dict)
+    seasonality_factors: dict[str, float] = field(default_factory=dict)
 
     # Metadata
     created_at: datetime = field(default_factory=datetime.now)
-    data_sources: List[str] = field(default_factory=list)
+    data_sources: list[str] = field(default_factory=list)
 
     def calculate_value_at_risk(self, confidence_level: float = 0.95) -> float:
         """Calculate value at risk for the exposure."""
@@ -150,7 +150,7 @@ class ExposureProfile:
         """Get seasonal adjustment factor."""
         return self.seasonality_factors.get(season, 1.0)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert exposure profile to dictionary."""
         return {
             "profile_id": self.profile_id,
@@ -179,7 +179,7 @@ class VulnerabilityProfile:
 
     # Vulnerability metrics
     vulnerability_score: float = 0.0
-    damage_ratios: Dict[str, float] = field(default_factory=dict)
+    damage_ratios: dict[str, float] = field(default_factory=dict)
     recovery_time: float = 0.0
 
     # Asset characteristics
@@ -205,7 +205,7 @@ class VulnerabilityProfile:
         # Simplified calculation - in practice would use vulnerability curves
         return self.vulnerability_score * hazard_intensity
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert vulnerability profile to dictionary."""
         return {
             "profile_id": self.profile_id,

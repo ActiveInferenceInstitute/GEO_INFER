@@ -8,41 +8,11 @@ disaster response, and performance optimization based on unified spatial archite
 
 import logging
 import random
-import sys
 from datetime import datetime
-from pathlib import Path
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+import pandas as pd
 
-# Unified Spatial Architecture
-from geo_infer_space.core import (
-    SpatialIndexingInterface,
-)
-
-try:
-    from geo_infer_space.analytics.temporal import TemporalAnalyzer
-
-    TEMPORAL_AVAILABLE = True
-except ImportError:
-    TEMPORAL_AVAILABLE = False
-    logging.warning("TemporalAnalyzer not available")
-
-try:
-    import numpy as np
-
-    NUMPY_AVAILABLE = True
-except ImportError:
-    NUMPY_AVAILABLE = False
-    logging.warning("NumPy not available")
-
-try:
-    import pandas as pd
-
-    PANDAS_AVAILABLE = True
-except ImportError:
-    PANDAS_AVAILABLE = False
-    logging.warning("Pandas not available")
+from geo_infer_space.core import SpatialIndexingInterface
 
 # Configure logging
 logging.basicConfig(
@@ -139,13 +109,10 @@ def example_demand_forecasting_ml():
 
         features.append(feature_vector)
 
-    if PANDAS_AVAILABLE:
-        df = pd.DataFrame(features)
-        print(f"Generated {len(df)} feature vectors")
-        print("Sample Features:")
-        print(df.head(2))
-    else:
-        print(f"Generated {len(features)} feature vectors")
+    df = pd.DataFrame(features)
+    print(f"Generated {len(df)} feature vectors")
+    print("Sample Features:")
+    print(df.head(2))
 
     print("\nDemand forecasting example completed successfully")
 

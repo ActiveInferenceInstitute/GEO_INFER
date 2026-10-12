@@ -7,6 +7,10 @@ from pathlib import Path
 
 import pytest
 
+from geo_infer_risk.civic_intel import (
+    CRESCENT_CITY_OBSERVATIONS_SCHEMA,
+    load_crescent_city_geo_observations,
+)
 from geo_infer_risk import (
     MultiHazardInteractionMatrix,
     crescent_city_hazard_weights,
@@ -148,15 +152,19 @@ def test_local_json_path_and_missing_seed_are_deterministic(tmp_path: Path) -> N
     assert load_crescent_city_hazard(tmp_path / "missing.json") == empty
 
 
-def test_source_parameter_replaces_deprecated_seed_alias() -> None:
-    """``source`` is the primary parameter; ``seed`` still routes for compatibility."""
+def test_source_is_the_only_input_parameter() -> None:
+    """``source`` is the single input; the removed ``seed`` alias is rejected."""
 
     fixture = _contract_fixture()
 
-    assert load_crescent_city_hazard(fixture) == load_crescent_city_hazard(seed=fixture)
     assert load_crescent_city_hazard(fixture) == parse_crescent_city_hazard(fixture)
+    assert load_crescent_city_hazard(source=fixture) == parse_crescent_city_hazard(
+        fixture
+    )
     with pytest.raises(TypeError, match="source must be"):
-        load_crescent_city_hazard(seed=object())
+        load_crescent_city_hazard(object())
+    with pytest.raises(TypeError, match="unexpected keyword argument 'seed'"):
+        load_crescent_city_hazard(seed=fixture)  # type: ignore[call-arg]
 
 
 def test_policy_weights_align_with_multi_hazard_matrix_names() -> None:
@@ -275,12 +283,7 @@ def test_existing_malformed_json_fails_closed(tmp_path: Path) -> None:
         load_crescent_city_hazard(invalid)
 
 
-# --- crescent-city-geo-observations/v1 delegation (2026-09-08 producer pass) ---
-
-from geo_infer_risk.civic_intel import (  # noqa: E402
-    CRESCENT_CITY_OBSERVATIONS_SCHEMA,
-    load_crescent_city_geo_observations,
-)
+# --- crescent-city-geo-observations/v1 delegation ---
 
 
 def test_observations_loader_is_the_bayes_core_object() -> None:

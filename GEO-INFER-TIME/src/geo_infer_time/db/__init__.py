@@ -8,9 +8,9 @@ import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from geo_infer_time.models.timeseries import TimeSeries
+from geo_infer_time.core.timestamps import normalize_datetime_index
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class TimeSeriesStore(ABC):
         """
 
     @abstractmethod
-    def list_series(self) -> List[str]:
+    def list_series(self) -> list[str]:
         """List the names of all stored time series.
 
         Returns:
@@ -79,8 +79,8 @@ class TimeSeriesStore(ABC):
     def query(
         self,
         name: str,
-        start: Optional[datetime] = None,
-        end: Optional[datetime] = None,
+        start: datetime | None = None,
+        end: datetime | None = None,
     ) -> TimeSeries:
         """Query a stored time series for a specific time range.
 
@@ -116,7 +116,7 @@ class InMemoryStore(TimeSeriesStore):
     """
 
     def __init__(self) -> None:
-        self._data: Dict[str, TimeSeries] = {}
+        self._data: dict[str, TimeSeries] = {}
         logger.debug("Initialized InMemoryStore")
 
     def store(self, name: str, ts: TimeSeries) -> None:
@@ -140,7 +140,7 @@ class InMemoryStore(TimeSeriesStore):
             metadata=deepcopy(ts.metadata),
         )
 
-    def list_series(self) -> List[str]:
+    def list_series(self) -> list[str]:
         """Return a sorted list of all stored series names."""
         return sorted(self._data.keys())
 
@@ -154,8 +154,8 @@ class InMemoryStore(TimeSeriesStore):
     def query(
         self,
         name: str,
-        start: Optional[datetime] = None,
-        end: Optional[datetime] = None,
+        start: datetime | None = None,
+        end: datetime | None = None,
     ) -> TimeSeries:
         """Query a stored time series by time range.
 
@@ -169,6 +169,12 @@ class InMemoryStore(TimeSeriesStore):
         ts = self._data[name]
         df = ts.to_dataframe()
 
+        if start is not None:
+            start = normalize_datetime_index([start])[0]
+        if end is not None:
+            end = normalize_datetime_index([end])[0]
+        if start is not None and end is not None and start > end:
+            raise ValueError("query start must not be after end")
         if start is not None:
             df = df.loc[df.index >= start]
         if end is not None:

@@ -10,7 +10,7 @@ import logging
 import requests
 import geopandas as gpd
 from pathlib import Path
-from typing import Dict, Any, Optional, cast
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class BaseAPIManager:
     Base class for API managers handling data retrieval and caching.
     """
 
-    def __init__(self, base_url: str, api_key: Optional[str] = None) -> None:
+    def __init__(self, base_url: str, api_key: str | None = None) -> None:
         """
         Initialize the API manager.
 
@@ -37,8 +37,8 @@ class BaseAPIManager:
     def fetch_data(
         self,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Fetch data from API endpoint.
 
@@ -53,7 +53,7 @@ class BaseAPIManager:
         try:
             response = self.session.get(url, params=params)
             response.raise_for_status()
-            return cast(Dict[str, Any], response.json())
+            return cast(dict[str, Any], response.json())
         except requests.RequestException as e:
             logger.error(f"API request failed: {e}")
             return {}
@@ -72,7 +72,7 @@ class GeneralGeoDataFetcher(BaseAPIManager):
     def get_geospatial_data(
         self,
         dataset: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> gpd.GeoDataFrame:
         """
         Get geospatial data for a specific dataset.

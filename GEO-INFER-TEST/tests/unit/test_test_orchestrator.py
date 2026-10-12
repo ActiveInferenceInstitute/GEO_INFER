@@ -159,3 +159,27 @@ class TestHypothesisOrchestrator:
         )  # Should equal unique names count
         for name in set(suite_names):
             assert name in combined.modules
+
+
+def test_dependency_cycle_fails_before_execution():
+    import pytest
+
+    with pytest.raises(ValueError, match="Cyclic test dependencies"):
+        _TestOrchestrator(
+            dependencies={"A": ["B"], "B": ["A"]}
+        ).resolve_execution_order(["A", "B"])
+
+
+def test_empty_and_custom_plan_require_actual_execution():
+    import pytest
+
+    orchestrator = _TestOrchestrator()
+    with pytest.raises(ValueError, match="empty test plan"):
+        orchestrator.execute_plan({"suite": "unit", "execution_order": []})
+    with pytest.raises(ValueError, match="explicit runner_fn"):
+        orchestrator.execute_plan({"suite": "custom", "execution_order": ["ACT"]})
+    report = orchestrator.execute_plan(
+        {"suite": "custom", "execution_order": ["ACT"]},
+        runner_fn=lambda _module: {"status": "skipped"},
+    )
+    assert not report["success"] and report["failed"] == 1

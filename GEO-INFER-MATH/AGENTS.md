@@ -25,12 +25,10 @@
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `CHANGELOG.md`
 - `IMPROVEMENTS.md`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Validation
 

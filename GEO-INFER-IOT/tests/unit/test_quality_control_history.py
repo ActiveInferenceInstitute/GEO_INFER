@@ -5,7 +5,7 @@ consistency and window-based outlier detection depend on retained history,
 so a controller that keeps no history silently passes everything.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 
@@ -13,7 +13,7 @@ from geo_infer_iot.core.quality_control import QualityController
 
 
 def _measurement(sensor_id, value, minutes_ago, base=None):
-    base = base or datetime(2026, 1, 1, 12, 0, 0)
+    base = base or datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
     return {
         "sensor_id": sensor_id,
         "value": value,
@@ -62,29 +62,94 @@ class TestMeasurementRetention:
 
     def test_unusable_measurements_are_not_retained(self, controller):
         """Values or timestamps the checks cannot use are dropped."""
-        controller.validate_measurement(
-            {"sensor_id": "s1", "value": None, "timestamp": "x"}
-        )
+        controller.validate_measurement({"sensor_id": "s1", "value": None})
         controller.validate_measurement({"sensor_id": "s1", "value": 1.0})
         controller.validate_measurement(
             {
                 "sensor_id": "s1",
                 "value": float("nan"),
-                "timestamp": "2026-01-01T12:00:00",
+                "timestamp": "2026-01-01T12:00:00+00:00",
             }
         )
         assert controller._get_recent_measurements("s1", minutes=60) == []
 
     def test_datetime_timestamps_are_accepted(self, controller):
-        """A datetime timestamp is retained the same as an ISO string."""
+        """An aware datetime timestamp is retained the same as an ISO string."""
         controller.validate_measurement(
             {
                 "sensor_id": "s1",
                 "value": 5.0,
-                "timestamp": datetime(2026, 1, 1, 12, 0, 0),
+                "timestamp": datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC),
             }
         )
         assert len(controller._get_recent_measurements("s1", minutes=60)) == 1
+
+
+class TestTimestampContract:
+    """Timestamps are timezone-aware UTC end to end; naive input is rejected."""
+
+    @pytest.mark.parametrize(
+        "timestamp",
+        ["2026-01-01T12:00:00", datetime(2026, 1, 1, 12, 0, 0)],
+    )
+    def test_naive_timestamps_are_rejected(self, controller, timestamp):
+        with pytest.raises(ValueError, match="timezone-aware"):
+            controller.validate_measurement(
+                {"sensor_id": "s1", "value": 1.0, "timestamp": timestamp}
+            )
+        # Rejection happens before any state change.
+        assert "s1" not in controller.measurement_history
+
+    def test_malformed_timestamp_is_rejected(self, controller):
+        with pytest.raises(ValueError, match="ISO-8601"):
+            controller.validate_measurement(
+                {"sensor_id": "s1", "value": 1.0, "timestamp": "x"}
+            )
+
+    def test_non_string_timestamp_is_rejected(self, controller):
+        with pytest.raises(TypeError):
+            controller.validate_measurement(
+                {"sensor_id": "s1", "value": 1.0, "timestamp": 1_700_000_000}
+            )
+
+    def test_offset_timestamps_are_normalized_to_utc(self, controller):
+        plus_two = timezone(timedelta(hours=2))
+        controller.validate_measurement(
+            {
+                "sensor_id": "s1",
+                "value": 1.0,
+                "timestamp": "2026-01-01T14:00:00+02:00",
+            }
+        )
+        controller.validate_measurement(
+            {
+                "sensor_id": "s1",
+                "value": 1.0,
+                "timestamp": datetime(2026, 1, 1, 14, 30, tzinfo=plus_two),
+            }
+        )
+        stored = [entry["timestamp"] for entry in controller.measurement_history["s1"]]
+        assert stored == [
+            datetime(2026, 1, 1, 12, 0, tzinfo=UTC),
+            datetime(2026, 1, 1, 12, 30, tzinfo=UTC),
+        ]
+        assert all(ts.tzinfo is UTC for ts in stored)
+
+    def test_zulu_suffix_is_accepted(self, controller):
+        controller.validate_measurement(
+            {"sensor_id": "s1", "value": 1.0, "timestamp": "2026-01-01T12:00:00Z"}
+        )
+        stored = controller.measurement_history["s1"][0]["timestamp"]
+        assert stored == datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+
+    def test_report_timestamps_are_utc(self, controller):
+        result = controller.validate_measurement(
+            {"sensor_id": "s1", "value": 1.0, "timestamp": "2026-01-01T12:00:00Z"}
+        )
+        validated_at = datetime.fromisoformat(result.metadata["validation_timestamp"])
+        assert validated_at.utcoffset() == timedelta(0)
+        generated_at = controller.get_quality_report()["generated_at"]
+        assert datetime.fromisoformat(generated_at).utcoffset() == timedelta(0)
 
 
 class TestTemporalConsistency:

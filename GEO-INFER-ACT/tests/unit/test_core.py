@@ -2,14 +2,9 @@
 Tests for GEO-INFER-ACT core functionality.
 """
 
-import os
-import sys
 import unittest
 import pytest
 import numpy as np
-
-# Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from geo_infer_act import ActiveInferenceStepResult, H3BeliefUpdateResult
 from geo_infer_act.core.active_inference import ActiveInferenceModel
@@ -119,13 +114,13 @@ class TestActiveInferenceModel(unittest.TestCase):
 
     def test_act_accepts_scalar_num_controls_in_local_backend(self):
         """The local action path accepts scalar and sequence control counts."""
-        gen_model = GenerativeModel("gaussian", {"state_dim": 3})
-        gen_model.num_controls = 2
-        self.model.model_type = "gaussian"
+        gen_model = GenerativeModel("categorical", {"state_dim": 3})
         self.model.set_generative_model(gen_model)
         self.model.current_beliefs = np.ones(3) / 3
 
-        assert self.model.act() in {0, 1}
+        for controls in (2, [2]):
+            gen_model.num_controls = controls
+            assert self.model.act() in {0, 1}
 
     def test_step(self):
         gen_model = GenerativeModel("categorical", self.gen_params)
@@ -513,8 +508,10 @@ class TestGenerativeModel(unittest.TestCase):
         self.model.enable_spatial_navigation(grid_size=3)
         self.assertTrue(self.model.spatial_mode)
         self.assertEqual(self.model.state_dim, 9)
-        self.assertEqual(self.model.obs_dim, 1)
-        self.assertEqual(len(self.model.transition_model), 4)  # 4 actions
+        self.assertEqual(self.model.obs_dim, 9)
+        np.testing.assert_array_equal(self.model.observation_model, np.eye(9))
+        self.assertEqual(self.model.transition_model.shape, (9, 9, 4))
+        np.testing.assert_allclose(self.model.transition_model.sum(axis=0), 1)
 
     def test_set_preferences(self):
         """Test setting preferences."""
@@ -575,9 +572,11 @@ class TestGenerativeModel(unittest.TestCase):
         """Test RxInfer integration with a deterministic local backend."""
         model_spec = """ # Julia code for model """
         data = {"observations": np.random.randn(10)}
-        result = self.model.integrate_rxinfer(model_spec, data)
+        result = self.model.integrate_rxinfer(
+            model_spec, data, backend="local_gaussian"
+        )
         self.assertEqual(result["status"], "success")
-        self.assertIn(result["backend"], {"rxinfer", "deterministic-local"})
+        self.assertIn(result["backend"], {"local_gaussian"})
 
     def test_integrate_bayeux(self):
         """Test Bayeux-compatible inference with deterministic NumPy sampling."""
@@ -617,6 +616,7 @@ class TestGenerativeModel(unittest.TestCase):
         """Test H3 spatial enabling."""
         model = GenerativeModel("categorical", {"state_dim": 1})
         boundary = {
+            "type": "Polygon",
             "coordinates": [
                 [
                     [-122.42, 37.77],
@@ -625,7 +625,7 @@ class TestGenerativeModel(unittest.TestCase):
                     [-122.41, 37.77],
                     [-122.42, 37.77],
                 ]
-            ]
+            ],
         }
         model.enable_h3_spatial(8, boundary)
         if hasattr(model, "spatial_config"):
@@ -637,6 +637,7 @@ class TestGenerativeModel(unittest.TestCase):
         model.enable_h3_spatial(
             8,
             {
+                "type": "Polygon",
                 "coordinates": [
                     [
                         [-122.42, 37.77],
@@ -645,7 +646,7 @@ class TestGenerativeModel(unittest.TestCase):
                         [-122.41, 37.77],
                         [-122.42, 37.77],
                     ]
-                ]
+                ],
             },
         )
         obs = {
@@ -871,7 +872,7 @@ class TestDiffuseAndAggregateBeliefs(unittest.TestCase):
         # Should have fewer cells at coarser resolution
         self.assertLessEqual(len(aggregated), len(beliefs))
         # All values should be valid distributions
-        for cell, b in aggregated.items():
+        for b in aggregated.values():
             self.assertAlmostEqual(np.sum(b), 1.0, places=5)
 
 

@@ -15,7 +15,6 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
-from typing import Dict
 
 from geo_infer_ops import __version__
 from geo_infer_ops.utils import load_config, configure_logging, get_logger
@@ -71,12 +70,12 @@ def create_app() -> FastAPI:
 
     # Health check endpoint
     @app.get("/health")
-    def health_check() -> Dict[str, str]:
+    def health_check() -> dict[str, str]:
         return {"status": "ok"}
 
     # Version endpoint
     @app.get("/version")
-    def version() -> Dict[str, str]:
+    def version() -> dict[str, str]:
         return {"version": __version__}
 
     # Expose the resolved configuration on the ASGI app state

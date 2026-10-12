@@ -9,7 +9,7 @@ Gracefully degrades when GEO-INFER-LOG is not installed.
 """
 
 import logging
-from typing import Dict, List, Optional, Any, cast
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +51,10 @@ class LogisticsEconomicAnalyzer:
     """
 
     def __init__(self) -> None:
-        self._supply_chain: Optional[Any] = None
-        self._facility_locator: Optional[Any] = None
-        self._inventory_mgr: Optional[Any] = None
-        self._emissions_calc: Optional[Any] = None
+        self._supply_chain: Any | None = None
+        self._facility_locator: Any | None = None
+        self._inventory_mgr: Any | None = None
+        self._emissions_calc: Any | None = None
 
         if HAS_LOG:
             self._supply_chain = SupplyChainModel()
@@ -75,13 +75,13 @@ class LogisticsEconomicAnalyzer:
 
     def total_cost_analysis(
         self,
-        facilities: List[Dict[str, Any]],
-        demand_points: List[Dict[str, Any]],
-        lead_times: Dict[str, int],
-        demand_data: Optional[Dict[str, List[float]]] = None,
+        facilities: list[dict[str, Any]],
+        demand_points: list[dict[str, Any]],
+        lead_times: dict[str, int],
+        demand_data: dict[str, list[float]] | None = None,
         service_level: float = 0.95,
         max_distance_km: float = 100.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compute total landed cost combining logistics and economic factors.
 
@@ -100,7 +100,7 @@ class LogisticsEconomicAnalyzer:
             Dictionary with ``logistics_cost``, ``inventory_cost``,
             ``coverage``, ``facility_cost``, ``total_landed_cost``.
         """
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "logistics_cost": 0.0,
             "inventory_cost": 0.0,
             "facility_cost": sum(f.get("fixed_cost", 0) for f in facilities),
@@ -155,12 +155,12 @@ class LogisticsEconomicAnalyzer:
 
     def optimal_network_design(
         self,
-        candidate_locations: List[Dict[str, Any]],
-        demand_points: List[Dict[str, Any]],
+        candidate_locations: list[dict[str, Any]],
+        demand_points: list[dict[str, Any]],
         max_facilities: int = 5,
         budget: float = float("inf"),
         max_distance_km: float = 100.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Design an optimal logistics network using p-median optimization.
 
@@ -196,4 +196,4 @@ class LogisticsEconomicAnalyzer:
         result["cost_per_unit_demand"] = result.get("total_cost", 0) / max(
             result["demand_served"], 1
         )
-        return cast(Dict[str, Any], result)
+        return cast(dict[str, Any], result)

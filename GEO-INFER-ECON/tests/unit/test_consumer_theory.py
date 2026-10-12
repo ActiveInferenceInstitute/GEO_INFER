@@ -162,7 +162,9 @@ class TestConsumerSurplus:
         self.cs = ConsumerSurplus()
 
     def test_surplus_integral_linear_demand(self) -> None:
-        demand_fn = lambda p: max(0, 10.0 - p)
+        def demand_fn(p: float) -> float:
+            return max(0.0, 10.0 - p)
+
         surplus = self.cs.calculate_surplus_integral(demand_fn, (0.0, 10.0), 5.0)
         # Integral from 5 to 10 of (10-p)dp = [10p - p^2/2] from 5 to 10 = (100-50) - (50-12.5) = 12.5
         assert abs(surplus - 12.5) < 0.5

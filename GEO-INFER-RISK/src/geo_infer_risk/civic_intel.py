@@ -14,16 +14,18 @@ import json
 import math
 import os
 from collections.abc import Mapping, Sequence
+from importlib.util import find_spec
 from pathlib import Path
 from typing import TypeAlias, TypedDict
 
 # Shared civic-intel ingestion core: the canonical contract loader and schema
 # constant live in GEO-INFER-BAYES, so every consumer resolves the SAME
 # objects and reads the ONE reviewed crescent-city-geo-intel.json copy.
-# The import is guarded: when the sibling is absent this module still imports
+# Resolve the sibling before import: when absent this module still imports
 # and its module-specific hazard-weight surface keeps working (cross-module
-# identity tests pin object identity when the sibling IS importable).
-try:
+# identity tests pin object identity when the sibling IS importable). A resolved
+# package's import failures must propagate, including root-named failures.
+if find_spec("geo_infer_bayes") is not None:
     from geo_infer_bayes.civic_intel import (
         CRESCENT_CITY_INTEL_SCHEMA,
         load_crescent_city_contract,
@@ -32,7 +34,7 @@ try:
         CRESCENT_CITY_OBSERVATIONS_SCHEMA,
         load_crescent_city_geo_observations,
     )
-except ImportError:  # pragma: no cover - sibling-absent degradation path
+else:
     CRESCENT_CITY_INTEL_SCHEMA = "crescent-city-geo-intel/v1"
     CRESCENT_CITY_OBSERVATIONS_SCHEMA = "crescent-city-geo-observations/v1"
 
@@ -328,34 +330,29 @@ def parse_crescent_city_hazard(
 
 def load_crescent_city_hazard(
     source: CrescentCitySeed = None,
-    *,
-    seed: CrescentCitySeed = None,
 ) -> CrescentCityHazardIntel:
     """Load Crescent City hazard policy from an injected mapping or JSON path.
 
     ``source`` accepts an injected mapping, an explicit local JSON path, or
-    ``None`` to load the reviewed package seed.  ``seed`` is a deprecated
-    keyword alias retained for compatibility and is used only when
-    ``source`` is ``None``.  A missing package seed or explicit path returns
-    an empty result.  Existing but malformed files fail closed.  The loader
+    ``None`` to load the reviewed package seed.  A missing package seed or
+    explicit path returns an empty result.  Existing but malformed files fail closed.  The loader
     never searches sibling projects, downloads data, or falls back to a live
     service.
     """
 
-    resolved = source if source is not None else seed
-    if isinstance(resolved, Mapping):
-        return parse_crescent_city_hazard(resolved)
-    if resolved is None:
+    if isinstance(source, Mapping):
+        return parse_crescent_city_hazard(source)
+    if source is None:
         # The reviewed package seed is the canonical bundled contract copy
         # owned by GEO-INFER-BAYES; RISK no longer ships its own duplicate.
         contract = load_crescent_city_contract()
         if contract is None:
             return _empty_hazard_intel()
         return parse_crescent_city_hazard(contract)
-    if not isinstance(resolved, (str, os.PathLike)):
+    if not isinstance(source, (str, os.PathLike)):
         raise TypeError("source must be a mapping, local JSON path, or None")
 
-    path = Path(resolved)
+    path = Path(source)
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:

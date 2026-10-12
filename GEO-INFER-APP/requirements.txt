@@ -1,7 +1,0 @@
-# GEO-INFER-APP runtime requirements
-#
-# geo-infer-app has no third-party runtime dependencies: it uses only the
-# Python 3.11+ standard library. geo_infer_agent is an optional, undeclared
-# integration (imported in a try/except ImportError with a deterministic
-# local fallback). Development/doc tooling lives in pyproject.toml extras
-# (dev, docs).

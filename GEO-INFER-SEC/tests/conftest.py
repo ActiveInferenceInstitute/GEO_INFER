@@ -10,11 +10,11 @@ import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -44,7 +44,7 @@ def tmp_output_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def sample_credentials() -> Dict[str, str]:
+def sample_credentials() -> dict[str, str]:
     """Test credential tokens for authentication tests.
 
     WARNING: These are synthetic test-only tokens. They are NOT real
@@ -65,7 +65,7 @@ def sample_credentials() -> Dict[str, str]:
 
 
 @pytest.fixture
-def security_config() -> Dict[str, Any]:
+def security_config() -> dict[str, Any]:
     """Configuration dict for security module settings.
 
     Specifies authentication, authorization, encryption, and rate
@@ -98,7 +98,7 @@ def security_config() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def audit_log_entries() -> List[Dict[str, Any]]:
+def audit_log_entries() -> list[dict[str, Any]]:
     """List of audit log entry dicts for security logging tests.
 
     Contains 6 entries representing login, data access, permission

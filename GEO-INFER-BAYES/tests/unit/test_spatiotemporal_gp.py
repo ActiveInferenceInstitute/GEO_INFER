@@ -35,15 +35,35 @@ def posterior_draws() -> SimpleNamespace:
     )
 
 
-def test_canonical_and_legacy_prediction_inputs_match(fitted_model) -> None:
+def test_predict_accepts_only_the_three_column_matrix(fitted_model) -> None:
     model, spatial, temporal, _ = fitted_model
     X = np.column_stack((spatial, temporal))
 
-    canonical = model.predict(X)
-    legacy = model.predict(spatial, temporal)
+    prediction = model.predict(X)
 
-    assert canonical.shape == (4,)
-    np.testing.assert_allclose(canonical, legacy)
+    assert prediction.shape == (4,)
+    assert np.all(np.isfinite(prediction))
+    # The split ``predict(spatial_coords, temporal_coords)`` form was removed.
+    with pytest.raises(ValueError, match=r"shape \(n_points, 3\)"):
+        model.predict(spatial, temporal)
+
+
+def test_log_likelihood_rejects_positional_coordinate_arrays(fitted_model) -> None:
+    model, spatial, temporal, observations = fitted_model
+
+    with pytest.raises(TypeError):
+        model.log_likelihood(spatial, temporal, observations)
+    with pytest.raises(TypeError, match="mapping"):
+        model.log_likelihood(spatial, temporal)
+
+
+def test_sample_draws_from_split_coordinates(fitted_model) -> None:
+    model, spatial, temporal, _ = fitted_model
+
+    draws = model.sample(spatial, temporal, n_samples=3)
+
+    assert draws.shape == (3, 4)
+    assert np.all(np.isfinite(draws))
 
 
 def test_posterior_prediction_and_predictive_sampling_are_finite(fitted_model) -> None:

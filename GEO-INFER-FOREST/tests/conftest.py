@@ -10,11 +10,11 @@ import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point, Polygon
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -95,7 +95,7 @@ def forest_stand_gdf() -> gpd.GeoDataFrame:
 
 
 @pytest.fixture
-def biomass_allometric_params() -> Dict[str, Dict[str, float]]:
+def biomass_allometric_params() -> dict[str, dict[str, float]]:
     """Allometric equation parameters for biomass estimation by species.
 
     Each species has coefficients a and b for the equation:
@@ -112,7 +112,7 @@ def biomass_allometric_params() -> Dict[str, Dict[str, float]]:
 
 
 @pytest.fixture
-def forest_config() -> Dict[str, Any]:
+def forest_config() -> dict[str, Any]:
     """Configuration dict for forest analysis operations.
 
     Specifies canopy analysis parameters, fire risk thresholds,

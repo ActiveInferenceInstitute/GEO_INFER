@@ -4,19 +4,15 @@
 from __future__ import annotations
 
 import argparse
-import sys
-from pathlib import Path
 
-ACT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ACT_ROOT / "src"))
-
-from geo_infer_act.runners.wrapper import run_scenario_entrypoint  # noqa: E402
+from geo_infer_act.runners.cli import build_parser
+from geo_infer_act.runners.wrapper import run_scenario_entrypoint
 
 
 def main(argv: list[str] | None = None) -> int:
     """Run the package-owned simple scenario."""
-    _: type[argparse.ArgumentParser] = argparse.ArgumentParser
-    return run_scenario_entrypoint("simple", argv, program="simple_model.py")
+    parser: argparse.ArgumentParser = build_parser(prog="simple_model.py")
+    return run_scenario_entrypoint("simple", argv, parser=parser)
 
 
 if __name__ == "__main__":

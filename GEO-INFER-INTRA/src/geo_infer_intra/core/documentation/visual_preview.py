@@ -16,13 +16,13 @@ import re
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import h3
 from PIL import Image, ImageDraw, PngImagePlugin
 
 # Canonical specifications and spatial profiles for all 45 GEO-INFER modules
-MODULE_PROFILES: Dict[str, Dict[str, Any]] = {
+MODULE_PROFILES: dict[str, dict[str, Any]] = {
     "ACT": {
         "name": "Active Inference Engine",
         "description": "Free energy minimization, epistemic exploration, and action selection",
@@ -589,7 +589,7 @@ def _projected_rings(
 
 def render_svg_card(
     module_id: str,
-    output_path: Optional[Path] = None,
+    output_path: Path | None = None,
     *,
     width: int = 700,
     height: int = 380,
@@ -628,7 +628,7 @@ def render_svg_card(
 
 def render_leaflet_html(
     module_id: str,
-    output_path: Optional[Path] = None,
+    output_path: Path | None = None,
     *,
     width: int = 800,
     height: int = 450,
@@ -686,7 +686,7 @@ if (typeof L !== 'undefined') {{
 
 def render_png_card(
     module_id: str,
-    output_path: Optional[Path] = None,
+    output_path: Path | None = None,
     *,
     width: int = 400,
     height: int = 240,
@@ -805,7 +805,7 @@ def generate_module_preview_suite(
 
 def generate_all_module_previews(
     output_dir: Path | str,
-) -> Dict[str, SpatialPreviewArtifacts]:
+) -> dict[str, SpatialPreviewArtifacts]:
     """Generate all module bundles in stable registry order."""
     return {
         mod: generate_module_preview_suite(mod, output_dir)

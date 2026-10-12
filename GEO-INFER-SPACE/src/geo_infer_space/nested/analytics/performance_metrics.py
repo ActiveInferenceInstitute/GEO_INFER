@@ -12,15 +12,16 @@ import time
 import psutil
 import threading
 from types import TracebackType
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass, field
-from typing import Any, Callable, Deque, Dict, List, Optional, Type, cast
+from typing import Any, cast
+from collections.abc import Callable
 from enum import Enum
 from collections import defaultdict, deque
 
-logger = logging.getLogger(__name__)
+import numpy as np
 
-import numpy as np  # hard dependency (numpy<2.0 pinned); no fallback path
+logger = logging.getLogger(__name__)
 
 
 class PerformanceMetric(Enum):
@@ -72,16 +73,16 @@ class PerformanceMeasurement:
 
     # Context
     operation_name: str
-    system_context: Dict[str, Any] = field(default_factory=dict)
+    system_context: dict[str, Any] = field(default_factory=dict)
 
     # Timing
-    timestamp: datetime = field(default_factory=datetime.now)
-    duration: Optional[timedelta] = None
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
+    duration: timedelta | None = None
 
     # Metadata
-    tags: Dict[str, str] = field(default_factory=dict)
+    tags: dict[str, str] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert measurement to dictionary."""
         return {
             "measurement_id": self.measurement_id,
@@ -106,10 +107,10 @@ class BenchmarkResult:
     benchmark_type: BenchmarkType
 
     # Measurements
-    measurements: List[PerformanceMeasurement] = field(default_factory=list)
+    measurements: list[PerformanceMeasurement] = field(default_factory=list)
 
     # Summary statistics
-    summary_stats: Dict[str, Dict[str, float]] = field(default_factory=dict)
+    summary_stats: dict[str, dict[str, float]] = field(default_factory=dict)
 
     # Performance scores
     performance_score: float = 0.0
@@ -117,13 +118,13 @@ class BenchmarkResult:
     scalability_score: float = 0.0
 
     # System information
-    system_info: Dict[str, Any] = field(default_factory=dict)
+    system_info: dict[str, Any] = field(default_factory=dict)
 
     # Test configuration
-    test_config: Dict[str, Any] = field(default_factory=dict)
+    test_config: dict[str, Any] = field(default_factory=dict)
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     duration: timedelta = field(default_factory=lambda: timedelta(0))
 
     def add_measurement(self, measurement: PerformanceMeasurement) -> None:
@@ -164,27 +165,27 @@ class PerformanceProfile:
     target_operation: str
 
     # Performance characteristics
-    baseline_metrics: Dict[PerformanceMetric, float] = field(default_factory=dict)
-    current_metrics: Dict[PerformanceMetric, float] = field(default_factory=dict)
+    baseline_metrics: dict[PerformanceMetric, float] = field(default_factory=dict)
+    current_metrics: dict[PerformanceMetric, float] = field(default_factory=dict)
 
     # Trends
-    performance_trends: Dict[PerformanceMetric, List[float]] = field(
+    performance_trends: dict[PerformanceMetric, list[float]] = field(
         default_factory=dict
     )
 
     # Thresholds
-    performance_thresholds: Dict[PerformanceMetric, Dict[str, float]] = field(
+    performance_thresholds: dict[PerformanceMetric, dict[str, float]] = field(
         default_factory=dict
     )
 
     # Optimization recommendations
-    recommendations: List[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
-    last_updated: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    last_updated: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    def update_metrics(self, metrics: Dict[PerformanceMetric, float]) -> None:
+    def update_metrics(self, metrics: dict[PerformanceMetric, float]) -> None:
         """Update current metrics and trends."""
         for metric, value in metrics.items():
             self.current_metrics[metric] = value
@@ -198,7 +199,7 @@ class PerformanceProfile:
             if len(self.performance_trends[metric]) > 100:
                 self.performance_trends[metric] = self.performance_trends[metric][-100:]
 
-        self.last_updated = datetime.now()
+        self.last_updated = datetime.now(UTC)
 
 
 class PerformanceMonitor:
@@ -209,9 +210,9 @@ class PerformanceMonitor:
     def __init__(self, operation_name: str, analyzer: "H3PerformanceAnalyzer") -> None:
         self.operation_name = operation_name
         self.analyzer = analyzer
-        self.start_time: Optional[float] = None
-        self.start_memory: Optional[int] = None
-        self.start_cpu: Optional[float] = None
+        self.start_time: float | None = None
+        self.start_memory: int | None = None
+        self.start_cpu: float | None = None
 
     def __enter__(self) -> "PerformanceMonitor":
         """Start monitoring."""
@@ -229,9 +230,9 @@ class PerformanceMonitor:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         """Stop monitoring and record measurements."""
         end_time = time.time()
@@ -293,17 +294,17 @@ class H3PerformanceAnalyzer:
         self.name = name
 
         # Measurement storage
-        self.measurements: List[PerformanceMeasurement] = []
-        self.benchmark_results: Dict[str, BenchmarkResult] = {}
-        self.performance_profiles: Dict[str, PerformanceProfile] = {}
+        self.measurements: list[PerformanceMeasurement] = []
+        self.benchmark_results: dict[str, BenchmarkResult] = {}
+        self.performance_profiles: dict[str, PerformanceProfile] = {}
 
         # Real-time monitoring
         self.monitoring_active = False
-        self.monitoring_thread: Optional[threading.Thread] = None
-        self.monitoring_data: Deque[Dict[str, Any]] = deque(maxlen=1000)
+        self.monitoring_thread: threading.Thread | None = None
+        self.monitoring_data: deque[dict[str, Any]] = deque(maxlen=1000)
 
         # Configuration
-        self.config: Dict[str, Any] = {
+        self.config: dict[str, Any] = {
             "measurement_retention_days": 30,
             "monitoring_interval": 1.0,  # seconds
             "benchmark_iterations": 10,
@@ -312,11 +313,11 @@ class H3PerformanceAnalyzer:
         }
 
         # Statistics
-        self.analysis_stats: Dict[str, int] = defaultdict(int)
+        self.analysis_stats: dict[str, int] = defaultdict(int)
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def record_measurement(
         self,
@@ -324,8 +325,8 @@ class H3PerformanceAnalyzer:
         value: float,
         unit: str,
         operation_name: str,
-        system_context: Optional[Dict[str, Any]] = None,
-        tags: Optional[Dict[str, str]] = None,
+        system_context: dict[str, Any] | None = None,
+        tags: dict[str, str] | None = None,
     ) -> PerformanceMeasurement:
         """
         Record a performance measurement.
@@ -353,7 +354,7 @@ class H3PerformanceAnalyzer:
 
         self.measurements.append(measurement)
         self.analysis_stats["measurements_recorded"] += 1
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         # Clean up old measurements
         self._cleanup_old_measurements()
@@ -376,7 +377,7 @@ class H3PerformanceAnalyzer:
         self,
         benchmark_type: BenchmarkType,
         target_function: Callable[..., Any],
-        test_config: Optional[Dict[str, Any]] = None,
+        test_config: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> BenchmarkResult:
         """
@@ -391,7 +392,7 @@ class H3PerformanceAnalyzer:
         Returns:
             BenchmarkResult instance
         """
-        start_time = datetime.now()
+        start_time = datetime.now(UTC)
         benchmark_id = f"benchmark_{uuid.uuid4().hex[:8]}"
 
         result = BenchmarkResult(
@@ -435,12 +436,12 @@ class H3PerformanceAnalyzer:
         result.efficiency_score = self._calculate_efficiency_score(result)
         result.scalability_score = self._calculate_scalability_score(result)
 
-        result.duration = datetime.now() - start_time
+        result.duration = datetime.now(UTC) - start_time
 
         # Store result
         self.benchmark_results[benchmark_id] = result
         self.analysis_stats["benchmarks_run"] += 1
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return result
 
@@ -448,7 +449,7 @@ class H3PerformanceAnalyzer:
         self,
         profile_id: str,
         target_operation: str,
-        baseline_metrics: Optional[Dict[PerformanceMetric, float]] = None,
+        baseline_metrics: dict[PerformanceMetric, float] | None = None,
     ) -> PerformanceProfile:
         """
         Create a performance profile.
@@ -468,12 +469,12 @@ class H3PerformanceAnalyzer:
         )
 
         self.performance_profiles[profile_id] = profile
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return profile
 
     def update_performance_profile(
-        self, profile_id: str, metrics: Dict[PerformanceMetric, float]
+        self, profile_id: str, metrics: dict[PerformanceMetric, float]
     ) -> None:
         """
         Update a performance profile with new metrics.
@@ -491,7 +492,7 @@ class H3PerformanceAnalyzer:
         # Generate recommendations
         profile.recommendations = self._generate_performance_recommendations(profile)
 
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def start_monitoring(self) -> None:
         """Start real-time performance monitoring."""
@@ -524,7 +525,7 @@ class H3PerformanceAnalyzer:
 
                 # Store monitoring data
                 self.monitoring_data.append(
-                    {"timestamp": datetime.now(), "metrics": system_metrics}
+                    {"timestamp": datetime.now(UTC), "metrics": system_metrics}
                 )
 
                 time.sleep(self.config["monitoring_interval"])
@@ -533,7 +534,7 @@ class H3PerformanceAnalyzer:
                 logger.warning(f"Monitoring loop error: {e}")
                 time.sleep(self.config["monitoring_interval"])
 
-    def _collect_system_metrics(self) -> Dict[str, float]:
+    def _collect_system_metrics(self) -> dict[str, float]:
         """Collect current system metrics."""
         metrics = {}
 
@@ -557,7 +558,7 @@ class H3PerformanceAnalyzer:
 
         return metrics
 
-    def _get_system_info(self) -> Dict[str, Any]:
+    def _get_system_info(self) -> dict[str, Any]:
         """Get system information."""
         info = {}
 
@@ -674,7 +675,7 @@ class H3PerformanceAnalyzer:
 
     def _generate_performance_recommendations(
         self, profile: PerformanceProfile
-    ) -> List[str]:
+    ) -> list[str]:
         """Generate performance optimization recommendations."""
         recommendations = []
 
@@ -714,7 +715,7 @@ class H3PerformanceAnalyzer:
 
     def _cleanup_old_measurements(self) -> None:
         """Clean up old measurements."""
-        cutoff_date = datetime.now() - timedelta(
+        cutoff_date = datetime.now(UTC) - timedelta(
             days=self.config["measurement_retention_days"]
         )
 
@@ -722,9 +723,9 @@ class H3PerformanceAnalyzer:
 
     def get_performance_summary(
         self,
-        operation_name: Optional[str] = None,
-        time_window: Optional[timedelta] = None,
-    ) -> Dict[str, Any]:
+        operation_name: str | None = None,
+        time_window: timedelta | None = None,
+    ) -> dict[str, Any]:
         """
         Get performance summary.
 
@@ -744,7 +745,7 @@ class H3PerformanceAnalyzer:
             ]
 
         if time_window:
-            cutoff_time = datetime.now() - time_window
+            cutoff_time = datetime.now(UTC) - time_window
             filtered_measurements = [
                 m for m in filtered_measurements if m.timestamp > cutoff_time
             ]
@@ -778,7 +779,7 @@ class H3PerformanceAnalyzer:
             },
         }
 
-    def get_analyzer_statistics(self) -> Dict[str, Any]:
+    def get_analyzer_statistics(self) -> dict[str, Any]:
         """Get analyzer statistics."""
         return {
             "analyzer_name": self.name,

@@ -64,8 +64,6 @@
 - `TIME/`
 - `TRANSPORT/`
 - `WATER/`
-- `_lib.py`
-- `update_to_thin_orchestrators.py`
 
 ## Validation
 

@@ -1,7 +1,6 @@
 """Energy grid optimization module."""
 
 import logging
-from typing import Dict, Optional
 import xarray as xr
 
 logger = logging.getLogger(__name__)
@@ -10,7 +9,7 @@ logger = logging.getLogger(__name__)
 class EnergyGridOptimizer:
     """Optimize energy grid networks."""
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize grid optimizer.
 
         Documented contract: ``config`` is accepted and stored for API
@@ -23,7 +22,7 @@ class EnergyGridOptimizer:
         self,
         demand: xr.DataArray,
         supply: xr.DataArray,
-        transmission_capacity: Optional[xr.DataArray] = None,
+        transmission_capacity: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """
         Optimize energy grid network.

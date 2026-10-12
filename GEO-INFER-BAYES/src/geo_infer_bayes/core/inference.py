@@ -4,7 +4,7 @@ Main inference engine for Bayesian analysis of geospatial data.
 
 import numpy as np
 import xarray as xr
-from typing import Dict, Any, Optional, Union
+from typing import Any
 
 from ..models.base import BayesianModel
 from .posterior import PosteriorAnalysis
@@ -31,7 +31,7 @@ class BayesianInference:
         self,
         model: "BayesianModel",
         method: str = "mcmc",
-        sampler_config: Optional[Dict[str, Any]] = None,
+        sampler_config: dict[str, Any] | None = None,
     ):
         self.model = model
         self.method = method.lower()
@@ -66,7 +66,7 @@ class BayesianInference:
         self.backend = backends[self.method](self.model, **self.sampler_config)
 
     def run(
-        self, data: Union[np.ndarray, xr.Dataset, Dict[str, Any]], **kwargs: Any
+        self, data: np.ndarray | xr.Dataset | dict[str, Any], **kwargs: Any
     ) -> PosteriorAnalysis:
         """
         Run the inference algorithm on the provided data.
@@ -120,7 +120,7 @@ class BayesianInference:
 
     def update(
         self,
-        new_data: Union[np.ndarray, xr.Dataset, Dict[str, Any]],
+        new_data: np.ndarray | xr.Dataset | dict[str, Any],
         previous_posterior: PosteriorAnalysis,
         **kwargs: Any,
     ) -> PosteriorAnalysis:

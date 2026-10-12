@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Command-line interface for GEO-INFER-AGENT
@@ -16,7 +15,7 @@ import yaml
 import asyncio
 import json
 import importlib
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 from geo_infer_agent.core.agent_registry import AGENT_DESCRIPTIONS, AGENT_TYPES
 
@@ -27,7 +26,7 @@ logger = logging.getLogger("geo_infer_agent.cli")
 # Embedded configuration templates for ``create-config``.  Keys mirror the
 # config values each agent class actually reads (see the corresponding
 # module's __init__/config handling).  Kept in sync with load_agent_class().
-CONFIG_TEMPLATES: Dict[str, Dict[str, Any]] = {
+CONFIG_TEMPLATES: dict[str, dict[str, Any]] = {
     "default": {
         "agent_type": "default",
         "memory_capacity": 1000,
@@ -103,7 +102,7 @@ def setup_logging(verbose: bool = False) -> None:
     )
 
 
-def load_config(config_path: str) -> Dict[str, Any]:
+def load_config(config_path: str) -> dict[str, Any]:
     """
     Load configuration from file.
 
@@ -118,7 +117,7 @@ def load_config(config_path: str) -> Dict[str, Any]:
         sys.exit(1)
 
     try:
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             if config_path.endswith(".yaml") or config_path.endswith(".yml"):
                 config = yaml.safe_load(f)
             elif config_path.endswith(".json"):
@@ -128,7 +127,7 @@ def load_config(config_path: str) -> Dict[str, Any]:
                 sys.exit(1)
 
         logger.info(f"Loaded configuration from {config_path}")
-        return cast(Dict[str, Any], config)
+        return cast(dict[str, Any], config)
     except Exception as e:
         logger.error(f"Failed to load configuration: {str(e)}")
         sys.exit(1)
@@ -194,7 +193,7 @@ async def run_agent(args: argparse.Namespace) -> None:
         # If state file provided, load state
         if args.state:
             if os.path.exists(args.state):
-                loader = getattr(agent_class, "load_state")
+                loader = agent_class.load_state
                 agent = loader(args.state, config=config)
                 logger.info(f"Loaded agent state from {args.state}")
             else:

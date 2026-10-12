@@ -5,8 +5,11 @@ Gaussian process surrogate model for black-box optimisation.
 """
 
 import numpy as np
-from typing import Optional, Dict, Any, Callable, Tuple, cast
+from typing import Any, cast
+from collections.abc import Callable
 import logging
+
+from geo_infer_math.utils.rng import SeedLike, resolve_rng
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +23,12 @@ class BayesianOptimization:
 
     def __init__(
         self,
-        bounds: Optional[np.ndarray] = None,
+        bounds: np.ndarray | None = None,
         n_initial: int = 5,
         max_iterations: int = 25,
         length_scale: float = 1.0,
         noise: float = 1e-6,
+        seed: SeedLike = None,
     ) -> None:
         """Initialize Bayesian optimiser.
 
@@ -34,12 +38,15 @@ class BayesianOptimization:
             max_iterations: Maximum BO iterations after initialisation.
             length_scale: RBF kernel length scale.
             noise: Observation noise variance.
+            seed: Seed or generator for the random initial design and EI
+                candidate search; see :func:`geo_infer_math.utils.rng.resolve_rng`.
         """
         self.bounds = bounds
         self.n_initial = n_initial
         self.max_iterations = max_iterations
         self.length_scale = length_scale
         self.noise = noise
+        self.rng = resolve_rng(seed)
         logger.debug(
             "BayesianOptimization initialized (n_init=%d, max_iter=%d)",
             n_initial,
@@ -49,9 +56,9 @@ class BayesianOptimization:
     def optimize(
         self,
         objective: Callable,
-        bounds: Optional[np.ndarray] = None,
+        bounds: np.ndarray | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run Bayesian optimisation loop.
 
         Args:
@@ -131,7 +138,7 @@ class BayesianOptimization:
         Y_train: np.ndarray,
         bounds: np.ndarray,
         n_test: int = 50,
-    ) -> Tuple[Callable, Callable]:
+    ) -> tuple[Callable, Callable]:
         """Fit GP and return prediction functions.
 
         Returns closures (mu_fn, sigma_fn) that predict at arbitrary points.
@@ -193,5 +200,5 @@ class BayesianOptimization:
     def _random_points(self, bounds: np.ndarray, n: int) -> np.ndarray:
         """Generate random points within bounds."""
         d = bounds.shape[0]
-        points = np.random.rand(n, d)
+        points = self.rng.random((n, d))
         return cast(np.ndarray, bounds[:, 0] + points * (bounds[:, 1] - bounds[:, 0]))

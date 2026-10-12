@@ -7,11 +7,12 @@ Provides readers and writers for common time series file formats
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import pandas as pd
 
 from geo_infer_time.models.timeseries import TimeSeries
+from geo_infer_time.core.timestamps import normalize_datetime_index
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +40,10 @@ class TimeSeriesReader:
 
     def read(
         self,
-        path: Union[str, Path],
-        time_column: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        spatial_location: Optional[Dict[str, float]] = None,
+        path: str | Path,
+        time_column: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        spatial_location: dict[str, float | str] | None = None,
         **kwargs: Any,
     ) -> TimeSeries:
         """Read a time series file into a TimeSeries object.
@@ -89,6 +90,21 @@ class TimeSeriesReader:
 
         df = self._set_time_index(df, time_column)
 
+        meta_path = path.with_suffix(".meta.json")
+        if meta_path.exists():
+            sidecar = json.loads(meta_path.read_text())
+            if not isinstance(sidecar, dict) or set(sidecar) - {
+                "metadata",
+                "spatial_location",
+            }:
+                raise ValueError("Invalid TimeSeries metadata sidecar")
+            if any(not isinstance(item, dict) for item in sidecar.values()):
+                raise ValueError("Metadata sidecar entries must be dictionaries")
+            if metadata is None:
+                metadata = sidecar.get("metadata")
+            if spatial_location is None:
+                spatial_location = sidecar.get("spatial_location")
+
         logger.info(
             "Loaded %d rows x %d columns from %s",
             len(df),
@@ -115,7 +131,11 @@ class TimeSeriesReader:
     @staticmethod
     def _read_json(path: Path, **kwargs: Any) -> pd.DataFrame:
         """Read JSON (records or table orientation)."""
-        kwargs.setdefault("convert_dates", True)
+        # Timestamp validation must see raw records; pandas' eager conversion
+        # would silently interpret numeric epochs before the TIME boundary.
+        kwargs.setdefault("convert_dates", False)
+        kwargs.setdefault("convert_axes", False)
+        kwargs.setdefault("date_unit", "ns")
         return pd.read_json(path, **kwargs)
 
     @staticmethod
@@ -124,7 +144,7 @@ class TimeSeriesReader:
         return pd.read_parquet(path, **kwargs)
 
     @staticmethod
-    def _set_time_index(df: pd.DataFrame, time_column: Optional[str]) -> pd.DataFrame:
+    def _set_time_index(df: pd.DataFrame, time_column: str | None) -> pd.DataFrame:
         """Ensure the DataFrame has a DatetimeIndex.
 
         If *time_column* is given, that column is converted to datetime and
@@ -139,30 +159,31 @@ class TimeSeriesReader:
                     f"Column '{time_column}' not found in data. "
                     f"Available: {list(df.columns)}"
                 )
-            df[time_column] = pd.to_datetime(df[time_column])
+            df[time_column] = normalize_datetime_index(df[time_column])
             df = df.set_index(time_column)
             return df
 
         # Already a DatetimeIndex
         if isinstance(df.index, pd.DatetimeIndex):
+            df.index = normalize_datetime_index(df.index)
             return df
 
         # Auto-detect a time column
         for name in common_names:
             if name in df.columns:
-                df[name] = pd.to_datetime(df[name])
+                df[name] = normalize_datetime_index(df[name])
                 df = df.set_index(name)
                 logger.debug("Auto-detected time column: %s", name)
                 return df
 
         # Last resort: try to parse the existing index
         try:
-            df.index = pd.to_datetime(df.index)
-        except Exception:
+            df.index = normalize_datetime_index(df.index)
+        except Exception as exc:
             raise ValueError(
                 "Could not identify a time column or convert the index "
                 "to datetime. Specify time_column explicitly."
-            )
+            ) from exc
 
         return df
 
@@ -184,7 +205,7 @@ class TimeSeriesWriter:
     def write(
         self,
         ts: TimeSeries,
-        path: Union[str, Path],
+        path: str | Path,
         write_metadata: bool = True,
         **kwargs: Any,
     ) -> Path:
@@ -195,6 +216,8 @@ class TimeSeriesWriter:
             path: Destination file path.
             write_metadata: If True and the TimeSeries has metadata or
                 spatial_location, write a sidecar ``.meta.json`` file.
+                Otherwise remove an existing sidecar so overwritten data
+                cannot inherit the previous series' provenance.
             **kwargs: Additional keyword arguments forwarded to the
                 underlying pandas write function.
 
@@ -219,9 +242,19 @@ class TimeSeriesWriter:
         logger.info("Writing time series (%d rows) to %s", len(df), path)
 
         if suffix == ".csv":
+            kwargs.setdefault("index_label", df.index.name or "timestamp")
             df.to_csv(path, **kwargs)
         elif suffix == ".json":
             kwargs.setdefault("date_format", "iso")
+            kwargs.setdefault("date_unit", "ns")
+            # pandas' timezone-aware ISO index conversion can truncate to
+            # microseconds even with date_unit='ns', collapsing distinct keys.
+            # Serialize the validated UTC identities as strings ourselves.
+            df.index = pd.Index(
+                [stamp.isoformat() for stamp in df.index], name=df.index.name
+            )
+            if kwargs.get("orient") == "records":
+                df = df.reset_index(names=df.index.name or "timestamp")
             df.to_json(path, **kwargs)
         elif suffix in (".parquet", ".pq"):
             df.to_parquet(path, **kwargs)
@@ -236,6 +269,8 @@ class TimeSeriesWriter:
                 meta["spatial_location"] = ts.spatial_location
             meta_path.write_text(json.dumps(meta, indent=2, default=str))
             logger.debug("Wrote metadata sidecar to %s", meta_path)
+        else:
+            path.with_suffix(".meta.json").unlink(missing_ok=True)
 
         return path
 
@@ -246,10 +281,10 @@ class TimeSeriesWriter:
 
 
 def read_timeseries(
-    path: Union[str, Path],
-    time_column: Optional[str] = None,
-    metadata: Optional[Dict[str, Any]] = None,
-    spatial_location: Optional[Dict[str, float]] = None,
+    path: str | Path,
+    time_column: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    spatial_location: dict[str, float | str] | None = None,
     **kwargs: Any,
 ) -> TimeSeries:
     """Read a time series file into a TimeSeries object.
@@ -278,7 +313,7 @@ def read_timeseries(
 
 def write_timeseries(
     ts: TimeSeries,
-    path: Union[str, Path],
+    path: str | Path,
     write_metadata: bool = True,
     **kwargs: Any,
 ) -> Path:

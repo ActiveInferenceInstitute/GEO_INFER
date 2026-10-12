@@ -26,12 +26,9 @@
 - `examples/`
 - `src/`
 - `tests/`
-- `run_tests.py`
-- `setup.py`
 - `IMPLEMENTATION_STATUS.md`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Validation
 

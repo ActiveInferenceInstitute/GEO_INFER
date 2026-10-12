@@ -21,10 +21,7 @@
 
 ## Local Contents
 
-- `cascadia_analysis_20251024_070156.log`
-- `cascadia_analysis_20260125_134358.log`
-- `cascadia_analysis_20260125_134408.log`
-- `data_cleanup.log`
+- No direct tracked child entries.
 
 ## Validation
 

@@ -9,7 +9,7 @@ data retrieval logic for agricultural geospatial entities.
 import logging
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class ResourceResponse:
     data: Any
     count: int
     resource_type: str
-    filters_applied: Dict[str, Any] = field(default_factory=dict)
+    filters_applied: dict[str, Any] = field(default_factory=dict)
 
 
 class FieldsResource:
@@ -33,17 +33,17 @@ class FieldsResource:
     """
 
     def __init__(self) -> None:
-        self._fields: Dict[str, Dict[str, Any]] = {}
+        self._fields: dict[str, dict[str, Any]] = {}
 
     def create(
         self,
         name: str,
         area_hectares: float,
-        location: Dict[str, float],
+        location: dict[str, float],
         soil_type: str = "loam",
-        crop_type: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        crop_type: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Register a new agricultural field.
 
@@ -67,7 +67,7 @@ class FieldsResource:
             raise ValueError("location must contain 'lat' and 'lon'")
 
         field_id = str(uuid.uuid4())[:8]
-        record: Dict[str, Any] = {
+        record: dict[str, Any] = {
             "id": field_id,
             "name": name,
             "area_hectares": area_hectares,
@@ -80,15 +80,15 @@ class FieldsResource:
         logger.info("Created field %s (%s)", field_id, name)
         return record
 
-    def get(self, field_id: str) -> Optional[Dict[str, Any]]:
+    def get(self, field_id: str) -> dict[str, Any] | None:
         """Return a single field by id, or None if not found."""
         return self._fields.get(field_id)
 
     def list(
         self,
-        soil_type: Optional[str] = None,
-        crop_type: Optional[str] = None,
-        min_area: Optional[float] = None,
+        soil_type: str | None = None,
+        crop_type: str | None = None,
+        min_area: float | None = None,
     ) -> ResourceResponse:
         """
         List fields with optional filters.
@@ -102,7 +102,7 @@ class FieldsResource:
             ResourceResponse with matching fields.
         """
         results = list(self._fields.values())
-        filters: Dict[str, Any] = {}
+        filters: dict[str, Any] = {}
 
         if soil_type is not None:
             results = [f for f in results if f["soil_type"] == soil_type]
@@ -121,9 +121,7 @@ class FieldsResource:
             filters_applied=filters,
         )
 
-    def update(
-        self, field_id: str, updates: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+    def update(self, field_id: str, updates: dict[str, Any]) -> dict[str, Any] | None:
         """
         Update a field record in place.
 
@@ -161,7 +159,7 @@ class CropsResource:
     """
 
     # Built-in crop reference data
-    _CROP_DATABASE: Dict[str, Dict[str, Any]] = {
+    _CROP_DATABASE: dict[str, dict[str, Any]] = {
         "corn": {
             "scientific_name": "Zea mays",
             "growing_season_days": 120,
@@ -210,9 +208,9 @@ class CropsResource:
     }
 
     def __init__(self) -> None:
-        self._custom_crops: Dict[str, Dict[str, Any]] = {}
+        self._custom_crops: dict[str, dict[str, Any]] = {}
 
-    def get(self, crop_name: str) -> Optional[Dict[str, Any]]:
+    def get(self, crop_name: str) -> dict[str, Any] | None:
         """
         Get crop reference data by name (case-insensitive).
 
@@ -226,7 +224,7 @@ class CropsResource:
             return {"name": key, **self._custom_crops[key]}
         return None
 
-    def list(self, category: Optional[str] = None) -> ResourceResponse:
+    def list(self, category: str | None = None) -> ResourceResponse:
         """
         List all known crops, optionally filtered by category.
 
@@ -236,11 +234,11 @@ class CropsResource:
         Returns:
             ResourceResponse with crop records.
         """
-        all_crops: List[Dict[str, Any]] = []
+        all_crops: list[dict[str, Any]] = []
         for name, data in {**self._CROP_DATABASE, **self._custom_crops}.items():
             all_crops.append({"name": name, **data})
 
-        filters: Dict[str, Any] = {}
+        filters: dict[str, Any] = {}
         if category is not None:
             all_crops = [c for c in all_crops if c.get("category") == category]
             filters["category"] = category
@@ -252,7 +250,7 @@ class CropsResource:
             filters_applied=filters,
         )
 
-    def register(self, crop_name: str, properties: Dict[str, Any]) -> Dict[str, Any]:
+    def register(self, crop_name: str, properties: dict[str, Any]) -> dict[str, Any]:
         """
         Register a custom crop type.
 
@@ -273,16 +271,14 @@ class CropsResource:
         logger.info("Registered custom crop: %s", key)
         return {"name": key, **properties}
 
-    def get_water_requirement(self, crop_name: str) -> Optional[float]:
+    def get_water_requirement(self, crop_name: str) -> float | None:
         """Return water requirement in mm for a crop, or None if unknown."""
         record = self.get(crop_name)
         if record is None:
             return None
         return record.get("water_requirement_mm")
 
-    def get_optimal_temperature_range(
-        self, crop_name: str
-    ) -> Optional[Dict[str, float]]:
+    def get_optimal_temperature_range(self, crop_name: str) -> dict[str, float] | None:
         """Return optimal temperature range dict or None if unknown."""
         record = self.get(crop_name)
         if record is None:
@@ -302,7 +298,7 @@ class YieldResource:
     """
 
     def __init__(self) -> None:
-        self._records: List[Dict[str, Any]] = []
+        self._records: list[dict[str, Any]] = []
 
     def estimate(
         self,
@@ -310,7 +306,7 @@ class YieldResource:
         area_hectares: float,
         soil_quality: float = 1.0,
         weather_factor: float = 1.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Estimate yield for a crop under given conditions.
 
@@ -365,7 +361,7 @@ class YieldResource:
         season: str,
         year: int,
         notes: str = "",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Record an actual yield observation for historical tracking.
 
@@ -381,7 +377,7 @@ class YieldResource:
             The stored observation record.
         """
         record_id = str(uuid.uuid4())[:8]
-        observation: Dict[str, Any] = {
+        observation: dict[str, Any] = {
             "id": record_id,
             "crop": crop_name,
             "area_hectares": area_hectares,
@@ -399,8 +395,8 @@ class YieldResource:
 
     def get_history(
         self,
-        crop_name: Optional[str] = None,
-        year: Optional[int] = None,
+        crop_name: str | None = None,
+        year: int | None = None,
     ) -> ResourceResponse:
         """
         Query historical yield observations.
@@ -413,7 +409,7 @@ class YieldResource:
             ResourceResponse with matching observations.
         """
         results = list(self._records)
-        filters: Dict[str, Any] = {}
+        filters: dict[str, Any] = {}
 
         if crop_name is not None:
             results = [r for r in results if r["crop"] == crop_name]
@@ -429,7 +425,7 @@ class YieldResource:
             filters_applied=filters,
         )
 
-    def average_yield(self, crop_name: str) -> Optional[float]:
+    def average_yield(self, crop_name: str) -> float | None:
         """
         Compute average historical yield per hectare for a crop.
 

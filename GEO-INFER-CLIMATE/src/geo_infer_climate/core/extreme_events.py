@@ -3,7 +3,8 @@ Extreme weather event analysis module.
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Tuple, Iterator
+from typing import Any
+from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import Enum
 import numpy as np
@@ -45,9 +46,9 @@ class ExtremeEvent:
     duration_days: int
     peak_value: float
     severity: Severity
-    location: Optional[Tuple[float, float]] = None
-    area_km2: Optional[float] = None
-    return_period_years: Optional[float] = None
+    location: tuple[float, float] | None = None
+    area_km2: float | None = None
+    return_period_years: float | None = None
 
 
 class ExtremeEventAnalyzer:
@@ -63,7 +64,7 @@ class ExtremeEventAnalyzer:
     - Climate indices
     """
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """
         Initialize extreme event analyzer.
 
@@ -82,14 +83,14 @@ class ExtremeEventAnalyzer:
         }
 
         # Event registry
-        self.event_registry: List[ExtremeEvent] = []
+        self.event_registry: list[ExtremeEvent] = []
 
     def detect_heatwaves(
         self,
         temperature: xr.DataArray,
         threshold_percentile: float = 90.0,
         min_duration: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect heatwave events.
 
@@ -114,7 +115,7 @@ class ExtremeEventAnalyzer:
                 continue
             if values.ndim == 1:
                 segment = values[event_start:event_end]
-                location: Dict[str, Any] = {}
+                location: dict[str, Any] = {}
             else:
                 lat_idx, lon_idx = np.unravel_index(cell, values.shape[1:])
                 segment = values[event_start:event_end, lat_idx, lon_idx]
@@ -144,7 +145,7 @@ class ExtremeEventAnalyzer:
         precipitation: xr.DataArray,
         threshold_percentile: float = 10.0,
         min_duration: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect drought events from precipitation data.
 
@@ -174,7 +175,7 @@ class ExtremeEventAnalyzer:
                 continue
             if values.ndim == 1:
                 segment = values[event_start:event_end]
-                location: Dict[str, Any] = {}
+                location: dict[str, Any] = {}
             else:
                 lat_idx, lon_idx = np.unravel_index(cell, values.shape[1:])
                 segment = values[event_start:event_end, lat_idx, lon_idx]
@@ -204,7 +205,7 @@ class ExtremeEventAnalyzer:
         temperature: xr.DataArray,
         threshold_percentile: float = 10.0,
         min_duration: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect cold spell events.
 
@@ -257,7 +258,7 @@ class ExtremeEventAnalyzer:
         }
 
     @staticmethod
-    def _iter_runs(above: np.ndarray) -> Iterator[Tuple[int, int, int]]:
+    def _iter_runs(above: np.ndarray) -> Iterator[tuple[int, int, int]]:
         """Yield (cell_index, start, end) for maximal True runs along axis 0.
 
         ``above`` is a boolean array whose first axis is time; remaining
@@ -279,7 +280,7 @@ class ExtremeEventAnalyzer:
         streamflow: xr.DataArray,
         threshold_percentile: float = 95.0,
         min_duration: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect flood events from streamflow data.
 
@@ -347,7 +348,7 @@ class ExtremeEventAnalyzer:
 
     def calculate_return_period(
         self, data: xr.DataArray, value: float, method: str = "gev"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate return period for an extreme value.
 
@@ -430,7 +431,7 @@ class ExtremeEventAnalyzer:
         precipitation: xr.DataArray,
         temp_threshold_percentile: float = 90.0,
         precip_threshold_percentile: float = 10.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect compound extreme events (e.g., hot and dry).
 
@@ -507,8 +508,8 @@ class ExtremeEventAnalyzer:
         }
 
     def calculate_climate_indices(
-        self, temperature: xr.DataArray, precipitation: Optional[xr.DataArray] = None
-    ) -> Dict[str, Any]:
+        self, temperature: xr.DataArray, precipitation: xr.DataArray | None = None
+    ) -> dict[str, Any]:
         """
         Calculate standard climate extreme indices.
 
@@ -606,12 +607,12 @@ class ExtremeEventAnalyzer:
         logger.info(f"Registered {event.event_type.value} event: {event.event_id}")
         return event.event_id
 
-    def get_event_statistics(self) -> Dict[str, Any]:
+    def get_event_statistics(self) -> dict[str, Any]:
         """Get statistics on registered events."""
         if not self.event_registry:
             return {"error": "No events registered"}
 
-        by_type: Dict[str, Dict[str, Any]] = {}
+        by_type: dict[str, dict[str, Any]] = {}
         for event in self.event_registry:
             etype = event.event_type.value
             if etype not in by_type:
@@ -625,7 +626,7 @@ class ExtremeEventAnalyzer:
             by_type[etype]["total_duration"] += event.duration_days
 
             sev = event.severity.value
-            severities: Dict[str, int] = by_type[etype]["severities"]
+            severities: dict[str, int] = by_type[etype]["severities"]
             severities[sev] = severities.get(sev, 0) + 1
 
         # Calculate averages

@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +33,7 @@ def whitebox_available() -> bool:
     return HAS_WHITEBOX
 
 
-def whitebox_version() -> Optional[str]:
+def whitebox_version() -> str | None:
     """Return the installed Whitebox version string, if available."""
     if not HAS_WHITEBOX:
         return None
@@ -56,11 +55,11 @@ def _require_whitebox() -> None:
 
 
 def flow_accumulation(
-    dem_file: Union[str, Path],
-    output_file: Union[str, Path],
+    dem_file: str | Path,
+    output_file: str | Path,
     *,
     flow_type: int = 1,
-    outlet_file: Optional[Union[str, Path]] = None,
+    outlet_file: str | Path | None = None,
 ) -> Path:
     """Compute Flow-Accumulation on a digital elevation model.
 

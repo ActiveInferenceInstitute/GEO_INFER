@@ -9,8 +9,9 @@ Preprocessing steps ensure data quality and compatibility with SPM statistical m
 """
 
 import numpy as np
-from typing import List, Optional, Any, cast
+from typing import Any, cast
 from scipy import stats
+from scipy.signal import savgol_filter
 import warnings
 
 from ..models.data_models import SPMData
@@ -18,7 +19,7 @@ from .validation import validate_spm_data
 
 
 def preprocess_data(
-    data: SPMData, steps: Optional[List[str]] = None, **kwargs: Any
+    data: SPMData, steps: list[str] | None = None, **kwargs: Any
 ) -> SPMData:
     """
     Apply preprocessing pipeline to SPM data.
@@ -63,7 +64,7 @@ def preprocess_data(
                 processed_data, **kwargs.get("temporal_params", {})
             )
         else:
-            warnings.warn(f"Unknown preprocessing step: {step}")
+            warnings.warn(f"Unknown preprocessing step: {step}", stacklevel=2)
 
     # Update metadata
     processed_data.metadata["preprocessing_steps"] = steps
@@ -202,7 +203,7 @@ def _spatial_interpolate_missing(
 
 
 def normalize_data(
-    data: SPMData, method: str = "zscore", axis: Optional[int] = None
+    data: SPMData, method: str = "zscore", axis: int | None = None
 ) -> SPMData:
     """
     Normalize data values for SPM analysis.
@@ -348,17 +349,11 @@ def _detect_outliers_1d(data: np.ndarray, method: str, threshold: float) -> np.n
         outliers = z_scores > threshold
 
     elif method == "isolation_forest":
-        # Isolation Forest method
-        try:
-            from sklearn.ensemble import IsolationForest
+        # Isolation Forest method (scikit-learn imported lazily for import cost)
+        from sklearn.ensemble import IsolationForest
 
-            iso_forest = IsolationForest(contamination=0.1, random_state=42)
-            outliers = iso_forest.fit_predict(data.reshape(-1, 1)) == -1
-        except ImportError:
-            warnings.warn(
-                "scikit-learn required for isolation forest. Using IQR method."
-            )
-            outliers = _detect_outliers_1d(data, "iqr", threshold)
+        iso_forest = IsolationForest(contamination=0.1, random_state=42)
+        outliers = iso_forest.fit_predict(data.reshape(-1, 1)) == -1
 
     else:
         raise ValueError(f"Unknown outlier detection method: {method}")
@@ -459,15 +454,7 @@ def temporal_filter(
             filtered_data = _exponential_filter(data.data, alpha)
 
         elif method == "savitzky_golay":
-            try:
-                from scipy.signal import savgol_filter
-
-                filtered_data = savgol_filter(data.data, window_size, 2)
-            except ImportError:
-                warnings.warn(
-                    "SciPy required for Savitzky-Golay filter. Using moving average."
-                )
-                filtered_data = _moving_average_filter(data.data, window_size)
+            filtered_data = savgol_filter(data.data, window_size, 2)
 
     else:
         # Multi-dimensional filtering (apply to each spatial point)

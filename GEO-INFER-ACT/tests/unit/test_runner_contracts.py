@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import shutil
 from pathlib import Path
 
 import pytest
@@ -143,3 +145,25 @@ def test_run_all_scenarios_writes_suite_manifest(tmp_path: Path) -> None:
     assert manifest["schema_version"] == "geo-infer-act-suite-manifest/v1"
     assert manifest["validation"]["status"] == "passed"
     assert {item["scenario"] for item in manifest["scenarios"]} == {"simple", "h3"}
+    moved = tmp_path / "relocated"
+    shutil.copytree(results.output_dir, moved)
+    for scenario in manifest["scenarios"]:
+        assert not Path(scenario["output_dir"]).is_absolute()
+        assert not Path(scenario["manifest"]).is_absolute()
+        child = json.loads((moved / scenario["manifest"]).read_text())
+        assert child["validation"]["output_dir"] == "."
+        for artifact in child["generated_files"]:
+            copied = moved / scenario["output_dir"] / artifact["path"]
+            assert hashlib.sha256(copied.read_bytes()).hexdigest() == artifact["sha256"]
+
+
+def test_package_version_fallback_uses_public_runtime_version(monkeypatch):
+    from importlib import metadata
+    from geo_infer_act import __version__
+    from geo_infer_act.runners import io
+
+    def absent_distribution(name):
+        raise metadata.PackageNotFoundError(name)
+
+    monkeypatch.setattr(io.metadata, "version", absent_distribution)
+    assert io.package_version() == __version__ == "0.4.0"

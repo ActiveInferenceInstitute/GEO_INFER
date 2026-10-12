@@ -9,10 +9,10 @@ This module provides JSON schemas for validating:
 These schemas can be used for configuration validation and API documentation.
 """
 
-from typing import Dict, Any
+from typing import Any
 
 # Schema for generative model configuration
-GENERATIVE_MODEL_SCHEMA: Dict[str, Any] = {
+GENERATIVE_MODEL_SCHEMA: dict[str, Any] = {
     "type": "object",
     "required": ["state_dimensions", "observation_dimensions", "control_dimensions"],
     "properties": {
@@ -65,7 +65,7 @@ GENERATIVE_MODEL_SCHEMA: Dict[str, Any] = {
 }
 
 # Schema for active inference state
-ACTIVE_INFERENCE_STATE_SCHEMA: Dict[str, Any] = {
+ACTIVE_INFERENCE_STATE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "required": ["state_dimensions", "observation_dimensions", "control_dimensions"],
     "properties": {
@@ -117,7 +117,7 @@ ACTIVE_INFERENCE_STATE_SCHEMA: Dict[str, Any] = {
 }
 
 # Schema for active inference agent configuration
-ACTIVE_INFERENCE_AGENT_SCHEMA: Dict[str, Any] = {
+ACTIVE_INFERENCE_AGENT_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "agent_id": {

@@ -89,8 +89,8 @@ def pytest_collection_modifyitems(
     del session, config
     for item in items:
         marker = _primary_marker_for_path(Path(str(item.fspath)))
-        # Directory taxonomy is canonical. Remove contradictory inherited or
-        # legacy markers before adding the one effective primary marker.
+        # Directory taxonomy is canonical. Remove contradictory explicit or
+        # inherited primary markers before adding the one effective marker.
         node = item
         while node is not None:
             node.own_markers = [

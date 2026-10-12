@@ -1,7 +1,7 @@
 """HR Reporting functions."""
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any
 from ..models.hr_models import Employee, EmploymentStatus
 from ..hr.transformer import convert_employees_to_dataframe
 
@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 def generate_headcount_report(
-    employees: List[Employee], group_by: Optional[List[str]] = None
-) -> Dict[str, Any]:
+    employees: list[Employee], group_by: list[str] | None = None
+) -> dict[str, Any]:
     """
     Generates a headcount report, optionally grouped by specified fields (e.g., department, location).
     """
@@ -21,7 +21,7 @@ def generate_headcount_report(
     if df.empty:
         return {"message": "Employee data is empty after conversion to DataFrame."}
 
-    report: Dict[str, Any] = {
+    report: dict[str, Any] = {
         "total_headcount": len(df[df["employment_status"] == EmploymentStatus.ACTIVE])
     }
 
@@ -42,8 +42,8 @@ def generate_headcount_report(
 
 
 def generate_diversity_report(
-    employees: List[Employee], diversity_fields: Optional[List[str]] = None
-) -> Dict[str, Any]:
+    employees: list[Employee], diversity_fields: list[str] | None = None
+) -> dict[str, Any]:
     """
     Generates a diversity report based on specified fields (e.g., gender, nationality).
     (This is a simplified example and needs careful consideration of privacy and ethics.)
@@ -56,7 +56,7 @@ def generate_diversity_report(
         return {"message": "Employee data is empty after conversion to DataFrame."}
 
     active_employees_df = df[df["employment_status"] == EmploymentStatus.ACTIVE]
-    report: Dict[str, Any] = {
+    report: dict[str, Any] = {
         "total_active_employees_for_diversity_metrics": len(active_employees_df)
     }
 
@@ -81,8 +81,8 @@ def generate_diversity_report(
 
 
 def get_quarterly_metrics(
-    quarter: str, year: int, employees: Optional[List[Employee]] = None
-) -> Dict[str, Any]:
+    quarter: str, year: int, employees: list[Employee] | None = None
+) -> dict[str, Any]:
     """
     Calculates real HR quarterly metrics from employee data.
 
@@ -114,8 +114,8 @@ def get_quarterly_metrics(
     )
 
     # Calculate basic diversity metrics
-    gender_counts: Dict[str, int] = {}
-    department_counts: Dict[str, int] = {}
+    gender_counts: dict[str, int] = {}
+    department_counts: dict[str, int] = {}
 
     for emp in employees:
         if emp.employment_status.value == "ACTIVE":

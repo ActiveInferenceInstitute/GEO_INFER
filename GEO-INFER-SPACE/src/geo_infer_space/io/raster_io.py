@@ -8,26 +8,17 @@ JPEG2000, PNG, and JPEG formats using rasterio.
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Union, Tuple
+from typing import Any, Optional, Union
 
 import numpy as np
 
+import rasterio
+from rasterio.crs import CRS
+from rasterio.enums import Resampling
+from rasterio.transform import Affine, from_bounds
+from rasterio.windows import Window
+
 logger = logging.getLogger(__name__)
-
-try:
-    import rasterio
-    from rasterio.crs import CRS
-    from rasterio.transform import Affine, from_bounds
-    from rasterio.enums import Resampling
-    from rasterio.windows import Window
-
-    HAS_RASTERIO = True
-except ImportError:
-    HAS_RASTERIO = False
-    logger.warning(
-        "rasterio is not installed. Raster I/O functionality will be limited. "
-        "Install with: pip install rasterio"
-    )
 
 # Supported raster formats
 SUPPORTED_RASTER_FORMATS = {
@@ -56,15 +47,6 @@ FORMAT_DRIVERS = {
 }
 
 
-def _check_rasterio() -> None:
-    """Raise ImportError if rasterio is not available."""
-    if not HAS_RASTERIO:
-        raise ImportError(
-            "rasterio is required for raster I/O operations. "
-            "Install with: pip install rasterio"
-        )
-
-
 class RasterReader:
     """Reader class for raster geospatial data."""
 
@@ -73,13 +55,13 @@ class RasterReader:
 
     def read(
         self,
-        file_path: Union[str, Path],
-        bands: Optional[List[int]] = None,
-        window: Optional[Tuple[int, int, int, int]] = None,
+        file_path: str | Path,
+        bands: list[int] | None = None,
+        window: tuple[int, int, int, int] | None = None,
         masked: bool = True,
-        overview_level: Optional[int] = None,
+        overview_level: int | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Read raster data from file.
 
@@ -107,7 +89,6 @@ class RasterReader:
             ValueError: If file format is not supported.
             FileNotFoundError: If file does not exist.
         """
-        _check_rasterio()
 
         file_path = Path(file_path)
 
@@ -147,12 +128,12 @@ class RasterReader:
     def _read_standard(
         self,
         file_path: Path,
-        bands: Optional[List[int]] = None,
-        window: Optional[Tuple[int, int, int, int]] = None,
+        bands: list[int] | None = None,
+        window: tuple[int, int, int, int] | None = None,
         masked: bool = True,
-        overview_level: Optional[int] = None,
+        overview_level: int | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Read raster using standard rasterio open."""
         read_window = None
         if window is not None:
@@ -233,11 +214,11 @@ class RasterReader:
     def _read_netcdf(
         self,
         file_path: Path,
-        bands: Optional[List[int]] = None,
+        bands: list[int] | None = None,
         masked: bool = True,
-        subdataset: Optional[str] = None,
+        subdataset: str | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Read NetCDF raster data.
 
         NetCDF files can contain multiple subdatasets. If *subdataset* is
@@ -245,7 +226,7 @@ class RasterReader:
         opening the file as a single rasterio dataset; if subdatasets are
         detected, read the first one and log the available options.
         """
-        open_path: Union[str, Path] = file_path
+        open_path: str | Path = file_path
 
         if subdataset is not None:
             open_path = f"netcdf:{file_path}:{subdataset}"
@@ -270,18 +251,18 @@ class RasterReader:
     def _read_hdf5(
         self,
         file_path: Path,
-        bands: Optional[List[int]] = None,
+        bands: list[int] | None = None,
         masked: bool = True,
-        subdataset: Optional[str] = None,
+        subdataset: str | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Read HDF5 raster data.
 
         HDF5 files can contain multiple subdatasets. Behaviour mirrors the
         NetCDF reader: honour *subdataset* if given, otherwise probe and
         fall back to the first subdataset.
         """
-        open_path: Union[str, Path] = file_path
+        open_path: str | Path = file_path
 
         if subdataset is not None:
             open_path = f"HDF5:{file_path}:{subdataset}"
@@ -304,8 +285,8 @@ class RasterReader:
 
     def read_metadata(
         self,
-        file_path: Union[str, Path],
-    ) -> Dict[str, Any]:
+        file_path: str | Path,
+    ) -> dict[str, Any]:
         """
         Read only metadata without loading pixel data.
 
@@ -315,7 +296,6 @@ class RasterReader:
         Returns:
             Dictionary with metadata, crs, transform, bounds, and shape info.
         """
-        _check_rasterio()
 
         file_path = Path(file_path)
 
@@ -353,14 +333,14 @@ class RasterWriter:
     def write(
         self,
         data: np.ndarray,
-        file_path: Union[str, Path],
-        crs: Optional[str] = None,
-        transform: Optional[Union[Tuple, "Affine"]] = None,
-        nodata: Optional[Union[int, float]] = None,
-        dtype: Optional[str] = None,
-        driver: Optional[str] = None,
-        compress: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
+        file_path: str | Path,
+        crs: str | None = None,
+        transform: Union[tuple, "Affine"] | None = None,
+        nodata: int | float | None = None,
+        dtype: str | None = None,
+        driver: str | None = None,
+        compress: str | None = None,
+        tags: dict[str, str] | None = None,
         overwrite: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -389,7 +369,6 @@ class RasterWriter:
             ValueError: If file format is not supported or data shape is wrong.
             FileExistsError: If file exists and overwrite is False.
         """
-        _check_rasterio()
 
         file_path = Path(file_path)
         file_ext = file_path.suffix.lower()
@@ -429,7 +408,7 @@ class RasterWriter:
                 affine_transform = transform
             else:
                 affine_transform = Affine(*transform[:6])
-        elif HAS_RASTERIO:
+        else:
             # A non-identity affine transform makes synthetic rasters valid
             # geospatial datasets and avoids Rasterio's warning on write.
             affine_transform = from_bounds(0, 0, width, height, width, height)
@@ -475,12 +454,12 @@ class RasterWriter:
         data: np.ndarray,
         file_path: Path,
         driver: str,
-        crs: Optional[str],
+        crs: str | None,
         transform: Optional["Affine"],
-        nodata: Optional[Union[int, float]],
+        nodata: int | float | None,
         dtype: str,
-        compress: Optional[str],
-        tags: Optional[Dict[str, str]],
+        compress: str | None,
+        tags: dict[str, str] | None,
         **kwargs: Any,
     ) -> None:
         """Write raster with a standard rasterio driver."""
@@ -515,12 +494,12 @@ class RasterWriter:
         self,
         data: np.ndarray,
         file_path: Path,
-        crs: Optional[str],
+        crs: str | None,
         transform: Optional["Affine"],
-        nodata: Optional[Union[int, float]],
+        nodata: int | float | None,
         dtype: str,
-        compress: Optional[str],
-        tags: Optional[Dict[str, str]],
+        compress: str | None,
+        tags: dict[str, str] | None,
         blocksize: int = 512,
         overview_resampling: str = "nearest",
         **kwargs: Any,
@@ -606,8 +585,8 @@ class RasterWriter:
 
     def write_from_dict(
         self,
-        raster_dict: Dict[str, Any],
-        file_path: Union[str, Path],
+        raster_dict: dict[str, Any],
+        file_path: str | Path,
         **kwargs: Any,
     ) -> None:
         """
@@ -633,9 +612,9 @@ class RasterWriter:
 
 
 def read_raster_file(
-    file_path: Union[str, Path],
+    file_path: str | Path,
     **kwargs: Any,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Read raster data from file using appropriate reader.
 
@@ -653,7 +632,7 @@ def read_raster_file(
 
 def write_raster_file(
     data: np.ndarray,
-    file_path: Union[str, Path],
+    file_path: str | Path,
     **kwargs: Any,
 ) -> None:
     """
@@ -668,7 +647,7 @@ def write_raster_file(
     writer.write(data, file_path, **kwargs)
 
 
-def supported_raster_formats() -> Dict[str, str]:
+def supported_raster_formats() -> dict[str, str]:
     """
     Get dictionary of supported raster formats.
 
@@ -678,7 +657,7 @@ def supported_raster_formats() -> Dict[str, str]:
     return SUPPORTED_RASTER_FORMATS.copy()
 
 
-def detect_raster_format(file_path: Union[str, Path]) -> Optional[str]:
+def detect_raster_format(file_path: str | Path) -> str | None:
     """
     Detect raster format from file extension.
 
@@ -692,7 +671,7 @@ def detect_raster_format(file_path: Union[str, Path]) -> Optional[str]:
     return SUPPORTED_RASTER_FORMATS.get(file_ext)
 
 
-def validate_raster_file(file_path: Union[str, Path]) -> Dict[str, Any]:
+def validate_raster_file(file_path: str | Path) -> dict[str, Any]:
     """
     Validate raster file and return metadata.
 
@@ -704,7 +683,7 @@ def validate_raster_file(file_path: Union[str, Path]) -> Dict[str, Any]:
     """
     file_path = Path(file_path)
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "valid": False,
         "format": None,
         "error": None,

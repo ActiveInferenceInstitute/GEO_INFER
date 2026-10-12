@@ -3,7 +3,7 @@ Sea-level rise analysis module.
 """
 
 import logging
-from typing import Dict, List, Optional, cast
+from typing import cast
 import numpy as np
 import xarray as xr
 
@@ -15,7 +15,7 @@ class SeaLevelAnalyzer:
     Analyze sea-level rise and impacts.
     """
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize sea-level analyzer."""
         self.config = config or {}
 
@@ -23,7 +23,7 @@ class SeaLevelAnalyzer:
         self,
         historical_data: xr.DataArray,
         scenario: str = "rcp45",
-        years: Optional[List[int]] = None,
+        years: list[int] | None = None,
     ) -> xr.DataArray:
         """
         Project future sea-level rise.

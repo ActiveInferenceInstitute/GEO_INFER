@@ -127,7 +127,7 @@ def test_record_request_multiple():
     reset_metrics()
 
     # Record multiple requests
-    for i in range(5):
+    for _ in range(5):
         record_request("test_module", "/test", 200, 0.1)
 
     # Check request count
@@ -153,7 +153,7 @@ def test_record_error_multiple():
     reset_metrics()
 
     # Record multiple errors
-    for i in range(3):
+    for _ in range(3):
         record_error("test_module", "test_error")
 
     # Check error count
@@ -183,6 +183,7 @@ def test_setup_monitoring():
 def test_start_metrics_server_yields_port_and_cleans_up():
     """Test metrics context manager exposes the selected port and closes handles."""
     server = MagicMock()
+    server.server_port = 9093
     thread = MagicMock()
     thread.is_alive.return_value = True
 

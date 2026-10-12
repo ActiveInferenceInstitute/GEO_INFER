@@ -6,7 +6,7 @@ through web services, enabling integration with web applications
 and distributed computing environments.
 """
 
-from typing import Dict, Any
+from typing import Any
 import numpy as np
 
 from ..models.data_models import SPMData, SPMResult, DesignMatrix
@@ -24,11 +24,11 @@ class SPMAPI:
     """
 
     def __init__(self) -> None:
-        self.datasets: Dict[str, Any] = {}  # Store uploaded datasets
-        self.results: Dict[str, Any] = {}  # Store analysis results
+        self.datasets: dict[str, Any] = {}  # Store uploaded datasets
+        self.results: dict[str, Any] = {}  # Store analysis results
         self.next_id = 1
 
-    def upload_data(self, data: Dict[str, Any], format: str = "json") -> Dict[str, Any]:
+    def upload_data(self, data: dict[str, Any], format: str = "json") -> dict[str, Any]:
         """
         Upload geospatial data for analysis.
 
@@ -66,8 +66,8 @@ class SPMAPI:
             return {"status": "error", "message": str(e)}
 
     def fit_model(
-        self, dataset_id: str, design_spec: Dict[str, Any], method: str = "OLS"
-    ) -> Dict[str, Any]:
+        self, dataset_id: str, design_spec: dict[str, Any], method: str = "OLS"
+    ) -> dict[str, Any]:
         """
         Fit GLM to uploaded dataset.
 
@@ -108,9 +108,9 @@ class SPMAPI:
     def run_contrast(
         self,
         result_id: str,
-        contrast_spec: Dict[str, Any],
+        contrast_spec: dict[str, Any],
         correction: str = "uncorrected",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Run statistical contrast on fitted model.
 
@@ -160,7 +160,7 @@ class SPMAPI:
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
-    def get_results(self, result_id: str, format: str = "summary") -> Dict[str, Any]:
+    def get_results(self, result_id: str, format: str = "summary") -> dict[str, Any]:
         """
         Retrieve analysis results.
 
@@ -192,7 +192,7 @@ class SPMAPI:
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
-    def list_datasets(self) -> Dict[str, Any]:
+    def list_datasets(self) -> dict[str, Any]:
         """List all uploaded datasets."""
         return {
             "status": "success",
@@ -200,7 +200,7 @@ class SPMAPI:
             "count": len(self.datasets),
         }
 
-    def list_results(self) -> Dict[str, Any]:
+    def list_results(self) -> dict[str, Any]:
         """List all analysis results."""
         return {
             "status": "success",
@@ -208,7 +208,7 @@ class SPMAPI:
             "count": len(self.results),
         }
 
-    def _json_to_spmdata(self, data: Dict[str, Any]) -> SPMData:
+    def _json_to_spmdata(self, data: dict[str, Any]) -> SPMData:
         """Convert JSON data to SPMData object."""
         from ..models.data_models import SPMData
 
@@ -229,7 +229,7 @@ class SPMAPI:
             crs=data.get("crs", "EPSG:4326"),
         )
 
-    def _csv_to_spmdata(self, data: Dict[str, Any]) -> SPMData:
+    def _csv_to_spmdata(self, data: dict[str, Any]) -> SPMData:
         """Convert CSV-like data to SPMData object.
 
         Expects data dict with either:
@@ -305,7 +305,7 @@ class SPMAPI:
             crs=data.get("crs", "EPSG:4326"),
         )
 
-    def _geojson_to_spmdata(self, data: Dict[str, Any]) -> SPMData:
+    def _geojson_to_spmdata(self, data: dict[str, Any]) -> SPMData:
         """Convert GeoJSON FeatureCollection data to SPMData object.
 
         Expects a GeoJSON ``FeatureCollection`` whose features carry Point
@@ -360,7 +360,7 @@ class SPMAPI:
         )
 
     def _create_design_from_spec(
-        self, design_spec: Dict[str, Any], data: SPMData
+        self, design_spec: dict[str, Any], data: SPMData
     ) -> DesignMatrix:
         """Create design matrix from API specification."""
         from ..utils.helpers import create_design_matrix
@@ -372,7 +372,7 @@ class SPMAPI:
             intercept=design_spec.get("intercept", True),
         )
 
-    def _format_summary(self, result: SPMResult) -> Dict[str, Any]:
+    def _format_summary(self, result: SPMResult) -> dict[str, Any]:
         """Format results as summary."""
         return {
             "status": "success",
@@ -387,7 +387,7 @@ class SPMAPI:
             ),
         }
 
-    def _format_full(self, result: SPMResult) -> Dict[str, Any]:
+    def _format_full(self, result: SPMResult) -> dict[str, Any]:
         """Format full results."""
         return {
             "status": "success",
@@ -407,7 +407,7 @@ class SPMAPI:
             },
         }
 
-    def _format_visualization(self, result: SPMResult) -> Dict[str, Any]:
+    def _format_visualization(self, result: SPMResult) -> dict[str, Any]:
         """Format results for visualization."""
         # This would create visualization data structures
         # For now, return basic structure

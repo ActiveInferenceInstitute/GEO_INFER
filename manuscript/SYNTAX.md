@@ -35,6 +35,9 @@ Catalog entry files are plain prose with these constraints:
 - No `{{TOKENS}}`: the render combines them from the tracked source without
   token substitution, so a token would reach the PDF literally. Quantities
   belong in the generated tables of the main sections.
+- No duplicated source/test census or suite-size rankings: the generated
+  catalog index owns those measurements. Describe concrete verification
+  surfaces and their evidence boundaries instead.
 - No figures, labels (`{#...}`), raw LaTeX, or HTML: entries are H2 prose
   under the catalog's single H1.
 

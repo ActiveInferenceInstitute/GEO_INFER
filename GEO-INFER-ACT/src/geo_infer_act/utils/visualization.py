@@ -9,17 +9,14 @@ interpretability dashboards.
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from typing import Dict, List, Any, Optional, Tuple, Union
+from typing import Any
 from pathlib import Path
 import logging
 
-# Additional imports for H3 and interactive visualization
-try:
-    import h3
+import h3
+from matplotlib.lines import Line2D
 
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
+# Optional interactive/geometry backends (``backends`` extra)
 
 try:
     from shapely.geometry import Polygon
@@ -77,11 +74,11 @@ def _finite_series(values: Any, name: str) -> np.ndarray:
 
 
 def plot_belief_update(
-    beliefs_before: Dict[str, np.ndarray],
-    beliefs_after: Dict[str, np.ndarray],
-    state_labels: Optional[List[str]] = None,
+    beliefs_before: dict[str, np.ndarray],
+    beliefs_after: dict[str, np.ndarray],
+    state_labels: list[str] | None = None,
     title: str = "Belief Update",
-    figsize: Tuple[int, int] = (10, 6),
+    figsize: tuple[int, int] = (10, 6),
 ) -> plt.Figure:
     """
     Plot belief updates with enhanced visualization.
@@ -212,10 +209,10 @@ def plot_belief_update(
 
 
 def plot_free_energy(
-    free_energy_history: List[float],
-    iterations: Optional[np.ndarray] = None,
+    free_energy_history: list[float],
+    iterations: np.ndarray | None = None,
     title: str = "Free Energy Minimization",
-    figsize: Tuple[int, int] = (10, 6),
+    figsize: tuple[int, int] = (10, 6),
 ) -> plt.Figure:
     """
     Plot free energy evolution with enhanced analysis.
@@ -337,10 +334,10 @@ def plot_free_energy(
 
 def plot_policies(
     policy_probabilities: np.ndarray,
-    policy_labels: Optional[List[str]] = None,
-    expected_free_energies: Optional[np.ndarray] = None,
+    policy_labels: list[str] | None = None,
+    expected_free_energies: np.ndarray | None = None,
     title: str = "Policy Evaluation",
-    figsize: Tuple[int, int] = (12, 8),
+    figsize: tuple[int, int] = (12, 8),
 ) -> plt.Figure:
     """
     Plot policy analysis with enhanced visualization.
@@ -407,7 +404,7 @@ def plot_policies(
         axes[0].grid(True, alpha=0.3)
 
         # Add probability labels
-        for i, bar in enumerate(bars):
+        for bar in bars:
             height = bar.get_height()
             axes[0].annotate(
                 f"{height:.3f}",
@@ -553,7 +550,7 @@ def plot_policies(
         axes[1, 1].grid(True, alpha=0.3)
 
         # Add value labels
-        for i, bar in enumerate(bars):
+        for bar in bars:
             height = bar.get_height()
             axes[1, 1].annotate(
                 f"{height:.3f}",
@@ -572,8 +569,8 @@ def plot_policies(
 
 
 def plot_perception_analysis(
-    beliefs_history: List[np.ndarray],
-    observations_history: List[np.ndarray],
+    beliefs_history: list[np.ndarray],
+    observations_history: list[np.ndarray],
     output_dir: Path,
     title: str = "Perception Analysis",
 ) -> None:
@@ -767,7 +764,7 @@ def plot_perception_analysis(
     ax8.grid(True)
 
     # Add metric values as text
-    for angle, value, label in zip(angles[:-1], values[:-1], quality_metrics.keys()):
+    for angle, value in zip(angles[:-1], values[:-1]):
         x = (value + 0.1) * np.cos(angle)
         y = (value + 0.1) * np.sin(angle)
         ax8.text(x, y, f"{value:.2f}", ha="center", va="center", fontweight="bold")
@@ -784,8 +781,8 @@ def plot_perception_analysis(
 
 
 def plot_action_analysis(
-    policy_history: List[Dict[str, Any]],
-    action_history: List[Any],
+    policy_history: list[dict[str, Any]],
+    action_history: list[Any],
     output_dir: Path,
     title: str = "Action Selection Analysis",
 ) -> None:
@@ -1074,7 +1071,7 @@ def plot_action_analysis(
     ax8.grid(True)
 
     # Add metric values
-    for angle, value, label in zip(angles[:-1], values[:-1], quality_metrics.keys()):
+    for angle, value in zip(angles[:-1], values[:-1]):
         x = (value + 0.1) * np.cos(angle)
         y = (value + 0.1) * np.sin(angle)
         ax8.text(x, y, f"{value:.2f}", ha="center", va="center", fontweight="bold")
@@ -1124,9 +1121,9 @@ def create_interpretability_dashboard(analyzer: Any, output_dir: Path) -> None:
     overview_text = "• Total Time Steps: {}\n• State Dimensions: {}\n• Initial Free Energy: {}\n• Final Free Energy: {}\n• Free Energy Reduction: {}".format(
         len(beliefs_array),
         beliefs_array.shape[1] if len(beliefs_array) > 0 else "N/A",
-        "{:.4f}".format(fe_array[0]) if len(fe_array) > 0 else "N/A",
-        "{:.4f}".format(fe_array[-1]) if len(fe_array) > 0 else "N/A",
-        "{:.4f}".format(fe_array[0] - fe_array[-1]) if len(fe_array) > 0 else "N/A",
+        f"{fe_array[0]:.4f}" if len(fe_array) > 0 else "N/A",
+        f"{fe_array[-1]:.4f}" if len(fe_array) > 0 else "N/A",
+        f"{fe_array[0] - fe_array[-1]:.4f}" if len(fe_array) > 0 else "N/A",
     )
 
     ax1.text(
@@ -1544,7 +1541,7 @@ def _belief_payload_to_vector(belief_payload: Any) -> np.ndarray:
     return np.asarray(belief_payload, dtype=float).reshape(-1)
 
 
-def plot_hierarchical_beliefs(beliefs: Dict[str, np.ndarray]) -> plt.Figure:
+def plot_hierarchical_beliefs(beliefs: dict[str, np.ndarray]) -> plt.Figure:
     """Plot beliefs across hierarchical levels."""
     if not beliefs:
         raise ValueError("beliefs must contain at least one hierarchical level")
@@ -1587,7 +1584,22 @@ def plot_markov_blanket(blanket: Any) -> plt.Figure:
     fig, ax = plt.subplots(figsize=(8, 8))
     try:
         import networkx as nx
-
+    except ImportError:
+        # Fallback if networkx is not installed
+        y = 0.8
+        for k, v in blanket.items():
+            ax.text(
+                0.5,
+                y,
+                f"{k.capitalize()} States: {len(v)} nodes",
+                ha="center",
+                va="center",
+                size=14,
+                bbox=dict(boxstyle="round,pad=0.3", fc="lightgray", ec="gray"),
+            )
+            y -= 0.2
+        ax.axis("off")
+    else:
         G = nx.DiGraph()
 
         # Standard colors and radii for Markov Blanket components
@@ -1660,8 +1672,6 @@ def plot_markov_blanket(blanket: Any) -> plt.Figure:
         )
         nx.draw_networkx_labels(G, pos, labels, ax=ax, font_size=12, font_weight="bold")
 
-        from matplotlib.lines import Line2D
-
         legend_elements = [
             Line2D(
                 [0],
@@ -1681,28 +1691,13 @@ def plot_markov_blanket(blanket: Any) -> plt.Figure:
             )
 
         ax.axis("off")
-    except ImportError:
-        # Fallback if networkx is not installed
-        y = 0.8
-        for k, v in blanket.items():
-            ax.text(
-                0.5,
-                y,
-                f"{k.capitalize()} States: {len(v)} nodes",
-                ha="center",
-                va="center",
-                size=14,
-                bbox=dict(boxstyle="round,pad=0.3", fc="lightgray", ec="gray"),
-            )
-            y -= 0.2
-        ax.axis("off")
 
     ax.set_title("Markov Blanket Topology", fontsize=16, fontweight="bold", pad=20)
     return fig
 
 
 def plot_h3_grid_static(
-    h3_data: Dict[str, Any], metric: str = "fe", title: str = "H3 Grid"
+    h3_data: dict[str, Any], metric: str = "fe", title: str = "H3 Grid"
 ) -> plt.Figure:
     """
     Create static plot of H3 grid data.
@@ -1716,19 +1711,6 @@ def plot_h3_grid_static(
         Matplotlib figure
     """
     fig, ax = plt.subplots(figsize=(12, 10))
-
-    if not H3_AVAILABLE:
-        ax.text(
-            0.5,
-            0.5,
-            "H3 package not available",
-            transform=ax.transAxes,
-            ha="center",
-            va="center",
-            fontsize=16,
-        )
-        ax.set_title(title)
-        return fig
 
     if not SHAPELY_AVAILABLE:
         ax.text(
@@ -1841,7 +1823,7 @@ def plot_h3_grid_static(
 
 
 def create_h3_gif(
-    history: List[Dict[str, Any]], output_path: str, metric: str = "fe"
+    history: list[dict[str, Any]], output_path: str, metric: str = "fe"
 ) -> None:
     """
     Create animated GIF of H3 grid evolution over time.
@@ -1861,7 +1843,7 @@ def create_h3_gif(
 
     try:
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-        images: List[np.ndarray] = []
+        images: list[np.ndarray] = []
 
         # Get global min/max values for consistent color scaling
         all_values = []
@@ -1911,7 +1893,7 @@ def create_h3_gif(
 
 
 def create_interactive_h3_slider(
-    history: List[Dict[str, Any]], metric: str = "fe"
+    history: list[dict[str, Any]], metric: str = "fe"
 ) -> Any:
     """
     Create interactive slider plot for H3 grid evolution.
@@ -1925,10 +1907,6 @@ def create_interactive_h3_slider(
     """
     if not PLOTLY_AVAILABLE:
         logger.error("plotly package required for interactive plots")
-        return None
-
-    if not H3_AVAILABLE:
-        logger.error("h3 package required for interactive H3 plots")
         return None
 
     if not history:
@@ -2011,7 +1989,7 @@ class BeliefVisualizer:
     Wrapper around functional plotting utilities for object-oriented usage.
     """
 
-    def __init__(self, output_dir: Optional[Union[str, Path]] = None):
+    def __init__(self, output_dir: str | Path | None = None):
         """
         Initialize the visualizer.
 
@@ -2023,9 +2001,9 @@ class BeliefVisualizer:
 
     def plot_belief_evolution(
         self,
-        belief_history: List[np.ndarray],
-        observations_history: Optional[List[np.ndarray]] = None,
-        output_path: Optional[str] = None,
+        belief_history: list[np.ndarray],
+        observations_history: list[np.ndarray] | None = None,
+        output_path: str | None = None,
     ) -> None:
         """
         Plot the evolution of beliefs over time.
@@ -2066,7 +2044,7 @@ class BeliefVisualizer:
             logger.info(f"Belief evolution plot saved to {save_path}")
 
     def plot_free_energy_trace(
-        self, free_energy_history: List[float], output_path: str = "free_energy.png"
+        self, free_energy_history: list[float], output_path: str = "free_energy.png"
     ) -> None:
         """Plot free energy minimization trace."""
         fig = plot_free_energy(free_energy_history, title="Free Energy Trace")

@@ -37,10 +37,31 @@ def load_rewriter_module():
     return module
 
 
+def test_signpost_public_interfaces_exclude_private_modules(tmp_path):
+    (tmp_path / "_worker.py").write_text("def launch():\n    pass\n", encoding="utf-8")
+    (tmp_path / "test_example.py").write_text(
+        "def scenario():\n    pass\n", encoding="utf-8"
+    )
+    (tmp_path / "__init__.py").write_text(
+        "def supported_api():\n    pass\n", encoding="utf-8"
+    )
+    (tmp_path / "public.py").write_text(
+        "class PublicModel:\n    pass\ndef _private_helper():\n    pass\n",
+        encoding="utf-8",
+    )
+    assert load_rewriter_module().public_symbols(tmp_path) == [
+        "`__init__.py:supported_api` (function)",
+        "`public.py:PublicModel` (class)",
+    ]
+
+
 def test_signpost_inventory_includes_new_files_and_excludes_deletions(
     tmp_path, monkeypatch
 ):
     subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "config", "core.fsmonitor", "false"], cwd=tmp_path, check=True
+    )
     tracked = tmp_path / "tracked.py"
     tracked.write_text("tracked = True\n")
     subprocess.run(["git", "add", "tracked.py"], cwd=tmp_path, check=True)
@@ -59,6 +80,243 @@ def test_signpost_inventory_includes_new_files_and_excludes_deletions(
     assert added in inventory
     assert tracked not in inventory
     assert tmp_path / "ignored.py" not in inventory
+
+
+def test_signpost_directory_index_preserves_deep_entries_and_visibility(
+    tmp_path, monkeypatch
+):
+    """Deep registered descendants expose ancestors without admitting scratch dirs."""
+    rewriter = load_rewriter_module()
+    monkeypatch.setattr(rewriter, "REPO_ROOT", tmp_path)
+    inventory = set()
+    for name in (
+        "alpha.py",
+        "config.yaml",
+        "README.md",
+        "AGENTS.md",
+        "deep/inner/model.py",
+        ".venv/hidden.py",
+        "__pycache__/hidden.py",
+        ".git/hidden.py",
+    ):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("# fixture\n")
+        inventory.add(path)
+    (tmp_path / "scratch").mkdir()
+    (tmp_path / "scratch" / "unregistered.py").write_text("# scratch\n")
+    (tmp_path / "empty").mkdir()
+    deleted = tmp_path / "deleted" / "model.py"
+    deleted.parent.mkdir()
+    deleted.write_text("# removed directory\n")
+    inventory.add(deleted)
+    deleted.unlink()
+    deleted.parent.rmdir()
+    monkeypatch.setattr(rewriter, "_TRACKED_FILES", inventory)
+
+    assert rewriter.direct_contents(tmp_path) == (
+        ["deep/"],
+        ["alpha.py"],
+        ["config.yaml"],
+    )
+    assert rewriter.direct_contents(tmp_path / "deep") == (["inner/"], [], [])
+    assert rewriter.direct_contents(tmp_path / "deep" / "inner") == (
+        [],
+        ["model.py"],
+        [],
+    )
+
+
+def test_signpost_standalone_queries_observe_same_size_mutation_and_reset(
+    tmp_path, monkeypatch
+):
+    """A render cache cannot leak stale facts into mutable standalone helpers."""
+    rewriter = load_rewriter_module()
+    module_path = tmp_path / "GEO-INFER-SAMPLE"
+    tests = module_path / "tests"
+    tests.mkdir(parents=True)
+    old = tests / "test_old.py"
+    new = tests / "helper.py"
+    old.write_text("def test_old(): assert True\n")
+    new.write_text("def support(): return 1\n")
+    inventory = {old}
+    monkeypatch.setattr(rewriter, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(rewriter, "_TRACKED_FILES", inventory)
+    module = rewriter.ModuleInfo(
+        "GEO-INFER-SAMPLE", module_path, "geo_infer_sample", "Sample", "0.4.0", [], 0, 1
+    )
+    readme = tests / "README.md"
+    assert rewriter.test_command(readme, module).endswith(
+        f"-m pytest {tests.relative_to(tmp_path)}"
+    )
+    inventory.remove(old)
+    inventory.add(new)
+    assert rewriter.direct_contents(tests)[1] == ["helper.py"]
+    assert rewriter.test_command(readme, module).endswith("--module SAMPLE")
+    monkeypatch.setattr(rewriter, "_TRACKED_FILES", {old})
+    assert rewriter.direct_contents(tests)[1] == ["test_old.py"]
+    monkeypatch.setattr(rewriter, "_TRACKED_FILES", None)
+    monkeypatch.setattr(rewriter, "git_ls_files", lambda: [new])
+    assert rewriter.direct_contents(tests)[1] == ["helper.py"]
+    other_root = tmp_path / "other"
+    other_root.mkdir()
+    other = other_root / "new.py"
+    other.write_text("def new_api(): return 1\n")
+    (other_root / "scratch.py").write_text("def scratch_api(): return 2\n")
+    prior_root_index = rewriter._build_directory_index(frozenset({old}))
+    monkeypatch.setattr(rewriter, "_DIRECTORY_INDEX", prior_root_index)
+    monkeypatch.setattr(rewriter, "REPO_ROOT", other_root)
+    monkeypatch.setattr(rewriter, "_TRACKED_FILES", {other})
+    assert rewriter.direct_contents(other_root)[1] == ["new.py"]
+    assert rewriter.public_symbols(other_root) == [
+        "`new.py:new_api` (function)",
+        "`scratch.py:scratch_api` (function)",
+    ]
+
+
+def test_signpost_render_owns_one_snapshot_and_restores_standalone_facts(
+    tmp_path, monkeypatch
+):
+    """One render is consistent; later renders observe even same-size set edits."""
+    rewriter = load_rewriter_module()
+    alpha = tmp_path / "alpha.py"
+    beta = tmp_path / "beta.py"
+    alpha.write_text("def alpha_api(): return 1\n")
+    beta.write_text("def beta_api(): return 2\n")
+    readme, agents = tmp_path / "README.md", tmp_path / "AGENTS.md"
+    inventory = {alpha}
+    monkeypatch.setattr(rewriter, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(rewriter, "_TRACKED_FILES", inventory)
+    monkeypatch.setattr(rewriter, "discover_modules", dict)
+    monkeypatch.setattr(rewriter, "repository_doc_files", lambda: ([readme], [agents]))
+    builds = []
+    original_build = rewriter._build_directory_index
+
+    def build(snapshot):
+        builds.append(len(snapshot))
+        return original_build(snapshot)
+
+    def render_readme(*_args):
+        return repr(
+            (rewriter.direct_contents(tmp_path), rewriter.public_symbols(tmp_path))
+        )
+
+    def render_agents(*_args):
+        inventory.discard(alpha)
+        inventory.add(beta)
+        return render_readme()
+
+    monkeypatch.setattr(rewriter, "_build_directory_index", build)
+    monkeypatch.setattr(rewriter, "render_readme", render_readme)
+    monkeypatch.setattr(rewriter, "render_agents", render_agents)
+    first = rewriter.expected_doc_files()
+    assert first[0][1] == first[1][1]
+    assert "alpha_api" in first[0][1] and "beta_api" not in first[0][1]
+    assert builds == [1]
+    assert rewriter._DIRECTORY_INDEX is None
+    assert rewriter.direct_contents(tmp_path)[1] == ["beta.py"]
+    second = rewriter.expected_doc_files()
+    assert second[0][1] == second[1][1]
+    assert "beta_api" in second[0][1] and "alpha_api" not in second[0][1]
+    assert builds == [1, 1, 1]
+    assert rewriter._DIRECTORY_INDEX is None
+
+
+def test_signpost_render_restores_prior_index_when_discovery_fails(
+    tmp_path, monkeypatch
+):
+    """A failed render must not leave its private snapshot active for callers."""
+    rewriter = load_rewriter_module()
+    monkeypatch.setattr(rewriter, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(rewriter, "_TRACKED_FILES", set())
+    prior = rewriter._build_directory_index(frozenset())
+    monkeypatch.setattr(rewriter, "_DIRECTORY_INDEX", prior)
+
+    def fail():
+        raise RuntimeError("discovery failed")
+
+    monkeypatch.setattr(rewriter, "discover_modules", fail)
+    with pytest.raises(RuntimeError, match="discovery failed"):
+        rewriter.expected_doc_files()
+    assert rewriter._DIRECTORY_INDEX is prior
+
+
+def test_signpost_index_visits_each_file_and_distinct_ancestor_once(monkeypatch):
+    """Shared deep paths do not multiply ancestor walks by the number of files."""
+    rewriter = load_rewriter_module()
+    reads = []
+
+    class Node:
+        def __init__(self, name, parent=None):
+            self.name = name
+            self._parent = parent or self
+
+        @property
+        def parent(self):
+            reads.append(self.name)
+            return self._parent
+
+    root = Node("root")
+    module = Node("module", root)
+    src = Node("src", module)
+    left, right = Node("left", src), Node("right", src)
+    files = [
+        Node(f"file-{index}", left if index % 2 else right) for index in range(120)
+    ]
+    iterations = []
+
+    class Inventory:
+        def __iter__(self):
+            iterations.append(1)
+            return iter(files)
+
+    index = rewriter._build_directory_index(Inventory())
+    assert iterations == [1]
+    assert len(reads) == len(files) + 5
+    assert all(
+        reads.count(name) == 1 for name in ("root", "module", "src", "left", "right")
+    )
+    assert index.children[root] == {module}
+    assert index.children[src] == {left, right}
+    assert set(index.files[left] + index.files[right]) == set(files)
+
+
+def test_signpost_render_excludes_ignored_symbols_and_includes_new_sources(
+    tmp_path, monkeypatch
+):
+    """Actual Git ignore rules bound generated exports while preserving new files."""
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "config", "core.fsmonitor", "false"], cwd=tmp_path, check=True
+    )
+    (tmp_path / ".gitignore").write_text("ignored.py\nignored-tree/\n")
+    (tmp_path / "ignored.py").write_text("def ignored_api(): return 1\n")
+    (tmp_path / "new.py").write_text("def new_api(): return 2\n")
+    ignored_tree = tmp_path / "ignored-tree"
+    ignored_tree.mkdir()
+    (ignored_tree / "scratch.py").write_text("def scratch_api(): return 3\n")
+    for name in ("README.md", "AGENTS.md"):
+        (tmp_path / name).write_text("# fixture\n")
+    rewriter = load_rewriter_module()
+    monkeypatch.setattr(rewriter, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(rewriter, "_TRACKED_FILES", None)
+    monkeypatch.setattr(rewriter, "discover_modules", dict)
+    monkeypatch.setattr(
+        rewriter,
+        "render_readme",
+        lambda *_args: repr(rewriter.public_symbols(tmp_path)),
+    )
+    monkeypatch.setattr(
+        rewriter,
+        "render_agents",
+        lambda *_args: repr(rewriter.direct_contents(tmp_path)),
+    )
+    rendered = dict(rewriter.expected_doc_files())
+    assert "new_api" in rendered[tmp_path / "README.md"]
+    assert "ignored_api" not in rendered[tmp_path / "README.md"]
+    assert "ignored-tree/" not in rendered[tmp_path / "AGENTS.md"]
+    assert rewriter._DIRECTORY_INDEX is None
+    assert any("ignored_api" in symbol for symbol in rewriter.public_symbols(tmp_path))
 
 
 def write_root_uv_files(root: Path) -> None:
@@ -277,19 +535,60 @@ def test_concrete_pass_contract_allows_abstract_methods_and_except_handlers(
     assert report.errors == []
 
 
-def test_python_tool_targets_reject_black_targets_below_python_311(
-    tmp_path, monkeypatch
-):
+def test_python_tool_targets_reject_ruff_target_below_python_311(tmp_path, monkeypatch):
     contracts = load_contracts_module()
     monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
-    (tmp_path / "pyproject.toml").write_text(
-        "[tool.black]\ntarget-version = ['py310', 'py311']\n"
-    )
+    (tmp_path / "pyproject.toml").write_text('[tool.ruff]\ntarget-version = "py310"\n')
     report = contracts.ContractReport()
 
     contracts.validate_python_tool_targets(report)
 
     assert any("py310" in error for error in report.errors)
+
+
+def test_python_tool_targets_reject_retired_formatter_sections(tmp_path, monkeypatch):
+    contracts = load_contracts_module()
+    monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.black]\nline-length = 88\n\n[tool.isort]\nprofile = 'black'\n"
+    )
+    report = contracts.ContractReport()
+
+    contracts.validate_python_tool_targets(report)
+
+    assert any("[tool.black]" in error for error in report.errors)
+    assert any("[tool.isort]" in error for error in report.errors)
+
+
+def test_pyproject_only_packaging_rejects_retired_mirrors(tmp_path, monkeypatch):
+    contracts = load_contracts_module()
+    monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
+    module_dir = tmp_path / "GEO-INFER-SAMPLE"
+    module_dir.mkdir()
+    (module_dir / "setup.py").write_text("from setuptools import setup\nsetup()\n")
+    (module_dir / "requirements.txt").write_text("numpy\n")
+    report = contracts.ContractReport()
+
+    contracts.validate_pyproject_only_packaging([module_dir], report)
+
+    assert any("setup.py" in error for error in report.errors)
+    assert any("requirements.txt" in error for error in report.errors)
+
+
+def test_declared_requirements_reject_stdlib_dependencies(tmp_path, monkeypatch):
+    contracts = load_contracts_module()
+    monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
+    module_dir = tmp_path / "GEO-INFER-SAMPLE"
+    module_dir.mkdir()
+    (module_dir / "pyproject.toml").write_text(
+        '[project]\nname = "geo-infer-sample"\ndependencies = ["json", "numpy"]\n'
+    )
+    report = contracts.ContractReport()
+
+    contracts.validate_declared_requirements(report)
+
+    assert any("json" in error for error in report.errors)
+    assert not any("numpy" in error for error in report.errors)
 
 
 def test_h3_dependency_metadata_rejects_old_h3_v4_floor(tmp_path, monkeypatch):
@@ -521,3 +820,40 @@ def test_import_smoke_strict_promotes_failures_to_errors(tmp_path, monkeypatch):
     assert len(report.errors) == 1
     assert not report.warnings
     assert "timed out" in report.errors[0]
+
+
+def _write_rng_helper(root, module: str, body: str) -> None:
+    package = root / f"GEO-INFER-{module}" / "src" / f"geo_infer_{module.lower()}"
+    (package / "utils").mkdir(parents=True)
+    (package / "utils" / "rng.py").write_text(body)
+
+
+def test_rng_helper_parity_allows_docstring_and_default_seed_drift(
+    tmp_path, monkeypatch
+):
+    contracts = load_contracts_module()
+    monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
+    shared = "def resolve_rng(seed=None):\n    return seed\n"
+    _write_rng_helper(
+        tmp_path, "AAA", '"""A."""\nDEFAULT_SEED: int | None = None\n' + shared
+    )
+    _write_rng_helper(
+        tmp_path, "BBB", '"""B."""\nDEFAULT_SEED: int | None = 0\n' + shared
+    )
+    report = contracts.ContractReport()
+
+    contracts.validate_rng_helper_parity(report)
+
+    assert report.errors == []
+
+
+def test_rng_helper_parity_rejects_behavioral_drift(tmp_path, monkeypatch):
+    contracts = load_contracts_module()
+    monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
+    _write_rng_helper(tmp_path, "AAA", "def resolve_rng(seed=None):\n    return seed\n")
+    _write_rng_helper(tmp_path, "BBB", "def resolve_rng(seed=None):\n    return None\n")
+    report = contracts.ContractReport()
+
+    contracts.validate_rng_helper_parity(report)
+
+    assert any("GEO-INFER-BBB" in error for error in report.errors)

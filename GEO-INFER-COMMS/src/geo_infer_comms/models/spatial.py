@@ -7,9 +7,9 @@ reference systems, spatial bounds, and geospatial filtering capabilities.
 """
 
 from __future__ import annotations
-from typing import Dict, List, Optional, Any, Literal, cast
+from typing import Any, Literal, cast
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 import math
 
 from geo_infer_comms.utils.validation import (
@@ -35,7 +35,7 @@ class GeospatialPoint:
 
     longitude: float  # X coordinate
     latitude: float  # Y coordinate
-    altitude: Optional[float] = None
+    altitude: float | None = None
     crs: str = CoordinateSystem.WGS84
 
     def __post_init__(self) -> None:
@@ -47,7 +47,7 @@ class GeospatialPoint:
         if not validate_crs(self.crs):
             raise ValueError(f"Invalid CRS: {self.crs}")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert point to dictionary representation."""
         data = {"longitude": self.longitude, "latitude": self.latitude, "crs": self.crs}
         if self.altitude is not None:
@@ -55,7 +55,7 @@ class GeospatialPoint:
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> GeospatialPoint:
+    def from_dict(cls, data: dict[str, Any]) -> GeospatialPoint:
         """Create point from dictionary."""
         return cls(
             longitude=data["longitude"],
@@ -122,7 +122,7 @@ class GeospatialBounds:
         if not validate_crs(self.crs):
             raise ValueError(f"Invalid CRS: {self.crs}")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert bounds to dictionary."""
         return {
             "min_longitude": self.min_longitude,
@@ -133,7 +133,7 @@ class GeospatialBounds:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> GeospatialBounds:
+    def from_dict(cls, data: dict[str, Any]) -> GeospatialBounds:
         """Create bounds from dictionary."""
         return cls(
             min_longitude=data["min_longitude"],
@@ -193,15 +193,15 @@ class GeospatialMetadata:
     """Comprehensive geospatial metadata for messages and data."""
 
     location: GeospatialPoint
-    bounds: Optional[GeospatialBounds] = None
-    accuracy: Optional[float] = None  # meters
-    precision: Optional[float] = None  # meters
-    source: Optional[str] = None  # GPS, network, user_input, etc.
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    bounds: GeospatialBounds | None = None
+    accuracy: float | None = None  # meters
+    precision: float | None = None  # meters
+    source: str | None = None  # GPS, network, user_input, etc.
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert geospatial metadata to dictionary."""
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "location": self.location.to_dict(),
             "timestamp": self.timestamp.isoformat(),
         }
@@ -216,7 +216,7 @@ class GeospatialMetadata:
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> GeospatialMetadata:
+    def from_dict(cls, data: dict[str, Any]) -> GeospatialMetadata:
         """Create geospatial metadata from dictionary."""
         location_data = data["location"]
         location = GeospatialPoint.from_dict(location_data)
@@ -251,14 +251,14 @@ class SpatialFilter:
     def __init__(
         self,
         filter_type: Literal["bounds", "radius", "polygon", "proximity"],
-        parameters: Dict[str, Any],
+        parameters: dict[str, Any],
         crs: str = CoordinateSystem.WGS84,
     ):
         self.filter_type = filter_type
         self.parameters = parameters
         self.crs = crs
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert filter to dictionary."""
         return {
             "filter_type": self.filter_type,
@@ -267,7 +267,7 @@ class SpatialFilter:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> SpatialFilter:
+    def from_dict(cls, data: dict[str, Any]) -> SpatialFilter:
         """Create filter from dictionary."""
         return cls(
             filter_type=data["filter_type"],
@@ -367,11 +367,11 @@ class SpatialIndex:
     """Spatial indexing for efficient geospatial queries."""
 
     def __init__(
-        self, index_type: str = "quadtree", bounds: Optional[GeospatialBounds] = None
+        self, index_type: str = "quadtree", bounds: GeospatialBounds | None = None
     ):
         self.index_type = index_type
         self.bounds = bounds
-        self._index: Dict[str, List[str]] = {}  # Simplified in-memory index
+        self._index: dict[str, list[str]] = {}  # Simplified in-memory index
 
     def insert(self, location: GeospatialPoint, data_id: str) -> None:
         """Insert location-data mapping into spatial index."""
@@ -381,7 +381,7 @@ class SpatialIndex:
             self._index[key] = []
         self._index[key].append(data_id)
 
-    def query(self, filter_obj: SpatialFilter) -> List[str]:
+    def query(self, filter_obj: SpatialFilter) -> list[str]:
         """Query spatial index for data matching filter."""
         results = []
         for key, data_ids in self._index.items():
@@ -419,7 +419,7 @@ def calculate_distance(point1: GeospatialPoint, point2: GeospatialPoint) -> floa
     return point1.distance_to(point2)
 
 
-def create_bounds_from_points(points: List[GeospatialPoint]) -> GeospatialBounds:
+def create_bounds_from_points(points: list[GeospatialPoint]) -> GeospatialBounds:
     """Create bounding box from list of points."""
     if not points:
         raise ValueError("Cannot create bounds from empty point list")
@@ -456,7 +456,7 @@ def buffer_point(point: GeospatialPoint, distance_meters: float) -> GeospatialBo
     )
 
 
-def geojson_to_geospatial_point(geojson: Dict[str, Any]) -> GeospatialPoint:
+def geojson_to_geospatial_point(geojson: dict[str, Any]) -> GeospatialPoint:
     """Convert GeoJSON Point to GeospatialPoint."""
     if not validate_geojson_geometry(geojson):
         raise ValueError("Invalid GeoJSON geometry")
@@ -474,7 +474,7 @@ def geojson_to_geospatial_point(geojson: Dict[str, Any]) -> GeospatialPoint:
     return GeospatialPoint(longitude, latitude, altitude)
 
 
-def geospatial_point_to_geojson(point: GeospatialPoint) -> Dict[str, Any]:
+def geospatial_point_to_geojson(point: GeospatialPoint) -> dict[str, Any]:
     """Convert GeospatialPoint to GeoJSON Point."""
     coordinates = [point.longitude, point.latitude]
     if point.altitude is not None:

@@ -9,7 +9,7 @@ This module provides functionality for:
 - Handling geospatial perception and action
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 # All imported subpackages ship with this module, so their imports are
 # unconditional: a failure here is a packaging bug and must surface, not be

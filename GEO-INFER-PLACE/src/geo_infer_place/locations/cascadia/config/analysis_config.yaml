@@ -1,0 +1,293 @@
+# Cascadia Agricultural Land Analysis Configuration
+
+# Core analysis settings
+analysis_settings:
+  target_counties:
+    CA:
+      - "Del Norte"
+      - "Humboldt"
+      - "Siskiyou"
+      - "Trinity"
+      - "Mendocino"
+    OR:
+      - "Josephine"
+      - "Jackson"
+      - "Curry"
+      - "Coos"
+      - "Lane"
+      - "Multnomah"
+      - "Clatsop"
+      - "Washington"
+    WA:
+      - "Pacific"
+      - "Grays Harbor"
+      - "Thurston"
+      - "Pierce"
+      - "King"
+      - "Snohomish"
+      - "Whatcom"
+
+  active_modules:
+    - zoning
+    - current_use
+    - ownership
+    - improvements
+    - water_rights
+    - ground_water
+    - surface_water
+    - power_source
+    - mortgage_debt
+    - ecology
+
+  h3_resolution: 8
+  enable_spatial_analysis: true
+  fusion_mode: geom_intersect  # options: geom_intersect, key_join
+  enable_visualization: true
+  enable_dashboard: true
+
+  # Enhanced logging for empirical data assessment
+  logging:
+    level: "INFO"
+    empirical_data_tracking: true
+    data_quality_assessment: true
+    spatial_variability_analysis: true
+    detailed_module_logging: true
+
+visualization:
+  center: [45.5, -122.5]  # Cascadia bioregion center
+  zoom: 7  # Regional zoom for multi-state analysis
+  layers:
+    - redevelopment_potential
+    - zoning_data
+    - current_use_data
+    - ownership_data
+    - improvements_data
+  # Initial visibility of layers in the interactive map
+  initial_layer_visibility:
+    zoning: true
+    current_use: false
+    ownership: false
+    improvements: false
+
+  # Enhanced visualization settings for empirical data
+  empirical_data_visualization:
+    show_data_sources: true
+    show_data_quality_indicators: true
+    show_spatial_variability: true
+    color_by_data_source: true
+
+spatial_analysis:
+  enable_correlation_analysis: true
+  enable_hotspot_detection: true
+  enable_spatial_relationships: true
+
+ecological_analysis:
+  enable_salmon_habitat: true
+  salmon_esu_data: "config/cascadia_salmon_esus.yaml"
+  ecoregion_data: "config/cascadia_ecoregions.yaml"
+  indigenous_territories_data: "config/cascadia_indigenous_territories.yaml"
+  climate_zones_data: "config/cascadia_climate_zones.yaml"
+  old_growth_analysis: true
+  spotted_owl_critical_habitat: true
+
+  # Empirical data analysis settings
+  empirical_analysis:
+    assess_data_coverage: true
+    measure_spatial_variability: true
+    validate_data_quality: true
+    track_data_sources: true
+
+# Module-specific configurations
+zoning:
+  ca_fmmp:
+    page_url: "https://www.conservation.ca.gov/dlrp/fmmp/inventory-products"
+    latest_year: 2022
+    fallback_data: "./data/zoning/ca_fallback.geojson"
+    validation:
+      required_fields: ["polygon_ty", "acres", "county"]
+      geometry_type: "Polygon"
+  or_dlcd_service_url: "https://maps.oregon.gov/arcgis/rest/services/LandUsePlanning/Statewide_Zoning/FeatureServer/0"
+  wa_king_county_service_url: "https://gisdata.kingcounty.gov/arcgis/rest/services/Planning/KingCo_Zoning/MapServer/0"
+
+  # Zoning classification system
+  classification_mapping:
+    agricultural_prime: ["PRIME_FARMLAND", "AG_PRIME", "EXCLUSIVE_FARM_USE"]
+    agricultural_secondary: ["FARMLAND_STATEWIDE", "AG_SECONDARY", "RURAL_AGRICULTURAL"]
+    grazing: ["GRAZING_LAND", "RANGELAND", "PASTORAL"]
+    rural_residential: ["RURAL_RESIDENTIAL", "RURAL_DEVELOPMENT"]
+    conservation: ["FORESTRY", "CONSERVATION", "OPEN_SPACE"]
+
+ownership:
+  ca_parcels_service_url: "https://services.gis.ca.gov/arcgis/rest/services/Boundaries/CA_Parcels/FeatureServer/0"
+  data_urls_config: "./config/data_urls.json"
+
+  # Ownership analysis
+  analysis_settings:
+    concentration_threshold: 0.7  # HHI threshold for high concentration
+    large_parcel_threshold: 100  # acres
+    institutional_owners: ["GOVERNMENT", "TRUST", "CORPORATION", "LLC"]
+    individual_patterns: ["FAMILY", "INDIVIDUAL", "PARTNERSHIP"]
+
+surface_water:
+  nhd_flowlines_url: "https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer/1"
+  nhd_waterbodies_url: "https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer/2"
+  buffer_distances: [100, 500, 1000]  # meters from water features
+  water_quality_sources:
+    - "https://waterdata.usgs.gov/nwis"
+    - "https://www.waterboards.ca.gov/water_issues/programs/gama/"
+
+current_use:
+  nass_cdl_api_url: "https://nassgeodata.gmu.edu/CropScape/nass_data_service.php"
+  land_iq_api_url: "https://www.landiq.com/api/v1/parcels"
+
+  # Crop analysis
+  crop_categories:
+    high_value: ["GRAPES", "ALMONDS", "CITRUS", "BERRIES"]
+    field_crops: ["WHEAT", "CORN", "SOYBEANS", "ALFALFA"]
+    specialty: ["HOPS", "LAVENDER", "HEMP", "ORGANIC"]
+
+  water_intensity_mapping:
+    high: ["RICE", "ALFALFA", "CITRUS"]
+    medium: ["WHEAT", "CORN", "VEGETABLES"]
+    low: ["DRYLAND_WHEAT", "RANGELAND", "PASTURE"]
+
+ground_water:
+  nwis_url: "https://waterservices.usgs.gov/nwis/gwlevels/"
+  parameter_cd: "72019"
+  ca_sources:
+    dwr_casgem: "https://data.cnra.ca.gov/dataset/periodic-groundwater-level-measurements"
+    dwr_sgma: "https://sgma.water.ca.gov/webgis"
+  or_sources:
+    oregon_gwic: "https://apps.wrd.state.or.us/apps/gw/gw_data_viewer/"
+
+water_rights:
+  ca_ewrims_csv_url: "https://data.ca.gov/datastore/dump/e87a4933-2125-4676-928d-294b22c6b44a"
+  or_wrd_url: "https://apps.wrd.state.or.us/apps/wr/wrinfo/"
+
+  # Water rights analysis configuration
+  priority_categories:
+    senior: "Pre-1914 rights"
+    appropriative: "Post-1914 appropriative rights"
+    riparian: "Riparian rights"
+    groundwater: "Groundwater extraction permits"
+
+improvements:
+  data_sources:
+    building_footprints: "https://github.com/microsoft/BuildingFootprints"
+    nass_structures: "https://www.nass.usda.gov/Research_and_Science/Cropland/sarsfaqs2.php"
+
+  # Infrastructure analysis
+  improvement_categories:
+    agricultural: ["BARN", "SILO", "GREENHOUSE", "EQUIPMENT_SHED"]
+    residential: ["HOUSE", "MOBILE_HOME", "CABIN"]
+    commercial: ["PROCESSING_FACILITY", "STORAGE", "OFFICE"]
+    infrastructure: ["ROADS", "UTILITIES", "IRRIGATION"]
+
+# SPACE integration settings
+space_integration:
+
+
+  spatial_processor:
+    enabled: true
+    buffer_distances: [500, 1000, 2000]  # meters
+    correlation_threshold: 0.3
+    clustering_algorithm: "DBSCAN"
+    cluster_min_samples: 5
+
+  data_integrator:
+    enabled: true
+    cache_dir: "./cache"
+    max_file_size_mb: 100
+    compression_enabled: true
+    format_validation: true
+
+  visualization_engine:
+    enabled: true
+    interactive_features: true
+    real_time_updates: false
+    export_capabilities: ["png", "svg", "html", "pdf"]
+
+# County boundary data sources
+county_boundaries:
+  ca_lassen:
+    name: "Lassen County, CA"
+    fips_code: "06035"
+    bounds:
+      north: 41.2
+      south: 40.0
+      east: -119.5
+      west: -121.5
+    data_sources:
+      - name: "US Census TIGER/Line"
+        url: "https://www2.census.gov/geo/tiger/TIGER2022/COUNTY/tl_2022_06_county.zip"
+        format: "shapefile"
+        priority: 1
+      - name: "California State Boundary"
+        url: "https://data.ca.gov/dataset/california-county-boundaries"
+        format: "geojson"
+        priority: 2
+    geometry_file: "ca_lassen_boundary.geojson"
+
+    # County-specific settings
+    agricultural_focus_areas:
+      - "Honey Lake Valley"
+      - "Long Valley"
+      - "Secret Valley"
+    conservation_areas:
+      - "Lassen National Forest"
+      - "Modoc National Forest"
+    major_water_sources:
+      - "Susan River"
+      - "Honey Lake"
+      - "Eagle Lake"
+
+  ca_del_norte:
+    name: "Del Norte County, CA"
+    fips_code: "06015"
+    bounds:
+      north: 42.0
+      south: 41.4
+      east: -123.5
+      west: -124.5
+    data_sources:
+      - name: "US Census TIGER/Line"
+        url: "https://www2.census.gov/geo/tiger/TIGER2022/COUNTY/tl_2022_06_county.zip"
+        format: "shapefile"
+        priority: 1
+      - name: "California State Boundary"
+        url: "https://data.ca.gov/dataset/california-county-boundaries"
+        format: "geojson"
+        priority: 2
+    geometry_file: "ca_del_norte_boundary.geojson"
+
+    # County-specific settings
+    agricultural_focus_areas:
+      - "Smith River Valley"
+      - "Crescent City Area"
+      - "Klamath River Valley"
+    conservation_areas:
+      - "Redwood National and State Parks"
+      - "Six Rivers National Forest"
+      - "Del Norte Coast Redwoods State Park"
+    major_water_sources:
+      - "Smith River"
+      - "Klamath River"
+      - "Crescent City Harbor"
+
+# Quality assurance and validation
+quality_assurance:
+  data_validation:
+    geometry_checks: true
+    attribute_completeness: 0.8  # Minimum 80% completeness
+    coordinate_system_validation: true
+    outlier_detection: true
+
+  analysis_validation:
+    cross_validation: true
+    sensitivity_analysis: false
+    uncertainty_quantification: false
+
+  reporting:
+    generate_qa_report: true
+    include_data_lineage: true
+    validation_metrics: true

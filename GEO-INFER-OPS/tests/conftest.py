@@ -7,7 +7,8 @@ import tempfile
 import pytest
 import structlog
 from pathlib import Path
-from typing import Dict, Any, Generator
+from typing import Any
+from collections.abc import Generator
 from unittest.mock import MagicMock
 
 from fastapi import FastAPI
@@ -33,7 +34,7 @@ def temp_dir() -> Generator[str, None, None]:
 
 
 @pytest.fixture(scope="session")
-def mock_config_dict() -> Dict[str, Any]:
+def mock_config_dict() -> dict[str, Any]:
     """Provide a mock configuration dictionary."""
     return {
         "logging": {"level": "DEBUG", "format": "console", "file": None},
@@ -55,7 +56,7 @@ def mock_config_dict() -> Dict[str, Any]:
 
 
 @pytest.fixture(scope="session")
-def config(mock_config_dict: Dict[str, Any]) -> Config:
+def config(mock_config_dict: dict[str, Any]) -> Config:
     """Create a test configuration instance."""
     return Config(**mock_config_dict)
 

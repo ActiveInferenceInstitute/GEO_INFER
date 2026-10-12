@@ -8,7 +8,7 @@ This module provides data models for underwriting operations including:
 - Audit and compliance tracking
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 from datetime import datetime
 from dataclasses import dataclass, field
 from enum import Enum
@@ -46,9 +46,9 @@ class Decision:
     confidence: float = 0.0
     risk_score: float = 0.0
     rule_score: float = 0.0
-    conditions: List[str] = field(default_factory=list)
-    requirements: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
+    conditions: list[str] = field(default_factory=list)
+    requirements: list[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
     decision_date: datetime = field(default_factory=datetime.now)
     decision_maker: str = "system"
 
@@ -60,7 +60,7 @@ class Decision:
         """Check if decision requires manual review."""
         return self.confidence < 0.7 or len(self.conditions) > 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert decision to dictionary."""
         return {
             "approved": self.approved,
@@ -89,19 +89,19 @@ class Guideline:
 
     # Rule definition
     rule_expression: str
-    rule_parameters: Dict[str, Any] = field(default_factory=dict)
+    rule_parameters: dict[str, Any] = field(default_factory=dict)
 
     # Applicability
-    applicable_products: List[str] = field(default_factory=list)
-    applicable_regions: List[str] = field(default_factory=list)
-    applicable_risk_tiers: List[str] = field(default_factory=list)
+    applicable_products: list[str] = field(default_factory=list)
+    applicable_regions: list[str] = field(default_factory=list)
+    applicable_risk_tiers: list[str] = field(default_factory=list)
 
     # Metadata
     effective_date: datetime = field(default_factory=datetime.now)
-    expiration_date: Optional[datetime] = None
+    expiration_date: datetime | None = None
     version: str = "1.0"
     created_by: str = "system"
-    approved_by: Optional[str] = None
+    approved_by: str | None = None
 
     # Status
     is_active: bool = True
@@ -128,7 +128,7 @@ class Guideline:
             and (self.expiration_date is None or self.expiration_date >= now)
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert guideline to dictionary."""
         return {
             "guideline_id": self.guideline_id,
@@ -159,31 +159,31 @@ class UnderwritingCase:
     """Underwriting case structure."""
 
     case_id: str
-    application_data: Dict[str, Any]
+    application_data: dict[str, Any]
     status: str = "pending"
 
     # Assessment results
-    risk_assessment: Optional[Dict[str, Any]] = None
-    rule_evaluation: Optional[Dict[str, Any]] = None
+    risk_assessment: dict[str, Any] | None = None
+    rule_evaluation: dict[str, Any] | None = None
 
     # Financial information
     premium: float = 0.0
 
     # Decision
-    decision: Optional[Decision] = None
+    decision: Decision | None = None
 
     # Policy (if approved)
-    policy: Optional[Dict[str, Any]] = None
+    policy: dict[str, Any] | None = None
 
     # Metadata
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
-    assigned_to: Optional[str] = None
+    assigned_to: str | None = None
     priority: str = "normal"
 
     # Error handling
-    error_message: Optional[str] = None
-    completed_at: Optional[datetime] = None
+    error_message: str | None = None
+    completed_at: datetime | None = None
 
     def is_completed(self) -> bool:
         """Check if case is completed."""
@@ -203,7 +203,7 @@ class UnderwritingCase:
             and self.days_open() > 2  # Cases open > 2 days need attention
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert underwriting case to dictionary."""
         return {
             "case_id": self.case_id,
@@ -239,14 +239,14 @@ class AuditTrail:
     timestamp: datetime = field(default_factory=datetime.now)
 
     # Action details
-    old_values: Dict[str, Any] = field(default_factory=dict)
-    new_values: Dict[str, Any] = field(default_factory=dict)
+    old_values: dict[str, Any] = field(default_factory=dict)
+    new_values: dict[str, Any] = field(default_factory=dict)
     reason: str = ""
 
     # Context
-    system_context: Dict[str, Any] = field(default_factory=dict)
+    system_context: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert audit trail to dictionary."""
         return {
             "audit_id": self.audit_id,
@@ -271,14 +271,14 @@ class ComplianceCheck:
     requirement: str
     status: str  # passed, failed, warning, not_applicable
     details: str = ""
-    evidence: List[str] = field(default_factory=list)
+    evidence: list[str] = field(default_factory=list)
     checked_at: datetime = field(default_factory=datetime.now)
 
     def is_compliant(self) -> bool:
         """Check if compliance check passed."""
         return self.status in ["passed", "not_applicable"]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert compliance check to dictionary."""
         return {
             "check_id": self.check_id,
@@ -300,7 +300,7 @@ class UnderwritingQueue:
     queue_id: str
     queue_type: str  # standard, priority, specialist, manual_review
     max_concurrent: int = 10
-    priority_levels: List[str] = field(
+    priority_levels: list[str] = field(
         default_factory=lambda: ["low", "normal", "high", "urgent"]
     )
 
@@ -313,7 +313,7 @@ class UnderwritingQueue:
     _completed_waits: int = field(default=0, repr=False)
 
     # Entry timestamps per enqueued case
-    _case_enqueued_at: Dict[str, datetime] = field(default_factory=dict)
+    _case_enqueued_at: dict[str, datetime] = field(default_factory=dict)
 
     def add_to_queue(self, case_id: str, priority: str = "normal") -> bool:
         """Add case to queue, recording its entry timestamp."""
@@ -341,7 +341,7 @@ class UnderwritingQueue:
         self.longest_wait_time = max(self.longest_wait_time, wait_seconds)
         return True
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert queue to dictionary."""
         return {
             "queue_id": self.queue_id,

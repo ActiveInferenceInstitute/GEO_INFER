@@ -6,7 +6,7 @@ valuation, biodiversity credit calculation, carbon stock accounting, and
 water resource balance tracking.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 import pandas as pd
 import logging
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Reference unit values (USD/ha/yr) aligned with SEEA-EA & TEEB databases
 # ---------------------------------------------------------------------------
-_ASSET_UNIT_VALUES: Dict[str, float] = {
+_ASSET_UNIT_VALUES: dict[str, float] = {
     "forest": 3800.0,
     "wetland": 6500.0,
     "grassland": 1200.0,
@@ -29,7 +29,7 @@ _ASSET_UNIT_VALUES: Dict[str, float] = {
 }
 
 # Carbon prices (USD/tCO2e) by market type
-_CARBON_PRICES: Dict[str, float] = {
+_CARBON_PRICES: dict[str, float] = {
     "voluntary": 12.0,
     "compliance": 45.0,
     "social_cost": 80.0,
@@ -44,7 +44,7 @@ class NaturalCapitalAccounting:
     assets and their monetary values over time.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize natural capital accounting.
 
         Args:
@@ -63,7 +63,7 @@ class NaturalCapitalAccounting:
             self.time_horizon,
         )
 
-    def account_assets(self, assets: List[Dict[str, Any]]) -> pd.DataFrame:
+    def account_assets(self, assets: list[dict[str, Any]]) -> pd.DataFrame:
         """Account for natural capital assets using SEEA-EA framework.
 
         Each asset dict should contain:
@@ -78,7 +78,7 @@ class NaturalCapitalAccounting:
             annual_value, npv, trend, projected_value_10yr.
         """
         logger.info("Accounting %d natural capital assets", len(assets))
-        rows: List[Dict[str, Any]] = []
+        rows: list[dict[str, Any]] = []
         for asset in assets:
             a_type = asset.get("type", "forest").lower()
             area = float(asset.get("area_ha", 0.0))
@@ -141,7 +141,7 @@ class EcosystemAssetsValuation:
     and supporting service values.
     """
 
-    SERVICE_SHARES: Dict[str, Dict[str, float]] = {
+    SERVICE_SHARES: dict[str, dict[str, float]] = {
         "forest": {
             "provisioning": 0.25,
             "regulating": 0.40,
@@ -174,12 +174,12 @@ class EcosystemAssetsValuation:
         },
     }
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.unit_values = {**_ASSET_UNIT_VALUES, **self.config.get("unit_values", {})}
         logger.info("EcosystemAssetsValuation initialized")
 
-    def value_ecosystem_assets(self, assets: List[Dict[str, Any]]) -> Dict[str, float]:
+    def value_ecosystem_assets(self, assets: list[dict[str, Any]]) -> dict[str, float]:
         """Value ecosystem assets with service-category breakdown.
 
         Each asset dict requires ``type``, ``area_ha``, and optionally
@@ -189,7 +189,7 @@ class EcosystemAssetsValuation:
             Dict with per-service total values and grand total.
         """
         logger.info("Valuing %d ecosystem assets", len(assets))
-        totals: Dict[str, float] = {
+        totals: dict[str, float] = {
             "provisioning": 0.0,
             "regulating": 0.0,
             "cultural": 0.0,
@@ -230,7 +230,7 @@ class BiodiversityCredits:
     Financial Disclosures (TNFD) approach.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.credit_price = float(self.config.get("credit_price", 25.0))  # USD per unit
         self.baseline_species_per_ha = float(
@@ -240,7 +240,7 @@ class BiodiversityCredits:
             "BiodiversityCredits initialized: price=$%.2f/unit", self.credit_price
         )
 
-    def calculate_credits(self, biodiversity_data: Dict[str, Any]) -> float:
+    def calculate_credits(self, biodiversity_data: dict[str, Any]) -> float:
         """Calculate biodiversity credits for a site.
 
         Args:
@@ -287,7 +287,7 @@ class CarbonAccounting:
     """
 
     # Default carbon densities (tC/ha) by ecosystem type
-    CARBON_DENSITIES: Dict[str, Dict[str, float]] = {
+    CARBON_DENSITIES: dict[str, dict[str, float]] = {
         "forest": {"agb": 120.0, "bgb": 30.0, "soc": 80.0, "dom": 15.0},
         "wetland": {"agb": 20.0, "bgb": 15.0, "soc": 200.0, "dom": 10.0},
         "grassland": {"agb": 8.0, "bgb": 20.0, "soc": 60.0, "dom": 3.0},
@@ -295,7 +295,7 @@ class CarbonAccounting:
         "coastal": {"agb": 15.0, "bgb": 12.0, "soc": 150.0, "dom": 8.0},
     }
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.co2_factor = 3.667  # tCO2 per tC
         self.market = self.config.get("carbon_market", "voluntary")
@@ -306,7 +306,7 @@ class CarbonAccounting:
             self.carbon_price,
         )
 
-    def account_carbon(self, carbon_data: Dict[str, Any]) -> pd.DataFrame:
+    def account_carbon(self, carbon_data: dict[str, Any]) -> pd.DataFrame:
         """Account for carbon stocks and flows across ecosystem parcels.
 
         Args:
@@ -323,7 +323,7 @@ class CarbonAccounting:
         parcels = carbon_data.get("parcels", [])
         logger.info("Carbon accounting for %d parcels", len(parcels))
 
-        rows: List[Dict[str, Any]] = []
+        rows: list[dict[str, Any]] = []
         for parcel in parcels:
             p_type = parcel.get("type", "forest").lower()
             area = float(parcel.get("area_ha", 0.0))
@@ -367,7 +367,7 @@ class WaterResourceAccounting:
     """
 
     # Default hydrological coefficients by land cover
-    HYDRO_COEFFICIENTS: Dict[str, Dict[str, float]] = {
+    HYDRO_COEFFICIENTS: dict[str, dict[str, float]] = {
         "forest": {
             "et_fraction": 0.55,
             "runoff_fraction": 0.20,
@@ -395,7 +395,7 @@ class WaterResourceAccounting:
         },
     }
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.water_price = float(self.config.get("water_price_per_m3", 0.50))  # USD/m³
         logger.info(
@@ -403,7 +403,7 @@ class WaterResourceAccounting:
             self.water_price,
         )
 
-    def account_water(self, water_data: Dict[str, Any]) -> pd.DataFrame:
+    def account_water(self, water_data: dict[str, Any]) -> pd.DataFrame:
         """Account for water resources using a catchment water balance.
 
         Args:
@@ -420,7 +420,7 @@ class WaterResourceAccounting:
         catchments = water_data.get("catchments", [])
         logger.info("Water accounting for %d catchments", len(catchments))
 
-        rows: List[Dict[str, Any]] = []
+        rows: list[dict[str, Any]] = []
         for c in catchments:
             c_type = c.get("type", "grassland").lower()
             area = float(c.get("area_ha", 0.0))

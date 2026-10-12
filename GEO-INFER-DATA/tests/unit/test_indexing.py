@@ -33,7 +33,7 @@ def _make_temporal_df(n: int = 20) -> pd.DataFrame:
     """Create a test DataFrame with a timestamp column."""
     return pd.DataFrame(
         {
-            "timestamp": pd.date_range("2024-01-01", periods=n, freq="h"),
+            "timestamp": pd.date_range("2024-01-01", periods=n, freq="h", tz="UTC"),
             "value": np.random.rand(n),
         }
     )
@@ -66,13 +66,12 @@ class TestSpatialIndexer:
         result = indexer.query_by_bounds(index_id, bbox=[-122.6, 37.4, -122.2, 37.8])
         assert sorted(result["id"]) == [0, 1, 2, 3]
 
-    def test_create_rtree_index_fallback(self):
+    def test_create_rtree_index_native(self):
         indexer = SpatialIndexer()
         gdf = _make_gdf()
-        # rtree may or may not be installed; both outcomes are valid
         index_id = indexer.create_spatial_index(gdf, strategy="rtree")
         assert index_id in indexer.indexes
-        assert indexer.indexes[index_id]["type"] in ("rtree", "rtree_mock")
+        assert indexer.indexes[index_id]["type"] == "rtree"
 
     def test_create_h3_index_uses_native_h3(self):
         indexer = SpatialIndexer()
@@ -183,8 +182,8 @@ class TestTemporalIndexer:
         index_id = indexer.create_temporal_index(df, "timestamp")
         result = indexer.query_by_time_range(
             index_id,
-            start_time=pd.Timestamp("2024-01-01 05:00"),
-            end_time=pd.Timestamp("2024-01-01 15:00"),
+            start_time=pd.Timestamp("2024-01-01 05:00", tz="UTC"),
+            end_time=pd.Timestamp("2024-01-01 15:00", tz="UTC"),
         )
         assert len(result) == 11  # hours 5 through 15
 
@@ -194,8 +193,8 @@ class TestTemporalIndexer:
         index_id = indexer.create_temporal_index(df, "timestamp")
         result = indexer.query_by_time_range(
             index_id,
-            start_time=pd.Timestamp("2025-01-01"),
-            end_time=pd.Timestamp("2025-12-31"),
+            start_time=pd.Timestamp("2025-01-01", tz="UTC"),
+            end_time=pd.Timestamp("2025-12-31", tz="UTC"),
         )
         assert len(result) == 0
 
@@ -203,21 +202,27 @@ class TestTemporalIndexer:
         indexer = TemporalIndexer()
         with pytest.raises(ValueError, match="not found"):
             indexer.query_by_time_range(
-                "missing", pd.Timestamp("2024-01-01"), pd.Timestamp("2024-12-31")
+                "missing",
+                pd.Timestamp("2024-01-01", tz="UTC"),
+                pd.Timestamp("2024-12-31", tz="UTC"),
             )
 
     def test_query_by_time_point(self):
         indexer = TemporalIndexer()
         df = _make_temporal_df(24)
         index_id = indexer.create_temporal_index(df, "timestamp")
-        result = indexer.query_by_time_point(index_id, pd.Timestamp("2024-01-01 10:00"))
+        result = indexer.query_by_time_point(
+            index_id, pd.Timestamp("2024-01-01 10:00", tz="UTC")
+        )
         assert len(result) == 1
 
     def test_query_by_time_point_no_match(self):
         indexer = TemporalIndexer()
         df = _make_temporal_df(24)
         index_id = indexer.create_temporal_index(df, "timestamp")
-        result = indexer.query_by_time_point(index_id, pd.Timestamp("2025-06-15"))
+        result = indexer.query_by_time_point(
+            index_id, pd.Timestamp("2025-06-15", tz="UTC")
+        )
         assert len(result) == 0
 
     def test_index_sorts_data(self):
@@ -225,10 +230,36 @@ class TestTemporalIndexer:
         indexer = TemporalIndexer()
         df = pd.DataFrame(
             {
-                "timestamp": pd.to_datetime(["2024-03-01", "2024-01-01", "2024-02-01"]),
+                "timestamp": pd.to_datetime(
+                    ["2024-03-01", "2024-01-01", "2024-02-01"], utc=True
+                ),
                 "value": [3, 1, 2],
             }
         )
         index_id = indexer.create_temporal_index(df, "timestamp")
         sorted_data = indexer.indexes[index_id]["data"]
         assert sorted_data["value"].tolist() == [1, 2, 3]
+
+
+@pytest.mark.parametrize("strategy", ["h3", "rtree"])
+@pytest.mark.parametrize("labels", [[7, 7], ["first", "second"], [0, 1]])
+def test_spatial_queries_preserve_observations_and_labels(strategy, labels):
+    frame = gpd.GeoDataFrame(
+        {"value": [3, 9]},
+        index=labels,
+        geometry=[Point(-122.42, 37.77), Point(-122.41, 37.78)],
+        crs="EPSG:4326",
+    )
+    indexer = SpatialIndexer()
+    index_id = indexer.create_spatial_index(frame, strategy)
+    result = indexer.query_by_bounds(index_id, [-122.45, 37.74, -122.38, 37.81])
+    assert result["value"].tolist() == [3, 9]
+    assert result.index.tolist() == labels
+    frame.loc[:, "value"] = 100
+    assert indexer.query_by_bounds(index_id, [-122.45, 37.74, -122.38, 37.81])[
+        "value"
+    ].tolist() == [3, 9]
+    empty = indexer.query_by_bounds(index_id, [0, 0, 0.001, 0.001])
+    assert empty.empty
+    assert empty.columns.tolist() == result.columns.tolist()
+    assert empty.crs == result.crs

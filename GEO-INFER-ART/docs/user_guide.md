@@ -4,9 +4,21 @@
 
 ### Installation
 
+GEO-INFER-ART is a member of the root uv workspace. From the repository root:
+
 ```bash
-uv pip install -e "./GEO-INFER-ART"
+uv sync --package geo-infer-art
+# Optional extras: neural (TensorFlow style transfer), integrations
+# (folium/plotly/psutil), viz3d (mayavi)
+uv sync --package geo-infer-art --extra neural
 ```
+
+### Reproducibility
+
+Stochastic generators draw from a per-instance ``numpy.random.Generator``:
+``ProceduralArt`` seeds it from ``params["seed"]``, and ``GenerativeMap``,
+``PlaceArt`` and ``StyleTransfer`` accept a ``seed`` argument (an int or a
+``Generator``). The process-wide ``numpy.random`` state is never used.
 
 ### Quick Start
 

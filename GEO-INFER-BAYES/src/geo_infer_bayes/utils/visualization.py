@@ -6,14 +6,14 @@ distributions, spatial predictions, and uncertainty quantification.
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Union
+from collections.abc import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
 
 
-def _finite_vector(values: Union[np.ndarray, Sequence[float]], name: str) -> np.ndarray:
+def _finite_vector(values: np.ndarray | Sequence[float], name: str) -> np.ndarray:
     """Return a non-empty finite one-dimensional plotting vector."""
     vector = np.asarray(values, dtype=float)
     if vector.size == 0:
@@ -27,9 +27,9 @@ def _finite_vector(values: Union[np.ndarray, Sequence[float]], name: str) -> np.
 def _validate_spatial_inputs(
     spatial_coords: np.ndarray,
     predictions: np.ndarray,
-    observations: Optional[np.ndarray] = None,
-    uncertainty: Optional[np.ndarray] = None,
-) -> tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
+    observations: np.ndarray | None = None,
+    uncertainty: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray | None, np.ndarray | None]:
     """Validate the aligned arrays used by spatial prediction plots."""
     coords = np.asarray(spatial_coords, dtype=float)
     if coords.ndim != 2 or coords.shape[1] < 2 or coords.shape[0] == 0:
@@ -57,7 +57,7 @@ def _validate_spatial_inputs(
     return coords[:, :2], predicted, observed, spread
 
 
-def _save_figure(fig: plt.Figure, output_path: Optional[str]) -> None:
+def _save_figure(fig: plt.Figure, output_path: str | None) -> None:
     """Save a figure when requested, creating its parent directory."""
     if output_path is not None:
         path = Path(output_path)
@@ -66,7 +66,7 @@ def _save_figure(fig: plt.Figure, output_path: Optional[str]) -> None:
 
 
 def plot_posterior(
-    samples: Dict[str, np.ndarray], parameters: Optional[List[str]] = None
+    samples: dict[str, np.ndarray], parameters: list[str] | None = None
 ) -> plt.Figure:
     """
     Plot posterior distributions for model parameters.
@@ -116,8 +116,8 @@ def plot_posterior(
 def plot_spatial_prediction(
     spatial_coords: np.ndarray,
     predictions: np.ndarray,
-    observations: Optional[np.ndarray] = None,
-    uncertainty: Optional[np.ndarray] = None,
+    observations: np.ndarray | None = None,
+    uncertainty: np.ndarray | None = None,
 ) -> plt.Figure:
     """
     Plot spatial predictions with optional uncertainty.
@@ -221,7 +221,7 @@ def plot_uncertainty(
 
 
 def plot_model_comparison(
-    models: List[str], metrics: Dict[str, List[float]]
+    models: list[str], metrics: dict[str, list[float]]
 ) -> plt.Figure:
     """
     Plot comparison of different models.
@@ -237,7 +237,7 @@ def plot_model_comparison(
         raise ValueError("models must contain at least one model")
     if not metrics:
         raise ValueError("metrics must contain at least one metric")
-    validated_metrics: Dict[str, np.ndarray] = {}
+    validated_metrics: dict[str, np.ndarray] = {}
     for metric_name, values in metrics.items():
         metric_values = _finite_vector(values, f"metrics[{metric_name!r}]")
         if len(metric_values) != len(models):

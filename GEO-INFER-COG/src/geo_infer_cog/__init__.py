@@ -22,7 +22,7 @@ Integration Points:
 - GEO-INFER-AI: Human-like spatial intelligence frameworks
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER-COG Team"
 
 # Core cognitive processing components
@@ -37,10 +37,7 @@ from .visualization import HumanCenteredVisualizer
 from .decision import SpatialDecisionSupport
 
 # API components
-try:
-    from .api.rest_api import create_cog_api_app
-except ImportError:
-    create_cog_api_app = None  # type: ignore[assignment]
+from .api.rest_api import create_cog_api_app
 
 # Utility functions and helpers
 from .utils.validation import validate_spatial_data, validate_cognitive_model
@@ -60,6 +57,7 @@ __all__ = [
     "SpatialLanguageProcessor",
     "HumanCenteredVisualizer",
     "SpatialDecisionSupport",
+    "create_cog_api_app",
     # Utilities
     "validate_spatial_data",
     "validate_cognitive_model",

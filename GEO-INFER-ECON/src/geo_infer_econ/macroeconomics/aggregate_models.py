@@ -8,7 +8,7 @@ spatial) models live in :mod:`geo_infer_econ.macroeconomics.growth_models`.
 
 import logging
 import numpy as np
-from typing import cast, Dict, Any, Optional
+from typing import cast, Any
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class AggregateGrowthModels:
     analysis, and growth accounting.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize aggregate growth models.
 
         Args:
@@ -34,7 +34,7 @@ class AggregateGrowthModels:
         self.g = self.config.get("technology_growth_rate", 0.02)
         logger.info("AggregateGrowthModels initialized (alpha=%.2f)", self.alpha)
 
-    def model_growth(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def model_growth(self, data: dict[str, Any]) -> dict[str, Any]:
         """Model aggregate growth via growth accounting.
 
         Args:
@@ -89,7 +89,7 @@ class BusinessCycleModels:
     spectral analysis.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize business cycle models.
 
         Args:
@@ -99,7 +99,7 @@ class BusinessCycleModels:
         self.hp_lambda = self.config.get("hp_lambda", 1600)  # Quarterly default
         logger.info("BusinessCycleModels initialized (lambda=%d)", self.hp_lambda)
 
-    def model_cycles(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def model_cycles(self, data: dict[str, Any]) -> dict[str, Any]:
         """Decompose economic series into trend and cyclical components.
 
         Args:
@@ -203,7 +203,7 @@ class MonetaryPolicyModels:
     Monetary policy modeling using Taylor rule and interest rate transmission.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize monetary policy models.
 
         Args:
@@ -221,7 +221,7 @@ class MonetaryPolicyModels:
             self.r_star,
         )
 
-    def model_policy(self, policy_data: Dict[str, Any]) -> Dict[str, Any]:
+    def model_policy(self, policy_data: dict[str, Any]) -> dict[str, Any]:
         """Model monetary policy using Taylor rule.
 
         Args:
@@ -304,7 +304,7 @@ class FiscalPolicyModels:
     Fiscal policy modeling with multiplier analysis and debt sustainability.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize fiscal policy models.
 
         Args:
@@ -317,7 +317,7 @@ class FiscalPolicyModels:
         self.mpi = self.config.get("import_propensity", 0.15)
         logger.info("FiscalPolicyModels initialized (MPC=%.2f)", self.mpc)
 
-    def model_fiscal_policy(self, policy_data: Dict[str, Any]) -> Dict[str, Any]:
+    def model_fiscal_policy(self, policy_data: dict[str, Any]) -> dict[str, Any]:
         """Model fiscal policy with multiplier effects.
 
         Args:
@@ -393,7 +393,7 @@ class TradeModels:
     International trade modeling using gravity model approach.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize trade models.
 
         Args:
@@ -404,7 +404,7 @@ class TradeModels:
         self.gdp_elasticity = self.config.get("gdp_elasticity", 0.8)
         logger.info("TradeModels initialized")
 
-    def model_trade(self, trade_data: Dict[str, Any]) -> Dict[str, Any]:
+    def model_trade(self, trade_data: dict[str, Any]) -> dict[str, Any]:
         """Model bilateral trade flows using gravity model.
 
         Args:

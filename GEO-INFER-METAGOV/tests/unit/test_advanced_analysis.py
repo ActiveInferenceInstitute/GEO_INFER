@@ -1,10 +1,6 @@
 """Unit tests for advanced governance analysis."""
 
 import pytest
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../src"))
 
 from geo_infer_metagov.core.advanced_analysis import (
     AdvancedGovernanceAnalyzer,

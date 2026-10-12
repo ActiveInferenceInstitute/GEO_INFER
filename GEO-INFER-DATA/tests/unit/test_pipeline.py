@@ -22,7 +22,7 @@ from geo_infer_data.models.schemas import Transformation
 
 
 def _run(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
+    return asyncio.run(coro)
 
 
 # ---------------------------------------------------------------------------
@@ -117,7 +117,9 @@ class TestTransformationEngine:
         engine = TransformationEngine()
         data = pd.DataFrame(
             {
-                "timestamp": pd.date_range("2025-01-01", periods=4, freq="30min"),
+                "timestamp": pd.date_range(
+                    "2025-01-01", periods=4, freq="30min", tz="UTC"
+                ),
                 "value": [1.0, 3.0, 5.0, 7.0],
             }
         )

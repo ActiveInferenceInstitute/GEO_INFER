@@ -24,7 +24,7 @@
 #
 # Metrics are printed as "METRIC name=value" lines; diagnostics as
 # "ASI key=value" lines.  Prerequisite: the shared uv workspace is synced
-# (uv sync --all-packages --all-extras); the harness itself never touches
+# (uv sync --all-packages --all-extras --all-groups); the harness itself never touches
 # the network (uv run --no-sync).
  set -euo pipefail
  cd "$(dirname "$0")"

@@ -24,7 +24,6 @@ import json
 # Import modules to test
 from geo_infer_ant.applications.environmental import (
     EnvironmentalMonitoringSwarm,
-    MonitoringObjective,  # noqa: F401
     SensorReading,
 )
 from geo_infer_ant.core.stigmergy import PheromoneSystem
@@ -270,7 +269,7 @@ class TestEnvironmentalMonitoringSwarm:
         assert 0 <= uncertainty["overall_uncertainty"] <= 1
 
     def test_spatial_uncertainty_matches_pairwise_bruteforce(self):
-        """Vectorized nearest-neighbor uncertainty must equal the legacy loop."""
+        """Vectorized nearest-neighbor uncertainty must equal the reference loop."""
         swarm = EnvironmentalMonitoringSwarm()
 
         rng = np.random.default_rng(7)
@@ -290,7 +289,7 @@ class TestEnvironmentalMonitoringSwarm:
         assert result == bruteforce
 
     def test_covered_area_subtracts_pairwise_overlaps_exactly(self):
-        """Overlap subtraction must match the legacy per-pair computation."""
+        """Overlap subtraction must match the per-pair reference computation."""
         bounds = {"min_lat": 0.0, "max_lat": 1.0, "min_lng": 0.0, "max_lng": 1.0}
         swarm = EnvironmentalMonitoringSwarm(
             swarm_size=40, spatial_coverage=bounds, sensor_range=0.05, random_seed=3
@@ -469,49 +468,51 @@ class TestApplicationPerformance:
         """Test large-scale environmental monitoring."""
         swarm_sizes = [50, 100, 200]
 
+        async def performance_test(
+            monitoring_swarm: EnvironmentalMonitoringSwarm, size: int
+        ) -> None:
+            import time
+
+            start_time = time.time()
+
+            # Deploy agents
+            _deployment = await monitoring_swarm.deploy_agents()
+
+            deployment_time = time.time() - start_time
+            assert deployment_time < 30.0  # Should deploy in reasonable time
+
+            # Process sensor data
+            start_time = time.time()
+            sensor_readings = []
+            for i in range(min(100, size * 2)):
+                reading = SensorReading(
+                    agent_id=f"agent_{i % size}",
+                    sensor_type="pm25_sensor",
+                    value=np.random.normal(25, 5),
+                    location=np.random.uniform(-10, 10, 2),
+                    timestamp=datetime.now(),
+                    quality_score=0.8,
+                )
+                sensor_readings.append(reading)
+
+            # Process collective intelligence
+            assessment = await monitoring_swarm.process_collective_intelligence(
+                individual_measurements=sensor_readings,
+                anomaly_detection="statistical",
+            )
+
+            processing_time = time.time() - start_time
+            assert processing_time < 10.0  # Should process in reasonable time
+
+            # Verify results
+            assert assessment["data_summary"]["total_measurements"] == len(
+                sensor_readings
+            )
+
         for size in swarm_sizes:
-            monitoring_swarm = EnvironmentalMonitoringSwarm(swarm_size=size)
-
-            async def performance_test():
-                import time
-
-                start_time = time.time()
-
-                # Deploy agents
-                _deployment = await monitoring_swarm.deploy_agents()
-
-                deployment_time = time.time() - start_time
-                assert deployment_time < 30.0  # Should deploy in reasonable time
-
-                # Process sensor data
-                start_time = time.time()
-                sensor_readings = []
-                for i in range(min(100, size * 2)):
-                    reading = SensorReading(
-                        agent_id=f"agent_{i % size}",
-                        sensor_type="pm25_sensor",
-                        value=np.random.normal(25, 5),
-                        location=np.random.uniform(-10, 10, 2),
-                        timestamp=datetime.now(),
-                        quality_score=0.8,
-                    )
-                    sensor_readings.append(reading)
-
-                # Process collective intelligence
-                assessment = await monitoring_swarm.process_collective_intelligence(
-                    individual_measurements=sensor_readings,
-                    anomaly_detection="statistical",
-                )
-
-                processing_time = time.time() - start_time
-                assert processing_time < 10.0  # Should process in reasonable time
-
-                # Verify results
-                assert assessment["data_summary"]["total_measurements"] == len(
-                    sensor_readings
-                )
-
-            asyncio.run(performance_test())
+            asyncio.run(
+                performance_test(EnvironmentalMonitoringSwarm(swarm_size=size), size)
+            )
 
 
 class TestApplicationErrorHandling:

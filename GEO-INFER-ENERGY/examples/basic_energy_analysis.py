@@ -10,7 +10,6 @@ import xarray as xr
 
 from geo_infer_energy import (
     RenewableResourceAssessor,
-    RenewableType,
     EnergyDemandForecaster,
     EnergyGridOptimizer,
 )

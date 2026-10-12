@@ -2,7 +2,7 @@
 Seasonal agricultural analysis functionality.
 """
 
-from typing import Dict, Optional, Any, Tuple
+from typing import Any
 import pandas as pd
 import numpy as np
 import geopandas as gpd
@@ -26,9 +26,9 @@ class SeasonalAnalysis:
 
     def __init__(
         self,
-        time_series_data: Optional[pd.DataFrame] = None,
-        spatial_data: Optional[gpd.GeoDataFrame] = None,
-        config: Optional[Dict[str, Any]] = None,
+        time_series_data: pd.DataFrame | None = None,
+        spatial_data: gpd.GeoDataFrame | None = None,
+        config: dict[str, Any] | None = None,
     ) -> None:
         """
         Initialize the seasonal analysis.
@@ -41,17 +41,17 @@ class SeasonalAnalysis:
         self.time_series_data = time_series_data
         self.spatial_data = spatial_data
         self.config = config or {}
-        self.growing_season: Dict[str, Any] = {}
+        self.growing_season: dict[str, Any] = {}
 
     def detect_growing_season(
         self,
-        time_series: Optional[pd.Series] = None,
+        time_series: pd.Series | None = None,
         variable: str = "ndvi",
         method: str = "threshold",
         threshold: float = 0.3,
         smoothing_window: int = 7,
         min_length_days: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect growing season start, peak, and end dates.
 
@@ -93,7 +93,7 @@ class SeasonalAnalysis:
 
         def _season_summary(
             start: Any, end: Any, season_length: int
-        ) -> Optional[Dict[str, Any]]:
+        ) -> dict[str, Any] | None:
             """Build a season summary with a peak strictly inside the detected interval."""
             season_data = time_series_smooth.loc[start:end]
             raw_season_data = time_series.loc[start:end]
@@ -211,10 +211,10 @@ class SeasonalAnalysis:
     def identify_phenological_stages(
         self,
         crop_type: str,
-        time_series: Optional[pd.Series] = None,
+        time_series: pd.Series | None = None,
         variable: str = "ndvi",
-        reference_stages: Optional[Dict[str, Tuple[float, float]]] = None,
-    ) -> Dict[str, Any]:
+        reference_stages: dict[str, tuple[float, float]] | None = None,
+    ) -> dict[str, Any]:
         """
         Identify crop phenological stages using time series data.
 
@@ -332,12 +332,12 @@ class SeasonalAnalysis:
 
     def analyze_temporal_trends(
         self,
-        time_series: Optional[pd.Series] = None,
+        time_series: pd.Series | None = None,
         variable: str = "ndvi",
         period: str = "daily",
         detrend: bool = False,
         window_size: int = 7,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze temporal trends in agricultural data.
 
@@ -401,11 +401,11 @@ class SeasonalAnalysis:
                 detrended = resampled.copy()
 
         # Calculate statistics
-        trend_data_out: Dict[str, Any] = {
+        trend_data_out: dict[str, Any] = {
             "original": resampled,
             "moving_avg": moving_avg,
         }
-        trend_results: Dict[str, Any] = {
+        trend_results: dict[str, Any] = {
             "variable": variable,
             "period": period,
             "statistics": {
@@ -445,12 +445,12 @@ class SeasonalAnalysis:
 
     def analyze_spatial_temporal_patterns(
         self,
-        dataset: Optional[xr.Dataset] = None,
+        dataset: xr.Dataset | None = None,
         variable: str = "ndvi",
         time_dim: str = "time",
         lat_dim: str = "lat",
         lon_dim: str = "lon",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze spatial-temporal patterns in agricultural data.
 

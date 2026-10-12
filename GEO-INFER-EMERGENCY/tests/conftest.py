@@ -10,7 +10,7 @@ optional geo dependencies.
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),  # Seattle
@@ -141,7 +141,7 @@ def shelter_locations_gdf() -> "gpd.GeoDataFrame":
 
 
 @pytest.fixture
-def emergency_config() -> Dict[str, Any]:
+def emergency_config() -> dict[str, Any]:
     """Configuration dict for emergency response modeling.
 
     Specifies response time targets, resource allocation parameters,

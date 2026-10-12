@@ -29,8 +29,9 @@ parsing is needed.
 
 ## Event time and window capacity
 
-Every record requires `timestamp`, `time`, or `datetime`. ISO timestamps and
-numeric Unix seconds are accepted; magnitudes above `1e11` are milliseconds.
+Every record requires `timestamp`, `time`, or `datetime`. ISO timestamps must carry an offset. Numeric payload timestamps require an
+explicit `timestamp_unit` of `"s"` or `"ms"` in adapter configuration; magnitudes
+never determine units.
 Kafka can use its broker timestamp when all payload time aliases are absent; broker
 timestamps are explicitly milliseconds, including epoch zero. An unavailable
 broker timestamp still fails validation. Payload event time always takes precedence.
@@ -38,9 +39,11 @@ broker timestamp still fails validation. Payload event time always takes precede
 (UTC ISO string), numeric `value`, and preserved metadata. Network adapters apply
 this validation before yielding a record.
 
-Epoch zero is preserved. Naive timestamps mean UTC and all output timestamps are
-UTC-aware. Missing timestamps, booleans, nonfinite measurements and `NaT` fail
-validation. Migrate naive datetime comparisons to timezone-aware UTC values.
+Epoch zero is preserved. Datetime and ISO-string timestamps must carry an
+explicit UTC offset (`Z` or `+HH:MM`); naive values raise `ValueError` because
+they are ambiguous between local wall-clock time and UTC. All output timestamps
+are UTC-aware. Missing timestamps, booleans, nonfinite measurements and `NaT`
+fail validation.
 
 Window input stays in event-time order, with stable order for equal timestamps.
 Watermarks never move backward. Records strictly before the watermark enter the
@@ -152,3 +155,6 @@ replaced by explicit acknowledgement after successful processing. Existing repla
 local WebSocket and Kafka fault-injection tests cover those stronger contracts;
 merge regressions also verify canonical records, dependency absence, configured
 adapter reuse, and broker timestamp precedence and units.
+
+Sliding calls enforce `max_window_evaluations` before performing work; choose a
+limit appropriate to the intended cadence.

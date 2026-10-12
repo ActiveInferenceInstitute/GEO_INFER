@@ -6,7 +6,7 @@ ICS (Incident Command System) and NIMS principles.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -47,12 +47,12 @@ class Incident:
     incident_id: str
     incident_type: IncidentType
     name: str
-    location: Dict[str, Any]  # geometry or coordinates
+    location: dict[str, Any]  # geometry or coordinates
     scale: IncidentScale
     status: str = "active"
     start_time: datetime = field(default_factory=datetime.now)
     description: str = ""
-    affected_area: Optional[Dict[str, Any]] = None
+    affected_area: dict[str, Any] | None = None
     priority: int = 1
 
 
@@ -63,9 +63,9 @@ class Agency:
     agency_id: str
     name: str
     agency_type: str  # fire, police, medical, public_works, etc.
-    jurisdiction: Optional[Dict[str, Any]] = None
-    contact_info: Dict[str, str] = field(default_factory=dict)
-    capabilities: List[str] = field(default_factory=list)
+    jurisdiction: dict[str, Any] | None = None
+    contact_info: dict[str, str] = field(default_factory=dict)
+    capabilities: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -73,14 +73,14 @@ class IncidentCommand:
     """Incident Command System structure."""
 
     incident_commander: str
-    command_location: Dict[str, Any]
-    operations_chief: Optional[str] = None
-    planning_chief: Optional[str] = None
-    logistics_chief: Optional[str] = None
-    finance_chief: Optional[str] = None
-    safety_officer: Optional[str] = None
-    liaison_officer: Optional[str] = None
-    public_info_officer: Optional[str] = None
+    command_location: dict[str, Any]
+    operations_chief: str | None = None
+    planning_chief: str | None = None
+    logistics_chief: str | None = None
+    finance_chief: str | None = None
+    safety_officer: str | None = None
+    liaison_officer: str | None = None
+    public_info_officer: str | None = None
 
 
 class EmergencyCoordinator:
@@ -94,9 +94,9 @@ class EmergencyCoordinator:
     def __init__(
         self,
         command_structure: str = "ics",
-        agencies: Optional[List[str]] = None,
+        agencies: list[str] | None = None,
         communication_protocol: str = "secure",
-        jurisdiction: Optional[Dict[str, Any]] = None,
+        jurisdiction: dict[str, Any] | None = None,
     ):
         """
         Initialize emergency coordinator.
@@ -108,12 +108,12 @@ class EmergencyCoordinator:
             jurisdiction: Jurisdictional boundary geometry
         """
         self.command_structure = command_structure
-        self.agencies: Dict[str, Agency] = {}
+        self.agencies: dict[str, Agency] = {}
         self.communication_protocol = communication_protocol
         self.jurisdiction = jurisdiction
-        self._active_incidents: Dict[str, Incident] = {}
-        self._incident_commands: Dict[str, IncidentCommand] = {}
-        self._mutual_aid_agreements: Dict[str, List[str]] = {}
+        self._active_incidents: dict[str, Incident] = {}
+        self._incident_commands: dict[str, IncidentCommand] = {}
+        self._mutual_aid_agreements: dict[str, list[str]] = {}
 
         # Register initial agencies
         if agencies:
@@ -137,11 +137,11 @@ class EmergencyCoordinator:
 
     def coordinate(
         self,
-        incident: Dict[str, Any],
-        agencies: List[str],
-        resources: Dict[str, Any],
-        incident_action_plan: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        incident: dict[str, Any],
+        agencies: list[str],
+        resources: dict[str, Any],
+        incident_action_plan: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Coordinate response to an incident.
 
@@ -204,7 +204,7 @@ class EmergencyCoordinator:
         )
         return coordination
 
-    def _assign_channels(self, incident: Incident) -> Dict[str, str]:
+    def _assign_channels(self, incident: Incident) -> dict[str, str]:
         """Assign communication channels for incident."""
         channels = {
             "command": f"CMD-{incident.incident_id[:8]}",
@@ -227,8 +227,8 @@ class EmergencyCoordinator:
         return 1
 
     def _allocate_resources(
-        self, agency_id: str, resources: Dict[str, Any], incident: Incident
-    ) -> List[Dict[str, Any]]:
+        self, agency_id: str, resources: dict[str, Any], incident: Incident
+    ) -> list[dict[str, Any]]:
         """Allocate resources to an agency based on capabilities."""
         allocated = []
         agency_type = agency_id.replace("agency_", "")
@@ -265,10 +265,10 @@ class EmergencyCoordinator:
     def establish_command(
         self,
         incident_type: str,
-        location: Dict[str, Any],
+        location: dict[str, Any],
         scale: str,
-        command_structure: Dict[str, str],
-    ) -> Dict[str, Any]:
+        command_structure: dict[str, str],
+    ) -> dict[str, Any]:
         """
         Establish incident command structure.
 
@@ -356,10 +356,10 @@ class EmergencyCoordinator:
     def request_mutual_aid(
         self,
         requesting_agency: str,
-        resource_needs: List[str],
+        resource_needs: list[str],
         duration_hours: int,
-        staging_areas: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        staging_areas: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Request mutual aid from neighboring jurisdictions.
 
@@ -379,8 +379,8 @@ class EmergencyCoordinator:
             requesting_agency, resource_needs
         )
 
-        assignments_out: List[Dict[str, Any]] = []
-        request: Dict[str, Any] = {
+        assignments_out: list[dict[str, Any]] = []
+        request: dict[str, Any] = {
             "request_id": request_id,
             "requesting_agency": requesting_agency,
             "resource_needs": resource_needs,
@@ -415,8 +415,8 @@ class EmergencyCoordinator:
         return request
 
     def _find_mutual_aid_partners(
-        self, requesting_agency: str, resource_needs: List[str]
-    ) -> List[Dict[str, Any]]:
+        self, requesting_agency: str, resource_needs: list[str]
+    ) -> list[dict[str, Any]]:
         """Find available mutual aid partners."""
         partners = []
         for agency_id, agency in self.agencies.items():
@@ -432,7 +432,7 @@ class EmergencyCoordinator:
         return partners
 
     def _estimate_eta(
-        self, partner: Dict[str, Any], staging_areas: List[Dict[str, Any]]
+        self, partner: dict[str, Any], staging_areas: list[dict[str, Any]]
     ) -> float:
         """Estimate ETA for mutual aid resources."""
         # Simple estimate based on typical response times
@@ -440,11 +440,11 @@ class EmergencyCoordinator:
 
     def generate_sitrep(
         self,
-        incident: Dict[str, Any],
+        incident: dict[str, Any],
         update_frequency: str = "hourly",
-        distribution: Optional[List[str]] = None,
+        distribution: list[str] | None = None,
         report_format: str = "ics_209",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate situation report.
 
@@ -512,7 +512,7 @@ class EmergencyCoordinator:
         delta = frequency_map.get(frequency, timedelta(hours=1))
         return (datetime.now() + delta).isoformat()
 
-    def get_active_incidents(self) -> List[Dict[str, Any]]:
+    def get_active_incidents(self) -> list[dict[str, Any]]:
         """Get list of active incidents."""
         return [
             {

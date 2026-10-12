@@ -9,10 +9,6 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from geo_infer_bayes import GaussianProcess
 

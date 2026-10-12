@@ -1,6 +1,7 @@
 # Module Structure Standards
 
-Every module follows this canonical structure:
+Modules follow this layout; optional directories (`config/`, `docs/`,
+`examples/`, `api/`, `models/`) exist only where the module needs them:
 
 ```
 GEO-INFER-MODULE/
@@ -37,49 +38,41 @@ GEO-INFER-MODULE/
 │   ├── unit/               # Unit tests
 │   ├── integration/        # Integration tests
 │   └── performance/        # Performance benchmarks
-├── pyproject.toml          # Package metadata, deps, tool config
-├── AGENTS.md               # AI agent guidance for this module
-├── CHANGELOG.md            # Version history (Keep a Changelog format)
-└── README.md               # Module documentation with YAML front matter
+├── pyproject.toml          # Sole packaging + dependency declaration
+├── AGENTS.md               # Generated agent signpost for this module
+├── SKILL.md                # Hand-written Claude Code skill
+└── README.md               # Generated module signpost
 ```
 
 ## Required Files
 
 | File | Purpose |
 |------|---------|
-| `README.md` | Module overview, API reference, getting started |
-| `AGENTS.md` | AI agent guidance: key files, patterns, gotchas |
-| `pyproject.toml` | Package metadata, dependencies, tool config |
+| `pyproject.toml` | Package metadata and dependencies (no `setup.py`, `setup.cfg` or `requirements.txt`; lint, format and pytest config live in the root `pyproject.toml`) |
 | `src/geo_infer_*/` | Source package (PEP 8 lowercase) |
-| `tests/` | Test suite with unit + integration subdirs |
+| `tests/` | At least four pytest files, with unit + integration subdirs |
+| `SKILL.md` | Hand-written Claude Code skill; validated by `validate_skills.py` |
+| `README.md`, `AGENTS.md` | Generated signposts (contents, public interface, metadata, dependencies, validation) |
 
-## README Structure
+## Generated Signposts
 
-All module READMEs must include:
+Module `README.md` and `AGENTS.md` files are generated from repository files by
+`uv run python GEO-INFER-TEST/rewrite_readme_agents.py`; CI fails when they
+drift (`--check`). Do not hand-edit them. Put conceptual guidance, tutorials
+and integration notes in `GEO-INFER-INTRA/docs/` or the module's `docs/`.
 
-1. **YAML Front Matter** — metadata (title, description, purpose, module_type, status, dependencies, tags)
-2. **Overview** — module purpose and scope
-3. **Core Features** — (not "Key Features") capabilities list
-4. **API Reference** — core classes with signatures and examples
-5. **Integration** — how it works with other modules
-6. **Getting Started** — installation and basic usage
-7. **Examples** — working code
-8. **Troubleshooting** — common issues and solutions
+## Module Themes
 
-## Module Categories (44 modules)
+These are the root README "Module Themes" (45 modules).
 
-| Category | Modules |
-|----------|---------|
-| 🧠 **Analytical Core** | ACT, BAYES, AI, MATH, COG, AGENT, SPM |
-| 🗺️ **Spatial-Temporal** | SPACE, TIME, IOT |
-| 💾 **Data Management** | DATA, API |
-| 🔒 **Security & Governance** | SEC, NORMS, REQ, METAGOV |
-| 🧪 **Simulation & Modeling** | SIM, ANT |
-| 👥 **People & Community** | CIV, PEP, ORG, COMMS |
-| 🖥️ **Applications** | APP, ART |
-| 🏢 **Domain-Specific** | AG, ECON, RISK, LOG, BIO, HEALTH, CLIMATE, ENERGY, WATER, TRANSPORT, FOREST, MARINE, EMERGENCY, EDU |
-| 📍 **Place-Based** | PLACE |
-| ⚙️ **Operations** | OPS, INTRA, GIT, TEST, EXAMPLES |
+| Theme | Modules |
+|-------|---------|
+| 🌍 **Spatial & Place-based** | SPACE, PLACE, TIME, MARINE, WATER, FOREST, CLIMATE, ENERGY, TRANSPORT, EMERGENCY |
+| 🧠 **Bayesian & Active Inference** | BAYES, SIM, SPM, COG, ACT, MATH |
+| 🤖 **Agents & AI Orchestration** | AGENT, AG, AI, ANT, OPS, COMMS |
+| 🏛️ **Governance, Risk & Domain** | INSURANCE, METAGOV, NORMS, ECON, PEP, REQ, SEC, CIV, HEALTH, ORG, RISK |
+| 🗄️ **Data, API & Applications** | API, APP, DATA, IOT, ART, EDU |
+| 🛠️ **Infrastructure & Validation** | INTRA, TEST, LOG, GIT, EXAMPLES, BIO |
 
 ## Module-Specific Agent Guidance
 

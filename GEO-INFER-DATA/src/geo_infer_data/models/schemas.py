@@ -5,21 +5,53 @@ This module defines comprehensive data models for geospatial datasets, metadata,
 quality reports, and ETL processes using Pydantic for runtime validation.
 """
 
-from typing import Dict, List, Optional, Union, Any
-from datetime import datetime, timezone
-from enum import Enum
+from types import UnionType
+from typing import Any, Union, get_args, get_origin
+from datetime import datetime, UTC
+from enum import StrEnum
 import uuid
 
-from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    ConfigDict,
+    field_validator,
+    ValidationInfo,
+)
 from pydantic import computed_field
+from geo_infer_time.core.timestamps import normalize_timestamp
 
 
 def utc_now() -> datetime:
     """Return a timezone-aware UTC timestamp."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
-class DataType(str, Enum):
+class TimestampModel(BaseModel):
+    """Require UTC-aware instants for all DATA model datetime fields."""
+
+    model_config = ConfigDict(validate_assignment=True)
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def normalize_datetime_fields(cls, value: Any, info: ValidationInfo) -> Any:
+        annotation = cls.model_fields[info.field_name].annotation
+        origin, arguments = get_origin(annotation), get_args(annotation)
+        scalar = annotation is datetime or (
+            origin in (Union, UnionType) and datetime in arguments
+        )
+        timestamp_mapping = origin is dict and arguments == (str, datetime)
+        if value is None or not (scalar or timestamp_mapping):
+            return value
+        try:
+            if timestamp_mapping and isinstance(value, dict):
+                return {key: normalize_timestamp(item) for key, item in value.items()}
+            return normalize_timestamp(value)
+        except TypeError as exc:
+            raise ValueError(str(exc)) from exc
+
+
+class DataType(StrEnum):
     """Supported data types for datasets."""
 
     VECTOR = "vector"
@@ -30,7 +62,7 @@ class DataType(str, Enum):
     TABULAR = "tabular"
 
 
-class DataFormat(str, Enum):
+class DataFormat(StrEnum):
     """Supported data formats."""
 
     GEOJSON = "geojson"
@@ -47,7 +79,7 @@ class DataFormat(str, Enum):
     WKB = "wkb"
 
 
-class QualityStatus(str, Enum):
+class QualityStatus(StrEnum):
     """Quality check status."""
 
     PASS = "pass"
@@ -55,7 +87,7 @@ class QualityStatus(str, Enum):
     WARNING = "warning"
 
 
-class ExecutionState(str, Enum):
+class ExecutionState(StrEnum):
     """ETL execution states."""
 
     PENDING = "pending"
@@ -65,7 +97,7 @@ class ExecutionState(str, Enum):
     CANCELLED = "cancelled"
 
 
-class StorageBackend(str, Enum):
+class StorageBackend(StrEnum):
     """Available storage backends."""
 
     POSTGRESQL = "postgresql"
@@ -78,37 +110,33 @@ class StorageBackend(str, Enum):
     LOCAL = "local"
 
 
-class CoordinateReferenceSystem(BaseModel):
+class CoordinateReferenceSystem(TimestampModel):
     """Coordinate reference system information."""
 
-    epsg_code: Optional[str] = Field(default="EPSG:4326", description="EPSG code")
-    proj_string: Optional[str] = Field(default=None, description="PROJ string")
-    wkt: Optional[str] = Field(
-        default=None, description="Well-known text representation"
-    )
+    epsg_code: str | None = Field(default="EPSG:4326", description="EPSG code")
+    proj_string: str | None = Field(default=None, description="PROJ string")
+    wkt: str | None = Field(default=None, description="Well-known text representation")
 
     model_config = ConfigDict(validate_assignment=True)
 
 
-class SpatialExtent(BaseModel):
+class SpatialExtent(TimestampModel):
     """Geographic extent of a dataset."""
 
-    bbox: List[float] = Field(
+    bbox: list[float] = Field(
         ...,
         min_length=4,
         max_length=6,
         description="Bounding box coordinates [min_lon, min_lat, max_lon, max_lat] or with elevation",
     )
-    crs: Union[str, Dict[str, Any], CoordinateReferenceSystem] = Field(
+    crs: str | dict[str, Any] | CoordinateReferenceSystem = Field(
         default="EPSG:4326", description="Coordinate reference system"
     )
-    geometry_wkt: Optional[str] = Field(
-        default=None, description="Geometry in WKT format"
-    )
+    geometry_wkt: str | None = Field(default=None, description="Geometry in WKT format")
 
     @field_validator("bbox")
     @classmethod
-    def validate_bbox(cls, v: List[float]) -> List[float]:
+    def validate_bbox(cls, v: list[float]) -> list[float]:
         """Validate bounding box coordinates."""
         if len(v) == 4:
             # [min_lon, min_lat, max_lon, max_lat]
@@ -151,116 +179,121 @@ class SpatialExtent(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class TemporalExtent(BaseModel):
+class TemporalExtent(TimestampModel):
     """Temporal extent of a dataset."""
 
     start: datetime = Field(..., description="Start time")
     end: datetime = Field(..., description="End time")
-    resolution: Optional[str] = Field(
+    resolution: str | None = Field(
         default=None, description="Temporal resolution (ISO 8601 duration)"
     )
 
-    @model_validator(mode="after")
-    def validate_temporal_order(self) -> "TemporalExtent":
-        """Ensure start time is before end time."""
-        if self.start and self.end and self.start > self.end:
+    @field_validator("start", "end")
+    @classmethod
+    def validate_temporal_order(cls, value: datetime, info: ValidationInfo) -> datetime:
+        """Reject reversed intervals before assignment can mutate the model."""
+        counterpart = info.data.get("end" if info.field_name == "start" else "start")
+        start, end = (
+            (value, counterpart) if info.field_name == "start" else (counterpart, value)
+        )
+        if start is not None and end is not None and start > end:
             raise ValueError("Start time must be before or equal to end time")
-        return self
+        return value
 
     model_config = ConfigDict(validate_assignment=True)
 
 
-class DataLineage(BaseModel):
+class DataLineage(TimestampModel):
     """Data provenance and transformation history."""
 
     source: str = Field(..., description="Original data source")
     process: str = Field(..., description="Processing steps applied")
     created_by: str = Field(..., description="Entity that created this version")
     created_at: datetime = Field(default_factory=utc_now)
-    parent_datasets: List[str] = Field(
+    parent_datasets: list[str] = Field(
         default_factory=list, description="Parent dataset IDs"
     )
-    transformations: List[str] = Field(
+    transformations: list[str] = Field(
         default_factory=list, description="Applied transformations"
     )
 
     model_config = ConfigDict(validate_assignment=True)
 
 
-class QualityCheck(BaseModel):
+class QualityCheck(TimestampModel):
     """Individual quality check result."""
 
     score: float = Field(
         ..., ge=0.0, le=1.0, description="Quality score between 0 and 1"
     )
     status: QualityStatus = Field(..., description="Quality check status")
-    issues: List[Dict[str, Any]] = Field(
+    issues: list[dict[str, Any]] = Field(
         default_factory=list, description="List of identified issues"
     )
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata about the check"
     )
 
     model_config = ConfigDict(validate_assignment=True)
 
 
-class DatasetMetadata(BaseModel):
+class DatasetMetadata(TimestampModel):
     """Comprehensive metadata for a geospatial dataset."""
 
     title: str = Field(..., description="Dataset title")
-    description: Optional[str] = Field(default=None, description="Dataset description")
-    keywords: List[str] = Field(default_factory=list, description="Search keywords")
-    spatial: Optional[SpatialExtent] = Field(
+    description: str | None = Field(default=None, description="Dataset description")
+    keywords: list[str] = Field(default_factory=list, description="Search keywords")
+    spatial: SpatialExtent | None = Field(
         default=None, description="Spatial extent and CRS"
     )
-    temporal: Optional[TemporalExtent] = Field(
+    temporal: TemporalExtent | None = Field(
         default=None, description="Temporal extent and resolution"
     )
     lineage: DataLineage = Field(..., description="Data provenance information")
-    quality: Dict[str, QualityCheck] = Field(
+    quality: dict[str, QualityCheck] = Field(
         default_factory=dict, description="Quality check results by category"
     )
-    contact: Dict[str, str] = Field(
+    contact: dict[str, str] = Field(
         default_factory=dict, description="Contact information"
     )
-    license: Optional[str] = Field(default=None, description="Data license")
-    rights: Optional[str] = Field(default=None, description="Usage rights")
+    license: str | None = Field(default=None, description="Data license")
+    rights: str | None = Field(default=None, description="Usage rights")
     version: str = Field(default="1.0.0", description="Dataset version")
-    checksum: Optional[str] = Field(default=None, description="Data checksum")
-    file_size: Optional[int] = Field(default=None, description="File size in bytes")
+    checksum: str | None = Field(default=None, description="Data checksum")
+    file_size: int | None = Field(default=None, description="File size in bytes")
 
     model_config = ConfigDict(validate_assignment=True)
 
 
-class DatasetSummary(BaseModel):
+class DatasetSummary(TimestampModel):
     """Summary information for a dataset."""
 
     id: str = Field(..., description="Unique dataset identifier")
     title: str = Field(..., description="Dataset title")
-    description: Optional[str] = Field(default=None, description="Dataset description")
+    description: str | None = Field(default=None, description="Dataset description")
     type: DataType = Field(..., description="Dataset type")
     format: DataFormat = Field(..., description="Data format")
-    size: Optional[int] = Field(default=None, description="Size in bytes")
-    bbox: List[float] = Field(
+    size: int | None = Field(default=None, description="Size in bytes")
+    bbox: list[float] = Field(
         default_factory=list,
         min_length=4,
         max_length=4,
         description="Spatial bounding box",
     )
-    temporal_extent: Optional[TemporalExtent] = Field(
+    temporal_extent: TemporalExtent | None = Field(
         default=None, description="Temporal extent"
     )
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
-    tags: List[str] = Field(default_factory=list, description="Dataset tags")
-    quality_score: Optional[float] = Field(
+    tags: list[str] = Field(default_factory=list, description="Dataset tags")
+    quality_score: float | None = Field(
         default=None, ge=0.0, le=1.0, description="Overall quality score"
     )
 
     model_config = ConfigDict(validate_assignment=True)
 
 
-class Dataset(BaseModel):
+class Dataset(TimestampModel):
     """Complete dataset representation."""
 
     id: str = Field(
@@ -268,19 +301,19 @@ class Dataset(BaseModel):
         description="Unique dataset identifier",
     )
     title: str = Field(..., description="Dataset title")
-    description: Optional[str] = Field(default=None, description="Dataset description")
+    description: str | None = Field(default=None, description="Dataset description")
     type: DataType = Field(..., description="Dataset type")
     format: DataFormat = Field(..., description="Data format")
     metadata: DatasetMetadata = Field(..., description="Complete dataset metadata")
     storage_backend: StorageBackend = Field(
         default=StorageBackend.POSTGRESQL, description="Storage backend"
     )
-    access_url: Optional[str] = Field(default=None, description="Data access URL")
-    download_url: Optional[str] = Field(default=None, description="Download URL")
-    permissions: Dict[str, List[str]] = Field(
+    access_url: str | None = Field(default=None, description="Data access URL")
+    download_url: str | None = Field(default=None, description="Download URL")
+    permissions: dict[str, list[str]] = Field(
         default_factory=dict, description="Access permissions by role"
     )
-    tags: List[str] = Field(default_factory=list, description="Dataset tags")
+    tags: list[str] = Field(default_factory=list, description="Dataset tags")
     version: str = Field(default="1.0.0", description="Dataset version")
     is_active: bool = Field(default=True, description="Whether dataset is active")
     created_at: datetime = Field(default_factory=utc_now)
@@ -289,24 +322,24 @@ class Dataset(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class DataQualityReport(BaseModel):
+class DataQualityReport(TimestampModel):
     """Comprehensive data quality assessment report."""
 
     dataset_id: str = Field(..., description="Dataset being assessed")
     overall_score: float = Field(
         ..., ge=0.0, le=1.0, description="Overall quality score"
     )
-    checks: Dict[str, QualityCheck] = Field(
+    checks: dict[str, QualityCheck] = Field(
         ..., description="Quality checks by category"
     )
-    recommendations: List[str] = Field(
+    recommendations: list[str] = Field(
         default_factory=list, description="Improvement recommendations"
     )
     generated_at: datetime = Field(default_factory=utc_now)
-    assessment_method: Union[str, List[str]] = Field(
+    assessment_method: str | list[str] = Field(
         default="comprehensive", description="Assessment methodology used"
     )
-    validation_rules: List[str] = Field(
+    validation_rules: list[str] = Field(
         default_factory=list, description="Validation rules applied"
     )
 
@@ -320,51 +353,51 @@ class DataQualityReport(BaseModel):
         return QualityStatus.FAIL
 
     @computed_field
-    def issues(self) -> List[Dict[str, Any]]:
+    def issues(self) -> list[dict[str, Any]]:
         """Flattened issues across all quality checks."""
         return [issue for check in self.checks.values() for issue in check.issues]
 
     model_config = ConfigDict(validate_assignment=True)
 
 
-class DataSource(BaseModel):
+class DataSource(TimestampModel):
     """Data source configuration for ETL pipelines."""
 
     type: str = Field(..., description="Source type (file, database, api, stream)")
-    configuration: Dict[str, Any] = Field(
+    configuration: dict[str, Any] = Field(
         ..., description="Source-specific configuration"
     )
-    credentials: Optional[Dict[str, str]] = Field(
+    credentials: dict[str, str] | None = Field(
         default=None, description="Authentication credentials"
     )
-    format: Optional[DataFormat] = Field(default=None, description="Data format")
-    data_schema: Optional[Dict[str, Any]] = Field(
+    format: DataFormat | None = Field(default=None, description="Data format")
+    data_schema: dict[str, Any] | None = Field(
         default=None, alias="schema", description="Data schema"
     )
 
     model_config = ConfigDict(validate_assignment=True, populate_by_name=True)
 
 
-class DataDestination(BaseModel):
+class DataDestination(TimestampModel):
     """Data destination configuration for ETL pipelines."""
 
     type: str = Field(
         ..., description="Destination type (dataset, database, file, api)"
     )
-    configuration: Dict[str, Any] = Field(
+    configuration: dict[str, Any] = Field(
         ..., description="Destination-specific configuration"
     )
-    format: Optional[DataFormat] = Field(default=None, description="Output format")
-    compression: Optional[str] = Field(default=None, description="Compression method")
+    format: DataFormat | None = Field(default=None, description="Output format")
+    compression: str | None = Field(default=None, description="Compression method")
 
     model_config = ConfigDict(validate_assignment=True)
 
 
-class Transformation(BaseModel):
+class Transformation(TimestampModel):
     """Transformation step in ETL pipeline."""
 
     type: str = Field(..., description="Transformation type")
-    parameters: Dict[str, Any] = Field(
+    parameters: dict[str, Any] = Field(
         default_factory=dict, description="Transformation parameters"
     )
     order: int = Field(default=0, description="Execution order")
@@ -373,22 +406,22 @@ class Transformation(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
 
-class ETLPipeline(BaseModel):
+class ETLPipeline(TimestampModel):
     """ETL pipeline configuration."""
 
     id: str = Field(
         default_factory=lambda: str(uuid.uuid4()), description="Pipeline identifier"
     )
     name: str = Field(..., description="Pipeline name")
-    description: Optional[str] = Field(default=None, description="Pipeline description")
+    description: str | None = Field(default=None, description="Pipeline description")
     source: DataSource = Field(..., description="Data source configuration")
     destination: DataDestination = Field(
         ..., description="Data destination configuration"
     )
-    transformations: List[Transformation] = Field(
+    transformations: list[Transformation] = Field(
         default_factory=list, description="Transformation steps"
     )
-    schedule: Optional[Dict[str, str]] = Field(
+    schedule: dict[str, str] | None = Field(
         default=None, description="Scheduling configuration"
     )
     status: str = Field(default="inactive", description="Pipeline status")
@@ -397,14 +430,14 @@ class ETLPipeline(BaseModel):
 
     @field_validator("transformations")
     @classmethod
-    def sort_transformations(cls, v: List[Transformation]) -> List[Transformation]:
+    def sort_transformations(cls, v: list[Transformation]) -> list[Transformation]:
         """Sort transformations by execution order."""
         return sorted(v, key=lambda x: x.order)
 
     model_config = ConfigDict(validate_assignment=True)
 
 
-class ExecutionStatus(BaseModel):
+class ExecutionStatus(TimestampModel):
     """ETL execution status and progress."""
 
     id: str = Field(
@@ -415,20 +448,18 @@ class ExecutionStatus(BaseModel):
     progress: float = Field(
         default=0.0, ge=0.0, le=100.0, description="Progress percentage"
     )
-    message: Optional[str] = Field(default=None, description="Status message")
-    started_at: Optional[datetime] = Field(default=None, description="Start time")
-    completed_at: Optional[datetime] = Field(
-        default=None, description="Completion time"
-    )
+    message: str | None = Field(default=None, description="Status message")
+    started_at: datetime | None = Field(default=None, description="Start time")
+    completed_at: datetime | None = Field(default=None, description="Completion time")
     created_at: datetime = Field(default_factory=utc_now)
-    logs: List[Dict[str, Any]] = Field(
+    logs: list[dict[str, Any]] = Field(
         default_factory=list, description="Execution logs"
     )
 
     model_config = ConfigDict(validate_assignment=True)
 
 
-class Pagination(BaseModel):
+class Pagination(TimestampModel):
     """Pagination information for API responses."""
 
     page: int = Field(..., ge=1, description="Current page number")
@@ -440,12 +471,12 @@ class Pagination(BaseModel):
     )
 
 
-class HealthStatus(BaseModel):
+class HealthStatus(TimestampModel):
     """System health status."""
 
     status: str = Field(..., description="Health status")
-    message: Optional[str] = Field(default=None, description="Health message")
+    message: str | None = Field(default=None, description="Health message")
     checked_at: datetime = Field(default_factory=utc_now)
-    components: Dict[str, Any] = Field(
+    components: dict[str, Any] = Field(
         default_factory=dict, description="Component health details"
     )

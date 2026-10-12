@@ -19,21 +19,18 @@ These tests pin that invariant so a future drift between the bundled copies
 from __future__ import annotations
 
 import hashlib
-import sys
 from pathlib import Path
 from typing import Any
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-TEST_PACKAGE_DIR = REPO_ROOT / "GEO-INFER-TEST"
-
-if str(TEST_PACKAGE_DIR) not in sys.path:
-    sys.path.insert(0, str(TEST_PACKAGE_DIR))
-
-from demo.crescent_city_civic_intel_demo import (  # noqa: E402
+# GEO-INFER-TEST/tests/conftest.py puts the GEO-INFER-TEST script directory
+# (which holds the ``demo`` package) on sys.path.
+from demo.crescent_city_civic_intel_demo import (
     _BUNDLED_SEED_RELATIVES,
     bundled_contract_path,
     load_bundled_contract,
 )
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 _EXPECTED_SCHEMA = "crescent-city-geo-intel/v1"
 

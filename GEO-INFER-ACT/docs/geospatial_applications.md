@@ -152,8 +152,8 @@ flowchart TD
 
 Every public geospatial method follows the same gate sequence before returning
 data to callers: validate cell identity, normalize probability vectors, compute
-finite diagnostics, and expose either the backward-compatible dictionary result
-or the typed result object.
+finite diagnostics, and expose either the default dictionary result or the
+typed result object.
 
 ```mermaid
 flowchart LR
@@ -383,7 +383,20 @@ Research-profile runs are opt-in through
 `--research-profile`. This profile keeps real H3 cells and
 `inferactively-pymdp==1.0.3`, but uses deterministic offline spatial fields plus
 action-conditioned transition and preference matrices so policy posterior,
-entropy, coherence, and belief-flux diagnostics do not collapse to uniform rows.
+entropy, coherence, and belief-flux diagnostics can reflect observed variation.
+A short environmental sample can legitimately select the same optimal action
+at every cell. Research-profile configuration does not promise policy diversity.
+
+Acceptance uses a separate explicit categorical fixture covering known policy
+regions. Independent NumPy arithmetic checks frequency-evidence posteriors and
+one-step policy scores: expected preference utility plus state-information gain,
+then a unit-precision softmax with uniform policy prior. Each gallery cell's
+actual score, probability vector, and selected action is checked too; the gallery
+continues to use its original environmental inputs.
+
+The pymdp `policy_beliefs` metadata and diagnostic `policy_belief_<state>` columns
+retain the exact local posterior used for prospective policy evaluation. Spatial
+diffusion and nested blending can change displayed cell beliefs afterward.
 
 Generate the four-run gallery with:
 
@@ -426,5 +439,3 @@ uv run --package geo-infer-act --extra dev geo-infer-act-run \
 - [Free Energy Principle](./free_energy_principle.md)
 - [Mathematical Framework](./mathematical_framework.md)
 - [References](./references.md)
-
-**Last Updated**: 2026-05-19

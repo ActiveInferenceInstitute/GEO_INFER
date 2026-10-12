@@ -5,7 +5,6 @@ and optimal panel tilt/azimuth determination.
 """
 
 import logging
-from typing import Dict, Optional
 
 import numpy as np
 
@@ -19,7 +18,7 @@ class SolarAnalyzer:
     panel orientation optimization for photovoltaic site assessment.
     """
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         """Initialize solar analyzer.
 
         Args:
@@ -232,7 +231,7 @@ class SolarAnalyzer:
         panel_area_m2: float,
         efficiency: float = 0.20,
         performance_ratio: float = 0.80,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Estimate PV system energy output.
 
         Args:

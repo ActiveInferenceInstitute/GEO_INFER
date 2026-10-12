@@ -18,7 +18,10 @@ GeoLibre's ``void``-oriented design while still allowing a result.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Sequence
+from typing import Any
+from collections.abc import Callable, Iterator, Mapping, Sequence
+import builtins
+import math
 
 
 @dataclass(frozen=True)
@@ -39,7 +42,7 @@ class ProcessingAlgorithm:
     id: str
     name: str
     description: str
-    run: Callable[["ProcessingContext"], Any] = field(repr=False)
+    run: Callable[[ProcessingContext], Any] = field(repr=False)
     parameters: Sequence[ParameterSpec] = ()
 
 
@@ -54,7 +57,7 @@ class ProcessingContext:
 
     layers: Sequence[Mapping[str, Any]] = ()
     parameters: Mapping[str, Any] = field(default_factory=dict)
-    logs: List[str] = field(default_factory=list)
+    logs: list[str] = field(default_factory=list)
 
     def log(self, message: str) -> None:
         """Append a progress note to this context's log."""
@@ -64,10 +67,8 @@ class ProcessingContext:
 class AlgorithmRegistry:
     """Register and dispatch processing algorithms by stable id."""
 
-    def __init__(
-        self, algorithms: Optional[Sequence[ProcessingAlgorithm]] = None
-    ) -> None:
-        self._algorithms: Dict[str, ProcessingAlgorithm] = {}
+    def __init__(self, algorithms: Sequence[ProcessingAlgorithm] | None = None) -> None:
+        self._algorithms: dict[str, ProcessingAlgorithm] = {}
         for algorithm in algorithms or ():
             self.register(algorithm)
 
@@ -91,7 +92,7 @@ class AlgorithmRegistry:
         """Return whether an algorithm id is registered."""
         return algorithm_id in self._algorithms
 
-    def list(self) -> List[ProcessingAlgorithm]:
+    def list(self) -> builtins.list[ProcessingAlgorithm]:
         """Return registered algorithms sorted by id."""
         return [self._algorithms[k] for k in sorted(self._algorithms)]
 
@@ -159,10 +160,10 @@ def _reference_bounds(context: ProcessingContext) -> Any:
         context.log("Error: layer not found")
         return None
     geojson = layer.get("geojson")
-    xs: List[float] = []
-    ys: List[float] = []
+    xs: list[float] = []
+    ys: list[float] = []
     for feature in (geojson or {}).get("features", []):
-        coords = _walk_coordinates(feature.get("geometry", {}))
+        coords = _walk_coordinates(feature.get("geometry") or {})
         for x, y in coords:
             xs.append(x)
             ys.append(y)
@@ -185,21 +186,23 @@ def _reference_count(context: ProcessingContext) -> Any:
     return count
 
 
-def _walk_coordinates(geometry: Mapping[str, Any]) -> List[tuple[float, float]]:
+def _walk_coordinates(geometry: Mapping[str, Any]) -> list[tuple[float, float]]:
     """Yield ``(x, y)`` pairs for any GeoJSON geometry."""
-    result: List[tuple[float, float]] = []
+    result: list[tuple[float, float]] = []
     _collect(geometry, result)
     return result
 
 
-def _collect(geometry: Mapping[str, Any], out: List[tuple[float, float]]) -> None:
+def _collect(geometry: Mapping[str, Any], out: list[tuple[float, float]]) -> None:
     geom_type = geometry.get("type")
     coords = geometry.get("coordinates")
-    if geom_type in ("Point", "MultiPoint"):
-        for item in _flatten_points(coords):
-            if _is_point(item):
-                out.append((float(item[0]), float(item[1])))
+    if geom_type == "GeometryCollection":
+        for child in geometry.get("geometries", []):
+            if child:
+                _collect(child, out)
     elif geom_type in (
+        "Point",
+        "MultiPoint",
         "LineString",
         "MultiLineString",
         "Polygon",
@@ -209,7 +212,7 @@ def _collect(geometry: Mapping[str, Any], out: List[tuple[float, float]]) -> Non
             out.append((float(position[0]), float(position[1])))
 
 
-def _flatten_points(coords: Any) -> List[Any]:
+def _flatten_points(coords: Any) -> list[Any]:
     if not isinstance(coords, list):
         return []
     if (
@@ -218,33 +221,32 @@ def _flatten_points(coords: Any) -> List[Any]:
         and isinstance(coords[0][0], (int, float))
     ):
         return [coords]
-    flattened: List[Any] = []
+    flattened: list[Any] = []
     for item in coords:
         flattened.extend(_flatten_points(item) if isinstance(item, list) else [])
     return flattened
 
 
-def _iter_positions(coords: Any) -> Iterator[List[Any]]:
-    if not isinstance(coords, list):
+def _iter_positions(coords: Any) -> Iterator[list[Any]]:
+    if not isinstance(coords, (list, tuple)):
         return
-    for ring_or_line in coords:
-        if not isinstance(ring_or_line, list):
-            continue
-        for position in ring_or_line:
-            if (
-                isinstance(position, list)
-                and position
-                and isinstance(position[0], (int, float))
-            ):
-                yield position
+    if _is_point(coords):
+        if not all(math.isfinite(value) for value in coords[:2]):
+            raise ValueError("GeoJSON positions must be finite")
+        yield coords
+    else:
+        for item in coords:
+            yield from _iter_positions(item)
 
 
 def _is_point(item: Any) -> bool:
     return (
-        isinstance(item, list)
+        isinstance(item, (list, tuple))
         and len(item) >= 2
         and isinstance(item[0], (int, float))
         and isinstance(item[1], (int, float))
+        and not isinstance(item[0], bool)
+        and not isinstance(item[1], bool)
     )
 
 

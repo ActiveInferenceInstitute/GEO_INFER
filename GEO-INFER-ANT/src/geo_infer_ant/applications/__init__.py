@@ -35,9 +35,6 @@ Example:
 
 import logging
 
-# Set up logging
-logger = logging.getLogger(__name__)
-
 from .environmental import (
     EnvironmentalMonitoringSwarm,
     MonitoringObjective,
@@ -45,6 +42,8 @@ from .environmental import (
 )
 from .disaster import DisasterResponseSwarm, DisasterScenario
 from .urban import UrbanTrafficSwarm, UrbanSystem
+
+logger = logging.getLogger(__name__)
 
 # Export main classes and functions
 __all__ = [

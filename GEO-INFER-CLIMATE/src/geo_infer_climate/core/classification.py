@@ -5,7 +5,7 @@ related thermal/moisture zone calculations.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import xarray as xr
@@ -21,7 +21,7 @@ class ClimateClassifier:
     (A, B, C, D, E) and sub-types.
     """
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         """Initialize climate classifier.
 
         Args:
@@ -33,7 +33,7 @@ class ClimateClassifier:
         self,
         monthly_temp_c: np.ndarray,
         monthly_precip_mm: np.ndarray,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Classify climate using Koppen-Geiger system.
 
         Uses 12 monthly mean temperatures and 12 monthly precipitation

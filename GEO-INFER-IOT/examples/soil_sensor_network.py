@@ -19,10 +19,7 @@ Usage:
 
 import asyncio
 import logging
-import argparse
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from datetime import UTC, datetime, timedelta
 import json
 
 import numpy as np
@@ -30,21 +27,14 @@ import pandas as pd
 import folium
 from folium.plugins import HeatMap, MarkerCluster
 import h3
+import paho.mqtt.client as mqtt
+import yaml
 
 # GEO-INFER imports. geo_infer_space/geo_infer_bayes are required workspace
 # dependencies of geo_infer_iot, so a plain import failing means the
 # installation is broken and the example must not pretend to work.
 from geo_infer_iot import IoTSystem, BayesianSpatialInference
-
-# Standard dependencies
-try:
-    import paho.mqtt.client as mqtt
-    import yaml
-
-    HAS_DEPS = True
-except ImportError as e:
-    logging.error(f"Missing dependencies: {e}")
-    HAS_DEPS = False
+from geo_infer_iot.models.measurement import normalize_timestamp
 
 # Configure logging
 logging.basicConfig(
@@ -64,13 +54,13 @@ class SoilSensorNetwork:
     - Real-time visualization and monitoring
     """
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         self.config = config
         self.sensors = {}
         self.measurements = []
         self.spatial_index = {}
         self.current_map = None
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._loop: asyncio.AbstractEventLoop | None = None
 
         # Initialize GEO-INFER components
         self.iot_system = IoTSystem(config)
@@ -99,7 +89,7 @@ class SoilSensorNetwork:
             # Parse sensor data
             data = json.loads(msg.payload.decode())
             sensor_id = data.get("sensor_id")
-            timestamp = data.get("timestamp", datetime.now().isoformat())
+            timestamp = data.get("timestamp", datetime.now(UTC).isoformat())
 
             # Extract sensor measurements
             measurement = {
@@ -145,7 +135,7 @@ class SoilSensorNetwork:
         except Exception as e:
             logger.error(f"Error processing MQTT message: {e}")
 
-    def _register_sensor(self, sensor_id: str, measurement: Dict):
+    def _register_sensor(self, sensor_id: str, measurement: dict):
         """Register a new sensor in the network."""
         sensor_info = {
             "sensor_id": sensor_id,
@@ -199,8 +189,9 @@ class SoilSensorNetwork:
                     "length_scale", 1000
                 ),  # meters
             }
-            # Perform Bayesian spatial inference (synchronous GP backend)
-            posterior = self.spatial_inference.infer_spatial_distribution(
+            # Perform Bayesian spatial inference (synchronous GP backend); the
+            # fitted state is read back through get_posterior_map below.
+            self.spatial_inference.infer_spatial_distribution(
                 sensor_data=recent_data.to_dict("records"),
                 priors=priors,
                 update_interval="15min",
@@ -218,11 +209,11 @@ class SoilSensorNetwork:
 
     def _get_recent_measurements(self, hours: int = 1) -> pd.DataFrame:
         """Get recent measurements within specified time window."""
-        cutoff_time = datetime.now() - timedelta(hours=hours)
+        cutoff_time = datetime.now(UTC) - timedelta(hours=hours)
 
         recent = []
         for measurement in self.measurements:
-            if datetime.fromisoformat(measurement["timestamp"]) > cutoff_time:
+            if normalize_timestamp(measurement["timestamp"]) > cutoff_time:
                 recent.append(measurement)
 
         return pd.DataFrame(recent)
@@ -287,7 +278,7 @@ class SoilSensorNetwork:
         except Exception as e:
             logger.error(f"Error generating visualization: {e}")
 
-    def _get_latest_measurement(self, sensor_id: str) -> Dict:
+    def _get_latest_measurement(self, sensor_id: str) -> dict:
         """Get the latest measurement for a specific sensor."""
         sensor_measurements = [
             m for m in self.measurements if m["sensor_id"] == sensor_id
@@ -421,17 +412,17 @@ class SoilSensorNetwork:
             self.mqtt_client.disconnect()
 
 
-def load_config(config_file: str) -> Dict:
+def load_config(config_file: str) -> dict:
     """Load configuration from YAML file."""
     try:
-        with open(config_file, "r") as f:
+        with open(config_file) as f:
             return yaml.safe_load(f)
     except FileNotFoundError:
         logger.warning(f"Config file {config_file} not found, using defaults")
         return get_default_config()
 
 
-def get_default_config() -> Dict:
+def get_default_config() -> dict:
     """Get default configuration for the soil sensor network."""
     return {
         "mqtt": {
@@ -457,7 +448,6 @@ def get_default_config() -> Dict:
 def simulate_sensor_data():
     """Generate simulated sensor data for testing."""
     import random
-    import time
 
     # Define a test area (e.g., around a farm)
     center_lat, center_lon = 40.7128, -74.0060  # New York area

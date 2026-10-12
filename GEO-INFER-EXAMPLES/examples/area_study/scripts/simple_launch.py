@@ -6,25 +6,25 @@ Direct and simple launcher for the area study dashboard.
 No complex subprocess management, just direct streamlit execution.
 """
 
-import sys
+import importlib.util
 import os
 import subprocess
+import sys
 
 
 def check_dependencies():
     """Check if required dependencies are installed."""
-    try:
-        import streamlit
-        import pandas
-        import numpy
-        import plotly.express
-
-        print("✅ All dependencies found!")
-        return True
-    except ImportError as e:
-        print(f"❌ Missing dependency: {e}")
+    missing = [
+        module
+        for module in ("streamlit", "pandas", "numpy", "plotly")
+        if importlib.util.find_spec(module) is None
+    ]
+    if missing:
+        print(f"❌ Missing dependencies: {', '.join(missing)}")
         print("💡 Install with: uv pip install streamlit pandas plotly")
         return False
+    print("✅ All dependencies found!")
+    return True
 
 
 def launch_dashboard():

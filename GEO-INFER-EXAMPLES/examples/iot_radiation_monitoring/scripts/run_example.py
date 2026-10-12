@@ -4,74 +4,31 @@ GEO-INFER Examples: IoT Radiation Monitoring
 Main execution script demonstrating integration of IoT, BAYES, SPACE, LOG, and TEST modules.
 """
 
+import argparse
+import json
 import os
 import sys
 import time
-import argparse
-import yaml
-import json
+from datetime import UTC, datetime
 from pathlib import Path
-from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional
 
-# Add parent directories to path for imports
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-sys.path.append(
-    str(Path(__file__).parent.parent.parent.parent / "GEO-INFER-IOT" / "src")
-)
-sys.path.append(
-    str(Path(__file__).parent.parent.parent.parent / "GEO-INFER-BAYES" / "src")
-)
-sys.path.append(
-    str(Path(__file__).parent.parent.parent.parent / "GEO-INFER-SPACE" / "src")
-)
-
-# Import GEO-INFER modules
-try:
-    from geo_infer_iot.core.ingestion import RadiationMonitoringSystem
-    from geo_infer_iot.core.registry import SensorRegistry
-
-    print("✓ Successfully imported GEO-INFER-IOT modules")
-except ImportError as e:
-    print(f"✗ Error importing GEO-INFER-IOT modules: {e}")
-    print("Please ensure GEO-INFER-IOT is installed.")
-    sys.exit(1)
-
-try:
-    from geo_infer_bayes.models.spatial_gp import SpatialGP
-    from geo_infer_bayes.core.inference import BayesianInference
-
-    print("✓ Successfully imported GEO-INFER-BAYES modules")
-    HAS_BAYES = True
-except ImportError as e:
-    print(f"⚠ Warning: GEO-INFER-BAYES not available: {e}")
-    print("Bayesian inference will be simulated.")
-    HAS_BAYES = False
-
-try:
-    from geo_infer_space.utils.h3_utils import cell_to_latlng
-
-    print("✓ Successfully imported GEO-INFER-SPACE modules")
-    HAS_SPACE = True
-except ImportError as e:
-    print(f"⚠ Warning: GEO-INFER-SPACE not available: {e}")
-    print("Spatial operations will use basic H3 functions.")
-    HAS_SPACE = False
-
-# Standard library imports
+import h3
 import numpy as np
 import pandas as pd
+import yaml
+from geo_infer_bayes.models.spatial_gp import SpatialGP
 
-try:
-    import h3
-    import geopandas as gpd
-    from shapely.geometry import Point
+#: Config covariance names mapped to ``SpatialGP`` (kernel, Matern degree).
+_COVARIANCE_KERNELS: dict[str, tuple[str, float]] = {
+    "exponential": ("exponential", 0.5),
+    "matern_32": ("matern", 1.5),
+    "matern_52": ("matern", 2.5),
+    "squared_exponential": ("rbf", 2.5),
+}
 
-    print("✓ Successfully imported spatial dependencies")
-except ImportError as e:
-    print(f"✗ Error importing spatial dependencies: {e}")
-    print("Please install: uv pip install h3 geopandas shapely")
-    sys.exit(1)
+#: Approximate metres per degree of latitude, used to express the configured
+#: covariance length scale in the degree units of the GP inputs.
+_METRES_PER_DEGREE = 111_000.0
 
 
 class EnhancedLogger:
@@ -91,7 +48,7 @@ class EnhancedLogger:
     def log(self, level: str, operation: str, data: dict, module: str = "MAIN"):
         """Log a structured message"""
         log_entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "level": level,
             "module": module,
             "operation": operation,
@@ -182,7 +139,7 @@ class QualityController:
 
         return results
 
-    def test_spatial_operations(self, h3_indices: List[str]) -> dict:
+    def test_spatial_operations(self, h3_indices: list[str]) -> dict:
         """Test H3 spatial operations"""
         results = {
             "test_name": "spatial_operations",
@@ -260,7 +217,7 @@ class QualityController:
 def load_config(config_path: str) -> dict:
     """Load configuration from YAML file"""
     try:
-        with open(config_path, "r") as file:
+        with open(config_path) as file:
             config = yaml.safe_load(file)
         return config["radiation_monitoring"]
     except Exception as e:
@@ -288,7 +245,7 @@ def generate_sample_sensor_data(config: dict, logger: EnhancedLogger) -> pd.Data
 
     # Add simulated anomalies
     if sim_config["anomalies"]["enable"]:
-        for i, anomaly in enumerate(sim_config["anomalies"]["locations"]):
+        for anomaly in sim_config["anomalies"]["locations"]:
             # Find sensors near anomaly locations
             distances = np.sqrt(
                 (latitudes - anomaly["lat"]) ** 2 + (longitudes - anomaly["lon"]) ** 2
@@ -305,7 +262,7 @@ def generate_sample_sensor_data(config: dict, logger: EnhancedLogger) -> pd.Data
             "latitude": latitudes,
             "longitude": longitudes,
             "radiation_level": radiation_levels,
-            "timestamp": datetime.now(timezone.utc),
+            "timestamp": datetime.now(UTC),
             "network": np.random.choice(["safecast", "eurdep", "ctbto"], sensor_count),
             "quality_flag": "ok",
         }
@@ -399,88 +356,45 @@ def perform_bayesian_inference(
     bayes_config = config["bayesian_inference"]
 
     # Prepare input data
-    coordinates = h3_data[["lat_center", "lon_center"]].values
-    observations = h3_data["radiation_mean"].values
-    observation_weights = 1.0 / (
-        h3_data["radiation_std"].fillna(0.1) + 0.01
-    )  # Inverse variance weighting
+    coordinates = h3_data[["lat_center", "lon_center"]].to_numpy(dtype=float)
+    observations = h3_data["radiation_mean"].to_numpy(dtype=float)
 
     # Create prediction grid
     resolution = bayes_config["prediction_grid"]["resolution"]
     bounds = config["spatial"]["global_bounds"]
 
-    # Generate H3 grid for prediction
+    # Generate H3 grid for prediction (10-degree lattice)
     prediction_h3_cells = []
-    for lat in np.arange(
-        bounds["min_lat"], bounds["max_lat"], 10
-    ):  # 10-degree grid for demo
+    for lat in np.arange(bounds["min_lat"], bounds["max_lat"], 10):
         for lon in np.arange(bounds["min_lon"], bounds["max_lon"], 10):
-            h3_cell = h3.latlng_to_cell(lat, lon, resolution)
-            prediction_h3_cells.append(h3_cell)
+            prediction_h3_cells.append(h3.latlng_to_cell(lat, lon, resolution))
 
-    # Remove duplicates and limit size
-    prediction_h3_cells = list(set(prediction_h3_cells))
+    # Remove duplicates (sorted for reproducible output) and limit size
+    prediction_h3_cells = sorted(set(prediction_h3_cells))
     max_cells = bayes_config["prediction_grid"]["max_cells"]
-    if len(prediction_h3_cells) > max_cells:
-        prediction_h3_cells = prediction_h3_cells[:max_cells]
+    prediction_h3_cells = prediction_h3_cells[:max_cells]
 
     prior_mean = bayes_config["prior"]["mean"]
-    length_scale = bayes_config["covariance"]["length_scale"]
+    covariance = bayes_config["covariance"]
+    length_scale = covariance["length_scale"]
+    kernel, degree = _COVARIANCE_KERNELS[covariance["function"]]
 
-    predictions = []
-    uncertainties = []
-
-    if HAS_BAYES:
-        # Use actual Bayesian inference if available
-        try:
-            # This is a simplified example - in practice, you'd set up the full GP model
-            logger.info(
-                "using_real_bayesian_inference", {"method": "gaussian_process"}, "BAYES"
-            )
-
-            # For now, fall back to simulation even with BAYES available
-            # until we implement the full integration
-            logger.info(
-                "falling_back_to_simulation",
-                {"reason": "full_integration_pending"},
-                "BAYES",
-            )
-            HAS_BAYES_IMPL = False
-        except Exception as e:
-            logger.warning("bayesian_inference_error", {"error": str(e)}, "BAYES")
-            HAS_BAYES_IMPL = False
-    else:
-        HAS_BAYES_IMPL = False
-
-    if not HAS_BAYES_IMPL:
-        # Simulated Bayesian inference results
-        logger.info(
-            "using_simulated_bayesian_inference",
-            {"method": "distance_weighted"},
-            "BAYES",
-        )
-
-        for pred_cell in prediction_h3_cells:
-            pred_lat, pred_lon = h3.cell_to_latlng(pred_cell)
-
-            # Calculate distance-weighted average (simplified spatial interpolation)
-            distances = np.sqrt(
-                (coordinates[:, 0] - pred_lat) ** 2
-                + (coordinates[:, 1] - pred_lon) ** 2
-            )
-            weights = np.exp(
-                -distances * 111000 / length_scale
-            )  # Convert degrees to meters
-
-            if np.sum(weights) > 0:
-                prediction = np.average(observations, weights=weights)
-                uncertainty = 1.0 / np.sum(weights)  # Simplified uncertainty
-            else:
-                prediction = prior_mean
-                uncertainty = bayes_config["prior"]["variance"]
-
-            predictions.append(prediction)
-            uncertainties.append(uncertainty)
+    # Gaussian-process regression with a constant prior mean (BAYES SpatialGP).
+    gp = SpatialGP(
+        kernel=kernel,
+        lengthscale=length_scale / _METRES_PER_DEGREE,
+        variance=covariance["variance"],
+        noise=covariance["noise_variance"],
+        degree=degree,
+        mean_function=lambda x: np.full(len(x), prior_mean),
+    )
+    gp.fit(coordinates, observations)
+    prediction_points = np.array(
+        [h3.cell_to_latlng(cell) for cell in prediction_h3_cells], dtype=float
+    )
+    mean_pred, std_pred = gp.predict(prediction_points, return_std=True)
+    predictions = mean_pred.tolist()
+    uncertainties = (std_pred**2).tolist()
 
     processing_time = time.time() - start_time
 
@@ -504,8 +418,8 @@ def perform_bayesian_inference(
             "mean_uncertainty": np.mean(uncertainties),
             "processing_time_seconds": processing_time,
             "converged": True,
-            "method": bayes_config["inference"]["method"],
-            "used_real_bayes": HAS_BAYES_IMPL,
+            "method": "gaussian_process",
+            "kernel": covariance["function"],
         },
         "BAYES",
     )
@@ -558,7 +472,7 @@ def detect_anomalies(data: pd.DataFrame, config: dict, logger: EnhancedLogger) -
                     "anomaly_score": z_score,
                     "alert_level": alert_level,
                     "detection_method": "statistical",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
             )
 
@@ -605,7 +519,6 @@ def save_results(
     output_dir.mkdir(exist_ok=True)
 
     # 1. Save global radiation map as GeoJSON
-    h3_data = spatial_results["h3_aggregated_data"]
     prediction_cells = inference_results["prediction_cells"]
     predictions = inference_results["predictions"]
     uncertainties = inference_results["uncertainty"]
@@ -653,7 +566,7 @@ def save_results(
         "type": "FeatureCollection",
         "features": features,
         "metadata": {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "h3_resolution": config["spatial"]["h3_resolution"],
             "total_features": len(features),
             "inference_method": config["bayesian_inference"]["inference"]["method"],
@@ -665,7 +578,7 @@ def save_results(
 
     # 2. Save anomaly report
     anomaly_report = {
-        "detection_timestamp": datetime.now(timezone.utc).isoformat(),
+        "detection_timestamp": datetime.now(UTC).isoformat(),
         "total_anomalies": len(anomaly_results["anomalies"]),
         "by_severity": anomaly_results["summary"],
         "anomaly_rate": anomaly_results["anomaly_rate"],
@@ -704,7 +617,7 @@ def save_results(
 
     # 4. Save processing performance metrics
     performance_metrics = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "processing_times": {
             "spatial_indexing": spatial_results["processing_time"],
             "bayesian_inference": inference_results["processing_time"],
@@ -773,7 +686,7 @@ def run_tests(
 
     test_results["summary"] = {
         "all_tests_passed": all_tests_passed,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "test_count": len(test_results) - 1,  # Exclude summary itself
     }
 
@@ -878,7 +791,7 @@ def main():
         # Final summary
         total_time = time.time() - logger.start_time
         print(f"\n🎉 Example completed successfully in {total_time:.2f} seconds!")
-        print(f"📊 Key Results:")
+        print("📊 Key Results:")
         print(
             f"   • Processed {len(sensor_data)} sensors across {spatial_results['cell_count']} H3 cells"
         )
@@ -889,7 +802,7 @@ def main():
         print(
             f"   • All quality tests passed: {test_results['summary']['all_tests_passed']}"
         )
-        print(f"📁 Outputs saved to: output/")
+        print("📁 Outputs saved to: output/")
         print(f"📝 Logs saved to: {logger.log_file}")
 
         logger.info(

@@ -3,7 +3,6 @@ Marine spatial planning module.
 """
 
 import logging
-from typing import Dict, Optional
 import numpy as np
 import xarray as xr
 
@@ -32,14 +31,14 @@ class MarineSpatialPlanner:
     Marine spatial planning (MSP) tools.
     """
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize marine spatial planner."""
         self.config = config or {}
 
     def design_mpa_network(
         self,
         biodiversity_data: xr.DataArray,
-        threat_data: Optional[xr.DataArray] = None,
+        threat_data: xr.DataArray | None = None,
         target_coverage: float = 0.3,
     ) -> xr.Dataset:
         """
@@ -83,7 +82,7 @@ class MarineSpatialPlanner:
         self,
         wind_resource: xr.DataArray,
         depth: xr.DataArray,
-        exclusion_zones: Optional[xr.DataArray] = None,
+        exclusion_zones: xr.DataArray | None = None,
         max_depth: float = 50.0,
     ) -> xr.Dataset:
         """

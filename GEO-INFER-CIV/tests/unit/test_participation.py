@@ -94,7 +94,7 @@ class TestParticipationAnalyzer:
         )
         assert report.overall_representation_score > 0.0
         assert len(report.representation_indices) == 4
-        for group, ri in report.representation_indices.items():
+        for ri in report.representation_indices.values():
             assert ri > 0.0
 
     def test_representation_underrepresented(self, analyzer):

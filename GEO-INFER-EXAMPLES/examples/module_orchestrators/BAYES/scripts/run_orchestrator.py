@@ -10,19 +10,13 @@ sampler, then summarize the posterior. All work goes through the real
 from __future__ import annotations
 
 import sys
-from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     import numpy as np
-
     from geo_infer_bayes import MCMCSampler
     from geo_infer_bayes.models.base import BayesianModel
 
@@ -42,7 +36,7 @@ def _operation() -> Dict[str, Any]:
             }
             self.noise_sigma = float(kwargs.get("noise_sigma", 1.0))
 
-        def log_likelihood(self, theta: Dict[str, Any], data: Any) -> float:
+        def log_likelihood(self, theta: dict[str, Any], data: Any) -> float:
             x = np.asarray(data["x"], dtype=float)
             y = np.asarray(data["y"], dtype=float)
             intercept = float(np.asarray(theta["intercept"]))
@@ -54,7 +48,7 @@ def _operation() -> Dict[str, Any]:
                 - len(y) * np.log(sigma * np.sqrt(2.0 * np.pi))
             )
 
-        def log_prior(self, theta: Dict[str, Any]) -> float:
+        def log_prior(self, theta: dict[str, Any]) -> float:
             total = 0.0
             for name, spec in self.parameters.items():
                 mu = float(spec["hyperparams"]["mu"])

@@ -6,7 +6,8 @@ to the appropriate backend (H3, SRAI, etc.) based on configuration and operation
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Any
+from collections.abc import Callable
 
 from .interfaces import (
     SpatialBackendProtocol,
@@ -24,76 +25,66 @@ class SpatialBackendDispatcher:
     """
 
     def __init__(self) -> None:
-        self.backends: Dict[str, SpatialBackendProtocol] = {}
-        self.default_backends: Dict[str, str] = {}
-        self.backend_capabilities: Dict[str, Dict[str, Any]] = {}
+        self.backends: dict[str, SpatialBackendProtocol] = {}
+        self.default_backends: dict[str, str] = {}
+        self.backend_capabilities: dict[str, dict[str, Any]] = {}
+        self._backend_loaders: dict[str, Callable[[], SpatialBackendProtocol]] = {}
         self._load_backends()
 
     _STANDARD_OPERATION_TYPES = ("indexing", "geometric", "analytics")
 
     def _load_backends(self) -> None:
         """Load available spatial backends."""
-        # Load H3 backend if available
-        try:
-            h3_backend = self._load_h3_backend()
-            if h3_backend and h3_backend.is_available():
-                self.register_backend("h3", h3_backend)
-                for operation_type in self._STANDARD_OPERATION_TYPES:
-                    self.default_backends.setdefault(operation_type, "h3")
-                logger.info("H3 backend loaded successfully")
-        except Exception as e:
-            logger.warning(f"Failed to load H3 backend: {e}")
+        h3_backend = self._load_h3_backend()
+        if h3_backend.is_available():
+            self.register_backend("h3", h3_backend)
+            for operation_type in self._STANDARD_OPERATION_TYPES:
+                self.default_backends.setdefault(operation_type, "h3")
+            logger.info("H3 backend loaded successfully")
+        self._backend_loaders["srai"] = self._load_srai_backend
 
-        # Load SRAI backend if available
-        try:
-            srai_backend = self._load_srai_backend()
-            if srai_backend:
-                self.register_backend("srai", srai_backend)
-                logger.info("SRAI backend loaded successfully")
-        except Exception as e:
-            logger.warning(f"Failed to load SRAI backend: {e}")
+    def _load_h3_backend(self) -> SpatialBackendProtocol:
+        """Load the required H3 implementation; internal failures propagate."""
+        from ..backends.h3 import H3Backend
 
-    def _load_h3_backend(self) -> Optional[SpatialBackendProtocol]:
-        """Load H3 backend implementation."""
-        try:
-            from ..backends.h3 import H3Backend
+        return H3Backend()
 
-            return H3Backend()
-        except ImportError:
-            return None
+    def _load_srai_backend(self) -> SpatialBackendProtocol:
+        """Load the SRAI interface, which reports an absent extra explicitly."""
+        from ..backends.srai import SraiBackend
 
-    def _load_srai_backend(self) -> Optional[SpatialBackendProtocol]:
-        """Load SRAI backend implementation."""
-        try:
-            from ..backends.srai import SraiBackend
-
-            return SraiBackend()
-        except ImportError:
-            return None
+        return SraiBackend()
 
     def register_backend(self, name: str, backend: SpatialBackendProtocol) -> None:
         """Register a spatial backend."""
+        capabilities = backend.get_capabilities()
+        self._backend_loaders.pop(name, None)
         self.backends[name] = backend
-        self.backend_capabilities[name] = backend.get_capabilities()
+        self.backend_capabilities[name] = capabilities
         logger.info(f"Registered spatial backend: {name}")
 
-    def get_backend(self, name: str) -> Optional[SpatialBackendProtocol]:
-        """Get a specific backend by name."""
+    def get_backend(self, name: str) -> SpatialBackendProtocol | None:
+        """Load a requested backend once; installed dependency failures propagate."""
+        loader = self._backend_loaders.get(name)
+        if loader is not None:
+            self.register_backend(name, loader())
         return self.backends.get(name)
 
     def get_available_backends(self) -> list[str]:
-        """Get list of available backend names."""
+        """Inspect all supported backends, including optional implementations."""
+        for name in tuple(self._backend_loaders):
+            self.get_backend(name)
         return [
             name for name, backend in self.backends.items() if backend.is_available()
         ]
 
     def set_default_backend(self, operation_type: str, backend_name: str) -> None:
         """Set the default backend for a specific operation type."""
-        if backend_name not in self.backends:
+        if self.get_backend(backend_name) is None:
             raise ValueError(f"Backend '{backend_name}' is not registered")
         self.default_backends[operation_type] = backend_name
 
-    def get_default_backend(self, operation_type: str) -> Optional[str]:
+    def get_default_backend(self, operation_type: str) -> str | None:
         """Get the registered default backend for an operation type.
 
         Returns the backend name previously registered through
@@ -105,7 +96,7 @@ class SpatialBackendDispatcher:
         """
         return self.default_backends.get(operation_type)
 
-    def _resolve_backend_name(self, operation_type: str, backend: Optional[str]) -> str:
+    def _resolve_backend_name(self, operation_type: str, backend: str | None) -> str:
         """Resolve the backend for a dispatch call or raise a precise error.
 
         Raises:
@@ -114,14 +105,15 @@ class SpatialBackendDispatcher:
                 The message always lists the currently available backends.
         """
         backend_name = backend or self.get_default_backend(operation_type)
-        available = ", ".join(self.get_available_backends()) or "none"
         if backend_name is None:
+            available = ", ".join(self.get_available_backends()) or "none"
             raise ValueError(
                 f"No default backend registered for {operation_type!r} "
                 f"operations and no explicit backend given; "
                 f"available backends: {available}"
             )
-        if backend_name not in self.backends:
+        if self.get_backend(backend_name) is None:
+            available = ", ".join(self.get_available_backends()) or "none"
             raise ValueError(
                 f"Backend '{backend_name}' is not available; "
                 f"available backends: {available}"
@@ -132,7 +124,7 @@ class SpatialBackendDispatcher:
         self,
         operation: str,
         *args: Any,
-        backend: Optional[str] = None,
+        backend: str | None = None,
         **kwargs: Any,
     ) -> Any:
         """Dispatch a spatial indexing operation to the appropriate backend."""
@@ -183,7 +175,7 @@ class SpatialBackendDispatcher:
         self,
         operation: str,
         *args: Any,
-        backend: Optional[str] = None,
+        backend: str | None = None,
         **kwargs: Any,
     ) -> Any:
         """Dispatch a geometry operation to a backend that implements it."""
@@ -218,7 +210,7 @@ class SpatialBackendDispatcher:
         self,
         operation: str,
         *args: Any,
-        backend: Optional[str] = None,
+        backend: str | None = None,
         **kwargs: Any,
     ) -> Any:
         """Dispatch a spatial analytics operation to the appropriate backend."""
@@ -251,8 +243,9 @@ class SpatialBackendDispatcher:
 
         return method(*args, **kwargs)
 
-    def get_backend_info(self) -> Dict[str, Any]:
-        """Get information about all registered backends."""
+    def get_backend_info(self) -> dict[str, Any]:
+        """Inspect all supported backends and their actual capabilities."""
+        self.get_available_backends()
         return {
             name: {
                 "available": backend.is_available(),
@@ -264,7 +257,7 @@ class SpatialBackendDispatcher:
 
 
 # Global dispatcher instance
-_dispatcher: Optional[SpatialBackendDispatcher] = None
+_dispatcher: SpatialBackendDispatcher | None = None
 
 
 def get_backend_dispatcher() -> SpatialBackendDispatcher:
@@ -275,7 +268,7 @@ def get_backend_dispatcher() -> SpatialBackendDispatcher:
     return _dispatcher
 
 
-def configure_backends(config: Dict[str, Any]) -> None:
+def configure_backends(config: dict[str, Any]) -> None:
     """Configure backend defaults from configuration."""
     dispatcher = get_backend_dispatcher()
 

@@ -30,7 +30,7 @@ import math
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Set, Tuple, cast
+from typing import Any, ClassVar, Literal, cast
 
 import h3
 
@@ -56,7 +56,7 @@ _COVERAGE_THRESHOLD = 0.30
 _EARTH_KM = 6371.0
 
 CoastalEdge = Literal["west", "east", "south", "north"]
-_COASTAL_EDGES: Tuple[str, ...] = ("west", "east", "south", "north")
+_COASTAL_EDGES: tuple[str, ...] = ("west", "east", "south", "north")
 
 # Contract ``anchor.coastalEdge`` values that explicitly mark a landlocked
 # municipality, i.e. no bounds edge is a shoreline.
@@ -108,29 +108,29 @@ class MunicipalGeoIntelMapper:
     seed plus a conservative fallback extent for the known site.
     """
 
-    seed_path: Optional[Path] = None
+    seed_path: Path | None = None
     h3_resolution: int = 8
     # None = auto-detect: resolve from the contract's ``anchor.coastalEdge``,
     # else fall back to ``_default_coastal_edge``. An explicit value overrides
     # any contract declaration.
-    coastal_edge: Optional[CoastalEdge] = None
+    coastal_edge: CoastalEdge | None = None
     # Class-level fallback orientation for a contract that declares no coast; a
     # subclass may override (kept "west" for Crescent City / Del Norte).
     _default_coastal_edge: ClassVar[CoastalEdge] = "west"
 
     # Municipality-specific fallback extent used only when the contract omits
     # ``anchor.bounds`` so a known site keeps working offline.
-    _fallback_bounds: Dict[str, float] = field(default_factory=dict)
+    _fallback_bounds: dict[str, float] = field(default_factory=dict)
 
     # Seed resolution hooks (env override name + packaged default path).
     _seed_env: str = "CRESCENT_INTEL_GEO_JSON"
     _packaged_seed: Path = _SEED_REL
 
     # ---- Public state ----
-    contract: Dict[str, Any] = field(default_factory=dict)
+    contract: dict[str, Any] = field(default_factory=dict)
     loaded: bool = False
-    source_path: Optional[Path] = None
-    error: Optional[str] = None
+    source_path: Path | None = None
+    error: str | None = None
 
     def __post_init__(self) -> None:
         """Resolve the seed path (env override -> passed -> packaged) and load."""
@@ -140,7 +140,7 @@ class MunicipalGeoIntelMapper:
                 f"coastal_edge must be one of {allowed} or None "
                 f"(auto-detect from contract); got {self.coastal_edge!r}"
             )
-        self._seed_override: Optional[Path] = None
+        self._seed_override: Path | None = None
         env = os.environ.get(self._seed_env)
         if env and Path(env).exists():
             self._seed_override = Path(env)
@@ -163,8 +163,8 @@ class MunicipalGeoIntelMapper:
             logger.warning(self.error)
             return
         try:
-            with open(path, "r", encoding="utf-8") as fh:
-                self.contract = cast(Dict[str, Any], json.load(fh))
+            with open(path, encoding="utf-8") as fh:
+                self.contract = cast(dict[str, Any], json.load(fh))
             if self.contract.get("schema") != "crescent-city-geo-intel/v1":
                 raise ValueError(
                     f"Unexpected intel schema {self.contract.get('schema')!r}"
@@ -189,30 +189,30 @@ class MunicipalGeoIntelMapper:
             return ""
         return str(self.contract.get("anchor", {}).get("name", "") or "")
 
-    def anchor(self) -> Dict[str, Any]:
+    def anchor(self) -> dict[str, Any]:
         """Return the contract anchor dict (empty when not loaded)."""
         if not self.loaded:
             return {}
         anchor = self.contract.get("anchor", {}) or {}
-        return cast(Dict[str, Any], anchor)
+        return cast(dict[str, Any], anchor)
 
-    def domains(self) -> List[Dict[str, Any]]:
+    def domains(self) -> list[dict[str, Any]]:
         """Return the civic-intel domains (empty list when not loaded)."""
         if not self.loaded:
             return []
         return self.contract.get("domains", []) or []
 
-    def hazard_domains(self) -> List[Dict[str, Any]]:
+    def hazard_domains(self) -> list[dict[str, Any]]:
         """Return the hazard-relevant domain subset."""
         if not self.loaded:
             return []
         return self.contract.get("hazard", {}).get("relevantDomains", []) or []
 
-    def domain_ids(self) -> List[str]:
+    def domain_ids(self) -> list[str]:
         """Return sorted civic-domain slugs (useful for gap reporting)."""
         return sorted(d.get("id", "") for d in self.domains() if d.get("id"))
 
-    def bounds(self) -> Dict[str, float]:
+    def bounds(self) -> dict[str, float]:
         """Return the grid bounds: contract ``anchor.bounds`` or fallback.
 
         When neither the contract nor the subclass fallback supplies geometry,
@@ -229,7 +229,7 @@ class MunicipalGeoIntelMapper:
         north = float(bounds.get("north", fb.get("north", 0.0)))
         return {"west": west, "south": south, "east": east, "north": north}
 
-    def _grid_geojson(self) -> Dict[str, Any]:
+    def _grid_geojson(self) -> dict[str, Any]:
         """Return a GeoJSON Polygon (lng,lat ring) covering the grid bounds."""
         b = self.bounds()
         if not b:
@@ -245,12 +245,12 @@ class MunicipalGeoIntelMapper:
 
     # -- Spatial hazard scoring (geometry-derived, transferable) --
 
-    def _cell_latlng(self, cell_id: str) -> Tuple[float, float]:
+    def _cell_latlng(self, cell_id: str) -> tuple[float, float]:
         """Return (lat, lon) at the H3 cell center."""
         lat, lng = h3.cell_to_latlng(cell_id)
         return float(lat), float(lng)
 
-    def _resolve_coastal_edge(self) -> Optional[CoastalEdge]:
+    def _resolve_coastal_edge(self) -> CoastalEdge | None:
         """Resolve the effective coastal bounds edge for hazard weighting.
 
         Resolution priority (coastline-agnostic, no western-shoreline
@@ -282,7 +282,7 @@ class MunicipalGeoIntelMapper:
                 logger.warning("Ignoring unknown contract coastalEdge %r", raw)
         return self._default_coastal_edge
 
-    def _coast_proximity(self, lat: float, lng: float, b: Dict[str, float]) -> float:
+    def _coast_proximity(self, lat: float, lng: float, b: dict[str, float]) -> float:
         """Normalized proximity to the effective coastal edge in [0, 1].
 
         Orients against whichever bounds edge the contract (or the caller)
@@ -327,7 +327,7 @@ class MunicipalGeoIntelMapper:
         dist_km = _distance_km(a_lat, a_lng, lat, lng)
         return _clamp01(1.0 - (dist_km / ref_km))
 
-    def _domain_weight(self, domain: Dict[str, Any], lat: float, lng: float) -> float:
+    def _domain_weight(self, domain: dict[str, Any], lat: float, lng: float) -> float:
         """Policy-coverage weight in [0,1] for a hazard domain at (lat, lng).
 
         Geometry-derived (coast proximity + municipal-seat proximity) and tuned
@@ -350,15 +350,15 @@ class MunicipalGeoIntelMapper:
             return _clamp01(0.30 * seat + 0.70 * coast)
         return _clamp01(seat)
 
-    def _all_hazard_tags(self) -> Set[str]:
+    def _all_hazard_tags(self) -> set[str]:
         """Collect the union of hazard tags across all hazard domains."""
-        tags: Set[str] = set()
+        tags: set[str] = set()
         for dom in self.hazard_domains():
             for tag in dom.get("hazardTags", []):
                 tags.add(str(tag))
         return tags
 
-    def generate_h3_cells(self) -> Dict[str, Dict[str, Any]]:
+    def generate_h3_cells(self) -> dict[str, dict[str, Any]]:
         """Generate an H3-indexed civic-intel surface covering the bounds.
 
         Returns:
@@ -389,20 +389,20 @@ class MunicipalGeoIntelMapper:
 
         hazard_domains = self.hazard_domains()
         domain_ids = self.domain_ids()
-        by_id: Dict[str, Dict[str, Any]] = {
+        by_id: dict[str, dict[str, Any]] = {
             str(d.get("id")): d for d in hazard_domains if d.get("id")
         }
-        out: Dict[str, Dict[str, Any]] = {}
+        out: dict[str, dict[str, Any]] = {}
         for cell_id in cells:
             lat, lng = self._cell_latlng(cell_id)
-            weights: Dict[str, float] = {}
+            weights: dict[str, float] = {}
             for did, dom in by_id.items():
                 weights[did] = round(float(self._domain_weight(dom, lat, lng)), 3)
             applying_ids = [
                 did for did, w in weights.items() if w >= _COVERAGE_THRESHOLD
             ]
             density = max(weights.values()) if weights else 0.0
-            tags: List[str] = []
+            tags: list[str] = []
             for did in applying_ids:
                 tags.extend(str(t) for t in (by_id[did].get("hazardTags") or []))
             out[cell_id] = {
@@ -416,7 +416,7 @@ class MunicipalGeoIntelMapper:
             }
         return out
 
-    def generate_hazard_surface(self) -> Dict[str, Any]:
+    def generate_hazard_surface(self) -> dict[str, Any]:
         """Build a compact hazard-intent summary (domain-aware, not a full grid).
 
         Each hazard domain is enriched with a ``coverage`` (mean weight across
@@ -427,20 +427,20 @@ class MunicipalGeoIntelMapper:
         if not hazards:
             return {"status": "no_hazard_domains", "domains": []}
         cell_surface = self.generate_h3_cells()
-        sums: Dict[str, float] = {}
-        counts: Dict[str, int] = {}
+        sums: dict[str, float] = {}
+        counts: dict[str, int] = {}
         for cell_data in cell_surface.values():
             by_domain = cell_data.get("coverage_by_domain") or {}
             for did, weight in by_domain.items():
                 sums[did] = sums.get(did, 0.0) + float(weight)
                 counts[did] = counts.get(did, 0) + 1
-        domains_out: List[Dict[str, Any]] = []
+        domains_out: list[dict[str, Any]] = []
         for d in hazards:
             did = d.get("id")
             if did is None:
                 continue
             avg = (sums.get(did, 0.0) / counts[did]) if counts.get(did) else 0.0
-            entry: Dict[str, Any] = {
+            entry: dict[str, Any] = {
                 "id": d.get("id"),
                 "name": d.get("name"),
                 "icon": d.get("icon"),
@@ -465,7 +465,7 @@ class CrescentCityIntelMapper(MunicipalGeoIntelMapper):
     dashboard import path stays deterministic offline.
     """
 
-    _fallback_bounds: Dict[str, float] = field(
+    _fallback_bounds: dict[str, float] = field(
         default_factory=lambda: {
             "west": -124.408,
             "south": 41.458,

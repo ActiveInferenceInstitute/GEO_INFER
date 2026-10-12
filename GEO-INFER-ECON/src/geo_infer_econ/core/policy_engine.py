@@ -2,7 +2,7 @@
 Policy Analysis Engine - Framework for economic policy impact assessment.
 """
 
-from typing import Dict, Any, List, Optional, Tuple, Union
+from typing import Any
 import numpy as np
 import pandas as pd
 from dataclasses import dataclass
@@ -29,10 +29,10 @@ class PolicyScenario:
     name: str
     description: str
     policy_type: PolicyType
-    parameters: Dict[str, Any]
-    spatial_scope: Optional[str] = None  # 'national', 'regional', 'local'
-    temporal_scope: Optional[Dict[str, Any]] = None
-    implementation_date: Optional[datetime] = None
+    parameters: dict[str, Any]
+    spatial_scope: str | None = None  # 'national', 'regional', 'local'
+    temporal_scope: dict[str, Any] | None = None
+    implementation_date: datetime | None = None
 
 
 @dataclass
@@ -40,12 +40,12 @@ class PolicyImpact:
     """Container for policy impact results."""
 
     scenario_name: str
-    gdp_impact: Dict[str, float]  # Regional GDP changes
-    employment_impact: Dict[str, float]  # Employment changes
-    welfare_impact: Dict[str, float]  # Welfare changes
-    distributional_impact: Dict[str, Any]  # Distributional effects
-    spatial_spillovers: Optional[Dict[str, float]] = None
-    confidence_intervals: Optional[Dict[str, Tuple[float, float]]] = None
+    gdp_impact: dict[str, float]  # Regional GDP changes
+    employment_impact: dict[str, float]  # Employment changes
+    welfare_impact: dict[str, float]  # Welfare changes
+    distributional_impact: dict[str, Any]  # Distributional effects
+    spatial_spillovers: dict[str, float] | None = None
+    confidence_intervals: dict[str, tuple[float, float]] | None = None
 
 
 @dataclass
@@ -53,10 +53,10 @@ class PolicyComparison:
     """Comparison of multiple policy scenarios."""
 
     baseline_scenario: str
-    alternative_scenarios: List[str]
-    comparison_metrics: Dict[str, Dict[str, float]]
-    ranking: List[Tuple[str, float]]  # (scenario_name, score)
-    recommendations: List[str]
+    alternative_scenarios: list[str]
+    comparison_metrics: dict[str, dict[str, float]]
+    ranking: list[tuple[str, float]]  # (scenario_name, score)
+    recommendations: list[str]
 
 
 class PolicyAnalysisEngine:
@@ -71,7 +71,7 @@ class PolicyAnalysisEngine:
     - Dynamic policy evaluation
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the Policy Analysis Engine.
 
@@ -80,12 +80,12 @@ class PolicyAnalysisEngine:
         """
         self.logger = logging.getLogger(__name__)
         self.config = config or {}
-        self.scenarios: Dict[str, Any] = {}
-        self.baseline_data: Dict[str, Any] = {}
-        self.impact_cache: Dict[str, Any] = {}
+        self.scenarios: dict[str, Any] = {}
+        self.baseline_data: dict[str, Any] = {}
+        self.impact_cache: dict[str, Any] = {}
 
     def add_baseline_data(
-        self, data_type: str, data: Union[pd.DataFrame, Dict[str, Any]]
+        self, data_type: str, data: pd.DataFrame | dict[str, Any]
     ) -> None:
         """
         Add baseline economic data for policy analysis.
@@ -107,7 +107,7 @@ class PolicyAnalysisEngine:
         self.scenarios[scenario.name] = scenario
         self.logger.info(f"Defined policy scenario: {scenario.name}")
 
-    def _require_baseline(self, data_type: str) -> Dict[str, Any]:
+    def _require_baseline(self, data_type: str) -> dict[str, Any]:
         """
         Return required baseline data or raise if missing/empty.
 
@@ -377,7 +377,7 @@ class PolicyAnalysisEngine:
         )
 
     def compare_scenarios(
-        self, scenario_names: List[str], weights: Optional[Dict[str, float]] = None
+        self, scenario_names: list[str], weights: dict[str, float] | None = None
     ) -> PolicyComparison:
         """
         Compare multiple policy scenarios.
@@ -477,8 +477,8 @@ class PolicyAnalysisEngine:
         tax_change: float,
         spending_change: float,
         transfer_change: float,
-        params: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        params: dict[str, Any],
+    ) -> dict[str, Any]:
         """Calculate distributional effects of fiscal policy."""
         income_quintiles = ["Q1", "Q2", "Q3", "Q4", "Q5"]
 
@@ -513,10 +513,10 @@ class PolicyAnalysisEngine:
 
     def _calculate_infrastructure_spillovers(
         self,
-        regional_allocation: Dict[str, float],
+        regional_allocation: dict[str, float],
         infrastructure_type: str,
-        params: Dict[str, Any],
-    ) -> Dict[str, float]:
+        params: dict[str, Any],
+    ) -> dict[str, float]:
         """Calculate spatial spillovers from infrastructure investment."""
         spillover_rates = {
             "transport": 0.15,
@@ -537,7 +537,7 @@ class PolicyAnalysisEngine:
 
     def _infrastructure_distributional_effects(
         self, infrastructure_type: str, investment_amount: float
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate distributional effects of infrastructure investment."""
         # Different infrastructure types benefit different income groups differently
         benefit_patterns = {
@@ -559,8 +559,8 @@ class PolicyAnalysisEngine:
         return effects
 
     def _environmental_distributional_effects(
-        self, carbon_tax: float, green_subsidies: float, params: Dict[str, Any]
-    ) -> Dict[str, float]:
+        self, carbon_tax: float, green_subsidies: float, params: dict[str, Any]
+    ) -> dict[str, float]:
         """Calculate distributional effects of environmental policy."""
         # Carbon tax is typically regressive
         carbon_tax_burden = {"Q1": 0.25, "Q2": 0.22, "Q3": 0.20, "Q4": 0.18, "Q5": 0.15}
@@ -597,7 +597,7 @@ class PolicyAnalysisEngine:
         )
 
     def _calculate_distributional_score(
-        self, distributional_impact: Dict[str, Any]
+        self, distributional_impact: dict[str, Any]
     ) -> float:
         """Calculate a single score representing distributional effects."""
         if "income_quintile_effects" in distributional_impact:
@@ -611,9 +611,9 @@ class PolicyAnalysisEngine:
 
     def _generate_policy_recommendations(
         self,
-        scenario_impacts: Dict[str, PolicyImpact],
-        ranking: List[Tuple[str, float]],
-    ) -> List[str]:
+        scenario_impacts: dict[str, PolicyImpact],
+        ranking: list[tuple[str, float]],
+    ) -> list[str]:
         """Generate policy recommendations based on analysis results."""
         recommendations = []
 

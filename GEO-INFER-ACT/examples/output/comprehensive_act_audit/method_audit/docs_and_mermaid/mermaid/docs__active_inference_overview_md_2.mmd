@@ -1,8 +1,0 @@
-flowchart LR
-    H3["Real H3 v4 cells"] --> OBS["Per-cell observations"]
-    OBS --> BEL["Normalized H3 beliefs"]
-    BEL --> FE["Variational free energy"]
-    BEL --> EFE["Expected free energy"]
-    EFE --> ACT["Selected spatial policy"]
-    ACT --> LAT["Neighbor lattice update"]
-    LAT --> OUT["Manifest, data, GeoJSON, visualizations"]

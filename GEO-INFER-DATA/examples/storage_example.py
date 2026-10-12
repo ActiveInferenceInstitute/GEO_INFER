@@ -15,7 +15,7 @@ Requirements:
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 
 import geopandas as gpd
@@ -113,7 +113,9 @@ async def main():
         description="Environmental monitoring data from sensors across San Francisco",
         spatial=SpatialExtent(bbox=[-122.6, 37.6, -122.2, 38.0], crs="EPSG:4326"),
         temporal=TemporalExtent(
-            start=datetime(2023, 1, 1), end=datetime(2023, 12, 31), resolution="PT1H"
+            start=datetime(2023, 1, 1, tzinfo=UTC),
+            end=datetime(2023, 12, 31, tzinfo=UTC),
+            resolution="PT1H",
         ),
         lineage=DataLineage(
             source="environmental_sensors",
@@ -129,7 +131,9 @@ async def main():
         description="High-frequency environmental measurements from weather stations",
         spatial=SpatialExtent(bbox=[-122.6, 37.6, -122.2, 38.0], crs="EPSG:4326"),
         temporal=TemporalExtent(
-            start=datetime(2023, 1, 1), end=datetime(2023, 12, 31), resolution="PT15M"
+            start=datetime(2023, 1, 1, tzinfo=UTC),
+            end=datetime(2023, 12, 31, tzinfo=UTC),
+            resolution="PT15M",
         ),
         lineage=DataLineage(
             source="weather_stations",
@@ -153,8 +157,8 @@ async def main():
             ],
             "temporal_queries": [
                 {
-                    "start": datetime(2023, 6, 1),
-                    "end": datetime(2023, 8, 31),
+                    "start": datetime(2023, 6, 1, tzinfo=UTC),
+                    "end": datetime(2023, 8, 31, tzinfo=UTC),
                     "frequency": "high",
                 }
             ],
@@ -172,8 +176,8 @@ async def main():
         access_patterns={
             "temporal_queries": [
                 {
-                    "start": datetime(2023, 1, 1),
-                    "end": datetime(2023, 12, 31),
+                    "start": datetime(2023, 1, 1, tzinfo=UTC),
+                    "end": datetime(2023, 12, 31, tzinfo=UTC),
                     "frequency": "daily",
                 }
             ],
@@ -190,7 +194,10 @@ async def main():
     # Spatial query
     spatial_results = await storage.adaptive_query(
         spatial_bounds=[-122.5, 37.7, -122.3, 37.9],
-        temporal_range=(datetime(2023, 6, 1), datetime(2023, 6, 30)),
+        temporal_range=(
+            datetime(2023, 6, 1, tzinfo=UTC),
+            datetime(2023, 6, 30, tzinfo=UTC),
+        ),
         optimization_hints={"frequent_queries": True},
     )
 
@@ -200,7 +207,10 @@ async def main():
 
     # Temporal query
     temporal_results = await storage.adaptive_query(
-        temporal_range=(datetime(2023, 7, 1), datetime(2023, 7, 31)),
+        temporal_range=(
+            datetime(2023, 7, 1, tzinfo=UTC),
+            datetime(2023, 7, 31, tzinfo=UTC),
+        ),
         optimization_hints={"real_time": False},
     )
 
@@ -219,7 +229,9 @@ async def main():
         },
         time_series_id: {
             "batch_processing": True,
-            "temporal_ranges": [(datetime(2023, 1, 1), datetime(2023, 12, 31))],
+            "temporal_ranges": [
+                (datetime(2023, 1, 1, tzinfo=UTC), datetime(2023, 12, 31, tzinfo=UTC))
+            ],
             "query_frequency": "weekly",
         },
     }

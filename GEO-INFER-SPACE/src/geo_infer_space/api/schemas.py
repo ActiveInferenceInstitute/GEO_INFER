@@ -5,7 +5,7 @@ This module defines data models for spatial analysis API endpoints
 using Pydantic for automatic validation and documentation generation.
 """
 
-from typing import List, Dict, Any, Optional, Union
+from typing import Any
 from pydantic import BaseModel, Field, field_validator
 from geojson_pydantic import Feature, FeatureCollection, MultiPolygon, Polygon
 
@@ -13,11 +13,11 @@ from geojson_pydantic import Feature, FeatureCollection, MultiPolygon, Polygon
 class SpatialAnalysisRequest(BaseModel):
     """Base request model for spatial analysis operations."""
 
-    data: Union[Feature, FeatureCollection] = Field(
+    data: Feature | FeatureCollection = Field(
         ..., description="GeoJSON data for analysis"
     )
-    crs: Optional[str] = Field("EPSG:4326", description="Coordinate reference system")
-    parameters: Optional[Dict[str, Any]] = Field(
+    crs: str | None = Field("EPSG:4326", description="Coordinate reference system")
+    parameters: dict[str, Any] | None = Field(
         default_factory=dict, description="Analysis-specific parameters"
     )
 
@@ -26,11 +26,11 @@ class SpatialAnalysisResponse(BaseModel):
     """Base response model for spatial analysis results."""
 
     success: bool = Field(..., description="Whether the operation succeeded")
-    result: Optional[Union[Feature, FeatureCollection, Dict[str, Any]]] = Field(
+    result: Feature | FeatureCollection | dict[str, Any] | None = Field(
         None, description="Analysis results"
     )
-    message: Optional[str] = Field(None, description="Status or error message")
-    metadata: Optional[Dict[str, Any]] = Field(
+    message: str | None = Field(None, description="Status or error message")
+    metadata: dict[str, Any] | None = Field(
         default_factory=dict, description="Additional metadata about the operation"
     )
 
@@ -47,16 +47,14 @@ class BufferAnalysisRequest(SpatialAnalysisRequest):
 class ProximityAnalysisRequest(BaseModel):
     """Request model for proximity analysis operations."""
 
-    source_data: Union[Feature, FeatureCollection] = Field(
+    source_data: Feature | FeatureCollection = Field(
         ..., description="Source geometries"
     )
-    target_data: Union[Feature, FeatureCollection] = Field(
+    target_data: Feature | FeatureCollection = Field(
         ..., description="Target geometries"
     )
-    max_distance: Optional[float] = Field(
-        None, description="Maximum distance to consider"
-    )
-    crs: Optional[str] = Field("EPSG:4326", description="Coordinate reference system")
+    max_distance: float | None = Field(None, description="Maximum distance to consider")
+    crs: str | None = Field("EPSG:4326", description="Coordinate reference system")
 
 
 class InterpolationRequest(BaseModel):
@@ -68,7 +66,7 @@ class InterpolationRequest(BaseModel):
     value_column: str = Field(
         ..., description="Column name containing values to interpolate"
     )
-    bounds: List[float] = Field(
+    bounds: list[float] = Field(
         ...,
         min_length=4,
         max_length=4,
@@ -80,10 +78,10 @@ class InterpolationRequest(BaseModel):
     method: str = Field(
         "idw", description="Interpolation method (idw, kriging, rbf, nearest)"
     )
-    parameters: Optional[Dict[str, Any]] = Field(
+    parameters: dict[str, Any] | None = Field(
         default_factory=dict, description="Method-specific parameters"
     )
-    crs: Optional[str] = Field("EPSG:4326", description="Coordinate reference system")
+    crs: str | None = Field("EPSG:4326", description="Coordinate reference system")
 
     @field_validator("method")
     def validate_method(cls: Any, v: str) -> str:
@@ -100,11 +98,11 @@ class ClusteringRequest(BaseModel):
     method: str = Field(
         "dbscan", description="Clustering method (dbscan, kmeans, hierarchical)"
     )
-    parameters: Optional[Dict[str, Any]] = Field(
+    parameters: dict[str, Any] | None = Field(
         default_factory=dict,
         description="Clustering parameters (eps, min_samples, n_clusters, etc.)",
     )
-    crs: Optional[str] = Field("EPSG:4326", description="Coordinate reference system")
+    crs: str | None = Field("EPSG:4326", description="Coordinate reference system")
 
     @field_validator("method")
     def validate_method(cls: Any, v: str) -> str:
@@ -120,14 +118,14 @@ class HotspotRequest(BaseModel):
     points: FeatureCollection = Field(
         ..., description="Point data for hotspot analysis"
     )
-    value_column: Optional[str] = Field(
+    value_column: str | None = Field(
         None, description="Column with values (if None, uses point density)"
     )
     method: str = Field("getis_ord", description="Hotspot detection method")
-    parameters: Optional[Dict[str, Any]] = Field(
+    parameters: dict[str, Any] | None = Field(
         default_factory=dict, description="Method-specific parameters"
     )
-    crs: Optional[str] = Field("EPSG:4326", description="Coordinate reference system")
+    crs: str | None = Field("EPSG:4326", description="Coordinate reference system")
 
     @field_validator("method")
     def validate_method(cls: Any, v: str) -> str:
@@ -143,17 +141,17 @@ class NetworkAnalysisRequest(BaseModel):
     network: FeatureCollection = Field(
         ..., description="Network edges as LineString features"
     )
-    origins: Optional[FeatureCollection] = Field(
+    origins: FeatureCollection | None = Field(
         None, description="Origin points for routing analysis"
     )
-    destinations: Optional[FeatureCollection] = Field(
+    destinations: FeatureCollection | None = Field(
         None, description="Destination points for routing analysis"
     )
     analysis_type: str = Field(..., description="Type of network analysis")
-    parameters: Optional[Dict[str, Any]] = Field(
+    parameters: dict[str, Any] | None = Field(
         default_factory=dict, description="Analysis-specific parameters"
     )
-    crs: Optional[str] = Field("EPSG:4326", description="Coordinate reference system")
+    crs: str | None = Field("EPSG:4326", description="Coordinate reference system")
 
     @field_validator("analysis_type")
     def validate_analysis_type(cls: Any, v: str) -> str:
@@ -175,16 +173,16 @@ class TerrainAnalysisRequest(BaseModel):
     dem_data: str = Field(
         ..., description="Path to DEM raster or base64 encoded raster data"
     )
-    analyses: List[str] = Field(
+    analyses: list[str] = Field(
         ["slope", "aspect", "hillshade"],
         description="List of terrain analyses to perform",
     )
-    parameters: Optional[Dict[str, Any]] = Field(
+    parameters: dict[str, Any] | None = Field(
         default_factory=dict, description="Analysis-specific parameters"
     )
 
     @field_validator("analyses")
-    def validate_analyses(cls: Any, v: List[str]) -> List[str]:
+    def validate_analyses(cls: Any, v: list[str]) -> list[str]:
         valid_analyses = ["slope", "aspect", "hillshade", "curvature", "tpi"]
         for analysis in v:
             if analysis not in valid_analyses:
@@ -195,12 +193,12 @@ class TerrainAnalysisRequest(BaseModel):
 class H3AnalysisRequest(BaseModel):
     """Request model for H3 hexagonal grid operations."""
 
-    geometry: Optional[Union[Feature, FeatureCollection, Polygon, MultiPolygon]] = (
-        Field(None, description="Polygon geometry for polygon_to_cells")
+    geometry: Feature | FeatureCollection | Polygon | MultiPolygon | None = Field(
+        None, description="Polygon geometry for polygon_to_cells"
     )
     resolution: int = Field(9, ge=0, le=15, description="H3 resolution (0-15)")
     operation: str = Field("polygon_to_cells", description="H3 operation to perform")
-    parameters: Optional[Dict[str, Any]] = Field(
+    parameters: dict[str, Any] | None = Field(
         default_factory=dict, description="Operation-specific parameters"
     )
 
@@ -223,6 +221,4 @@ class ErrorResponse(BaseModel):
     success: bool = Field(False, description="Always false for errors")
     error: str = Field(..., description="Error type")
     message: str = Field(..., description="Error message")
-    details: Optional[Dict[str, Any]] = Field(
-        None, description="Additional error details"
-    )
+    details: dict[str, Any] | None = Field(None, description="Additional error details")

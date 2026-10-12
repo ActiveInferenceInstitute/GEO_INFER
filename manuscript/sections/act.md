@@ -4,6 +4,6 @@
 
 **Public API.** The package `geo_infer_act` exports the core FEP stack: `ActiveInferenceModel`, `FreeEnergyCalculator`, `GenerativeModel`, `BayesianBeliefUpdate`, `PolicySelector`, `VariationalInference`, `DynamicCausalModel`, `SpatialActiveInferenceAgent`, and `MarkovDecisionProcess`. Spatially structured results are first-class exports: `H3GridInferenceResult`, `NestedH3GridInferenceResult`, `H3BeliefUpdateResult`, `SpatialInferenceTrace`, `PolicyEvaluation`, and `FreeEnergyBreakdown`. A civic-intelligence integration exposes `CrescentCityIntel`, `parse_crescent_city_intel`, `hazard_policy_prior`, `HazardDomain`, and `CivicIntelBounds`, mapping external hazard reports onto categorical priors.
 
-**Verification status.** The `tests/` directory is present with 46 test files — the largest test surface in the A–D band — and the repo-root audit scripts provide end-to-end pipeline checks.
+The module audit scripts check generative models, free-energy computations, policy selection, spatial agents, and API behavior. The shared repository runner records executed cases and artifacts separately from the inventory census.
 
 **Theme role.** Inference and learning: ACT is the mathematical heart from which agent modules (e.g., the AGENT and ANT bands) derive their decision-making cores.

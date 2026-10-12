@@ -5,7 +5,7 @@ This module provides tools for community engagement, participatory mapping,
 citizen science, and collaborative geospatial decision-making.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Development Team"
 
 from .core.participation import (

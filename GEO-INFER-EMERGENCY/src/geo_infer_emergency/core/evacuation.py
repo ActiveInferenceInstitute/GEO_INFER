@@ -6,7 +6,7 @@ shelter management, and clearance time estimation.
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -30,10 +30,10 @@ class EvacuationZone:
 
     zone_id: str
     name: str
-    geometry: Dict[str, Any]  # GeoJSON geometry
+    geometry: dict[str, Any]  # GeoJSON geometry
     population: int
     level: EvacuationLevel = EvacuationLevel.WARNING
-    special_populations: List[str] = field(default_factory=list)
+    special_populations: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -42,10 +42,10 @@ class Shelter:
 
     shelter_id: str
     name: str
-    location: Dict[str, Any]
+    location: dict[str, Any]
     capacity: int
     current_occupancy: int = 0
-    services: List[str] = field(default_factory=list)
+    services: list[str] = field(default_factory=list)
     accessible: bool = True
 
 
@@ -56,7 +56,7 @@ class EvacuationRoute:
     route_id: str
     origin_zone: str
     destination_shelter: str
-    path: List[Dict[str, float]]  # List of coordinates
+    path: list[dict[str, float]]  # List of coordinates
     distance_km: float
     estimated_time_minutes: float
     capacity_vehicles_per_hour: int
@@ -70,10 +70,10 @@ class EvacuationPlanner:
 
     def __init__(
         self,
-        road_network: Optional[nx.Graph] = None,
-        population_data: Optional[Dict[str, Any]] = None,
-        shelters: Optional[List[Dict[str, Any]]] = None,
-        special_needs: Optional[List[str]] = None,
+        road_network: nx.Graph | None = None,
+        population_data: dict[str, Any] | None = None,
+        shelters: list[dict[str, Any]] | None = None,
+        special_needs: list[str] | None = None,
     ):
         """
         Initialize evacuation planner.
@@ -90,9 +90,9 @@ class EvacuationPlanner:
         self.road_network = road_network
         self.population_data = population_data
         self.special_needs = special_needs or ["hospitals", "nursing_homes", "schools"]
-        self._zones: Dict[str, EvacuationZone] = {}
-        self._shelters: Dict[str, Shelter] = {}
-        self._routes: Dict[str, EvacuationRoute] = {}
+        self._zones: dict[str, EvacuationZone] = {}
+        self._shelters: dict[str, Shelter] = {}
+        self._routes: dict[str, EvacuationRoute] = {}
 
         # Register shelters
         if shelters:
@@ -101,7 +101,7 @@ class EvacuationPlanner:
 
         logger.info("Initialized EvacuationPlanner")
 
-    def register_shelter(self, shelter_data: Dict[str, Any]) -> Shelter:
+    def register_shelter(self, shelter_data: dict[str, Any]) -> Shelter:
         """Register a shelter in the system."""
         shelter = Shelter(
             shelter_id=shelter_data.get("id", f"shelter_{len(self._shelters)}"),
@@ -116,12 +116,12 @@ class EvacuationPlanner:
 
     def plan(
         self,
-        affected_zone: Dict[str, Any],
-        population: Dict[str, Any],
-        destinations: List[Dict[str, Any]],
+        affected_zone: dict[str, Any],
+        population: dict[str, Any],
+        destinations: list[dict[str, Any]],
         phasing: str = "staged",
         contraflow: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create an evacuation plan.
 
@@ -204,7 +204,7 @@ class EvacuationPlanner:
 
     def _calculate_phases(
         self, zone: EvacuationZone, strategy: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Calculate evacuation phases."""
         phases = []
 
@@ -264,7 +264,7 @@ class EvacuationPlanner:
 
         return phases
 
-    def _identify_contraflow_segments(self) -> List[Dict[str, Any]]:
+    def _identify_contraflow_segments(self) -> list[dict[str, Any]]:
         """Identify road segments flagged as contraflow-capable in the network.
 
         A segment qualifies when its edge carries a truthy
@@ -273,7 +273,7 @@ class EvacuationPlanner:
         """
         if self.road_network is None:
             return []
-        segments: List[Dict[str, Any]] = []
+        segments: list[dict[str, Any]] = []
         for u, v, data in self.road_network.edges(data=True):
             if data.get("contraflow_capable"):
                 segments.append(
@@ -286,7 +286,7 @@ class EvacuationPlanner:
                 )
         return segments
 
-    def _plan_special_populations(self, zone: EvacuationZone) -> Dict[str, Any]:
+    def _plan_special_populations(self, zone: EvacuationZone) -> dict[str, Any]:
         """Plan for special populations in the zone."""
         return {
             "facilities": zone.special_populations,
@@ -297,11 +297,11 @@ class EvacuationPlanner:
 
     def optimize_routes(
         self,
-        origins: List[str],
-        destinations: List[str],
-        objectives: List[str],
-        constraints: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        origins: list[str],
+        destinations: list[str],
+        objectives: list[str],
+        constraints: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Optimize evacuation routes with Dijkstra shortest paths.
 
@@ -414,7 +414,7 @@ class EvacuationPlanner:
         return any(attribute in data for _, _, data in graph.edges(data=True))
 
     @staticmethod
-    def _path_distance_km(graph: nx.Graph, path: List[str]) -> float:
+    def _path_distance_km(graph: nx.Graph, path: list[str]) -> float:
         """Sum path length in kilometres.
 
         Per edge, uses ``distance`` (km) when present, otherwise
@@ -433,11 +433,11 @@ class EvacuationPlanner:
 
     def plan_shelters(
         self,
-        shelter_locations: List[Dict[str, Any]],
+        shelter_locations: list[dict[str, Any]],
         population_estimate: int,
         duration_days: int,
-        services: List[str],
-    ) -> Dict[str, Any]:
+        services: list[str],
+    ) -> dict[str, Any]:
         """
         Plan shelter operations.
 
@@ -504,11 +504,11 @@ class EvacuationPlanner:
 
     def plan_special_populations(
         self,
-        facilities: List[Dict[str, Any]],
-        transportation: List[Dict[str, Any]],
-        receiving_facilities: List[Dict[str, Any]],
+        facilities: list[dict[str, Any]],
+        transportation: list[dict[str, Any]],
+        receiving_facilities: list[dict[str, Any]],
         medical_support: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Plan evacuation of special populations.
 
@@ -585,10 +585,10 @@ class EvacuationPlanner:
 
     def estimate_clearance_time(
         self,
-        evacuation_plan: Dict[str, Any],
+        evacuation_plan: dict[str, Any],
         traffic_model: str = "dynamic_assignment",
-        scenarios: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        scenarios: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Estimate evacuation clearance time.
 
@@ -648,8 +648,8 @@ class EvacuationPlanner:
 
 
 def _path_edges(
-    graph: nx.Graph, path: List[str]
-) -> List[Tuple[Any, Any, Dict[str, Any]]]:
+    graph: nx.Graph, path: list[str]
+) -> list[tuple[Any, Any, dict[str, Any]]]:
     """Return (u, v, data) triples for consecutive path node pairs."""
     return [
         (u, v, graph.get_edge_data(u, v) or {}) for u, v in zip(path[:-1], path[1:])

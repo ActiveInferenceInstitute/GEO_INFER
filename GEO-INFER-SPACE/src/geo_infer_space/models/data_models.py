@@ -6,14 +6,24 @@ geometries, coordinate systems, and analysis results with automatic
 validation and serialization capabilities.
 """
 
-from typing import List, Dict, Any, Optional, Union, Tuple, cast
-from datetime import datetime
-from enum import Enum
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from typing import Any, cast
+from datetime import UTC, datetime
+from enum import StrEnum
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 from geojson_pydantic import Feature, FeatureCollection, Point, Polygon, LineString
+from geo_infer_time import normalize_timestamp
 
 
-class GeometryType(str, Enum):
+class _UTCMetadataModel(BaseModel):
+    model_config = ConfigDict(validate_assignment=True, validate_default=True)
+
+    @field_validator("created_at", "updated_at", check_fields=False, mode="before")
+    @classmethod
+    def normalize_metadata_time(cls, value: datetime | None) -> datetime | None:
+        return None if value is None else normalize_timestamp(value)
+
+
+class GeometryType(StrEnum):
     """Enumeration of supported geometry types."""
 
     POINT = "Point"
@@ -28,15 +38,15 @@ class GeometryType(str, Enum):
 class CoordinateReferenceSystem(BaseModel):
     """Model for coordinate reference system information."""
 
-    epsg_code: Optional[int] = Field(None, description="EPSG code")
-    proj4_string: Optional[str] = Field(None, description="PROJ4 string")
-    wkt: Optional[str] = Field(None, description="Well-Known Text representation")
-    name: Optional[str] = Field(None, description="CRS name")
+    epsg_code: int | None = Field(None, description="EPSG code")
+    proj4_string: str | None = Field(None, description="PROJ4 string")
+    wkt: str | None = Field(None, description="Well-Known Text representation")
+    name: str | None = Field(None, description="CRS name")
     is_projected: bool = Field(False, description="Whether CRS is projected")
-    units: Optional[str] = Field(None, description="Linear units")
+    units: str | None = Field(None, description="Linear units")
 
     @field_validator("epsg_code")
-    def validate_epsg_code(cls, v: Optional[int]) -> Optional[int]:
+    def validate_epsg_code(cls, v: int | None) -> int | None:
         if v is not None and (v < 1000 or v > 32767):
             raise ValueError("EPSG code must be between 1000 and 32767")
         return v
@@ -45,13 +55,11 @@ class CoordinateReferenceSystem(BaseModel):
 class GeometryModel(BaseModel):
     """Model for geometry objects with validation."""
 
-    geometry: Union[Point, Polygon, LineString] = Field(
-        ..., description="GeoJSON geometry"
-    )
-    crs: Optional[CoordinateReferenceSystem] = Field(
+    geometry: Point | Polygon | LineString = Field(..., description="GeoJSON geometry")
+    crs: CoordinateReferenceSystem | None = Field(
         None, description="Coordinate reference system"
     )
-    properties: Dict[str, Any] = Field(
+    properties: dict[str, Any] = Field(
         default_factory=dict, description="Geometry properties"
     )
 
@@ -70,8 +78,8 @@ class SpatialBounds(BaseModel):
     miny: float = Field(..., description="Minimum Y coordinate")
     maxx: float = Field(..., description="Maximum X coordinate")
     maxy: float = Field(..., description="Maximum Y coordinate")
-    minz: Optional[float] = Field(None, description="Minimum Z coordinate")
-    maxz: Optional[float] = Field(None, description="Maximum Z coordinate")
+    minz: float | None = Field(None, description="Minimum Z coordinate")
+    maxz: float | None = Field(None, description="Maximum Z coordinate")
 
     @field_validator("maxx")
     def validate_x_bounds(cls, v: float, info: ValidationInfo) -> float:
@@ -101,15 +109,16 @@ class SpatialBounds(BaseModel):
         return self.width * self.height
 
 
-class SpatialIndex(BaseModel):
+class SpatialIndex(_UTCMetadataModel):
     """Model for spatial index configuration."""
 
     index_type: str = Field(..., description="Type of spatial index")
-    parameters: Dict[str, Any] = Field(
+    parameters: dict[str, Any] = Field(
         default_factory=dict, description="Index parameters"
     )
     created_at: datetime = Field(
-        default_factory=datetime.now, description="Creation timestamp"
+        default_factory=lambda: datetime.now(UTC),
+        description="Creation timestamp (UTC)",
     )
     num_features: int = Field(0, description="Number of indexed features")
 
@@ -121,29 +130,30 @@ class SpatialIndex(BaseModel):
         return v.lower()
 
 
-class SpatialMetadata(BaseModel):
+class SpatialMetadata(_UTCMetadataModel):
     """Model for spatial dataset metadata."""
 
     name: str = Field(..., description="Dataset name")
-    description: Optional[str] = Field(None, description="Dataset description")
-    source: Optional[str] = Field(None, description="Data source")
+    description: str | None = Field(None, description="Dataset description")
+    source: str | None = Field(None, description="Data source")
     created_at: datetime = Field(
-        default_factory=datetime.now, description="Creation timestamp"
+        default_factory=lambda: datetime.now(UTC),
+        description="Creation timestamp (UTC)",
     )
-    updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
-    bounds: Optional[SpatialBounds] = Field(None, description="Spatial bounds")
-    crs: Optional[CoordinateReferenceSystem] = Field(
+    updated_at: datetime | None = Field(None, description="Last update timestamp")
+    bounds: SpatialBounds | None = Field(None, description="Spatial bounds")
+    crs: CoordinateReferenceSystem | None = Field(
         None, description="Coordinate reference system"
     )
     num_features: int = Field(0, description="Number of features")
-    geometry_types: List[GeometryType] = Field(
+    geometry_types: list[GeometryType] = Field(
         default_factory=list, description="Geometry types present"
     )
-    attributes: Dict[str, str] = Field(
+    attributes: dict[str, str] = Field(
         default_factory=dict, description="Attribute column types"
     )
-    tags: List[str] = Field(default_factory=list, description="Dataset tags")
-    license: Optional[str] = Field(None, description="Data license")
+    tags: list[str] = Field(default_factory=list, description="Dataset tags")
+    license: str | None = Field(None, description="Data license")
 
     @field_validator("num_features")
     def validate_num_features(cls, v: int) -> int:
@@ -156,17 +166,17 @@ class SpatialDataset(BaseModel):
     """Model for complete spatial dataset."""
 
     metadata: SpatialMetadata = Field(..., description="Dataset metadata")
-    features: Union[FeatureCollection, List[Feature]] = Field(
+    features: FeatureCollection | list[Feature] = Field(
         ..., description="Spatial features"
     )
-    spatial_index: Optional[SpatialIndex] = Field(
+    spatial_index: SpatialIndex | None = Field(
         None, description="Spatial index information"
     )
 
     @field_validator("features", mode="after")
     def validate_features(
         cls,
-        v: Union[FeatureCollection, List[Feature]],
+        v: FeatureCollection | list[Feature],
         info: ValidationInfo,
     ) -> FeatureCollection:
         if isinstance(v, list):
@@ -180,7 +190,7 @@ class SpatialDataset(BaseModel):
 
         return v
 
-    def get_bounds(self) -> Optional[SpatialBounds]:
+    def get_bounds(self) -> SpatialBounds | None:
         """Calculate spatial bounds of the dataset."""
         feature_collection = cast(FeatureCollection, self.features)
         if not feature_collection.features:
@@ -206,8 +216,8 @@ class SpatialDataset(BaseModel):
         )
 
     def _extract_coordinates(
-        self, geometry: Dict[str, Any]
-    ) -> List[Tuple[float, float]]:
+        self, geometry: dict[str, Any]
+    ) -> list[tuple[float, float]]:
         """Extract coordinate pairs from geometry."""
         geom_type = geometry.get("type")
         coordinates = geometry.get("coordinates", [])
@@ -236,30 +246,29 @@ class SpatialDataset(BaseModel):
         return []
 
 
-class AnalysisResult(BaseModel):
+class AnalysisResult(_UTCMetadataModel):
     """Model for spatial analysis results."""
 
     analysis_type: str = Field(..., description="Type of analysis performed")
     success: bool = Field(..., description="Whether analysis succeeded")
-    result_data: Optional[Union[FeatureCollection, Dict[str, Any]]] = Field(
+    result_data: FeatureCollection | dict[str, Any] | None = Field(
         None, description="Analysis result data"
     )
-    parameters: Dict[str, Any] = Field(
+    parameters: dict[str, Any] = Field(
         default_factory=dict, description="Analysis parameters"
     )
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Result metadata"
     )
-    execution_time: Optional[float] = Field(
-        None, description="Execution time in seconds"
-    )
+    execution_time: float | None = Field(None, description="Execution time in seconds")
     created_at: datetime = Field(
-        default_factory=datetime.now, description="Creation timestamp"
+        default_factory=lambda: datetime.now(UTC),
+        description="Creation timestamp (UTC)",
     )
-    error_message: Optional[str] = Field(None, description="Error message if failed")
+    error_message: str | None = Field(None, description="Error message if failed")
 
     @field_validator("execution_time")
-    def validate_execution_time(cls, v: Optional[float]) -> Optional[float]:
+    def validate_execution_time(cls, v: float | None) -> float | None:
         if v is not None and v < 0:
             raise ValueError("Execution time cannot be negative")
         return v
@@ -272,13 +281,11 @@ class H3CellData(BaseModel):
     resolution: int = Field(..., ge=0, le=15, description="H3 resolution")
     center_lat: float = Field(..., description="Cell center latitude")
     center_lng: float = Field(..., description="Cell center longitude")
-    boundary: List[Tuple[float, float]] = Field(
+    boundary: list[tuple[float, float]] = Field(
         ..., description="Cell boundary coordinates"
     )
-    area_km2: Optional[float] = Field(
-        None, description="Cell area in square kilometers"
-    )
-    properties: Dict[str, Any] = Field(
+    area_km2: float | None = Field(None, description="Cell area in square kilometers")
+    properties: dict[str, Any] = Field(
         default_factory=dict, description="Cell properties"
     )
 
@@ -310,8 +317,8 @@ class NetworkEdge(BaseModel):
     target_node: str = Field(..., description="Target node identifier")
     geometry: LineString = Field(..., description="Edge geometry (LineString)")
     length: float = Field(..., gt=0, description="Edge length")
-    weight: Optional[float] = Field(None, description="Edge weight for routing")
-    attributes: Dict[str, Any] = Field(
+    weight: float | None = Field(None, description="Edge weight for routing")
+    attributes: dict[str, Any] = Field(
         default_factory=dict, description="Edge attributes"
     )
 
@@ -328,7 +335,7 @@ class NetworkNode(BaseModel):
     node_id: str = Field(..., description="Unique node identifier")
     geometry: Point = Field(..., description="Node geometry (Point)")
     degree: int = Field(0, ge=0, description="Node degree (number of connections)")
-    attributes: Dict[str, Any] = Field(
+    attributes: dict[str, Any] = Field(
         default_factory=dict, description="Node attributes"
     )
 
@@ -343,13 +350,13 @@ class SpatialNetwork(BaseModel):
     """Model for spatial network data."""
 
     name: str = Field(..., description="Network name")
-    nodes: List[NetworkNode] = Field(..., description="Network nodes")
-    edges: List[NetworkEdge] = Field(..., description="Network edges")
-    crs: Optional[CoordinateReferenceSystem] = Field(
+    nodes: list[NetworkNode] = Field(..., description="Network nodes")
+    edges: list[NetworkEdge] = Field(..., description="Network edges")
+    crs: CoordinateReferenceSystem | None = Field(
         None, description="Coordinate reference system"
     )
     is_directed: bool = Field(False, description="Whether network is directed")
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Network metadata"
     )
 
@@ -363,7 +370,7 @@ class SpatialNetwork(BaseModel):
         """Number of edges in the network."""
         return len(self.edges)
 
-    def get_bounds(self) -> Optional[SpatialBounds]:
+    def get_bounds(self) -> SpatialBounds | None:
         """Calculate spatial bounds of the network."""
         if not self.nodes:
             return None

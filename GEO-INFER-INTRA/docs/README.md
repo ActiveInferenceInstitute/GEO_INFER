@@ -17,9 +17,11 @@ Docs workspace within `GEO-INFER-INTRA`.
 - `integration/`
 - `knowledge_base/`
 - `materiality/`
+- `math/`
 - `modules/`
 - `ontology/`
 - `realms/`
+- `releases/`
 - `security/`
 - `support/`
 - `tnfd/`
@@ -52,8 +54,8 @@ Docs workspace within `GEO-INFER-INTRA`.
 
 - Module: `GEO-INFER-INTRA`
 - Package: `geo_infer_intra`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-INTRA`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-intra`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module INTRA`
 
 ## Dependencies

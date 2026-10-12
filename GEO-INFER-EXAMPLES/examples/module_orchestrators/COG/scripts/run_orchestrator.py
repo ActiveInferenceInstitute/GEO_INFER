@@ -12,22 +12,17 @@ real ``geo_infer_cog`` public API.
 from __future__ import annotations
 
 import sys
-from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     from geo_infer_cog import SpatialPerceptionModel
 
     # Synthetic cognitive-map observations: landmarks and regions a wayfinder
     # would perceive on a fictional downtown map.
-    spatial_data: Dict[str, Any] = {
+    spatial_data: dict[str, Any] = {
         "geometries": [
             {
                 "type": "Point",

@@ -6,7 +6,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 from geo_infer_act.runners.contracts import SCENARIO_NAMES, RunConfig
 from geo_infer_act.runners.scenarios import (
@@ -16,10 +16,18 @@ from geo_infer_act.runners.scenarios import (
 )
 
 
-def build_parser(default_all: bool = False) -> argparse.ArgumentParser:
-    """Build the shared ACT runner CLI parser."""
+def build_parser(
+    default_all: bool = False, prog: str | None = None
+) -> argparse.ArgumentParser:
+    """Build the shared ACT runner CLI parser.
+
+    Args:
+        default_all: Default ``--scenario`` to ``all`` instead of unset.
+        prog: Program name shown in usage text and recorded in run manifests.
+    """
     parser = argparse.ArgumentParser(
-        description="Run GEO-INFER-ACT Active Inference scenarios."
+        prog=prog,
+        description="Run GEO-INFER-ACT Active Inference scenarios.",
     )
     parser.add_argument(
         "--scenario",
@@ -93,7 +101,7 @@ def config_from_args(args: argparse.Namespace) -> RunConfig:
     return config
 
 
-def main(argv: Optional[Iterable[str]] = None) -> int:
+def main(argv: Iterable[str] | None = None) -> int:
     """Run one scenario or a full scenario suite."""
     args = build_parser().parse_args(list(argv) if argv is not None else None)
     config = config_from_args(args)
@@ -107,6 +115,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             deterministic=config.deterministic,
             visualizations=config.visualizations,
             command=command,
+            config=config,
         )
         payload = {"manifest": str(suite.manifest_path)}
         message = f"Suite manifest: {suite.manifest_path}"
@@ -119,7 +128,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     return 0
 
 
-def run_all_main(argv: Optional[Iterable[str]] = None) -> int:
+def run_all_main(argv: Iterable[str] | None = None) -> int:
     """Entry point for the full examples suite."""
     args_list = list(argv) if argv is not None else sys.argv[1:]
     if "--scenario" not in args_list:

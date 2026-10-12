@@ -1,7 +1,6 @@
 """Carbon sequestration modeling."""
 
 import logging
-from typing import Dict, Optional
 import xarray as xr
 
 logger = logging.getLogger(__name__)
@@ -10,7 +9,7 @@ logger = logging.getLogger(__name__)
 class CarbonSequestrationModeler:
     """Model carbon sequestration in forests."""
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize carbon sequestration modeler."""
         self.config = config or {}
         # Carbon content: ~50% of dry biomass

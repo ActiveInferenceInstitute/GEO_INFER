@@ -11,16 +11,14 @@ Examples workspace within `GEO-INFER-TIME`.
 
 - `basic_temporal_analysis.py:generate_sample_timeseries` (function)
 - `basic_temporal_analysis.py:main` (function)
-- `demo_all_methods.py:success` (function)
-- `demo_all_methods.py:info` (function)
-- `demo_all_methods.py:section` (function)
+- `demo_all_methods.py:main` (function)
 
 ## Module Metadata
 
 - Module: `GEO-INFER-TIME`
 - Package: `geo_infer_time`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-TIME`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-time`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module TIME`
 
 ## Dependencies

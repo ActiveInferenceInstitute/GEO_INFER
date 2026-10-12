@@ -9,7 +9,7 @@ and event handling.
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 # Import the main communication system
 from geo_infer_comms import (
@@ -256,7 +256,7 @@ def geospatial_operations_example():
         location=sf_point,
         accuracy=5.0,
         source="GPS",
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
 
     logger.info(

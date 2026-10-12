@@ -166,7 +166,3 @@ See VFE and EFE in practice:
 ## References
 
 Friston, K. (2010). The free-energy principle: a unified brain theory? *Nature Reviews Neuroscience*, 11(2), 127-138.
-
----
-
-**Last Updated**: 2026-05-18

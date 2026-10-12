@@ -5,14 +5,13 @@ management core (resource travel-time estimation, SAR pattern metrics).
 """
 
 import math
-from typing import Dict
 
 # Mean Earth radius in kilometres (spherical approximation).
 EARTH_RADIUS_KM = 6371.0
 
 
 def haversine_distance_km(
-    point_a: Dict[str, float], point_b: Dict[str, float]
+    point_a: dict[str, float], point_b: dict[str, float]
 ) -> float:
     """
     Great-circle distance between two points in kilometres.

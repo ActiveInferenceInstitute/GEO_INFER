@@ -34,6 +34,7 @@
 - `test_mlflow_integration.py`
 - `test_model_evaluation.py`
 - `test_model_evaluation_coverage.py`
+- `test_permutation_ownership.py`
 - `test_rng.py`
 - `test_spatial_lag_features.py`
 - `test_spatial_predictor.py`

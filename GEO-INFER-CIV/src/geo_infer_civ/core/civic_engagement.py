@@ -6,7 +6,7 @@ and voter turnout modeling for civic engagement processes.
 """
 
 import math
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
 from dataclasses import dataclass
 from enum import Enum
 
@@ -45,8 +45,8 @@ class MeetingRecord:
     actual_attendees: int
     public_comments_count: int = 0
     duration_minutes: float = 60.0
-    location: Optional[Tuple[float, float]] = None
-    topic: Optional[str] = None
+    location: tuple[float, float] | None = None
+    topic: str | None = None
 
 
 @dataclass
@@ -58,8 +58,8 @@ class PublicComment:
     category: CommentCategory
     word_count: int
     timestamp: float
-    submitter_id: Optional[str] = None
-    topic: Optional[str] = None
+    submitter_id: str | None = None
+    topic: str | None = None
     sentiment_score: float = 0.0
 
 
@@ -81,11 +81,11 @@ class CommentAnalysis:
     """Analysis of public comments."""
 
     total_comments: int
-    category_distribution: Dict[str, float]
+    category_distribution: dict[str, float]
     average_word_count: float
     average_sentiment: float
     unique_submitters: int
-    topics: Dict[str, int]
+    topics: dict[str, int]
     engagement_depth_score: float
 
 
@@ -98,7 +98,7 @@ class AttendanceTracker:
     """
 
     def __init__(self) -> None:
-        self._meetings: List[MeetingRecord] = []
+        self._meetings: list[MeetingRecord] = []
 
     def add_meeting(self, meeting: MeetingRecord) -> None:
         """
@@ -109,7 +109,7 @@ class AttendanceTracker:
         """
         self._meetings.append(meeting)
 
-    def add_meetings(self, meetings: List[MeetingRecord]) -> None:
+    def add_meetings(self, meetings: list[MeetingRecord]) -> None:
         """
         Add multiple meeting records.
 
@@ -120,7 +120,7 @@ class AttendanceTracker:
 
     def compute_attendance_trend(
         self,
-        meeting_type: Optional[MeetingType] = None,
+        meeting_type: MeetingType | None = None,
     ) -> AttendanceTrend:
         """
         Compute attendance trend analysis.
@@ -175,8 +175,8 @@ class AttendanceTracker:
             direction = "stable"
 
         # Per-type averages
-        type_averages: Dict[str, float] = {}
-        type_counts: Dict[str, Tuple[int, int]] = {}
+        type_averages: dict[str, float] = {}
+        type_counts: dict[str, tuple[int, int]] = {}
         for m in meetings:
             t = m.meeting_type.value
             if t not in type_counts:
@@ -204,7 +204,7 @@ class AttendanceTracker:
             meeting_count=len(meetings),
         )
 
-    def get_meeting_effectiveness(self, meeting_id: str) -> Dict[str, Any]:
+    def get_meeting_effectiveness(self, meeting_id: str) -> dict[str, Any]:
         """
         Compute effectiveness metrics for a specific meeting.
 
@@ -264,7 +264,7 @@ class PublicCommentAnalyzer:
     """
 
     def __init__(self) -> None:
-        self._comments: List[PublicComment] = []
+        self._comments: list[PublicComment] = []
 
     def add_comment(self, comment: PublicComment) -> None:
         """
@@ -275,7 +275,7 @@ class PublicCommentAnalyzer:
         """
         self._comments.append(comment)
 
-    def add_comments(self, comments: List[PublicComment]) -> None:
+    def add_comments(self, comments: list[PublicComment]) -> None:
         """
         Add multiple public comment records.
 
@@ -286,7 +286,7 @@ class PublicCommentAnalyzer:
 
     def analyze(
         self,
-        meeting_id: Optional[str] = None,
+        meeting_id: str | None = None,
     ) -> CommentAnalysis:
         """
         Analyze public comments, optionally filtered by meeting.
@@ -316,7 +316,7 @@ class PublicCommentAnalyzer:
             )
 
         # Category distribution
-        cat_counts: Dict[str, int] = {}
+        cat_counts: dict[str, int] = {}
         for c in comments:
             cat_counts[c.category.value] = cat_counts.get(c.category.value, 0) + 1
         total = len(comments)
@@ -330,7 +330,7 @@ class PublicCommentAnalyzer:
         unique_submitters = len({c.submitter_id for c in comments if c.submitter_id})
 
         # Topics
-        topic_counts: Dict[str, int] = {}
+        topic_counts: dict[str, int] = {}
         for c in comments:
             if c.topic:
                 topic_counts[c.topic] = topic_counts.get(c.topic, 0) + 1
@@ -364,7 +364,7 @@ class PublicCommentAnalyzer:
         )
 
     @staticmethod
-    def _shannon_entropy(counts: List[int]) -> float:
+    def _shannon_entropy(counts: list[int]) -> float:
         """Compute Shannon entropy from a list of counts."""
         total = sum(counts)
         if total == 0:
@@ -386,7 +386,7 @@ class VoterTurnoutModel:
     """
 
     def __init__(self) -> None:
-        self._turnout_records: List[Dict[str, Any]] = []
+        self._turnout_records: list[dict[str, Any]] = []
 
     def add_election(
         self,
@@ -427,7 +427,7 @@ class VoterTurnoutModel:
 
     def compute_average_turnout(
         self,
-        election_type: Optional[str] = None,
+        election_type: str | None = None,
     ) -> float:
         """
         Compute average turnout rate across all or filtered elections.
@@ -456,7 +456,7 @@ class VoterTurnoutModel:
         election_type: str,
         is_contested: bool = True,
         media_coverage_score: float = 0.5,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Predict voter turnout for an upcoming election.
 
@@ -532,7 +532,7 @@ class VoterTurnoutModel:
             },
         }
 
-    def get_turnout_summary(self) -> Dict[str, Any]:
+    def get_turnout_summary(self) -> dict[str, Any]:
         """
         Get a summary of all turnout data.
 
@@ -542,7 +542,7 @@ class VoterTurnoutModel:
         if not self._turnout_records:
             return {"total_elections": 0, "overall_average_turnout": 0.0, "by_type": {}}
 
-        type_rates: Dict[str, List[float]] = {}
+        type_rates: dict[str, list[float]] = {}
         for r in self._turnout_records:
             t = r["election_type"]
             if t not in type_rates:

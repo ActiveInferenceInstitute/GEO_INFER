@@ -12,19 +12,13 @@ from __future__ import annotations
 
 import sys
 from itertools import permutations
-from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
-
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
-def _path_length(path: List[int], distances: np.ndarray) -> float:
+def _path_length(path: list[int], distances: np.ndarray) -> float:
     """Total open-path length of ``path`` under ``distances``.
 
     Matches the module's fitness semantics: ``_evaluate_solution`` sums
@@ -33,7 +27,7 @@ def _path_length(path: List[int], distances: np.ndarray) -> float:
     return float(sum(distances[path[i], path[i + 1]] for i in range(len(path) - 1)))
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     from geo_infer_ant import AntColonyOptimization
 
     rng = np.random.default_rng(7)

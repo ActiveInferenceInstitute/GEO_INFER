@@ -78,17 +78,7 @@ def find_facilities_nearby_example():
 
 def get_nearest_facility_example():
     print("Getting nearest facility...")
-    params = {
-        "latitude": 34.0580,
-        "longitude": -118.3000,
-        "required_services": json.dumps(
-            ["Emergency"]
-        ),  # Pass list as JSON string for GET/POST params if needed
-    }
-    # If using POST with JSON body, can pass list directly in body
-    # For GET or form data in POST, often need to serialize lists/dicts
-    # FastAPI Query can handle List, but client might need to format it correctly (e.g. repeated param)
-    # Let's try with a direct list for Query (FastAPI is good at parsing this)
+    # FastAPI parses repeated query parameters into the required_services list.
     response = requests.post(
         f"{ACCESSIBILITY_URL}/facilities/nearest",
         params={

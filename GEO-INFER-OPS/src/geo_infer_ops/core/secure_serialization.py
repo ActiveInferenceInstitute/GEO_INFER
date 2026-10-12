@@ -44,7 +44,7 @@ import secrets
 import stat
 import threading
 from pathlib import Path
-from typing import Any, Optional, Union, Dict, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ _HEADER_PREFIX_LEN = len(MAGIC) + 3  # magic + version + alg + key_id length
 _LENGTH_FIELD_LEN = 8
 
 _key_cache_lock = threading.Lock()
-_key_file_cache: Dict[Tuple[str, int, int], bytes] = {}
+_key_file_cache: dict[tuple[str, int, int], bytes] = {}
 
 
 class PayloadSecurityError(Exception):
@@ -103,7 +103,7 @@ def default_key_path() -> Path:
     return base / "geo-infer" / "serialization.key"
 
 
-def _coerce_key(material: Union[bytes, bytearray, memoryview, str]) -> bytes:
+def _coerce_key(material: bytes | bytearray | memoryview | str) -> bytes:
     """Normalise supplied key material to raw bytes."""
     if isinstance(material, str):
         stripped = material.strip()
@@ -157,7 +157,7 @@ def _create_key_file(path: Path) -> bytes:
     return material
 
 
-def resolve_signing_key(key: Optional[Union[bytes, str]] = None) -> bytes:
+def resolve_signing_key(key: bytes | str | None = None) -> bytes:
     """
     Resolve the master signing key for authenticated serialization.
 
@@ -226,7 +226,7 @@ def derive_context_key(master_key: bytes, context: str) -> bytes:
     ).digest()
 
 
-def _resolve_key_id(key_id: Optional[str]) -> bytes:
+def _resolve_key_id(key_id: str | None) -> bytes:
     """Return the encoded key identifier bound into the envelope header."""
     resolved = key_id or os.environ.get(ENV_KEY_ID) or DEFAULT_KEY_ID
     encoded = resolved.encode("utf-8")
@@ -258,8 +258,8 @@ def sign_payload(
     payload: bytes,
     *,
     context: str,
-    key: Optional[Union[bytes, str]] = None,
-    key_id: Optional[str] = None,
+    key: bytes | str | None = None,
+    key_id: str | None = None,
 ) -> bytes:
     """
     Wrap raw serialized bytes in an authenticated GISP1 envelope.
@@ -284,10 +284,10 @@ def sign_payload(
 
 
 def verify_payload(
-    envelope: Union[bytes, bytearray, memoryview],
+    envelope: bytes | bytearray | memoryview,
     *,
     context: str,
-    key: Optional[Union[bytes, str]] = None,
+    key: bytes | str | None = None,
 ) -> bytes:
     """
     Verify a GISP1 envelope and return its payload.
@@ -356,8 +356,8 @@ def sign_payload_text(
     payload: bytes,
     *,
     context: str,
-    key: Optional[Union[bytes, str]] = None,
-    key_id: Optional[str] = None,
+    key: bytes | str | None = None,
+    key_id: str | None = None,
 ) -> str:
     """Return a text-safe GISP1 envelope for string-mode transports."""
     envelope = sign_payload(payload, context=context, key=key, key_id=key_id)
@@ -368,7 +368,7 @@ def verify_payload_text(
     envelope: str,
     *,
     context: str,
-    key: Optional[Union[bytes, str]] = None,
+    key: bytes | str | None = None,
 ) -> bytes:
     """Verify a text-mode GISP1 envelope and return its payload bytes."""
     if not isinstance(envelope, str):
@@ -411,9 +411,9 @@ def dumps_signed(
     obj: Any,
     *,
     context: str,
-    key: Optional[Union[bytes, str]] = None,
+    key: bytes | str | None = None,
     serializer: str = "pickle",
-    key_id: Optional[str] = None,
+    key_id: str | None = None,
 ) -> bytes:
     """Serialize ``obj`` and return an authenticated binary envelope."""
     return sign_payload(
@@ -425,10 +425,10 @@ def dumps_signed(
 
 
 def loads_signed(
-    envelope: Union[bytes, bytearray, memoryview],
+    envelope: bytes | bytearray | memoryview,
     *,
     context: str,
-    key: Optional[Union[bytes, str]] = None,
+    key: bytes | str | None = None,
     serializer: str = "pickle",
 ) -> Any:
     """Verify an authenticated binary envelope, then deserialize its payload."""
@@ -441,9 +441,9 @@ def dumps_signed_text(
     obj: Any,
     *,
     context: str,
-    key: Optional[Union[bytes, str]] = None,
+    key: bytes | str | None = None,
     serializer: str = "json",
-    key_id: Optional[str] = None,
+    key_id: str | None = None,
 ) -> str:
     """Serialize ``obj`` and return an authenticated text envelope."""
     return sign_payload_text(
@@ -458,7 +458,7 @@ def loads_signed_text(
     envelope: str,
     *,
     context: str,
-    key: Optional[Union[bytes, str]] = None,
+    key: bytes | str | None = None,
     serializer: str = "json",
 ) -> Any:
     """Verify an authenticated text envelope, then deserialize its payload."""

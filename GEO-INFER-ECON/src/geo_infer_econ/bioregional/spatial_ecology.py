@@ -6,7 +6,7 @@ ecosystem network analysis, conservation prioritization using Zonation-like
 scoring, and restoration cost-benefit analysis.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -23,7 +23,7 @@ class LandscapeEconomics:
     ecology and environmental economics.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize landscape economics.
 
         Args:
@@ -32,7 +32,7 @@ class LandscapeEconomics:
                 - ``edge_bonus_factor`` (float): Value multiplier for edge habitat (default 1.15).
         """
         self.config = config or {}
-        self.per_ha_values: Dict[str, float] = self.config.get(
+        self.per_ha_values: dict[str, float] = self.config.get(
             "per_ha_values",
             {
                 "forest": 3800.0,
@@ -45,7 +45,7 @@ class LandscapeEconomics:
         self.edge_bonus = float(self.config.get("edge_bonus_factor", 1.15))
         logger.info("LandscapeEconomics initialized")
 
-    def analyze_landscape(self, landscape_data: gpd.GeoDataFrame) -> Dict[str, Any]:
+    def analyze_landscape(self, landscape_data: gpd.GeoDataFrame) -> dict[str, Any]:
         """Analyze landscape economics from a patch GeoDataFrame.
 
         Expects columns: ``land_cover`` (str), and geometry must be polygon/multi-polygon.
@@ -120,7 +120,7 @@ class HabitatConnectivity:
     Index of Connectivity (IIC) approach.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.dispersal_distance_m = float(
             self.config.get("dispersal_distance_m", 5000.0)
@@ -130,7 +130,7 @@ class HabitatConnectivity:
             self.dispersal_distance_m,
         )
 
-    def analyze_connectivity(self, habitat_data: gpd.GeoDataFrame) -> Dict[str, Any]:
+    def analyze_connectivity(self, habitat_data: gpd.GeoDataFrame) -> dict[str, Any]:
         """Analyze habitat connectivity from patch GeoDataFrame.
 
         Expects polygon geometries. Optionally ``habitat_quality`` (0-1) column.
@@ -168,11 +168,11 @@ class HabitatConnectivity:
 
         # Connected components via BFS
         visited = set()
-        components: List[List[int]] = []
+        components: list[list[int]] = []
         for start in range(n):
             if start in visited:
                 continue
-            comp: List[int] = []
+            comp: list[int] = []
             queue = [start]
             while queue:
                 node = queue.pop(0)
@@ -225,11 +225,11 @@ class EcosystemNetworkAnalysis:
     groups or functional units and edges represent energy/material flows.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         logger.info("EcosystemNetworkAnalysis initialized")
 
-    def analyze_network(self, network_data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_network(self, network_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze an ecosystem network.
 
         Args:
@@ -319,7 +319,7 @@ class ConservationPrioritization:
     threat level, cost, and complementarity with existing protected areas.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.weights = self.config.get(
             "weights",
@@ -332,7 +332,7 @@ class ConservationPrioritization:
         )
         logger.info("ConservationPrioritization initialized")
 
-    def prioritize_areas(self, conservation_data: Dict[str, Any]) -> pd.DataFrame:
+    def prioritize_areas(self, conservation_data: dict[str, Any]) -> pd.DataFrame:
         """Prioritize conservation areas using multi-criteria scoring.
 
         Args:
@@ -355,7 +355,7 @@ class ConservationPrioritization:
         if not areas:
             return pd.DataFrame()
 
-        rows: List[Dict[str, Any]] = []
+        rows: list[dict[str, Any]] = []
         for area in areas:
             sr = float(area.get("species_richness", 0))
             tl = float(area.get("threat_level", 0))
@@ -436,7 +436,7 @@ class RestorationEconomics:
     """
 
     # Typical restoration costs (USD/ha) by ecosystem type
-    RESTORATION_COSTS: Dict[str, float] = {
+    RESTORATION_COSTS: dict[str, float] = {
         "forest": 3500.0,
         "wetland": 8000.0,
         "grassland": 1500.0,
@@ -446,7 +446,7 @@ class RestorationEconomics:
     }
 
     # Expected annual ecosystem service gains post-restoration (USD/ha/yr)
-    SERVICE_GAINS: Dict[str, float] = {
+    SERVICE_GAINS: dict[str, float] = {
         "forest": 2800.0,
         "wetland": 5000.0,
         "grassland": 900.0,
@@ -455,7 +455,7 @@ class RestorationEconomics:
         "degraded_farmland": 1800.0,
     }
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.discount_rate = float(self.config.get("discount_rate", 0.04))
         self.time_horizon = int(self.config.get("time_horizon", 30))
@@ -465,7 +465,7 @@ class RestorationEconomics:
             self.time_horizon,
         )
 
-    def analyze_restoration(self, restoration_data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_restoration(self, restoration_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze restoration economics for proposed projects.
 
         Args:
@@ -483,7 +483,7 @@ class RestorationEconomics:
         projects = restoration_data.get("projects", [])
         logger.info("Analyzing %d restoration projects", len(projects))
 
-        project_results: List[Dict[str, Any]] = []
+        project_results: list[dict[str, Any]] = []
         total_cost = 0.0
         total_npv_benefit = 0.0
 

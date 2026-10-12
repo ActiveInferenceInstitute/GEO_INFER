@@ -8,10 +8,8 @@ Advanced machine learning and artificial intelligence capabilities specifically 
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -21,8 +19,8 @@ Advanced machine learning and artificial intelligence capabilities specifically 
 
 - Module: `GEO-INFER-AI`
 - Package: `geo_infer_ai`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-AI`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-ai`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module AI`
 
 ## Dependencies

@@ -11,7 +11,7 @@ import yaml
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Union
+from typing import Any
 import geopandas as gpd
 from shapely.geometry import Polygon, MultiPolygon, mapping
 import requests
@@ -29,7 +29,7 @@ class CountyBoundaryLoader:
         self.boundaries_config = self._load_boundaries_config()
         self.county_geometries = {}
 
-    def _load_boundaries_config(self) -> Dict[str, Any]:
+    def _load_boundaries_config(self) -> dict[str, Any]:
         """Load the county boundaries configuration file"""
         config_path = self.config_dir / "county_boundaries.yaml"
 
@@ -38,7 +38,7 @@ class CountyBoundaryLoader:
             return {}
 
         try:
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 config = yaml.safe_load(f)
             logger.info(f"Loaded county boundaries configuration from {config_path}")
             return config
@@ -46,13 +46,11 @@ class CountyBoundaryLoader:
             logger.error(f"Failed to load county boundaries config: {e}")
             return {}
 
-    def get_county_info(self, county_key: str) -> Optional[Dict[str, Any]]:
+    def get_county_info(self, county_key: str) -> dict[str, Any] | None:
         """Get county information from configuration"""
         return self.boundaries_config.get(county_key)
 
-    def load_county_geometry(
-        self, county_key: str
-    ) -> Optional[Union[Polygon, Dict[str, Any]]]:
+    def load_county_geometry(self, county_key: str) -> Polygon | dict[str, Any] | None:
         """
         Load county geometry from GeoJSON file
 
@@ -78,7 +76,7 @@ class CountyBoundaryLoader:
             if geometry_path.exists():
                 # First try loading as GeoJSON directly
                 try:
-                    with open(geometry_path, "r") as f:
+                    with open(geometry_path) as f:
                         geojson_data = json.load(f)
 
                     # If it's a FeatureCollection, extract the first feature's geometry
@@ -188,8 +186,8 @@ class CountyBoundaryLoader:
             return None
 
     def _create_geometry_from_bounds(
-        self, county_info: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, county_info: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Create a simple polygon from county bounds as GeoJSON for H3 v4"""
         bounds = county_info.get("bounds", {})
         if not bounds:
@@ -378,13 +376,13 @@ class CountyBoundaryLoader:
             return False
 
     def get_all_county_geometries(
-        self, target_counties: Dict[str, List[str]]
-    ) -> Dict[str, Dict[str, Any]]:
+        self, target_counties: dict[str, list[str]]
+    ) -> dict[str, dict[str, Any]]:
         """Get geometries for all target counties"""
         geometries = {}
 
         for state, counties in target_counties.items():
-            if not state in geometries:
+            if state not in geometries:
                 geometries[state] = {}
 
             if counties == ["all"] or "all" in counties:
@@ -417,7 +415,7 @@ class CountyBoundaryLoader:
 
         return geometries
 
-    def validate_geometry(self, geometry: Union[Dict[str, Any], Polygon]) -> bool:
+    def validate_geometry(self, geometry: dict[str, Any] | Polygon) -> bool:
         """Validate that a geometry is suitable for H3 geo_to_cells"""
         # For GeoJSON dict
         if isinstance(geometry, dict):

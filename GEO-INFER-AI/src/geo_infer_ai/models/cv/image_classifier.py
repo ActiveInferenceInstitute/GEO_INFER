@@ -9,7 +9,7 @@ weights are shipped.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -30,7 +30,7 @@ class ImageClassifier(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
         model_type: str = "random_forest",
-        n_classes: Optional[int] = None,
+        n_classes: int | None = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -43,14 +43,14 @@ class ImageClassifier(BaseEstimator, ClassifierMixin):
         """
         self.model_type = model_type
         self.n_classes = n_classes
-        self.model: Optional[Any] = None
-        self.classes_: Optional[np.ndarray] = None
+        self.model: Any | None = None
+        self.classes_: np.ndarray | None = None
         self._initialize_model(**kwargs)
 
     def _initialize_model(self, **kwargs: Any) -> None:
         """Initialize the underlying model based on model_type."""
         if self.model_type == "random_forest":
-            rf_params: Dict[str, Any] = {
+            rf_params: dict[str, Any] = {
                 "n_estimators": 100,
                 "max_depth": 20,
                 "random_state": 42,
@@ -59,7 +59,7 @@ class ImageClassifier(BaseEstimator, ClassifierMixin):
             rf_params.update(kwargs)
             self.model = RandomForestClassifier(**rf_params)
         elif self.model_type == "neural_network":
-            mlp_params: Dict[str, Any] = {
+            mlp_params: dict[str, Any] = {
                 "hidden_layer_sizes": (100, 50),
                 "max_iter": 500,
                 "random_state": 42,
@@ -75,7 +75,7 @@ class ImageClassifier(BaseEstimator, ClassifierMixin):
             )
 
     def fit(
-        self, X: np.ndarray, y: np.ndarray, sample_weight: Optional[np.ndarray] = None
+        self, X: np.ndarray, y: np.ndarray, sample_weight: np.ndarray | None = None
     ) -> "ImageClassifier":
         """
         Train the image classifier.
@@ -182,7 +182,7 @@ class ImageClassifier(BaseEstimator, ClassifierMixin):
                 f"Unsupported image shape: {X.shape}. Expected 2D, 3D, or 4D arrays"
             )
 
-    def get_feature_importance(self) -> Optional[np.ndarray]:
+    def get_feature_importance(self) -> np.ndarray | None:
         """
         Get feature importance scores (for Random Forest models).
 

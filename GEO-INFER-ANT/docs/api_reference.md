@@ -210,7 +210,7 @@ class SwarmAgent:
         position: np.ndarray,
         sensory_range: float = 100.0,
         movement_speed: float = 1.5,
-        active_inference_enabled: bool = True,
+        active_inference_enabled: bool = False,
         spatial_backend: str = "h3",
         **kwargs,
     )
@@ -222,20 +222,23 @@ class SwarmAgent:
 | `position` | `np.ndarray` | required | Initial `[lat, lng]` position |
 | `sensory_range` | `float` | 100.0 | Maximum perception distance in meters |
 | `movement_speed` | `float` | 1.5 | Maximum speed in m/s |
-| `active_inference_enabled` | `bool` | `True` | Use Active Inference for decisions |
+| `active_inference_enabled` | `bool` | `False` | Enable an explicitly configured ACT model |
 | `spatial_backend` | `str` | `"h3"` | Spatial backend |
 
-**Key kwargs:** `initial_energy` (float, default 1.0), `memory_capacity` (int, default 50).
+**Key kwargs:** `initial_energy` (float, default 1.0), `memory_capacity` (int, default 50). Enabling ACT also requires `active_inference_model` (an `ActiveInferenceModel` with its `GenerativeModel` configured), `act_observation_encoder` (a callable converting processed sensory data into the model's observation), and `act_actions` (ordered action dictionaries containing `action_type`). Their order must match the model's transition operators. The agent owns a copy of the action dictionaries.
+
+The current bridge accepts flat categorical models. Execute each selected action before requesting another decision. A successful execution advances the prior through the selected transition once and records `act_prediction_history`; failed execution does not advance it. The next decision conditions the next real observation. No observation is synthesized from the action's expected outcome.
+Execution uses the agent's owned action snapshot, so mutating a returned decision cannot retarget its physical action or transition. Concurrent execution of that decision raises. If model prediction fails after physical success, retrying the same decision retries prediction without repeating the physical action.
 
 **Methods:**
 
 #### `async perceive_environment(spatial_context, environmental_signals, social_signals, stigmergic_signals, temporal_context) -> SensoryInput`
 
-Gather and integrate multi-modal sensory information. Updates Active Inference beliefs if enabled.
+Gather and integrate multi-modal sensory information. ACT inference runs when `make_decision` consumes this input.
 
 #### `make_decision(sensory_input, internal_motivations=None, behavioral_rules=None) -> ActionDecision`
 
-Select an action using Active Inference policy selection (minimizing expected free energy) or fallback rule-based logic. Default motivations: energy_conservation=0.8, task_completion=0.9, social_coordination=0.7, exploration=0.5.
+With ACT enabled, encode the observation and call the configured model's `step` once. Return its chosen action and policy probability as confidence. Encoding and inference errors propagate. The model's configured preferences govern this policy. With ACT disabled, use the rule policy; its default motivations are energy_conservation=0.8, task_completion=0.9, social_coordination=0.7, exploration=0.5.
 
 #### `async execute_action(decision: ActionDecision) -> Dict[str, Any]`
 

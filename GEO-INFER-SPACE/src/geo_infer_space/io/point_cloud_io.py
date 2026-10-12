@@ -9,7 +9,7 @@ NumPy and the Python standard library for zero-dependency fallback.
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Literal
 
 import numpy as np
 
@@ -33,7 +33,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Supported point cloud formats
 # ---------------------------------------------------------------------------
-SUPPORTED_POINT_CLOUD_FORMATS: Dict[str, str] = {
+SUPPORTED_POINT_CLOUD_FORMATS: dict[str, str] = {
     ".las": "LAS (LASer)",
     ".laz": "LAZ (Compressed LAS)",
     ".ply": "PLY (Polygon File Format)",
@@ -62,9 +62,9 @@ class PointCloudReader:
 
     def read(
         self,
-        file_path: Union[str, Path],
+        file_path: str | Path,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Read point cloud data from *file_path*.
 
         Args:
@@ -126,7 +126,7 @@ class PointCloudReader:
     # ------------------------------------------------------------------
     # LAS / LAZ
     # ------------------------------------------------------------------
-    def _read_las(self, file_path: Path, **kwargs: Any) -> Dict[str, Any]:
+    def _read_las(self, file_path: Path, **kwargs: Any) -> dict[str, Any]:
         """Read a LAS or LAZ file using *laspy*."""
         if not HAS_LASPY:
             raise ImportError(
@@ -146,9 +146,9 @@ class PointCloudReader:
         )
 
         # Optional attributes
-        classifications: Optional[np.ndarray] = None
-        intensities: Optional[np.ndarray] = None
-        colors: Optional[np.ndarray] = None
+        classifications: np.ndarray | None = None
+        intensities: np.ndarray | None = None
+        colors: np.ndarray | None = None
 
         if hasattr(las, "classification"):
             classifications = np.asarray(las.classification)
@@ -168,7 +168,7 @@ class PointCloudReader:
 
         # Metadata
         header = las.header
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "format": "LAS" if file_path.suffix.lower() == ".las" else "LAZ",
             "point_count": int(header.point_count),
             "point_format_id": int(header.point_format.id),
@@ -203,7 +203,7 @@ class PointCloudReader:
     # ------------------------------------------------------------------
     # PLY
     # ------------------------------------------------------------------
-    def _read_ply(self, file_path: Path, **kwargs: Any) -> Dict[str, Any]:
+    def _read_ply(self, file_path: Path, **kwargs: Any) -> dict[str, Any]:
         """Read a PLY file (ASCII or binary little-endian).
 
         A lightweight reader that does not require ``plyfile`` as a
@@ -213,7 +213,7 @@ class PointCloudReader:
         """
         with open(file_path, "rb") as fh:
             # ---- Parse header ------------------------------------------------
-            header_lines: List[str] = []
+            header_lines: list[str] = []
             while True:
                 line = fh.readline()
                 if not line:
@@ -225,7 +225,7 @@ class PointCloudReader:
 
             ply_format = "ascii"
             vertex_count = 0
-            properties: List[tuple] = []  # (name, dtype_str)
+            properties: list[tuple] = []  # (name, dtype_str)
             in_vertex_element = False
 
             for hline in header_lines:
@@ -303,17 +303,17 @@ class PointCloudReader:
                 )
             )
 
-            classifications: Optional[np.ndarray] = None
+            classifications: np.ndarray | None = None
             for cname in ("classification", "label", "class", "scalar_classification"):
                 if cname in prop_names:
                     classifications = np.asarray(raw_data[cname])
                     break
 
-            intensities: Optional[np.ndarray] = None
+            intensities: np.ndarray | None = None
             if "intensity" in prop_names:
                 intensities = np.asarray(raw_data["intensity"])
 
-            colors: Optional[np.ndarray] = None
+            colors: np.ndarray | None = None
             if all(c in prop_names for c in ("red", "green", "blue")):
                 colors = np.column_stack(
                     (
@@ -323,7 +323,7 @@ class PointCloudReader:
                     )
                 )
 
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "format": "PLY",
             "point_count": vertex_count,
             "ply_format": ply_format,
@@ -353,7 +353,7 @@ class PointCloudReader:
     # ------------------------------------------------------------------
     # XYZ (whitespace-delimited plain text)
     # ------------------------------------------------------------------
-    def _read_xyz(self, file_path: Path, **kwargs: Any) -> Dict[str, Any]:
+    def _read_xyz(self, file_path: Path, **kwargs: Any) -> dict[str, Any]:
         """Read a plain-text XYZ file.
 
         Each line contains at least three whitespace-separated values
@@ -371,7 +371,7 @@ class PointCloudReader:
         """
         delimiter = kwargs.get("delimiter", None)
         skip_header = kwargs.get("skip_header", 0)
-        columns: Optional[List[str]] = kwargs.get("columns", None)
+        columns: list[str] | None = kwargs.get("columns", None)
         comments = kwargs.get("comments", "#")
 
         data = np.loadtxt(
@@ -403,7 +403,7 @@ class PointCloudReader:
             ]
             columns = default_cols[: data.shape[1]]
 
-        col_map: Dict[str, int] = {name: idx for idx, name in enumerate(columns)}
+        col_map: dict[str, int] = {name: idx for idx, name in enumerate(columns)}
 
         points = np.column_stack(
             (
@@ -413,15 +413,15 @@ class PointCloudReader:
             )
         )
 
-        classifications: Optional[np.ndarray] = None
+        classifications: np.ndarray | None = None
         if "classification" in col_map:
             classifications = data[:, col_map["classification"]].astype(np.int32)
 
-        intensities: Optional[np.ndarray] = None
+        intensities: np.ndarray | None = None
         if "intensity" in col_map:
             intensities = data[:, col_map["intensity"]]
 
-        colors: Optional[np.ndarray] = None
+        colors: np.ndarray | None = None
         if all(c in col_map for c in ("red", "green", "blue")):
             colors = np.column_stack(
                 (
@@ -431,7 +431,7 @@ class PointCloudReader:
                 )
             ).astype(np.uint8)
 
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "format": "XYZ",
             "point_count": int(points.shape[0]),
             "num_columns": int(data.shape[1]),
@@ -460,7 +460,7 @@ class PointCloudReader:
     # ------------------------------------------------------------------
     # CSV (comma-separated, with optional header)
     # ------------------------------------------------------------------
-    def _read_csv(self, file_path: Path, **kwargs: Any) -> Dict[str, Any]:
+    def _read_csv(self, file_path: Path, **kwargs: Any) -> dict[str, Any]:
         """Read point cloud data from a CSV file.
 
         The CSV file should have a header row.  The reader auto-detects
@@ -476,12 +476,12 @@ class PointCloudReader:
             delimiter: CSV delimiter (default ``','``).
         """
         delimiter = kwargs.get("delimiter", ",")
-        x_col: Optional[str] = kwargs.get("x_col", None)
-        y_col: Optional[str] = kwargs.get("y_col", None)
-        z_col: Optional[str] = kwargs.get("z_col", None)
+        x_col: str | None = kwargs.get("x_col", None)
+        y_col: str | None = kwargs.get("y_col", None)
+        z_col: str | None = kwargs.get("z_col", None)
 
         # Read header
-        with open(file_path, "r", encoding="utf-8") as fh:
+        with open(file_path, encoding="utf-8") as fh:
             first_line = fh.readline().strip()
 
         headers = [h.strip().lower() for h in first_line.split(delimiter)]
@@ -491,7 +491,7 @@ class PointCloudReader:
         _y_candidates = ["y", "northing", "latitude", "lat", "n"]
         _z_candidates = ["z", "elevation", "altitude", "alt", "height", "h"]
 
-        def _find_col(explicit: Optional[str], candidates: List[str]) -> Optional[str]:
+        def _find_col(explicit: str | None, candidates: list[str]) -> str | None:
             if explicit and explicit.lower() in headers:
                 return explicit.lower()
             for c in candidates:
@@ -528,17 +528,17 @@ class PointCloudReader:
         points = np.column_stack((data[:, xi], data[:, yi], data[:, zi]))
 
         # Optional columns
-        classifications: Optional[np.ndarray] = None
+        classifications: np.ndarray | None = None
         for cname in ("classification", "class", "label"):
             if cname in headers:
                 classifications = data[:, headers.index(cname)].astype(np.int32)
                 break
 
-        intensities: Optional[np.ndarray] = None
+        intensities: np.ndarray | None = None
         if "intensity" in headers:
             intensities = data[:, headers.index("intensity")]
 
-        colors: Optional[np.ndarray] = None
+        colors: np.ndarray | None = None
         if all(c in headers for c in ("red", "green", "blue")):
             colors = np.column_stack(
                 (
@@ -548,7 +548,7 @@ class PointCloudReader:
                 )
             ).astype(np.uint8)
 
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "format": "CSV",
             "point_count": int(points.shape[0]),
             "headers": headers,
@@ -582,7 +582,7 @@ class PointCloudReader:
     # Helpers
     # ------------------------------------------------------------------
     @staticmethod
-    def _empty_result(fmt: str, file_path: Path) -> Dict[str, Any]:
+    def _empty_result(fmt: str, file_path: Path) -> dict[str, Any]:
         """Return an empty result dictionary."""
         return {
             "points": np.empty((0, 3), dtype=np.float64),
@@ -620,11 +620,11 @@ class PointCloudWriter:
     def write(
         self,
         points: np.ndarray,
-        file_path: Union[str, Path],
-        classifications: Optional[np.ndarray] = None,
-        intensities: Optional[np.ndarray] = None,
-        colors: Optional[np.ndarray] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        file_path: str | Path,
+        classifications: np.ndarray | None = None,
+        intensities: np.ndarray | None = None,
+        colors: np.ndarray | None = None,
+        metadata: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Write point cloud data to *file_path*.
@@ -724,10 +724,10 @@ class PointCloudWriter:
         points: np.ndarray,
         file_path: Path,
         *,
-        classifications: Optional[np.ndarray] = None,
-        intensities: Optional[np.ndarray] = None,
-        colors: Optional[np.ndarray] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        classifications: np.ndarray | None = None,
+        intensities: np.ndarray | None = None,
+        colors: np.ndarray | None = None,
+        metadata: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Write a LAS/LAZ file using *laspy*."""
@@ -799,9 +799,9 @@ class PointCloudWriter:
         points: np.ndarray,
         file_path: Path,
         *,
-        classifications: Optional[np.ndarray] = None,
-        intensities: Optional[np.ndarray] = None,
-        colors: Optional[np.ndarray] = None,
+        classifications: np.ndarray | None = None,
+        intensities: np.ndarray | None = None,
+        colors: np.ndarray | None = None,
         binary: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -880,8 +880,8 @@ class PointCloudWriter:
         points: np.ndarray,
         file_path: Path,
         *,
-        classifications: Optional[np.ndarray] = None,
-        intensities: Optional[np.ndarray] = None,
+        classifications: np.ndarray | None = None,
+        intensities: np.ndarray | None = None,
         delimiter: str = " ",
         precision: int = 6,
         **kwargs: Any,
@@ -912,9 +912,9 @@ class PointCloudWriter:
         points: np.ndarray,
         file_path: Path,
         *,
-        classifications: Optional[np.ndarray] = None,
-        intensities: Optional[np.ndarray] = None,
-        colors: Optional[np.ndarray] = None,
+        classifications: np.ndarray | None = None,
+        intensities: np.ndarray | None = None,
+        colors: np.ndarray | None = None,
         delimiter: str = ",",
         precision: int = 6,
         **kwargs: Any,
@@ -957,9 +957,9 @@ class PointCloudWriter:
 # Convenience functions
 # ---------------------------------------------------------------------------
 def read_point_cloud_file(
-    file_path: Union[str, Path],
+    file_path: str | Path,
     **kwargs: Any,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Read point cloud data from file using the appropriate reader.
 
     This is a convenience wrapper around :class:`PointCloudReader`.
@@ -978,11 +978,11 @@ def read_point_cloud_file(
 
 def write_point_cloud_file(
     points: np.ndarray,
-    file_path: Union[str, Path],
-    classifications: Optional[np.ndarray] = None,
-    intensities: Optional[np.ndarray] = None,
-    colors: Optional[np.ndarray] = None,
-    metadata: Optional[Dict[str, Any]] = None,
+    file_path: str | Path,
+    classifications: np.ndarray | None = None,
+    intensities: np.ndarray | None = None,
+    colors: np.ndarray | None = None,
+    metadata: dict[str, Any] | None = None,
     **kwargs: Any,
 ) -> None:
     """Write point cloud data to file using the appropriate writer.
@@ -1010,7 +1010,7 @@ def write_point_cloud_file(
     )
 
 
-def supported_point_cloud_formats() -> Dict[str, str]:
+def supported_point_cloud_formats() -> dict[str, str]:
     """Get dictionary of supported point cloud formats.
 
     Returns:

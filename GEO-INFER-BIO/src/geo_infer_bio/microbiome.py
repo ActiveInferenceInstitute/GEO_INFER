@@ -20,7 +20,7 @@ import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class MicrobiomeDataLoader:
     - Custom microbiome datasets with spatial coordinates
     """
 
-    def __init__(self, cache_dir: Optional[str] = None):
+    def __init__(self, cache_dir: str | None = None):
         """
         Initialize the microbiome data loader.
 
@@ -60,11 +60,11 @@ class MicrobiomeDataLoader:
 
     def load_emp_data(
         self,
-        region_bbox: Optional[Tuple[float, float, float, float]] = None,
-        sample_types: Optional[List[str]] = None,
-        max_samples: Optional[int] = None,
+        region_bbox: tuple[float, float, float, float] | None = None,
+        sample_types: list[str] | None = None,
+        max_samples: int | None = None,
         quality_filters: bool = True,
-        metadata_path: Optional[str] = None,
+        metadata_path: str | None = None,
     ) -> "MicrobiomeDataset":
         """
         Load Earth Microbiome Project data with spatial filtering.
@@ -157,7 +157,7 @@ class MicrobiomeDataLoader:
     def load_custom_microbiome_data(
         self,
         metadata_path: str,
-        coordinate_columns: Tuple[str, str] = ("latitude", "longitude"),
+        coordinate_columns: tuple[str, str] = ("latitude", "longitude"),
     ) -> "MicrobiomeDataset":
         """
         Load custom microbiome dataset with spatial coordinates.
@@ -237,7 +237,7 @@ class MicrobiomeDataset:
                 f"{invalid_lon.sum()} invalid longitudes"
             )
 
-    def get_coordinates(self) -> List[Tuple[float, float]]:
+    def get_coordinates(self) -> list[tuple[float, float]]:
         """
         Get sample coordinates as list of (latitude, longitude) tuples.
 
@@ -281,7 +281,7 @@ class MicrobiomeDataset:
         return self.metadata[available_cols]
 
     def filter_by_coordinates(
-        self, bbox: Tuple[float, float, float, float]
+        self, bbox: tuple[float, float, float, float]
     ) -> "MicrobiomeDataset":
         """
         Filter dataset by spatial bounding box.
@@ -308,7 +308,7 @@ class MicrobiomeDataset:
             data_source=f"{self.data_source} (spatially filtered)",
         )
 
-    def export_for_h3_integration(self) -> Dict[str, Any]:
+    def export_for_h3_integration(self) -> dict[str, Any]:
         """
         Export data in format suitable for H3 spatial integration.
 

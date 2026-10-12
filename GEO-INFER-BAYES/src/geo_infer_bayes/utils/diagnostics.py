@@ -1,6 +1,6 @@
 """Convergence and efficiency diagnostics for Bayesian samples."""
 
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 
@@ -62,13 +62,13 @@ def _r_hat(chains: np.ndarray) -> float:
     return float(np.sqrt(max(variance_hat / within_chain, 0.0)))
 
 
-def mcmc_diagnostics(samples: Dict[str, np.ndarray]) -> Dict[str, Any]:
+def mcmc_diagnostics(samples: dict[str, np.ndarray]) -> dict[str, Any]:
     """Compute posterior summaries, effective sample size, and R-hat.
 
     One-dimensional arrays are treated as a single chain.  Pass a two-
     dimensional ``(chain, draw)`` array when a meaningful R-hat is required.
     """
-    diagnostics: Dict[str, Any] = {}
+    diagnostics: dict[str, Any] = {}
     for parameter, values in samples.items():
         chains = _as_chains(values)
         flattened = chains.reshape(-1)
@@ -86,9 +86,9 @@ def mcmc_diagnostics(samples: Dict[str, np.ndarray]) -> Dict[str, Any]:
     return diagnostics
 
 
-def convergence_metrics(samples: Dict[str, np.ndarray]) -> Dict[str, Any]:
+def convergence_metrics(samples: dict[str, np.ndarray]) -> dict[str, Any]:
     """Compute R-hat, Monte Carlo standard error, and Geweke statistics."""
-    metrics: Dict[str, Any] = {}
+    metrics: dict[str, Any] = {}
     for parameter, values in samples.items():
         chains = _as_chains(values)
         flattened = chains.reshape(-1)

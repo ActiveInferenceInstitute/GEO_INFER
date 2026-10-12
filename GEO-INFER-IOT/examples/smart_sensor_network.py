@@ -13,10 +13,10 @@ broker or external service is contacted.
 """
 
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List
+from datetime import datetime, timedelta, UTC
+from typing import Any
 
-from geo_infer_iot import IoTSystem, QualityController, SensorRegistry
+from geo_infer_iot import IoTSystem, QualityController
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,7 +28,7 @@ logger = logging.getLogger("smart_sensor_network")
 CENTER_LAT, CENTER_LON = 40.7128, -74.0060
 
 
-def build_network_config() -> Dict[str, Any]:
+def build_network_config() -> dict[str, Any]:
     """Configuration for the demo network."""
     return {
         "spatial": {"default_resolution": 8},
@@ -36,7 +36,7 @@ def build_network_config() -> Dict[str, Any]:
     }
 
 
-def register_deployment(system: IoTSystem) -> List[Dict[str, Any]]:
+def register_deployment(system: IoTSystem) -> list[dict[str, Any]]:
     """Register one network and three sensors through the IoT system."""
     result = system.register_network(
         network_id="SMART_CITY_001",
@@ -52,7 +52,7 @@ def register_deployment(system: IoTSystem) -> List[Dict[str, Any]]:
     )
     logger.info("Network registration: %s", result)
 
-    sensors: List[Dict[str, Any]] = []
+    sensors: list[dict[str, Any]] = []
     for i in range(3):
         sensor_data = {
             "sensor_id": f"SENSOR_{i:03d}",
@@ -70,11 +70,11 @@ def register_deployment(system: IoTSystem) -> List[Dict[str, Any]]:
 
 
 def simulate_measurements(
-    sensors: List[Dict[str, Any]], count: int = 6
-) -> List[Dict[str, Any]]:
+    sensors: list[dict[str, Any]], count: int = 6
+) -> list[dict[str, Any]]:
     """Build deterministic simulated readings for the registered sensors."""
-    now = datetime.now(timezone.utc)
-    measurements: List[Dict[str, Any]] = []
+    now = datetime.now(UTC)
+    measurements: list[dict[str, Any]] = []
     for i in range(count):
         sensor = sensors[i % len(sensors)]
         measurements.append(

@@ -1,12 +1,11 @@
 """Talent Acquisition and Management specific data models."""
 
-from typing import Optional, List
 from datetime import datetime, date
 from pydantic import BaseModel, Field
-from enum import Enum
+from enum import StrEnum
 
 
-class JobRequisitionStatus(str, Enum):
+class JobRequisitionStatus(StrEnum):
     OPEN = "open"
     CLOSED = "closed"
     ON_HOLD = "on_hold"
@@ -14,7 +13,7 @@ class JobRequisitionStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-class CandidateStatus(str, Enum):
+class CandidateStatus(StrEnum):
     APPLIED = "applied"
     SCREENING = "screening"
     INTERVIEWING = "interviewing"
@@ -26,7 +25,7 @@ class CandidateStatus(str, Enum):
     WITHDRAWN = "withdrawn"
 
 
-class InterviewType(str, Enum):
+class InterviewType(StrEnum):
     PHONE_SCREEN = "phone_screen"
     TECHNICAL = "technical"
     BEHAVIORAL = "behavioral"
@@ -37,12 +36,12 @@ class InterviewType(str, Enum):
 
 class InterviewFeedback(BaseModel):
     interviewer_id: str  # Could be Employee ID
-    interviewer_name: Optional[str] = None  # Denormalized for convenience
-    rating: Optional[float] = None  # e.g., 1-5 scale
-    pros: Optional[List[str]] = None
-    cons: Optional[List[str]] = None
-    notes: Optional[str] = None
-    recommend_hire: Optional[bool] = None
+    interviewer_name: str | None = None  # Denormalized for convenience
+    rating: float | None = None  # e.g., 1-5 scale
+    pros: list[str] | None = None
+    cons: list[str] | None = None
+    notes: str | None = None
+    recommend_hire: bool | None = None
     feedback_submitted_at: datetime = Field(default_factory=datetime.now)
 
 
@@ -50,23 +49,23 @@ class Interview(BaseModel):
     interview_id: str
     interview_type: InterviewType
     scheduled_at: datetime
-    interviewers: List[str]  # List of Employee IDs
-    feedback: List[InterviewFeedback] = []
+    interviewers: list[str]  # List of Employee IDs
+    feedback: list[InterviewFeedback] = []
     status: str = "scheduled"  # e.g., scheduled, completed, cancelled
 
 
 class Offer(BaseModel):
     offer_id: str
     offered_at: date
-    expires_at: Optional[date] = None
-    salary_offered: Optional[float] = None
-    currency: Optional[str] = "USD"
-    bonus_offered: Optional[float] = None
-    stock_options_offered: Optional[int] = None
-    start_date_proposed: Optional[date] = None
+    expires_at: date | None = None
+    salary_offered: float | None = None
+    currency: str | None = "USD"
+    bonus_offered: float | None = None
+    stock_options_offered: int | None = None
+    start_date_proposed: date | None = None
     status: str = "pending"  # e.g., pending, accepted, declined, rescinded
-    accepted_at: Optional[date] = None
-    declined_at: Optional[date] = None
+    accepted_at: date | None = None
+    declined_at: date | None = None
 
 
 class Candidate(BaseModel):
@@ -74,21 +73,21 @@ class Candidate(BaseModel):
     first_name: str
     last_name: str
     email: str
-    phone_number: Optional[str] = None
-    linkedin_profile: Optional[str] = None
-    resume_url: Optional[str] = None  # Or store as blob/file path
-    portfolio_url: Optional[str] = None
-    source: Optional[str] = None  # e.g., "LinkedIn", "Referral", "Careers Page"
+    phone_number: str | None = None
+    linkedin_profile: str | None = None
+    resume_url: str | None = None  # Or store as blob/file path
+    portfolio_url: str | None = None
+    source: str | None = None  # e.g., "LinkedIn", "Referral", "Careers Page"
     applied_at: datetime = Field(default_factory=datetime.now)
     status: CandidateStatus = CandidateStatus.APPLIED
-    job_requisition_id: Optional[str] = None  # Link to JobRequisition
-    current_company: Optional[str] = None
-    current_title: Optional[str] = None
-    skills: List[str] = []
-    interviews: List[Interview] = []
-    offer: Optional[Offer] = None
-    notes: Optional[str] = None
-    tags: List[str] = []
+    job_requisition_id: str | None = None  # Link to JobRequisition
+    current_company: str | None = None
+    current_title: str | None = None
+    skills: list[str] = []
+    interviews: list[Interview] = []
+    offer: Offer | None = None
+    notes: str | None = None
+    tags: list[str] = []
     updated_at: datetime = Field(default_factory=datetime.now)
 
 
@@ -98,18 +97,18 @@ class JobRequisition(BaseModel):
     )
     job_title: str
     department: str
-    location: Optional[str] = None
-    description: Optional[str] = None
-    responsibilities: Optional[List[str]] = None
-    qualifications: Optional[List[str]] = None
+    location: str | None = None
+    description: str | None = None
+    responsibilities: list[str] | None = None
+    qualifications: list[str] | None = None
     status: JobRequisitionStatus = JobRequisitionStatus.OPEN
     opened_at: date
-    closed_at: Optional[date] = None
-    hiring_manager_id: Optional[str] = None  # Employee ID
-    priority: Optional[str] = "medium"  # e.g., high, medium, low
-    salary_min: Optional[float] = None
-    salary_max: Optional[float] = None
+    closed_at: date | None = None
+    hiring_manager_id: str | None = None  # Employee ID
+    priority: str | None = "medium"  # e.g., high, medium, low
+    salary_min: float | None = None
+    salary_max: float | None = None
     currency: str = "USD"
-    candidates: List[Candidate] = []  # Candidates associated with this req
+    candidates: list[Candidate] = []  # Candidates associated with this req
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)

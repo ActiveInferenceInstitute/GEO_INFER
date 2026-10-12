@@ -28,16 +28,16 @@ uv pip list | grep geo-infer
 which python
 
 # Try importing the base package
-python -c "import geo_infer_space; print(geo_infer_space.__file__)"
+uv run python -c "import geo_infer_space; print(geo_infer_space.__file__)"
 ```
 
 **Common causes and fixes:**
 
 | Error Message | Cause | Fix |
 |--------------|-------|-----|
-| `No module named 'geo_infer_space'` | Module not installed | `uv pip install -e ./GEO-INFER-SPACE` |
-| `No module named 'h3'` | Missing system dependency | `uv pip install h3` |
-| `ImportError: cannot import name 'latlng_to_cell'` | H3 v3 installed instead of v4 | `uv pip install "h3>=4.5.0,<5"` |
+| `No module named 'geo_infer_space'` | Module not installed, or command run outside the workspace environment | `uv sync --all-packages --all-extras --all-groups`, then run through `uv run` |
+| `No module named 'h3'` | Environment not synced | `uv sync --all-packages --all-extras --all-groups` |
+| `ImportError: cannot import name 'latlng_to_cell'` | H3 v3 installed instead of the locked v4 | `uv sync --all-packages --all-extras --all-groups` (restores `h3>=4.5.0,<5` from `uv.lock`) |
 | `No module named 'tensorflow_probability'` | Optional dependency | Install TFP or use NumPy fallback |
 
 GEO-INFER modules use graceful degradation for optional dependencies. If you see a log message like `"TensorFlow Probability not installed; using NumPy/SciPy GP backend."`, the module is working correctly with the fallback.
@@ -107,21 +107,25 @@ def reduce_memory(df):
     return df
 ```
 
-### H3 API Compatibility
+### H3 runtime contract
 
-GEO-INFER-SPACE uses H3 v4. The v3 to v4 API changed function names.
+GEO-INFER-SPACE uses the locked H3 4.x runtime. Use these supported operations:
 
-| v3 Function | v4 Function |
-|-------------|-------------|
-| `h3.geo_to_h3(lat, lng, res)` | `h3.latlng_to_cell(lat, lng, res)` |
-| `h3.h3_to_geo(cell)` | `h3.cell_to_latlng(cell)` |
-| `h3.h3_to_geo_boundary(cell)` | `h3.cell_to_boundary(cell)` |
-| `h3.k_ring(cell, k)` | `h3.grid_disk(cell, k)` |
-| `h3.h3_get_resolution(cell)` | `h3.get_resolution(cell)` |
-| `h3.h3_to_parent(cell, res)` | `h3.cell_to_parent(cell, res)` |
-| `h3.h3_to_children(cell, res)` | `h3.cell_to_children(cell, res)` |
+| Operation | Function |
+|-----------|----------|
+| Latitude/longitude to cell | `h3.latlng_to_cell(lat, lng, resolution)` |
+| Cell centroid | `h3.cell_to_latlng(cell)` |
+| Cell boundary | `h3.cell_to_boundary(cell)` |
+| Neighborhood | `h3.grid_disk(cell, radius)` |
+| Resolution | `h3.get_resolution(cell)` |
+| Parent | `h3.cell_to_parent(cell, resolution)` |
+| Children | `h3.cell_to_children(cell, resolution)` |
 
-If you see `AttributeError: module 'h3' has no attribute 'geo_to_h3'`, you have H3 v4 installed but are calling v3 functions.
+For a missing H3 attribute, verify the installed package with `uv pip show h3`,
+restore the locked environment, and check the supported operation above.
+The repository wrappers enforce identity, resolution and allocation contracts;
+run `uv run python GEO-INFER-TEST/run_unified_tests.py --h3-migration` to verify
+composition with ACT.
 
 ### Dependency Conflicts
 
@@ -144,8 +148,8 @@ uv pip list --format=columns
 
 | Conflict | Root Cause | Fix |
 |----------|-----------|-----|
-| numpy version mismatch | Module A needs numpy>=1.24, B pins <1.24 | Update both modules |
-| GDAL binding mismatch | System GDAL differs from Python binding | `uv pip install GDAL==$(gdal-config --version)` |
+| numpy version mismatch | Module A needs numpy>=1.24, B pins <1.24 | Update both module `pyproject.toml` files, then `uv lock` |
+| GDAL binding mismatch | System GDAL differs from Python binding | `uv run --with "GDAL==$(gdal-config --version)" ...` (GDAL is not a workspace dependency) |
 | shapely 1.x vs 2.x | API changed between major versions | Use `shapely>=2.0` |
 
 ## Step-by-Step Diagnosis Workflow

@@ -6,7 +6,8 @@ regularisation support.
 """
 
 import numpy as np
-from typing import Optional, Dict, Any, Callable, List
+from typing import Any
+from collections.abc import Callable
 import logging
 
 logger = logging.getLogger(__name__)
@@ -46,11 +47,11 @@ class OptimizationBridges:
         self,
         objective: Callable,
         initial_guess: np.ndarray,
-        gradient_fn: Optional[Callable] = None,
+        gradient_fn: Callable | None = None,
         scheduler: str = "constant",
-        clip_norm: Optional[float] = None,
+        clip_norm: float | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run optimisation with ML-style training loop.
 
         Args:
@@ -66,8 +67,8 @@ class OptimizationBridges:
             'converged', 'n_iterations'.
         """
         params = np.asarray(initial_guess, dtype=np.float64).copy()
-        loss_history: List[float] = []
-        grad_norm_history: List[float] = []
+        loss_history: list[float] = []
+        grad_norm_history: list[float] = []
 
         for iteration in range(self.max_iterations):
             # Compute loss

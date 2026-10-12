@@ -6,7 +6,7 @@ multi-level spatial data structures.
 """
 
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Any
 from .base import BayesianModel
 from ._model_utils import posterior_draw_indices
 from ..utils.rng import SeedLike, resolve_rng
@@ -36,7 +36,7 @@ class HierarchicalBayesianModel(BayesianModel):
         # Set before super().__init__, which calls _setup_model and needs this
         # to declare the per-level intercept parameters.
         self.n_levels = int(n_levels)
-        self.levels: Dict[str, Any] = {}
+        self.levels: dict[str, Any] = {}
         super().__init__(name="HierarchicalBayesianModel", **kwargs)
 
     def _setup_model(self, **kwargs: Any) -> None:
@@ -55,7 +55,7 @@ class HierarchicalBayesianModel(BayesianModel):
                 "hyperparams": {"mu": "mu_alpha", "sigma": "sigma_alpha"},
             }
 
-    def log_likelihood(self, theta: Dict[str, Any], data: Any) -> float:
+    def log_likelihood(self, theta: dict[str, Any], data: Any) -> float:
         """
         Compute the log-likelihood for the hierarchical model.
 
@@ -91,7 +91,7 @@ class HierarchicalBayesianModel(BayesianModel):
 
         return float(log_likelihood)
 
-    def log_prior(self, theta: Dict[str, Any]) -> float:
+    def log_prior(self, theta: dict[str, Any]) -> float:
         """
         Compute the log-prior for the hierarchical model parameters.
 
@@ -142,7 +142,7 @@ class HierarchicalBayesianModel(BayesianModel):
         posterior: Any = None,
         samples: int = 100,
         return_std: bool = False,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """
         Make predictions at new locations.
 
@@ -203,7 +203,7 @@ class HierarchicalBayesianModel(BayesianModel):
 
     def _per_draw_predictions(
         self, X: np.ndarray, posterior: Any, samples: int
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Return per-draw predictive means and per-draw observation noise.
 
         The group alphas and the observation noise are taken from the *same*
@@ -230,8 +230,8 @@ class HierarchicalBayesianModel(BayesianModel):
         X = np.asarray(X)
         names = [f"alpha_{level}" for level in range(self.n_levels)] + ["noise"]
         indices = posterior_draw_indices(posterior, samples, names)
-        per_draw_means: List[np.ndarray] = []
-        per_draw_noise: List[float] = []
+        per_draw_means: list[np.ndarray] = []
+        per_draw_noise: list[float] = []
         for i in indices:
             alphas = [
                 float(np.asarray(posterior.samples[f"alpha_{level}"])[i])
@@ -254,7 +254,7 @@ class HierarchicalBayesianModel(BayesianModel):
     def posterior_predictive(
         self,
         posterior: Any,
-        X: Optional[np.ndarray] = None,
+        X: np.ndarray | None = None,
         samples: int = 100,
         random_seed: SeedLike = None,
     ) -> np.ndarray:
@@ -298,11 +298,11 @@ class HierarchicalBayesianModel(BayesianModel):
     def predictive_interval(
         self,
         posterior: Any,
-        X: Optional[np.ndarray] = None,
+        X: np.ndarray | None = None,
         level: float = 0.95,
         samples: int = 200,
         random_seed: SeedLike = None,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Return a calibrated posterior predictive interval ``(mean, lower, upper)``.
 
         The interval is taken from *predictive* draws (which carry observation
@@ -346,9 +346,9 @@ class HierarchicalBayesianModel(BayesianModel):
     def uncertainty_decomposition(
         self,
         posterior: Any,
-        X: Optional[np.ndarray] = None,
+        X: np.ndarray | None = None,
         samples: int = 50,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """
         Decompose predictive uncertainty into epistemic and aleatoric parts.
 

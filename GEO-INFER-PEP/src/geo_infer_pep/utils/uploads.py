@@ -25,7 +25,9 @@ async def save_upload_file_tmp(upload_file: UploadFile) -> Path:
             tmp_path = Path(tmp.name)
     except Exception:
         logger.exception("Could not save uploaded file to a temporary path")
-        raise HTTPException(status_code=500, detail="Could not save uploaded file")
+        raise HTTPException(
+            status_code=500, detail="Could not save uploaded file"
+        ) from None
     finally:
         await upload_file.close()
     return tmp_path

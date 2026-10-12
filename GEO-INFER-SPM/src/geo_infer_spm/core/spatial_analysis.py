@@ -22,7 +22,8 @@ where γ(h) is the semivariogram, h is spatial lag, N(h) is number of pairs.
 """
 
 import numpy as np
-from typing import Dict, Optional, Any, cast
+from collections.abc import Callable
+from typing import Any, cast
 from scipy.spatial.distance import pdist, squareform
 from scipy.optimize import minimize
 
@@ -54,8 +55,8 @@ class SpatialAnalyzer:
             coordinates: Spatial coordinates (n_points x 2)
         """
         self.coordinates = coordinates
-        self.distance_matrix: Optional[np.ndarray] = None
-        self.variogram_model: Optional[Dict[str, Any]] = None
+        self.distance_matrix: np.ndarray | None = None
+        self.variogram_model: dict[str, Any] | None = None
         self._compute_distance_matrix()
 
     def _compute_distance_matrix(self) -> None:
@@ -66,8 +67,8 @@ class SpatialAnalyzer:
         self,
         residuals: np.ndarray,
         n_bins: int = 20,
-        max_distance: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        max_distance: float | None = None,
+    ) -> dict[str, Any]:
         """
         Estimate empirical variogram from residuals.
 
@@ -129,7 +130,7 @@ class SpatialAnalyzer:
 
     def _fit_variogram_model(
         self, distances: np.ndarray, values: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Fit theoretical variogram model to empirical values.
 
@@ -184,7 +185,9 @@ class SpatialAnalyzer:
                 )
                 nugget_guess = np.min(values)
 
-                def objective(params: np.ndarray) -> float:
+                def objective(
+                    params: np.ndarray, model_func: Callable[..., Any] = model_func
+                ) -> float:
                     nugget, sill, range_ = params
                     predicted = model_func(distances, nugget, sill, range_)
                     return float(np.sum((values - predicted) ** 2))
@@ -275,7 +278,7 @@ class SpatialAnalyzer:
 
     def detect_clusters(
         self, statistical_map: np.ndarray, threshold: float, min_cluster_size: int = 1
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect significant clusters in statistical parametric map.
 
@@ -335,7 +338,7 @@ class SpatialAnalyzer:
         self,
         data: SPMData,
         design_matrix: Any = None,
-        bandwidth: Optional[float] = None,
+        bandwidth: float | None = None,
     ) -> SPMResult:
         """
         Perform geographically weighted regression (GWR).
@@ -410,7 +413,7 @@ class SpatialAnalyzer:
         return result
 
     def _select_gwr_bandwidth(
-        self, X: np.ndarray, y: np.ndarray, bandwidths: Optional[np.ndarray] = None
+        self, X: np.ndarray, y: np.ndarray, bandwidths: np.ndarray | None = None
     ) -> float:
         """
         Select optimal bandwidth using cross-validation.
@@ -467,7 +470,7 @@ class SpatialAnalyzer:
         self,
         n_basis: int = 10,
         basis_type: str = "gaussian",
-        random_seed: Optional[int] = None,
+        random_seed: int | None = None,
     ) -> np.ndarray:
         """
         Generate spatial basis functions for modeling spatial variation.
@@ -475,9 +478,9 @@ class SpatialAnalyzer:
         Args:
             n_basis: Number of basis functions
             basis_type: Type of basis functions ('gaussian', 'polynomial')
-            random_seed: Optional seed for reproducible Gaussian center
-                selection. When ``None`` (default) the legacy behaviour is
-                kept: the global ``np.random`` state is seeded with 42.
+            random_seed: Seed or generator for Gaussian center selection;
+                ``None`` (default) draws fresh OS entropy. See
+                :func:`geo_infer_spm.utils.rng.resolve_rng`.
 
         Returns:
             Basis function matrix (n_points x n_basis)

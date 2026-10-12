@@ -19,7 +19,7 @@ interpolators that ship with the AI package.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -54,22 +54,22 @@ class SpatialPredictor(BaseEstimator, RegressorMixin):
         """
         self.model_type = model_type
         self.include_spatial_features = include_spatial_features
-        self.model: Optional[Any] = None
-        self.feature_names_: Optional[List[str]] = None
+        self.model: Any | None = None
+        self.feature_names_: list[str] | None = None
         self._initialize_model(**kwargs)
 
     def _initialize_model(self, **kwargs: Any) -> None:
         """Initialize the underlying regression model."""
         if self.model_type == "linear":
-            linear_params: Dict[str, Any] = {"fit_intercept": True}
+            linear_params: dict[str, Any] = {"fit_intercept": True}
             linear_params.update(kwargs)
             self.model = LinearRegression(**linear_params)
         elif self.model_type == "ridge":
-            ridge_params: Dict[str, Any] = {"alpha": 1.0, "fit_intercept": True}
+            ridge_params: dict[str, Any] = {"alpha": 1.0, "fit_intercept": True}
             ridge_params.update(kwargs)
             self.model = Ridge(**ridge_params)
         elif self.model_type == "random_forest":
-            rf_params: Dict[str, Any] = {
+            rf_params: dict[str, Any] = {
                 "n_estimators": 100,
                 "max_depth": 20,
                 "random_state": 42,
@@ -78,7 +78,7 @@ class SpatialPredictor(BaseEstimator, RegressorMixin):
             rf_params.update(kwargs)
             self.model = RandomForestRegressor(**rf_params)
         elif self.model_type == "gradient_boosting":
-            gb_params: Dict[str, Any] = {
+            gb_params: dict[str, Any] = {
                 "n_estimators": 100,
                 "learning_rate": 0.1,
                 "max_depth": 5,
@@ -94,10 +94,10 @@ class SpatialPredictor(BaseEstimator, RegressorMixin):
 
     def fit(
         self,
-        X: Union[np.ndarray, pd.DataFrame],
+        X: np.ndarray | pd.DataFrame,
         y: np.ndarray,
-        sample_weight: Optional[np.ndarray] = None,
-        coordinates: Optional[np.ndarray] = None,
+        sample_weight: np.ndarray | None = None,
+        coordinates: np.ndarray | None = None,
     ) -> "SpatialPredictor":
         """
         Train the spatial predictor.
@@ -145,8 +145,8 @@ class SpatialPredictor(BaseEstimator, RegressorMixin):
 
     def predict(
         self,
-        X: Union[np.ndarray, pd.DataFrame],
-        coordinates: Optional[np.ndarray] = None,
+        X: np.ndarray | pd.DataFrame,
+        coordinates: np.ndarray | None = None,
     ) -> np.ndarray:
         """
         Make predictions.
@@ -202,7 +202,7 @@ class SpatialPredictor(BaseEstimator, RegressorMixin):
         X_enhanced = np.column_stack([X, spatial_features])
         return X_enhanced
 
-    def get_feature_importance(self) -> Optional[np.ndarray]:
+    def get_feature_importance(self) -> np.ndarray | None:
         """
         Get feature importance scores (for tree-based models).
 
@@ -218,7 +218,7 @@ class SpatialPredictor(BaseEstimator, RegressorMixin):
             return np.asarray(np.abs(self.model.coef_))
         return None
 
-    def get_feature_names(self) -> Optional[List[str]]:
+    def get_feature_names(self) -> list[str] | None:
         """
         Get feature names.
 
@@ -241,7 +241,7 @@ class IDWInterpolator:
         self,
         power: float = 2.0,
         min_points: int = 3,
-        max_distance: Optional[float] = None,
+        max_distance: float | None = None,
     ) -> None:
         """
         Initialize IDW interpolator.
@@ -259,8 +259,8 @@ class IDWInterpolator:
         self.power = power
         self.min_points = min_points
         self.max_distance = max_distance
-        self.coordinates_: Optional[np.ndarray] = None
-        self.values_: Optional[np.ndarray] = None
+        self.coordinates_: np.ndarray | None = None
+        self.values_: np.ndarray | None = None
 
     def fit(self, coordinates: np.ndarray, values: np.ndarray) -> "IDWInterpolator":
         """
@@ -341,7 +341,7 @@ class OrdinaryKriging:
         self,
         variogram_model: str = "spherical",
         n_lags: int = 15,
-        max_range: Optional[float] = None,
+        max_range: float | None = None,
     ) -> None:
         """
         Initialize Ordinary Kriging interpolator.
@@ -354,8 +354,8 @@ class OrdinaryKriging:
         self.variogram_model = variogram_model
         self.n_lags = n_lags
         self.max_range = max_range
-        self.coordinates_: Optional[np.ndarray] = None
-        self.values_: Optional[np.ndarray] = None
+        self.coordinates_: np.ndarray | None = None
+        self.values_: np.ndarray | None = None
         self.nugget: float = 0.0
         self.sill: float = 1.0
         self.range_param: float = 1.0
@@ -395,8 +395,8 @@ class OrdinaryKriging:
         n = len(self.values_)
 
         # Compute pairwise distances and squared differences
-        distances_list: List[float] = []
-        semivariances_list: List[float] = []
+        distances_list: list[float] = []
+        semivariances_list: list[float] = []
 
         for i in range(n):
             for j in range(i + 1, n):
@@ -471,7 +471,7 @@ class OrdinaryKriging:
         else:
             raise ValueError(f"Unknown variogram model: {self.variogram_model}")
 
-    def predict(self, target_coordinates: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def predict(self, target_coordinates: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
         Predict values and estimation variance at target locations.
 

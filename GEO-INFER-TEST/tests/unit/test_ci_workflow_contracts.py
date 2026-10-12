@@ -7,7 +7,10 @@ depend on, the same way the acceptance probes grep the workflow sources.
 
 from __future__ import annotations
 
+import copy
 import importlib.util
+from functools import cache
+import re
 import sys
 from pathlib import Path
 
@@ -17,10 +20,17 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 
 
-def _load(name: str) -> dict:
+@cache
+def _parsed_workflow(name: str) -> dict:
     document = yaml.safe_load((WORKFLOWS / name).read_text(encoding="utf-8"))
     assert isinstance(document, dict)
     return document
+
+
+def _load(name: str) -> dict:
+    # Parse each immutable workflow once per test process. Return an independent
+    # copy so a test cannot mutate the document seen by another contract.
+    return copy.deepcopy(_parsed_workflow(name))
 
 
 def _trigger(document: dict) -> dict:
@@ -37,6 +47,37 @@ def test_ci_runs_on_release_tags_for_the_release_gate():
     """GS-002: CI must run on v* tags so the release ci-gate has a run to wait for."""
     push = _trigger(_load("ci.yml"))["push"]
     assert push["tags"] == ["v*"]
+
+
+def test_linux_numerical_jobs_provision_blas_before_backend_execution():
+    """Cold PyTensor must link its declared BLAS without warning suppression."""
+    jobs = _load("ci.yml")["jobs"]
+    for name in ("validate", "build-smoke", "test", "manuscript"):
+        job = jobs[name]
+        assert job["runs-on"] == "ubuntu-latest"
+        steps = job["steps"]
+        indices = [
+            index
+            for index, step in enumerate(steps)
+            if step.get("uses") == "./.github/actions/provision-pytensor-blas"
+        ]
+        assert len(indices) == 1
+        assert indices[0] < next(
+            index for index, step in enumerate(steps) if "run" in step
+        )
+    assert "./.github/actions/provision-pytensor-blas" not in _dump(
+        jobs["process-contracts-windows"]
+    )
+    action = yaml.safe_load(
+        (REPO_ROOT / ".github/actions/provision-pytensor-blas/action.yml").read_text(
+            encoding="utf-8"
+        )
+    )
+    script = action["runs"]["steps"][0]["run"]
+    assert "libblas-dev" in script
+    assert "PYTENSOR_FLAGS=blas__ldflags=-lblas" in script
+    assert "GITHUB_ENV" in script
+    assert "filterwarnings" not in script
 
 
 def test_release_requires_ci_gate_and_always_verifies_wheels():
@@ -106,12 +147,10 @@ def test_validate_job_runs_gates_once_outside_test_matrix():
         "run_model_audit.py",
         "gitleaks detect",
         "check_coverage_floor.py",
-        # CI-04: the four ruff surfaces (changed-file check, changed-file
-        # format, src runtime hygiene, module-test hygiene).
+        # CI-04: the ruff surfaces (changed-file check and format under the
+        # root lint contract; the repository-wide check is pinned below).
         "xargs -0 uv run --with 'ruff>=0.15.6,<0.16' ruff check",
         "ruff format --check",
-        "--select F821,F823,E721,E722",
-        "--select F401,F841,F811,F823",
         # CI-04: the validator commands the marker list did not pin.
         "validate_packaging.py --strict",
         "validate_logging_hygiene.py",
@@ -119,6 +158,15 @@ def test_validate_job_runs_gates_once_outside_test_matrix():
         "rewrite_readme_agents.py --check",
     ):
         assert marker in gate_text, f"missing gate marker: {marker}"
+    # The root pyproject [tool.ruff.lint] table is the only lint contract; a
+    # --select override would silently narrow it.
+    assert "--select" not in gate_text
+    hygiene = next(
+        step["run"]
+        for step in jobs["validate"]["steps"]
+        if step.get("name") == "Run source runtime hygiene"
+    )
+    assert "uv run --with 'ruff>=0.15.6,<0.16' ruff check .\n" in hygiene
 
     test_text = _dump(jobs["test"])
     for marker in (
@@ -155,10 +203,11 @@ def test_tag_push_diff_gates_resolve_full_tree_not_head_parent():
     for script in gate_scripts:
         assert tag_branch in script, "tag/zero-base branch missing"
         branch_pos = script.index(tag_branch)
-        # Zero-SHA/tag detection precedes both the 40-hex regex that would
-        # otherwise swallow the zero SHA and the HEAD^ fallback.
+        # Missing/invalid dispatch and schedule bases also select the full
+        # tree, rather than silently narrowing coverage to the last commit.
         assert branch_pos < script.index("^[0-9a-f]{40}$")
-        assert branch_pos < script.index(head_fallback)
+        assert head_fallback not in script
+        assert script.count(empty_tree) == 2
         branch_body = script[branch_pos : script.index("elif", branch_pos)]
         assert empty_tree in branch_body
         assert head_fallback not in branch_body
@@ -191,6 +240,7 @@ def test_test_matrix_covers_all_categories_per_interpreter():
         "performance",
         "system",
         "h3",
+        "slow",
     ]
 
 
@@ -199,6 +249,93 @@ def test_build_smoke_builds_wheels_in_pr_ci():
     build = _dump(_load("ci.yml")["jobs"]["build-smoke"])
     assert "build_package_wheels.py" in build
     assert "--outdir" in build
+    assert "--verify --verify-extras" in build
+    assert "Retain installed wheel evidence" in build
+    assert "include-hidden-files: true" in build
+    assert _load("ci.yml")["jobs"]["build-smoke"]["strategy"]["matrix"][
+        "python-version"
+    ] == ["3.11", "3.12"]
+
+
+def test_documentation_examples_have_a_persistent_ci_gate():
+    validate = _dump(_load("ci.yml")["jobs"]["validate"])
+    assert (
+        "record_validation.py -- python GEO-INFER-TEST/validate_doc_examples.py"
+        in validate
+    )
+
+
+def test_manuscript_jobs_use_registered_root_profiles_and_receipts():
+    steps = _load("ci.yml")["jobs"]["manuscript"]["steps"]
+    source = next(
+        step["run"]
+        for step in steps
+        if step.get("name") == "Run root manuscript regression tests"
+    )
+    render = next(
+        step["run"]
+        for step in steps
+        if step.get("name") == "Run render-dependent root tests"
+    )
+    assert "--module ROOT --category manuscript " in source
+    assert "--module ROOT --category manuscript-render " in render
+    upload = next(
+        step
+        for step in steps
+        if step.get("name") == "Retain root manuscript execution evidence"
+    )
+    assert upload["if"] == "always()"
+    assert upload["with"]["if-no-files-found"] == "error"
+
+
+def test_manuscript_retains_bounded_producer_evidence_before_later_gates():
+    """A render failure must preserve the producer's actual attribution tier."""
+    steps = _load("ci.yml")["jobs"]["manuscript"]["steps"]
+    names = [step.get("name", "") for step in steps]
+    retained = names.index("Retain generated research evidence")
+    validated = names.index("Validate bounded research evidence custody")
+    custody = names.index("Retain research custody result")
+    assert names.index("Generate research artifacts") < validated < custody < retained
+    assert retained < names.index("Check published artifacts converge")
+    validation = steps[validated]
+    assert validation["id"] == "research_evidence"
+    assert validation["if"] == "always()"
+    assert "validate_research_evidence.py" in validation["run"]
+    assert (
+        "--receipt-path .geo-infer-test-results/research-custody.json"
+        in validation["run"]
+    )
+    assert steps[custody]["if"] == "always()"
+    assert (
+        steps[custody]["with"]["path"]
+        == ".geo-infer-test-results/research-custody.json"
+    )
+    assert steps[custody]["with"]["if-no-files-found"] == "error"
+    upload = steps[retained]
+    assert (
+        upload["if"]
+        == "${{ always() && steps.research_evidence.outcome == 'success' }}"
+    )
+    assert upload["with"]["if-no-files-found"] == "error"
+    assert set(upload["with"]["path"].splitlines()) == {
+        "output/data/research_manifest.json",
+        "output/data/research_inventory.json",
+        "output/data/research_verification.json",
+        "output/data/manuscript_variables.json",
+        "output/figures/figure_registry.json",
+    }
+
+
+def test_standalone_import_probes_install_locked_process_dependency():
+    steps = _load("import-probes.yml")["jobs"]["probes"]["steps"]
+    resolve = next(step["run"] for step in steps if step.get("id") == "locked_tools")
+    install = next(
+        step["run"]
+        for step in steps
+        if step.get("name") == "Install standalone probe test tools"
+    )
+    assert "psutil_version" in resolve and 'pkg.get("name") == "psutil"' in resolve
+    assert '"psutil==${{ steps.locked_tools.outputs.psutil_version }}"' in install
 
 
 def test_workflow_definitions_are_linted_in_ci():
@@ -348,6 +485,44 @@ def test_scheduled_runs_get_their_own_concurrency_bucket():
     )
 
 
+CI_EXCLUDED_PACKAGES = ("cupy", "mayavi", "vaex", "vaex-core")
+
+
+def _workspace_sync_commands(text: str) -> list[str]:
+    """Return every ``uv sync`` command in a workflow, continuations joined."""
+    joined = re.sub(r"\\\n\s*", " ", text)
+    return [
+        line.strip() for line in joined.splitlines() if re.match(r"^\s*uv sync\b", line)
+    ]
+
+
+def test_workspace_syncs_install_every_dependency_group():
+    """DEP-02: workspace syncs install PEP 735 groups as well as extras.
+
+    ``uv sync`` installs only the default ``dev`` group, so the per-module
+    ``[dependency-groups] test`` declarations would never reach CI without
+    ``--all-groups``. Every workspace-wide sync keeps the CPU-runner package
+    exclusions alongside it.
+    """
+    commands = [
+        command
+        for workflow in sorted(WORKFLOWS.glob("*.yml"))
+        + sorted((REPO_ROOT / ".github/actions").glob("*/action.yml"))
+        for command in _workspace_sync_commands(workflow.read_text(encoding="utf-8"))
+        if "--all-packages" in command
+    ]
+    assert len(commands) >= 3
+    for command in commands:
+        tokens = command.split()
+        assert {"--locked", "--all-extras", "--all-groups"} <= set(tokens), command
+        excluded = {
+            tokens[index + 1]
+            for index, token in enumerate(tokens[:-1])
+            if token == "--no-install-package"
+        }
+        assert set(CI_EXCLUDED_PACKAGES) <= excluded, command
+
+
 def test_import_probes_derive_pytest_from_the_workspace_lock():
     """GS19-23: no floating pytest pin; the version comes from uv.lock."""
     job = _dump(_load("import-probes.yml")["jobs"]["probes"])
@@ -413,3 +588,171 @@ def test_generated_signposts_carry_ci_strict_flags():
             " --strict-import-smoke" in rendered
         )
         assert "validate_skills.py --check-xrefs --warnings-fatal" in rendered
+
+
+def test_slow_complement_is_required_for_both_release_interpreters():
+    jobs = _load("ci.yml")["jobs"]
+    matrix = jobs["test"]["strategy"]["matrix"]
+    assert set(matrix["python-version"]) == {"3.11", "3.12"}
+    assert set(matrix["category"]) == {
+        "unit",
+        "integration",
+        "performance",
+        "system",
+        "h3",
+        "slow",
+    }
+    assert "if" not in jobs["test"]
+    assert jobs["test"]["strategy"]["fail-fast"] is False
+    assert "slow-scheduled" not in jobs
+    assert (
+        jobs["paired-interchange"]["uses"] == "./.github/workflows/gnn-interchange.yml"
+    )
+
+
+def test_fast_and_validation_jobs_retain_full_attempt_artifacts():
+    jobs = _load("ci.yml")["jobs"]
+    for name in ("fast-contracts", "validate", "process-contracts-windows"):
+        uploads = [
+            step
+            for step in jobs[name]["steps"]
+            if "actions/upload-artifact@" in step.get("uses", "")
+        ]
+        assert len(uploads) == 1
+        assert uploads[0]["if"] == "always()"
+        assert uploads[0]["with"]["include-hidden-files"] is True
+        assert uploads[0]["with"]["if-no-files-found"] == "error"
+        assert uploads[0]["with"]["path"] == ".geo-infer-test-results/"
+    assert "needs" not in jobs["fast-contracts"]
+    fast = _dump(jobs["fast-contracts"])
+    assert "--paths" in fast and "test_space_time_composition_contract.py" in fast
+    assert "./.github/actions/sync-cpu-workspace" in fast
+
+
+def test_process_tree_contract_has_real_hosted_windows_execution():
+    job = _load("ci.yml")["jobs"]["process-contracts-windows"]
+    assert job["runs-on"] == "windows-latest"
+    assert "test_execution_contracts.py" in _dump(job)
+    assert "test_process_ownership_contracts.py" in _dump(job)
+    assert (
+        "timeout_terminates" not in _dump(job).split("'-k',")[1].split("--junitxml")[0]
+    )
+    assert "continue-on-error" not in job
+
+
+def test_paired_interchange_consumers_trigger_and_receipt_custody():
+    workflow = _load("gnn-interchange.yml")
+    trigger = _trigger(workflow)
+    assert "workflow_call" in trigger
+    paths = trigger["pull_request"]["paths"]
+    for path in (
+        "GEO-INFER-SPACE/**",
+        "GEO-INFER-TIME/**",
+        "GEO-INFER-TEST/src/**",
+        "pyproject.toml",
+        "**/pyproject.toml",
+        "uv.lock",
+        "conftest.py",
+    ):
+        assert path in paths
+    job = workflow["jobs"]["interchange"]
+    geo_checkout = next(
+        step for step in job["steps"] if step.get("with", {}).get("path") == "geo"
+    )
+    assert geo_checkout["with"]["ref"] == "${{ github.sha }}"
+    validator = next(
+        step["run"]
+        for step in job["steps"]
+        if "validate_gnn_interchange.py" in step.get("run", "")
+    )
+    assert "--output receipts/interchange.json" in validator
+    assert "> receipts/interchange.json" not in validator
+    verification = next(
+        step["run"]
+        for step in job["steps"]
+        if step.get("name") == "Verify exact candidate receipt and retained artifacts"
+    )
+    assert "GITHUB_SHA" in verification and "sha256" in verification
+    assert "receipt['gnn']['revision'] == pair['revision']" in verification
+    assert "custody_complete" in verification
+
+
+def test_cpu_jobs_explicitly_provision_real_duckdb_spatial_runtime():
+    for name in ("validate", "fast-contracts", "test"):
+        job = _load("ci.yml")["jobs"][name]
+        provision = next(
+            step
+            for step in job["steps"]
+            if step.get("name") == "Provision compatible DuckDB Spatial runtime"
+        )
+        assert "provision_duckdb_spatial.py" in provision["run"]
+        assert "json.loads" in provision["run"] and "verified" in provision["run"]
+        assert "continue-on-error" not in provision
+
+
+def test_called_and_standalone_pair_jobs_have_distinct_concurrency_groups():
+    group = _load("gnn-interchange.yml")["concurrency"]["group"]
+    assert "github.workflow" in group and "github.event_name" in group
+
+
+def test_cpu_workspace_setup_is_shared_and_remains_fail_closed():
+    jobs = _load("ci.yml")["jobs"]
+    for name in ("validate", "fast-contracts", "test", "manuscript"):
+        steps = jobs[name]["steps"]
+        sync = [
+            step
+            for step in steps
+            if step.get("uses") == "./.github/actions/sync-cpu-workspace"
+        ]
+        assert len(sync) == 1, name
+        assert "continue-on-error" not in sync[0]
+        assert not _workspace_sync_commands(_dump(jobs[name]))
+        setup_index = next(
+            i
+            for i, step in enumerate(steps)
+            if step.get("uses", "").startswith("astral-sh/setup-uv@")
+        )
+        assert steps.index(sync[0]) > setup_index
+
+
+def test_cpu_cache_has_one_writer_per_interpreter_and_no_environment_reuse():
+    jobs = _load("ci.yml")["jobs"]
+    for name in ("validate", "fast-contracts", "test", "manuscript"):
+        setup = next(
+            step
+            for step in jobs[name]["steps"]
+            if step.get("uses", "").startswith("astral-sh/setup-uv@")
+        )["with"]
+        expected = (
+            "cpu-workspace-py${{ matrix.python-version }}"
+            if name == "test"
+            else "cpu-workspace-py3.11"
+        )
+        assert setup["cache-suffix"] == expected
+        assert setup["enable-cache"] is True
+        assert setup["save-cache"] == (
+            "${{ matrix.category == 'unit' }}" if name == "test" else False
+        )
+        assert setup["cache-dependency-glob"].splitlines() == [
+            "**/pyproject.toml",
+            "**/uv.lock",
+            ".python-version",
+        ]
+        # Only the uv package download/build cache is reused; the composite
+        # action still constructs and synchronizes each job's environment.
+        assert ".venv" not in setup.get("cache-local-path", "")
+
+
+def test_cpu_cache_readers_do_not_prune_unsaved_cache():
+    jobs = _load("ci.yml")["jobs"]
+    for name in ("validate", "fast-contracts", "manuscript"):
+        assert not any(
+            "uv cache prune" in step.get("run", "") for step in jobs[name]["steps"]
+        )
+    pruning = [
+        step
+        for step in jobs["test"]["steps"]
+        if "uv cache prune" in step.get("run", "")
+    ]
+    assert len(pruning) == 1
+    assert pruning[0]["if"] == "always() && matrix.category == 'unit'"

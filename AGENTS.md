@@ -32,7 +32,7 @@ New to this repo? In order:
 ## Standard Commands
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
 uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language --strict-import-smoke
 uv run python GEO-INFER-TEST/validate_logging_hygiene.py
@@ -46,15 +46,23 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --h3-migration
 uv run python GEO-INFER-TEST/validate_test_contracts.py --strict
 uv run python GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42
 uv run python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible
-uv run --with 'ruff>=0.15.6,<0.16' ruff check GEO-INFER-*/src --select F821,F823,E721,E722
+uv run --with 'ruff>=0.15.6,<0.16' ruff check .
 gitleaks detect --source . --config .gitleaks.toml --redact --verbose
 uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check
 ```
 
+On macOS 27, native PyMC checks require the explicit repository compiler
+profile described in [SPM native sampling profiles](GEO-INFER-SPM/docs/native_sampling_profiles.md).
+Prefix validation commands with
+`PYTENSOR_FLAGS="cxx=$PWD/GEO-INFER-SPM/pytensor_clang++_macos27.py"`.
+Keep native compilation enabled and retain the chosen profile in evidence.
+
 ## Modular Hygiene Contract
 
 - Use root `pyproject.toml`, `uv.lock`, and `.python-version` as the shared uv environment contract.
-- Sync the shared workspace with `uv sync --all-packages --all-extras`.
+- Preserve `uv.lock` LF bytes through root `.gitattributes`; receipt custody uses raw file hashes on every platform.
+- Preserve captured Cascadia publisher bytes and LF replay outputs through the exact paths in root `.gitattributes`; do not normalize hash-bound archives.
+- Sync the shared workspace with `uv sync --all-packages --all-extras --all-groups`.
 - Keep module behavior in the owning `GEO-INFER-*` package under `src/`; keep scripts and examples as orchestration surfaces.
 - Treat `manuscript/generate_research_artifacts.py` as the only producer of manuscript variables, figure captions, figure registries, and resolved manuscript copies; never hand-edit ignored `output/`.
 - Keep every module's local test inventory above the minimum release gate of four pytest files.

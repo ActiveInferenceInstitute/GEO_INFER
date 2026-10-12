@@ -6,7 +6,8 @@ including gradient helpers, loss functions, and optimization wrappers.
 """
 
 import numpy as np
-from typing import Optional, Tuple, Dict, Any, Callable
+from typing import Any
+from collections.abc import Callable
 import logging
 
 logger = logging.getLogger(__name__)
@@ -59,7 +60,7 @@ def gradient_helper(
 def spatial_loss_function(
     predictions: np.ndarray,
     targets: np.ndarray,
-    coordinates: Optional[np.ndarray] = None,
+    coordinates: np.ndarray | None = None,
     loss_type: str = "mse",
     spatial_weight: float = 0.0,
 ) -> float:
@@ -122,7 +123,7 @@ def optimization_wrapper(
     initial_guess: np.ndarray,
     method: str = "gradient_descent",
     **kwargs: Any,
-) -> Tuple[np.ndarray, float, Dict[str, Any]]:
+) -> tuple[np.ndarray, float, dict[str, Any]]:
     """
     Wrapper for optimization algorithms.
 
@@ -161,7 +162,7 @@ class AIConvenience:
     def __init__(self) -> None:
         """Initialize AI convenience class."""
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self._gradient_cache: Dict[str, np.ndarray] = {}
+        self._gradient_cache: dict[str, np.ndarray] = {}
         self.logger.debug("AIConvenience initialized")
 
     def compute_gradient(
@@ -198,7 +199,7 @@ class AIConvenience:
 
     def optimize(
         self, objective: Callable, initial_guess: np.ndarray, **kwargs: Any
-    ) -> Tuple[np.ndarray, float, Dict[str, Any]]:
+    ) -> tuple[np.ndarray, float, dict[str, Any]]:
         """
         Optimize objective function.
 

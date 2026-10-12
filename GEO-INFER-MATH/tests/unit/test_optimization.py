@@ -7,10 +7,7 @@ ScipyOptimizer, MultiObjectiveOptimizer, and OptimizationManager.
 
 import numpy as np
 import pytest
-import sys
-import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from geo_infer_math.core.optimization import (
     OptimizationConfig,

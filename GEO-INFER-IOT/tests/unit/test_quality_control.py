@@ -1,6 +1,7 @@
 """Tests for IoT quality control module."""
 
 from geo_infer_iot.core.quality_control import *  # noqa - import available QC classes
+from datetime import UTC
 
 
 class TestMeasurementQualityChecks:
@@ -58,17 +59,17 @@ class TestQualityFlags:
         assert "exceeds_max_threshold" in flags
 
     def test_stale_data_detection(self):
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         old_timestamp = now - timedelta(hours=25)
         is_stale = (now - old_timestamp).total_seconds() > 24 * 3600
         assert is_stale is True
 
     def test_fresh_data_not_stale(self):
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         recent_timestamp = now - timedelta(minutes=5)
         is_stale = (now - recent_timestamp).total_seconds() > 24 * 3600
         assert is_stale is False

@@ -20,7 +20,7 @@ Implemented Methods:
 """
 
 import numpy as np
-from typing import Dict, Optional, Tuple, Any, cast
+from typing import Any, cast
 
 from ...models.data_models import SPMData, SPMResult, DesignMatrix
 
@@ -42,7 +42,7 @@ class NonparametricSPM:
     def __init__(
         self,
         method: str = "loess",
-        bandwidth: Optional[float] = None,
+        bandwidth: float | None = None,
         kernel: str = "gaussian",
     ):
         """
@@ -56,7 +56,7 @@ class NonparametricSPM:
         self.method = method.lower()
         self.bandwidth = bandwidth
         self.kernel = kernel.lower()
-        self.fitted_model: Optional[Dict[str, Any]] = None
+        self.fitted_model: dict[str, Any] | None = None
 
         self._validate_parameters()
 
@@ -74,7 +74,7 @@ class NonparametricSPM:
         self,
         data: SPMData,
         design_matrix: DesignMatrix,
-        response_var: Optional[str] = None,
+        response_var: str | None = None,
     ) -> SPMResult:
         """
         Fit nonparametric model to SPM data.
@@ -134,9 +134,7 @@ class NonparametricSPM:
 
         return result
 
-    def _extract_response(
-        self, data: SPMData, response_var: Optional[str]
-    ) -> np.ndarray:
+    def _extract_response(self, data: SPMData, response_var: str | None) -> np.ndarray:
         """Extract response variable from SPMData."""
         if isinstance(data.data, np.ndarray):
             if data.data.ndim == 1:
@@ -153,7 +151,7 @@ class NonparametricSPM:
 
     def _fit_loess(
         self, X: np.ndarray, y: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, Dict[str, Any]]:
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
         """
         Fit LOESS (Locally Estimated Scatterplot Smoothing).
 
@@ -212,7 +210,7 @@ class NonparametricSPM:
 
     def _fit_kernel_regression(
         self, X: np.ndarray, y: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, Dict[str, Any]]:
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
         """
         Fit kernel regression model.
 
@@ -264,7 +262,7 @@ class NonparametricSPM:
 
     def _fit_spline(
         self, X: np.ndarray, y: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, Dict[str, Any]]:
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
         """
         Fit smoothing spline.
         Ships a moving-average approximation of a smoothing spline; see
@@ -310,7 +308,7 @@ class NonparametricSPM:
 
     def _fit_gam(
         self, X: np.ndarray, y: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, Dict[str, Any]]:
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
         """Fit Generalized Additive Model.
 
         Ships per-predictor smoothing summed without backfitting; see
@@ -354,7 +352,7 @@ class NonparametricSPM:
 
     def _fit_robust_regression(
         self, X: np.ndarray, y: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, Dict[str, Any]]:
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
         """
         Fit robust regression using iteratively reweighted least squares.
 
@@ -374,7 +372,9 @@ class NonparametricSPM:
         max_iter = 20
         tol = 1e-6
 
-        for iteration in range(max_iter):
+        n_iter = 0
+        for _ in range(max_iter):
+            n_iter += 1
             # Compute residuals
             residuals = y - X @ beta
 
@@ -410,8 +410,8 @@ class NonparametricSPM:
         diagnostics = {
             "r_squared": r_squared,
             "robust_scale": scale,
-            "n_iterations": iteration + 1,
-            "converged": iteration < max_iter - 1,
+            "n_iterations": n_iter,
+            "converged": n_iter < max_iter,
         }
 
         return y_hat, weights, diagnostics
@@ -495,7 +495,7 @@ class NonparametricSPM:
         # ("Out-of-sample prediction (nonparametric)").
         return cast(np.ndarray, self.fitted_model["y_hat"])
 
-    def get_smooth_components(self) -> Optional[np.ndarray]:
+    def get_smooth_components(self) -> np.ndarray | None:
         """
         Get smooth function components (for GAM).
 

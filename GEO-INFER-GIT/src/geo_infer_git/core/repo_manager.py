@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Repository Manager for GEO-INFER-GIT
@@ -12,7 +11,8 @@ import os
 import yaml
 import logging
 import concurrent.futures
-from typing import Dict, List, Optional, Any, cast, Callable
+from typing import Any, cast
+from collections.abc import Callable
 from pathlib import Path
 import shutil
 import git
@@ -33,7 +33,7 @@ class RepoManager:
     - Managing branches across repositories
     """
 
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, config_path: str | None = None):
         """
         Initialize the Repository Manager with configuration.
 
@@ -42,10 +42,10 @@ class RepoManager:
         """
         self.config = self._load_config(config_path)
         self.base_dir = self._get_base_dir()
-        self.repos: Dict[str, Any] = {}  # Will store repo name -> repo object mappings
-        self._protected_branches: Dict[str, set[str]] = {}
+        self.repos: dict[str, Any] = {}  # Will store repo name -> repo object mappings
+        self._protected_branches: dict[str, set[str]] = {}
 
-    def _load_config(self, config_path: Optional[str] = None) -> Dict:
+    def _load_config(self, config_path: str | None = None) -> dict:
         """
         Load configuration from file or use defaults.
 
@@ -70,10 +70,10 @@ class RepoManager:
             return default_config
 
         try:
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 config = yaml.safe_load(f)
                 logger.info(f"Loaded configuration from {config_path}")
-                return cast(Dict, config)
+                return cast(dict, config)
         except Exception as e:
             logger.error(f"Failed to load configuration from {config_path}: {e}")
             logger.info("Using default configuration")
@@ -104,7 +104,7 @@ class RepoManager:
                 logger.error(f"Failed to create base directory {self.base_dir}: {e}")
                 raise
 
-    def clone_repositories(self, repo_list: List[Dict], parallel: bool = True) -> Dict:
+    def clone_repositories(self, repo_list: list[dict], parallel: bool = True) -> dict:
         """
         Clone multiple repositories.
 
@@ -166,7 +166,7 @@ class RepoManager:
 
         return results
 
-    def _clone_single_repo(self, repo_config: Dict) -> bool:
+    def _clone_single_repo(self, repo_config: dict) -> bool:
         """
         Clone a single repository.
 
@@ -256,7 +256,7 @@ class RepoManager:
         # Get the last part of the URL
         return url.split("/")[-1]
 
-    def sync_repositories(self, repo_names: Optional[List[str]] = None) -> Dict:
+    def sync_repositories(self, repo_names: list[str] | None = None) -> dict:
         """
         Synchronize repositories by pulling latest changes.
 
@@ -303,7 +303,7 @@ class RepoManager:
 
         return results
 
-    def _get_all_repo_paths(self) -> Dict[str, Path]:
+    def _get_all_repo_paths(self) -> dict[str, Path]:
         """
         Get paths for all repositories in the base directory.
 
@@ -320,7 +320,7 @@ class RepoManager:
 
         return repos
 
-    def check_repo_status(self, repo_names: Optional[List[str]] = None) -> Dict:
+    def check_repo_status(self, repo_names: list[str] | None = None) -> dict:
         """
         Check status of repositories (changes, branch, etc.).
 
@@ -330,7 +330,7 @@ class RepoManager:
         Returns:
             Dictionary with repository status information
         """
-        results: Dict[str, Any] = {}
+        results: dict[str, Any] = {}
         all_repos = self._get_all_repo_paths()
 
         repos_to_check = []
@@ -400,7 +400,7 @@ class RepoManager:
                 return repositories[candidate]
         raise FileNotFoundError(f"Repository not found: {repo_name}")
 
-    def _branch_info(self, repo: git.Repo, branch: git.Head) -> Dict[str, object]:
+    def _branch_info(self, repo: git.Repo, branch: git.Head) -> dict[str, object]:
         """Return stable metadata for a local branch."""
         default_name = self.config.get("repositories", {}).get("default_branch", "main")
         ahead = behind = 0
@@ -432,7 +432,7 @@ class RepoManager:
             ),
         }
 
-    def list_branches(self, repo_name: str) -> List[Dict[str, object]]:
+    def list_branches(self, repo_name: str) -> list[dict[str, object]]:
         """List local branches and their commit metadata for one repository."""
         repo = git.Repo(self._resolve_repo_path(repo_name))
         return [self._branch_info(repo, branch) for branch in repo.heads]
@@ -441,9 +441,9 @@ class RepoManager:
         self,
         repo_name: str,
         branch_name: str,
-        base_branch: Optional[str] = None,
+        base_branch: str | None = None,
         protected: bool = False,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """Create a local branch from a named base branch."""
         repo = git.Repo(self._resolve_repo_path(repo_name))
         if branch_name in repo.heads:
@@ -466,9 +466,9 @@ class RepoManager:
         source_branch: str,
         target_branch: str,
         strategy: str = "merge",
-        message: Optional[str] = None,
+        message: str | None = None,
         delete_source: bool = False,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """Merge a local source branch into a target branch."""
         repo = git.Repo(self._resolve_repo_path(repo_name))
         if repo.is_dirty(untracked_files=True):
@@ -523,8 +523,8 @@ class RepoManager:
                 repo.git.checkout(original_branch)
 
     def create_branch(
-        self, branch_name: str, repo_names: Optional[List[str]] = None
-    ) -> Dict:
+        self, branch_name: str, repo_names: list[str] | None = None
+    ) -> dict:
         """
         Create a new branch in repositories.
 
@@ -570,8 +570,8 @@ class RepoManager:
         return results
 
     def checkout_branch(
-        self, branch_name: str, repo_names: Optional[List[str]] = None
-    ) -> Dict:
+        self, branch_name: str, repo_names: list[str] | None = None
+    ) -> dict:
         """
         Checkout a branch in repositories.
 
@@ -641,7 +641,7 @@ class RepoManager:
 
         return results
 
-    def batch_operation(self, operation: str, *args: Any, **kwargs: Any) -> Dict:
+    def batch_operation(self, operation: str, *args: Any, **kwargs: Any) -> dict:
         """
         Perform a Git operation across multiple repositories.
 
@@ -652,7 +652,7 @@ class RepoManager:
         Returns:
             Dictionary with operation results
         """
-        op_map: Dict[str, Callable[..., Any]] = {
+        op_map: dict[str, Callable[..., Any]] = {
             "clone": self.clone_repositories,
             "sync": self.sync_repositories,
             "status": self.check_repo_status,
@@ -665,7 +665,7 @@ class RepoManager:
             return {"error": f"Unknown operation: {operation}"}
 
         logger.info(f"Performing batch operation: {operation}")
-        return cast(Dict, op_map[operation](*args, **kwargs))
+        return cast(dict, op_map[operation](*args, **kwargs))
 
 
 if __name__ == "__main__":

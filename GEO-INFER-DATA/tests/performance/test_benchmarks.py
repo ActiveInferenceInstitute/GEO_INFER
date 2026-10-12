@@ -13,7 +13,7 @@ from unittest.mock import Mock, AsyncMock
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, UTC
 
 from geo_infer_data import (
     MultiSourceDataIngestion,
@@ -40,7 +40,7 @@ class TestIngestionBenchmarks:
             {
                 "sensor_id": [f"sensor_{i % 100}" for i in range(n_records)],
                 "timestamp": pd.date_range(
-                    "2023-01-01", periods=n_records, freq="1min"
+                    "2023-01-01", periods=n_records, freq="1min", tz="UTC"
                 ),
                 "temperature": np.random.normal(20, 5, n_records),
                 "humidity": np.random.normal(60, 10, n_records),
@@ -215,7 +215,7 @@ class TestStorageBenchmarks:
                 "temperature": np.random.normal(20, 5, n_records),
                 "humidity": np.random.normal(60, 10, n_records),
                 "timestamp": pd.date_range(
-                    "2023-01-01", periods=n_records, freq="1min"
+                    "2023-01-01", periods=n_records, freq="1min", tz="UTC"
                 ),
             },
             geometry=gpd.points_from_xy(
@@ -233,7 +233,8 @@ class TestStorageBenchmarks:
             description="Benchmark dataset for storage performance testing",
             spatial=SpatialExtent(bbox=[-122.5, 37.6, -122.3, 37.8], crs="EPSG:4326"),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 12, 31)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 12, 31, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="benchmark", process="performance_test", created_by="test"
@@ -295,7 +296,7 @@ class TestStorageBenchmarks:
 
             # Benchmark spatial queries
             spatial_times = []
-            for i in range(10):  # Multiple queries for averaging
+            for _ in range(10):  # Multiple queries for averaging
                 start_time = time.time()
                 results = await storage.adaptive_query(
                     spatial_bounds=[-122.5, 37.7, -122.3, 37.9],
@@ -306,14 +307,20 @@ class TestStorageBenchmarks:
 
             # Benchmark temporal queries
             temporal_times = []
-            for i in range(10):
+            for _ in range(10):
                 start_time = time.time()
                 results = await storage.adaptive_query(
-                    temporal_range=(datetime(2023, 1, 1), datetime(2023, 1, 2)),
+                    temporal_range=(
+                        datetime(2023, 1, 1, tzinfo=UTC),
+                        datetime(2023, 1, 2, tzinfo=UTC),
+                    ),
                     optimization_hints={"real_time": False},
                 )
                 query_time = time.time() - start_time
                 temporal_times.append(query_time)
+                # One-minute observations include both endpoints: 24*60+1.
+                assert results["id"].tolist() == list(range(1441))
+                assert str(results["timestamp"].dt.tz) == "UTC"
 
             avg_spatial_time = sum(spatial_times) / len(spatial_times)
             avg_temporal_time = sum(temporal_times) / len(temporal_times)
@@ -353,7 +360,9 @@ class TestValidationBenchmarks:
         return pd.DataFrame(
             {
                 "id": range(n_records),
-                "timestamp": pd.date_range("2023-01-01", periods=n_records, freq="30s"),
+                "timestamp": pd.date_range(
+                    "2023-01-01", periods=n_records, freq="30s", tz="UTC"
+                ),
                 "temperature": np.random.normal(20, 5, n_records),
                 "humidity": np.random.normal(60, 10, n_records),
                 "latitude": np.random.normal(37.7749, 0.05, n_records),
@@ -375,7 +384,8 @@ class TestValidationBenchmarks:
                 title="Benchmark dataset",
                 spatial=SpatialExtent(bbox=[-122.5, 37.7, -122.3, 37.9]),
                 temporal=TemporalExtent(
-                    start=datetime(2023, 1, 1), end=datetime(2023, 12, 31)
+                    start=datetime(2023, 1, 1, tzinfo=UTC),
+                    end=datetime(2023, 12, 31, tzinfo=UTC),
                 ),
                 lineage=DataLineage(
                     source="benchmark", process="validation", created_by="pytest"
@@ -527,7 +537,8 @@ class TestMemoryBenchmarks:
             title="Memory Test Data",
             spatial=SpatialExtent(bbox=[-122.5, 37.6, -122.3, 37.8]),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 1, 2, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="memory_test", process="benchmark", created_by="test"
@@ -572,7 +583,7 @@ class TestScalabilityBenchmarks:
             test_data = pd.DataFrame(
                 {
                     "timestamp": pd.date_range(
-                        "2023-01-01", periods=n_records, freq="1min"
+                        "2023-01-01", periods=n_records, freq="1min", tz="UTC"
                     ),
                     "temperature": np.random.normal(20, 5, n_records),
                     "latitude": np.random.normal(37.7, 0.1, n_records),
@@ -635,7 +646,8 @@ class TestScalabilityBenchmarks:
                 title=f"Scalability Test {data_size}",
                 spatial=SpatialExtent(bbox=[-122.5, 37.6, -122.3, 37.8]),
                 temporal=TemporalExtent(
-                    start=datetime(2023, 1, 1), end=datetime(2023, 1, 2)
+                    start=datetime(2023, 1, 1, tzinfo=UTC),
+                    end=datetime(2023, 1, 2, tzinfo=UTC),
                 ),
                 lineage=DataLineage(
                     source="scalability_test", process="benchmark", created_by="test"

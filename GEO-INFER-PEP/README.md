@@ -11,7 +11,6 @@ Comprehensive people operations management including HR, CRM, talent acquisition
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -21,8 +20,8 @@ Comprehensive people operations management including HR, CRM, talent acquisition
 
 - Module: `GEO-INFER-PEP`
 - Package: `geo_infer_pep`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-PEP`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-pep`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module PEP`
 
 ## Dependencies

@@ -4,9 +4,9 @@ Security management for GEO-INFER-OPS.
 
 import os
 import jwt
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any
 
 import cryptography
 from cryptography.fernet import Fernet
@@ -70,7 +70,7 @@ class SecurityManager:
 
     def generate_tls_certificate(
         self, common_name: str, organization: str, country: str, days_valid: int = 365
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """
         Generate a self-signed TLS certificate.
 
@@ -107,10 +107,8 @@ class SecurityManager:
                 .issuer_name(issuer)
                 .public_key(public_key)
                 .serial_number(cryptography.x509.random_serial_number())
-                .not_valid_before(datetime.now(timezone.utc))
-                .not_valid_after(
-                    datetime.now(timezone.utc) + timedelta(days=days_valid)
-                )
+                .not_valid_before(datetime.now(UTC))
+                .not_valid_after(datetime.now(UTC) + timedelta(days=days_valid))
                 .add_extension(
                     cryptography.x509.SubjectAlternativeName(
                         [
@@ -226,7 +224,7 @@ class SecurityManager:
             payload = {
                 "sub": user_id,
                 "user_id": user_id,
-                "exp": datetime.now(timezone.utc) + timedelta(seconds=expires_in),
+                "exp": datetime.now(UTC) + timedelta(seconds=expires_in),
                 **kwargs,
             }
 
@@ -241,7 +239,7 @@ class SecurityManager:
             logger.error("jwt_token_generation_failed", error=str(e))
             raise
 
-    def verify_jwt_token(self, token: str) -> Dict[str, Any]:
+    def verify_jwt_token(self, token: str) -> dict[str, Any]:
         """
         Verify a JWT token.
 
@@ -307,8 +305,8 @@ class SecurityManager:
             raise
 
     def generate_password_hash(
-        self, password: str, salt: Optional[bytes] = None
-    ) -> Dict[str, bytes]:
+        self, password: str, salt: bytes | None = None
+    ) -> dict[str, bytes]:
         """
         Generate a password hash using PBKDF2.
 

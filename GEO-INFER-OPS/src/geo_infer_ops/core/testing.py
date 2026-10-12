@@ -3,7 +3,8 @@
 import contextlib
 import os
 import tempfile
-from typing import Optional, Dict, Any, Generator, Union, List
+from typing import Any
+from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -17,7 +18,7 @@ logger = get_logger(__name__)
 
 
 @contextlib.contextmanager
-def temporary_config(config_dict: Dict[str, Any]) -> Generator[Config, None, None]:
+def temporary_config(config_dict: dict[str, Any]) -> Generator[Config, None, None]:
     """Test configuration fixture.
 
     Args:
@@ -68,7 +69,7 @@ def setup_testing(
     test_dir: str = "tests",
     coverage_report: bool = True,
     parallel: bool = False,
-    timeout: Optional[int] = None,
+    timeout: int | None = None,
     log_level: str = "INFO",
     json_format: bool = True,
     exit_on_failure: bool = False,
@@ -148,7 +149,7 @@ def assert_response_status(response: Any, expected_status: int) -> None:
     )
 
 
-def assert_response_json(response: Any, expected_json: Dict[str, Any]) -> None:
+def assert_response_json(response: Any, expected_json: dict[str, Any]) -> None:
     """Assert response JSON content.
 
     Args:
@@ -162,8 +163,8 @@ def assert_response_json(response: Any, expected_json: Dict[str, Any]) -> None:
 
 def assert_metric_value(
     metric_name: str,
-    expected_value: Union[int, float],
-    labels: Optional[Dict[str, str]] = None,
+    expected_value: int | float,
+    labels: dict[str, str] | None = None,
 ) -> None:
     """Assert Prometheus metric value.
 
@@ -191,7 +192,7 @@ def create_test_app() -> Any:
     return FastAPI()
 
 
-def create_test_request() -> Dict[str, Any]:
+def create_test_request() -> dict[str, Any]:
     """Create a test request.
 
     Returns:
@@ -205,7 +206,7 @@ def create_test_request() -> Dict[str, Any]:
     }
 
 
-def create_test_response() -> Dict[str, Any]:
+def create_test_response() -> dict[str, Any]:
     """Create a test response.
 
     Returns:
@@ -219,8 +220,8 @@ def create_test_response() -> Dict[str, Any]:
 
 
 def create_test_metric(
-    name: str, metric_type: str = "counter", labels: Optional[List[str]] = None
-) -> Union[Counter, Gauge, Histogram]:
+    name: str, metric_type: str = "counter", labels: list[str] | None = None
+) -> Counter | Gauge | Histogram:
     """Create a test metric.
 
     Args:

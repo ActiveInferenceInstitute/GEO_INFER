@@ -7,35 +7,19 @@ and classifying boundaries in nested geospatial systems.
 
 import logging
 import math
-from datetime import datetime
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 from enum import Enum
 from collections import defaultdict
+
+import numpy as np
+import h3
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from ..core.nested_grid import NestedH3Grid, NestedSystem
-
-import numpy as np  # hard dependency (numpy<2.0 pinned); no fallback path
-
-try:
-    from scipy import ndimage as ndimage
-    from scipy.spatial import ConvexHull as ConvexHull
-
-    SCIPY_AVAILABLE = True
-except ImportError:
-    SCIPY_AVAILABLE = False
-    logger.warning("SciPy not available. Advanced boundary analysis will be limited.")
-
-try:
-    import h3
-
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available")
 
 
 class BoundaryType(Enum):
@@ -70,10 +54,10 @@ class BoundarySegment:
     """
 
     segment_id: str
-    cell_indices: List[str]
+    cell_indices: list[str]
     boundary_type: BoundaryType
     strength: float = 1.0
-    properties: Dict[str, Any] = field(default_factory=dict)
+    properties: dict[str, Any] = field(default_factory=dict)
 
     # Geometric properties
     length: float = 0.0
@@ -81,14 +65,14 @@ class BoundarySegment:
     orientation: float = 0.0
 
     # Connectivity
-    connected_segments: Set[str] = field(default_factory=set)
+    connected_segments: set[str] = field(default_factory=set)
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def __post_init__(self) -> None:
         """Calculate geometric properties after creation."""
-        if self.cell_indices and H3_AVAILABLE:
+        if self.cell_indices:
             self._calculate_geometric_properties()
 
     def _calculate_geometric_properties(self) -> None:
@@ -200,27 +184,27 @@ class BoundaryDetector:
         self.name = name
 
         # Detection parameters
-        self.detection_methods: Dict[str, Dict[str, Any]] = {
+        self.detection_methods: dict[str, dict[str, Any]] = {
             "neighbor_analysis": {"threshold": 0.5, "min_boundary_length": 3},
             "gradient_detection": {"gradient_threshold": 0.3, "smoothing_radius": 1},
             "clustering": {"min_cluster_size": 5, "boundary_width": 2},
         }
 
         # Results storage
-        self.detected_boundaries: Dict[str, List[BoundarySegment]] = {}
-        self.boundary_statistics: Dict[str, Dict[str, Any]] = {}
+        self.detected_boundaries: dict[str, list[BoundarySegment]] = {}
+        self.boundary_statistics: dict[str, dict[str, Any]] = {}
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def detect_boundaries(
         self,
         nested_grid: "NestedH3Grid",
         method: BoundaryDetectionMethod = (BoundaryDetectionMethod.NEIGHBOR_ANALYSIS),
-        system_ids: Optional[List[str]] = None,
+        system_ids: list[str] | None = None,
         **kwargs: Any,
-    ) -> Dict[str, List[BoundarySegment]]:
+    ) -> dict[str, list[BoundarySegment]]:
         """
         Detect boundaries in nested systems.
 
@@ -265,13 +249,13 @@ class BoundaryDetector:
 
         self.detected_boundaries.update(detected_boundaries)
         self._calculate_boundary_statistics()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return detected_boundaries
 
     def _detect_neighbor_boundaries(
         self, system: "NestedSystem", **kwargs: Any
-    ) -> List[BoundarySegment]:
+    ) -> list[BoundarySegment]:
         """Detect boundaries based on neighbor analysis."""
         threshold = kwargs.get(
             "threshold", self.detection_methods["neighbor_analysis"]["threshold"]
@@ -312,7 +296,7 @@ class BoundaryDetector:
 
     def _detect_gradient_boundaries(
         self, system: "NestedSystem", **kwargs: Any
-    ) -> List[BoundarySegment]:
+    ) -> list[BoundarySegment]:
         """Detect boundaries based on gradient analysis."""
         gradient_threshold = kwargs.get(
             "gradient_threshold",
@@ -355,7 +339,7 @@ class BoundaryDetector:
 
     def _detect_clustering_boundaries(
         self, system: "NestedSystem", **kwargs: Any
-    ) -> List[BoundarySegment]:
+    ) -> list[BoundarySegment]:
         """Detect boundaries based on clustering analysis."""
         value_field = kwargs.get("value_field", "cluster_id")
 
@@ -392,19 +376,17 @@ class BoundaryDetector:
 
     def _detect_edge_boundaries(
         self, system: "NestedSystem", **kwargs: Any
-    ) -> List[BoundarySegment]:
-        """Detect boundaries using edge detection algorithms."""
-        if not SCIPY_AVAILABLE:
-            logger.warning("SciPy required for edge detection")
-            return self._detect_neighbor_boundaries(system, **kwargs)
+    ) -> list[BoundarySegment]:
+        """Detect boundaries for the EDGE method.
 
-        # This would implement more sophisticated edge detection
-        # For now, fall back to neighbor analysis
+        On the hexagonal H3 lattice, edge detection is the neighbour-difference
+        test, so this delegates to ``_detect_neighbor_boundaries``.
+        """
         return self._detect_neighbor_boundaries(system, **kwargs)
 
     def _detect_topological_boundaries(
         self, system: "NestedSystem", **kwargs: Any
-    ) -> List[BoundarySegment]:
+    ) -> list[BoundarySegment]:
         """Detect boundaries based on topological analysis."""
         # Analyze topological features like holes, islands, etc.
         boundary_cells = []
@@ -432,7 +414,7 @@ class BoundaryDetector:
 
     def _detect_statistical_boundaries(
         self, system: "NestedSystem", **kwargs: Any
-    ) -> List[BoundarySegment]:
+    ) -> list[BoundarySegment]:
         """Detect boundaries using statistical methods."""
         value_field = kwargs.get("value_field", "value")
         z_threshold = kwargs.get("z_threshold", 2.0)
@@ -473,9 +455,9 @@ class BoundaryDetector:
 
     def _group_boundary_cells(
         self,
-        boundary_cells: List[Tuple[str, float]],
+        boundary_cells: list[tuple[str, float]],
         system: "NestedSystem",
-    ) -> List[BoundarySegment]:
+    ) -> list[BoundarySegment]:
         """Group connected boundary cells into segments."""
         if not boundary_cells:
             return []
@@ -543,7 +525,7 @@ class BoundaryDetector:
             segment_lengths = [seg.length for seg in segments]
             segment_strengths = [seg.strength for seg in segments]
 
-            stats: Dict[str, Any] = {
+            stats: dict[str, Any] = {
                 "num_segments": len(segments),
                 "total_boundary_length": sum(segment_lengths),
                 "average_segment_length": sum(segment_lengths) / len(segment_lengths)
@@ -557,7 +539,7 @@ class BoundaryDetector:
             }
 
             # Count boundary types
-            type_counts: Dict[str, int] = defaultdict(int)
+            type_counts: dict[str, int] = defaultdict(int)
             for segment in segments:
                 type_counts[segment.boundary_type.value] += 1
 
@@ -565,7 +547,7 @@ class BoundaryDetector:
 
             self.boundary_statistics[system_id] = stats
 
-    def get_boundary_summary(self) -> Dict[str, Any]:
+    def get_boundary_summary(self) -> dict[str, Any]:
         """Get summary of boundary detection results."""
         total_segments = sum(
             len(segments) for segments in self.detected_boundaries.values()

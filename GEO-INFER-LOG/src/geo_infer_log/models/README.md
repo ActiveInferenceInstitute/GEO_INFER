@@ -26,8 +26,8 @@ Models workspace within `GEO-INFER-LOG`.
 
 - Module: `GEO-INFER-LOG`
 - Package: `geo_infer_log`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-LOG`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-log`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module LOG`
 
 ## Dependencies

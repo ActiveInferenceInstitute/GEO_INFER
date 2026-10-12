@@ -5,7 +5,6 @@ Provides consistency checking, conflict detection,
 and feasibility scoring for requirement specifications.
 """
 
-from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -34,9 +33,9 @@ class ValidationIssue:
 
     issue_id: str
     severity: ValidationSeverity
-    req_ids: List[str]
+    req_ids: list[str]
     description: str
-    suggestion: Optional[str] = None
+    suggestion: str | None = None
 
 
 @dataclass
@@ -44,9 +43,9 @@ class ConflictDetectionResult:
     """Result of conflict detection analysis."""
 
     total_conflicts: int
-    conflicts: List[ValidationIssue]
-    conflict_pairs: List[Tuple[str, str]]
-    severity_distribution: Dict[str, int]
+    conflicts: list[ValidationIssue]
+    conflict_pairs: list[tuple[str, str]]
+    severity_distribution: dict[str, int]
 
 
 @dataclass
@@ -55,9 +54,9 @@ class ConsistencyReport:
 
     is_consistent: bool
     total_issues: int
-    errors: List[ValidationIssue]
-    warnings: List[ValidationIssue]
-    info_items: List[ValidationIssue]
+    errors: list[ValidationIssue]
+    warnings: list[ValidationIssue]
+    info_items: list[ValidationIssue]
     consistency_score: float
 
 
@@ -66,9 +65,9 @@ class FeasibilityAssessment:
     """Feasibility assessment for a set of requirements."""
 
     overall_feasibility: float
-    per_requirement_scores: Dict[str, float]
-    risk_factors: List[str]
-    bottleneck_requirements: List[str]
+    per_requirement_scores: dict[str, float]
+    risk_factors: list[str]
+    bottleneck_requirements: list[str]
     resource_utilization: float
 
 
@@ -89,13 +88,13 @@ class RequirementSpec:
     description: str
     priority: int  # 1-4
     effort_estimate: float  # person-days
-    dependencies: List[str] = field(default_factory=list)
-    constraints: List[str] = field(default_factory=list)
-    tags: List[str] = field(default_factory=list)
-    resources_required: List[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
+    constraints: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    resources_required: list[str] = field(default_factory=list)
 
 
-def find_dependency_cycles(adjacency: Dict[str, List[str]]) -> List[List[str]]:
+def find_dependency_cycles(adjacency: dict[str, list[str]]) -> list[list[str]]:
     """
     Detect dependency cycles via DFS with an explicit path stack.
 
@@ -112,9 +111,9 @@ def find_dependency_cycles(adjacency: Dict[str, List[str]]) -> List[List[str]]:
         A list of cycles, each a list of node ids closing back on itself.
     """
     WHITE, GRAY, BLACK = 0, 1, 2
-    color: Dict[str, int] = {rid: WHITE for rid in adjacency}
-    cycles: List[List[str]] = []
-    path: List[str] = []
+    color: dict[str, int] = {rid: WHITE for rid in adjacency}
+    cycles: list[list[str]] = []
+    path: list[str] = []
 
     def dfs(node: str) -> None:
         color[node] = GRAY
@@ -150,8 +149,8 @@ class RequirementValidator:
     """
 
     def __init__(self) -> None:
-        self._specs: Dict[str, RequirementSpec] = {}
-        self._resource_capacity: Dict[str, float] = {}
+        self._specs: dict[str, RequirementSpec] = {}
+        self._resource_capacity: dict[str, float] = {}
 
     def add_spec(self, spec: RequirementSpec) -> None:
         """
@@ -162,7 +161,7 @@ class RequirementValidator:
         """
         self._specs[spec.req_id] = spec
 
-    def add_specs(self, specs: List[RequirementSpec]) -> None:
+    def add_specs(self, specs: list[RequirementSpec]) -> None:
         """
         Add multiple requirement specifications.
 
@@ -172,7 +171,7 @@ class RequirementValidator:
         for spec in specs:
             self.add_spec(spec)
 
-    def set_resource_capacity(self, resources: Dict[str, float]) -> None:
+    def set_resource_capacity(self, resources: dict[str, float]) -> None:
         """
         Set available resource capacities for feasibility analysis.
 
@@ -195,9 +194,9 @@ class RequirementValidator:
         Returns:
             ConsistencyReport with all found issues.
         """
-        errors: List[ValidationIssue] = []
-        warnings: List[ValidationIssue] = []
-        info_items: List[ValidationIssue] = []
+        errors: list[ValidationIssue] = []
+        warnings: list[ValidationIssue] = []
+        info_items: list[ValidationIssue] = []
         issue_counter = 0
 
         all_ids = set(self._specs.keys())
@@ -232,7 +231,7 @@ class RequirementValidator:
             )
 
         # Check for duplicate titles
-        titles: Dict[str, List[str]] = {}
+        titles: dict[str, list[str]] = {}
         for rid, spec in self._specs.items():
             normalized = spec.title.strip().lower()
             if normalized not in titles:
@@ -312,8 +311,8 @@ class RequirementValidator:
         Returns:
             ConflictDetectionResult with found conflicts.
         """
-        conflicts: List[ValidationIssue] = []
-        conflict_pairs: List[Tuple[str, str]] = []
+        conflicts: list[ValidationIssue] = []
+        conflict_pairs: list[tuple[str, str]] = []
         issue_counter = 0
 
         specs_list = list(self._specs.values())
@@ -376,7 +375,7 @@ class RequirementValidator:
                         )
                     )
 
-        severity_dist: Dict[str, int] = {"error": 0, "warning": 0, "info": 0}
+        severity_dist: dict[str, int] = {"error": 0, "warning": 0, "info": 0}
         for c in conflicts:
             severity_dist[c.severity.value] += 1
 
@@ -417,9 +416,9 @@ class RequirementValidator:
         )
 
         # Per-requirement feasibility scores
-        per_req_scores: Dict[str, float] = {}
-        risk_factors: List[str] = []
-        bottlenecks: List[str] = []
+        per_req_scores: dict[str, float] = {}
+        risk_factors: list[str] = []
+        bottlenecks: list[str] = []
 
         for rid, spec in self._specs.items():
             # Base feasibility: effort relative to available
@@ -468,10 +467,10 @@ class RequirementValidator:
             resource_utilization=round(min(resource_utilization, 10.0), 4),
         )
 
-    def _detect_dependency_cycles(self) -> List[List[str]]:
+    def _detect_dependency_cycles(self) -> list[list[str]]:
         """Detect circular dependencies in requirement specs."""
         # Edges point from a requirement to the requirements it depends on.
-        adjacency: Dict[str, List[str]] = {
+        adjacency: dict[str, list[str]] = {
             rid: list(spec.dependencies) for rid, spec in self._specs.items()
         }
         return find_dependency_cycles(adjacency)

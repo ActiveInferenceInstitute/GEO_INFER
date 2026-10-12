@@ -12,11 +12,9 @@ Usage: uv run --extra dev python scripts/manuscript_fig_verification_landscape.p
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
+# Run as ``python scripts/<name>.py``: the script directory is sys.path[0], so
+# the sibling helper module imports directly.
 from _manuscript_fig_common import (
     RC_CONTEXT,
     TEST_COLOR,

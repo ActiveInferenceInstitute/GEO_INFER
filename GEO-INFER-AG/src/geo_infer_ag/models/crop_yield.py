@@ -3,7 +3,7 @@ Crop yield modeling and prediction functionality.
 """
 
 import io
-from typing import Dict, List, Optional, Any
+from typing import Any
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from datetime import datetime
@@ -32,7 +32,7 @@ class CropYieldModel(AgricultureModel):
         self,
         crop_type: str,
         model_type: str = "machine_learning",
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ):
         """
         Initialize the crop yield model.
@@ -47,11 +47,11 @@ class CropYieldModel(AgricultureModel):
 
         self.crop_type = crop_type.lower()
         self.model_type = model_type
-        self.predictor: Optional[RandomForestRegressor] = None
+        self.predictor: RandomForestRegressor | None = None
         self.fitted = False
-        self.feature_columns: Optional[List[str]] = None
-        self._statistical_params: Optional[Dict[str, Any]] = None
-        self._process_params: Optional[Dict[str, Any]] = None
+        self.feature_columns: list[str] | None = None
+        self._statistical_params: dict[str, Any] | None = None
+        self._process_params: dict[str, Any] | None = None
 
         # Define required inputs based on model type
         if model_type == "machine_learning":
@@ -73,9 +73,9 @@ class CropYieldModel(AgricultureModel):
 
     def fit(
         self,
-        training_data: Dict[str, Any],
+        training_data: dict[str, Any],
         target_column: str = "yield",
-        feature_columns: Optional[List[str]] = None,
+        feature_columns: list[str] | None = None,
     ) -> None:
         """
         Train the yield prediction model using historical data.
@@ -158,7 +158,7 @@ class CropYieldModel(AgricultureModel):
 
         self.fitted = True
 
-    def predict(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def predict(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Predict crop yields using the model.
 
@@ -386,7 +386,7 @@ class CropYieldModel(AgricultureModel):
 
         return result
 
-    def get_feature_importance(self) -> Dict[str, float]:
+    def get_feature_importance(self) -> dict[str, float]:
         """
         Get feature importance for machine learning models.
 

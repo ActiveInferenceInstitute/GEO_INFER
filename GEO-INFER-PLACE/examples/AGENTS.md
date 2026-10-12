@@ -23,7 +23,6 @@
 
 - `demo_output/`
 - `del_norte_county_demo.py`
-- `del_norte_demo.log`
 
 ## Validation
 

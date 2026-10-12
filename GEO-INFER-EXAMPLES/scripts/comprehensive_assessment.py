@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any
 
@@ -125,7 +125,7 @@ def build_report(root: Path = EXAMPLES_ROOT) -> dict[str, Any]:
     assessments = [assess_example(path, modules) for path in discover_examples(root)]
     return {
         "schema_version": 2,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "source_of_truth": "filesystem discovery and README text only",
         "execution_performed": False,
         "summary": {
@@ -178,7 +178,7 @@ def markdown(report: dict[str, Any]) -> str:
 def save_report(
     report: dict[str, Any], output: Path | None = None
 ) -> tuple[Path, Path]:
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     basename = output or (
         EXAMPLES_ROOT.parent / "assessment_results" / f"inventory_{stamp}"
     )

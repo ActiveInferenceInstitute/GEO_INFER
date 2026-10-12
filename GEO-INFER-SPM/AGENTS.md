@@ -26,10 +26,9 @@
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
+- `pytensor_clang++_macos27.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Validation
 

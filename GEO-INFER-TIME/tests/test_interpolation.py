@@ -20,7 +20,7 @@ from geo_infer_time.models.timeseries import TimeSeries
 
 def _make_ts_with_gaps(n: int = 100, gap_indices: list = None) -> TimeSeries:
     """Create a TimeSeries with NaN gaps at specified indices."""
-    index = pd.date_range("2023-01-01", periods=n, freq="h")
+    index = pd.date_range("2023-01-01", periods=n, freq="h", tz="UTC")
     values = np.sin(np.linspace(0, 4 * np.pi, n)) + np.random.normal(0, 0.1, n)
     df = pd.DataFrame({"value": values}, index=index)
     if gap_indices:
@@ -30,7 +30,7 @@ def _make_ts_with_gaps(n: int = 100, gap_indices: list = None) -> TimeSeries:
 
 def _make_seasonal_ts(periods: int = 120, period: int = 12) -> TimeSeries:
     """Create a TimeSeries with seasonal pattern and gaps."""
-    index = pd.date_range("2023-01-01", periods=periods, freq="D")
+    index = pd.date_range("2023-01-01", periods=periods, freq="D", tz="UTC")
     seasonal = np.sin(np.linspace(0, 2 * np.pi * (periods / period), periods))
     trend = np.linspace(0, 5, periods)
     values = trend + 10 * seasonal + np.random.normal(0, 0.5, periods)
@@ -206,7 +206,7 @@ class TestInterpolateSeasonal:
 class TestInterpolateGapAware:
     def test_small_gaps_filled_large_gaps_remain(self):
         """Gaps of size <= max_gap_size are filled; larger gaps remain."""
-        index = pd.date_range("2023-01-01", periods=50, freq="h")
+        index = pd.date_range("2023-01-01", periods=50, freq="h", tz="UTC")
         values = np.arange(50, dtype=float)
         # Small gap (2 points)
         values[10] = np.nan
@@ -244,7 +244,7 @@ class TestInterpolateGapAware:
 class TestResampleInterpolate:
     def test_upsample(self):
         """Resampling to higher frequency produces more data points."""
-        index = pd.date_range("2023-01-01", periods=24, freq="h")
+        index = pd.date_range("2023-01-01", periods=24, freq="h", tz="UTC")
         values = np.sin(np.linspace(0, 2 * np.pi, 24))
         df = pd.DataFrame({"value": values}, index=index)
         ts = TimeSeries(data=df)
@@ -255,7 +255,7 @@ class TestResampleInterpolate:
 
     def test_downsample(self):
         """Resampling to lower frequency produces fewer data points."""
-        index = pd.date_range("2023-01-01", periods=48, freq="h")
+        index = pd.date_range("2023-01-01", periods=48, freq="h", tz="UTC")
         values = np.sin(np.linspace(0, 4 * np.pi, 48))
         df = pd.DataFrame({"value": values}, index=index)
         ts = TimeSeries(data=df)
@@ -265,7 +265,7 @@ class TestResampleInterpolate:
         assert len(result) <= len(ts)
 
     def test_no_nans_after_resample(self):
-        index = pd.date_range("2023-01-01", periods=24, freq="h")
+        index = pd.date_range("2023-01-01", periods=24, freq="h", tz="UTC")
         values = np.linspace(0, 10, 24)
         df = pd.DataFrame({"value": values}, index=index)
         ts = TimeSeries(data=df)
@@ -275,7 +275,7 @@ class TestResampleInterpolate:
         assert result.to_dataframe()["value"].isna().sum() == 0
 
     def test_metadata_updated_on_resample(self):
-        index = pd.date_range("2023-01-01", periods=10, freq="h")
+        index = pd.date_range("2023-01-01", periods=10, freq="h", tz="UTC")
         df = pd.DataFrame({"value": np.arange(10.0)}, index=index)
         ts = TimeSeries(data=df)
 

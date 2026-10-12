@@ -6,14 +6,14 @@ clustering, interpolation, and validation.
 """
 
 import math
-from typing import List, Tuple, Dict, Any, Optional
+from typing import Any
 from collections import defaultdict
 
 from .geospatial_utils import haversine_distance, create_bounding_box
 from ..models import Location
 
 
-def project_to_utm(location: Location) -> Tuple[float, float, str]:
+def project_to_utm(location: Location) -> tuple[float, float, str]:
     """
     Project a geographic location to UTM coordinates.
 
@@ -79,7 +79,7 @@ def project_to_utm(location: Location) -> Tuple[float, float, str]:
 
 def buffer_point(
     location: Location, radius_meters: float, num_points: int = 32
-) -> List[Location]:
+) -> list[Location]:
     """
     Create a circular buffer around a point.
 
@@ -108,8 +108,8 @@ def buffer_point(
 
 
 def spatial_clustering(
-    locations: List[Location], eps_km: float, min_samples: int
-) -> List[List[Location]]:
+    locations: list[Location], eps_km: float, min_samples: int
+) -> list[list[Location]]:
     """
     Perform spatial clustering using DBSCAN algorithm.
 
@@ -124,11 +124,11 @@ def spatial_clustering(
     if not locations:
         return []
 
-    clusters: List[List[int]] = []
+    clusters: list[list[int]] = []
     visited = set()
     assigned = set()
 
-    def region_query(point_idx: int) -> List[int]:
+    def region_query(point_idx: int) -> list[int]:
         """Find neighbors within eps distance."""
         neighbors = []
         for i, loc in enumerate(locations):
@@ -137,7 +137,7 @@ def spatial_clustering(
                 neighbors.append(i)
         return neighbors
 
-    def expand_cluster(point_idx: int, neighbors: List[int]) -> List[int]:
+    def expand_cluster(point_idx: int, neighbors: list[int]) -> list[int]:
         """Expand cluster from a core point."""
         cluster = []
         i = 0
@@ -179,7 +179,7 @@ def spatial_clustering(
     return location_clusters
 
 
-def calculate_spatial_statistics(locations: List[Location]) -> Dict[str, float]:
+def calculate_spatial_statistics(locations: list[Location]) -> dict[str, float]:
     """
     Calculate basic spatial statistics for a set of locations.
 
@@ -215,7 +215,7 @@ def calculate_spatial_statistics(locations: List[Location]) -> Dict[str, float]:
     bbox = create_bounding_box(centroid, max_dist)
 
     # Calculate statistics
-    stats: Dict[str, float] = {
+    stats: dict[str, float] = {
         "count": len(locations),
         "centroid_lat": centroid_lat,
         "centroid_lon": centroid_lon,
@@ -237,7 +237,7 @@ def calculate_spatial_statistics(locations: List[Location]) -> Dict[str, float]:
     return stats
 
 
-def validate_geographic_bounds(locations: List[Location]) -> Dict[str, Any]:
+def validate_geographic_bounds(locations: list[Location]) -> dict[str, Any]:
     """
     Validate that locations are within reasonable geographic bounds.
 
@@ -247,7 +247,7 @@ def validate_geographic_bounds(locations: List[Location]) -> Dict[str, Any]:
     Returns:
         Validation results dictionary
     """
-    validation_results: Dict[str, Any] = {
+    validation_results: dict[str, Any] = {
         "valid": True,
         "total_locations": len(locations),
         "invalid_locations": [],
@@ -313,7 +313,7 @@ def validate_geographic_bounds(locations: List[Location]) -> Dict[str, Any]:
     return validation_results
 
 
-def interpolate_points(locations: List[Location], num_points: int) -> List[Location]:
+def interpolate_points(locations: list[Location], num_points: int) -> list[Location]:
     """
     Interpolate additional points along a path defined by locations.
 
@@ -350,7 +350,7 @@ def interpolate_points(locations: List[Location], num_points: int) -> List[Locat
     return interpolated
 
 
-def find_centroid(locations: List[Location]) -> Location:
+def find_centroid(locations: list[Location]) -> Location:
     """
     Calculate the centroid of a list of locations.
 
@@ -382,8 +382,8 @@ def find_centroid(locations: List[Location]) -> Location:
 
 
 def calculate_voronoi_regions(
-    locations: List[Location], boundary_box: Optional[Tuple[Location, Location]] = None
-) -> List[List[Location]]:
+    locations: list[Location], boundary_box: tuple[Location, Location] | None = None
+) -> list[list[Location]]:
     """
     Calculate Voronoi regions for a set of points.
 
@@ -405,8 +405,8 @@ def calculate_voronoi_regions(
     # This is not a true Voronoi diagram but provides similar functionality
 
     # Collect validated coordinates
-    lat_list: List[float] = []
-    lon_list: List[float] = []
+    lat_list: list[float] = []
+    lon_list: list[float] = []
     for loc in locations:
         if loc.latitude is None or loc.longitude is None:
             raise ValueError("Locations must have non-null latitude and longitude")
@@ -438,7 +438,7 @@ def calculate_voronoi_regions(
     lon_step = (bb_max_lon - bb_min_lon) / grid_size
 
     # Assign grid points to nearest location
-    regions: Dict[int, List[Location]] = defaultdict(list)
+    regions: dict[int, list[Location]] = defaultdict(list)
 
     for i in range(grid_size + 1):
         for j in range(grid_size + 1):
@@ -470,8 +470,8 @@ def calculate_voronoi_regions(
 
 
 def calculate_spatial_autocorrelation(
-    locations: List[Location], values: List[float], max_distance_km: float = 10.0
-) -> Dict[str, float]:
+    locations: list[Location], values: list[float], max_distance_km: float = 10.0
+) -> dict[str, float]:
     """
     Calculate spatial autocorrelation statistics (Moran's I).
 
@@ -579,8 +579,8 @@ def _normal_cdf(x: float) -> float:
 
 
 def calculate_hotspot_statistics(
-    locations: List[Location], case_counts: List[int]
-) -> Dict[str, Any]:
+    locations: list[Location], case_counts: list[int]
+) -> dict[str, Any]:
     """
     Calculate hotspot statistics using spatial scan statistics.
 
@@ -594,7 +594,7 @@ def calculate_hotspot_statistics(
     if len(locations) != len(case_counts):
         raise ValueError("Locations and case counts must have the same length")
 
-    results: Dict[str, Any] = {
+    results: dict[str, Any] = {
         "total_cases": sum(case_counts),
         "total_locations": len(locations),
         "hotspots": [],

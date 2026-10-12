@@ -5,36 +5,39 @@ Provides sample CSV files, GeoJSON files, data source configurations,
 and standard spatial fixtures.
 """
 
-import json
 import asyncio
+import json
+from collections.abc import Iterator
+
 import pytest
 import numpy as np
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
 
 
 @pytest.fixture(autouse=True)
-def ensure_event_loop():
-    """Provide a default event loop for legacy sync wrappers under Python 3.12."""
+def owned_event_loop() -> Iterator[None]:
+    """Give each test an explicitly closed current-thread event loop.
+
+    pytest-asyncio snapshots the current loop around async tests through
+    ``asyncio.get_event_loop()``, which implicitly creates (and never closes)
+    a loop when none is set; under ``-W error`` that loop's ResourceWarning
+    would fail whichever later test triggers garbage collection.
+    """
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            yield
-        finally:
-            loop.close()
-            asyncio.set_event_loop(None)
-    else:
         yield
+    finally:
+        asyncio.set_event_loop(None)
+        loop.close()
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -116,7 +119,7 @@ def sample_geojson_path(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def data_source_config() -> Dict[str, Any]:
+def data_source_config() -> dict[str, Any]:
     """Configuration dict for a data source connection.
 
     Specifies connection parameters for a local file-based data source

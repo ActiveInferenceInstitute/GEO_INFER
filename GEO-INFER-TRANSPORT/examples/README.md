@@ -20,8 +20,8 @@ Examples workspace within `GEO-INFER-TRANSPORT`.
 
 - Module: `GEO-INFER-TRANSPORT`
 - Package: `geo_infer_transport`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-TRANSPORT`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-transport`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module TRANSPORT`
 
 ## Dependencies

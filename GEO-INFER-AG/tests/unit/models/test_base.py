@@ -1,7 +1,7 @@
 """Unit tests for the base AgricultureModel class."""
 
 import pytest
-from typing import Dict, Any
+from typing import Any
 
 from geo_infer_ag.models.base import AgricultureModel
 
@@ -13,13 +13,13 @@ class ConcreteAgricultureModel(AgricultureModel):
         self,
         name: str = "test_model",
         version: str = "0.1.0",
-        config: Dict[str, Any] = None,
+        config: dict[str, Any] = None,
     ):
         """Initialize the concrete model."""
         super().__init__(name=name, version=version, config=config)
         self.required_inputs = ["field_data", "weather_data"]
 
-    def predict(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def predict(self, data: dict[str, Any]) -> dict[str, Any]:
         """Implement the predict method for testing."""
         self.validate_inputs(data)
         return {"result": "test_prediction", "inputs": list(data.keys())}

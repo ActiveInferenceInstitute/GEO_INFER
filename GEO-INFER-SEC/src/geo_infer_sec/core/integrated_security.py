@@ -15,7 +15,8 @@ import threading
 import time
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, Any, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 from dataclasses import dataclass, field
 import yaml
 
@@ -60,16 +61,16 @@ class IntegratedThreat:
 
     threat_id: str
     primary_domain: SecurityDomain
-    affected_domains: List[SecurityDomain]
+    affected_domains: list[SecurityDomain]
     correlation_type: ThreatCorrelationType
-    component_threats: Dict[str, Any]  # Maps domain to threat objects
+    component_threats: dict[str, Any]  # Maps domain to threat objects
     combined_severity: IncidentSeverity
     confidence_score: float
-    attack_chain: List[str]
-    impact_assessment: Dict[str, Any]
-    recommended_response: List[str]
+    attack_chain: list[str]
+    impact_assessment: dict[str, Any]
+    recommended_response: list[str]
     detected_at: datetime = field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -81,21 +82,21 @@ class SecurityIncident:
     description: str
     severity: IncidentSeverity
     status: str  # open, investigating, contained, resolved
-    affected_systems: List[str]
-    threat_vectors: List[str]
-    timeline: List[Dict[str, Any]]
-    response_actions: List[Dict[str, Any]]
-    assigned_team: Optional[str] = None
+    affected_systems: list[str]
+    threat_vectors: list[str]
+    timeline: list[dict[str, Any]]
+    response_actions: list[dict[str, Any]]
+    assigned_team: str | None = None
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
-    resolved_at: Optional[datetime] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    resolved_at: datetime | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class IntegratedSecurityManager:
     """Holistic security management system integrating all security domains."""
 
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, config_path: str | None = None):
         """Initialize the integrated security manager."""
         self.logger = logging.getLogger(__name__)
         self.config = self._load_config(config_path)
@@ -106,19 +107,19 @@ class IntegratedSecurityManager:
         self.cognitive_manager = CognitiveSecurityManager(config_path)
 
         # Initialize integration components
-        self.integrated_threats: Dict[str, IntegratedThreat] = {}
-        self.security_incidents: Dict[str, SecurityIncident] = {}
-        self.correlation_rules: List[Dict[str, Any]] = []
+        self.integrated_threats: dict[str, IntegratedThreat] = {}
+        self.security_incidents: dict[str, SecurityIncident] = {}
+        self.correlation_rules: list[dict[str, Any]] = []
 
         # Initialize monitoring and coordination
         self.orchestration_active = False
-        self.orchestration_threads: List[threading.Thread] = []
-        self.alert_callbacks: List[Callable[[Dict[str, Any]], None]] = []
-        self.response_handlers: Dict[str, Callable[[IntegratedThreat], None]] = {}
+        self.orchestration_threads: list[threading.Thread] = []
+        self.alert_callbacks: list[Callable[[dict[str, Any]], None]] = []
+        self.response_handlers: dict[str, Callable[[IntegratedThreat], None]] = {}
 
         # Security metrics and KPIs
-        self.security_metrics: Dict[str, Any] = {}
-        self.performance_history: List[Dict[str, Any]] = []
+        self.security_metrics: dict[str, Any] = {}
+        self.performance_history: list[dict[str, Any]] = []
 
         # Initialize utilities
         self.security_utils = SecurityUtils()
@@ -127,7 +128,7 @@ class IntegratedSecurityManager:
         self._setup_cross_domain_alerts()
         self._initialize_correlation_rules()
 
-    def _load_config(self, config_path: Optional[str]) -> Dict[str, Any]:
+    def _load_config(self, config_path: str | None) -> dict[str, Any]:
         """Load configuration for integrated security."""
         default_config = {
             "correlation_window_minutes": 30,
@@ -141,7 +142,7 @@ class IntegratedSecurityManager:
 
         if config_path:
             try:
-                with open(config_path, "r") as f:
+                with open(config_path) as f:
                     user_config = yaml.safe_load(f)
                     default_config.update(user_config.get("integrated_security", {}))
             except Exception as e:
@@ -203,7 +204,7 @@ class IntegratedSecurityManager:
         self.logger.info(f"Received digital security alert: {alert.alert_id}")
         self._correlate_cross_domain_threat(SecurityDomain.DIGITAL, alert)
 
-    def _handle_cognitive_alert(self, alert: Dict[str, Any]) -> None:
+    def _handle_cognitive_alert(self, alert: dict[str, Any]) -> None:
         """Handle alerts from cognitive security domain."""
         self.logger.info(f"Received cognitive security alert: {alert.get('type')}")
         self._correlate_cross_domain_threat(SecurityDomain.COGNITIVE, alert)
@@ -234,7 +235,7 @@ class IntegratedSecurityManager:
 
     def _find_threat_correlations(
         self, primary_domain: SecurityDomain, threat_data: Any
-    ) -> List[Tuple[SecurityDomain, Any]]:
+    ) -> list[tuple[SecurityDomain, Any]]:
         """Find correlations with threats in other domains."""
         correlations = []
         current_time = datetime.now()
@@ -259,7 +260,7 @@ class IntegratedSecurityManager:
         self,
         domain: SecurityDomain,
         threat_data: Any,
-        rule: Dict[str, Any],
+        rule: dict[str, Any],
         current_time: datetime,
         time_window: timedelta,
     ) -> bool:
@@ -288,10 +289,10 @@ class IntegratedSecurityManager:
         return "unknown"
 
     def _find_matching_threats(
-        self, rule: Dict[str, Any], current_time: datetime, time_window: timedelta
-    ) -> List[Tuple[SecurityDomain, Any]]:
+        self, rule: dict[str, Any], current_time: datetime, time_window: timedelta
+    ) -> list[tuple[SecurityDomain, Any]]:
         """Find threats matching correlation rule in other domains."""
-        matches: List[Tuple[SecurityDomain, Any]] = []
+        matches: list[tuple[SecurityDomain, Any]] = []
 
         # Check physical threats
         if "physical" in rule["conditions"]:
@@ -329,7 +330,7 @@ class IntegratedSecurityManager:
         self,
         primary_domain: SecurityDomain,
         primary_threat: Any,
-        correlations: List[Tuple[SecurityDomain, Any]],
+        correlations: list[tuple[SecurityDomain, Any]],
     ) -> IntegratedThreat:
         """Create an integrated threat from correlated threats."""
         threat_id = f"integrated_{datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -390,7 +391,7 @@ class IntegratedSecurityManager:
     def _determine_correlation_type(
         self,
         primary_domain: SecurityDomain,
-        correlations: List[Tuple[SecurityDomain, Any]],
+        correlations: list[tuple[SecurityDomain, Any]],
     ) -> ThreatCorrelationType:
         """Determine the type of threat correlation."""
         if len(set(domain for domain, _ in correlations)) > 1:
@@ -400,7 +401,7 @@ class IntegratedSecurityManager:
         return ThreatCorrelationType.TEMPORAL
 
     def _calculate_combined_severity(
-        self, primary_threat: Any, correlations: List[Tuple[SecurityDomain, Any]]
+        self, primary_threat: Any, correlations: list[tuple[SecurityDomain, Any]]
     ) -> IncidentSeverity:
         """Calculate combined severity from multiple threats."""
         # Start with primary threat severity
@@ -439,8 +440,8 @@ class IntegratedSecurityManager:
         self,
         primary_domain: SecurityDomain,
         primary_threat: Any,
-        correlations: List[Tuple[SecurityDomain, Any]],
-    ) -> List[str]:
+        correlations: list[tuple[SecurityDomain, Any]],
+    ) -> list[str]:
         """Reconstruct the attack chain from correlated threats."""
         chain = [
             f"{primary_domain.value}: {self._extract_threat_type(primary_domain, primary_threat)}"
@@ -453,8 +454,8 @@ class IntegratedSecurityManager:
         return chain
 
     def _assess_impact(
-        self, domains: List[SecurityDomain], threats: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, domains: list[SecurityDomain], threats: dict[str, Any]
+    ) -> dict[str, Any]:
         """Assess the impact of integrated threats."""
         impact = {
             "affected_domains": len(domains),
@@ -479,9 +480,9 @@ class IntegratedSecurityManager:
     def _generate_response_recommendations(
         self,
         severity: IncidentSeverity,
-        domains: List[SecurityDomain],
+        domains: list[SecurityDomain],
         correlation_type: ThreatCorrelationType,
-    ) -> List[str]:
+    ) -> list[str]:
         """Generate coordinated response recommendations."""
         recommendations = []
 
@@ -716,7 +717,7 @@ class IntegratedSecurityManager:
         self.security_metrics["overall_security_score"] = overall_score
         self.security_metrics["last_updated"] = datetime.now().isoformat()
 
-    def _get_domain_metrics(self, domain: SecurityDomain) -> Dict[str, Any]:
+    def _get_domain_metrics(self, domain: SecurityDomain) -> dict[str, Any]:
         """Get metrics from a specific security domain."""
         if domain == SecurityDomain.PHYSICAL:
             return {
@@ -742,7 +743,7 @@ class IntegratedSecurityManager:
         return {}
 
     def _calculate_security_score(
-        self, physical: Dict, digital: Dict, cognitive: Dict
+        self, physical: dict, digital: dict, cognitive: dict
     ) -> float:
         """Calculate overall security score from domain metrics."""
         # Simplified scoring algorithm
@@ -817,7 +818,7 @@ class IntegratedSecurityManager:
             del self.integrated_threats[threat_id]
 
     # Public API
-    def get_security_dashboard(self) -> Dict[str, Any]:
+    def get_security_dashboard(self) -> dict[str, Any]:
         """Get comprehensive security dashboard data."""
         return {
             "timestamp": datetime.now().isoformat(),
@@ -842,7 +843,7 @@ class IntegratedSecurityManager:
             "top_recommendations": self._get_top_recommendations(),
         }
 
-    def _get_recent_alerts(self, hours: int = 24) -> List[Dict[str, Any]]:
+    def _get_recent_alerts(self, hours: int = 24) -> list[dict[str, Any]]:
         """Get recent security alerts across all domains."""
         cutoff_time = datetime.now() - timedelta(hours=hours)
         alerts = []
@@ -889,7 +890,7 @@ class IntegratedSecurityManager:
         else:
             return "critical"
 
-    def _get_top_recommendations(self) -> List[str]:
+    def _get_top_recommendations(self) -> list[str]:
         """Get top security recommendations."""
         recommendations = []
 
@@ -914,13 +915,13 @@ class IntegratedSecurityManager:
 
         return recommendations[:5]  # Return top 5 recommendations
 
-    def get_integrated_threats(self) -> List[IntegratedThreat]:
+    def get_integrated_threats(self) -> list[IntegratedThreat]:
         """Get all integrated threats."""
         return list(self.integrated_threats.values())
 
     def get_security_incidents(
-        self, status: Optional[str] = None
-    ) -> List[SecurityIncident]:
+        self, status: str | None = None
+    ) -> list[SecurityIncident]:
         """Get security incidents, optionally filtered by status."""
         incidents = list(self.security_incidents.values())
 
@@ -951,6 +952,6 @@ class IntegratedSecurityManager:
         """Add a response handler for specific actions."""
         self.response_handlers[action] = handler
 
-    def add_alert_callback(self, callback: Callable[[Dict[str, Any]], None]) -> None:
+    def add_alert_callback(self, callback: Callable[[dict[str, Any]], None]) -> None:
         """Add alert callback for integrated security notifications."""
         self.alert_callbacks.append(callback)

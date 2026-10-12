@@ -11,7 +11,7 @@ Implements comprehensive bioregional market mechanisms including:
 """
 
 import numpy as np
-from typing import cast, Dict, List, Optional, Tuple, Any
+from typing import cast, Any
 from dataclasses import dataclass
 import geopandas as gpd
 from datetime import datetime
@@ -23,13 +23,13 @@ class BioregionalAsset:
 
     asset_id: str
     asset_type: str  # forest, wetland, grassland, agricultural, etc.
-    location: Tuple[float, float]  # (lat, lon)
+    location: tuple[float, float]  # (lat, lon)
     area_hectares: float
-    ecological_attributes: Dict[str, float]  # biodiversity, carbon storage, etc.
-    economic_attributes: Dict[str, float]  # market value, income potential, etc.
+    ecological_attributes: dict[str, float]  # biodiversity, carbon storage, etc.
+    economic_attributes: dict[str, float]  # market value, income potential, etc.
     ownership_type: str  # private, public, community, cooperative
     management_regime: str  # conservation, sustainable use, restoration
-    ecosystem_services: Dict[
+    ecosystem_services: dict[
         str, float
     ]  # provisioning, regulating, cultural, supporting
 
@@ -40,11 +40,11 @@ class MarketParticipant:
 
     participant_id: str
     participant_type: str  # landowner, buyer, intermediary, regulator
-    location: Tuple[float, float]
-    assets_owned: List[str]  # list of asset IDs
-    market_preferences: Dict[str, float]
-    budget_constraints: Dict[str, float]
-    sustainability_goals: Dict[str, float]
+    location: tuple[float, float]
+    assets_owned: list[str]  # list of asset IDs
+    market_preferences: dict[str, float]
+    budget_constraints: dict[str, float]
+    sustainability_goals: dict[str, float]
 
 
 @dataclass
@@ -55,12 +55,12 @@ class EcosystemServiceCredit:
     service_type: str  # carbon, biodiversity, water, pollination, etc.
     quantity: float  # units of service
     quality_tier: str  # high, medium, low based on additionality and permanence
-    location: Tuple[float, float]
+    location: tuple[float, float]
     temporal_profile: str  # permanent, temporary, periodic
     verification_status: str  # verified, pending, self-reported
     price_per_unit: float
-    expiration_date: Optional[datetime]
-    co_benefits: Dict[str, float]  # additional ecological benefits
+    expiration_date: datetime | None
+    co_benefits: dict[str, float]  # additional ecological benefits
 
 
 class BioregionalMarketDesign:
@@ -70,11 +70,11 @@ class BioregionalMarketDesign:
 
     def __init__(self, bioregion_boundary: gpd.GeoDataFrame):
         self.bioregion = bioregion_boundary
-        self.assets: Dict[str, Any] = {}
-        self.participants: Dict[str, Any] = {}
-        self.credits: Dict[str, Any] = {}
-        self.market_mechanisms: Dict[str, Any] = {}
-        self.transaction_history: List[Any] = []
+        self.assets: dict[str, Any] = {}
+        self.participants: dict[str, Any] = {}
+        self.credits: dict[str, Any] = {}
+        self.market_mechanisms: dict[str, Any] = {}
+        self.transaction_history: list[Any] = []
 
     def register_asset(self, asset: BioregionalAsset) -> bool:
         """Register a bioregional asset in the market system"""
@@ -91,7 +91,7 @@ class BioregionalMarketDesign:
         asset_id: str,
         service_type: str,
         quantity: float,
-        quality_parameters: Dict[str, Any],
+        quality_parameters: dict[str, Any],
     ) -> EcosystemServiceCredit:
         """
         Create ecosystem service credits from bioregional assets
@@ -143,7 +143,7 @@ class BioregionalMarketDesign:
         return credit
 
     def _assess_credit_quality(
-        self, asset: BioregionalAsset, service_type: str, parameters: Dict[str, Any]
+        self, asset: BioregionalAsset, service_type: str, parameters: dict[str, Any]
     ) -> float:
         """Assess the quality of ecosystem service credits"""
         quality_factors = {
@@ -176,7 +176,7 @@ class BioregionalMarketDesign:
         ]
 
     def _calculate_location_multiplier(
-        self, location: Tuple[float, float], service_type: str
+        self, location: tuple[float, float], service_type: str
     ) -> float:
         """Calculate location-based price multiplier"""
         # Simple distance-based multiplier (can be made more sophisticated)
@@ -199,7 +199,7 @@ class BioregionalMarketDesign:
 
     def _calculate_co_benefits(
         self, asset: BioregionalAsset, service_type: str
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate co-benefits of ecosystem service credits"""
         co_benefits = {}
 
@@ -230,7 +230,7 @@ class EcosystemServicesMarkets:
 
     def __init__(self, market_design: BioregionalMarketDesign):
         self.market_design = market_design
-        self.order_book: Dict[str, List[Any]] = {"buy": [], "sell": []}
+        self.order_book: dict[str, list[Any]] = {"buy": [], "sell": []}
         self.market_clearing_mechanism = "double_auction"
 
     def submit_buy_order(
@@ -239,10 +239,10 @@ class EcosystemServicesMarkets:
         service_type: str,
         quantity: float,
         max_price: float,
-        location_preferences: Dict[str, Any],
+        location_preferences: dict[str, Any],
     ) -> str:
         """Submit a buy order for ecosystem services"""
-        order: Dict[str, Any] = {
+        order: dict[str, Any] = {
             "order_id": f"buy_{participant_id}_{datetime.now().isoformat()}",
             "participant_id": participant_id,
             "order_type": "buy",
@@ -262,7 +262,7 @@ class EcosystemServicesMarkets:
         """Submit a sell order for ecosystem service credits"""
         credit = self.market_design.credits[credit_id]
 
-        order: Dict[str, Any] = {
+        order: dict[str, Any] = {
             "order_id": f"sell_{participant_id}_{datetime.now().isoformat()}",
             "participant_id": participant_id,
             "order_type": "sell",
@@ -278,7 +278,7 @@ class EcosystemServicesMarkets:
         self.order_book["sell"].append(order)
         return cast(str, order["order_id"])
 
-    def clear_market(self) -> List[Dict[str, Any]]:
+    def clear_market(self) -> list[dict[str, Any]]:
         """Clear the market and execute trades"""
         if self.market_clearing_mechanism == "double_auction":
             return self._double_auction_clearing()
@@ -287,7 +287,7 @@ class EcosystemServicesMarkets:
         else:
             return []
 
-    def _double_auction_clearing(self) -> List[Dict[str, Any]]:
+    def _double_auction_clearing(self) -> list[dict[str, Any]]:
         """Double auction market clearing mechanism"""
         transactions = []
 
@@ -343,7 +343,7 @@ class EcosystemServicesMarkets:
 
         return transactions
 
-    def _check_location_compatibility(self, buy_order: Dict, sell_order: Dict) -> bool:
+    def _check_location_compatibility(self, buy_order: dict, sell_order: dict) -> bool:
         """Check if buy and sell orders are locationally compatible"""
         location_prefs = buy_order.get("location_preferences", {})
 
@@ -367,7 +367,7 @@ class EcosystemServicesMarkets:
 
         return True
 
-    def _call_auction_clearing(self) -> List[Dict[str, Any]]:
+    def _call_auction_clearing(self) -> list[dict[str, Any]]:
         """Uniform-price call auction: find clearing price at supply/demand intersection."""
         buy_orders = sorted(
             self.order_book["buy"], key=lambda x: x["price"], reverse=True
@@ -442,12 +442,12 @@ class BiodiversityMarkets:
 
     def __init__(self, market_design: BioregionalMarketDesign):
         self.market_design = market_design
-        self.habitat_banks: Dict[str, Any] = {}
-        self.mitigation_requirements: Dict[str, Any] = {}
+        self.habitat_banks: dict[str, Any] = {}
+        self.mitigation_requirements: dict[str, Any] = {}
 
     def create_habitat_bank(
-        self, bank_id: str, asset_ids: List[str], credit_types: List[str]
-    ) -> Dict[str, Any]:
+        self, bank_id: str, asset_ids: list[str], credit_types: list[str]
+    ) -> dict[str, Any]:
         """Create a habitat bank for biodiversity credit generation"""
         total_area = sum(
             self.market_design.assets[aid].area_hectares for aid in asset_ids
@@ -477,10 +477,10 @@ class BiodiversityMarkets:
 
     def calculate_mitigation_requirement(
         self,
-        impact_location: Tuple[float, float],
+        impact_location: tuple[float, float],
         impact_area: float,
         habitat_type: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate biodiversity mitigation requirements for development impacts"""
         # Biodiversity offset ratios based on habitat type and location
         offset_ratios = {
@@ -518,7 +518,7 @@ class BiodiversityMarkets:
 
     def match_credits_to_requirements(
         self, requirement_id: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Match available biodiversity credits to mitigation requirements"""
         requirement = self.mitigation_requirements[requirement_id]
         available_credits = []
@@ -548,7 +548,7 @@ class BiodiversityMarkets:
 
         return available_credits
 
-    def _get_bank_centroid(self, bank: Dict[str, Any]) -> Tuple[float, float]:
+    def _get_bank_centroid(self, bank: dict[str, Any]) -> tuple[float, float]:
         """Calculate centroid of habitat bank assets"""
         locations = [
             self.market_design.assets[aid].location for aid in bank["asset_ids"]
@@ -558,7 +558,7 @@ class BiodiversityMarkets:
         return (centroid_lat, centroid_lon)
 
     def _calculate_distance(
-        self, loc1: Tuple[float, float], loc2: Tuple[float, float]
+        self, loc1: tuple[float, float], loc2: tuple[float, float]
     ) -> float:
         """Calculate distance between two locations"""
         return float(
@@ -573,13 +573,13 @@ class LocalFoodSystems:
 
     def __init__(self, market_design: BioregionalMarketDesign):
         self.market_design = market_design
-        self.food_producers: Dict[str, Any] = {}
-        self.food_consumers: Dict[str, Any] = {}
-        self.distribution_networks: Dict[str, Any] = {}
+        self.food_producers: dict[str, Any] = {}
+        self.food_consumers: dict[str, Any] = {}
+        self.distribution_networks: dict[str, Any] = {}
 
     def optimize_local_food_system(
-        self, optimization_objectives: List[str]
-    ) -> Dict[str, Any]:
+        self, optimization_objectives: list[str]
+    ) -> dict[str, Any]:
         """
         Optimize local food system for multiple objectives using advanced algorithms
 
@@ -613,7 +613,7 @@ class LocalFoodSystems:
         production_scenarios = self._generate_production_scenarios()
 
         # Evaluate scenarios against objectives
-        scenario_scores: Dict[str, Dict[str, float]] = {}
+        scenario_scores: dict[str, dict[str, float]] = {}
         for scenario_name, scenario in production_scenarios.items():
             scores = {}
             for obj_name, obj_func in active_objectives.items():
@@ -622,7 +622,7 @@ class LocalFoodSystems:
 
         # Multi-objective optimization (simplified)
         # In practice, would use Pareto optimization or weighted sum
-        best_scenario: Tuple[str, Any]
+        best_scenario: tuple[str, Any]
         if len(active_objectives) == 1:
             # Single objective - find best scenario
             best_scenario = max(
@@ -650,7 +650,7 @@ class LocalFoodSystems:
             "nutritional_adequacy": production_scenarios[best_scenario[0]]["nutrition"],
         }
 
-    def _generate_production_scenarios(self) -> Dict[str, Dict[str, Any]]:
+    def _generate_production_scenarios(self) -> dict[str, dict[str, Any]]:
         """Generate different production scenarios for optimization"""
         scenarios = {}
 
@@ -683,19 +683,19 @@ class LocalFoodSystems:
 
         return scenarios
 
-    def _transport_objective(self, scenario: Dict[str, Any]) -> float:
+    def _transport_objective(self, scenario: dict[str, Any]) -> float:
         """Objective function for minimizing transport"""
         # Lower transport scores are better
         return float(1.0 / (scenario["environmental"]["carbon_footprint"] + 0.1))
 
-    def _nutrition_objective(self, scenario: Dict[str, Any]) -> float:
+    def _nutrition_objective(self, scenario: dict[str, Any]) -> float:
         """Objective function for maximizing nutrition"""
         return float(
             scenario["nutrition"]["nutritional_diversity"]
             * scenario["nutrition"]["food_security"]
         )
 
-    def _environmental_objective(self, scenario: Dict[str, Any]) -> float:
+    def _environmental_objective(self, scenario: dict[str, Any]) -> float:
         """Objective function for minimizing environmental impact"""
         # Combined environmental score (lower is better)
         return float(
@@ -707,7 +707,7 @@ class LocalFoodSystems:
             )
         )
 
-    def _economic_objective(self, scenario: Dict[str, Any]) -> float:
+    def _economic_objective(self, scenario: dict[str, Any]) -> float:
         """Objective function for maximizing economic efficiency"""
         return float(
             scenario["economic"]["economic_multiplier"]
@@ -716,8 +716,8 @@ class LocalFoodSystems:
         )
 
     def _find_pareto_optimal(
-        self, scenario_scores: Dict[str, Dict[str, float]], weights: Dict[str, float]
-    ) -> Tuple[str, float]:
+        self, scenario_scores: dict[str, dict[str, float]], weights: dict[str, float]
+    ) -> tuple[str, float]:
         """Find Pareto optimal scenario using weighted sum"""
         best_scenario: str = ""
         best_score = -float("inf")
@@ -740,7 +740,7 @@ class LocalFoodSystems:
         return self._calculate_distance(producer_loc, consumer_loc)
 
     def _calculate_distance(
-        self, loc1: Tuple[float, float], loc2: Tuple[float, float]
+        self, loc1: tuple[float, float], loc2: tuple[float, float]
     ) -> float:
         """Calculate distance between two locations"""
         return float(
@@ -757,13 +757,13 @@ class CarbonMarkets:
 
     def __init__(self, market_design: BioregionalMarketDesign):
         self.market_design = market_design
-        self.allowances: Dict[str, float] = {}  # participant_id → tonnes CO2
-        self.emissions: Dict[str, float] = {}  # participant_id → tonnes CO2
+        self.allowances: dict[str, float] = {}  # participant_id → tonnes CO2
+        self.emissions: dict[str, float] = {}  # participant_id → tonnes CO2
         self.price_per_tonne: float = 50.0
-        self.trade_history: List[Dict[str, Any]] = []
-        self.sequestration_projects: Dict[str, Dict[str, Any]] = {}
+        self.trade_history: list[dict[str, Any]] = []
+        self.sequestration_projects: dict[str, dict[str, Any]] = {}
 
-    def set_cap(self, total_cap: float, allocation: Dict[str, float]) -> Dict[str, Any]:
+    def set_cap(self, total_cap: float, allocation: dict[str, float]) -> dict[str, Any]:
         """Set the emissions cap and allocate allowances.
 
         Args:
@@ -783,7 +783,7 @@ class CarbonMarkets:
             "n_participants": len(self.allowances),
         }
 
-    def report_emissions(self, participant_id: str, emissions: float) -> Dict[str, Any]:
+    def report_emissions(self, participant_id: str, emissions: float) -> dict[str, Any]:
         """Report emissions for a participant.
 
         Args:
@@ -813,8 +813,8 @@ class CarbonMarkets:
         seller_id: str,
         buyer_id: str,
         tonnes: float,
-        price_per_tonne: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        price_per_tonne: float | None = None,
+    ) -> dict[str, Any]:
         """Execute an allowance trade between participants.
 
         Args:
@@ -863,7 +863,7 @@ class CarbonMarkets:
         asset_id: str,
         annual_sequestration: float,
         duration_years: int = 20,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Register a carbon sequestration project for credit generation.
 
         Args:
@@ -887,13 +887,13 @@ class CarbonMarkets:
         self.sequestration_projects[project_id] = project
         return project
 
-    def check_compliance(self) -> Dict[str, Any]:
+    def check_compliance(self) -> dict[str, Any]:
         """Check compliance for all participants.
 
         Returns:
             Dict with per-participant compliance and summary.
         """
-        results: Dict[str, Dict[str, Any]] = {}
+        results: dict[str, dict[str, Any]] = {}
         compliant_count = 0
         total_surplus = 0.0
         total_deficit = 0.0
@@ -934,12 +934,12 @@ class WaterMarkets:
 
     def __init__(self, market_design: BioregionalMarketDesign):
         self.market_design = market_design
-        self.water_rights: Dict[str, Dict[str, Any]] = {}
-        self.allocations: Dict[str, float] = {}
-        self.trade_history: List[Dict[str, Any]] = []
+        self.water_rights: dict[str, dict[str, Any]] = {}
+        self.allocations: dict[str, float] = {}
+        self.trade_history: list[dict[str, Any]] = []
         self.watershed_supply: float = 0.0
 
-    def set_watershed_supply(self, annual_supply_m3: float) -> Dict[str, Any]:
+    def set_watershed_supply(self, annual_supply_m3: float) -> dict[str, Any]:
         """Set the total available water supply for the watershed.
 
         Args:
@@ -962,7 +962,7 @@ class WaterMarkets:
         volume_m3: float,
         priority: int = 1,
         use_type: str = "agricultural",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Register a water right.
 
         Args:
@@ -989,7 +989,7 @@ class WaterMarkets:
 
         return right
 
-    def allocate_by_priority(self) -> Dict[str, Any]:
+    def allocate_by_priority(self) -> dict[str, Any]:
         """Allocate water by priority when supply is scarce.
 
         Rights are filled in priority order (lower number = higher priority).
@@ -1000,8 +1000,8 @@ class WaterMarkets:
         """
         sorted_rights = sorted(self.water_rights.values(), key=lambda r: r["priority"])
         remaining = self.watershed_supply
-        allocations: Dict[str, float] = {}
-        shortfalls: Dict[str, float] = {}
+        allocations: dict[str, float] = {}
+        shortfalls: dict[str, float] = {}
 
         for right in sorted_rights:
             rid = right["right_id"]
@@ -1035,7 +1035,7 @@ class WaterMarkets:
         buyer_id: str,
         volume_m3: float,
         price_per_m3: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Trade water allocation between participants.
 
         Args:
@@ -1076,7 +1076,7 @@ class WaterMarkets:
             "buyer_new_allocation": round(self.allocations[buyer_id], 2),
         }
 
-    def watershed_balance(self) -> Dict[str, Any]:
+    def watershed_balance(self) -> dict[str, Any]:
         """Get overall watershed water balance.
 
         Returns:

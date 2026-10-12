@@ -9,10 +9,10 @@ import importlib.resources
 import os
 
 import yaml
-from typing import Any, Dict, Optional, cast
+from typing import Any, cast
 
 
-def find_config_file(config_path: Optional[str] = None) -> str:
+def find_config_file(config_path: str | None = None) -> str:
     """
     Find the configuration file to use.
 
@@ -68,7 +68,7 @@ def find_config_file(config_path: Optional[str] = None) -> str:
     raise FileNotFoundError("No configuration file found")
 
 
-def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
+def load_config(config_path: str | None = None) -> dict[str, Any]:
     """
     Load configuration from a YAML file.
 
@@ -80,7 +80,7 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     """
     config_file = find_config_file(config_path)
 
-    with open(config_file, "r") as f:
+    with open(config_file) as f:
         config = yaml.safe_load(f)
 
     # Override with environment variables
@@ -112,4 +112,4 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
 
             section[parts[-1]] = value
 
-    return cast(Dict[str, Any], config)
+    return cast(dict[str, Any], config)

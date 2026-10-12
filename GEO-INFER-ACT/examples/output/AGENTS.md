@@ -21,7 +21,7 @@
 
 ## Local Contents
 
-- `comprehensive_act_audit/`
+- No direct tracked child entries.
 
 ## Validation
 

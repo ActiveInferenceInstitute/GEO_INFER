@@ -3,21 +3,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional
+from typing import Any
+from collections.abc import Callable
 
 
 @dataclass
 class AgentConfigForm:
     """Container describing an agent configuration form payload."""
 
-    schema: Dict[str, Any]
-    initial_values: Dict[str, Any]
-    on_submit: Optional[Callable[[Dict[str, Any]], Any]] = None
-    on_cancel: Optional[Callable[[], Any]] = None
+    schema: dict[str, Any]
+    initial_values: dict[str, Any]
+    on_submit: Callable[[dict[str, Any]], Any] | None = None
+    on_cancel: Callable[[], Any] | None = None
     is_loading: bool = False
-    error: Optional[str] = None
+    error: str | None = None
 
-    def submit(self, values: Optional[Dict[str, Any]] = None) -> Optional[Any]:
+    def submit(self, values: dict[str, Any] | None = None) -> Any | None:
         """Submit a normalized configuration payload."""
         payload = dict(self.initial_values)
         if values:
@@ -26,7 +27,7 @@ class AgentConfigForm:
             return payload
         return self.on_submit(payload)
 
-    def cancel(self) -> Optional[Any]:
+    def cancel(self) -> Any | None:
         """Execute the optional cancellation handler."""
         if self.on_cancel is None:
             return None

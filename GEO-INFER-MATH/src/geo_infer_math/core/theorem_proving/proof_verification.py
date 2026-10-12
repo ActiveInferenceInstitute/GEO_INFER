@@ -5,7 +5,7 @@ This module provides proof verification capabilities for
 spatial mathematics theorems.
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Any
 import logging
 
 
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def verify_proof(
     theorem: str,
     proof: str,
-    assumptions: Optional[List[str]] = None,
+    assumptions: list[str] | None = None,
     backend: str = "z3",
 ) -> bool:
     """
@@ -57,7 +57,7 @@ class ProofVerifier:
         self._prover = TheoremProver(backend=backend)
 
     def verify(
-        self, theorem: str, proof: str, assumptions: Optional[List[str]] = None
+        self, theorem: str, proof: str, assumptions: list[str] | None = None
     ) -> bool:
         """
         Verify a proof.
@@ -72,7 +72,7 @@ class ProofVerifier:
         """
         return self._prover.verify(theorem, proof, assumptions=assumptions)
 
-    def check_proof_structure(self, proof: str) -> Dict[str, Any]:
+    def check_proof_structure(self, proof: str) -> dict[str, Any]:
         """
         Check the structure of a proof.
 
@@ -102,7 +102,7 @@ class ProofVerifier:
 
         return structure
 
-    def validate_proof_steps(self, proof: str, theorem: str) -> List[Dict[str, Any]]:
+    def validate_proof_steps(self, proof: str, theorem: str) -> list[dict[str, Any]]:
         """
         Validate individual proof steps.
 

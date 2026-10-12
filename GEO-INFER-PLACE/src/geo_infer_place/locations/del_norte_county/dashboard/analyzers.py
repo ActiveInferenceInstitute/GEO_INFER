@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Mapping
+from typing import Any
+from collections.abc import Mapping
 
 
 def _required_mapping(data: Mapping[str, Any] | None, name: str) -> Mapping[str, Any]:
@@ -18,7 +19,7 @@ class ClimateAnalyzer:
     def __init__(self, data: Mapping[str, Any] | None = None, **kwargs: Any):
         self.data = data
 
-    def generate_climate_projections(self) -> Dict[str, Any]:
+    def generate_climate_projections(self) -> dict[str, Any]:
         """Return configured historical and projected climate observations."""
         data = _required_mapping(self.data, "climate")
         if "historical" not in data and "projections" not in data:
@@ -27,7 +28,7 @@ class ClimateAnalyzer:
             )
         return dict(data)
 
-    def calculate_climate_risks(self) -> Dict[str, float]:
+    def calculate_climate_risks(self) -> dict[str, float]:
         """Return risk indicators calculated by the configured climate provider."""
         data = _required_mapping(self.data, "climate")
         risks = data.get("risk_indicators")
@@ -35,7 +36,7 @@ class ClimateAnalyzer:
             raise ValueError("Climate data must contain risk_indicators")
         return {str(key): float(value) for key, value in risks.items()}
 
-    def run_analysis(self) -> Dict[str, Any]:
+    def run_analysis(self) -> dict[str, Any]:
         """Return the configured climate analysis."""
         result = dict(self.generate_climate_projections())
         result["risk_indicators"] = self.calculate_climate_risks()
@@ -48,7 +49,7 @@ class ZoningAnalyzer:
     def __init__(self, data: Mapping[str, Any] | None = None, **kwargs: Any):
         self.data = data
 
-    def generate_zoning_analysis(self) -> Dict[str, Any]:
+    def generate_zoning_analysis(self) -> dict[str, Any]:
         """Return configured zoning observations with percentages."""
         data = _required_mapping(self.data, "zoning")
         zones = data.get("zoning_breakdown", data.get("zones"))
@@ -70,7 +71,7 @@ class ZoningAnalyzer:
         result["zone_breakdown"] = breakdown
         return result
 
-    def run_analysis(self) -> Dict[str, Any]:
+    def run_analysis(self) -> dict[str, Any]:
         """Return the configured zoning analysis."""
         return self.generate_zoning_analysis()
 
@@ -81,7 +82,7 @@ class AgroEconomicAnalyzer:
     def __init__(self, data: Mapping[str, Any] | None = None, **kwargs: Any):
         self.data = data
 
-    def generate_economic_analysis(self) -> Dict[str, Any]:
+    def generate_economic_analysis(self) -> dict[str, Any]:
         """Return configured economic sector observations and derived shares."""
         data = _required_mapping(self.data, "economic")
         sectors = data.get("sector_analysis", data.get("sectors"))
@@ -105,6 +106,6 @@ class AgroEconomicAnalyzer:
         }
         return result
 
-    def run_analysis(self) -> Dict[str, Any]:
+    def run_analysis(self) -> dict[str, Any]:
         """Return the configured economic analysis."""
         return self.generate_economic_analysis()

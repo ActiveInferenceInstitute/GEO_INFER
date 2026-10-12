@@ -8,7 +8,7 @@ transportation network analysis, and emissions calculation.
 import logging
 import pandas as pd
 import networkx as nx
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 import matplotlib.pyplot as plt
 
 from geo_infer_log.models.schemas import VehicleType, FuelType, Vehicle, Route
@@ -23,9 +23,9 @@ class MultiModalPlanner:
 
     def __init__(self) -> None:
         """Initialize a multimodal transportation planner."""
-        self.networks: Dict[str, nx.Graph] = {}  # mode -> network graph
+        self.networks: dict[str, nx.Graph] = {}  # mode -> network graph
         # List of transfer points between modes
-        self.transfer_points: List[Dict[str, Any]] = []
+        self.transfer_points: list[dict[str, Any]] = []
 
     def load_network(self, mode: str, network_file: str) -> None:
         """Load a transportation network for a specific mode.
@@ -40,10 +40,10 @@ class MultiModalPlanner:
 
     def add_transfer_point(
         self,
-        location: Tuple[float, float],
+        location: tuple[float, float],
         name: str,
-        modes: List[str],
-        transfer_time: Dict[Tuple[str, str], int],
+        modes: list[str],
+        transfer_time: dict[tuple[str, str], int],
     ) -> None:
         """Add a transfer point between transportation modes.
 
@@ -89,11 +89,11 @@ class MultiModalPlanner:
 
     def plan_route(
         self,
-        origin: Tuple[float, float],
-        destination: Tuple[float, float],
-        allowed_modes: List[str],
-        preferences: Optional[Dict[str, Any]] = None,
-    ) -> Dict:
+        origin: tuple[float, float],
+        destination: tuple[float, float],
+        allowed_modes: list[str],
+        preferences: dict[str, Any] | None = None,
+    ) -> dict:
         """Plan a multimodal route between origin and destination.
 
         Args:
@@ -125,7 +125,7 @@ class MultiModalPlanner:
                 net = self.networks[mode]
 
                 # Nearest-node lookup via Haversine distance
-                def _nearest(net: Any, lon: float, lat: float) -> Optional[Any]:
+                def _nearest(net: Any, lon: float, lat: float) -> Any | None:
                     best, best_d = None, float("inf")
                     for n, d in net.nodes(data=True):
                         nx_val = d.get("x", d.get("lon", 0))
@@ -166,7 +166,7 @@ class MultiModalPlanner:
                     continue
 
         # Build route segments from the discovered path
-        segments: List[Dict[str, Any]] = []
+        segments: list[dict[str, Any]] = []
         if best_route:
             current_mode = None
             seg_start = None
@@ -241,7 +241,7 @@ class MultiModalPlanner:
             "num_transfers": len(segments) - 1,
         }
 
-    def _build_multimodal_graph(self, modes: List[str]) -> nx.DiGraph:
+    def _build_multimodal_graph(self, modes: list[str]) -> nx.DiGraph:
         """Build a multimodal graph combining specified mode networks.
 
         Args:
@@ -290,9 +290,9 @@ class MultiModalPlanner:
 
     def compare_routes(
         self,
-        origin: Tuple[float, float],
-        destination: Tuple[float, float],
-        mode_combinations: List[List[str]],
+        origin: tuple[float, float],
+        destination: tuple[float, float],
+        mode_combinations: list[list[str]],
     ) -> pd.DataFrame:
         """Compare different multimodal routes between origin and destination.
 
@@ -328,8 +328,8 @@ class TransportationNetworkAnalyzer:
 
     def __init__(self) -> None:
         """Initialize a transportation network analyzer."""
-        self.network: Optional[nx.Graph] = None
-        self.flow_data: Optional[Any] = None
+        self.network: nx.Graph | None = None
+        self.flow_data: Any | None = None
 
     def load_network(self, network_file: str) -> None:
         """Load a transportation network from a file.
@@ -362,7 +362,7 @@ class TransportationNetworkAnalyzer:
             "Loaded flow data: %d records from %s", len(self.flow_data), flow_file
         )
 
-    def calculate_network_metrics(self) -> Dict:
+    def calculate_network_metrics(self) -> dict:
         """Calculate metrics for the transportation network.
 
         Returns:
@@ -405,7 +405,7 @@ class TransportationNetworkAnalyzer:
 
         return metrics
 
-    def identify_critical_links(self, top_n: int = 10) -> List[Tuple[str, str]]:
+    def identify_critical_links(self, top_n: int = 10) -> list[tuple[str, str]]:
         """Identify critical links in the transportation network.
 
         Args:
@@ -426,7 +426,7 @@ class TransportationNetworkAnalyzer:
         )
         return [link for link, _ in critical_links[:top_n]]
 
-    def _edge_flows(self) -> Dict[Tuple[Any, Any], float]:
+    def _edge_flows(self) -> dict[tuple[Any, Any], float]:
         """Aggregate flow records into per-edge totals.
 
         Expects a DataFrame with columns like 'origin'/'source'/'from',
@@ -435,7 +435,7 @@ class TransportationNetworkAnalyzer:
         Returns:
             Mapping of (origin, destination) to total flow
         """
-        edge_flows: Dict[Tuple[Any, Any], float] = {}
+        edge_flows: dict[tuple[Any, Any], float] = {}
         if isinstance(self.flow_data, pd.DataFrame) and not self.flow_data.empty:
             origin_col = next(
                 (
@@ -463,7 +463,7 @@ class TransportationNetworkAnalyzer:
                     edge_flows[key] = edge_flows.get(key, 0) + row[flow_col]
         return edge_flows
 
-    def analyze_flow(self) -> Dict:
+    def analyze_flow(self) -> dict:
         """Analyze transportation flow in the network.
 
         Returns:
@@ -572,16 +572,16 @@ class TransportationNetworkAnalyzer:
 class TrafficSimulator:
     """Simulates traffic patterns and congestion."""
 
-    def __init__(self, network: Optional[nx.DiGraph] = None):
+    def __init__(self, network: nx.DiGraph | None = None):
         """Initialize a traffic simulator.
 
         Args:
             network: Transportation network graph
         """
         self.network = network
-        self.time_periods: List[str] = []
+        self.time_periods: list[str] = []
         # (u, v) -> speed by time period
-        self.edge_speeds: Dict[Tuple[str, str], Dict[str, float]] = {}
+        self.edge_speeds: dict[tuple[str, str], dict[str, float]] = {}
 
     def load_network(self, network_file: str) -> None:
         """Load a transportation network from a file.
@@ -591,7 +591,7 @@ class TrafficSimulator:
         """
         self.network = _load_gpickle(network_file)
 
-    def set_time_periods(self, periods: List[str]) -> None:
+    def set_time_periods(self, periods: list[str]) -> None:
         """Set time periods for traffic simulation.
 
         Args:
@@ -604,7 +604,7 @@ class TrafficSimulator:
             for u, v in self.network.edges():
                 self.edge_speeds[(u, v)] = {period: 0 for period in periods}
 
-    def set_edge_speeds(self, edge: Tuple[str, str], speeds: Dict[str, float]) -> None:
+    def set_edge_speeds(self, edge: tuple[str, str], speeds: dict[str, float]) -> None:
         """Set speeds for an edge by time period.
 
         Args:
@@ -623,7 +623,7 @@ class TrafficSimulator:
 
     def simulate_traffic(
         self, origin: str, destination: str, departure_time: str
-    ) -> Dict:
+    ) -> dict:
         """Simulate traffic for a route from origin to destination.
 
         Args:
@@ -682,8 +682,8 @@ class TrafficSimulator:
         }
 
     def analyze_congestion(
-        self, time_period: Optional[str] = None, congestion_threshold: float = 0.7
-    ) -> Dict:
+        self, time_period: str | None = None, congestion_threshold: float = 0.7
+    ) -> dict:
         """Analyze network congestion.
 
         Args:
@@ -735,7 +735,7 @@ class EmissionsCalculator:
     def __init__(self) -> None:
         """Initialize an emissions calculator."""
         # Default emissions factors by vehicle type and fuel type (kg CO2e per km)
-        self.emissions_factors: Dict[Tuple[VehicleType, Optional[FuelType]], float] = {
+        self.emissions_factors: dict[tuple[VehicleType, FuelType | None], float] = {
             (VehicleType.TRUCK, FuelType.DIESEL): 0.9,
             (VehicleType.TRUCK, FuelType.ELECTRIC): 0.2,
             (VehicleType.VAN, FuelType.DIESEL): 0.5,
@@ -750,7 +750,7 @@ class EmissionsCalculator:
         }
 
     def set_emissions_factor(
-        self, vehicle_type: VehicleType, fuel_type: Optional[FuelType], factor: float
+        self, vehicle_type: VehicleType, fuel_type: FuelType | None, factor: float
     ) -> None:
         """Set an emissions factor for a vehicle and fuel type.
 
@@ -794,7 +794,7 @@ class EmissionsCalculator:
         return emissions
 
     def compare_emissions(
-        self, route: Dict, vehicle_options: List[Vehicle]
+        self, route: dict, vehicle_options: list[Vehicle]
     ) -> pd.DataFrame:
         """Compare emissions for different vehicle options on a route.
 
@@ -824,8 +824,8 @@ class EmissionsCalculator:
         return pd.DataFrame(comparisons)
 
     def calculate_fleet_emissions(
-        self, fleet: List[Vehicle], routes: List[Route]
-    ) -> Dict:
+        self, fleet: list[Vehicle], routes: list[Route]
+    ) -> dict:
         """Calculate total emissions for a fleet of vehicles.
 
         Args:

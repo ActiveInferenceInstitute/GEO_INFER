@@ -5,11 +5,11 @@ Provides circular economy modeling, material flow analysis, industrial ecology,
 waste-to-resource system design, and regenerative design capabilities.
 """
 
-from typing import Dict, Optional, Any
+from typing import Any
 import numpy as np
 import pandas as pd
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +23,13 @@ class CircularEconomyModels:
     aligned with the Ellen MacArthur Foundation methodology.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize circular economy models."""
         self.config = config or {}
         self.include_energy = self.config.get("include_energy", True)
         logger.info("CircularEconomyModels initialized")
 
-    def model_circular_flows(self, flow_data: Dict[str, Any]) -> pd.DataFrame:
+    def model_circular_flows(self, flow_data: dict[str, Any]) -> pd.DataFrame:
         """Model circular economy flows.
 
         Args:
@@ -138,11 +138,11 @@ class CircularEconomyModels:
 class MaterialFlowAnalysis:
     """Material flow analysis (MFA) for tracking substance flows through systems."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         logger.info("MaterialFlowAnalysis initialized")
 
-    def analyze_flows(self, material_data: Dict[str, Any]) -> pd.DataFrame:
+    def analyze_flows(self, material_data: dict[str, Any]) -> pd.DataFrame:
         """Analyze material flows through a system.
 
         Args:
@@ -165,19 +165,19 @@ class MaterialFlowAnalysis:
         logger.info("Analyzing material flows for %s (period: %s)", system, period)
 
         # Aggregate inflows and outflows by material
-        inflow_totals: Dict[str, float] = {}
+        inflow_totals: dict[str, float] = {}
         for f in inflows:
             mat = f.get("material", "unknown")
             inflow_totals[mat] = inflow_totals.get(mat, 0) + float(f.get("mass_kg", 0))
 
-        outflow_totals: Dict[str, float] = {}
+        outflow_totals: dict[str, float] = {}
         for f in outflows:
             mat = f.get("material", "unknown")
             outflow_totals[mat] = outflow_totals.get(mat, 0) + float(
                 f.get("mass_kg", 0)
             )
 
-        stock_totals: Dict[str, float] = {}
+        stock_totals: dict[str, float] = {}
         for s in stocks:
             mat = s.get("material", "unknown")
             stock_totals[mat] = stock_totals.get(mat, 0) + float(s.get("mass_kg", 0))
@@ -229,11 +229,11 @@ class MaterialFlowAnalysis:
 class IndustrialEcologyModels:
     """Industrial ecology models for industrial symbiosis and eco-industrial parks."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         logger.info("IndustrialEcologyModels initialized")
 
-    def model_industrial_ecology(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def model_industrial_ecology(self, data: dict[str, Any]) -> dict[str, Any]:
         """Model industrial ecology / symbiosis networks.
 
         Args:
@@ -335,7 +335,7 @@ class IndustrialEcologyModels:
 class WasteToResourceSystems:
     """Waste-to-resource system design using circular cascading principles."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         logger.info("WasteToResourceSystems initialized")
 
@@ -361,7 +361,7 @@ class WasteToResourceSystems:
         "electronic": {"disassembly": 0.50, "smelting": 0.70},
     }
 
-    def design_system(self, waste_data: Dict[str, Any]) -> Dict[str, Any]:
+    def design_system(self, waste_data: dict[str, Any]) -> dict[str, Any]:
         """Design a waste-to-resource system.
 
         Args:
@@ -436,7 +436,7 @@ class WasteToResourceSystems:
             },
             "budget_usd": budget,
             "space_m2": space,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     @staticmethod
@@ -463,7 +463,7 @@ class WasteToResourceSystems:
 class RegenerativeDesign:
     """Regenerative design principles for built and natural environments."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         logger.info("RegenerativeDesign initialized")
 
@@ -478,8 +478,8 @@ class RegenerativeDesign:
     ]
 
     def design_regenerative_system(
-        self, design_params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, design_params: dict[str, Any]
+    ) -> dict[str, Any]:
         """Design a regenerative system.
 
         Args:

@@ -10,7 +10,7 @@ import io
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from geo_infer_ai.core.secure_serialization import (
     CONTEXT_MODEL_SAVE,
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 def _instantiate_with_random_state(
-    model_class: Any, random_state: int, params: Dict[str, Any]
+    model_class: Any, random_state: int, params: dict[str, Any]
 ) -> Any:
     """Instantiate ``model_class`` with ``random_state`` when supported.
 
@@ -81,7 +81,7 @@ class TrainingConfig:
     validation_split: float = 0.2
     early_stopping_patience: int = 10
     save_best_model: bool = True
-    model_save_path: Optional[Union[str, Path]] = None
+    model_save_path: str | Path | None = None
     verbose: int = 1
 
     def __post_init__(self) -> None:
@@ -106,7 +106,7 @@ class ModelTrainer:
     for both classification and regression tasks in geospatial contexts.
     """
 
-    def __init__(self, config: Optional[TrainingConfig] = None) -> None:
+    def __init__(self, config: TrainingConfig | None = None) -> None:
         """
         Initialize the model trainer.
 
@@ -114,8 +114,8 @@ class ModelTrainer:
             config: Training configuration. If None, uses default configuration.
         """
         self.config = config or TrainingConfig()
-        self.training_history: List[Dict[str, float]] = []
-        self.best_model: Optional[Any] = None
+        self.training_history: list[dict[str, float]] = []
+        self.best_model: Any | None = None
         self.best_score: float = float("-inf")
 
     def _reset_best(self) -> None:
@@ -133,9 +133,9 @@ class ModelTrainer:
         model: Any,
         X_train: np.ndarray,
         y_train: np.ndarray,
-        X_val: Optional[np.ndarray] = None,
-        y_val: Optional[np.ndarray] = None,
-    ) -> Dict[str, Any]:
+        X_val: np.ndarray | None = None,
+        y_val: np.ndarray | None = None,
+    ) -> dict[str, Any]:
         """
         Train a classification model.
 
@@ -194,9 +194,9 @@ class ModelTrainer:
         model: Any,
         X_train: np.ndarray,
         y_train: np.ndarray,
-        X_val: Optional[np.ndarray] = None,
-        y_val: Optional[np.ndarray] = None,
-    ) -> Dict[str, Any]:
+        X_val: np.ndarray | None = None,
+        y_val: np.ndarray | None = None,
+    ) -> dict[str, Any]:
         """
         Train a regression model.
 
@@ -258,7 +258,7 @@ class ModelTrainer:
         X_test: np.ndarray,
         y_test: np.ndarray,
         task_type: str = "classification",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Evaluate a trained model on test data.
 
@@ -361,7 +361,7 @@ class ModelTrainer:
         task_type: str = "classification",
         stratified: bool = True,
         random_state: int = 42,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform k-fold cross-validation on a model.
 
@@ -393,7 +393,7 @@ class ModelTrainer:
             kf = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
             split_iterator = kf.split(X)
 
-        fold_results: List[Dict[str, float]] = []
+        fold_results: list[dict[str, float]] = []
 
         for fold_idx, (train_idx, val_idx) in enumerate(split_iterator):
             X_train_fold, X_val_fold = X[train_idx], X[val_idx]
@@ -445,14 +445,14 @@ class ModelTrainer:
     def hyperparameter_search(
         self,
         model_class: Any,
-        param_grid: Dict[str, List[Any]],
+        param_grid: dict[str, list[Any]],
         X: np.ndarray,
         y: np.ndarray,
         task_type: str = "classification",
         n_splits: int = 3,
-        scoring: Optional[str] = None,
+        scoring: str | None = None,
         random_state: int = 42,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Grid search over hyperparameters using cross-validation.
 
@@ -489,9 +489,9 @@ class ModelTrainer:
 
         logger.info(f"Evaluating {len(all_combinations)} parameter combinations")
 
-        search_results: List[Dict[str, Any]] = []
+        search_results: list[dict[str, Any]] = []
         best_score = float("-inf")
-        best_params: Dict[str, Any] = {}
+        best_params: dict[str, Any] = {}
 
         for combo in all_combinations:
             params = dict(zip(param_names, combo))
@@ -550,7 +550,7 @@ class ModelTrainer:
         val_size: float = 0.1,
         stratify: bool = False,
         random_state: int = 42,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """
         Split data into train, validation, and test sets.
 
@@ -604,7 +604,7 @@ class ModelTrainer:
             "y_test": y_test,
         }
 
-    def _save_model(self, model: Any, path: Union[str, Path]) -> None:
+    def _save_model(self, model: Any, path: str | Path) -> None:
         """
         Save a trained model to disk using joblib (preferred) or pickle.
 
@@ -637,7 +637,7 @@ class ModelTrainer:
         with open(path, "wb") as f:
             f.write(envelope)
 
-    def load_model(self, path: Union[str, Path]) -> Any:
+    def load_model(self, path: str | Path) -> Any:
         """
         Load a trained model from disk (supports both joblib and pickle formats).
 

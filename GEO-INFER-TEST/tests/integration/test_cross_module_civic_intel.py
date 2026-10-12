@@ -21,7 +21,7 @@ All assertions use the real civic-intel modules - no mocks, no stubbing.
 
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 
 from geo_infer_risk import (

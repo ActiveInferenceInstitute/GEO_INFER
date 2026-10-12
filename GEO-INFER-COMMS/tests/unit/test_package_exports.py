@@ -34,9 +34,9 @@ def test_unified_interface_exports():
 def test_unified_interface_probe_import():
     """The supplement's acceptance probe: direct import of the three engines."""
     from geo_infer_comms import (
-        CollaborationManager as cm,  # noqa: F401
-        StreamManager as sm,  # noqa: F401
-        AdvancedSpatialRouter as asr,  # noqa: F401
+        CollaborationManager as cm,
+        StreamManager as sm,
+        AdvancedSpatialRouter as asr,
     )
 
     assert cm is CollaborationManager

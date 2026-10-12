@@ -5,7 +5,6 @@ This example shows how to use the comprehensive module simulation methods
 that are exactly named after each GEO-INFER module.
 """
 
-import numpy as np
 from geo_infer_sim.module_simulations import ModuleSimulations, ModuleSimulationConfig
 
 

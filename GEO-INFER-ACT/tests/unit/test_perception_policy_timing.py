@@ -67,13 +67,15 @@ def test_repeated_act_never_calls_state_inference_or_advances_beliefs(monkeypatc
         raise AssertionError("Action selection must not infer states again")
 
     monkeypatch.setattr(Agent, "infer_states", unexpected_perception)
-    for candidates in (["left", "right"], ["hold"], ["left", "right"]):
+    for candidates in (["left", "right"], ["hold", "move"], ["left", "right"]):
         assert agent.act(candidates) in candidates
         np.testing.assert_allclose(agent.current_beliefs["states"], posterior)
         np.testing.assert_allclose(
             agent.latest_pymdp_result.beliefs, posterior, atol=1e-7
         )
         assert agent.latest_pymdp_result.free_energy == free_energy
+    with pytest.raises(ValueError, match="Action count"):
+        agent.act(["hold"])
     assert agent.history == []
 
 

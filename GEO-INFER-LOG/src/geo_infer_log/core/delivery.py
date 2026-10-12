@@ -11,8 +11,10 @@ import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point, Polygon
 from shapely.ops import unary_union, voronoi_diagram
-from typing import Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
+
+from geo_infer_log.models.schemas import Vehicle, Location, Route, RoutingParameters
+from geo_infer_log.core.routing import RouteOptimizer
 
 try:
     from sklearn.cluster import KMeans
@@ -33,14 +35,10 @@ def _deg_per_km_lon(lat_deg: float) -> float:
     return 1.0 / (111.32 * math.cos(math.radians(lat_deg)))
 
 
-from geo_infer_log.models.schemas import Vehicle, Location, Route, RoutingParameters
-from geo_infer_log.core.routing import RouteOptimizer
-
-
 class LastMileRouter:
     """Specialized routing for last-mile delivery."""
 
-    def __init__(self, parameters: Optional[RoutingParameters] = None):
+    def __init__(self, parameters: RoutingParameters | None = None):
         """Initialize a last-mile router.
 
         Args:
@@ -48,7 +46,7 @@ class LastMileRouter:
         """
         self.parameters = parameters or RoutingParameters()
         self.route_optimizer = RouteOptimizer(parameters)
-        self.service_areas: Dict[str, Polygon] = {}  # depot_id -> service area polygon
+        self.service_areas: dict[str, Polygon] = {}  # depot_id -> service area polygon
 
     def load_network(self, network_file: str) -> None:
         """Load a transportation network from a file.
@@ -59,7 +57,7 @@ class LastMileRouter:
         self.route_optimizer.load_network(network_file)
 
     def define_service_area(
-        self, depot_id: str, depot_location: Tuple[float, float], max_distance: float
+        self, depot_id: str, depot_location: tuple[float, float], max_distance: float
     ) -> Polygon:
         """Define a service area around a depot.
 
@@ -99,10 +97,10 @@ class LastMileRouter:
     def optimize_deliveries(
         self,
         depot: Location,
-        deliveries: List[Location],
-        vehicles: List[Vehicle],
-        constraints: Dict,
-    ) -> List[Route]:
+        deliveries: list[Location],
+        vehicles: list[Vehicle],
+        constraints: dict,
+    ) -> list[Route]:
         """Optimize deliveries from a depot.
 
         Args:
@@ -128,7 +126,7 @@ class LastMileRouter:
         clusters = self._cluster_deliveries(deliveries, len(vehicles))
 
         # Optimize routes for each cluster
-        routes: List[Route] = []
+        routes: list[Route] = []
         for i, cluster in enumerate(clusters):
             if i >= len(vehicles):
                 break
@@ -165,8 +163,8 @@ class LastMileRouter:
         return routes
 
     def _cluster_deliveries(
-        self, deliveries: List[Location], num_clusters: int
-    ) -> List[List[Location]]:
+        self, deliveries: list[Location], num_clusters: int
+    ) -> list[list[Location]]:
         """Cluster delivery locations.
 
         Args:
@@ -188,7 +186,7 @@ class LastMileRouter:
             # Real KMeans geographic clustering
             kmeans = KMeans(n_clusters=num_clusters, n_init=10, random_state=42)
             labels = kmeans.fit_predict(coords)
-            clusters: List[List[Location]] = [[] for _ in range(num_clusters)]
+            clusters: list[list[Location]] = [[] for _ in range(num_clusters)]
             for delivery, label in zip(deliveries, labels):
                 clusters[label].append(delivery)
             # Remove empty clusters
@@ -218,19 +216,19 @@ class DeliveryScheduler:
             router: Last-mile router for optimizing deliveries
         """
         self.router = router
-        self.schedule: Dict[str, List[Route]] = {}  # date -> list of routes
+        self.schedule: dict[str, list[Route]] = {}  # date -> list of routes
         # vehicle_id -> list of routes
-        self.vehicle_assignments: Dict[str, List[Route]] = {}
+        self.vehicle_assignments: dict[str, list[Route]] = {}
 
     def create_schedule(
         self,
         depot: Location,
-        deliveries: List[Location],
-        vehicles: List[Vehicle],
+        deliveries: list[Location],
+        vehicles: list[Vehicle],
         start_date: datetime,
         end_date: datetime,
         max_deliveries_per_day: int,
-    ) -> Dict:
+    ) -> dict:
         """Create a delivery schedule for a date range.
 
         Args:
@@ -283,7 +281,7 @@ class DeliveryScheduler:
             "total_routes": sum(len(routes) for routes in self.schedule.values()),
         }
 
-    def get_daily_schedule(self, date: datetime) -> List[Route]:
+    def get_daily_schedule(self, date: datetime) -> list[Route]:
         """Get the delivery schedule for a specific day.
 
         Args:
@@ -295,7 +293,7 @@ class DeliveryScheduler:
         date_str = date.strftime("%Y-%m-%d")
         return self.schedule.get(date_str, [])
 
-    def get_vehicle_schedule(self, vehicle_id: str) -> List[Route]:
+    def get_vehicle_schedule(self, vehicle_id: str) -> list[Route]:
         """Get the schedule for a specific vehicle.
 
         Args:
@@ -308,7 +306,7 @@ class DeliveryScheduler:
 
     def reschedule_delivery(
         self, route_id: str, delivery_idx: int, new_date: datetime
-    ) -> Dict:
+    ) -> dict:
         """Reschedule a delivery to a different date.
 
         Args:
@@ -324,7 +322,7 @@ class DeliveryScheduler:
         # Find and remove the delivery from its current route
         original_route = None
         removed_delivery = None
-        for date_str, routes in self.schedule.items():
+        for routes in self.schedule.values():
             for route in routes:
                 if route.id == route_id:
                     original_route = route
@@ -390,14 +388,14 @@ class ServiceAreaAnalyzer:
 
     def __init__(self) -> None:
         """Initialize a service area analyzer."""
-        self.service_areas: Dict[str, Polygon] = {}  # depot_id -> service area polygon
+        self.service_areas: dict[str, Polygon] = {}  # depot_id -> service area polygon
 
     def create_service_area(
         self,
         depot_id: str,
-        depot_location: Tuple[float, float],
-        max_time: Optional[int] = None,
-        max_distance: Optional[float] = None,
+        depot_location: tuple[float, float],
+        max_time: int | None = None,
+        max_distance: float | None = None,
     ) -> gpd.GeoDataFrame:
         """Create a service area around a depot.
 
@@ -464,8 +462,8 @@ class ServiceAreaAnalyzer:
         return gdf
 
     def analyze_coverage(
-        self, service_areas: Dict[str, Polygon], demand_points: gpd.GeoDataFrame
-    ) -> Dict:
+        self, service_areas: dict[str, Polygon], demand_points: gpd.GeoDataFrame
+    ) -> dict:
         """Analyze coverage of demand points by service areas.
 
         Args:
@@ -498,10 +496,10 @@ class ServiceAreaAnalyzer:
 
     def optimize_service_areas(
         self,
-        depot_locations: List[Tuple[str, Tuple[float, float]]],
+        depot_locations: list[tuple[str, tuple[float, float]]],
         demand_points: gpd.GeoDataFrame,
         max_distance: float,
-    ) -> Dict[str, Polygon]:
+    ) -> dict[str, Polygon]:
         """Optimize service areas for multiple depots.
 
         Args:

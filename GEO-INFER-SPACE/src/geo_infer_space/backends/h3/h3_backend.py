@@ -7,8 +7,12 @@ require the H3 library to be installed - no simulated implementations.
 """
 
 import logging
+import math
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
+from collections.abc import Callable
+
+import h3
 
 from ...core.interfaces import H3UnavailableError
 
@@ -22,12 +26,40 @@ MAX_H3_MAJOR = 5
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def _version_tuple(version: str) -> Tuple[int, int, int] | None:
-    """Parse a semantic H3 version without accepting a legacy major release."""
+def _integer(value: int, name: str, minimum: int, maximum: int | None = None) -> None:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int)
+        or value < minimum
+        or (maximum is not None and value > maximum)
+    ):
+        raise ValueError(f"{name} must be an integer in the supported range")
+
+
+def _cell(cell: str) -> None:
+    if (
+        not isinstance(cell, str)
+        or not h3.is_valid_cell(cell)
+        or h3.int_to_str(h3.str_to_int(cell)) != cell
+    ):
+        raise ValueError("Expected a canonical H3 cell string")
+
+
+def _disk_budget(cell: str, k: int, max_cells: int, *, minimum: int = 0) -> None:
+    """Reject oversized native disk allocation before entering H3."""
+    _cell(cell)
+    _integer(k, "k", minimum)
+    _integer(max_cells, "max_cells", 1)
+    if 1 + 3 * k * (k + 1) > max_cells:
+        raise ValueError("Neighborhood allocation exceeds max_cells")
+
+
+def _version_tuple(version: str) -> tuple[int, int, int] | None:
+    """Parse a semantic H3 version without accepting an unsupported major release."""
     try:
         parts = version.lstrip("v").split(".")
         return cast(
-            Tuple[int, int, int],
+            tuple[int, int, int],
             tuple(int(part.split("+")[0].split("-")[0]) for part in parts[:3])
             + (0,) * max(0, 3 - len(parts)),
         )
@@ -57,66 +89,34 @@ class H3Backend:
 
     This class provides H3-specific implementations of the generic spatial
     interfaces. All operations require the H3 library - operations will
-    raise H3UnavailableError if H3 is not installed.
+    raise H3UnavailableError if the installed h3-py violates >=4.5.0,<5.
 
     Implements: IndexingBackendProtocol, AnalyticsBackendProtocol
     """
 
     def __init__(self) -> None:
-        """Initialize the H3 backend and check library availability."""
+        """Initialize the H3 backend and check the h3-py version contract."""
         self._check_h3_availability()
-        self._init_accelerator()
-
-    def _init_accelerator(self) -> None:
-        """Initialize compatibility state without loading optional GPU libraries."""
-        self.accelerator = False
-        self.accelerator_backends: List[str] = []
-
-    def _prepare_accelerator(self) -> None:
-        """Explicitly refresh cached GPU capability diagnostics."""
-        from ..gpu.gpu_acceleration import get_backend_diagnostics
-
-        capabilities = get_backend_diagnostics(refresh=True)
-        self.accelerator_backends = [
-            name for name, details in capabilities.items() if details["usable"]
-        ]
-        self.accelerator = bool(self.accelerator_backends)
-
-    @staticmethod
-    def _numeric_backend(use_gpu: bool, backend: str | None) -> str:
-        """Resolve legacy use_gpu without silently overriding an explicit backend."""
-        if not use_gpu:
-            if backend not in (None, "cpu", "auto"):
-                raise ValueError("use_gpu=False conflicts with an explicit GPU backend")
-            return "cpu"
-        return backend if backend is not None else "auto"
 
     def _check_h3_availability(self) -> None:
-        """Check if H3 library is available."""
-        try:
-            import h3
-
-            self.h3 = h3
-            version = getattr(h3, "__version__", None)
-            parsed_version = _version_tuple(cast(str, version))
-            if (
-                parsed_version is None
-                or parsed_version < MIN_H3_VERSION
-                or parsed_version[0] >= MAX_H3_MAJOR
-            ):
-                self._available = False
-                logger.error(
-                    "Unsupported H3 version %r; GEO-INFER requires h3-py >=4.5.0,<5",
-                    version,
-                )
-                return
-
-            self._available = True
-            logger.info("H3 library v%s loaded successfully", version)
-        except ImportError:
-            self.h3 = None
+        """Bind the h3 module and verify the installed version contract."""
+        self.h3 = h3
+        version = getattr(h3, "__version__", None)
+        parsed_version = _version_tuple(cast(str, version))
+        if (
+            parsed_version is None
+            or parsed_version < MIN_H3_VERSION
+            or parsed_version[0] >= MAX_H3_MAJOR
+        ):
             self._available = False
-            logger.warning("H3 library is not installed - install with: pip install h3")
+            logger.error(
+                "Unsupported H3 version %r; GEO-INFER requires h3-py >=4.5.0,<5",
+                version,
+            )
+            return
+
+        self._available = True
+        logger.info("H3 library v%s loaded successfully", version)
 
     @property
     def name(self) -> str:
@@ -126,15 +126,13 @@ class H3Backend:
     @property
     def version(self) -> str:
         """Return the backend version."""
-        if self.h3:
-            return getattr(self.h3, "__version__", "unknown")
-        return "not-installed"
+        return cast(str, getattr(self.h3, "__version__", "unknown"))
 
     def is_available(self) -> bool:
         """Check if the backend is available and functional."""
         return self._available
 
-    def get_capabilities(self) -> Dict[str, Any]:
+    def get_capabilities(self) -> dict[str, Any]:
         """Return the backend's capabilities."""
         return {
             "indexing": {
@@ -196,10 +194,27 @@ class H3Backend:
             H3 cell identifier string
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If coordinates or resolution are invalid
         """
         logger.debug(f"Converting ({lat}, {lng}) to H3 cell at resolution {resolution}")
+        if (
+            isinstance(lat, bool)
+            or isinstance(lng, bool)
+            or not isinstance(lat, (int, float))
+            or not isinstance(lng, (int, float))
+            or not math.isfinite(lat)
+            or not math.isfinite(lng)
+            or not -90 <= lat <= 90
+            or not -180 <= lng <= 180
+        ):
+            raise ValueError("Expected finite WGS84 latitude/longitude")
+        if (
+            isinstance(resolution, bool)
+            or not isinstance(resolution, int)
+            or not 0 <= resolution <= 15
+        ):
+            raise ValueError("resolution must be an integer between 0 and 15")
         return cast(str, self.h3.latlng_to_cell(lat, lng, resolution))
 
     @_require_h3("cell_to_latlng")
@@ -214,14 +229,14 @@ class H3Backend:
             Tuple of (latitude, longitude)
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cell identifier is invalid
         """
         logger.debug(f"Converting H3 cell {cell} to coordinates")
-        return cast(Tuple[float, float], self.h3.cell_to_latlng(cell))
+        return cast(tuple[float, float], self.h3.cell_to_latlng(cell))
 
     @_require_h3("polygon_to_cells")
-    def polygon_to_cells(self, polygon: Dict[str, Any], resolution: int) -> List[str]:
+    def polygon_to_cells(self, polygon: dict[str, Any], resolution: int) -> list[str]:
         """
         Convert polygon to list of H3 cells.
 
@@ -233,7 +248,7 @@ class H3Backend:
             List of H3 cell identifiers covering the polygon
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If polygon format is invalid
         """
         if hasattr(polygon, "__geo_interface__"):
@@ -283,7 +298,9 @@ class H3Backend:
             raise ValueError(f"H3 polygon conversion failed: {e}") from e
 
     @_require_h3("get_cell_neighbors")
-    def get_cell_neighbors(self, cell: str, k: int = 1) -> List[str]:
+    def get_cell_neighbors(
+        self, cell: str, k: int = 1, *, max_cells: int = 1_000_000
+    ) -> list[str]:
         """
         Get neighboring cells around a given cell.
 
@@ -295,12 +312,11 @@ class H3Backend:
             List of neighboring H3 cell identifiers
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cell identifier is invalid
         """
         logger.debug(f"Getting k={k} neighbors for cell {cell}")
-        if not isinstance(k, int) or k < 1:
-            raise ValueError("k must be a positive integer")
+        _disk_budget(cell, k, max_cells, minimum=1)
         # grid_disk is defined for pentagons, while grid_ring can raise for
         # them. Removing the inner disk gives the same exact-ring semantics.
         disk = set(self.h3.grid_disk(cell, k))
@@ -308,10 +324,11 @@ class H3Backend:
         return sorted(disk - inner_disk)
 
     @_require_h3("get_cells_within_radius")
-    def get_cells_within_radius(self, cell: str, k: int = 1) -> List[str]:
+    def get_cells_within_radius(
+        self, cell: str, k: int = 1, *, max_cells: int = 1_000_000
+    ) -> list[str]:
         """Return every cell within ``k`` H3 grid rings, excluding ``cell``."""
-        if not isinstance(k, int) or k < 0:
-            raise ValueError("k must be a non-negative integer")
+        _disk_budget(cell, k, max_cells)
         return sorted(set(self.h3.grid_disk(cell, k)) - {cell})
 
     @_require_h3("get_cell_distance")
@@ -327,7 +344,7 @@ class H3Backend:
             Grid distance between cells
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cells are at different resolutions or invalid
         """
         logger.debug(f"Calculating distance between {cell1} and {cell2}")
@@ -336,14 +353,13 @@ class H3Backend:
     @_require_h3("compute_distance_matrix")
     def compute_distance_matrix(
         self,
-        cells_a: List[str],
-        cells_b: List[str],
-        use_gpu: bool = True,
-    ) -> Dict[str, Any]:
+        cells_a: list[str],
+        cells_b: list[str],
+    ) -> dict[str, Any]:
         """Return host H3 int64 grid distances; incomparable pairs are -1.
 
-        use_gpu is retained for compatibility. Exact H3 topology always runs
-        on the CPU, and the returned metadata reflects that execution.
+        Exact H3 topology always runs on the CPU, and the returned metadata
+        reflects that execution.
         """
         from ..gpu.gpu_acceleration import h3_grid_distance_kernel
 
@@ -360,27 +376,26 @@ class H3Backend:
     @_require_h3("geodesic_distance_matrix")
     def geodesic_distance_matrix(
         self,
-        cells_a: List[str],
-        cells_b: List[str],
-        use_gpu: bool = True,
+        cells_a: list[str],
+        cells_b: list[str],
         *,
-        backend: str | None = None,
+        backend: str = "auto",
         chunk_size: int = 1024,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Return float64 centroid great-circle distances in km and diagnostics.
 
         Invalid cells raise; they are never replaced by an unrelated location.
-        use_gpu=False forces CPU. An explicit unavailable backend raises.
+        backend="cpu" forces CPU. An explicit unavailable GPU backend raises.
         """
         from ..gpu.gpu_acceleration import pairwise_haversine_kernel
 
         pts_a = [self.h3.cell_to_latlng(cell) for cell in cells_a]
         pts_b = [self.h3.cell_to_latlng(cell) for cell in cells_b]
-        diagnostics: Dict[str, Any] = {}
+        diagnostics: dict[str, Any] = {}
         matrix = pairwise_haversine_kernel(
             pts_a,
             pts_b,
-            backend=self._numeric_backend(use_gpu, backend),
+            backend=backend,
             chunk_size=chunk_size,
             diagnostics=diagnostics,
         )
@@ -400,14 +415,13 @@ class H3Backend:
     @_require_h3("geodesic_spatial_join")
     def geodesic_spatial_join(
         self,
-        points_a: List[Tuple[float, float]],
-        points_b: List[Tuple[float, float]],
+        points_a: list[tuple[float, float]],
+        points_b: list[tuple[float, float]],
         max_distance_km: float,
-        use_gpu: bool = True,
         *,
-        backend: str | None = None,
+        backend: str = "auto",
         chunk_size: int = 1024,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Join finite geographic points within a positive distance using tiles.
 
         Intermediate distance storage is bounded by chunk_size squared. Result
@@ -415,12 +429,12 @@ class H3Backend:
         """
         from ..gpu.gpu_acceleration import gpu_spatial_join_by_distance
 
-        diagnostics: Dict[str, Any] = {}
+        diagnostics: dict[str, Any] = {}
         pairs, unmatched_a, unmatched_b = gpu_spatial_join_by_distance(
             points_a,
             points_b,
             max_distance_km=max_distance_km,
-            backend=self._numeric_backend(use_gpu, backend),
+            backend=backend,
             chunk_size=chunk_size,
             diagnostics=diagnostics,
         )
@@ -437,7 +451,7 @@ class H3Backend:
         }
 
     @_require_h3("compact_cells")
-    def compact_cells(self, cells: List[str]) -> List[str]:
+    def compact_cells(self, cells: list[str]) -> list[str]:
         """
         Compact a list of cells into a more efficient representation.
 
@@ -448,7 +462,7 @@ class H3Backend:
             Compacted list of cell identifiers at mixed resolutions
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
         """
         logger.debug(f"Compacting {len(cells)} cells")
         result = list(self.h3.compact_cells(cells))
@@ -456,7 +470,13 @@ class H3Backend:
         return result
 
     @_require_h3("uncompact_cells")
-    def uncompact_cells(self, compacted_cells: List[str], resolution: int) -> List[str]:
+    def uncompact_cells(
+        self,
+        compacted_cells: list[str],
+        resolution: int,
+        *,
+        max_cells: int = 1_000_000,
+    ) -> list[str]:
         """
         Uncompact cells back to individual cell identifiers.
 
@@ -468,11 +488,33 @@ class H3Backend:
             List of individual cell identifiers at target resolution
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
         """
         logger.debug(
             f"Uncompacting {len(compacted_cells)} cells to resolution {resolution}"
         )
+        _integer(resolution, "resolution", 0, 15)
+        _integer(max_cells, "max_cells", 1)
+        for cell in compacted_cells:
+            _cell(cell)
+            if h3.get_resolution(cell) > resolution:
+                raise ValueError(
+                    "Target resolution cannot be coarser than a source cell"
+                )
+        if len(set(compacted_cells)) != len(compacted_cells):
+            raise ValueError("Compacted cells must be unique")
+        ancestors = set(compacted_cells)
+        for cell in compacted_cells:
+            if any(
+                h3.cell_to_parent(cell, level) in ancestors
+                for level in range(h3.get_resolution(cell))
+            ):
+                raise ValueError("Compacted cells cannot overlap their ancestors")
+        if (
+            sum(h3.cell_to_children_size(cell, resolution) for cell in compacted_cells)
+            > max_cells
+        ):
+            raise ValueError("Uncompact allocation exceeds max_cells")
         result = list(self.h3.uncompact_cells(compacted_cells, resolution))
         logger.debug(f"Uncompacted to {len(result)} cells")
         return result
@@ -490,7 +532,7 @@ class H3Backend:
             Parent cell identifier
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If resolutions are incompatible
         """
         logger.debug(f"Getting parent of {cell} at resolution {resolution}")
@@ -500,7 +542,9 @@ class H3Backend:
             raise ValueError(f"Failed to get parent: {e}") from e
 
     @_require_h3("get_cell_children")
-    def get_cell_children(self, cell: str, resolution: int) -> List[str]:
+    def get_cell_children(
+        self, cell: str, resolution: int, *, max_cells: int = 1_000_000
+    ) -> list[str]:
         """
         Get children of a cell at a finer resolution.
 
@@ -512,17 +556,21 @@ class H3Backend:
             List of child cell identifiers
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If resolutions are incompatible
         """
         logger.debug(f"Getting children of {cell} at resolution {resolution}")
-        try:
-            return list(self.h3.cell_to_children(cell, resolution))
-        except Exception as e:
-            raise ValueError(f"Failed to get children: {e}") from e
+        _cell(cell)
+        _integer(resolution, "resolution", 0, 15)
+        _integer(max_cells, "max_cells", 1)
+        if resolution < h3.get_resolution(cell):
+            raise ValueError("Child resolution cannot be coarser than the source cell")
+        if h3.cell_to_children_size(cell, resolution) > max_cells:
+            raise ValueError("Children allocation exceeds max_cells")
+        return list(self.h3.cell_to_children(cell, resolution))
 
     @_require_h3("get_cell_path")
-    def get_cell_path(self, start_cell: str, end_cell: str) -> List[str]:
+    def get_cell_path(self, start_cell: str, end_cell: str) -> list[str]:
         """
         Get the path of cells between two cells.
 
@@ -534,7 +582,7 @@ class H3Backend:
             List of cell identifiers in the path (inclusive)
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cells are invalid or disconnected
         """
         logger.debug(f"Calculating path from {start_cell} to {end_cell}")
@@ -545,7 +593,9 @@ class H3Backend:
             raise ValueError(f"Failed to calculate path: {e}") from e
 
     @_require_h3("get_cell_ring")
-    def get_cell_ring(self, cell: str, k: int) -> List[str]:
+    def get_cell_ring(
+        self, cell: str, k: int, *, max_cells: int = 1_000_000
+    ) -> list[str]:
         """
         Get the ring of cells at distance k.
 
@@ -557,18 +607,20 @@ class H3Backend:
             List of cell identifiers in the ring
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cell or k matches invalid
         """
         logger.debug(f"Getting ring k={k} for {cell}")
-        try:
-            return list(self.h3.grid_ring(cell, k))
-        except Exception as e:
-            raise ValueError(f"Failed to get ring: {e}") from e
+        _cell(cell)
+        _integer(k, "k", 0)
+        _integer(max_cells, "max_cells", 1)
+        if max(1, 6 * k) > max_cells:
+            raise ValueError("Ring allocation exceeds max_cells")
+        return list(self.h3.grid_ring(cell, k))
 
     # SpatialAnalyticsBackend implementation
     @_require_h3("analyze_hotspots")
-    def analyze_hotspots(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_hotspots(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Analyze spatial hotspots in H3-indexed data.
 
@@ -585,7 +637,7 @@ class H3Backend:
                 - hotspot_count: Number of identified hotspots
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cells and values have different lengths
         """
         cells = data.get("cells", [])
@@ -629,7 +681,7 @@ class H3Backend:
         }
 
     @_require_h3("compute_proximity")
-    def compute_proximity(self, points: List[tuple[float, float]]) -> Dict[str, Any]:
+    def compute_proximity(self, points: list[tuple[float, float]]) -> dict[str, Any]:
         """
         Compute proximity analysis between points using H3.
 
@@ -643,7 +695,7 @@ class H3Backend:
                 - analyzed_pairs: Number of successfully analyzed pairs
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
         """
         logger.info(f"Computing proximity for {len(points)} points")
 
@@ -694,7 +746,7 @@ class H3Backend:
             Resolution level (0-15)
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cell identifier is invalid
         """
         logger.debug(f"Getting resolution for cell: {cell}")
@@ -707,7 +759,7 @@ class H3Backend:
             raise ValueError(f"Invalid H3 cell identifier: {cell}") from e
 
     @_require_h3("get_cell_boundary")
-    def get_cell_boundary(self, cell: str) -> List[Tuple[float, float]]:
+    def get_cell_boundary(self, cell: str) -> list[tuple[float, float]]:
         """
         Get the boundary coordinates of an H3 cell.
 
@@ -718,7 +770,7 @@ class H3Backend:
             List of (latitude, longitude) tuples forming the cell boundary
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cell identifier is invalid
         """
         logger.debug(f"Getting boundary for cell: {cell}")
@@ -746,7 +798,7 @@ class H3Backend:
             Area in specified unit
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cell identifier is invalid
         """
         logger.debug(f"Getting area for cell: {cell} in {unit}")
@@ -760,7 +812,7 @@ class H3Backend:
             raise ValueError(f"Invalid H3 cell identifier: {cell}") from e
 
     @_require_h3("cells_to_multipolygon")
-    def cells_to_multipolygon(self, cells: List[str]) -> Dict[str, Any]:
+    def cells_to_multipolygon(self, cells: list[str]) -> dict[str, Any]:
         """
         Convert a list of H3 cells to a GeoJSON MultiPolygon geometry.
 
@@ -771,7 +823,7 @@ class H3Backend:
             GeoJSON-like dictionary with 'type' and 'coordinates'
 
         Raises:
-            H3UnavailableError: If H3 library is not installed
+            H3UnavailableError: If the installed h3-py violates >=4.5.0,<5
             ValueError: If cell identifiers are invalid
         """
         logger.info(f"Converting {len(cells)} cells to MultiPolygon")
@@ -817,45 +869,45 @@ class H3Backend:
         return shape(geometry)
 
     @staticmethod
-    def _geojson(geometry: "BaseGeometry") -> Dict[str, Any]:
+    def _geojson(geometry: "BaseGeometry") -> dict[str, Any]:
         from shapely.geometry import mapping
 
         return dict(mapping(geometry))
 
     @_require_h3("buffer_geometry")
     def buffer_geometry(
-        self, geometry: Dict[str, Any], distance: float, **kwargs: Any
-    ) -> Dict[str, Any]:
+        self, geometry: dict[str, Any], distance: float, **kwargs: Any
+    ) -> dict[str, Any]:
         """Buffer a GeoJSON geometry in its coordinate units."""
         if distance <= 0:
             raise ValueError("distance must be positive")
         return self._geojson(self._geometry(geometry).buffer(distance, **kwargs))
 
     @_require_h3("calculate_area")
-    def calculate_area(self, geometry: Dict[str, Any]) -> float:
+    def calculate_area(self, geometry: dict[str, Any]) -> float:
         """Return the planar area of a GeoJSON geometry."""
         return float(self._geometry(geometry).area)
 
     @_require_h3("calculate_perimeter")
-    def calculate_perimeter(self, geometry: Dict[str, Any]) -> float:
+    def calculate_perimeter(self, geometry: dict[str, Any]) -> float:
         """Return the planar perimeter/length of a GeoJSON geometry."""
         return float(self._geometry(geometry).length)
 
     @_require_h3("calculate_centroid")
-    def calculate_centroid(self, geometry: Dict[str, Any]) -> Tuple[float, float]:
+    def calculate_centroid(self, geometry: dict[str, Any]) -> tuple[float, float]:
         """Return the centroid as a ``(latitude, longitude)`` pair."""
         centroid = self._geometry(geometry).centroid
         return float(centroid.y), float(centroid.x)
 
     @_require_h3("calculate_distance")
     def calculate_distance(
-        self, geometry_a: Dict[str, Any], geometry_b: Dict[str, Any]
+        self, geometry_a: dict[str, Any], geometry_b: dict[str, Any]
     ) -> float:
         """Return the planar distance between two GeoJSON geometries."""
         return float(self._geometry(geometry_a).distance(self._geometry(geometry_b)))
 
     @_require_h3("union_geometries")
-    def union_geometries(self, geometries: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def union_geometries(self, geometries: list[dict[str, Any]]) -> dict[str, Any]:
         """Return the unary union of GeoJSON geometries."""
         from shapely.ops import unary_union
 
@@ -865,8 +917,8 @@ class H3Backend:
 
     @_require_h3("intersection_geometries")
     def intersection_geometries(
-        self, geometry_a: Dict[str, Any], geometry_b: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, geometry_a: dict[str, Any], geometry_b: dict[str, Any]
+    ) -> dict[str, Any]:
         """Return the intersection of two GeoJSON geometries."""
         return self._geojson(
             self._geometry(geometry_a).intersection(self._geometry(geometry_b))
@@ -874,8 +926,8 @@ class H3Backend:
 
     @_require_h3("difference_geometries")
     def difference_geometries(
-        self, geometry_a: Dict[str, Any], geometry_b: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, geometry_a: dict[str, Any], geometry_b: dict[str, Any]
+    ) -> dict[str, Any]:
         """Return ``geometry_a - geometry_b`` as GeoJSON."""
         return self._geojson(
             self._geometry(geometry_a).difference(self._geometry(geometry_b))
@@ -883,22 +935,22 @@ class H3Backend:
 
     @_require_h3("contains_geometry")
     def contains_geometry(
-        self, container: Dict[str, Any], contained: Dict[str, Any]
+        self, container: dict[str, Any], contained: dict[str, Any]
     ) -> bool:
         """Return whether one GeoJSON geometry contains another."""
         return bool(self._geometry(container).contains(self._geometry(contained)))
 
     @_require_h3("intersects_geometry")
     def intersects_geometry(
-        self, geometry_a: Dict[str, Any], geometry_b: Dict[str, Any]
+        self, geometry_a: dict[str, Any], geometry_b: dict[str, Any]
     ) -> bool:
         """Return whether two GeoJSON geometries intersect."""
         return bool(self._geometry(geometry_a).intersects(self._geometry(geometry_b)))
 
     @_require_h3("transform_geometry")
     def transform_geometry(
-        self, geometry: Dict[str, Any], from_crs: str, to_crs: str
-    ) -> Dict[str, Any]:
+        self, geometry: dict[str, Any], from_crs: str, to_crs: str
+    ) -> dict[str, Any]:
         """Transform a GeoJSON geometry between CRS definitions."""
         from pyproj import Transformer
         from shapely.ops import transform
@@ -909,11 +961,11 @@ class H3Backend:
     @_require_h3("find_clusters")
     def find_clusters(
         self,
-        cells: List[str],
-        values: List[float],
+        cells: list[str],
+        values: list[float],
         min_cluster_size: int = 3,
         distance_threshold: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Find spatial clusters of cells based on values and proximity.
 
@@ -938,30 +990,45 @@ class H3Backend:
             f"Finding clusters in {len(cells)} cells with min_size={min_cluster_size}"
         )
 
+        from ...core.state_space import H3StateSpace
+
+        if cells:
+            H3StateSpace(cells)
+        if (
+            isinstance(min_cluster_size, bool)
+            or not isinstance(min_cluster_size, int)
+            or min_cluster_size < 1
+        ):
+            raise ValueError("min_cluster_size must be a positive integer")
+        if (
+            isinstance(distance_threshold, bool)
+            or not isinstance(distance_threshold, int)
+            or distance_threshold < 0
+        ):
+            raise ValueError("distance_threshold must be a non-negative integer")
+        if any(
+            isinstance(value, (bool, str, bytes)) or not math.isfinite(value)
+            for value in values
+        ):
+            raise ValueError("values must be finite numbers")
+
         # Create cell-value mapping
         cell_values = dict(zip(cells, values))
         cell_set = set(cells)
         visited = set()
-        clusters: List[Dict[str, Any]] = []
+        assigned = set()
+        clusters: list[dict[str, Any]] = []
         noise = []
 
-        def get_neighbors_in_set(cell: str) -> List[str]:
+        def get_neighbors_in_set(cell: str) -> list[str]:
             """Get neighbors of a cell that are in our cell set."""
-            try:
-                neighbors = list(self.h3.grid_disk(cell, distance_threshold))
-                return [n for n in neighbors if n in cell_set and n != cell]
-            except (ValueError, self.h3.H3BaseException) as e:
-                # h3-py 4.x raises ValueError for malformed indices and
-                # H3BaseException subclasses for library errors (no CellError).
-                logger.warning(
-                    f"grid_disk failed for cell {cell}; cluster expansion may "
-                    f"degrade around it: {e}"
-                )
-                return []
+            neighbors = self.h3.grid_disk(cell, distance_threshold)
+            return [n for n in neighbors if n in cell_set and n != cell]
 
-        def expand_cluster(cell: str, neighbors: List[str], cluster: List[str]) -> None:
+        def expand_cluster(cell: str, neighbors: list[str], cluster: list[str]) -> None:
             """Expand cluster from seed cell."""
             cluster.append(cell)
+            assigned.add(cell)
             i = 0
             while i < len(neighbors):
                 neighbor = neighbors[i]
@@ -972,8 +1039,9 @@ class H3Backend:
                         neighbors.extend(
                             [n for n in new_neighbors if n not in neighbors]
                         )
-                if neighbor not in cluster:
+                if neighbor not in assigned:
                     cluster.append(neighbor)
+                    assigned.add(neighbor)
                 i += 1
 
         # Main clustering loop
@@ -986,7 +1054,7 @@ class H3Backend:
             if len(neighbors) < min_cluster_size - 1:
                 noise.append(cell)
             else:
-                cluster: List[str] = []
+                cluster: list[str] = []
                 expand_cluster(cell, neighbors, cluster)
                 if len(cluster) >= min_cluster_size:
                     cluster_values = [cell_values[c] for c in cluster]
@@ -1003,6 +1071,7 @@ class H3Backend:
                 else:
                     noise.extend(cluster)
 
+        noise = [cell for cell in cells if cell not in assigned]
         logger.info(f"Found {len(clusters)} clusters, {len(noise)} noise cells")
 
         return {
@@ -1020,13 +1089,13 @@ class H3Backend:
     @_require_h3("cluster_points")
     def cluster_points(
         self,
-        points: List[Tuple[float, float]],
-        values: List[float] | None = None,
+        points: list[tuple[float, float]],
+        values: list[float] | None = None,
         method: str = "dbscan",
         resolution: int = 9,
         min_cluster_size: int = 3,
         distance_threshold: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Cluster coordinate points after indexing them with native H3."""
         if method != "dbscan":
             raise ValueError("H3 point clustering supports method='dbscan' only")
@@ -1036,7 +1105,7 @@ class H3Backend:
             raise ValueError("values must have the same length as points")
         values = values or [1.0] * len(points)
 
-        grouped: Dict[str, List[float]] = {}
+        grouped: dict[str, list[float]] = {}
         for (lat, lng), value in zip(points, values):
             cell = self.h3.latlng_to_cell(float(lat), float(lng), resolution)
             grouped.setdefault(cell, []).append(float(value))
@@ -1051,8 +1120,8 @@ class H3Backend:
 
     @_require_h3("calculate_density")
     def calculate_density(
-        self, cells: List[str], values: List[float], kernel_radius: int = 1
-    ) -> Dict[str, Any]:
+        self, cells: list[str], values: list[float], kernel_radius: int = 1
+    ) -> dict[str, Any]:
         """
         Calculate density values across cells using kernel smoothing.
 
@@ -1066,6 +1135,11 @@ class H3Backend:
         Returns:
             Dictionary with density values and statistics
         """
+        from ...core.spatial_methods import SpatialMethods
+
+        cells = SpatialMethods._cells(cells)
+        SpatialMethods._values(cells, values)
+        SpatialMethods._integer(kernel_radius, "kernel_radius")
         if len(cells) != len(values):
             raise ValueError(
                 f"Cells ({len(cells)}) and values ({len(values)}) must have the same length"
@@ -1081,10 +1155,7 @@ class H3Backend:
 
         for cell in cells:
             # Get neighbors within kernel radius
-            try:
-                neighborhood = list(self.h3.grid_disk(cell, kernel_radius))
-            except Exception:
-                neighborhood = [cell]
+            neighborhood = list(self.h3.grid_disk(cell, kernel_radius))
 
             # Calculate weighted average (IDW with distance weights)
             total_weight = 0.0
@@ -1092,14 +1163,11 @@ class H3Backend:
 
             for neighbor in neighborhood:
                 if neighbor in cell_set:
-                    try:
-                        distance = self.h3.grid_distance(cell, neighbor)
-                        # Inverse distance weight (avoid div by zero)
-                        weight = 1.0 / (distance + 1)
-                        weighted_sum += cell_values[neighbor] * weight
-                        total_weight += weight
-                    except Exception:
-                        continue
+                    distance = self.h3.grid_distance(cell, neighbor)
+                    # Inverse distance weight (avoid div by zero)
+                    weight = 1.0 / (distance + 1)
+                    weighted_sum += cell_values[neighbor] * weight
+                    total_weight += weight
 
             densities[cell] = weighted_sum / total_weight if total_weight > 0 else 0.0
 
@@ -1121,16 +1189,15 @@ class H3Backend:
     @_require_h3("spatial_join")
     def spatial_join(
         self,
-        cells_a: List[str],
-        cells_b: List[str],
+        cells_a: list[str],
+        cells_b: list[str],
         join_type: str = "intersects",
-        use_gpu: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Join exact H3 host topology with deterministic input ordering.
 
         Intersects means identical or adjacent cells; contains/within mean
-        strict H3 ancestry. use_gpu is a compatibility argument and does not
-        accelerate these host H3 operations. Invalid cells raise.
+        strict H3 ancestry. These host H3 operations always run on the CPU.
+        Invalid cells raise.
         """
         from ..gpu.gpu_acceleration import spatial_join_kernel
 
@@ -1153,11 +1220,11 @@ class H3Backend:
     @_require_h3("interpolate_values")
     def interpolate_values(
         self,
-        cells: List[str],
-        values: List[float],
-        target_cells: List[str],
+        cells: list[str],
+        values: list[float],
+        target_cells: list[str],
         method: str = "idw",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Interpolate values at target cell locations using source cells.
 
@@ -1170,6 +1237,14 @@ class H3Backend:
         Returns:
             Dictionary with interpolated values and metadata
         """
+        from ...core.spatial_methods import SpatialMethods
+
+        cells = SpatialMethods._cells(cells)
+        SpatialMethods._values(cells, values)
+        target_cells = SpatialMethods._cells(target_cells)
+        SpatialMethods._cells(list(dict.fromkeys((*cells, *target_cells))))
+        if target_cells and not cells:
+            raise ValueError("Interpolation requires observed source cells")
         if len(cells) != len(values):
             raise ValueError(
                 f"Cells ({len(cells)}) and values ({len(values)}) must have the same length"
@@ -1199,13 +1274,10 @@ class H3Backend:
                 min_distance = float("inf")
                 nearest_value = 0.0
                 for source, value in cell_values.items():
-                    try:
-                        dist = self.h3.grid_distance(target, source)
-                        if dist < min_distance:
-                            min_distance = dist
-                            nearest_value = value
-                    except Exception:
-                        continue
+                    dist = self.h3.grid_distance(target, source)
+                    if dist < min_distance:
+                        min_distance = dist
+                        nearest_value = value
                 interpolated[target] = nearest_value
 
             elif method == "idw" or method == "linear":
@@ -1215,17 +1287,14 @@ class H3Backend:
                 power = 2.0 if method == "idw" else 1.0
 
                 for source, value in cell_values.items():
-                    try:
-                        dist = self.h3.grid_distance(target, source)
-                        if dist == 0:
-                            weighted_sum = value
-                            total_weight = 1.0
-                            break
-                        weight = 1.0 / (dist**power)
-                        weighted_sum += value * weight
-                        total_weight += weight
-                    except Exception:
-                        continue
+                    dist = self.h3.grid_distance(target, source)
+                    if dist == 0:
+                        weighted_sum = value
+                        total_weight = 1.0
+                        break
+                    weight = 1.0 / (dist**power)
+                    weighted_sum += value * weight
+                    total_weight += weight
 
                 interpolated[target] = (
                     weighted_sum / total_weight if total_weight > 0 else 0.0
@@ -1272,7 +1341,7 @@ class H3Backend:
             logger.debug("Unexpected error validating H3 cell %r", cell, exc_info=True)
             return False
 
-    def validate_resolution(self, resolution: int) -> Dict[str, Any]:
+    def validate_resolution(self, resolution: int) -> dict[str, Any]:
         """
         Validate that a resolution is within the valid H3 range.
 
@@ -1282,7 +1351,11 @@ class H3Backend:
         Returns:
             Dictionary with validation result and details
         """
-        is_valid = isinstance(resolution, int) and 0 <= resolution <= 15
+        is_valid = (
+            not isinstance(resolution, bool)
+            and isinstance(resolution, int)
+            and 0 <= resolution <= 15
+        )
         return {
             "valid": is_valid,
             "resolution": resolution,
@@ -1295,7 +1368,7 @@ class H3Backend:
             ),
         }
 
-    def validate_coordinates(self, lat: float, lng: float) -> Dict[str, Any]:
+    def validate_coordinates(self, lat: float, lng: float) -> dict[str, Any]:
         """
         Validate lat/lng coordinates are within valid ranges.
 
@@ -1306,8 +1379,18 @@ class H3Backend:
         Returns:
             Dictionary with validation result and details
         """
-        lat_valid = isinstance(lat, (int, float)) and -90 <= lat <= 90
-        lng_valid = isinstance(lng, (int, float)) and -180 <= lng <= 180
+        lat_valid = (
+            not isinstance(lat, bool)
+            and isinstance(lat, (int, float))
+            and math.isfinite(lat)
+            and -90 <= lat <= 90
+        )
+        lng_valid = (
+            not isinstance(lng, bool)
+            and isinstance(lng, (int, float))
+            and math.isfinite(lng)
+            and -180 <= lng <= 180
+        )
 
         errors = []
         if not lat_valid:
@@ -1411,7 +1494,7 @@ class H3Backend:
         return cast(int, self.h3.get_base_cell_number(cell))
 
     @_require_h3("get_icosahedron_faces")
-    def get_icosahedron_faces(self, cell: str) -> List[int]:
+    def get_icosahedron_faces(self, cell: str) -> list[int]:
         """
         Get the icosahedron faces a cell intersects.
 
@@ -1426,7 +1509,7 @@ class H3Backend:
         return list(self.h3.get_icosahedron_faces(cell))
 
     @_require_h3("get_pentagons")
-    def get_pentagons(self, resolution: int) -> List[str]:
+    def get_pentagons(self, resolution: int) -> list[str]:
         """
         Get all 12 pentagon cells at a given resolution.
 
@@ -1443,8 +1526,8 @@ class H3Backend:
 
     @_require_h3("get_cells_at_resolution")
     def get_cells_at_resolution(
-        self, cells: List[str], target_resolution: int
-    ) -> List[str]:
+        self, cells: list[str], target_resolution: int
+    ) -> list[str]:
         """
         Convert a mixed-resolution set of cells to a uniform resolution.
 
@@ -1499,7 +1582,7 @@ class H3Backend:
         return cast(str, self.h3.cells_to_directed_edge(origin, destination))
 
     @_require_h3("edge_to_cells")
-    def edge_to_cells(self, edge: str) -> Tuple[str, str]:
+    def edge_to_cells(self, edge: str) -> tuple[str, str]:
         """
         Get the origin and destination cells of a directed edge.
 
@@ -1514,7 +1597,7 @@ class H3Backend:
         return (origin, destination)
 
     @_require_h3("get_cell_edges")
-    def get_cell_edges(self, cell: str) -> List[str]:
+    def get_cell_edges(self, cell: str) -> list[str]:
         """
         Get all directed edges originating from a cell.
 
@@ -1529,7 +1612,7 @@ class H3Backend:
         return list(self.h3.origin_to_directed_edges(cell))
 
     @_require_h3("get_edge_boundary")
-    def get_edge_boundary(self, edge: str) -> List[Tuple[float, float]]:
+    def get_edge_boundary(self, edge: str) -> list[tuple[float, float]]:
         """
         Get the geographic boundary of a directed edge.
 
@@ -1546,7 +1629,7 @@ class H3Backend:
     # =========================================================================
 
     @_require_h3("cell_to_local_ij")
-    def cell_to_local_ij(self, origin: str, cell: str) -> Tuple[int, int]:
+    def cell_to_local_ij(self, origin: str, cell: str) -> tuple[int, int]:
         """
         Get the local IJ coordinates of a cell relative to an origin.
 
@@ -1676,7 +1759,7 @@ class H3Backend:
         end_lat: float,
         end_lng: float,
         resolution: int,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Convert a line segment to H3 cells it passes through.
 
@@ -1720,7 +1803,7 @@ class H3Backend:
         return self.great_circle_distance(lat, lng, center[0], center[1], unit="m")
 
     @_require_h3("get_resolution_stats")
-    def get_resolution_stats(self, resolution: int) -> Dict[str, Any]:
+    def get_resolution_stats(self, resolution: int) -> dict[str, Any]:
         """
         Get statistics about a given H3 resolution level.
 
@@ -1750,7 +1833,7 @@ class H3Backend:
     # COMPREHENSIVE VALIDATION
     # =========================================================================
 
-    def validate_cell_set(self, cells: List[str]) -> Dict[str, Any]:
+    def validate_cell_set(self, cells: list[str]) -> dict[str, Any]:
         """
         Validate a set of H3 cells comprehensively.
 

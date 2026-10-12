@@ -35,14 +35,15 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
-from typing import Any, Mapping, Optional
+from typing import Any
+from collections.abc import Mapping
 
 try:  # pragma: no cover - import availability is environment dependent
     import h3
 
-    _H3_VERSION: Optional[str] = h3.__version__
+    _H3_VERSION: str | None = h3.__version__
 except Exception:  # pragma: no cover - h3 is optional for non-spatial entry points
     _H3_VERSION = None
 
@@ -54,7 +55,7 @@ def _input_digest(payload: Any) -> str:
     ).hexdigest()
 
 
-def _accessibility_checks(artifact_path: Path, *, title_marker: Optional[str]) -> dict:
+def _accessibility_checks(artifact_path: Path, *, title_marker: str | None) -> dict:
     """Build the accessibility-check sub-document for ``artifact_path``.
 
     The checks adapt to the artifact type so the receipt stays meaningful for
@@ -90,9 +91,9 @@ def write_visualization_receipt(
     artifact_path: Path,
     input_payload: Any,
     schema_version: str,
-    generated_at: Optional[str] = None,
-    title_marker: Optional[str] = None,
-    extra: Optional[Mapping[str, Any]] = None,
+    generated_at: str | None = None,
+    title_marker: str | None = None,
+    extra: Mapping[str, Any] | None = None,
 ) -> Path:
     """Write a deterministic manifest JSON next to ``artifact_path``.
 
@@ -120,7 +121,7 @@ def write_visualization_receipt(
 
     manifest: dict[str, Any] = {
         "schema_version": schema_version,
-        "generated_at": generated_at or datetime.now().isoformat(),
+        "generated_at": generated_at or datetime.now(UTC).isoformat(),
         "input_sha256": _input_digest(input_payload),
         "h3_version": _H3_VERSION,
         "artifacts": [

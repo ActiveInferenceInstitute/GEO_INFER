@@ -5,7 +5,7 @@ This module provides tools for requirements analysis, dependency resolution,
 traceability tracking, and requirement validation.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Development Team"
 
 from .core.requirements import (

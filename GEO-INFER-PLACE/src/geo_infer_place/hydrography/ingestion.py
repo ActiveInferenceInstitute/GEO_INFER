@@ -9,7 +9,7 @@ this service does not provide transactionally consistent historical snapshots.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 import hashlib
 import json
 import math
@@ -221,7 +221,7 @@ class NHDPlusHRIngestor:
                 **identity,
                 "schema_version": 1,
                 "status": "incomplete",
-                "acquired_at": datetime.now(timezone.utc).isoformat(),
+                "acquired_at": datetime.now(UTC).isoformat(),
                 "crs": "EPSG:4326",
                 "pages": {},
                 "coverage": "intersecting whole reaches; boundary crossings are not basin outlets",

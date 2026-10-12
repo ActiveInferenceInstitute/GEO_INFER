@@ -7,7 +7,6 @@ Tests workspace within `GEO-INFER-ART`.
 - `integration/`
 - `unit/`
 - `conftest.py`
-- `run_all_tests.py`
 - `test_generative_terrain.py`
 
 ## Public Interface
@@ -19,15 +18,13 @@ Tests workspace within `GEO-INFER-ART`.
 - `conftest.py:spatial_art_config` (function)
 - `conftest.py:color_palette` (function)
 - `conftest.py:sample_terrain_data` (function)
-- `conftest.py:pytest_collection_modifyitems` (function)
-- `run_all_tests.py:run_all_tests` (function)
 
 ## Module Metadata
 
 - Module: `GEO-INFER-ART`
 - Package: `geo_infer_art`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-ART`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-art`
 - Tests: `uv run python -m pytest GEO-INFER-ART/tests`
 
 ## Dependencies
@@ -50,7 +47,7 @@ Tests workspace within `GEO-INFER-ART`.
   `geo_infer_test.testing` fixtures for deterministic RNG, filesystem, HTTP,
   SQLite, service, model, and artifact boundaries.
 - Dependencies: required test/runtime dependencies are installed by
-  `uv sync --all-packages --all-extras`; missing backends are failures.
+  `uv sync --all-packages --all-extras --all-groups`; missing backends are failures.
 - Expected artifacts: JUnit XML under `.geo-infer-test-results/`; model and
   visualization outputs require finite statistics, sidecars, hashes, and a
   manifest.

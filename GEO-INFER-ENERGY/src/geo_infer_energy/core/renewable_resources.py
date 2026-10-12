@@ -1,7 +1,7 @@
 """Renewable resource assessment module."""
 
 import logging
-from typing import Dict, Optional, List, Tuple, Any
+from typing import Any
 from dataclasses import dataclass
 from enum import Enum
 import numpy as np
@@ -40,13 +40,13 @@ class RenewableSite:
 
     site_id: str
     name: str
-    location: Tuple[float, float]
+    location: tuple[float, float]
     resource_type: RenewableType
     capacity_mw: float
     capacity_factor: float
-    annual_generation_gwh: Optional[float] = None
-    lcoe_usd_mwh: Optional[float] = None
-    land_area_km2: Optional[float] = None
+    annual_generation_gwh: float | None = None
+    lcoe_usd_mwh: float | None = None
+    land_area_km2: float | None = None
 
 
 class RenewableResourceAssessor:
@@ -61,7 +61,7 @@ class RenewableResourceAssessor:
     - Grid integration analysis
     """
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize renewable resource assessor.
 
         Documented contract: ``config`` is accepted and stored for API
@@ -93,13 +93,13 @@ class RenewableResourceAssessor:
         }
 
         # Site registry
-        self.site_registry: Dict[str, RenewableSite] = {}
+        self.site_registry: dict[str, RenewableSite] = {}
 
     def assess_solar_potential(
         self,
         solar_irradiance: xr.DataArray,
-        slope: Optional[xr.DataArray] = None,
-        aspect: Optional[xr.DataArray] = None,
+        slope: xr.DataArray | None = None,
+        aspect: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """
         Assess solar energy potential.
@@ -135,7 +135,7 @@ class RenewableResourceAssessor:
         )
 
     def assess_wind_potential(
-        self, wind_speed: xr.DataArray, elevation: Optional[xr.DataArray] = None
+        self, wind_speed: xr.DataArray, elevation: xr.DataArray | None = None
     ) -> xr.Dataset:
         """
         Assess wind energy potential.
@@ -198,11 +198,11 @@ class RenewableResourceAssessor:
 
     def assess_site_suitability(
         self,
-        location: Tuple[float, float],
+        location: tuple[float, float],
         resource_type: RenewableType,
         resource_value: float,
-        constraints: Optional[Dict[str, bool]] = None,
-    ) -> Dict[str, Any]:
+        constraints: dict[str, bool] | None = None,
+    ) -> dict[str, Any]:
         """
         Assess site suitability for renewable development.
 
@@ -218,7 +218,7 @@ class RenewableResourceAssessor:
         constraints = constraints or {}
 
         # Define thresholds by resource type
-        thresholds: Dict[RenewableType, List[float]] = {
+        thresholds: dict[RenewableType, list[float]] = {
             RenewableType.SOLAR_PV: [3.5, 4.5, 5.5, 6.5],  # kWh/m²/day
             RenewableType.ONSHORE_WIND: [5.0, 6.0, 7.0, 8.0],  # m/s
             RenewableType.OFFSHORE_WIND: [6.0, 7.0, 8.0, 9.0],  # m/s
@@ -294,7 +294,7 @@ class RenewableResourceAssessor:
         resource_type: RenewableType,
         resource_data: xr.DataArray,
         rated_capacity_mw: float = 1.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate capacity factor from resource time series.
 
@@ -383,11 +383,11 @@ class RenewableResourceAssessor:
         resource_type: RenewableType,
         capacity_mw: float,
         capacity_factor: float,
-        capital_cost_usd_kw: Optional[float] = None,
+        capital_cost_usd_kw: float | None = None,
         discount_rate: float = 0.07,
         lifetime_years: int = 25,
-        opex_usd_kw_year: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        opex_usd_kw_year: float | None = None,
+    ) -> dict[str, Any]:
         """
         Calculate Levelized Cost of Energy (LCOE).
 
@@ -466,7 +466,7 @@ class RenewableResourceAssessor:
         demand_profile: xr.DataArray,
         renewable_penetration: float = 0.5,
         duration_hours: float = 4.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze storage requirements for renewable integration.
 
@@ -542,7 +542,7 @@ class RenewableResourceAssessor:
         )
         return site.site_id
 
-    def get_portfolio_summary(self) -> Dict[str, Any]:
+    def get_portfolio_summary(self) -> dict[str, Any]:
         """Get summary of registered renewable portfolio."""
         if not self.site_registry:
             return {"error": "No sites registered"}
@@ -550,7 +550,7 @@ class RenewableResourceAssessor:
         sites = list(self.site_registry.values())
 
         # Aggregate by type
-        by_type: Dict[str, Dict[str, Any]] = {}
+        by_type: dict[str, dict[str, Any]] = {}
         for site in sites:
             rtype = site.resource_type.value
             if rtype not in by_type:

@@ -14,8 +14,8 @@ Integration workspace within `GEO-INFER-EDU`.
 
 - Module: `GEO-INFER-EDU`
 - Package: `geo_infer_edu`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-EDU`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-edu`
 - Tests: `uv run python -m pytest GEO-INFER-EDU/tests/integration`
 
 ## Dependencies

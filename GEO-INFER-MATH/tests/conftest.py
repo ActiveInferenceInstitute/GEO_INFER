@@ -10,11 +10,10 @@ import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point
 from pathlib import Path
-from typing import List, Dict, Tuple
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -66,7 +65,7 @@ def spatial_weight_matrix() -> np.ndarray:
 
 
 @pytest.fixture
-def coordinate_pairs() -> List[Tuple[float, float]]:
+def coordinate_pairs() -> list[tuple[float, float]]:
     """List of 10 (lat, lng) tuples for distance and projection tests.
 
     Points distributed across the continental US for testing geodesic
@@ -87,7 +86,7 @@ def coordinate_pairs() -> List[Tuple[float, float]]:
 
 
 @pytest.fixture
-def graph_adjacency() -> Dict[str, List[str]]:
+def graph_adjacency() -> dict[str, list[str]]:
     """Graph adjacency dict compatible with networkx for graph algorithm tests.
 
     Represents a small connected graph with 6 nodes and 8 edges,

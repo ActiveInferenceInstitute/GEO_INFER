@@ -6,7 +6,7 @@ import logging
 import numpy as np
 import xarray as xr
 import copy
-from typing import Dict, Any, Optional, Union, List, Tuple
+from typing import Any
 from tqdm import tqdm
 from ..utils.rng import SeedLike, resolve_rng
 
@@ -73,10 +73,10 @@ class VariationalInference:
         # records the ELBO in optimization order so a caller can inspect the
         # trace, and ``best_elbo`` / ``best_var_params`` pin the highest value
         # seen (the returned samples are drawn from the best state).
-        self.elbo_history: List[float] = []
+        self.elbo_history: list[float] = []
         self.best_elbo: float = -np.inf
-        self.best_var_params: Optional[Dict[str, Dict[str, np.ndarray]]] = None
-        self.converged_at: Optional[int] = None
+        self.best_var_params: dict[str, dict[str, np.ndarray]] | None = None
+        self.converged_at: int | None = None
         self.n_total_iterations: int = 0
 
         if self.vi_method not in ["meanfield", "fullrank"]:
@@ -90,10 +90,10 @@ class VariationalInference:
         data: Any,
         progress_bar: bool = True,
         *,
-        initial_var_params: Optional[Dict[str, Dict[str, np.ndarray]]] = None,
+        initial_var_params: dict[str, dict[str, np.ndarray]] | None = None,
         n_samples: int = 1000,
         **kwargs: Any,
-    ) -> Union[Dict[str, np.ndarray], xr.Dataset]:
+    ) -> dict[str, np.ndarray] | xr.Dataset:
         """
         Run variational inference for the model.
 
@@ -176,8 +176,8 @@ class VariationalInference:
         return samples
 
     def _initialize_variational_parameters(
-        self, param_names: List[str]
-    ) -> Dict[str, Dict[str, np.ndarray]]:
+        self, param_names: list[str]
+    ) -> dict[str, dict[str, np.ndarray]]:
         """
         Initialize variational distribution parameters.
 
@@ -185,7 +185,7 @@ class VariationalInference:
         log-standard deviation for each parameter.
         For full-rank, we would need additional covariance terms.
         """
-        var_params: Dict[str, Dict[str, np.ndarray]] = {}
+        var_params: dict[str, dict[str, np.ndarray]] = {}
 
         for param in param_names:
             param_info = self.model.parameters[param]
@@ -225,8 +225,8 @@ class VariationalInference:
         return var_params
 
     def _compute_elbo_and_gradients(
-        self, var_params: Dict[str, Dict[str, np.ndarray]], data: Any
-    ) -> Tuple[float, Dict[str, Dict[str, np.ndarray]]]:
+        self, var_params: dict[str, dict[str, np.ndarray]], data: Any
+    ) -> tuple[float, dict[str, dict[str, np.ndarray]]]:
         """
         Compute the Evidence Lower Bound (ELBO) and its gradients.
 
@@ -293,8 +293,8 @@ class VariationalInference:
         return elbo, grads
 
     def _sample_variational_distribution(
-        self, var_params: Dict[str, Dict[str, np.ndarray]]
-    ) -> Dict[str, Any]:
+        self, var_params: dict[str, dict[str, np.ndarray]]
+    ) -> dict[str, Any]:
         """
         Sample from the variational distribution.
 
@@ -327,7 +327,7 @@ class VariationalInference:
         return sample
 
     def _log_prob_variational(
-        self, sample: Dict[str, float], var_params: Dict[str, Dict[str, np.ndarray]]
+        self, sample: dict[str, float], var_params: dict[str, dict[str, np.ndarray]]
     ) -> float:
         """
         Compute the log probability of a sample under the variational distribution.
@@ -366,8 +366,8 @@ class VariationalInference:
 
     def _compute_mean_gradient(
         self,
-        sample: Dict[str, float],
-        var_params: Dict[str, Dict[str, np.ndarray]],
+        sample: dict[str, float],
+        var_params: dict[str, dict[str, np.ndarray]],
         param: str,
     ) -> np.ndarray:
         """
@@ -385,8 +385,8 @@ class VariationalInference:
 
     def _compute_log_std_gradient(
         self,
-        sample: Dict[str, float],
-        var_params: Dict[str, Dict[str, np.ndarray]],
+        sample: dict[str, float],
+        var_params: dict[str, dict[str, np.ndarray]],
         param: str,
     ) -> np.ndarray:
         """
@@ -407,8 +407,8 @@ class VariationalInference:
 
     def _compute_cov_factor_gradient(
         self,
-        sample: Dict[str, float],
-        var_params: Dict[str, Dict[str, np.ndarray]],
+        sample: dict[str, float],
+        var_params: dict[str, dict[str, np.ndarray]],
         param: str,
     ) -> np.ndarray:
         """
@@ -434,8 +434,8 @@ class VariationalInference:
 
     def _update_variational_parameters(
         self,
-        var_params: Dict[str, Dict[str, np.ndarray]],
-        grads: Dict[str, Dict[str, np.ndarray]],
+        var_params: dict[str, dict[str, np.ndarray]],
+        grads: dict[str, dict[str, np.ndarray]],
     ) -> None:
         """
         Update variational parameters using computed gradients.
@@ -476,7 +476,7 @@ class VariationalInference:
             # Constrain log_std for numerical stability
             var_params[param]["log_std"] = np.clip(var_params[param]["log_std"], -10, 2)
 
-    def _effective_std(self, param_dist: Dict[str, np.ndarray]) -> np.ndarray:
+    def _effective_std(self, param_dist: dict[str, np.ndarray]) -> np.ndarray:
         """Return the positive scalar standard deviation for the VI family."""
         if self.vi_method == "fullrank" and "cov_factor" in param_dist:
             cov_factor = np.asarray(param_dist["cov_factor"], dtype=float)
@@ -492,8 +492,8 @@ class VariationalInference:
         )
 
     def _generate_samples(
-        self, var_params: Dict[str, Dict[str, np.ndarray]], n_samples: int = 1000
-    ) -> Dict[str, np.ndarray]:
+        self, var_params: dict[str, dict[str, np.ndarray]], n_samples: int = 1000
+    ) -> dict[str, np.ndarray]:
         """
         Generate samples from the approximate posterior for inference.
         """
@@ -511,7 +511,7 @@ class VariationalInference:
 
         return samples
 
-    def estimate_posterior(self) -> Dict[str, Dict[str, float]]:
+    def estimate_posterior(self) -> dict[str, dict[str, float]]:
         """
         Summarize the converged variational posterior per parameter.
 
@@ -534,7 +534,7 @@ class VariationalInference:
             raise RuntimeError(
                 "No variational posterior to summarize; call run() first."
             )
-        summary: Dict[str, Dict[str, float]] = {}
+        summary: dict[str, dict[str, float]] = {}
         for param, dist in self.best_var_params.items():
             summary[param] = {
                 "mean": float(np.mean(np.asarray(dist["mean"], dtype=float))),
@@ -545,9 +545,9 @@ class VariationalInference:
     def update(
         self,
         new_data: Any,
-        previous_samples: Union[Dict[str, np.ndarray], xr.Dataset],
+        previous_samples: dict[str, np.ndarray] | xr.Dataset,
         **kwargs: Any,
-    ) -> Union[Dict[str, np.ndarray], xr.Dataset]:
+    ) -> dict[str, np.ndarray] | xr.Dataset:
         """
         Update the approximate posterior with new data.
 

@@ -6,19 +6,13 @@ and calibration management for IoT sensor networks.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
+from typing import Any
+from datetime import datetime, timedelta, UTC
 import numpy as np
 from dataclasses import dataclass
+from geo_infer_time.core.timestamps import normalize_timestamp
 
-# Optional imports for enhanced functionality
-try:
-    from scipy import stats
-    from scipy.optimize import curve_fit as curve_fit
-
-    HAS_SCIPY = True
-except ImportError:
-    HAS_SCIPY = False
+from scipy import stats
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +22,14 @@ class CalibrationResult:
     """Result of a calibration operation."""
 
     success: bool
-    calibration_parameters: Dict[str, Any]
+    calibration_parameters: dict[str, Any]
     calibration_error: float
     timestamp: datetime
     method: str
     notes: str = ""
+
+    def __post_init__(self) -> None:
+        self.timestamp = normalize_timestamp(self.timestamp)
 
 
 class SensorCalibration:
@@ -46,10 +43,10 @@ class SensorCalibration:
     - Multi-point calibration procedures
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
-        self.calibration_history: List[Dict[str, Any]] = []
-        self.drift_models: Dict[str, Any] = {}
+        self.calibration_history: list[dict[str, Any]] = []
+        self.drift_models: dict[str, Any] = {}
 
         # Default calibration parameters
         self.default_params = {
@@ -64,7 +61,7 @@ class SensorCalibration:
     def calibrate_sensor(
         self,
         sensor_id: str,
-        reference_data: List[Dict],
+        reference_data: list[dict],
         calibration_method: str = "linear",
     ) -> CalibrationResult:
         """
@@ -84,7 +81,7 @@ class SensorCalibration:
                     success=False,
                     calibration_parameters={},
                     calibration_error=float("inf"),
-                    timestamp=datetime.now(),
+                    timestamp=datetime.now(UTC),
                     method=calibration_method,
                     notes="Insufficient reference data",
                 )
@@ -98,7 +95,7 @@ class SensorCalibration:
                 calibration_params = self._linear_calibration(
                     sensor_values, reference_values
                 )
-            elif calibration_method == "polynomial" and HAS_SCIPY:
+            elif calibration_method == "polynomial":
                 calibration_params = self._polynomial_calibration(
                     sensor_values, reference_values
                 )
@@ -124,7 +121,7 @@ class SensorCalibration:
                 success=True,
                 calibration_parameters=calibration_params,
                 calibration_error=calibration_error,
-                timestamp=datetime.now(),
+                timestamp=datetime.now(UTC),
                 method=calibration_method,
                 notes=f"Calibration completed with {len(reference_data)} reference points",
             )
@@ -145,24 +142,17 @@ class SensorCalibration:
                 success=False,
                 calibration_parameters={},
                 calibration_error=float("inf"),
-                timestamp=datetime.now(),
+                timestamp=datetime.now(UTC),
                 method=calibration_method,
                 notes=f"Calibration failed: {str(e)}",
             )
 
     def _linear_calibration(
-        self, sensor_values: List[float], reference_values: List[float]
-    ) -> Dict:
+        self, sensor_values: list[float], reference_values: list[float]
+    ) -> dict:
         """Perform linear calibration: reference = slope * sensor + offset."""
         if len(sensor_values) < 2:
             return {"slope": 1.0, "offset": 0.0}
-
-        if not HAS_SCIPY:
-            # Degraded mode (no scipy): least-squares fit via numpy only.
-            slope, offset = (
-                float(c) for c in np.polyfit(sensor_values, reference_values, 1)
-            )
-            return {"slope": slope, "offset": offset}
 
         # Linear regression
         slope, offset, r_value, p_value, std_err = stats.linregress(
@@ -177,11 +167,11 @@ class SensorCalibration:
         }
 
     def _polynomial_calibration(
-        self, sensor_values: List[float], reference_values: List[float]
-    ) -> Dict:
+        self, sensor_values: list[float], reference_values: list[float]
+    ) -> dict:
         """Perform polynomial calibration (2nd order)."""
-        if not HAS_SCIPY or len(sensor_values) < 3:
-            # Fall back to linear
+        if len(sensor_values) < 3:
+            # A quadratic fit needs at least three points; fall back to linear
             return self._linear_calibration(sensor_values, reference_values)
 
         try:
@@ -205,8 +195,8 @@ class SensorCalibration:
             return self._linear_calibration(sensor_values, reference_values)
 
     def _apply_calibration(
-        self, sensor_values: List[float], params: Dict, method: str
-    ) -> List[float]:
+        self, sensor_values: list[float], params: dict, method: str
+    ) -> list[float]:
         """Apply calibration parameters to sensor values."""
         if method == "linear":
             slope = params.get("slope", 1.0)
@@ -219,8 +209,8 @@ class SensorCalibration:
             return sensor_values  # No calibration
 
     def detect_drift(
-        self, sensor_id: str, recent_measurements: List[Dict], reference_baseline: Dict
-    ) -> Dict:
+        self, sensor_id: str, recent_measurements: list[dict], reference_baseline: dict
+    ) -> dict:
         """
         Detect sensor drift using recent measurements and baseline.
 
@@ -267,11 +257,8 @@ class SensorCalibration:
             drift_score = (mean_drift + std_drift) / 2
 
             # Statistical significance test
-            if HAS_SCIPY:
-                t_stat, p_value = stats.ttest_ind(recent_values, baseline_values)
-                confidence = 1 - p_value if p_value < 0.05 else 0.5
-            else:
-                confidence = 0.5  # Default confidence if scipy not available
+            t_stat, p_value = stats.ttest_ind(recent_values, baseline_values)
+            confidence = 1 - p_value if p_value < 0.05 else 0.5
 
             # Determine if drift is significant
             threshold = self.config.get("drift_threshold", 0.05)
@@ -288,7 +275,7 @@ class SensorCalibration:
                 "recent_std": recent_std,
                 "baseline_std": baseline_std,
                 "threshold": threshold,
-                "analysis_timestamp": datetime.now().isoformat(),
+                "analysis_timestamp": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:
@@ -300,7 +287,7 @@ class SensorCalibration:
                 "error": str(e),
             }
 
-    def generate_calibration_schedule(self, sensor_inventory: List[Dict]) -> List[Dict]:
+    def generate_calibration_schedule(self, sensor_inventory: list[dict]) -> list[dict]:
         """
         Generate calibration schedule for sensor inventory.
 
@@ -333,11 +320,11 @@ class SensorCalibration:
                 )
             else:
                 # First calibration - schedule immediately
-                next_calibration = datetime.now()
+                next_calibration = datetime.now(UTC)
 
             # Determine priority based on time since last calibration
             days_since_calibration = (
-                (datetime.now() - last_calibration).days
+                (datetime.now(UTC) - last_calibration).days
                 if last_calibration
                 else float("inf")
             )
@@ -353,7 +340,9 @@ class SensorCalibration:
                     if last_calibration
                     else None,
                     "next_calibration": next_calibration.isoformat(),
-                    "days_until_due": max(0, (next_calibration - datetime.now()).days),
+                    "days_until_due": max(
+                        0, (next_calibration - datetime.now(UTC)).days
+                    ),
                     "priority": priority,
                     "calibration_method": sensor.get("calibration_method", "linear"),
                 }
@@ -377,7 +366,7 @@ class SensorCalibration:
         else:
             return "low"
 
-    def validate_calibration_data(self, calibration_data: List[Dict]) -> Dict:
+    def validate_calibration_data(self, calibration_data: list[dict]) -> dict:
         """
         Validate calibration data quality and completeness.
 
@@ -433,8 +422,8 @@ class SensorCalibration:
         }
 
     def get_calibration_report(
-        self, sensor_id: Optional[str] = None, time_window_days: int = 30
-    ) -> Dict:
+        self, sensor_id: str | None = None, time_window_days: int = 30
+    ) -> dict:
         """
         Generate calibration report for sensor(s).
 
@@ -445,7 +434,7 @@ class SensorCalibration:
         Returns:
             Comprehensive calibration report
         """
-        cutoff_date = datetime.now() - timedelta(days=time_window_days)
+        cutoff_date = datetime.now(UTC) - timedelta(days=time_window_days)
 
         # Filter calibration history
         relevant_calibrations = []
@@ -490,5 +479,5 @@ class SensorCalibration:
             "calibration_methods_used": list(
                 set(r["result"].method for r in successful_calibrations)
             ),
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
         }

@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Unit tests for configuration loader utilities.
 """
 
-import os
 import tempfile
 import json
 import yaml
@@ -27,8 +25,9 @@ from geo_infer_git.utils.config_loader import (
 class TestCloneConfig:
     """Test CloneConfig dataclass."""
 
-    def test_default_initialization(self):
+    def test_default_initialization(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test default CloneConfig initialization."""
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
         config = CloneConfig()
 
         assert config.output_dir == "./cloned_repositories"
@@ -47,11 +46,11 @@ class TestCloneConfig:
         config = CloneConfig(max_workers=0)
         assert config.max_workers == 1
 
-    def test_environment_token(self):
+    def test_environment_token(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test GitHub token from environment."""
-        with patch.dict(os.environ, {"GITHUB_TOKEN": "test_token"}):
-            config = CloneConfig()
-            assert config.github_token == "test_token"
+        monkeypatch.setenv("GITHUB_TOKEN", "test_token")
+        config = CloneConfig()
+        assert config.github_token == "test_token"
 
 
 class TestTargetRepository:
@@ -248,7 +247,7 @@ test:
             config_file = Path(temp_dir) / "test.json"
             assert config_file.exists()
 
-            with open(config_file, "r") as f:
+            with open(config_file) as f:
                 saved_config = json.load(f)
                 assert saved_config == test_config
 

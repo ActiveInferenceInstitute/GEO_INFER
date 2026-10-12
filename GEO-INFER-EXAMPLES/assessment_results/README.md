@@ -4,10 +4,7 @@ Assessment Results workspace within `GEO-INFER-EXAMPLES`.
 
 ## Contents
 
-- `assessment_summary_20250620_154749.md`
-- `comprehensive_assessment_20250620_154749.json`
-- `latest_assessment_summary.md`
-- `latest_comprehensive_assessment.json`
+- No direct tracked child entries.
 
 ## Public Interface
 
@@ -17,8 +14,8 @@ Assessment Results workspace within `GEO-INFER-EXAMPLES`.
 
 - Module: `GEO-INFER-EXAMPLES`
 - Package: `geo_infer_examples`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-EXAMPLES`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-examples`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module EXAMPLES`
 
 ## Dependencies

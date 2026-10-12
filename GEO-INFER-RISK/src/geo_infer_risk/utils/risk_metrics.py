@@ -20,15 +20,18 @@ this module is a summary of that table:
 
 Annualization is explicit throughout. Several metrics need to know how many
 years of exposure the table spans; a table of ``n`` events says nothing about
-that on its own. Those functions take an ``exposure_years`` argument and log a
-warning when it is omitted, because the fallback (treating each event as one
-year) systematically distorts anything expressed per year.
+that on its own. :func:`calculate_aal` requires ``exposure_years``. The
+exceedance functions take an optional ``exposure_years``: without it their
+probabilities are per-event frequencies (EP curve, PML) or the table is
+assumed to span one year (annual OEP/AEP, tail fit), and a warning is logged
+because that assumption distorts anything expressed per year.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any
+from collections.abc import Sequence
 
 import numpy as np
 import pandas as pd
@@ -51,7 +54,7 @@ __all__ = [
     "estimate_pml_with_tail_fit",
 ]
 
-REQUIRED_COLUMNS: Tuple[str, ...] = ("event_id", "hazard_type", "loss")
+REQUIRED_COLUMNS: tuple[str, ...] = ("event_id", "hazard_type", "loss")
 
 
 def _validate_columns(event_loss_table: pd.DataFrame) -> None:
@@ -70,7 +73,7 @@ def _validate_columns(event_loss_table: pd.DataFrame) -> None:
 
 
 def _event_total_losses(
-    event_loss_table: Union[pd.DataFrame, np.ndarray],
+    event_loss_table: pd.DataFrame | np.ndarray,
 ) -> np.ndarray:
     """Return one loss per event, as a 1-D float array.
 
@@ -98,7 +101,7 @@ def _event_total_losses(
 
 
 def _resolve_exposure_years(
-    exposure_years: Optional[float],
+    exposure_years: float | None,
     n_events: int,
     caller: str,
 ) -> float:
@@ -134,7 +137,7 @@ def _resolve_exposure_years(
 
 def _empirical_exceedance(
     losses: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Return the empirical exceedance curve for a set of per-event losses.
 
     Uses the Weibull plotting position, ``p_i = i / (n + 1)`` for the ``i``-th
@@ -185,85 +188,57 @@ def _interpolate_loss_at_probs(
 
 
 def calculate_aal(
-    event_loss_table: Union[pd.DataFrame, np.ndarray],
-    exposure_years: Optional[float] = None,
-) -> Union[float, Dict[str, Any]]:
+    event_loss_table: pd.DataFrame | np.ndarray,
+    exposure_years: float,
+) -> float | dict[str, Any]:
     """Calculate the Average Annual Loss (AAL).
 
     The AAL is the expected loss per year: total modelled loss divided by the
-    number of years of exposure the table represents.
+    number of years of exposure the table represents,
+    ``AAL = total loss / exposure_years``. The event count cannot stand in for
+    the exposure period, so ``exposure_years`` is required.
 
     Args:
         event_loss_table: Either a DataFrame of event losses with columns
             ``event_id``, ``hazard_type`` and ``loss``, or a 1-D numpy array of
             per-event losses.
-        exposure_years: Number of exposure years the loss table spans. When
-            provided, ``AAL = total loss / exposure_years``. When omitted, the
-            denominator falls back to the number of distinct events, which
-            equals the AAL only if exactly one event occurs per year and
-            otherwise over-estimates it; a warning is logged in that case.
+        exposure_years: Number of exposure years the loss table spans.
 
     Returns:
-        For an array input, the mean loss per event as a float. For a DataFrame
-        input, a dict with ``total`` (float) and ``by_hazard``
-        (``Dict[str, float]``) keys.
+        For an array input, the AAL as a float. For a DataFrame input, a dict
+        with ``total`` (float) and ``by_hazard`` (``Dict[str, float]``) keys.
 
     Raises:
         ValueError: If a DataFrame input lacks a required column, if an array
             input is not one-dimensional, or if ``exposure_years`` is not
             finite and positive.
     """
+    if exposure_years is None:
+        raise ValueError(
+            "calculate_aal requires exposure_years: the number of years of "
+            "exposure the loss table spans"
+        )
     if isinstance(event_loss_table, np.ndarray):
         losses = _event_total_losses(event_loss_table)
-        if losses.size == 0:
-            return 0.0
-        if exposure_years is not None:
-            years = _resolve_exposure_years(
-                exposure_years, losses.size, "calculate_aal"
-            )
-            return float(losses.sum() / years)
-        return float(np.mean(losses))
+        years = _resolve_exposure_years(exposure_years, losses.size, "calculate_aal")
+        return float(losses.sum() / years) if losses.size else 0.0
 
     _validate_columns(event_loss_table)
-    total_loss = float(event_loss_table["loss"].sum())
     num_events = int(event_loss_table["event_id"].nunique())
-
-    if exposure_years is not None:
-        denominator = _resolve_exposure_years(
-            exposure_years, num_events, "calculate_aal"
-        )
-    else:
-        denominator = float(num_events) if num_events > 0 else 1.0
-        logger.warning(
-            "calculate_aal called without exposure_years; dividing by the %d "
-            "distinct events instead of by years of exposure. That equals the "
-            "AAL only at one event per year. Pass exposure_years for a true "
-            "average annual loss.",
-            num_events,
-        )
-
-    hazard_aal: Dict[str, float] = {}
-    for hazard_type, group in event_loss_table.groupby("hazard_type"):
-        hazard_loss = float(group["loss"].sum())
-        if exposure_years is not None:
-            hazard_aal[str(hazard_type)] = hazard_loss / denominator
-        else:
-            hazard_events = int(group["event_id"].nunique())
-            hazard_aal[str(hazard_type)] = (
-                hazard_loss / hazard_events if hazard_events > 0 else 0.0
-            )
-
-    return {
-        "total": total_loss / denominator if total_loss else 0.0,
-        "by_hazard": hazard_aal,
+    years = _resolve_exposure_years(exposure_years, num_events, "calculate_aal")
+    total_loss = float(event_loss_table["loss"].sum())
+    hazard_aal = {
+        str(hazard_type): float(group["loss"].sum()) / years
+        for hazard_type, group in event_loss_table.groupby("hazard_type")
     }
+    return {"total": total_loss / years, "by_hazard": hazard_aal}
 
 
 def calculate_ep_curve(
-    event_loss_table: Union[pd.DataFrame, np.ndarray],
-    exceedance_probs: Optional[List[float]] = None,
-    exposure_years: Optional[float] = None,
-) -> Dict[str, List[float]]:
+    event_loss_table: pd.DataFrame | np.ndarray,
+    exceedance_probs: list[float] | None = None,
+    exposure_years: float | None = None,
+) -> dict[str, list[float]]:
     """Calculate the exceedance probability (EP) curve.
 
     The EP curve pairs each loss level with the probability of exceeding it.
@@ -327,9 +302,9 @@ def calculate_ep_curve(
 
 
 def calculate_pml(
-    event_loss_table: Union[pd.DataFrame, np.ndarray],
+    event_loss_table: pd.DataFrame | np.ndarray,
     return_period: float = 250,
-    exposure_years: Optional[float] = None,
+    exposure_years: float | None = None,
 ) -> float:
     """Calculate the Probable Maximum Loss (PML) at a return period.
 
@@ -384,10 +359,10 @@ def calculate_pml(
 
 
 def calculate_loss_by_return_period(
-    event_loss_table: Union[pd.DataFrame, np.ndarray],
-    return_periods: List[float],
-    exposure_years: Optional[float] = None,
-) -> Dict[str, float]:
+    event_loss_table: pd.DataFrame | np.ndarray,
+    return_periods: list[float],
+    exposure_years: float | None = None,
+) -> dict[str, float]:
     """Calculate losses for several return periods.
 
     Args:
@@ -422,7 +397,7 @@ def calculate_loss_by_return_period(
 
 
 def calculate_tail_value_at_risk(
-    event_loss_table: Union[pd.DataFrame, np.ndarray],
+    event_loss_table: pd.DataFrame | np.ndarray,
     confidence_level: float = 0.99,
 ) -> float:
     """Calculate Tail Value at Risk (TVaR) over the event loss distribution.
@@ -460,9 +435,9 @@ def calculate_tail_value_at_risk(
 
 
 def calculate_annual_occurrence_exceedance_probability(
-    event_loss_table: Union[pd.DataFrame, np.ndarray],
+    event_loss_table: pd.DataFrame | np.ndarray,
     threshold: float,
-    exposure_years: Optional[float] = None,
+    exposure_years: float | None = None,
 ) -> float:
     """Calculate the annual Occurrence Exceedance Probability (OEP).
 
@@ -503,11 +478,11 @@ def calculate_annual_occurrence_exceedance_probability(
 
 
 def calculate_annual_aggregate_exceedance_probability(
-    event_loss_table: Union[pd.DataFrame, np.ndarray],
+    event_loss_table: pd.DataFrame | np.ndarray,
     threshold: float,
     num_years: int = 10000,
     random_seed: SeedLike = None,
-    exposure_years: Optional[float] = None,
+    exposure_years: float | None = None,
 ) -> float:
     """Estimate the annual Aggregate Exceedance Probability (AEP) by simulation.
 
@@ -568,9 +543,9 @@ def calculate_annual_aggregate_exceedance_probability(
 
 
 def calculate_loss_frequency_curve(
-    event_loss_table: Union[pd.DataFrame, np.ndarray],
+    event_loss_table: pd.DataFrame | np.ndarray,
     num_bins: int = 20,
-) -> Dict[str, List[float]]:
+) -> dict[str, list[float]]:
     """Calculate a histogram of per-event losses.
 
     Args:
@@ -607,7 +582,7 @@ def calculate_loss_frequency_curve(
 
 def _fit_exceedance_tail(
     losses: np.ndarray, years: float, threshold_percentile: float
-) -> Tuple[float, float, float, np.ndarray]:
+) -> tuple[float, float, float, np.ndarray]:
     """Fit a power-law tail to the largest per-event losses.
 
     The tail is the ``threshold_percentile`` largest fraction of losses.  Its
@@ -658,12 +633,12 @@ def _fit_exceedance_tail(
 
 
 def calculate_aep_curve(
-    event_loss_table: Union[pd.DataFrame, np.ndarray],
-    thresholds: Optional[Sequence[float]] = None,
+    event_loss_table: pd.DataFrame | np.ndarray,
+    thresholds: Sequence[float] | None = None,
     num_years: int = 5000,
     random_seed: SeedLike = None,
-    exposure_years: Optional[float] = None,
-) -> Dict[str, List[float]]:
+    exposure_years: float | None = None,
+) -> dict[str, list[float]]:
     """Estimate an Annual Exceedance Probability (AEP) curve over loss levels.
 
     AEP here is the *aggregate* annual probability that a year's summed losses
@@ -721,11 +696,11 @@ def calculate_aep_curve(
 
 
 def estimate_pml_with_tail_fit(
-    event_loss_table: Union[pd.DataFrame, np.ndarray],
+    event_loss_table: pd.DataFrame | np.ndarray,
     return_period: float = 250,
-    exposure_years: Optional[float] = None,
+    exposure_years: float | None = None,
     threshold_percentile: float = 0.7,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Estimate PML beyond the observed record from a fitted power-law tail.
 
     The classic PML is the empirical loss at a long return period, which must
@@ -786,7 +761,7 @@ def estimate_pml_with_tail_fit(
     }
 
 
-def calculate_correlation_matrix(event_loss_table: pd.DataFrame) -> Dict[str, Any]:
+def calculate_correlation_matrix(event_loss_table: pd.DataFrame) -> dict[str, Any]:
     """Calculate the correlation of losses across hazard types.
 
     Losses are pivoted to one row per event and one column per hazard type,

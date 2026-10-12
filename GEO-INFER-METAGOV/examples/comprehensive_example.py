@@ -168,7 +168,7 @@ def main():
     print(
         f"✓ Overall performance: {performance_metrics.overall_score:.2f} ({performance_metrics.performance_rating})"
     )
-    print(f"✓ Top dimensions:")
+    print("✓ Top dimensions:")
     sorted_dims = sorted(
         performance_metrics.dimension_scores.items(), key=lambda x: x[1], reverse=True
     )[:3]
@@ -316,10 +316,10 @@ def main():
     print(f"✓ Performance Rating: {performance_metrics.performance_rating}")
     print(f"✓ Scenarios Analyzed: {len(scenarios)}")
     print(f"✓ Conflict Resolution: {resolution.resolved}")
-    print(f"✓ Accountability: Multi-directional")
-    print(f"✓ Transparency: Full disclosure")
-    print(f"✓ Adaptive Mechanisms: Active")
-    print(f"\n✓ Comprehensive governance system operational!")
+    print("✓ Accountability: Multi-directional")
+    print("✓ Transparency: Full disclosure")
+    print("✓ Adaptive Mechanisms: Active")
+    print("\n✓ Comprehensive governance system operational!")
     print("=" * 80)
 
 

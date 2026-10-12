@@ -6,7 +6,7 @@ their relationships with jurisdictions and entities.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from typing import Any
 import datetime
 import uuid
 
@@ -26,19 +26,19 @@ class Regulation:
     regulation_type: str  # e.g., 'environmental', 'zoning', 'safety'
     issuing_authority: str
     effective_date: datetime.date
-    applicable_jurisdictions: List[str] = field(default_factory=list)
-    parent_regulation_id: Optional[str] = None
-    attributes: Dict[str, Any] = field(default_factory=dict)
-    expiration_date: Optional[datetime.date] = None
-    amendment_date: Optional[datetime.date] = None
-    reference_code: Optional[str] = None
+    applicable_jurisdictions: list[str] = field(default_factory=list)
+    parent_regulation_id: str | None = None
+    attributes: dict[str, Any] = field(default_factory=dict)
+    expiration_date: datetime.date | None = None
+    amendment_date: datetime.date | None = None
+    reference_code: str | None = None
     created_at: datetime.datetime = field(default_factory=datetime.datetime.now)
     updated_at: datetime.datetime = field(default_factory=datetime.datetime.now)
-    code: Optional[str] = None
-    category: Optional[str] = None
-    superseded_regulation_id: Optional[str] = None
-    source_url: Optional[str] = None
-    tags: Optional[List[str]] = None
+    code: str | None = None
+    category: str | None = None
+    superseded_regulation_id: str | None = None
+    source_url: str | None = None
+    tags: list[str] | None = None
 
     def __eq__(self, other: object) -> bool:
         """Check equality based on the unique regulation ID."""
@@ -58,12 +58,12 @@ class Regulation:
         regulation_type: str,
         issuing_authority: str,
         effective_date: datetime.date,
-        applicable_jurisdictions: Optional[List[str]] = None,
-        parent_regulation_id: Optional[str] = None,
-        attributes: Optional[Dict[str, Any]] = None,
-        expiration_date: Optional[datetime.date] = None,
-        amendment_date: Optional[datetime.date] = None,
-        reference_code: Optional[str] = None,
+        applicable_jurisdictions: list[str] | None = None,
+        parent_regulation_id: str | None = None,
+        attributes: dict[str, Any] | None = None,
+        expiration_date: datetime.date | None = None,
+        amendment_date: datetime.date | None = None,
+        reference_code: str | None = None,
     ) -> "Regulation":
         """
         Create a new Regulation with a generated UUID.
@@ -132,7 +132,7 @@ class Regulation:
             self.applicable_jurisdictions.remove(jurisdiction_id)
             self.updated_at = datetime.datetime.now()
 
-    def is_active(self, reference_date: Optional[datetime.date] = None) -> bool:
+    def is_active(self, reference_date: datetime.date | None = None) -> bool:
         """
         Check if the regulation is active as of the reference date.
 
@@ -153,7 +153,7 @@ class Regulation:
         return is_effective and is_not_expired
 
     def amend(
-        self, new_description: str, amendment_date: Optional[datetime.date] = None
+        self, new_description: str, amendment_date: datetime.date | None = None
     ) -> None:
         """
         Amend the regulation with a new description.
@@ -181,16 +181,16 @@ class RegulatoryFramework:
     description: str
     domain: str = ""  # e.g., 'environment', 'urban planning', 'finance'
     issuing_authority: str = ""
-    regulations: List[str] = field(default_factory=list)  # List of regulation IDs
-    attributes: Dict[str, Any] = field(default_factory=dict)
-    effective_date: Optional[datetime.date] = None
-    expiration_date: Optional[datetime.date] = None
+    regulations: list[str] = field(default_factory=list)  # List of regulation IDs
+    attributes: dict[str, Any] = field(default_factory=dict)
+    effective_date: datetime.date | None = None
+    expiration_date: datetime.date | None = None
     version: str = "1.0"
     created_at: datetime.datetime = field(default_factory=datetime.datetime.now)
     updated_at: datetime.datetime = field(default_factory=datetime.datetime.now)
-    authority: Optional[str] = None
-    sector: Optional[str] = None
-    regulation_ids: Optional[List[str]] = None
+    authority: str | None = None
+    sector: str | None = None
+    regulation_ids: list[str] | None = None
 
     @classmethod
     def create(
@@ -199,10 +199,10 @@ class RegulatoryFramework:
         description: str,
         domain: str,
         issuing_authority: str,
-        regulations: Optional[List[str]] = None,
-        attributes: Optional[Dict[str, Any]] = None,
-        effective_date: Optional[datetime.date] = None,
-        expiration_date: Optional[datetime.date] = None,
+        regulations: list[str] | None = None,
+        attributes: dict[str, Any] | None = None,
+        effective_date: datetime.date | None = None,
+        expiration_date: datetime.date | None = None,
         version: str = "1.0",
     ) -> "RegulatoryFramework":
         """
@@ -268,7 +268,7 @@ class RegulatoryFramework:
             self.regulations.remove(regulation_id)
             self.updated_at = datetime.datetime.now()
 
-    def is_active(self, reference_date: Optional[datetime.date] = None) -> bool:
+    def is_active(self, reference_date: datetime.date | None = None) -> bool:
         """
         Check if the framework is active as of the reference date.
 

@@ -6,11 +6,9 @@ Script to run all GEO-INFER-ART examples.
 import os
 import sys
 import subprocess
-import importlib.util
-from typing import List, Tuple
 
 
-def find_example_scripts() -> List[str]:
+def find_example_scripts() -> list[str]:
     """Find all Python example scripts in the examples directory.
 
     Returns:
@@ -27,7 +25,7 @@ def find_example_scripts() -> List[str]:
     return sorted(example_scripts)
 
 
-def run_example(script_path: str) -> Tuple[int, str]:
+def run_example(script_path: str) -> tuple[int, str]:
     """Run an example script and return its exit code.
 
     Args:
@@ -69,11 +67,6 @@ def run_all_examples() -> int:
     print(f"Found {len(example_scripts)} example scripts:")
     for script in example_scripts:
         print(f"  - {os.path.basename(script)}")
-
-    # Add the project directory to the path so modules can be imported
-    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if project_dir not in sys.path:
-        sys.path.insert(0, project_dir)
 
     # Run all examples
     results = []

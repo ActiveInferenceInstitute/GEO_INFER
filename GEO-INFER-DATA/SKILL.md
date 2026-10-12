@@ -116,3 +116,41 @@ result = await pipeline.execute_workflow(
 - **API** → Data source for spatial query endpoints
 - **IOT** → Sensor data ingestion pipelines
 - **EXAMPLES** → Example ETL workflows
+
+Dataset/model and cache timestamps require explicit timezone offsets and normalize
+to UTC through `geo_infer_time.core.timestamps.normalize_timestamp`. Select backend
+extras explicitly: `postgres` (psycopg2 + asyncpg), `s3` (boto3), `minio`, `redis`,
+and `raster` (rasterio). Base/local operations do not import those clients; an
+unavailable selected backend raises an error naming its installation extra.
+HTTP connector calls and downloads run off the event loop; requests are spaced
+using a monotonic clock, and failed pagination does not return partial success.
+
+### DuckDB Spatial verification
+
+Provision official signed HTTPFS and Spatial matching the installed stable DuckDB
+version and native platform with
+`uv run python GEO-INFER-DATA/provision_duckdb_spatial.py`. Python HTTPS downloads
+bootstrap HTTPFS without DuckDB's auto-install path. The product identifies
+itself to the repository; TLS verification and official-origin redirect checks
+remain enabled. Both gzip archives download and decompress before installation.
+A separate, stdlib-only worker bounds DNS, TLS, headers, body and gzip parsing;
+`--download-timeout 120` shares one monotonic download budget, and
+`--max-extension-bytes 536870912` limits each compressed and decompressed archive.
+DuckDB verifies signatures with unsigned extensions disabled. The success JSON
+records runtime ABI, official URLs, decompressed sizes and SHA-256 hashes.
+An ordinary failure returns failed JSON, full diagnostic stderr and exit 1;
+no retry or cached extension can certify a failed download. Installation itself
+is not a transaction across extensions: a later install failure can leave the
+first signed extension installed. `read_cloud_native_vector(path, require_duckdb=True)` requires the
+actual DuckDB path and propagates backend errors. Normal reads load an installed
+extension without downloading one; GeoParquet uses native Parquet with declared
+WKB geometry columns and preserves their names, null geometries and CRS.
+GeoParquet is a hybrid reader: native DuckDB supplies geometry and compatible
+Arrow fields; selective original Arrow reads retain physical index fields and
+changed types such as timezone-aware nanosecond timestamps and ordered
+categories. Original pandas metadata restores Index/MultiIndex/RangeIndex,
+nullable/string dtypes and timezone labels. This operation lazily requires
+`geo-infer-data[integrations]` (including PyArrow); source files are read only.
+The native single-file scan explicitly preserves insertion order and validates
+schema/row counts against the original Parquet file; reader layer/keyword options use GeoPandas
+when they are unsupported by DuckDB.

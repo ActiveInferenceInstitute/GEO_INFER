@@ -6,47 +6,20 @@ Launches an interactive dashboard for exploring area study results.
 Provides visualizations and community engagement features.
 """
 
-import sys
-import os
+import importlib.util
 import json
 import logging
+import os
+import sys
 from pathlib import Path
-from datetime import datetime
 
-# Optional dependencies with graceful handling
-try:
-    import streamlit as st
-
-    HAS_STREAMLIT = True
-except ImportError:
-    HAS_STREAMLIT = False
-    print("⚠️  Streamlit not found. Install with: uv pip install streamlit")
-
-try:
-    import pandas as pd
-
-    HAS_PANDAS = True
-except ImportError:
-    HAS_PANDAS = False
-    print("⚠️  Pandas not found. Install with: uv pip install pandas")
-
-try:
-    import plotly.express as px
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-
-    HAS_PLOTLY = True
-except ImportError:
-    HAS_PLOTLY = False
-    print("⚠️  Plotly not found. Install with: uv pip install plotly")
-
-try:
-    import requests
-
-    HAS_REQUESTS = True
-except ImportError:
-    HAS_REQUESTS = False
-    print("⚠️  Requests not found. Install with: uv pip install requests")
+#: Distribution names checked before launch, keyed by import name.
+REQUIRED_DEPENDENCIES: dict[str, str] = {
+    "streamlit": "streamlit",
+    "pandas": "pandas",
+    "plotly": "plotly",
+    "requests": "requests",
+}
 
 
 def setup_logging():
@@ -70,7 +43,7 @@ class AreaStudyDashboard:
         json_files = list(output_dir.glob("*area_study_results*.json"))
         if json_files:
             latest_file = max(json_files, key=lambda f: f.stat().st_mtime)
-            with open(latest_file, "r") as f:
+            with open(latest_file) as f:
                 self.data = json.load(f)
             self.logger.info(f"Loaded data from {latest_file.name}")
         else:
@@ -167,9 +140,7 @@ def run_streamlit_app(port=8501):
     """Run Streamlit app with robust server management."""
     import subprocess
     import sys
-    import os
     import time
-    import signal
     import atexit
 
     # Get the current script directory
@@ -264,23 +235,13 @@ def check_dependencies():
     """Check if all required dependencies are available."""
     print("🔍 Checking dependencies...")
 
-    missing_deps = []
-
-    if not HAS_STREAMLIT:
-        missing_deps.append("streamlit")
-        print("❌ Streamlit not found")
-
-    if not HAS_PANDAS:
-        missing_deps.append("pandas")
-        print("❌ Pandas not found")
-
-    if not HAS_PLOTLY:
-        missing_deps.append("plotly")
-        print("❌ Plotly not found")
-
-    if not HAS_REQUESTS:
-        missing_deps.append("requests")
-        print("❌ Requests not found")
+    missing_deps = [
+        package
+        for module, package in REQUIRED_DEPENDENCIES.items()
+        if importlib.util.find_spec(module) is None
+    ]
+    for package in missing_deps:
+        print(f"❌ {package} not found")
 
     if missing_deps:
         print(f"\n📦 Missing dependencies: {', '.join(missing_deps)}")

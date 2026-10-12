@@ -203,6 +203,16 @@ class TestZoningAnalyzer:
         assert set(gdf.columns) >= {"id", "name", "zoning_code", "category", "geometry"}
         assert gdf.crs == "EPSG:4326"
 
+    def test_generate_zoning_report_renders_formatted_values(self):
+        """Report lines carry computed values, never bare format specs."""
+        report = self.analyzer.generate_zoning_report()
+
+        assert "Total Area: " in report
+        assert " ha" in report
+        assert "Population Density: " in report
+        lines = [line.strip() for line in report.splitlines()]
+        assert not any(line in {".1f", ".2f", ".3f"} for line in lines)
+
     def test_visualize_zoning(self):
         """Test visualization of zoning districts."""
         # Basic visualization test

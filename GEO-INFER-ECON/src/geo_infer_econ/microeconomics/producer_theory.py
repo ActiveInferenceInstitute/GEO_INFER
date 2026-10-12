@@ -10,7 +10,8 @@ Implements comprehensive producer theory models including:
 """
 
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Callable, Any
+from typing import Any
+from collections.abc import Callable
 from dataclasses import dataclass
 from scipy.optimize import minimize
 
@@ -20,11 +21,11 @@ class FirmProfile:
     """Profile of a firm for producer theory analysis"""
 
     firm_id: str
-    location: Tuple[float, float]
-    inputs: Dict[str, float]  # input quantities
-    outputs: Dict[str, float]  # output quantities
-    input_prices: Dict[str, float]
-    output_prices: Dict[str, float]
+    location: tuple[float, float]
+    inputs: dict[str, float]  # input quantities
+    outputs: dict[str, float]  # output quantities
+    input_prices: dict[str, float]
+    output_prices: dict[str, float]
     technology_level: float
     scale: str  # 'small', 'medium', 'large'
     industry: str
@@ -122,20 +123,20 @@ class CostMinimization:
     Cost minimization and cost function analysis
     """
 
-    def __init__(self, production_function: Optional[Callable[..., Any]] = None):
+    def __init__(self, production_function: Callable[..., Any] | None = None):
         self.production_function = (
             production_function
             if production_function is not None
             else ProductionFunctions.cobb_douglas
         )
-        self.parameters: Dict[str, Any] = {}
+        self.parameters: dict[str, Any] = {}
 
     def minimize_cost(
         self,
         output_target: float,
         input_prices: np.ndarray,
-        production_params: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        production_params: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Solve cost minimization problem
 
@@ -214,7 +215,7 @@ class TechnicalEfficiency:
     """
 
     def __init__(self) -> None:
-        self.efficiency_scores: Dict[str, float] = {}
+        self.efficiency_scores: dict[str, float] = {}
 
     def data_envelopment_analysis(
         self, inputs: np.ndarray, outputs: np.ndarray
@@ -266,15 +267,15 @@ class ProducerTheoryModels:
     Main producer theory modeling class
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.production_functions = ProductionFunctions()
         self.cost_minimization = CostMinimization()
         self.efficiency_analysis = TechnicalEfficiency()
 
     def analyze_production_possibilities(
-        self, firms: List[FirmProfile]
-    ) -> Dict[str, Any]:
+        self, firms: list[FirmProfile]
+    ) -> dict[str, Any]:
         """
         Analyze production possibilities frontier for multiple firms
 
@@ -318,8 +319,8 @@ class ProducerTheoryModels:
         self,
         output_level: float,
         input_prices: np.ndarray,
-        production_params: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        production_params: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Calculate cost function for given output level
 

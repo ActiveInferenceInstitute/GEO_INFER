@@ -6,7 +6,7 @@
 |---|---|
 | `output/data/research_inventory.json` | Machine-readable repository measurements and source provenance. |
 | `output/data/manuscript_variables.json` | Complete token map used for manuscript injection. |
-| `output/data/research_verification.json` | Commands actually run, statuses, return codes, durations, and output tails. |
+| `output/data/research_verification.json` | Commands actually run, statuses, return codes, durations, output tails, and execution receipt references. |
 | `figure_registry.json` under `output/figures` | Figure labels, dynamic captions, generator paths, and a SHA-256 digest of each written image. |
 | `output/manuscript/` | Resolved publication copies consumed by a renderer. |
 
@@ -45,8 +45,16 @@ The verification record in `output/data/research_verification.json` is the
 manuscript's only source of executed-command evidence. It is a schema-versioned
 object holding whether full validation was requested and one result entry per
 command group that ran, each carrying the group name, the exact command line,
-a `passed` / `failed` / `not-run` status, the process return code, the wall
-duration in seconds, and a tail of captured output. The record also carries
+a `passed` / `failed` / `timeout` status, the process return code, the elapsed
+duration in seconds, and a tail of captured output. Newly executed groups
+also carry a repository-relative `receipt` reference into
+`.geo-infer-test-results/runs/`. Shared execution retains each attempt's
+command, complete captured output, and artifact hashes in its own directory;
+failed attempts survive subsequent executions. The bounded output tails and
+table rows summarize those receipts. Older stored records may have no receipt
+reference. Execution uses monotonic deadlines and process-tree cleanup;
+failures and timeouts are recorded without assertion retries, and later
+groups still run. The record also carries
 the commit and source fingerprint of the checkout its commands ran against,
 because those commands take minutes while a render is bounded: a build that
 executes none of them republishes the stored record rather than emptying it,
@@ -97,8 +105,8 @@ invoked without it publishes whatever the record holds, including failures.
 `{{VERIFICATION_RECORD_COMMIT}}` at source hash
 `{{VERIFICATION_RECORD_SOURCE_HASH}}`. Every command group that tier defines
 has one row: `Exit` is the process return code, `Seconds` the wall duration
-observed, and `Status` is one of the three published states `passed`,
-`failed`, and `not run` — a group that did not run is printed, never
+observed, and `Status` is `passed`, `failed`, `timeout`, or `not run` — a group
+that did not run is printed, never
 omitted. Read the table as the command-level evidence behind
 `{{VERIFICATION_STATUS}}`: a failed group is published with its return code
 instead of being summarised away. {#tbl:verification_record}

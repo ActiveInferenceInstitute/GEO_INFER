@@ -5,7 +5,7 @@ and canopy gap detection for forest monitoring applications.
 """
 
 import logging
-from typing import Dict, Optional, cast
+from typing import cast
 
 import numpy as np
 import xarray as xr
@@ -21,7 +21,7 @@ class CanopyAnalyzer:
     leaf area index, and detect canopy gaps indicating disturbance.
     """
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         """Initialize canopy analyzer.
 
         Args:
@@ -162,7 +162,7 @@ class CanopyAnalyzer:
     def detect_canopy_gaps(
         self,
         ndvi: xr.DataArray,
-        gap_threshold: Optional[float] = None,
+        gap_threshold: float | None = None,
         min_gap_pixels: int = 1,
     ) -> xr.Dataset:
         """Detect canopy gaps from NDVI data.

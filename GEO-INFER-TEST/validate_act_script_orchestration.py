@@ -11,7 +11,6 @@ from __future__ import annotations
 import ast
 import importlib
 import json
-import sys
 from pathlib import Path
 
 
@@ -59,7 +58,6 @@ def _statement_count(path: Path) -> int:
 
 
 def validate_package_contract() -> None:
-    sys.path.insert(0, str(ACT_SRC))
     runners = importlib.import_module("geo_infer_act.runners")
     required = {
         "RunConfig",

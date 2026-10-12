@@ -16,7 +16,8 @@ Validation Methods:
 """
 
 import numpy as np
-from typing import Dict, List, Optional, Any, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 from scipy import stats
 from sklearn.model_selection import KFold, LeaveOneOut
 import warnings
@@ -59,8 +60,7 @@ class ModelValidator:
         self.n_bootstraps = n_bootstraps
         self.random_state = random_state
 
-        # Reproducible per-instance RNG (unlike the legacy global seed, this
-        # does not mutate process-wide np.random state).
+        # Per-instance RNG; never reads or mutates process-wide np.random state.
         self._rng = np.random.default_rng(random_state)
 
     def cross_validate(
@@ -69,7 +69,7 @@ class ModelValidator:
         data: SPMData,
         design_matrix: DesignMatrix,
         **model_kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform cross-validation of SPM model.
 
@@ -105,7 +105,7 @@ class ModelValidator:
         data: SPMData,
         design_matrix: DesignMatrix,
         **model_kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform k-fold cross-validation."""
         y = self._extract_response(data)
         n_points = len(y)
@@ -142,7 +142,7 @@ class ModelValidator:
                 )
 
             except Exception as e:
-                warnings.warn(f"Cross-validation fold failed: {e}")
+                warnings.warn(f"Cross-validation fold failed: {e}", stacklevel=2)
                 continue
 
         # Average predictions
@@ -171,7 +171,7 @@ class ModelValidator:
         data: SPMData,
         design_matrix: DesignMatrix,
         **model_kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform leave-one-out cross-validation."""
         y = self._extract_response(data)
         n_points = len(y)
@@ -200,7 +200,10 @@ class ModelValidator:
                 errors.append(error**2)
 
             except Exception as e:
-                warnings.warn(f"LOO-CV prediction failed for point {test_idx[0]}: {e}")
+                warnings.warn(
+                    f"LOO-CV prediction failed for point {test_idx[0]}: {e}",
+                    stacklevel=2,
+                )
                 continue
 
         # Compute statistics
@@ -224,7 +227,7 @@ class ModelValidator:
         data: SPMData,
         design_matrix: DesignMatrix,
         **model_kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform bootstrap cross-validation."""
         y = self._extract_response(data)
         n_points = len(y)
@@ -256,7 +259,7 @@ class ModelValidator:
                 bootstrap_scores.append(boot_score)
 
             except Exception as e:
-                warnings.warn(f"Bootstrap iteration {i} failed: {e}")
+                warnings.warn(f"Bootstrap iteration {i} failed: {e}", stacklevel=2)
                 continue
 
         # Average predictions across bootstraps
@@ -282,7 +285,7 @@ class ModelValidator:
         data: SPMData,
         design_matrix: DesignMatrix,
         **model_kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform spatial block cross-validation.
 
         Coordinates are clustered into ``n_folds`` spatial blocks with
@@ -339,7 +342,7 @@ class ModelValidator:
                 )
 
             except Exception as e:
-                warnings.warn(f"Spatial CV fold {fold} failed: {e}")
+                warnings.warn(f"Spatial CV fold {fold} failed: {e}", stacklevel=2)
                 continue
 
         # Average predictions
@@ -444,8 +447,8 @@ class ModelValidator:
         return float(np.var(residuals))
 
     def compare_models(
-        self, model_results: List[SPMResult], method: str = "aic"
-    ) -> Dict[str, Any]:
+        self, model_results: list[SPMResult], method: str = "aic"
+    ) -> dict[str, Any]:
         """
         Compare multiple fitted models.
 
@@ -521,7 +524,7 @@ class ModelValidator:
 
         return float(deviance + 2 * p_d)
 
-    def diagnostic_tests(self, model_result: SPMResult) -> Dict[str, Any]:
+    def diagnostic_tests(self, model_result: SPMResult) -> dict[str, Any]:
         """
         Perform comprehensive diagnostic tests on fitted model.
 
@@ -535,7 +538,7 @@ class ModelValidator:
         y_hat = y - model_result.residuals
         residuals = model_result.residuals
 
-        diagnostics: Dict[str, Any] = {}
+        diagnostics: dict[str, Any] = {}
 
         # Normality tests
         diagnostics["shapiro_wilk"] = self._shapiro_wilk_test(residuals)
@@ -553,7 +556,7 @@ class ModelValidator:
 
         return diagnostics
 
-    def _shapiro_wilk_test(self, residuals: np.ndarray) -> Dict[str, float]:
+    def _shapiro_wilk_test(self, residuals: np.ndarray) -> dict[str, float]:
         """Test for normality using Shapiro-Wilk test."""
         try:
             stat, p_value = stats.shapiro(residuals)
@@ -561,7 +564,7 @@ class ModelValidator:
         except Exception:
             return {"statistic": np.nan, "p_value": np.nan, "normal": False}
 
-    def _jarque_bera_test(self, residuals: np.ndarray) -> Dict[str, float]:
+    def _jarque_bera_test(self, residuals: np.ndarray) -> dict[str, float]:
         """Test for normality using Jarque-Bera test."""
         try:
             stat, p_value = stats.jarque_bera(residuals)
@@ -571,7 +574,7 @@ class ModelValidator:
 
     def _breusch_pagan_test(
         self, residuals: np.ndarray, fitted: np.ndarray
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Test for heteroscedasticity using Breusch-Pagan test."""
         try:
             # Deferred: see docs/deferred_statistical_methods.md
@@ -598,7 +601,7 @@ class ModelValidator:
         except Exception:
             return {"statistic": np.nan, "p_value": np.nan, "homoscedastic": True}
 
-    def _durbin_watson_test(self, residuals: np.ndarray) -> Dict[str, Any]:
+    def _durbin_watson_test(self, residuals: np.ndarray) -> dict[str, Any]:
         """Compute Durbin-Watson statistic for autocorrelation."""
         if len(residuals) < 2:
             return {"statistic": np.nan, "autocorrelation": "unknown"}
@@ -634,9 +637,9 @@ class ModelValidator:
 
 def validate_spm_model(
     model_result: SPMResult,
-    validation_data: Optional[SPMData] = None,
+    validation_data: SPMData | None = None,
     method: str = "diagnostics",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Convenience function for SPM model validation.
 

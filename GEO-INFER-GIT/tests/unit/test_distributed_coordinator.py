@@ -7,7 +7,7 @@ explicit start()/stop() lifecycle.
 
 import socket
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 from geo_infer_git.core.distributed_coordinator import (
     DistributedCoordinator,
@@ -383,7 +383,7 @@ class TestJobScheduling:
 
 
 def _utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _utc_now_minus(seconds: float) -> datetime:

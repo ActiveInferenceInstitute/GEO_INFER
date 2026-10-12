@@ -36,8 +36,8 @@ Unit workspace within `GEO-INFER-RISK`.
 
 - Module: `GEO-INFER-RISK`
 - Package: `geo_infer_risk`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-RISK`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-risk`
 - Tests: `uv run python -m pytest GEO-INFER-RISK/tests/unit`
 
 ## Dependencies

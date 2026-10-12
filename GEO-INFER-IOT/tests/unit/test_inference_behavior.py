@@ -6,7 +6,7 @@ z-score contract of get_posterior_map (previously a two-value hardcode).
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 import numpy as np
 import pytest
@@ -54,7 +54,7 @@ def _engine_with_cache(mean=2.0, std=0.5):
         "h3_grid": np.array([[0.0, 0.0], [1.0, 1.0]]),
         "sensor_coords": np.zeros((2, 2)),
         "sensor_values": np.zeros(2),
-        "timestamp": datetime.now(),
+        "timestamp": datetime.now(UTC),
         "update_interval": "15min",
     }
     return engine
@@ -71,11 +71,20 @@ class TestInferSpatialDistribution:
         assert all(p == 5.0 for p in result["posterior_mean"])
         assert all(s == 1.0 for s in result["posterior_std"])
 
-    def test_error_when_gp_model_unavailable(self):
+    def test_default_engine_uses_real_bayes_gaussian_process(self):
+        from geo_infer_bayes import GaussianProcess
+
         engine = _engine()
-        engine.gp_model = None
-        result = engine.infer_spatial_distribution(_sensor_data())
-        assert result == {"error": "Bayesian inference not available"}
+        assert isinstance(engine.gp_model, GaussianProcess)
+        data = [
+            {"latitude": 40.0 + 0.01 * i, "longitude": -74.0 + 0.01 * i, "value": i}
+            for i in range(5)
+        ]
+        result = engine.infer_spatial_distribution(data)
+        assert result["success"] is True
+        assert result["sensor_count"] == 5
+        assert len(result["posterior_mean"]) == result["prediction_points"] > 0
+        assert all(np.isfinite(result["posterior_std"]))
 
     def test_error_on_insufficient_data(self):
         engine = _engine()

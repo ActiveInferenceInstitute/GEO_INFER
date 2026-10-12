@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict
+from typing import Any
 
 
 @dataclass
 class IntegrationManager:
     """Record configured integrations and expose their readiness state."""
 
-    integrations: Dict[str, Any] = field(default_factory=dict)
+    integrations: dict[str, Any] = field(default_factory=dict)
 
-    def setup_integrations(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def setup_integrations(self, config: dict[str, Any]) -> dict[str, Any]:
         """Validate and store integration configuration."""
         if not isinstance(config, dict):
             raise TypeError("Integration configuration must be a mapping")

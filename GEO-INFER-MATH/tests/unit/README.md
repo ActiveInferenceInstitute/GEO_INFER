@@ -6,6 +6,7 @@ Unit workspace within `GEO-INFER-MATH`.
 
 - `test_ai_convenience.py`
 - `test_bayes_convenience.py`
+- `test_circulation.py`
 - `test_clustering.py`
 - `test_config_contract.py`
 - `test_convenience_api.py`
@@ -33,8 +34,8 @@ Unit workspace within `GEO-INFER-MATH`.
 
 - Module: `GEO-INFER-MATH`
 - Package: `geo_infer_math`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-MATH`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-math`
 - Tests: `uv run python -m pytest GEO-INFER-MATH/tests/unit`
 
 ## Dependencies

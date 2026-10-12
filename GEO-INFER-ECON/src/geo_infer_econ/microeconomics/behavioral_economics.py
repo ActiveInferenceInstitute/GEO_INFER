@@ -11,7 +11,7 @@ Implements behavioral economics models including:
 """
 
 import numpy as np
-from typing import Dict, List, Optional, Any, cast
+from typing import Any, cast
 from dataclasses import dataclass
 
 from ..utils.rng import resolve_rng
@@ -34,9 +34,9 @@ class ProspectTheory:
     Prospect theory implementation with value function and probability weighting
     """
 
-    def __init__(self, parameters: Optional[BehavioralParameters] = None):
+    def __init__(self, parameters: BehavioralParameters | None = None):
         self.parameters = parameters or BehavioralParameters()
-        self.value_function_cache: Dict[str, Any] = {}
+        self.value_function_cache: dict[str, Any] = {}
 
     def value_function(
         self, outcomes: np.ndarray, reference_point: float = 0.0
@@ -124,7 +124,7 @@ class BoundedRationality:
     Models of bounded rationality and cognitive limitations
     """
 
-    def __init__(self, rng: Optional[np.random.Generator] = None) -> None:
+    def __init__(self, rng: np.random.Generator | None = None) -> None:
         """
         Initialize bounded rationality models.
 
@@ -133,12 +133,12 @@ class BoundedRationality:
                 fallback choice. When omitted, a fixed-seed generator is used
                 so choices are deterministic by default.
         """
-        self.choice_models: Dict[str, Any] = {}
+        self.choice_models: dict[str, Any] = {}
         self._rng = resolve_rng(rng)
 
     def satisficing_model(
-        self, alternatives: List[Dict[str, Any]], aspiration_level: float
-    ) -> Dict[str, Any]:
+        self, alternatives: list[dict[str, Any]], aspiration_level: float
+    ) -> dict[str, Any]:
         """
         Satisficing choice model (Simon, 1955)
 
@@ -175,7 +175,7 @@ class BoundedRationality:
             }
 
     def recognition_heuristic(
-        self, alternatives: List[str], recognition_memory: Dict[str, float]
+        self, alternatives: list[str], recognition_memory: dict[str, float]
     ) -> str:
         """
         Recognition heuristic for decision making
@@ -203,7 +203,7 @@ class SocialPreferences:
     """
 
     def __init__(self) -> None:
-        self.social_utility_functions: Dict[str, Any] = {}
+        self.social_utility_functions: dict[str, Any] = {}
 
     def fehr_schmidt_model(
         self,
@@ -234,7 +234,7 @@ class SocialPreferences:
         return own_payoff - inequity_cost
 
     def calculate_social_welfare(
-        self, payoffs: List[float], social_welfare_function: str = "utilitarian"
+        self, payoffs: list[float], social_welfare_function: str = "utilitarian"
     ) -> float:
         """
         Calculate social welfare using different welfare functions
@@ -264,7 +264,7 @@ class TimePreferences:
     """
 
     def __init__(self) -> None:
-        self.discount_functions: Dict[str, Any] = {}
+        self.discount_functions: dict[str, Any] = {}
 
     def hyperbolic_discounting(self, delay: float, k: float = 1.0) -> float:
         """
@@ -302,10 +302,10 @@ class TimePreferences:
 
     def analyze_time_inconsistency(
         self,
-        reward_sizes: List[float],
-        delays: List[float],
-        discount_params: Dict[str, float],
-    ) -> Dict[str, Any]:
+        reward_sizes: list[float],
+        delays: list[float],
+        discount_params: dict[str, float],
+    ) -> dict[str, Any]:
         """
         Analyze time inconsistency in intertemporal choice
 
@@ -348,8 +348,8 @@ class TimePreferences:
         short_delay: float,
         large_reward: float,
         long_delay: float,
-        params: Dict[str, float],
-    ) -> Dict[str, Any]:
+        params: dict[str, float],
+    ) -> dict[str, Any]:
         """Analyze choice between sooner small reward and later large reward"""
         # Calculate present values
         pv_small = small_reward * self.hyperbolic_discounting(
@@ -375,8 +375,8 @@ class TimePreferences:
         long_delay: float,
         small_reward: float,
         short_delay: float,
-        params: Dict[str, float],
-    ) -> Dict[str, Any]:
+        params: dict[str, float],
+    ) -> dict[str, Any]:
         """Analyze choice between later large reward and sooner small reward"""
         pv_large = large_reward * self.hyperbolic_discounting(
             long_delay, params.get("k", 1.0)
@@ -394,7 +394,7 @@ class TimePreferences:
             "type": "later_vs_soon",
         }
 
-    def _calculate_inconsistency_score(self, choices: List[Dict[str, Any]]) -> float:
+    def _calculate_inconsistency_score(self, choices: list[dict[str, Any]]) -> float:
         """Calculate degree of time inconsistency"""
         # Count cases where choice is inconsistent with exponential discounting
         inconsistent_choices = 0
@@ -414,11 +414,11 @@ class MentalAccounting:
     """
 
     def __init__(self) -> None:
-        self.accounting_frames: Dict[str, Any] = {}
+        self.accounting_frames: dict[str, Any] = {}
 
     def analyze_framing_effect(
-        self, problem_framing: Dict[str, Any], choice_options: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, problem_framing: dict[str, Any], choice_options: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Analyze how problem framing affects choices
 
@@ -461,8 +461,8 @@ class MentalAccounting:
         }
 
     def mental_accounting_segregation(
-        self, transactions: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, transactions: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Analyze how people mentally segregate or integrate financial transactions
 
@@ -473,7 +473,7 @@ class MentalAccounting:
             Mental accounting analysis
         """
         # Categorize transactions by mental accounts
-        accounts: Dict[str, List[Dict[str, Any]]] = {
+        accounts: dict[str, list[dict[str, Any]]] = {
             "income": [],
             "necessary_expenses": [],
             "luxury_expenses": [],
@@ -517,14 +517,14 @@ class NudgeAnalysis:
     """
 
     def __init__(self) -> None:
-        self.nudge_effectiveness: Dict[str, Any] = {}
+        self.nudge_effectiveness: dict[str, Any] = {}
 
     def evaluate_nudge_effectiveness(
         self,
         nudge_type: str,
         target_behavior: str,
-        population_characteristics: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        population_characteristics: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Evaluate the effectiveness of different nudge types
 
@@ -576,7 +576,7 @@ class NudgeAnalysis:
 
     def _estimate_behavioral_impact(
         self, effectiveness: float, behavior: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Estimate the impact of nudge on behavior"""
         # Simplified impact estimation
         impact_multipliers = {
@@ -604,8 +604,8 @@ class BehavioralEconomicsEngine:
 
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
-        rng: Optional[np.random.Generator] = None,
+        config: dict[str, Any] | None = None,
+        rng: np.random.Generator | None = None,
     ):
         """
         Initialize the behavioral economics engine.
@@ -625,8 +625,8 @@ class BehavioralEconomicsEngine:
         self.nudge_analysis = NudgeAnalysis()
 
     def analyze_behavioral_choice(
-        self, choice_problem: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, choice_problem: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Comprehensive behavioral analysis of a choice problem
 
@@ -676,8 +676,8 @@ class BehavioralEconomicsEngine:
         return analysis_results
 
     def evaluate_nudge_intervention(
-        self, nudge_design: Dict[str, Any], target_population: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, nudge_design: dict[str, Any], target_population: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Evaluate a behavioral nudge intervention
 
@@ -707,8 +707,8 @@ class BehavioralEconomicsEngine:
         }
 
     def _assess_implementation_feasibility(
-        self, nudge_design: Dict[str, Any]
-    ) -> Dict[str, float]:
+        self, nudge_design: dict[str, Any]
+    ) -> dict[str, float]:
         """Assess feasibility of implementing the nudge"""
         return {
             "technical_feasibility": 0.9,
@@ -718,8 +718,8 @@ class BehavioralEconomicsEngine:
         }
 
     def _assess_ethical_considerations(
-        self, nudge_design: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, nudge_design: dict[str, Any]
+    ) -> dict[str, Any]:
         """Assess ethical implications of the nudge"""
         return {
             "autonomy_respect": 0.8,
@@ -729,8 +729,8 @@ class BehavioralEconomicsEngine:
         }
 
     def _conduct_cost_benefit_analysis(
-        self, effectiveness: Dict[str, Any], nudge_design: Dict[str, Any]
-    ) -> Dict[str, float]:
+        self, effectiveness: dict[str, Any], nudge_design: dict[str, Any]
+    ) -> dict[str, float]:
         """Conduct cost-benefit analysis of nudge"""
         estimated_impact = effectiveness.get("expected_impact", {}).get(
             "estimated_behavior_change", 0

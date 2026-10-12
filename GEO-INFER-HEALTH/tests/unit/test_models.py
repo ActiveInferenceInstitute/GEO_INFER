@@ -3,7 +3,7 @@ Unit tests for GEO-INFER-HEALTH data models.
 """
 
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from geo_infer_health.models import (
     Location,
@@ -118,7 +118,7 @@ class TestDiseaseReport:
     def test_disease_report_creation(self, sample_locations):
         """Test creating a DiseaseReport object."""
         location = sample_locations[0]
-        report_date = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        report_date = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
 
         report = DiseaseReport(
             report_id="covid_report_001",
@@ -137,7 +137,7 @@ class TestDiseaseReport:
     def test_disease_report_defaults(self, sample_locations):
         """Test DiseaseReport default values."""
         location = sample_locations[0]
-        report_date = datetime.now(timezone.utc)
+        report_date = datetime.now(UTC)
 
         report = DiseaseReport(
             report_id="minimal_report",
@@ -154,7 +154,7 @@ class TestDiseaseReport:
     def test_disease_report_validation(self, sample_locations):
         """Test DiseaseReport validation."""
         location = sample_locations[0]
-        report_date = datetime.now(timezone.utc)
+        report_date = datetime.now(UTC)
 
         # Valid report
         DiseaseReport(
@@ -228,7 +228,7 @@ class TestEnvironmentalData:
     def test_environmental_data_creation(self, sample_locations):
         """Test creating an EnvironmentalData object."""
         location = sample_locations[0]
-        timestamp = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        timestamp = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
 
         env_data = EnvironmentalData(
             data_id="pm25_reading_001",
@@ -247,7 +247,7 @@ class TestEnvironmentalData:
     def test_environmental_data_validation(self, sample_locations):
         """Test EnvironmentalData validation."""
         location = sample_locations[0]
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
 
         # Valid environmental data
         EnvironmentalData(

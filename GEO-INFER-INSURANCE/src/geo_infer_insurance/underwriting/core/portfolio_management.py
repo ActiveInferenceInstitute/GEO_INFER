@@ -11,7 +11,8 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, Dict, Iterable, List, Mapping, Optional, cast
+from typing import Any, cast
+from collections.abc import Iterable, Mapping
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +31,11 @@ def _as_mapping(value: Any) -> Mapping[str, Any]:
 class PortfolioManager:
     """Track policy exposure, premium, and claim metrics by portfolio."""
 
-    def __init__(self, config: Optional[Any] = None):
+    def __init__(self, config: Any | None = None):
         self.config = config or {}
-        self.policies: Dict[str, Dict[str, Any]] = {}
-        self.claims: List[Dict[str, Any]] = []
-        self._policy_portfolios: Dict[str, str] = {}
+        self.policies: dict[str, dict[str, Any]] = {}
+        self.claims: list[dict[str, Any]] = []
+        self._policy_portfolios: dict[str, str] = {}
 
     def add_policy(self, policy: Any, portfolio_id: str = "default") -> str:
         """Add or replace a policy in a named portfolio.
@@ -81,7 +82,7 @@ class PortfolioManager:
         self._policy_portfolios.pop(policy_id, None)
         return existed
 
-    def update_portfolio_metrics(self, claim: Any) -> Dict[str, Any]:
+    def update_portfolio_metrics(self, claim: Any) -> dict[str, Any]:
         """Record a claim and update its associated policy loss metrics."""
         record = dict(_as_mapping(claim))
         claim_id = str(record.get("claim_id") or record.get("id") or len(self.claims))
@@ -104,9 +105,7 @@ class PortfolioManager:
         self.claims.append(normalized)
         return normalized
 
-    def get_portfolio_summary(
-        self, portfolio_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+    def get_portfolio_summary(self, portfolio_id: str | None = None) -> dict[str, Any]:
         """Return deterministic aggregate portfolio metrics."""
         records = [
             policy
@@ -119,8 +118,8 @@ class PortfolioManager:
         total_exposure = sum(policy["exposure"] for policy in records)
         total_claims = sum(claim["amount"] for claim in claims)
 
-        status_counts: Dict[str, int] = defaultdict(int)
-        region_exposure: Dict[str, float] = defaultdict(float)
+        status_counts: dict[str, int] = defaultdict(int)
+        region_exposure: dict[str, float] = defaultdict(float)
         for policy in records:
             status_counts[policy["status"]] += 1
             region_exposure[policy["region"]] += policy["exposure"]
@@ -149,15 +148,15 @@ class PortfolioManager:
 class PortfolioOptimizer:
     """Provide deterministic capacity and concentration recommendations."""
 
-    def __init__(self, config: Optional[Any] = None):
+    def __init__(self, config: Any | None = None):
         self.config = config or {}
 
     def optimize(
-        self, policies: Iterable[Any], max_exposure: Optional[float] = None
-    ) -> Dict[str, Any]:
+        self, policies: Iterable[Any], max_exposure: float | None = None
+    ) -> dict[str, Any]:
         """Rank policies by risk-adjusted premium and flag capacity breaches."""
         records = [dict(_as_mapping(policy)) for policy in policies]
-        normalized: List[Dict[str, Any]] = [
+        normalized: list[dict[str, Any]] = [
             {
                 "policy_id": str(record.get("policy_id", record.get("id", index))),
                 "risk_score": float(record.get("risk_score", 0.0) or 0.0),

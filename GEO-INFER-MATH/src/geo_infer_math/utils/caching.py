@@ -8,14 +8,15 @@ computations to improve performance.
 import functools
 import hashlib
 import pickle
-from typing import Any, Callable, Optional, Dict
+from typing import Any
+from collections.abc import Callable
 import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-def cache_result(maxsize: int = 128, ttl: Optional[float] = None) -> Callable:
+def cache_result(maxsize: int = 128, ttl: float | None = None) -> Callable:
     """
     Decorator to cache function results.
 
@@ -28,8 +29,8 @@ def cache_result(maxsize: int = 128, ttl: Optional[float] = None) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
-        cache: Dict[str, Any] = {}
-        cache_times: Dict[str, float] = {}
+        cache: dict[str, Any] = {}
+        cache_times: dict[str, float] = {}
 
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -72,7 +73,7 @@ def cache_result(maxsize: int = 128, ttl: Optional[float] = None) -> Callable:
             cache.clear()
             cache_times.clear()
 
-        def cache_info() -> Dict[str, Any]:
+        def cache_info() -> dict[str, Any]:
             return {
                 "size": len(cache),
                 "maxsize": maxsize,
@@ -80,8 +81,8 @@ def cache_result(maxsize: int = 128, ttl: Optional[float] = None) -> Callable:
                 "misses": getattr(wrapper, "_misses", 0),
             }
 
-        setattr(wrapper, "cache_clear", cache_clear)
-        setattr(wrapper, "cache_info", cache_info)
+        wrapper.cache_clear = cache_clear
+        wrapper.cache_info = cache_info
 
         return wrapper
 
@@ -119,10 +120,10 @@ class ComputationCache:
             maxsize: Maximum cache size
         """
         self.maxsize = maxsize
-        self._cache: Dict[str, Any] = {}
-        self._access_times: Dict[str, float] = {}
+        self._cache: dict[str, Any] = {}
+        self._access_times: dict[str, float] = {}
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """
         Get cached value.
 

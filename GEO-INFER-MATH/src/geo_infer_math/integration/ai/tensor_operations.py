@@ -6,13 +6,13 @@ spatial convolution kernels, and adjacency tensor construction.
 """
 
 import numpy as np
-from typing import Optional, Any, cast
+from typing import Any, cast
 import logging
-
-logger = logging.getLogger(__name__)
 
 # Import core tensor ops under a different name to avoid collision
 from geo_infer_math.core.linalg_tensor import TensorOperations as _CoreTensorOperations
+
+logger = logging.getLogger(__name__)
 
 
 class SpatialTensorOperations:
@@ -90,8 +90,8 @@ class SpatialTensorOperations:
     def build_adjacency_tensor(
         self,
         coordinates: np.ndarray,
-        threshold: Optional[float] = None,
-        k_nearest: Optional[int] = None,
+        threshold: float | None = None,
+        k_nearest: int | None = None,
     ) -> np.ndarray:
         """Build a spatial adjacency matrix from coordinates.
 

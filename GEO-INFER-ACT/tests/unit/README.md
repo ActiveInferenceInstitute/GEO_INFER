@@ -6,9 +6,11 @@ Unit workspace within `GEO-INFER-ACT`.
 
 - `test_analysis.py`
 - `test_api.py`
+- `test_bayeux_import_boundary.py`
 - `test_categorical_regressions.py`
 - `test_civic_intel.py`
 - `test_climate_model.py`
+- `test_comprehensive_audit_contracts.py`
 - `test_continuous_efe.py`
 - `test_continuous_pomdp_filter.py`
 - `test_core.py`
@@ -28,11 +30,13 @@ Unit workspace within `GEO-INFER-ACT`.
 - `test_h3_adapter.py`
 - `test_h3_adapter_nested_grid_resolution.py`
 - `test_h3_flow_network.py`
+- `test_h3_grid_independence.py`
 - `test_h3_validation_logging.py`
 - `test_h3_viz_integration.py`
 - `test_inference_hardening.py`
 - `test_markov_decision_process.py`
 - `test_math_and_correlation_contracts.py`
+- `test_method_scan_contracts.py`
 - `test_model_contracts.py`
 - `test_models.py`
 - `test_nested_h3_active_inference.py`
@@ -40,6 +44,7 @@ Unit workspace within `GEO-INFER-ACT`.
 - `test_policy_decomposition.py`
 - `test_policy_selection.py`
 - `test_pymdp_h3_backend.py`
+- `test_research_policy_contracts.py`
 - `test_runner_contracts.py`
 - `test_spatial_agent.py`
 - `test_spatial_grid_scoring.py`
@@ -57,8 +62,8 @@ Unit workspace within `GEO-INFER-ACT`.
 
 - Module: `GEO-INFER-ACT`
 - Package: `geo_infer_act`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-ACT`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-act`
 - Tests: `uv run python -m pytest GEO-INFER-ACT/tests/unit`
 
 ## Dependencies
@@ -72,7 +77,7 @@ Unit workspace within `GEO-INFER-ACT`.
 - `seaborn>=0.11.0`
 - `inferactively-pymdp==1.0.3`
 - `h3>=4.5.0,<5`
-- `geo-infer-bayes>=0.3.0`
+- `geo-infer-bayes>=0.4.0`
 
 
 ## Validation

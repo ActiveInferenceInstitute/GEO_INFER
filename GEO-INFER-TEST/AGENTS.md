@@ -36,17 +36,18 @@
 - `measure_module_coverage.py`
 - `orchestrator_coverage_metric.py`
 - `preview_receipt_metric.py`
+- `record_validation.py`
 - `render_lane_metric.py`
 - `rewrite_readme_agents.py`
 - `run_model_audit.py`
 - `run_unified_tests.py`
 - `secret_scan_metric.py`
-- `setup.py`
 - `stale_assessment_metric.py`
 - `tests_lint_metric.py`
 - `validate_act_geospatial_contract.py`
 - `validate_act_script_orchestration.py`
 - `validate_active_inference_contract.py`
+- `validate_doc_examples.py`
 - `validate_doc_imports.py`
 - `validate_documentation.py`
 - `validate_gnn_interchange.py`
@@ -55,20 +56,22 @@
 - `validate_model_contracts.py`
 - `validate_packaging.py`
 - `validate_repo_contracts.py`
+- `validate_research_evidence.py`
 - `validate_skills.py`
 - `validate_test_contracts.py`
+- `validate_wheel_receipt.py`
 - `water_surface_metric.py`
 - `.gitignore`
 - `SKILL.md`
 - `TESTING.md`
 - `coverage_baseline.json`
+- `doc_examples.json`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Validation
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python GEO-INFER-TEST/run_unified_tests.py --module TEST
 ```
 

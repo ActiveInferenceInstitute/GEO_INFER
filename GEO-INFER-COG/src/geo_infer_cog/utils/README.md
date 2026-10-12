@@ -26,18 +26,18 @@ Utils workspace within `GEO-INFER-COG`.
 - `helpers.py:cleanup_temp_files` (function)
 - `rng.py:resolve_rng` (function)
 - `rng.py:resolve_optional_rng` (function)
+- `rng.py:spawn_rng` (function)
+- `rng.py:derive_int_seed` (function)
 - `validation.py:validate_spatial_data` (function)
 - `validation.py:validate_geometry` (function)
 - `validation.py:validate_point_coordinates` (function)
-- `validation.py:validate_linestring_coordinates` (function)
-- `validation.py:validate_polygon_coordinates` (function)
 
 ## Module Metadata
 
 - Module: `GEO-INFER-COG`
 - Package: `geo_infer_cog`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-COG`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-cog`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module COG`
 
 ## Dependencies

@@ -14,7 +14,6 @@ from geo_infer_pep.models.talent_models import (
     JobRequisitionStatus,
     InterviewType,
 )
-from geo_infer_pep.talent import importer as talent_importer_module
 from geo_infer_pep.talent.importer import CSVTalentImporter
 from geo_infer_pep.talent.transformer import (
     clean_candidate_data,
@@ -243,22 +242,16 @@ def test_job_requisition_model():
 
 
 # Importer Tests
-def test_csv_talent_importer(dummy_talent_csv_files, caplog, monkeypatch):
+def test_csv_talent_importer(dummy_talent_csv_files, caplog):
     """Behavior-focused test: test_csv_talent_importer."""
-    # Freeze the importer's clock so the opened_at default is deterministic
-    # (no midnight race between the SUT's date.today() and the assertion).
-    frozen_today = date(2031, 5, 17)
-
-    class _FrozenDate(date):
-        @classmethod
-        def today(cls):
-            return frozen_today
-
-    monkeypatch.setattr(talent_importer_module, "date", _FrozenDate)
+    # Inject a fixed clock so date defaults are deterministic (no midnight
+    # race between the importer's clock and the assertion).
+    frozen_now = datetime(2031, 5, 17, 9, 30)
 
     importer = CSVTalentImporter(
         candidate_file_path=str(dummy_talent_csv_files["candidates"]),
         requisition_file_path=str(dummy_talent_csv_files["requisitions"]),
+        clock=lambda: frozen_now,
     )
 
     with caplog.at_level("WARNING", logger="geo_infer_pep.talent.importer"):
@@ -283,10 +276,8 @@ def test_csv_talent_importer(dummy_talent_csv_files, caplog, monkeypatch):
 
     cand_bad_date_obj = next(c for c in candidates if c.candidate_id == "cand_csv_3")
     assert cand_bad_date_obj.status == CandidateStatus.INTERVIEWING
-    # applied_at for cand_csv_3 should be datetime.now() or very close, as parsing failed
-    assert (
-        datetime.now() - cand_bad_date_obj.applied_at
-    ).total_seconds() < 5  # Check it defaulted to now
+    # applied_at for cand_csv_3 defaults to the importer clock, as parsing failed
+    assert cand_bad_date_obj.applied_at == frozen_now
 
     # Expect 2 valid requisitions, 1 with default opened_at
     assert len(requisitions) == 3
@@ -298,8 +289,8 @@ def test_csv_talent_importer(dummy_talent_csv_files, caplog, monkeypatch):
 
     req_bad_date_obj = next(r for r in requisitions if r.requisition_id == "req_csv_3")
     assert req_bad_date_obj.status == JobRequisitionStatus.ON_HOLD
-    # opened_at for req_csv_3 defaults to the importer's date.today()
-    assert req_bad_date_obj.opened_at == frozen_today
+    # opened_at for req_csv_3 defaults to the importer clock's date
+    assert req_bad_date_obj.opened_at == frozen_now.date()
 
 
 # Transformer Tests

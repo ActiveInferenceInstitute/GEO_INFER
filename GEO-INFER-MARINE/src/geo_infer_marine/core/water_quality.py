@@ -5,7 +5,7 @@ indices, turbidity scoring, and composite marine water quality index.
 """
 
 import logging
-from typing import Dict, Optional, cast
+from typing import cast
 
 import numpy as np
 import xarray as xr
@@ -20,7 +20,7 @@ class MarineWaterQuality:
     dissolved oxygen saturation, trophic state, and composite quality indices.
     """
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         """Initialize marine water quality assessor.
 
         Args:
@@ -177,7 +177,7 @@ class MarineWaterQuality:
         dissolved_oxygen_score: xr.DataArray,
         ph_score: xr.DataArray,
         turbidity_score: xr.DataArray,
-        temperature_score: Optional[xr.DataArray] = None,
+        temperature_score: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """Calculate composite marine Water Quality Index.
 

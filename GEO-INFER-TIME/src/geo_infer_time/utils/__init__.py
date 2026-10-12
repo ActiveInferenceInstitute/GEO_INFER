@@ -6,12 +6,13 @@ and convenience factory functions for working with TimeSeries objects.
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
 from geo_infer_time.models.timeseries import TimeSeries
+from geo_infer_time.core.timestamps import normalize_datetime_index
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ __all__ = [
 ]
 
 
-def validate_timeseries(ts: TimeSeries) -> Dict[str, Any]:
+def validate_timeseries(ts: TimeSeries) -> dict[str, Any]:
     """Validate a TimeSeries for completeness, gaps, and data quality.
 
     Checks performed:
@@ -56,8 +57,8 @@ def validate_timeseries(ts: TimeSeries) -> Dict[str, Any]:
                 "gaps": [{"start": ..., "end": ..., "size": ...}, ...],
             }
     """
-    errors: List[str] = []
-    warnings: List[str] = []
+    errors: list[str] = []
+    warnings: list[str] = []
     df = ts.to_dataframe()
     index = ts.timestamps
 
@@ -85,16 +86,20 @@ def validate_timeseries(ts: TimeSeries) -> Dict[str, Any]:
     # Monotonicity
     is_monotonic = bool(index.is_monotonic_increasing)
     if not is_monotonic:
-        warnings.append("Timestamps are not monotonically increasing.")
+        errors.append("Timestamps are not monotonically increasing.")
 
     # Duplicates
     dup_count = int(index.duplicated().sum())
     if dup_count > 0:
-        warnings.append(f"Found {dup_count} duplicate timestamp(s).")
+        errors.append(f"Found {dup_count} duplicate timestamp(s).")
+    try:
+        normalize_datetime_index(index)
+    except (TypeError, ValueError) as exc:
+        errors.append(str(exc))
 
     # Missing values
-    missing_values: Dict[str, int] = {}
-    missing_pct: Dict[str, float] = {}
+    missing_values: dict[str, int] = {}
+    missing_pct: dict[str, float] = {}
     for col in df.columns:
         n_missing = int(df[col].isna().sum())
         missing_values[col] = n_missing
@@ -106,10 +111,13 @@ def validate_timeseries(ts: TimeSeries) -> Dict[str, Any]:
             )
 
     # Frequency detection
-    detected_freq = detect_frequency(ts)
+    try:
+        detected_freq = detect_frequency(ts)
+    except (TypeError, ValueError):
+        detected_freq = None
 
     # Gap detection
-    gaps: List[Dict[str, Any]] = []
+    gaps: list[dict[str, Any]] = []
     if row_count > 1 and is_monotonic:
         diffs = pd.Series(index[1:] - index[:-1])
         positive_diffs = diffs[diffs > pd.Timedelta(0)]
@@ -154,79 +162,29 @@ def validate_timeseries(ts: TimeSeries) -> Dict[str, Any]:
     return result
 
 
-def detect_frequency(ts: TimeSeries) -> Optional[str]:
-    """Detect the frequency of a TimeSeries.
+def detect_frequency(ts: TimeSeries) -> str | None:
+    """Return the exact regular cadence, or None for irregular/short axes.
 
-    Uses ``pandas.infer_freq`` on the DatetimeIndex. If that fails (e.g.
-    because of gaps or irregular spacing), falls back to the median
-    difference between consecutive timestamps and maps it to common
-    pandas offset aliases.
-
-    Args:
-        ts: The TimeSeries to analyze.
-
-    Returns:
-        A pandas frequency alias string (e.g. ``'h'``, ``'D'``, ``'min'``)
-        or None if the frequency cannot be determined.
+    No approximate daily or calendar alias is assigned to an irregular axis.
+    Callers filling gaps must select their intended grid explicitly.
     """
-    index = ts.timestamps
+    from geo_infer_time.core._validation import regular_frequency
+
+    index = normalize_datetime_index(ts.timestamps)
     if len(index) < 2:
         return None
-
-    # Try pandas built-in first
     try:
-        freq = pd.infer_freq(index)
-        if freq is not None:
-            logger.debug("Inferred frequency via pandas: %s", freq)
-            return str(freq)
-    except Exception:
-        pass
-
-    # Fallback: median interval mapping
-    diffs = pd.Series(index).diff().dropna()
-    if diffs.empty:
+        frequency = regular_frequency(index)
+        return frequency.freqstr if isinstance(frequency, pd.DateOffset) else frequency
+    except ValueError:
         return None
-
-    median_seconds = diffs.median().total_seconds()
-
-    frequency_map = [
-        (1, "s"),
-        (60, "min"),
-        (3600, "h"),
-        (86400, "D"),
-        (604800, "W"),
-        (2592000, "ME"),  # ~30 days
-        (31536000, "YE"),  # ~365 days
-    ]
-
-    best_alias: Optional[str] = None
-    best_ratio = float("inf")
-    for seconds, alias in frequency_map:
-        ratio = max(median_seconds / seconds, seconds / median_seconds)
-        if ratio < best_ratio:
-            best_ratio = ratio
-            best_alias = alias
-
-    # Only accept if within 2x tolerance
-    if best_ratio <= 2.0:
-        logger.debug(
-            "Estimated frequency from median interval (%.1fs): %s",
-            median_seconds,
-            best_alias,
-        )
-        return best_alias
-
-    logger.debug(
-        "Could not determine frequency (median interval: %.1fs)", median_seconds
-    )
-    return None
 
 
 def align_timeseries(
-    ts_list: List[TimeSeries],
+    ts_list: list[TimeSeries],
     method: str = "outer",
-    fill_method: Optional[str] = "ffill",
-) -> List[TimeSeries]:
+    fill_method: str | None = "ffill",
+) -> list[TimeSeries]:
     """Align multiple TimeSeries to a common time index.
 
     Computes the union (outer) or intersection (inner) of all timestamp
@@ -249,6 +207,8 @@ def align_timeseries(
         raise ValueError("ts_list must not be empty.")
     if method not in ("outer", "inner"):
         raise ValueError(f"method must be 'outer' or 'inner', got '{method}'.")
+    if fill_method not in (None, "linear", "ffill", "bfill"):
+        raise ValueError("fill_method must be linear, ffill, bfill, or None")
 
     logger.info("Aligning %d time series using '%s' join", len(ts_list), method)
 
@@ -265,7 +225,7 @@ def align_timeseries(
 
     common_index = common_index.sort_values()
 
-    aligned: List[TimeSeries] = []
+    aligned: list[TimeSeries] = []
     for ts in ts_list:
         df = ts.to_dataframe().reindex(common_index)
 
@@ -290,12 +250,12 @@ def align_timeseries(
 
 
 def create_timeseries(
-    values: Union[List[float], np.ndarray, Dict[str, List[float]]],
-    start: Union[str, datetime],
+    values: list[float] | np.ndarray | dict[str, list[float]],
+    start: str | datetime,
     freq: str,
-    name: Optional[str] = None,
-    metadata: Optional[Dict[str, Any]] = None,
-    spatial_location: Optional[Dict[str, float]] = None,
+    name: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    spatial_location: dict[str, float | str] | None = None,
     **kwargs: Any,
 ) -> TimeSeries:
     """Create a TimeSeries from raw values and a start time / frequency.
@@ -318,7 +278,10 @@ def create_timeseries(
     Returns:
         A new TimeSeries.
     """
+    start = normalize_datetime_index([start])[0]
     if isinstance(values, dict):
+        if not values:
+            raise ValueError("values must contain at least one named column")
         length = len(next(iter(values.values())))
         index = pd.date_range(start=start, periods=length, freq=freq)
         df = pd.DataFrame(values, index=index)
@@ -331,7 +294,7 @@ def create_timeseries(
     logger.debug(
         "Created TimeSeries: %d rows, start=%s, freq=%s",
         len(df),
-        index[0],
+        index[0] if len(index) else None,
         freq,
     )
 
@@ -346,8 +309,10 @@ def create_timeseries(
 def fill_gaps(
     ts: TimeSeries,
     method: str = "linear",
-    freq: Optional[str] = None,
-    limit: Optional[int] = None,
+    freq: str | pd.DateOffset | None = None,
+    limit: int | None = None,
+    *,
+    max_points: int = 1_000_000,
 ) -> TimeSeries:
     """Fill temporal gaps in a TimeSeries.
 
@@ -360,10 +325,11 @@ def fill_gaps(
         method: Fill method -- ``'linear'``, ``'ffill'``, ``'bfill'``,
             ``'time'``, or any method accepted by
             :meth:`pandas.DataFrame.interpolate`.
-        freq: Target frequency for the regular index. If None, the
-            frequency is auto-detected via :func:`detect_frequency`.
+        freq: Target frequency alias or pandas offset. If None, retain a
+            verified explicit offset or infer an exact regular cadence.
         limit: Maximum number of consecutive NaN values to fill. None
             means no limit.
+        max_points: Allocation budget for the regularized time grid.
 
     Returns:
         A new TimeSeries with gaps filled.
@@ -371,17 +337,33 @@ def fill_gaps(
     Raises:
         ValueError: If frequency cannot be determined.
     """
+    from geo_infer_time.core._validation import positive_integer
+
+    positive_integer(max_points, "max_points")
     if freq is None:
-        freq = detect_frequency(ts)
-        if freq is None:
+        from geo_infer_time.core._validation import regular_frequency
+
+        try:
+            freq = regular_frequency(normalize_datetime_index(ts.timestamps))
+        except ValueError as exc:
             raise ValueError(
                 "Cannot determine frequency automatically. Pass freq explicitly."
-            )
+            ) from exc
 
     logger.info("Filling gaps with method='%s', freq='%s'", method, freq)
 
     df = ts.to_dataframe()
-    regular_index = pd.date_range(start=df.index.min(), end=df.index.max(), freq=freq)
+    if df.empty:
+        return TimeSeries(
+            df, spatial_location=ts.spatial_location, metadata=ts.metadata
+        )
+    from geo_infer_time.core._validation import bounded_date_range
+
+    regular_index = bounded_date_range(df.index.min(), df.index.max(), freq, max_points)
+    if not df.index.isin(regular_index).all():
+        raise ValueError(
+            "Target frequency would discard observed timestamps; resample explicitly"
+        )
     df = df.reindex(regular_index)
 
     if method == "ffill":

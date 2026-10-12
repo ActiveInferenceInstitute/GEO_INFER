@@ -30,15 +30,15 @@ Utils workspace within `GEO-INFER-RISK`.
 - `risk_metrics.py:estimate_pml_with_tail_fit` (function)
 - `risk_metrics.py:calculate_correlation_matrix` (function)
 - `rng.py:resolve_rng` (function)
+- `rng.py:resolve_optional_rng` (function)
 - `rng.py:spawn_rng` (function)
-- `rng.py:derive_int_seed` (function)
 
 ## Module Metadata
 
 - Module: `GEO-INFER-RISK`
 - Package: `geo_infer_risk`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-RISK`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-risk`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module RISK`
 
 ## Dependencies

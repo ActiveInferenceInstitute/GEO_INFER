@@ -24,6 +24,7 @@ Unit workspace within `GEO-INFER-SPACE`.
 - `test_h3_policy.py`
 - `test_h3_predicate_logging.py`
 - `test_io_modules.py`
+- `test_method_contracts.py`
 - `test_ml_integration_tables.py`
 - `test_morans_i_variance_parity.py`
 - `test_nested_analytics.py`
@@ -39,7 +40,9 @@ Unit workspace within `GEO-INFER-SPACE`.
 - `test_spatial_statistics.py`
 - `test_spatial_utils.py`
 - `test_spatiotemporal.py`
+- `test_spatiotemporal_alignment.py`
 - `test_state_space.py`
+- `test_statistics_failure_contracts.py`
 - `test_temporal_analytics.py`
 - `test_unified_backend.py`
 - `test_unified_backend_geojson_seam.py`
@@ -57,12 +60,13 @@ Unit workspace within `GEO-INFER-SPACE`.
 
 - Module: `GEO-INFER-SPACE`
 - Package: `geo_infer_space`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-SPACE`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-space`
 - Tests: `uv run python -m pytest GEO-INFER-SPACE/tests/unit`
 
 ## Dependencies
 
+- `geo-infer-time>=0.4.0`
 - `fastapi>=0.100.0`
 - `fiona>=1.8.0`
 - `geojson-pydantic>=2.0.0`

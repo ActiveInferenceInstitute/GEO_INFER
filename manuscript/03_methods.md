@@ -114,8 +114,8 @@ refusing to report a diagnostic that is not defined:
   between the $100\alpha/2$ and $100(1-\alpha/2)$ percentiles of the posterior
   draws. It requires $0 < \alpha < 1$ and rejects missing, empty, or
   non-finite draws.
-- `SpatioTemporalGP.predict()` accepts an $(n, 3)$ matrix of $x$, $y$, and
-  time; the two-coordinate call remains a compatibility path. Posterior
+- `SpatioTemporalGP.predict()` accepts only an $(n, 3)$ matrix of $x$, $y$,
+  and time; split spatial/temporal arguments are rejected. Posterior
   predictions fit a concrete spatial GP for each draw without mutating the
   fitted model.
 
@@ -193,14 +193,17 @@ The per-module entries of the Supplemental Module Catalog
 ([@sec:module_catalog]) are authored, one file per module under
 `manuscript/sections/`, named by the module's lowercase slug. Each entry is
 verified against three surfaces rather than written from memory: the public
-interface is read from the symbols the package exports in its
-`__init__.py`, the test census is taken from the module's `tests/` tree,
-and the theme role restates the declared grouping the generator enforces.
+interface is read from package exports in `__init__.py` and, where imports are
+submodule-specific, the owning implementation. Verification surfaces are checked
+against the module's test tree, and the theme role restates the declared grouping
+the generator enforces.
 Entries are plain prose — one `##` heading naming the module, then
 paragraphs — and carry no tokens, labels, figures, or raw LaTeX, because
 the render combines them from the tracked source after the generator's
 token substitution has run; a quantity that belongs in the catalog belongs
-in its generated index table instead.
+in its generated index table instead. Authored entries do not duplicate source
+or test counts, rank suite quality by file counts, or treat local software
+fixtures as field validation.
 
 The render wiring is deliberate and fail-closed: `S02_module_catalog.md`
 is a published section whose position in the section order is fixed in

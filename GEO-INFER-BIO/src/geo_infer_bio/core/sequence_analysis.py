@@ -2,18 +2,19 @@
 Sequence analysis module for GEO-INFER-BIO.
 """
 
-from typing import Dict, List, Optional, Union, Any, cast
+from typing import Any, cast
+
 import pandas as pd
 from Bio import SeqIO
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
 from Bio.Align import MultipleSeqAlignment, PairwiseAligner, substitution_matrices
 from Bio.Data import CodonTable
-
-_BLOSUM62 = substitution_matrices.load("BLOSUM62")
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 
 from ..utils.validation import DataValidator
 from ..utils.visualization import BioVisualizer
+
+_BLOSUM62 = substitution_matrices.load("BLOSUM62")
 
 
 class SequenceAnalyzer:
@@ -27,7 +28,7 @@ class SequenceAnalyzer:
 
     def load_sequence(
         self, file_path: str, format: str = "fasta"
-    ) -> Union[SeqRecord, List[SeqRecord]]:
+    ) -> SeqRecord | list[SeqRecord]:
         """
         Load sequence data from a file.
 
@@ -38,12 +39,12 @@ class SequenceAnalyzer:
         Returns:
             Sequence record(s) from the file
         """
-        with open(file_path, "r", encoding="utf-8") as handle:
+        with open(file_path, encoding="utf-8") as handle:
             return list(SeqIO.parse(handle, format))
 
     def align_sequences(
         self,
-        sequences: List[SeqRecord],
+        sequences: list[SeqRecord],
         algorithm: str = "global",
         gap_open: float = -10,
         gap_extend: float = -0.5,
@@ -98,7 +99,7 @@ class SequenceAnalyzer:
         gc_count = int(sequence.count("G")) + int(sequence.count("C"))
         return (gc_count / len(sequence)) * 100
 
-    def find_motifs(self, sequence: Seq, motif_length: int = 6) -> Dict[str, List[int]]:
+    def find_motifs(self, sequence: Seq, motif_length: int = 6) -> dict[str, list[int]]:
         """
         Find repeated motifs in a sequence.
 
@@ -109,7 +110,7 @@ class SequenceAnalyzer:
         Returns:
             Dictionary of motifs and their positions
         """
-        motifs: Dict[str, List[int]] = {}
+        motifs: dict[str, list[int]] = {}
         for i in range(len(sequence) - motif_length + 1):
             motif = str(sequence[i : i + motif_length])
             if motif in motifs:
@@ -153,7 +154,7 @@ class SequenceAnalyzer:
 
     def predict_coding_regions(
         self, sequence: Seq, min_length: int = 100
-    ) -> List[Dict[str, int]]:
+    ) -> list[dict[str, int]]:
         """
         Predict potential coding regions in a sequence.
 
@@ -189,9 +190,9 @@ class SequenceAnalyzer:
 
     def analyze_spatial_distribution(
         self,
-        sequences: List[SeqRecord],
+        sequences: list[SeqRecord],
         spatial_data: pd.DataFrame,
-    ) -> Dict[str, pd.DataFrame]:
+    ) -> dict[str, pd.DataFrame]:
         """
         Analyze spatial distribution of sequence features.
 
@@ -202,7 +203,7 @@ class SequenceAnalyzer:
         Returns:
             Dictionary of spatial analyses
         """
-        results: Dict[str, List[Dict[str, Any]]] = {
+        results: dict[str, list[dict[str, Any]]] = {
             "gc_content": [],
             "motif_density": [],
             "coding_potential": [],
@@ -247,8 +248,8 @@ class SequenceAnalyzer:
 
     def visualize_spatial_patterns(
         self,
-        spatial_analysis: Dict[str, pd.DataFrame],
-        output_path: Optional[str] = None,
+        spatial_analysis: dict[str, pd.DataFrame],
+        output_path: str | None = None,
     ) -> None:
         """
         Visualize spatial patterns in sequence features.

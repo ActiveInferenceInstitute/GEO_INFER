@@ -8,7 +8,7 @@ This module provides comprehensive economic modeling capabilities including:
 - Spatial econometrics and policy analysis
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Team"
 
 # Core imports

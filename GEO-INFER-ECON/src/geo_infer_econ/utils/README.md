@@ -20,6 +20,8 @@ Utils workspace within `GEO-INFER-ECON`.
 - `indicators.py:EconomicIndicators` (class)
 - `rng.py:resolve_rng` (function)
 - `rng.py:resolve_optional_rng` (function)
+- `rng.py:spawn_rng` (function)
+- `rng.py:derive_int_seed` (function)
 - `validator.py:ModelValidator` (class)
 - `visualizer.py:ResultsVisualizer` (class)
 
@@ -27,8 +29,8 @@ Utils workspace within `GEO-INFER-ECON`.
 
 - Module: `GEO-INFER-ECON`
 - Package: `geo_infer_econ`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-ECON`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-econ`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module ECON`
 
 ## Dependencies

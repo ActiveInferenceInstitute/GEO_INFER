@@ -23,7 +23,7 @@ Mathematical Foundations:
 
 import numpy as np
 import logging
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime
 import colorsys
@@ -40,8 +40,8 @@ class VisualizationElement:
 
     element_id: str
     element_type: str  # 'point', 'line', 'polygon', 'text', 'symbol'
-    geometry: Dict[str, Any]
-    visual_properties: Dict[str, Any] = field(default_factory=dict)
+    geometry: dict[str, Any]
+    visual_properties: dict[str, Any] = field(default_factory=dict)
     cognitive_weight: float = 0.5
     accessibility_score: float = 1.0
     uncertainty_level: float = 0.0
@@ -130,7 +130,7 @@ class ColorScheme:
             ],  # Vivid for high information density
         }
 
-    def get_perceptually_uniform_colors(self, n_colors: int) -> List[str]:
+    def get_perceptually_uniform_colors(self, n_colors: int) -> list[str]:
         """Generate perceptually uniform colors for data visualization."""
         if not isinstance(n_colors, int) or n_colors < 0:
             raise ValueError("n_colors must be a non-negative integer")
@@ -146,14 +146,12 @@ class ColorScheme:
             value = 0.8 + (i % 2) * 0.1  # Vary brightness slightly
 
             rgb = colorsys.hsv_to_rgb(hue / 360, saturation, value)
-            hex_color = "#{:02x}{:02x}{:02x}".format(
-                int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255)
-            )
+            hex_color = f"#{int(rgb[0] * 255):02x}{int(rgb[1] * 255):02x}{int(rgb[2] * 255):02x}"
             colors.append(hex_color)
 
         return colors
 
-    def get_cognitive_load_colors(self, load_level: str, n_colors: int) -> List[str]:
+    def get_cognitive_load_colors(self, load_level: str, n_colors: int) -> list[str]:
         """Get colors optimized for specific cognitive load levels."""
         if not isinstance(n_colors, int) or n_colors < 0:
             raise ValueError("n_colors must be a non-negative integer")
@@ -199,7 +197,7 @@ class HumanCenteredVisualizer:
         perceptual_grouping: str = "gestalt_principles",
         uncertainty_communication: str = "confidence_intervals",
         accessibility_features: str = "wcag_compliant",
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ):
         """
         Initialize human-centered visualizer.
@@ -249,11 +247,11 @@ class HumanCenteredVisualizer:
 
     def create_optimized_map(
         self,
-        spatial_data: Dict[str, Any],
-        user_cognitive_profile: Optional[UserCognitiveProfile] = None,
+        spatial_data: dict[str, Any],
+        user_cognitive_profile: UserCognitiveProfile | None = None,
         task_context: str = "general_exploration",
-        display_constraints: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        display_constraints: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Create a cognitively optimized map visualization.
 
@@ -303,7 +301,7 @@ class HumanCenteredVisualizer:
             processing_time = (datetime.now() - start_time).total_seconds()
 
             self._visualization_counter += 1
-            visualization_result: Dict[str, Any] = {
+            visualization_result: dict[str, Any] = {
                 "visualization_id": f"viz_{self._visualization_counter:06d}",
                 "timestamp": start_time.isoformat(),
                 "processing_time": processing_time,
@@ -333,9 +331,9 @@ class HumanCenteredVisualizer:
             logger.error(f"Error creating optimized visualization: {str(e)}")
             raise
 
-    def _analyze_spatial_data(self, spatial_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_spatial_data(self, spatial_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze spatial data for visualization planning."""
-        analysis: Dict[str, Any] = {
+        analysis: dict[str, Any] = {
             "element_count": 0,
             "element_types": {},
             "spatial_extent": {},
@@ -408,7 +406,7 @@ class HumanCenteredVisualizer:
 
         return analysis
 
-    def _calculate_element_cognitive_weight(self, geometry: Dict[str, Any]) -> float:
+    def _calculate_element_cognitive_weight(self, geometry: dict[str, Any]) -> float:
         """Calculate cognitive weight of a spatial element."""
         base_weights = {
             "point": 0.8,  # Points are usually important landmarks
@@ -432,8 +430,8 @@ class HumanCenteredVisualizer:
         return min(1.0, max(0.0, base_weight))
 
     def _analyze_user_profile(
-        self, user_profile: Optional[UserCognitiveProfile]
-    ) -> Dict[str, Any]:
+        self, user_profile: UserCognitiveProfile | None
+    ) -> dict[str, Any]:
         """Analyze user profile for visualization adaptation."""
         if not user_profile:
             return {
@@ -470,12 +468,12 @@ class HumanCenteredVisualizer:
 
     def _determine_cognitive_load_strategy(
         self,
-        data_analysis: Dict[str, Any],
-        user_analysis: Dict[str, Any],
+        data_analysis: dict[str, Any],
+        user_analysis: dict[str, Any],
         task_context: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Determine cognitive load optimization strategy."""
-        strategy: Dict[str, Any] = {
+        strategy: dict[str, Any] = {
             "load_level": "medium",
             "max_elements": 50,
             "simplification_enabled": True,
@@ -533,10 +531,10 @@ class HumanCenteredVisualizer:
 
     def _apply_perceptual_grouping(
         self,
-        elements: List[VisualizationElement],
-        user_analysis: Dict[str, Any],
-        load_strategy: Dict[str, Any],
-    ) -> List[VisualizationElement]:
+        elements: list[VisualizationElement],
+        user_analysis: dict[str, Any],
+        load_strategy: dict[str, Any],
+    ) -> list[VisualizationElement]:
         """Apply perceptual grouping based on Gestalt principles."""
         if not elements or not load_strategy.get("simplification_enabled", True):
             return elements
@@ -561,11 +559,11 @@ class HumanCenteredVisualizer:
         return grouped_elements
 
     def _apply_proximity_grouping(
-        self, elements: List[VisualizationElement]
-    ) -> List[VisualizationElement]:
+        self, elements: list[VisualizationElement]
+    ) -> list[VisualizationElement]:
         """Apply proximity-based perceptual grouping."""
         # Simple proximity grouping - group elements that are close together
-        grouped: List[VisualizationElement] = []
+        grouped: list[VisualizationElement] = []
 
         for element in elements:
             # Check if this element should be grouped with existing groups
@@ -610,8 +608,8 @@ class HumanCenteredVisualizer:
         return False
 
     def _get_element_centroid(
-        self, geometry: Dict[str, Any]
-    ) -> Optional[Tuple[float, float]]:
+        self, geometry: dict[str, Any]
+    ) -> tuple[float, float] | None:
         """Get centroid of a geometry element."""
         geom_type = geometry.get("type", "").lower()
         coords = geometry.get("coordinates", [])
@@ -651,8 +649,8 @@ class HumanCenteredVisualizer:
         return None
 
     def _apply_similarity_grouping(
-        self, elements: List[VisualizationElement]
-    ) -> List[VisualizationElement]:
+        self, elements: list[VisualizationElement]
+    ) -> list[VisualizationElement]:
         """Apply similarity-based perceptual grouping."""
         # Group elements by visual similarity
         grouped = []
@@ -695,13 +693,13 @@ class HumanCenteredVisualizer:
 
     def _generate_visualization_specification(
         self,
-        elements: List[VisualizationElement],
-        user_analysis: Dict[str, Any],
-        load_strategy: Dict[str, Any],
-        display_constraints: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        elements: list[VisualizationElement],
+        user_analysis: dict[str, Any],
+        load_strategy: dict[str, Any],
+        display_constraints: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Generate complete visualization specification."""
-        spec: Dict[str, Any] = {
+        spec: dict[str, Any] = {
             "layout_type": "adaptive",
             "element_specifications": {},
             "interaction_model": "progressive",
@@ -750,10 +748,10 @@ class HumanCenteredVisualizer:
         return spec
 
     def _determine_visual_encoding(
-        self, element: VisualizationElement, user_analysis: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, element: VisualizationElement, user_analysis: dict[str, Any]
+    ) -> dict[str, Any]:
         """Determine visual encoding for an element."""
-        encoding: Dict[str, Any] = {
+        encoding: dict[str, Any] = {
             "shape": "default",
             "size": "medium",
             "color": "#1f77b4",
@@ -790,8 +788,8 @@ class HumanCenteredVisualizer:
         return encoding
 
     def _determine_interaction_behavior(
-        self, element: VisualizationElement, user_analysis: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, element: VisualizationElement, user_analysis: dict[str, Any]
+    ) -> dict[str, Any]:
         """Determine interaction behavior for an element."""
         behavior = {
             "clickable": True,
@@ -817,8 +815,8 @@ class HumanCenteredVisualizer:
         return behavior
 
     def _determine_accessibility_properties(
-        self, element: VisualizationElement, user_analysis: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, element: VisualizationElement, user_analysis: dict[str, Any]
+    ) -> dict[str, Any]:
         """Determine accessibility properties for an element."""
         accessibility = {
             "alt_text": f"Spatial element of type {element.element_type}",
@@ -842,10 +840,10 @@ class HumanCenteredVisualizer:
 
     def _configure_layout(
         self,
-        elements: List[VisualizationElement],
-        user_analysis: Dict[str, Any],
-        display_constraints: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        elements: list[VisualizationElement],
+        user_analysis: dict[str, Any],
+        display_constraints: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Configure layout for the visualization."""
         layout = {
             "arrangement": "force_directed",
@@ -878,8 +876,8 @@ class HumanCenteredVisualizer:
         return layout
 
     def _configure_accessibility_features(
-        self, user_analysis: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, user_analysis: dict[str, Any]
+    ) -> dict[str, Any]:
         """Configure accessibility features for the visualization."""
         features = {
             "high_contrast_mode": self.accessibility_features == "wcag_compliant",
@@ -901,9 +899,9 @@ class HumanCenteredVisualizer:
 
     def _configure_performance_optimizations(
         self,
-        load_strategy: Dict[str, Any],
-        display_constraints: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        load_strategy: dict[str, Any],
+        display_constraints: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Configure performance optimizations."""
         optimizations = {
             "caching_enabled": True,
@@ -923,10 +921,10 @@ class HumanCenteredVisualizer:
 
     def _create_adaptive_color_scheme(
         self,
-        elements: List[VisualizationElement],
-        user_analysis: Dict[str, Any],
-        load_strategy: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        elements: list[VisualizationElement],
+        user_analysis: dict[str, Any],
+        load_strategy: dict[str, Any],
+    ) -> dict[str, Any]:
         """Create adaptive color scheme for the visualization."""
         scheme = {
             "base_colors": [],
@@ -964,10 +962,10 @@ class HumanCenteredVisualizer:
 
     def _apply_progressive_disclosure(
         self,
-        visualization_spec: Dict[str, Any],
-        user_analysis: Dict[str, Any],
-        load_strategy: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        visualization_spec: dict[str, Any],
+        user_analysis: dict[str, Any],
+        load_strategy: dict[str, Any],
+    ) -> dict[str, Any]:
         """Apply progressive disclosure strategy."""
         disclosure = {
             "initial_detail_level": "summary",
@@ -995,10 +993,10 @@ class HumanCenteredVisualizer:
 
     def _summarize_adaptations(
         self,
-        load_strategy: Dict[str, Any],
-        user_analysis: Dict[str, Any],
+        load_strategy: dict[str, Any],
+        user_analysis: dict[str, Any],
         task_context: str,
-    ) -> List[str]:
+    ) -> list[str]:
         """Summarize adaptations applied to the visualization."""
         adaptations = []
 
@@ -1027,10 +1025,10 @@ class HumanCenteredVisualizer:
 
     def communicate_uncertainty(
         self,
-        spatial_predictions: Dict[str, Any],
-        uncertainty_quantification: Dict[str, Any],
+        spatial_predictions: dict[str, Any],
+        uncertainty_quantification: dict[str, Any],
         user_risk_tolerance: str = "moderate",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Communicate spatial uncertainty in a user-appropriate manner.
 
@@ -1042,7 +1040,7 @@ class HumanCenteredVisualizer:
         Returns:
             Uncertainty communication strategy and visualization
         """
-        communication_strategy: Dict[str, Any] = {
+        communication_strategy: dict[str, Any] = {
             "communication_method": "visual_indicators",
             "detail_level": "moderate",
             "user_adapted": True,
@@ -1096,9 +1094,9 @@ class HumanCenteredVisualizer:
 
     def apply_perceptual_grouping(
         self,
-        spatial_data: Dict[str, Any],
-        grouping_principles: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        spatial_data: dict[str, Any],
+        grouping_principles: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Apply perceptual grouping principles to spatial data.
 
@@ -1112,7 +1110,7 @@ class HumanCenteredVisualizer:
         if grouping_principles is None:
             grouping_principles = ["proximity", "similarity"]
 
-        grouping_result: Dict[str, Any] = {
+        grouping_result: dict[str, Any] = {
             "applied_principles": grouping_principles,
             "group_specifications": {},
             "visual_emphasis": {},
@@ -1146,8 +1144,8 @@ class HumanCenteredVisualizer:
         return grouping_result
 
     def _apply_proximity_grouping_to_data(
-        self, spatial_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, spatial_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Apply proximity grouping to spatial data."""
         geometries = spatial_data.get("geometries", [])
         if not geometries:
@@ -1191,7 +1189,7 @@ class HumanCenteredVisualizer:
                         queue.append(candidate)
             clusters.append(cluster)
 
-        cluster_specs: List[Dict[str, Any]] = [
+        cluster_specs: list[dict[str, Any]] = [
             {
                 "element_indices": cluster,
                 "element_ids": [f"elem_{index}" for index in cluster],
@@ -1211,11 +1209,11 @@ class HumanCenteredVisualizer:
         }
 
     def _apply_similarity_grouping_to_data(
-        self, spatial_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, spatial_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Apply similarity grouping to spatial data."""
         geometries = spatial_data.get("geometries", [])
-        groups: Dict[Tuple[str, int], List[int]] = {}
+        groups: dict[tuple[str, int], list[int]] = {}
         for index, geometry in enumerate(geometries):
             if not isinstance(geometry, dict):
                 raise ValueError(f"geometry at index {index} must be a mapping")
@@ -1244,7 +1242,7 @@ class HumanCenteredVisualizer:
             "grouping_confidence": 1.0,
         }
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current status of the visualizer."""
         return {
             "visualizer_type": "human_centered",

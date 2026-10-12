@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 
@@ -16,8 +15,9 @@ import asyncio
 import logging
 import json
 import uuid
-from typing import Dict, List, Any, Optional, Callable
-from datetime import datetime, timezone
+from typing import Any
+from collections.abc import Callable
+from datetime import datetime, UTC
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ class AgentAPIClient:
     file; no network transport is involved.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the Agent API client.
 
@@ -62,11 +62,11 @@ class AgentAPIClient:
             config: Configuration options for the API client
         """
         self.config = config or {}
-        self.agents: Dict[str, Dict[str, Any]] = {}
-        self.agent_status_callbacks: Dict[str, List[Callable[[str, str], None]]] = {}
-        self._status_monitoring_task: Optional[asyncio.Task[None]] = None
+        self.agents: dict[str, dict[str, Any]] = {}
+        self.agent_status_callbacks: dict[str, list[Callable[[str, str], None]]] = {}
+        self._status_monitoring_task: asyncio.Task[None] | None = None
         # Per-agent operational counters: {agent_id: {"decision_count": int, "success_count": int}}
-        self._agent_counters: Dict[str, Dict[str, int]] = {}
+        self._agent_counters: dict[str, dict[str, int]] = {}
 
     async def initialize(self) -> None:
         """Initialize the API client: start status monitoring and load persisted agents."""
@@ -92,7 +92,7 @@ class AgentAPIClient:
         # Save agent configurations
         await self._save_agents()
 
-    async def create_agent(self, agent_type: str, config: Dict[str, Any]) -> str:
+    async def create_agent(self, agent_type: str, config: dict[str, Any]) -> str:
         """
         Create a new agent.
 
@@ -118,7 +118,7 @@ class AgentAPIClient:
         logger.info(f"Creating agent of type: {normalized_type}")
 
         agent_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         self.agents[agent_id] = {
             "id": agent_id,
@@ -152,7 +152,7 @@ class AgentAPIClient:
             return False
 
         logger.info(f"Starting agent: {agent_id}")
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         self.agents[agent_id]["status"] = "running"
         self.agents[agent_id]["last_update"] = now
@@ -176,7 +176,7 @@ class AgentAPIClient:
             return False
 
         logger.info(f"Stopping agent: {agent_id}")
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         self.agents[agent_id]["status"] = "stopped"
         self.agents[agent_id]["last_update"] = now
@@ -206,7 +206,7 @@ class AgentAPIClient:
         self._agent_counters.pop(agent_id, None)
         return True
 
-    async def get_agent_status(self, agent_id: str) -> Optional[Dict[str, Any]]:
+    async def get_agent_status(self, agent_id: str) -> dict[str, Any] | None:
         """
         Get current status of an agent.
 
@@ -222,7 +222,7 @@ class AgentAPIClient:
 
         return self.agents[agent_id].copy()
 
-    async def list_agents(self) -> List[Dict[str, Any]]:
+    async def list_agents(self) -> list[dict[str, Any]]:
         """
         List all agents.
 
@@ -232,8 +232,8 @@ class AgentAPIClient:
         return list(self.agents.values())
 
     async def send_command(
-        self, agent_id: str, command: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, agent_id: str, command: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """
         Send a command to an agent and return a structured result.
 
@@ -270,7 +270,7 @@ class AgentAPIClient:
         if result.get("status") == "success":
             counters["success_count"] += 1
 
-        self.agents[agent_id]["last_update"] = datetime.now(timezone.utc).isoformat()
+        self.agents[agent_id]["last_update"] = datetime.now(UTC).isoformat()
 
         return {
             "status": result["status"],
@@ -278,12 +278,12 @@ class AgentAPIClient:
             "command_type": command_type,
             "result": result.get("result"),
             "message": result.get("message", ""),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     def _route_command(
-        self, agent_id: str, command_type: str, parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, agent_id: str, command_type: str, parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Route a command to the appropriate handler and return the result.
 
@@ -316,7 +316,7 @@ class AgentAPIClient:
                     "message": "parameters.config must be a dict",
                 }
             agent["config"].update(updates)
-            agent["last_update"] = datetime.now(timezone.utc).isoformat()
+            agent["last_update"] = datetime.now(UTC).isoformat()
             return {
                 "status": "success",
                 "result": {"updated_keys": list(updates.keys())},
@@ -330,7 +330,7 @@ class AgentAPIClient:
 
         if command_type == "pause":
             agent["status"] = "paused"
-            agent["last_update"] = datetime.now(timezone.utc).isoformat()
+            agent["last_update"] = datetime.now(UTC).isoformat()
             return {"status": "success", "result": {"status": "paused"}}
 
         if command_type == "resume":
@@ -340,7 +340,7 @@ class AgentAPIClient:
                     "message": f"Cannot resume agent in '{agent['status']}' state",
                 }
             agent["status"] = "running"
-            agent["last_update"] = datetime.now(timezone.utc).isoformat()
+            agent["last_update"] = datetime.now(UTC).isoformat()
             return {"status": "success", "result": {"status": "running"}}
 
         if command_type == "reset":
@@ -358,7 +358,7 @@ class AgentAPIClient:
             ),
         }
 
-    async def get_agent_metrics(self, agent_id: str) -> Optional[Dict[str, Any]]:
+    async def get_agent_metrics(self, agent_id: str) -> dict[str, Any] | None:
         """
         Get performance metrics for an agent.
 
@@ -388,7 +388,7 @@ class AgentAPIClient:
         started_at = agent.get("started_at")
         if started_at and agent["status"] in ("running", "paused"):
             started_dt = datetime.fromisoformat(started_at)
-            now_dt = datetime.now(timezone.utc)
+            now_dt = datetime.now(UTC)
             uptime_seconds = int((now_dt - started_dt).total_seconds())
 
         return {
@@ -482,7 +482,7 @@ class AgentAPIClient:
             return
 
         try:
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 data = json.load(f)
         except (OSError, ValueError) as e:
             # ValueError covers json.JSONDecodeError. Surface the corrupt
@@ -533,7 +533,7 @@ class AgentManager:
     and manages agent lifecycle in the application context.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the agent manager.
 
@@ -560,7 +560,7 @@ class AgentManager:
         await self.api_client.shutdown()
 
     async def create_agent(
-        self, agent_type: str, name: str, config: Dict[str, Any]
+        self, agent_type: str, name: str, config: dict[str, Any]
     ) -> str:
         """
         Create a new agent with the given configuration.
@@ -627,8 +627,8 @@ class AgentManager:
         self,
         agent_id: str,
         command_type: str,
-        parameters: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Dict[str, Any]]:
+        parameters: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
         """
         Send a command to an agent.
 
@@ -647,7 +647,7 @@ class AgentManager:
         }
         return await self.api_client.send_command(agent_id, command)
 
-    async def get_agent_info(self, agent_id: str) -> Optional[Dict[str, Any]]:
+    async def get_agent_info(self, agent_id: str) -> dict[str, Any] | None:
         """
         Get information about an agent.
 
@@ -661,9 +661,9 @@ class AgentManager:
 
     async def list_agents(
         self,
-        filter_type: Optional[str] = None,
+        filter_type: str | None = None,
         active_only: bool = False,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List agents, optionally filtered.
 
@@ -684,7 +684,7 @@ class AgentManager:
 
         return agents
 
-    async def get_agent_metrics(self, agent_id: str) -> Optional[Dict[str, Any]]:
+    async def get_agent_metrics(self, agent_id: str) -> dict[str, Any] | None:
         """
         Get performance metrics for an agent.
 

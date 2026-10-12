@@ -13,7 +13,8 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from typing import Dict, List, Optional, Tuple, Any
+from scipy.special import logsumexp
+from typing import Any
 from ..utils.rng import SeedLike, resolve_rng
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ class ModelComparison:
     information criteria and cross-validation.
     """
 
-    def __init__(self, models: Optional[List[Any]] = None) -> None:
+    def __init__(self, models: list[Any] | None = None) -> None:
         """
         Initialize the model comparison tool.
 
@@ -36,8 +37,8 @@ class ModelComparison:
                     ``log_likelihood(theta, data) -> float`` and
                     ``parameters`` (dict of parameter definitions).
         """
-        self.models: List[Any] = models or []
-        self.comparison_results: Dict[str, Any] = {}
+        self.models: list[Any] = models or []
+        self.comparison_results: dict[str, Any] = {}
 
     # ------------------------------------------------------------------
     # Public API
@@ -45,7 +46,7 @@ class ModelComparison:
 
     def compare_models(
         self, data: Any, method: str = "loo", random_seed: SeedLike = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compare models using specified method.
 
@@ -68,7 +69,7 @@ class ModelComparison:
         if not self.models:
             raise ValueError("No models to compare.")
 
-        results: Dict[str, Any] = {}
+        results: dict[str, Any] = {}
 
         for i, model in enumerate(self.models):
             model_name = getattr(model, "name", f"Model_{i}")
@@ -104,7 +105,7 @@ class ModelComparison:
         self.comparison_results = results
         return results
 
-    def get_best_model(self, criterion: str = "loo") -> Optional[Any]:
+    def get_best_model(self, criterion: str = "loo") -> Any | None:
         """
         Get the best model according to the specified criterion.
 
@@ -192,7 +193,7 @@ class ModelComparison:
         log_bf = np.clip(log_bf, -500.0, 500.0)
         return float(np.exp(log_bf))
 
-    def plot_comparison(self) -> Tuple[plt.Figure, plt.Axes]:
+    def plot_comparison(self) -> tuple[plt.Figure, plt.Axes]:
         """Plot model comparison results as a bar chart.
 
         Returns
@@ -291,7 +292,7 @@ class ModelComparison:
         n_obs = len(observations)
         ll_matrix = np.zeros((n_posterior_samples, n_obs))
         failures = 0
-        first_failure: Optional[BaseException] = None
+        first_failure: BaseException | None = None
 
         params = getattr(model, "parameters", {})
         for s in range(n_posterior_samples):
@@ -344,13 +345,12 @@ class ModelComparison:
 
     def _loo_comparison(
         self, model: Any, data: Any, random_seed: SeedLike = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Pareto-smoothed importance-sampling LOO (PSIS-LOO, Vehtari et al. 2017).
 
         Uses ``arviz.stats.stats.psislw`` on the pointwise log-likelihood
-        matrix and the same elpd/p_loo/se formulas as arviz's ``loo``. Falls
-        back to naive log-mean-exp LOO (labelled ``naive-loo``) only when
-        arviz is unavailable.
+        matrix and the same elpd/p_loo/se formulas as arviz's ``loo``; the
+        result is labelled ``method="psis-loo"``.
 
         Args:
             model: The model to compare.
@@ -363,50 +363,31 @@ class ModelComparison:
         )
         n_samples, n_obs = ll_matrix.shape
 
-        try:
-            from arviz.stats.stats import psislw
-            from scipy.special import logsumexp
+        # Function-local: arviz import cost is paid only when LOO is requested.
+        from arviz.stats.stats import psislw
 
-            # arviz loo semantics: psislw expects (n_obs, n_samples) — the
-            # LAST dimension is samples — and returns (smoothed_log_weights,
-            # pareto_shape). Verified numerically against az.loo.
-            ll_t = ll_matrix.T
-            log_weights_t, pareto_k = psislw(-ll_t, reff=1.0)
-            elpd_loo_i = logsumexp(log_weights_t + ll_t, axis=1)
-            # Normalized log predictive density (log of the mean).
-            lpd_i = logsumexp(ll_t, axis=1) - np.log(n_samples)
-            elpd_loo = float(np.sum(elpd_loo_i))
-            p_loo = float(np.sum(lpd_i) - elpd_loo)
-            se = float(np.sqrt(n_obs * np.var(elpd_loo_i)))
-            return {
-                "elpd_loo": elpd_loo,
-                "p_loo": p_loo,
-                "se": se,
-                "method": "psis-loo",
-                "pareto_k_max": float(np.max(pareto_k)) if len(pareto_k) else 0.0,
-            }
-        except ImportError:
-            # Naive LOO fallback (no PSIS smoothing).
-            elpd_i = np.zeros(n_obs)
-            for j in range(n_obs):
-                max_ll = np.max(ll_matrix[:, j])
-                elpd_i[j] = max_ll + np.log(np.mean(np.exp(ll_matrix[:, j] - max_ll)))
-
-            elpd_loo = float(np.sum(elpd_i))
-            se = float(np.sqrt(n_obs * np.var(elpd_i)))
-            p_loo = float(np.sum(np.var(ll_matrix, axis=0)))
-
-            return {
-                "elpd_loo": elpd_loo,
-                "p_loo": p_loo,
-                "se": se,
-                "method": "naive-loo",
-                "pareto_k_max": 0.0,
-            }
+        # arviz loo semantics: psislw expects (n_obs, n_samples) — the
+        # LAST dimension is samples — and returns (smoothed_log_weights,
+        # pareto_shape). Verified numerically against az.loo.
+        ll_t = ll_matrix.T
+        log_weights_t, pareto_k = psislw(-ll_t, reff=1.0)
+        elpd_loo_i = logsumexp(log_weights_t + ll_t, axis=1)
+        # Normalized log predictive density (log of the mean).
+        lpd_i = logsumexp(ll_t, axis=1) - np.log(n_samples)
+        elpd_loo = float(np.sum(elpd_loo_i))
+        p_loo = float(np.sum(lpd_i) - elpd_loo)
+        se = float(np.sqrt(n_obs * np.var(elpd_loo_i)))
+        return {
+            "elpd_loo": elpd_loo,
+            "p_loo": p_loo,
+            "se": se,
+            "method": "psis-loo",
+            "pareto_k_max": float(np.max(pareto_k)) if len(pareto_k) else 0.0,
+        }
 
     def _waic_comparison(
         self, model: Any, data: Any, random_seed: SeedLike = None
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Widely Applicable Information Criterion (Watanabe 2010).
 
         WAIC = -2 * (lppd - p_waic)
@@ -448,7 +429,7 @@ class ModelComparison:
 
     def _dic_comparison(
         self, model: Any, data: Any, random_seed: SeedLike = None
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Deviance Information Criterion.
 
         DIC = D_bar + p_D

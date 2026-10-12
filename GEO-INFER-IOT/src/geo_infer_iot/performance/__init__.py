@@ -7,8 +7,8 @@ and profiling capabilities for the GEO-INFER-IOT system.
 
 import logging
 import time
-from typing import Dict, List, Optional, Any, Deque
-from datetime import datetime, timedelta
+from typing import Any
+from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass, field
 from collections import deque
 import json
@@ -20,6 +20,9 @@ try:
 except ImportError:
     psutil = None
 
+from geo_infer_iot.models.timestamps import utc_now
+from geo_infer_time.core.timestamps import normalize_timestamp
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,7 +30,7 @@ logger = logging.getLogger(__name__)
 class PerformanceMetrics:
     """Performance metrics data structure."""
 
-    timestamp: datetime = field(default_factory=datetime.now)
+    timestamp: datetime = field(default_factory=utc_now)
     cpu_percent: float = 0.0
     memory_percent: float = 0.0
     memory_mb: float = 0.0
@@ -44,6 +47,9 @@ class PerformanceMetrics:
     error_rate: float = 0.0
     queue_size: int = 0
 
+    def __post_init__(self) -> None:
+        self.timestamp = normalize_timestamp(self.timestamp)
+
 
 @dataclass
 class BenchmarkResult:
@@ -54,9 +60,13 @@ class BenchmarkResult:
     start_time: datetime
     end_time: datetime
     duration_seconds: float
-    metrics: Dict[str, Any]
+    metrics: dict[str, Any]
     success: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
+
+    def __post_init__(self) -> None:
+        self.start_time = normalize_timestamp(self.start_time)
+        self.end_time = normalize_timestamp(self.end_time)
 
 
 class PerformanceMonitor:
@@ -67,14 +77,14 @@ class PerformanceMonitor:
     and performance benchmarking capabilities.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.is_monitoring: bool = False
-        self.monitoring_thread: Optional[threading.Thread] = None
-        self.metrics_history: Deque[PerformanceMetrics] = deque(
+        self.monitoring_thread: threading.Thread | None = None
+        self.metrics_history: deque[PerformanceMetrics] = deque(
             maxlen=1000
         )  # Keep last 1000 metrics
-        self.benchmark_history: List[BenchmarkResult] = []
+        self.benchmark_history: list[BenchmarkResult] = []
 
         # Monitoring intervals
         self.system_metrics_interval = self.config.get(
@@ -94,7 +104,7 @@ class PerformanceMonitor:
         # IoT system references for metrics collection
         self.iot_system: Any = None
         self.measurement_count: int = 0
-        self.last_measurement_time: Optional[float] = None
+        self.last_measurement_time: float | None = None
 
         logger.info("PerformanceMonitor initialized")
 
@@ -134,11 +144,11 @@ class PerformanceMonitor:
 
     def _monitoring_loop(self) -> None:
         """Main monitoring loop running in background thread."""
-        last_system_check = time.time()
-        last_iot_check = time.time()
+        last_system_check = time.monotonic()
+        last_iot_check = time.monotonic()
 
         while self.is_monitoring:
-            current_time = time.time()
+            current_time = time.monotonic()
 
             # Collect system metrics periodically
             if current_time - last_system_check >= self.system_metrics_interval:
@@ -164,7 +174,7 @@ class PerformanceMonitor:
             network_io = psutil.net_io_counters()
 
             metrics = PerformanceMetrics(
-                timestamp=datetime.now(),
+                timestamp=datetime.now(UTC),
                 cpu_percent=cpu_percent,
                 memory_percent=memory.percent,
                 memory_mb=memory.used / (1024 * 1024),
@@ -197,7 +207,7 @@ class PerformanceMonitor:
 
             # Update measurement throughput
             current_measurements = len(self.iot_system.ingestion.measurements)
-            current_time = time.time()
+            current_time = time.monotonic()
 
             if self.last_measurement_time is not None:
                 time_diff = current_time - self.last_measurement_time
@@ -229,7 +239,7 @@ class PerformanceMonitor:
         except Exception as e:
             logger.error(f"Error collecting IoT metrics: {e}")
 
-    def _check_performance_thresholds(self, metrics: PerformanceMetrics) -> List[str]:
+    def _check_performance_thresholds(self, metrics: PerformanceMetrics) -> list[str]:
         """Check if performance metrics exceed thresholds."""
         warnings = []
 
@@ -256,16 +266,16 @@ class PerformanceMonitor:
             logger.warning(f"Performance thresholds exceeded: {', '.join(warnings)}")
         return warnings
 
-    def get_current_metrics(self) -> Optional[PerformanceMetrics]:
+    def get_current_metrics(self) -> PerformanceMetrics | None:
         """Get the most recent performance metrics."""
         return self.metrics_history[-1] if self.metrics_history else None
 
-    def get_metrics_history(self, minutes: int = 60) -> List[PerformanceMetrics]:
+    def get_metrics_history(self, minutes: int = 60) -> list[PerformanceMetrics]:
         """Get performance metrics history for the specified time window."""
-        cutoff_time = datetime.now() - timedelta(minutes=minutes)
+        cutoff_time = datetime.now(UTC) - timedelta(minutes=minutes)
         return [m for m in self.metrics_history if m.timestamp >= cutoff_time]
 
-    def get_performance_summary(self, minutes: int = 60) -> Dict[str, Any]:
+    def get_performance_summary(self, minutes: int = 60) -> dict[str, Any]:
         """Get performance summary for the specified time window."""
         history = self.get_metrics_history(minutes)
 
@@ -313,14 +323,14 @@ class PerformanceMonitor:
                 "std": np.std(error_rates),
             },
             "threshold_exceedances": self._count_threshold_exceedances(history),
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
         }
 
         return summary
 
     def _count_threshold_exceedances(
-        self, history: List[PerformanceMetrics]
-    ) -> Dict[str, int]:
+        self, history: list[PerformanceMetrics]
+    ) -> dict[str, int]:
         """Count how many times each threshold was exceeded."""
         exceedances = {
             "cpu_percent": 0,
@@ -361,7 +371,8 @@ class PerformanceMonitor:
         benchmark_id = f"benchmark_{int(time.time())}_{benchmark_type}"
 
         try:
-            start_time = datetime.now()
+            start_time = datetime.now(UTC)
+            started_monotonic = time.perf_counter()
 
             if benchmark_type == "ingestion_throughput":
                 result = self._benchmark_ingestion_throughput(**kwargs)
@@ -372,8 +383,8 @@ class PerformanceMonitor:
             else:
                 raise ValueError(f"Unknown benchmark type: {benchmark_type}")
 
-            end_time = datetime.now()
-            duration = (end_time - start_time).total_seconds()
+            end_time = datetime.now(UTC)
+            duration = time.perf_counter() - started_monotonic
 
             benchmark_result = BenchmarkResult(
                 benchmark_id=benchmark_id,
@@ -389,8 +400,8 @@ class PerformanceMonitor:
             benchmark_result = BenchmarkResult(
                 benchmark_id=benchmark_id,
                 benchmark_type=benchmark_type,
-                start_time=datetime.now(),
-                end_time=datetime.now(),
+                start_time=datetime.now(UTC),
+                end_time=datetime.now(UTC),
                 duration_seconds=0.0,
                 metrics={},
                 success=False,
@@ -402,20 +413,20 @@ class PerformanceMonitor:
 
     def _benchmark_ingestion_throughput(
         self, duration_seconds: int = 60, batch_size: int = 100
-    ) -> Dict:
+    ) -> dict:
         """Benchmark data ingestion throughput."""
         if self.iot_system is None:
             return {"error": "IoT system not available for benchmarking"}
 
         # Simulate data ingestion load
-        start_time = time.time()
+        start_time = time.perf_counter()
 
         # Generate and process test measurements
         test_measurements = []
         for i in range(batch_size):
             test_measurement = {
                 "sensor_id": f"benchmark_sensor_{i}",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "variable": "temperature",
                 "value": 25.0 + i * 0.1,
                 "unit": "celsius",
@@ -436,7 +447,7 @@ class PerformanceMonitor:
             except Exception as e:
                 logger.warning(f"Benchmark measurement failed: {e}")
 
-        end_time = time.time()
+        end_time = time.perf_counter()
         actual_duration = end_time - start_time
         throughput = processed_count / actual_duration if actual_duration > 0 else 0
 
@@ -450,7 +461,7 @@ class PerformanceMonitor:
 
     def _benchmark_spatial_inference(
         self, num_sensors: int = 50, iterations: int = 10
-    ) -> Dict:
+    ) -> dict:
         """Benchmark spatial inference performance."""
         if self.iot_system is None or self.iot_system.spatial_inference is None:
             return {"error": "Spatial inference not available for benchmarking"}
@@ -460,7 +471,7 @@ class PerformanceMonitor:
         for i in range(num_sensors):
             measurement = {
                 "sensor_id": f"benchmark_sensor_{i}",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "variable": "temperature",
                 "value": 20.0 + i * 0.1,
                 "unit": "celsius",
@@ -473,7 +484,7 @@ class PerformanceMonitor:
         inference_times = []
 
         for _ in range(iterations):
-            start_time = time.time()
+            start_time = time.perf_counter()
 
             try:
                 # Run spatial inference
@@ -483,7 +494,7 @@ class PerformanceMonitor:
             except Exception as e:
                 logger.warning(f"Inference benchmark failed: {e}")
 
-            end_time = time.time()
+            end_time = time.perf_counter()
             inference_times.append(end_time - start_time)
 
         avg_inference_time = np.mean(inference_times)
@@ -501,7 +512,7 @@ class PerformanceMonitor:
 
     def _benchmark_memory_usage(
         self, operation: str = "ingestion", iterations: int = 100
-    ) -> Dict:
+    ) -> dict:
         """Benchmark memory usage for different operations."""
         if psutil is None:
             return {"error": "psutil not available"}
@@ -515,7 +526,7 @@ class PerformanceMonitor:
             for i in range(iterations):
                 test_measurement = {
                     "sensor_id": f"benchmark_sensor_{i}",
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "variable": "temperature",
                     "value": 25.0,
                     "unit": "celsius",
@@ -544,11 +555,11 @@ class PerformanceMonitor:
 
         return {"error": f"Unsupported operation: {operation}"}
 
-    def export_metrics(self, output_path: str, format: str = "json") -> Dict:
+    def export_metrics(self, output_path: str, format: str = "json") -> dict:
         """Export performance metrics to file."""
         try:
             export_data = {
-                "export_timestamp": datetime.now().isoformat(),
+                "export_timestamp": datetime.now(UTC).isoformat(),
                 "monitor_config": self.config,
                 "thresholds": self.thresholds,
                 "metrics_history": [m.__dict__ for m in self.metrics_history],
@@ -637,7 +648,7 @@ class PerformanceMonitor:
 
         return total_score / total_weight if total_weight > 0 else 0.0
 
-    def get_performance_report(self, hours: int = 24) -> Dict:
+    def get_performance_report(self, hours: int = 24) -> dict:
         """Generate comprehensive performance report."""
         summary = self.get_performance_summary(hours * 60)  # Convert to minutes
         health_score = self.get_system_health_score()
@@ -648,7 +659,7 @@ class PerformanceMonitor:
             recent_benchmarks = [
                 b
                 for b in self.benchmark_history
-                if b.start_time >= datetime.now() - timedelta(hours=hours)
+                if b.start_time >= datetime.now(UTC) - timedelta(hours=hours)
             ]
 
             if recent_benchmarks:
@@ -678,7 +689,7 @@ class PerformanceMonitor:
             ),
             "benchmark_summary": benchmark_summary,
             "thresholds": self.thresholds,
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
         }
 
 
@@ -706,7 +717,7 @@ def stop_performance_monitoring() -> None:
     monitor.stop_monitoring()
 
 
-def get_current_performance_metrics() -> Optional[PerformanceMetrics]:
+def get_current_performance_metrics() -> PerformanceMetrics | None:
     """Get current performance metrics."""
     monitor = get_performance_monitor()
     return monitor.get_current_metrics()
@@ -718,7 +729,7 @@ def run_performance_benchmark(benchmark_type: str, **kwargs: Any) -> BenchmarkRe
     return monitor.run_benchmark(benchmark_type, **kwargs)
 
 
-def get_performance_report(hours: int = 24) -> Dict[str, Any]:
+def get_performance_report(hours: int = 24) -> dict[str, Any]:
     """Get comprehensive performance report."""
     monitor = get_performance_monitor()
     return monitor.get_performance_report(hours)

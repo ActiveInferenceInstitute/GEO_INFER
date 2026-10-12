@@ -3,7 +3,7 @@ batch filtering, config key paths, candidate derivation, meter distances,
 and streaming API catalog honesty."""
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 import h3
 import numpy as np
@@ -105,7 +105,7 @@ class TestQualityControlConfigPath:
         controller = QualityController(
             {"temporal_consistency": {"max_change_rate": 0.01}}
         )
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         # Retain-after-scoring means the rate is computed among stored
         # history; feed a stable pair followed by a jump so the stored
@@ -119,6 +119,20 @@ class TestQualityControlConfigPath:
         )
         assert not result.passed
         assert any("Temporal change rate" in issue for issue in result.issues)
+
+    def test_flat_max_change_rate_key_is_not_read(self):
+        """Only temporal_consistency.max_change_rate configures the threshold."""
+        controller = QualityController({"max_change_rate": 0.01})
+        now = datetime.now(UTC).isoformat()
+        for value in (10.0, 10.05, 10.1):
+            controller.validate_measurement(
+                {"sensor_id": "s1", "value": value, "timestamp": now}
+            )
+        result = controller.validate_measurement(
+            {"sensor_id": "s1", "value": 10.1, "timestamp": now}
+        )
+        # ~0.5% steps pass the 10% default; a flat 1% key would not apply.
+        assert not any("Temporal change rate" in issue for issue in result.issues)
 
 
 class TestAdaptiveSamplingCandidates:

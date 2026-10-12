@@ -23,10 +23,7 @@ import asyncio
 from datetime import datetime, timedelta
 
 # Import modules to test
-from geo_infer_ant.analysis.patterns import (
-    SwarmPatternAnalyzer,
-    AnalysisConfiguration,  # noqa: F401
-)  # noqa: F401
+from geo_infer_ant.analysis.patterns import SwarmPatternAnalyzer
 from geo_infer_ant.core.stigmergy import PheromoneSystem
 from geo_infer_ant.core.digital_stigmergy import DigitalStigmergy
 
@@ -67,7 +64,7 @@ class TestSwarmPatternAnalyzer:
             agent_trajectory = []
             current_pos = center + np.random.normal(0, 1, 2)
 
-            for step in range(n_steps):
+            for _ in range(n_steps):
                 # Movement with attraction to center
                 attraction = -0.1 * (current_pos - center)
                 noise = np.random.normal(0, 0.5, 2)
@@ -107,7 +104,7 @@ class TestSwarmPatternAnalyzer:
         for agent in range(n_agents):
             trajectory = [initial_positions[agent]]
 
-            for step in range(n_steps):
+            for _ in range(n_steps):
                 # Calculate average velocity of neighbors
                 neighbors = [
                     initial_positions[i] for i in range(n_agents) if i != agent
@@ -135,7 +132,7 @@ class TestSwarmPatternAnalyzer:
         assert "flocking_detected" in flocking_result
 
     def test_flocking_separation_matches_pairwise_bruteforce(self):
-        """Vectorized separation must equal the legacy per-pair computation."""
+        """Vectorized separation must equal the per-pair reference computation."""
         analyzer = SwarmPatternAnalyzer()
 
         rng = np.random.default_rng(7)
@@ -162,8 +159,8 @@ class TestSwarmPatternAnalyzer:
         assert measures["separation"] == float(np.mean(bruteforce))
         assert measures["separation"] > 0.0
 
-    def test_flocking_analysis_single_agent_keeps_failure_contract(self):
-        """Single-agent trajectories must keep the legacy failure contract."""
+    def test_flocking_analysis_single_agent_reports_degenerate_input(self):
+        """Fewer than two agents is reported as a degenerate flocking input."""
         analyzer = SwarmPatternAnalyzer()
 
         analysis = analyzer.analyze_spatial_patterns(
@@ -171,7 +168,10 @@ class TestSwarmPatternAnalyzer:
         )
 
         flocking_result = analysis["patterns_detected"]["flocking"]
-        assert flocking_result.get("status") == "flocking_analysis_failed"
+        assert flocking_result == {
+            "status": "flocking_analysis_failed",
+            "error": "flocking analysis requires at least 2 agents; got 1",
+        }
 
     def test_migration_pattern_detection(self):
         """Test migration pattern detection."""
@@ -222,7 +222,7 @@ class TestSwarmPatternAnalyzer:
         communication_data = []
         n_agents = 10
 
-        for i in range(50):  # 50 communication events
+        for _ in range(50):  # 50 communication events
             comm = {
                 "from": f"agent_{np.random.randint(0, n_agents)}",
                 "to": f"agent_{np.random.randint(0, n_agents)}",
@@ -458,9 +458,9 @@ class TestAnalysisPerformance:
         n_steps = 100
         large_trajectories = []
 
-        for agent in range(n_agents):
+        for _ in range(n_agents):
             trajectory = []
-            for step in range(n_steps):
+            for _ in range(n_steps):
                 position = np.random.uniform(-50, 50, 2)
                 trajectory.append(position)
             large_trajectories.append(np.array(trajectory))
@@ -597,7 +597,7 @@ class TestAnalysisValidation:
 
         # Validate pattern detection structure
         patterns = analysis["patterns_detected"]
-        for pattern_type, pattern_result in patterns.items():
+        for pattern_result in patterns.values():
             assert isinstance(pattern_result, dict)
             if "status" in pattern_result:
                 assert pattern_result["status"] in [

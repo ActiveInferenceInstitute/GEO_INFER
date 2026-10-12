@@ -13,17 +13,11 @@ Usage:
 Example:
     python del_norte_county_demo.py --output ./del_norte_dashboard --api-keys api_keys.json
 
-Required packages:
-    - folium
-    - h3
-    - pandas
-    - geopandas
-    - numpy
-    - requests
+Dependencies are the GEO-INFER-PLACE [project.dependencies]; install with
+``uv sync --package geo-infer-place``.
 """
 
 import sys
-import importlib
 import argparse
 import json
 import logging
@@ -31,6 +25,16 @@ import tempfile
 from pathlib import Path
 from datetime import datetime
 import traceback
+
+import h3
+import numpy as np
+
+from geo_infer_place.locations.del_norte_county.comprehensive_dashboard import (
+    DelNorteComprehensiveDashboard,
+)
+from geo_infer_place.locations.del_norte_county.dashboard.core import AdvancedDashboard
+from geo_infer_place.utils.data_sources import CaliforniaDataSources
+from geo_infer_place.core.api_clients import CaliforniaAPIManager
 
 # Log to the system temp directory — never scatter log files into the cwd
 _log_path = Path(tempfile.gettempdir()) / "del_norte_demo.log"
@@ -44,148 +48,10 @@ logger = logging.getLogger(__name__)
 logger.info("Demo log file: %s", _log_path)
 
 
-def check_dependencies():
-    """Verify required dependencies are importable.
-
-    This example never installs packages: mutating the user's environment at
-    runtime is the package manager's job. Missing deps are a hard error with
-    actionable instructions.
-
-    Returns:
-        True when all required packages are importable.
-    """
-    logger.info("=== Dependency Check ===")
-
-    # Required packages — all declared in pyproject.toml [project.dependencies]
-    required_packages = {
-        "folium": "folium",
-        "h3": "h3",
-        "pandas": "pandas",
-        "geopandas": "geopandas",
-        "numpy": "numpy",
-        "requests": "requests",
-        "yaml": "pyyaml",
-        "plotly": "plotly",
-        "matplotlib": "matplotlib",
-        "branca": "branca",
-        "shapely": "shapely",
-    }
-
-    available_packages = []
-    missing_packages = []
-
-    for module_name, package_name in required_packages.items():
-        try:
-            importlib.import_module(module_name)
-            available_packages.append(module_name)
-            logger.info("✓ %s is available", module_name)
-        except ImportError:
-            missing_packages.append(package_name)
-            logger.warning("✗ %s is missing", module_name)
-
-    if missing_packages:
-        logger.error(
-            "Missing required packages: %s. Install them with:\n"
-            "  uv add %s\n"
-            "or:\n"
-            "  uv pip install %s",
-            ", ".join(missing_packages),
-            " ".join(missing_packages),
-            " ".join(missing_packages),
-        )
-        return False
-
-    logger.info(
-        "All %d required packages available: %s",
-        len(available_packages),
-        ", ".join(available_packages),
-    )
-    return True
-
-
-# Check dependencies first
-print("=== Checking Dependencies ===")
-if not check_dependencies():
-    print("Dependencies check failed. Install the missing packages listed above.")
-    sys.exit(1)
-
-# Now import the modules after ensuring dependencies are available
-print("=== Importing Core Modules ===")
-try:
-    import folium
-
-    print(f"✓ folium version: {folium.__version__}")
-except ImportError as e:
-    print(f"✗ folium import failed: {e}")
-
-try:
-    import h3
-
-    print(f"✓ h3 version: {h3.__version__}")
-except ImportError as e:
-    print(f"✗ h3 import failed: {e}")
-
-try:
-    import pandas as pd
-
-    print(f"✓ pandas version: {pd.__version__}")
-except ImportError as e:
-    print(f"✗ pandas import failed: {e}")
-
-try:
-    import numpy as np
-
-    print(f"✓ numpy version: {np.__version__}")
-except ImportError as e:
-    print(f"✗ numpy import failed: {e}")
-
-try:
-    import requests
-
-    print(f"✓ requests version: {requests.__version__}")
-except ImportError as e:
-    print(f"✗ requests import failed: {e}")
-
-# Try to import advanced visualization packages
-try:
-    import plotly
-
-    print(f"✓ plotly version: {plotly.__version__}")
-except ImportError as e:
-    print(f"○ plotly not available: {e}")
-
-try:
-    import matplotlib
-
-    print(f"✓ matplotlib version: {matplotlib.__version__}")
-except ImportError as e:
-    print(f"○ matplotlib not available: {e}")
-
-try:
-    import seaborn
-
-    print(f"✓ seaborn version: {seaborn.__version__}")
-except ImportError as e:
-    print(f"○ seaborn not available: {e}")
-
-print("=== Core Module Import Complete ===")
-print()
-
-# Import the concrete dashboard and data integration components.
-from geo_infer_place.locations.del_norte_county.comprehensive_dashboard import (
-    DelNorteComprehensiveDashboard,
-)
-from geo_infer_place.locations.del_norte_county.dashboard.core import AdvancedDashboard
-from geo_infer_place.utils.data_sources import CaliforniaDataSources
-from geo_infer_place.core.api_clients import CaliforniaAPIManager
-
-# Logging already configured earlier in the file
-
-
 def load_api_keys(api_keys_file: str) -> dict:
     """Load API keys from JSON file."""
     try:
-        with open(api_keys_file, "r") as f:
+        with open(api_keys_file) as f:
             api_keys = json.load(f)
         logger.info(f"Loaded API keys from {api_keys_file}")
         return api_keys
@@ -330,7 +196,7 @@ def run_comprehensive_demo(
         analysis_results = dashboard.run_comprehensive_analysis()
 
         logger.info(f"Analysis completed for {len(analysis_results)} domains:")
-        for domain, results in analysis_results.items():
+        for domain in analysis_results:
             logger.info(f"  ✓ {domain}")
 
         # Step 4: Generate interactive dashboard
@@ -369,7 +235,6 @@ def run_comprehensive_demo(
             logger.info(f"  - Resolution: {h3_data.get('resolution', 'Unknown')}")
 
         if "integration" in analysis_results:
-            integration = analysis_results["integration"]
             logger.info("Cross-domain integration:")
             logger.info(
                 f"  - Climate vulnerability index: {dashboard._calculate_climate_vulnerability_index():.2f}"
@@ -401,9 +266,6 @@ def run_comprehensive_demo(
 def demonstrate_h3_spatial_analysis():
     """Demonstrate H3 spatial analysis capabilities."""
     logger.info("=== Demonstrating H3 Spatial Analysis ===")
-
-    import h3
-    import numpy as np
 
     # Del Norte County center
     center_lat, center_lon = 41.75, -124.0
@@ -572,13 +434,13 @@ API Keys File Format (JSON):
     logger.info("Running component demonstrations...")
 
     # Demonstrate data sources catalog
-    data_sources = demonstrate_data_sources()
+    demonstrate_data_sources()
 
     # Demonstrate API connections
-    api_manager = demonstrate_api_connections(api_keys)
+    demonstrate_api_connections(api_keys)
 
     # Demonstrate H3 spatial analysis
-    h3_cells = demonstrate_h3_spatial_analysis()
+    demonstrate_h3_spatial_analysis()
 
     if args.demo_only:
         logger.info("Demo-only mode completed.")

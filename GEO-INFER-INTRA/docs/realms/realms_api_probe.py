@@ -19,27 +19,13 @@ import json
 import time
 import logging
 import requests
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Any
 from datetime import datetime
-import jsonschema
 from jsonschema import validate, ValidationError
 import argparse
 import sys
 import os
-from urllib.parse import urljoin
 
-# Create timestamped output directory
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-output_dir = os.path.join("outputs", f"test_run_{timestamp}")
-os.makedirs(output_dir, exist_ok=True)
-
-# Configure logging to write to timestamped directory
-log_file = os.path.join(output_dir, "test_execution.log")
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler(log_file), logging.StreamHandler(sys.stdout)],
-)
 logger = logging.getLogger(__name__)
 
 
@@ -52,7 +38,7 @@ class RealmsAPITester:
         self,
         schema_path: str = "realm_schema.json",
         timeout: int = 30,
-        output_dir: str = None,
+        output_dir: str | None = None,
     ):
         """
         Initialize the API tester.
@@ -93,10 +79,10 @@ class RealmsAPITester:
             "end_time": None,
         }
 
-    def _load_schema(self, schema_path: str) -> Dict[str, Any]:
+    def _load_schema(self, schema_path: str) -> dict[str, Any]:
         """Load and validate the JSON schema."""
         try:
-            with open(schema_path, "r") as f:
+            with open(schema_path) as f:
                 schema = json.load(f)
             logger.info(f"Successfully loaded schema from {schema_path}")
             return schema
@@ -111,9 +97,9 @@ class RealmsAPITester:
         self,
         method: str,
         url: str,
-        params: Optional[Dict] = None,
-        headers: Optional[Dict] = None,
-    ) -> Tuple[bool, Dict[str, Any]]:
+        params: dict | None = None,
+        headers: dict | None = None,
+    ) -> tuple[bool, dict[str, Any]]:
         """
         Make HTTP request with error handling and timing.
 
@@ -187,12 +173,12 @@ class RealmsAPITester:
             logger.error(f"✗ {method} {url} - Unexpected error: {e}")
             return False, result
 
-    def _validate_realm_schema(self, data: Any) -> Tuple[bool, Optional[str]]:
+    def _validate_realm_schema(self, data: Any) -> tuple[bool, str | None]:
         """
         Validate data against the realm schema.
 
         Returns:
-            Tuple of (is_valid: bool, error_message: Optional[str])
+            Tuple of (is_valid: bool, error_message: str | None)
         """
         if not self.schema:
             return True, "No schema loaded - skipping validation"
@@ -211,7 +197,7 @@ class RealmsAPITester:
             return False, f"Validation error: {str(e)}"
 
     def _record_test_result(
-        self, test_name: str, success: bool, details: Dict[str, Any]
+        self, test_name: str, success: bool, details: dict[str, Any]
     ):
         """Record the result of a test."""
         self.results["total_tests"] += 1
@@ -229,7 +215,7 @@ class RealmsAPITester:
             }
         )
 
-    def test_search_by_name(self, search_terms: List[str] = None) -> None:
+    def test_search_by_name(self, search_terms: list[str] | None = None) -> None:
         """
         Test the search Realms by name endpoint.
 
@@ -349,7 +335,7 @@ class RealmsAPITester:
 
             time.sleep(0.5)
 
-    def test_get_realm_by_id(self, realm_ids: List[int] = None) -> None:
+    def test_get_realm_by_id(self, realm_ids: list[int] | None = None) -> None:
         """
         Test the get Realm by ID endpoint.
 
@@ -465,8 +451,8 @@ class RealmsAPITester:
             time.sleep(0.5)
 
     def run_all_tests(
-        self, search_terms: List[str] = None, realm_ids: List[int] = None
-    ) -> Dict[str, Any]:
+        self, search_terms: list[str] | None = None, realm_ids: list[int] | None = None
+    ) -> dict[str, Any]:
         """
         Run all API tests.
 
@@ -570,7 +556,7 @@ class RealmsAPITester:
             avg_time = sum(response_times) / len(response_times)
             max_time = max(response_times)
             min_time = min(response_times)
-            logger.info(f"\n⏱️  RESPONSE TIMES:")
+            logger.info("\n⏱️  RESPONSE TIMES:")
             logger.info(f"  Average: {avg_time:.2f}s")
             logger.info(f"  Fastest: {min_time:.2f}s")
             logger.info(f"  Slowest: {max_time:.2f}s")
@@ -607,6 +593,18 @@ def main():
     )
 
     args = parser.parse_args()
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir = os.path.join("outputs", f"test_run_{timestamp}")
+    os.makedirs(output_dir, exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler(os.path.join(output_dir, "test_execution.log")),
+            logging.StreamHandler(sys.stdout),
+        ],
+    )
 
     # Initialize tester
     tester = RealmsAPITester(

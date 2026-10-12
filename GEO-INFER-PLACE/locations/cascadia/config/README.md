@@ -4,7 +4,6 @@ Config workspace within `GEO-INFER-PLACE`.
 
 ## Contents
 
-- `county_boundary_loader.py`
 - `analysis_config.yaml`
 - `ca_del_norte_boundary.geojson`
 - `ca_humboldt_boundary.geojson`
@@ -24,20 +23,18 @@ Config workspace within `GEO-INFER-PLACE`.
 - `cascadia_volcanoes.source.json`
 - `cascadia_watersheds.source.json`
 - `county_boundaries.yaml`
-- `data_cleanup_config.json`
 - `data_urls.json`
 
 ## Public Interface
 
-- `county_boundary_loader.py:CountyBoundaryLoader` (class)
-- `county_boundary_loader.py:create_county_boundary_loader` (function)
+- No public Python symbols are defined directly in this directory.
 
 ## Module Metadata
 
 - Module: `GEO-INFER-PLACE`
 - Package: `geo_infer_place`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-PLACE`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-place`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module PLACE`
 
 ## Dependencies
@@ -55,7 +52,8 @@ Config workspace within `GEO-INFER-PLACE`.
 - `matplotlib>=3.5.0`
 - `branca>=0.6.0`
 - `requests>=2.28.0`
-- `geo-infer-space`
+- `geo-infer-space>=0.4.0`
+- `geo-infer-time>=0.4.0`
 
 
 ## Validation

@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional, Tuple, Any
+from typing import Any
 from collections import defaultdict
 import math
 from datetime import timedelta
@@ -12,8 +12,8 @@ class DiseaseHotspotAnalyzer:
 
     def __init__(
         self,
-        reports: List[DiseaseReport],
-        population_data: Optional[List[PopulationData]] = None,
+        reports: list[DiseaseReport],
+        population_data: list[PopulationData] | None = None,
     ):
         self.reports = sorted(reports, key=lambda r: r.report_date)
         self.population_data = population_data if population_data else []
@@ -21,7 +21,7 @@ class DiseaseHotspotAnalyzer:
 
     def get_cases_in_radius(
         self, center_loc: Location, radius_km: float
-    ) -> List[DiseaseReport]:
+    ) -> list[DiseaseReport]:
         """Returns all disease reports within a given radius of a center location."""
         return [
             report
@@ -33,8 +33,8 @@ class DiseaseHotspotAnalyzer:
         self,
         center_loc: Location,
         radius_km: float,
-        time_window_days: Optional[int] = None,
-    ) -> Tuple[float, int, int, bool]:
+        time_window_days: int | None = None,
+    ) -> tuple[float, int, int, bool]:
         """Calculates the incidence rate within a given radius and time window.
 
         Incidence rate is per 100,000 population when population data is
@@ -98,14 +98,14 @@ class DiseaseHotspotAnalyzer:
         self,
         threshold_case_count: int = 5,
         scan_radius_km: float = 1.0,
-        min_density_cases_per_sq_km: Optional[float] = None,
-    ) -> List[Dict]:
+        min_density_cases_per_sq_km: float | None = None,
+    ) -> list[dict]:
         """Identifies simple hotspots based on case counts in a radius or density.
 
         Returns:
             A list of dictionaries, each representing a hotspot with 'location', 'case_count', 'radius_km'.
         """
-        hotspots: List[Dict[str, Any]] = []
+        hotspots: list[dict[str, Any]] = []
         # This is a naive approach: iterate through each report as a potential center.
         # More sophisticated methods (e.g., DBSCAN, Getis-Ord Gi*) should be used for real applications.
         for report in self.reports:
@@ -160,7 +160,7 @@ class DiseaseHotspotAnalyzer:
         beta: float = 0.3,
         gamma: float = 0.1,
         days: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Simulate SIR (Susceptible-Infected-Recovered) disease spread model.
 
@@ -181,30 +181,30 @@ class DiseaseHotspotAnalyzer:
         """
         if gamma <= 0:
             raise ValueError("gamma must be > 0")
-        S: List[float] = [float(population - initial_infected)]
-        I: List[float] = [float(initial_infected)]
-        R: List[float] = [0.0]
+        susceptible: list[float] = [float(population - initial_infected)]
+        infected: list[float] = [float(initial_infected)]
+        recovered: list[float] = [0.0]
 
         for _ in range(days - 1):
-            s, i, r = S[-1], I[-1], R[-1]
+            s, i, r = susceptible[-1], infected[-1], recovered[-1]
             n = s + i + r
 
             # SIR differential equations (discrete approximation)
             new_infected = (beta * s * i) / n if n > 0 else 0
             new_recovered = gamma * i
 
-            S.append(max(0, s - new_infected))
-            I.append(max(0, i + new_infected - new_recovered))
-            R.append(r + new_recovered)
+            susceptible.append(max(0, s - new_infected))
+            infected.append(max(0, i + new_infected - new_recovered))
+            recovered.append(r + new_recovered)
 
         return {
-            "susceptible": S,
-            "infected": I,
-            "recovered": R,
+            "susceptible": susceptible,
+            "infected": infected,
+            "recovered": recovered,
             "days": list(range(days)),
             "basic_reproduction_number": beta / gamma,
-            "peak_infected": max(I),
-            "peak_day": I.index(max(I)),
+            "peak_infected": max(infected),
+            "peak_day": infected.index(max(infected)),
         }
 
     def find_potential_contacts(
@@ -212,7 +212,7 @@ class DiseaseHotspotAnalyzer:
         case_report: "DiseaseReport",
         search_radius_km: float = 0.1,
         time_window_hours: int = 48,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Find potential contacts for a given case based on proximity and time.
 
@@ -276,7 +276,7 @@ class DiseaseHotspotAnalyzer:
 
     def analyze_temporal_trends(
         self, time_resolution: str = "daily", metric: str = "case_count"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze temporal trends in disease reports.
 
@@ -291,7 +291,7 @@ class DiseaseHotspotAnalyzer:
             return {"error": "No reports to analyze"}
 
         # Group reports by time period
-        time_series: Dict[str, int] = defaultdict(int)
+        time_series: dict[str, int] = defaultdict(int)
 
         for report in self.reports:
             if time_resolution == "hourly":
@@ -356,7 +356,7 @@ class DiseaseHotspotAnalyzer:
 
     def calculate_reproduction_number(
         self, serial_interval_days: float = 5.0, window_days: int = 7
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Estimate the effective reproduction number (Rt) over time.
 
@@ -371,7 +371,7 @@ class DiseaseHotspotAnalyzer:
             return {"error": "Insufficient data for Rt calculation"}
 
         # Group by day
-        daily_cases: Dict[str, int] = defaultdict(int)
+        daily_cases: dict[str, int] = defaultdict(int)
         for report in self.reports:
             day = report.report_date.strftime("%Y-%m-%d")
             daily_cases[day] += report.case_count
@@ -380,7 +380,7 @@ class DiseaseHotspotAnalyzer:
         case_counts = [daily_cases[d] for d in sorted_days]
 
         # Calculate Rt via the case-ratio method
-        rt_values: List[Dict[str, Any]] = []
+        rt_values: list[dict[str, Any]] = []
         for i in range(window_days, len(case_counts)):
             current_window = sum(case_counts[i - window_days + 1 : i + 1])
             previous_window = (
@@ -423,8 +423,8 @@ class DiseaseHotspotAnalyzer:
         }
 
     def generate_risk_map_data(
-        self, grid_resolution_km: float = 1.0, bbox: Optional[Dict[str, float]] = None
-    ) -> Dict[str, Any]:
+        self, grid_resolution_km: float = 1.0, bbox: dict[str, float] | None = None
+    ) -> dict[str, Any]:
         """
         Generate risk map data by gridding the study area.
 

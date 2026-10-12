@@ -15,8 +15,8 @@ Integration workspace within `GEO-INFER-TIME`.
 
 - Module: `GEO-INFER-TIME`
 - Package: `geo_infer_time`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-TIME`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-time`
 - Tests: `uv run python -m pytest GEO-INFER-TIME/tests/integration`
 
 ## Dependencies

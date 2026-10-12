@@ -15,20 +15,22 @@ as a passing research result.
 from __future__ import annotations
 
 import argparse
+import glob
 import hashlib
 import json
 import os
 import platform
 import re
+import shlex
 import shutil
 import subprocess
 import sys
 import tomllib
 from dataclasses import asdict, dataclass, replace
-from datetime import datetime, timezone
 from math import ceil
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
+from collections.abc import Iterable, Mapping, Sequence
 
 TOKEN_RE = re.compile(r"\{\{([A-Z][A-Z0-9_]*)\}\}")
 EXCLUDED_MANUSCRIPT_DOCS = frozenset({"README.md", "AGENTS.md", "SYNTAX.md"})
@@ -283,6 +285,7 @@ class VerificationResult:
     return_code: int | None
     duration_seconds: float | None
     output_tail: str
+    receipt: str | None = None
 
 
 @dataclass(frozen=True)
@@ -322,7 +325,7 @@ class VerificationRecord:
         return defined_command_groups(full_validation=self.full_validation_requested)
 
     @classmethod
-    def unmeasured(cls, *, full_validation: bool = False) -> "VerificationRecord":
+    def unmeasured(cls, *, full_validation: bool = False) -> VerificationRecord:
         """A record holding no executed command and naming no tree.
 
         The stamps are empty rather than borrowed from a build: an unmeasured
@@ -428,10 +431,15 @@ def _nonempty_lines(path: Path) -> int:
     )
 
 
+# Read-only git queries must not start Git's optional persistent daemon: a
+# user-level core.fsmonitor=true would otherwise leave one running per tree.
+_GIT = ("git", "-c", "core.fsmonitor=false")
+
+
 def _run_git(root: Path, *args: str, default: str = "unavailable") -> str:
     try:
         result = subprocess.run(
-            ["git", "-C", str(root), *args],
+            [*_GIT, "-C", str(root), *args],
             check=True,
             capture_output=True,
             text=True,
@@ -455,7 +463,7 @@ def _dirty_file_count(root: Path) -> int:
     """
     try:
         result = subprocess.run(
-            ["git", "-C", str(root), "status", "--porcelain"],
+            [*_GIT, "-C", str(root), "status", "--porcelain"],
             check=True,
             capture_output=True,
             text=True,
@@ -1525,7 +1533,7 @@ def generate_figures(
         # directly comparable with a bar in the left one.
         count_limit = max((*source_counts, *test_counts, 1)) * 1.08
         bar_height = 0.38
-        for index, (axis, (start, stop)) in enumerate(zip(axes, panels)):
+        for axis, (start, stop) in zip(axes, panels):
             panel_labels = labels[start:stop]
             y = list(range(len(panel_labels)))
             axis.barh(
@@ -1691,7 +1699,14 @@ def _verification_payload(record: VerificationRecord) -> dict[str, Any]:
     return {
         "schema_version": RESEARCH_SCHEMA,
         "full_validation_requested": record.full_validation_requested,
-        "results": [asdict(result) for result in record.results],
+        "results": [
+            {
+                key: value
+                for key, value in asdict(result).items()
+                if key != "receipt" or value is not None
+            }
+            for result in record.results
+        ],
         "source_commit": record.source_commit,
         "source_hash": record.source_hash,
     }
@@ -1934,26 +1949,97 @@ def resolve_verification(
     )
 
 
+def _verification_argv(command: str, root: Path) -> list[str]:
+    """Parse a trusted command declaration and expand compileall path operands.
+
+    Only compileall paths use globbing. Quoted scripts and other arguments keep
+    their literal content; no shell interprets them or expands substitutions.
+    Missing paths and unmatched patterns are rejected: compileall can print
+    "Can't list" while still exiting successfully. At least one explicit path
+    is required, rather than implicitly compiling the interpreter's sys.path.
+    """
+    argv = shlex.split(command)
+    if not argv:
+        raise ValueError("Verification commands must not be empty")
+    if argv[1:3] != ["-m", "compileall"]:
+        return argv
+    expanded = argv[:3]
+    value_options = {
+        "-r",
+        "-d",
+        "-s",
+        "-p",
+        "-x",
+        "-i",
+        "-j",
+        "--workers",
+        "--invalidation-mode",
+        "-o",
+        "-e",
+    }
+    option_value = False
+    only_paths = False
+    path_count = 0
+    for argument in argv[3:]:
+        if option_value:
+            expanded.append(argument)
+            option_value = False
+            continue
+        if not only_paths and argument.startswith("-"):
+            expanded.append(argument)
+            option_value = argument in value_options
+            only_paths = argument == "--"
+            continue
+        if glob.has_magic(argument):
+            paths = sorted(glob.glob(argument, root_dir=root))
+            if not paths:
+                raise ValueError(
+                    f"Verification compileall path pattern matched no paths: {argument}"
+                )
+        else:
+            paths = [argument]
+        for path in paths:
+            if not ((root / path).is_file() or (root / path).is_dir()):
+                raise ValueError(f"Verification compileall path does not exist: {path}")
+        expanded.extend(paths)
+        path_count += len(paths)
+    if not path_count:
+        raise ValueError(
+            "Verification compileall must select at least one explicit path"
+        )
+    return expanded
+
+
 def run_verification(
     root: Path, *, full_validation: bool = False
 ) -> tuple[VerificationResult, ...]:
     """Run and record the research verification commands.
 
-    Every command gets the same wall-clock envelope as the unified test
-    runners' own ``--timeout``: an unbounded ``subprocess.run`` is how one
-    hung validator stalls the whole CI job (the workflow-level
-    ``timeout-minutes`` guard kills the job but publishes nothing).  A
-    command that exceeds the envelope is recorded as ``status="timeout"``
-    with the elapsed duration rather than aborting the remaining groups, so
-    the record still shows what ran and the publication gate treats the
-    timed-out group exactly like a failed one.
+    Shared execution provides monotonic deadlines, process-tree cleanup and
+    immutable attempts, including retained output and artifact hashes. Each
+    result links to that receipt relative to ``root``; its bounded output tail
+    is a summary. Earlier records without receipt references remain readable.
+    A timeout or ordinary failure is recorded without retrying or aborting the
+    remaining groups. An interrupted attempt retains its failure and stops
+    admission; the remaining groups are reported as not run. Importing the
+    generator does not initialize execution.
     """
+    from geo_infer_test.execution import run_command
+
     commands = (
         *VERIFICATION_COMMANDS,
         *(FULL_VALIDATION_COMMANDS if full_validation else ()),
     )
+    if not commands:
+        raise ValueError("Verification must select at least one command group")
+    names = [name for name, _command in commands]
+    if any(not name.strip() for name in names) or len(names) != len(set(names)):
+        raise ValueError("Verification command group names must be unique and nonempty")
+    planned_commands = [
+        (name, command, _verification_argv(command, root)) for name, command in commands
+    ]
     results: list[VerificationResult] = []
-    for name, command in commands:
+    for name, command, argv in planned_commands:
         # The bare validators get the same 600s envelope as the unified test
         # runners' own per-command timeout.  The full-validation runner
         # groups aggregate a whole category of per-module commands, so their
@@ -1965,42 +2051,31 @@ def run_verification(
             if name in FULL_VALIDATION_GROUPS
             else VERIFICATION_TIMEOUT_SECONDS
         )
-        started = datetime.now(tz=timezone.utc)
-        try:
-            completed = subprocess.run(
-                command,
-                cwd=root,
-                shell=True,
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=timeout,
-            )
-        except subprocess.TimeoutExpired:
-            elapsed = (datetime.now(tz=timezone.utc) - started).total_seconds()
-            results.append(
-                VerificationResult(
-                    name=name,
-                    command=command,
-                    status="timeout",
-                    return_code=None,
-                    duration_seconds=round(elapsed, 3),
-                    output_tail=f"timed out after {timeout}s and was terminated",
-                )
-            )
-            continue
-        elapsed = (datetime.now(tz=timezone.utc) - started).total_seconds()
+        completed = run_command(argv, name, timeout, cwd=root)
         combined = f"{completed.stdout}\n{completed.stderr}".strip()
         results.append(
             VerificationResult(
                 name=name,
                 command=command,
-                status="passed" if completed.returncode == 0 else "failed",
+                status=(
+                    "timeout"
+                    if completed.status == "TIMEOUT"
+                    else "passed"
+                    if completed.success and completed.status == "PASS"
+                    else "failed"
+                ),
                 return_code=completed.returncode,
-                duration_seconds=round(elapsed, 3),
+                duration_seconds=round(completed.duration, 3),
                 output_tail=combined[-2000:],
+                receipt=(
+                    Path(os.path.relpath(completed.receipt, root)).as_posix()
+                    if completed.receipt
+                    else None
+                ),
             )
         )
+        if completed.status == "INTERRUPTED":
+            break
     return tuple(results)
 
 
@@ -2514,7 +2589,7 @@ def bibliography_policy(root: Path) -> dict[str, bool]:
             continue
         if not in_bibliography:
             continue
-        for prefix, name, default in _BIBLIOGRAPHY_POLICY:
+        for prefix, name, _default in _BIBLIOGRAPHY_POLICY:
             if line.startswith(prefix):
                 policy[name] = line[len(prefix) :].strip().lower() == "true"
                 matched[name] = True
@@ -2552,55 +2627,13 @@ def audit_bibliography(
     return tuple(sorted(entries - cited)), tuple(sorted(undefined))
 
 
-TEST_FILE_CENSUS_RE = re.compile(r"(\d+)\s+test files", re.IGNORECASE)
-
-
 def audit_module_census(root: Path, inventory: RepositoryInventory) -> None:
-    """Reconcile the catalog sections' stated test-file counts with the tree.
+    """Apply the same lightweight literal-count contract as the early docs gate."""
+    from geo_infer_test.documentation_contracts import module_catalog_census_errors
 
-    ``manuscript/sections/*.md`` are tracked prose combined verbatim at render
-    time (``scripts/render_manuscript_pdf.py::_module_catalog_sections``), so
-    unlike the module tables nothing regenerates their numbers: a stated
-    census drifts silently whenever tests are added or removed.  This audit
-    runs at generator time and fails the build on the first disagreement
-    between what a section states and what :func:`collect_inventory` measures
-    for the same module (the section stem names the module: ``water.md``
-    audits ``GEO-INFER-WATER``).
-
-    Scope, stated honestly: the only census quantity the existing inventory
-    machinery measures per module is the ``test_*.py`` file count
-    (``ModuleMetrics.test_files``), so that is the only stated literal gated
-    here.  Test class and function counts, which most sections also state,
-    are not measured by ``collect_inventory`` and stay ungated.  Sections
-    that phrase their census without the literal "<N> test files" — narrative
-    per-directory forms such as "``tests/unit/`` holds 18 files ... plus one
-    integration file" — are treated as not stated and skipped rather than
-    parsed heuristically.
-    """
-    measured = {module.name: module for module in inventory.modules}
-    sections_dir = root / "manuscript" / "sections"
-    if not sections_dir.is_dir():
-        return
-    drift: list[str] = []
-    for section in sorted(sections_dir.glob("*.md")):
-        module = measured.get(f"GEO-INFER-{section.stem.upper()}")
-        if module is None:
-            continue
-        stated = TEST_FILE_CENSUS_RE.findall(section.read_text(encoding="utf-8"))
-        if not stated:
-            continue
-        if len(set(stated)) > 1:
-            drift.append(
-                f"{section.relative_to(root)} states conflicting test-file "
-                f"counts: {', '.join(stated)}"
-            )
-            continue
-        if int(stated[0]) != module.test_files:
-            drift.append(
-                f"{section.relative_to(root)} states {stated[0]} test files "
-                f"for {module.name}, but the measured count is "
-                f"{module.test_files}"
-            )
+    drift = module_catalog_census_errors(
+        root, {module.name: module.test_files for module in inventory.modules}
+    )
     if drift:
         raise ValueError(
             "module catalog census drift (stated literals vs measured tree): "

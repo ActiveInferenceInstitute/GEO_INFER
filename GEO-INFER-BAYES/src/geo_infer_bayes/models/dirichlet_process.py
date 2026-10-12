@@ -6,8 +6,9 @@ spatial clustering and density estimation.
 """
 
 import numpy as np
-from typing import Dict, Optional, Tuple, Union, Any
+from typing import Any
 from .base import BayesianModel
+from ..utils.rng import SeedLike
 from ._model_utils import (
     features_from,
     log_prior_from_parameters,
@@ -55,7 +56,7 @@ class DirichletProcessMixture(BayesianModel):
             },
         }
 
-    def log_likelihood(self, theta: Dict[str, Any], data: Any) -> float:
+    def log_likelihood(self, theta: dict[str, Any], data: Any) -> float:
         """Compute the log-likelihood for the DP mixture model."""
         observations = observations_from(data)
 
@@ -100,7 +101,7 @@ class DirichletProcessMixture(BayesianModel):
             np.sum(maximum + np.log(np.mean(np.exp(component_ll - maximum), axis=0)))
         )
 
-    def log_prior(self, theta: Dict[str, Any]) -> float:
+    def log_prior(self, theta: dict[str, Any]) -> float:
         """Compute the log-prior for the DP mixture model parameters."""
         if "alpha" in theta and float(np.asarray(theta["alpha"])) <= 0:
             return -np.inf
@@ -112,7 +113,7 @@ class DirichletProcessMixture(BayesianModel):
         posterior: Any = None,
         samples: int = 100,
         return_std: bool = False,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """Make predictions at new locations."""
         signal = np.mean(features_from(X_new), axis=1)
         means = posterior_vector(posterior, "cluster_means_0", samples)
@@ -135,10 +136,18 @@ class DirichletProcessMixture(BayesianModel):
         return prediction
 
     def posterior_predictive(
-        self, posterior: Any, X: Optional[np.ndarray] = None, samples: int = 100
+        self,
+        posterior: Any,
+        X: np.ndarray | None = None,
+        samples: int = 100,
+        random_seed: SeedLike = None,
     ) -> np.ndarray:
-        """Generate posterior predictive samples."""
+        """Generate posterior predictive samples.
+
+        ``random_seed`` seeds the predictive draws; see
+        :func:`geo_infer_bayes.utils.rng.resolve_rng`.
+        """
         if X is None:
             raise ValueError("X is required to generate posterior predictive samples")
         predictions, std = self.predict(X, posterior, samples=samples, return_std=True)
-        return predictive_samples(predictions, std, samples)
+        return predictive_samples(predictions, std, samples, seed=random_seed)

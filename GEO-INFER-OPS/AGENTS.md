@@ -25,16 +25,13 @@
 - `deployment/`
 - `docs/`
 - `examples/`
-- `logs/`
 - `monitoring/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `Dockerfile`
 - `SKILL.md`
 - `docker-compose.yml`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Validation
 

@@ -7,13 +7,12 @@ coordinate manipulation, and geospatial data conversion.
 
 import math
 import numpy as np
-from typing import List, Dict, Tuple, Optional
 from shapely.geometry import Point, LineString, Polygon
 import geopandas as gpd
 
 
 def haversine_distance(
-    point1: Tuple[float, float], point2: Tuple[float, float]
+    point1: tuple[float, float], point2: tuple[float, float]
 ) -> float:
     """
     Calculate the great circle distance between two points on the earth.
@@ -44,8 +43,8 @@ def haversine_distance(
 
 
 def get_bbox(
-    points: List[Tuple[float, float]], buffer: float = 0.0
-) -> Tuple[float, float, float, float]:
+    points: list[tuple[float, float]], buffer: float = 0.0
+) -> tuple[float, float, float, float]:
     """
     Get the bounding box for a list of coordinates.
 
@@ -71,8 +70,8 @@ def get_bbox(
 
 
 def coords_to_geojson(
-    coords: List[Tuple[float, float]], geometry_type: str = "LineString"
-) -> Dict:
+    coords: list[tuple[float, float]], geometry_type: str = "LineString"
+) -> dict:
     """
     Convert a list of coordinates to GeoJSON format.
 
@@ -118,7 +117,7 @@ def coords_to_geojson(
 
 
 def points_to_gdf(
-    points: List[Tuple[float, float]], properties: Optional[List[Dict]] = None
+    points: list[tuple[float, float]], properties: list[dict] | None = None
 ) -> gpd.GeoDataFrame:
     """
     Convert a list of points to a GeoDataFrame.
@@ -148,7 +147,7 @@ def points_to_gdf(
     return gdf
 
 
-def route_to_linestring(coords: List[Tuple[float, float]]) -> LineString:
+def route_to_linestring(coords: list[tuple[float, float]]) -> LineString:
     """
     Convert route coordinates to a LineString geometry.
 
@@ -164,7 +163,7 @@ def route_to_linestring(coords: List[Tuple[float, float]]) -> LineString:
     return LineString(coords)
 
 
-def create_buffer(point: Tuple[float, float], distance_km: float) -> Polygon:
+def create_buffer(point: tuple[float, float], distance_km: float) -> Polygon:
     """
     Create a buffer around a point with a specified radius.
 
@@ -186,7 +185,7 @@ def create_buffer(point: Tuple[float, float], distance_km: float) -> Polygon:
     return buffer
 
 
-def calculate_route_distance(coords: List[Tuple[float, float]]) -> float:
+def calculate_route_distance(coords: list[tuple[float, float]]) -> float:
     """
     Calculate the total distance of a route using Haversine formula.
 
@@ -206,7 +205,7 @@ def calculate_route_distance(coords: List[Tuple[float, float]]) -> float:
     return total_distance
 
 
-def get_centroid(points: List[Tuple[float, float]]) -> Tuple[float, float]:
+def get_centroid(points: list[tuple[float, float]]) -> tuple[float, float]:
     """
     Calculate the geographic centroid of a set of points.
 
@@ -242,7 +241,7 @@ def get_centroid(points: List[Tuple[float, float]]) -> Tuple[float, float]:
 
 
 def within_distance(
-    point: Tuple[float, float], target: Tuple[float, float], max_distance_km: float
+    point: tuple[float, float], target: tuple[float, float], max_distance_km: float
 ) -> bool:
     """
     Check if a point is within a specified distance of a target.

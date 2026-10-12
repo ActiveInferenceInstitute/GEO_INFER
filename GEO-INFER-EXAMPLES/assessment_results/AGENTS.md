@@ -21,10 +21,7 @@
 
 ## Local Contents
 
-- `assessment_summary_20250620_154749.md`
-- `comprehensive_assessment_20250620_154749.json`
-- `latest_assessment_summary.md`
-- `latest_comprehensive_assessment.json`
+- No direct tracked child entries.
 
 ## Validation
 

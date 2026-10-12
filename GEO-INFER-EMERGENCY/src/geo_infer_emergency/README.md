@@ -15,8 +15,8 @@ Geo Infer Emergency workspace within `GEO-INFER-EMERGENCY`.
 
 - Module: `GEO-INFER-EMERGENCY`
 - Package: `geo_infer_emergency`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-EMERGENCY`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-emergency`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module EMERGENCY`
 
 ## Dependencies

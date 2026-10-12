@@ -1,6 +1,6 @@
 """Security integration for governance data and operations."""
 
-from typing import Dict, Any
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -50,8 +50,8 @@ class SecurityGovernanceIntegration:
             )
 
     def secure_governance_data(
-        self, governance_data: Dict[str, Any], sensitivity_level: str = "medium"
-    ) -> Dict[str, Any]:
+        self, governance_data: dict[str, Any], sensitivity_level: str = "medium"
+    ) -> dict[str, Any]:
         """
         Apply security controls to governance data.
 
@@ -128,8 +128,8 @@ class SecurityGovernanceIntegration:
         return security_config
 
     def create_audit_log_entry(
-        self, action: str, actor: str, governance_entity: str, details: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, action: str, actor: str, governance_entity: str, details: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Create audit log entry for governance action.
 
@@ -169,8 +169,8 @@ class SecurityGovernanceIntegration:
         return log_entry
 
     def configure_access_control(
-        self, governance_structure: Dict[str, Any], access_policies: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, governance_structure: dict[str, Any], access_policies: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Configure access control for governance operations.
 
@@ -186,8 +186,8 @@ class SecurityGovernanceIntegration:
         Dict[str, Any]
             Access control configuration
         """
-        entity_access_out: Dict[str, Any] = {}
-        access_config: Dict[str, Any] = {
+        entity_access_out: dict[str, Any] = {}
+        access_config: dict[str, Any] = {
             "configured": True,
             "policies": access_policies,
             "entity_access": entity_access_out,

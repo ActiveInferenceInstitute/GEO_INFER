@@ -54,6 +54,7 @@ telemetry lives in `geo_infer_agent.api.telemetry.TelemetryService`.
 ```python
 import asyncio
 from geo_infer_agent.core.agent_base import BaseAgent
+from geo_infer_agent.core.agent_registry import AgentRegistry
 
 
 class GreeterAgent(BaseAgent):
@@ -109,12 +110,18 @@ config = {
     ],
 }
 
-agent = BDIAgent(agent_id="bdi-demo", config=config)
-asyncio.run(agent.initialize())
-perception = asyncio.run(agent.perceive())
-agent.update_beliefs(perception)
-action = asyncio.run(agent.decide())      # {'type': 'log', ...}
-result = asyncio.run(agent.act(action))   # {'success': True, ...}
+async def run_bdi():
+    agent = BDIAgent(agent_id="bdi-demo", config=config)
+    await agent.initialize()
+    try:
+        perception = await agent.perceive()
+        agent.update_beliefs(perception)
+        action = await agent.decide()      # {'type': 'log', ...}
+        return await agent.act(action)    # {'success': True, ...}
+    finally:
+        await agent.shutdown()
+
+result = asyncio.run(run_bdi())
 ```
 
 Plan templates support `$CONFIG:<key>` placeholders (e.g.
@@ -159,6 +166,13 @@ unregistered agent returns False.
   messaging should subclass/override `send_message` with a real transport.
 - `run()` logs and stores crashes in `agent.last_error` without re-raising —
   check `agent.last_error` to distinguish crash vs clean stop.
+- Registry task completion releases its running flag and retained task. A
+  concurrent restart keeps its own task and flag when an older stop completes.
+- Failed message callbacks retain an undelivered message for retry; successful
+  callbacks consume it once.
+- Async tests use pytest-asyncio function-scoped loops, direct `await`, bounded
+  event/task waits, and actual stop/shutdown calls. Do not clear task references
+  or close a manual loop as a substitute for awaiting cleanup.
 - Test: `uv run python GEO-INFER-TEST/run_unified_tests.py --module AGENT`
 
 ### Integrations

@@ -6,7 +6,7 @@ distance-weighted spatial attention.
 """
 
 import numpy as np
-from typing import Optional, Tuple, Any, cast
+from typing import Any, cast
 import logging
 
 logger = logging.getLogger(__name__)
@@ -34,10 +34,10 @@ class SpatialAttention:
         queries: np.ndarray,
         keys: np.ndarray,
         values: np.ndarray,
-        coordinates: Optional[np.ndarray] = None,
+        coordinates: np.ndarray | None = None,
         distance_weight: float = 0.0,
         **kwargs: Any,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Compute scaled dot-product attention with optional spatial weighting.
 
         attention(Q, K, V) = softmax(Q·K^T / √d_k + λ·S) · V
@@ -97,9 +97,9 @@ class SpatialAttention:
         keys: np.ndarray,
         values: np.ndarray,
         n_heads: int = 4,
-        coordinates: Optional[np.ndarray] = None,
+        coordinates: np.ndarray | None = None,
         distance_weight: float = 0.0,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Multi-head attention with optional spatial weighting.
 
         Splits Q, K, V across heads, computes attention independently,

@@ -10,7 +10,7 @@ import hmac
 import secrets
 import base64
 import os
-from typing import Dict, List, Optional, Union, Any, Tuple, cast
+from typing import Any, cast
 from dataclasses import dataclass
 import logging
 import json
@@ -43,7 +43,7 @@ class SecurityConfig:
     # generate_secure_token() and validate_token() agree on the HMAC key.
     # When unset it falls back to GEO_INFER_TOKEN_SECRET, then to a
     # per-process random key (valid only within one process lifetime).
-    token_secret: Optional[str] = None
+    token_secret: str | None = None
 
     # Privacy parameters
     k_anonymity: int = 5
@@ -67,7 +67,7 @@ class SecurityUtils:
     access control, and audit logging.
     """
 
-    def __init__(self, config: Optional[SecurityConfig] = None):
+    def __init__(self, config: SecurityConfig | None = None):
         """
         Initialize security utilities.
 
@@ -75,8 +75,8 @@ class SecurityUtils:
             config: Security configuration
         """
         self.config = config or SecurityConfig()
-        self.failed_attempts: Dict[str, Tuple[int, datetime]] = {}
-        self.audit_log: List[Dict[str, Any]] = []
+        self.failed_attempts: dict[str, tuple[int, datetime]] = {}
+        self.audit_log: list[dict[str, Any]] = []
         # Stable HMAC key for token sign/verify. Prefer an explicit secret,
         # then the env var, then a per-process random key.
         secret = self.config.token_secret or os.getenv("GEO_INFER_TOKEN_SECRET")
@@ -89,7 +89,7 @@ class SecurityUtils:
                 "GEO_INFER_TOKEN_SECRET); tokens are only valid within this process."
             )
 
-    def generate_secure_key(self, length: Optional[int] = None) -> bytes:
+    def generate_secure_key(self, length: int | None = None) -> bytes:
         """
         Generate a cryptographically secure random key.
 
@@ -103,8 +103,8 @@ class SecurityUtils:
         return secrets.token_bytes(key_len)
 
     def hash_password(
-        self, password: str, salt: Optional[bytes] = None
-    ) -> Tuple[bytes, bytes]:
+        self, password: str, salt: bytes | None = None
+    ) -> tuple[bytes, bytes]:
         """
         Hash a password using PBKDF2.
 
@@ -140,7 +140,7 @@ class SecurityUtils:
         computed_hash, _ = self.hash_password(password, salt)
         return hmac.compare_digest(computed_hash, stored_hash)
 
-    def encrypt_data(self, data: Union[str, bytes], key: bytes) -> Tuple[bytes, bytes]:
+    def encrypt_data(self, data: str | bytes, key: bytes) -> tuple[bytes, bytes]:
         """
         Encrypt data using AES-256-CBC.
 
@@ -248,8 +248,8 @@ class SecurityUtils:
     def apply_k_anonymity(
         self,
         data: pd.DataFrame,
-        sensitive_cols: List[str],
-        quasi_identifiers: List[str],
+        sensitive_cols: list[str],
+        quasi_identifiers: list[str],
     ) -> pd.DataFrame:
         """
         Apply k-anonymity to protect sensitive data.
@@ -269,7 +269,7 @@ class SecurityUtils:
         groups = anonymized.groupby(quasi_identifiers)
 
         # For each group, ensure at least k records
-        for name, group in groups:
+        for _, group in groups:
             if len(group) < k:
                 # Suppress or generalize values
                 for col in quasi_identifiers:
@@ -278,19 +278,25 @@ class SecurityUtils:
         return anonymized
 
     def add_noise_to_numerical(
-        self, data: pd.DataFrame, columns: List[str], noise_level: float = 0.1
+        self,
+        data: pd.DataFrame,
+        columns: list[str],
+        noise_level: float = 0.1,
+        rng: int | np.random.Generator | None = None,
     ) -> pd.DataFrame:
         """
-            Add noise to numerical columns for privacy protection.
+        Add Gaussian noise to numerical columns for privacy protection.
 
         Args:
-                data: Input DataFrame
-                columns: Columns to add noise to
-                noise_level: Standard deviation of noise as fraction of data std
+            data: Input DataFrame
+            columns: Columns to add noise to
+            noise_level: Standard deviation of noise as fraction of data std
+            rng: Integer seed or ``np.random.Generator`` for reproducible noise
 
         Returns:
-                DataFrame with added noise
+            DataFrame with added noise
         """
+        generator = np.random.default_rng(rng)
         noisy_data = data.copy()
 
         for col in columns:
@@ -298,7 +304,7 @@ class SecurityUtils:
                 noisy_data[col]
             ):
                 std = noisy_data[col].std()
-                noise = np.random.normal(0, std * noise_level, len(noisy_data))
+                noise = generator.normal(0, std * noise_level, len(noisy_data))
                 noisy_data[col] = noisy_data[col] + noise
 
         return noisy_data
@@ -351,7 +357,7 @@ class SecurityUtils:
 
         return False
 
-    def _get_user_permissions(self, user_id: str) -> List[str]:
+    def _get_user_permissions(self, user_id: str) -> list[str]:
         """Get list of resources user has permission to access."""
         # Simplified permission system
         # In practice, this would query a database or external system
@@ -387,7 +393,7 @@ class SecurityUtils:
         resource: str,
         action: str,
         result: str,
-        reason: Optional[str] = None,
+        reason: str | None = None,
     ) -> None:
         """Log an audit event."""
         if not self.config.enable_audit_logging:
@@ -408,10 +414,10 @@ class SecurityUtils:
 
     def get_audit_log(
         self,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        user_id: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        user_id: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get audit log entries with optional filtering.
 
@@ -491,7 +497,7 @@ class SecurityUtils:
         )
         return token.decode("utf-8")
 
-    def validate_token(self, token: str) -> Optional[str]:
+    def validate_token(self, token: str) -> str | None:
         """
         Validate a secure token and return user ID if valid.
 
@@ -558,23 +564,9 @@ class SecurityUtils:
             input_data = input_data.replace(char, "")
         return input_data
 
-    def sanitize_input(self, input_data: str) -> str:
-        """Deprecated alias for :meth:`strip_dangerous_chars`.
-
-        Kept because other GEO-INFER modules may import it. The old
-        docstring claimed this prevents injection attacks, which is false:
-        character stripping is not injection defense. Callers should
-        migrate to :meth:`strip_dangerous_chars`.
-        """
-        logger.warning(
-            "sanitize_input() is a deprecated alias for strip_dangerous_chars(); "
-            "character stripping is not injection defense"
-        )
-        return self.strip_dangerous_chars(input_data)
-
     def validate_file_upload(
-        self, file_path: str, allowed_extensions: List[str], max_size_mb: int = 10
-    ) -> Tuple[bool, str]:
+        self, file_path: str, allowed_extensions: list[str], max_size_mb: int = 10
+    ) -> tuple[bool, str]:
         """
         Validate file upload for security.
 
@@ -605,7 +597,7 @@ class SecurityUtils:
 
 
 # Convenience functions
-def create_security_utils(config: Optional[SecurityConfig] = None) -> SecurityUtils:
+def create_security_utils(config: SecurityConfig | None = None) -> SecurityUtils:
     """Create a new SecurityUtils instance."""
     return SecurityUtils(config)
 
@@ -656,7 +648,7 @@ _PII_COLUMN_HINTS = (
 )
 
 
-def check_pii_columns(df: pd.DataFrame) -> List[str]:
+def check_pii_columns(df: pd.DataFrame) -> list[str]:
     """Return columns whose names suggest they hold personally identifiable data."""
     lowered = {str(col).lower(): str(col) for col in df.columns}
     return [lowered[keyword] for keyword in _PII_COLUMN_HINTS if keyword in lowered]

@@ -7,16 +7,15 @@ Tests cover:
 - SpatialProcessor buffer analysis
 """
 
-import pytest
-import sys
-import os
 import logging
 
+import geopandas as gpd
+import pytest
+from shapely.geometry import Point
+
+from geo_infer_space.core import SpatialIndexingInterface
+
 logger = logging.getLogger(__name__)
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
-
-from geo_infer_space.core import SpatialIndexingInterface  # noqa: E402
 
 
 class TestSpatialIndexingWorkflows:
@@ -111,12 +110,6 @@ class TestSpatialProcessorWorkflows:
         """
         Workflow: Create geometries -> buffer -> check spatial relationships.
         """
-        try:
-            import geopandas as gpd
-            from shapely.geometry import Point
-        except ImportError:
-            pytest.fail("geopandas or shapely not available")
-
         from geo_infer_space.core.spatial_processor import SpatialProcessor
 
         processor = SpatialProcessor()
@@ -139,7 +132,7 @@ class TestSpatialProcessorWorkflows:
 
         # Step 3: Verify buffers exist and are larger than points
         assert len(buffered) == 3
-        for idx, row in buffered.iterrows():
+        for _, row in buffered.iterrows():
             assert row.geometry.area > 0
 
         # Step 4: Nearby buffers should overlap, distant should not

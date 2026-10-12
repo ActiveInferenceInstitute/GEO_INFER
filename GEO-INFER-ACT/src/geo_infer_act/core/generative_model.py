@@ -7,22 +7,15 @@ based on latest research from the Active Inference Institute and peer-reviewed l
 
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Union,
     cast,
 )
+from collections.abc import Callable, Iterable, Mapping
 import numpy as np
 from dataclasses import dataclass, field
 import logging
 import copy
-import warnings
 
-from geo_infer_act.core.free_energy import FreeEnergyCalculator
+from geo_infer_act.core.free_energy import FreeEnergyCalculator, validate_spd_precision
 from geo_infer_act.core.types import (
     FreeEnergyBreakdown,
     H3BeliefUpdateResult,
@@ -31,6 +24,7 @@ from geo_infer_act.core.types import (
     NestedH3LevelSummary,
     SpatialInferenceTrace,
 )
+from geo_infer_act.utils.bayeux_backend import _import_bayeux
 from geo_infer_act.utils.h3_adapter import (
     edge_count_from_graph,
     get_h3_adapter,
@@ -80,6 +74,8 @@ def _kalman_posterior(
         )
     ):
         raise ValueError("Gaussian posterior inputs must be finite")
+    validate_spd_precision("predicted_covariance", predicted_covariance)
+    validate_spd_precision("observation_covariance", observation_covariance)
 
     innovation_covariance = (
         observation_matrix @ predicted_covariance @ observation_matrix.T
@@ -123,10 +119,10 @@ def _normalize_categorical_matrix(
 class MarkovBlanket:
     """Markov blanket specification for conditional independence."""
 
-    sensory_states: List[int] = field(default_factory=list)
-    active_states: List[int] = field(default_factory=list)
-    internal_states: List[int] = field(default_factory=list)
-    external_states: List[int] = field(default_factory=list)
+    sensory_states: list[int] = field(default_factory=list)
+    active_states: list[int] = field(default_factory=list)
+    internal_states: list[int] = field(default_factory=list)
+    external_states: list[int] = field(default_factory=list)
 
     def check_conditional_independence(
         self, state_idx: int, all_states: np.ndarray
@@ -200,8 +196,8 @@ class HierarchicalLevel:
     state_dim: int
     obs_dim: int
     temporal_scale: float = 1.0
-    parent_level: Optional[int] = None
-    child_levels: List[int] = field(default_factory=list)
+    parent_level: int | None = None
+    child_levels: list[int] = field(default_factory=list)
     precision: float = 1.0
 
 
@@ -217,8 +213,8 @@ class GenerativeModel:
     def __init__(
         self,
         model_type: str,
-        parameters: Dict[str, Any],
-        model_id: Optional[str] = None,
+        parameters: dict[str, Any],
+        model_id: str | None = None,
     ):
         """
         Initialize a generative model.
@@ -230,7 +226,8 @@ class GenerativeModel:
         """
         self.model_id = model_id
         self.model_type = model_type
-        self.parameters = parameters
+        self.parameters = copy.deepcopy(parameters)
+        parameters = self.parameters
         self.prior_precision = parameters.get("prior_precision", 1.0)
         random_seed = parameters.get("random_seed")
         if random_seed is not None and not isinstance(random_seed, (int, np.integer)):
@@ -239,16 +236,16 @@ class GenerativeModel:
 
         # Basic dimensions
         self.state_dim = parameters.get("state_dim", 1)
-        self.obs_dim = parameters.get("obs_dim", 1)
+        self.obs_dim = parameters.get("obs_dim", self.state_dim)
 
         # Hierarchical architecture
         self.hierarchical = parameters.get("hierarchical", False)
-        self.levels: List[HierarchicalLevel] = []
+        self.levels: list[HierarchicalLevel] = []
         self.current_level = 0
 
         # Markov blanket structure
         self.markov_blankets = parameters.get("markov_blankets", False)
-        self.blanket_structure: Optional[MarkovBlanket] = None
+        self.blanket_structure: MarkovBlanket | None = None
 
         # Message passing configuration
         self.message_passing = parameters.get("message_passing", True)
@@ -258,7 +255,7 @@ class GenerativeModel:
         self.spatial_mode = parameters.get("spatial_mode", False)
         self.temporal_hierarchies = parameters.get("temporal_hierarchies", False)
 
-        self.spatial_graph: Optional[Any] = None
+        self.spatial_graph: Any | None = None
 
         # Initialize core components
         self.beliefs = self._initialize_beliefs()
@@ -289,6 +286,7 @@ class GenerativeModel:
         # Integration with modern tools
         self.rxinfer_model = None
         self.bayeux_model = None
+        self._last_gaussian_free_energy: dict[str, float] = {}
 
     def _initialize_hierarchical_structure(self) -> None:
         """Initialize hierarchical levels for multi-scale modeling."""
@@ -366,7 +364,7 @@ class GenerativeModel:
 
         return kernel / np.sum(kernel)  # Normalize
 
-    def _initialize_beliefs(self) -> Dict[str, Any]:
+    def _initialize_beliefs(self) -> dict[str, Any]:
         """Initialize belief distributions with hierarchical support."""
         if "D" in self.parameters:
             # If D is provided, it's the initial beliefs.
@@ -377,7 +375,7 @@ class GenerativeModel:
                 self.parameters["D"], list
             ):
                 return {"states": self.parameters["D"]}
-            return cast(Dict[str, Any], self.parameters["D"])
+            return cast(dict[str, Any], self.parameters["D"])
 
         if self.hierarchical:
             beliefs = {}
@@ -414,11 +412,11 @@ class GenerativeModel:
         else:
             raise ValueError(f"Unsupported model type: {self.model_type}")
 
-    def _initialize_preferences(self) -> Dict[str, Any]:
+    def _initialize_preferences(self) -> dict[str, Any]:
         """Initialize prior preferences with hierarchical support."""
         if "C" in self.parameters:
             # If C is provided
-            return cast(Dict[str, Any], self.parameters["C"])
+            return cast(dict[str, Any], self.parameters["C"])
 
         if self.hierarchical:
             preferences = {}
@@ -479,7 +477,7 @@ class GenerativeModel:
             return transition
 
         if self.hierarchical:
-            models: Dict[str, Any] = {}
+            models: dict[str, Any] = {}
             for level in self.levels:
                 if self.model_type == "categorical":
                     models[f"level_{level.level_id}"] = np.eye(level.state_dim)
@@ -499,10 +497,10 @@ class GenerativeModel:
 
     def _initialize_hierarchical_categorical_transition(
         self, transition: Any
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Build validated per-level categorical transition matrices."""
         if isinstance(transition, Mapping):
-            models: Dict[str, np.ndarray] = {}
+            models: dict[str, np.ndarray] = {}
             for level in self.levels:
                 level_key = f"level_{level.level_id}"
                 if level_key not in transition:
@@ -536,7 +534,7 @@ class GenerativeModel:
         return {f"level_{level.level_id}": matrix.copy() for level in self.levels}
 
     def _categorical_transition(
-        self, state_dim: int, level_key: Optional[str] = None
+        self, state_dim: int, level_key: str | None = None
     ) -> np.ndarray:
         """Return the validated column-stochastic categorical transition matrix."""
         transition: Any = self.transition_model
@@ -565,7 +563,7 @@ class GenerativeModel:
             return self.parameters["A"]
 
         if self.hierarchical:
-            models: Dict[str, Any] = {}
+            models: dict[str, Any] = {}
             for level in self.levels:
                 if self.model_type == "categorical":
                     models[f"level_{level.level_id}"] = (
@@ -589,7 +587,7 @@ class GenerativeModel:
                 C[:C_dim, :C_dim] = np.eye(C_dim)
                 return {"C": C, "R": np.eye(self.obs_dim) * 0.01}
 
-    def update_beliefs(self, observations: Dict[str, np.ndarray]) -> Dict[str, Any]:
+    def update_beliefs(self, observations: dict[str, np.ndarray]) -> dict[str, Any]:
         """
         Update beliefs using hierarchical inference and message passing.
 
@@ -605,10 +603,10 @@ class GenerativeModel:
             return self._update_single_level_beliefs(observations)
 
     def _update_hierarchical_beliefs(
-        self, observations: Dict[str, np.ndarray]
-    ) -> Dict[str, Any]:
+        self, observations: dict[str, np.ndarray]
+    ) -> dict[str, Any]:
         """Update beliefs in hierarchical model using message passing."""
-        if self.message_passing:
+        if self.message_passing and self.model_type == "categorical":
             return self._message_passing_update(observations)
         else:
             # Sequential update of each level
@@ -632,8 +630,8 @@ class GenerativeModel:
             return updated_beliefs
 
     def _message_passing_update(
-        self, observations: Dict[str, np.ndarray]
-    ) -> Dict[str, Dict[str, np.ndarray]]:
+        self, observations: dict[str, np.ndarray]
+    ) -> dict[str, dict[str, np.ndarray]]:
         """Perform message passing for belief update."""
         updated_beliefs = {}
         # Bottom-up messages
@@ -710,7 +708,7 @@ class GenerativeModel:
                 )
 
     def _check_convergence(
-        self, old_beliefs: Dict, new_beliefs: Dict, threshold: float
+        self, old_beliefs: dict, new_beliefs: dict, threshold: float
     ) -> bool:
         """Check if message passing has converged."""
         for key in old_beliefs:
@@ -727,8 +725,8 @@ class GenerativeModel:
         return True
 
     def _update_single_level_beliefs(
-        self, observations: Dict[str, np.ndarray]
-    ) -> Dict[str, Any]:
+        self, observations: dict[str, np.ndarray]
+    ) -> dict[str, Any]:
         """Update beliefs for single-level models."""
         if self.model_type == "categorical":
             obs_vector = observations.get("observations")
@@ -741,20 +739,9 @@ class GenerativeModel:
                     "state_dim; factorized models must use their domain adapter"
                 )
             if getattr(self, "spatial_mode", False) and getattr(self, "h3_cells", None):
-                if obs_vector.size != int(self.state_dim):
-                    raise ValueError(
-                        "H3 spatial update_beliefs requires one observation per "
-                        "expanded state; use update_h3_beliefs for cell mappings"
-                    )
-                prior = normalize_distribution(
-                    np.asarray(self.beliefs["states"], dtype=float).reshape(-1)
+                raise ValueError(
+                    "H3 spatial update_beliefs requires explicit cell mappings; use update_h3_beliefs"
                 )
-                self.beliefs["states"] = categorical_posterior(
-                    prior,
-                    obs_vector,
-                    np.eye(int(self.state_dim), dtype=float),
-                )
-                return self.beliefs
             prior = self._categorical_transition(int(self.state_dim)) @ np.asarray(
                 self.beliefs["states"], dtype=float
             ).reshape(-1)
@@ -786,6 +773,17 @@ class GenerativeModel:
             updated_mean, updated_precision = _kalman_posterior(
                 pred_mean, pred_cov, obs_vector, C, R
             )
+            self._last_gaussian_free_energy["single"] = (
+                self.free_energy_calculator.compute_gaussian_free_energy(
+                    updated_mean,
+                    updated_precision,
+                    obs_vector,
+                    pred_mean,
+                    np.linalg.solve(pred_cov, np.eye(self.state_dim)),
+                    observation_matrix=C,
+                    observation_precision=np.linalg.solve(R, np.eye(self.obs_dim)),
+                )
+            )
 
             # Update beliefs
             self.beliefs["mean"] = updated_mean
@@ -795,7 +793,7 @@ class GenerativeModel:
 
     def _update_categorical_level(
         self, level: HierarchicalLevel, observation: np.ndarray
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Update beliefs for a categorical level."""
         level_key = f"level_{level.level_id}"
         current_beliefs = self.beliefs[level_key]
@@ -810,7 +808,7 @@ class GenerativeModel:
 
     def _update_gaussian_level(
         self, level: HierarchicalLevel, observation: np.ndarray
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Update beliefs for a Gaussian level."""
         level_key = f"level_{level.level_id}"
         current_beliefs = self.beliefs[level_key]
@@ -832,6 +830,17 @@ class GenerativeModel:
         # single-level model.
         updated_mean, updated_precision = _kalman_posterior(
             pred_mean, pred_cov, observation, C, R
+        )
+        self._last_gaussian_free_energy[level_key] = (
+            self.free_energy_calculator.compute_gaussian_free_energy(
+                updated_mean,
+                updated_precision,
+                observation,
+                pred_mean,
+                np.linalg.solve(pred_cov, np.eye(level.state_dim)),
+                observation_matrix=C,
+                observation_precision=np.linalg.solve(R, np.eye(level.obs_dim)),
+            )
         )
 
         return {"mean": updated_mean, "precision": updated_precision}
@@ -883,7 +892,18 @@ class GenerativeModel:
         return float(np.sum(log_terms))
 
     def compute_free_energy(self) -> float:
-        """Compute variational free energy."""
+        """Return the latest Gaussian VFE or categorical reference score.
+
+        A standalone model without observations exposes a reference score;
+        orchestration agents expose the actual perception VFE after conditioning.
+        """
+        if self.model_type in {"gaussian", "hierarchical_gaussian"}:
+            return float(sum(self._last_gaussian_free_energy.values()))
+        from geo_infer_act.core.factored_runtime import is_factored_model
+
+        if is_factored_model(self):
+            joint = self._factored_joint_beliefs()
+            return float(np.log(joint.size) - entropy(joint))
         if self.hierarchical:
             total_fe = 0.0
             for level in self.levels:
@@ -891,7 +911,7 @@ class GenerativeModel:
                 beliefs = self.beliefs[level_key]["states"]
                 # Use uniform reference observations/preferences when no current
                 # observation is attached to this standalone generative model.
-                observations = np.ones(level.obs_dim) / level.obs_dim
+                observations = np.ones(level.state_dim) / level.state_dim
                 preferences = np.ones(level.state_dim) / level.state_dim
                 level_fe = cast(
                     float,
@@ -905,10 +925,7 @@ class GenerativeModel:
             beliefs = self.beliefs["states"]
 
             # Handle factorized dimensions for reference observations/preferences.
-            if isinstance(self.obs_dim, list):
-                observations = np.array([np.ones(d) / d for d in self.obs_dim])
-            else:
-                observations = np.ones(self.obs_dim) / self.obs_dim
+            observations = np.ones(self.state_dim) / self.state_dim
 
             if isinstance(self.state_dim, list):
                 preferences = np.array([np.ones(d) / d for d in self.state_dim])
@@ -924,10 +941,10 @@ class GenerativeModel:
 
     def compute_expected_free_energy(
         self,
-        policies: List[Dict[str, Any]],
-        preferences: Optional[np.ndarray] = None,
+        policies: list[dict[str, Any]],
+        preferences: np.ndarray | None = None,
         return_breakdowns: bool = False,
-    ) -> Union[float, Dict[str, Any], List[Any]]:
+    ) -> float | dict[str, Any] | list[Any]:
         """
         Compute expected free energy over a set of continuous/categorical
         policies for the discrete generative model.
@@ -962,7 +979,7 @@ class GenerativeModel:
             if preferences is not None
             else self._categorical_preference_vector(len(belief_vector))
         )
-        breakdowns: List[FreeEnergyBreakdown] = []
+        breakdowns: list[FreeEnergyBreakdown] = []
         for policy in policies:
             breakdown = self.free_energy_calculator.compute_expected_free_energy(
                 belief_vector,
@@ -975,7 +992,7 @@ class GenerativeModel:
         efe_scores = [item.free_energy for item in breakdowns]
         efe_array = np.asarray(efe_scores, dtype=float)
         posterior = softmax(-efe_array)
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "efe_scores": efe_scores,
             "pragmatic_values": [item.pragmatic_value for item in breakdowns],
             "epistemic_values": [item.epistemic_value for item in breakdowns],
@@ -1035,7 +1052,7 @@ class GenerativeModel:
         self.nested_models.append(child_model)
         logger.info(f"Added nested model of type {child_model.model_type}")
 
-    def update_nested_beliefs(self, observations: Dict[str, np.ndarray]) -> None:
+    def update_nested_beliefs(self, observations: dict[str, np.ndarray]) -> None:
         """Update beliefs through hierarchy recursively."""
         # Update current level
         self.update_beliefs(observations)
@@ -1052,8 +1069,8 @@ class GenerativeModel:
                 nested_model.update_nested_beliefs(nested_obs)
 
     def _create_nested_observations(
-        self, observation_dim: Optional[int] = None
-    ) -> Dict[str, np.ndarray]:
+        self, observation_dim: int | None = None
+    ) -> dict[str, np.ndarray]:
         """Create observations for nested levels based on current beliefs."""
         # Use current belief means as observations for the nested level.
         if self.model_type == "categorical":
@@ -1075,17 +1092,29 @@ class GenerativeModel:
 
     def enable_spatial_navigation(self, grid_size: int) -> None:
         """Enable spatial navigation mode for geospatial applications."""
+        if (
+            isinstance(grid_size, bool)
+            or not isinstance(grid_size, (int, np.integer))
+            or grid_size < 1
+        ):
+            raise ValueError("grid_size must be a positive integer")
+        if 5 * grid_size**4 > self.parameters.get("max_entries", 1_000_000):
+            raise ValueError("Spatial navigation exceeds max_entries allocation budget")
         self.spatial_mode = True
         self.grid_size = grid_size
         self.state_dim = grid_size * grid_size  # Flatten grid
-        self.obs_dim = 1  # Distance to target
+        self.obs_dim = self.state_dim
         self.beliefs = self._initialize_beliefs()
-        self.transition_model = self._initialize_spatial_transition_model()
+        self.transition_model = np.stack(
+            self._initialize_spatial_transition_model(), axis=2
+        )
+        self.parameters["num_controls"] = 4
+        self.preferences = {"observations": np.ones(self.obs_dim) / self.obs_dim}
         self.observation_model = self._initialize_spatial_observation_model()
         self.spatial_graph = {}
         logger.info(f"Enabled spatial navigation with {grid_size}x{grid_size} grid")
 
-    def enable_h3_spatial(self, h3_resolution: int, boundary: Dict[str, Any]) -> None:
+    def enable_h3_spatial(self, h3_resolution: int, boundary: dict[str, Any]) -> None:
         """
         Enable H3-based spatial modeling for a real geospatial boundary.
 
@@ -1104,27 +1133,34 @@ class GenerativeModel:
         """
         from geo_infer_act.utils.integration import create_h3_spatial_model
 
-        result = create_h3_spatial_model({}, h3_resolution, boundary)
+        result = create_h3_spatial_model(
+            {"max_cells": self.parameters.get("max_cells", 100_000)},
+            h3_resolution,
+            boundary,
+        )
         if result["status"] == "success":
             self.spatial_mode = True
             self.spatial_config = result["model_config"]
             self.h3_cells = self.spatial_config.get("boundary_cells", [])
             if not self.h3_cells:
                 raise ValueError("H3 spatial model did not produce any cells")
-            self.state_dim = len(self.h3_cells) * self.parameters.get("state_dim", 1)
             self.beliefs = self._initialize_beliefs()
             self.spatial_graph = self._build_h3_neighbor_graph(self.h3_cells)
-            logger.info(f"Enabled H3 spatial mode with {self.state_dim} cells")
+            logger.info(
+                "Enabled H3 spatial mode with %s cells and %s states per cell",
+                len(self.h3_cells),
+                self.state_dim,
+            )
         else:
             raise RuntimeError(result["message"])
 
     def enable_nested_h3_spatial(
         self,
-        resolutions: List[int],
-        boundary: Optional[Dict[str, Any]] = None,
-        cells: Optional[List[str]] = None,
+        resolutions: list[int],
+        boundary: dict[str, Any] | None = None,
+        cells: list[str] | None = None,
         top_down_weight: float = 0.15,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Enable nested H3 spatial modeling across ordered resolutions.
 
@@ -1166,7 +1202,6 @@ class GenerativeModel:
             "nested_h3": True,
             "resolutions": list(self.nested_h3_resolutions),
         }
-        self.state_dim = len(self.h3_cells) * self.parameters.get("state_dim", 1)
         self.beliefs = self._initialize_beliefs()
         finest = self.nested_h3_resolutions[-1]
         self.spatial_graph = {
@@ -1175,24 +1210,21 @@ class GenerativeModel:
             .get(str(finest), {})
             .items()
         }
-        return cast(Dict[str, Any], hierarchy)
+        return cast(dict[str, Any], hierarchy)
 
-    def _build_h3_neighbor_graph(self, cells: List[str]) -> Dict[str, set]:
+    def _build_h3_neighbor_graph(self, cells: list[str]) -> dict[str, set]:
         """Build a first-order neighbor graph for H3 cells known to this model."""
         adapter = get_h3_adapter()
         cells = adapter.validate_cells(cells)
         cell_set = set(cells)
-        graph: Dict[str, set] = {cell: set() for cell in cells}
+        graph: dict[str, set] = {cell: set() for cell in cells}
 
         for cell in cells:
-            try:
-                graph[cell] = {
-                    neighbor
-                    for neighbor in adapter.grid_ring(cell, 1)
-                    if neighbor in cell_set
-                }
-            except Exception as exc:
-                logger.debug("Could not compute H3 neighbors for %s: %s", cell, exc)
+            graph[cell] = {
+                neighbor
+                for neighbor in adapter.grid_ring(cell, 1)
+                if neighbor in cell_set
+            }
         return graph
 
     def _initialize_spatial_transition_model(self) -> Any:
@@ -1219,7 +1251,7 @@ class GenerativeModel:
                 else:
                     next_state = state  # stay in place if at boundary
 
-                T[state, next_state] = 1.0
+                T[next_state, state] = 1.0
 
             transition_matrices.append(T)
 
@@ -1232,14 +1264,23 @@ class GenerativeModel:
         return np.eye(self.state_dim)
 
     def integrate_rxinfer(
-        self, model_specification: str, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self,
+        model_specification: str,
+        data: dict[str, Any],
+        *,
+        backend: str = "rxinfer",
+    ) -> dict[str, Any]:
         """Integrate with Julia RxInfer for Factor Graph-based inference.
 
-        Attempts to call a Julia subprocess with the RxInfer.jl package.  Returns
-        a structured 'not_available' response when Julia or RxInfer is not installed
-        rather than reporting success without a real backend.
+        ``rxinfer`` requires Julia/RxInfer and propagates backend failures.
+        ``local_gaussian`` explicitly chooses the conjugate scalar Gaussian
+        model declared by data's prior/measurement precision parameters. It
+        does not execute or claim equivalence to the supplied Julia source.
         """
+        if backend == "local_gaussian":
+            return self._deterministic_rxinfer_result(data)
+        if backend != "rxinfer":
+            raise ValueError("backend must be rxinfer or local_gaussian")
         if not isinstance(model_specification, str) or not model_specification.strip():
             raise ValueError("model_specification must be a non-empty Julia program")
 
@@ -1284,7 +1325,7 @@ class GenerativeModel:
                     timeout=60,
                 )
                 if result_proc.returncode == 0 and result_proc.stdout.strip():
-                    result: Dict[str, Any] = _json.loads(
+                    result: dict[str, Any] = _json.loads(
                         result_proc.stdout.strip().splitlines()[-1]
                     )
                     logger.info("RxInfer integration completed via Julia subprocess")
@@ -1296,42 +1337,80 @@ class GenerativeModel:
             finally:
                 if os.path.exists(data_path):
                     os.unlink(data_path)
-        except (FileNotFoundError, RuntimeError):
-            return self._deterministic_rxinfer_result(data)
-        except Exception as e:
-            logger.info(
-                "RxInfer integration unavailable; using deterministic local inference: %s",
-                e,
-            )
-            return self._deterministic_rxinfer_result(data)
+        except FileNotFoundError as exc:
+            raise RuntimeError(
+                "Julia/RxInfer is unavailable; choose backend='local_gaussian' explicitly for the declared local model"
+            ) from exc
 
     @staticmethod
-    def _deterministic_rxinfer_result(data: Dict[str, Any]) -> Dict[str, Any]:
-        """Return a finite local Gaussian posterior when Julia is unavailable."""
+    def _deterministic_rxinfer_result(data: dict[str, Any]) -> dict[str, Any]:
+        """Condition a declared scalar normal prior on independent normal data."""
         observations = np.asarray(data.get("observations", []), dtype=float)
         if observations.size == 0 or not np.isfinite(observations).all():
             raise ValueError("RxInfer data must contain finite observations")
+        prior_mean = float(data.get("prior_mean", 0))
+        prior_precision = float(data.get("prior_precision", 1))
+        measurement_precision = float(data.get("measurement_precision", 1))
+        if not np.isfinite(prior_mean) or not all(
+            np.isfinite(value) and value > 0
+            for value in (prior_precision, measurement_precision)
+        ):
+            raise ValueError(
+                "Local Gaussian parameters must be finite with positive precisions"
+            )
+        precision = prior_precision + observations.size * measurement_precision
+        mean = (
+            prior_precision * prior_mean + measurement_precision * observations.sum()
+        ) / precision
+        if not np.isfinite(precision) or not np.isfinite(mean):
+            raise ValueError("Local Gaussian posterior exceeds finite numeric range")
         return {
             "status": "success",
-            "backend": "deterministic-local",
+            "backend": "local_gaussian",
             "posterior_marginals": {
-                "mean": float(np.mean(observations)),
-                "variance": float(np.var(observations)),
+                "mean": float(mean),
+                "variance": float(1 / precision),
             },
             "iterations": int(observations.size),
         }
 
     def integrate_bayeux(
-        self, log_density_fn: Callable, test_point: Dict[str, np.ndarray]
-    ) -> Dict[str, Any]:
-        """Integrate with JAX-based Bayeux for scalable inference.
+        self,
+        log_density_fn: Callable,
+        test_point: dict[str, np.ndarray],
+        *,
+        backend: str = "numpy_metropolis",
+        n_samples: int = 1000,
+        warmup: int = 100,
+        transform_fn: Callable | None = None,
+    ) -> dict[str, Any]:
+        """Sample a declared backend without silently replacing failures.
 
-        Attempts to use the `bayeux` library (pip install bayeux-ml) with JAX.
-        Uses a NumPy random-walk Metropolis sampler when bayeux/JAX is not
-        installed, so the caller still gets real posterior samples.
+        The CPU default is an explicit symmetric random-walk Metropolis chain.
+        ``backend="bayeux"`` calls Bayeux's real NumPyro NUTS implementation;
+        the density callable must accept keyword parameters and be JAX traceable.
+        Neither path claims a marginal likelihood or unmeasured effective sample
+        size. Caller density errors propagate, including errors after warmup.
         """
+        if backend not in {"numpy_metropolis", "bayeux"}:
+            raise ValueError("backend must be numpy_metropolis or bayeux")
+        for name, value, minimum in (
+            ("n_samples", n_samples, 1),
+            ("warmup", warmup, 0),
+        ):
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, np.integer))
+                or value < minimum
+            ):
+                raise ValueError(f"{name} must be an integer at least {minimum}")
         if not callable(log_density_fn):
             raise TypeError("log_density_fn must be callable")
+        if transform_fn is not None:
+            if not callable(transform_fn):
+                raise TypeError("transform_fn must be callable")
+            if backend != "bayeux":
+                raise ValueError("transform_fn requires backend='bayeux'")
         if not isinstance(test_point, Mapping) or not test_point:
             raise ValueError("test_point must be a non-empty parameter mapping")
         test_point = {
@@ -1340,202 +1419,186 @@ class GenerativeModel:
         }
         if not all(np.all(np.isfinite(value)) for value in test_point.values()):
             raise ValueError("test_point values must be finite")
+        if backend == "bayeux":
+            bx = _import_bayeux()
+            import jax
 
-        try:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", DeprecationWarning)
-                import bayeux as bx
-                import jax
-
-                model = bx.Model(log_density=log_density_fn, test_point=test_point)
-                # Use NUTS sampler by default
-                results = model.mcmc.numpyro_nuts(
-                    seed=jax.random.PRNGKey(int(self.parameters.get("random_seed", 0))),
-                    num_samples=1000,
-                )
-            posterior_samples = {k: np.array(v) for k, v in results.items()}
-            logger.info("Bayeux/JAX NUTS sampling completed")
-            return {
-                "status": "success",
-                "posterior_samples": posterior_samples,
-                "log_marginal_likelihood": float("nan"),
-                "diagnostics": {"sampler": "numpyro_nuts"},
-            }
-        except Exception as backend_error:
-            # Optional Bayeux/JAX installations can be present but unusable on
-            # CPU-only or warning-as-error environments. Treat that the same as
-            # an unavailable backend so callers retain a local inference path.
-            logger.info(
-                "Bayeux/JAX unavailable (%s) — using NumPy random-walk Metropolis",
-                backend_error,
+            model_kwargs = (
+                {} if transform_fn is None else {"transform_fn": transform_fn}
             )
-            n_samples = 1000
-            current = {k: v.copy() for k, v in test_point.items()}
-            samples: Dict[str, list] = {k: [] for k in current}
-            try:
-                current_log_p = float(log_density_fn(**current))
-            except Exception as exc:
-                raise ValueError("log_density_fn failed at test_point") from exc
-            step_size = 0.1
-            for _ in range(n_samples):
-                proposal = {
-                    k: v + self.rng.standard_normal(size=v.shape) * step_size
-                    for k, v in current.items()
-                }
-                try:
-                    proposal_log_p = float(log_density_fn(**proposal))
-                except Exception:
-                    proposal_log_p = -np.inf
-                if np.log(self.rng.random()) < (proposal_log_p - current_log_p):
-                    current = proposal
-                    current_log_p = proposal_log_p
-                for k in samples:
-                    samples[k].append(current[k].copy())
-            posterior_samples = {k: np.stack(v, axis=0) for k, v in samples.items()}
-            return {
-                "status": "success",
-                "posterior_samples": posterior_samples,
-                "log_marginal_likelihood": float("nan"),
-                "diagnostics": {
-                    "sampler": "numpy_metropolis",
-                    "effective_sample_size": n_samples // 2,
-                    "backend_error": str(backend_error),
-                },
+            model = bx.Model(
+                log_density=lambda point: log_density_fn(**point),
+                test_point=test_point,
+                **model_kwargs,
+            )
+            inference = model.mcmc.numpyro_nuts(
+                seed=jax.random.PRNGKey(
+                    int(self.parameters.get("random_seed", 0) or 0)
+                ),
+                num_samples=n_samples,
+                num_warmup=warmup,
+                num_chains=1,
+                return_pytree=True,
+                progress_bar=False,
+            )
+            posterior_samples = {
+                key: np.asarray(inference[key]).copy() for key in test_point
             }
-        except Exception as e:
-            logger.error(f"Bayeux integration failed: {e}")
-            return {"status": "error", "message": str(e)}
+            diagnostics = {"sampler": "numpyro_nuts", "chains": 1}
+        else:
+            current = {key: value.copy() for key, value in test_point.items()}
+            current_log_p = float(log_density_fn(**current))
+            if not np.isfinite(current_log_p):
+                raise ValueError("log_density_fn must be finite at test_point")
+            samples: dict[str, list] = {key: [] for key in current}
+            accepted = 0
+            for index in range(n_samples + warmup):
+                proposal = {
+                    key: value + self.rng.standard_normal(size=value.shape) * 0.1
+                    for key, value in current.items()
+                }
+                proposal_log_p = float(log_density_fn(**proposal))
+                if np.isnan(proposal_log_p) or np.isposinf(proposal_log_p):
+                    raise ValueError(
+                        "log_density_fn must return finite density or negative infinity outside support"
+                    )
+                if np.log(self.rng.random()) < proposal_log_p - current_log_p:
+                    current, current_log_p = proposal, proposal_log_p
+                    accepted += int(index >= warmup)
+                if index >= warmup:
+                    for key in samples:
+                        samples[key].append(current[key].copy())
+            posterior_samples = {
+                key: np.stack(values, axis=0) for key, values in samples.items()
+            }
+            diagnostics = {
+                "sampler": "numpy_metropolis",
+                "acceptance_rate": accepted / n_samples,
+                "chains": 1,
+            }
+        if not all(np.all(np.isfinite(value)) for value in posterior_samples.values()):
+            raise ValueError("Posterior samples must be finite")
+        return {
+            "status": "success",
+            "backend": backend,
+            "posterior_samples": posterior_samples,
+            "log_marginal_likelihood": None,
+            "diagnostics": diagnostics,
+        }
+
+    @staticmethod
+    def _validated_spatial_beliefs(beliefs: Mapping[str, Any]) -> dict[str, np.ndarray]:
+        """Own aligned, positive-mass cell distributions before spatial operations."""
+        if not isinstance(beliefs, Mapping):
+            raise TypeError("beliefs must be a cell-to-vector mapping")
+        validated = {}
+        dimensions = set()
+        for cell, values in beliefs.items():
+            vector = np.asarray(values, dtype=float)
+            if (
+                vector.ndim != 1
+                or not vector.size
+                or not np.all(np.isfinite(vector))
+                or np.any(vector < 0)
+                or not np.isfinite(vector.sum())
+                or vector.sum() <= 0
+            ):
+                raise ValueError(
+                    "Spatial beliefs must be finite nonnegative vectors with positive mass"
+                )
+            dimensions.add(vector.size)
+            validated[cell] = vector / vector.sum()
+        if len(dimensions) > 1:
+            raise ValueError(
+                "Spatial belief vectors must share the same state dimension"
+            )
+        return validated
 
     def diffuse_beliefs(
-        self, beliefs: Dict[str, np.ndarray], diffusion_rate: float = 0.1
-    ) -> Dict[str, np.ndarray]:
-        """Diffuse beliefs across spatial neighbors using precision-weighted averaging.
+        self, beliefs: dict[str, np.ndarray], diffusion_rate: float = 0.1
+    ) -> dict[str, np.ndarray]:
+        """Blend each posterior with the equal-weight mean of observed neighbors.
 
-        Each cell's belief is updated as a weighted average of its own belief
-        and its neighbors' beliefs, where the mixing weight is controlled by
-        diffusion_rate. Beliefs are re-normalized after diffusion.
-
-        Args:
-            beliefs: Dictionary mapping cell IDs to belief arrays
-            diffusion_rate: Rate of belief diffusion (0 = no diffusion, 1 = full averaging)
-
-        Returns:
-            Diffused beliefs dictionary
+        The rate lies in [0, 1]. Cells without observed neighbors retain their
+        posterior. Missing neighbor observations are not invented, and all
+        returned vectors are independently owned. A model without configured
+        spatial topology returns an owned copy of the validated distributions.
         """
+        if (
+            isinstance(diffusion_rate, bool)
+            or not np.isfinite(diffusion_rate)
+            or not 0 <= diffusion_rate <= 1
+        ):
+            raise ValueError("diffusion_rate must be finite and between zero and one")
+        distributions = self._validated_spatial_beliefs(beliefs)
         if not self.spatial_mode or self.spatial_graph is None:
-            return beliefs
-
-        diffused = {}
-
-        # Get neighbor lookup from spatial graph
-        neighbor_map = {}
+            return distributions
         if hasattr(self.spatial_graph, "neighbors"):
-            # H3SpatialGraph object with .neighbors dict
-            for cell, distance_neighbors in self.spatial_graph.neighbors.items():
-                # distance_neighbors is {distance: set_of_cells}
-                immediate = distance_neighbors.get(1, set())
-                neighbor_map[cell] = immediate
-        elif isinstance(self.spatial_graph, dict):
-            # Direct dict mapping cell -> neighbors (index-based or cell-based)
+            neighbor_map = {
+                cell: neighbors.get(1, set())
+                for cell, neighbors in self.spatial_graph.neighbors.items()
+            }
+        elif isinstance(self.spatial_graph, Mapping):
             neighbor_map = self.spatial_graph
-
-        for cell, belief in beliefs.items():
-            belief = normalize_belief_vector(belief)
-            neighbors = neighbor_map.get(cell, set())
-
-            if not neighbors:
+        else:
+            raise TypeError("Spatial topology must expose a neighbor mapping")
+        unknown = set(distributions) - set(neighbor_map)
+        if unknown:
+            raise ValueError(
+                f"Beliefs contain cells outside the configured topology: {sorted(unknown)}"
+            )
+        diffused = {}
+        for cell, belief in distributions.items():
+            observed_neighbors = [
+                distributions[neighbor]
+                for neighbor in neighbor_map[cell]
+                if neighbor in distributions
+            ]
+            if not observed_neighbors:
                 diffused[cell] = belief.copy()
-                continue
-
-            # Collect valid neighbor beliefs
-            neighbor_beliefs = []
-            for neighbor in neighbors:
-                if neighbor in beliefs:
-                    neighbor_beliefs.append(normalize_belief_vector(beliefs[neighbor]))
-
-            if not neighbor_beliefs:
-                diffused[cell] = belief.copy()
-                continue
-
-            # Average neighbor beliefs
-            avg_neighbor_belief = np.mean(neighbor_beliefs, axis=0)
-
-            # Weighted blend: (1 - rate) * own + rate * neighbors
-            blended = (
-                1.0 - diffusion_rate
-            ) * belief + diffusion_rate * avg_neighbor_belief
-
-            # Re-normalize to valid distribution
-            total = np.sum(blended)
-            if total > 1e-10:
-                blended = blended / total
             else:
-                blended = np.ones_like(blended) / len(blended)
-
-            diffused[cell] = blended
-
-        # Include any cells not in the input unchanged.
-        for cell in beliefs:
-            if cell not in diffused:
-                diffused[cell] = normalize_belief_vector(beliefs[cell]).copy()
-
+                diffused[cell] = (
+                    1 - diffusion_rate
+                ) * belief + diffusion_rate * np.mean(observed_neighbors, axis=0)
         return diffused
 
     def aggregate_beliefs_to_resolution(
-        self, beliefs: Dict[str, np.ndarray], target_resolution: int
-    ) -> Dict[str, np.ndarray]:
-        """Aggregate fine-resolution beliefs to a coarser H3 resolution.
+        self, beliefs: dict[str, np.ndarray], target_resolution: int
+    ) -> dict[str, np.ndarray]:
+        """Average equal-resolution cell posteriors under their H3 parents.
 
-        Maps each fine-resolution cell to its parent at target_resolution using
-        h3.cell_to_parent, then averages beliefs across children of each parent.
-
-        Args:
-            beliefs: Dictionary mapping H3 cell IDs to belief arrays
-            target_resolution: Target coarser H3 resolution
-
-        Returns:
-            Aggregated beliefs at the target resolution
+        Refinement, invalid cells, and mixed input resolutions fail explicitly.
+        Parent order follows the first supplied child in each group. This is
+        an equal-cell posterior mean, not an area-weighted observation sum.
         """
+        if (
+            isinstance(target_resolution, bool)
+            or not isinstance(target_resolution, (int, np.integer))
+            or not 0 <= target_resolution <= 15
+        ):
+            raise ValueError(
+                "target_resolution must be an integer between zero and fifteen"
+            )
+        distributions = self._validated_spatial_beliefs(beliefs)
         adapter = get_h3_adapter()
-
-        # Group cells by their parent at the target resolution
-        parent_groups: Dict[str, list] = {}
-        for cell, belief in beliefs.items():
-            try:
-                cell_res = adapter.get_resolution(cell)
-                if cell_res <= target_resolution:
-                    # Already at or coarser than target; retain the existing value.
-                    parent_groups.setdefault(cell, []).append(
-                        normalize_belief_vector(belief)
-                    )
-                else:
-                    parent = adapter.cell_to_parent(cell, target_resolution)
-                    parent_groups.setdefault(parent, []).append(
-                        normalize_belief_vector(belief)
-                    )
-            except Exception as e:
-                logger.debug(f"Failed to aggregate cell {cell}: {e}")
-                continue
-
-        # Average beliefs within each parent cell
-        aggregated = {}
-        for parent, child_beliefs in parent_groups.items():
-            avg = np.mean(child_beliefs, axis=0)
-            # Normalize
-            total = np.sum(avg)
-            if total > 1e-10:
-                avg = avg / total
-            else:
-                avg = np.ones_like(avg) / len(avg)
-            aggregated[parent] = avg
-
-        logger.debug(
-            f"Aggregated {len(beliefs)} cells to {len(aggregated)} parent cells at resolution {target_resolution}"
-        )
-        return aggregated
+        cells = adapter.validate_cells(distributions)
+        resolutions = {adapter.get_resolution(cell) for cell in cells}
+        if len(resolutions) > 1:
+            raise ValueError("Aggregation requires a single input H3 resolution")
+        if resolutions and target_resolution > next(iter(resolutions)):
+            raise ValueError("Aggregation cannot refine cells to a finer resolution")
+        parent_groups = {}
+        for cell, belief in distributions.items():
+            parent = adapter.cell_to_parent(cell, int(target_resolution))
+            parent_groups.setdefault(parent, []).append(belief)
+        return {
+            parent: np.mean(child_beliefs, axis=0)
+            for parent, child_beliefs in parent_groups.items()
+        }
 
     def set_preferences(self, preferences: Any) -> None:
         """Set prior preferences with hierarchical support."""
+        preferences = copy.deepcopy(preferences)
         if not isinstance(preferences, dict):
             self.preferences = copy.deepcopy(preferences)
         elif self.hierarchical and isinstance(self.preferences, dict):
@@ -1553,7 +1616,7 @@ class GenerativeModel:
             self.preferences = copy.deepcopy(preferences)
         logger.debug("Updated model preferences")
 
-    def get_model_summary(self) -> Dict[str, Any]:
+    def get_model_summary(self) -> dict[str, Any]:
         """Get comprehensive model summary for monitoring and debugging."""
         summary = {
             "model_type": self.model_type,
@@ -1561,12 +1624,16 @@ class GenerativeModel:
             "obs_dim": self.obs_dim,
             "hierarchical": self.hierarchical,
             "spatial_mode": self.spatial_mode,
-            "markov_blankets": self.markov_blankets,
+            "markov_blankets": copy.deepcopy(self.markov_blankets),
             "message_passing": self.message_passing,
             "free_energy": self.compute_free_energy(),
             "belief_entropy": self._compute_belief_entropy(),
             "convergence_status": self._check_model_convergence(),
         }
+        from geo_infer_act.core.factored_runtime import is_factored_model
+
+        if is_factored_model(self):
+            summary["free_energy_definition"] = "reference_kl_to_uniform_joint"
 
         if self.hierarchical:
             summary["levels"] = len(self.levels)
@@ -1582,11 +1649,33 @@ class GenerativeModel:
 
         return summary
 
+    def _factored_joint_beliefs(self) -> np.ndarray:
+        """Return an owned, bounded joint rather than a mixture of marginals."""
+        from geo_infer_act.core.factored_runtime import build_runtime_artifact
+
+        initial = np.asarray(build_runtime_artifact(self).to_dict()["initial_joint"])
+        joint = np.asarray(self.beliefs.get("joint", initial), dtype=float)
+        if (
+            joint.shape != initial.shape
+            or not np.all(np.isfinite(joint))
+            or np.any(joint < 0)
+            or not np.isfinite(joint.sum())
+            or joint.sum() <= 0
+        ):
+            raise ValueError(
+                "Factored joint beliefs must match the finite state domain"
+            )
+        return joint / joint.sum()
+
     def _compute_belief_entropy(self) -> float:
         """Compute total entropy of current beliefs."""
+        from geo_infer_act.core.factored_runtime import is_factored_model
+
+        if is_factored_model(self):
+            return entropy(self._factored_joint_beliefs())
         if self.hierarchical:
             total_entropy = 0.0
-            for level_key, beliefs in self.beliefs.items():
+            for beliefs in self.beliefs.values():
                 if self.model_type == "categorical":
                     total_entropy += entropy(beliefs["states"])
                 elif self.model_type in ["gaussian", "hierarchical_gaussian"]:
@@ -1628,8 +1717,8 @@ class GenerativeModel:
             return "learning"
 
     def update_h3_beliefs(
-        self, h3_observations: Dict[str, np.ndarray], return_result: bool = False
-    ) -> Union[H3BeliefUpdateResult, Dict[str, Any]]:
+        self, h3_observations: dict[str, np.ndarray], return_result: bool = False
+    ) -> H3BeliefUpdateResult | dict[str, Any]:
         """
         Update beliefs for H3-indexed observations and report spatial coherence.
 
@@ -1661,7 +1750,7 @@ class GenerativeModel:
             )
 
         beliefs = {}
-        pymdp_metadata: Dict[str, Any] = {}
+        pymdp_metadata: dict[str, Any] = {}
         for index, cell in enumerate(observed_cells):
             obs = observations_by_cell[cell]
             obs_array = np.asarray(obs, dtype=float).reshape(-1)
@@ -1670,7 +1759,7 @@ class GenerativeModel:
             pymdp_result = run_model_step(
                 self,
                 obs_array,
-                random_seed=int(self.parameters.get("random_seed", 0)) + index,
+                random_seed=int(self.parameters.get("random_seed", 0) or 0) + index,
             )
             beliefs[cell] = normalize_belief_vector(pymdp_result.beliefs)
             pymdp_metadata[cell] = pymdp_result.to_metadata()
@@ -1693,7 +1782,9 @@ class GenerativeModel:
         avg_beliefs = normalize_belief_vector(np.mean(list(beliefs.values()), axis=0))
         self.beliefs["states"] = avg_beliefs.copy()
         spatial_consistency = self._compute_h3_spatial_consistency(beliefs)
-        aggregate_free_energy = self._compute_h3_aggregate_free_energy(beliefs)
+        aggregate_free_energy = float(
+            np.mean([record["free_energy"] for record in pymdp_metadata.values()])
+        )
         result = H3BeliefUpdateResult(
             h3_beliefs=beliefs,
             average=avg_beliefs,
@@ -1703,6 +1794,10 @@ class GenerativeModel:
                 "adapter_source": adapter.source,
                 "pymdp_backend": "inferactively-pymdp",
                 "pymdp_cell_metadata": pymdp_metadata,
+                "aggregate_free_energy_definition": "mean_observed_cell_perception_vfe",
+                "reference_kl_to_uniform": self._compute_h3_reference_kl_to_uniform(
+                    beliefs
+                ),
                 "h3_resolution": (
                     adapter.get_resolution(observed_cells[0])
                     if observed_cells
@@ -1714,15 +1809,15 @@ class GenerativeModel:
 
     def compute_h3_cell_diagnostics(
         self,
-        cell_results: Dict[str, Any],
+        cell_results: dict[str, Any],
         *,
         timestep: int = 0,
         scenario: str = "h3",
-        previous_beliefs: Optional[Dict[str, Any]] = None,
-        hierarchy: Optional[Dict[str, Any]] = None,
-        parent_beliefs: Optional[Dict[str, Any]] = None,
-        backend_metadata: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        previous_beliefs: dict[str, Any] | None = None,
+        hierarchy: dict[str, Any] | None = None,
+        parent_beliefs: dict[str, Any] | None = None,
+        backend_metadata: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> SpatialInferenceTrace:
         """
         Compute typed H3 cell, edge, and level diagnostics for inference results.
@@ -1753,10 +1848,10 @@ class GenerativeModel:
 
     def update_nested_h3_beliefs(
         self,
-        h3_observations: Dict[str, np.ndarray],
+        h3_observations: dict[str, np.ndarray],
         return_result: bool = False,
-        top_down_weight: Optional[float] = None,
-    ) -> Union[NestedH3BeliefUpdateResult, Dict[str, Any]]:
+        top_down_weight: float | None = None,
+    ) -> NestedH3BeliefUpdateResult | dict[str, Any]:
         """
         Update beliefs on a nested H3 hierarchy with bottom-up and top-down flow.
 
@@ -1803,8 +1898,8 @@ class GenerativeModel:
         if observed_cells and not child_parent_map:
             raise ValueError("Nested H3 hierarchy has no parent-child mappings")
 
-        fine_beliefs: Dict[str, np.ndarray] = {}
-        pymdp_metadata: Dict[str, Any] = {}
+        fine_beliefs: dict[str, np.ndarray] = {}
+        pymdp_metadata: dict[str, Any] = {}
         for index, cell in enumerate(observed_cells):
             obs = np.asarray(observations_by_cell[cell], dtype=float).reshape(-1)
             if obs.size == 0 or not np.all(np.isfinite(obs)):
@@ -1812,7 +1907,7 @@ class GenerativeModel:
             pymdp_result = run_model_step(
                 self,
                 obs,
-                random_seed=int(self.parameters.get("random_seed", 0)) + index,
+                random_seed=int(self.parameters.get("random_seed", 0) or 0) + index,
             )
             fine_beliefs[cell] = normalize_belief_vector(pymdp_result.beliefs)
             pymdp_metadata[cell] = pymdp_result.to_metadata()
@@ -1853,7 +1948,7 @@ class GenerativeModel:
             raise ValueError("top_down_weight must be between 0.0 and 1.0")
 
         if weight > 0.0:
-            blended: Dict[str, np.ndarray] = {}
+            blended: dict[str, np.ndarray] = {}
             for child, belief in fine_beliefs.items():
                 parent = child_parent_map.get(child)
                 parent_belief = parent_beliefs.get(parent) if parent else None
@@ -1880,14 +1975,7 @@ class GenerativeModel:
             hierarchy,
         )
         aggregate_free_energy = float(
-            np.mean(
-                [
-                    summary.mean_free_energy
-                    for summary in level_summaries
-                    if np.isfinite(summary.mean_free_energy)
-                ]
-                or [0.0]
-            )
+            np.mean([record["free_energy"] for record in pymdp_metadata.values()])
         )
         self.beliefs["states"] = normalize_belief_vector(
             np.mean(list(fine_beliefs.values()), axis=0)
@@ -1904,6 +1992,7 @@ class GenerativeModel:
                 "adapter_source": adapter.source,
                 "pymdp_backend": "inferactively-pymdp",
                 "pymdp_cell_metadata": pymdp_metadata,
+                "aggregate_free_energy_definition": "mean_observed_leaf_perception_vfe_before_spatial_blending",
                 "resolutions": list(hierarchy.get("resolutions", [])),
                 "top_down_weight": weight,
                 "leaf_resolution": finest_resolution,
@@ -1913,16 +2002,16 @@ class GenerativeModel:
         return result if return_result else result.to_dict()
 
     def _aggregate_nested_h3_parent_beliefs(
-        self, fine_beliefs: Dict[str, np.ndarray], hierarchy: Dict[str, Any]
-    ) -> Dict[str, np.ndarray]:
+        self, fine_beliefs: dict[str, np.ndarray], hierarchy: dict[str, Any]
+    ) -> dict[str, np.ndarray]:
         """Aggregate finest child beliefs to all parent levels."""
         if not fine_beliefs:
             return {}
         adapter = get_h3_adapter()
         resolutions = [int(value) for value in hierarchy.get("resolutions", [])]
-        parent_beliefs: Dict[str, np.ndarray] = {}
+        parent_beliefs: dict[str, np.ndarray] = {}
         for target_resolution in reversed(resolutions[:-1]):
-            grouped: Dict[str, List[np.ndarray]] = {}
+            grouped: dict[str, list[np.ndarray]] = {}
             for child, belief in fine_beliefs.items():
                 parent = adapter.cell_to_parent(child, target_resolution)
                 grouped.setdefault(parent, []).append(normalize_belief_vector(belief))
@@ -1934,13 +2023,13 @@ class GenerativeModel:
 
     def _nested_h3_level_beliefs(
         self,
-        fine_beliefs: Dict[str, np.ndarray],
-        parent_beliefs: Dict[str, np.ndarray],
-        hierarchy: Dict[str, Any],
-    ) -> Dict[int, Dict[str, np.ndarray]]:
+        fine_beliefs: dict[str, np.ndarray],
+        parent_beliefs: dict[str, np.ndarray],
+        hierarchy: dict[str, Any],
+    ) -> dict[int, dict[str, np.ndarray]]:
         """Group nested H3 beliefs by resolution."""
         adapter = get_h3_adapter()
-        levels: Dict[int, Dict[str, np.ndarray]] = {}
+        levels: dict[int, dict[str, np.ndarray]] = {}
         for cell, belief in parent_beliefs.items():
             levels.setdefault(adapter.get_resolution(cell), {})[cell] = belief
         for cell, belief in fine_beliefs.items():
@@ -1952,15 +2041,15 @@ class GenerativeModel:
 
     def _nested_h3_level_summaries(
         self,
-        level_beliefs: Dict[int, Dict[str, np.ndarray]],
-        hierarchy: Dict[str, Any],
-    ) -> List[NestedH3LevelSummary]:
+        level_beliefs: dict[int, dict[str, np.ndarray]],
+        hierarchy: dict[str, Any],
+    ) -> list[NestedH3LevelSummary]:
         """Build per-resolution nested H3 diagnostics."""
-        summaries: List[NestedH3LevelSummary] = []
+        summaries: list[NestedH3LevelSummary] = []
         same_level_neighbors = hierarchy.get("same_level_neighbors", {})
         for resolution in hierarchy.get("resolutions", []):
             level = level_beliefs.get(int(resolution), {})
-            graph: Dict[str, Iterable[str]] = {
+            graph: dict[str, Iterable[str]] = {
                 cell: {
                     neighbor
                     for neighbor in same_level_neighbors.get(str(resolution), {}).get(
@@ -1977,16 +2066,16 @@ class GenerativeModel:
                     for belief in level.values()
                 ]
                 mean_entropy = float(np.mean(entropies))
-                mean_free_energy = self._compute_h3_aggregate_free_energy(level)
+                mean_reference_kl = self._compute_h3_reference_kl_to_uniform(level)
             else:
                 mean_entropy = 0.0
-                mean_free_energy = 0.0
+                mean_reference_kl = 0.0
             summaries.append(
                 NestedH3LevelSummary(
                     resolution=int(resolution),
                     cell_count=len(level),
                     edge_count=edge_count_from_graph(graph),
-                    mean_free_energy=float(mean_free_energy),
+                    mean_reference_kl_to_uniform=float(mean_reference_kl),
                     mean_entropy=mean_entropy,
                     coherence=float(consistency.global_coherence),
                     metadata={
@@ -1997,7 +2086,7 @@ class GenerativeModel:
         return summaries
 
     def _compute_h3_spatial_consistency_for_graph(
-        self, beliefs: Dict[str, np.ndarray], graph: Dict[str, Any]
+        self, beliefs: dict[str, np.ndarray], graph: dict[str, Any]
     ) -> H3SpatialConsistency:
         """Compute H3 spatial consistency using an explicit graph."""
         if not beliefs:
@@ -2038,8 +2127,8 @@ class GenerativeModel:
 
     def _compute_nested_h3_spatial_consistency(
         self,
-        level_beliefs: Dict[int, Dict[str, np.ndarray]],
-        hierarchy: Dict[str, Any],
+        level_beliefs: dict[int, dict[str, np.ndarray]],
+        hierarchy: dict[str, Any],
     ) -> H3SpatialConsistency:
         """Compute combined lateral and cross-level nested H3 consistency."""
         same_level_neighbors = hierarchy.get("same_level_neighbors", {})
@@ -2064,7 +2153,7 @@ class GenerativeModel:
 
         child_parent_map = hierarchy.get("child_parent_map", {})
         cross_level_scores = []
-        all_beliefs: Dict[str, np.ndarray] = {}
+        all_beliefs: dict[str, np.ndarray] = {}
         for beliefs in level_beliefs.values():
             all_beliefs.update(beliefs)
         for child, parent in child_parent_map.items():
@@ -2094,10 +2183,10 @@ class GenerativeModel:
             metadata={"cross_level_coherence": cross_level},
         )
 
-    def _compute_h3_aggregate_free_energy(
-        self, beliefs: Dict[str, np.ndarray]
+    def _compute_h3_reference_kl_to_uniform(
+        self, beliefs: dict[str, np.ndarray]
     ) -> float:
-        """Compute a finite aggregate free-energy diagnostic for H3 beliefs."""
+        """Average KL(cell posterior || uniform); no measurement VFE is claimed."""
         if not beliefs:
             return 0.0
         values = []
@@ -2106,11 +2195,18 @@ class GenerativeModel:
             belief = normalize_belief_vector(belief)
             if uniform is None or len(uniform) != len(belief):
                 uniform = np.ones_like(belief) / len(belief)
-            values.append(float(np.sum(belief * np.log((belief + 1e-12) / uniform))))
+            positive = belief > 0
+            values.append(
+                float(
+                    np.sum(
+                        belief[positive] * np.log(belief[positive] / uniform[positive])
+                    )
+                )
+            )
         return float(np.mean(values))
 
     def _compute_h3_spatial_consistency(
-        self, beliefs: Dict[str, np.ndarray]
+        self, beliefs: dict[str, np.ndarray]
     ) -> H3SpatialConsistency:
         """Compute global and neighbor-level consistency for H3 beliefs."""
         if not beliefs:

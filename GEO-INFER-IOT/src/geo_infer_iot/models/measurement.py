@@ -6,32 +6,41 @@ including batch processing, quality metadata, and temporal analysis.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
-from datetime import datetime
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from typing import Any
+from datetime import datetime, UTC
+from pydantic import Field, ValidationInfo, field_validator
 import numpy as np
 import h3
+
+from geo_infer_time.core.timestamps import normalize_timestamp
+from .timestamps import TimestampModel
+from .spatial import sensor_cell
 
 logger = logging.getLogger(__name__)
 
 
-class MeasurementQuality(BaseModel):
+def _utc_now() -> datetime:
+    """Current time as a timezone-aware UTC datetime."""
+    return datetime.now(UTC)
+
+
+class MeasurementQuality(TimestampModel):
     """Quality metadata for sensor measurements."""
 
     quality_score: float = Field(
         1.0, ge=0.0, le=1.0, description="Overall quality score"
     )
-    validation_checks: List[str] = Field(
+    validation_checks: list[str] = Field(
         default_factory=list, description="Validation checks performed"
     )
-    outlier_score: Optional[float] = Field(None, description="Outlier detection score")
+    outlier_score: float | None = Field(None, description="Outlier detection score")
     calibration_applied: bool = Field(
         False, description="Whether calibration was applied"
     )
-    uncertainty_estimate: Optional[float] = Field(
+    uncertainty_estimate: float | None = Field(
         None, description="Measurement uncertainty"
     )
-    quality_flags: List[str] = Field(default_factory=list, description="Quality flags")
+    quality_flags: list[str] = Field(default_factory=list, description="Quality flags")
 
     def add_flag(self, flag: str) -> None:
         """Add a quality flag."""
@@ -45,7 +54,7 @@ class MeasurementQuality(BaseModel):
         )
 
 
-class Measurement(BaseModel):
+class Measurement(TimestampModel):
     """Individual sensor measurement data model."""
 
     measurement_id: str = Field(..., description="Unique measurement identifier")
@@ -60,17 +69,17 @@ class Measurement(BaseModel):
     value: float = Field(..., description="Measured value")
     unit: str = Field(..., description="Unit of measurement")
     timestamp: datetime = Field(
-        default_factory=datetime.now, description="Measurement timestamp"
+        default_factory=_utc_now, description="Measurement timestamp (aware UTC)"
     )
 
     # Location information
-    latitude: Optional[float] = Field(
+    latitude: float | None = Field(
         None, ge=-90, le=90, description="Latitude in decimal degrees"
     )
-    longitude: Optional[float] = Field(
+    longitude: float | None = Field(
         None, ge=-180, le=180, description="Longitude in decimal degrees"
     )
-    h3_index: Optional[str] = Field(None, description="H3 hexagonal index")
+    h3_index: str | None = Field(None, description="H3 hexagonal index")
     h3_resolution: int = Field(8, ge=0, le=15, description="H3 resolution level")
 
     # Quality and metadata
@@ -85,20 +94,26 @@ class Measurement(BaseModel):
         ),
         description="Quality metadata",
     )
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional measurement metadata"
     )
 
     # Processing information
-    processed_at: Optional[datetime] = Field(
+    processed_at: datetime | None = Field(
         None, description="When measurement was processed"
     )
-    processing_version: Optional[str] = Field(
+    processing_version: str | None = Field(
         None, description="Processing pipeline version"
     )
 
+    @field_validator("timestamp", "processed_at")
+    @classmethod
+    def validate_timestamps(cls, v: datetime | None) -> datetime | None:
+        """Require timezone-aware timestamps and normalize them to UTC."""
+        return None if v is None else normalize_timestamp(v)
+
     @field_validator("h3_index")
-    def validate_h3_index(cls, v: Optional[str], info: Any) -> Optional[str]:
+    def validate_h3_index(cls, v: str | None, info: Any) -> str | None:
         """Validate H3 index format."""
         if v and not h3.is_valid_cell(v):
             raise ValueError(f"Invalid H3 index: {v}")
@@ -111,25 +126,29 @@ class Measurement(BaseModel):
             self.latitude is not None
             and self.longitude is not None
             and not self.h3_index
-            and self.h3_resolution
         ):
             self.h3_index = h3.latlng_to_cell(
                 self.latitude, self.longitude, self.h3_resolution
             )
 
     def update_location(
-        self, latitude: float, longitude: float, h3_resolution: Optional[int] = None
+        self, latitude: float, longitude: float, h3_resolution: int | None = None
     ) -> None:
         """Update measurement location and recalculate H3 index."""
-        self.latitude = latitude
-        self.longitude = longitude
+        resolution = self.h3_resolution if h3_resolution is None else h3_resolution
+        cell = sensor_cell(latitude, longitude, resolution)
+        candidate = type(self).model_validate(
+            {
+                **self.model_dump(),
+                "latitude": latitude,
+                "longitude": longitude,
+                "h3_resolution": resolution,
+                "h3_index": cell,
+            }
+        )
+        self.__dict__.update(candidate.__dict__)
 
-        if h3_resolution:
-            self.h3_resolution = h3_resolution
-
-        self.h3_index = h3.latlng_to_cell(latitude, longitude, self.h3_resolution)
-
-    def apply_calibration(self, calibration_params: Dict) -> "Measurement":
+    def apply_calibration(self, calibration_params: dict) -> "Measurement":
         """Apply calibration to the measurement value."""
         if calibration_params.get("method") == "linear":
             slope = calibration_params.get("slope", 1.0)
@@ -143,7 +162,7 @@ class Measurement(BaseModel):
 
         return self
 
-    def get_location_info(self) -> Dict:
+    def get_location_info(self) -> dict:
         """Get comprehensive location information."""
         return {
             "latitude": self.latitude,
@@ -153,19 +172,19 @@ class Measurement(BaseModel):
             "coordinate_system": "WGS84",
         }
 
-    def get_temporal_info(self) -> Dict:
+    def get_temporal_info(self) -> dict:
         """Get temporal information about the measurement."""
         return {
             "timestamp": self.timestamp.isoformat(),
             "processed_at": (
                 self.processed_at.isoformat() if self.processed_at else None
             ),
-            "age_seconds": (datetime.now() - self.timestamp).total_seconds(),
+            "age_seconds": (_utc_now() - self.timestamp).total_seconds(),
             "processing_version": self.processing_version,
         }
 
 
-class MeasurementBatch(BaseModel):
+class MeasurementBatch(TimestampModel):
     """Batch of sensor measurements for efficient processing."""
 
     batch_id: str = Field(..., description="Unique batch identifier")
@@ -175,38 +194,44 @@ class MeasurementBatch(BaseModel):
         exclude=True,
         repr=False,
     )
-    measurements: List[Measurement] = Field(
+    measurements: list[Measurement] = Field(
         ..., description="Measurements included in this batch"
     )
 
     # Batch metadata
-    sensor_ids: List[str] = Field(
+    sensor_ids: list[str] = Field(
         default_factory=list, description="Unique sensor IDs in batch"
     )
-    variables: List[str] = Field(
+    variables: list[str] = Field(
         default_factory=list, description="Unique variables in batch"
     )
-    time_range: Dict[str, datetime] = Field(
+    time_range: dict[str, datetime] = Field(
         default_factory=dict, description="Time range of batch"
     )
     # Batch processing information
     batch_size: int = Field(..., description="Number of measurements in batch")
     created_at: datetime = Field(
-        default_factory=datetime.now, description="Batch creation timestamp"
+        default_factory=_utc_now, description="Batch creation timestamp (aware UTC)"
     )
-    processed_at: Optional[datetime] = Field(
+    processed_at: datetime | None = Field(
         None, description="Batch processing timestamp"
     )
 
     # Quality summary
-    quality_summary: Dict[str, Any] = Field(
+    quality_summary: dict[str, Any] = Field(
         default_factory=dict, description="Quality summary for batch"
     )
 
+    @field_validator("created_at", "processed_at")
+    @classmethod
+    def validate_batch_timestamps(cls, v: datetime | None) -> datetime | None:
+        """Require timezone-aware batch timestamps and normalize them to UTC."""
+        return None if v is None else normalize_timestamp(v)
+
     @field_validator("measurements")
     def validate_measurements(
-        cls, v: List["Measurement"], info: "ValidationInfo"
-    ) -> List["Measurement"]:
+        cls, v: list["Measurement"], info: "ValidationInfo"
+    ) -> list["Measurement"]:
         """Validate measurements in batch unless explicitly allowed empty."""
         if len(v) == 0 and not info.data.get("allow_empty", False):
             raise ValueError("Batch must contain at least one measurement")
@@ -328,7 +353,7 @@ class MeasurementBatch(BaseModel):
             allow_empty=True,
         )
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get statistical summary of the batch."""
         if not self.measurements:
             return {}
@@ -373,20 +398,20 @@ class MeasurementBatch(BaseModel):
         }
 
 
-class MeasurementStream(BaseModel):
+class MeasurementStream(TimestampModel):
     """Real-time measurement stream configuration."""
 
     stream_id: str = Field(..., description="Unique stream identifier")
-    sensor_ids: List[str] = Field(..., description="Sensor IDs in this stream")
-    variables: List[str] = Field(..., description="Variables being streamed")
+    sensor_ids: list[str] = Field(..., description="Sensor IDs in this stream")
+    variables: list[str] = Field(..., description="Variables being streamed")
 
     # Stream configuration
     protocol: str = Field("websocket", description="Streaming protocol")
     format: str = Field("json", description="Data format")
-    compression: Optional[str] = Field(None, description="Compression method")
+    compression: str | None = Field(None, description="Compression method")
 
     # Quality and filtering
-    quality_filter: Optional[float] = Field(
+    quality_filter: float | None = Field(
         None, description="Minimum quality score filter"
     )
     outlier_filter: bool = Field(True, description="Enable outlier filtering")
@@ -397,7 +422,7 @@ class MeasurementStream(BaseModel):
 
     # Status
     is_active: bool = Field(True, description="Stream active status")
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=_utc_now)
 
     def add_sensor(self, sensor_id: str) -> None:
         """Add a sensor to the stream."""
@@ -420,33 +445,33 @@ class MeasurementStream(BaseModel):
             self.variables.remove(variable)
 
 
-class MeasurementValidation(BaseModel):
+class MeasurementValidation(TimestampModel):
     """Measurement validation rules and constraints."""
 
     validation_id: str = Field(..., description="Unique validation rule ID")
 
     # Target specification
-    sensor_id: Optional[str] = Field(
+    sensor_id: str | None = Field(
         None, description="Target sensor ID (None for all sensors)"
     )
-    variable: Optional[str] = Field(
+    variable: str | None = Field(
         None, description="Target variable (None for all variables)"
     )
 
     # Validation rules
-    value_range: Optional[Dict[str, float]] = Field(
+    value_range: dict[str, float] | None = Field(
         None, description="Min/max value constraints"
     )
-    temporal_constraints: Optional[Dict[str, Any]] = Field(
+    temporal_constraints: dict[str, Any] | None = Field(
         None, description="Temporal validation rules"
     )
-    spatial_constraints: Optional[Dict[str, Any]] = Field(
+    spatial_constraints: dict[str, Any] | None = Field(
         None, description="Spatial validation rules"
     )
 
     # Quality requirements
     min_quality_score: float = Field(0.7, description="Minimum required quality score")
-    max_uncertainty: Optional[float] = Field(
+    max_uncertainty: float | None = Field(
         None, description="Maximum allowed uncertainty"
     )
 
@@ -458,8 +483,8 @@ class MeasurementValidation(BaseModel):
 
     # Metadata
     description: str = Field("", description="Validation rule description")
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=_utc_now)
+    updated_at: datetime = Field(default_factory=_utc_now)
 
     @field_validator("action_on_failure")
     def validate_action(cls, v: str) -> str:

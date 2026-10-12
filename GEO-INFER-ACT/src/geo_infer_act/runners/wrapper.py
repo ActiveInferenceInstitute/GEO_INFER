@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 from geo_infer_act.runners.cli import build_parser, config_from_args
 from geo_infer_act.runners.scenarios import run_all_scenarios, run_scenario
@@ -13,18 +14,28 @@ from geo_infer_act.runners.scenarios import run_all_scenarios, run_scenario
 
 def run_scenario_entrypoint(
     default_scenario: str,
-    argv: Optional[Iterable[str]] = None,
-    program: Optional[str] = None,
+    argv: Iterable[str] | None = None,
+    parser: argparse.ArgumentParser | None = None,
 ) -> int:
-    """Run a package-owned scenario implementation from an entrypoint."""
+    """Run a package-owned scenario implementation from an entrypoint.
+
+    Args:
+        default_scenario: Scenario used when ``--scenario`` is not passed.
+        argv: CLI arguments; defaults to ``sys.argv[1:]``.
+        parser: Parser from :func:`build_parser`; its ``prog`` is recorded as
+            the manifest command. A default parser is built when omitted.
+    """
     args_list = list(argv) if argv is not None else sys.argv[1:]
-    parser = build_parser(default_all=default_scenario == "all")
+    if parser is None:
+        parser = build_parser(
+            default_all=default_scenario == "all", prog="geo-infer-act-run"
+        )
     parser.set_defaults(scenario=default_scenario)
     args = parser.parse_args(args_list)
     config = config_from_args(args)
     if "--scenario" not in args_list:
         config.scenario = default_scenario
-    command = [program or "geo-infer-act-run", *args_list]
+    command = [parser.prog, *args_list]
 
     manifest_path: Path
     if config.scenario == "all":

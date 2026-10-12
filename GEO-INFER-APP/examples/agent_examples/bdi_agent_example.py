@@ -5,7 +5,6 @@ This example demonstrates how to create and interact with a BDI agent
 using the GEO-INFER-APP agent interface.
 """
 
-import time
 import json
 import logging
 from geo_infer_app.models.agent_interface import AgentType

@@ -68,17 +68,12 @@ class TestBayesianSPM:
         assert "method" in result.model_diagnostics
         assert result.model_diagnostics["method"] == "Empirical_Bayes_GLM"
 
-    def test_pymc3_fallback(self):
-        """Test PyMC3 fallback behavior."""
-        # This should work even if PyMC3 is not available
-        try:
-            result = self.bayesian_spm.fit_bayesian_glm(
-                self.spm_data, self.design_matrix.matrix, n_samples=50, n_tune=25
-            )
-            assert result is not None
-        except ImportError:
-            # Should fallback to empirical Bayes
-            pytest.fail("PyMC3 not available, testing fallback")
+    def test_fit_works_with_or_without_pymc(self):
+        """Fitting succeeds via PyMC >= 5 when installed, else empirical Bayes."""
+        result = self.bayesian_spm.fit_bayesian_glm(
+            self.spm_data, self.design_matrix.matrix, n_samples=50, n_tune=25
+        )
+        assert result is not None
 
     def test_posterior_probability_map(self):
         """Test posterior probability map computation."""
@@ -169,7 +164,7 @@ class TestBayesianModelTypes:
         # Should initialize with hierarchical model type
         assert bayesian_spm.model_type == "hierarchical_glm"
 
-        # Test fitting (should fallback to empirical Bayes if PyMC3 unavailable)
+        # Test fitting (falls back to empirical Bayes when PyMC is unavailable)
         result = bayesian_spm.fit_bayesian_glm(
             self.spm_data, self.design_matrix.matrix, n_samples=50, n_tune=25
         )
@@ -459,3 +454,88 @@ class TestBayesianEdgeCases:
         assert isinstance(ess, np.ndarray)
         assert len(ess) == 1
         assert np.isnan(ess[0])
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"n_samples": 0},
+        {"n_tune": -1},
+        {"chains": 1},
+        {"cores": 0},
+        {"cores": 3, "chains": 2},
+        {"n_samples": True},
+    ],
+)
+def test_sampling_controls_reject_invalid_values_before_sampling(options):
+    data = SPMData(
+        data=np.array([1.0, 2.0]), coordinates=np.array([[0.0, 0.0], [1.0, 1.0]])
+    )
+    with pytest.raises(ValueError):
+        BayesianSPM().fit_bayesian_glm(data, np.ones((2, 1)), **options)
+
+
+def test_real_pymc_intercept_only_matches_independent_sample_mean():
+    # Symmetric observed deviations give sample mean 1.5 exactly. The broad
+    # N(0,10) prior has negligible influence compared with this small noise.
+    deviations = np.tile(np.array([-0.15, -0.05, 0.05, 0.15]), 6)
+    response = 1.5 + deviations
+    data = SPMData(
+        data=response,
+        coordinates=np.column_stack(
+            [np.linspace(0, 1, response.size), np.zeros(response.size)]
+        ),
+    )
+    model = BayesianSPM()
+    result = model.fit_bayesian_glm(
+        data,
+        np.ones((response.size, 1)),
+        n_samples=100,
+        n_tune=100,
+        random_seed=83,
+        chains=2,
+        cores=1,
+    )
+    assert result.model_diagnostics["method"] == "Bayesian_GLM_PyMC"
+    assert result.beta_coefficients.shape == (1,)
+    np.testing.assert_allclose(result.beta_coefficients, [1.5], atol=0.05, rtol=0)
+    assert model.posterior_samples["beta"].shape == (200, 1)
+    assert np.isfinite(model.posterior_samples["sigma"]).all()
+    assert result.model_diagnostics["chains"] == 2
+
+
+@pytest.mark.parametrize(
+    "failure_kind", ["missing_pymc", "internal_missing", "import_error"]
+)
+def test_optional_pymc_boundary_distinguishes_absence_from_broken_install(failure_kind):
+    import subprocess
+    import sys
+
+    code = f"""
+import importlib.abc, sys
+class BackendBoundary(importlib.abc.MetaPathFinder):
+ def find_spec(self, fullname, path=None, target=None):
+  if fullname == "pymc":
+   kind={failure_kind!r}
+   if kind == "missing_pymc": raise ModuleNotFoundError("absent optional PyMC", name="pymc")
+   if kind == "internal_missing": raise ModuleNotFoundError("broken installed PyMC dependency", name="pytensor")
+   raise ImportError("installed PyMC initialization failed")
+sys.meta_path.insert(0, BackendBoundary())
+if {failure_kind!r} == "missing_pymc":
+ from geo_infer_spm.core.bayesian import PYMC_AVAILABLE
+ assert PYMC_AVAILABLE is False
+else:
+ try:
+  import geo_infer_spm.core.bayesian
+ except ImportError as exc:
+  assert str(exc) in ("broken installed PyMC dependency", "installed PyMC initialization failed")
+ else:
+  raise AssertionError("broken installed PyMC was silently replaced")
+"""
+    subprocess.run(
+        [sys.executable, "-c", code],
+        check=True,
+        timeout=90,
+        capture_output=True,
+        text=True,
+    )

@@ -258,7 +258,7 @@ class TestH3SpatialIntegrationAndSurfaceWaterModule:
         """Index flowline network onto H3 cells and verify metrics."""
         h3_metrics = flowline_network.index_to_h3(resolution=7)
         assert len(h3_metrics) > 0
-        for cell_id, data in h3_metrics.items():
+        for data in h3_metrics.values():
             assert "flowline_length_km" in data
             assert data["flowline_length_km"] > 0
             assert "max_stream_order" in data

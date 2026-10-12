@@ -5,7 +5,6 @@ Logs workspace within `GEO-INFER-EXAMPLES`.
 ## Contents
 
 - `radiation_monitoring_20250620_084037.jsonl`
-- `radiation_monitoring_demo.log`
 - `radiation_monitoring_demo_structured.jsonl`
 
 ## Public Interface
@@ -16,8 +15,8 @@ Logs workspace within `GEO-INFER-EXAMPLES`.
 
 - Module: `GEO-INFER-EXAMPLES`
 - Package: `geo_infer_examples`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-EXAMPLES`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-examples`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module EXAMPLES`
 
 ## Dependencies

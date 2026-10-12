@@ -10,7 +10,7 @@ import geo_infer_space
 
 def test_package_version_matches_distribution_metadata():
     """The importable version matches the workspace distribution metadata."""
-    assert geo_infer_space.__version__ == version("geo-infer-space") == "0.3.0"
+    assert geo_infer_space.__version__ == version("geo-infer-space")
 
 
 @pytest.mark.core

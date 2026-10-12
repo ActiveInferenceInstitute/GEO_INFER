@@ -24,7 +24,6 @@
 - `integration/`
 - `unit/`
 - `conftest.py`
-- `run_all_tests.py`
 - `test_generative_terrain.py`
 
 ## Validation

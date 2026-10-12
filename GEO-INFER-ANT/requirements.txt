@@ -1,8 +1,0 @@
-# GEO-INFER-ANT runtime requirements: generated mirror of [project.dependencies] in pyproject.toml.
-# pyproject.toml is canonical; optional/test extras live only in [project.optional-dependencies].
-jsonschema>=4.0.0
-networkx>=2.8
-numpy>=1.21.0
-pyyaml>=6.0
-scikit-learn>=1.1.0
-scipy>=1.7.0

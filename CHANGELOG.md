@@ -5,6 +5,275 @@ All notable changes to the GEO-INFER framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 0.4.0 candidate preparation
+
+- Make INSURANCE queue timing tests deterministic with controlled timestamps,
+  exact running-mean assertions and legitimate zero waits, removing dependence
+  on wall-clock resolution without changing production queue behavior.
+
+- Apply HEALTH facility-type filtering to zero-population counts, bound valid
+  antipodal haversine roundoff, and calculate radius-query distances once per
+  eligible facility while preserving tie order. Remove stale commented-out API
+  stubs and document current query and spherical-distance contracts.
+
+- Complete content-free Linux process-denial diagnostics with all-four GID
+  equality; report missing credentials explicitly and restrict LSM mode output
+  to known values, preventing arbitrary profile suffix disclosure. Keep ownership
+  inspection fail-closed and historical denial causality unresolved.
+- Reconcile tracked readiness documentation with accepted main PR #81 and closed
+  issues #61–68; preserve the six unmet issue requirements and bounded next steps.
+
+- Load SPACE's optional SRAI backend only on request or explicit discovery;
+  default H3 operations no longer import its numerical/ML dependency stack.
+  Preserve installed dependency failures when SRAI is requested. Measure ANT's
+  unchanged 100-agent/200 MB memory contract in an owned fresh process, avoiding
+  prior-suite resident allocations; preserve the earlier failure as unexplained.
+- Document the existing native macOS 27 PyTensor compiler profile in root agent
+  commands, retaining actual C compilation rather than a numerical fallback.
+
+- Let manuscript sections flow across pages, removing unconditional section
+  breaks that stranded short tails on otherwise empty pages. Retain the
+  declared section order and native readability/layout acceptance.
+
+- Add a hosted disposable-service acceptance job for real PostGIS, Redis and
+  MinIO/S3-compatible operations, including projected/custom geometry and signed
+  payload tamper rejection; retain receipts separately from installed clients.
+- Correct DATA PostgreSQL generic retrieval/deletion and same-second identifier
+  collisions. Write tables transactionally without replacing existing data;
+  delegate PostGIS indexing to GeoPandas/GeoAlchemy2 and declare the required
+  extra. Preserve observation identity for H3 and R-tree indexes with duplicate
+  or string labels, retain schema/CRS on empty results, and isolate indexed data
+  from caller mutation. Actual SQLite regressions cover SQL routing; native
+  PostgreSQL service verification remains a separate acceptance requirement.
+
+- Validate an orthonormal basis of the graph face-boundary numerical span;
+  tiny invalid faces cannot pass the chain check and produce divergent curl
+  projections. Analytical regressions cover tiny and large valid/invalid faces
+  zero and dependent valid columns, and near-dependent invalid columns. Refresh readiness records to distinguish verified
+  candidate evidence from historical failures and pending main publication.
+
+- Make the non-pytest exit-code regression launch a real child and assert its
+  exit code, output, failure classification and complete receipt custody;
+  a metadata failure can no longer satisfy the test. Limit allowed-empty
+  exit-code handling and pytest diagnostics to actual pytest entry points;
+  ordinary commands returning code 5 remain failures even with allow_empty.
+
+- Add MATH finite-real skew decomposition, transition/rate probability currents,
+  detailed-balance checks and discrete graph Hodge projections with an explicit
+  harmonic remainder. Analytical tests cover nonuniform stationary measures,
+  irreversible cycles, face/no-face topology, disconnected gauges and invalid
+  inputs; these numerical anchors do not claim external formal proof acceptance.
+- Repair SPM formula rejection, degenerate radial/Gaussian bases and the default
+  polynomial basis expansion; document supported grammar and polynomial order.
+- Share locked CPU workspace installation and interpreter-specific uv package
+  caches across CI jobs, with one cache writer per interpreter. Prune only
+  those cache writers; readers skip cleanup of caches they never save. Cache parsed
+  workflow fixtures while returning independent copies to each contract test.
+- Stop manuscript verification admission after interruption, retaining the
+  interrupted attempt and explicit not-run groups.
+- Replace obsolete H3 installation/API examples and unsupported RNG docstrings
+  with current uv, H3 v4 and generator contracts.
+
+- Measure owning TEST source files named `test_*` instead of excluding them by
+  filename, with regression coverage for each declared coverage configuration.
+- Propagate ownership census timeouts separately from target pipe polling and
+  retain target, census, cleanup and receipt timing evidence. Avoid regex scans
+  of token-negative native rows while preserving exact ownership verification.
+- Treat the Linux `PF_EXITING` kernel flag as a positive exit observation when
+  an owned task's environment is denied after `exit_mm()` but before it is a
+  zombie. Under hosted load that window outlasted the 50 ms observation budget
+  and failed the GEO-INFER-SPACE coverage measurement after all 814 tests
+  passed. Persistent denial of a live or unobservable task remains fatal.
+- Append content-free kernel facts, observed at the moment of denial, to a
+  persistent owned-process environment denial (run state, flags, `environ`
+  inode owner, credential equality, thread count, no_new_privs, seccomp and
+  LSM confinement without profile names) so the remaining short-lived
+  live-task denial class (#78) can be identified. Platforms without POSIX
+  credentials report no facts.
+- Seed the MATH Metropolis-Hastings integration chain through its owning `rng`
+  parameter. The sampler draws from its own generator, so the legacy global
+  `np.random.seed` never reached it and the 200-sample mean tolerance stayed
+  unseeded (hosted Python 3.12 drew a 1.035-off mean).
+- Exclude the reserved `ROOT` and `ALL` selectors from the discoverer's
+  generated module names. Hypothesis drew `ROOT`, which correctly resolves to
+  the repository root rather than a `GEO-INFER-ROOT` directory; both
+  selector meanings are now pinned by explicit tests.
+- Run the manuscript generator's and ROOT tests' git commands with
+  `core.fsmonitor=false`, matching the existing custody reads. A user-level
+  `core.fsmonitor=true` made each shim-worktree `git status` start a detached
+  daemon that outlived the worktree and failed ROOT acceptance as a leaked
+  owned process.
+- Preserve exact Cascadia publisher bytes and LF replay outputs through Windows
+  checkout, and exercise explicit UTF-8 renderer reads under a cp1252 default.
+- Synchronize deadline regression injections with real target completion and
+  distinguish preliminary, final and cleanup scans, including a real forced
+  incomplete poll without changing production deadlines. Permit a preliminary
+  scan to retain the full original budget when the clock has not advanced.
+- Reject empty programmatic runner selections, restore discovery after scoped
+  runs, and bound parallel admission so fail-fast stops queued work. Retain
+  admitted worker outcomes through repeated shutdown interruption before reuse.
+- Validate and bound the manuscript producer's five JSON evidence records before
+  upload, retaining a separate custody receipt on every outcome and rejecting
+  replacement of validated source paths.
+- Add a locked native Windows PLACE lane for real loopback worker deadlines,
+  process cleanup, batch failure preservation and exact captured-source replay.
+  Keep its installed profile isolated from optional sibling source paths and
+  retain the real canonical poisoning failure as a separate negative control.
+- Preserve LF lockfile bytes on Windows Git checkouts so raw receipt hashes
+  match the committed workspace lock.
+- Introduce strict TIME-owned UTC normalization and ordered H3 observation
+  alignment, retaining explicit gaps and state identities across composition.
+- Retain immutable execution attempts and require fresh JUnit/receipts; preserve
+  all category lanes, add required slow tests and paired GNN interchange.
+- Require owned JUnit reports for pytest console and Python module entry points,
+  retaining both report aliases, split operands, and ordinary validator arguments.
+  Negative report checks require the actual child exit and specific report
+  diagnostic, so setup failures cannot satisfy them.
+- Repair DATA async transport and optional integrations, IOT timestamp and bounds
+  semantics, ART registry-only persistence, and OPS metrics lifecycle.
+- Consolidate Cascadia inside PLACE, defer GPU probing, rename misleading AI
+  value metrics and MATH memory constraints, and separate large climate timing
+  cases from numerical unit tests.
+- Align root, member, public runtime and citation versions to 0.4.0. This section
+  records preparation changes, not publication or hosted acceptance. See the
+  [migration guide](GEO-INFER-INTRA/docs/releases/0.4.0_migration.md).
+- Solve LOG supply-chain models with the declared MILP constraints, preserve ACT
+  scoring state and analyzer history across cell permutations, and verify SPM's
+  real compiled backend with an explicit macOS 27 compiler profile.
+- Execute maintained documentation examples, test all 45 installed wheels outside
+  the checkout, and provision DuckDB Spatial explicitly for actual fast-path proof.
+- Review SPACE, TIME and ACT method surfaces; correct H3 identity, owned caches,
+  CRS processing, undefined spatial statistics, forecast cadence and options,
+  missing-data aggregation, stream budgets, Gaussian measurement free energy,
+  factored domain inference and elapsed-time causal dynamics.
+- Bind ANT physical actions to real ACT transitions, preserve prediction retries
+  without repeated physical work, and route RISK, PLACE and ECON through explicit
+  temporal interfaces and failure boundaries.
+- Preserve coverage interruption and cleanup diagnostics, recognize positively
+  stopped Linux process identities within bounded census deadlines, and check
+  manuscript census drift in the early documentation gate.
+- Generate the manuscript prerequisites before ROOT coverage and synchronize
+  subprocess regression fixtures with bounded readiness handshakes.
+- Stabilize compressed HTTP fixtures and their parameter identities across
+  independent test-category collections.
+- Exclude internal native census observers from inherited launch ownership while
+  retaining target ancestry, bounded inspection and fail-closed access errors.
+- Declare the Windows process profile explicitly and run strict test-contract
+  validation before the early runtime fixtures.
+- Observe real descendant readiness and identity in cleanup regressions, retaining
+  actual deadlines, immediate parent exit, and captured output under coverage.
+- Require completed stream emission before timeout-retention assertions, checking
+  exact payloads, receipt hashes, and the original command deadline.
+- Index signpost directory facts once per render, restore caller state on failure,
+  and exclude ignored scratch source files from generated public exports.
+- Validate mixed ISO timestamp formats per record, count distinct invalid rows,
+  and distinguish absent optional civic-intelligence packages from broken imports.
+- Replace stale Active Inference and temporal tutorials with executable public
+  interface examples and centralize manuscript inventory measurements.
+- Retain full wheel build/probe logs and immutable wheel copies, validate operation
+  code hashes, include staged bytes in source custody, and widen dispatch/scheduled
+  diff gates to the complete tree.
+
+
+### Post-0.3.0 waves (2026-09-26 .. 2026-09-28, PRs #40-#60)
+
+- Ledger reconciliation and scope passes (#40, #44, #45, #52); test-guard and
+  dependency-truth lanes (#41, #42, #47, #56, #60); ART offline VGG19 fixture
+  (#46); release wheel attach and scheduled-run concurrency (#48, #49); stamp
+  sweep (#50); flake hardening (#51, #53, #54, #59); repo-wide `ruff format`
+  and format-check uv install (#55, #57); tag-scoped release gate,
+  target-keyed release queue, manuscript PDF attach and no import-probe push
+  leg (#53); GNN pair-pin bumps (#43 and later).
+
+### Legacy sweep (2026-10-01)
+
+#### Removed
+
+- **Packaging mirrors**: 38 module `setup.py` shims and 45 module
+  `requirements.txt` files; `pyproject.toml` + root `uv.lock` are the only
+  dependency declaration. The `wheel` build requirement, `[tool.black]`,
+  `[tool.isort]`, and the black/isort/pydocstyle dev dependencies are gone
+  (Ruff is the only lint/format tool).
+- **One-shot migration tooling and snapshots**: ten `GEO-INFER-INTRA/scripts`
+  migration/fix scripts, the UV migration guide, and every bannered
+  "Historical artifact" assessment snapshot.
+- **Compatibility aliases and branches** (breaking for any external caller):
+  `numpy.random.RandomState` seeds in every `resolve_rng`; ACT untyped
+  coordinate-only boundaries, the SPACE `sys.path` fallback and
+  `obj_array_zeros`; BAYES split `SpatioTemporalGP.predict(spatial, temporal)`
+  and 3-argument `log_likelihood`; MATH `core` star re-exports,
+  `info_spatial_entropy`, `GeoInferMathError` and `New*Error` aliases; SPM
+  PyMC3 fallback and global-stream default; SPACE `HAS_CUPY/HAS_GPU/HAS_JAX/
+  HAS_TORCH`, `use_gpu` and `spatial_join_kernel(resolution=)`; PLACE OSC
+  loader attributes and Cascadia re-export shims; IOT `CoordinateTransform`,
+  `OSCCatalog`, `HAS_GEO_*` and flat `max_change_rate`; SEC
+  `SecurityUtils.sanitize_input`; OPS `DeploymentConfig.DockerConfig/
+  KubernetesConfig`; RISK `seed` keyword/param aliases, legacy vulnerability
+  keys and `CatastropheModelManager.models`; ART custom-algorithm files
+  without `function_name`; SIM checkpoints without RNG snapshots.
+- **Stray entrypoints**: ANT `run_tests.py`, ART `tests/run_all_tests.py`,
+  GIT `clone_repos.py`, EXAMPLES `demo_orchestrator.py` and
+  `update_to_thin_orchestrators.py`, OPS `setup_framework.py` and
+  `geo_infer_paths.py`; `sys.path` hacks across tests, examples and scripts.
+
+#### Changed
+
+- Root `[tool.ruff.lint]` contract (E4/E7/E9/F/UP/B/NPY); the whole tree is
+  clean and CI now runs `ruff check .` plus root-config `ruff check` on changed
+  files. PEP 585/604 typing throughout.
+- The seven vendored `utils/rng.py` helpers share one implementation
+  (`resolve_rng`, `resolve_optional_rng`, `spawn_rng`, `derive_int_seed`),
+  enforced by `validate_rng_helper_parity`.
+- `validate_repo_contracts.py` rejects module `setup.py`/`setup.cfg`/
+  `requirements.txt` and retired formatter sections; requirement-file parity
+  machinery is deleted from `validate_packaging.py`.
+- TIME and DATA timestamp normalisers reject naive datetimes.
+- `calculate_aal` requires `exposure_years`; ART generators, MATH optimizers,
+  SEC anonymization and IOT cross-validation take explicit seeds.
+- `geo_infer_examples.orchestration` hosts the orchestrator engine used by all
+  `run_orchestrator.py` scripts.
+- README theme table is validated to list every module exactly once; module
+  signposts advertise `uv sync --package <dist>`.
+
+- **Hard-dependency import guards**: 72 `try/except ImportError` guards
+  (plus `HAS_*`/`*_AVAILABLE` flags and fallback branches) around packages
+  each module declares in `[project.dependencies]` are removed across ACT,
+  ANT, API, BAYES, COMMS, DATA, IOT, MATH, NORMS, PEP, PLACE, RISK, SPACE,
+  SPM and TEST; guards remain only for optional extras. BAYES LOO is always
+  PSIS-LOO; DATA spatial indexes always use a real R-tree.
+- **Tracked runtime logs** (EXAMPLES, OPS, PLACE, Cascadia) and the
+  machine-specific Cascadia `data_cleanup_config.json`; `*.log` is ignored
+  except the curated ACT audit bundle and INTRA realms receipts.
+
+#### Added
+
+- `validate_packaging.validate_test_import_parity` (DEP-02): every
+  third-party or sibling import under a module's `tests/` must be declared
+  (dependency, extra, or PEP 735 `[dependency-groups]`); remaining gaps live
+  in `test` groups. CI and the canonical sync command use `--all-groups`.
+- `validate_repo_contracts.validate_rng_helper_parity` and
+  `validate_pyproject_only_packaging`.
+- IOT `models.measurement.normalize_timestamp` (explicit-UTC contract shared
+  with TIME/DATA).
+
+#### Fixed
+
+- SPM scale-location plot imported a nonexistent `scipy.stats.lowess`.
+- ANT mutual information divided nats by an entropy in bits.
+- PLACE Cascadia CLI validated an always-empty `locals()` lookup; data
+  quality is wired to `geo_infer_data`'s `GeospatialValidator`; the cleanup
+  config is written with portable relative paths.
+- NORMS zoning report printed format specs instead of values, and area
+  statistics were in square degrees / Web Mercator (now EPSG:6933 equal-area).
+- RISK spatial correlation mixed degrees and kilometres.
+- PLACE `process_to_h3` always returned `{}`.
+- SPACE H3 visualization used the removed `plt.cm.get_cmap`.
+- HEALTH loguru log format; CLI tests no longer write `logs/` into the repo.
+- MATH/SPM/EXAMPLES scripts printed literal `".3f"` format specs.
+- DATA tests whose `assert False` sat inside `except Exception`.
+
 ## [0.3.0] - 2026-09-17 — manuscript catalog wave + token auto-injection
 
 > **Manuscript catalog.** The research manuscript became a deterministic,
@@ -881,5 +1150,6 @@ pass at that SHA.
 
 [0.2.0]: https://github.com/ActiveInferenceInstitute/GEO_INFER/compare/v0.1.0...v0.2.0
 [0.2.1]: https://github.com/ActiveInferenceInstitute/GEO_INFER/compare/v0.2.0...v0.2.1
+[Unreleased]: https://github.com/ActiveInferenceInstitute/GEO_INFER/compare/v0.3.0...HEAD
 [0.3.0]: https://github.com/ActiveInferenceInstitute/GEO_INFER/compare/v0.2.1...v0.3.0
 [0.1.0]: https://github.com/ActiveInferenceInstitute/GEO_INFER/releases/tag/v0.1.0

@@ -8,33 +8,45 @@ grid management, cell representation, analytics, and validation using H3 v4 API.
 import logging
 from typing import (
     Any,
-    Dict,
-    Iterator,
-    List,
     Optional,
-    Set,
-    Tuple,
     cast,
 )
+from collections.abc import Iterator
+from copy import deepcopy
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, UTC
 import json
+import math
 
+import h3
 import numpy as np
 import pandas as pd
+from geo_infer_time import normalize_timestamp
 
 logger = logging.getLogger(__name__)
 
-try:
-    import h3
 
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available. Install with 'uv pip install h3'")
+def _integer(value: int, name: str, minimum: int, maximum: int | None = None) -> None:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int)
+        or value < minimum
+        or (maximum is not None and value > maximum)
+    ):
+        raise ValueError(f"{name} must be an integer in the supported range")
 
 
-@dataclass
+def _coordinates(lat: float, lng: float) -> None:
+    if any(
+        isinstance(value, (bool, str, bytes))
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        for value in (lat, lng)
+    ) or not (-90 <= lat <= 90 and -180 <= lng <= 180):
+        raise ValueError("Expected finite WGS84 latitude/longitude")
+
+
+@dataclass(frozen=True)
 class H3Cell:
     """
     Represents a single H3 hexagonal cell with comprehensive metadata and operations.
@@ -48,33 +60,33 @@ class H3Cell:
     latitude: float = field(default=0.0)
     longitude: float = field(default=0.0)
     area_km2: float = field(default=0.0)
-    boundary: List[Tuple[float, float]] = field(default_factory=list)
-    properties: Dict[str, Any] = field(default_factory=dict)
-    created_at: datetime = field(default_factory=datetime.now)
+    boundary: tuple[tuple[float, float], ...] = field(default_factory=tuple)
+    properties: dict[str, Any] = field(default_factory=dict)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def __post_init__(self) -> None:
         """Initialize cell properties after creation."""
-        if H3_AVAILABLE and self.index:
-            try:
-                # Get coordinates
-                self.latitude, self.longitude = h3.cell_to_latlng(self.index)
-
-                # Get area
-                self.area_km2 = h3.cell_area(self.index, "km^2")
-
-                # Get boundary
-                self.boundary = list(h3.cell_to_boundary(self.index))
-
-                # Validate resolution
-                actual_resolution = h3.get_resolution(self.index)
-                if self.resolution != actual_resolution:
-                    logger.warning(
-                        f"Resolution mismatch: expected {self.resolution}, got {actual_resolution}"
-                    )
-                    self.resolution = actual_resolution
-
-            except Exception as e:
-                logger.error(f"Failed to initialize H3Cell {self.index}: {e}")
+        if (
+            not isinstance(self.index, str)
+            or not h3.is_valid_cell(self.index)
+            or h3.int_to_str(h3.str_to_int(self.index)) != self.index
+        ):
+            raise ValueError("index must be a canonical H3 cell string")
+        if (
+            isinstance(self.resolution, bool)
+            or not isinstance(self.resolution, int)
+            or self.resolution != h3.get_resolution(self.index)
+        ):
+            raise ValueError("resolution must match the H3 cell index")
+        if not isinstance(self.properties, dict):
+            raise ValueError("properties must be a mapping")
+        latitude, longitude = h3.cell_to_latlng(self.index)
+        object.__setattr__(self, "created_at", normalize_timestamp(self.created_at))
+        object.__setattr__(self, "latitude", latitude)
+        object.__setattr__(self, "longitude", longitude)
+        object.__setattr__(self, "area_km2", h3.cell_area(self.index, "km^2"))
+        object.__setattr__(self, "boundary", tuple(h3.cell_to_boundary(self.index)))
+        object.__setattr__(self, "properties", deepcopy(self.properties))
 
     @classmethod
     def from_coordinates(
@@ -92,9 +104,8 @@ class H3Cell:
         Returns:
             H3Cell instance
         """
-        if not H3_AVAILABLE:
-            raise ImportError("h3-py package required for H3Cell operations")
-
+        _coordinates(lat, lng)
+        _integer(resolution, "resolution", 0, 15)
         index = h3.latlng_to_cell(lat, lng, resolution)
         return cls(
             index=index,
@@ -104,145 +115,68 @@ class H3Cell:
             properties=properties,
         )
 
-    def neighbors(self, k: int = 1) -> List["H3Cell"]:
-        """
-        Get neighboring cells within k distance.
+    def neighbors(self, k: int = 1, *, max_cells: int = 1_000_000) -> list["H3Cell"]:
+        """Return real disk neighbors excluding self; topology errors propagate."""
+        _integer(k, "k", 0)
+        _integer(max_cells, "max_cells", 1)
+        if 1 + 3 * k * (k + 1) > max_cells:
+            raise ValueError("Neighborhood allocation exceeds max_cells")
+        return [
+            H3Cell(index=index, resolution=self.resolution)
+            for index in h3.grid_disk(self.index, k)
+            if index != self.index
+        ]
 
-        Args:
-            k: Distance (number of rings) for neighbors
-
-        Returns:
-            List of neighboring H3Cell instances
-        """
-        if not H3_AVAILABLE:
-            return []
-
-        try:
-            neighbor_indices = h3.grid_disk(self.index, k)
-            neighbors = []
-
-            for neighbor_index in neighbor_indices:
-                if neighbor_index != self.index:  # Exclude self
-                    neighbor = H3Cell(index=neighbor_index, resolution=self.resolution)
-                    neighbors.append(neighbor)
-
-            return neighbors
-
-        except Exception as e:
-            logger.error(f"Failed to get neighbors for {self.index}: {e}")
-            return []
-
-    def parent(self, parent_resolution: Optional[int] = None) -> Optional["H3Cell"]:
-        """
-        Get parent cell at coarser resolution.
-
-        Args:
-            parent_resolution: Target parent resolution (must be < current resolution)
-
-        Returns:
-            Parent H3Cell or None if invalid
-        """
-        if not H3_AVAILABLE:
-            return None
-
+    def parent(self, parent_resolution: int | None = None) -> Optional["H3Cell"]:
+        """Return a coarser parent, or None at resolution zero by default."""
         if parent_resolution is None:
-            parent_resolution = max(0, self.resolution - 1)
-
+            if self.resolution == 0:
+                return None
+            parent_resolution = self.resolution - 1
+        _integer(parent_resolution, "parent_resolution", 0, 15)
         if parent_resolution >= self.resolution:
-            logger.warning(
-                f"Parent resolution {parent_resolution} must be < current resolution {self.resolution}"
-            )
-            return None
+            raise ValueError("Parent resolution must be coarser than the cell")
+        return H3Cell(
+            index=h3.cell_to_parent(self.index, parent_resolution),
+            resolution=parent_resolution,
+        )
 
-        try:
-            parent_index = h3.cell_to_parent(self.index, parent_resolution)
-            return H3Cell(index=parent_index, resolution=parent_resolution)
-        except Exception as e:
-            logger.error(f"Failed to get parent for {self.index}: {e}")
-            return None
-
-    def children(self, child_resolution: Optional[int] = None) -> List["H3Cell"]:
-        """
-        Get child cells at finer resolution.
-
-        Args:
-            child_resolution: Target child resolution (must be > current resolution)
-
-        Returns:
-            List of child H3Cell instances
-        """
-        if not H3_AVAILABLE:
-            return []
-
+    def children(
+        self, child_resolution: int | None = None, *, max_cells: int = 1_000_000
+    ) -> list["H3Cell"]:
+        """Return complete finer children, bounded before topology allocation."""
         if child_resolution is None:
-            child_resolution = min(15, self.resolution + 1)
-
+            if self.resolution == 15:
+                return []
+            child_resolution = self.resolution + 1
+        _integer(child_resolution, "child_resolution", 0, 15)
+        _integer(max_cells, "max_cells", 1)
         if child_resolution <= self.resolution:
-            logger.warning(
-                f"Child resolution {child_resolution} must be > current resolution {self.resolution}"
-            )
-            return []
-
-        try:
-            child_indices = h3.cell_to_children(self.index, child_resolution)
-            children = []
-
-            for child_index in child_indices:
-                child = H3Cell(index=child_index, resolution=child_resolution)
-                children.append(child)
-
-            return children
-
-        except Exception as e:
-            logger.error(f"Failed to get children for {self.index}: {e}")
-            return []
+            raise ValueError("Child resolution must be finer than the cell")
+        if h3.cell_to_children_size(self.index, child_resolution) > max_cells:
+            raise ValueError("Children allocation exceeds max_cells")
+        return [
+            H3Cell(index=index, resolution=child_resolution)
+            for index in h3.cell_to_children(self.index, child_resolution)
+        ]
 
     def distance_to(self, other: "H3Cell") -> int:
-        """
-        Calculate grid distance to another cell.
-
-        Args:
-            other: Another H3Cell instance
-
-        Returns:
-            Grid distance (number of cells)
-        """
-        if not H3_AVAILABLE:
-            return -1
-
+        """Return exact grid distance; mixed resolutions and unsupported pairs raise."""
+        if not isinstance(other, H3Cell):
+            raise TypeError("other must be an H3Cell")
         if self.resolution != other.resolution:
-            logger.warning(
-                "Distance calculation between different resolutions may be inaccurate"
-            )
-
-        try:
-            return cast(int, h3.grid_distance(self.index, other.index))
-        except Exception as e:
-            logger.error(
-                f"Failed to calculate distance between {self.index} and {other.index}: {e}"
-            )
-            return -1
+            raise ValueError("Grid distance requires equal resolutions")
+        return cast(int, h3.grid_distance(self.index, other.index))
 
     def is_neighbor(self, other: "H3Cell") -> bool:
-        """
-        Check if another cell is a direct neighbor.
+        """Return real adjacency for equal-resolution cells."""
+        if not isinstance(other, H3Cell):
+            raise TypeError("other must be an H3Cell")
+        if self.resolution != other.resolution:
+            raise ValueError("Adjacency requires equal resolutions")
+        return cast(bool, h3.are_neighbor_cells(self.index, other.index))
 
-        Args:
-            other: Another H3Cell instance
-
-        Returns:
-            True if cells are neighbors
-        """
-        if not H3_AVAILABLE:
-            return False
-
-        try:
-            return cast(bool, h3.are_neighbor_cells(self.index, other.index))
-        except Exception as e:
-            logger.error(f"Failed to check neighbor relationship: {e}")
-            return False
-
-    def to_geojson(self) -> Dict[str, Any]:
+    def to_geojson(self) -> dict[str, Any]:
         """
         Convert cell to GeoJSON feature.
 
@@ -250,7 +184,7 @@ class H3Cell:
             GeoJSON feature dictionary
         """
         # Ensure boundary is closed (first point = last point)
-        boundary_coords = self.boundary.copy()
+        boundary_coords = list(self.boundary)
         if boundary_coords and boundary_coords[0] != boundary_coords[-1]:
             boundary_coords.append(boundary_coords[0])
 
@@ -261,13 +195,13 @@ class H3Cell:
                 "coordinates": [[[lng, lat] for lat, lng in boundary_coords]],
             },
             "properties": {
+                **deepcopy(self.properties),
                 "h3_index": self.index,
                 "resolution": self.resolution,
                 "latitude": self.latitude,
                 "longitude": self.longitude,
                 "area_km2": self.area_km2,
                 "created_at": self.created_at.isoformat(),
-                **self.properties,
             },
         }
 
@@ -288,7 +222,7 @@ class H3Grid:
 
     def __init__(
         self,
-        cells: Optional[List[H3Cell]] = None,
+        cells: list[H3Cell] | None = None,
         name: str = "H3Grid",
     ) -> None:
         """
@@ -298,11 +232,23 @@ class H3Grid:
             cells: List of H3Cell instances
             name: Grid name for identification
         """
-        self.cells: List[H3Cell] = cells or []
+        self._cells = list(cells) if cells is not None else []
+        self._cells_snapshot: tuple[H3Cell, ...] | None = None
+        if any(not isinstance(cell, H3Cell) for cell in self._cells):
+            raise TypeError("cells must contain H3Cell instances")
+        if len({cell.index for cell in self.cells}) != len(self.cells):
+            raise ValueError("Grid cell indexes must be unique")
         self.name = name
-        self.created_at = datetime.now()
-        self._cell_index: Dict[str, H3Cell] = {}
+        self.created_at = datetime.now(UTC)
+        self._cell_index: dict[str, H3Cell] = {}
         self._build_index()
+
+    @property
+    def cells(self) -> tuple[H3Cell, ...]:
+        """Read-only membership; use add_cell/remove_cell to preserve the index."""
+        if self._cells_snapshot is None:
+            self._cells_snapshot = tuple(self._cells)
+        return self._cells_snapshot
 
     def _build_index(self) -> None:
         """Build internal index for fast cell lookup."""
@@ -310,8 +256,11 @@ class H3Grid:
 
     def add_cell(self, cell: H3Cell) -> None:
         """Add a cell to the grid."""
+        if not isinstance(cell, H3Cell):
+            raise TypeError("cell must be an H3Cell")
         if cell.index not in self._cell_index:
-            self.cells.append(cell)
+            self._cells.append(cell)
+            self._cells_snapshot = None
             self._cell_index[cell.index] = cell
 
     def remove_cell(self, cell_index: str) -> bool:
@@ -326,12 +275,13 @@ class H3Grid:
         """
         if cell_index in self._cell_index:
             cell = self._cell_index[cell_index]
-            self.cells.remove(cell)
+            self._cells.remove(cell)
+            self._cells_snapshot = None
             del self._cell_index[cell_index]
             return True
         return False
 
-    def get_cell(self, cell_index: str) -> Optional[H3Cell]:
+    def get_cell(self, cell_index: str) -> H3Cell | None:
         """Get cell by index."""
         return self._cell_index.get(cell_index)
 
@@ -342,46 +292,30 @@ class H3Grid:
     @classmethod
     def from_polygon(
         cls,
-        polygon_coords: List[Tuple[float, float]],
+        polygon_coords: list[tuple[float, float]],
         resolution: int,
         name: str = "PolygonGrid",
     ) -> "H3Grid":
-        """
-        Create H3Grid from polygon coordinates.
+        """Create cells covering a WGS84 (lat, lng) ring; invalid inputs raise."""
+        _integer(resolution, "resolution", 0, 15)
+        if len(polygon_coords) < 3:
+            raise ValueError("A polygon needs at least three positions")
+        for lat, lng in polygon_coords:
+            _coordinates(lat, lng)
+        coords = [[lng, lat] for lat, lng in polygon_coords]
+        if coords[0] != coords[-1]:
+            coords.append(coords[0])
+        from shapely.geometry import Polygon
 
-        Args:
-            polygon_coords: List of (lat, lng) coordinate pairs
-            resolution: H3 resolution
-            name: Grid name
-
-        Returns:
-            H3Grid instance covering the polygon
-        """
-        if not H3_AVAILABLE:
-            raise ImportError("h3-py package required for H3Grid operations")
-
-        # Convert to GeoJSON format (lng, lat order)
-        geojson_coords = [[lng, lat] for lat, lng in polygon_coords]
-
-        # Ensure polygon is closed
-        if geojson_coords[0] != geojson_coords[-1]:
-            geojson_coords.append(geojson_coords[0])
-
-        polygon_geojson = {"type": "Polygon", "coordinates": [geojson_coords]}
-
-        try:
-            cell_indices = h3.geo_to_cells(polygon_geojson, resolution)
-            cells = []
-
-            for cell_index in cell_indices:
-                cell = H3Cell(index=cell_index, resolution=resolution)
-                cells.append(cell)
-
-            return cls(cells=cells, name=name)
-
-        except Exception as e:
-            logger.error(f"Failed to create H3Grid from polygon: {e}")
-            return cls(name=name)
+        polygon = Polygon(coords)
+        if not polygon.is_valid or polygon.area == 0:
+            raise ValueError("Polygon must have valid topology and positive area")
+        indexes = h3.geo_to_cells(
+            {"type": "Polygon", "coordinates": [coords]}, resolution
+        )
+        return cls(
+            [H3Cell(index=index, resolution=resolution) for index in indexes], name=name
+        )
 
     @classmethod
     def from_center(
@@ -391,91 +325,58 @@ class H3Grid:
         resolution: int,
         k: int = 1,
         name: str = "CenterGrid",
+        *,
+        max_cells: int = 1_000_000,
     ) -> "H3Grid":
-        """
-        Create H3Grid centered on coordinates with a grid-disk neighborhood.
-
-        Args:
-            lat: Center latitude
-            lng: Center longitude
-            resolution: H3 resolution
-            k: Ring distance
-            name: Grid name
-
-        Returns:
-            H3Grid instance
-        """
-        if not H3_AVAILABLE:
-            raise ImportError("h3-py package required for H3Grid operations")
-
-        try:
-            center_index = h3.latlng_to_cell(lat, lng, resolution)
-            cell_indices = h3.grid_disk(center_index, k)
-            cells = []
-
-            for cell_index in cell_indices:
-                cell = H3Cell(index=cell_index, resolution=resolution)
-                cells.append(cell)
-
-            return cls(cells=cells, name=name)
-
-        except Exception as e:
-            logger.error(f"Failed to create H3Grid from center: {e}")
-            return cls(name=name)
+        """Create a real, bounded H3 disk centered on WGS84 coordinates."""
+        _coordinates(lat, lng)
+        _integer(resolution, "resolution", 0, 15)
+        _integer(k, "k", 0)
+        _integer(max_cells, "max_cells", 1)
+        if 1 + 3 * k * (k + 1) > max_cells:
+            raise ValueError("Disk allocation exceeds max_cells")
+        indexes = h3.grid_disk(h3.latlng_to_cell(lat, lng, resolution), k)
+        return cls(
+            [H3Cell(index=index, resolution=resolution) for index in indexes], name=name
+        )
 
     def compact(self) -> "H3Grid":
-        """
-        Compact cells to mixed resolutions for efficiency.
+        """Compact real cells; unsupported or overlapping domains raise."""
+        indexes = h3.compact_cells([cell.index for cell in self.cells])
+        return H3Grid(
+            [
+                H3Cell(index=index, resolution=h3.get_resolution(index))
+                for index in indexes
+            ],
+            name=f"{self.name}_compacted",
+        )
 
-        Returns:
-            New H3Grid with compacted cells
-        """
-        if not H3_AVAILABLE or not self.cells:
-            return H3Grid(name=f"{self.name}_compacted")
-
-        try:
-            cell_indices = [cell.index for cell in self.cells]
-            compacted_indices = h3.compact_cells(cell_indices)
-
-            compacted_cells = []
-            for cell_index in compacted_indices:
-                resolution = h3.get_resolution(cell_index)
-                cell = H3Cell(index=cell_index, resolution=resolution)
-                compacted_cells.append(cell)
-
-            return H3Grid(cells=compacted_cells, name=f"{self.name}_compacted")
-
-        except Exception as e:
-            logger.error(f"Failed to compact H3Grid: {e}")
-            return H3Grid(name=f"{self.name}_compacted")
-
-    def uncompact(self, target_resolution: int) -> "H3Grid":
-        """
-        Uncompact cells to uniform resolution.
-
-        Args:
-            target_resolution: Target resolution for all cells
-
-        Returns:
-            New H3Grid with uniform resolution
-        """
-        if not H3_AVAILABLE or not self.cells:
-            return H3Grid(name=f"{self.name}_uncompacted")
-
-        try:
-            cell_indices = [cell.index for cell in self.cells]
-            uncompacted_indices = h3.uncompact_cells(cell_indices, target_resolution)
-
-            uncompacted_cells = []
-            for cell_index in uncompacted_indices:
-                cell = H3Cell(index=cell_index, resolution=target_resolution)
-                uncompacted_cells.append(cell)
-
-            return H3Grid(cells=uncompacted_cells, name=f"{self.name}_uncompacted")
-
-        except Exception as e:
-            logger.error(f"Failed to uncompact H3Grid: {e}")
-            return H3Grid(name=f"{self.name}_uncompacted")
+    def uncompact(
+        self, target_resolution: int, *, max_cells: int = 1_000_000
+    ) -> "H3Grid":
+        """Expand a nonoverlapping mixed-resolution domain within an allocation budget."""
+        _integer(target_resolution, "target_resolution", 0, 15)
+        _integer(max_cells, "max_cells", 1)
+        indexes = [cell.index for cell in self.cells]
+        if any(cell.resolution > target_resolution for cell in self.cells):
+            raise ValueError("Target resolution cannot be coarser than a source cell")
+        ancestors = set(indexes)
+        if any(
+            h3.cell_to_parent(cell.index, level) in ancestors
+            for cell in self.cells
+            for level in range(cell.resolution)
+        ):
+            raise ValueError("Source cells cannot overlap their ancestors")
+        if (
+            sum(h3.cell_to_children_size(index, target_resolution) for index in indexes)
+            > max_cells
+        ):
+            raise ValueError("Uncompact allocation exceeds max_cells")
+        expanded = h3.uncompact_cells(indexes, target_resolution)
+        return H3Grid(
+            [H3Cell(index=index, resolution=target_resolution) for index in expanded],
+            name=f"{self.name}_uncompacted",
+        )
 
     def total_area(self) -> float:
         """
@@ -486,9 +387,13 @@ class H3Grid:
         """
         return sum(cell.area_km2 for cell in self.cells)
 
-    def bounds(self) -> Tuple[float, float, float, float]:
+    def bounds(self) -> tuple[float, float, float, float]:
         """
-        Get bounding box of all cells.
+        Get coordinate extrema of all cell boundary vertices.
+
+        Longitude extrema use the conventional [-180, 180] representation.
+        A grid crossing the antimeridian therefore has a wide longitude span;
+        this tuple does not encode a wrapped longitude interval.
 
         Returns:
             (min_lat, min_lng, max_lat, max_lng)
@@ -496,12 +401,12 @@ class H3Grid:
         if not self.cells:
             return (0.0, 0.0, 0.0, 0.0)
 
-        lats = [cell.latitude for cell in self.cells]
-        lngs = [cell.longitude for cell in self.cells]
+        lats = [latitude for cell in self.cells for latitude, _ in cell.boundary]
+        lngs = [longitude for cell in self.cells for _, longitude in cell.boundary]
 
         return (min(lats), min(lngs), max(lats), max(lngs))
 
-    def center(self) -> Tuple[float, float]:
+    def center(self) -> tuple[float, float]:
         """
         Get center coordinates of the grid.
 
@@ -516,7 +421,7 @@ class H3Grid:
 
         return (sum(lats) / len(lats), sum(lngs) / len(lngs))
 
-    def resolutions(self) -> Set[int]:
+    def resolutions(self) -> set[int]:
         """Get set of all resolutions in the grid."""
         return {cell.resolution for cell in self.cells}
 
@@ -533,7 +438,7 @@ class H3Grid:
         filtered_cells = [cell for cell in self.cells if cell.resolution == resolution]
         return H3Grid(cells=filtered_cells, name=f"{self.name}_res{resolution}")
 
-    def to_geojson(self) -> Dict[str, Any]:
+    def to_geojson(self) -> dict[str, Any]:
         """
         Convert grid to GeoJSON FeatureCollection.
 
@@ -566,6 +471,7 @@ class H3Grid:
         data = []
         for cell in self.cells:
             row = {
+                **deepcopy(cell.properties),
                 "h3_index": cell.index,
                 "resolution": cell.resolution,
                 "latitude": cell.latitude,
@@ -573,8 +479,6 @@ class H3Grid:
                 "area_km2": cell.area_km2,
                 "created_at": cell.created_at,
             }
-            # Add custom properties
-            row.update(cell.properties)
             data.append(row)
 
         return pd.DataFrame(data)
@@ -608,18 +512,15 @@ class H3Analytics:
             grid: H3Grid instance to analyze
         """
         self.grid = grid
-        self.stats_cache: Dict[str, Any] = {}
+        self.stats_cache: dict[str, Any] = {}
 
-    def basic_statistics(self) -> Dict[str, Any]:
+    def basic_statistics(self) -> dict[str, Any]:
         """
         Calculate basic grid statistics.
 
         Returns:
             Dictionary with basic statistics
         """
-        if "basic_stats" in self.stats_cache:
-            return cast(Dict[str, Any], self.stats_cache["basic_stats"])
-
         if not self.grid.cells:
             return {}
 
@@ -644,14 +545,14 @@ class H3Analytics:
         self.stats_cache["basic_stats"] = stats
         return stats
 
-    def connectivity_analysis(self) -> Dict[str, Any]:
+    def connectivity_analysis(self) -> dict[str, Any]:
         """
         Analyze connectivity between cells.
 
         Returns:
             Dictionary with connectivity metrics
         """
-        if not H3_AVAILABLE or not self.grid.cells:
+        if not self.grid.cells:
             return {}
 
         # Build adjacency information
@@ -663,17 +564,11 @@ class H3Analytics:
             neighbors_in_grid = []
 
             # Get all neighbors of this cell
-            try:
-                neighbor_indices = h3.grid_disk(cell.index, 1)
-                for neighbor_index in neighbor_indices:
-                    if neighbor_index != cell.index and self.grid.has_cell(
-                        neighbor_index
-                    ):
-                        neighbors_in_grid.append(neighbor_index)
-                        adjacency_count += 1
-            except Exception as e:
-                logger.error(f"Failed to analyze connectivity for {cell.index}: {e}")
-                continue
+            neighbor_indices = h3.grid_disk(cell.index, 1)
+            for neighbor_index in neighbor_indices:
+                if neighbor_index != cell.index and self.grid.has_cell(neighbor_index):
+                    neighbors_in_grid.append(neighbor_index)
+                    adjacency_count += 1
 
             cell_neighbors[cell.index] = neighbors_in_grid
 
@@ -697,8 +592,8 @@ class H3Analytics:
         }
 
     def density_analysis(
-        self, reference_area_km2: Optional[float] = None
-    ) -> Dict[str, Any]:
+        self, reference_area_km2: float | None = None
+    ) -> dict[str, Any]:
         """
         Analyze cell density patterns.
 
@@ -744,7 +639,7 @@ class H3Analytics:
             ),
         }
 
-    def resolution_analysis(self) -> Dict[str, Any]:
+    def resolution_analysis(self) -> dict[str, Any]:
         """
         Analyze resolution distribution and patterns.
 
@@ -755,8 +650,8 @@ class H3Analytics:
             return {}
 
         resolutions = [cell.resolution for cell in self.grid.cells]
-        resolution_counts: Dict[int, int] = {}
-        resolution_areas: Dict[int, float] = {}
+        resolution_counts: dict[int, int] = {}
+        resolution_areas: dict[int, float] = {}
 
         for cell in self.grid.cells:
             res = cell.resolution
@@ -775,7 +670,7 @@ class H3Analytics:
             "resolution_diversity": len(set(resolutions)),
         }
 
-    def spatial_distribution(self) -> Dict[str, Any]:
+    def spatial_distribution(self) -> dict[str, Any]:
         """
         Analyze spatial distribution patterns.
 
@@ -810,7 +705,7 @@ class H3Analytics:
             * (self.grid.bounds()[3] - self.grid.bounds()[1]),
         }
 
-    def generate_report(self) -> Dict[str, Any]:
+    def generate_report(self) -> dict[str, Any]:
         """
         Generate comprehensive analytics report.
 
@@ -821,7 +716,7 @@ class H3Analytics:
             "grid_info": {
                 "name": self.grid.name,
                 "created_at": self.grid.created_at.isoformat(),
-                "analysis_timestamp": datetime.now().isoformat(),
+                "analysis_timestamp": datetime.now(UTC).isoformat(),
             },
             "basic_statistics": self.basic_statistics(),
             "connectivity_analysis": self.connectivity_analysis(),
@@ -860,10 +755,10 @@ class H3Visualizer:
         """
         try:
             import folium
-        except ImportError:
+        except ImportError as exc:
             raise ImportError(
                 "folium package required for interactive maps. Install with 'uv pip install folium'"
-            )
+            ) from exc
 
         if not self.grid.cells:
             # Create empty map
@@ -945,7 +840,7 @@ class H3Validator:
     """
 
     @staticmethod
-    def validate_h3_index(h3_index: str) -> Dict[str, Any]:
+    def validate_h3_index(h3_index: str) -> dict[str, Any]:
         """
         Validate H3 index format and properties.
 
@@ -955,17 +850,13 @@ class H3Validator:
         Returns:
             Validation result dictionary
         """
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "valid": False,
             "index": h3_index,
             "errors": [],
             "warnings": [],
             "properties": {},
         }
-
-        if not H3_AVAILABLE:
-            result["errors"].append("h3-py package not available")
-            return result
 
         try:
             # Check if index is valid
@@ -1002,7 +893,7 @@ class H3Validator:
         return result
 
     @staticmethod
-    def validate_coordinates(lat: float, lng: float) -> Dict[str, Any]:
+    def validate_coordinates(lat: float, lng: float) -> dict[str, Any]:
         """
         Validate latitude/longitude coordinates.
 
@@ -1013,7 +904,7 @@ class H3Validator:
         Returns:
             Validation result dictionary
         """
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "valid": True,
             "latitude": lat,
             "longitude": lng,
@@ -1038,7 +929,7 @@ class H3Validator:
         return result
 
     @staticmethod
-    def validate_resolution(resolution: int) -> Dict[str, Any]:
+    def validate_resolution(resolution: int) -> dict[str, Any]:
         """
         Validate H3 resolution parameter.
 
@@ -1048,7 +939,7 @@ class H3Validator:
         Returns:
             Validation result dictionary
         """
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "valid": True,
             "resolution": resolution,
             "errors": [],
@@ -1075,7 +966,7 @@ class H3Validator:
         return result
 
     @classmethod
-    def validate_grid(cls, grid: H3Grid) -> Dict[str, Any]:
+    def validate_grid(cls, grid: H3Grid) -> dict[str, Any]:
         """
         Validate entire H3Grid for consistency and integrity.
 
@@ -1085,7 +976,7 @@ class H3Validator:
         Returns:
             Comprehensive validation report
         """
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "valid": True,
             "grid_name": grid.name,
             "cell_count": len(grid.cells),

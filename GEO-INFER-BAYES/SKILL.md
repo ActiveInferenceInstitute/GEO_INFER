@@ -124,8 +124,9 @@ results = ModelComparison([model]).compare_models(
 
 Every sampler and predictive method takes a `random_seed` routed through
 `geo_infer_bayes.utils.rng.resolve_rng`, which accepts `None`, an `int`, a
-`SeedSequence`, a `BitGenerator`, a `numpy.random.Generator`, or a legacy
-`RandomState`, and always returns a `Generator`. Consequences worth knowing:
+`SeedSequence`, a `BitGenerator`, or a `numpy.random.Generator`, and always
+returns a `Generator`; `numpy.random.RandomState` and the `numpy.random` module
+raise `TypeError`. Consequences worth knowing:
 
 - Passing an `int` makes a chain replayable; `0` is a valid seed.
 - Passing a `Generator` threads one stream through a whole pipeline.

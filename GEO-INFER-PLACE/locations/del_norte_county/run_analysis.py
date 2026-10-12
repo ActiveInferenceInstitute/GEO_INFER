@@ -22,7 +22,6 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Optional
 
 from geo_infer_place.locations.del_norte_county.forest_health_monitor import (
     ForestHealthMonitor,
@@ -48,7 +47,7 @@ def load_location_config() -> dict:
     try:
         import yaml
 
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             return yaml.safe_load(f) or {}
     except Exception:
         # Minimal default bounds if YAML not available
@@ -119,8 +118,8 @@ def cleanup_old_results(output_dir: Path) -> None:
     preserve_files = set()
 
     # Group files by pattern and find the most recent for each
-    files_to_keep: Dict[str, Optional[Path]] = {}
-    files_to_remove: List[Path] = []
+    files_to_keep: dict[str, Path | None] = {}
+    files_to_remove: list[Path] = []
 
     for pattern_name, (pattern, _) in patterns.items():
         matching_files = []

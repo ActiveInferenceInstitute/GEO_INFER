@@ -24,6 +24,7 @@
 - `information_theory/`
 - `theorem_proving/`
 - `__init__.py`
+- `circulation.py`
 - `geometry.py`
 - `gpu_acceleration.py`
 - `graph_theory.py`

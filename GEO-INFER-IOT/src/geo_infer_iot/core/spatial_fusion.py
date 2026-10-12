@@ -6,23 +6,14 @@ integrating with GEO-INFER-SPACE for H3 spatial indexing and spatial operations.
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple, Any
-from datetime import datetime
+from typing import Any
+from datetime import datetime, UTC
 import numpy as np
 import h3
 
-# Optional imports for enhanced functionality
-try:
-    from geo_infer_space.utils.h3_utils import get_h3_neighbors
-
-    HAS_GEO_SPACE = True
-except ImportError:
-    HAS_GEO_SPACE = False
+from geo_infer_space.utils.h3_utils import get_h3_neighbors
 
 logger = logging.getLogger(__name__)
-
-if not HAS_GEO_SPACE:
-    logger.warning("GEO-INFER-SPACE not available, using basic spatial operations")
 
 
 class SpatialDataFusion:
@@ -36,14 +27,10 @@ class SpatialDataFusion:
     - Temporal consistency validation across spatial regions
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
-        self.fusion_cache: Dict[str, Any] = {}
-        self.spatial_operations: Optional[Dict[str, Any]] = None
-
-        # Initialize spatial operations if available
-        if HAS_GEO_SPACE:
-            self.spatial_operations = {"h3_neighbors": get_h3_neighbors}
+        self.fusion_cache: dict[str, Any] = {}
+        self.spatial_operations: dict[str, Any] = {"h3_neighbors": get_h3_neighbors}
 
         # Default fusion parameters
         self.default_params = {
@@ -58,10 +45,10 @@ class SpatialDataFusion:
 
     def fuse_sensor_data(
         self,
-        measurements: List[Dict],
+        measurements: list[dict],
         target_variable: str,
-        target_location: Optional[Tuple[float, float]] = None,
-    ) -> Dict:
+        target_location: tuple[float, float] | None = None,
+    ) -> dict:
         """
         Fuse sensor data using spatial interpolation and uncertainty quantification.
 
@@ -107,7 +94,7 @@ class SpatialDataFusion:
                     "target_variable": target_variable,
                     "measurement_count": len(variable_measurements),
                     "fusion_method": "spatial_interpolation",
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
             )
 
@@ -118,8 +105,8 @@ class SpatialDataFusion:
             return {"error": f"Fusion failed: {str(e)}"}
 
     def _interpolate_to_location(
-        self, measurements: List[Dict], target_location: Tuple[float, float]
-    ) -> Dict:
+        self, measurements: list[dict], target_location: tuple[float, float]
+    ) -> dict:
         """Interpolate measurements to a target location."""
         target_lat, target_lon = target_location
 
@@ -182,10 +169,10 @@ class SpatialDataFusion:
             ),
         }
 
-    def _aggregate_measurements(self, measurements: List[Dict]) -> Dict:
+    def _aggregate_measurements(self, measurements: list[dict]) -> dict:
         """Aggregate measurements spatially without target location."""
         # Simple spatial averaging with H3-based grouping
-        h3_groups: Dict[str, List[Dict[str, Any]]] = {}
+        h3_groups: dict[str, list[dict[str, Any]]] = {}
 
         for measurement in measurements:
             h3_index = h3.latlng_to_cell(
@@ -252,8 +239,8 @@ class SpatialDataFusion:
         return float(R * c)
 
     def validate_spatial_consistency(
-        self, measurements: List[Dict], consistency_threshold: float = 2.0
-    ) -> Dict:
+        self, measurements: list[dict], consistency_threshold: float = 2.0
+    ) -> dict:
         """
         Validate spatial consistency of measurements using H3-based analysis.
 
@@ -266,7 +253,7 @@ class SpatialDataFusion:
         """
         try:
             # Group measurements by H3 cell
-            h3_measurements: Dict[str, List[Dict[str, Any]]] = {}
+            h3_measurements: dict[str, list[dict[str, Any]]] = {}
             for measurement in measurements:
                 h3_index = h3.latlng_to_cell(
                     measurement["latitude"], measurement["longitude"], 8
@@ -293,32 +280,27 @@ class SpatialDataFusion:
                 std_value = np.std(values)
 
                 # Get neighboring cells for between-cell consistency
-                if HAS_GEO_SPACE:
-                    try:
-                        neighbors = get_h3_neighbors(h3_index, ring_size=1)
-                        neighbor_values = []
+                try:
+                    neighbors = get_h3_neighbors(h3_index, ring_size=1)
+                    neighbor_values = []
 
-                        for neighbor_h3 in neighbors:
-                            if neighbor_h3 in h3_measurements:
-                                neighbor_vals = [
-                                    m["value"] for m in h3_measurements[neighbor_h3]
-                                ]
-                                neighbor_values.extend(neighbor_vals)
+                    for neighbor_h3 in neighbors:
+                        if neighbor_h3 in h3_measurements:
+                            neighbor_vals = [
+                                m["value"] for m in h3_measurements[neighbor_h3]
+                            ]
+                            neighbor_values.extend(neighbor_vals)
 
-                        if neighbor_values:
-                            neighbor_mean = np.mean(neighbor_values)
-                            between_cell_diff = abs(mean_value - neighbor_mean)
-                            between_cell_consistency = max(
-                                0, 1.0 - between_cell_diff / consistency_threshold
-                            )
-                        else:
-                            between_cell_consistency = 1.0
-                    except Exception:
-                        between_cell_consistency = (
-                            1.0  # Default if neighbor analysis fails
+                    if neighbor_values:
+                        neighbor_mean = np.mean(neighbor_values)
+                        between_cell_diff = abs(mean_value - neighbor_mean)
+                        between_cell_consistency = max(
+                            0, 1.0 - between_cell_diff / consistency_threshold
                         )
-                else:
-                    between_cell_consistency = 1.0
+                    else:
+                        between_cell_consistency = 1.0
+                except Exception:
+                    between_cell_consistency = 1.0  # Default if neighbor analysis fails
 
                 # Overall consistency score
                 within_cell_consistency = max(

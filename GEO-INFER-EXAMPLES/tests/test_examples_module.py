@@ -2,12 +2,7 @@
 Unit tests for GEO-INFER-EXAMPLES module.
 """
 
-import pytest
 from pathlib import Path
-import sys
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from geo_infer_examples import __version__
 
@@ -43,10 +38,10 @@ class TestExamplesModule:
         readme = Path(__file__).parent.parent / "README.md"
         assert readme.exists()
 
-    def test_requirements_exists(self):
-        """Test that requirements.txt exists."""
-        requirements = Path(__file__).parent.parent / "requirements.txt"
-        assert requirements.exists()
+    def test_pyproject_exists(self):
+        """Test that pyproject.toml declares the module package."""
+        pyproject = Path(__file__).parent.parent / "pyproject.toml"
+        assert pyproject.exists()
 
 
 class TestExamplesStructure:
@@ -64,7 +59,3 @@ class TestExamplesStructure:
         )
         assert orchestrators_dir.exists()
         assert orchestrators_dir.is_dir()
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])

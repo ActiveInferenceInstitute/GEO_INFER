@@ -5,7 +5,7 @@ This module implements a concrete Active Inference model for climate adaptation,
 defining the specific state space, observations, and dynamics (A, B, C, D matrices).
 """
 
-from typing import Dict, Any, Optional
+from typing import Any
 import numpy as np
 import logging
 
@@ -54,8 +54,8 @@ class ClimateModel(ActiveInferenceModel):
 
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
-        random_seed: Optional[int] = None,
+        config: dict[str, Any] | None = None,
+        random_seed: int | None = None,
     ):
         """
         Initialize the Climate Model.
@@ -84,7 +84,7 @@ class ClimateModel(ActiveInferenceModel):
         D = self._build_prior_D()
 
         # Define parameters for the generic engine
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "state_dim": self.num_states,  # This might need adaptation in core if it expects int
             "obs_dim": self.num_obs,  # This might need adaptation
             "action_dim": self.num_controls,
@@ -107,17 +107,6 @@ class ClimateModel(ActiveInferenceModel):
         self.generative_model = GenerativeModel(
             model_type="categorical", parameters=params
         )
-        # Inject the specific matrices
-        self.generative_model.observation_model = A
-        self.generative_model.transition_model = B
-        # C matrix is a per-modality object array, while GenerativeModel types
-        # ``preferences`` as Dict[str, Any] for its hierarchical API; storing the
-        # raw pymdp-style C here is intentional.
-        self.generative_model.preferences = C
-        self.generative_model.beliefs = {
-            "states": D
-        }  # Initial beliefs from prior wrapped in dict
-
         # Also set the internal active inference components to use these
         self.set_generative_model(self.generative_model)
 
@@ -214,8 +203,8 @@ class ClimateModel(ActiveInferenceModel):
         B_co2[:, 2, 0] = [0.0, 0.0, 1.0]
 
         # Action 1 Reduce
-        B_co2[:, 0, 1] = [0.9, 0.2, 0.0]
-        B_co2[:, 1, 1] = [0.1, 0.7, 0.1]
+        B_co2[:, 0, 1] = [0.9, 0.1, 0.0]
+        B_co2[:, 1, 1] = [0.2, 0.7, 0.1]
         B_co2[:, 2, 1] = [0.0, 0.1, 0.9]
 
         # Action 2 GeoEng: modeled as solar-radiation management, which cools
@@ -263,8 +252,8 @@ class ClimateModel(ActiveInferenceModel):
         """
         if observations is None:
             # Default observation (e.g. from environment)
-            obs = np.array([0, 0])
+            obs = [0, 0]
         else:
-            obs = np.asarray(observations)
+            obs = observations
 
         return super().step(obs, **kwargs)

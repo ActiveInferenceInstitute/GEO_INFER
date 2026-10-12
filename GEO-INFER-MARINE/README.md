@@ -8,10 +8,8 @@ Marine and oceanographic analysis, coastal management, and marine ecosystem moni
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -21,8 +19,8 @@ Marine and oceanographic analysis, coastal management, and marine ecosystem moni
 
 - Module: `GEO-INFER-MARINE`
 - Package: `geo_infer_marine`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-MARINE`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-marine`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module MARINE`
 
 ## Dependencies

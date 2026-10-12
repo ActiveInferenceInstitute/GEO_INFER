@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Dict, Any
+from datetime import datetime, UTC
+from typing import Any
 
 
 @dataclass
@@ -16,10 +16,8 @@ class TestOutcome:
     passed: bool
     duration_seconds: float
     message: str
-    details: Dict[str, Any] = field(default_factory=dict)
-    timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    details: dict[str, Any] = field(default_factory=dict)
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     category: str = "general"
 
 
@@ -30,6 +28,6 @@ class ValidationRule:
     name: str
     field: str
     rule_type: str  # range, format, custom
-    parameters: Dict[str, Any]
+    parameters: dict[str, Any]
     severity: str = "error"  # error, warning, info
     description: str = ""

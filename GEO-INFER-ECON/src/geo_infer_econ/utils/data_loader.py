@@ -10,7 +10,7 @@ import pandas as pd
 import geopandas as gpd
 import numpy as np
 import requests
-from typing import Dict, List, Optional, Any
+from typing import Any
 from pathlib import Path
 import logging
 from dataclasses import dataclass
@@ -24,9 +24,9 @@ class DataSourceConfig:
     source_type: str  # 'file', 'api', 'database', 'web_service'
     format: str  # 'csv', 'json', 'geojson', 'xlsx', 'api'
     location: str  # file path or URL
-    parameters: Optional[Dict[str, Any]] = None
-    authentication: Optional[Dict[str, str]] = None
-    cache_settings: Optional[Dict[str, Any]] = None
+    parameters: dict[str, Any] | None = None
+    authentication: dict[str, str] | None = None
+    cache_settings: dict[str, Any] | None = None
 
 
 @dataclass
@@ -34,9 +34,9 @@ class DataValidationResult:
     """Results of data validation"""
 
     is_valid: bool
-    errors: List[str]
-    warnings: List[str]
-    summary: Dict[str, Any]
+    errors: list[str]
+    warnings: list[str]
+    summary: dict[str, Any]
 
 
 class EconomicDataLoader:
@@ -47,7 +47,7 @@ class EconomicDataLoader:
     preprocessing, and caching capabilities.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the Economic Data Loader.
 
@@ -56,9 +56,9 @@ class EconomicDataLoader:
         """
         self.logger = logging.getLogger(__name__)
         self.config = config or {}
-        self.data_sources: Dict[str, DataSourceConfig] = {}
-        self.cache: Dict[str, Any] = {}
-        self.validation_rules: Dict[str, Any] = {}
+        self.data_sources: dict[str, DataSourceConfig] = {}
+        self.cache: dict[str, Any] = {}
+        self.validation_rules: dict[str, Any] = {}
 
         # Setup default configurations
         self._setup_default_configs()
@@ -95,7 +95,7 @@ class EconomicDataLoader:
     def load_economic_data(
         self,
         source_name: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         validate: bool = True,
     ) -> pd.DataFrame:
         """
@@ -217,7 +217,7 @@ class EconomicDataLoader:
         return self._load_from_api(config)
 
     def _apply_filters(
-        self, data: pd.DataFrame, filters: Dict[str, Any]
+        self, data: pd.DataFrame, filters: dict[str, Any]
     ) -> pd.DataFrame:
         """Apply filters to the loaded data."""
         filtered_data = data.copy()
@@ -395,7 +395,7 @@ class EconomicDataLoader:
         return actual_type == expected_type
 
     def preprocess_economic_data(
-        self, data: pd.DataFrame, preprocessing_steps: Optional[List[str]] = None
+        self, data: pd.DataFrame, preprocessing_steps: list[str] | None = None
     ) -> pd.DataFrame:
         """
         Preprocess economic data with common cleaning and transformation steps.
@@ -474,7 +474,7 @@ class EconomicDataLoader:
         return data
 
     def merge_economic_datasets(
-        self, datasets: List[pd.DataFrame], merge_keys: List[str], how: str = "outer"
+        self, datasets: list[pd.DataFrame], merge_keys: list[str], how: str = "outer"
     ) -> pd.DataFrame:
         """
         Merge multiple economic datasets.

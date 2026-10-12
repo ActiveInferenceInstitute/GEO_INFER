@@ -37,7 +37,7 @@ class TestNormativeInference:
         )
 
         # Define a mandatory helmet norm
-        self.helmet_condition = lambda obs: obs.get("wearing_helmet", False) == True
+        self.helmet_condition = lambda obs: obs.get("wearing_helmet", False) is True
         self.helmet_id = self.inference.add_norm(
             name="Helmet Required",
             condition=self.helmet_condition,
@@ -81,8 +81,11 @@ class TestNormativeInference:
 
     def test_add_norm(self):
         """Test adding a norm to the inference engine."""
+
         # Add a new norm
-        parking_condition = lambda obs: obs.get("is_parked_legally", False) == True
+        def parking_condition(obs: dict) -> bool:
+            return obs.get("is_parked_legally", False) is True
+
         parking_id = self.inference.add_norm(
             name="Legal Parking",
             condition=parking_condition,

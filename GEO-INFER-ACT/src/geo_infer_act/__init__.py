@@ -5,7 +5,7 @@ This module provides mathematical and computational tools for modeling complex
 ecological and civic systems using principles from active inference theory.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Development Team"
 __email__ = "blanket@activeinference.institute"
 

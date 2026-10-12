@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import networkx as nx
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any
 from shapely.geometry import Point, LineString
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ def shortest_path(
     end_point: Point,
     weight_column: str = "length",
     impedance_factor: float = 1.0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Calculate shortest path between two points on a network.
 
@@ -169,7 +169,7 @@ def service_area(
 
 def network_connectivity(
     network_gdf: gpd.GeoDataFrame, weight_column: str = "length"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Analyze network connectivity metrics.
 
@@ -234,8 +234,8 @@ def network_connectivity(
 
 def routing_analysis(
     network_gdf: gpd.GeoDataFrame,
-    origins: List[Point],
-    destinations: List[Point],
+    origins: list[Point],
+    destinations: list[Point],
     weight_column: str = "length",
 ) -> pd.DataFrame:
     """
@@ -309,8 +309,8 @@ def routing_analysis(
 
 def accessibility_analysis(
     network_gdf: gpd.GeoDataFrame,
-    origins: List[Point],
-    destinations: List[Point],
+    origins: list[Point],
+    destinations: list[Point],
     max_distance: float,
     weight_column: str = "length",
 ) -> pd.DataFrame:
@@ -343,7 +343,7 @@ def accessibility_analysis(
 
             accessible_count = 0
             total_distance = 0
-            min_distance: Optional[float] = float("inf")
+            min_distance: float | None = float("inf")
             distances = []
 
             for dest_node in dest_nodes:
@@ -426,7 +426,7 @@ def _create_graph_from_gdf(
 
 def _find_nearest_node(
     G: nx.Graph, point: Point, network_gdf: gpd.GeoDataFrame
-) -> Optional[Tuple[float, float]]:
+) -> tuple[float, float] | None:
     """Find nearest network node to a point."""
     if not G.nodes():
         return None

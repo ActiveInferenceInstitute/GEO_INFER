@@ -1,534 +1,60 @@
 # GEO-INFER-TRANSPORT: Transportation Systems Module
-> **Illustrative example notice.** This page contains historical or
-> conceptual integration sketches. Names such as `SpatialAnalyzer` and
-> domain-specific facade classes are not public GEO-INFER exports in the
-> current checkout; verify imports against each module's `src/` package
-> and use the module README/tests for executable examples.
-> **Purpose**: Traffic analysis, route optimization, and transportation network management
->
-> This module provides transportation analysis capabilities including traffic modeling, multimodal routing, demand forecasting, and integration with Active Inference principles.
-## Overview
-Note: Code examples are illustrative; see `GEO-INFER-TRANSPORT/examples` for runnable scripts.
-### Links
-- Module README: [Module README](../../../GEO-INFER-TRANSPORT/README.md)
-- Modules Overview: ../modules/index.md
-GEO-INFER-TRANSPORT implements transportation analysis for geospatial applications. It provides:
-- **Traffic Analysis**: Real-time traffic monitoring, congestion detection, and pattern analysis
-- **Route Optimization**: Multimodal path planning, shortest path, and vehicle routing
-- **Demand Forecasting**: Travel pattern prediction and origin-destination analysis
-- **Network Modeling**: Transportation network analysis, capacity planning, and flow modeling
-- **Infrastructure Planning**: Facility siting, capacity optimization, and impact assessment
-### Mathematical Foundations
-#### Traffic Flow Theory
-The module uses the fundamental diagram:
-```
-q = k * v
-```
-Where:
-- `q` is flow (vehicles/hour)
-- `k` is density (vehicles/km)
-- `v` is speed (km/hour)
-#### User Equilibrium
-Traffic assignment uses Wardrop's user equilibrium:
-```
-If f_p > 0, then c_p = min(c_r) for all r ∈ R_{od}
-```
-Where all used routes have equal and minimum travel cost.
-## Core Features
-### 1. Traffic Analysis
-**Purpose**: Monitor and analyze traffic conditions in real-time.
-```python
-from geo_infer_transport import TrafficAnalyzer
-# Initialize traffic analyzer
-analyzer = TrafficAnalyzer(
-network=road_network,
-data_sources=['sensors', 'probe_vehicles', 'cameras'],
-update_frequency='5min',
-historical_analysis=True
-)
-# Analyze current traffic state
-traffic_state = analyzer.analyze(
-network=road_network,
-sensors=traffic_sensors,
-time_window='real_time',
-include_uncertainty=True
-)
-# Detect congestion
-congestion = analyzer.detect_congestion(
-traffic_state=traffic_state,
-congestion_definition='los_e',
-spatial_clustering=True,
-temporal_persistence='3_intervals'
-)
-# Analyze traffic patterns
-patterns = analyzer.analyze_patterns(
-historical_data=traffic_history,
-pattern_types=['daily', 'weekly', 'seasonal', 'event'],
-clustering_method='hierarchical'
-)
-# Estimate origin-destination matrix
-od_matrix = analyzer.estimate_od_matrix(
-traffic_counts=sensor_counts,
-method='entropy_maximization',
-constraints=['production', 'attraction'],
-time_period='am_peak'
-)
-# Predict traffic
-prediction = analyzer.predict_traffic(
-current_state=traffic_state,
-prediction_horizon='60min',
-method='lstm',
-include_incidents=True
-)
-```
-### 2. Route Optimization
-**Purpose**: Calculate optimal routes for various objectives.
-```python
-from geo_infer_transport import RoutingEngine
-# Initialize route optimizer
-optimizer = RoutingEngine(
-network=multimodal_network,
-routing_engine='osrm',
-real_time_traffic=True,
-accessibility_aware=True
-)
-# Optimize single route
-route = optimizer.optimize(
-origin=start_point,
-destination=end_point,
-modes=['driving', 'transit', 'cycling'],
-criteria=['time', 'cost', 'emissions'],
-preferences={'avoid': ['tolls', 'highways']}
-)
-# Vehicle routing problem
-vrp_solution = optimizer.solve_vrp(
-depot=warehouse_location,
-customers=delivery_locations,
-vehicles=fleet_data,
-constraints={
-'time_windows': delivery_windows,
-'capacity': vehicle_capacities,
-'driver_hours': max_hours
-},
-objectives=['distance', 'time', 'cost']
-)
-# Multimodal routing
-multimodal = optimizer.multimodal_route(
-origin=home_location,
-destination=work_location,
-modes=['walk', 'transit', 'bike_share'],
-transfer_penalty=5, # minutes
-accessibility_requirements='wheelchair'
-)
-# Isochrone analysis
-isochrones = optimizer.calculate_isochrones(
-origin=facility_location,
-travel_times=[5, 10, 15, 30], # minutes
-mode='driving',
-departure_time='08:00',
-include_traffic=True
-)
-# Fleet routing optimization
-fleet_routes = optimizer.optimize_fleet(
-fleet=vehicle_fleet,
-tasks=delivery_tasks,
-constraints=operational_constraints,
-rebalancing=True
-)
-```
-### 3. Transit Optimization
-**Purpose**: Optimize transit routes and operations.
-```python
-from geo_infer_transport import TransitOptimizer
-# Initialize demand forecaster
-forecaster = TransitOptimizer(
-models=['gravity', 'activity_based', 'machine_learning'],
-spatial_resolution='taz',
-temporal_resolution='hourly'
-)
-# Forecast travel demand
-demand = forecaster.forecast(
-base_year_data=current_demand,
-forecast_year=2035,
-scenarios={
-'population': population_growth,
-'employment': employment_projections,
-'land_use': development_plans
-}
-)
-# Trip generation
-generation = forecaster.trip_generation(
-zones=traffic_zones,
-socioeconomic=zone_demographics,
-land_use=land_use_data,
-rates='cross_classification'
-)
-# Trip distribution
-distribution = forecaster.trip_distribution(
-productions=generation['productions'],
-attractions=generation['attractions'],
-impedance=travel_times,
-method='gravity'
-)
-# Mode choice modeling
-mode_split = forecaster.mode_choice(
-od_trips=distribution,
-mode_attributes={'auto': auto_attrs, 'transit': transit_attrs},
-model='nested_logit',
-choice_set=['auto', 'transit', 'bike', 'walk']
-)
-# Traffic assignment
-assignment = forecaster.traffic_assignment(
-od_demand=mode_split['auto'],
-network=road_network,
-method='user_equilibrium',
-convergence=0.01
-)
-```
-### 4. Network Construction and Analysis
-**Purpose**: Build and analyze transportation networks.
-```python
-from geo_infer_transport import TransportNetwork
-# Initialize network modeler
-modeler = TransportNetwork(
-network_type='multimodal',
-coordinate_system='EPSG:4326',
-graph_engine='networkx'
-)
-# Build network
-network = modeler.build_network(
-roads=road_centerlines,
-transit=transit_routes,
-bike=bike_network,
-pedestrian=sidewalks,
-connectivity='multimodal'
-)
-# Analyze network connectivity
-connectivity = modeler.analyze_connectivity(
-network=network,
-metrics=['average_path_length', 'clustering', 'betweenness'],
-by_mode=True
-)
-# Identify critical links
-critical = modeler.identify_critical_links(
-network=network,
-criteria='flow_weighted_betweenness',
-top_n=20,
-failure_analysis=True
-)
-# Model network resilience
-resilience = modeler.assess_resilience(
-network=network,
-disruption_scenarios=disruption_set,
-recovery_time=True,
-redundancy_analysis=True
-)
-# Capacity analysis
-capacity = modeler.analyze_capacity(
-network=network,
-demand=traffic_demand,
-bottleneck_identification=True,
-los_calculation=True
-)
-```
-### 5. Accessibility Analysis
-**Purpose**: Analyze transportation accessibility and service coverage.
-```python
-from geo_infer_transport import AccessibilityAnalyzer
-# Initialize infrastructure planner
-planner = AccessibilityAnalyzer(
-planning_horizon_years=25,
-evaluation_framework='benefit_cost',
-equity_analysis=True
-)
-# Site facilities
-site_analysis = planner.site_facility(
-facility_type='transit_station',
-candidate_sites=potential_locations,
-demand=ridership_forecast,
-constraints={'land_use': zoning, 'cost': budget_limit},
-objectives=['ridership', 'equity', 'cost_effectiveness']
-)
-# Evaluate projects
-evaluation = planner.evaluate_project(
-project=highway_expansion,
-benefits=['travel_time_savings', 'safety', 'emissions'],
-costs=['construction', 'maintenance', 'user_costs'],
-discount_rate=0.07,
-analysis_period=30
-)
-# Prioritize investments
-priorities = planner.prioritize_investments(
-projects=project_portfolio,
-budget_constraint=available_funding,
-criteria={
-'benefit_cost': 0.3,
-'equity': 0.2,
-'safety': 0.25,
-'mobility': 0.25
-},
-method='multicriteria'
-)
-# Impact assessment
-impact = planner.assess_impact(
-project=new_highway,
-impacts=['traffic', 'environment', 'economic', 'social'],
-study_area=affected_area,
-comparison='with_without'
-)
-```
-## API Reference
-### TrafficAnalyzer
-Traffic monitoring and analysis.
-```python
-class TrafficAnalyzer:
-def __init__(self, network, data_sources, update_frequency='5min',
-historical_analysis=True):
-"""
-Initialize traffic analyzer.
-Args:
-network (network): Road network
-data_sources (list): Traffic data sources
-update_frequency (str): Update frequency
-historical_analysis (bool): Enable historical analysis
-"""
-def analyze(self, network, sensors, time_window, include_uncertainty):
-"""Analyze current traffic state."""
-def detect_congestion(self, traffic_state, congestion_definition, spatial_clustering, temporal_persistence):
-"""Detect congestion locations."""
-def predict_traffic(self, current_state, prediction_horizon, method, include_incidents):
-"""Predict future traffic conditions."""
-```
-### RoutingEngine
-Routing calculation and path optimization.
-```python
-class RoutingEngine:
-def __init__(self, network, routing_engine='osrm', real_time_traffic=True,
-accessibility_aware=True):
-"""
-Initialize route optimizer.
-Args:
-network (network): Transportation network
-routing_engine (str): Routing engine to use
-real_time_traffic (bool): Include real-time traffic
-accessibility_aware (bool): Consider accessibility needs
-"""
-def optimize(self, origin, destination, modes, criteria, preferences):
-"""Calculate optimal route."""
-def solve_vrp(self, depot, customers, vehicles, constraints, objectives):
-"""Solve vehicle routing problem."""
-```
-### TransitOptimizer
-Transit route and schedule optimization.
-```python
-class TransitOptimizer:
-def __init__(self, models, spatial_resolution='taz', temporal_resolution='hourly'):
-"""
-Initialize demand forecaster.
-Args:
-models (list): Forecasting models to use
-spatial_resolution (str): Spatial resolution
-temporal_resolution (str): Temporal resolution
-"""
-def forecast(self, base_year_data, forecast_year, scenarios):
-"""Forecast future travel demand."""
-def traffic_assignment(self, od_demand, network, method, convergence):
-"""Assign demand to network."""
-```
-## Use Cases
-### 1. Real-Time Traffic Management
-**Problem**: Manage traffic in real-time to reduce congestion.
-```python
-from geo_infer_transport import TrafficAnalyzer, RoutingEngine
-from geo_infer_iot import SensorNetwork
-# Set up real-time monitoring
-sensors = SensorNetwork()
-analyzer = TrafficAnalyzer()
-# Real-time traffic state
-def update_traffic_state():
-sensor_data = sensors.get_current_readings()
-traffic_state = analyzer.analyze(
-sensors=sensor_data,
-time_window='real_time'
-)
-# Detect incidents
-incidents = analyzer.detect_incidents(
-traffic_state=traffic_state,
-detection_method='speed_anomaly'
-)
-# Generate routing advisories
-if incidents:
-optimizer = RoutingEngine()
-alternatives = optimizer.calculate_alternatives(
-affected_corridor=incident_location,
-detour_options=parallel_routes
-)
-return traffic_state, incidents, alternatives
-```
-### 2. Transit Planning
-**Problem**: Plan transit routes and evaluate service changes.
-```python
-from geo_infer_transport import TransitOptimizer, TransportNetwork, AccessibilityAnalyzer
-# Analyze transit demand
-forecaster = TransitOptimizer()
-transit_demand = forecaster.forecast(
-base_year_data=current_ridership,
-forecast_year=2030,
-scenarios={'population': growth_scenario}
-)
-# Design route alternatives
-modeler = TransportNetwork()
-route_alternatives = modeler.design_transit_routes(
-demand=transit_demand,
-constraints={'coverage': 0.8, 'frequency': 15},
-objectives=['ridership', 'operating_cost']
-)
-# Evaluate alternatives
-planner = AccessibilityAnalyzer()
-evaluation = planner.evaluate_project(
-project=route_alternatives,
-benefits=['ridership', 'accessibility', 'emissions'],
-costs=['capital', 'operating'],
-equity_analysis=True
-)
-```
-### 3. Freight Logistics Optimization
-**Problem**: Optimize freight delivery operations.
-```python
-from geo_infer_transport import RoutingEngine, TrafficAnalyzer
-from geo_infer_log import LogisticsManager
-# Optimize delivery routes
-optimizer = RoutingEngine()
-routes = optimizer.solve_vrp(
-depot=distribution_center,
-customers=delivery_points,
-vehicles=truck_fleet,
-constraints={
-'time_windows': customer_windows,
-'capacity': truck_capacities,
-'driver_hours': driver_regulations
-},
-objectives=['cost', 'time', 'emissions']
-)
-# Account for traffic
-analyzer = TrafficAnalyzer()
-traffic_forecast = analyzer.predict_traffic(
-prediction_horizon='8hours',
-departure_time='06:00'
-)
-# Adjust routes for traffic
-adjusted_routes = optimizer.adjust_for_traffic(
-routes=routes,
-traffic_forecast=traffic_forecast,
-flexibility='departure_time'
-)
-# Monitor execution
-logistics = LogisticsManager()
-execution = logistics.monitor_deliveries(
-routes=adjusted_routes,
-tracking=gps_tracking,
-kpis=['on_time', 'efficiency', 'customer_satisfaction']
-)
-```
-## Integration with Other Modules
-### GEO-INFER-SPACE Integration
-```python
-from geo_infer_transport import RoutingEngine
-from geo_infer_space import SpatialAnalyzer
-# Combine transport and spatial analysis
-optimizer = RoutingEngine()
-spatial = SpatialAnalyzer()
-# Accessibility analysis
-accessibility = spatial.calculate_accessibility(
-origins=population_locations,
-destinations=job_locations,
-travel_times=optimizer.calculate_times(),
-aggregation='h3_resolution_8'
-)
-```
-### GEO-INFER-TIME Integration
-```python
-from geo_infer_transport import TrafficAnalyzer
-from geo_infer_time import TemporalAnalyzer
-# Combine transport and temporal analysis
-traffic = TrafficAnalyzer()
-temporal = TemporalAnalyzer()
-# Temporal traffic patterns
-patterns = temporal.analyze_patterns(
-data=traffic.get_historical_data(),
-pattern_types=['daily', 'weekly', 'holiday'],
-decomposition='stl'
-)
-```
-### GEO-INFER-LOG Integration
-```python
-from geo_infer_transport import RoutingEngine
-from geo_infer_log import SupplyChainOptimizer
-# Link transport to logistics
-route_opt = RoutingEngine()
-supply_chain = SupplyChainOptimizer()
-# Integrated supply chain routing
-integrated = supply_chain.optimize_distribution(
-routing_engine=route_opt,
-distribution_network=dc_network,
-demand=customer_demand
-)
-```
-## Troubleshooting
-### Common Issues
-**Routing failures:**
-```python
-# Check network connectivity
-optimizer.validate_network(
-checks=['connectivity', 'turn_restrictions', 'one_way']
-)
-# Handle unreachable destinations
-optimizer.set_fallback_routing(
-method='euclidean_approximation',
-max_attempts=3
-)
-```
-**Traffic prediction accuracy:**
-```python
-# Calibrate prediction model
-analyzer.calibrate_model(
-observed=historical_traffic,
-validation_period='7_days',
-metrics=['mae', 'rmse', 'mape']
-)
-# Include additional features
-analyzer.add_features([
-'weather', 'events', 'incidents', 'construction'
-])
-```
-## Performance Optimization
-```python
-# Enable parallel routing
-optimizer.enable_parallel_routing(n_workers=8)
-# Use spatial indexing
-optimizer.enable_spatial_index(
-index_type='rtree',
-cache_routes=True
-)
-# GPU-accelerated traffic prediction
-analyzer.enable_gpu_acceleration()
-```
-## Related Documentation
-### Related Modules
-- **[GEO-INFER-SPACE](../modules/geo-infer-space.md)** - Spatial network modeling
-- **[GEO-INFER-TIME](../modules/geo-infer-time.md)** - Temporal demand patterns
-- **[GEO-INFER-LOG](../modules/geo-infer-log.md)** - Logistics optimization
-- **[GEO-INFER-ECON](../modules/geo-infer-econ.md)** - Economic analysis
-- **[GEO-INFER-EMERGENCY](../modules/geo-infer-emergency.md)** - Evacuation routing
----
-**Ready to get started?** Check out the **[Traffic Analysis Tutorial](../getting_started/index.md)** or explore **[Route Optimization Examples](../examples_gallery.md)**!
 
-## 🗺️ Interactive Spatial Preview
+`GEO-INFER-TRANSPORT` owns the `geo_infer_transport` package under `GEO-INFER-TRANSPORT/src/`.
+GEO-INFER-TRANSPORT: Transportation Analysis Module
 
-Pre-rendered spatial snapshot for **GEO-INFER-TRANSPORT** (*Transportation Systems Module*). Reproducible preview cards are generated by `geo_infer_intra.core.documentation.visual_preview`.
+## Public import surface
 
-| Preview | Widget |
-| --- | --- |
-| ![GEO-INFER-TRANSPORT Leaflet Preview](previews/geo-infer-transport_preview.svg) | [Interactive map](previews/geo-infer-transport_preview.html) · [PNG](previews/geo-infer-transport_preview.png) |
+These names are exported by the current owning package:
 
-> **Reproducible contract:** each map ships as `geo-infer-transport_preview.html`, `geo-infer-transport_preview.svg`, `geo-infer-transport_preview.png`, and `geo-infer-transport_preview.manifest.json` beneath `previews/`. The receipt records geometry provenance and artifact SHA-256 hashes. Values are illustrative, not observations.
+- `geo_infer_transport.TransportNetwork`
+- `geo_infer_transport.RoutingEngine`
+- `geo_infer_transport.TrafficAnalyzer`
+- `geo_infer_transport.AccessibilityAnalyzer`
+- `geo_infer_transport.TransitOptimizer`
+
+The small example below verifies the installed import contract. It does not infer
+scientific validity or service availability from successful imports; the owning
+regression tests exercise behavior with concrete inputs.
+
+```python
+import geo_infer_transport
+from geo_infer_transport import TransportNetwork, RoutingEngine, TrafficAnalyzer, AccessibilityAnalyzer
+assert all(value is not None for value in (TransportNetwork, RoutingEngine, TrafficAnalyzer, AccessibilityAnalyzer,))
+assert geo_infer_transport.__version__ == "0.4.0"
+```
+
+Run examples in the shared, locked workspace environment. Constructor inputs,
+optional backends, and result shapes belong to the referenced source and tests.
+Cross-module callers should pass explicit spatial state ordering and timezone-aware
+instants when those fields are part of their data contract.
+
+## Verification
+
+From the repository root:
+
+```bash
+uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --module TRANSPORT --timeout 600 --workers 2
+```
+
+The module command includes its owned test files and registered nested test roots.
+The fleet's separate unit and slow categories cover complementary marker selections;
+release CI requires unit, slow, integration, performance, system, and H3 lanes on
+Python 3.11 and 3.12. Results include immutable attempt receipts under
+`.geo-infer-test-results/runs/`, with logs, current JUnit, selection inventories,
+interpreter and source custody. A missing optional dependency must be addressed by
+the declared package extra rather than by omitting its tests.
+
+## Source and examples
+
+- [Owning package](../../../GEO-INFER-TRANSPORT/src/geo_infer_transport/README.md)
+- [Module inventory and dependencies](../../../GEO-INFER-TRANSPORT/README.md)
+- [Module operating contract](../../../GEO-INFER-TRANSPORT/AGENTS.md)
+- [Regression: test_network_workflow.py](../../../GEO-INFER-TRANSPORT/tests/integration/test_network_workflow.py)
+- [Regression: test_accessibility.py](../../../GEO-INFER-TRANSPORT/tests/test_accessibility.py)
+- [Regression: test_network_routing.py](../../../GEO-INFER-TRANSPORT/tests/test_network_routing.py)
+- [Example source: multimodal_analysis.py](../../../GEO-INFER-TRANSPORT/examples/multimodal_analysis.py)
+- [Example source: traffic_simulation.py](../../../GEO-INFER-TRANSPORT/examples/traffic_simulation.py)
+
+See the [cross-module integration guide](../../../GEO-INFER-EXAMPLES/docs/INTEGRATION_GUIDE.md)
+for actual DATA, SPACE, TIME, BAYES, and ACT composition checks.

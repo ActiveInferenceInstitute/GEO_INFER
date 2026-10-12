@@ -13,7 +13,7 @@ This module provides sophisticated claims processing capabilities including:
 import logging
 import time
 import uuid
-from typing import Dict, List, Optional, Any
+from typing import Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from enum import Enum
@@ -78,8 +78,8 @@ class Payment:
     amount: float
     payment_date: datetime
     payment_method: str = "electronic"
-    reference_number: Optional[str] = None
-    notes: Optional[str] = None
+    reference_number: str | None = None
+    notes: str | None = None
 
 
 @dataclass
@@ -103,19 +103,19 @@ class Claim:
     paid_amount: float = 0.0
 
     # Reserves
-    reserves: List[Reserve] = field(default_factory=list)
+    reserves: list[Reserve] = field(default_factory=list)
 
     # Payments
-    payments: List[Payment] = field(default_factory=list)
+    payments: list[Payment] = field(default_factory=list)
 
     # Assessment information
     cause_of_loss: str = ""
-    adjuster_id: Optional[str] = None
-    supervisor_id: Optional[str] = None
+    adjuster_id: str | None = None
+    supervisor_id: str | None = None
 
     # Documentation
-    supporting_documents: List[str] = field(default_factory=list)
-    notes: List[str] = field(default_factory=list)
+    supporting_documents: list[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
 
     # Metadata
     created_at: datetime = field(default_factory=datetime.now)
@@ -123,8 +123,8 @@ class Claim:
     created_by: str = "system"
 
     # Error handling
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     def add_reserve(self, reserve: Reserve) -> None:
         """Add reserve estimate to claim."""
@@ -154,7 +154,7 @@ class Claim:
         """Calculate days since claim was reported."""
         return (datetime.now() - self.reported_date).days
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert claim to dictionary for serialization."""
         return {
             "claim_id": self.claim_id,
@@ -217,12 +217,12 @@ class ClaimsProcessingConfig:
             "expected_value"  # expected_value, percentile, conservative
         )
         self.payment_processing_days: int = 30
-        self.escalation_thresholds: Dict[str, float] = {
+        self.escalation_thresholds: dict[str, float] = {
             "amount": 50000,
             "complexity": 0.8,
             "days_open": 60,
         }
-        self.external_integrations: List[str] = ["property_database", "weather_data"]
+        self.external_integrations: list[str] = ["property_database", "weather_data"]
 
 
 class ClaimsProcessor:
@@ -238,7 +238,7 @@ class ClaimsProcessor:
     - Claims analytics and performance tracking
     """
 
-    def __init__(self, config: Optional[ClaimsProcessingConfig] = None):
+    def __init__(self, config: ClaimsProcessingConfig | None = None):
         """
         Initialize the claims processor.
 
@@ -251,13 +251,13 @@ class ClaimsProcessor:
         )
 
         # Claims storage
-        self.claims: Dict[str, Claim] = {}
-        self.claim_index: Dict[str, List[str]] = {}
+        self.claims: dict[str, Claim] = {}
+        self.claim_index: dict[str, list[str]] = {}
 
         # Processing queues
-        self.pending_claims: List[str] = []
-        self.in_review_claims: List[str] = []
-        self.approved_claims: List[str] = []
+        self.pending_claims: list[str] = []
+        self.in_review_claims: list[str] = []
+        self.approved_claims: list[str] = []
 
         # Performance tracking
         self.processing_metrics = {
@@ -274,7 +274,7 @@ class ClaimsProcessor:
 
         self.logger.info("Claims processor initialized")
 
-    def process_claim(self, claim_data: Dict[str, Any]) -> Claim:
+    def process_claim(self, claim_data: dict[str, Any]) -> Claim:
         """
         Process a new insurance claim.
 
@@ -378,9 +378,9 @@ class ClaimsProcessor:
         """
         return f"CLM{int(time.time())}{uuid.uuid4().hex[:12].upper()}"
 
-    def _validate_claim(self, claim_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_claim(self, claim_data: dict[str, Any]) -> dict[str, Any]:
         """Validate claim data."""
-        validation_result: Dict[str, Any] = {
+        validation_result: dict[str, Any] = {
             "is_valid": True,
             "errors": [],
             "warnings": [],
@@ -429,8 +429,8 @@ class ClaimsProcessor:
         return validation_result
 
     def _perform_initial_assessment(
-        self, claim: Claim, claim_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, claim: Claim, claim_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Perform initial claim assessment."""
         assessment = {
             "assessment": "standard",
@@ -456,7 +456,7 @@ class ClaimsProcessor:
 
         return assessment
 
-    def _has_suspicious_patterns(self, claim_data: Dict[str, Any]) -> bool:
+    def _has_suspicious_patterns(self, claim_data: dict[str, Any]) -> bool:
         """Check for suspicious claim patterns."""
         suspicious_indicators = [
             claim_data.get("claimed_amount", 0) > 50000,
@@ -476,8 +476,8 @@ class ClaimsProcessor:
         return bool(sum(bool(i) for i in suspicious_indicators) >= 2)
 
     def _check_for_fraud(
-        self, claim: Claim, claim_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, claim: Claim, claim_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Perform fraud detection analysis."""
         fraud_result = {"flagged": False, "reason": "", "confidence": 0.0}
 
@@ -506,7 +506,7 @@ class ClaimsProcessor:
 
         return fraud_result
 
-    def _check_similar_claims_pattern(self, claim_data: Dict[str, Any]) -> bool:
+    def _check_similar_claims_pattern(self, claim_data: dict[str, Any]) -> bool:
         """Check for patterns of similar claims."""
         # Check for repeated claims from the same policyholder with similar attributes
         policy_id = claim_data.get("policy_id", "")
@@ -520,7 +520,7 @@ class ClaimsProcessor:
         ]
         return len(matching) >= 3  # Flag if 3+ similar claims from same policy
 
-    def _check_inconsistent_information(self, claim_data: Dict[str, Any]) -> bool:
+    def _check_inconsistent_information(self, claim_data: dict[str, Any]) -> bool:
         """Check for inconsistent information in claim."""
         # Cross-check claim fields for logical contradictions
         loss_date = claim_data.get("loss_date")
@@ -534,8 +534,8 @@ class ClaimsProcessor:
         return False
 
     def _calculate_reserves(
-        self, claim: Claim, assessment: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, claim: Claim, assessment: dict[str, Any]
+    ) -> dict[str, Any]:
         """Calculate claim reserves."""
         reserves = []
 
@@ -565,7 +565,7 @@ class ClaimsProcessor:
 
         return {"reserves": reserves}
 
-    def _should_auto_approve(self, claim: Claim, assessment: Dict[str, Any]) -> bool:
+    def _should_auto_approve(self, claim: Claim, assessment: dict[str, Any]) -> bool:
         """Determine if claim should be auto-approved."""
         if self.config.processing_mode == "manual":
             return False
@@ -580,7 +580,7 @@ class ClaimsProcessor:
 
         return all(auto_approval_criteria)
 
-    def _approve_claim(self, claim: Claim, assessment: Dict[str, Any]) -> None:
+    def _approve_claim(self, claim: Claim, assessment: dict[str, Any]) -> None:
         """Approve claim and set approved amount."""
         claim.status = ClaimStatus.APPROVED
         claim.approved_amount = assessment.get(
@@ -692,11 +692,11 @@ class ClaimsProcessor:
         self.logger.info(f"Claim {claim.claim_number} reopened: {reopen_reason}")
         return True
 
-    def get_claim(self, claim_id: str) -> Optional[Claim]:
+    def get_claim(self, claim_id: str) -> Claim | None:
         """Retrieve claim by ID."""
         return self.claims.get(claim_id)
 
-    def search_claims(self, criteria: Dict[str, Any]) -> List[Claim]:
+    def search_claims(self, criteria: dict[str, Any]) -> list[Claim]:
         """
         Search claims based on criteria.
 
@@ -729,7 +729,7 @@ class ClaimsProcessor:
 
         return matching_claims
 
-    def get_claims_summary(self) -> Dict[str, Any]:
+    def get_claims_summary(self) -> dict[str, Any]:
         """Get summary of all claims and processing metrics."""
         claims = list(self.claims.values())
 
@@ -741,7 +741,7 @@ class ClaimsProcessor:
             }
 
         # Status breakdown
-        status_counts: Dict[str, Any] = {}
+        status_counts: dict[str, Any] = {}
         for claim in claims:
             status = claim.status.value
             status_counts[status] = status_counts.get(status, 0) + 1
@@ -825,7 +825,7 @@ class ClaimsProcessor:
         self.processing_metrics["outstanding_reserves"] = total_reserves
 
     def export_claims_data(
-        self, format: str = "csv", filename: Optional[str] = None
+        self, format: str = "csv", filename: str | None = None
     ) -> str:
         """
         Export claims data to file.
@@ -857,9 +857,9 @@ class ClaimsProcessor:
         self.logger.info(f"Claims data exported to {filename}")
         return filename
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform health check on claims processing system."""
-        health_status: Dict[str, Any] = {
+        health_status: dict[str, Any] = {
             "status": "operational",
             "total_claims": len(self.claims),
             "pending_claims": len(self.pending_claims),
@@ -889,7 +889,7 @@ class ClaimsEngine:
     - Integration with external claims systems
     """
 
-    def __init__(self, config: Optional[ClaimsProcessingConfig] = None):
+    def __init__(self, config: ClaimsProcessingConfig | None = None):
         """
         Initialize the claims engine.
 
@@ -907,7 +907,7 @@ class ClaimsEngine:
         self.settlement_prediction_model = None
 
         # Claims storage
-        self.claims: Dict[str, Claim] = {}
+        self.claims: dict[str, Claim] = {}
 
         # Performance tracking
         self.prediction_accuracy = 0.0
@@ -915,7 +915,7 @@ class ClaimsEngine:
 
         self.logger.info("Claims engine initialized")
 
-    def predict_claim_outcome(self, claim_data: Dict[str, Any]) -> Dict[str, Any]:
+    def predict_claim_outcome(self, claim_data: dict[str, Any]) -> dict[str, Any]:
         """
         Predict claim outcome using machine learning.
 
@@ -950,7 +950,7 @@ class ClaimsEngine:
 
         return prediction
 
-    def assess_fraud_risk(self, claim_data: Dict[str, Any]) -> Dict[str, Any]:
+    def assess_fraud_risk(self, claim_data: dict[str, Any]) -> dict[str, Any]:
         """
         Assess fraud risk using advanced detection methods.
 
@@ -1004,8 +1004,8 @@ class ClaimsEngine:
         return fraud_assessment
 
     def optimize_settlement(
-        self, claim: Claim, constraints: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, claim: Claim, constraints: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Optimize settlement amount based on claim characteristics and constraints.
 
@@ -1036,7 +1036,7 @@ class ClaimsEngine:
 
 # Convenience functions
 def create_claims_processor(
-    config: Optional[ClaimsProcessingConfig] = None,
+    config: ClaimsProcessingConfig | None = None,
 ) -> ClaimsProcessor:
     """Create a new claims processor."""
     return ClaimsProcessor(config)

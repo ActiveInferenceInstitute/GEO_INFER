@@ -6,7 +6,8 @@ converters, optimizers, caching, and general helper functions.
 """
 
 import logging
-from typing import List, Dict, Any, Optional, Tuple, Callable
+from typing import Any
+from collections.abc import Callable
 import time
 
 logger = logging.getLogger(__name__)
@@ -109,7 +110,7 @@ class H3Utils:
             return f"{area_km2 * 1000000:.0f} m²"
 
     @staticmethod
-    def calculate_grid_bounds(cells: List) -> Tuple[float, float, float, float]:
+    def calculate_grid_bounds(cells: list) -> tuple[float, float, float, float]:
         """
         Calculate bounding box for a list of cells.
 
@@ -128,7 +129,7 @@ class H3Utils:
         return (min(lats), min(lngs), max(lats), max(lngs))
 
     @staticmethod
-    def generate_grid_summary(cells: List) -> Dict[str, Any]:
+    def generate_grid_summary(cells: list) -> dict[str, Any]:
         """
         Generate summary statistics for a grid of cells.
 
@@ -150,7 +151,7 @@ class H3Utils:
         for cell in cells:
             all_properties.update(cell.properties.keys())
 
-        summary: Dict[str, Any] = {
+        summary: dict[str, Any] = {
             "cell_count": len(cells),
             "resolutions": {
                 "unique": len(set(resolutions)),
@@ -184,7 +185,7 @@ class H3Converter:
     """
 
     @staticmethod
-    def cells_to_coordinates(cells: List) -> List[Tuple[float, float]]:
+    def cells_to_coordinates(cells: list) -> list[tuple[float, float]]:
         """
         Extract coordinates from H3 cells.
 
@@ -197,7 +198,7 @@ class H3Converter:
         return [(cell.latitude, cell.longitude) for cell in cells]
 
     @staticmethod
-    def cells_to_dict(cells: List) -> List[Dict[str, Any]]:
+    def cells_to_dict(cells: list) -> list[dict[str, Any]]:
         """
         Convert H3 cells to list of dictionaries.
 
@@ -223,7 +224,7 @@ class H3Converter:
         return result
 
     @staticmethod
-    def dict_to_geojson(cell_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def dict_to_geojson(cell_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Convert cell dictionary to GeoJSON feature.
 
@@ -261,7 +262,7 @@ class H3Optimizer:
 
     def __init__(self) -> None:
         """Initialize optimizer."""
-        self.performance_stats: Dict[str, Dict[str, Any]] = {}
+        self.performance_stats: dict[str, dict[str, Any]] = {}
 
     def time_operation(
         self,
@@ -269,7 +270,7 @@ class H3Optimizer:
         func: Callable[..., Any],
         *args: Any,
         **kwargs: Any,
-    ) -> Tuple[Any, float]:
+    ) -> tuple[Any, float]:
         """
         Time an operation and record performance statistics.
 
@@ -305,7 +306,7 @@ class H3Optimizer:
 
         return result, execution_time
 
-    def get_performance_report(self) -> Dict[str, Any]:
+    def get_performance_report(self) -> dict[str, Any]:
         """
         Get performance statistics report.
 
@@ -327,7 +328,7 @@ class H3Optimizer:
 
         return report
 
-    def suggest_optimizations(self, cells: List) -> List[str]:
+    def suggest_optimizations(self, cells: list) -> list[str]:
         """
         Suggest optimizations based on grid characteristics.
 
@@ -337,7 +338,7 @@ class H3Optimizer:
         Returns:
             List of optimization suggestions
         """
-        suggestions: List[str] = []
+        suggestions: list[str] = []
 
         if not cells:
             return suggestions
@@ -365,7 +366,7 @@ class H3Optimizer:
             suggestions.append("High resolution detected - may impact performance")
 
         # Property-based suggestions
-        property_counts: Dict[str, int] = {}
+        property_counts: dict[str, int] = {}
         for cell in cells:
             for prop in cell.properties:
                 property_counts[prop] = property_counts.get(prop, 0) + 1
@@ -395,11 +396,11 @@ class H3Cache:
         Args:
             max_size: Maximum number of cached items
         """
-        self.cache: Dict[str, Any] = {}
-        self.access_times: Dict[str, float] = {}
+        self.cache: dict[str, Any] = {}
+        self.access_times: dict[str, float] = {}
         self.max_size = max_size
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """
         Get item from cache.
 
@@ -441,7 +442,7 @@ class H3Cache:
         """Get current cache size."""
         return len(self.cache)
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """
         Get cache statistics.
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Unit tests for the geo-infer-git console-script CLI.
@@ -11,7 +10,7 @@ on partial failure or missing input).
 
 import argparse
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pytest
 import yaml
@@ -21,7 +20,7 @@ from geo_infer_git import cli
 
 def make_args(**overrides: Any) -> argparse.Namespace:
     """Build an argparse.Namespace matching main()'s parser output."""
-    defaults: Dict[str, Any] = {
+    defaults: dict[str, Any] = {
         "verbose": False,
         "config": None,
         "command": None,
@@ -110,16 +109,16 @@ class FakeRepoManager:
 
     def __init__(
         self,
-        clone_results: Optional[Dict[str, bool]] = None,
-        sync_results: Optional[Dict[str, bool]] = None,
-        status_results: Optional[Dict[str, Any]] = None,
-        branch_results: Optional[Dict[str, bool]] = None,
+        clone_results: dict[str, bool] | None = None,
+        sync_results: dict[str, bool] | None = None,
+        status_results: dict[str, Any] | None = None,
+        branch_results: dict[str, bool] | None = None,
     ):
-        self.config_path: Optional[str] = None
-        self.clone_calls: List[Dict[str, Any]] = []
-        self.sync_calls: List[Dict[str, Any]] = []
-        self.status_calls: List[Dict[str, Any]] = []
-        self.branch_calls: List[Dict[str, Any]] = []
+        self.config_path: str | None = None
+        self.clone_calls: list[dict[str, Any]] = []
+        self.sync_calls: list[dict[str, Any]] = []
+        self.status_calls: list[dict[str, Any]] = []
+        self.branch_calls: list[dict[str, Any]] = []
         self._clone_results = clone_results or {}
         self._sync_results = sync_results or {}
         self._status_results = status_results or {}

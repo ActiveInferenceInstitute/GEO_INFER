@@ -5,20 +5,15 @@ Provides distance matrices, pheromone grids on H3 cells,
 ant colony configurations, and standard spatial fixtures.
 """
 
-import pytest
-import numpy as np
-
-
-def pytest_configure(config):
-    config.addinivalue_line("markers", "slow: marks tests as slow")
-
-
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
+
+import numpy as np
+import pytest
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -56,7 +51,7 @@ def distance_matrix() -> np.ndarray:
 
 
 @pytest.fixture
-def pheromone_grid() -> List[Dict[str, Any]]:
+def pheromone_grid() -> list[dict[str, Any]]:
     """List of H3 cells with initial pheromone concentrations.
 
     Uses H3 v4 API (latlng_to_cell). Each entry has a cell ID string
@@ -76,7 +71,7 @@ def pheromone_grid() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture
-def ant_colony_config() -> Dict[str, Any]:
+def ant_colony_config() -> dict[str, Any]:
     """Configuration dict for an AntColony solver.
 
     Specifies standard ACO hyperparameters: number of ants, iterations,

@@ -19,8 +19,8 @@ Unit workspace within `GEO-INFER-REQ`.
 
 - Module: `GEO-INFER-REQ`
 - Package: `geo_infer_req`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-REQ`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-req`
 - Tests: `uv run python -m pytest GEO-INFER-REQ/tests/unit`
 
 ## Dependencies

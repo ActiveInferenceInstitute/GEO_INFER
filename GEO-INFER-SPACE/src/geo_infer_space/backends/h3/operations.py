@@ -7,44 +7,16 @@ error handling, and real-world spatial analysis capabilities.
 
 import logging
 import math
-from typing import List, Dict, Any, Optional, Tuple, Set, cast
+from typing import Any, cast
+
+import h3
 
 logger = logging.getLogger(__name__)
-
-try:
-    import h3
-
-    MIN_H3_VERSION = (4, 5, 0)
-
-    def _version_tuple(version: str) -> Tuple[int, int, int] | None:
-        try:
-            parts = version.lstrip("v").split(".")
-            return cast(
-                Tuple[int, int, int],
-                tuple(int(part.split("+")[0].split("-")[0]) for part in parts[:3])
-                + (0,) * max(0, 3 - len(parts)),
-            )
-        except (AttributeError, TypeError, ValueError):
-            return None
-
-    _h3_version = _version_tuple(cast(str, getattr(h3, "__version__", None)))
-    H3_AVAILABLE = bool(
-        _h3_version is not None and MIN_H3_VERSION <= _h3_version and _h3_version[0] < 5
-    )
-    if not H3_AVAILABLE:
-        logger.error(
-            "Unsupported h3-py version %r; GEO-INFER requires >=4.5.0,<5",
-            getattr(h3, "__version__", None),
-        )
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available. Install with 'uv pip install h3'")
-
 
 # Additional utility functions for comprehensive H3 operations
 
 
-def get_resolution_info(resolution: int) -> Dict[str, Any]:
+def get_resolution_info(resolution: int) -> dict[str, Any]:
     """
     Get detailed information about an H3 resolution level.
 
@@ -58,9 +30,6 @@ def get_resolution_info(resolution: int) -> Dict[str, Any]:
         >>> info = get_resolution_info(9)
         >>> print(f"Resolution 9 average area: {info['avg_area_km2']:.6f} km²")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     if isinstance(resolution, bool) or not isinstance(resolution, int):
         raise TypeError("Resolution must be an integer")
     if not 0 <= resolution <= 15:
@@ -83,8 +52,8 @@ def get_resolution_info(resolution: int) -> Dict[str, Any]:
 
 
 def find_optimal_resolution(
-    area_km2: float, target_cells: Optional[int] = None
-) -> Dict[str, Any]:
+    area_km2: float, target_cells: int | None = None
+) -> dict[str, Any]:
     """
     Find the optimal H3 resolution for a given area or target number of cells.
 
@@ -155,7 +124,7 @@ def find_optimal_resolution(
 
 def create_h3_grid_for_bounds(
     min_lat: float, max_lat: float, min_lng: float, max_lng: float, resolution: int
-) -> List[str]:
+) -> list[str]:
     """
     Create an H3 grid covering the specified bounding box.
 
@@ -173,9 +142,6 @@ def create_h3_grid_for_bounds(
         >>> grid = create_h3_grid_for_bounds(37.7, 37.8, -122.5, -122.4, 9)
         >>> print(f"Created grid with {len(grid)} cells")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     # Validate bounds
     if not (-90 <= min_lat <= max_lat <= 90):
         raise ValueError("Invalid latitude bounds")
@@ -216,7 +182,6 @@ def coordinate_to_cell(lat: float, lng: float, resolution: int) -> str:
         H3 cell index string
 
     Raises:
-        ImportError: If h3-py package not available
         ValueError: If coordinates or resolution invalid
 
     Example:
@@ -224,9 +189,6 @@ def coordinate_to_cell(lat: float, lng: float, resolution: int) -> str:
         >>> print(cell)
         '89283082e3fffff'
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     # Validate inputs
     if not -90 <= lat <= 90:
         raise ValueError(f"Latitude {lat} must be between -90 and 90")
@@ -244,7 +206,7 @@ def coordinate_to_cell(lat: float, lng: float, resolution: int) -> str:
         raise
 
 
-def cell_to_coordinates(h3_index: str) -> Tuple[float, float]:
+def cell_to_coordinates(h3_index: str) -> tuple[float, float]:
     """
     Convert H3 cell index to latitude/longitude coordinates.
 
@@ -255,26 +217,22 @@ def cell_to_coordinates(h3_index: str) -> Tuple[float, float]:
         Tuple of (latitude, longitude) coordinates
 
     Raises:
-        ImportError: If h3-py package not available
         ValueError: If H3 index is invalid
 
     Example:
         >>> coords = cell_to_coordinates('89283082e3fffff')
         >>> print(f"Lat: {coords[0]:.4f}, Lng: {coords[1]:.4f}")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     try:
-        return cast(Tuple[float, float], h3.cell_to_latlng(h3_index))
+        return cast(tuple[float, float], h3.cell_to_latlng(h3_index))
     except Exception as e:
         logger.error(f"Failed to convert H3 index {h3_index} to coordinates: {e}")
-        raise ValueError(f"Invalid H3 index: {h3_index}")
+        raise ValueError(f"Invalid H3 index: {h3_index}") from e
 
 
 def cell_to_boundary(
     h3_index: str, geo_json: bool = False
-) -> List[Tuple[float, float]]:
+) -> list[tuple[float, float]]:
     """
     Get the boundary coordinates of an H3 cell.
 
@@ -292,25 +250,22 @@ def cell_to_boundary(
         >>> boundary = cell_to_boundary('89283082e3fffff')
         >>> print(f"Hexagon has {len(boundary)} vertices")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     try:
         # H3-py v4 removed the ``geo_json`` keyword from ``cell_to_boundary``.
         # Its native result is always ``(latitude, longitude)``; convert only
-        # when this compatibility flag explicitly requests GeoJSON order.
+        # when ``geo_json`` requests GeoJSON order.
         boundary = h3.cell_to_boundary(h3_index)
         if geo_json:
             return [(lng, lat) for lat, lng in boundary]
         return [(lat, lng) for lat, lng in boundary]
     except Exception as e:
         logger.error(f"Failed to get boundary for H3 index {h3_index}: {e}")
-        raise ValueError(f"Invalid H3 index: {h3_index}")
+        raise ValueError(f"Invalid H3 index: {h3_index}") from e
 
 
 def cells_to_geojson(
-    h3_indices: List[str], properties: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+    h3_indices: list[str], properties: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """
     Convert H3 cell indices to GeoJSON FeatureCollection.
 
@@ -329,9 +284,6 @@ def cells_to_geojson(
         >>> geojson = cells_to_geojson(cells, {'type': 'analysis_area'})
         >>> print(f"Created FeatureCollection with {len(geojson['features'])} features")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     features = []
 
     for h3_index in h3_indices:
@@ -346,7 +298,7 @@ def cells_to_geojson(
             coordinates = [ring]
 
             # Create feature
-            feature: Dict[str, Any] = {
+            feature: dict[str, Any] = {
                 "type": "Feature",
                 "properties": {
                     "h3_index": h3_index,
@@ -370,7 +322,7 @@ def cells_to_geojson(
 # Grid Operations
 
 
-def grid_disk(h3_index: str, k: int) -> List[str]:
+def grid_disk(h3_index: str, k: int) -> list[str]:
     """
     Get all H3 cells within grid distance k of the given cell.
 
@@ -388,9 +340,6 @@ def grid_disk(h3_index: str, k: int) -> List[str]:
         >>> neighbors = grid_disk('89283082e3fffff', 2)
         >>> print(f"Found {len(neighbors)} cells within 2 rings")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     if isinstance(k, bool) or not isinstance(k, int):
         raise TypeError("Grid distance k must be an integer")
     if k < 0:
@@ -403,7 +352,7 @@ def grid_disk(h3_index: str, k: int) -> List[str]:
         raise
 
 
-def grid_ring(h3_index: str, k: int) -> List[str]:
+def grid_ring(h3_index: str, k: int) -> list[str]:
     """
     Get H3 cells at exactly grid distance k from the given cell.
 
@@ -418,9 +367,6 @@ def grid_ring(h3_index: str, k: int) -> List[str]:
         >>> ring_cells = grid_ring('89283082e3fffff', 1)
         >>> print(f"Found {len(ring_cells)} cells at ring 1")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     if isinstance(k, bool) or not isinstance(k, int):
         raise TypeError("Ring distance k must be an integer")
     if k <= 0:
@@ -451,9 +397,6 @@ def grid_distance(h3_index1: str, h3_index2: str) -> int:
         >>> distance = grid_distance('89283082e3fffff', '89283082e7fffff')
         >>> print(f"Grid distance: {distance} steps")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     try:
         return cast(int, h3.grid_distance(h3_index1, h3_index2))
     except Exception as e:
@@ -463,7 +406,7 @@ def grid_distance(h3_index1: str, h3_index2: str) -> int:
         raise
 
 
-def grid_path(h3_index1: str, h3_index2: str) -> List[str]:
+def grid_path(h3_index1: str, h3_index2: str) -> list[str]:
     """
     Find a path between two H3 cells.
 
@@ -478,11 +421,8 @@ def grid_path(h3_index1: str, h3_index2: str) -> List[str]:
         >>> path = grid_path('89283082e3fffff', '89283082e7fffff')
         >>> print(f"Path has {len(path)} steps")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     try:
-        return cast(List[str], h3.grid_path_cells(h3_index1, h3_index2))
+        return cast(list[str], h3.grid_path_cells(h3_index1, h3_index2))
     except Exception as e:
         logger.error(
             f"Failed to find grid path between {h3_index1} and {h3_index2}: {e}"
@@ -508,9 +448,6 @@ def cell_to_parent(h3_index: str, parent_resolution: int) -> str:
         >>> parent = cell_to_parent('89283082e3fffff', 8)
         >>> print(f"Parent cell: {parent}")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     try:
         current_resolution = h3.get_resolution(h3_index)
         if parent_resolution >= current_resolution:
@@ -526,7 +463,7 @@ def cell_to_parent(h3_index: str, parent_resolution: int) -> str:
         raise
 
 
-def cell_to_children(h3_index: str, child_resolution: int) -> List[str]:
+def cell_to_children(h3_index: str, child_resolution: int) -> list[str]:
     """
     Get the children cells at a finer resolution.
 
@@ -541,9 +478,6 @@ def cell_to_children(h3_index: str, child_resolution: int) -> List[str]:
         >>> children = cell_to_children('89283082e3fffff', 10)
         >>> print(f"Found {len(children)} children")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     try:
         current_resolution = h3.get_resolution(h3_index)
         if child_resolution <= current_resolution:
@@ -559,7 +493,7 @@ def cell_to_children(h3_index: str, child_resolution: int) -> List[str]:
         raise
 
 
-def compact_cells(h3_indices: Set[str]) -> List[str]:
+def compact_cells(h3_indices: set[str]) -> list[str]:
     """
     Compact a set of H3 cells by replacing clusters with their parents.
 
@@ -574,9 +508,6 @@ def compact_cells(h3_indices: Set[str]) -> List[str]:
         >>> compacted = compact_cells(cells)
         >>> print(f"Compacted from {len(cells)} to {len(compacted)} cells")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     try:
         return sorted(h3.compact_cells(h3_indices))
     except Exception as e:
@@ -584,7 +515,7 @@ def compact_cells(h3_indices: Set[str]) -> List[str]:
         raise
 
 
-def uncompact_cells(h3_indices: Set[str], target_resolution: int) -> List[str]:
+def uncompact_cells(h3_indices: set[str], target_resolution: int) -> list[str]:
     """
     Uncompact a set of H3 cells to a target resolution.
 
@@ -600,9 +531,6 @@ def uncompact_cells(h3_indices: Set[str], target_resolution: int) -> List[str]:
         >>> uncompacted = uncompact_cells(cells, 10)
         >>> print(f"Uncompacted to {len(uncompacted)} cells")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     try:
         return sorted(h3.uncompact_cells(h3_indices, target_resolution))
     except Exception as e:
@@ -616,8 +544,8 @@ def uncompact_cells(h3_indices: Set[str], target_resolution: int) -> List[str]:
 
 
 def polygon_to_cells(
-    polygon_coords: List[Tuple[float, float]], resolution: int
-) -> List[str]:
+    polygon_coords: list[tuple[float, float]], resolution: int
+) -> list[str]:
     """
     Get H3 cells that cover a polygon.
 
@@ -638,9 +566,6 @@ def polygon_to_cells(
         >>> cells = polygon_to_cells(coords, 9)
         >>> print(f"Polygon covered by {len(cells)} H3 cells")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     try:
         # H3-py v4 expects an H3Shape (normally LatLngPoly), not the raw
         # nested coordinate list accepted by older releases.
@@ -655,7 +580,7 @@ def polygon_to_cells(
         raise
 
 
-def cells_to_polygon(h3_indices: Set[str]) -> List[Tuple[float, float]]:
+def cells_to_polygon(h3_indices: set[str]) -> list[tuple[float, float]]:
     """
     Create a polygon boundary from a set of H3 cells.
 
@@ -670,9 +595,6 @@ def cells_to_polygon(h3_indices: Set[str]) -> List[Tuple[float, float]]:
         >>> boundary = cells_to_polygon(cells)
         >>> print(f"Boundary has {len(boundary)} vertices")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     try:
         geometry = h3.cells_to_geo(h3_indices)
         if geometry.get("type") != "Polygon":
@@ -710,7 +632,7 @@ def cell_area(h3_index: str, unit: str = "km^2") -> float:
     return _canonical_cell_area(h3_index, unit)
 
 
-def cells_area(h3_indices: Set[str], unit: str = "km^2") -> float:
+def cells_area(h3_indices: set[str], unit: str = "km^2") -> float:
     """
     Calculate the total area of a set of H3 cells.
 
@@ -726,9 +648,6 @@ def cells_area(h3_indices: Set[str], unit: str = "km^2") -> float:
         >>> total_area = cells_area(cells, 'km^2')
         >>> print(f"Total area: {total_area:.6f} km²")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     try:
         total_area = 0.0
         for h3_index in h3_indices:
@@ -742,7 +661,7 @@ def cells_area(h3_indices: Set[str], unit: str = "km^2") -> float:
 # Analysis Operations
 
 
-def neighbor_cells(h3_index: str) -> List[str]:
+def neighbor_cells(h3_index: str) -> list[str]:
     """
     Get the immediate neighbors of an H3 cell.
 
@@ -756,9 +675,6 @@ def neighbor_cells(h3_index: str) -> List[str]:
         >>> neighbors = neighbor_cells('89283082e3fffff')
         >>> print(f"Cell has {len(neighbors)} neighbors")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     try:
         disk = set(h3.grid_disk(h3_index, 1))
         disk.discard(h3_index)
@@ -782,9 +698,6 @@ def cell_resolution(h3_index: str) -> int:
         >>> resolution = cell_resolution('89283082e3fffff')
         >>> print(f"Cell resolution: {resolution}")
     """
-    if not H3_AVAILABLE:
-        raise ImportError("h3-py package required. Install with 'uv pip install h3'")
-
     try:
         return cast(int, h3.get_resolution(h3_index))
     except Exception as e:
@@ -806,9 +719,6 @@ def is_valid_cell(h3_index: str) -> bool:
         >>> valid = is_valid_cell('89283082e3fffff')
         >>> print(f"Index is valid: {valid}")
     """
-    if not H3_AVAILABLE:
-        return False
-
     try:
         return bool(h3.is_valid_cell(h3_index))
     except (TypeError, ValueError):
@@ -833,9 +743,6 @@ def are_neighbor_cells(h3_index1: str, h3_index2: str) -> bool:
         >>> neighbors = are_neighbor_cells('89283082e3fffff', '89283082e7fffff')
         >>> print(f"Cells are neighbors: {neighbors}")
     """
-    if not H3_AVAILABLE:
-        return False
-
     try:
         return bool(h3.are_neighbor_cells(h3_index1, h3_index2))
     except (TypeError, ValueError):
@@ -853,7 +760,7 @@ def are_neighbor_cells(h3_index1: str, h3_index2: str) -> bool:
 # Advanced Operations
 
 
-def cells_intersection(cells1: Set[str], cells2: Set[str]) -> List[str]:
+def cells_intersection(cells1: set[str], cells2: set[str]) -> list[str]:
     """
     Find the intersection of two sets of H3 cells.
 
@@ -873,7 +780,7 @@ def cells_intersection(cells1: Set[str], cells2: Set[str]) -> List[str]:
     return sorted(cells1.intersection(cells2))
 
 
-def cells_union(cells1: Set[str], cells2: Set[str]) -> List[str]:
+def cells_union(cells1: set[str], cells2: set[str]) -> list[str]:
     """
     Find the union of two sets of H3 cells.
 
@@ -893,7 +800,7 @@ def cells_union(cells1: Set[str], cells2: Set[str]) -> List[str]:
     return sorted(cells1.union(cells2))
 
 
-def cells_difference(cells1: Set[str], cells2: Set[str]) -> List[str]:
+def cells_difference(cells1: set[str], cells2: set[str]) -> list[str]:
     """
     Find the difference between two sets of H3 cells.
 
@@ -913,7 +820,7 @@ def cells_difference(cells1: Set[str], cells2: Set[str]) -> List[str]:
     return sorted(cells1.difference(cells2))
 
 
-def grid_statistics(h3_indices: Set[str]) -> Dict[str, Any]:
+def grid_statistics(h3_indices: set[str]) -> dict[str, Any]:
     """
     Calculate comprehensive statistics for a set of H3 cells.
 
@@ -932,9 +839,6 @@ def grid_statistics(h3_indices: Set[str]) -> Dict[str, Any]:
     """
     if not h3_indices:
         return {"error": "No cells provided"}
-
-    if not H3_AVAILABLE:
-        return {"error": "h3-py package required"}
 
     try:
         # Basic counts

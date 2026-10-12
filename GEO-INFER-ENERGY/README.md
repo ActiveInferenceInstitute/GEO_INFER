@@ -8,11 +8,9 @@ Energy systems analysis, renewable energy optimization, and grid management.
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -22,8 +20,8 @@ Energy systems analysis, renewable energy optimization, and grid management.
 
 - Module: `GEO-INFER-ENERGY`
 - Package: `geo_infer_energy`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-ENERGY`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-energy`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module ENERGY`
 
 ## Dependencies

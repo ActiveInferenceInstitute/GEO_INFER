@@ -12,11 +12,11 @@ import geopandas as gpd
 import h3
 from shapely.geometry import Point
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -89,7 +89,7 @@ def climate_grid() -> gpd.GeoDataFrame:
 
 
 @pytest.fixture
-def reference_period_data() -> Dict[str, Any]:
+def reference_period_data() -> dict[str, Any]:
     """Reference period climate statistics for anomaly computation.
 
     Provides 1961-1990 baseline period means and standard deviations

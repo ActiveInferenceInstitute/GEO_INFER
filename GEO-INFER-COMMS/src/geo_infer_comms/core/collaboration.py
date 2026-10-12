@@ -9,9 +9,9 @@ and geospatial context for multi-user collaborative work.
 from __future__ import annotations
 import asyncio
 import logging
-from typing import Dict, List, Optional, Any, Set, cast
+from typing import Any, cast
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
 import uuid
 
@@ -42,7 +42,7 @@ class CollaborationManager:
         max_sessions: int = 1000,
         max_participants_per_session: int = 100,
         enable_persistence: bool = True,
-        persistence_path: Optional[str] = None,
+        persistence_path: str | None = None,
     ):
         self.max_sessions = max_sessions
         self.max_participants_per_session = max_participants_per_session
@@ -50,18 +50,18 @@ class CollaborationManager:
         self.persistence_path = persistence_path
 
         # Session storage and management
-        self.sessions: Dict[str, CollaborationSessionResponse] = {}
-        self.session_participants: Dict[str, Dict[str, Participant]] = {}
-        self.participant_sessions: Dict[str, Set[str]] = {}  # user_id -> session_ids
+        self.sessions: dict[str, CollaborationSessionResponse] = {}
+        self.session_participants: dict[str, dict[str, Participant]] = {}
+        self.participant_sessions: dict[str, set[str]] = {}  # user_id -> session_ids
 
         # Real-time collaboration features
-        self.shared_workspaces: Dict[str, Dict[str, Any]] = {}
-        self.session_messages: Dict[str, List[Dict[str, Any]]] = {}
-        self.session_documents: Dict[str, Dict[str, Any]] = {}
+        self.shared_workspaces: dict[str, dict[str, Any]] = {}
+        self.session_messages: dict[str, list[dict[str, Any]]] = {}
+        self.session_documents: dict[str, dict[str, Any]] = {}
 
         # Threading and concurrency
         self._lock = threading.RLock()
-        self._background_tasks: Dict[str, asyncio.Task] = {}
+        self._background_tasks: dict[str, asyncio.Task] = {}
 
         # Metrics and monitoring
         self.metrics = CollaborationMetrics()
@@ -106,7 +106,7 @@ class CollaborationManager:
                     name=f"User {creator_id}",
                     role=ParticipantRole.HOST,
                     status=ParticipantStatus.ONLINE,
-                    joined_at=datetime.now(timezone.utc),
+                    joined_at=datetime.now(UTC),
                 )
             ],
             geospatial_context=request.geospatial_context,
@@ -182,7 +182,7 @@ class CollaborationManager:
                 name=f"User {user_id}",
                 role=participant_role,
                 status=ParticipantStatus.ONLINE,
-                joined_at=datetime.now(timezone.utc),
+                joined_at=datetime.now(UTC),
             )
 
             # Add to session
@@ -267,7 +267,7 @@ class CollaborationManager:
         with self._lock:
             # Update session status
             session.status = "ended"
-            session.ended_at = datetime.now(timezone.utc)
+            session.ended_at = datetime.now(UTC)
 
             # Update all participants
             for p in session.participants:
@@ -277,18 +277,18 @@ class CollaborationManager:
         self.logger.info(f"Session ended: {session_id} by {ended_by}")
         return True
 
-    def get_session(self, session_id: str) -> Optional[CollaborationSessionResponse]:
+    def get_session(self, session_id: str) -> CollaborationSessionResponse | None:
         """Get a specific session by ID."""
         with self._lock:
             return self.sessions.get(session_id)
 
     def get_sessions(
         self,
-        session_type: Optional[CollaborationType] = None,
-        status: Optional[str] = None,
-        participant_id: Optional[str] = None,
+        session_type: CollaborationType | None = None,
+        status: str | None = None,
+        participant_id: str | None = None,
         limit: int = 100,
-    ) -> List[CollaborationSessionResponse]:
+    ) -> list[CollaborationSessionResponse]:
         """Get sessions with filtering."""
         with self._lock:
             sessions = list(self.sessions.values())
@@ -317,7 +317,7 @@ class CollaborationManager:
 
     def get_participant_sessions(
         self, user_id: str
-    ) -> List[CollaborationSessionResponse]:
+    ) -> list[CollaborationSessionResponse]:
         """Get all sessions for a specific participant."""
         session_ids = self.participant_sessions.get(user_id, set())
 
@@ -330,7 +330,7 @@ class CollaborationManager:
         return sessions
 
     def add_session_message(
-        self, session_id: str, user_id: str, message: Dict[str, Any]
+        self, session_id: str, user_id: str, message: dict[str, Any]
     ) -> bool:
         """Add a message to a session's shared workspace."""
         session = self.sessions.get(session_id)
@@ -348,7 +348,7 @@ class CollaborationManager:
             session_message = {
                 **message,
                 "user_id": user_id,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
             self.session_messages[session_id].append(session_message)
@@ -357,14 +357,14 @@ class CollaborationManager:
 
     def get_session_messages(
         self, session_id: str, limit: int = 100
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get messages from a session's shared workspace."""
         with self._lock:
             messages = self.session_messages.get(session_id, [])
             return messages[-limit:]  # Return most recent messages
 
     def update_shared_document(
-        self, session_id: str, document_id: str, user_id: str, updates: Dict[str, Any]
+        self, session_id: str, document_id: str, user_id: str, updates: dict[str, Any]
     ) -> bool:
         """Update a shared document in the session workspace."""
         session = self.sessions.get(session_id)
@@ -383,29 +383,29 @@ class CollaborationManager:
                 self.session_documents[session_id][document_id] = {
                     "id": document_id,
                     "created_by": user_id,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "created_at": datetime.now(UTC).isoformat(),
                     "content": {},
                     "version": 1,
-                    "last_modified": datetime.now(timezone.utc).isoformat(),
+                    "last_modified": datetime.now(UTC).isoformat(),
                 }
 
             document = self.session_documents[session_id][document_id]
             document["content"].update(updates)
             document["version"] += 1
-            document["last_modified"] = datetime.now(timezone.utc).isoformat()
+            document["last_modified"] = datetime.now(UTC).isoformat()
             document["last_modified_by"] = user_id
 
         return True
 
     def get_shared_document(
         self, session_id: str, document_id: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get a shared document from the session workspace."""
         with self._lock:
             session_docs = self.session_documents.get(session_id, {})
             return session_docs.get(document_id)
 
-    def get_session_statistics(self) -> Dict[str, Any]:
+    def get_session_statistics(self) -> dict[str, Any]:
         """Get collaboration system statistics."""
         with self._lock:
             active_sessions = len(
@@ -425,7 +425,7 @@ class CollaborationManager:
                 "metrics": self.metrics.to_dict(),
             }
 
-    def _get_session_info(self, session_id: str) -> Dict[str, Any]:
+    def _get_session_info(self, session_id: str) -> dict[str, Any]:
         """Get detailed information about a session."""
         session = self.sessions.get(session_id)
         if not session:
@@ -458,11 +458,11 @@ class CollaborationMetrics:
     participants_left: int = 0
     messages_shared: int = 0
     documents_shared: int = 0
-    start_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    start_time: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert metrics to dictionary."""
-        uptime = datetime.now(timezone.utc) - self.start_time
+        uptime = datetime.now(UTC) - self.start_time
         return {
             "sessions_created": self.sessions_created,
             "sessions_ended": self.sessions_ended,
@@ -483,7 +483,7 @@ class CollaborationMetrics:
         self.participants_left = 0
         self.messages_shared = 0
         self.documents_shared = 0
-        self.start_time = datetime.now(timezone.utc)
+        self.start_time = datetime.now(UTC)
 
 
 class RealTimeCollaborationEngine:
@@ -496,20 +496,20 @@ class RealTimeCollaborationEngine:
 
     def __init__(self, collaboration_manager: CollaborationManager):
         self.collaboration_manager = collaboration_manager
-        self.live_cursors: Dict[
-            str, Dict[str, Any]
+        self.live_cursors: dict[
+            str, dict[str, Any]
         ] = {}  # session_id -> user_id -> cursor_data
-        self.shared_editing: Dict[
-            str, Dict[str, Any]
+        self.shared_editing: dict[
+            str, dict[str, Any]
         ] = {}  # session_id -> document_id -> edit_data
-        self.voice_channels: Dict[
-            str, Dict[str, Any]
+        self.voice_channels: dict[
+            str, dict[str, Any]
         ] = {}  # session_id -> voice_channel_data
 
         self.logger = logging.getLogger(__name__)
 
     def update_live_cursor(
-        self, session_id: str, user_id: str, cursor_data: Dict[str, Any]
+        self, session_id: str, user_id: str, cursor_data: dict[str, Any]
     ) -> None:
         """Update a user's live cursor position in a session."""
         if session_id not in self.live_cursors:
@@ -518,14 +518,14 @@ class RealTimeCollaborationEngine:
         self.live_cursors[session_id][user_id] = {
             **cursor_data,
             "user_id": user_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         self.logger.debug(
             f"Live cursor updated for user {user_id} in session {session_id}"
         )
 
-    def get_live_cursors(self, session_id: str) -> Dict[str, Any]:
+    def get_live_cursors(self, session_id: str) -> dict[str, Any]:
         """Get all live cursors for a session."""
         return self.live_cursors.get(session_id, {})
 
@@ -568,7 +568,7 @@ class RealTimeCollaborationEngine:
 
         return False
 
-    def get_active_editors(self, session_id: str, document_id: str) -> List[str]:
+    def get_active_editors(self, session_id: str, document_id: str) -> list[str]:
         """Get list of active editors for a document."""
         if (
             session_id in self.shared_editing
@@ -579,7 +579,7 @@ class RealTimeCollaborationEngine:
         return []
 
     def create_voice_channel(
-        self, session_id: str, channel_config: Dict[str, Any]
+        self, session_id: str, channel_config: dict[str, Any]
     ) -> str:
         """Create a voice channel for a session."""
         channel_id = f"voice_{session_id}_{uuid.uuid4().hex[:8]}"
@@ -588,7 +588,7 @@ class RealTimeCollaborationEngine:
             "session_id": session_id,
             "config": channel_config,
             "participants": set(),
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
 
         self.logger.info(
@@ -623,11 +623,11 @@ class GeospatialCollaborationCoordinator:
 
     def __init__(self, collaboration_manager: CollaborationManager):
         self.collaboration_manager = collaboration_manager
-        self.session_locations: Dict[
-            str, Dict[str, GeospatialMetadata]
+        self.session_locations: dict[
+            str, dict[str, GeospatialMetadata]
         ] = {}  # session_id -> user_id -> location
-        self.spatial_workspaces: Dict[
-            str, Dict[str, Any]
+        self.spatial_workspaces: dict[
+            str, dict[str, Any]
         ] = {}  # session_id -> spatial_data
 
         self.logger = logging.getLogger(__name__)
@@ -644,7 +644,7 @@ class GeospatialCollaborationCoordinator:
             location=location,
             accuracy=accuracy,
             source="collaboration",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
 
         if session_id not in self.session_locations:
@@ -658,12 +658,12 @@ class GeospatialCollaborationCoordinator:
 
     def get_session_participant_locations(
         self, session_id: str
-    ) -> Dict[str, GeospatialMetadata]:
+    ) -> dict[str, GeospatialMetadata]:
         """Get all participant locations for a session."""
         return self.session_locations.get(session_id, {})
 
     def create_spatial_workspace(
-        self, session_id: str, workspace_config: Dict[str, Any]
+        self, session_id: str, workspace_config: dict[str, Any]
     ) -> str:
         """Create a spatial workspace for collaborative geospatial work."""
         workspace_id = f"spatial_{session_id}_{uuid.uuid4().hex[:8]}"
@@ -673,7 +673,7 @@ class GeospatialCollaborationCoordinator:
             "config": workspace_config,
             "features": [],
             "annotations": {},
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
 
         self.logger.info(
@@ -682,7 +682,7 @@ class GeospatialCollaborationCoordinator:
         return workspace_id
 
     def add_spatial_feature(
-        self, workspace_id: str, user_id: str, feature: Dict[str, Any]
+        self, workspace_id: str, user_id: str, feature: dict[str, Any]
     ) -> bool:
         """Add a spatial feature to a workspace."""
         if workspace_id not in self.spatial_workspaces:
@@ -691,14 +691,14 @@ class GeospatialCollaborationCoordinator:
         feature_data = {
             **feature,
             "added_by": user_id,
-            "added_at": datetime.now(timezone.utc).isoformat(),
+            "added_at": datetime.now(UTC).isoformat(),
         }
 
         self.spatial_workspaces[workspace_id]["features"].append(feature_data)
         return True
 
     def add_workspace_annotation(
-        self, workspace_id: str, user_id: str, annotation: Dict[str, Any]
+        self, workspace_id: str, user_id: str, annotation: dict[str, Any]
     ) -> bool:
         """Add an annotation to a spatial workspace."""
         if workspace_id not in self.spatial_workspaces:
@@ -713,25 +713,25 @@ class GeospatialCollaborationCoordinator:
             **annotation,
             "annotation_id": annotation_id,
             "added_by": user_id,
-            "added_at": datetime.now(timezone.utc).isoformat(),
+            "added_at": datetime.now(UTC).isoformat(),
         }
 
         return True
 
-    def get_workspace_features(self, workspace_id: str) -> List[Dict[str, Any]]:
+    def get_workspace_features(self, workspace_id: str) -> list[dict[str, Any]]:
         """Get all features in a spatial workspace."""
         if workspace_id in self.spatial_workspaces:
             return cast(
-                List[Dict[str, Any]],
+                list[dict[str, Any]],
                 self.spatial_workspaces[workspace_id]["features"],
             )
         return []
 
-    def get_workspace_annotations(self, workspace_id: str) -> Dict[str, Any]:
+    def get_workspace_annotations(self, workspace_id: str) -> dict[str, Any]:
         """Get all annotations in a spatial workspace."""
         if workspace_id in self.spatial_workspaces:
             return cast(
-                Dict[str, Any],
+                dict[str, Any],
                 self.spatial_workspaces[workspace_id]["annotations"],
             )
         return {}
@@ -747,12 +747,12 @@ class CollaborationNotificationManager:
 
     def __init__(self, collaboration_manager: CollaborationManager):
         self.collaboration_manager = collaboration_manager
-        self.session_notifications: Dict[str, List[Dict[str, Any]]] = {}
+        self.session_notifications: dict[str, list[dict[str, Any]]] = {}
 
         self.logger = logging.getLogger(__name__)
 
     def send_session_notification(
-        self, session_id: str, notification: Dict[str, Any], sender_id: str
+        self, session_id: str, notification: dict[str, Any], sender_id: str
     ) -> bool:
         """Send a notification to all participants in a session."""
         session = self.collaboration_manager.sessions.get(session_id)
@@ -769,7 +769,7 @@ class CollaborationNotificationManager:
             **notification,
             "session_id": session_id,
             "sender_id": sender_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         if session_id not in self.session_notifications:
@@ -782,7 +782,7 @@ class CollaborationNotificationManager:
 
     def get_session_notifications(
         self, session_id: str, limit: int = 50
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get notifications for a session."""
         notifications = self.session_notifications.get(session_id, [])
         return notifications[-limit:]  # Return most recent
@@ -806,7 +806,7 @@ class CollaborationAnalytics:
 
     def __init__(self, collaboration_manager: CollaborationManager):
         self.collaboration_manager = collaboration_manager
-        self.session_analytics: Dict[str, Dict[str, Any]] = {}
+        self.session_analytics: dict[str, dict[str, Any]] = {}
 
         self.logger = logging.getLogger(__name__)
 
@@ -815,27 +815,27 @@ class CollaborationAnalytics:
         session_id: str,
         activity_type: str,
         user_id: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         """Record an activity in a collaboration session."""
         if session_id not in self.session_analytics:
             self.session_analytics[session_id] = {
                 "activities": [],
-                "start_time": datetime.now(timezone.utc).isoformat(),
+                "start_time": datetime.now(UTC).isoformat(),
                 "participants": set(),
             }
 
         activity = {
             "activity_type": activity_type,
             "user_id": user_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "details": details or {},
         }
 
         self.session_analytics[session_id]["activities"].append(activity)
         self.session_analytics[session_id]["participants"].add(user_id)
 
-    def get_session_analytics(self, session_id: str) -> Dict[str, Any]:
+    def get_session_analytics(self, session_id: str) -> dict[str, Any]:
         """Get comprehensive analytics for a session."""
         session_data = self.session_analytics.get(session_id, {})
         if not session_data:
@@ -845,9 +845,9 @@ class CollaborationAnalytics:
         participants = session_data["participants"]
 
         # Calculate metrics
-        activity_counts: Dict[str, int] = {}
-        user_activity: Dict[str, int] = {}
-        activity_timeline: Dict[str, int] = {}
+        activity_counts: dict[str, int] = {}
+        user_activity: dict[str, int] = {}
+        activity_timeline: dict[str, int] = {}
 
         for activity in activities:
             # Count by type
@@ -871,11 +871,11 @@ class CollaborationAnalytics:
             "activity_timeline": activity_timeline,
             "time_range": {
                 "start": session_data["start_time"],
-                "end": datetime.now(timezone.utc).isoformat(),
+                "end": datetime.now(UTC).isoformat(),
             },
         }
 
-    def get_system_analytics(self) -> Dict[str, Any]:
+    def get_system_analytics(self) -> dict[str, Any]:
         """Get system-wide collaboration analytics."""
         total_sessions = len(self.session_analytics)
         total_activities = sum(

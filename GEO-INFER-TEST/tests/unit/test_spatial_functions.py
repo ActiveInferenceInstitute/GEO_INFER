@@ -116,9 +116,9 @@ class TestH3SpatialIndexing:
         # Create H3 cell
         h3_cell = h3.latlng_to_cell(lat, lng, resolution)
 
-        assert h3_cell is not None
-        assert isinstance(h3_cell, int)
-        assert h3_cell > 0
+        assert isinstance(h3_cell, str)
+        assert h3.is_valid_cell(h3_cell)
+        assert h3.str_to_int(h3_cell) > 0
 
     def test_h3_cell_to_latlng(self):
         """Test converting H3 cell back to lat/lng coordinates."""
@@ -160,10 +160,10 @@ class TestH3SpatialIndexing:
         h3_cell = h3.latlng_to_cell(lat, lng, resolution)
         boundary = h3.cell_to_boundary(h3_cell)
 
-        assert len(boundary) == 6  # H3 cells are hexagonal
-        assert all(
-            len(coord) == 2 for coord in boundary
-        )  # Each coordinate is [lng, lat]
+        # H3 v4 returns an open ring of six (lat, lng) vertices for a hexagon.
+        assert len(boundary) == 6
+        assert all(len(coord) == 2 for coord in boundary)
+        assert boundary[0] != boundary[-1]
 
     def test_h3_resolution_consistency(self):
         """Test that H3 resolution is consistent across operations."""
@@ -200,7 +200,7 @@ class TestH3SpatialIndexing:
         h3_cells = h3.geo_to_cells(polygon.__geo_interface__, resolution)
 
         assert len(h3_cells) > 0
-        assert all(isinstance(cell, int) for cell in h3_cells)
+        assert all(isinstance(cell, str) for cell in h3_cells)
 
         # Check that all cells are at the specified resolution
         for cell in h3_cells:
@@ -462,14 +462,16 @@ class TestSpatialDataIO:
 
         for h3_cell in sample_h3_indices:
             boundary = h3.cell_to_boundary(h3_cell)
-            # Convert to GeoJSON format (lng, lat pairs)
-            coordinates = [[coord[0], coord[1]] for coord in boundary]
+            # GeoJSON rings are closed [lng, lat] sequences; H3 v4 returns an
+            # open ring of (lat, lng) vertices.
+            coordinates = [[lng, lat] for lat, lng in boundary]
+            coordinates.append(coordinates[0])
 
             feature = {
                 "type": "Feature",
                 "geometry": {"type": "Polygon", "coordinates": [coordinates]},
                 "properties": {
-                    "h3_index": str(h3_cell),
+                    "h3_index": h3_cell,
                     "resolution": h3.get_resolution(h3_cell),
                 },
             }
@@ -538,7 +540,7 @@ class TestSpatialPerformance:
 
         assert creation_time < 5.0  # Should complete within 5 seconds
         assert len(h3_cells) == n_points
-        assert all(isinstance(cell, int) for cell in h3_cells)
+        assert all(isinstance(cell, str) for cell in h3_cells)
 
 
 # ---------------------------------------------------------------------------

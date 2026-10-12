@@ -7,7 +7,8 @@ and Active Inference specific calculations.
 """
 
 import logging
-from typing import Callable, Dict, Optional, Union, cast
+from typing import cast
+from collections.abc import Callable
 
 import numpy as np
 from scipy.signal import find_peaks
@@ -224,7 +225,7 @@ def kl_divergence(p: np.ndarray, q: np.ndarray, epsilon: float = 1e-10) -> float
     return float(max(0.0, divergence))
 
 
-def entropy(p: np.ndarray, base: Union[float, str] = "e") -> float:
+def entropy(p: np.ndarray, base: float | str = "e") -> float:
     """
     Compute entropy of a probability distribution.
 
@@ -446,7 +447,7 @@ def dirichlet_kl_divergence(alpha1: np.ndarray, alpha2: np.ndarray) -> float:
 
 
 def sample_categorical(
-    probabilities: np.ndarray, n_samples: int = 1, random_state: Optional[int] = None
+    probabilities: np.ndarray, n_samples: int = 1, random_state: int | None = None
 ) -> np.ndarray:
     """
     Sample from categorical distribution.
@@ -475,7 +476,7 @@ def sample_categorical(
 
 
 def compute_free_energy_categorical(
-    beliefs: np.ndarray, observations: np.ndarray, prior: Optional[np.ndarray] = None
+    beliefs: np.ndarray, observations: np.ndarray, prior: np.ndarray | None = None
 ) -> float:
     """
     Compute variational free energy for categorical models.
@@ -624,7 +625,7 @@ def matrix_log_det(matrix: np.ndarray) -> float:
 # Additional analysis functions for pattern detection
 
 
-def detect_stationarity(data: np.ndarray, window_size: int = 10) -> Dict[str, float]:
+def detect_stationarity(data: np.ndarray, window_size: int = 10) -> dict[str, float]:
     """
     Detect stationarity in time series data.
 
@@ -668,7 +669,7 @@ def detect_stationarity(data: np.ndarray, window_size: int = 10) -> Dict[str, fl
 
 def detect_periodicity(
     data: np.ndarray, min_period: int = 2
-) -> Dict[str, Union[bool, float, int]]:
+) -> dict[str, bool | float | int]:
     """
     Detect periodic patterns in data.
 
@@ -717,7 +718,7 @@ def detect_periodicity(
     return {"is_periodic": False, "period": 0, "strength": 0.0}
 
 
-def assess_complexity(data: np.ndarray) -> Dict[str, float]:
+def assess_complexity(data: np.ndarray) -> dict[str, float]:
     """
     Assess complexity of data using multiple metrics.
 
@@ -805,7 +806,7 @@ def assess_complexity(data: np.ndarray) -> Dict[str, float]:
 
 def compute_prediction_accuracy(
     predictions: np.ndarray, targets: np.ndarray
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Compute various prediction accuracy metrics.
 
@@ -927,7 +928,7 @@ def compute_surprise(
             prob = predicted_distribution[idx]
             return float(-np.log(prob + 1e-10))
         else:
-            return float(10.0)  # High surprise for invalid index
+            return 10.0  # High surprise for invalid index
 
     # For continuous/multi-dimensional observations
     else:
@@ -944,7 +945,7 @@ def compute_surprise(
 
 def assess_convergence(
     sequence: np.ndarray, window_size: int = 10, threshold: float = 1e-3
-) -> Dict[str, Union[bool, float, int]]:
+) -> dict[str, bool | float | int]:
     """
     Assess convergence of a sequence.
 
@@ -987,7 +988,7 @@ def assess_convergence(
 
 
 def sample_dirichlet(
-    alpha: np.ndarray, random_state: Optional[Union[int, np.random.Generator]] = None
+    alpha: np.ndarray, random_state: int | np.random.Generator | None = None
 ) -> np.ndarray:
     """Sample from a Dirichlet distribution using an isolated RNG stream."""
     rng = (

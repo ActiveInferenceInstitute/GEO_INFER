@@ -26,30 +26,35 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime
 from types import TracebackType
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, cast
+from typing import Any, cast
+from collections.abc import Mapping, Sequence
 
 import numpy as np
 from scipy import stats
+from scipy.spatial.distance import pdist, squareform
 
 # GEO-INFER module imports with error handling
 try:
     from geo_infer_space.core.analytics import SpatialAnalyticsInterface
-    from geo_infer_space.core.dispatcher import configure_backends
     from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
 
     SPACE_AVAILABLE = True
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "geo_infer_space":
+        raise
     SPACE_AVAILABLE = False
     SpatialIndexingInterface = None
     SpatialAnalyticsInterface = None
 
 try:
-    from geo_infer_time.core.temporal_analysis import TemporalAnalysisInterface
+    from geo_infer_time import TemporalAnalyzer, ForecastingEngine, TimeSeries
 
     TIME_AVAILABLE = True
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "geo_infer_time":
+        raise
     TIME_AVAILABLE = False
-    TemporalAnalysisInterface = None
+    TemporalAnalyzer = None
 
 try:
     from geo_infer_math.core.interpolation import (  # type: ignore[import-untyped]
@@ -61,7 +66,9 @@ try:
     )
 
     MATH_AVAILABLE = True
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "geo_infer_math":
+        raise
     MATH_AVAILABLE = False
     GearysC = None
     MoranI = None
@@ -73,7 +80,9 @@ try:
     )
 
     BAYES_AVAILABLE = True
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "geo_infer_bayes":
+        raise
     BAYES_AVAILABLE = False
     BayesianInference = None
 
@@ -100,11 +109,11 @@ class AnalysisJob:
     status: str = "queued"
     progress: float = 0.0
     created_at: datetime = field(default_factory=datetime.now)
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    error_message: Optional[str] = None
-    results: Optional[Dict[str, Any]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    error_message: str | None = None
+    results: dict[str, Any] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -139,10 +148,10 @@ class EnhancedRiskEngine:
 
     # Runtime-integration singletons; typed Optional[Any] so mypy does not
     # collapse them to None (they are populated at runtime if modules present).
-    spatial_interface: Optional[Any] = None
-    temporal_interface: Optional[Any] = None
+    spatial_interface: Any | None = None
+    temporal_interface: Any | None = None
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the EnhancedRiskEngine with comprehensive configuration.
 
@@ -164,8 +173,14 @@ class EnhancedRiskEngine:
         # All stochastic draws come from self.rng; resolve_rng owns seed
         # validation and never touches the numpy.random singleton.
         self.rng: np.random.Generator = resolve_rng(self.random_seed)
-        self._file_handler: Optional[logging.FileHandler] = None
+        self._file_handler: logging.FileHandler | None = None
         self._closed = False
+        # Initialize installed interfaces before creating log handlers or workers.
+        # Constructor failures describe broken integrations, not absence.
+        self.spatial_interface = None
+        self.spatial_analytics = None
+        self.temporal_interface = None
+        self.integration_status = self._check_module_integrations()
         # Logging needs the output directory before it creates its file handler.
         # Resolve and create it here so initialization is deterministic and the
         # first startup does not emit a misleading "output_dir" warning.
@@ -175,23 +190,20 @@ class EnhancedRiskEngine:
         os.makedirs(self.cache_dir, exist_ok=True)
         self.logger = self._setup_enhanced_logging()
 
-        # Initialize integration status
-        self.integration_status = self._check_module_integrations()
-
         # Initialize core components
         self._initialize_core_components()
 
         # Initialize model containers
-        self.hazard_models: Dict[str, Any] = {}
-        self.vulnerability_models: Dict[str, Any] = {}
-        self.exposure_models: Dict[str, Any] = {}
+        self.hazard_models: dict[str, Any] = {}
+        self.vulnerability_models: dict[str, Any] = {}
+        self.exposure_models: dict[str, Any] = {}
         self.catastrophe_manager = CatastropheModelManager()
         self.insurance_manager = InsuranceManager()
 
         # Initialize results and job management
         self.event_losses = None
         self.aggregated_metrics = None
-        self.active_jobs: Dict[str, AnalysisJob] = {}
+        self.active_jobs: dict[str, AnalysisJob] = {}
         self.job_counter = 0
 
         # Initialize spatial and temporal interfaces
@@ -217,9 +229,9 @@ class EnhancedRiskEngine:
 
     def __exit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         """Shut down worker resources when leaving a context manager."""
         self.close()
@@ -239,58 +251,31 @@ class EnhancedRiskEngine:
         """Check availability of external module integrations."""
         status = ModelIntegrationStatus()
 
-        # Check SPACE integration
         if SPACE_AVAILABLE:
-            try:
-                # Try to configure backends
-                configure_backends(
-                    {"default_backends": {"indexing": "h3", "analytics": "srai"}}
-                )
-                SpatialIndexingInterface()
-                SpatialAnalyticsInterface()
-                status.spatial_indexing_available = True
-                status.space_integration = True
-            except Exception as e:
-                self.logger.warning(f"SPACE integration check failed: {e}")
-                status.space_integration = False
+            self.spatial_interface = SpatialIndexingInterface()
+            self.spatial_analytics = SpatialAnalyticsInterface(backend="h3")
+            status.spatial_indexing_available = True
+            status.space_integration = True
 
-        # Check TIME integration
         if TIME_AVAILABLE:
-            try:
-                # Try to initialize temporal analysis
-                TemporalAnalysisInterface()
-                status.temporal_analysis_available = True
-                status.time_integration = True
-            except Exception as e:
-                self.logger.warning(f"TIME integration check failed: {e}")
-                status.time_integration = False
+            self.temporal_interface = TemporalAnalyzer()
+            status.temporal_analysis_available = True
+            status.time_integration = True
 
-        # Check MATH integration
         if MATH_AVAILABLE:
-            try:
-                MoranI()
-                InterpolationManager()
-                status.advanced_statistics_available = True
-                status.math_integration = True
-            except Exception as e:
-                self.logger.warning(f"MATH integration check failed: {e}")
-                status.math_integration = False
+            MoranI()
+            InterpolationManager()
+            status.advanced_statistics_available = True
+            status.math_integration = True
 
-        # Check BAYES integration
         if BAYES_AVAILABLE:
-            try:
-                status.bayesian_inference_available = all(
-                    callable(getattr(BayesianInference, method, None))
-                    for method in ("__init__", "run", "update")
-                )
-                if not status.bayesian_inference_available:
-                    raise TypeError(
-                        "BayesianInference does not expose the required API"
-                    )
-                status.bayes_integration = True
-            except Exception as e:
-                self.logger.warning(f"BAYES integration check failed: {e}")
-                status.bayes_integration = False
+            if not all(
+                callable(getattr(BayesianInference, method, None))
+                for method in ("__init__", "run", "update")
+            ):
+                raise TypeError("BayesianInference does not expose the required API")
+            status.bayesian_inference_available = True
+            status.bayes_integration = True
 
         return status
 
@@ -301,31 +286,18 @@ class EnhancedRiskEngine:
         self.insurance_manager = InsuranceManager()
 
         # Initialize spatial and temporal interfaces if available
-        self.spatial_interface = None
-        self.temporal_interface = None
         self.math_interface = None
         self.bayes_interface = None
 
     def _initialize_spatial_interface(self) -> None:
         """Initialize spatial analysis interface."""
         if self.integration_status.space_integration:
-            try:
-                self.spatial_interface = SpatialIndexingInterface()
-                self.spatial_analytics = SpatialAnalyticsInterface()
-                self.logger.info("Spatial interface initialized successfully")
-            except Exception as e:
-                self.logger.error(f"Failed to initialize spatial interface: {e}")
-                self.spatial_interface = None
+            self.logger.info("Spatial interface initialized successfully")
 
     def _initialize_temporal_interface(self) -> None:
-        """Initialize temporal analysis interface."""
+        """Report the validated, retained temporal interface."""
         if self.integration_status.time_integration:
-            try:
-                self.temporal_interface = TemporalAnalysisInterface()
-                self.logger.info("Temporal interface initialized successfully")
-            except Exception as e:
-                self.logger.error(f"Failed to initialize temporal interface: {e}")
-                self.temporal_interface = None
+            self.logger.info("Temporal interface initialized successfully")
 
     def _ensure_open(self) -> None:
         """Reject work submitted after the engine has released its resources."""
@@ -372,7 +344,7 @@ class EnhancedRiskEngine:
 
         return logger
 
-    def get_integration_status(self) -> Dict[str, bool]:
+    def get_integration_status(self) -> dict[str, bool]:
         """Get status of all module integrations."""
         return {
             "space_integration": self.integration_status.space_integration,
@@ -387,7 +359,7 @@ class EnhancedRiskEngine:
 
     def run_enhanced_analysis(
         self, analysis_type: str = "comprehensive", **kwargs: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Run enhanced risk analysis with advanced capabilities.
 
@@ -428,18 +400,18 @@ class EnhancedRiskEngine:
             self._update_job_status(job_id, "failed", error_message=str(e))
             raise
 
-    def _run_comprehensive_analysis(self, **kwargs: Any) -> Dict[str, Any]:
+    def _run_comprehensive_analysis(self, **kwargs: Any) -> dict[str, Any]:
         """Run comprehensive multi-hazard risk analysis."""
         # Load and validate models
         self._load_configured_models()
 
         # Run spatial analysis if available
-        spatial_results: Dict[str, Any] = {}
+        spatial_results: dict[str, Any] = {}
         if self.spatial_interface:
             spatial_results = self._run_spatial_analysis(**kwargs)
 
         # Run temporal analysis if available
-        temporal_results: Dict[str, Any] = {}
+        temporal_results: dict[str, Any] = {}
         if self.temporal_interface:
             temporal_results = self._run_temporal_analysis(**kwargs)
 
@@ -459,9 +431,9 @@ class EnhancedRiskEngine:
 
         return combined_results
 
-    def _run_core_analysis(self, **kwargs: Any) -> Dict[str, Any]:
+    def _run_core_analysis(self, **kwargs: Any) -> dict[str, Any]:
         """Summarize configured models and optionally run their loss simulation."""
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "analysis_type": "core",
             "model_status": self.get_model_status(),
         }
@@ -472,7 +444,7 @@ class EnhancedRiskEngine:
             )
         return results
 
-    def _run_spatial_analysis(self, **kwargs: Any) -> Dict[str, Any]:
+    def _run_spatial_analysis(self, **kwargs: Any) -> dict[str, Any]:
         """Run advanced spatial analysis using GEO-INFER-SPACE."""
         if not self.spatial_interface:
             return {}
@@ -528,7 +500,7 @@ class EnhancedRiskEngine:
             self.logger.warning(f"Spatial analysis failed: {e}")
             return {}
 
-    def _run_spatial_statistics(self, region: Dict[str, Any]) -> Dict[str, Any]:
+    def _run_spatial_statistics(self, region: dict[str, Any]) -> dict[str, Any]:
         """Run spatial statistics using GEO-INFER-MATH."""
         if not self.integration_status.advanced_statistics_available:
             return {}
@@ -574,8 +546,6 @@ class EnhancedRiskEngine:
             n = len(vals)
 
             # Distance-based spatial weights (inverse distance)
-            from scipy.spatial.distance import pdist, squareform
-
             dists = squareform(pdist(coords_arr))
             np.fill_diagonal(dists, np.inf)
             W = 1.0 / dists
@@ -599,71 +569,63 @@ class EnhancedRiskEngine:
                 "local_indicators": [float(d) for d in dev[:10]],
                 "source": "inline_fallback",
             }
-        except ImportError:
-            self.logger.warning("scipy not available for spatial statistics")
-            return {
-                "spatial_autocorrelation": 0.0,
-                "morans_i": 0.0,
-                "geary_c": 0.0,
-                "local_indicators": [],
-            }
         except Exception as e:
             self.logger.warning(f"Spatial statistics failed: {e}")
             return {}
 
-    def _run_temporal_analysis(self, **kwargs: Any) -> Dict[str, Any]:
-        """Run temporal analysis using GEO-INFER-TIME."""
+    def _run_temporal_analysis(self, **kwargs: Any) -> dict[str, Any]:
+        """Analyze timestamped loss observations through the public TIME API.
+
+        ``time_horizon`` counts future model steps on the historical cadence.
+        Missing values and irregular steps require explicit preparation before
+        forecasting. Timestamps must include their timezone.
+        """
         if not self.temporal_interface:
             return {}
-
-        try:
-            time_horizon = kwargs.get("time_horizon", 50)
-
-            # Analyse loss history to extract seasonal and trend components
-            history = kwargs.get("loss_history", [])
-            if not history:
-                return {
-                    "seasonal_patterns": {},
-                    "trend_analysis": {},
-                    "time_series_decomposition": {},
-                    "forecast_scenarios": [],
-                }
-
-            values = np.array([h.get("value", 0) for h in history], dtype=float)
-            # Trend via simple linear regression
-            x = np.arange(len(values), dtype=float)
-            if len(values) > 1:
-                slope = np.polyfit(x, values, 1)[0]
-            else:
-                slope = 0.0
-
-            # Seasonal: group by month index (mod 12)
-            seasonal: Dict[int, List[Any]] = {}
-            for i, v in enumerate(values):
-                month = i % 12
-                seasonal.setdefault(month, []).append(v)
-            seasonal_means = {k: float(np.mean(v)) for k, v in seasonal.items()}
-
+        history = kwargs.get("loss_history", [])
+        if not history:
             return {
-                "seasonal_patterns": seasonal_means,
-                "trend_analysis": {
-                    "slope": float(slope),
-                    "direction": "increasing" if slope > 0 else "decreasing",
-                },
-                "time_series_decomposition": {
-                    "mean": float(np.mean(values)),
-                    "std": float(np.std(values)),
-                },
-                "forecast_scenarios": [
-                    {
-                        "horizon": time_horizon,
-                        "projected_mean": float(np.mean(values) + slope * time_horizon),
-                    }
-                ],
+                "seasonal_patterns": {},
+                "trend_analysis": {},
+                "time_series_decomposition": {},
+                "forecast_scenarios": [],
             }
-        except Exception as e:
-            self.logger.warning(f"Temporal analysis failed: {e}")
-            return {}
+        if any("value" not in row or "timestamp" not in row for row in history):
+            raise ValueError(
+                "Each loss history observation requires value and timestamp"
+            )
+        values = np.asarray([row["value"] for row in history], dtype=float)
+        series = TimeSeries(values, timestamps=[row["timestamp"] for row in history])
+        trend = self.temporal_interface.detect_trend(series, method="linear")
+        horizon = kwargs.get("time_horizon", 50)
+        forecast = ForecastingEngine().forecast_linear(series, horizon=horizon)
+        seasonal: dict[int, list[float]] = {}
+        for timestamp, value in zip(series.timestamps, values):
+            seasonal.setdefault(timestamp.month, []).append(float(value))
+        return {
+            "backend": "geo_infer_time",
+            "seasonal_patterns": {
+                month: float(np.mean(v)) for month, v in seasonal.items()
+            },
+            "trend_analysis": {
+                **trend,
+                "slope": trend["slope_per_sample"],
+                "direction": trend["trend_direction"],
+                "slope_units": "loss per observation",
+            },
+            "time_series_decomposition": {
+                "mean": float(np.mean(values)),
+                "std": float(np.std(values)),
+            },
+            "forecast_scenarios": [
+                {
+                    "horizon": horizon,
+                    "horizon_units": "model steps",
+                    "projected_mean": forecast["forecast"][-1],
+                    "timestamp": forecast["timestamps"][-1],
+                }
+            ],
+        }
 
     def _create_analysis_job(self, job_type: str, **kwargs: Any) -> str:
         """Create a new analysis job."""
@@ -681,9 +643,9 @@ class EnhancedRiskEngine:
         self,
         job_id: str,
         status: str,
-        progress: Optional[float] = None,
-        results: Optional[Dict[str, Any]] = None,
-        error_message: Optional[str] = None,
+        progress: float | None = None,
+        results: dict[str, Any] | None = None,
+        error_message: str | None = None,
     ) -> None:
         """Update job status and progress."""
         if job_id not in self.active_jobs:
@@ -706,7 +668,7 @@ class EnhancedRiskEngine:
         if results:
             job.results = results
 
-    def get_job_status(self, job_id: str) -> Optional[Dict[str, Any]]:
+    def get_job_status(self, job_id: str) -> dict[str, Any] | None:
         """Get status of an analysis job."""
         if job_id not in self.active_jobs:
             return None
@@ -737,7 +699,7 @@ class EnhancedRiskEngine:
 
         return False
 
-    def get_model_status(self) -> Dict[str, Any]:
+    def get_model_status(self) -> dict[str, Any]:
         """Get status of all loaded models."""
         return {
             "hazard_models": list(self.hazard_models.keys()),
@@ -769,8 +731,8 @@ class EnhancedRiskEngine:
 
     def calculate_compound_exceedance_probability(
         self,
-        exceedance_probabilities: Union[Mapping[str, float], Sequence[float]],
-        hazard_sequence: Optional[Sequence[str]] = None,
+        exceedance_probabilities: Mapping[str, float] | Sequence[float],
+        hazard_sequence: Sequence[str] | None = None,
     ) -> float:
         """Estimate joint exceedance along a configured compound-hazard path."""
         self._ensure_open()
@@ -780,7 +742,7 @@ class EnhancedRiskEngine:
 
     def calculate_joint_exceedance_probability(
         self,
-        exceedance_probabilities: Union[Mapping[str, float], Sequence[float]],
+        exceedance_probabilities: Mapping[str, float] | Sequence[float],
         hazard_sequences: Sequence[Sequence[str]],
     ) -> float:
         """Estimate the union exceedance across several compound paths."""
@@ -791,9 +753,9 @@ class EnhancedRiskEngine:
 
     def get_branch_exceedance_probabilities(
         self,
-        exceedance_probabilities: Union[Mapping[str, float], Sequence[float]],
-        max_path_length: Optional[int] = None,
-    ) -> Dict[Tuple[str, ...], float]:
+        exceedance_probabilities: Mapping[str, float] | Sequence[float],
+        max_path_length: int | None = None,
+    ) -> dict[tuple[str, ...], float]:
         """Enumerate directed compound paths and their joint probabilities."""
         self._ensure_open()
         return self.catastrophe_manager.branch_exceedance_probabilities(
@@ -802,9 +764,9 @@ class EnhancedRiskEngine:
 
     def get_dominant_hazard_path(
         self,
-        exceedance_probabilities: Union[Mapping[str, float], Sequence[float]],
-        max_path_length: Optional[int] = None,
-    ) -> Tuple[Tuple[str, ...], float]:
+        exceedance_probabilities: Mapping[str, float] | Sequence[float],
+        max_path_length: int | None = None,
+    ) -> tuple[tuple[str, ...], float]:
         """Return the compound path with the largest joint exceedance."""
         self._ensure_open()
         return self.catastrophe_manager.dominant_exceedance_path(
@@ -812,8 +774,8 @@ class EnhancedRiskEngine:
         )
 
     def calibrate_models(
-        self, calibration_data: Dict[str, Any], method: str = "cross_validation"
-    ) -> Dict[str, Any]:
+        self, calibration_data: dict[str, Any], method: str = "cross_validation"
+    ) -> dict[str, Any]:
         """
         Calibrate model parameters using historical data.
 
@@ -846,8 +808,8 @@ class EnhancedRiskEngine:
         return self._calibrate_with_cross_validation(calibration_data)
 
     def _calibrate_with_cross_validation(
-        self, calibration_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, calibration_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Fit and cross-validate an empirical mean-loss baseline.
 
         The generic risk engine cannot safely mutate heterogeneous hazard,
@@ -872,7 +834,7 @@ class EnhancedRiskEngine:
             raise ValueError("calibration samples must contain finite loss values")
         losses = np.asarray([float(sample["loss"]) for sample in samples], dtype=float)
         k = min(5, max(1, len(samples)))
-        folds: list[Dict[str, Any]] = []
+        folds: list[dict[str, Any]] = []
         for i in range(k):
             train_values = losses[np.arange(len(losses)) % k != i]
             test_values = losses[np.arange(len(losses)) % k == i]
@@ -907,8 +869,8 @@ class EnhancedRiskEngine:
         }
 
     def run_monte_carlo_analysis(
-        self, num_iterations: Optional[int] = None, convergence_threshold: float = 0.01
-    ) -> Dict[str, Any]:
+        self, num_iterations: int | None = None, convergence_threshold: float = 0.01
+    ) -> dict[str, Any]:
         """
         Run advanced Monte Carlo analysis with convergence monitoring.
 
@@ -999,7 +961,7 @@ class EnhancedRiskEngine:
             },
         }
 
-    def _run_monte_carlo_batch(self, batch_size: int) -> Dict[str, Any]:
+    def _run_monte_carlo_batch(self, batch_size: int) -> dict[str, Any]:
         """Run a batch of Monte Carlo simulations."""
         losses = []
 
@@ -1018,7 +980,7 @@ class EnhancedRiskEngine:
             "batch_std": np.std(losses),
         }
 
-    def _generate_random_event(self) -> Dict[str, Any]:
+    def _generate_random_event(self) -> dict[str, Any]:
         """Sample an event from a configured historical hazard catalogue."""
         candidates = [
             (hazard_type, model)
@@ -1049,9 +1011,9 @@ class EnhancedRiskEngine:
                     f"Hazard catalogue for {hazard_type} has no usable intensity column"
                 )
             event["magnitude"] = event[intensity_column]
-        return cast(Dict[str, Any], event)
+        return cast(dict[str, Any], event)
 
-    def _calculate_event_loss(self, event: Dict[str, Any]) -> float:
+    def _calculate_event_loss(self, event: dict[str, Any]) -> float:
         """Calculate loss using configured exposure and vulnerability models."""
         exposure_records = [
             model.exposure_data
@@ -1092,7 +1054,7 @@ class EnhancedRiskEngine:
         )
 
     def save_enhanced_results(
-        self, results: Dict[str, Any], filename: Optional[str] = None
+        self, results: dict[str, Any], filename: str | None = None
     ) -> str:
         """
         Save enhanced analysis results with comprehensive metadata.
@@ -1200,7 +1162,7 @@ class EnhancedRiskEngine:
             f"{len(self.exposure_models)} exposure"
         )
 
-    def _run_portfolio_analysis(self, **kwargs: Any) -> Dict[str, Any]:
+    def _run_portfolio_analysis(self, **kwargs: Any) -> dict[str, Any]:
         """Run portfolio risk analysis.
 
         The inter-peril correlation is an ILLUSTRATIVE default (0.3 when more
@@ -1236,7 +1198,7 @@ class EnhancedRiskEngine:
             },
         }
 
-    def _run_climate_analysis(self, **kwargs: Any) -> Dict[str, Any]:
+    def _run_climate_analysis(self, **kwargs: Any) -> dict[str, Any]:
         """Run climate risk analysis.
 
         The scenario factors, linear year scaling, and adaptation cost-benefit
@@ -1280,7 +1242,7 @@ class EnhancedRiskEngine:
             "adaptation_analysis": {"cost_benefit_ratio": cost_benefit_ratio},
         }
 
-    def _run_stress_test(self, **kwargs: Any) -> Dict[str, Any]:
+    def _run_stress_test(self, **kwargs: Any) -> dict[str, Any]:
         """Run stress testing analysis."""
         # Stress test by scaling losses by severity multiplier
         severity_map = {"low": 1.5, "moderate": 2.0, "high": 3.0, "extreme": 5.0}

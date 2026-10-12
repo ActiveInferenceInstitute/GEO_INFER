@@ -1,7 +1,7 @@
 """Talent Acquisition API Endpoints."""
 
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import Any
 from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 import logging
 from ..models.talent_models import Candidate, CandidateStatus, JobRequisition
@@ -23,8 +23,8 @@ router = APIRouter(
 )
 
 
-@router.post("/upload/candidates/csv", response_model=Dict[str, Any])
-async def upload_candidates_csv(file: UploadFile = File(...)) -> Dict[str, Any]:
+@router.post("/upload/candidates/csv", response_model=dict[str, Any])
+async def upload_candidates_csv(file: UploadFile = File(...)) -> dict[str, Any]:
     """Upload a CSV file with candidate data."""
     if not file.filename or not file.filename.endswith(".csv"):
         raise HTTPException(
@@ -53,16 +53,16 @@ async def upload_candidates_csv(file: UploadFile = File(...)) -> Dict[str, Any]:
             temp_file_path.unlink()
 
 
-@router.get("/candidates", response_model=List[Candidate])
+@router.get("/candidates", response_model=list[Candidate])
 async def get_all_candidates(
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-) -> List[Candidate]:
+) -> list[Candidate]:
     return store.candidates[offset : offset + limit]
 
 
-@router.get("/reports/candidate-pipeline", response_model=Dict[str, Any])
-async def get_talent_candidate_pipeline_report() -> Dict[str, Any]:
+@router.get("/reports/candidate-pipeline", response_model=dict[str, Any])
+async def get_talent_candidate_pipeline_report() -> dict[str, Any]:
     if not store.candidates:
         raise HTTPException(
             status_code=404, detail="No candidate data. Upload data first."
@@ -70,8 +70,8 @@ async def get_talent_candidate_pipeline_report() -> Dict[str, Any]:
     return generate_candidate_pipeline_report(store.candidates, store.requisitions)
 
 
-@router.get("/reports/time-to-hire", response_model=Dict[str, Any])
-async def get_talent_time_to_hire_report() -> Dict[str, Any]:
+@router.get("/reports/time-to-hire", response_model=dict[str, Any])
+async def get_talent_time_to_hire_report() -> dict[str, Any]:
     hired_candidates = [
         cand for cand in store.candidates if cand.status == CandidateStatus.HIRED
     ]
@@ -82,8 +82,8 @@ async def get_talent_time_to_hire_report() -> Dict[str, Any]:
     return calculate_time_to_hire(hired_candidates)
 
 
-@router.get("/visualizations/candidate-pipeline-status", response_model=Dict[str, str])
-async def get_candidate_pipeline_status_plot() -> Dict[str, str]:
+@router.get("/visualizations/candidate-pipeline-status", response_model=dict[str, str])
+async def get_candidate_pipeline_status_plot() -> dict[str, str]:
     if not store.candidates:
         raise HTTPException(
             status_code=404, detail="No candidate data for visualization."
@@ -95,11 +95,11 @@ async def get_candidate_pipeline_status_plot() -> Dict[str, str]:
         raise HTTPException(status_code=500, detail="Failed to generate plot.")
 
 
-@router.get("/requisitions", response_model=List[JobRequisition])
+@router.get("/requisitions", response_model=list[JobRequisition])
 async def get_all_requisitions(
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-) -> List[JobRequisition]:
+) -> list[JobRequisition]:
     """Retrieve job requisitions from the in-memory store."""
     return store.requisitions[offset : offset + limit]
 
@@ -156,8 +156,8 @@ async def update_requisition(
     )
 
 
-@router.delete("/requisitions/{requisition_id}", response_model=Dict[str, Any])
-async def delete_requisition(requisition_id: str) -> Dict[str, Any]:
+@router.delete("/requisitions/{requisition_id}", response_model=dict[str, Any])
+async def delete_requisition(requisition_id: str) -> dict[str, Any]:
     """Delete a job requisition record by id."""
     for index, existing in enumerate(store.requisitions):
         if existing.requisition_id == requisition_id:

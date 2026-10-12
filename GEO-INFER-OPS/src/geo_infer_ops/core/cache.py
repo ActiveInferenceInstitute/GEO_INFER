@@ -16,7 +16,7 @@ use Redis' native ``INCRBY``/``DECRBY`` on integer strings and never
 deserialise a payload, so they carry no code-execution risk.
 """
 
-from typing import Optional, Any, Union, Dict, List, cast
+from typing import Any, cast
 from enum import Enum
 
 import redis
@@ -50,7 +50,7 @@ class CacheManager:
         self,
         serializer: CacheSerializer = CacheSerializer.JSON,
         prefix: str = "geo_infer:",
-        signing_key: Optional[Union[bytes, str]] = None,
+        signing_key: bytes | str | None = None,
         raise_on_untrusted: bool = False,
     ):
         """
@@ -79,7 +79,7 @@ class CacheManager:
     def _connect(self) -> None:
         """Connect to Redis server."""
         try:
-            cache_cfg: Any = getattr(self.config, "cache")
+            cache_cfg: Any = self.config.cache
             self.redis = redis.Redis(
                 host=cache_cfg.redis.host,
                 port=cache_cfg.redis.port,
@@ -100,7 +100,7 @@ class CacheManager:
             logger.error("cache_connection_failed", error=str(e))
             raise
 
-    def _serialize(self, value: Any) -> Union[str, bytes]:
+    def _serialize(self, value: Any) -> str | bytes:
         """
         Serialize and sign a value for storage.
 
@@ -131,7 +131,7 @@ class CacheManager:
             logger.error("cache_serialization_failed", error=str(e))
             raise
 
-    def _deserialize(self, value: Optional[Union[str, bytes]]) -> Any:
+    def _deserialize(self, value: str | bytes | None) -> Any:
         """
         Verify and deserialize a value read from storage.
 
@@ -238,7 +238,7 @@ class CacheManager:
         self,
         key: str,
         value: Any,
-        expire: Optional[int] = None,
+        expire: int | None = None,
         nx: bool = False,
         xx: bool = False,
     ) -> bool:
@@ -323,7 +323,7 @@ class CacheManager:
             logger.error("cache_expire_failed", key=key, error=str(e))
             return False
 
-    def ttl(self, key: str) -> Optional[int]:
+    def ttl(self, key: str) -> int | None:
         """
         Get time to live for key.
 
@@ -342,7 +342,7 @@ class CacheManager:
             logger.error("cache_ttl_failed", key=key, error=str(e))
             return None
 
-    def increment(self, key: str, amount: int = 1) -> Optional[int]:
+    def increment(self, key: str, amount: int = 1) -> int | None:
         """
         Increment value in cache.
 
@@ -360,7 +360,7 @@ class CacheManager:
             logger.error("cache_increment_failed", key=key, error=str(e))
             return None
 
-    def decrement(self, key: str, amount: int = 1) -> Optional[int]:
+    def decrement(self, key: str, amount: int = 1) -> int | None:
         """
         Decrement value in cache.
 
@@ -378,7 +378,7 @@ class CacheManager:
             logger.error("cache_decrement_failed", key=key, error=str(e))
             return None
 
-    def get_many(self, keys: List[str]) -> Dict[str, Any]:
+    def get_many(self, keys: list[str]) -> dict[str, Any]:
         """
         Get multiple values from cache.
 
@@ -407,7 +407,7 @@ class CacheManager:
             logger.error("cache_get_many_failed", error=str(e))
             return {}
 
-    def set_many(self, mapping: Dict[str, Any], expire: Optional[int] = None) -> bool:
+    def set_many(self, mapping: dict[str, Any], expire: int | None = None) -> bool:
         """
         Set multiple values in cache.
 
@@ -435,7 +435,7 @@ class CacheManager:
             logger.error("cache_set_many_failed", error=str(e))
             return False
 
-    def delete_many(self, keys: List[str]) -> bool:
+    def delete_many(self, keys: list[str]) -> bool:
         """
         Delete multiple values from cache.
 

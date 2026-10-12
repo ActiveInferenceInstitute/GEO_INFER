@@ -116,7 +116,9 @@ class TestMLflowPipelineEnabled:
             experiment_name="unit-load-fail", tracking_uri=tracking_dir
         )
         pipeline.start_run(run_name="load-fail")
-        with pytest.raises(Exception):
+        from mlflow.exceptions import MlflowException
+
+        with pytest.raises(MlflowException, match="not found"):
             pipeline.load_model("runs:/00000000000000000000000000000000/bogus")
         pipeline.end_run()
 

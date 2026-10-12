@@ -5,7 +5,7 @@ coastal management, marine ecosystem monitoring, ocean current modeling,
 water quality assessment, and coral reef health analysis.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Development Team"
 
 from .core.oceanographic_data import OceanographicDataProcessor

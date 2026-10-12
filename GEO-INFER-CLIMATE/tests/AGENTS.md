@@ -22,6 +22,7 @@
 ## Local Contents
 
 - `integration/`
+- `performance/`
 - `unit/`
 - `conftest.py`
 

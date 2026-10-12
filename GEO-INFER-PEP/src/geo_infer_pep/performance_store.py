@@ -7,7 +7,6 @@ instances created directly remain instance-scoped for isolated use (e.g.
 tests).
 """
 
-from typing import Dict, List
 import logging
 
 from .models.hr_models import PerformanceReview
@@ -19,7 +18,7 @@ class PerformanceReviewStore:
     """In-memory store of performance reviews keyed by employee."""
 
     def __init__(self) -> None:
-        self.reviews_by_employee: Dict[str, List[PerformanceReview]] = {}
+        self.reviews_by_employee: dict[str, list[PerformanceReview]] = {}
 
     def add(self, employee_id: str, review: PerformanceReview) -> None:
         """Persist ``review`` under ``employee_id``."""
@@ -30,7 +29,7 @@ class PerformanceReviewStore:
             employee_id,
         )
 
-    def list_for_employee(self, employee_id: str) -> List[PerformanceReview]:
+    def list_for_employee(self, employee_id: str) -> list[PerformanceReview]:
         """Return a copy of the reviews for ``employee_id`` (empty if unknown)."""
         return list(self.reviews_by_employee.get(employee_id, []))
 

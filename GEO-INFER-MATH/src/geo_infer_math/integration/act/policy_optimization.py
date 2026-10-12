@@ -9,7 +9,7 @@ References:
 """
 
 import numpy as np
-from typing import Optional, Dict, Any, cast
+from typing import Any, cast
 import logging
 
 logger = logging.getLogger(__name__)
@@ -44,10 +44,10 @@ class PolicyOptimization:
         policies: np.ndarray,
         A: np.ndarray,
         B: np.ndarray,
-        C: Optional[np.ndarray] = None,
-        current_beliefs: Optional[np.ndarray] = None,
+        C: np.ndarray | None = None,
+        current_beliefs: np.ndarray | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Select a policy by minimising expected free energy.
 
         Args:
@@ -133,7 +133,7 @@ class PolicyOptimization:
         total_ambiguity = 0.0
         total_risk = 0.0
 
-        for t, action in enumerate(policy):
+        for action in policy:
             # Predict future state: q(s_t+1) = B(a) @ q(s_t)
             if action < B.shape[2]:
                 current = B[:, :, action] @ current

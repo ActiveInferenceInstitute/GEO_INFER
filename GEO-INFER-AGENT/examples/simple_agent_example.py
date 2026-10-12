@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Simple agent example for GEO-INFER-AGENT.
@@ -39,7 +38,7 @@ async def run_simple_agent(args):
     config = {}
     if args.config:
         try:
-            with open(args.config, "r") as f:
+            with open(args.config) as f:
                 config = json.load(f)
             logging.info(f"Loaded configuration from {args.config}")
         except Exception as e:
@@ -122,8 +121,7 @@ async def run_simple_agent(args):
             # Monitor agent state
             try:
                 while True:
-                    # Get agent state and info
-                    agent_info = agent_interface.get_agent_info(agent_id)
+                    # Get agent state
                     agent_state = await agent_interface.get_agent_state(agent_id)
 
                     logging.info(
@@ -195,7 +193,7 @@ def main():
         else:
             # Run until interrupted
             asyncio.run(run_simple_agent(args))
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logging.info(f"Runtime of {args.runtime} seconds reached, stopping")
     except KeyboardInterrupt:
         logging.info("Example interrupted")

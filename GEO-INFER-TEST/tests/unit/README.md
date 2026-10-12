@@ -4,6 +4,7 @@ Unit workspace within `GEO-INFER-TEST`.
 
 ## Contents
 
+- `test_act_research_oracles.py`
 - `test_build_package_wheels.py`
 - `test_check_coverage_floor_gate.py`
 - `test_ci_workflow_contracts.py`
@@ -11,12 +12,20 @@ Unit workspace within `GEO-INFER-TEST`.
 - `test_crescent_city_civic_intel_demo.py`
 - `test_crescent_city_geo_intel_contract_sync.py`
 - `test_data_domains.py`
+- `test_data_quality_contract.py`
+- `test_doc_examples.py`
+- `test_documentation_census.py`
+- `test_execution_contracts.py`
+- `test_gnn_interchange_receipts.py`
 - `test_log_integration.py`
 - `test_manuscript_research.py`
 - `test_measure_module_coverage.py`
 - `test_module_health.py`
 - `test_parametric_load_benchmarks.py`
 - `test_performance_monitor.py`
+- `test_place_windows_workflow.py`
+- `test_process_ownership_contracts.py`
+- `test_research_evidence.py`
 - `test_root_pytest_policy.py`
 - `test_run_unified_tests.py`
 - `test_runtime_metadata.py`
@@ -44,8 +53,8 @@ Unit workspace within `GEO-INFER-TEST`.
 
 - Module: `GEO-INFER-TEST`
 - Package: `geo_infer_test`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-TEST`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-test`
 - Tests: `uv run python -m pytest GEO-INFER-TEST/tests/unit`
 
 ## Dependencies
@@ -71,7 +80,7 @@ Unit workspace within `GEO-INFER-TEST`.
 ## Validation
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python -m pytest GEO-INFER-TEST/tests/unit
 ```
 

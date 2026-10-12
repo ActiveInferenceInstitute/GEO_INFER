@@ -6,19 +6,13 @@ measurements to continuous spatial surfaces, with integration to H3 spatial inde
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple, Any, cast
-from datetime import datetime
+from typing import Any, cast
+from datetime import datetime, UTC
 import numpy as np
 import h3
 
-# Optional imports for enhanced functionality
-try:
-    from scipy import interpolate
-    from scipy.spatial.distance import cdist
-
-    HAS_SCIPY = True
-except ImportError:
-    HAS_SCIPY = False
+from scipy import interpolate
+from scipy.spatial.distance import cdist
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +28,9 @@ class SpatialInterpolation:
     - Cross-validation for interpolation quality assessment
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
-        self.interpolation_cache: Dict[str, Any] = {}
+        self.interpolation_cache: dict[str, Any] = {}
 
         # Default interpolation parameters
         self.default_params = {
@@ -79,10 +73,10 @@ class SpatialInterpolation:
 
     def interpolate_to_grid(
         self,
-        measurements: List[Dict[str, Any]],
-        target_grid: List[Tuple[float, float]],
-        method: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        measurements: list[dict[str, Any]],
+        target_grid: list[tuple[float, float]],
+        method: str | None = None,
+    ) -> dict[str, Any]:
         """
         Interpolate sensor measurements to a target grid.
 
@@ -131,7 +125,7 @@ class SpatialInterpolation:
                 interpolated_values = self._nearest_neighbor(
                     sensor_latlon, sensor_values, target_latlon
                 )
-            elif method == "linear" and HAS_SCIPY:
+            elif method == "linear":
                 interpolated_values = self._linear_interpolation(
                     sensor_latlon, sensor_values, target_latlon
                 )
@@ -153,7 +147,7 @@ class SpatialInterpolation:
                 "sensor_count": len(sensor_values),
                 "target_points": len(target_grid),
                 "uncertainty": uncertainty.tolist(),
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:
@@ -220,12 +214,6 @@ class SpatialInterpolation:
         target_latlon: np.ndarray,
     ) -> np.ndarray:
         """Perform linear interpolation using scipy on projected planar meters."""
-        if not HAS_SCIPY:
-            # Fall back to IDW
-            return self._inverse_distance_weighted(
-                sensor_latlon, sensor_values, target_latlon
-            )
-
         try:
             # Project degrees to a local equirectangular metric plane so
             # scipy's planar griddata operates in consistent units
@@ -284,8 +272,8 @@ class SpatialInterpolation:
         return np.clip(uncertainty, 0.01, 1.0)  # Clamp between 0.01 and 1.0
 
     def interpolate_h3_cells(
-        self, measurements: List[Dict], target_h3_indices: List[str]
-    ) -> Dict:
+        self, measurements: list[dict], target_h3_indices: list[str]
+    ) -> dict:
         """
         Interpolate measurements to specific H3 cells.
 
@@ -336,8 +324,8 @@ class SpatialInterpolation:
             return {"error": f"H3 interpolation failed: {str(e)}"}
 
     def create_interpolation_grid(
-        self, bounds: Dict[str, float], resolution_km: float = 1.0
-    ) -> List[Tuple[float, float]]:
+        self, bounds: dict[str, float], resolution_km: float = 1.0
+    ) -> list[tuple[float, float]]:
         """
         Create a regular grid for interpolation within bounds.
 
@@ -382,14 +370,19 @@ class SpatialInterpolation:
             return []
 
     def cross_validate_interpolation(
-        self, measurements: List[Dict], test_fraction: float = 0.2
-    ) -> Dict:
+        self,
+        measurements: list[dict],
+        test_fraction: float = 0.2,
+        seed: int | np.random.Generator | None = 42,
+    ) -> dict:
         """
         Cross-validate interpolation quality using hold-out testing.
 
         Args:
             measurements: All available measurements
             test_fraction: Fraction of data to use for testing
+            seed: Seed or Generator for the hold-out split (deterministic by
+                default; the global NumPy random state is never touched)
 
         Returns:
             Cross-validation results with error metrics
@@ -399,9 +392,9 @@ class SpatialInterpolation:
                 return {"error": "Insufficient measurements for cross-validation"}
 
             # Split data into training and testing
-            np.random.seed(42)  # For reproducibility
+            rng = np.random.default_rng(seed)
             n_test = int(len(measurements) * test_fraction)
-            test_indices = np.random.choice(len(measurements), n_test, replace=False)
+            test_indices = rng.choice(len(measurements), n_test, replace=False)
 
             train_measurements = [
                 measurements[i]
@@ -456,14 +449,14 @@ class SpatialInterpolation:
                 },
                 "method": interpolation_result["method"],
                 "test_fraction": test_fraction,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:
             logger.error(f"Error in cross-validation: {e}")
             return {"error": f"Cross-validation failed: {str(e)}"}
 
-    def get_interpolation_quality(self, sensor_coords: np.ndarray, method: str) -> Dict:
+    def get_interpolation_quality(self, sensor_coords: np.ndarray, method: str) -> dict:
         """
         Assess interpolation quality based on sensor distribution.
 
@@ -534,7 +527,7 @@ class SpatialInterpolation:
                 "distribution_factor": distribution_factor,
                 "coverage_factor": coverage_factor,
                 "issues": issues,
-                "assessment_timestamp": datetime.now().isoformat(),
+                "assessment_timestamp": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:

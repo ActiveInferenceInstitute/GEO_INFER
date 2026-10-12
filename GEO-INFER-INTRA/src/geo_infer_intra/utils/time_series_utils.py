@@ -1,6 +1,7 @@
 """Time series test helper utilities for GEO-INFER-INTRA."""
 
-from typing import Dict, Any, List, Union, Callable
+from typing import Any
+from collections.abc import Callable
 import datetime
 import random
 import json
@@ -48,7 +49,7 @@ def create_timestamp_range(
     start_date: datetime.datetime,
     end_date: datetime.datetime,
     interval: datetime.timedelta,
-) -> List[str]:
+) -> list[str]:
     """
     Create a range of ISO8601 timestamp strings.
 
@@ -72,7 +73,7 @@ def create_timestamp_range(
 
 def create_daily_timestamps(
     start_year: int, start_month: int, start_day: int, num_days: int
-) -> List[str]:
+) -> list[str]:
     """
     Create a list of daily ISO8601 timestamp strings.
 
@@ -92,7 +93,7 @@ def create_daily_timestamps(
 
 def create_hourly_timestamps(
     start_year: int, start_month: int, start_day: int, start_hour: int, num_hours: int
-) -> List[str]:
+) -> list[str]:
     """
     Create a list of hourly ISO8601 timestamp strings.
 
@@ -112,8 +113,8 @@ def create_hourly_timestamps(
 
 
 def create_time_series_data(
-    timestamps: List[str], value_generator: Callable[[str, int], float]
-) -> Dict[str, Any]:
+    timestamps: list[str], value_generator: Callable[[str, int], float]
+) -> dict[str, Any]:
     """
     Create time series data with generated values.
 
@@ -183,7 +184,7 @@ def seasonal_generator(
     return base_value + seasonal + noise
 
 
-def load_time_series_file(file_path: Union[str, Path]) -> Dict[str, Any]:
+def load_time_series_file(file_path: str | Path) -> dict[str, Any]:
     """
     Load time series data from file.
 
@@ -198,7 +199,7 @@ def load_time_series_file(file_path: Union[str, Path]) -> Dict[str, Any]:
 
 
 def save_time_series_file(
-    time_series_data: Dict[str, Any], file_path: Union[str, Path]
+    time_series_data: dict[str, Any], file_path: str | Path
 ) -> None:
     """
     Save time series data to file.

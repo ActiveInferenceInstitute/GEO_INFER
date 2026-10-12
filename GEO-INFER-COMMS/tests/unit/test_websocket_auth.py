@@ -1,16 +1,15 @@
-"""Unit tests for WebSocket authentication fallback semantics (M3-04).
+"""Unit tests for WebSocket authentication semantics (M3-04).
 
-Covers the hard-reject contract: when ``COMMS_JWT_SECRET`` is configured but
-PyJWT is unavailable, authentication must fail closed instead of falling back
-to hash-derived identity (which would let any token string authenticate).
+Covers the hard-reject contract: when ``COMMS_JWT_SECRET`` is configured, every
+token must validate as an HS256 JWT; a non-JWT token fails closed instead of
+falling back to hash-derived identity (which would let any token string
+authenticate). The hash identity applies only when no secret is configured.
 """
 
 import asyncio
 import hashlib
-import importlib.util
 import json
-import sys
-from typing import Any, Dict, List
+from typing import Any
 
 import jwt
 
@@ -21,7 +20,7 @@ class FakeWebSocket:
     """Minimal async websocket double recording sent frames."""
 
     def __init__(self) -> None:
-        self.sent: List[str] = []
+        self.sent: list[str] = []
 
     async def send(self, text: str) -> None:
         self.sent.append(text)
@@ -31,29 +30,23 @@ class FakeManager:
     """Minimal manager double; authentication does not touch the manager."""
 
     def __init__(self) -> None:
-        self.subscriptions: Dict[str, Any] = {}
+        self.subscriptions: dict[str, Any] = {}
 
 
 def _connection() -> WebSocketConnection:
     return WebSocketConnection("conn-1", FakeWebSocket(), FakeManager())
 
 
-def _last_message(conn: WebSocketConnection) -> Dict[str, Any]:
+def _last_message(conn: WebSocketConnection) -> dict[str, Any]:
     assert conn.websocket.sent, "expected an outbound frame"
     return json.loads(conn.websocket.sent[-1])
 
 
-def test_pyjwt_is_importable_in_declared_environments():
-    """pyjwt is a declared COMMS dependency, so it resolves in a synced env."""
-    assert importlib.util.find_spec("jwt") is not None
-
-
-def test_rejects_when_secret_configured_but_pyjwt_absent(monkeypatch):
-    """Secret configured + PyJWT missing must reject, not authenticate."""
+def test_rejects_non_jwt_token_when_secret_configured(monkeypatch):
+    """Secret configured + a non-JWT token must reject, not hash-authenticate."""
     monkeypatch.setenv(
         "COMMS_JWT_SECRET", "unit-test-secret-0123456789abcdef-0123456789abcdef"
     )
-    monkeypatch.setitem(sys.modules, "jwt", None)
 
     conn = _connection()
     asyncio.run(conn._handle_authentication({"token": "forged-token"}))
@@ -68,7 +61,6 @@ def test_rejects_when_secret_configured_but_pyjwt_absent(monkeypatch):
 def test_hash_identity_fallback_when_no_secret_configured(monkeypatch):
     """Without a configured secret the documented hash identity still applies."""
     monkeypatch.delenv("COMMS_JWT_SECRET", raising=False)
-    monkeypatch.setitem(sys.modules, "jwt", None)
 
     conn = _connection()
     asyncio.run(conn._handle_authentication({"token": "some-token"}))

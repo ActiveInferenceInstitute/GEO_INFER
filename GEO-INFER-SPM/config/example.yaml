@@ -68,7 +68,7 @@ performance:
   memory_efficient: true
   chunk_size: 1000                    # Process data in chunks
 
-# Bayesian analysis settings (requires PyMC3)
+# Bayesian analysis settings (requires PyMC >= 5)
 bayesian:
   enabled: false
   sampling:

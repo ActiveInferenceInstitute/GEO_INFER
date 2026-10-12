@@ -43,7 +43,7 @@ for i in range(1, reps + 1):
     except subprocess.TimeoutExpired:
         elapsed = time.perf_counter() - t0
         print(f"[{label}] rep{i}: TIMEOUT after {elapsed:.2f}s (parent guard 300s)")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"[{label}] rep{i}: ERROR {e!r}")
 
 if times:

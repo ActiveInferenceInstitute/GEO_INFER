@@ -1,7 +1,6 @@
 """CRM Data Visualization functions."""
 
 import logging
-from typing import List, Optional
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
@@ -16,8 +15,8 @@ DEFAULT_OUTPUT_DIR = Path("visualizations_output")
 
 
 def plot_customer_distribution_by_status(
-    customers: List[Customer], output_dir: Path = DEFAULT_OUTPUT_DIR
-) -> Optional[str]:
+    customers: list[Customer], output_dir: Path = DEFAULT_OUTPUT_DIR
+) -> str | None:
     """
     Generates a bar chart of customer distribution by status.
     Saves the plot to a file and returns the file path.
@@ -53,8 +52,8 @@ def plot_customer_distribution_by_status(
 
 
 def plot_customer_distribution_by_source(
-    customers: List[Customer], output_dir: Path = DEFAULT_OUTPUT_DIR
-) -> Optional[str]:
+    customers: list[Customer], output_dir: Path = DEFAULT_OUTPUT_DIR
+) -> str | None:
     """
     Generates a bar chart of customer distribution by source.
     Saves the plot to a file and returns the file path.

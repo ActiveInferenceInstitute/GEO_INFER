@@ -5,7 +5,7 @@ and biodiversity metrics specific to coral reef ecosystems.
 """
 
 import logging
-from typing import Any, Dict, Optional, cast
+from typing import Any, cast
 
 import numpy as np
 import xarray as xr
@@ -22,7 +22,7 @@ class CoralReefAssessor:
     and reef biodiversity assessment tools.
     """
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         """Initialize coral reef assessor.
 
         Args:
@@ -103,8 +103,8 @@ class CoralReefAssessor:
 
     def calculate_reef_biodiversity(
         self,
-        species_counts: Dict[str, int],
-    ) -> Dict[str, float]:
+        species_counts: dict[str, int],
+    ) -> dict[str, float]:
         """Calculate reef biodiversity metrics.
 
         Computes Shannon diversity, Simpson diversity, and Margalef richness
@@ -146,7 +146,7 @@ class CoralReefAssessor:
         macroalgae_cover_pct: float,
         fish_biomass_kg_ha: float,
         bleaching_alert_level: int = 0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate composite reef health score.
 
         Combines live coral cover, macroalgae ratio, fish biomass,

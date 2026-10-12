@@ -29,7 +29,7 @@ examples_dir: ../GEO-INFER-EXAMPLES/examples/
 
 ```python
 from geo_infer_space.backends.h3 import H3Backend
-from geo_infer_space import GISManager
+from geo_infer_space import GISManager, H3StateSpace, align_h3_observations
 from geo_infer_space.core import (
     GeometricOperationsInterface,
     SpatialIndexingInterface,
@@ -114,6 +114,23 @@ print(f"UTM Zone 10N: ({x:.0f}, {y:.0f})")
 
 - **MATH** → Spatial weights for statistics
 - **TIME** → Spatio-temporal analysis
+- Follow [method contracts](docs/METHOD_CONTRACTS.md) for topology failure
+  propagation, bounded expansion, configuration ownership and statistical
+  reference assumptions.
+- `SpatialStatistics.nearest_neighbor_index` reports geodesic distances; pass
+  the real `study_area_km2` to request a spatial-randomness reference score.
+- `BaseAnalysisModule` accepts explicit JSON/YAML `config_path` and `output_dir`;
+  constructor `h3_resolution` overrides the configuration default.
+- H3 ML empty neighbor statistics remain NaN with explicit zero counts; choose
+  missing-value preprocessing before fitting an estimator.
+- `align_h3_observations` maps finite records into explicit `H3StateSpace`
+  columns and ordered UTC timestamps. It rejects unknown cells/times and
+  duplicate pairs; absent observations stay NaN.
+- SPACE temporal analytics require aware UTC-normalizable timestamps. Weighted
+  space-time interpolation is `SpatioTemporalAnalyzer.interpolate_spatiotemporal`
+  with softened inverse-distance weights, rather than a kriging estimator.
+- Follow [the composition guide](docs/CROSS_MODULE_COMPOSITION.md) for data
+  axes, missingness, coordinate order and model schedule requirements.
 - **DATA** → Spatial indexing of datasets
 - **PLACE** → Boundary tessellation with H3
 - Nearly every module depends on SPACE for geographic indexing

@@ -8,10 +8,8 @@ Geospatial intelligence for logistics optimization, supply chain management, rou
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -21,8 +19,8 @@ Geospatial intelligence for logistics optimization, supply chain management, rou
 
 - Module: `GEO-INFER-LOG`
 - Package: `geo_infer_log`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-LOG`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-log`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module LOG`
 
 ## Dependencies

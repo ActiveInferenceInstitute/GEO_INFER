@@ -5,14 +5,14 @@ This module provides convenience methods for integrating across
 different GEO-INFER modules.
 """
 
-from typing import Dict, Any
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 def cross_module_helper(
-    module_name: str, operation: str, data: Dict[str, Any], **kwargs: Any
+    module_name: str, operation: str, data: dict[str, Any], **kwargs: Any
 ) -> Any:
     """
     Helper for cross-module operations.
@@ -75,11 +75,11 @@ class IntegrationConvenience:
     def __init__(self) -> None:
         """Initialize integration convenience class."""
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self._module_registry: Dict[str, Any] = {}
+        self._module_registry: dict[str, Any] = {}
         self.logger.debug("IntegrationConvenience initialized")
 
     def execute_cross_module(
-        self, module_name: str, operation: str, data: Dict[str, Any], **kwargs: Any
+        self, module_name: str, operation: str, data: dict[str, Any], **kwargs: Any
     ) -> Any:
         """
         Execute cross-module operation.

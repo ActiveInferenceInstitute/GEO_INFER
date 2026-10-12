@@ -21,6 +21,8 @@ AUTHORITATIVE_DOCS = (
     "AGENTS.md",
     "CONTRIBUTING.md",
     "SECURITY.md",
+    "GEO-INFER-INTRA/docs/active_inference_guide.md",
+    "GEO-INFER-INTRA/docs/temporal_analysis_guide.md",
     "GEO-INFER-INTRA/docs/index.md",
     "GEO-INFER-INTRA/docs/overview.md",
     "GEO-INFER-INTRA/docs/getting_started/index.md",
@@ -196,6 +198,9 @@ def main() -> int:
             )
         )
         errors.extend(import_truth_errors(REPO_ROOT))
+        from geo_infer_test.documentation_contracts import module_catalog_census_errors
+
+        errors.extend(module_catalog_census_errors(REPO_ROOT))
 
     if errors:
         print("Documentation validation failed:", file=sys.stderr)

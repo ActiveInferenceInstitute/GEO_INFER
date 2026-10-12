@@ -8,9 +8,11 @@ Unit workspace within `GEO-INFER-SPM`.
 - `test_advanced_models.py`
 - `test_api_endpoints.py`
 - `test_bayesian.py`
+- `test_compiler_profile.py`
 - `test_contrasts.py`
 - `test_data_io.py`
 - `test_glm.py`
+- `test_helper_input_contracts.py`
 - `test_helpers.py`
 - `test_helpers_reproducibility.py`
 - `test_package_exports.py`
@@ -30,8 +32,8 @@ Unit workspace within `GEO-INFER-SPM`.
 
 - Module: `GEO-INFER-SPM`
 - Package: `geo_infer_spm`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-SPM`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-spm`
 - Tests: `uv run python -m pytest GEO-INFER-SPM/tests/unit`
 
 ## Dependencies

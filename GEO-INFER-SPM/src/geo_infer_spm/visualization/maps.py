@@ -6,17 +6,10 @@ and visualizing SPM analysis results as spatial plots and maps.
 """
 
 import numpy as np
-from typing import Dict, Optional, Any
-import warnings
+from typing import Any
+
+import matplotlib.pyplot as plt
 from scipy import stats
-
-try:
-    import matplotlib.pyplot as plt
-
-    MATPLOTLIB_AVAILABLE = True
-except ImportError:
-    MATPLOTLIB_AVAILABLE = False
-    warnings.warn("matplotlib not available. Visualization functions limited.")
 
 from ..models.data_models import SPMResult
 
@@ -24,10 +17,10 @@ from ..models.data_models import SPMResult
 def create_statistical_map(
     spm_result: SPMResult,
     contrast_idx: int = 0,
-    threshold: Optional[float] = None,
+    threshold: float | None = None,
     colormap: str = "RdBu_r",
-    title: Optional[str] = None,
-) -> Dict[str, Any]:
+    title: str | None = None,
+) -> dict[str, Any]:
     """
     Create statistical parametric map visualization.
 
@@ -131,57 +124,56 @@ def create_statistical_map(
     }
 
     # Create matplotlib figure if available
-    if MATPLOTLIB_AVAILABLE:
-        fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
 
-        # Create scatter plot colored by statistic
-        sc = ax.scatter(
-            coordinates[:, 0],
-            coordinates[:, 1],
-            c=stat_values,
-            cmap=colormap,
-            s=50,
-            alpha=0.7,
-            edgecolors="black",
-            linewidth=0.5,
+    # Create scatter plot colored by statistic
+    sc = ax.scatter(
+        coordinates[:, 0],
+        coordinates[:, 1],
+        c=stat_values,
+        cmap=colormap,
+        s=50,
+        alpha=0.7,
+        edgecolors="black",
+        linewidth=0.5,
+    )
+
+    # Highlight significant points
+    if significant_mask is not None and np.any(significant_mask):
+        sig_coords = coordinates[significant_mask]
+        ax.scatter(
+            sig_coords[:, 0],
+            sig_coords[:, 1],
+            c="red",
+            s=60,
+            marker="*",
+            label="Significant",
         )
 
-        # Highlight significant points
-        if significant_mask is not None and np.any(significant_mask):
-            sig_coords = coordinates[significant_mask]
-            ax.scatter(
-                sig_coords[:, 0],
-                sig_coords[:, 1],
-                c="red",
-                s=60,
-                marker="*",
-                label="Significant",
-            )
+    # Add colorbar
+    cbar = plt.colorbar(sc, ax=ax)
+    cbar.set_label("T-statistic")
 
-        # Add colorbar
-        cbar = plt.colorbar(sc, ax=ax)
-        cbar.set_label("T-statistic")
+    # Set labels and title
+    ax.set_xlabel("Longitude")
+    ax.set_ylabel("Latitude")
+    ax.set_title(viz_data["title"])
+    ax.grid(True, alpha=0.3)
 
-        # Set labels and title
-        ax.set_xlabel("Longitude")
-        ax.set_ylabel("Latitude")
-        ax.set_title(viz_data["title"])
-        ax.grid(True, alpha=0.3)
+    # Add legend if significant points exist
+    if significant_mask is not None and np.any(significant_mask):
+        ax.legend()
 
-        # Add legend if significant points exist
-        if significant_mask is not None and np.any(significant_mask):
-            ax.legend()
+    plt.tight_layout()
 
-        plt.tight_layout()
-
-        viz_data["matplotlib_figure"] = fig
+    viz_data["matplotlib_figure"] = fig
 
     return viz_data
 
 
 def plot_spm_results(
     spm_result: SPMResult, plot_type: str = "stat_map", **kwargs: Any
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Create comprehensive SPM results visualization.
 
@@ -193,9 +185,6 @@ def plot_spm_results(
     Returns:
         Dictionary with visualization data
     """
-    if not MATPLOTLIB_AVAILABLE:
-        return {"error": "matplotlib not available for plotting"}
-
     if plot_type == "stat_map":
         return create_statistical_map(spm_result, **kwargs)
 
@@ -215,7 +204,7 @@ def plot_spm_results(
         raise ValueError(f"Unknown plot type: {plot_type}")
 
 
-def _plot_beta_coefficients(spm_result: SPMResult, **kwargs: Any) -> Dict[str, Any]:
+def _plot_beta_coefficients(spm_result: SPMResult, **kwargs: Any) -> dict[str, Any]:
     """Plot regression coefficient maps."""
     beta = spm_result.beta_coefficients
     coordinates = spm_result.spm_data.coordinates
@@ -273,7 +262,7 @@ def _plot_beta_coefficients(spm_result: SPMResult, **kwargs: Any) -> Dict[str, A
     return {"plot_type": "beta_coefficients", "matplotlib_figure": fig}
 
 
-def _plot_residuals(spm_result: SPMResult, **kwargs: Any) -> Dict[str, Any]:
+def _plot_residuals(spm_result: SPMResult, **kwargs: Any) -> dict[str, Any]:
     """Plot model residuals."""
     residuals = spm_result.residuals
     coordinates = spm_result.spm_data.coordinates
@@ -323,7 +312,7 @@ def _plot_residuals(spm_result: SPMResult, **kwargs: Any) -> Dict[str, Any]:
     }
 
 
-def _plot_model_diagnostics(spm_result: SPMResult, **kwargs: Any) -> Dict[str, Any]:
+def _plot_model_diagnostics(spm_result: SPMResult, **kwargs: Any) -> dict[str, Any]:
     """Create model diagnostic plots."""
     diagnostics = spm_result.model_diagnostics
 

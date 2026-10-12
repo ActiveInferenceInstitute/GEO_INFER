@@ -81,7 +81,3 @@ Application errors return the middleware error envelope:
 
 `VALIDATION_ERROR` maps to 422, `NOT_FOUND_ERROR` to 404, and
 `CONFLICT_ERROR` to 409.
-
----
-
-**Last Updated**: 2026-09-05

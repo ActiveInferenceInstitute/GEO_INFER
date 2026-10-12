@@ -6,7 +6,8 @@ and personalized content delivery.
 """
 
 import logging
-from typing import Callable, Dict, List, Optional, Any
+from typing import Any
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 
@@ -19,12 +20,12 @@ class LearnerProfile:
 
     learner_id: str
     learning_style: str = "visual"  # visual, auditory, kinesthetic, reading
-    prior_knowledge: List[str] = field(default_factory=list)
-    interests: List[str] = field(default_factory=list)
+    prior_knowledge: list[str] = field(default_factory=list)
+    interests: list[str] = field(default_factory=list)
     preferred_pace: str = "moderate"  # slow, moderate, fast
     available_time_hours_week: float = 10
-    strengths: List[str] = field(default_factory=list)
-    challenges: List[str] = field(default_factory=list)
+    strengths: list[str] = field(default_factory=list)
+    challenges: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -38,8 +39,8 @@ class LearningResource:
     difficulty: str
     duration_minutes: int
     format: str
-    url: Optional[str] = None
-    prerequisites: List[str] = field(default_factory=list)
+    url: str | None = None
+    prerequisites: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -48,20 +49,20 @@ class LearningPathway:
 
     pathway_id: str
     learner_id: str
-    target_competencies: List[str]
-    sequence: List[Dict[str, Any]]
+    target_competencies: list[str]
+    sequence: list[dict[str, Any]]
     estimated_duration_weeks: int
     optimization_strategy: str
     created_at: datetime = field(default_factory=datetime.now)
 
 
 def compute_skill_gap_pathway(
-    target_competencies: List[str],
-    current_skills: List[str],
+    target_competencies: list[str],
+    current_skills: list[str],
     hours_per_week: float,
     hours_per_competency: float,
-    resources_for: Optional[Callable[[str], List[Dict[str, Any]]]] = None,
-) -> Dict[str, Any]:
+    resources_for: Callable[[str], list[dict[str, Any]]] | None = None,
+) -> dict[str, Any]:
     """
     Compute the skill-gap -> sequence -> duration core shared by all
     learning-pathway creators (PersonalizedLearning.create_pathway and
@@ -108,7 +109,7 @@ class PersonalizedLearning:
         self,
         adaptation_method: str = "knowledge_tracing",
         recommendation_algorithm: str = "collaborative_filtering",
-        learning_styles: Optional[List[str]] = None,
+        learning_styles: list[str] | None = None,
     ):
         """
         Initialize personalized learning engine.
@@ -126,15 +127,15 @@ class PersonalizedLearning:
             "kinesthetic",
             "reading",
         ]
-        self._learner_profiles: Dict[str, LearnerProfile] = {}
-        self._resource_library: Dict[str, LearningResource] = {}
-        self._mastery_data: Dict[str, Dict[str, float]] = {}
+        self._learner_profiles: dict[str, LearnerProfile] = {}
+        self._resource_library: dict[str, LearningResource] = {}
+        self._mastery_data: dict[str, dict[str, float]] = {}
         logger.info(
             f"Initialized PersonalizedLearning with {adaptation_method} adaptation"
         )
 
     def register_resource(
-        self, resource: LearningResource | Dict[str, Any]
+        self, resource: LearningResource | dict[str, Any]
     ) -> LearningResource:
         """Register a learning resource supplied by the content owner."""
         if isinstance(resource, dict):
@@ -142,7 +143,7 @@ class PersonalizedLearning:
         self._resource_library[resource.resource_id] = resource
         return resource
 
-    def register_learner(self, learner_profile: Dict[str, Any]) -> LearnerProfile:
+    def register_learner(self, learner_profile: dict[str, Any]) -> LearnerProfile:
         """Register a new learner with their profile."""
         profile = LearnerProfile(
             learner_id=learner_profile.get(
@@ -166,9 +167,9 @@ class PersonalizedLearning:
 
     def create_pathway(
         self,
-        learner_profile: Dict[str, Any],
-        learning_goals: List[str],
-        constraints: Dict[str, Any],
+        learner_profile: dict[str, Any],
+        learning_goals: list[str],
+        constraints: dict[str, Any],
         optimization: str = "mastery",
     ) -> LearningPathway:
         """
@@ -238,7 +239,7 @@ class PersonalizedLearning:
 
     def _find_resources_for_skill(
         self, skill: str, learning_style: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Find appropriate resources for a skill and learning style."""
         preferred_formats = set(self._get_preferred_formats(learning_style))
         return [
@@ -255,9 +256,9 @@ class PersonalizedLearning:
         self,
         learner_id: str,
         current_topic: str,
-        resource_types: Optional[List[str]] = None,
+        resource_types: list[str] | None = None,
         difficulty: str = "appropriate",
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Recommend learning resources for a learner.
 
@@ -277,7 +278,7 @@ class PersonalizedLearning:
 
         resource_type_set = set(resource_types or [])
         preferred = set(self._get_preferred_formats(profile.learning_style))
-        recommendations: List[Dict[str, Any]] = []
+        recommendations: list[dict[str, Any]] = []
         for resource in self._resource_library.values():
             if resource.topic != current_topic:
                 continue
@@ -306,7 +307,7 @@ class PersonalizedLearning:
         )
         return recommendations
 
-    def _get_preferred_formats(self, learning_style: str) -> List[str]:
+    def _get_preferred_formats(self, learning_style: str) -> list[str]:
         """Get preferred resource formats for learning style."""
         style_map = {
             "visual": ["video", "infographic", "diagram", "animation"],
@@ -320,9 +321,9 @@ class PersonalizedLearning:
         self,
         learner_id: str,
         topic: str,
-        format_preference: Optional[str] = None,
-        mastery_level: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        format_preference: str | None = None,
+        mastery_level: float | None = None,
+    ) -> dict[str, Any]:
         """
         Deliver content adapted to learner's current state.
 
@@ -392,7 +393,7 @@ class PersonalizedLearning:
 
     def _generate_content_sections(
         self, topic: str, difficulty: str, depth: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Generate content sections for adaptive delivery."""
         sections = [
             {
@@ -427,7 +428,7 @@ class PersonalizedLearning:
 
         return sections
 
-    def _generate_practice(self, topic: str, difficulty: str) -> List[Dict[str, Any]]:
+    def _generate_practice(self, topic: str, difficulty: str) -> list[dict[str, Any]]:
         """Generate practice exercises."""
         num_exercises = 3 if difficulty in ["introductory", "intermediate"] else 5
 
@@ -441,7 +442,7 @@ class PersonalizedLearning:
             for i in range(num_exercises)
         ]
 
-    def _suggest_next_steps(self, topic: str, mastery: float) -> List[str]:
+    def _suggest_next_steps(self, topic: str, mastery: float) -> list[str]:
         """Suggest next learning steps."""
         if mastery < 0.5:
             return [
@@ -465,10 +466,10 @@ class PersonalizedLearning:
     def schedule_review(
         self,
         learner_id: str,
-        mastered_topics: List[str],
+        mastered_topics: list[str],
         retention_model: str = "forgetting_curve",
         review_frequency: str = "optimal",
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Schedule spaced repetition reviews.
 
@@ -481,7 +482,7 @@ class PersonalizedLearning:
         Returns:
             Review schedule
         """
-        schedule: List[Dict[str, Any]] = []
+        schedule: list[dict[str, Any]] = []
         now = datetime.now()
 
         # Spaced repetition intervals (days)

@@ -7,12 +7,14 @@ and operates on standard data structures.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
+import math
+from typing import Any
 from datetime import datetime
 
-logger = logging.getLogger(__name__)
-
 import numpy as np
+from geo_infer_time import normalize_datetime_index
+
+logger = logging.getLogger(__name__)
 
 
 class TemporalAnalyzer:
@@ -25,16 +27,16 @@ class TemporalAnalyzer:
 
     def __init__(self) -> None:
         """Initialize the TemporalAnalyzer."""
-        self.analysis_history: List[Dict[str, Any]] = []
+        self.analysis_history: list[dict[str, Any]] = []
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
     def analyze_temporal_patterns(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         timestamp_column: str,
         value_column: str,
         temporal_resolution: str = "hour",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze temporal patterns in data.
 
@@ -47,6 +49,8 @@ class TemporalAnalyzer:
         Returns:
             Dictionary containing temporal pattern analysis
         """
+        if temporal_resolution not in {"hour", "day", "week", "month"}:
+            raise ValueError("temporal resolution must be hour, day, week or month")
         if not data:
             return {"error": "No data provided"}
 
@@ -58,6 +62,12 @@ class TemporalAnalyzer:
                 val = record[value_column]
 
                 if ts_val is not None and val is not None:
+                    if (
+                        isinstance(val, (bool, str, bytes))
+                        or not isinstance(val, (int, float))
+                        or not math.isfinite(val)
+                    ):
+                        raise ValueError("Observed values must be finite numbers")
                     timestamp = self._parse_timestamp(ts_val)
                     if timestamp:
                         temporal_data.append(
@@ -91,37 +101,15 @@ class TemporalAnalyzer:
             "method": "Temporal Pattern Analysis",
         }
 
-    def _parse_timestamp(self, ts: Any) -> Optional[datetime]:
-        """Parse timestamp from various formats."""
-        if isinstance(ts, datetime):
-            return ts
-
-        timestamp_str = str(ts)
-        try:
-            # Try common formats
-            formats = [
-                "%Y-%m-%d %H:%M:%S",
-                "%Y-%m-%dT%H:%M:%S",
-                "%Y-%m-%d",
-                "%m/%d/%Y %H:%M:%S",
-            ]
-            for fmt in formats:
-                try:
-                    return datetime.strptime(timestamp_str, fmt)
-                except ValueError:
-                    continue
-
-            # ISO format fallback
-            return datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
-        except Exception as e:
-            logger.debug(f"Failed to parse timestamp '{timestamp_str}': {e}")
-            return None
+    def _parse_timestamp(self, ts: Any) -> datetime:
+        """Normalize an explicit aware instant to UTC."""
+        return normalize_datetime_index([ts])[0]
 
     def _aggregate_by_temporal_resolution(
-        self, temporal_data: List[Dict], resolution: str
-    ) -> Dict[int, Dict[str, float]]:
+        self, temporal_data: list[dict], resolution: str
+    ) -> dict[int, dict[str, float]]:
         """Aggregate data by temporal resolution."""
-        aggregated: Dict[int, List[float]] = {}
+        aggregated: dict[int, list[float]] = {}
 
         for item in temporal_data:
             ts = item["timestamp"]
@@ -143,21 +131,23 @@ class TemporalAnalyzer:
             aggregated[key].append(val)
 
         # Calculate stats for each bucket
-        result: Dict[int, Dict[str, float]] = {}
+        result: dict[int, dict[str, float]] = {}
         for key, values in aggregated.items():
             stats = {
                 "mean": float(np.mean(values)),
                 "sum": float(np.sum(values)),
                 "count": len(values),
                 "std": float(np.std(values)),
+                "min": float(np.min(values)),
+                "max": float(np.max(values)),
             }
             result[key] = stats
 
         return result
 
     def _analyze_patterns(
-        self, aggregated_data: Dict, resolution: str
-    ) -> Dict[str, Any]:
+        self, aggregated_data: dict, resolution: str
+    ) -> dict[str, Any]:
         """Analyze temporal patterns in aggregated data."""
         if not aggregated_data:
             return {}
@@ -175,16 +165,29 @@ class TemporalAnalyzer:
 
         return {"peak_periods": peak_periods, "total_periods": len(aggregated_data)}
 
-    def _calculate_temporal_stats(self, aggregated_data: Dict) -> Dict[str, Any]:
+    def _calculate_temporal_stats(self, aggregated_data: dict) -> dict[str, Any]:
         """Calculate overall statistics."""
         if not aggregated_data:
             return {}
 
-        all_means = [d["mean"] for d in aggregated_data.values()]
-
+        buckets = list(aggregated_data.values())
+        count = sum(bucket["count"] for bucket in buckets)
+        total = math.fsum(bucket["sum"] for bucket in buckets)
+        mean = total / count
+        variance = (
+            math.fsum(
+                bucket["count"] * (bucket["std"] ** 2 + (bucket["mean"] - mean) ** 2)
+                for bucket in buckets
+            )
+            / count
+        )
         return {
-            "overall_mean": float(np.mean(all_means)),
-            "overall_std": float(np.std(all_means)),
-            "min_mean": float(np.min(all_means)),
-            "max_mean": float(np.max(all_means)),
+            "overall_mean": mean,
+            "overall_std": math.sqrt(variance),
+            "min_mean": min(bucket["mean"] for bucket in buckets),
+            "max_mean": max(bucket["mean"] for bucket in buckets),
+            "overall_min": min(bucket["min"] for bucket in buckets),
+            "overall_max": max(bucket["max"] for bucket in buckets),
+            "total_observations": count,
+            "total_value": total,
         }

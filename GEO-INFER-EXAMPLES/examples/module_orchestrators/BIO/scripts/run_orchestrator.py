@@ -14,18 +14,13 @@ from __future__ import annotations
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     import numpy as np
-
     from geo_infer_bio import SequenceAnalyzer
 
     rng = np.random.default_rng(7)
@@ -51,7 +46,7 @@ def _operation() -> Dict[str, Any]:
         "CGT",
     ]
 
-    def _random_bases(count: int) -> List[str]:
+    def _random_bases(count: int) -> list[str]:
         return [str(base) for base in rng.choice(bases, size=count)]
 
     # Designed 87-nt ORF: ATG, 27 sense codons, TAA (j - start = 84 >= 60).

@@ -3,7 +3,7 @@ Marine ecosystem modeling module.
 """
 
 import logging
-from typing import Dict, Optional, List, Tuple, Any
+from typing import Any
 import numpy as np
 import xarray as xr
 from dataclasses import dataclass
@@ -34,9 +34,9 @@ class SpeciesData:
     common_name: str
     scientific_name: str
     trophic_level: float
-    habitat_preference: List[MarineHabitatType]
-    temperature_range: Tuple[float, float]
-    depth_range: Tuple[float, float]
+    habitat_preference: list[MarineHabitatType]
+    temperature_range: tuple[float, float]
+    depth_range: tuple[float, float]
     conservation_status: str = "LC"  # IUCN status
 
 
@@ -53,14 +53,14 @@ class MarineEcosystemModeler:
     - Climate change impact assessment
     """
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize marine ecosystem modeler."""
         self.config = config or {}
-        self.species_registry: Dict[str, SpeciesData] = {}
-        self.mpa_registry: Dict[str, Dict] = {}
+        self.species_registry: dict[str, SpeciesData] = {}
+        self.mpa_registry: dict[str, dict] = {}
 
     def assess_coral_reef_health(
-        self, temperature: xr.DataArray, ph: Optional[xr.DataArray] = None
+        self, temperature: xr.DataArray, ph: xr.DataArray | None = None
     ) -> xr.Dataset:
         """
         Assess coral reef health based on temperature and pH.
@@ -81,7 +81,7 @@ class MarineEcosystemModeler:
         thermal_stress = np.maximum(temperature - optimal_temp, 0)
         bleaching_risk = (thermal_stress / 5.0).clip(min=0.0, max=1.0)
 
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "thermal_stress": thermal_stress,
             "bleaching_risk": bleaching_risk,
         }
@@ -98,7 +98,7 @@ class MarineEcosystemModeler:
     def model_fisheries_stock(
         self,
         habitat_quality: xr.DataArray,
-        fishing_pressure: Optional[xr.DataArray] = None,
+        fishing_pressure: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """
         Model fisheries stock based on habitat and fishing pressure.
@@ -123,8 +123,8 @@ class MarineEcosystemModeler:
         )
 
     def calculate_biodiversity_indices(
-        self, species_counts: Dict[str, int], area_km2: float = 1.0
-    ) -> Dict[str, float]:
+        self, species_counts: dict[str, int], area_km2: float = 1.0
+    ) -> dict[str, float]:
         """
         Calculate biodiversity indices from species abundance data.
 
@@ -162,7 +162,7 @@ class MarineEcosystemModeler:
         species_id: str,
         temperature: xr.DataArray,
         depth: xr.DataArray,
-        habitat_map: Optional[xr.DataArray] = None,
+        habitat_map: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """
         Model species distribution based on environmental conditions.
@@ -214,10 +214,10 @@ class MarineEcosystemModeler:
         self,
         mpa_id: str,
         name: str,
-        boundary: List[Tuple[float, float]],  # List of (lon, lat) points
+        boundary: list[tuple[float, float]],  # List of (lon, lat) points
         protection_level: str = "full",
-        target_species: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        target_species: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Create a marine protected area definition.
 
@@ -246,7 +246,7 @@ class MarineEcosystemModeler:
 
         return mpa
 
-    def _calculate_polygon_area(self, coords: List[Tuple[float, float]]) -> float:
+    def _calculate_polygon_area(self, coords: list[tuple[float, float]]) -> float:
         """Calculate approximate area of a polygon in km²."""
         if len(coords) < 3:
             return 0.0
@@ -277,10 +277,10 @@ class MarineEcosystemModeler:
     def assess_mpa_effectiveness(
         self,
         mpa_id: str,
-        species_counts_inside: Dict[str, int],
-        species_counts_outside: Dict[str, int],
+        species_counts_inside: dict[str, int],
+        species_counts_outside: dict[str, int],
         time_since_establishment_years: float = 1.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Assess the effectiveness of a marine protected area.
 
@@ -360,7 +360,7 @@ class MarineEcosystemModeler:
         sea_level_rise_cm: float,
         ph_change: float,
         time_horizon_years: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Assess climate change impacts on marine ecosystems.
 
@@ -452,8 +452,8 @@ class MarineEcosystemModeler:
         }
 
     def estimate_blue_carbon(
-        self, habitat_area_km2: Dict[str, float], condition: str = "healthy"
-    ) -> Dict[str, Any]:
+        self, habitat_area_km2: dict[str, float], condition: str = "healthy"
+    ) -> dict[str, Any]:
         """
         Estimate blue carbon storage in marine habitats.
 

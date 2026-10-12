@@ -53,44 +53,40 @@ class TestLargeScalePerformance:
             psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024  # MB
 
             # Run simulation
-            async def simulation_test():
-                simulation_start = time.time()
-
-                results = await population.run_simulation(
+            simulation_start = time.time()
+            results = asyncio.run(
+                population.run_simulation(
                     time_steps=5, data_collection=["trajectories"]
                 )
+            )
+            simulation_time = time.time() - simulation_start
+            simulation_memory = (
+                psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+            )  # MB
 
-                simulation_time = time.time() - simulation_start
-                simulation_memory = (
-                    psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
-                )  # MB
+            # Performance assertions
+            assert results.time_steps == 5
+            assert len(results.trajectories) > 0
 
-                # Performance assertions
-                assert results.time_steps == 5
-                assert len(results.trajectories) > 0
+            # Time constraints (should complete within reasonable limits)
+            assert creation_time < 30.0  # 30 seconds for creation
+            assert simulation_time < 120.0  # 120 seconds for simulation
 
-                # Time constraints (should complete within reasonable limits)
-                assert creation_time < 30.0  # 30 seconds for creation
-                assert simulation_time < 120.0  # 120 seconds for simulation
+            # RSS includes interpreter and backend allocations that are
+            # initialized lazily on hosted runners. Keep a meaningful
+            # upper bound while allowing normal allocator variance.
+            assert simulation_memory - start_memory < 750, (
+                "simulation exceeded 750MB additional RSS"
+            )
 
-                # RSS includes interpreter and backend allocations that are
-                # initialized lazily on hosted runners. Keep a meaningful
-                # upper bound while allowing normal allocator variance.
-                assert simulation_memory - start_memory < 750, (
-                    "simulation exceeded 750MB additional RSS"
-                )
-
-                return {
-                    "population_size": size,
-                    "creation_time": creation_time,
-                    "simulation_time": simulation_time,
-                    "memory_increase": simulation_memory - start_memory,
-                    "agents_per_second": size / creation_time,
-                    "simulation_efficiency": len(results.trajectories)
-                    / simulation_time,
-                }
-
-            performance_metrics = asyncio.run(simulation_test())
+            performance_metrics = {
+                "population_size": size,
+                "creation_time": creation_time,
+                "simulation_time": simulation_time,
+                "memory_increase": simulation_memory - start_memory,
+                "agents_per_second": size / creation_time,
+                "simulation_efficiency": len(results.trajectories) / simulation_time,
+            }
 
             # Log performance metrics
             print(f"Population size {size}:")
@@ -250,26 +246,24 @@ class TestMemoryEfficiency:
             )
 
             # Run simulation
-            async def memory_test():
-                await population.run_simulation(
+            asyncio.run(
+                population.run_simulation(
                     time_steps=config["simulation_steps"],
                     data_collection=["trajectories"],
                 )
+            )
+            simulation_memory = (
+                psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+            )
 
-                simulation_memory = (
-                    psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
-                )
-
-                return {
-                    "config": config,
-                    "creation_memory": creation_memory - start_memory,
-                    "simulation_memory": simulation_memory - creation_memory,
-                    "total_memory": simulation_memory - start_memory,
-                    "memory_per_agent": (simulation_memory - start_memory)
-                    / config["population_size"],
-                }
-
-            memory_metrics = asyncio.run(memory_test())
+            memory_metrics = {
+                "config": config,
+                "creation_memory": creation_memory - start_memory,
+                "simulation_memory": simulation_memory - creation_memory,
+                "total_memory": simulation_memory - start_memory,
+                "memory_per_agent": (simulation_memory - start_memory)
+                / config["population_size"],
+            }
 
             print(
                 f"Memory usage for {config['population_size']} agents, {config['simulation_steps']} steps:"
@@ -339,25 +333,22 @@ class TestScalabilityLimits:
                 )
 
                 # Test if basic operations are still feasible
-                async def feasibility_test():
-                    # Test basic simulation
-                    results = await population.run_simulation(
+                results = asyncio.run(
+                    population.run_simulation(
                         time_steps=5,  # Very short simulation
                         data_collection=["trajectories"],
                     )
+                )
+                simulation_time = time.time() - start_time - creation_time
 
-                    simulation_time = time.time() - start_time - creation_time
-
-                    return {
-                        "size": size,
-                        "creation_time": creation_time,
-                        "simulation_time": simulation_time,
-                        "memory_usage": creation_memory - start_memory,
-                        "feasible": results.time_steps == 5
-                        and len(results.trajectories) > 0,
-                    }
-
-                feasibility = asyncio.run(feasibility_test())
+                feasibility = {
+                    "size": size,
+                    "creation_time": creation_time,
+                    "simulation_time": simulation_time,
+                    "memory_usage": creation_memory - start_memory,
+                    "feasible": results.time_steps == 5
+                    and len(results.trajectories) > 0,
+                }
 
                 print(f"Swarm size {size}:")
                 print(f"  Feasible: {feasibility['feasible']}")
@@ -448,31 +439,27 @@ class TestRealTimePerformance:
         for config in time_steps_configs:
             population = AgentPopulation(population_size=50)
 
-            async def real_time_test():
-                start_time = time.time()
-
-                await population.run_simulation(
+            start_time = time.time()
+            asyncio.run(
+                population.run_simulation(
                     time_steps=config["steps"], data_collection=["trajectories"]
                 )
+            )
+            execution_time = time.time() - start_time
+            target_time = config["max_time"]
+            real_time_efficiency = execution_time / target_time
 
-                execution_time = time.time() - start_time
-                target_time = config["max_time"]
-
-                real_time_efficiency = execution_time / target_time
-
-                return {
-                    "config": config,
-                    "execution_time": execution_time,
-                    "target_time": target_time,
-                    "efficiency": (
-                        1.0 / real_time_efficiency
-                        if real_time_efficiency > 0
-                        else float("inf")
-                    ),
-                    "meets_constraint": execution_time <= target_time,
-                }
-
-            performance = asyncio.run(real_time_test())
+            performance = {
+                "config": config,
+                "execution_time": execution_time,
+                "target_time": target_time,
+                "efficiency": (
+                    1.0 / real_time_efficiency
+                    if real_time_efficiency > 0
+                    else float("inf")
+                ),
+                "meets_constraint": execution_time <= target_time,
+            }
 
             print(f"Real-time test {config['steps']} steps in {config['max_time']}s:")
             print(f"  Execution time: {performance['execution_time']:.2f}s")
@@ -501,7 +488,7 @@ class TestStressTesting:
         async def concurrent_test():
             # Create multiple populations simultaneously
             populations = []
-            for i in range(3):
+            for _ in range(3):
                 population = AgentPopulation(population_size=100)
                 populations.append(population)
 

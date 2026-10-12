@@ -5,8 +5,9 @@ Validates schema construction, field validation, serialization,
 and constraint enforcement for all core data models.
 """
 
-from datetime import datetime
+from datetime import datetime, UTC
 import pytest
+from pydantic import ValidationError
 
 from geo_infer_data.models.schemas import (
     CoordinateReferenceSystem,
@@ -47,11 +48,11 @@ class TestSpatialExtent:
         assert len(se.bbox) == 6
 
     def test_invalid_bbox_lon_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             SpatialExtent(bbox=[-200.0, 37.7, -122.3, 37.9])
 
     def test_invalid_bbox_order_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             SpatialExtent(bbox=[-120.0, 37.9, -122.3, 37.7])  # min_lon > max_lon
 
     def test_crs_string_converted(self):
@@ -67,16 +68,16 @@ class TestSpatialExtent:
 class TestTemporalExtent:
     def test_valid_temporal_extent(self):
         te = TemporalExtent(
-            start=datetime(2023, 1, 1),
-            end=datetime(2023, 12, 31),
+            start=datetime(2023, 1, 1, tzinfo=UTC),
+            end=datetime(2023, 12, 31, tzinfo=UTC),
         )
         assert te.start < te.end
 
     def test_invalid_order_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             TemporalExtent(
-                start=datetime(2023, 12, 31),
-                end=datetime(2023, 1, 1),
+                start=datetime(2023, 12, 31, tzinfo=UTC),
+                end=datetime(2023, 1, 1, tzinfo=UTC),
             )
 
 
@@ -91,7 +92,7 @@ class TestQualityCheck:
         assert qc.score == 0.85
 
     def test_score_out_of_range_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             QualityCheck(score=1.5, status=QualityStatus.PASS)
 
     def test_issues_default_empty(self):

@@ -14,7 +14,6 @@ H3 v4 spatial indexing and comprehensive geospatial analysis framework with adva
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -24,12 +23,13 @@ H3 v4 spatial indexing and comprehensive geospatial analysis framework with adva
 
 - Module: `GEO-INFER-SPACE`
 - Package: `geo_infer_space`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-SPACE`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-space`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module SPACE`
 
 ## Dependencies
 
+- `geo-infer-time>=0.4.0`
 - `fastapi>=0.100.0`
 - `fiona>=1.8.0`
 - `geojson-pydantic>=2.0.0`
@@ -59,6 +59,13 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module SPACE
 
 
 ## Implemented Nested H3 Contracts
+
+- Default H3 dispatch loads only H3. SRAI initializes on an explicit request,
+  default selection, or full backend inspection. Missing SRAI is reported by
+  its interface; broken installed dependencies propagate when it is loaded.
+- `dispatcher.backends` contains realized implementations. Use
+  `get_available_backends()` or `get_backend_info()` for full discovery.
+
 
 - `geo_infer_space.nested.NestedH3Grid` builds real `h3>=4.5.0,<5`
   hierarchies from seed cells or boundary vertices across ordered resolutions.

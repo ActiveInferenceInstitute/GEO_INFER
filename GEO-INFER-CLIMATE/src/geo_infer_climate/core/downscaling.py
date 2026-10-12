@@ -6,7 +6,6 @@ to convert coarse-resolution climate model output to fine-resolution data.
 """
 
 import logging
-from typing import Optional
 
 import numpy as np
 import xarray as xr
@@ -24,7 +23,7 @@ class DownscalingMethods:
     machine-learning downscaling.
     """
 
-    def __init__(self, config: Optional[dict] = None):
+    def __init__(self, config: dict | None = None):
         """
         Initialize downscaling methods.
 

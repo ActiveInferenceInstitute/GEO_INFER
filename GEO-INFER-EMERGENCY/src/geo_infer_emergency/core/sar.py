@@ -6,7 +6,7 @@ search pattern generation, and team coordination.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -46,10 +46,10 @@ class SearchSubject:
     subject_id: str
     subject_type: SubjectType
     name: str
-    age: Optional[int] = None
-    last_known_location: Optional[Dict[str, float]] = None
-    last_seen_time: Optional[datetime] = None
-    medical_conditions: List[str] = field(default_factory=list)
+    age: int | None = None
+    last_known_location: dict[str, float] | None = None
+    last_seen_time: datetime | None = None
+    medical_conditions: list[str] = field(default_factory=list)
     clothing: str = ""
     experience_level: str = "unknown"
 
@@ -61,9 +61,9 @@ class SearchTeam:
     team_id: str
     name: str
     size: int
-    capabilities: List[str]
-    location: Optional[Dict[str, float]] = None
-    assigned_sector: Optional[str] = None
+    capabilities: list[str]
+    location: dict[str, float] | None = None
+    assigned_sector: str | None = None
     status: str = "available"
 
 
@@ -72,10 +72,10 @@ class SearchArea:
     """Defines a search area with probability."""
 
     area_id: str
-    geometry: Dict[str, Any]  # GeoJSON
+    geometry: dict[str, Any]  # GeoJSON
     probability: float = 0.5
     terrain: str = "mixed"
-    search_pattern: Optional[SearchPattern] = None
+    search_pattern: SearchPattern | None = None
     searched: bool = False
 
 
@@ -98,9 +98,9 @@ class SearchAndRescue:
 
     def __init__(
         self,
-        terrain_data: Optional[Dict[str, Any]] = None,
-        statistical_data: Optional[Dict[str, Any]] = None,
-        team_capabilities: Optional[List[str]] = None,
+        terrain_data: dict[str, Any] | None = None,
+        statistical_data: dict[str, Any] | None = None,
+        team_capabilities: list[str] | None = None,
     ):
         """
         Initialize search and rescue module.
@@ -113,12 +113,12 @@ class SearchAndRescue:
         self.terrain_data = terrain_data
         self.statistical_data = statistical_data
         self.team_capabilities = team_capabilities or ["ground", "k9", "aerial"]
-        self._subjects: Dict[str, SearchSubject] = {}
-        self._teams: Dict[str, SearchTeam] = {}
-        self._search_areas: Dict[str, SearchArea] = {}
+        self._subjects: dict[str, SearchSubject] = {}
+        self._teams: dict[str, SearchTeam] = {}
+        self._search_areas: dict[str, SearchArea] = {}
         logger.info("Initialized SearchAndRescue module")
 
-    def register_subject(self, subject_data: Dict[str, Any]) -> SearchSubject:
+    def register_subject(self, subject_data: dict[str, Any]) -> SearchSubject:
         """Register a search subject."""
         subject = SearchSubject(
             subject_id=subject_data.get("id", f"subject_{len(self._subjects)}"),
@@ -134,7 +134,7 @@ class SearchAndRescue:
         self._subjects[subject.subject_id] = subject
         return subject
 
-    def register_team(self, team_data: Dict[str, Any]) -> SearchTeam:
+    def register_team(self, team_data: dict[str, Any]) -> SearchTeam:
         """Register a search team."""
         team = SearchTeam(
             team_id=team_data.get("id", f"team_{len(self._teams)}"),
@@ -148,12 +148,12 @@ class SearchAndRescue:
 
     def plan_mission(
         self,
-        subject: Dict[str, Any],
-        last_known_point: Dict[str, float],
-        search_radius: Optional[float] = None,
+        subject: dict[str, Any],
+        last_known_point: dict[str, float],
+        search_radius: float | None = None,
         terrain_type: str = "mixed",
-        weather: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        weather: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Plan a SAR mission.
 
@@ -225,11 +225,11 @@ class SearchAndRescue:
 
     def calculate_pod(
         self,
-        subject: Dict[str, Any],
-        search_area: Dict[str, Any],
+        subject: dict[str, Any],
+        search_area: dict[str, Any],
         search_effort: float,
         terrain_coverable: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate probability of detection (POD).
 
@@ -304,11 +304,11 @@ class SearchAndRescue:
 
     def generate_pattern(
         self,
-        area: Dict[str, Any],
+        area: dict[str, Any],
         pattern_type: str = "expanding_square",
         team_size: int = 4,
         visibility_distance: float = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate search pattern.
 
@@ -365,8 +365,8 @@ class SearchAndRescue:
         return pattern
 
     def _generate_expanding_square(
-        self, center: Dict[str, float], radius_km: float
-    ) -> List[Dict[str, float]]:
+        self, center: dict[str, float], radius_km: float
+    ) -> list[dict[str, float]]:
         """Generate expanding square pattern waypoints."""
         waypoints = [center.copy()]
 
@@ -395,8 +395,8 @@ class SearchAndRescue:
         return waypoints
 
     def _generate_parallel_lines(
-        self, center: Dict[str, float], radius_km: float, spacing_km: float
-    ) -> List[Dict[str, float]]:
+        self, center: dict[str, float], radius_km: float, spacing_km: float
+    ) -> list[dict[str, float]]:
         """Generate parallel line pattern waypoints."""
         waypoints = []
 
@@ -418,8 +418,8 @@ class SearchAndRescue:
         return waypoints
 
     def _generate_sector(
-        self, center: Dict[str, float], radius_km: float
-    ) -> List[Dict[str, float]]:
+        self, center: dict[str, float], radius_km: float
+    ) -> list[dict[str, float]]:
         """Generate sector search pattern waypoints."""
         waypoints = [center.copy()]
 
@@ -437,12 +437,12 @@ class SearchAndRescue:
         return waypoints
 
     def _generate_grid(
-        self, center: Dict[str, float], radius_km: float, spacing_km: float
-    ) -> List[Dict[str, float]]:
+        self, center: dict[str, float], radius_km: float, spacing_km: float
+    ) -> list[dict[str, float]]:
         """Generate grid pattern waypoints."""
         return self._generate_parallel_lines(center, radius_km, spacing_km)
 
-    def _calculate_pattern_distance(self, waypoints: List[Dict[str, float]]) -> float:
+    def _calculate_pattern_distance(self, waypoints: list[dict[str, float]]) -> float:
         """Calculate total distance of pattern."""
         if len(waypoints) < 2:
             return 0
@@ -455,11 +455,11 @@ class SearchAndRescue:
 
     def coordinate_teams(
         self,
-        teams: List[Dict[str, Any]],
-        search_areas: List[Dict[str, Any]],
-        assignments: Dict[str, str],
-        briefing_time: Optional[datetime] = None,
-    ) -> Dict[str, Any]:
+        teams: list[dict[str, Any]],
+        search_areas: list[dict[str, Any]],
+        assignments: dict[str, str],
+        briefing_time: datetime | None = None,
+    ) -> dict[str, Any]:
         """
         Coordinate search teams.
 
@@ -476,10 +476,10 @@ class SearchAndRescue:
         for team_data in teams:
             self.register_team(team_data)
 
-        teams_out: List[Dict[str, Any]] = []
-        search_areas_out: List[Dict[str, Any]] = []
-        assignments_out: List[Dict[str, Any]] = []
-        coordination: Dict[str, Any] = {
+        teams_out: list[dict[str, Any]] = []
+        search_areas_out: list[dict[str, Any]] = []
+        assignments_out: list[dict[str, Any]] = []
+        coordination: dict[str, Any] = {
             "coordination_id": f"coord_{datetime.now().strftime('%Y%m%d%H%M%S')}",
             "created_at": datetime.now().isoformat(),
             "briefing_time": briefing_time.isoformat() if briefing_time else None,
@@ -500,7 +500,7 @@ class SearchAndRescue:
 
         # Process teams
         for team_id, team in self._teams.items():
-            team_info: Dict[str, Any] = {
+            team_info: dict[str, Any] = {
                 "team_id": team_id,
                 "name": team.name,
                 "size": team.size,
@@ -511,7 +511,7 @@ class SearchAndRescue:
 
         # Process search areas
         for area in search_areas:
-            area_info: Dict[str, Any] = {
+            area_info: dict[str, Any] = {
                 "area_id": area.get("id"),
                 "priority": area.get("priority", 1),
                 "probability": area.get("probability", 0.5),
@@ -540,8 +540,8 @@ class SearchAndRescue:
         self,
         area_id: str,
         search_result: str,
-        new_information: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        new_information: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Update search probability based on results.
 

@@ -1,23 +1,24 @@
-import matplotlib
-
-matplotlib.use("Agg")  # Non-interactive backend for CI/headless testing
-
 """
 Pytest fixtures for GEO-INFER-ART tests.
 
 Provides sample image arrays, spatial art configurations,
 color palettes, and standard spatial fixtures.
 """
-import pytest
-import numpy as np
-import geopandas as gpd
-from shapely.geometry import Point
+
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
+
+import geopandas as gpd
+import matplotlib
+import numpy as np
+import pytest
+from shapely.geometry import Point
+
+matplotlib.use("Agg")  # Non-interactive backend for CI/headless testing
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -69,7 +70,7 @@ def sample_image_array() -> np.ndarray:
 
 
 @pytest.fixture
-def spatial_art_config() -> Dict[str, Any]:
+def spatial_art_config() -> dict[str, Any]:
     """Configuration dict for spatial art generation.
 
     Specifies output resolution, projection, style parameters, and
@@ -90,7 +91,7 @@ def spatial_art_config() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def color_palette() -> List[str]:
+def color_palette() -> list[str]:
     """Hex color palette for generative art tests.
 
     A curated 8-color palette suitable for geospatial data
@@ -120,24 +121,3 @@ def sample_terrain_data() -> np.ndarray:
     xx, yy = np.meshgrid(x, y)
     elevation = 3000.0 * np.exp(-(xx**2 + yy**2) / 1.5)
     return elevation.astype(np.float32)
-
-
-def pytest_collection_modifyitems(
-    session: pytest.Session, config: pytest.Config, items: list[pytest.Item]
-) -> None:
-    """Deselect TensorFlow-gated style-transfer tests when TF is not installed.
-
-    The root test contract forbids runtime skips, so the heavy optional
-    dependency is handled at collection time instead: without tensorflow the
-    style-transfer tests are deselected (they run wherever the declared test
-    dependency group is installed).
-    """
-    try:
-        import tensorflow  # noqa: F401
-    except ImportError:
-        items[:] = [
-            item
-            for item in items
-            if item.fspath is not None
-            and "test_style_transfer" not in Path(str(item.fspath)).name
-        ]

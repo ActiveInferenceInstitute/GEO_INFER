@@ -177,7 +177,3 @@ delivered = await messaging.send_message(message)
 | **GEO-INFER-SPACE** | Spatial states |
 | **GEO-INFER-IOT** | Sensor data |
 | **GEO-INFER-COMMS** | Agent messaging |
-
----
-
-**Last Updated**: 2026-09-05

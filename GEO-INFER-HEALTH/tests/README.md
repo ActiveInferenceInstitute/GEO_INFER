@@ -32,8 +32,8 @@ Tests workspace within `GEO-INFER-HEALTH`.
 
 - Module: `GEO-INFER-HEALTH`
 - Package: `geo_infer_health`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-HEALTH`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-health`
 - Tests: `uv run python -m pytest GEO-INFER-HEALTH/tests`
 
 ## Dependencies
@@ -57,7 +57,7 @@ Tests workspace within `GEO-INFER-HEALTH`.
   `geo_infer_test.testing` fixtures for deterministic RNG, filesystem, HTTP,
   SQLite, service, model, and artifact boundaries.
 - Dependencies: required test/runtime dependencies are installed by
-  `uv sync --all-packages --all-extras`; missing backends are failures.
+  `uv sync --all-packages --all-extras --all-groups`; missing backends are failures.
 - Expected artifacts: JUnit XML under `.geo-infer-test-results/`; model and
   visualization outputs require finite statistics, sidecars, hashes, and a
   manifest.

@@ -9,7 +9,7 @@ the domain ``ValueError`` -> HTTP 400 / unexpected-exception -> HTTP 500
 contract established by GS-223 and LOG-EXC-01.
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -39,7 +39,7 @@ from geo_infer_log.models.schemas import Vehicle
 # Shared payloads
 # ---------------------------------------------------------------------------
 
-_VEHICLE_PAYLOAD: Dict[str, Any] = {
+_VEHICLE_PAYLOAD: dict[str, Any] = {
     "id": "truck-001",
     "type": "truck",
     "capacity": 1000,
@@ -50,13 +50,13 @@ _VEHICLE_PAYLOAD: Dict[str, Any] = {
     "location": [13.404954, 52.520008],
 }
 
-_DEPOT: Dict[str, Any] = {
+_DEPOT: dict[str, Any] = {
     "name": "Berlin Warehouse",
     "coordinates": [13.404954, 52.520008],
     "type": "depot",
 }
 
-_CUSTOMER_A: Dict[str, Any] = {
+_CUSTOMER_A: dict[str, Any] = {
     "name": "Customer A",
     "coordinates": [13.5, 52.5],
     "type": "customer",
@@ -64,14 +64,14 @@ _CUSTOMER_A: Dict[str, Any] = {
     "priority": 1,
 }
 
-_VRP_PAYLOAD: Dict[str, Any] = {
+_VRP_PAYLOAD: dict[str, Any] = {
     "depot": _DEPOT,
     "deliveries": [_CUSTOMER_A],
     "vehicles": [_VEHICLE_PAYLOAD],
     "constraints": {"max_route_duration": 480},
 }
 
-_SCHEDULE_PAYLOAD: Dict[str, Any] = {
+_SCHEDULE_PAYLOAD: dict[str, Any] = {
     "depot": _DEPOT,
     "deliveries": [_CUSTOMER_A],
     "vehicles": [_VEHICLE_PAYLOAD],
@@ -80,7 +80,7 @@ _SCHEDULE_PAYLOAD: Dict[str, Any] = {
     "max_deliveries_per_day": 30,
 }
 
-_NETWORK_PAYLOAD: Dict[str, Any] = {
+_NETWORK_PAYLOAD: dict[str, Any] = {
     "network": {
         "id": "network-001",
         "name": "European Distribution Network",
@@ -107,7 +107,7 @@ _NETWORK_PAYLOAD: Dict[str, Any] = {
     }
 }
 
-_FACILITY_PAYLOAD: Dict[str, Any] = {
+_FACILITY_PAYLOAD: dict[str, Any] = {
     "candidates": [
         {"id": "c1", "location": [13.4050, 52.5200], "cost": 10000},
         {"id": "c2", "location": [11.5820, 48.1351], "cost": 8000},
@@ -119,7 +119,7 @@ _FACILITY_PAYLOAD: Dict[str, Any] = {
     "max_distance": 500,
 }
 
-_NETWORK_OPT_PAYLOAD: Dict[str, Any] = {
+_NETWORK_OPT_PAYLOAD: dict[str, Any] = {
     "locations": [
         {"id": "loc1", "location": [13.4050, 52.5200], "cost": 10000},
         {"id": "loc2", "location": [11.5820, 48.1351], "cost": 8000},
@@ -140,7 +140,7 @@ class _RecordingFleet:
     """Fleet-manager double that records registrations and serves lookups."""
 
     def __init__(self) -> None:
-        self.vehicles: Dict[str, Vehicle] = {}
+        self.vehicles: dict[str, Vehicle] = {}
 
     def add_vehicle(self, vehicle: Vehicle) -> None:
         self.vehicles[vehicle.id] = vehicle
@@ -159,11 +159,11 @@ class _FailingAdder:
 class _VehicleRouterDouble:
     """VehicleRouter double exposing the fleet manager and a canned VRP result."""
 
-    def __init__(self, fleet: Any, result: Dict[str, Any]) -> None:
+    def __init__(self, fleet: Any, result: dict[str, Any]) -> None:
         self.fleet_manager = fleet
         self._result = result
 
-    def solve_vrp(self, **kwargs: Any) -> Dict[str, Any]:
+    def solve_vrp(self, **kwargs: Any) -> dict[str, Any]:
         return self._result
 
 
@@ -174,17 +174,17 @@ class _FailingVRPRouter:
         self.fleet_manager = _RecordingFleet()
         self._exc = exc
 
-    def solve_vrp(self, **kwargs: Any) -> Dict[str, Any]:
+    def solve_vrp(self, **kwargs: Any) -> dict[str, Any]:
         raise self._exc
 
 
 class _RouteLike:
     """Stand-in for a core Route with the model_dump() the handlers rely on."""
 
-    def __init__(self, payload: Dict[str, Any]) -> None:
+    def __init__(self, payload: dict[str, Any]) -> None:
         self._payload = payload
 
-    def model_dump(self) -> Dict[str, Any]:
+    def model_dump(self) -> dict[str, Any]:
         return self._payload
 
 
@@ -216,9 +216,9 @@ class _AnalyzerDouble:
 
     def __init__(
         self,
-        disruption: Dict[str, Any],
-        critical_nodes: List[str],
-        improvements: List[Dict[str, Any]],
+        disruption: dict[str, Any],
+        critical_nodes: list[str],
+        improvements: list[dict[str, Any]],
         exc: Exception | None = None,
     ) -> None:
         self._disruption = disruption
@@ -226,17 +226,17 @@ class _AnalyzerDouble:
         self._improvements = improvements
         self._exc = exc
 
-    def simulate_disruption(self, **kwargs: Any) -> Dict[str, Any]:
+    def simulate_disruption(self, **kwargs: Any) -> dict[str, Any]:
         if self._exc is not None:
             raise self._exc
         return self._disruption
 
-    def identify_critical_nodes(self) -> List[str]:
+    def identify_critical_nodes(self) -> list[str]:
         if self._exc is not None:
             raise self._exc
         return self._critical_nodes
 
-    def suggest_improvements(self) -> List[Dict[str, Any]]:
+    def suggest_improvements(self) -> list[dict[str, Any]]:
         if self._exc is not None:
             raise self._exc
         return self._improvements
@@ -245,20 +245,20 @@ class _AnalyzerDouble:
 class _LocatorDouble:
     """FacilityLocator double with a canned siting result."""
 
-    def __init__(self, result: List[Dict[str, Any]]) -> None:
+    def __init__(self, result: list[dict[str, Any]]) -> None:
         self._result = result
 
-    def locate_facilities(self, **kwargs: Any) -> List[Dict[str, Any]]:
+    def locate_facilities(self, **kwargs: Any) -> list[dict[str, Any]]:
         return self._result
 
 
 class _NetworkOptimizerDouble:
     """NetworkOptimizer double with a canned design result."""
 
-    def __init__(self, result: Dict[str, Any]) -> None:
+    def __init__(self, result: dict[str, Any]) -> None:
         self._result = result
 
-    def optimize_network(self, **kwargs: Any) -> Dict[str, Any]:
+    def optimize_network(self, **kwargs: Any) -> dict[str, Any]:
         return self._result
 
 
@@ -266,7 +266,7 @@ class _SchedulerDouble:
     """DeliveryScheduler double serving canned schedules and reschedules."""
 
     def __init__(self, exc: Exception | None = None) -> None:
-        self._schedule: Dict[str, Any] = {
+        self._schedule: dict[str, Any] = {
             "schedule": [
                 {
                     "date": "2026-09-15",
@@ -276,31 +276,31 @@ class _SchedulerDouble:
             ],
             "total_deliveries": 1,
         }
-        self._daily: List[Dict[str, Any]] = [
+        self._daily: list[dict[str, Any]] = [
             {"route_id": "route-001", "vehicle_id": "truck-001", "stops": 1}
         ]
-        self._reschedule: Dict[str, Any] = {
+        self._reschedule: dict[str, Any] = {
             "status": "success",
             "route_id": "route-001",
         }
         self._exc = exc
 
-    def create_schedule(self, **kwargs: Any) -> Dict[str, Any]:
+    def create_schedule(self, **kwargs: Any) -> dict[str, Any]:
         if self._exc is not None:
             raise self._exc
         return self._schedule
 
-    def get_daily_schedule(self, date: Any) -> List[_RouteLike]:
+    def get_daily_schedule(self, date: Any) -> list[_RouteLike]:
         if self._exc is not None:
             raise self._exc
         return [_RouteLike(self._daily[0])]
 
-    def get_vehicle_schedule(self, vehicle_id: str) -> List[_RouteLike]:
+    def get_vehicle_schedule(self, vehicle_id: str) -> list[_RouteLike]:
         if self._exc is not None:
             raise self._exc
         return [_RouteLike(self._daily[0])]
 
-    def reschedule_delivery(self, **kwargs: Any) -> Dict[str, Any]:
+    def reschedule_delivery(self, **kwargs: Any) -> dict[str, Any]:
         if self._exc is not None:
             raise self._exc
         return self._reschedule
@@ -326,7 +326,7 @@ class _ServiceAreaDouble:
 
 def _client() -> tuple[TestClient, dict[str, Any]]:
     """Build a TestClient over all three routers with swappable doubles."""
-    doubles: Dict[str, Any] = {}
+    doubles: dict[str, Any] = {}
     app = FastAPI()
     app.include_router(routes_router)
     app.include_router(supply_chain_router)
@@ -589,7 +589,7 @@ class TestSupplyChainEndpoints:
         """A domain ValueError from siting becomes a 400."""
 
         class _FailingLocator:
-            def locate_facilities(self, **kwargs: Any) -> List[Dict[str, Any]]:
+            def locate_facilities(self, **kwargs: Any) -> list[dict[str, Any]]:
                 raise ValueError("num_facilities exceeds candidates")
 
         client = _client_with(
@@ -620,7 +620,7 @@ class TestSupplyChainEndpoints:
         """A domain ValueError from network design becomes a 400."""
 
         class _FailingOptimizer:
-            def optimize_network(self, **kwargs: Any) -> Dict[str, Any]:
+            def optimize_network(self, **kwargs: Any) -> dict[str, Any]:
                 raise ValueError("Budget constraint infeasible")
 
         client = _client_with(

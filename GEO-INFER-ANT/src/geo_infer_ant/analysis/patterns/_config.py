@@ -1,35 +1,34 @@
 """Configuration model for emergent behavior pattern analysis in GEO-INFER-ANT."""
 
 from dataclasses import dataclass, field
-from typing import List
 
 
 @dataclass
 class AnalysisConfiguration:
     """Configuration for pattern analysis."""
 
-    analysis_types: List[str] = field(
+    analysis_types: list[str] = field(
         default_factory=lambda: [
             "spatial_patterns",
             "temporal_patterns",
             "interaction_networks",
         ]
     )
-    statistical_methods: List[str] = field(
+    statistical_methods: list[str] = field(
         default_factory=lambda: [
             "cluster_analysis",
             "network_analysis",
             "information_theory",
         ]
     )
-    visualization_tools: List[str] = field(
+    visualization_tools: list[str] = field(
         default_factory=lambda: [
             "trajectory_plots",
             "interaction_graphs",
             "phase_diagrams",
         ]
     )
-    complexity_measures: List[str] = field(
+    complexity_measures: list[str] = field(
         default_factory=lambda: [
             "fractal_dimension",
             "lyapunov_exponents",

@@ -4,7 +4,7 @@ GEO-INFER-SPACE Integration Adapter
 Provides spatial operations wrapper for economic analysis.
 """
 
-from typing import Dict, Optional, Any, Tuple, Union, cast
+from typing import Any, cast
 import numpy as np
 import geopandas as gpd
 import logging
@@ -36,7 +36,7 @@ class SpaceIntegration:
     - Geometric operations (buffers, intersections, distances)
     """
 
-    def __init__(self, backend: str = "h3", config: Optional[Dict[str, Any]] = None):
+    def __init__(self, backend: str = "h3", config: dict[str, Any] | None = None):
         """
         Initialize space integration.
 
@@ -68,9 +68,7 @@ class SpaceIntegration:
                 self.analytics = None
                 self.geometry = None
 
-    def latlng_to_cell(
-        self, lat: float, lng: float, resolution: int = 9
-    ) -> Optional[str]:
+    def latlng_to_cell(self, lat: float, lng: float, resolution: int = 9) -> str | None:
         """
         Convert lat/lng to spatial cell index.
 
@@ -97,7 +95,7 @@ class SpaceIntegration:
             logger.error(f"Failed to convert lat/lng to cell: {e}")
             return None
 
-    def cell_to_latlng(self, cell: Union[str, int]) -> Optional[Tuple[float, float]]:
+    def cell_to_latlng(self, cell: str | int) -> tuple[float, float] | None:
         """
         Convert spatial cell index to lat/lng.
 
@@ -116,14 +114,14 @@ class SpaceIntegration:
                 import h3
 
                 cell = h3.int_to_str(cell)
-            return cast(Tuple[float, float], self.indexer.cell_to_latlng(cell))
+            return cast(tuple[float, float], self.indexer.cell_to_latlng(cell))
         except Exception as e:
             logger.error(f"Failed to convert cell to lat/lng: {e}")
             return None
 
     def calculate_distance(
-        self, point1: Tuple[float, float], point2: Tuple[float, float]
-    ) -> Optional[float]:
+        self, point1: tuple[float, float], point2: tuple[float, float]
+    ) -> float | None:
         """
         Calculate distance between two points.
 
@@ -163,7 +161,7 @@ class SpaceIntegration:
 
     def analyze_hotspots(
         self, gdf: gpd.GeoDataFrame, value_column: str, **kwargs: Any
-    ) -> Optional[gpd.GeoDataFrame]:
+    ) -> gpd.GeoDataFrame | None:
         """
         Analyze spatial hotspots in economic data.
 
@@ -192,7 +190,7 @@ class SpaceIntegration:
         target_locations: gpd.GeoDataFrame,
         method: str = "idw",
         **kwargs: Any,
-    ) -> Optional[np.ndarray]:
+    ) -> np.ndarray | None:
         """
         Perform spatial interpolation of economic values.
 
@@ -223,7 +221,7 @@ class SpaceIntegration:
 
     def create_buffer(
         self, geometry: gpd.GeoDataFrame, distance: float, **kwargs: Any
-    ) -> Optional[gpd.GeoDataFrame]:
+    ) -> gpd.GeoDataFrame | None:
         """
         Create buffer zones around geometries.
 

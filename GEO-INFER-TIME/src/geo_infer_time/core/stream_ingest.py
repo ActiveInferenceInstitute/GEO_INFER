@@ -16,20 +16,13 @@ import asyncio
 from abc import ABC, abstractmethod
 import json
 import math
-from datetime import datetime, timezone
-from typing import Any, AsyncIterator, Iterable
+from datetime import datetime, UTC
+from typing import Any
+from collections.abc import AsyncIterator, Iterable
 from urllib.parse import urlsplit
 
 
-def normalize_timestamp(value: datetime) -> datetime:
-    """Normalize a datetime to UTC, interpreting legacy naive values as UTC."""
-    if not isinstance(value, datetime):
-        raise TypeError("timestamp must be a datetime")
-    if value != value:  # Reject pandas NaT, a datetime subclass.
-        raise ValueError("timestamp must not be NaT")
-    if value.utcoffset() is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
+from geo_infer_time.core.timestamps import normalize_timestamp as normalize_timestamp
 
 
 def _integer(value: Any, name: str, minimum: int = 0) -> int:
@@ -70,6 +63,9 @@ class StreamIngestAdapter(ABC):
         self.config = dict(config or {})
         if "simulated_records" in self.config:
             raise TypeError("Use ReplayIngestAdapter(records) for offline input")
+        self.timestamp_unit = self.config.get("timestamp_unit")
+        if self.timestamp_unit not in (None, "s", "ms"):
+            raise ValueError("timestamp_unit must be 's', 'ms', or None")
         self.is_connected = False
 
     @abstractmethod
@@ -90,7 +86,12 @@ class StreamIngestAdapter(ABC):
         yield  # pragma: no cover
 
     async def acknowledge(self, record: dict[str, Any]) -> None:
-        """Confirm successful processing (no-op for sources without offsets)."""
+        """Confirm successful processing of ``record``.
+
+        Sources without offsets have nothing to commit, so the default does
+        nothing; offset-tracking adapters (Kafka) override it.
+        """
+        return None
 
     def normalize_record(self, record: str | bytes | dict[str, Any]) -> dict[str, Any]:
         """Validate a record and return canonical UTC ISO time and numeric value."""
@@ -102,8 +103,9 @@ class StreamIngestAdapter(ABC):
     ) -> tuple[datetime, float, dict[str, Any]]:
         """Parse UTC event time and a finite value, retaining other metadata.
 
-        Naive timestamps are interpreted as UTC. Numeric timestamps are seconds,
-        or milliseconds when their absolute value exceeds 1e11. Event time must
+        String and datetime timestamps must carry a UTC offset (ISO 8601 ``Z``
+        or ``+HH:MM``); naive values raise ValueError. Numeric timestamps require
+        an explicit ``timestamp_unit`` of ``s`` or ``ms`` in adapter config. Event time must
         be supplied explicitly; wall-clock time is never substituted.
         """
         data = _decode(record)
@@ -124,9 +126,16 @@ class StreamIngestAdapter(ABC):
         elif isinstance(raw_ts, (int, float)):
             if not math.isfinite(raw_ts):
                 raise ValueError("timestamp must be finite")
-            timestamp = datetime.fromtimestamp(
-                raw_ts / 1000 if abs(raw_ts) > 1e11 else raw_ts, tz=timezone.utc
-            )
+            if self.timestamp_unit is None:
+                raise ValueError("Numeric timestamps require explicit timestamp_unit")
+            try:
+                timestamp = datetime.fromtimestamp(
+                    raw_ts / 1000 if self.timestamp_unit == "ms" else raw_ts, tz=UTC
+                )
+            except (ValueError, OverflowError, OSError) as exc:
+                raise ValueError(
+                    "timestamp is outside the supported datetime range"
+                ) from exc
         elif isinstance(raw_ts, str):
             timestamp = datetime.fromisoformat(raw_ts)
         else:
@@ -444,7 +453,7 @@ class KafkaIngestAdapter(_NetworkAdapter):
                     ):
                         # Kafka timestamps are always milliseconds, including epoch zero.
                         record["timestamp"] = datetime.fromtimestamp(
-                            broker_time / 1000, tz=timezone.utc
+                            broker_time / 1000, tz=UTC
                         )
                 record.setdefault("topic", message.topic)
                 record = self.normalize_record(record)

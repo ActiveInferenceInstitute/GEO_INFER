@@ -3,7 +3,6 @@ Climate impact assessment module.
 """
 
 import logging
-from typing import Dict, Optional
 import numpy as np
 import xarray as xr
 
@@ -15,7 +14,7 @@ class ClimateImpactAssessor:
     Assess climate change impacts on various systems.
     """
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """
         Initialize impact assessor.
 
@@ -73,7 +72,7 @@ class ClimateImpactAssessor:
         self,
         precipitation: xr.DataArray,
         temperature: xr.DataArray,
-        evapotranspiration: Optional[xr.DataArray] = None,
+        evapotranspiration: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """
         Assess climate impact on water resources via a simple water balance.

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Active Inference for GEO-INFER-AGENT
@@ -11,7 +10,7 @@ perception, learning and decision-making as minimizing variational free energy.
 
 import numpy as np
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any
 from dataclasses import dataclass
 import torch
 import torch.nn as nn
@@ -31,7 +30,7 @@ class ActiveInferenceConfig:
     precision: float = 1.0  # Precision parameter for information gain
     learning_rate: float = 0.01  # Learning rate for model updates
     use_gpu: bool = False  # Whether to use GPU if available
-    random_seed: Optional[int] = None  # Seed for stochastic batch sampling
+    random_seed: int | None = None  # Seed for stochastic batch sampling
 
     # Optimization settings
     optimization_steps: int = 100  # Steps for action optimization
@@ -63,7 +62,7 @@ class GenerativeModel(nn.Module):
         state_dim: int,
         obs_dim: int,
         action_dim: int,
-        config: Optional[ActiveInferenceConfig] = None,
+        config: ActiveInferenceConfig | None = None,
     ):
         """
         Initialize the generative model.
@@ -133,7 +132,7 @@ class GenerativeModel(nn.Module):
         Returns:
             Neural network model
         """
-        layers: List[nn.Module] = []
+        layers: list[nn.Module] = []
 
         # Input layer
         layers.append(nn.Linear(input_dim, self.config.hidden_size))
@@ -329,7 +328,7 @@ class GenerativeModel(nn.Module):
 
         return G
 
-    def plan_actions(self, current_state: torch.Tensor) -> List[torch.Tensor]:
+    def plan_actions(self, current_state: torch.Tensor) -> list[torch.Tensor]:
         """
         Plan a sequence of actions to minimize expected free energy.
 
@@ -411,7 +410,7 @@ class GenerativeModel(nn.Module):
         actions: torch.Tensor,
         next_states: torch.Tensor,
         observations: torch.Tensor,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Update the generative model based on experience.
 
@@ -478,7 +477,7 @@ class ActiveInferenceAgent:
         state_dim: int,
         obs_dim: int,
         action_dim: int,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ):
         """
         Initialize the active inference agent.
@@ -514,7 +513,7 @@ class ActiveInferenceAgent:
         self.rng: np.random.Generator = np.random.default_rng(seed)
 
         # Buffer for experience
-        self.experience_buffer: Dict[str, List[np.ndarray]] = {
+        self.experience_buffer: dict[str, list[np.ndarray]] = {
             "states": [],
             "actions": [],
             "next_states": [],
@@ -544,7 +543,7 @@ class ActiveInferenceAgent:
         # Return mean of inferred state
         return state_dist.mean.squeeze(0).cpu().numpy()
 
-    def plan(self, state: np.ndarray) -> List[np.ndarray]:
+    def plan(self, state: np.ndarray) -> list[np.ndarray]:
         """
         Plan a sequence of actions given the current state.
 
@@ -603,7 +602,7 @@ class ActiveInferenceAgent:
         self.experience_buffer["next_states"].append(next_state)
         self.experience_buffer["observations"].append(observation)
 
-    def learn(self, batch_size: Optional[int] = None) -> Dict[str, float]:
+    def learn(self, batch_size: int | None = None) -> dict[str, float]:
         """
         Update the generative model based on collected experience.
 

@@ -21,6 +21,7 @@
 
 ## Local Contents
 
+- `california_multilayer_demo.py`
 - `demo_all_methods.py`
 - `h3_advanced_applications.py`
 - `h3_comprehensive_examples.py`

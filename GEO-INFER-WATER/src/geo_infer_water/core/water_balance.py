@@ -5,7 +5,7 @@ evapotranspiration, and the SCS Curve Number method for runoff estimation.
 """
 
 import logging
-from typing import Dict, Optional, cast
+from typing import cast
 
 import numpy as np
 import xarray as xr
@@ -20,7 +20,7 @@ class WaterBalanceModeler:
     and monthly/annual water balance accounting.
     """
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         """Initialize water balance modeler.
 
         Args:
@@ -190,7 +190,7 @@ class WaterBalanceModeler:
         pet_mm: np.ndarray,
         soil_capacity_mm: float = 200.0,
         initial_storage_mm: float = 100.0,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Calculate monthly water balance with soil moisture accounting.
 
         Tracks soil moisture storage, actual evapotranspiration,

@@ -7,6 +7,57 @@ import pytest
 from geo_infer_risk.core.hazard_model import EnhancedHazardModel
 from geo_infer_risk.core.risk_engine import EnhancedRiskEngine
 from geo_infer_risk.utils.config_loader import load_config_with_defaults
+import geo_infer_risk.core.risk_engine as risk_runtime
+import geo_infer_risk.core.hazard_model as hazard_runtime
+import geo_infer_risk.core.catastrophe_models as catastrophe_runtime
+
+
+@pytest.mark.parametrize("runtime", [hazard_runtime, catastrophe_runtime])
+@pytest.mark.parametrize("interface", ["TemporalAnalyzer", "SpatialIndexingInterface"])
+def test_connected_models_propagate_installed_interface_errors(
+    monkeypatch, runtime, interface
+):
+    def failed_interface(*args, **kwargs):
+        raise RuntimeError("installed model interface is broken")
+
+    monkeypatch.setattr(runtime, interface, failed_interface)
+    with pytest.raises(RuntimeError, match="installed model interface is broken"):
+        if runtime is hazard_runtime:
+            runtime.EnhancedHazardModel("flood", {})
+        else:
+            runtime.EnhancedCatastropheModel()
+
+
+@pytest.mark.parametrize(
+    "interface",
+    ["TemporalAnalyzer", "SpatialIndexingInterface", "SpatialAnalyticsInterface"],
+)
+def test_installed_interface_constructor_failures_propagate_before_logging(
+    tmp_path, monkeypatch, interface
+):
+    config = engine_config(tmp_path)
+
+    def failed_interface(*args, **kwargs):
+        raise RuntimeError("installed interface is broken")
+
+    monkeypatch.setattr(risk_runtime, interface, failed_interface)
+    with pytest.raises(RuntimeError, match="installed interface is broken"):
+        EnhancedRiskEngine(config)
+    assert not (tmp_path / "outputs" / "risk_engine.log").exists()
+
+
+def test_time_constructor_is_retained_once(tmp_path, monkeypatch):
+    real_analyzer = risk_runtime.TemporalAnalyzer
+    constructed = []
+
+    def analyzer():
+        actual = real_analyzer()
+        constructed.append(actual)
+        return actual
+
+    monkeypatch.setattr(risk_runtime, "TemporalAnalyzer", analyzer)
+    with EnhancedRiskEngine(engine_config(tmp_path)) as engine:
+        assert constructed == [engine.temporal_interface]
 
 
 def engine_config(tmp_path: Path) -> dict:
@@ -89,3 +140,47 @@ def test_cross_validation_fits_loss_baseline_parameters(tmp_path: Path) -> None:
         fold["training_sample_count"] == 3
         for fold in result["cross_validation_results"]["folds"]
     )
+
+
+def test_temporal_analysis_uses_actual_utc_axis_and_forecast(tmp_path):
+    """UTC month membership and future values have independent tiny oracles."""
+    history = [
+        {"timestamp": "2026-01-30T16:00:00-08:00", "value": 2.0},
+        {"timestamp": "2026-02-01T00:00:00Z", "value": 5.0},
+        {"timestamp": "2026-02-02T00:00:00Z", "value": 8.0},
+    ]
+    with EnhancedRiskEngine(engine_config(tmp_path)) as engine:
+        assert engine.get_integration_status()["temporal_analysis"]
+        result = engine.run_enhanced_analysis(loss_history=history, time_horizon=2)
+    temporal = result["temporal_analysis"]
+    assert temporal["backend"] == "geo_infer_time"
+    assert temporal["seasonal_patterns"] == {1: 2.0, 2: 6.5}
+    assert temporal["trend_analysis"]["slope_per_sample"] == pytest.approx(3.0)
+    scenario = temporal["forecast_scenarios"][0]
+    assert scenario["projected_mean"] == pytest.approx(14.0)
+    assert scenario["timestamp"] == "2026-02-04T00:00:00+00:00"
+
+
+@pytest.mark.parametrize(
+    "fault", ["naive", "missing_timestamp", "missing_value", "gap", "nan"]
+)
+def test_temporal_loss_history_errors_propagate(tmp_path, fault):
+    history = [
+        {"timestamp": "2026-01-01T00:00:00Z", "value": 2.0},
+        {"timestamp": "2026-01-02T00:00:00Z", "value": 5.0},
+        {"timestamp": "2026-01-03T00:00:00Z", "value": 8.0},
+    ]
+    if fault == "naive":
+        history[0]["timestamp"] = "2026-01-01"
+    elif fault == "missing_timestamp":
+        del history[0]["timestamp"]
+    elif fault == "missing_value":
+        del history[0]["value"]
+    elif fault == "gap":
+        history[-1]["timestamp"] = "2026-01-04T00:00:00Z"
+    else:
+        history[0]["value"] = float("nan")
+    with EnhancedRiskEngine(engine_config(tmp_path)) as engine:
+        with pytest.raises((ValueError, TypeError)):
+            engine.run_enhanced_analysis(loss_history=history, time_horizon=2)
+        assert list(engine.active_jobs.values())[-1].status == "failed"

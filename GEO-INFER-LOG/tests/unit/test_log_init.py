@@ -66,15 +66,15 @@ class TestLazyLoading:
         assert geo_infer_log.RouteOptimizer is RouteOptimizer
 
     def test_lazy_submodule(self) -> None:
-        import geo_infer_log.api
+        import importlib
 
-        assert geo_infer_log.api is geo_infer_log.api  # noqa: PLR0124
         module = geo_infer_log.api
-        assert module.__name__.startswith("geo_infer_log")
+        assert module is importlib.import_module("geo_infer_log.api")
+        assert module.__name__ == "geo_infer_log.api"
 
     def test_unknown_attribute_raises(self) -> None:
         with pytest.raises(AttributeError):
-            geo_infer_log.definitely_not_exported  # noqa: B018
+            geo_infer_log.definitely_not_exported  # noqa: B018 -- attribute access under test
 
 
 def make_logger(**config) -> EnhancedLogger:

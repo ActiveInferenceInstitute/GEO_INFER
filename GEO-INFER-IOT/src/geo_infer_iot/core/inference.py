@@ -7,10 +7,11 @@ modeling when that workspace module is available.
 """
 
 import logging
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from datetime import datetime, UTC
+from typing import Any
 
 import numpy as np
+from geo_infer_bayes import GaussianProcess, SpatialCovariance  # type: ignore[import-untyped]
 from scipy.stats import norm
 
 logger = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ class BayesianSpatialInference:
         variable: str,
         spatial_resolution: int,
         temporal_window: str,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ) -> None:
         self.variable = variable
         self.spatial_resolution = spatial_resolution
@@ -38,55 +39,46 @@ class BayesianSpatialInference:
         self.config = config or {}
 
         # Integration with GEO-INFER-BAYES
-        self.gp_model: Optional[Any] = None
-        self.posterior_cache: Dict[str, Any] = {}
+        self.gp_model: Any = None
+        self.posterior_cache: dict[str, Any] = {}
 
-        # Setup Bayesian inference if available
         self._setup_bayesian_inference()
 
     def _setup_bayesian_inference(self) -> None:
-        """Setup Bayesian spatial inference model."""
-        try:
-            # Import GEO-INFER-BAYES components
-            from geo_infer_bayes import GaussianProcess, SpatialCovariance  # type: ignore[import-untyped]
-
-            # Configure covariance function based on variable characteristics
-            if self.variable in ["soil_moisture", "temperature"]:
-                # Environmental variables with smooth spatial correlation
-                cov_func = SpatialCovariance.matern_52(
-                    length_scale=self.config.get("length_scale", 1000.0),
-                    variance=self.config.get("variance", 1.0),
-                )
-            elif self.variable in ["air_quality", "radiation"]:
-                # Variables with more complex spatial patterns
-                cov_func = SpatialCovariance.matern_32(
-                    length_scale=self.config.get("length_scale", 2000.0),
-                    variance=self.config.get("variance", 0.5),
-                )
-            else:
-                # Default configuration
-                cov_func = SpatialCovariance.matern_52(
-                    length_scale=self.config.get("length_scale", 1500.0),
-                    variance=self.config.get("variance", 1.0),
-                )
-
-            # Initialize Gaussian Process model
-            self.gp_model = GaussianProcess(
-                covariance_function=cov_func,
-                mean_function=self.config.get("mean_function", "constant"),
-                noise_variance=self.config.get("noise_variance", 0.01),
+        """Configure the GEO-INFER-BAYES Gaussian-process spatial model."""
+        # Configure covariance function based on variable characteristics
+        if self.variable in ["soil_moisture", "temperature"]:
+            # Environmental variables with smooth spatial correlation
+            cov_func = SpatialCovariance.matern_52(
+                length_scale=self.config.get("length_scale", 1000.0),
+                variance=self.config.get("variance", 1.0),
+            )
+        elif self.variable in ["air_quality", "radiation"]:
+            # Variables with more complex spatial patterns
+            cov_func = SpatialCovariance.matern_32(
+                length_scale=self.config.get("length_scale", 2000.0),
+                variance=self.config.get("variance", 0.5),
+            )
+        else:
+            # Default configuration
+            cov_func = SpatialCovariance.matern_52(
+                length_scale=self.config.get("length_scale", 1500.0),
+                variance=self.config.get("variance", 1.0),
             )
 
-        except ImportError:
-            self.gp_model = None
-            logger.warning("GEO-INFER-BAYES not available, spatial inference disabled")
+        # Initialize Gaussian Process model
+        self.gp_model = GaussianProcess(
+            covariance_function=cov_func,
+            mean_function=self.config.get("mean_function", "constant"),
+            noise_variance=self.config.get("noise_variance", 0.01),
+        )
 
     def infer_spatial_distribution(
         self,
-        sensor_data: List[Dict[str, Any]],
-        priors: Optional[Any] = None,
+        sensor_data: list[dict[str, Any]],
+        priors: Any | None = None,
         update_interval: str = "15min",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform Bayesian spatial inference on sensor data.
 
@@ -98,9 +90,6 @@ class BayesianSpatialInference:
         Returns:
             Dictionary containing posterior distribution and uncertainty estimates
         """
-        if self.gp_model is None:
-            return {"error": "Bayesian inference not available"}
-
         try:
             # Extract coordinates and values from sensor data
             coords_list = []
@@ -138,7 +127,7 @@ class BayesianSpatialInference:
                     "h3_grid": h3_grid,
                     "sensor_coords": coords,
                     "sensor_values": values,
-                    "timestamp": datetime.now(),
+                    "timestamp": datetime.now(UTC),
                     "update_interval": update_interval,
                 }
 
@@ -158,8 +147,8 @@ class BayesianSpatialInference:
             return {"error": f"Spatial inference failed: {str(e)}"}
 
     def get_posterior_map(
-        self, confidence_intervals: Optional[List[float]] = None
-    ) -> Dict[str, Any]:
+        self, confidence_intervals: list[float] | None = None
+    ) -> dict[str, Any]:
         """
         Get current posterior spatial distribution map.
 

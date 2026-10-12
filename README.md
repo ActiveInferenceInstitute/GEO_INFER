@@ -30,15 +30,15 @@ domain modeling, agent workflows, and reproducible repository validation in one
 | Metric | Value |
 | --- | ---: |
 | Modules | 45 |
-| Python source files | 930 |
-| Python test files | 753 |
-| Repository README.md files | 812 |
-| Repository AGENTS.md files | 809 |
+| Python source files | 1001 |
+| Python test files | 792 |
+| Repository README.md files | 809 |
+| Repository AGENTS.md files | 806 |
 
 ## Quick Start
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
 uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language --strict-import-smoke
 uv run python GEO-INFER-TEST/validate_documentation.py --strict
@@ -72,7 +72,7 @@ The repository is a uv workspace. Use the full sync when working across module
 boundaries, or sync a single package when developing one module:
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv sync --package geo-infer-act
 uv sync --package geo-infer-space
 uv sync --package geo-infer-ant
@@ -90,7 +90,7 @@ the exact reproducible exception list.
 | 🌍 Spatial & Place-based | `GEO-INFER-SPACE`, `GEO-INFER-PLACE`, `GEO-INFER-TIME`, `GEO-INFER-MARINE`, `GEO-INFER-WATER`, `GEO-INFER-FOREST`, `GEO-INFER-CLIMATE`, `GEO-INFER-ENERGY`, `GEO-INFER-TRANSPORT`, `GEO-INFER-EMERGENCY` |
 | 🧠 Bayesian & Active Inference | `GEO-INFER-BAYES`, `GEO-INFER-SIM`, `GEO-INFER-SPM`, `GEO-INFER-COG`, `GEO-INFER-ACT`, `GEO-INFER-MATH` |
 | 🤖 Agents & AI Orchestration | `GEO-INFER-AGENT`, `GEO-INFER-AG`, `GEO-INFER-AI`, `GEO-INFER-ANT`, `GEO-INFER-OPS`, `GEO-INFER-COMMS` |
-| 🏛️ Governance, Risk & Domain | `GEO-INFER-INSURANCE`, `GEO-INFER-METAGOV`, `GEO-INFER-NORMS`, `GEO-INFER-ECON`, `GEO-INFER-PEP`, `GEO-INFER-REQ`, `GEO-INFER-SEC`, `GEO-INFER-CIV`, `GEO-INFER-HEALTH`, `GEO-INFER-ORG` |
+| 🏛️ Governance, Risk & Domain | `GEO-INFER-RISK`, `GEO-INFER-INSURANCE`, `GEO-INFER-METAGOV`, `GEO-INFER-NORMS`, `GEO-INFER-ECON`, `GEO-INFER-PEP`, `GEO-INFER-REQ`, `GEO-INFER-SEC`, `GEO-INFER-CIV`, `GEO-INFER-HEALTH`, `GEO-INFER-ORG` |
 | 🗄️ Data, API & Applications | `GEO-INFER-API`, `GEO-INFER-APP`, `GEO-INFER-DATA`, `GEO-INFER-IOT`, `GEO-INFER-ART`, `GEO-INFER-EDU` |
 | 🛠️ Infrastructure & Validation | `GEO-INFER-INTRA`, `GEO-INFER-TEST`, `GEO-INFER-LOG`, `GEO-INFER-GIT`, `GEO-INFER-EXAMPLES`, `GEO-INFER-BIO` |
 
@@ -98,56 +98,57 @@ the exact reproducible exception list.
 
 | Module | Package | Source files | Test files |
 | --- | --- | ---: | ---: |
-| `GEO-INFER-ACT` | `geo_infer_act` | 52 | 50 |
+| `GEO-INFER-ACT` | `geo_infer_act` | 54 | 56 |
 | `GEO-INFER-AG` | `geo_infer_ag` | 16 | 12 |
-| `GEO-INFER-AGENT` | `geo_infer_agent` | 26 | 27 |
-| `GEO-INFER-AI` | `geo_infer_ai` | 18 | 20 |
-| `GEO-INFER-ANT` | `geo_infer_ant` | 24 | 10 |
+| `GEO-INFER-AGENT` | `geo_infer_agent` | 26 | 28 |
+| `GEO-INFER-AI` | `geo_infer_ai` | 18 | 21 |
+| `GEO-INFER-ANT` | `geo_infer_ant` | 24 | 11 |
 | `GEO-INFER-API` | `geo_infer_api` | 14 | 11 |
 | `GEO-INFER-APP` | `geo_infer_app` | 13 | 9 |
-| `GEO-INFER-ART` | `geo_infer_art` | 20 | 11 |
+| `GEO-INFER-ART` | `geo_infer_art` | 20 | 12 |
 | `GEO-INFER-BAYES` | `geo_infer_bayes` | 38 | 28 |
 | `GEO-INFER-BIO` | `geo_infer_bio` | 12 | 10 |
 | `GEO-INFER-CIV` | `geo_infer_civ` | 5 | 7 |
-| `GEO-INFER-CLIMATE` | `geo_infer_climate` | 11 | 11 |
+| `GEO-INFER-CLIMATE` | `geo_infer_climate` | 11 | 12 |
 | `GEO-INFER-COG` | `geo_infer_cog` | 21 | 16 |
 | `GEO-INFER-COMMS` | `geo_infer_comms` | 19 | 20 |
-| `GEO-INFER-DATA` | `geo_infer_data` | 27 | 24 |
+| `GEO-INFER-DATA` | `geo_infer_data` | 30 | 28 |
 | `GEO-INFER-ECON` | `geo_infer_econ` | 36 | 18 |
 | `GEO-INFER-EDU` | `geo_infer_edu` | 7 | 7 |
 | `GEO-INFER-EMERGENCY` | `geo_infer_emergency` | 8 | 9 |
 | `GEO-INFER-ENERGY` | `geo_infer_energy` | 9 | 9 |
-| `GEO-INFER-EXAMPLES` | `geo_infer_examples` | 5 | 10 |
+| `GEO-INFER-EXAMPLES` | `geo_infer_examples` | 6 | 10 |
 | `GEO-INFER-FOREST` | `geo_infer_forest` | 9 | 8 |
 | `GEO-INFER-GIT` | `geo_infer_git` | 22 | 19 |
 | `GEO-INFER-HEALTH` | `geo_infer_health` | 18 | 15 |
 | `GEO-INFER-INSURANCE` | `geo_infer_insurance` | 21 | 12 |
 | `GEO-INFER-INTRA` | `geo_infer_intra` | 9 | 10 |
-| `GEO-INFER-IOT` | `geo_infer_iot` | 17 | 16 |
-| `GEO-INFER-LOG` | `geo_infer_log` | 21 | 19 |
+| `GEO-INFER-IOT` | `geo_infer_iot` | 19 | 18 |
+| `GEO-INFER-LOG` | `geo_infer_log` | 21 | 20 |
 | `GEO-INFER-MARINE` | `geo_infer_marine` | 12 | 10 |
-| `GEO-INFER-MATH` | `geo_infer_math` | 66 | 21 |
+| `GEO-INFER-MATH` | `geo_infer_math` | 67 | 22 |
 | `GEO-INFER-METAGOV` | `geo_infer_metagov` | 21 | 16 |
 | `GEO-INFER-NORMS` | `geo_infer_norms` | 20 | 15 |
 | `GEO-INFER-OPS` | `geo_infer_ops` | 17 | 18 |
 | `GEO-INFER-ORG` | `geo_infer_org` | 5 | 7 |
 | `GEO-INFER-PEP` | `geo_infer_pep` | 40 | 16 |
-| `GEO-INFER-PLACE` | `geo_infer_place` | 41 | 25 |
+| `GEO-INFER-PLACE` | `geo_infer_place` | 91 | 25 |
 | `GEO-INFER-REQ` | `geo_infer_req` | 5 | 7 |
 | `GEO-INFER-RISK` | `geo_infer_risk` | 15 | 24 |
 | `GEO-INFER-SEC` | `geo_infer_sec` | 22 | 20 |
 | `GEO-INFER-SIM` | `geo_infer_sim` | 11 | 9 |
-| `GEO-INFER-SPACE` | `geo_infer_space` | 84 | 47 |
-| `GEO-INFER-SPM` | `geo_infer_spm` | 27 | 21 |
-| `GEO-INFER-TEST` | `geo_infer_test` | 12 | 41 |
-| `GEO-INFER-TIME` | `geo_infer_time` | 18 | 19 |
+| `GEO-INFER-SPACE` | `geo_infer_space` | 84 | 50 |
+| `GEO-INFER-SPM` | `geo_infer_spm` | 27 | 23 |
+| `GEO-INFER-TEST` | `geo_infer_test` | 22 | 52 |
+| `GEO-INFER-TIME` | `geo_infer_time` | 20 | 23 |
 | `GEO-INFER-TRANSPORT` | `geo_infer_transport` | 7 | 10 |
 | `GEO-INFER-WATER` | `geo_infer_water` | 9 | 9 |
 
 ## Modular Hygiene
 
 - Root `pyproject.toml`, `uv.lock`, and `.python-version` are the canonical uv environment surfaces.
-- Sync the full workspace with `uv sync --all-packages --all-extras` before repo-wide validation.
+- Keep `uv.lock` as LF text through root `.gitattributes` so raw receipt hashes agree across platforms.
+- Sync the full workspace with `uv sync --all-packages --all-extras --all-groups` before repo-wide validation.
 - Each module owns importable behavior under `src/` and keeps at least four pytest files under `tests/`.
 - Planned work belongs in root `TODO.md` or a tracked issue, not source or test task markers.
 - Importable libraries use `logging.getLogger(__name__)`; process-wide logging configuration belongs in CLI entrypoints.
@@ -168,7 +169,7 @@ the exact reproducible exception list.
 - Test contract: `uv run python GEO-INFER-TEST/validate_test_contracts.py --strict`
 - Model contract: `uv run python GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42`
 - Reproducible model audit: `uv run python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible`
-- Source runtime hygiene: `uv run --with 'ruff>=0.15.6,<0.16' ruff check GEO-INFER-*/src --select F821,F823,E721,E722`
+- Lint contract: `uv run --with 'ruff>=0.15.6,<0.16' ruff check .`
 - Manuscript variables, figures, captions, and resolved copies: `uv run python manuscript/generate_research_artifacts.py`
 
 ## Repo-wide Change Workflow

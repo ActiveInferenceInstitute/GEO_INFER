@@ -5,7 +5,6 @@ domain managers (physical zones, perimeter calculations).
 """
 
 import math
-from typing import Optional
 
 from shapely.geometry import Point, Polygon
 
@@ -44,7 +43,7 @@ class GeoSpatialUtils:
         self,
         center: Point,
         radius_m: float,
-        num_points: Optional[int] = 64,
+        num_points: int | None = 64,
     ) -> Polygon:
         """Create a circle of ``radius_m`` metres around ``center``.
 

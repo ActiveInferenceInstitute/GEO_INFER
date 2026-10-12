@@ -82,9 +82,8 @@ class TestCategoricalFreeEnergy:
         """Test that mismatched dimensions are handled gracefully."""
         beliefs = np.array([0.5, 0.3, 0.2])
         obs = np.array([0.6, 0.4])  # Different length
-        # Should handle mismatch without crashing
-        fe = self.calc.compute_categorical_free_energy(beliefs, obs)
-        assert np.isfinite(fe)
+        with pytest.raises(ValueError, match="length 3"):
+            self.calc.compute_categorical_free_energy(beliefs, obs)
 
     def test_breakdown_matches_complexity_minus_accuracy(self) -> None:
         """Test that categorical free energy exposes its mathematical terms."""

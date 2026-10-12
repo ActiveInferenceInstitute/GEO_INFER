@@ -6,11 +6,11 @@ decisions, policy lifecycle management, claims processing, premium pricing,
 portfolio management, and regulatory compliance.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Development Team"
 __license__ = "CC-BY-NC-SA-4.0"
 
-from typing import Any, Optional
+from typing import Any
 
 from geo_infer_insurance.underwriting import (
     UnderwritingEngine,
@@ -58,7 +58,7 @@ __all__ = [
 ]
 
 
-def create_underwriting_system(config: Optional[Any] = None) -> Any:
+def create_underwriting_system(config: Any | None = None) -> Any:
     """
     Create an underwriting system.
 
@@ -72,7 +72,7 @@ def create_underwriting_system(config: Optional[Any] = None) -> Any:
 
 
 def underwrite_insurance_policy(
-    application_data: Any, config: Optional[Any] = None
+    application_data: Any, config: Any | None = None
 ) -> Any:
     """
     Underwrite an insurance policy application.
@@ -87,7 +87,7 @@ def underwrite_insurance_policy(
     return underwrite_policy(application_data, config)
 
 
-def process_insurance_claim(claim_data: Any, config: Optional[Any] = None) -> Any:
+def process_insurance_claim(claim_data: Any, config: Any | None = None) -> Any:
     """
     Process an insurance claim.
 

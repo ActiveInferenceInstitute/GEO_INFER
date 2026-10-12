@@ -5,7 +5,8 @@ rate tracking, chain diagnostics, and thinning.
 """
 
 import numpy as np
-from typing import Optional, Dict, Any, Callable, List
+from typing import Any
+from collections.abc import Callable
 import logging
 
 from geo_infer_math.utils.rng import resolve_rng
@@ -27,7 +28,7 @@ class MCMCHelpers:
         burn_in: int = 200,
         thin: int = 1,
         proposal_std: float = 0.1,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> None:
         """Initialize MCMC sampler.
 
@@ -56,7 +57,7 @@ class MCMCHelpers:
         log_posterior: Callable,
         initial_state: np.ndarray,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run Metropolis-Hastings sampling.
 
         Args:
@@ -86,8 +87,8 @@ class MCMCHelpers:
 
         current_lp = float(log_posterior(state))
 
-        chain: List[np.ndarray] = []
-        log_posteriors: List[float] = []
+        chain: list[np.ndarray] = []
+        log_posteriors: list[float] = []
         n_accepted = 0
 
         for i in range(total):
@@ -127,7 +128,7 @@ class MCMCHelpers:
             "diagnostics": diagnostics,
         }
 
-    def _compute_diagnostics(self, samples: np.ndarray) -> Dict[str, Any]:
+    def _compute_diagnostics(self, samples: np.ndarray) -> dict[str, Any]:
         """Compute basic chain diagnostics."""
         n, d = samples.shape
 

@@ -30,12 +30,11 @@ Example:
 
 import logging
 
-# Set up logging
-logger = logging.getLogger(__name__)
-
 from .aco import AntColonyOptimization, ACOParameters, OptimizationResult
 from .pso import ParticleSwarmOptimization, PSOParameters
 from .abc import ArtificialBeeColony, ABCParameters
+
+logger = logging.getLogger(__name__)
 
 # Export main classes and functions
 __all__ = [

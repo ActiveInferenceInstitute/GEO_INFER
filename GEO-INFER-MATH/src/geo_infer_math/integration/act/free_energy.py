@@ -10,7 +10,7 @@ References:
 """
 
 import numpy as np
-from typing import Optional, Dict, Any
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -36,10 +36,10 @@ class FreeEnergyCalculator:
         self,
         observations: np.ndarray,
         beliefs: np.ndarray,
-        likelihood: Optional[np.ndarray] = None,
-        prior: Optional[np.ndarray] = None,
+        likelihood: np.ndarray | None = None,
+        prior: np.ndarray | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate variational free energy.
 
         F = E_q[ln q(s)] - E_q[ln p(o,s)]
@@ -105,7 +105,7 @@ class FreeEnergyCalculator:
         self,
         beliefs: np.ndarray,
         likelihood: np.ndarray,
-        prior_preferences: Optional[np.ndarray] = None,
+        prior_preferences: np.ndarray | None = None,
     ) -> float:
         """Calculate expected free energy G for policy evaluation.
 

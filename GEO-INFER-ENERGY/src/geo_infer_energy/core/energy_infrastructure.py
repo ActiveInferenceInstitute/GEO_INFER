@@ -1,7 +1,6 @@
 """Energy infrastructure planning module."""
 
 import logging
-from typing import Dict, Optional
 import xarray as xr
 
 logger = logging.getLogger(__name__)
@@ -10,7 +9,7 @@ logger = logging.getLogger(__name__)
 class EnergyInfrastructurePlanner:
     """Plan energy infrastructure siting."""
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize infrastructure planner.
 
         Documented contract: ``config`` is accepted and stored for API
@@ -23,7 +22,7 @@ class EnergyInfrastructurePlanner:
         self,
         resource_potential: xr.DataArray,
         demand_centers: xr.DataArray,
-        constraints: Optional[xr.DataArray] = None,
+        constraints: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """
         Optimize energy facility siting.

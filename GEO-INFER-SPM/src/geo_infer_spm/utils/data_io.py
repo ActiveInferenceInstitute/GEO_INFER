@@ -17,36 +17,14 @@ All functions return standardized SPMData objects for consistent processing.
 
 import numpy as np
 import pandas as pd
-from typing import Dict, Optional, Any, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 import json
 
-try:
-    import rasterio
-
-    RASTERIO_AVAILABLE = True
-except ImportError:
-    RASTERIO_AVAILABLE = False
-
-try:
-    import geopandas as gpd
-
-    GEOPANDAS_AVAILABLE = True
-except ImportError:
-    GEOPANDAS_AVAILABLE = False
-
-try:
-    import xarray as xr
-
-    XARRAY_AVAILABLE = True
-except ImportError:
-    XARRAY_AVAILABLE = False
-
-try:
-    import h5py
-
-    HDF5_AVAILABLE = True
-except ImportError:
-    HDF5_AVAILABLE = False
+import geopandas as gpd
+import h5py
+import rasterio
+import xarray as xr
 
 from ..models.data_models import SPMData, SPMResult
 
@@ -92,7 +70,7 @@ def load_data(file_path: str, **kwargs: Any) -> SPMData:
 
 
 def load_geotiff(
-    file_path: str, band: Optional[int] = None, nodata_value: Optional[float] = None
+    file_path: str, band: int | None = None, nodata_value: float | None = None
 ) -> SPMData:
     """
     Load GeoTIFF raster data.
@@ -105,9 +83,6 @@ def load_geotiff(
     Returns:
         SPMData object with raster data
     """
-    if not RASTERIO_AVAILABLE:
-        raise ImportError("rasterio package required for GeoTIFF loading")
-
     with rasterio.open(file_path) as src:
         if band is None:
             band = 1
@@ -155,8 +130,8 @@ def load_geotiff(
 
 def load_netcdf(
     file_path: str,
-    variable: Optional[str] = None,
-    time_dim: Optional[str] = None,
+    variable: str | None = None,
+    time_dim: str | None = None,
     lat_dim: str = "lat",
     lon_dim: str = "lon",
 ) -> SPMData:
@@ -173,9 +148,6 @@ def load_netcdf(
     Returns:
         SPMData object with NetCDF data
     """
-    if not XARRAY_AVAILABLE:
-        raise ImportError("xarray package required for NetCDF loading")
-
     # Open dataset
     ds = xr.open_dataset(file_path)
 
@@ -243,7 +215,7 @@ def load_netcdf(
     )
 
 
-def load_geojson(file_path: str, value_column: Optional[str] = None) -> SPMData:
+def load_geojson(file_path: str, value_column: str | None = None) -> SPMData:
     """
     Load GeoJSON vector data.
 
@@ -254,9 +226,6 @@ def load_geojson(file_path: str, value_column: Optional[str] = None) -> SPMData:
     Returns:
         SPMData object with vector data
     """
-    if not GEOPANDAS_AVAILABLE:
-        raise ImportError("geopandas package required for GeoJSON loading")
-
     # Read GeoJSON
     gdf = gpd.read_file(file_path)
 
@@ -289,7 +258,7 @@ def load_geojson(file_path: str, value_column: Optional[str] = None) -> SPMData:
 
 
 def load_geopackage(
-    file_path: str, layer: Optional[str] = None, value_column: Optional[str] = None
+    file_path: str, layer: str | None = None, value_column: str | None = None
 ) -> SPMData:
     """
     Load GeoPackage vector data.
@@ -302,9 +271,6 @@ def load_geopackage(
     Returns:
         SPMData object with vector data
     """
-    if not GEOPANDAS_AVAILABLE:
-        raise ImportError("geopandas package required for GeoPackage loading")
-
     # Read GeoPackage
     gpd.read_file(file_path, layer=layer)
 
@@ -316,7 +282,7 @@ def load_csv_with_coords(
     file_path: str,
     x_column: str = "longitude",
     y_column: str = "latitude",
-    value_column: Optional[str] = None,
+    value_column: str | None = None,
     **kwargs: Any,
 ) -> SPMData:
     """
@@ -389,7 +355,7 @@ def load_csv_with_coords(
 def load_hdf5(
     file_path: str,
     dataset_path: str = "/",
-    coordinate_datasets: Optional[Dict[str, str]] = None,
+    coordinate_datasets: dict[str, str] | None = None,
 ) -> SPMData:
     """
     Load HDF5 data.
@@ -402,9 +368,6 @@ def load_hdf5(
     Returns:
         SPMData object with HDF5 data
     """
-    if not HDF5_AVAILABLE:
-        raise ImportError("h5py package required for HDF5 loading")
-
     with h5py.File(file_path, "r") as f:
         # Load main dataset
         if dataset_path not in f:
@@ -483,7 +446,7 @@ def load_json_data(
     Returns:
         SPMData object with JSON data
     """
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         json_data = json.load(f)
 
     # Extract data and coordinates
@@ -590,9 +553,6 @@ def _save_spm_json(spm_result: SPMResult, file_path: str, **kwargs: Any) -> None
 
 def _save_spm_hdf5(spm_result: SPMResult, file_path: str, **kwargs: Any) -> None:
     """Save SPM results as HDF5."""
-    if not HDF5_AVAILABLE:
-        raise ImportError("h5py package required for HDF5 saving")
-
     with h5py.File(file_path, "w") as f:
         # Save main results
         f.create_dataset("beta_coefficients", data=spm_result.beta_coefficients)

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import geopandas as gpd
-from typing import Any, Optional
+from typing import Any
 from pathlib import Path
 
 
@@ -41,7 +41,7 @@ class BioVisualizer:
         return data.copy()
 
     @staticmethod
-    def _spatial_frame(data: Any, value_column: Optional[str] = None) -> pd.DataFrame:
+    def _spatial_frame(data: Any, value_column: str | None = None) -> pd.DataFrame:
         """Validate a table that will be converted to point geometries."""
         required: tuple[str, ...] = ("longitude", "latitude")
         if value_column is not None:
@@ -63,7 +63,7 @@ class BioVisualizer:
         return frame
 
     @staticmethod
-    def _finish(fig: plt.Figure, output_path: Optional[str]) -> plt.Figure:
+    def _finish(fig: plt.Figure, output_path: str | None) -> plt.Figure:
         """Lay out, optionally persist, and release a rendered figure."""
         fig.tight_layout()
         if output_path:
@@ -76,7 +76,7 @@ class BioVisualizer:
     def plot_spatial_distribution(
         self,
         data: Any,
-        output_path: Optional[str] = None,
+        output_path: str | None = None,
         title: str = "Spatial Distribution",
     ) -> plt.Figure:
         """
@@ -105,7 +105,7 @@ class BioVisualizer:
     def plot_gc_distribution(
         self,
         data: pd.DataFrame,
-        output_path: Optional[str] = None,
+        output_path: str | None = None,
     ) -> plt.Figure:
         """
         Plot GC content distribution.
@@ -139,7 +139,7 @@ class BioVisualizer:
     def plot_motif_density(
         self,
         data: pd.DataFrame,
-        output_path: Optional[str] = None,
+        output_path: str | None = None,
     ) -> plt.Figure:
         """
         Plot motif density distribution.
@@ -174,7 +174,7 @@ class BioVisualizer:
     def plot_coding_potential(
         self,
         data: pd.DataFrame,
-        output_path: Optional[str] = None,
+        output_path: str | None = None,
     ) -> plt.Figure:
         """
         Plot coding potential distribution.
@@ -209,7 +209,7 @@ class BioVisualizer:
     def plot_sequence_alignment(
         self,
         alignment: Any,
-        output_path: Optional[str] = None,
+        output_path: str | None = None,
     ) -> plt.Figure:
         """
         Plot sequence alignment.

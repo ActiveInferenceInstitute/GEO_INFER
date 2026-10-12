@@ -1,4 +1,3 @@
-from typing import List, Optional, Dict
 from datetime import datetime, timedelta
 
 from geo_infer_health.models import Location, EnvironmentalData
@@ -8,9 +7,8 @@ from geo_infer_health.utils.geospatial_utils import haversine_distance
 class EnvironmentalHealthAnalyzer:
     """Analyzes environmental data in relation to health."""
 
-    def __init__(self, environmental_readings: List[EnvironmentalData]):
+    def __init__(self, environmental_readings: list[EnvironmentalData]):
         self.readings = sorted(environmental_readings, key=lambda r: r.timestamp)
-        # Potential pre-processing: spatial/temporal indexing for readings
 
     def _calculate_distance(self, loc1: Location, loc2: Location) -> float:
         """Calculate distance in kilometers between two locations."""
@@ -20,10 +18,10 @@ class EnvironmentalHealthAnalyzer:
         self,
         center_loc: Location,
         radius_km: float,
-        parameter_name: Optional[str] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List[EnvironmentalData]:
+        parameter_name: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+    ) -> list[EnvironmentalData]:
         """Retrieves environmental readings near a location within a given time window and for a specific parameter."""
         nearby_readings = []
         for reading in self.readings:
@@ -42,11 +40,11 @@ class EnvironmentalHealthAnalyzer:
 
     def calculate_average_exposure(
         self,
-        target_locations: List[Location],
+        target_locations: list[Location],
         radius_km: float,
         parameter_name: str,
         time_window_days: int,
-    ) -> Dict[str, Optional[float]]:  # Returns dict mapping location str to avg value
+    ) -> dict[str, float | None]:  # Returns dict mapping location str to avg value
         """Calculates the average exposure to an environmental parameter for a list of locations.
 
         Args:
@@ -72,7 +70,7 @@ class EnvironmentalHealthAnalyzer:
         latest_reading_time = self.readings[-1].timestamp
         start_time = latest_reading_time - timedelta(days=time_window_days)
 
-        avg_exposure_results: Dict[str, Optional[float]] = {}
+        avg_exposure_results: dict[str, float | None] = {}
         for loc in target_locations:
             relevant_readings = self.get_environmental_readings_near_location(
                 center_loc=loc,
@@ -88,11 +86,3 @@ class EnvironmentalHealthAnalyzer:
                 avg_value = total_value / len(relevant_readings)
                 avg_exposure_results[key_for(loc)] = avg_value
         return avg_exposure_results
-
-    # Baseline for more complex exposure modeling
-    # def estimate_cumulative_exposure(self, person_trajectory: List[Tuple[Location, datetime]], parameter: str):
-    #     pass
-
-    # Baseline for linking environmental data to health outcomes
-    # def correlate_env_health(self, disease_reports: List[DiseaseReport], env_parameter: str, lag_time_days: int):
-    #     pass

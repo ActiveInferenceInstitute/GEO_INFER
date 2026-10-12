@@ -11,7 +11,7 @@ import json
 import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Optional, Any, Tuple
+from typing import Any
 import h3
 from shapely.geometry import shape
 
@@ -28,7 +28,7 @@ class FireRiskAssessor:
 
     def __init__(
         self,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         data_integrator: Any,
         spatial_processor: Any,
         output_dir: Path,
@@ -44,13 +44,13 @@ class FireRiskAssessor:
         self.fire_config = config.get("analyses", {}).get("fire_risk", {})
         self.h3_resolution = config.get("spatial", {}).get("h3_resolution", 8)
 
-        self.last_analysis_time: Optional[datetime] = None
+        self.last_analysis_time: datetime | None = None
 
         logger.info("FireRiskAssessor initialized for Del Norte County")
 
     def run_analysis(
-        self, temporal_range: Optional[Tuple[str, str]] = None
-    ) -> Dict[str, Any]:
+        self, temporal_range: tuple[str, str] | None = None
+    ) -> dict[str, Any]:
         """Run comprehensive fire risk analysis."""
         logger.info("🔥 Starting fire risk analysis for Del Norte County...")
 
@@ -110,8 +110,8 @@ class FireRiskAssessor:
         return results
 
     def _acquire_fire_data(
-        self, temporal_range: Optional[Tuple[str, str]]
-    ) -> Dict[str, Any]:
+        self, temporal_range: tuple[str, str] | None
+    ) -> dict[str, Any]:
         """Acquire fire-related data from multiple sources."""
         bounds = self.config.get("location", {}).get("bounds", {})
         bbox = (
@@ -121,7 +121,7 @@ class FireRiskAssessor:
             bounds.get("north"),
         )
 
-        fire_data: Dict[str, Any] = {
+        fire_data: dict[str, Any] = {
             "bbox": bbox,
             "temporal_range": temporal_range,
             "data_sources": {},
@@ -180,7 +180,7 @@ class FireRiskAssessor:
         fwi = (temp_f - humidity) + (wind_speed * 0.5)
         return max(0, fwi)
 
-    def _load_fuel_moisture_data(self) -> Dict[str, Any]:
+    def _load_fuel_moisture_data(self) -> dict[str, Any]:
         """Load configured fuel-moisture observations from an empirical source."""
         source = self.fire_config.get("fuel_moisture_source")
         if not source:
@@ -210,7 +210,7 @@ class FireRiskAssessor:
             raise ValueError("Fuel-moisture source returned no measurements")
         return payload
 
-    def _analyze_fire_weather(self, fire_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_fire_weather(self, fire_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze fire weather conditions."""
         weather_data = fire_data["data_sources"].get("fire_weather", {})
         measurements = weather_data.get("measurements", [])
@@ -264,14 +264,14 @@ class FireRiskAssessor:
 
         return analysis
 
-    def _analyze_historical_fires(self, fire_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_historical_fires(self, fire_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze historical fire patterns."""
         fire_perimeters = fire_data["data_sources"].get("fire_perimeters", {})
         features = fire_perimeters.get("features", [])
         if not features:
             return {"status": "no_data", "fire_statistics": {"total_fires": 0}}
 
-        def property_value(properties: Dict[str, Any], *names: str) -> Any:
+        def property_value(properties: dict[str, Any], *names: str) -> Any:
             for name in names:
                 value = properties.get(name)
                 if value not in (None, ""):
@@ -280,8 +280,8 @@ class FireRiskAssessor:
 
         acres = []
         years = []
-        causes: Dict[str, int] = {}
-        months: Dict[str, int] = {}
+        causes: dict[str, int] = {}
+        months: dict[str, int] = {}
         for feature in features:
             properties = feature.get("properties") or {}
             raw_acres = property_value(properties, "GIS_ACRES", "AcresBurned", "acres")
@@ -330,7 +330,7 @@ class FireRiskAssessor:
             "fires_by_month": months,
         }
 
-    def _assess_fuel_conditions(self, fire_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _assess_fuel_conditions(self, fire_data: dict[str, Any]) -> dict[str, Any]:
         """Assess current fuel moisture and loading conditions."""
         fuel_data = fire_data["data_sources"].get("fuel_moisture", {})
         measurements = fuel_data.get("measurements", [])
@@ -380,7 +380,7 @@ class FireRiskAssessor:
 
         return fuel_assessment
 
-    def _assess_wui_risk(self, fire_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _assess_wui_risk(self, fire_data: dict[str, Any]) -> dict[str, Any]:
         """Assess wildland-urban interface fire risk."""
         source = self.fire_config.get("wui_source")
         if not source:
@@ -397,8 +397,8 @@ class FireRiskAssessor:
         return payload
 
     def _generate_risk_assessment(
-        self, analysis_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, analysis_results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate integrated fire risk assessment."""
         weather_analysis = analysis_results.get("fire_weather_analysis", {})
         fuel_analysis = analysis_results.get("fuel_analysis", {})
@@ -463,7 +463,7 @@ class FireRiskAssessor:
 
         return risk_assessment
 
-    def _prepare_spatial_data(self, analysis_results: Dict[str, Any]) -> Dict[str, Any]:
+    def _prepare_spatial_data(self, analysis_results: dict[str, Any]) -> dict[str, Any]:
         """Prepare spatial data for integration."""
         spatial_data = {
             "h3_resolution": self.h3_resolution,
@@ -505,7 +505,7 @@ class FireRiskAssessor:
 
         return spatial_data
 
-    def _save_analysis_results(self, results: Dict[str, Any]) -> None:
+    def _save_analysis_results(self, results: dict[str, Any]) -> None:
         """Save analysis results to file."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         results_file = self.output_dir / f"fire_risk_analysis_{timestamp}.json"
@@ -517,7 +517,7 @@ class FireRiskAssessor:
 
         logger.info(f"Fire risk analysis results saved to: {results_file}")
 
-    def get_monitoring_status(self) -> Dict[str, Any]:
+    def get_monitoring_status(self) -> dict[str, Any]:
         """Get current monitoring system status."""
         return {
             "monitor_type": "fire_risk",

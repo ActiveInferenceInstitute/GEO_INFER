@@ -6,9 +6,7 @@ This script demonstrates how to interact with the GEO-INFER-API
 for working with GeoJSON polygon features.
 """
 
-import json
 import uuid
-from typing import Dict, List, Tuple
 
 import requests
 
@@ -226,7 +224,8 @@ def main():
         # Simplify the polygon
         print("\n6. Simplifying the polygon...")
         simplified = simplify_polygon(retrieved_feature, tolerance=0.05)
-        print("Simplified polygon created")
+        outer_ring = simplified["geometry"]["coordinates"][0]
+        print(f"Simplified polygon outer ring: {len(outer_ring)} positions")
 
         # Update the feature
         print("\n7. Updating the feature...")

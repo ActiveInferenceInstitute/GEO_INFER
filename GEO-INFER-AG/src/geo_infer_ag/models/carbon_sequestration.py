@@ -3,7 +3,7 @@ Carbon sequestration modeling for agricultural lands.
 """
 
 import io
-from typing import Dict, List, Optional, Union, Any
+from typing import Any
 import logging
 import numpy as np
 from datetime import datetime
@@ -35,8 +35,8 @@ class CarbonSequestrationModel(AgricultureModel):
         self,
         model_type: str = "tier1",
         time_horizon: int = 20,
-        carbon_pools: Optional[List[str]] = None,
-        config: Optional[Dict[str, Any]] = None,
+        carbon_pools: list[str] | None = None,
+        config: dict[str, Any] | None = None,
     ):
         """
         Initialize the carbon sequestration model.
@@ -124,9 +124,9 @@ class CarbonSequestrationModel(AgricultureModel):
 
     def fit(
         self,
-        training_data: Dict[str, Any],
-        target_columns: Optional[Dict[str, str]] = None,
-        feature_columns: Optional[List[str]] = None,
+        training_data: dict[str, Any],
+        target_columns: dict[str, str] | None = None,
+        feature_columns: list[str] | None = None,
     ) -> None:
         """
         Train the carbon sequestration model using historical data.
@@ -181,7 +181,7 @@ class CarbonSequestrationModel(AgricultureModel):
 
         # Train a separate model for each carbon pool
         self.predictors = {}
-        skipped_pools: Dict[str, int] = {}
+        skipped_pools: dict[str, int] = {}
 
         for pool in self.carbon_pools:
             target_col = target_columns[pool]
@@ -219,7 +219,7 @@ class CarbonSequestrationModel(AgricultureModel):
                 )
         self.fitted = True
 
-    def predict(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def predict(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Predict carbon sequestration potential using the model.
 
@@ -597,8 +597,8 @@ class CarbonSequestrationModel(AgricultureModel):
         return result
 
     def calculate_carbon_value(
-        self, result: Dict[str, Any], carbon_price: float = 25.0
-    ) -> Dict[str, Union[float, np.ndarray]]:
+        self, result: dict[str, Any], carbon_price: float = 25.0
+    ) -> dict[str, float | np.ndarray]:
         """
         Calculate monetary value of carbon sequestration.
 

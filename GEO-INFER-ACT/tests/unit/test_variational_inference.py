@@ -85,11 +85,12 @@ class TestMeanFieldUpdate:
         result = self.vi.mean_field_update_gaussian(mean, cov, obs)
         assert result.shape == (2,)
 
-    def test_default_fallback(self) -> None:
-        """Test that unknown prior types return a copy of prior."""
-        prior = {"some_key": np.array([1.0, 2.0])}
-        result = self.vi.mean_field_update(prior, {}, np.zeros(2))
-        np.testing.assert_array_equal(result["some_key"], prior["some_key"])
+    def test_unsupported_prior_is_rejected(self) -> None:
+        """Unknown prior families must not fabricate a posterior update."""
+        with pytest.raises(ValueError, match="Unsupported prior"):
+            self.vi.mean_field_update(
+                {"some_key": np.array([1.0, 2.0])}, {}, np.zeros(2)
+            )
 
 
 class TestStructuredInference:

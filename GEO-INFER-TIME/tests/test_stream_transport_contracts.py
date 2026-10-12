@@ -2,7 +2,7 @@
 
 import asyncio
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 import pytest
 
@@ -10,19 +10,29 @@ from geo_infer_time import ReplayIngestAdapter, StreamIngestAdapter, StreamProce
 
 
 def test_epoch_zero_is_preserved():
-    timestamp, _, _ = ReplayIngestAdapter([]).parse_record({"timestamp": 0, "value": 1})
-    assert timestamp == datetime(1970, 1, 1, tzinfo=timezone.utc)
+    timestamp, _, _ = ReplayIngestAdapter([], {"timestamp_unit": "s"}).parse_record(
+        {"timestamp": 0, "value": 1}
+    )
+    assert timestamp == datetime(1970, 1, 1, tzinfo=UTC)
 
 
-def test_offsets_and_naive_records_normalize_to_utc():
+def test_offsets_normalize_to_utc():
     adapter = ReplayIngestAdapter([])
     first, _, _ = adapter.parse_record(
         {"timestamp": "2024-01-01T02:00:00+02:00", "value": 1}
     )
     second, _, _ = adapter.parse_record(
-        {"timestamp": "2024-01-01T00:00:00", "value": 1}
+        {"timestamp": "2024-01-01T00:00:00Z", "value": 1}
     )
-    assert first == second == datetime(2024, 1, 1, tzinfo=timezone.utc)
+    assert first == second == datetime(2024, 1, 1, tzinfo=UTC)
+
+
+def test_naive_timestamps_are_rejected():
+    adapter = ReplayIngestAdapter([])
+    with pytest.raises(ValueError, match="timezone-aware"):
+        adapter.parse_record({"timestamp": "2024-01-01T00:00:00", "value": 1})
+    with pytest.raises(ValueError, match="timezone-aware"):
+        StreamProcessor(timedelta(seconds=10)).add_data_point(datetime(2024, 1, 1), 1)
 
 
 def test_missing_timestamp_is_rejected():
@@ -34,7 +44,7 @@ def test_out_of_order_retention_and_bounds():
     processor = StreamProcessor(
         timedelta(seconds=10), watermark_delay=timedelta(seconds=10)
     )
-    base = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2024, 1, 1, tzinfo=UTC)
     for seconds in [10, 5, 18]:
         processor.add_data_point(base + timedelta(seconds=seconds), seconds)
     assert [p["value"] for p in processor.buffer] == [10, 18]
@@ -49,7 +59,9 @@ def test_explicit_replay_and_zero_limit():
 
     async def run():
         processor = StreamProcessor(timedelta(seconds=10))
-        adapter = ReplayIngestAdapter([{"timestamp": 0, "value": 2}])
+        adapter = ReplayIngestAdapter(
+            [{"timestamp": 0, "value": 2}], {"timestamp_unit": "s"}
+        )
         assert await processor.ingest_adapter_stream(adapter, max_messages=0) == 0
         assert await processor.ingest_adapter_stream(adapter) == 1
         assert not adapter.is_connected
@@ -63,7 +75,9 @@ def test_actual_local_websocket_and_cleanup():
 
     async def run():
         async def handler(connection):
-            await connection.send(json.dumps({"timestamp": 0, "value": 7}))
+            await connection.send(
+                json.dumps({"timestamp": "1970-01-01T00:00:00Z", "value": 7})
+            )
             await connection.wait_closed()
 
         async with serve(handler, "127.0.0.1", 0) as server:
@@ -88,12 +102,14 @@ def test_invalid_timestamps_rejected(timestamp):
 @pytest.mark.parametrize("value", [True, float("nan"), float("inf"), "bad"])
 def test_nonfinite_values_rejected(value):
     with pytest.raises((TypeError, ValueError)):
-        ReplayIngestAdapter([]).parse_record({"timestamp": 0, "value": value})
+        ReplayIngestAdapter([]).parse_record(
+            {"timestamp": "1970-01-01T00:00:00Z", "value": value}
+        )
 
 
 def test_buffer_capacity_does_not_partially_accept_record():
     processor = StreamProcessor(timedelta(seconds=10), max_buffer_points=2)
-    base = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2024, 1, 1, tzinfo=UTC)
     processor.add_data_point(base, 1)
     processor.add_data_point(base, 2)
     with pytest.raises(BufferError):
@@ -106,7 +122,7 @@ def test_buffer_capacity_does_not_partially_accept_record():
 
 def test_late_buffer_is_bounded_and_watermark_never_regresses():
     processor = StreamProcessor(timedelta(seconds=10), max_buffer_points=1)
-    base = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2024, 1, 1, tzinfo=UTC)
     processor.add_data_point(base + timedelta(seconds=5), 1)
     processor.add_data_point(base, 2)
     with pytest.raises(BufferError):
@@ -119,7 +135,7 @@ def test_late_buffer_is_bounded_and_watermark_never_regresses():
 
 def test_history_capacity_and_session_gap_equality():
     processor = StreamProcessor(timedelta(seconds=60), max_history_windows=2)
-    base = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2024, 1, 1, tzinfo=UTC)
     for seconds in (0, 5, 10, 16):
         processor.add_data_point(base + timedelta(seconds=seconds), 1)
         processor.process_window()
@@ -132,6 +148,8 @@ def test_history_capacity_and_session_gap_equality():
 
 
 def test_websocket_failed_handshake_never_claims_connection():
+    from websockets.exceptions import InvalidHandshake
+
     from geo_infer_time import WebSocketIngestAdapter
 
     async def run():
@@ -144,7 +162,7 @@ def test_websocket_failed_handshake_never_claims_connection():
             adapter = WebSocketIngestAdapter(
                 {"url": f"ws://127.0.0.1:{port}", "max_retries": 0}
             )
-            with pytest.raises(Exception):
+            with pytest.raises(InvalidHandshake):
                 await adapter.connect()
             assert not adapter.is_connected
 
@@ -218,7 +236,7 @@ def test_websocket_reconnect_and_finite_retry_budget():
             if connections == 1:
                 await connection.close(code=1011)
             else:
-                await connection.send('{"timestamp":0,"value":9}')
+                await connection.send('{"timestamp":"1970-01-01T00:00:00Z","value":9}')
                 await connection.wait_closed()
 
         async with serve(handler, "127.0.0.1", 0) as server:
@@ -284,7 +302,7 @@ def test_processor_limit_and_cleanup_apply_to_custom_adapters():
         async def stream_data(self, max_messages=None):
             try:
                 while True:
-                    yield {"timestamp": 0, "value": 1}
+                    yield {"timestamp": "1970-01-01T00:00:00Z", "value": 1}
             finally:
                 self.closed = True
 

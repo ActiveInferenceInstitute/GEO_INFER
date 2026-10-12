@@ -7,6 +7,10 @@ Unit workspace within `GEO-INFER-TIME`.
 - `test_action_schedule.py`
 - `test_core.py`
 - `test_inference_schedule.py`
+- `test_lazy_public_imports.py`
+- `test_linear_trend_contract.py`
+- `test_method_contracts.py`
+- `test_timestamps.py`
 
 ## Public Interface
 
@@ -16,8 +20,8 @@ Unit workspace within `GEO-INFER-TIME`.
 
 - Module: `GEO-INFER-TIME`
 - Package: `geo_infer_time`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-TIME`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-time`
 - Tests: `uv run python -m pytest GEO-INFER-TIME/tests/unit`
 
 ## Dependencies

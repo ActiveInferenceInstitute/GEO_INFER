@@ -8,11 +8,11 @@ observation sequences, and standard spatial fixtures.
 import pytest
 import numpy as np
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -45,7 +45,7 @@ def tmp_output_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def free_energy_agent() -> Dict[str, Any]:
+def free_energy_agent() -> dict[str, Any]:
     """Active Inference agent configuration with 3 hidden states.
 
     Returns a dict containing the generative model matrices (A, B, C, D)
@@ -97,7 +97,7 @@ def free_energy_agent() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def generative_model_config() -> Dict[str, Any]:
+def generative_model_config() -> dict[str, Any]:
     """Configuration dict for an Active Inference generative model.
 
     Specifies policy length, inference depth, and learning rates

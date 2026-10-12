@@ -9,7 +9,7 @@ import logging
 
 import numpy as np
 from scipy.special import gammaln
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class SpatialLikelihood:
         self,
         predictions: np.ndarray,
         observations: np.ndarray,
-        spatial_weights: Optional[np.ndarray] = None,
+        spatial_weights: np.ndarray | None = None,
     ) -> float:
         """
         Compute the log likelihood for spatial data.
@@ -60,7 +60,7 @@ class SpatialLikelihood:
             raise ValueError(f"Unknown likelihood type: {self.likelihood_type}")
 
     def _gaussian_likelihood(
-        self, pred: np.ndarray, obs: np.ndarray, weights: Optional[np.ndarray] = None
+        self, pred: np.ndarray, obs: np.ndarray, weights: np.ndarray | None = None
     ) -> float:
         """Gaussian likelihood for continuous spatial data."""
         if weights is not None:
@@ -117,7 +117,7 @@ class PoissonProcess:
         self.parameters = kwargs
 
     def log_likelihood(
-        self, intensity: np.ndarray, points: np.ndarray, window: Dict[str, float]
+        self, intensity: np.ndarray, points: np.ndarray, window: dict[str, float]
     ) -> float:
         """
         Compute the log likelihood for a spatial Poisson process.
@@ -150,7 +150,7 @@ class PoissonProcess:
         return float(log_likelihood)
 
     def _integrate_intensity(
-        self, intensity: np.ndarray, window: Dict[str, float]
+        self, intensity: np.ndarray, window: dict[str, float]
     ) -> float:
         """Integrate the intensity function over the observation window."""
         # Simple rectangular integration

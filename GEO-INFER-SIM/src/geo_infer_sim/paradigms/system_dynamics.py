@@ -6,7 +6,8 @@ and feedback loops for aggregate system behavior.
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Callable
+from typing import Any
+from collections.abc import Callable
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
@@ -19,8 +20,8 @@ class Stock:
     name: str
     initial_value: float
     current_value: float = 0.0
-    min_value: Optional[float] = None
-    max_value: Optional[float] = None
+    min_value: float | None = None
+    max_value: float | None = None
 
     def __post_init__(self) -> None:
         """Initialize stock value."""
@@ -32,10 +33,10 @@ class Flow:
     """Represents a flow (rate of change) in system dynamics."""
 
     name: str
-    source_stock: Optional[str] = None
-    target_stock: Optional[str] = None
-    rate_function: Optional[Callable[[Dict[str, float]], float]] = None
-    constant_rate: Optional[float] = None
+    source_stock: str | None = None
+    target_stock: str | None = None
+    rate_function: Callable[[dict[str, float]], float] | None = None
+    constant_rate: float | None = None
 
 
 class SystemDynamicsModel:
@@ -48,17 +49,17 @@ class SystemDynamicsModel:
 
     def __init__(self) -> None:
         """Initialize the system dynamics model."""
-        self.stocks: Dict[str, Stock] = {}
-        self.flows: List[Flow] = []
+        self.stocks: dict[str, Stock] = {}
+        self.flows: list[Flow] = []
         self.time = 0.0
-        self.history: List[Dict[str, float]] = []
+        self.history: list[dict[str, float]] = []
 
     def add_stock(
         self,
         name: str,
         initial_value: float,
-        min_value: Optional[float] = None,
-        max_value: Optional[float] = None,
+        min_value: float | None = None,
+        max_value: float | None = None,
     ) -> None:
         """
         Add a stock to the model.
@@ -81,10 +82,10 @@ class SystemDynamicsModel:
     def add_flow(
         self,
         name: str,
-        source_stock: Optional[str] = None,
-        target_stock: Optional[str] = None,
-        rate_function: Optional[Callable[[Dict[str, float]], float]] = None,
-        constant_rate: Optional[float] = None,
+        source_stock: str | None = None,
+        target_stock: str | None = None,
+        rate_function: Callable[[dict[str, float]], float] | None = None,
+        constant_rate: float | None = None,
     ) -> None:
         """
         Add a flow to the model.
@@ -109,7 +110,7 @@ class SystemDynamicsModel:
         self.flows.append(flow)
         logger.debug(f"Added flow: {name}")
 
-    def calculate_flow_rate(self, flow: Flow, stock_values: Dict[str, float]) -> float:
+    def calculate_flow_rate(self, flow: Flow, stock_values: dict[str, float]) -> float:
         """
         Calculate flow rate for a flow.
 
@@ -181,7 +182,7 @@ class SystemDynamicsModel:
             }
         )
 
-    def get_state(self) -> Dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         """
         Get current model state.
 

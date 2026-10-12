@@ -5,7 +5,7 @@ for fire danger assessment based on meteorological conditions.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import xarray as xr
@@ -21,7 +21,7 @@ class FireRiskAssessor:
     indices and simple weather-based fire danger classification.
     """
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         """Initialize fire risk assessor.
 
         Args:
@@ -88,7 +88,7 @@ class FireRiskAssessor:
         self,
         temperature_c: float,
         relative_humidity: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate Angstrom Fire Danger Index.
 
         A simple index using temperature and humidity:
@@ -172,7 +172,7 @@ class FireRiskAssessor:
         temperature: xr.DataArray,
         humidity: xr.DataArray,
         wind_speed: xr.DataArray,
-        slope: Optional[xr.DataArray] = None,
+        slope: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """Assess fire risk over a spatial grid.
 

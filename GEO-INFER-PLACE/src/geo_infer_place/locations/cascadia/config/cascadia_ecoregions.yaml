@@ -1,0 +1,119 @@
+# EPA Level III Ecoregions of Cascadia
+# Source: US EPA Office of Research and Development
+# Omernik, J.M. (1987) Ecoregions of the Conterminous United States
+
+metadata:
+  classification_system: "Omernik Level III Ecoregions"
+  data_source: "US EPA Ecoregions, USFS Classification"
+  projection: "WGS84"
+  total_ecoregions_in_cascadia: 8
+
+ecoregions:
+  - code: "1"
+    name: "Coast Range"
+    states: ["CA", "OR", "WA"]
+    area_sq_mi: 23000
+    elevation_range_m: [0, 1800]
+    climate_type: "Oceanic (Cfb/Cfc)"
+    annual_precipitation_mm: [1500, 4000]
+    dominant_vegetation: ["Sitka Spruce", "Western Red Cedar", "Douglas Fir", "Red Alder"]
+    soils: ["Ultisols", "Inceptisols", "Spodosols"]
+    land_use_pct:
+      forestry: 75
+      agriculture: 5
+      developed: 5
+      protected: 15
+    key_ecosystem_services: ["carbon_sequestration", "old_growth_habitat", "salmon_habitat", "watershed_protection"]
+    threatened_species: ["Northern Spotted Owl", "Marbled Murrelet", "Coho Salmon", "Cutthroat Trout"]
+    notes: "Contains some of the highest rainfall in lower 48 states (240 inches/yr at Quinault, WA)"
+
+  - code: "2"
+    name: "Puget Lowland"
+    states: ["WA"]
+    area_sq_mi: 4700
+    elevation_range_m: [0, 300]
+    climate_type: "Oceanic (Cfb)"
+    annual_precipitation_mm: [900, 1300]
+    dominant_vegetation: ["Douglas Fir", "Western Red Cedar", "Red Alder", "Big Leaf Maple"]
+    population_density: "High (Seattle metro area)"
+    land_use_pct:
+      developed: 45
+      forestry: 25
+      agriculture: 15
+      protected: 15
+    key_ecosystem_services: ["urban_stormwater", "salmon_habitat", "estuary_ecology"]
+    notes: "Most developed ecoregion in Cascadia; Puget Sound/Salish Sea estuary system"
+
+  - code: "3"
+    name: "Willamette Valley"
+    states: ["OR"]
+    area_sq_mi: 8100
+    elevation_range_m: [30, 300]
+    climate_type: "Mediterranean-influenced Oceanic (Csb)"
+    annual_precipitation_mm: [900, 1200]
+    dominant_vegetation: ["Oregon White Oak", "ponderosa pine edges", "grassland/prairie remnants"]
+    native_prairie_remaining_pct: 1
+    land_use_pct:
+      agriculture: 55
+      developed: 20
+      forestry: 10
+      protected: 15
+    key_crops: ["nursery crops", "grass seed", "hazelnuts", "wine grapes", "berries", "hops"]
+    notes: "Oregon's agricultural heartland; historically oak savanna and wet prairie"
+
+  - code: "4"
+    name: "Cascades"
+    states: ["CA", "OR", "WA"]
+    area_sq_mi: 31000
+    elevation_range_m: [600, 4392]
+    climate_type: "Continental/Alpine above 1500m"
+    annual_precipitation_mm: [1000, 5000]
+    dominant_vegetation: ["Pacific Silver Fir", "Mountain Hemlock", "Subalpine Fir", "Whitebark Pine"]
+    volcanic_features: 12
+    national_parks: ["Crater Lake NP", "Mt. Rainier NP", "North Cascades NP", "Lassen Volcanic NP"]
+    wilderness_areas: 45
+    key_ecosystem_services: ["snowpack_water_storage", "summer_baseflow", "habitat_connectivity"]
+
+  - code: "9"
+    name: "Eastern Cascades Slopes and Foothills"
+    states: ["OR", "WA"]
+    area_sq_mi: 19000
+    elevation_range_m: [400, 1500]
+    climate_type: "Semi-arid (BSk/BSh)"
+    annual_precipitation_mm: [250, 600]
+    dominant_vegetation: ["Ponderosa Pine", "Oregon White Oak", "Bitterbrush", "Big Sagebrush"]
+    key_ecosystem_services: ["grazing", "timber", "recreation"]
+
+  - code: "10"
+    name: "Columbia Plateau"
+    states: ["OR", "WA", "ID"]
+    area_sq_mi: 55000
+    elevation_range_m: [100, 1200]
+    climate_type: "Semi-arid (BSk)"
+    annual_precipitation_mm: [150, 400]
+    dominant_vegetation: ["Big Sagebrush", "Bluebunch Wheatgrass", "Bitterbrush"]
+    land_use_pct:
+      agriculture: 45
+      rangeland: 35
+      developed: 10
+      protected: 10
+    key_crops: ["wheat", "potatoes", "apples", "hops", "wine grapes"]
+
+  - code: "78"
+    name: "Klamath Mountains"
+    states: ["CA", "OR"]
+    area_sq_mi: 12000
+    elevation_range_m: [0, 2700]
+    climate_type: "Mediterranean-Oceanic transition (Csb/Csa)"
+    annual_precipitation_mm: [900, 2500]
+    dominant_vegetation: ["Douglas Fir", "Tanoak", "Port Orford Cedar", "Brewer Spruce", "Jeffrey Pine"]
+    biodiversity_hotspot: true
+    endemic_species_count: 280
+    notes: "Globally recognized biodiversity hotspot; geologically complex (serpentine soils produce unique plant communities)"
+    threatened_species: ["Port Orford Cedar", "Pacific Fisher", "Northern Spotted Owl"]
+
+  - code: "85"
+    name: "Great Valley (northern extent)"
+    states: ["CA"]
+    area_sq_mi: 5000
+    notes: "Northern Sacramento Valley transition zone"

@@ -4,7 +4,7 @@ GEO-INFER-DATA Integration Adapter
 Provides data loading wrapper for economic datasets.
 """
 
-from typing import Dict, List, Optional, Any, Union, Tuple
+from typing import Any
 import pandas as pd
 import geopandas as gpd
 import logging
@@ -36,7 +36,7 @@ class DataIntegration:
     - Data format conversion
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize data integration.
 
@@ -66,10 +66,10 @@ class DataIntegration:
     def load_dataset(
         self,
         dataset_id: str,
-        spatial_bounds: Optional[List[float]] = None,
-        temporal_range: Optional[Tuple[str, str]] = None,
+        spatial_bounds: list[float] | None = None,
+        temporal_range: tuple[str, str] | None = None,
         format: str = "geopandas",
-    ) -> Optional[Union[pd.DataFrame, gpd.GeoDataFrame]]:
+    ) -> pd.DataFrame | gpd.GeoDataFrame | None:
         """
         Load economic dataset with optional filtering.
 
@@ -126,8 +126,8 @@ class DataIntegration:
             return None
 
     def list_datasets(
-        self, dataset_type: Optional[str] = None, tags: Optional[List[str]] = None
-    ) -> Optional[List[Dict[str, Any]]]:
+        self, dataset_type: str | None = None, tags: list[str] | None = None
+    ) -> list[dict[str, Any]] | None:
         """
         List available economic datasets.
 
@@ -169,8 +169,8 @@ class DataIntegration:
             return None
 
     def load_economic_data(
-        self, source: Union[str, Path], source_type: str = "file", **kwargs: Any
-    ) -> Optional[Union[pd.DataFrame, gpd.GeoDataFrame]]:
+        self, source: str | Path, source_type: str = "file", **kwargs: Any
+    ) -> pd.DataFrame | gpd.GeoDataFrame | None:
         """
         Load economic data from various sources.
 

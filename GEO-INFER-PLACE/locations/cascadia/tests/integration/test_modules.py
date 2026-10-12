@@ -7,7 +7,6 @@ with the BaseAnalysisModule pattern and SPACE integration.
 """
 
 import logging
-import os
 import sys
 import tempfile
 from pathlib import Path
@@ -15,16 +14,6 @@ from pathlib import Path
 import yaml
 
 CASCADIA_ROOT = Path(__file__).resolve().parents[2]
-WORKSPACE_ROOT = CASCADIA_ROOT.parents[2]
-
-for import_root in (
-    CASCADIA_ROOT,
-    WORKSPACE_ROOT / "GEO-INFER-PLACE" / "src",
-    WORKSPACE_ROOT / "GEO-INFER-SPACE" / "src",
-):
-    resolved = str(import_root)
-    if import_root.is_dir() and resolved not in sys.path:
-        sys.path.insert(0, resolved)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -63,12 +52,18 @@ def _init_backend_and_modules(base_data_dir: Path):
     """Helper: create backend and initialize modules. Returns (backend, modules)."""
     from geo_infer_place.core.unified_backend import CascadianAgriculturalH3Backend
 
-    from src.data_modules.current_use.geo_infer_current_use import GeoInferCurrentUse
-    from src.data_modules.improvements.geo_infer_improvements import (
+    from geo_infer_place.locations.cascadia.data_modules.current_use.geo_infer_current_use import (
+        GeoInferCurrentUse,
+    )
+    from geo_infer_place.locations.cascadia.data_modules.improvements.geo_infer_improvements import (
         GeoInferImprovements,
     )
-    from src.data_modules.ownership.geo_infer_ownership import GeoInferOwnership
-    from src.data_modules.zoning.geo_infer_zoning import GeoInferZoning
+    from geo_infer_place.locations.cascadia.data_modules.ownership.geo_infer_ownership import (
+        GeoInferOwnership,
+    )
+    from geo_infer_place.locations.cascadia.data_modules.zoning.geo_infer_zoning import (
+        GeoInferZoning,
+    )
 
     config_path = CASCADIA_ROOT / "config" / "analysis_config.yaml"
     with config_path.open(encoding="utf-8") as f:
@@ -76,21 +71,16 @@ def _init_backend_and_modules(base_data_dir: Path):
     assert config.get("analysis_settings"), "Cascadia analysis config is empty"
 
     base_data_dir.mkdir(parents=True, exist_ok=True)
-    osc_repo_dir = Path(
-        os.environ.get(
-            "OSC_REPOS_DIR",
-            str(WORKSPACE_ROOT / "GEO-INFER-SPACE" / "repo"),
-        )
-    )
     backend = CascadianAgriculturalH3Backend(
         modules={},
         resolution=8,
         bioregion="Cascadia",
         target_counties={"CA": ["Lassen"]},
         base_data_dir=base_data_dir,
-        osc_repo_dir=osc_repo_dir,
     )
-    logger.info(f"✅ Backend created with {len(backend.target_hexagons)} target hexagons")
+    logger.info(
+        f"✅ Backend created with {len(backend.target_hexagons)} target hexagons"
+    )
 
     modules = {}
     modules["zoning"] = GeoInferZoning(backend)

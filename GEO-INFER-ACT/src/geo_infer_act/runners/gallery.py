@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from geo_infer_act.runners.contracts import RunConfig, ScenarioRunResult
 from geo_infer_act.runners.io import ensure_output_tree, to_jsonable, utc_now
@@ -21,7 +21,7 @@ def run_spatial_active_inference_gallery(
     timesteps: int = 4,
     h3_resolution: int = 8,
     h3_ring_size: int = 1,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Generate the four-run spatial active-inference visualization gallery."""
     output_dir = ensure_output_tree(Path(output_dir))
     scenarios = [
@@ -34,7 +34,7 @@ def run_spatial_active_inference_gallery(
             {"research_profile": True, "nested_h3": True},
         ),
     ]
-    results: List[ScenarioRunResult] = []
+    results: list[ScenarioRunResult] = []
     for index, (gallery_name, scenario, parameters) in enumerate(scenarios):
         result = run_scenario(
             RunConfig(
@@ -65,8 +65,8 @@ def run_spatial_active_inference_gallery(
 
 
 def _build_gallery_manifest(
-    output_dir: Path, results: List[ScenarioRunResult]
-) -> Dict[str, Any]:
+    output_dir: Path, results: list[ScenarioRunResult]
+) -> dict[str, Any]:
     """Build a JSON-safe gallery manifest from scenario manifests."""
     entries = []
     for result in results:
@@ -99,7 +99,7 @@ def _build_gallery_manifest(
     }
 
 
-def _build_gallery_index(gallery_manifest: Dict[str, Any]) -> str:
+def _build_gallery_index(gallery_manifest: dict[str, Any]) -> str:
     """Build the static gallery HTML index."""
     cards = "\n".join(_run_card(run) for run in gallery_manifest["runs"])
     return f"""<!doctype html>
@@ -132,7 +132,7 @@ def _build_gallery_index(gallery_manifest: Dict[str, Any]) -> str:
 """
 
 
-def _run_card(run: Dict[str, Any]) -> str:
+def _run_card(run: dict[str, Any]) -> str:
     """Build one gallery card."""
     metrics = run.get("metrics", {})
     metric_rows = "\n".join(
@@ -166,7 +166,7 @@ def _run_card(run: Dict[str, Any]) -> str:
 </section>"""
 
 
-def _format_float(value: Optional[Any]) -> str:
+def _format_float(value: Any | None) -> str:
     if value is None:
         return ""
     try:

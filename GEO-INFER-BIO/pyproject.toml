@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=77.0", "wheel"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-infer-bio"
-version = "0.3.0"
+version = "0.4.0"
 description = "Bioinformatics and biological data analysis with geospatial context for spatial omics, landscape genetics, phylogeography, and microbial ecology"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"
@@ -60,9 +60,9 @@ integrations = [
 dev = [
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
-    "pytest-asyncio>=0.20.0",
-    "black>=21.9.0",
-        "mypy>=0.910",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.15.6,<0.16",
+    "mypy>=0.910",
     # Test-only dependencies (imported by tests/, not by src/)
     "setuptools>=77.0",
 ]
@@ -73,9 +73,9 @@ docs = [
     "myst-parser>=0.15.0",
 ]
 geo-infer = [
-    "geo-infer-space>=0.3.0",
-    "geo-infer-time>=0.3.0",
-    "geo-infer-ai>=0.3.0"
+    "geo-infer-space>=0.4.0",
+    "geo-infer-time>=0.4.0",
+    "geo-infer-ai>=0.4.0"
 ]
 
 [project.urls]
@@ -94,68 +94,10 @@ exclude = ["tests*"]
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.md", "*.txt"]
 
-[tool.black]
-line-length = 88
-target-version = ['py311', 'py312']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-line_length = 88
-known_first_party = ["geo_infer_bio"]
-
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-
-[[tool.mypy.overrides]]
-module = [
-    "numpy.*",
-    "pandas.*",
-    "geopandas.*",
-    "h3.*",
-    "folium.*",
-    "plotly.*",
-    "matplotlib.*",
-    "scipy.*",
-    "sklearn.*",
-    "tensorflow.*",
-    "torch.*",
-    "pymc.*",
-    "arviz.*",
-]
-ignore_missing_imports = true
-
 [tool.coverage.run]
 source = ["src"]
 omit = [
     "*/tests/*",
-    "*/test_*",
     "*/__pycache__/*",
 ]
 

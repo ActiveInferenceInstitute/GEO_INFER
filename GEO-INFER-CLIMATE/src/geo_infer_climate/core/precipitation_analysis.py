@@ -5,7 +5,7 @@ and precipitation statistics for hydrological design.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 from scipy import stats as scipy_stats
@@ -20,7 +20,7 @@ class PrecipitationAnalyzer:
     return period analysis, and rainfall distribution fitting.
     """
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         """Initialize precipitation analyzer.
 
         Args:
@@ -30,8 +30,8 @@ class PrecipitationAnalyzer:
 
     def fit_idf_curve(
         self,
-        annual_maxima: Dict[float, np.ndarray],
-    ) -> Dict[float, Dict[str, Any]]:
+        annual_maxima: dict[float, np.ndarray],
+    ) -> dict[float, dict[str, Any]]:
         """Fit Intensity-Duration-Frequency curves from annual maximum series.
 
         For each duration, fits a Gumbel distribution to annual maxima
@@ -90,7 +90,7 @@ class PrecipitationAnalyzer:
         self,
         annual_maxima: np.ndarray,
         design_value: float,
-    ) -> Dict[str, Optional[float]]:
+    ) -> dict[str, float | None]:
         """Calculate return period for a given rainfall value using Gumbel distribution.
 
         Args:
@@ -144,7 +144,7 @@ class PrecipitationAnalyzer:
         self,
         annual_maxima: np.ndarray,
         return_period_years: float,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate design rainfall depth for a given return period.
 
         Args:
@@ -184,7 +184,7 @@ class PrecipitationAnalyzer:
     def calculate_precipitation_statistics(
         self,
         daily_precip: np.ndarray,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate standard precipitation statistics.
 
         Args:
@@ -234,7 +234,7 @@ class PrecipitationAnalyzer:
     def fit_gamma_distribution(
         self,
         wet_day_precip: np.ndarray,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Fit gamma distribution to wet-day precipitation.
 
         Used as a basis for SPI calculation and rainfall modeling.

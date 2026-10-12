@@ -1,12 +1,16 @@
 """Behavioral tests for underwriting data models (GS-146).
 
-Replaces the former import-and-enum-only padding with tests of the
-behavioral surface: decision finality/review gating, guideline
+Tests decision finality/review gating, guideline
 applicability and effectiveness windows, case state helpers, audit
 records, and queue wait-time accounting.
 """
 
 from datetime import datetime, timedelta
+from types import SimpleNamespace
+
+import pytest
+
+import geo_infer_insurance.underwriting.models.underwriting_models as underwriting_models
 
 from geo_infer_insurance.underwriting.models.underwriting_models import (
     AuditTrail,
@@ -266,22 +270,61 @@ class TestUnderwritingQueue:
 
         assert queue.remove_from_queue("ghost") is False
 
-    def test_wait_time_statistics_update_on_removal(self) -> None:
+    @pytest.mark.parametrize("wait_seconds", [0.0, 2.0, 6.0])
+    def test_wait_time_statistics_update_on_removal(
+        self, monkeypatch: pytest.MonkeyPatch, wait_seconds: float
+    ) -> None:
+        start = datetime(2026, 1, 1)
+        timestamps = iter((start, start + timedelta(seconds=wait_seconds)))
+        monkeypatch.setattr(
+            underwriting_models,
+            "datetime",
+            SimpleNamespace(now=lambda: next(timestamps)),
+        )
         queue = UnderwritingQueue(queue_id="q4", queue_type="priority")
-        queue.add_to_queue("case-1")
-        queue.remove_from_queue("case-1")
 
-        assert queue.average_wait_time >= 0.0
-        assert queue.longest_wait_time >= queue.average_wait_time
+        assert queue.add_to_queue("case-1") is True
+        assert queue.remove_from_queue("case-1") is True
+        assert queue.average_wait_time == wait_seconds
+        assert queue.longest_wait_time == wait_seconds
+        assert queue._completed_waits == 1
+        assert queue.total_pending == 0
 
-    def test_average_wait_time_is_running_mean_across_removals(self) -> None:
+    @pytest.mark.parametrize(
+        ("first_wait", "second_wait"),
+        [(2.0, 6.0), (6.0, 2.0), (0.0, 0.0), (0.0, 6.0), (6.0, 0.0)],
+    )
+    def test_average_wait_time_is_running_mean_across_removals(
+        self, monkeypatch: pytest.MonkeyPatch, first_wait: float, second_wait: float
+    ) -> None:
+        start = datetime(2026, 1, 1)
+        second_start = start + timedelta(seconds=10)
+        timestamps = iter(
+            (
+                start,
+                start + timedelta(seconds=first_wait),
+                second_start,
+                second_start + timedelta(seconds=second_wait),
+            )
+        )
+        monkeypatch.setattr(
+            underwriting_models,
+            "datetime",
+            SimpleNamespace(now=lambda: next(timestamps)),
+        )
         queue = UnderwritingQueue(queue_id="q5", queue_type="standard")
-        queue.add_to_queue("a")
-        queue.remove_from_queue("a")
-        queue.add_to_queue("b")
-        queue.remove_from_queue("b")
 
-        # Second observation must blend into the running mean, not replace it.
+        assert queue.add_to_queue("a") is True
+        assert queue.remove_from_queue("a") is True
+        assert queue.average_wait_time == first_wait
+        assert queue.add_to_queue("b") is True
+        assert queue.remove_from_queue("b") is True
+
+        # Unequal known waits distinguish the running mean from the latest wait.
+        expected_mean = (first_wait + second_wait) / 2.0
         assert queue._completed_waits == 2
-        assert queue.average_wait_time > 0.0
-        assert queue.longest_wait_time >= queue.average_wait_time
+        assert queue.total_pending == 0
+        assert queue.average_wait_time == expected_mean
+        if expected_mean > 0.0:
+            assert queue.average_wait_time > 0.0
+        assert queue.longest_wait_time == max(first_wait, second_wait)

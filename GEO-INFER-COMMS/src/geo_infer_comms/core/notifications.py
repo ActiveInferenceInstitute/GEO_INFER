@@ -6,11 +6,12 @@ with geospatial filtering, multi-channel delivery, and intelligent routing.
 """
 
 from __future__ import annotations
-from typing import Dict, List, Optional, Callable, Any, Literal, cast
+from typing import Any, Literal, cast
+from collections.abc import Callable
 import logging
 import threading
 import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass, field
 import uuid
 
@@ -48,23 +49,23 @@ class NotificationManager:
         self,
         max_notifications: int = 10000,
         enable_persistence: bool = True,
-        persistence_path: Optional[str] = None,
+        persistence_path: str | None = None,
     ):
         self.max_notifications = max_notifications
         self.enable_persistence = enable_persistence
         self.persistence_path = persistence_path
 
         # Notification storage and tracking
-        self.notifications: Dict[str, NotificationResponse] = {}
-        self.notification_queue: List[NotificationResponse] = []
-        self.delivery_handlers: Dict[str, Callable] = {}
+        self.notifications: dict[str, NotificationResponse] = {}
+        self.notification_queue: list[NotificationResponse] = []
+        self.delivery_handlers: dict[str, Callable] = {}
 
         # Geospatial filtering
-        self.spatial_filters: Dict[str, SpatialFilter] = {}
+        self.spatial_filters: dict[str, SpatialFilter] = {}
 
         # Scheduling and threading
-        self._scheduler_thread: Optional[threading.Thread] = None
-        self._delivery_thread: Optional[threading.Thread] = None
+        self._scheduler_thread: threading.Thread | None = None
+        self._delivery_thread: threading.Thread | None = None
         self._running = False
         self._lock = threading.RLock()
 
@@ -138,7 +139,7 @@ class NotificationManager:
             content=request.content,
             notification_type=request.notification_type,
             priority=request.priority,
-            delivery_methods=cast(List[str], request.delivery_method),
+            delivery_methods=cast(list[str], request.delivery_method),
             recipients=request.recipients,
             geospatial_context=request.geospatial_context,
         )
@@ -175,7 +176,7 @@ class NotificationManager:
             # Claim the notification under the lock so concurrent scheduler and
             # delivery threads cannot double-send it.
             notification.status = NotificationStatus.SENT
-            notification.created_at = datetime.now(timezone.utc)
+            notification.created_at = datetime.now(UTC)
 
         try:
             # Deliver notification
@@ -240,7 +241,7 @@ class NotificationManager:
             return True
 
         notification.status = NotificationStatus.READ
-        notification.read_at = datetime.now(timezone.utc)
+        notification.read_at = datetime.now(UTC)
 
         self.metrics.notifications_read += 1
         self.logger.info(f"Notification marked as read: {notification_id} by {user_id}")
@@ -248,12 +249,12 @@ class NotificationManager:
 
     def get_notifications(
         self,
-        user_id: Optional[str] = None,
-        status: Optional[NotificationStatus] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
+        user_id: str | None = None,
+        status: NotificationStatus | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
         limit: int = 100,
-    ) -> List[NotificationResponse]:
+    ) -> list[NotificationResponse]:
         """
         Get notifications with filtering.
 
@@ -310,7 +311,7 @@ class NotificationManager:
         self.delivery_handlers[method] = handler
         self.logger.info(f"Registered delivery handler for method: {method}")
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get notification system metrics."""
         return {
             "notifications_stored": len(self.notifications),
@@ -324,7 +325,7 @@ class NotificationManager:
         """Background thread to process scheduled notifications."""
         while self._running:
             try:
-                current_time = datetime.now(timezone.utc)
+                current_time = datetime.now(UTC)
 
                 with self._lock:
                     # Check for notifications ready to send
@@ -351,7 +352,7 @@ class NotificationManager:
         """Background thread to process notification delivery."""
         while self._running:
             try:
-                current_time = datetime.now(timezone.utc)
+                current_time = datetime.now(UTC)
 
                 with self._lock:
                     # Process pending notifications that are due (or were never
@@ -502,11 +503,11 @@ class NotificationMetrics:
     delivery_failures: int = 0
     scheduled_notifications: int = 0
     spatial_filters_used: int = 0
-    start_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    start_time: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert metrics to dictionary."""
-        uptime = datetime.now(timezone.utc) - self.start_time
+        uptime = datetime.now(UTC) - self.start_time
         return {
             "notifications_created": self.notifications_created,
             "notifications_sent": self.notifications_sent,
@@ -528,7 +529,7 @@ class NotificationMetrics:
         self.delivery_failures = 0
         self.scheduled_notifications = 0
         self.spatial_filters_used = 0
-        self.start_time = datetime.now(timezone.utc)
+        self.start_time = datetime.now(UTC)
 
 
 class AlertSystem:
@@ -541,8 +542,8 @@ class AlertSystem:
 
     def __init__(self, notification_manager: NotificationManager):
         self.notification_manager = notification_manager
-        self.alert_rules: Dict[str, AlertRule] = {}
-        self.alert_history: List[AlertResponse] = []
+        self.alert_rules: dict[str, AlertRule] = {}
+        self.alert_history: list[AlertResponse] = []
         self.max_history = 1000
 
         self.logger = logging.getLogger(__name__)
@@ -559,9 +560,9 @@ class AlertSystem:
     def trigger_alert(
         self,
         rule_id: str,
-        trigger_data: Dict[str, Any],
-        geospatial_context: Optional[GeospatialMetadata] = None,
-    ) -> Optional[AlertResponse]:
+        trigger_data: dict[str, Any],
+        geospatial_context: GeospatialMetadata | None = None,
+    ) -> AlertResponse | None:
         """Trigger an alert based on a rule."""
 
         rule = self.alert_rules.get(rule_id)
@@ -600,7 +601,7 @@ class AlertSystem:
             notification_id=notification.notification_id,
             trigger_data=trigger_data,
             geospatial_context=geospatial_context,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         # Store in history
@@ -614,11 +615,11 @@ class AlertSystem:
 
     def get_alert_history(
         self,
-        rule_id: Optional[str] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
+        rule_id: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
         limit: int = 100,
-    ) -> List[AlertResponse]:
+    ) -> list[AlertResponse]:
         """Get alert history with filtering."""
         filtered = self.alert_history
 
@@ -635,7 +636,7 @@ class AlertSystem:
         filtered.sort(key=lambda a: a.created_at, reverse=True)
         return filtered[:limit]
 
-    def get_alert_statistics(self) -> Dict[str, Any]:
+    def get_alert_statistics(self) -> dict[str, Any]:
         """Get alert system statistics."""
         return {
             "total_rules": len(self.alert_rules),
@@ -650,19 +651,19 @@ class AlertRule:
 
     name: str
     description: str
-    conditions: Dict[str, Any]
+    conditions: dict[str, Any]
     alert_title: str
     alert_content: str
-    recipients: List[str]
+    recipients: list[str]
     priority: MessagePriority = MessagePriority.HIGH
-    delivery_methods: List[str] = field(default_factory=lambda: ["in_app", "email"])
-    escalation_policy: Optional[Dict[str, Any]] = None
+    delivery_methods: list[str] = field(default_factory=lambda: ["in_app", "email"])
+    escalation_policy: dict[str, Any] | None = None
     cooldown_period: int = 300  # seconds
-    rule_id: Optional[str] = None
+    rule_id: str | None = None
     enabled: bool = True
-    last_triggered: Optional[datetime] = None
+    last_triggered: datetime | None = None
 
-    def evaluate_conditions(self, trigger_data: Dict[str, Any]) -> bool:
+    def evaluate_conditions(self, trigger_data: dict[str, Any]) -> bool:
         """Evaluate if alert conditions are met."""
         if not self.enabled:
             return False
@@ -693,14 +694,14 @@ class AlertRule:
         # Check cooldown period
         if self.last_triggered:
             cooldown_end = self.last_triggered + timedelta(seconds=self.cooldown_period)
-            if datetime.now(timezone.utc) < cooldown_end:
+            if datetime.now(UTC) < cooldown_end:
                 return False
 
         return True
 
     def update_last_triggered(self) -> None:
         """Update the last triggered timestamp."""
-        self.last_triggered = datetime.now(timezone.utc)
+        self.last_triggered = datetime.now(UTC)
 
 
 @dataclass
@@ -710,11 +711,11 @@ class AlertResponse:
     alert_id: str
     rule_id: str
     notification_id: str
-    trigger_data: Dict[str, Any]
-    geospatial_context: Optional[GeospatialMetadata]
+    trigger_data: dict[str, Any]
+    geospatial_context: GeospatialMetadata | None
     created_at: datetime
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         data = {
             "alert_id": self.alert_id,
@@ -742,7 +743,7 @@ class NotificationFormatter:
         return content
 
     @staticmethod
-    def format_for_email(notification: NotificationResponse) -> Dict[str, str]:
+    def format_for_email(notification: NotificationResponse) -> dict[str, str]:
         """Format notification for email delivery."""
         return {
             "subject": f"GEO-INFER Alert: {notification.title}",
@@ -765,7 +766,7 @@ class NotificationFormatter:
     @staticmethod
     def format_for_push_notification(
         notification: NotificationResponse,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Format notification for push notification."""
         title = notification.title
         body = notification.content
@@ -782,9 +783,9 @@ class NotificationFormatter:
     @staticmethod
     def format_for_geospatial_context(
         notification: NotificationResponse,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Format notification with geospatial context information."""
-        formatted: Dict[str, Any] = {
+        formatted: dict[str, Any] = {
             "notification_id": notification.notification_id,
             "title": notification.title,
             "content": notification.content,
@@ -809,20 +810,20 @@ class EmergencyAlertSystem:
 
     def __init__(self, notification_manager: NotificationManager):
         self.notification_manager = notification_manager
-        self.emergency_contacts: Dict[str, Dict[str, Any]] = {}
-        self.emergency_zones: Dict[str, GeospatialBounds] = {}
-        self.active_emergencies: Dict[str, EmergencyAlert] = {}
+        self.emergency_contacts: dict[str, dict[str, Any]] = {}
+        self.emergency_zones: dict[str, GeospatialBounds] = {}
+        self.active_emergencies: dict[str, EmergencyAlert] = {}
 
         self.logger = logging.getLogger(__name__)
 
     def register_emergency_contact(
-        self, contact_id: str, contact_info: Dict[str, Any], priority: int = 1
+        self, contact_id: str, contact_info: dict[str, Any], priority: int = 1
     ) -> None:
         """Register an emergency contact."""
         self.emergency_contacts[contact_id] = {
             **contact_info,
             "priority": priority,
-            "registered_at": datetime.now(timezone.utc),
+            "registered_at": datetime.now(UTC),
         }
         self.logger.info(f"Registered emergency contact: {contact_id}")
 
@@ -847,7 +848,7 @@ class EmergencyAlertSystem:
             location=location,
             severity=severity,
             description=description,
-            declared_at=datetime.now(timezone.utc),
+            declared_at=datetime.now(UTC),
         )
 
         self.active_emergencies[emergency_id] = emergency
@@ -864,7 +865,7 @@ class EmergencyAlertSystem:
             return False
 
         emergency = self.active_emergencies[emergency_id]
-        emergency.resolved_at = datetime.now(timezone.utc)
+        emergency.resolved_at = datetime.now(UTC)
         emergency.status = "resolved"
 
         # Send resolution notifications
@@ -873,7 +874,7 @@ class EmergencyAlertSystem:
         self.logger.info(f"Emergency resolved: {emergency_id}")
         return True
 
-    def get_active_emergencies(self) -> List[EmergencyAlert]:
+    def get_active_emergencies(self) -> list[EmergencyAlert]:
         """Get list of currently active emergencies."""
         return [
             emergency
@@ -962,10 +963,10 @@ class EmergencyAlert:
     severity: str
     description: str
     declared_at: datetime
-    resolved_at: Optional[datetime] = None
+    resolved_at: datetime | None = None
     status: str = "active"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         data = {
             "emergency_id": self.emergency_id,

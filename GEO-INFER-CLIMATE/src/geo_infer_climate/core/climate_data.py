@@ -7,11 +7,18 @@ CMIP models, reanalysis data, and observational data.
 
 import importlib.util
 import logging
-from typing import Dict, List, Optional, Tuple
 import numpy as np
 import xarray as xr
 
 logger = logging.getLogger(__name__)
+
+
+def _detrend_series(ts: np.ndarray, x: np.ndarray) -> np.ndarray:
+    """Remove the least-squares linear trend of ``ts`` against ``x``."""
+    if np.isnan(ts).all():
+        return ts
+    trend = np.polyfit(x, ts, 1)
+    return ts - np.polyval(trend, x)
 
 
 class ClimateDataProcessor:
@@ -22,7 +29,7 @@ class ClimateDataProcessor:
     observational climate data.
     """
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """
         Initialize climate data processor.
 
@@ -34,7 +41,7 @@ class ClimateDataProcessor:
         self.supported_datasets = ["cmip6", "era5", "ncep", "observations"]
 
     def load_dataset(
-        self, file_path: str, dataset_type: str, variables: Optional[List[str]] = None
+        self, file_path: str, dataset_type: str, variables: list[str] | None = None
     ) -> xr.Dataset:
         """
         Load climate dataset from file.
@@ -82,7 +89,7 @@ class ClimateDataProcessor:
             logger.error(f"Error loading dataset: {e}")
             raise
 
-    def validate_dataset(self, dataset: xr.Dataset) -> Dict[str, bool]:
+    def validate_dataset(self, dataset: xr.Dataset) -> dict[str, bool]:
         """
         Validate climate dataset structure and data quality.
 
@@ -128,7 +135,7 @@ class ClimateDataProcessor:
         return validation_results
 
     def preprocess_dataset(
-        self, dataset: xr.Dataset, operations: Optional[List[str]] = None
+        self, dataset: xr.Dataset, operations: list[str] | None = None
     ) -> xr.Dataset:
         """
         Preprocess climate dataset with common operations.
@@ -208,16 +215,9 @@ class ClimateDataProcessor:
                     # Detrend along time dimension
                     time_axis = dataset[var].dims.index("time")
                     x = np.arange(data.shape[time_axis])
-
                     # Fit and remove linear trend along time_axis
-                    def _detrend_1d(ts: np.ndarray) -> np.ndarray:
-                        if not np.isnan(ts).all():
-                            trend = np.polyfit(x, ts, 1)
-                            return ts - np.polyval(trend, x)
-                        return ts
-
                     detrended[var].values = np.apply_along_axis(
-                        _detrend_1d, time_axis, data
+                        _detrend_series, time_axis, data, x
                     )
 
         return detrended
@@ -263,8 +263,8 @@ class ClimateDataProcessor:
     def extract_spatial_subset(
         self,
         dataset: xr.Dataset,
-        lat_range: Tuple[float, float],
-        lon_range: Tuple[float, float],
+        lat_range: tuple[float, float],
+        lon_range: tuple[float, float],
     ) -> xr.Dataset:
         """
         Extract spatial subset of dataset.

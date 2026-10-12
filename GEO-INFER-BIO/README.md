@@ -8,12 +8,10 @@ Bioinformatics and biological data analysis with geospatial context for spatial 
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `Dockerfile`
 - `SKILL.md`
 - `docker-compose.yml`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -23,8 +21,8 @@ Bioinformatics and biological data analysis with geospatial context for spatial 
 
 - Module: `GEO-INFER-BIO`
 - Package: `geo_infer_bio`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-BIO`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-bio`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module BIO`
 
 ## Dependencies

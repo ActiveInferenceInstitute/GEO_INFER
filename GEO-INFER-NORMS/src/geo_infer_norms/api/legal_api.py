@@ -5,7 +5,7 @@ This module provides API endpoints for interacting with legal frameworks,
 regulations, and jurisdictional data.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 import datetime
 from fastapi import APIRouter, HTTPException, Query, Path
 from pydantic import BaseModel, Field, ConfigDict
@@ -37,12 +37,10 @@ class JurisdictionCreate(BaseModel):
     level: str = Field(
         ..., description="Level of jurisdiction (federal, state, local, etc.)"
     )
-    description: Optional[str] = Field(
-        None, description="Description of the jurisdiction"
-    )
-    code: Optional[str] = Field(None, description="Jurisdiction code")
-    parent_id: Optional[str] = Field(None, description="Parent jurisdiction ID")
-    geometry: Optional[GeometryModel] = Field(None, description="GeoJSON geometry")
+    description: str | None = Field(None, description="Description of the jurisdiction")
+    code: str | None = Field(None, description="Jurisdiction code")
+    parent_id: str | None = Field(None, description="Parent jurisdiction ID")
+    geometry: GeometryModel | None = Field(None, description="GeoJSON geometry")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -65,25 +63,23 @@ class RegulationCreate(BaseModel):
     """Request model for creating a regulation"""
 
     name: str = Field(..., description="Name of the regulation")
-    description: Optional[str] = Field(
-        None, description="Description of the regulation"
-    )
-    code: Optional[str] = Field(None, description="Regulation code or identifier")
-    category: Optional[str] = Field(None, description="Category of regulation")
-    applicable_jurisdictions: List[str] = Field(
+    description: str | None = Field(None, description="Description of the regulation")
+    code: str | None = Field(None, description="Regulation code or identifier")
+    category: str | None = Field(None, description="Category of regulation")
+    applicable_jurisdictions: list[str] = Field(
         ..., description="IDs of jurisdictions where this regulation applies"
     )
-    effective_date: Optional[datetime.datetime] = Field(
+    effective_date: datetime.datetime | None = Field(
         None, description="When the regulation takes effect"
     )
-    expiration_date: Optional[datetime.datetime] = Field(
+    expiration_date: datetime.datetime | None = Field(
         None, description="When the regulation expires"
     )
-    superseded_regulation_id: Optional[str] = Field(
+    superseded_regulation_id: str | None = Field(
         None, description="ID of regulation this supersedes"
     )
-    source_url: Optional[str] = Field(None, description="URL to the source document")
-    tags: Optional[List[str]] = Field(None, description="Tags for the regulation")
+    source_url: str | None = Field(None, description="URL to the source document")
+    tags: list[str] | None = Field(None, description="Tags for the regulation")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -104,12 +100,12 @@ class RegulatoryFrameworkCreate(BaseModel):
     """Request model for creating a regulatory framework"""
 
     name: str = Field(..., description="Name of the framework")
-    description: Optional[str] = Field(None, description="Description of the framework")
-    authority: Optional[str] = Field(
+    description: str | None = Field(None, description="Description of the framework")
+    authority: str | None = Field(
         None, description="Authority that established the framework"
     )
-    sector: Optional[str] = Field(None, description="Sector the framework applies to")
-    regulation_ids: Optional[List[str]] = Field(
+    sector: str | None = Field(None, description="Sector the framework applies to")
+    regulation_ids: list[str] | None = Field(
         None, description="IDs of regulations in this framework"
     )
 
@@ -138,8 +134,8 @@ class LegalAPI:
 
     def __init__(
         self,
-        legal_framework: Optional[LegalFramework] = None,
-        jurisdiction_handler: Optional[JurisdictionHandler] = None,
+        legal_framework: LegalFramework | None = None,
+        jurisdiction_handler: JurisdictionHandler | None = None,
     ):
         """
         Initialize the LegalAPI.
@@ -159,62 +155,62 @@ class LegalAPI:
     def _setup_routes(self) -> None:
         """Set up API routes"""
         # Jurisdiction endpoints
-        self.router.post("/jurisdictions", response_model=Dict[str, Any])(
+        self.router.post("/jurisdictions", response_model=dict[str, Any])(
             self.create_jurisdiction
         )
-        self.router.get("/jurisdictions", response_model=List[Dict[str, Any]])(
+        self.router.get("/jurisdictions", response_model=list[dict[str, Any]])(
             self.list_jurisdictions
         )
         self.router.get(
-            "/jurisdictions/{jurisdiction_id}", response_model=Dict[str, Any]
+            "/jurisdictions/{jurisdiction_id}", response_model=dict[str, Any]
         )(self.get_jurisdiction)
         self.router.get(
-            "/jurisdictions/by-name/{name}", response_model=List[Dict[str, Any]]
+            "/jurisdictions/by-name/{name}", response_model=list[dict[str, Any]]
         )(self.find_jurisdictions_by_name)
         self.router.get(
             "/jurisdictions/hierarchy/{jurisdiction_id}",
-            response_model=List[Dict[str, Any]],
+            response_model=list[dict[str, Any]],
         )(self.get_jurisdiction_hierarchy)
 
         # Regulation endpoints
-        self.router.post("/regulations", response_model=Dict[str, Any])(
+        self.router.post("/regulations", response_model=dict[str, Any])(
             self.create_regulation
         )
-        self.router.get("/regulations", response_model=List[Dict[str, Any]])(
+        self.router.get("/regulations", response_model=list[dict[str, Any]])(
             self.list_regulations
         )
-        self.router.get("/regulations/{regulation_id}", response_model=Dict[str, Any])(
+        self.router.get("/regulations/{regulation_id}", response_model=dict[str, Any])(
             self.get_regulation
         )
         self.router.get(
             "/regulations/jurisdiction/{jurisdiction_id}",
-            response_model=List[Dict[str, Any]],
+            response_model=list[dict[str, Any]],
         )(self.get_regulations_by_jurisdiction)
 
         # Regulatory framework endpoints
-        self.router.post("/frameworks", response_model=Dict[str, Any])(
+        self.router.post("/frameworks", response_model=dict[str, Any])(
             self.create_regulatory_framework
         )
-        self.router.get("/frameworks", response_model=List[Dict[str, Any]])(
+        self.router.get("/frameworks", response_model=list[dict[str, Any]])(
             self.list_regulatory_frameworks
         )
 
         # Geospatial endpoints
         self.router.post(
-            "/spatial/jurisdictions-at-point", response_model=List[Dict[str, Any]]
+            "/spatial/jurisdictions-at-point", response_model=list[dict[str, Any]]
         )(self.get_jurisdictions_by_point)
         self.router.post(
-            "/spatial/regulations-at-point", response_model=List[Dict[str, Any]]
+            "/spatial/regulations-at-point", response_model=list[dict[str, Any]]
         )(self.get_regulations_by_point)
-        self.router.get("/spatial/export", response_model=Dict[str, Any])(
+        self.router.get("/spatial/export", response_model=dict[str, Any])(
             self.export_to_geojson
         )
 
     # Helper methods
 
     def _geometry_from_model(
-        self, geometry_model: Optional[GeometryModel]
-    ) -> Optional[BaseGeometry]:
+        self, geometry_model: GeometryModel | None
+    ) -> BaseGeometry | None:
         """
         Convert a GeometryModel to a Shapely geometry object.
 
@@ -235,9 +231,9 @@ class LegalAPI:
         try:
             return shape(geojson)
         except Exception as e:
-            raise ValueError(f"Invalid geometry: {str(e)}")
+            raise ValueError(f"Invalid geometry: {str(e)}") from e
 
-    def _jurisdiction_to_dict(self, jurisdiction: Jurisdiction) -> Dict[str, Any]:
+    def _jurisdiction_to_dict(self, jurisdiction: Jurisdiction) -> dict[str, Any]:
         """
         Convert a Jurisdiction object to a dictionary for API response.
 
@@ -263,7 +259,7 @@ class LegalAPI:
             "geometry": geometry_dict,
         }
 
-    def _regulation_to_dict(self, regulation: Regulation) -> Dict[str, Any]:
+    def _regulation_to_dict(self, regulation: Regulation) -> dict[str, Any]:
         """
         Convert a Regulation object to a dictionary for API response.
 
@@ -291,7 +287,7 @@ class LegalAPI:
             "tags": regulation.tags,
         }
 
-    def _framework_to_dict(self, framework: RegulatoryFramework) -> Dict[str, Any]:
+    def _framework_to_dict(self, framework: RegulatoryFramework) -> dict[str, Any]:
         """
         Convert a RegulatoryFramework object to a dictionary for API response.
 
@@ -314,7 +310,7 @@ class LegalAPI:
 
     async def create_jurisdiction(
         self, jurisdiction_data: JurisdictionCreate
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a new jurisdiction.
 
@@ -349,13 +345,13 @@ class LegalAPI:
                 "jurisdiction_id": jurisdiction.id,
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def list_jurisdictions(
         self,
-        level: Optional[str] = Query(None, description="Filter by jurisdiction level"),
+        level: str | None = Query(None, description="Filter by jurisdiction level"),
         with_geometry: bool = Query(False, description="Include geometry in response"),
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List all jurisdictions, optionally filtered by level.
 
@@ -395,11 +391,11 @@ class LegalAPI:
 
             return result
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_jurisdiction(
         self, jurisdiction_id: str = Path(..., description="ID of the jurisdiction")
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get a jurisdiction by ID.
 
@@ -420,7 +416,7 @@ class LegalAPI:
 
             return self._jurisdiction_to_dict(jurisdiction)
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def find_jurisdictions_by_name(
         self,
@@ -428,7 +424,7 @@ class LegalAPI:
         partial_match: bool = Query(
             False, description="Whether to allow partial matching"
         ),
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Find jurisdictions by name.
 
@@ -446,11 +442,11 @@ class LegalAPI:
 
             return [self._jurisdiction_to_dict(j) for j in jurisdictions]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_jurisdiction_hierarchy(
         self, jurisdiction_id: str = Path(..., description="ID of the jurisdiction")
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get the hierarchical chain of jurisdictions.
 
@@ -473,13 +469,13 @@ class LegalAPI:
 
             return [self._jurisdiction_to_dict(j) for j in hierarchy]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Regulation endpoints
 
     async def create_regulation(
         self, regulation_data: RegulationCreate
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a new regulation.
 
@@ -516,15 +512,13 @@ class LegalAPI:
                 "regulation_id": regulation.id,
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def list_regulations(
         self,
-        category: Optional[str] = Query(
-            None, description="Filter by regulation category"
-        ),
-        tag: Optional[str] = Query(None, description="Filter by tag"),
-    ) -> List[Dict[str, Any]]:
+        category: str | None = Query(None, description="Filter by regulation category"),
+        tag: str | None = Query(None, description="Filter by tag"),
+    ) -> list[dict[str, Any]]:
         """
         List all regulations, optionally filtered.
 
@@ -546,11 +540,11 @@ class LegalAPI:
 
             return [self._regulation_to_dict(r) for r in regulations]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_regulation(
         self, regulation_id: str = Path(..., description="ID of the regulation")
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get a regulation by ID.
 
@@ -571,11 +565,11 @@ class LegalAPI:
 
             return self._regulation_to_dict(regulation)
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_regulations_by_jurisdiction(
         self, jurisdiction_id: str = Path(..., description="ID of the jurisdiction")
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get all regulations applicable to a specific jurisdiction.
 
@@ -592,13 +586,13 @@ class LegalAPI:
 
             return [self._regulation_to_dict(r) for r in regulations]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Regulatory framework endpoints
 
     async def create_regulatory_framework(
         self, framework_data: RegulatoryFrameworkCreate
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a new regulatory framework.
 
@@ -628,11 +622,11 @@ class LegalAPI:
                 "framework": self._framework_to_dict(framework),
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def list_regulatory_frameworks(
-        self, sector: Optional[str] = Query(None, description="Filter by sector")
-    ) -> List[Dict[str, Any]]:
+        self, sector: str | None = Query(None, description="Filter by sector")
+    ) -> list[dict[str, Any]]:
         """
         List all regulatory frameworks.
 
@@ -659,7 +653,7 @@ class LegalAPI:
 
     async def get_jurisdictions_by_point(
         self, point: PointLocation
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get all jurisdictions that contain a specific geographic point.
 
@@ -680,11 +674,11 @@ class LegalAPI:
 
             return [self._jurisdiction_to_dict(j) for j in jurisdictions]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def get_regulations_by_point(
         self, point: PointLocation
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get all regulations applicable to a specific geographic point.
 
@@ -703,14 +697,14 @@ class LegalAPI:
 
             return [self._regulation_to_dict(r) for r in regulations]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def export_to_geojson(
         self,
         with_regulations: bool = Query(
             False, description="Include regulation count in properties"
         ),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Export the legal framework's jurisdictions to GeoJSON.
 
@@ -741,4 +735,4 @@ class LegalAPI:
                 "geojson": geojson,
             }
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e

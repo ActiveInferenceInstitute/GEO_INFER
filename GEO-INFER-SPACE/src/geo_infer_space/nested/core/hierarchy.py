@@ -7,23 +7,14 @@ level management, and hierarchical operations.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, cast
+from typing import Any, cast
 from enum import Enum
 from collections import defaultdict, deque
+import networkx as nx
 
 logger = logging.getLogger(__name__)
-
-try:
-    import networkx as nx
-
-    NETWORKX_AVAILABLE = True
-except ImportError:
-    NETWORKX_AVAILABLE = False
-    logger.warning(
-        "NetworkX not available. Graph-based hierarchy analysis will be limited."
-    )
 
 
 class RelationshipType(Enum):
@@ -57,15 +48,15 @@ class HierarchicalRelationship:
     target_id: str
     relationship_type: RelationshipType
     strength: float = 1.0
-    properties: Dict[str, Any] = field(default_factory=dict)
-    created_at: datetime = field(default_factory=datetime.now)
+    properties: dict[str, Any] = field(default_factory=dict)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def __post_init__(self) -> None:
         """Validate relationship after creation."""
         if not 0.0 <= self.strength <= 1.0:
             raise ValueError("Relationship strength must be between 0.0 and 1.0")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "source_id": self.source_id,
@@ -96,43 +87,40 @@ class HierarchyManager:
         self.name = name
 
         # Hierarchy structure
-        self.relationships: Dict[str, HierarchicalRelationship] = {}
-        self.parent_child_map: Dict[str, Set[str]] = defaultdict(
+        self.relationships: dict[str, HierarchicalRelationship] = {}
+        self.parent_child_map: dict[str, set[str]] = defaultdict(
             set
         )  # parent -> children
-        self.child_parent_map: Dict[str, str] = {}  # child -> parent
+        self.child_parent_map: dict[str, str] = {}  # child -> parent
 
         # Level management
-        self.level_assignments: Dict[str, int] = {}
-        self.levels: Dict[int, Set[str]] = defaultdict(set)
+        self.level_assignments: dict[str, int] = {}
+        self.levels: dict[int, set[str]] = defaultdict(set)
         self.max_level: int = 0
 
         # System registry
-        self.systems: Set[str] = set()
-        self.root_systems: Set[str] = set()
-        self.leaf_systems: Set[str] = set()
+        self.systems: set[str] = set()
+        self.root_systems: set[str] = set()
+        self.leaf_systems: set[str] = set()
 
-        # Graph representation (if NetworkX available)
-        self.hierarchy_graph: Optional["nx.DiGraph"] = None
-        if NETWORKX_AVAILABLE:
-            self.hierarchy_graph = nx.DiGraph()
+        # Graph representation
+        self.hierarchy_graph: nx.DiGraph = nx.DiGraph()
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
-    def add_system(self, system_id: str, level: Optional[int] = None) -> None:
+    def add_system(self, system_id: str, level: int | None = None) -> None:
         """Add a system to the hierarchy."""
         self.systems.add(system_id)
 
         if level is not None:
             self.set_system_level(system_id, level)
 
-        if NETWORKX_AVAILABLE and self.hierarchy_graph:
-            self.hierarchy_graph.add_node(system_id)
+        self.hierarchy_graph.add_node(system_id)
 
         self._update_system_classification()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def remove_system(self, system_id: str) -> None:
         """Remove a system from the hierarchy."""
@@ -175,12 +163,11 @@ class HierarchyManager:
             del self.parent_child_map[system_id]
 
         # Remove from graph
-        if NETWORKX_AVAILABLE and self.hierarchy_graph:
-            if self.hierarchy_graph.has_node(system_id):
-                self.hierarchy_graph.remove_node(system_id)
+        if self.hierarchy_graph.has_node(system_id):
+            self.hierarchy_graph.remove_node(system_id)
 
         self._update_system_classification()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def add_relationship(
         self,
@@ -188,7 +175,7 @@ class HierarchyManager:
         target_id: str,
         relationship_type: RelationshipType,
         strength: float = 1.0,
-        properties: Optional[Dict[str, Any]] = None,
+        properties: dict[str, Any] | None = None,
     ) -> str:
         """Add a hierarchical relationship."""
         if source_id not in self.systems:
@@ -218,17 +205,16 @@ class HierarchyManager:
                 self.set_system_level(target_id, child_level)
 
         # Update graph
-        if NETWORKX_AVAILABLE and self.hierarchy_graph:
-            self.hierarchy_graph.add_edge(
-                source_id,
-                target_id,
-                relationship_type=relationship_type.value,
-                strength=strength,
-                **properties or {},
-            )
+        self.hierarchy_graph.add_edge(
+            source_id,
+            target_id,
+            relationship_type=relationship_type.value,
+            strength=strength,
+            **properties or {},
+        )
 
         self._update_system_classification()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return rel_id
 
@@ -248,17 +234,16 @@ class HierarchyManager:
                 del self.child_parent_map[relationship.target_id]
 
         # Remove from graph
-        if NETWORKX_AVAILABLE and self.hierarchy_graph:
-            if self.hierarchy_graph.has_edge(
+        if self.hierarchy_graph.has_edge(
+            relationship.source_id, relationship.target_id
+        ):
+            self.hierarchy_graph.remove_edge(
                 relationship.source_id, relationship.target_id
-            ):
-                self.hierarchy_graph.remove_edge(
-                    relationship.source_id, relationship.target_id
-                )
+            )
 
         del self.relationships[rel_id]
         self._update_system_classification()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def set_system_level(self, system_id: str, level: int) -> None:
         """Set the hierarchical level of a system."""
@@ -275,17 +260,17 @@ class HierarchyManager:
         self.levels[level].add(system_id)
         self.max_level = max(self.max_level, level)
 
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
-    def get_children(self, system_id: str) -> Set[str]:
+    def get_children(self, system_id: str) -> set[str]:
         """Get direct children of a system."""
         return self.parent_child_map.get(system_id, set()).copy()
 
-    def get_parent(self, system_id: str) -> Optional[str]:
+    def get_parent(self, system_id: str) -> str | None:
         """Get parent of a system."""
         return self.child_parent_map.get(system_id)
 
-    def get_ancestors(self, system_id: str) -> List[str]:
+    def get_ancestors(self, system_id: str) -> list[str]:
         """Get all ancestors of a system (path to root)."""
         ancestors = []
         current = system_id
@@ -297,7 +282,7 @@ class HierarchyManager:
 
         return ancestors
 
-    def get_descendants(self, system_id: str) -> Set[str]:
+    def get_descendants(self, system_id: str) -> set[str]:
         """Get all descendants of a system."""
         descendants = set()
         queue = deque([system_id])
@@ -313,7 +298,7 @@ class HierarchyManager:
 
         return descendants
 
-    def get_siblings(self, system_id: str) -> Set[str]:
+    def get_siblings(self, system_id: str) -> set[str]:
         """Get siblings of a system (same parent)."""
         parent = self.get_parent(system_id)
         if not parent:
@@ -323,72 +308,33 @@ class HierarchyManager:
         siblings.discard(system_id)
         return siblings
 
-    def get_systems_at_level(self, level: int) -> Set[str]:
+    def get_systems_at_level(self, level: int) -> set[str]:
         """Get all systems at a specific level."""
         return self.levels.get(level, set()).copy()
 
-    def get_level(self, system_id: str) -> Optional[int]:
+    def get_level(self, system_id: str) -> int | None:
         """Get the level of a system."""
         return self.level_assignments.get(system_id)
 
-    def find_path(self, source_id: str, target_id: str) -> Optional[List[str]]:
-        """Find path between two systems in the hierarchy."""
-        if not NETWORKX_AVAILABLE or not self.hierarchy_graph:
-            # Fallback to simple traversal
-            return self._find_path_simple(source_id, target_id)
+    def find_path(self, source_id: str, target_id: str) -> list[str] | None:
+        """Find the shortest path between two systems, ignoring edge direction.
 
+        Traversal uses the undirected view of the relationship graph, so
+        siblings connect through their shared parent.
+        """
         try:
             return cast(
-                List[str],
-                nx.shortest_path(self.hierarchy_graph, source_id, target_id),
+                list[str],
+                nx.shortest_path(
+                    self.hierarchy_graph.to_undirected(as_view=True),
+                    source_id,
+                    target_id,
+                ),
             )
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return None
 
-    def _find_path_simple(self, source_id: str, target_id: str) -> Optional[List[str]]:
-        """Simple path finding without NetworkX."""
-        if source_id == target_id:
-            return [source_id]
-
-        # Try going up to common ancestor then down
-        source_ancestors = [source_id] + self.get_ancestors(source_id)
-        target_ancestors = [target_id] + self.get_ancestors(target_id)
-
-        # Find common ancestor
-        common_ancestor = None
-        for ancestor in source_ancestors:
-            if ancestor in target_ancestors:
-                common_ancestor = ancestor
-                break
-
-        if not common_ancestor:
-            return None
-
-        # Build path: source -> common_ancestor -> target
-        source_to_ancestor = []
-        current = source_id
-        while current != common_ancestor:
-            source_to_ancestor.append(current)
-            source_parent = self.get_parent(current)
-            if not source_parent:
-                break
-            current = source_parent
-        source_to_ancestor.append(common_ancestor)
-
-        ancestor_to_target = []
-        current = target_id
-        while current != common_ancestor:
-            ancestor_to_target.append(current)
-            target_parent = self.get_parent(current)
-            if not target_parent:
-                break
-            current = target_parent
-
-        # Combine paths
-        path = source_to_ancestor + ancestor_to_target[::-1][1:]
-        return path if len(path) > 1 else None
-
-    def calculate_hierarchy_metrics(self) -> Dict[str, Any]:
+    def calculate_hierarchy_metrics(self) -> dict[str, Any]:
         """Calculate comprehensive hierarchy metrics."""
         metrics = {
             "total_systems": len(self.systems),
@@ -404,7 +350,7 @@ class HierarchyManager:
         }
 
         # Count relationship types
-        rel_type_counts: Dict[str, int] = defaultdict(int)
+        rel_type_counts: dict[str, int] = defaultdict(int)
         for relationship in self.relationships.values():
             rel_type_counts[relationship.relationship_type.value] += 1
         metrics["relationship_type_distribution"] = dict(rel_type_counts)
@@ -439,15 +385,14 @@ class HierarchyManager:
             metrics["max_depth"] = 0
 
         # NetworkX-based metrics
-        if NETWORKX_AVAILABLE and self.hierarchy_graph:
-            try:
-                metrics["is_tree"] = nx.is_tree(self.hierarchy_graph)
-                metrics["is_forest"] = nx.is_forest(self.hierarchy_graph)
-                metrics["num_connected_components"] = (
-                    nx.number_weakly_connected_components(self.hierarchy_graph)
-                )
-            except Exception as e:
-                logger.warning(f"Failed to calculate NetworkX metrics: {e}")
+        try:
+            metrics["is_tree"] = nx.is_tree(self.hierarchy_graph)
+            metrics["is_forest"] = nx.is_forest(self.hierarchy_graph)
+            metrics["num_connected_components"] = nx.number_weakly_connected_components(
+                self.hierarchy_graph
+            )
+        except Exception as e:
+            logger.warning(f"Failed to calculate NetworkX metrics: {e}")
 
         return metrics
 
@@ -468,19 +413,18 @@ class HierarchyManager:
             ):
                 self.leaf_systems.add(system_id)
 
-    def validate_hierarchy(self) -> Dict[str, Any]:
+    def validate_hierarchy(self) -> dict[str, Any]:
         """Validate the hierarchy structure and return issues."""
         issues = []
         warnings = []
 
         # Check for cycles
-        if NETWORKX_AVAILABLE and self.hierarchy_graph:
-            try:
-                cycles = list(nx.simple_cycles(self.hierarchy_graph))
-                if cycles:
-                    issues.append(f"Cycles detected: {cycles}")
-            except Exception as e:
-                warnings.append(f"Could not check for cycles: {e}")
+        try:
+            cycles = list(nx.simple_cycles(self.hierarchy_graph))
+            if cycles:
+                issues.append(f"Cycles detected: {cycles}")
+        except Exception as e:
+            warnings.append(f"Could not check for cycles: {e}")
 
         # Check for orphaned systems
         orphaned = []
@@ -515,10 +459,10 @@ class HierarchyManager:
             "is_valid": len(issues) == 0,
             "issues": issues,
             "warnings": warnings,
-            "validation_timestamp": datetime.now().isoformat(),
+            "validation_timestamp": datetime.now(UTC).isoformat(),
         }
 
-    def export_hierarchy(self) -> Dict[str, Any]:
+    def export_hierarchy(self) -> dict[str, Any]:
         """Export hierarchy structure."""
         return {
             "name": self.name,
@@ -533,7 +477,7 @@ class HierarchyManager:
             "updated_at": self.updated_at.isoformat(),
         }
 
-    def get_hierarchy_summary(self) -> Dict[str, Any]:
+    def get_hierarchy_summary(self) -> dict[str, Any]:
         """Get a summary of the hierarchy."""
         metrics = self.calculate_hierarchy_metrics()
         validation = self.validate_hierarchy()

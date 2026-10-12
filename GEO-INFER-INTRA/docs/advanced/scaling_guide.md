@@ -29,10 +29,9 @@ Partition the spatial extent into regular tiles for parallel processing:
 
 ```python
 import numpy as np
-from typing import List, Tuple
 
-def generate_tiles(bbox: Tuple[float, float, float, float],
-                   tile_size_deg: float = 1.0) -> List[Tuple[float, float, float, float]]:
+def generate_tiles(bbox: tuple[float, float, float, float],
+                   tile_size_deg: float = 1.0) -> list[tuple[float, float, float, float]]:
     """Generate non-overlapping tiles covering a bounding box.
 
     Args:
@@ -69,8 +68,8 @@ Use coarse H3 cells as tile boundaries. This ensures tiles align with the H3 hie
 ```python
 import h3
 
-def h3_tile_partition(bbox: Tuple[float, float, float, float],
-                       tile_resolution: int = 2) -> List[str]:
+def h3_tile_partition(bbox: tuple[float, float, float, float],
+                       tile_resolution: int = 2) -> list[str]:
     """Partition a bounding box into H3 cells at a coarse resolution."""
     min_lon, min_lat, max_lon, max_lat = bbox
     center_lat = (min_lat + max_lat) / 2
@@ -132,10 +131,9 @@ Active Inference belief propagation can be partitioned spatially. Each spatial p
 
 ```python
 import numpy as np
-from typing import Dict, List
 
-def partition_beliefs(beliefs: Dict[str, np.ndarray],
-                      partitions: List[List[str]]) -> List[Dict[str, np.ndarray]]:
+def partition_beliefs(beliefs: dict[str, np.ndarray],
+                      partitions: list[list[str]]) -> list[dict[str, np.ndarray]]:
     """Split a belief dictionary into spatial partitions."""
     return [
         {cell: beliefs[cell] for cell in part if cell in beliefs}
@@ -143,9 +141,9 @@ def partition_beliefs(beliefs: Dict[str, np.ndarray],
     ]
 
 def synchronize_boundary_beliefs(
-    partition_a: Dict[str, np.ndarray],
-    partition_b: Dict[str, np.ndarray],
-    boundary_cells: List[str],
+    partition_a: dict[str, np.ndarray],
+    partition_b: dict[str, np.ndarray],
+    boundary_cells: list[str],
     mixing_weight: float = 0.5,
 ) -> None:
     """Average beliefs at partition boundaries for consistency."""

@@ -1,7 +1,7 @@
 """Performance evaluation system for governance structures."""
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
+from typing import Any
 from geo_infer_metagov.utils.helpers import entity_field
 from enum import Enum
 import logging
@@ -32,12 +32,12 @@ class PerformanceMetrics:
     evaluation_id: str
     governance_structure_id: str
     evaluation_date: datetime
-    dimension_scores: Dict[str, float] = field(default_factory=dict)
+    dimension_scores: dict[str, float] = field(default_factory=dict)
     overall_score: float = 0.0
     performance_rating: str = "fair"
-    trends: Dict[str, str] = field(default_factory=dict)
-    benchmarks: Dict[str, float] = field(default_factory=dict)
-    recommendations: List[str] = field(default_factory=list)
+    trends: dict[str, str] = field(default_factory=dict)
+    benchmarks: dict[str, float] = field(default_factory=dict)
+    recommendations: list[str] = field(default_factory=list)
 
 
 class PerformanceEvaluator:
@@ -63,8 +63,8 @@ class PerformanceEvaluator:
 
     def __init__(self) -> None:
         """Initialize performance evaluator."""
-        self.evaluations: Dict[str, PerformanceMetrics] = {}
-        self.benchmarks: Dict[str, float] = {
+        self.evaluations: dict[str, PerformanceMetrics] = {}
+        self.benchmarks: dict[str, float] = {
             "excellent": 0.8,
             "good": 0.6,
             "fair": 0.4,
@@ -73,8 +73,8 @@ class PerformanceEvaluator:
 
     def evaluate_governance_performance(
         self,
-        governance_structure: Dict[str, Any],
-        performance_data: Optional[Dict[str, Any]] = None,
+        governance_structure: dict[str, Any],
+        performance_data: dict[str, Any] | None = None,
     ) -> PerformanceMetrics:
         """
         Evaluate comprehensive governance performance.
@@ -185,8 +185,8 @@ class PerformanceEvaluator:
 
     def _evaluate_effectiveness(
         self,
-        governance_structure: Dict[str, Any],
-        performance_data: Optional[Dict[str, Any]],
+        governance_structure: dict[str, Any],
+        performance_data: dict[str, Any] | None,
     ) -> float:
         """Evaluate governance effectiveness."""
         # Base score from structure quality
@@ -210,8 +210,8 @@ class PerformanceEvaluator:
 
     def _evaluate_efficiency(
         self,
-        governance_structure: Dict[str, Any],
-        performance_data: Optional[Dict[str, Any]],
+        governance_structure: dict[str, Any],
+        performance_data: dict[str, Any] | None,
     ) -> float:
         """Evaluate governance efficiency."""
         entities = governance_structure.get("entities", [])
@@ -242,8 +242,8 @@ class PerformanceEvaluator:
 
     def _evaluate_equity(
         self,
-        governance_structure: Dict[str, Any],
-        performance_data: Optional[Dict[str, Any]],
+        governance_structure: dict[str, Any],
+        performance_data: dict[str, Any] | None,
     ) -> float:
         """Evaluate governance equity."""
         stakeholder_groups = governance_structure.get("stakeholder_groups", [])
@@ -275,8 +275,8 @@ class PerformanceEvaluator:
 
     def _evaluate_sustainability(
         self,
-        governance_structure: Dict[str, Any],
-        performance_data: Optional[Dict[str, Any]],
+        governance_structure: dict[str, Any],
+        performance_data: dict[str, Any] | None,
     ) -> float:
         """Evaluate governance sustainability."""
         # Check for adaptive mechanisms
@@ -303,8 +303,8 @@ class PerformanceEvaluator:
 
     def _evaluate_participation(
         self,
-        governance_structure: Dict[str, Any],
-        performance_data: Optional[Dict[str, Any]],
+        governance_structure: dict[str, Any],
+        performance_data: dict[str, Any] | None,
     ) -> float:
         """Evaluate stakeholder participation."""
         stakeholder_groups = governance_structure.get("stakeholder_groups", [])
@@ -335,8 +335,8 @@ class PerformanceEvaluator:
 
     def _evaluate_transparency(
         self,
-        governance_structure: Dict[str, Any],
-        performance_data: Optional[Dict[str, Any]],
+        governance_structure: dict[str, Any],
+        performance_data: dict[str, Any] | None,
     ) -> float:
         """Evaluate governance transparency."""
         # Check for information flows
@@ -357,8 +357,8 @@ class PerformanceEvaluator:
 
     def _evaluate_accountability(
         self,
-        governance_structure: Dict[str, Any],
-        performance_data: Optional[Dict[str, Any]],
+        governance_structure: dict[str, Any],
+        performance_data: dict[str, Any] | None,
     ) -> float:
         """Evaluate governance accountability."""
         # Check for reporting relationships
@@ -379,8 +379,8 @@ class PerformanceEvaluator:
 
     def _evaluate_legitimacy(
         self,
-        governance_structure: Dict[str, Any],
-        performance_data: Optional[Dict[str, Any]],
+        governance_structure: dict[str, Any],
+        performance_data: dict[str, Any] | None,
     ) -> float:
         """Evaluate governance legitimacy."""
         # Legitimacy based on stakeholder acceptance
@@ -399,8 +399,8 @@ class PerformanceEvaluator:
 
     def _evaluate_adaptability(
         self,
-        governance_structure: Dict[str, Any],
-        performance_data: Optional[Dict[str, Any]],
+        governance_structure: dict[str, Any],
+        performance_data: dict[str, Any] | None,
     ) -> float:
         """Evaluate governance adaptability."""
         # Check for adaptive mechanisms
@@ -423,8 +423,8 @@ class PerformanceEvaluator:
 
     def _evaluate_resilience(
         self,
-        governance_structure: Dict[str, Any],
-        performance_data: Optional[Dict[str, Any]],
+        governance_structure: dict[str, Any],
+        performance_data: dict[str, Any] | None,
     ) -> float:
         """Evaluate governance resilience."""
         entities = governance_structure.get("entities", [])
@@ -452,7 +452,7 @@ class PerformanceEvaluator:
 
         return float(resilience_score)
 
-    def _identify_trends(self, dimension_scores: Dict[str, float]) -> Dict[str, str]:
+    def _identify_trends(self, dimension_scores: dict[str, float]) -> dict[str, str]:
         """Identify performance trends."""
         trends = {}
 
@@ -469,8 +469,8 @@ class PerformanceEvaluator:
         return trends
 
     def _generate_performance_recommendations(
-        self, dimension_scores: Dict[str, float], overall_score: float
-    ) -> List[str]:
+        self, dimension_scores: dict[str, float], overall_score: float
+    ) -> list[str]:
         """Generate performance improvement recommendations."""
         recommendations = []
 
@@ -525,8 +525,8 @@ class PerformanceEvaluator:
     def benchmark_against_standards(
         self,
         performance_metrics: PerformanceMetrics,
-        standards: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, Any]:
+        standards: dict[str, float] | None = None,
+    ) -> dict[str, Any]:
         """
         Benchmark performance against governance standards.
 
@@ -591,7 +591,7 @@ class PerformanceEvaluator:
 
     def compare_performances(
         self, metrics1: PerformanceMetrics, metrics2: PerformanceMetrics
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compare two performance evaluations.
 
@@ -607,11 +607,11 @@ class PerformanceEvaluator:
         Dict[str, Any]
             Comparison results
         """
-        dimension_differences_out: Dict[str, float] = {}
-        improved_dimensions_out: List[str] = []
-        declined_dimensions_out: List[str] = []
-        stable_dimensions_out: List[str] = []
-        comparison: Dict[str, Any] = {
+        dimension_differences_out: dict[str, float] = {}
+        improved_dimensions_out: list[str] = []
+        declined_dimensions_out: list[str] = []
+        stable_dimensions_out: list[str] = []
+        comparison: dict[str, Any] = {
             "overall_difference": metrics2.overall_score - metrics1.overall_score,
             "dimension_differences": dimension_differences_out,
             "improved_dimensions": improved_dimensions_out,

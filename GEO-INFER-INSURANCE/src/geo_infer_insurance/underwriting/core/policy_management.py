@@ -13,7 +13,7 @@ This module provides sophisticated policy management capabilities including:
 import logging
 import time
 import uuid
-from typing import Dict, List, Optional, Any
+from typing import Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from enum import Enum
@@ -60,9 +60,9 @@ class Coverage:
     premium: float = 0.0
     coinsurance: float = 1.0  # 100% coinsurance by default
     waiting_period_days: int = 0
-    retroactive_date: Optional[datetime] = None
-    conditions: List[str] = field(default_factory=list)
-    exclusions: List[str] = field(default_factory=list)
+    retroactive_date: datetime | None = None
+    conditions: list[str] = field(default_factory=list)
+    exclusions: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -74,8 +74,8 @@ class Endorsement:
     effective_date: datetime
     description: str
     premium_change: float = 0.0
-    coverage_changes: Dict[str, Any] = field(default_factory=dict)
-    conditions: List[str] = field(default_factory=list)
+    coverage_changes: dict[str, Any] = field(default_factory=dict)
+    conditions: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -93,7 +93,7 @@ class Policy:
     expiration_date: datetime
 
     # Coverage information
-    coverages: List[Coverage] = field(default_factory=list)
+    coverages: list[Coverage] = field(default_factory=list)
     term_months: int = 12
 
     # Financial information
@@ -110,13 +110,13 @@ class Policy:
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
     created_by: str = "system"
-    underwriter_id: Optional[str] = None
+    underwriter_id: str | None = None
 
     # Endorsements and amendments
-    endorsements: List[Endorsement] = field(default_factory=list)
+    endorsements: list[Endorsement] = field(default_factory=list)
 
     # Additional data
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def add_coverage(self, coverage: Coverage) -> None:
         """Add coverage to the policy."""
@@ -164,7 +164,7 @@ class Policy:
             return 0
         return (self.expiration_date - now).days
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert policy to dictionary for serialization."""
         return {
             "policy_id": self.policy_id,
@@ -367,7 +367,7 @@ class PolicyManager:
     - Policy compliance monitoring
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the policy manager.
 
@@ -380,14 +380,14 @@ class PolicyManager:
         )
 
         # Policy storage
-        self.policies: Dict[str, Policy] = {}
-        self.policy_index: Dict[str, List[str]] = {}  # Index by various criteria
+        self.policies: dict[str, Policy] = {}
+        self.policy_index: dict[str, list[str]] = {}  # Index by various criteria
 
         # Lifecycle manager
         self.lifecycle = PolicyLifecycle()
 
         # Performance tracking
-        self.performance_metrics: Dict[str, Any] = {
+        self.performance_metrics: dict[str, Any] = {
             "total_policies": 0,
             "active_policies": 0,
             "total_premium": 0.0,
@@ -400,9 +400,9 @@ class PolicyManager:
 
     def create_policy(
         self,
-        application_data: Dict[str, Any],
-        premium_calculation: Dict[str, Any],
-        decision: Dict[str, Any],
+        application_data: dict[str, Any],
+        premium_calculation: dict[str, Any],
+        decision: dict[str, Any],
     ) -> Policy:
         """
         Create a new insurance policy from application data.
@@ -488,8 +488,8 @@ class PolicyManager:
             return "decline"
 
     def _create_coverages_from_application(
-        self, application_data: Dict[str, Any], premium_calculation: Dict[str, Any]
-    ) -> List[Coverage]:
+        self, application_data: dict[str, Any], premium_calculation: dict[str, Any]
+    ) -> list[Coverage]:
         """Create coverages from application data."""
         coverages = []
         coverage_requests = application_data.get("coverage_requests", [])
@@ -519,11 +519,11 @@ class PolicyManager:
 
         return coverages
 
-    def get_policy(self, policy_id: str) -> Optional[Policy]:
+    def get_policy(self, policy_id: str) -> Policy | None:
         """Retrieve policy by ID."""
         return self.policies.get(policy_id)
 
-    def search_policies(self, criteria: Dict[str, Any]) -> List[Policy]:
+    def search_policies(self, criteria: dict[str, Any]) -> list[Policy]:
         """
         Search policies based on criteria.
 
@@ -553,7 +553,7 @@ class PolicyManager:
 
         return matching_policies
 
-    def update_policy(self, policy_id: str, updates: Dict[str, Any]) -> bool:
+    def update_policy(self, policy_id: str, updates: dict[str, Any]) -> bool:
         """
         Update policy information.
 
@@ -618,7 +618,7 @@ class PolicyManager:
         return True
 
     def bind_policy(
-        self, policy_id: str, effective_date: Optional[datetime] = None
+        self, policy_id: str, effective_date: datetime | None = None
     ) -> bool:
         """
         Bind quoted policy.
@@ -684,8 +684,8 @@ class PolicyManager:
         return success
 
     def renew_policy(
-        self, policy_id: str, renewal_term_months: Optional[int] = None
-    ) -> Optional[Policy]:
+        self, policy_id: str, renewal_term_months: int | None = None
+    ) -> Policy | None:
         """
         Renew existing policy.
 
@@ -740,7 +740,7 @@ class PolicyManager:
         return renewal_policy
 
     def cancel_policy(
-        self, policy_id: str, reason: str, cancellation_date: Optional[datetime] = None
+        self, policy_id: str, reason: str, cancellation_date: datetime | None = None
     ) -> bool:
         """
         Cancel existing policy.
@@ -777,8 +777,8 @@ class PolicyManager:
         return success
 
     def get_portfolio_summary(
-        self, portfolio_criteria: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, portfolio_criteria: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Get portfolio summary and performance metrics.
 
@@ -800,13 +800,13 @@ class PolicyManager:
         average_premium = total_premium / len(policies) if policies else 0
 
         # Risk tier distribution
-        risk_tiers: Dict[str, Any] = {}
+        risk_tiers: dict[str, Any] = {}
         for policy in policies:
             tier = policy.risk_tier
             risk_tiers[tier] = risk_tiers.get(tier, 0) + 1
 
         # Status distribution
-        status_counts: Dict[str, Any] = {}
+        status_counts: dict[str, Any] = {}
         for policy in policies:
             status = policy.status.value
             status_counts[status] = status_counts.get(status, 0) + 1
@@ -822,7 +822,7 @@ class PolicyManager:
             "last_updated": datetime.now().isoformat(),
         }
 
-    def _get_expiring_policies(self, days_ahead: int) -> List[str]:
+    def _get_expiring_policies(self, days_ahead: int) -> list[str]:
         """Get list of policies expiring within specified days."""
         now = datetime.now()
         threshold_date = now + timedelta(days=days_ahead)
@@ -869,22 +869,20 @@ class PolicyManager:
         )
 
         # Update status distribution
-        status_counts: Dict[str, Any] = {}
+        status_counts: dict[str, Any] = {}
         for policy in policies:
             status = policy.status.value
             status_counts[status] = status_counts.get(status, 0) + 1
         self.performance_metrics["policies_by_status"] = status_counts
 
         # Update risk tier distribution
-        tier_counts: Dict[str, Any] = {}
+        tier_counts: dict[str, Any] = {}
         for policy in policies:
             tier = policy.risk_tier
             tier_counts[tier] = tier_counts.get(tier, 0) + 1
         self.performance_metrics["policies_by_risk_tier"] = tier_counts
 
-    def export_portfolio(
-        self, format: str = "csv", filename: Optional[str] = None
-    ) -> str:
+    def export_portfolio(self, format: str = "csv", filename: str | None = None) -> str:
         """
         Export portfolio data to file.
 
@@ -915,7 +913,7 @@ class PolicyManager:
         self.logger.info(f"Portfolio exported to {filename}")
         return filename
 
-    def get_policy_performance(self, policy_id: str) -> Dict[str, Any]:
+    def get_policy_performance(self, policy_id: str) -> dict[str, Any]:
         """Get performance metrics for a specific policy."""
         if policy_id not in self.policies:
             return {}
@@ -936,7 +934,7 @@ class PolicyManager:
             "last_updated": policy.updated_at.isoformat(),
         }
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform health check on policy management system."""
         return {
             "status": "operational",
@@ -948,6 +946,6 @@ class PolicyManager:
 
 
 # Convenience functions
-def create_policy_manager(config: Optional[Dict[str, Any]] = None) -> PolicyManager:
+def create_policy_manager(config: dict[str, Any] | None = None) -> PolicyManager:
     """Create a new policy manager."""
     return PolicyManager(config)

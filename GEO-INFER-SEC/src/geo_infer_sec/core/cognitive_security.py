@@ -14,7 +14,8 @@ import logging
 import numpy as np
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, Any, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from collections import defaultdict, deque
 import json
@@ -72,13 +73,13 @@ class BehaviorProfile:
 
     entity_id: str
     entity_type: str  # user, system, network, etc.
-    baseline_metrics: Dict[str, float]
-    current_metrics: Dict[str, float]
+    baseline_metrics: dict[str, float]
+    current_metrics: dict[str, float]
     behavior_score: float
     behavior_type: BehaviorType
     last_updated: datetime
     confidence_level: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -88,14 +89,14 @@ class CognitiveThreat:
     threat_id: str
     threat_type: str
     confidence_score: float
-    behavioral_indicators: List[str]
+    behavioral_indicators: list[str]
     prediction_model: str
     detection_method: str
-    affected_entities: List[str]
+    affected_entities: list[str]
     risk_score: float
-    recommended_actions: List[str]
+    recommended_actions: list[str]
     detected_at: datetime = field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -105,18 +106,18 @@ class ThreatHuntingResult:
     hunt_id: str
     hunt_type: ThreatHuntingType
     hypothesis: str
-    findings: List[Dict[str, Any]]
-    threat_indicators: List[str]
+    findings: list[dict[str, Any]]
+    threat_indicators: list[str]
     confidence_level: float
-    recommendations: List[str]
+    recommendations: list[str]
     hunt_date: datetime = field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class CognitiveSecurityManager:
     """AI-driven cognitive security management system."""
 
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, config_path: str | None = None):
         """Initialize the cognitive security manager."""
         self.logger = logging.getLogger(__name__)
 
@@ -126,9 +127,9 @@ class CognitiveSecurityManager:
             )
 
         # Initialize data structures
-        self.behavior_profiles: Dict[str, BehaviorProfile] = {}
-        self.cognitive_threats: Dict[str, CognitiveThreat] = {}
-        self.threat_hunting_results: Dict[str, ThreatHuntingResult] = {}
+        self.behavior_profiles: dict[str, BehaviorProfile] = {}
+        self.cognitive_threats: dict[str, CognitiveThreat] = {}
+        self.threat_hunting_results: dict[str, ThreatHuntingResult] = {}
         self.security_events_buffer: deque = deque(maxlen=10000)
 
         # Initialize ML models
@@ -139,8 +140,8 @@ class CognitiveSecurityManager:
 
         # Initialize monitoring
         self.monitoring_active = False
-        self.analysis_threads: List[threading.Thread] = []
-        self.alert_callbacks: List[Callable[[Dict[str, Any]], None]] = []
+        self.analysis_threads: list[threading.Thread] = []
+        self.alert_callbacks: list[Callable[[dict[str, Any]], None]] = []
 
         # Configuration
         self.config = {
@@ -179,7 +180,7 @@ class CognitiveSecurityManager:
 
     # Behavioral Analysis
     def analyze_user_behavior(
-        self, user_id: str, events: List[SecurityEvent]
+        self, user_id: str, events: list[SecurityEvent]
     ) -> BehaviorProfile:
         """Analyze user behavior patterns."""
         if not events:
@@ -227,8 +228,8 @@ class CognitiveSecurityManager:
         return profile
 
     def _extract_behavioral_metrics(
-        self, events: List[SecurityEvent]
-    ) -> Dict[str, float]:
+        self, events: list[SecurityEvent]
+    ) -> dict[str, float]:
         """Extract behavioral metrics from security events."""
         if not events:
             return {}
@@ -278,7 +279,7 @@ class CognitiveSecurityManager:
 
         return metrics
 
-    def _calculate_unusual_hour_activity(self, events: List[SecurityEvent]) -> float:
+    def _calculate_unusual_hour_activity(self, events: list[SecurityEvent]) -> float:
         """Calculate the proportion of events occurring during unusual hours."""
         if not events:
             return 0.0
@@ -293,7 +294,7 @@ class CognitiveSecurityManager:
         return unusual_hour_count / len(events)
 
     def _calculate_behavior_deviation(
-        self, baseline: Dict[str, float], current: Dict[str, float]
+        self, baseline: dict[str, float], current: dict[str, float]
     ) -> float:
         """Calculate behavior deviation score."""
         if not baseline or not current:
@@ -337,7 +338,7 @@ class CognitiveSecurityManager:
         )
 
     # Anomaly Detection
-    def detect_anomalies(self, events: List[SecurityEvent]) -> List[Dict[str, Any]]:
+    def detect_anomalies(self, events: list[SecurityEvent]) -> list[dict[str, Any]]:
         """Detect anomalies in security events using ML."""
         if not ML_AVAILABLE or not events:
             return []
@@ -372,7 +373,7 @@ class CognitiveSecurityManager:
             self.logger.error(f"Error in anomaly detection: {e}")
             return []
 
-    def _prepare_feature_matrix(self, events: List[SecurityEvent]) -> np.ndarray:
+    def _prepare_feature_matrix(self, events: list[SecurityEvent]) -> np.ndarray:
         """Prepare feature matrix for ML algorithms."""
         features = []
 
@@ -395,8 +396,8 @@ class CognitiveSecurityManager:
 
     # Threat Prediction
     def predict_threats(
-        self, historical_data: List[SecurityEvent]
-    ) -> List[CognitiveThreat]:
+        self, historical_data: list[SecurityEvent]
+    ) -> list[CognitiveThreat]:
         """Predict potential threats using ML models."""
         if not ML_AVAILABLE or not historical_data:
             return []
@@ -429,8 +430,8 @@ class CognitiveSecurityManager:
             return []
 
     def _analyze_threat_patterns(
-        self, events: List[SecurityEvent]
-    ) -> Dict[str, Dict[str, Any]]:
+        self, events: list[SecurityEvent]
+    ) -> dict[str, dict[str, Any]]:
         """Analyze patterns in security events to predict threats."""
         patterns = {}
 
@@ -493,13 +494,13 @@ class CognitiveSecurityManager:
         self,
         hypothesis: str,
         hunt_type: ThreatHuntingType,
-        search_criteria: Dict[str, Any],
+        search_criteria: dict[str, Any],
     ) -> ThreatHuntingResult:
         """Conduct AI-assisted threat hunting."""
         hunt_id = f"hunt_{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
-        findings: List[Any] = []
-        threat_indicators: List[str] = []
+        findings: list[Any] = []
+        threat_indicators: list[str] = []
 
         try:
             # Filter events based on search criteria
@@ -552,7 +553,7 @@ class CognitiveSecurityManager:
                 recommendations=[],
             )
 
-    def _filter_events_for_hunt(self, criteria: Dict[str, Any]) -> List[SecurityEvent]:
+    def _filter_events_for_hunt(self, criteria: dict[str, Any]) -> list[SecurityEvent]:
         """Filter security events based on hunt criteria."""
         filtered_events = []
 
@@ -583,8 +584,8 @@ class CognitiveSecurityManager:
         return filtered_events
 
     def _hunt_by_indicators(
-        self, events: List[SecurityEvent], criteria: Dict[str, Any]
-    ) -> Tuple[List[Dict], List[str]]:
+        self, events: list[SecurityEvent], criteria: dict[str, Any]
+    ) -> tuple[list[dict], list[str]]:
         """Hunt for threats based on indicators of compromise."""
         findings = []
         indicators = criteria.get("indicators", [])
@@ -606,8 +607,8 @@ class CognitiveSecurityManager:
         return findings, indicators
 
     def _hunt_by_hypothesis(
-        self, events: List[SecurityEvent], hypothesis: str
-    ) -> Tuple[List[Dict], List[str]]:
+        self, events: list[SecurityEvent], hypothesis: str
+    ) -> tuple[list[dict], list[str]]:
         """Hunt for threats based on a hypothesis."""
         findings = []
         indicators = []
@@ -638,8 +639,8 @@ class CognitiveSecurityManager:
         return findings, indicators
 
     def _proactive_hunt(
-        self, events: List[SecurityEvent]
-    ) -> Tuple[List[Dict], List[str]]:
+        self, events: list[SecurityEvent]
+    ) -> tuple[list[dict], list[str]]:
         """Proactive threat hunting using behavioral analysis."""
         findings = []
         indicators = []
@@ -659,13 +660,13 @@ class CognitiveSecurityManager:
                         "risk_level": "MEDIUM",
                     }
                 )
-                indicators.append(f"Behavioral anomaly detected")
+                indicators.append("Behavioral anomaly detected")
 
         return findings, indicators
 
     def _reactive_hunt(
-        self, events: List[SecurityEvent]
-    ) -> Tuple[List[Dict], List[str]]:
+        self, events: list[SecurityEvent]
+    ) -> tuple[list[dict], list[str]]:
         """Reactive threat hunting based on recent alerts."""
         findings = []
         indicators = []
@@ -687,7 +688,7 @@ class CognitiveSecurityManager:
 
         return findings, indicators
 
-    def _calculate_hunt_confidence(self, findings: List[Dict]) -> float:
+    def _calculate_hunt_confidence(self, findings: list[dict]) -> float:
         """Calculate confidence level for hunt results."""
         if not findings:
             return 0.0
@@ -702,8 +703,8 @@ class CognitiveSecurityManager:
         return min(1.0, confidence)
 
     def _generate_hunt_recommendations(
-        self, findings: List[Dict], hunt_type: ThreatHuntingType
-    ) -> List[str]:
+        self, findings: list[dict], hunt_type: ThreatHuntingType
+    ) -> list[str]:
         """Generate recommendations based on hunt results."""
         recommendations = []
 
@@ -824,7 +825,7 @@ class CognitiveSecurityManager:
         for user_id, user_events in events_by_user.items():
             self.analyze_user_behavior(user_id, user_events)
 
-    def _trigger_cognitive_alert(self, anomaly: Dict[str, Any]) -> None:
+    def _trigger_cognitive_alert(self, anomaly: dict[str, Any]) -> None:
         """Trigger alert for cognitive security detection."""
         alert_data = {
             "type": "cognitive_anomaly",
@@ -861,23 +862,23 @@ class CognitiveSecurityManager:
         """Add a security event to the cognitive analysis buffer."""
         self.security_events_buffer.append(event)
 
-    def get_behavior_profile(self, entity_id: str) -> Optional[BehaviorProfile]:
+    def get_behavior_profile(self, entity_id: str) -> BehaviorProfile | None:
         """Get behavior profile for an entity."""
         return self.behavior_profiles.get(entity_id)
 
-    def get_cognitive_threats(self) -> List[CognitiveThreat]:
+    def get_cognitive_threats(self) -> list[CognitiveThreat]:
         """Get all active cognitive threats."""
         return list(self.cognitive_threats.values())
 
-    def get_threat_hunting_results(self) -> List[ThreatHuntingResult]:
+    def get_threat_hunting_results(self) -> list[ThreatHuntingResult]:
         """Get all threat hunting results."""
         return list(self.threat_hunting_results.values())
 
-    def add_alert_callback(self, callback: Callable[[Dict[str, Any]], None]) -> None:
+    def add_alert_callback(self, callback: Callable[[dict[str, Any]], None]) -> None:
         """Add a callback function for cognitive security alerts."""
         self.alert_callbacks.append(callback)
 
-    def generate_cognitive_report(self) -> Dict[str, Any]:
+    def generate_cognitive_report(self) -> dict[str, Any]:
         """Generate a comprehensive cognitive security report."""
         report = {
             "timestamp": datetime.now().isoformat(),

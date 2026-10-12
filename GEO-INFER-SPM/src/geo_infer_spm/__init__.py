@@ -62,7 +62,7 @@ from .core.advanced.spatial_regression import fit_spatial_model
 # API
 from .api.endpoints import SPMAPI
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Framework"
 __description__ = "Statistical Parametric Mapping for Geospatial Analysis"
 

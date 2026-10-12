@@ -6,7 +6,7 @@ autocorrelation, and distributions in geospatial data.
 """
 
 import numpy as np
-from typing import List, Tuple, Dict, Optional, Any, cast
+from typing import Any, cast
 from dataclasses import dataclass
 from math import erfc, sqrt
 
@@ -48,7 +48,7 @@ def _generate_weights(coords: np.ndarray, include_self: bool = False) -> np.ndar
     return cast(np.ndarray, weights)
 
 
-def _cliff_ord_terms(weights_matrix: np.ndarray) -> Tuple[float, float, float]:
+def _cliff_ord_terms(weights_matrix: np.ndarray) -> tuple[float, float, float]:
     """Compute the S0, S1, and S2 connectivity terms of Cliff & Ord (1973).
 
     S0 = sum of all off-diagonal weights.
@@ -123,7 +123,7 @@ class SpatialDescriptiveStats:
     variance: float
     min_value: float
     max_value: float
-    centroid: Tuple[float, float]
+    centroid: tuple[float, float]
     dispersion: float
     skewness: float
     kurtosis: float
@@ -137,7 +137,7 @@ class MoranI:
     of values across geographic locations.
     """
 
-    def __init__(self, weights_matrix: Optional[np.ndarray] = None):
+    def __init__(self, weights_matrix: np.ndarray | None = None):
         """
         Initialize MoranI calculator.
 
@@ -148,8 +148,8 @@ class MoranI:
         self.weights_matrix = weights_matrix
 
     def compute(
-        self, values: np.ndarray, coords: Optional[np.ndarray] = None
-    ) -> Dict[str, float]:
+        self, values: np.ndarray, coords: np.ndarray | None = None
+    ) -> dict[str, float]:
         """
         Compute Moran's I statistic.
 
@@ -226,8 +226,8 @@ class GearysC:
 
     def __init__(
         self,
-        weights_matrix: Optional[np.ndarray] = None,
-        rng: Optional[Any] = None,
+        weights_matrix: np.ndarray | None = None,
+        rng: Any | None = None,
         n_permutations: int = 200,
     ) -> None:
         """
@@ -271,8 +271,8 @@ class GearysC:
         return float(np.var(perm_stats, ddof=1))
 
     def compute(
-        self, values: np.ndarray, coords: Optional[np.ndarray] = None
-    ) -> Dict[str, float]:
+        self, values: np.ndarray, coords: np.ndarray | None = None
+    ) -> dict[str, float]:
         """
         Compute Geary's C statistic.
 
@@ -343,7 +343,7 @@ class GetisOrd:
     clusters) and cold spots (low-value clusters) in spatial data.
     """
 
-    def __init__(self, weights_matrix: Optional[np.ndarray] = None):
+    def __init__(self, weights_matrix: np.ndarray | None = None):
         """
         Initialize GetisOrd calculator.
 
@@ -354,8 +354,8 @@ class GetisOrd:
         self.weights_matrix = weights_matrix
 
     def compute(
-        self, values: np.ndarray, coords: Optional[np.ndarray] = None
-    ) -> Dict[str, Any]:
+        self, values: np.ndarray, coords: np.ndarray | None = None
+    ) -> dict[str, Any]:
         """
         Compute Getis-Ord G* statistics.
 
@@ -424,7 +424,7 @@ class GetisOrd:
         }
 
 
-def getis_ord_g(values: np.ndarray, weights_matrix: np.ndarray) -> Dict[str, Any]:
+def getis_ord_g(values: np.ndarray, weights_matrix: np.ndarray) -> dict[str, Any]:
     """
     Calculate Getis-Ord G* statistic for hot spot analysis.
 
@@ -470,10 +470,10 @@ def getis_ord_g(values: np.ndarray, weights_matrix: np.ndarray) -> Dict[str, Any
 
 def ripley_k(
     points: np.ndarray,
-    distances: List[float],
+    distances: list[float],
     area: float,
     boundary_correction: bool = True,
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """
     Calculate Ripley's K function for point pattern analysis.
 
@@ -524,9 +524,9 @@ def ripley_k(
 def semivariogram(
     coords: np.ndarray,
     values: np.ndarray,
-    lag_distances: List[float],
+    lag_distances: list[float],
     tolerance: float = 0.5,
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """
     Calculate empirical semivariogram.
 
@@ -639,7 +639,7 @@ def spatial_entropy(values: np.ndarray, bins: int = 10) -> float:
 
 def local_indicators_spatial_association(
     values: np.ndarray, weights_matrix: np.ndarray
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """
     Calculate Local Indicators of Spatial Association (LISA).
 

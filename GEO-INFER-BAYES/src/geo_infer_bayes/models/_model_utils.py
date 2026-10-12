@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from math import lgamma, log, pi
-from typing import Any, Mapping, Sequence
+from typing import Any
+from collections.abc import Mapping, Sequence
 
 import numpy as np
 from ..utils.rng import SeedLike, resolve_rng

@@ -25,9 +25,11 @@
 - `test_advanced_models.py`
 - `test_api_endpoints.py`
 - `test_bayesian.py`
+- `test_compiler_profile.py`
 - `test_contrasts.py`
 - `test_data_io.py`
 - `test_glm.py`
+- `test_helper_input_contracts.py`
 - `test_helpers.py`
 - `test_helpers_reproducibility.py`
 - `test_package_exports.py`

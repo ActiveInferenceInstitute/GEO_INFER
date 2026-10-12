@@ -16,7 +16,7 @@ Key Features:
 import logging
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class ClimateDataProcessor:
     - Custom climate rasters
     """
 
-    def __init__(self, cache_dir: Optional[str] = None):
+    def __init__(self, cache_dir: str | None = None):
         """
         Initialize climate data processor.
 
@@ -56,7 +56,7 @@ class ClimateDataProcessor:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         # WorldClim configuration
-        self.worldclim_config: Dict[str, Any] = {
+        self.worldclim_config: dict[str, Any] = {
             "base_url": "https://biogeo.ucdavis.edu/data/worldclim/v2.1/",
             "variables": {
                 "bio1": "Annual Mean Temperature",
@@ -88,11 +88,11 @@ class ClimateDataProcessor:
 
     def load_worldclim_data(
         self,
-        variables: List[str],
-        coordinates: List[Tuple[float, float]],
+        variables: list[str],
+        coordinates: list[tuple[float, float]],
         buffer_km: float = 5.0,
         resolution: str = "30s",
-        data_path: Optional[str] = None,
+        data_path: str | None = None,
     ) -> "ClimateDataset":
         """
         Load WorldClim bioclimatic variables for specified coordinates.
@@ -132,7 +132,7 @@ class ClimateDataProcessor:
                 continue
 
             if source.is_file():
-                raster_path: Optional[Path] = source
+                raster_path: Path | None = source
             else:
                 number = var.removeprefix("bio")
                 candidates = (
@@ -175,8 +175,8 @@ class ClimateDataProcessor:
         )
 
     def _calculate_bbox_with_buffer(
-        self, coordinates: List[Tuple[float, float]], buffer_km: float
-    ) -> Tuple[float, float, float, float]:
+        self, coordinates: list[tuple[float, float]], buffer_km: float
+    ) -> tuple[float, float, float, float]:
         """Calculate bounding box with buffer around coordinates."""
         if not coordinates:
             raise ValueError("No coordinates provided")
@@ -233,7 +233,7 @@ class ClimateDataProcessor:
     def load_custom_climate_data(
         self,
         raster_path: str,
-        coordinates: List[Tuple[float, float]],
+        coordinates: list[tuple[float, float]],
         variable_name: str = "custom_climate",
     ) -> "ClimateDataset":
         """
@@ -299,8 +299,8 @@ class ClimateDataset:
 
     def __init__(
         self,
-        data: Dict[str, Any],
-        coordinates: List[Tuple[float, float]],
+        data: dict[str, Any],
+        coordinates: list[tuple[float, float]],
         data_source: str = "Unknown",
     ):
         """
@@ -320,7 +320,7 @@ class ClimateDataset:
             f"{len(self.coordinates)} locations"
         )
 
-    def get_variables(self) -> List[str]:
+    def get_variables(self) -> list[str]:
         """Get list of available climate variables."""
         return list(self.data.keys())
 
@@ -351,7 +351,7 @@ class ClimateDataset:
         Returns:
             DataFrame with all variables and coordinates
         """
-        dfs: List[pd.DataFrame] = [
+        dfs: list[pd.DataFrame] = [
             self.get_variable_data(variable).rename(columns={"value": variable})[
                 ["latitude", "longitude", variable]
             ]
@@ -368,7 +368,7 @@ class ClimateDataset:
 
         return result
 
-    def export_for_h3_integration(self) -> Dict[str, Any]:
+    def export_for_h3_integration(self) -> dict[str, Any]:
         """
         Export climate data for H3 spatial integration.
 

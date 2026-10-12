@@ -3,7 +3,7 @@ Bayesian models for geospatial applications: GaussianProcess and SpatialCovarian
 """
 
 import numpy as np
-from typing import Any, Optional, Tuple, Union
+from typing import Any
 
 
 class SpatialCovariance:
@@ -67,7 +67,7 @@ class GaussianProcess:
         signal_variance: float = 1.0,
         noise_variance: float = 1e-2,
         jitter: float = 1e-6,
-        covariance_function: Optional[dict[str, float | str]] = None,
+        covariance_function: dict[str, float | str] | None = None,
         mean_function: str = "constant",
         **kwargs: object,
     ) -> None:
@@ -92,11 +92,11 @@ class GaussianProcess:
                 "(supported: 'zero', 'constant')"
             )
         self.mean_function = mean_function
-        self._mean: Optional[float] = None
-        self.X_train: Optional[np.ndarray] = None
-        self.y_train: Optional[np.ndarray] = None
-        self._L: Optional[np.ndarray] = None
-        self._alpha: Optional[np.ndarray] = None
+        self._mean: float | None = None
+        self.X_train: np.ndarray | None = None
+        self.y_train: np.ndarray | None = None
+        self._L: np.ndarray | None = None
+        self._alpha: np.ndarray | None = None
 
     # ------------------------------------------------------------------
     # Kernel functions
@@ -212,7 +212,7 @@ class GaussianProcess:
         self,
         X_new: np.ndarray,
         return_std: bool = True,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """Make predictions with uncertainty quantification.
 
         Computes the GP predictive mean and (optionally) standard

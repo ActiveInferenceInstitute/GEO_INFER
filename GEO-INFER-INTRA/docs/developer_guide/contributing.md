@@ -22,7 +22,7 @@ signposts until the code and tests exist.
 ```bash
 git clone https://github.com/ActiveInferenceInstitute/GEO_INFER.git
 cd GEO_INFER
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 ```
 
 Check the working tree before editing. In a shared checkout, preserve unrelated

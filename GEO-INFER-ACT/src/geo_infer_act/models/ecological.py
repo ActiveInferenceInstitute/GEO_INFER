@@ -2,11 +2,11 @@
 Ecological model for active inference.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any
+import copy
 import numpy as np
 
 from geo_infer_act.core.active_inference import ActiveInferenceModel
-from geo_infer_act.utils.pymdp_adapter import obj_array_zeros
 
 
 class EcologicalModel(ActiveInferenceModel):
@@ -20,7 +20,7 @@ class EcologicalModel(ActiveInferenceModel):
 
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
         random_seed: int | None = None,
     ):
         """
@@ -29,7 +29,7 @@ class EcologicalModel(ActiveInferenceModel):
         Args:
             config: Configuration dictionary with optional matrix overrides.
         """
-        config = config or {}
+        config = copy.deepcopy(config or {})
         if random_seed is not None:
             config["random_seed"] = random_seed
 
@@ -48,6 +48,9 @@ class EcologicalModel(ActiveInferenceModel):
         # 3. Define Action Space (Control Factors)
         # Factor 0: Action (0=Wait, 1=Forage, 2=Hide)
         self.num_controls = [3]
+        config.setdefault("state_dim", self.num_states)
+        config.setdefault("obs_dim", self.num_obs)
+        config.setdefault("num_controls", self.num_controls)
 
         # 4. Construct Matrices (if not provided in config)
         if "A" not in config:
@@ -70,11 +73,8 @@ class EcologicalModel(ActiveInferenceModel):
         )
         self.set_generative_model(gen_model)
 
-    def _build_A_matrix(self) -> List[np.ndarray]:
+    def _build_A_matrix(self) -> list[np.ndarray]:
         """Build Likelihood Matrix A: P(o|s)."""
-        A: List[np.ndarray]
-        A = obj_array_zeros([self.num_obs, self.num_states])
-
         # --- Modality 0: Food Signal (mapping from Resource Level) ---
         # State Factor 0 (Resources): Low(0) -> None(0), Med(1) -> Scant(1), High(2) -> Abundant(2)
         # State Factor 1 (Risk): Irrelevant for food signal
@@ -97,9 +97,6 @@ class EcologicalModel(ActiveInferenceModel):
         A_food[1, 2, :] = 0.2
         A_food[2, 2, :] = 0.8
 
-        # Flatten A_food to (Obs_Food, Total_States=6)
-        A[0] = A_food.reshape(3, 6)
-
         # --- Modality 1: Threat Signal (mapping from Risk) ---
         # State Factor 0 (Resources): Irrelevant
         # State Factor 1 (Risk): Safe(0) -> Quiet(0), Risky(1) -> Noise(1)
@@ -114,11 +111,10 @@ class EcologicalModel(ActiveInferenceModel):
         A_threat[0, :, 1] = 0.2
         A_threat[1, :, 1] = 0.8
 
-        A[1] = A_threat.reshape(2, 6)
+        # Flatten each modality to (Obs, Total_States=6)
+        return [A_food.reshape(3, 6), A_threat.reshape(2, 6)]
 
-        return A
-
-    def _build_B_matrix(self) -> List[np.ndarray]:
+    def _build_B_matrix(self) -> list[np.ndarray]:
         """Build Transition Matrix B: P(s'|s,u)."""
         # Initialize B as list of arrays for independent factors
         # Factor 0: Resource (3 states)
@@ -183,10 +179,9 @@ class EcologicalModel(ActiveInferenceModel):
 
         return B
 
-    def _build_C_matrix(self) -> List[np.ndarray]:
+    def _build_C_matrix(self) -> list[np.ndarray]:
         """Build Preference Matrix C: P(o)."""
-        C: List[np.ndarray]
-        C = obj_array_zeros(self.num_obs)
+        C = [np.zeros(n_obs) for n_obs in self.num_obs]
 
         # Prefer Abundant Food (Modality 0, Index 2)
         # C values are log-probabilities (utilities)
@@ -200,10 +195,9 @@ class EcologicalModel(ActiveInferenceModel):
 
         return C
 
-    def _build_D_matrix(self) -> List[np.ndarray]:
+    def _build_D_matrix(self) -> list[np.ndarray]:
         """Build Prior Matrix D: P(s)."""
-        D: List[np.ndarray]
-        D = obj_array_zeros(self.num_states)
+        D = [np.zeros(n_states) for n_states in self.num_states]
 
         # Start expecting High Resources
         D[0][0] = 0.1
@@ -224,14 +218,18 @@ class EcologicalModel(ActiveInferenceModel):
             observation: List of integers [Food_Obs_Idx, Threat_Obs_Idx]
         """
         if observation is None:
-            obs = np.array([0, 0])
+            obs = [0, 0]
         else:
-            obs = np.asarray(observation)
+            obs = observation
 
-        # Perceive
-        beliefs = self.perceive(obs)
+        # Use the shared step so history, diagnostics and action timing agree.
+        result = super().step(obs, **kwargs)
+        if kwargs.get("return_result", False):
+            return result
+        beliefs, action = result
 
-        # Act
-        action = self.act()
-
-        return {"beliefs": beliefs, "action": action, "observation": obs.tolist()}
+        return {
+            "beliefs": beliefs,
+            "action": action,
+            "observation": np.asarray(obs).tolist(),
+        }

@@ -1,7 +1,7 @@
 """Water quality assessment module."""
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, cast
 from dataclasses import dataclass
 from enum import Enum
 from datetime import datetime
@@ -41,18 +41,18 @@ class WaterSample:
     """Water quality sample data."""
 
     sample_id: str
-    location: Tuple[float, float]  # (lon, lat)
+    location: tuple[float, float]  # (lon, lat)
     timestamp: str
     ph: float
     dissolved_oxygen: float  # mg/L
     turbidity: float  # NTU
     temperature: float  # Celsius
-    conductivity: Optional[float] = None  # µS/cm
-    nitrate: Optional[float] = None  # mg/L
-    phosphate: Optional[float] = None  # mg/L
-    ammonia: Optional[float] = None  # mg/L
-    e_coli: Optional[float] = None  # CFU/100mL
-    total_dissolved_solids: Optional[float] = None  # mg/L
+    conductivity: float | None = None  # µS/cm
+    nitrate: float | None = None  # mg/L
+    phosphate: float | None = None  # mg/L
+    ammonia: float | None = None  # mg/L
+    e_coli: float | None = None  # CFU/100mL
+    total_dissolved_solids: float | None = None  # mg/L
 
 
 class WaterQualityAssessor:
@@ -68,12 +68,12 @@ class WaterQualityAssessor:
     - Regulatory compliance checking
     """
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize water quality assessor."""
         self.config = config or {}
 
         # Water quality standards (EPA/WHO default values)
-        self.standards: Dict[str, Dict[str, float]] = {
+        self.standards: dict[str, dict[str, float]] = {
             "ph": {"min": 6.5, "max": 8.5, "optimal": 7.0},
             "dissolved_oxygen": {"min": 5.0, "optimal": 8.0},  # mg/L
             "turbidity": {"max": 1.0, "optimal": 0.5},  # NTU
@@ -99,14 +99,14 @@ class WaterQualityAssessor:
         }
 
         # Sample history for trend analysis
-        self.sample_history: List[WaterSample] = []
+        self.sample_history: list[WaterSample] = []
 
     def assess_water_quality(
         self,
         ph: xr.DataArray,
-        dissolved_oxygen: Optional[xr.DataArray] = None,
-        turbidity: Optional[xr.DataArray] = None,
-        nitrate: Optional[xr.DataArray] = None,
+        dissolved_oxygen: xr.DataArray | None = None,
+        turbidity: xr.DataArray | None = None,
+        nitrate: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """
         Assess water quality against standards.
@@ -120,7 +120,7 @@ class WaterQualityAssessor:
         Returns:
             Water quality assessment
         """
-        results: Dict[str, Any] = {}
+        results: dict[str, Any] = {}
 
         # pH assessment
         ph_standard = self.standards["ph"]
@@ -159,7 +159,7 @@ class WaterQualityAssessor:
 
     def calculate_wqi(
         self, sample: WaterSample, reference_temperature: float = 20.0
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate Water Quality Index using NSF WQI method.
 
@@ -250,7 +250,7 @@ class WaterQualityAssessor:
     def identify_pollution_sources(
         self,
         pollutant_concentration: xr.DataArray,
-        flow_direction: Optional[xr.DataArray] = None,
+        flow_direction: xr.DataArray | None = None,
     ) -> xr.Dataset:
         """
         Identify potential pollution sources.
@@ -318,13 +318,13 @@ class WaterQualityAssessor:
 
     def track_pollution_plume(
         self,
-        initial_location: Tuple[float, float],
+        initial_location: tuple[float, float],
         pollutant_type: PollutantType,
-        flow_velocity: Tuple[float, float],  # (vx, vy) in m/s
+        flow_velocity: tuple[float, float],  # (vx, vy) in m/s
         diffusion_coefficient: float,
         time_hours: float,
         grid_resolution: float = 100.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Model pollution plume dispersion using advection-diffusion.
 
@@ -393,8 +393,8 @@ class WaterQualityAssessor:
         }
 
     def analyze_trends(
-        self, samples: List[WaterSample], parameter: str, time_window_days: int = 365
-    ) -> Dict[str, Any]:
+        self, samples: list[WaterSample], parameter: str, time_window_days: int = 365
+    ) -> dict[str, Any]:
         """
         Analyze water quality trends over time.
 
@@ -430,7 +430,7 @@ class WaterQualityAssessor:
         ordered = sorted(samples, key=lambda s: _parse_ts(s.timestamp))
 
         # Extract values for the requested parameter in time order.
-        pairs: List[Tuple[float, float]] = []
+        pairs: list[tuple[float, float]] = []
         for s in ordered:
             value = getattr(s, parameter, None)
             if value is None:
@@ -495,10 +495,10 @@ class WaterQualityAssessor:
 
     def assess_risk(
         self,
-        samples: List[WaterSample],
+        samples: list[WaterSample],
         water_body_type: WaterBodyType,
         usage_type: str = "drinking",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Assess water quality risk for specific usage.
 
@@ -514,7 +514,7 @@ class WaterQualityAssessor:
             return {"error": "No samples provided"}
 
         # Usage-specific thresholds
-        usage_thresholds: Dict[str, Dict[str, Dict[str, float]]] = {
+        usage_thresholds: dict[str, dict[str, dict[str, float]]] = {
             "drinking": {
                 "ph": {"min": 6.5, "max": 8.5},
                 "turbidity": {"max": 1.0},
@@ -613,8 +613,8 @@ class WaterQualityAssessor:
             return f"Water is NOT suitable for {usage_type}. Immediate action required."
 
     def check_regulatory_compliance(
-        self, samples: List[WaterSample], regulations: str = "EPA"
-    ) -> Dict[str, Any]:
+        self, samples: list[WaterSample], regulations: str = "EPA"
+    ) -> dict[str, Any]:
         """
         Check compliance with regulatory standards.
 
@@ -626,7 +626,7 @@ class WaterQualityAssessor:
             Compliance report
         """
         # Regulatory limit thresholds
-        reg_limits: Dict[str, Dict[str, Dict[str, float]]] = {
+        reg_limits: dict[str, dict[str, dict[str, float]]] = {
             "EPA": {
                 "ph": {"min": 6.5, "max": 8.5},
                 "nitrate": {"max": 10.0},
@@ -650,13 +650,13 @@ class WaterQualityAssessor:
         limits = reg_limits.get(regulations, reg_limits["EPA"])
 
         # Check each parameter
-        compliance_results: Dict[str, Any] = {}
+        compliance_results: dict[str, Any] = {}
         overall_compliant = True
 
         for param, lim in limits.items():
             values = [getattr(s, param, None) for s in samples]
             values = [v for v in values if v is not None]
-            float_values = cast("List[float]", values)
+            float_values = cast("list[float]", values)
 
             if not values:
                 compliance_results[param] = {"status": "No data"}
@@ -700,7 +700,7 @@ class WaterQualityAssessor:
         concentration_mg_l: float,
         flow_rate_m3_s: float,
         time_period_hours: float = 24.0,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate pollutant load from concentration and flow.
 

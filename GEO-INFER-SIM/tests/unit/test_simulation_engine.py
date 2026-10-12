@@ -3,6 +3,7 @@ Unit tests for simulation engine.
 """
 
 import dataclasses
+import json
 import threading
 
 import pytest
@@ -258,6 +259,22 @@ class TestCheckpointReproducibility:
         resumed.step(lambda t, s: {"v": resumed.rng.random()})
 
         assert resumed._current_state["v"] == uninterrupted._current_state["v"]
+
+    @pytest.mark.parametrize("dropped", ["rng_state", "config"])
+    def test_checkpoint_without_snapshot_is_rejected(
+        self, tmp_path, dropped: str
+    ) -> None:
+        """A checkpoint lacking the RNG or config snapshot cannot be resumed."""
+        engine = SimulationEngine(SimulationConfig(random_seed=5))
+        engine.initialize({"x": 1.0})
+        filepath = tmp_path / "ckpt.json"
+        engine.save_checkpoint(str(filepath))
+        payload = json.loads(filepath.read_text())
+        del payload[dropped]
+        filepath.write_text(json.dumps(payload))
+
+        with pytest.raises(ValueError, match=dropped):
+            SimulationEngine(SimulationConfig()).load_checkpoint(str(filepath))
 
 
 class TestSimulationConfigSurface:

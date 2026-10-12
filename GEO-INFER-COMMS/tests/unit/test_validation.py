@@ -1,7 +1,7 @@
 """Tests for COMMS validation utilities."""
 
 import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 from geo_infer_comms.utils.validation import (
     sanitize_message_content,
@@ -281,11 +281,8 @@ class TestNotificationAndEventValidation:
     def test_timestamp(self):
         assert validate_timestamp("2026-01-01T00:00:00+00:00") is True
         assert validate_timestamp("2026-01-01T00:00:00Z") is True
-        assert validate_timestamp(datetime.now(timezone.utc)) is True
-        assert (
-            validate_timestamp(datetime.now(timezone.utc) + timedelta(days=400))
-            is False
-        )
+        assert validate_timestamp(datetime.now(UTC)) is True
+        assert validate_timestamp(datetime.now(UTC) + timedelta(days=400)) is False
         assert validate_timestamp("not-a-timestamp") is False
         assert validate_timestamp(12345) is False
 

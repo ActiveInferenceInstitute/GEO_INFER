@@ -1,2 +1,0 @@
-# GEO-INFER-CIV runtime dependencies: none — the core is pure standard library.
-# Dev/test extras are declared in pyproject.toml ([project.optional-dependencies]).

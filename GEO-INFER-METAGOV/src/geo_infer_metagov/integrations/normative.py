@@ -1,6 +1,6 @@
 """Normative integration for governance rule translation and compliance."""
 
-from typing import List, Dict, Any
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -51,9 +51,9 @@ class NormativeGovernanceIntegration:
 
     def translate_governance_rules_to_norms(
         self,
-        governance_rules: List[Dict[str, Any]],
+        governance_rules: list[dict[str, Any]],
         normative_framework: str = "default",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Translate governance rules to normative rules.
 
@@ -69,9 +69,9 @@ class NormativeGovernanceIntegration:
         Dict[str, Any]
             Translated normative rules
         """
-        normative_rules_out: List[Dict[str, Any]] = []
-        untranslatable_rules_out: List[Dict[str, Any]] = []
-        translation: Dict[str, Any] = {
+        normative_rules_out: list[dict[str, Any]] = []
+        untranslatable_rules_out: list[dict[str, Any]] = []
+        translation: dict[str, Any] = {
             "translated": True,
             "normative_rules": normative_rules_out,
             "translation_quality": 0.0,
@@ -122,9 +122,9 @@ class NormativeGovernanceIntegration:
 
     def check_compliance_with_norms(
         self,
-        governance_actions: List[Dict[str, Any]],
-        normative_rules: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        governance_actions: list[dict[str, Any]],
+        normative_rules: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Check governance actions for compliance with normative rules.
 
@@ -140,9 +140,9 @@ class NormativeGovernanceIntegration:
         Dict[str, Any]
             Compliance checking results
         """
-        compliant_actions_out: List[Dict[str, Any]] = []
-        violations_out: List[Dict[str, Any]] = []
-        compliance: Dict[str, Any] = {
+        compliant_actions_out: list[dict[str, Any]] = []
+        violations_out: list[dict[str, Any]] = []
+        compliance: dict[str, Any] = {
             "checked": True,
             "compliant_actions": compliant_actions_out,
             "violations": violations_out,
@@ -162,7 +162,7 @@ class NormativeGovernanceIntegration:
             # Simplified compliance checking
             # In real implementation, would use normative reasoning
             is_compliant = True
-            violated_norms: List[str] = []
+            violated_norms: list[str] = []
 
             for norm in normative_rules:
                 norm_type = norm.get("norm_type", "")
@@ -207,9 +207,9 @@ class NormativeGovernanceIntegration:
 
     def detect_norm_violations(
         self,
-        governance_structure: Dict[str, Any],
-        normative_rules: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        governance_structure: dict[str, Any],
+        normative_rules: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Detect norm violations in governance structure.
 
@@ -225,8 +225,8 @@ class NormativeGovernanceIntegration:
         Dict[str, Any]
             Violation detection results
         """
-        violations_out2: List[Dict[str, Any]] = []
-        violations: Dict[str, Any] = {
+        violations_out2: list[dict[str, Any]] = []
+        violations: dict[str, Any] = {
             "violations_detected": False,
             "violations": violations_out2,
             "violation_count": 0,
@@ -269,9 +269,9 @@ class NormativeGovernanceIntegration:
 
     def align_norms_with_governance(
         self,
-        governance_rules: List[Dict[str, Any]],
-        existing_norms: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        governance_rules: list[dict[str, Any]],
+        existing_norms: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Align normative rules with governance rules.
 
@@ -287,9 +287,9 @@ class NormativeGovernanceIntegration:
         Dict[str, Any]
             Alignment analysis
         """
-        conflicts_out: List[Dict[str, Any]] = []
-        gaps_out: List[str] = []
-        alignment: Dict[str, Any] = {
+        conflicts_out: list[dict[str, Any]] = []
+        gaps_out: list[str] = []
+        alignment: dict[str, Any] = {
             "aligned": True,
             "alignment_score": 0.0,
             "conflicts": conflicts_out,

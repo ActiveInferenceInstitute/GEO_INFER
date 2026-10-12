@@ -1,7 +1,6 @@
 """Carbon footprint analysis module."""
 
 import logging
-from typing import Dict, Optional
 import xarray as xr
 
 logger = logging.getLogger(__name__)
@@ -10,7 +9,7 @@ logger = logging.getLogger(__name__)
 class CarbonFootprintAnalyzer:
     """Analyze carbon footprint of energy systems."""
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize carbon footprint analyzer.
 
         Documented contract: ``config`` is accepted and stored for API

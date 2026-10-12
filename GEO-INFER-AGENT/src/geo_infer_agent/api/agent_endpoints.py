@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 REST API endpoints for the GEO-INFER-AGENT system.
@@ -13,7 +12,7 @@ This module defines RESTful API endpoints that allow:
 
 import logging
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -30,11 +29,11 @@ class AgentCreate(BaseModel):
     """Model for creating a new agent."""
 
     agent_type: str = Field(..., description="Type of agent to create")
-    agent_id: Optional[str] = Field(
+    agent_id: str | None = Field(
         None, description="Custom ID for the agent (auto-generated if not provided)"
     )
-    config: Dict[str, Any] = Field({}, description="Agent configuration")
-    region: Optional[str] = Field(
+    config: dict[str, Any] = Field({}, description="Agent configuration")
+    region: str | None = Field(
         None, description="Geospatial region for agent operation (GeoJSON)"
     )
 
@@ -43,14 +42,14 @@ class AgentAction(BaseModel):
     """Model for triggering an agent action."""
 
     action: str = Field(..., description="Action to perform")
-    parameters: Dict[str, Any] = Field({}, description="Action parameters")
+    parameters: dict[str, Any] = Field({}, description="Action parameters")
 
 
 class AgentMessage(BaseModel):
     """Model for agent-to-agent messages."""
 
     to_agent_id: str = Field(..., description="Target agent ID")
-    content: Dict[str, Any] = Field(..., description="Message content")
+    content: dict[str, Any] = Field(..., description="Message content")
 
 
 class AgentResponse(BaseModel):
@@ -58,7 +57,7 @@ class AgentResponse(BaseModel):
 
     success: bool = Field(..., description="Whether the operation was successful")
     message: str = Field(..., description="Human-readable message")
-    data: Optional[Dict[str, Any]] = Field(None, description="Response data")
+    data: dict[str, Any] | None = Field(None, description="Response data")
 
 
 # Initialize API
@@ -69,7 +68,7 @@ app = FastAPI(
 )
 
 
-def cors_allow_credentials(origins: List[str]) -> bool:
+def cors_allow_credentials(origins: list[str]) -> bool:
     """Decide whether CORS may send credentials.
 
     Credentialed CORS is only safe for an explicit, finite origin list.
@@ -81,7 +80,7 @@ def cors_allow_credentials(origins: List[str]) -> bool:
     return bool(origins) and "*" not in origins
 
 
-def cors_origins() -> List[str]:
+def cors_origins() -> list[str]:
     """Parse explicit allowed CORS origins from the environment.
 
     ``GEO_INFER_AGENT_CORS_ORIGINS`` accepts a comma-separated origin list.
@@ -109,8 +108,8 @@ app.add_middleware(
 agent_registry = AgentRegistry()
 
 
-@app.get("/agents", response_model=List[Dict[str, Any]], tags=["Agents"])
-async def list_agents() -> List[Dict[str, Any]]:
+@app.get("/agents", response_model=list[dict[str, Any]], tags=["Agents"])
+async def list_agents() -> list[dict[str, Any]]:
     """List all registered agents."""
     return agent_registry.list_agents()
 
@@ -138,7 +137,7 @@ async def create_agent(
         )
     except Exception as e:
         logger.error(f"Failed to create agent: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/agents/{agent_id}", response_model=AgentResponse, tags=["Agents"])
@@ -149,8 +148,10 @@ async def get_agent(agent_id: str) -> AgentResponse:
         return AgentResponse(
             success=True, message=f"Details for agent {agent_id}", data=agent_info
         )
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Agent {agent_id} not found"
+        ) from exc
 
 
 @app.delete("/agents/{agent_id}", response_model=AgentResponse, tags=["Agents"])
@@ -162,8 +163,10 @@ async def delete_agent(agent_id: str) -> AgentResponse:
         return AgentResponse(
             success=True, message=f"Agent {agent_id} deleted successfully", data=None
         )
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Agent {agent_id} not found"
+        ) from exc
 
 
 @app.post("/agents/{agent_id}/start", response_model=AgentResponse, tags=["Control"])
@@ -181,8 +184,10 @@ async def start_agent(
         return AgentResponse(
             success=True, message=f"Agent {agent_id} started", data=None
         )
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Agent {agent_id} not found"
+        ) from exc
 
 
 @app.post("/agents/{agent_id}/stop", response_model=AgentResponse, tags=["Control"])
@@ -193,8 +198,10 @@ async def stop_agent(agent_id: str) -> AgentResponse:
         return AgentResponse(
             success=True, message=f"Agent {agent_id} stopped", data=None
         )
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Agent {agent_id} not found"
+        ) from exc
 
 
 @app.post("/agents/{agent_id}/action", response_model=AgentResponse, tags=["Control"])
@@ -211,10 +218,12 @@ async def agent_action(agent_id: str, action_data: AgentAction) -> AgentResponse
             message=f"Action '{action_data.action}' executed on agent {agent_id}",
             data=result,
         )
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Agent {agent_id} not found"
+        ) from exc
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/agents/{agent_id}/state", response_model=AgentResponse, tags=["State"])
@@ -225,8 +234,10 @@ async def get_agent_state(agent_id: str) -> AgentResponse:
         return AgentResponse(
             success=True, message=f"Current state of agent {agent_id}", data=state
         )
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Agent {agent_id} not found"
+        ) from exc
 
 
 @app.post(
@@ -247,11 +258,11 @@ async def send_message(agent_id: str, message: AgentMessage) -> AgentResponse:
             else "Failed to send message",
             data=None,
         )
-    except KeyError:
+    except KeyError as exc:
         raise HTTPException(
             status_code=404,
             detail=f"Agent {agent_id} or {message.to_agent_id} not found",
-        )
+        ) from exc
 
 
 def start_api_server(host: str = "0.0.0.0", port: int = 8000) -> None:

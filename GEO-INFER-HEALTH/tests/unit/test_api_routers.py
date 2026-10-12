@@ -1,6 +1,6 @@
 """FastAPI TestClient tests for the GEO-INFER-HEALTH API routers."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 import pytest
 from fastapi import FastAPI
@@ -33,7 +33,7 @@ def _report(report_id: str, lat: float, lon: float, case_count: int) -> dict:
         "report_id": report_id,
         "disease_code": "FLU",
         "location": {"latitude": lat, "longitude": lon},
-        "report_date": datetime.now(timezone.utc).isoformat(),
+        "report_date": datetime.now(UTC).isoformat(),
         "case_count": case_count,
         "source": "Hospital A",
     }
@@ -101,7 +101,7 @@ def test_environmental_reading_roundtrip(client):
         "value": 35.0,
         "unit": "ug/m3",
         "location": {"latitude": 34.05, "longitude": -118.24},
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     post = client.post("/api/v1/environment/readings/", json=payload)
     assert post.status_code == 201
@@ -112,7 +112,7 @@ def test_environmental_reading_roundtrip(client):
 
 
 def test_average_exposure_endpoints(client):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     for i, value in enumerate([10.0, 20.0]):
         client.post(
             "/api/v1/environment/readings/",
@@ -137,7 +137,7 @@ def test_average_exposure_endpoints(client):
 
 def test_exposure_uses_latest_reading_anchor(client):
     """Historical data older than the window from *today* still yields a value."""
-    old = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    old = datetime(2020, 1, 1, tzinfo=UTC)
     for i, value in enumerate([4.0, 6.0]):
         client.post(
             "/api/v1/environment/readings/",

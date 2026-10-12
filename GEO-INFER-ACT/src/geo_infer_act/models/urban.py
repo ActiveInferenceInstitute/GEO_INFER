@@ -2,10 +2,10 @@
 Urban planning model using active inference.
 """
 
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any
 import numpy as np
 
-from geo_infer_act.models.base import BaseActiveInferenceModel
+from geo_infer_act.models.base import BaseActiveInferenceModel, _dimension
 from geo_infer_act.core.generative_model import GenerativeModel
 from geo_infer_act.core.active_inference import ActiveInferenceModel as Agent
 
@@ -20,12 +20,12 @@ class UrbanModel(BaseActiveInferenceModel):
 
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
         n_agents: int = 3,
         n_resources: int = 3,  # Reduced to 3 for 'Low', 'Med', 'High' levels of amenity
         n_locations: int = 5,
-        planning_horizon: int = 5,
-        random_seed: Optional[int] = None,
+        planning_horizon: int = 2,
+        random_seed: int | None = None,
     ):
         """
         Initialize the urban planning model.
@@ -43,10 +43,10 @@ class UrbanModel(BaseActiveInferenceModel):
         self.random_seed = random_seed
         self.rng = np.random.default_rng(random_seed)
 
-        self.n_agents = n_agents
-        self.n_resources = n_resources
-        self.n_locations = n_locations
-        self.planning_horizon = planning_horizon
+        self.n_agents = _dimension(n_agents, "n_agents")
+        self.n_resources = _dimension(n_resources, "n_resources")
+        self.n_locations = _dimension(n_locations, "n_locations")
+        self.planning_horizon = _dimension(planning_horizon, "planning_horizon")
 
         # Environment State
         # resource_levels[loc] = level (0=Low, 1=Med, 2=High)
@@ -60,7 +60,7 @@ class UrbanModel(BaseActiveInferenceModel):
             self.connectivity[i, (i - 1) % n_locations] = 1
 
         # Agents
-        self.agents: List[Dict[str, Any]] = []
+        self.agents: list[dict[str, Any]] = []
         self._initialize_agents()
         self._initial_resource_levels = self.resource_levels.copy()
         self._initial_agent_locations = [agent["location"] for agent in self.agents]
@@ -78,7 +78,7 @@ class UrbanModel(BaseActiveInferenceModel):
             # 2. Observation Space:
             # Modality 0: GPS/Location Sensor (Perfect)
             # Modality 1: Resource Sensor (Noisy detection of local amenity level)
-            num_obs = [self.n_locations, 3]  # 3 levels of resources
+            num_obs = [self.n_locations, self.n_resources]
 
             # 3. Control Space: Move to adjacent node (or stay)
             # Action: Go to node 0, 1, ..., N-1. (Valid only if connected)
@@ -99,14 +99,13 @@ class UrbanModel(BaseActiveInferenceModel):
             # Actually, standard ActInf doesn't learn A matrix parameters online easily without 'learning' flag.
             # Let's give them a noisy map.
 
-            A_res = np.zeros((3, self.n_locations))
+            A_res = np.ones((self.n_resources, self.n_locations)) * (
+                0.2 / self.n_resources
+            )
             for loc in range(self.n_locations):
                 true_level = self.resource_levels[loc]
                 # High prob of seeing the true level
-                A_res[true_level, loc] = 0.8
-                # Small prob of error
-                A_res[(true_level + 1) % 3, loc] = 0.1
-                A_res[(true_level - 1) % 3, loc] = 0.1
+                A_res[true_level, loc] += 0.8
 
             A = [A_loc, A_res]
 
@@ -126,7 +125,7 @@ class UrbanModel(BaseActiveInferenceModel):
             # --- C Matrix (Preferences) ---
             # Agents prefer High Resources (Modality 1, Index 2)
             C_loc = np.zeros(self.n_locations)  # No location preference
-            C_res = np.array([-2.0, 0.0, 2.0])  # Prefer High(2)
+            C_res = np.linspace(-2.0, 2.0, self.n_resources)
             C = [C_loc, C_res]
 
             # --- D Matrix (Prior) ---
@@ -155,6 +154,9 @@ class UrbanModel(BaseActiveInferenceModel):
                 model_type="categorical", parameters=config, model_id=agent_id
             )
             agent.set_generative_model(gen_model)
+            from geo_infer_act.core.factored_runtime import build_runtime_artifact
+
+            build_runtime_artifact(gen_model)
 
             # Initial absolute state (simulation truth)
             start_loc = int(self.rng.integers(0, self.n_locations))
@@ -163,8 +165,12 @@ class UrbanModel(BaseActiveInferenceModel):
                 {"id": agent_id, "model": agent, "location": start_loc, "history": []}
             )
 
-    def step(self, input_actions: Optional[Any] = None) -> Tuple[Dict[str, Any], bool]:
+    def step(self, input_actions: Any | None = None) -> tuple[dict[str, Any], bool]:
         """Advance one simulation step."""
+        if input_actions is not None:
+            raise ValueError(
+                "UrbanModel selects its own actions; input_actions are unsupported"
+            )
         states = []
 
         for agent_data in self.agents:
@@ -216,15 +222,21 @@ class UrbanModel(BaseActiveInferenceModel):
 
         return {"states": states, "resource_map": self.resource_levels.tolist()}, False
 
-    def run_simulation(self, n_steps: int = 10) -> List[Dict[str, Any]]:
+    def run_simulation(self, n_steps: int = 10) -> list[dict[str, Any]]:
         """Run repeated urban planning steps and return the state history."""
+        if (
+            isinstance(n_steps, bool)
+            or not isinstance(n_steps, (int, np.integer))
+            or n_steps < 0
+        ):
+            raise ValueError("n_steps must be a nonnegative integer")
         history = []
         for _ in range(n_steps):
             state, _ = self.step()
             history.append(state)
         return history
 
-    def reset(self) -> Dict[str, Any]:
+    def reset(self) -> dict[str, Any]:
         """Restore the seeded environment and every agent's initial location."""
         self.resource_levels = self._initial_resource_levels.copy()
         for agent_data, initial_location in zip(

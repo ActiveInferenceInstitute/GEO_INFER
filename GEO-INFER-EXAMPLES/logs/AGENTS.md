@@ -21,7 +21,7 @@
 
 ## Local Contents
 
-- `example_runner.log`
+- No direct tracked child entries.
 
 ## Validation
 

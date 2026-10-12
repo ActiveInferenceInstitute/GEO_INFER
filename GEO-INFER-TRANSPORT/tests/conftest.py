@@ -10,11 +10,11 @@ import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point, LineString
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -120,7 +120,7 @@ def od_matrix() -> np.ndarray:
 
 
 @pytest.fixture
-def transport_config() -> Dict[str, Any]:
+def transport_config() -> dict[str, Any]:
     """Configuration dict for transport network analysis.
 
     Specifies routing algorithm, impedance function, mode parameters,

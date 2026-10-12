@@ -11,7 +11,7 @@ This module provides compliance capabilities including:
 
 import logging
 import time
-from typing import Dict, List, Optional, Any
+from typing import Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from enum import Enum
@@ -49,18 +49,18 @@ class RegulatoryRequirement:
     category: str  # capital, reporting, governance, etc.
     description: str
     regulation_reference: str
-    applicability_criteria: Dict[str, Any] = field(default_factory=dict)
+    applicability_criteria: dict[str, Any] = field(default_factory=dict)
     compliance_threshold: float = 1.0
     monitoring_frequency: str = "quarterly"
 
-    def is_applicable(self, context: Dict[str, Any]) -> bool:
+    def is_applicable(self, context: dict[str, Any]) -> bool:
         """Check if requirement is applicable."""
         for key, value in self.applicability_criteria.items():
             if key in context and context[key] != value:
                 return False
         return True
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert requirement to dictionary."""
         return {
             "requirement_id": self.requirement_id,
@@ -83,12 +83,12 @@ class ComplianceCheck:
     entity_id: str
     status: ComplianceStatus
     check_date: datetime = field(default_factory=datetime.now)
-    next_check_date: Optional[datetime] = None
-    findings: List[str] = field(default_factory=list)
-    evidence: Dict[str, Any] = field(default_factory=dict)
+    next_check_date: datetime | None = None
+    findings: list[str] = field(default_factory=list)
+    evidence: dict[str, Any] = field(default_factory=dict)
     remediation_required: bool = False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert check to dictionary."""
         return {
             "check_id": self.check_id,
@@ -128,8 +128,8 @@ class ComplianceEngine:
         self.logger = logging.getLogger("geo_infer_insurance.underwriting.compliance")
 
         # Regulatory requirements
-        self.requirements: Dict[str, RegulatoryRequirement] = {}
-        self.compliance_checks: Dict[str, ComplianceCheck] = {}
+        self.requirements: dict[str, RegulatoryRequirement] = {}
+        self.compliance_checks: dict[str, ComplianceCheck] = {}
 
         # Load framework requirements
         self._load_framework_requirements()
@@ -240,8 +240,8 @@ class ComplianceEngine:
             self.requirements[req.requirement_id] = req
 
     def perform_compliance_check(
-        self, entity_id: str, context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, entity_id: str, context: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Perform compliance check for entity.
 
@@ -290,7 +290,7 @@ class ComplianceEngine:
         self,
         requirement: RegulatoryRequirement,
         entity_id: str,
-        context: Dict[str, Any],
+        context: dict[str, Any],
     ) -> ComplianceCheck:
         """Check compliance for specific requirement."""
         check_id = f"check_{entity_id}_{requirement.requirement_id}_{int(time.time())}"
@@ -330,7 +330,7 @@ class ComplianceEngine:
         return check
 
     def _get_compliance_value(
-        self, requirement: RegulatoryRequirement, context: Dict[str, Any]
+        self, requirement: RegulatoryRequirement, context: dict[str, Any]
     ) -> float:
         """Get compliance value for requirement."""
         # Simplified compliance calculation - in practice would be more sophisticated
@@ -360,7 +360,7 @@ class ComplianceEngine:
 
     def generate_compliance_report(
         self, entity_id: str, period: str = "quarterly"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate compliance report for entity.
 
@@ -443,7 +443,7 @@ class ComplianceEngine:
             return True
         return False
 
-    def get_compliance_status(self, entity_id: str) -> Dict[str, Any]:
+    def get_compliance_status(self, entity_id: str) -> dict[str, Any]:
         """Get compliance status for entity."""
         # Get recent checks for entity
         entity_checks = [
@@ -476,7 +476,7 @@ class ComplianceEngine:
             ),
         }
 
-    def get_framework_requirements(self) -> List[Dict[str, Any]]:
+    def get_framework_requirements(self) -> list[dict[str, Any]]:
         """Get all requirements for current framework."""
         return [req.to_dict() for req in self.requirements.values()]
 
@@ -487,7 +487,7 @@ class ComplianceEngine:
         self._load_framework_requirements()
         self.logger.info(f"Compliance framework changed to {framework.value}")
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform health check on compliance engine."""
         return {
             "status": "operational",
@@ -520,7 +520,7 @@ class RegulatoryFramework:
             ComplianceFramework.US_INSURANCE_REGULATION: self._define_us_insurance_framework(),
         }
 
-    def _define_standard_framework(self) -> Dict[str, Any]:
+    def _define_standard_framework(self) -> dict[str, Any]:
         """Define standard compliance framework."""
         return {
             "name": "Standard Insurance Regulation",
@@ -534,7 +534,7 @@ class RegulatoryFramework:
             "penalties": ["fines", "license_suspension"],
         }
 
-    def _define_solvency_ii_framework(self) -> Dict[str, Any]:
+    def _define_solvency_ii_framework(self) -> dict[str, Any]:
         """Define Solvency II framework."""
         return {
             "name": "Solvency II",
@@ -549,7 +549,7 @@ class RegulatoryFramework:
             "penalties": ["fines", "capital_addons", "supervisory_intervention"],
         }
 
-    def _define_basel_iii_framework(self) -> Dict[str, Any]:
+    def _define_basel_iii_framework(self) -> dict[str, Any]:
         """Define Basel III framework."""
         return {
             "name": "Basel III",
@@ -559,7 +559,7 @@ class RegulatoryFramework:
             "penalties": ["capital_restrictions", "supervisory_measures"],
         }
 
-    def _define_us_insurance_framework(self) -> Dict[str, Any]:
+    def _define_us_insurance_framework(self) -> dict[str, Any]:
         """Define US insurance regulation framework."""
         return {
             "name": "US Insurance Regulation",
@@ -573,11 +573,11 @@ class RegulatoryFramework:
             "penalties": ["fines", "license_revocation", "civil_penalties"],
         }
 
-    def get_framework_info(self, framework: ComplianceFramework) -> Dict[str, Any]:
+    def get_framework_info(self, framework: ComplianceFramework) -> dict[str, Any]:
         """Get framework information."""
         return self.frameworks.get(framework, {})
 
-    def get_all_frameworks(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_frameworks(self) -> dict[str, dict[str, Any]]:
         """Get all framework definitions."""
         return {k.value: v for k, v in self.frameworks.items()}
 
@@ -591,9 +591,9 @@ def create_compliance_engine(
 
 
 def check_policy_compliance(
-    policy_data: Dict[str, Any],
+    policy_data: dict[str, Any],
     framework: ComplianceFramework = ComplianceFramework.STANDARD,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Check policy compliance with regulatory framework.
 

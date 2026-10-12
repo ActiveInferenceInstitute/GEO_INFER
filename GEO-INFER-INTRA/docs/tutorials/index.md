@@ -22,7 +22,6 @@ the shared uv environment.
 
 - [Environmental Monitoring Integration](../guides/ENVIRONMENTAL_MONITORING_INTEGRATION.md)
 - [Module Integration Guide](../guides/MODULE_INTEGRATION_GUIDE.md)
-- [UV Migration Guide](../guides/UV_MIGRATION_GUIDE.md)
 
 ## Workflow Tutorials
 

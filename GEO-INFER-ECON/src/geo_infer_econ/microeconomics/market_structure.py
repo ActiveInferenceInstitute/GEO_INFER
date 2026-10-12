@@ -11,7 +11,7 @@ Implements comprehensive market structure analysis including:
 
 import numpy as np
 import pandas as pd
-from typing import cast, Dict, List, Optional, Any
+from typing import cast, Any
 from dataclasses import dataclass
 
 
@@ -23,8 +23,8 @@ class MarketDefinition:
     product_market: str
     geographic_market: str
     time_period: str
-    participants: List[str]
-    boundaries: Dict[str, Any]
+    participants: list[str]
+    boundaries: dict[str, Any]
 
 
 class CompetitionAnalysis:
@@ -33,7 +33,7 @@ class CompetitionAnalysis:
     """
 
     def __init__(self) -> None:
-        self.market_data: Dict[str, Any] = {}
+        self.market_data: dict[str, Any] = {}
 
     def calculate_price_correlation_matrix(
         self, price_data: pd.DataFrame
@@ -51,8 +51,8 @@ class CompetitionAnalysis:
         return cast(np.ndarray, price_data.corr().values)
 
     def test_market_definition(
-        self, price_data: pd.DataFrame, candidate_market: List[str]
-    ) -> Dict[str, Any]:
+        self, price_data: pd.DataFrame, candidate_market: list[str]
+    ) -> dict[str, Any]:
         """
         Test whether candidate products/locations constitute a relevant market
 
@@ -95,7 +95,7 @@ class CompetitionAnalysis:
             "candidate_market": candidate_market,
         }
 
-    def analyze_entry_barriers(self, industry_data: pd.DataFrame) -> Dict[str, Any]:
+    def analyze_entry_barriers(self, industry_data: pd.DataFrame) -> dict[str, Any]:
         """
         Analyze entry barriers in an industry
 
@@ -142,11 +142,11 @@ class SpatialMarketAnalysis:
     """
 
     def __init__(self) -> None:
-        self.spatial_markets: Dict[str, Any] = {}
+        self.spatial_markets: dict[str, Any] = {}
 
     def delineate_geographic_markets(
-        self, price_data: pd.DataFrame, locations: List[str]
-    ) -> Dict[str, Any]:
+        self, price_data: pd.DataFrame, locations: list[str]
+    ) -> dict[str, Any]:
         """
         Delineate geographic markets based on price integration
 
@@ -210,12 +210,12 @@ class MarketStructureAnalysis:
     Main market structure analysis class
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.competition_analysis: Any = CompetitionAnalysis()
         self.spatial_analysis = SpatialMarketAnalysis()
 
-    def analyze_market_power(self, market_data: pd.DataFrame) -> Dict[str, Any]:
+    def analyze_market_power(self, market_data: pd.DataFrame) -> dict[str, Any]:
         """
         Analyze market power and concentration
 
@@ -251,7 +251,7 @@ class MarketStructureAnalysis:
 
     def _calculate_power_indicators(
         self, market_data: pd.DataFrame
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate various market power indicators"""
         indicators = {}
 
@@ -276,7 +276,7 @@ class MarketStructureAnalysis:
 
     def analyze_spatial_market_structure(
         self, spatial_data: pd.DataFrame
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze market structure in spatial context
 
@@ -317,7 +317,7 @@ class MarketStructureAnalysis:
 
     def _analyze_spatial_competition(
         self, spatial_data: pd.DataFrame
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze spatial competition patterns"""
         # Baseline for spatial competition analysis
         return {

@@ -27,6 +27,7 @@
 - `civic_intel.py`
 - `dynamic_causal_model.py`
 - `efe_decomposition.py`
+- `factored_runtime.py`
 - `free_energy.py`
 - `generative_model.py`
 - `gnn_contract.py`

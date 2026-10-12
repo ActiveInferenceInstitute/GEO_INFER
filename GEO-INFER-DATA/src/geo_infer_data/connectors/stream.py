@@ -9,7 +9,8 @@ dependency of this package.
 
 import json
 import logging
-from typing import Any, AsyncIterator, Dict, Optional
+from typing import Any
+from collections.abc import AsyncIterator
 
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ class StreamConnector:
         """
         raise RuntimeError("Stream connector subclasses must implement connect()")
 
-    async def stream_data(self, **kwargs: Any) -> AsyncIterator[Dict[str, Any]]:
+    async def stream_data(self, **kwargs: Any) -> AsyncIterator[dict[str, Any]]:
         """
         Stream data from source.
 
@@ -79,7 +80,7 @@ class MQTTConnector(StreamConnector):
         qos: Subscription QoS level (default ``0``).
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         import aiomqtt
 
         self._aiomqtt = aiomqtt
@@ -90,7 +91,7 @@ class MQTTConnector(StreamConnector):
         self.username = config.get("username")
         self.password = config.get("password")
         self.qos = config.get("qos", 0)
-        self._client: Optional[Any] = None
+        self._client: Any | None = None
 
         logger.info(f"Initialized MQTTConnector for {self.host}:{self.port}")
 
@@ -125,7 +126,7 @@ class MQTTConnector(StreamConnector):
 
     async def stream_data(  # type: ignore[override]
         self, topic: str, **kwargs: Any
-    ) -> AsyncIterator[Dict[str, Any]]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """
         Stream messages from an MQTT topic.
 
@@ -142,7 +143,7 @@ class MQTTConnector(StreamConnector):
         logger.info(f"Subscribed to MQTT topic: {topic}")
 
         async for message in client.messages:
-            record: Dict[str, Any] = {
+            record: dict[str, Any] = {
                 "topic": message.topic.value,
                 "payload": _decode_payload(message.payload),
                 "qos": message.qos,
@@ -169,7 +170,7 @@ class KafkaConnector(StreamConnector):
     missing library rather than returning fabricated records.
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.bootstrap_servers = config.get("bootstrap_servers", ["localhost:9092"])
         self.group_id = config.get("group_id", "geo_infer_data")
@@ -189,7 +190,7 @@ class KafkaConnector(StreamConnector):
 
     async def stream_data(  # type: ignore[override]
         self, topic: str, **kwargs: Any
-    ) -> AsyncIterator[Dict[str, Any]]:
+    ) -> AsyncIterator[dict[str, Any]]:
         raise self._unavailable("stream_data()")
         yield  # pragma: no cover - makes this an async generator
 
@@ -211,12 +212,12 @@ class WebSocketConnector(StreamConnector):
             callers that drive their own reconnection loop).
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.url = config.get("url", "ws://localhost:8765")
         self.reconnect_interval = config.get("reconnect_interval", 5)
-        self._session: Optional[Any] = None
-        self._connection: Optional[Any] = None
+        self._session: Any | None = None
+        self._connection: Any | None = None
 
         logger.info(f"Initialized WebSocketConnector for {self.url}")
 
@@ -255,7 +256,7 @@ class WebSocketConnector(StreamConnector):
 
     async def stream_data(  # type: ignore[override, misc]
         self, **kwargs: Any
-    ) -> AsyncIterator[Dict[str, Any]]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """
         Stream messages from the WebSocket connection.
 

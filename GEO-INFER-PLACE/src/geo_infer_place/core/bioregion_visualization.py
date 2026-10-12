@@ -20,6 +20,8 @@ import logging
 from pathlib import Path
 from typing import Any
 
+import folium
+import h3
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -171,20 +173,14 @@ def _add_integration_layers(
     Adds H3 hexagon layers for seismic hazard, forest health, and ecosystem
     services when the corresponding integration results are available.
     """
-    try:
-        import h3 as h3lib
-        import folium as _folium
-    except ImportError:
-        return
-
     # Seismic hazard layer (CSZ hazard scores per hexagon)
     seismic = integration_results.get("seismic_risk", {})
     hazard_scores = seismic.get("hazard_scores", {}) if seismic.get("available") else {}
     if hazard_scores:
-        seismic_layer = _folium.FeatureGroup(name="CSZ Seismic Hazard (GEO-INFER-RISK)")
+        seismic_layer = folium.FeatureGroup(name="CSZ Seismic Hazard (GEO-INFER-RISK)")
         max_score = max(hazard_scores.values()) or 1.0
         for cell_id, score in hazard_scores.items():
-            boundary = h3lib.cell_to_boundary(cell_id)
+            boundary = h3.cell_to_boundary(cell_id)
             # boundary is list of (lat, lon) — folium Polygon expects [[lat, lon], ...]
             locations = [[lat, lon] for lat, lon in boundary]
             norm = float(score) / max_score
@@ -192,7 +188,7 @@ def _add_integration_layers(
             g = int(100 * (1 - norm))
             b = 0
             color = f"#{r:02x}{g:02x}{b:02x}"
-            _folium.Polygon(
+            folium.Polygon(
                 locations=locations,
                 color=color,
                 weight=0.5,
@@ -208,7 +204,7 @@ def _add_integration_layers(
     forest = integration_results.get("forest_health", {})
     forest_results = forest.get("results", {}) if forest.get("available") else {}
     if forest_results and isinstance(forest_results, dict):
-        forest_layer = _folium.FeatureGroup(name="Forest Health (GEO-INFER-FOREST)")
+        forest_layer = folium.FeatureGroup(name="Forest Health (GEO-INFER-FOREST)")
         skipped = 0
         for cell_id, cell_data in forest_results.items():
             try:
@@ -217,11 +213,11 @@ def _add_integration_layers(
                     if isinstance(cell_data, dict)
                     else cell_data
                 )
-                boundary = h3lib.cell_to_boundary(cell_id)
+                boundary = h3.cell_to_boundary(cell_id)
                 locations = [[lat, lon] for lat, lon in boundary]
                 g = int(180 * score)
                 color = f"#00{g:02x}00"
-                _folium.Polygon(
+                folium.Polygon(
                     locations=locations,
                     color=color,
                     weight=0.5,
@@ -247,12 +243,12 @@ def _add_integration_layers(
     econ = integration_results.get("ecosystem_services", {})
     bank_summary = econ.get("bank_summary", {}) if econ.get("available") else {}
     if bank_summary:
-        econ_layer = _folium.FeatureGroup(name="Ecosystem Services (GEO-INFER-ECON)")
+        econ_layer = folium.FeatureGroup(name="Ecosystem Services (GEO-INFER-ECON)")
         credit_types = econ.get("credit_types", [])
         # Add a single info marker at bioregion centroid
-        _folium.Marker(
+        folium.Marker(
             location=[46.5, -121.5],
-            icon=_folium.DivIcon(
+            icon=folium.DivIcon(
                 html='<div style="font-size:12px;background:white;border:1px solid #888;'
                 'border-radius:4px;padding:3px 6px;font-family:sans-serif;">'
                 f"🌿 Ecosystem Credits: {', '.join(credit_types)}</div>",
@@ -286,12 +282,6 @@ def create_bioregion_map(
     Returns:
         Absolute path of the generated HTML file as a string.
     """
-    try:
-        import folium
-    except ImportError as exc:
-        logger.error("folium is required for bioregion map: %s", exc)
-        raise
-
     config_dir = Path(config_dir)
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -341,8 +331,6 @@ def create_bioregion_map(
     )
 
     if h3_data:
-        import h3
-
         cells_layer = folium.FeatureGroup(name="H3 analysis cells")
         for cell, properties in h3_data.items():
             if not h3.is_valid_cell(cell):

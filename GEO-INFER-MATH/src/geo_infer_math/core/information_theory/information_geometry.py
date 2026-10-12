@@ -7,7 +7,7 @@ and geodesic distances.
 """
 
 import numpy as np
-from typing import Optional, Dict, Callable
+from collections.abc import Callable
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 def fisher_information_matrix(
     log_likelihood: Callable,
     parameters: np.ndarray,
-    data: Optional[np.ndarray] = None,
+    data: np.ndarray | None = None,
     method: str = "observed",
 ) -> np.ndarray:
     """
@@ -107,7 +107,7 @@ def geodesic_distance(
     log_likelihood: Callable,
     theta1: np.ndarray,
     theta2: np.ndarray,
-    data: Optional[np.ndarray] = None,
+    data: np.ndarray | None = None,
     n_steps: int = 10,
 ) -> float:
     """
@@ -296,14 +296,14 @@ class InformationGeometryCalculator:
     def __init__(self) -> None:
         """Initialize information geometry calculator."""
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self._metric_cache: Dict[str, np.ndarray] = {}
+        self._metric_cache: dict[str, np.ndarray] = {}
         self.logger.debug("InformationGeometryCalculator initialized")
 
     def fisher_information(
         self,
         log_likelihood: Callable,
         parameters: np.ndarray,
-        data: Optional[np.ndarray] = None,
+        data: np.ndarray | None = None,
     ) -> np.ndarray:
         """
         Calculate Fisher information matrix.
@@ -342,7 +342,7 @@ class InformationGeometryCalculator:
         log_likelihood: Callable,
         theta1: np.ndarray,
         theta2: np.ndarray,
-        data: Optional[np.ndarray] = None,
+        data: np.ndarray | None = None,
     ) -> float:
         """
         Calculate geodesic distance.

@@ -10,12 +10,22 @@ import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any
 import subprocess
+import os
+
+
+@pytest.fixture(autouse=True)
+def isolated_git_monitor_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep temporary repositories from starting user-configured Git daemons."""
+    count = int(os.environ.get("GIT_CONFIG_COUNT", "0"))
+    monkeypatch.setenv("GIT_CONFIG_COUNT", str(count + 1))
+    monkeypatch.setenv(f"GIT_CONFIG_KEY_{count}", "core.fsmonitor")
+    monkeypatch.setenv(f"GIT_CONFIG_VALUE_{count}", "false")
 
 
 @pytest.fixture(scope="session")
-def sample_coordinates() -> List[Tuple[float, float]]:
+def sample_coordinates() -> list[tuple[float, float]]:
     """Standard (lat, lng) coordinate pairs for spatial tests."""
     return [
         (47.6062, -122.3321),
@@ -83,7 +93,7 @@ def sample_repo_path(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def commit_metadata_list() -> List[Dict[str, str]]:
+def commit_metadata_list() -> list[dict[str, str]]:
     """List of commit metadata dicts for git analysis tests.
 
     Contains 5 synthetic commits with author, date, message, and
@@ -129,7 +139,7 @@ def commit_metadata_list() -> List[Dict[str, str]]:
 
 
 @pytest.fixture
-def git_config() -> Dict[str, Any]:
+def git_config() -> dict[str, Any]:
     """Configuration dict for git analysis operations.
 
     Specifies analysis parameters such as date ranges, file filters,

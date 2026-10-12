@@ -14,8 +14,8 @@ Integration workspace within `GEO-INFER-HEALTH`.
 
 - Module: `GEO-INFER-HEALTH`
 - Package: `geo_infer_health`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-HEALTH`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-health`
 - Tests: `uv run python -m pytest GEO-INFER-HEALTH/tests/integration`
 
 ## Dependencies

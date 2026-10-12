@@ -1,7 +1,7 @@
 """REST API implementations for GEO-INFER-METAGOV module."""
 
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any
 from dataclasses import dataclass
 from enum import Enum
 from datetime import datetime
@@ -23,8 +23,8 @@ class APIResponse:
     status: str
     code: int
     message: str
-    data: Optional[Any] = None
-    timestamp: Optional[str] = None
+    data: Any | None = None
+    timestamp: str | None = None
     version: str = APIVersion.V1.value
 
     def __post_init__(self) -> None:
@@ -45,18 +45,18 @@ class GovernanceAPI:
             API version
         """
         self.version = version
-        self.governance_structures: Dict[str, Any] = {}
-        self.analysis_cache: Dict[str, Any] = {}
+        self.governance_structures: dict[str, Any] = {}
+        self.analysis_cache: dict[str, Any] = {}
         self._next_governance_id: int = 0
         logger.info(f"GovernanceAPI initialized (v{version})")
 
     def create_governance_structure(
         self,
-        spatial_scope: Dict[str, Any],
-        stakeholder_groups: List[Dict[str, Any]],
-        decision_domains: List[str],
-        governance_levels: Optional[List[str]] = None,
-        coordination_mechanisms: Optional[List[str]] = None,
+        spatial_scope: dict[str, Any],
+        stakeholder_groups: list[dict[str, Any]],
+        decision_domains: list[str],
+        governance_levels: list[str] | None = None,
+        coordination_mechanisms: list[str] | None = None,
     ) -> APIResponse:
         """
         Create a new governance structure via API.
@@ -153,7 +153,7 @@ class GovernanceAPI:
 
     def list_governance_structures(
         self,
-        filter_by: Optional[Dict[str, Any]] = None,
+        filter_by: dict[str, Any] | None = None,
         limit: int = 100,
         offset: int = 0,
     ) -> APIResponse:
@@ -213,7 +213,7 @@ class GovernanceAPI:
             )
 
     def update_governance_structure(
-        self, governance_id: str, updates: Dict[str, Any]
+        self, governance_id: str, updates: dict[str, Any]
     ) -> APIResponse:
         """
         Update governance structure.
@@ -355,10 +355,10 @@ class GovernanceAPI:
             )
 
     def _calculate_metrics(
-        self, structure: Dict[str, Any], analysis_type: str
-    ) -> Dict[str, float]:
+        self, structure: dict[str, Any], analysis_type: str
+    ) -> dict[str, float]:
         """Calculate metrics for governance structure."""
-        metrics: Dict[str, float] = {
+        metrics: dict[str, float] = {
             "entity_count": float(len(structure.get("stakeholder_groups", []))),
             "domain_count": float(len(structure.get("decision_domains", []))),
             "level_count": float(len(structure.get("governance_levels", []))),
@@ -381,8 +381,8 @@ class GovernanceAPI:
         return metrics
 
     def _generate_recommendations(
-        self, structure: Dict[str, Any], analysis_type: str
-    ) -> List[str]:
+        self, structure: dict[str, Any], analysis_type: str
+    ) -> list[str]:
         """Generate recommendations for governance structure."""
         recommendations = []
 
@@ -433,14 +433,14 @@ class StakeholderAPI:
 
     def __init__(self) -> None:
         """Initialize stakeholder API."""
-        self.stakeholders: Dict[str, Any] = {}
+        self.stakeholders: dict[str, Any] = {}
         logger.info("StakeholderAPI initialized")
 
     def create_stakeholder(
         self,
         name: str,
         category: str,
-        interests: Optional[List[str]] = None,
+        interests: list[str] | None = None,
         decision_power: float = 0.5,
     ) -> APIResponse:
         """
@@ -515,7 +515,7 @@ class StakeholderAPI:
                 status="error", code=500, message=f"Server error: {str(e)}"
             )
 
-    def list_stakeholders(self, category: Optional[str] = None) -> APIResponse:
+    def list_stakeholders(self, category: str | None = None) -> APIResponse:
         """List stakeholders with optional filtering by category."""
         try:
             stakeholders = list(self.stakeholders.values())

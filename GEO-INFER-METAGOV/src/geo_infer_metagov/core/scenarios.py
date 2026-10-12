@@ -1,7 +1,7 @@
 """Scenario planning for governance systems."""
 
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import Any
 import logging
 
 from geo_infer_metagov.utils.helpers import entity_field
@@ -16,8 +16,8 @@ class Scenario:
     scenario_id: str
     name: str
     description: str
-    assumptions: Dict[str, Any]
-    modifications: Dict[str, Any]
+    assumptions: dict[str, Any]
+    modifications: dict[str, Any]
     probability: float = 0.5
     time_horizon: int = 5  # years
 
@@ -27,10 +27,10 @@ class ScenarioAnalysis:
     """Results of scenario analysis."""
 
     analysis_id: str
-    base_case: Dict[str, Any]
-    scenarios: List[Dict[str, Any]]
-    sensitivity_analysis: Dict[str, Any]
-    recommendations: List[str]
+    base_case: dict[str, Any]
+    scenarios: list[dict[str, Any]]
+    sensitivity_analysis: dict[str, Any]
+    recommendations: list[str]
 
 
 class ScenarioPlanner:
@@ -51,15 +51,15 @@ class ScenarioPlanner:
 
     def __init__(self) -> None:
         """Initialize scenario planner."""
-        self.scenarios: Dict[str, Scenario] = {}
-        self.analyses: Dict[str, ScenarioAnalysis] = {}
+        self.scenarios: dict[str, Scenario] = {}
+        self.analyses: dict[str, ScenarioAnalysis] = {}
 
     def generate_scenarios(
         self,
-        governance_structure: Dict[str, Any],
-        scenario_types: List[str],
+        governance_structure: dict[str, Any],
+        scenario_types: list[str],
         time_horizon: int = 5,
-    ) -> List[Scenario]:
+    ) -> list[Scenario]:
         """
         Generate scenarios for governance planning.
 
@@ -91,7 +91,7 @@ class ScenarioPlanner:
 
     def _create_scenario(
         self,
-        governance_structure: Dict[str, Any],
+        governance_structure: dict[str, Any],
         scenario_type: str,
         time_horizon: int,
     ) -> Scenario:
@@ -99,7 +99,7 @@ class ScenarioPlanner:
         scenario_id = f"scenario_{scenario_type}_{len(self.scenarios)}"
 
         # Define scenario characteristics based on type
-        scenario_definitions: Dict[str, Dict[str, Any]] = {
+        scenario_definitions: dict[str, dict[str, Any]] = {
             "optimistic": {
                 "name": "Optimistic Future",
                 "description": "Best-case scenario with favorable conditions",
@@ -186,8 +186,8 @@ class ScenarioPlanner:
         )
 
     def evaluate_scenario(
-        self, scenario: Scenario, governance_structure: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, scenario: Scenario, governance_structure: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Evaluate governance structure under a scenario.
 
@@ -223,8 +223,8 @@ class ScenarioPlanner:
         }
 
     def _apply_scenario_modifications(
-        self, structure: Dict[str, Any], modifications: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, structure: dict[str, Any], modifications: dict[str, Any]
+    ) -> dict[str, Any]:
         """Apply scenario modifications to governance structure."""
         modified = structure.copy()
 
@@ -272,8 +272,8 @@ class ScenarioPlanner:
         return modified
 
     def _evaluate_structure_under_scenario(
-        self, structure: Dict[str, Any], scenario: Scenario
-    ) -> Dict[str, Any]:
+        self, structure: dict[str, Any], scenario: Scenario
+    ) -> dict[str, Any]:
         """Evaluate structure performance under scenario."""
         entities = structure.get("entities", [])
 
@@ -312,7 +312,7 @@ class ScenarioPlanner:
         }
 
     def analyze_scenarios(
-        self, governance_structure: Dict[str, Any], scenarios: List[Scenario]
+        self, governance_structure: dict[str, Any], scenarios: list[Scenario]
     ) -> ScenarioAnalysis:
         """
         Analyze multiple scenarios for governance structure.
@@ -374,10 +374,10 @@ class ScenarioPlanner:
         return analysis
 
     def _perform_sensitivity_analysis(
-        self, governance_structure: Dict[str, Any], scenarios: List[Scenario]
-    ) -> Dict[str, Any]:
+        self, governance_structure: dict[str, Any], scenarios: list[Scenario]
+    ) -> dict[str, Any]:
         """Perform sensitivity analysis on key variables."""
-        sensitivity: Dict[str, Any] = {
+        sensitivity: dict[str, Any] = {
             "key_variables": [],
             "sensitivity_scores": {},
             "critical_factors": [],
@@ -420,8 +420,8 @@ class ScenarioPlanner:
         return sensitivity
 
     def _generate_scenario_recommendations(
-        self, base_case: Dict[str, Any], scenario_evaluations: List[Dict[str, Any]]
-    ) -> List[str]:
+        self, base_case: dict[str, Any], scenario_evaluations: list[dict[str, Any]]
+    ) -> list[str]:
         """Generate recommendations based on scenario analysis."""
         recommendations = []
 
@@ -455,8 +455,8 @@ class ScenarioPlanner:
         return recommendations
 
     def compare_scenarios(
-        self, scenario_evaluations: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, scenario_evaluations: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Compare multiple scenario evaluations.
 

@@ -5,10 +5,49 @@ Tests for integration adapters with GEO-INFER-SPACE, GEO-INFER-TIME, and GEO-INF
 """
 
 import unittest
+import subprocess
+import sys
+from pathlib import Path
+import pytest
 import numpy as np
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
+
+
+@pytest.mark.parametrize("missing", ["geo_infer_time", "broken_time_dependency"])
+def test_time_optional_import_distinguishes_absence_from_breakage(missing):
+    """Only absence of the owning package permits the local ECON path."""
+    source = (
+        Path(__file__).resolve().parents[2]
+        / "src"
+        / "geo_infer_econ"
+        / "integrations"
+        / "time_integration.py"
+    )
+    code = """
+import importlib.util, sys
+class Missing:
+    def find_spec(self, name, path=None, target=None):
+        if name.split('.')[0] == 'geo_infer_time':
+            raise ModuleNotFoundError('declared test boundary', name=sys.argv[2])
+        return None
+sys.meta_path.insert(0, Missing())
+spec = importlib.util.spec_from_file_location('econ_time_probe', sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+assert module.TIME_AVAILABLE is False
+"""
+    result = subprocess.run(
+        [sys.executable, "-I", "-c", code, str(source), missing],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    if missing == "geo_infer_time":
+        assert result.returncode == 0, result.stderr
+    else:
+        assert result.returncode != 0 and "declared test boundary" in result.stderr
 
 
 class TestSpaceIntegration(unittest.TestCase):
@@ -107,7 +146,7 @@ class TestTimeIntegration(unittest.TestCase):
         self.time = TimeIntegration()
 
         # Create test time series
-        dates = pd.date_range(start="2020-01-01", periods=24, freq="ME")
+        dates = pd.date_range(start="2020-01-01", periods=24, freq="ME", tz="UTC")
         self.test_series = pd.Series(
             np.random.randn(24).cumsum() * 0.5 + 100, index=dates, name="gdp_growth"
         )
@@ -170,10 +209,10 @@ class TestTimeIntegration(unittest.TestCase):
     def test_align_time_series(self):
         """Test time series alignment"""
         series1 = pd.Series(
-            [1, 2, 3], index=pd.date_range("2020-01-01", periods=3, freq="D")
+            [1, 2, 3], index=pd.date_range("2020-01-01", periods=3, freq="D", tz="UTC")
         )
         series2 = pd.Series(
-            [4, 5], index=pd.date_range("2020-01-02", periods=2, freq="D")
+            [4, 5], index=pd.date_range("2020-01-02", periods=2, freq="D", tz="UTC")
         )
 
         aligned = self.time.align_time_series([series1, series2], method="interpolate")
@@ -257,7 +296,7 @@ class TestIntegratedWorkflow(unittest.TestCase):
             ],
         )
 
-        dates = pd.date_range(start="2020-01-01", periods=12, freq="ME")
+        dates = pd.date_range(start="2020-01-01", periods=12, freq="ME", tz="UTC")
         self.time_series = pd.Series(
             np.random.randn(12).cumsum() * 0.5 + 100, index=dates
         )
@@ -290,3 +329,33 @@ class TestIntegratedWorkflow(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTimeContractFailures:
+    """Installed TIME adapters preserve rejected axes rather than returning None."""
+
+    def test_naive_axis_propagates(self):
+        import pytest
+        from geo_infer_econ.integrations import TimeIntegration
+
+        series = pd.Series(
+            [1.0, 2.0, 3.0], index=pd.date_range("2026-10-01", periods=3)
+        )
+        with pytest.raises(ValueError, match="timezone"):
+            TimeIntegration().detect_trend(series)
+
+    def test_numeric_axis_is_not_an_implicit_epoch(self):
+        import pytest
+        from geo_infer_econ.integrations import TimeIntegration
+
+        with pytest.raises(ValueError, match="timestamp must be"):
+            TimeIntegration().detect_trend(pd.Series([1.0, 2.0, 3.0]))
+
+    def test_decomposition_preserves_observation_axis(self):
+        from geo_infer_econ.integrations import TimeIntegration
+
+        axis = pd.date_range("2026-10-01", periods=24, freq="D", tz="UTC")
+        values = pd.Series(np.tile([1.0, 2.0, 3.0, 2.0, 1.0, 2.0], 4), index=axis)
+        result = TimeIntegration().decompose_time_series(values)
+        assert result
+        assert all(component.index.equals(axis) for component in result.values())

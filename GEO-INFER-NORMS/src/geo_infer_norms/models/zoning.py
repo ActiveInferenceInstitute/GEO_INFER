@@ -6,7 +6,7 @@ districts used in urban planning and land use regulation.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from typing import Any
 import datetime
 from shapely.geometry import Polygon
 import uuid
@@ -26,16 +26,16 @@ class ZoningCode:
     description: str
     category: str  # e.g., "residential", "commercial", "industrial", "mixed_use"
     jurisdiction_id: str
-    allowed_uses: List[str] = field(default_factory=list)
-    conditional_uses: List[str] = field(default_factory=list)
-    prohibited_uses: List[str] = field(default_factory=list)
-    attributes: Dict[str, Any] = field(default_factory=dict)
+    allowed_uses: list[str] = field(default_factory=list)
+    conditional_uses: list[str] = field(default_factory=list)
+    prohibited_uses: list[str] = field(default_factory=list)
+    attributes: dict[str, Any] = field(default_factory=dict)
     created_at: datetime.datetime = field(default_factory=datetime.datetime.now)
     updated_at: datetime.datetime = field(default_factory=datetime.datetime.now)
-    max_height: Optional[float] = None
-    max_density: Optional[float] = None
-    min_lot_size: Optional[float] = None
-    max_lot_coverage: Optional[float] = None
+    max_height: float | None = None
+    max_density: float | None = None
+    min_lot_size: float | None = None
+    max_lot_coverage: float | None = None
     max_floor_area_ratio: float = 0.0
     setbacks: Any = None
     environmental_requirements: Any = None
@@ -48,10 +48,10 @@ class ZoningCode:
         description: str,
         category: str,
         jurisdiction_id: str,
-        allowed_uses: Optional[List[str]] = None,
-        conditional_uses: Optional[List[str]] = None,
-        prohibited_uses: Optional[List[str]] = None,
-        attributes: Optional[Dict[str, Any]] = None,
+        allowed_uses: list[str] | None = None,
+        conditional_uses: list[str] | None = None,
+        prohibited_uses: list[str] | None = None,
+        attributes: dict[str, Any] | None = None,
     ) -> "ZoningCode":
         """
         Create a new ZoningCode.
@@ -204,14 +204,14 @@ class ZoningDistrict:
     name: str
     zoning_code: str  # Reference to a ZoningCode
     jurisdiction_id: str
-    geometry: Optional[Polygon] = None
-    overlay_codes: List[str] = field(default_factory=list)  # Additional zoning overlays
-    attributes: Dict[str, Any] = field(default_factory=dict)
-    effective_date: Optional[datetime.date] = None
-    expiration_date: Optional[datetime.date] = None
+    geometry: Polygon | None = None
+    overlay_codes: list[str] = field(default_factory=list)  # Additional zoning overlays
+    attributes: dict[str, Any] = field(default_factory=dict)
+    effective_date: datetime.date | None = None
+    expiration_date: datetime.date | None = None
     created_at: datetime.datetime = field(default_factory=datetime.datetime.now)
     updated_at: datetime.datetime = field(default_factory=datetime.datetime.now)
-    description: Optional[str] = None
+    description: str | None = None
     area: float = 0.0
     area_hectares: float = 0.0
     population: float = 0.0
@@ -223,11 +223,11 @@ class ZoningDistrict:
         name: str,
         zoning_code: str,
         jurisdiction_id: str,
-        geometry: Optional[Polygon] = None,
-        overlay_codes: Optional[List[str]] = None,
-        attributes: Optional[Dict[str, Any]] = None,
-        effective_date: Optional[datetime.date] = None,
-        expiration_date: Optional[datetime.date] = None,
+        geometry: Polygon | None = None,
+        overlay_codes: list[str] | None = None,
+        attributes: dict[str, Any] | None = None,
+        effective_date: datetime.date | None = None,
+        expiration_date: datetime.date | None = None,
     ) -> "ZoningDistrict":
         """
         Create a new ZoningDistrict with a generated UUID.
@@ -300,7 +300,7 @@ class ZoningDistrict:
             self.overlay_codes.remove(overlay_code)
             self.updated_at = datetime.datetime.now()
 
-    def is_active(self, reference_date: Optional[datetime.date] = None) -> bool:
+    def is_active(self, reference_date: datetime.date | None = None) -> bool:
         """
         Check if the zoning district is active as of the reference date.
 
@@ -347,27 +347,27 @@ class LandUseType:
     id: str
     name: str
     category: str  # e.g., "residential", "commercial", "industrial"
-    subcategory: Optional[str] = None
+    subcategory: str | None = None
     description: str = ""
-    attributes: Dict[str, Any] = field(default_factory=dict)
-    compatible_uses: List[str] = field(default_factory=list)
-    incompatible_uses: List[str] = field(default_factory=list)
-    typical_zoning_codes: List[str] = field(default_factory=list)
+    attributes: dict[str, Any] = field(default_factory=dict)
+    compatible_uses: list[str] = field(default_factory=list)
+    incompatible_uses: list[str] = field(default_factory=list)
+    typical_zoning_codes: list[str] = field(default_factory=list)
     created_at: datetime.datetime = field(default_factory=datetime.datetime.now)
     updated_at: datetime.datetime = field(default_factory=datetime.datetime.now)
-    intensity: Optional[float] = None
+    intensity: float | None = None
 
     @classmethod
     def create(
         cls,
         name: str,
         category: str,
-        subcategory: Optional[str] = None,
+        subcategory: str | None = None,
         description: str = "",
-        attributes: Optional[Dict[str, Any]] = None,
-        compatible_uses: Optional[List[str]] = None,
-        incompatible_uses: Optional[List[str]] = None,
-        typical_zoning_codes: Optional[List[str]] = None,
+        attributes: dict[str, Any] | None = None,
+        compatible_uses: list[str] | None = None,
+        incompatible_uses: list[str] | None = None,
+        typical_zoning_codes: list[str] | None = None,
     ) -> "LandUseType":
         """
         Create a new LandUseType with a generated UUID.
@@ -451,7 +451,7 @@ class LandUseType:
             self.typical_zoning_codes.append(zoning_code)
             self.updated_at = datetime.datetime.now()
 
-    def is_compatible_with(self, use_id: str) -> Optional[bool]:
+    def is_compatible_with(self, use_id: str) -> bool | None:
         """
         Check if this land use type is compatible with another.
 

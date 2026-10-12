@@ -3,12 +3,12 @@ Utility functions for working with GeoJSON data.
 """
 
 import math
-from typing import Dict, List, Optional, Tuple, Union, cast
+from typing import cast
 
 from geo_infer_api.models.geojson import GeoJSONType, Polygon, PolygonFeature
 
 
-def validate_polygon_rings(coordinates: List[List[Tuple[float, float]]]) -> bool:
+def validate_polygon_rings(coordinates: list[list[tuple[float, float]]]) -> bool:
     """
     Validate that a polygon's rings follow the GeoJSON specification.
 
@@ -39,7 +39,7 @@ def validate_polygon_rings(coordinates: List[List[Tuple[float, float]]]) -> bool
     return True
 
 
-def calculate_polygon_area(polygon: Union[Polygon, Dict]) -> float:
+def calculate_polygon_area(polygon: Polygon | dict) -> float:
     """
     Calculate the approximate area of a polygon in square kilometers.
 
@@ -71,9 +71,7 @@ def calculate_polygon_area(polygon: Union[Polygon, Dict]) -> float:
     return area
 
 
-def polygon_contains_point(
-    polygon: Union[Polygon, Dict], point: Tuple[float, float]
-) -> bool:
+def polygon_contains_point(polygon: Polygon | dict, point: tuple[float, float]) -> bool:
     """
     Check if a point is inside a polygon using the ray casting algorithm.
 
@@ -112,7 +110,7 @@ def polygon_contains_point(
     return inside
 
 
-def simplify_polygon(polygon: Union[Polygon, Dict], tolerance: float = 0.01) -> Polygon:
+def simplify_polygon(polygon: Polygon | dict, tolerance: float = 0.01) -> Polygon:
     """
     Simplify a polygon using the Ramer-Douglas-Peucker algorithm.
 
@@ -124,7 +122,7 @@ def simplify_polygon(polygon: Union[Polygon, Dict], tolerance: float = 0.01) -> 
         Polygon: A simplified Polygon
     """
 
-    def rdp(points: List, epsilon: float) -> List:
+    def rdp(points: list, epsilon: float) -> list:
         """Recursive Ramer-Douglas-Peucker simplification."""
         if len(points) <= 2:
             return points
@@ -145,7 +143,7 @@ def simplify_polygon(polygon: Union[Polygon, Dict], tolerance: float = 0.01) -> 
             return [points[0], points[-1]]
 
     def perpendicular_distance(
-        point: Tuple, line_start: Tuple, line_end: Tuple
+        point: tuple, line_start: tuple, line_end: tuple
     ) -> float:
         """Calculate perpendicular distance from a point to a line segment."""
         x, y = point
@@ -181,9 +179,9 @@ def simplify_polygon(polygon: Union[Polygon, Dict], tolerance: float = 0.01) -> 
 
 
 def create_polygon_feature(
-    coordinates: List[List[Tuple[float, float]]],
-    properties: Optional[Dict] = None,
-    feature_id: Optional[str] = None,
+    coordinates: list[list[tuple[float, float]]],
+    properties: dict | None = None,
+    feature_id: str | None = None,
 ) -> PolygonFeature:
     """
     Create a GeoJSON PolygonFeature from coordinates.
@@ -212,18 +210,18 @@ def create_polygon_feature(
     )
 
 
-def _get_exterior_ring(polygon: Union[Polygon, Dict]) -> List[Tuple[float, float]]:
+def _get_exterior_ring(polygon: Polygon | dict) -> list[tuple[float, float]]:
     """Extract exterior ring coordinates from a Polygon or dict."""
     if isinstance(polygon, Polygon):
         return polygon.coordinates[0]
     elif isinstance(polygon, dict) and polygon.get("type") == GeoJSONType.POLYGON:
         coords = polygon.get("coordinates", [[]])[0]
-        return cast("List[Tuple[float, float]]", coords)
+        return cast("list[tuple[float, float]]", coords)
     raise ValueError("Input must be a GeoJSON Polygon")
 
 
 def create_buffer(
-    polygon: Union[Polygon, Dict],
+    polygon: Polygon | dict,
     distance: float,
     unit: str = "kilometers",
     segments: int = 16,
@@ -273,7 +271,7 @@ def create_buffer(
     buf_min_lat = min_lat - lat_delta
     buf_max_lat = max_lat + lat_delta
 
-    buffer_ring: List[Tuple[float, float]] = [
+    buffer_ring: list[tuple[float, float]] = [
         (buf_min_lon, buf_min_lat),
         (buf_max_lon, buf_min_lat),
         (buf_max_lon, buf_max_lat),
@@ -284,7 +282,7 @@ def create_buffer(
     return Polygon(type=GeoJSONType.POLYGON, coordinates=[buffer_ring])
 
 
-def calculate_intersection(polygons: List[Union[Polygon, Dict]]) -> Polygon:
+def calculate_intersection(polygons: list[Polygon | dict]) -> Polygon:
     """
     Calculate the bounding-box intersection of multiple polygons.
 
@@ -308,7 +306,7 @@ def calculate_intersection(polygons: List[Union[Polygon, Dict]]) -> Polygon:
         raise ValueError("At least 2 polygons required for intersection")
 
     # Compute bounding box for each polygon
-    def bbox(poly: Union[Polygon, Dict]) -> Tuple[float, float, float, float]:
+    def bbox(poly: Polygon | dict) -> tuple[float, float, float, float]:
         ring = _get_exterior_ring(poly)
         lons = [c[0] for c in ring]
         lats = [c[1] for c in ring]
@@ -325,7 +323,7 @@ def calculate_intersection(polygons: List[Union[Polygon, Dict]]) -> Polygon:
     if inter_min_lon >= inter_max_lon or inter_min_lat >= inter_max_lat:
         raise ValueError("Polygons do not overlap — intersection is empty")
 
-    ring: List[Tuple[float, float]] = [
+    ring: list[tuple[float, float]] = [
         (inter_min_lon, inter_min_lat),
         (inter_max_lon, inter_min_lat),
         (inter_max_lon, inter_max_lat),
@@ -335,7 +333,7 @@ def calculate_intersection(polygons: List[Union[Polygon, Dict]]) -> Polygon:
     return Polygon(type=GeoJSONType.POLYGON, coordinates=[ring])
 
 
-def calculate_union(polygons: List[Union[Polygon, Dict]]) -> Polygon:
+def calculate_union(polygons: list[Polygon | dict]) -> Polygon:
     """
     Calculate the bounding-box union of multiple polygons.
 
@@ -351,8 +349,8 @@ def calculate_union(polygons: List[Union[Polygon, Dict]]) -> Polygon:
     if len(polygons) < 2:
         raise ValueError("At least 2 polygons required for union")
 
-    all_lons: List[float] = []
-    all_lats: List[float] = []
+    all_lons: list[float] = []
+    all_lats: list[float] = []
     for poly in polygons:
         ext_ring = _get_exterior_ring(poly)
         all_lons.extend(c[0] for c in ext_ring)
@@ -361,7 +359,7 @@ def calculate_union(polygons: List[Union[Polygon, Dict]]) -> Polygon:
     u_min_lon, u_max_lon = min(all_lons), max(all_lons)
     u_min_lat, u_max_lat = min(all_lats), max(all_lats)
 
-    union_ring: List[Tuple[float, float]] = [
+    union_ring: list[tuple[float, float]] = [
         (u_min_lon, u_min_lat),
         (u_max_lon, u_min_lat),
         (u_max_lon, u_max_lat),
@@ -372,8 +370,8 @@ def calculate_union(polygons: List[Union[Polygon, Dict]]) -> Polygon:
 
 
 def calculate_distance(
-    polygon1: Union[Polygon, Dict],
-    polygon2: Union[Polygon, Dict],
+    polygon1: Polygon | dict,
+    polygon2: Polygon | dict,
     method: str = "centroid",
 ) -> float:
     """
@@ -389,7 +387,7 @@ def calculate_distance(
         float: Distance in kilometers
     """
 
-    def get_centroid(polygon: Union[Polygon, Dict]) -> Tuple[float, float]:
+    def get_centroid(polygon: Polygon | dict) -> tuple[float, float]:
         """Calculate centroid of a polygon."""
         if isinstance(polygon, Polygon):
             coords = polygon.coordinates[0]

@@ -9,10 +9,8 @@ Communications infrastructure for geospatial systems enabling data exchange, mes
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -22,8 +20,8 @@ Communications infrastructure for geospatial systems enabling data exchange, mes
 
 - Module: `GEO-INFER-COMMS`
 - Package: `geo_infer_comms`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-COMMS`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-comms`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module COMMS`
 
 ## Dependencies

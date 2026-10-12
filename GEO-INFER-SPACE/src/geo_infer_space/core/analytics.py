@@ -5,7 +5,7 @@ This module defines the generic interface for spatial analytics operations
 that can be implemented by different backends (H3, SRAI, etc.).
 """
 
-from typing import Dict, Any, List, Optional, Tuple, cast
+from typing import Any, cast
 import logging
 import numpy as np
 
@@ -22,13 +22,13 @@ class SpatialAnalyticsInterface:
     to different backends based on configuration.
     """
 
-    def __init__(self, backend: Optional[str] = None) -> None:
+    def __init__(self, backend: str | None = None) -> None:
         from .dispatcher import get_backend_dispatcher
 
         self.dispatcher = get_backend_dispatcher()
         self.backend = backend
 
-    def analyze_hotspots(self, data: Dict[str, Any], **kwargs: Any) -> Dict[str, Any]:
+    def analyze_hotspots(self, data: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
         """
         Analyze spatial hotspots in the data.
 
@@ -40,13 +40,13 @@ class SpatialAnalyticsInterface:
             Hotspot analysis results
         """
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.dispatcher.dispatch_analytics_operation(
                 "analyze_hotspots", data, backend=self.backend, **kwargs
             ),
         )
 
-    def analyze_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_context(self, context: dict[str, Any]) -> dict[str, Any]:
         """
         Analyze spatial context for a given location or area.
 
@@ -86,7 +86,7 @@ class SpatialAnalyticsInterface:
 
     def analyze_clusters(
         self, data: np.ndarray, method: str = "dbscan", **kwargs: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze spatial clustering patterns in data.
 
@@ -110,7 +110,7 @@ class SpatialAnalyticsInterface:
             **kwargs,
         )
 
-    def find_hotspots(self, data: Dict[str, Any], **kwargs: Any) -> Dict[str, Any]:
+    def find_hotspots(self, data: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
         """
         Find spatial hotspots in data.
 
@@ -122,15 +122,15 @@ class SpatialAnalyticsInterface:
             Hotspot detection results
         """
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.dispatcher.dispatch_analytics_operation(
                 "find_hotspots", data, backend=self.backend, **kwargs
             ),
         )
 
     def compute_proximity(
-        self, points: List[Tuple[float, float]], **kwargs: Any
-    ) -> Dict[str, Any]:
+        self, points: list[tuple[float, float]], **kwargs: Any
+    ) -> dict[str, Any]:
         """
         Compute proximity analysis between points.
 
@@ -142,15 +142,15 @@ class SpatialAnalyticsInterface:
             Proximity analysis results
         """
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.dispatcher.dispatch_analytics_operation(
                 "compute_proximity", points, backend=self.backend, **kwargs
             ),
         )
 
     def cluster_points(
-        self, points: List[Tuple[float, float]], **kwargs: Any
-    ) -> Dict[str, Any]:
+        self, points: list[tuple[float, float]], **kwargs: Any
+    ) -> dict[str, Any]:
         """
         Cluster spatial points.
 
@@ -162,7 +162,7 @@ class SpatialAnalyticsInterface:
             Clustering results with cluster assignments
         """
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.dispatcher.dispatch_analytics_operation(
                 "cluster_points", points, backend=self.backend, **kwargs
             ),
@@ -170,11 +170,11 @@ class SpatialAnalyticsInterface:
 
     def interpolate_values(
         self,
-        points: List[Tuple[float, float, float]],
-        target_points: Optional[List[Tuple[float, float]]] = None,
+        points: list[tuple[float, float, float]],
+        target_points: list[tuple[float, float]] | None = None,
         resolution: int = 9,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Interpolate values across a spatial surface.
 
@@ -228,7 +228,7 @@ class SpatialAnalyticsInterface:
                 for lat, lng in target_points
             ]
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.dispatcher.dispatch_analytics_operation(
                 "interpolate_values",
                 source_cells,
@@ -240,8 +240,8 @@ class SpatialAnalyticsInterface:
         )
 
     def analyze_network(
-        self, edges: List[Tuple[int, int, float]], **kwargs: Any
-    ) -> Dict[str, Any]:
+        self, edges: list[tuple[int, int, float]], **kwargs: Any
+    ) -> dict[str, Any]:
         """
         Analyze spatial network structure.
 
@@ -255,7 +255,7 @@ class SpatialAnalyticsInterface:
         backend = self.backend or self.dispatcher.get_default_backend("analytics")
         raise UnsupportedSpatialOperationError("analyze_network", backend)
 
-    def detect_patterns(self, data: Dict[str, Any], **kwargs: Any) -> Dict[str, Any]:
+    def detect_patterns(self, data: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
         """
         Detect spatial patterns in the data.
 
@@ -270,8 +270,8 @@ class SpatialAnalyticsInterface:
         raise UnsupportedSpatialOperationError("detect_patterns", backend)
 
     def compute_density(
-        self, points: List[Tuple[float, float]], **kwargs: Any
-    ) -> Dict[str, Any]:
+        self, points: list[tuple[float, float]], **kwargs: Any
+    ) -> dict[str, Any]:
         """
         Compute spatial density.
 
@@ -287,10 +287,10 @@ class SpatialAnalyticsInterface:
 
     def analyze_accessibility(
         self,
-        origins: List[Tuple[float, float]],
-        destinations: List[Tuple[float, float]],
+        origins: list[tuple[float, float]],
+        destinations: list[tuple[float, float]],
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze spatial accessibility between origins and destinations.
 

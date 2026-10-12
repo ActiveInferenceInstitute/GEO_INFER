@@ -89,7 +89,7 @@ def test_feature_collection_to_file():
         assert os.path.exists(tmp_path)
         assert os.path.getsize(tmp_path) > 0
 
-        with open(tmp_path, "r") as f:
+        with open(tmp_path) as f:
             geojson_data = json.load(f)
 
         assert geojson_data["type"] == "FeatureCollection"

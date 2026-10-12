@@ -6,9 +6,17 @@ dependencies, and manages named test suites.
 """
 
 import logging
+from copy import deepcopy
+
+from ..execution import (
+    discover_geo_infer_modules,
+    module_by_name,
+    run_module_category_tests,
+)
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any
+from collections.abc import Callable
 
 
 @dataclass
@@ -17,9 +25,9 @@ class TestSuiteDefinition:
 
     name: str
     description: str
-    test_patterns: List[str] = field(default_factory=list)
-    modules: List[str] = field(default_factory=list)
-    markers: List[str] = field(default_factory=list)
+    test_patterns: list[str] = field(default_factory=list)
+    modules: list[str] = field(default_factory=list)
+    markers: list[str] = field(default_factory=list)
     timeout_seconds: int = 300
 
 
@@ -49,28 +57,27 @@ class TestSuiteManager:
             markers=["benchmark", "performance"],
             timeout_seconds=600,
         ),
-        "smoke": TestSuiteDefinition(
-            name="smoke",
-            description="Quick smoke tests for basic sanity",
-            test_patterns=["tests/unit/test_*.py"],
-            markers=["smoke"],
-            timeout_seconds=60,
+        "slow": TestSuiteDefinition(
+            name="slow", description="Slow unit complement", markers=["slow"]
+        ),
+        "system": TestSuiteDefinition(
+            name="system", description="System integration tests", markers=["system"]
         ),
     }
 
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: logging.Logger | None = None):
         self.logger = logger or logging.getLogger(__name__)
-        self._suites: Dict[str, TestSuiteDefinition] = dict(self._BUILTIN_SUITES)
+        self._suites: dict[str, TestSuiteDefinition] = deepcopy(self._BUILTIN_SUITES)
 
     def register_suite(self, suite: TestSuiteDefinition) -> None:
         """Register or overwrite a named test suite."""
         self._suites[suite.name] = suite
         self.logger.info("Registered suite: %s", suite.name)
 
-    def get_suite(self, name: str) -> Optional[TestSuiteDefinition]:
+    def get_suite(self, name: str) -> TestSuiteDefinition | None:
         return self._suites.get(name)
 
-    def list_suites(self) -> List[Dict[str, Any]]:
+    def list_suites(self) -> list[dict[str, Any]]:
         return [
             {
                 "name": s.name,
@@ -83,18 +90,17 @@ class TestSuiteManager:
             for s in self._suites.values()
         ]
 
-    def combine_suites(self, names: List[str]) -> TestSuiteDefinition:
+    def combine_suites(self, names: list[str]) -> TestSuiteDefinition:
         """Create a combined suite from multiple named suites."""
-        patterns: List[str] = []
-        modules_set: Set[str] = set()
-        markers: List[str] = []
+        patterns: list[str] = []
+        modules_set: set[str] = set()
+        markers: list[str] = []
         max_timeout = 300
 
         for name in names:
             suite = self._suites.get(name)
             if suite is None:
-                self.logger.warning("Suite '%s' not found, skipping", name)
-                continue
+                raise ValueError(f"Unknown suite: {name}")
             patterns.extend(suite.test_patterns)
             modules_set.update(suite.modules)
             markers.extend(suite.markers)
@@ -117,7 +123,7 @@ class TestOrchestrator:
     """
 
     # Default dependency graph (module → list of modules it depends on)
-    DEFAULT_DEPENDENCIES: Dict[str, List[str]] = {
+    DEFAULT_DEPENDENCIES: dict[str, list[str]] = {
         "TEST": [],
         "LOG": [],
         "MATH": [],
@@ -144,31 +150,36 @@ class TestOrchestrator:
 
     def __init__(
         self,
-        suite_manager: Optional[TestSuiteManager] = None,
-        dependencies: Optional[Dict[str, List[str]]] = None,
-        logger: Optional[logging.Logger] = None,
+        suite_manager: TestSuiteManager | None = None,
+        dependencies: dict[str, list[str]] | None = None,
+        logger: logging.Logger | None = None,
     ):
         self.suite_manager = suite_manager or TestSuiteManager()
         self.dependencies = dependencies or dict(self.DEFAULT_DEPENDENCIES)
         self.logger = logger or logging.getLogger(__name__)
-        self._execution_log: List[Dict[str, Any]] = []
+        self._execution_log: list[dict[str, Any]] = []
 
-    def resolve_execution_order(self, modules: List[str]) -> List[str]:
+    def resolve_execution_order(self, modules: list[str]) -> list[str]:
         """
         Topological sort of *modules* respecting their dependency graph.
         Modules not in the graph are appended at the end.
         """
-        visited: Set[str] = set()
-        order: List[str] = []
+        visited: set[str] = set()
+        visiting: set[str] = set()
+        order: list[str] = []
         modules_set = set(modules)
 
         def _visit(m: str) -> None:
             if m in visited:
                 return
-            visited.add(m)
+            if m in visiting:
+                raise ValueError(f"Cyclic test dependencies at {m}")
+            visiting.add(m)
             for dep in self.dependencies.get(m, []):
                 if dep in modules_set:
                     _visit(dep)
+            visiting.remove(m)
+            visited.add(m)
             order.append(m)
 
         for m in modules:
@@ -179,8 +190,8 @@ class TestOrchestrator:
     def plan_execution(
         self,
         suite_name: str = "unit",
-        modules: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        modules: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Build an execution plan: ordered modules, suite config, and
         estimated duration.
@@ -189,10 +200,14 @@ class TestOrchestrator:
         if suite is None:
             raise ValueError(f"Suite '{suite_name}' not found")
 
-        target_modules = modules or suite.modules or list(self.dependencies.keys())
+        target_modules = (
+            modules
+            or suite.modules
+            or [module.name for module in discover_geo_infer_modules()]
+        )
         ordered = self.resolve_execution_order(target_modules)
 
-        plan: Dict[str, Any] = {
+        plan: dict[str, Any] = {
             "suite": suite.name,
             "description": suite.description,
             "execution_order": ordered,
@@ -208,24 +223,47 @@ class TestOrchestrator:
 
     def execute_plan(
         self,
-        plan: Dict[str, Any],
-        runner_fn: Optional[Callable[[str], Dict[str, Any]]] = None,
-    ) -> Dict[str, Any]:
+        plan: dict[str, Any],
+        runner_fn: Callable[[str], dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         """
         Execute a plan by calling *runner_fn(module)* for each module
-        in order.  Falls back to a no-op if no runner is supplied.
+        in order. Uses canonical category execution when no runner is supplied.
         """
-        results: Dict[str, Dict[str, Any]] = {}
-        start = time.time()
+        results: dict[str, dict[str, Any]] = {}
+        start = time.monotonic()
+        if not plan["execution_order"]:
+            raise ValueError("Cannot execute an empty test plan")
+
+        if runner_fn is None and plan["suite"] not in {
+            "unit",
+            "slow",
+            "integration",
+            "performance",
+            "system",
+        }:
+            raise ValueError("Custom suites require an explicit runner_fn")
 
         for module in plan["execution_order"]:
-            mod_start = time.time()
+            mod_start = time.monotonic()
             try:
                 if runner_fn:
                     mod_result = runner_fn(module)
                 else:
-                    mod_result = {"status": "skipped", "reason": "no runner provided"}
-                mod_result["duration"] = time.time() - mod_start
+                    report = run_module_category_tests(
+                        plan["suite"],
+                        plan["timeout_seconds"],
+                        modules=[module_by_name(module)],
+                    )
+                    mod_result = {
+                        "status": "passed" if report.success else "failed",
+                        "receipts": [result.receipt for result in report.results],
+                    }
+                if mod_result.get("status") not in {"passed", "failed", "error"}:
+                    raise ValueError(
+                        f"Runner returned an unsupported outcome: {mod_result.get('status')}"
+                    )
+                mod_result["duration"] = time.monotonic() - mod_start
                 results[module] = mod_result
                 self.logger.info(
                     "Module %s: %s (%.2fs)",
@@ -237,13 +275,15 @@ class TestOrchestrator:
                 results[module] = {
                     "status": "error",
                     "error": str(exc),
-                    "duration": time.time() - mod_start,
+                    "duration": time.monotonic() - mod_start,
                 }
                 self.logger.error("Module %s failed: %s", module, exc)
 
-        total_duration = time.time() - start
+        total_duration = time.monotonic() - start
         execution_report = {
             "suite": plan["suite"],
+            "success": bool(results)
+            and all(result["status"] == "passed" for result in results.values()),
             "module_results": results,
             "total_modules": len(results),
             "total_duration": total_duration,
@@ -255,5 +295,5 @@ class TestOrchestrator:
         self._execution_log.append(execution_report)
         return execution_report
 
-    def get_execution_history(self) -> List[Dict[str, Any]]:
+    def get_execution_history(self) -> list[dict[str, Any]]:
         return list(self._execution_log)

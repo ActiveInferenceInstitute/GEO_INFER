@@ -18,7 +18,8 @@ data must raise instead of silently reading as "never converged".
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 import pytest
 

@@ -6,9 +6,9 @@ with automatic documentation, validation, and error handling.
 """
 
 import logging
-from typing import Any, Dict, List, Tuple, cast
+from typing import Any, cast
 import math
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import geopandas as gpd
@@ -27,6 +27,7 @@ from .schemas import (
     H3AnalysisRequest,
     ErrorResponse,
 )
+from .. import __version__
 
 from ..analytics import (
     proximity_analysis,
@@ -54,7 +55,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="GEO-INFER-SPACE API",
     description="Advanced spatial analysis and processing services",
-    version="0.1.0",
+    version=__version__,
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -69,8 +70,6 @@ app.add_middleware(
 )
 
 # Create API router
-from fastapi import APIRouter
-
 router = APIRouter(prefix="/api/v1", tags=["spatial"])
 
 
@@ -89,7 +88,7 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
 
 
 def geojson_to_gdf(
-    geojson_data: Dict[str, Any], crs: str = "EPSG:4326"
+    geojson_data: dict[str, Any], crs: str = "EPSG:4326"
 ) -> gpd.GeoDataFrame:
     """Convert GeoJSON data to GeoDataFrame."""
     try:
@@ -102,22 +101,22 @@ def geojson_to_gdf(
             geom = shape(geojson_data)
             return gpd.GeoDataFrame([{"geometry": geom}], crs=crs)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid GeoJSON data: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid GeoJSON data: {e}") from e
 
 
-def gdf_to_geojson(gdf: gpd.GeoDataFrame) -> Dict[str, Any]:
+def gdf_to_geojson(gdf: gpd.GeoDataFrame) -> dict[str, Any]:
     """Convert GeoDataFrame to GeoJSON."""
     try:
-        return cast(Dict[str, Any], json.loads(gdf.to_json()))
+        return cast(dict[str, Any], json.loads(gdf.to_json()))
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to convert to GeoJSON: {e}"
-        )
+        ) from e
 
 
-def _records_to_json(frame: pd.DataFrame) -> List[Dict[str, Any]]:
+def _records_to_json(frame: pd.DataFrame) -> list[dict[str, Any]]:
     """Convert tabular network results to JSON-safe records."""
-    records = cast(List[Dict[str, Any]], frame.to_dict(orient="records"))
+    records = cast(list[dict[str, Any]], frame.to_dict(orient="records"))
     for record in records:
         for key, value in list(record.items()):
             if isinstance(value, float) and not math.isfinite(value):
@@ -140,7 +139,7 @@ def _reproject_geometry_series(
 
     transformer = Transformer.from_crs(source_crs, target_crs, always_xy=True)
 
-    def transform_coordinates(x: Any, y: Any, z: Any = None) -> Tuple[Any, Any]:
+    def transform_coordinates(x: Any, y: Any, z: Any = None) -> tuple[Any, Any]:
         try:
             x_values = [float(value) for value in x]
             y_values = [float(value) for value in y]
@@ -157,7 +156,7 @@ def _reproject_geometry_series(
 
 def _buffer_geometry(
     gdf: gpd.GeoDataFrame, distance: float
-) -> Tuple[gpd.GeoSeries, Dict[str, Any]]:
+) -> tuple[gpd.GeoSeries, dict[str, Any]]:
     """Buffer safely, using meters for geographic input CRS values.
 
     Shapely buffers coordinates in a planar coordinate system. Calling it
@@ -250,7 +249,7 @@ async def buffer_analysis_endpoint(
         raise
     except Exception as e:
         logger.error(f"Buffer analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/proximity", response_model=SpatialAnalysisResponse)
@@ -291,7 +290,7 @@ async def proximity_analysis_endpoint(
         raise
     except Exception as e:
         logger.error(f"Proximity analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/interpolation", response_model=SpatialAnalysisResponse)
@@ -319,7 +318,7 @@ async def interpolation_endpoint(
         result_gdf = spatial_interpolation(
             points_gdf=points_gdf,
             value_column=request.value_column,
-            grid_bounds=cast(Tuple[float, float, float, float], tuple(request.bounds)),
+            grid_bounds=cast(tuple[float, float, float, float], tuple(request.bounds)),
             grid_resolution=request.resolution,
             method=request.method,
             **(request.parameters or {}),
@@ -345,7 +344,7 @@ async def interpolation_endpoint(
         raise
     except Exception as e:
         logger.error(f"Interpolation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/clustering", response_model=SpatialAnalysisResponse)
@@ -398,7 +397,7 @@ async def clustering_endpoint(
         raise
     except Exception as e:
         logger.error(f"Clustering analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/hotspots", response_model=SpatialAnalysisResponse)
@@ -459,7 +458,7 @@ async def hotspot_detection_endpoint(
         raise
     except Exception as e:
         logger.error(f"Hotspot detection failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/network", response_model=SpatialAnalysisResponse)
@@ -627,7 +626,7 @@ async def network_analysis_endpoint(
         raise
     except Exception as e:
         logger.error(f"Network analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/h3", response_model=SpatialAnalysisResponse)
@@ -791,17 +790,17 @@ async def h3_analysis_endpoint(
         raise
     except Exception as e:
         logger.error(f"H3 analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/health")
-async def health_check() -> Dict[str, str]:
+async def health_check() -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "healthy", "service": "GEO-INFER-SPACE"}
 
 
 @router.get("/capabilities")
-async def get_capabilities() -> Dict[str, List[str]]:
+async def get_capabilities() -> dict[str, list[str]]:
     """Get available analysis capabilities."""
     return {
         "vector_operations": [

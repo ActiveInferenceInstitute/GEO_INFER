@@ -11,15 +11,15 @@ import numpy as np
 import rasterio
 from scipy import ndimage
 from scipy.ndimage import generic_filter
-from typing import Dict, Any, Optional, List
+from typing import Any
 import geopandas as gpd
 
 logger = logging.getLogger(__name__)
 
 
 def terrain_analysis(
-    dem_path: str, output_dir: str, analyses: Optional[List[str]] = None
-) -> Dict[str, str]:
+    dem_path: str, output_dir: str, analyses: list[str] | None = None
+) -> dict[str, str]:
     """
     Perform comprehensive terrain analysis on a Digital Elevation Model.
 
@@ -101,7 +101,7 @@ def terrain_analysis(
     return results
 
 
-def _evaluate_expression(expression: str, bands: Dict[str, Any], nodata: float) -> Any:
+def _evaluate_expression(expression: str, bands: dict[str, Any], nodata: float) -> Any:
     """Interpret a bounded arithmetic AST without exposing Python objects."""
     import ast
     import functools
@@ -226,7 +226,7 @@ def _evaluate_expression(expression: str, bands: Dict[str, Any], nodata: float) 
 
 
 def map_algebra(
-    raster_paths: List[str],
+    raster_paths: list[str],
     expression: str,
     output_path: str,
     nodata_value: float = -9999,
@@ -242,7 +242,7 @@ def map_algebra(
         raise ValueError("At least one raster path required")
     if not np.isfinite(nodata_value) or abs(nodata_value) > np.finfo(np.float32).max:
         raise ValueError("nodata_value must be representable as finite float32")
-    bands: Dict[str, Any] = {}
+    bands: dict[str, Any] = {}
     profile = None
     invalid = None
     grid = None
@@ -345,7 +345,7 @@ def focal_statistics(
 def zonal_statistics(
     raster_path: str,
     zones_gdf: gpd.GeoDataFrame,
-    statistics: Optional[List[str]] = None,
+    statistics: list[str] | None = None,
 ) -> gpd.GeoDataFrame:
     """
     Calculate zonal statistics for raster values within polygon zones.
@@ -407,10 +407,10 @@ def zonal_statistics(
 
 
 def raster_overlay(
-    raster_paths: List[str],
+    raster_paths: list[str],
     output_path: str,
     method: str = "sum",
-    weights: Optional[List[float]] = None,
+    weights: list[float] | None = None,
 ) -> str:
     """
     Overlay multiple rasters using specified method.
@@ -524,7 +524,7 @@ def image_processing(
     return output_path
 
 
-def _write_raster(data: np.ndarray, output_path: str, profile: Dict[str, Any]) -> None:
+def _write_raster(data: np.ndarray, output_path: str, profile: dict[str, Any]) -> None:
     """Helper function to write raster data."""
     profile_copy = profile.copy()
     profile_copy.update(dtype=data.dtype)

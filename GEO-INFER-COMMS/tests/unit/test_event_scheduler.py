@@ -6,7 +6,7 @@ patching the module's ``time.sleep`` with a rendezvous barrier — no
 wall-clock sleeps, no polling.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from threading import Event
 from types import SimpleNamespace
 from contextlib import contextmanager
@@ -18,7 +18,7 @@ from geo_infer_comms.core.events import EventManager, EventScheduler, RecurringE
 from geo_infer_comms.models.message import EventPublishRequest
 
 
-UTC = timezone.utc
+UTC = UTC
 
 
 @pytest.fixture()

@@ -17,12 +17,13 @@ Tests workspace within `GEO-INFER-SPACE`.
 
 - Module: `GEO-INFER-SPACE`
 - Package: `geo_infer_space`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-SPACE`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-space`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module SPACE`
 
 ## Dependencies
 
+- `geo-infer-time>=0.4.0`
 - `fastapi>=0.100.0`
 - `fiona>=1.8.0`
 - `geojson-pydantic>=2.0.0`
@@ -54,7 +55,7 @@ Tests workspace within `GEO-INFER-SPACE`.
   `geo_infer_test.testing` fixtures for deterministic RNG, filesystem, HTTP,
   SQLite, service, model, and artifact boundaries.
 - Dependencies: required test/runtime dependencies are installed by
-  `uv sync --all-packages --all-extras`; missing backends are failures.
+  `uv sync --all-packages --all-extras --all-groups`; missing backends are failures.
 - Expected artifacts: JUnit XML under `.geo-infer-test-results/`; model and
   visualization outputs require finite statistics, sidecars, hashes, and a
   manifest.

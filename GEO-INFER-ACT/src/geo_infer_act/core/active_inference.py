@@ -8,7 +8,8 @@ and free energy minimization.
 
 import copy
 import numpy as np
-from typing import Dict, List, Any, Optional, Tuple, Union, Iterable, cast
+from typing import Any, cast
+from collections.abc import Iterable
 import logging
 
 from geo_infer_act.core.generative_model import GenerativeModel
@@ -31,7 +32,17 @@ from geo_infer_act.utils.h3_adapter import (
 )
 from geo_infer_act.utils.math import normalize_distribution
 from geo_infer_act.utils.analysis import ActiveInferenceAnalyzer
-from geo_infer_act.utils.pymdp_adapter import PymdpStepResult, run_model_step
+from geo_infer_act.utils.pymdp_adapter import (
+    PymdpStepResult,
+    _model_num_controls,
+    run_model_step,
+)
+from geo_infer_act.core.factored_runtime import (
+    build_runtime_artifact,
+    is_factored_model,
+    marginal_beliefs,
+)
+from geo_infer_act.core.gnn_factored_contract import infer_factored_step
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +93,10 @@ class ActiveInferenceModel:
             model_type: Type of underlying generative model
             **kwargs: Additional parameters
         """
+        if model_type not in {"categorical", "gaussian", "hierarchical_gaussian"}:
+            raise ValueError(f"Unsupported model type: {model_type}")
         self.model_type = model_type
-        self.parameters = dict(kwargs)
+        self.parameters = copy.deepcopy(kwargs)
         self.preferences = self.parameters.pop("preferences", None)
         policy_temperature = self.parameters.pop(
             "policy_temperature", self.parameters.pop("temperature", 1.0)
@@ -95,13 +108,17 @@ class ActiveInferenceModel:
         self.random_seed = random_seed
 
         # Initialize core components
-        self.generative_model: Optional[GenerativeModel] = None
+        self.generative_model: GenerativeModel | None = None
         self.free_energy_calculator = FreeEnergyCalculator()
         self.policy_selector = PolicySelector(
             temperature=policy_temperature,
             selection_mode=policy_selection_mode,
             random_seed=random_seed,
         )
+        self._initial_policy_rng_state = copy.deepcopy(
+            self.policy_selector.rng.bit_generator.state
+        )
+        self._factored_next_prior: np.ndarray | None = None
         self.belief_updater = BayesianBeliefUpdate()
 
         # Analyzer Integration
@@ -114,14 +131,14 @@ class ActiveInferenceModel:
             )
 
         # State variables
-        self.current_beliefs: Optional[Any] = None
-        self.current_observations: Optional[Any] = None
-        self.current_actions: Optional[Any] = None
-        self.latest_policy_evaluation: Optional[PolicyEvaluation] = None
-        self.latest_policy_selection: Optional[Dict[str, Any]] = None
-        self.latest_pymdp_result: Optional[PymdpStepResult] = None
-        self._perception_free_energy: Optional[float] = None
-        self.history: List[Dict[str, Any]] = []
+        self.current_beliefs: Any | None = None
+        self.current_observations: Any | None = None
+        self.current_actions: Any | None = None
+        self.latest_policy_evaluation: PolicyEvaluation | None = None
+        self.latest_policy_selection: dict[str, Any] | None = None
+        self.latest_pymdp_result: PymdpStepResult | None = None
+        self._perception_free_energy: float | None = None
+        self.history: list[dict[str, Any]] = []
 
         logger.info(f"Initialized ActiveInferenceModel with type: {model_type}")
 
@@ -134,6 +151,7 @@ class ActiveInferenceModel:
         self.latest_policy_evaluation = None
         self.latest_policy_selection = None
         self._perception_free_energy = None
+        self._factored_next_prior = None
         if getattr(model, "model_type", None) and model.model_type != self.model_type:
             logger.info(
                 "Aligning active inference model type with generative model: %s",
@@ -158,11 +176,60 @@ class ActiveInferenceModel:
         if self.generative_model is None:
             raise ValueError("Generative model must be set before perception")
 
+        if self.model_type == "categorical" and is_factored_model(
+            self.generative_model
+        ):
+            if any(
+                isinstance(value, (bool, np.bool_))
+                for value in np.asarray(observation, dtype=object).flat
+            ):
+                raise ValueError(
+                    "Factored observations must contain integer modality indices"
+                )
         observation = np.asarray(observation, dtype=float).reshape(-1)
-        self.current_observations = observation
-        self.latest_pymdp_result = None
-        self._perception_free_energy = None
-
+        if observation.size == 0 or not np.all(np.isfinite(observation)):
+            raise ValueError("Observations must be a nonempty finite vector")
+        if self.model_type == "categorical" and is_factored_model(
+            self.generative_model
+        ):
+            artifact = build_runtime_artifact(self.generative_model)
+            sizes = [
+                len(factor["states"]) for factor in artifact.to_dict()["state_factors"]
+            ]
+            if not np.all(np.isfinite(observation)) or not np.all(
+                observation == np.floor(observation)
+            ):
+                raise ValueError(
+                    "Factored observations must contain integer modality indices"
+                )
+            result = infer_factored_step(
+                artifact,
+                observation.astype(int).tolist(),
+                prior=self._factored_next_prior,
+            )
+            beliefs = marginal_beliefs(result["posterior"], sizes)
+            self.current_beliefs = beliefs
+            self.generative_model.beliefs = copy.deepcopy(beliefs)
+            self.current_observations = observation.copy()
+            self.latest_pymdp_result = None
+            self._perception_free_energy = result["free_energy"]
+            self._factored_next_prior = np.asarray(result["posterior"], dtype=float)
+            return cast(np.ndarray, self._clone_beliefs(beliefs))
+        if self.model_type == "categorical":
+            if (
+                np.any(observation < 0)
+                or not np.isfinite(observation.sum())
+                or observation.sum() <= 0
+            ):
+                raise ValueError(
+                    "Categorical observations must be nonnegative with positive mass"
+                )
+            if self._supports_pymdp_adapter():
+                obs_dim = np.asarray(self.generative_model.observation_model).shape[0]
+                if observation.size != obs_dim:
+                    raise ValueError(
+                        f"Observation dimension must match configured A: {observation.size} != {obs_dim}"
+                    )
         perception_prior = (
             self._extract_belief_vector(
                 self.current_beliefs
@@ -173,6 +240,8 @@ class ActiveInferenceModel:
             else None
         )
         updated_beliefs = self._update_beliefs_with_model(observation)
+        self.current_observations = observation.copy()
+        self._perception_free_energy = None
         self.current_beliefs = updated_beliefs
         if self.model_type == "categorical" and self._supports_pymdp_adapter():
             self.generative_model.beliefs = self._clone_beliefs(updated_beliefs)
@@ -189,7 +258,7 @@ class ActiveInferenceModel:
 
         return cast(np.ndarray, self._clone_beliefs(self.current_beliefs))
 
-    def act(self, available_actions: Optional[List[Any]] = None) -> Any:
+    def act(self, available_actions: list[Any] | None = None) -> Any:
         """
         Select action based on expected free energy minimization.
 
@@ -199,10 +268,85 @@ class ActiveInferenceModel:
         Returns:
             Selected action
         """
+        if self.model_type in {"gaussian", "hierarchical_gaussian"}:
+            raise ValueError(
+                "Gaussian action selection requires explicit control dynamics; use ContinuousPOMDPActiveInference or the Gaussian GNN runner"
+            )
         if self.generative_model is None:
             raise ValueError("Generative model must be set before action selection")
         if available_actions is not None and not available_actions:
             raise ValueError("available_actions must contain at least one action")
+        if self.model_type == "categorical" and is_factored_model(
+            self.generative_model
+        ):
+            if (
+                self.current_observations is None
+                or self._perception_free_energy is None
+            ):
+                raise ValueError(
+                    "Factored action selection requires a prior perception"
+                )
+            artifact = build_runtime_artifact(self.generative_model)
+            data = artifact.to_dict()
+            joint = self.current_beliefs["joint"]
+            result = infer_factored_step(
+                artifact,
+                self.current_observations.astype(int).tolist(),
+                posterior=joint,
+            )
+            probabilities = self.policy_selector.compose_policy_posterior(
+                result["expected_free_energy"],
+                precision=1 / self.policy_selector.temperature,
+                prior=np.asarray(data["policy_prior"]),
+            )["posterior"]
+            index = (
+                int(np.argmax(probabilities))
+                if self.policy_selector.selection_mode == "deterministic"
+                else int(
+                    self.policy_selector.rng.choice(len(probabilities), p=probabilities)
+                )
+            )
+            controls = data["policies"][index][0]
+            if available_actions is not None and len(available_actions) != len(
+                probabilities
+            ):
+                raise ValueError(
+                    "available_actions must preserve every declared factored policy in order"
+                )
+            action = (
+                available_actions[index]
+                if available_actions is not None
+                else (controls[0] if len(controls) == 1 else list(controls))
+            )
+            transition = np.array([[1.0]])
+            for spec in data["transitions"]:
+                matrix = np.asarray(spec["probabilities"], dtype=float)
+                transition = np.kron(
+                    transition, matrix[:, :, controls[spec["control_factor"]]]
+                )
+            self._factored_next_prior = transition @ joint
+            evaluation = PolicyEvaluation(
+                policy=action,
+                expected_free_energy=float(result["expected_free_energy"][index]),
+                probability=float(probabilities[index]),
+                index=index,
+                metadata={
+                    "backend": result["backend"],
+                    "artifact_sha256": artifact.digest,
+                },
+            )
+            self.latest_policy_evaluation = evaluation
+            self.latest_policy_selection = {
+                "backend": result["backend"],
+                "policy": action,
+                "probability": evaluation.probability,
+                "all_probabilities": probabilities.copy(),
+                "all_free_energies": np.asarray(result["expected_free_energy"]),
+                "selected_index": index,
+                "evaluation": evaluation,
+            }
+            self.current_actions = copy.deepcopy(action)
+            return copy.deepcopy(action)
 
         if (
             self.model_type == "categorical"
@@ -214,7 +358,8 @@ class ActiveInferenceModel:
                     len(available_actions)
                     if available_actions is not None
                     else _coerce_action_count(
-                        self.parameters.get("num_controls"), default=3
+                        self.parameters.get("num_controls"),
+                        default=_model_num_controls(self.generative_model),
                     )
                 )
                 pymdp_result = run_model_step(
@@ -259,6 +404,10 @@ class ActiveInferenceModel:
                     "policy": action,
                     "evaluation": self.latest_policy_evaluation,
                     "pymdp": pymdp_result.to_metadata(),
+                    "probability": selected_probability,
+                    "all_probabilities": pymdp_result.policy_posterior.copy(),
+                    "all_free_energies": -pymdp_result.negative_expected_free_energy.copy(),
+                    "selected_index": selected_index,
                 }
                 self.current_actions = action
                 return action
@@ -288,9 +437,7 @@ class ActiveInferenceModel:
 
         belief_vector = self._extract_belief_vector(self.current_beliefs)
         if belief_vector is None:
-            belief_vector = np.ones(len(available_actions), dtype=float) / len(
-                available_actions
-            )
+            raise ValueError("Action selection requires configured current beliefs")
 
         policy_candidates = [
             {
@@ -312,18 +459,65 @@ class ActiveInferenceModel:
         self.current_actions = selected_action
         return selected_action
 
-    def update_observations(self, observations: Dict[str, Any]) -> None:
+    def update_observations(self, observations: dict[str, Any]) -> None:
         """Update observations for the active inference model."""
-        self.current_observations = observations
+        self.current_observations = copy.deepcopy(observations)
         self._perception_free_energy = None
         self.latest_pymdp_result = None
 
-    def update_preferences(self, preferences: Dict[str, float]) -> None:
+    def predict_beliefs(self, action_index: int | None = None) -> dict[str, np.ndarray]:
+        """Advance one explicit interval of a flat categorical transition model.
+
+        ``step`` conditions a measurement and evaluates prospective actions.
+        Flat models advance time only through this method, so callers can
+        record an explicit action for every interval, including missing data.
+        B uses (next, current[, action]); no observation is synthesized.
+        Factored domain models already propagate their selected controls.
+        """
+        if self.generative_model is None or not self._supports_pymdp_adapter():
+            raise ValueError("Prediction requires a configured flat categorical model")
+        prior = self._extract_belief_vector(self.current_beliefs)
+        if prior is None:
+            raise ValueError("Prediction requires configured current beliefs")
+        matrix = np.asarray(self.generative_model.transition_model, dtype=float)
+        if matrix.ndim == 3:
+            if (
+                isinstance(action_index, bool)
+                or not isinstance(action_index, (int, np.integer))
+                or not 0 <= action_index < matrix.shape[2]
+            ):
+                raise ValueError(
+                    "Action-conditioned prediction requires a valid action_index"
+                )
+            matrix = matrix[:, :, action_index]
+        elif action_index is not None:
+            raise ValueError("Action-independent B requires action_index=None")
+        if (
+            matrix.shape != (len(prior), len(prior))
+            or not np.all(np.isfinite(matrix))
+            or np.any(matrix < 0)
+            or not np.allclose(matrix.sum(axis=0), 1, atol=1e-8, rtol=0)
+        ):
+            raise ValueError(
+                "Prediction requires finite nonnegative column-stochastic B"
+            )
+        predicted = matrix @ prior
+        self.current_beliefs = {"states": predicted.copy()}
+        self.generative_model.beliefs = self._clone_beliefs(self.current_beliefs)
+        self.current_observations = None
+        self.current_actions = None
+        self.latest_pymdp_result = None
+        self.latest_policy_evaluation = None
+        self.latest_policy_selection = None
+        self._perception_free_energy = None
+        return self._clone_beliefs(self.current_beliefs)
+
+    def update_preferences(self, preferences: dict[str, float]) -> None:
         """Update preferences for the active inference model."""
         self.set_preferences(preferences)
 
     def update_with_outcome(
-        self, decision: Dict[str, Any], outcome: Dict[str, Any]
+        self, decision: dict[str, Any], outcome: dict[str, Any]
     ) -> None:
         """
         Update model based on decision outcome for learning.
@@ -336,30 +530,31 @@ class ActiveInferenceModel:
             decision: The decision/action taken
             outcome: The observed outcome
         """
-        self.history.append(
-            {
-                "decision": decision,
-                "outcome": outcome,
-                "beliefs_at_decision": self._clone_beliefs(self.current_beliefs),
-            }
-        )
+        beliefs_at_decision = self._clone_beliefs(self.current_beliefs)
         if "observation" in outcome:
             obs = np.asarray(outcome["observation"], dtype=float).reshape(-1)
             self.perceive(obs)
+        self.history.append(
+            {
+                "decision": copy.deepcopy(decision),
+                "outcome": copy.deepcopy(outcome),
+                "beliefs_at_decision": beliefs_at_decision,
+            }
+        )
 
     def generate_policies(
-        self, available_actions: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, available_actions: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Generate policy options from available actions."""
-        return available_actions
+        return copy.deepcopy(available_actions)
 
-    def select_policy(self, policies: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def select_policy(self, policies: list[dict[str, Any]]) -> dict[str, Any]:
         """Select optimal policy from candidates."""
         if not policies:
-            return {}
+            raise ValueError("policies must contain at least one policy")
         belief_vector = self._extract_belief_vector(self.current_beliefs)
         if belief_vector is None:
-            belief_vector = np.ones(len(policies), dtype=float) / len(policies)
+            raise ValueError("Policy selection requires configured current beliefs")
         policy_info = self.policy_selector.select_policy(
             belief_vector,
             policies,
@@ -367,9 +562,9 @@ class ActiveInferenceModel:
         )
         self.latest_policy_evaluation = policy_info.get("evaluation")
         self.latest_policy_selection = policy_info
-        return cast(Dict[str, Any], policy_info.get("policy", {}))
+        return cast(dict[str, Any], policy_info.get("policy", {}))
 
-    def compute_expected_free_energy(self, policy: Dict[str, Any]) -> float:
+    def compute_expected_free_energy(self, policy: dict[str, Any]) -> float:
         """Compute expected free energy for a given policy.
 
         Delegates to FreeEnergyCalculator.compute_expected_free_energy using
@@ -398,9 +593,9 @@ class ActiveInferenceModel:
     def step(
         self,
         observation: np.ndarray,
-        available_actions: Optional[List[Any]] = None,
+        available_actions: list[Any] | None = None,
         return_result: bool = False,
-    ) -> Union[Tuple[np.ndarray, Any], ActiveInferenceStepResult]:
+    ) -> tuple[np.ndarray, Any] | ActiveInferenceStepResult:
         """
         Perform one complete active inference step.
 
@@ -412,6 +607,16 @@ class ActiveInferenceModel:
             Tuple of (updated_beliefs, selected_action), or an
             ActiveInferenceStepResult when ``return_result`` is true.
         """
+        if self.generative_model is not None and is_factored_model(
+            self.generative_model
+        ):
+            if any(
+                isinstance(value, (bool, np.bool_))
+                for value in np.asarray(observation, dtype=object).flat
+            ):
+                raise ValueError(
+                    "Factored observations must contain integer modality indices"
+                )
         observation_array = np.asarray(observation, dtype=float).reshape(-1)
 
         # Perception: update beliefs
@@ -497,6 +702,9 @@ class ActiveInferenceModel:
     def compute_free_energy(self) -> float:
         """Compute current variational free energy."""
 
+        if self._perception_free_energy is not None:
+            return float(self._perception_free_energy)
+
         # Delegate to GenerativeModel if it supports free energy computation (handles hierarchical etc.)
         if self.generative_model is not None and hasattr(
             self.generative_model, "compute_free_energy"
@@ -519,18 +727,14 @@ class ActiveInferenceModel:
                 ),
             )
 
-        if self.model_type == "gaussian":
-            gaussian_beliefs = self._ensure_gaussian_beliefs(self.current_beliefs)
-            if gaussian_beliefs is None or self.current_observations is None:
+        if self.model_type in {"gaussian", "hierarchical_gaussian"}:
+            if (
+                self.generative_model is None
+                or self.current_observations is None
+                or not self.generative_model._last_gaussian_free_energy
+            ):
                 return np.inf
-            gaussian_preferences = self._get_gaussian_preferences()
-            return self.free_energy_calculator.compute_gaussian_free_energy(
-                gaussian_beliefs["mean"],
-                gaussian_beliefs["precision"],
-                self.current_observations,
-                gaussian_preferences.get("mean"),
-                gaussian_preferences.get("precision"),
-            )
+            return self.generative_model.compute_free_energy()
 
         return np.inf
 
@@ -542,6 +746,7 @@ class ActiveInferenceModel:
                 initial_beliefs = self._extract_model_beliefs(self.generative_model)
                 self._initial_beliefs = self._clone_beliefs(initial_beliefs)
             self.generative_model.beliefs = self._clone_beliefs(initial_beliefs)
+            self.generative_model._last_gaussian_free_energy.clear()
             self.current_beliefs = self._clone_beliefs(initial_beliefs)
         else:
             self.current_beliefs = None
@@ -552,28 +757,28 @@ class ActiveInferenceModel:
         self.latest_policy_selection = None
         self.latest_pymdp_result = None
         self._perception_free_energy = None
+        self._factored_next_prior = None
+        self.policy_selector.rng.bit_generator.state = copy.deepcopy(
+            self._initial_policy_rng_state
+        )
         self.history = []
 
-    def get_history(self) -> List[Dict[str, Any]]:
+    def get_history(self) -> list[dict[str, Any]]:
         """Get the complete history of interactions."""
         return [copy.deepcopy(entry) for entry in self.history]
 
-    def get_current_state(self) -> Dict[str, Any]:
+    def get_current_state(self) -> dict[str, Any]:
         """Get current model state."""
         return {
             "beliefs": self._clone_beliefs(self.current_beliefs),
-            "observations": (
-                self.current_observations.copy()
-                if isinstance(self.current_observations, np.ndarray)
-                else self.current_observations
-            ),
-            "actions": self.current_actions,
+            "observations": copy.deepcopy(self.current_observations),
+            "actions": copy.deepcopy(self.current_actions),
             "free_energy": self.compute_free_energy(),
             "model_type": self.model_type,
         }
 
     def apply_to_h3(
-        self, h3_obs: Dict[str, np.ndarray], return_result: bool = False
+        self, h3_obs: dict[str, np.ndarray], return_result: bool = False
     ) -> Any:
         """
         Update a spatial generative model from H3-indexed observations.
@@ -598,7 +803,7 @@ class ActiveInferenceModel:
         )
 
     def infer_over_h3_grid(
-        self, h3_grid: Dict[str, Any], return_result: bool = False
+        self, h3_grid: dict[str, Any], return_result: bool = False
     ) -> Any:
         """
         Run independent one-step inference across an H3 observation grid.
@@ -625,7 +830,7 @@ class ActiveInferenceModel:
         observations_by_cell = {str(cell): obs for cell, obs in h3_grid.items()}
         observed_cells = adapter.validate_cells(observations_by_cell.keys())
         results = {}
-        typed_results: Dict[str, ActiveInferenceStepResult] = {}
+        typed_results: dict[str, ActiveInferenceStepResult] = {}
         original_beliefs = self._clone_beliefs(self.current_beliefs)
         original_observations = (
             self.current_observations.copy()
@@ -636,7 +841,9 @@ class ActiveInferenceModel:
         original_policy_evaluation = self.latest_policy_evaluation
         original_policy_selection = self.latest_policy_selection
         original_pymdp_result = self.latest_pymdp_result
+        original_analyzer = self.analyzer
         original_perception_free_energy = self._perception_free_energy
+        original_factored_prior = self._clone_beliefs(self._factored_next_prior)
         original_policy_rng_state = copy.deepcopy(
             self.policy_selector.rng.bit_generator.state
         )
@@ -645,10 +852,34 @@ class ActiveInferenceModel:
             if self.generative_model is not None
             else None
         )
+        original_gaussian_free_energy = copy.deepcopy(
+            getattr(self.generative_model, "_last_gaussian_free_energy", {})
+        )
         history_len = len(self.history)
 
         try:
+            # Scoring is read-only; ordinary step() records analyzer traces.
+            # Suppress that writer for this query and restore it even on error.
+            self.analyzer = None
             for cell in observed_cells:
+                # Each cell is an independent scoring request. A posterior
+                # from the previous cell must not become this cell's prior;
+                # otherwise a permutation of the same grid changes inference.
+                self.current_beliefs = self._clone_beliefs(original_beliefs)
+                self._factored_next_prior = self._clone_beliefs(original_factored_prior)
+                self.current_actions = original_actions
+                self.policy_selector.rng.bit_generator.state = copy.deepcopy(
+                    original_policy_rng_state
+                )
+                if self.generative_model is not None:
+                    self.generative_model.beliefs = copy.deepcopy(
+                        original_model_beliefs
+                    )
+                    self.generative_model._last_gaussian_free_energy = copy.deepcopy(
+                        original_gaussian_free_energy
+                    )
+                if len(self.history) > history_len:
+                    self.history = self.history[:history_len]
                 obs = observations_by_cell[cell]
                 step_result = cast(
                     ActiveInferenceStepResult, self.step(obs, return_result=True)
@@ -668,6 +899,7 @@ class ActiveInferenceModel:
                     ),
                 }
         finally:
+            self.analyzer = original_analyzer
             self.current_beliefs = original_beliefs
             self.current_observations = original_observations
             self.current_actions = original_actions
@@ -675,9 +907,13 @@ class ActiveInferenceModel:
             self.latest_policy_selection = original_policy_selection
             self.latest_pymdp_result = original_pymdp_result
             self._perception_free_energy = original_perception_free_energy
+            self._factored_next_prior = original_factored_prior
             self.policy_selector.rng.bit_generator.state = original_policy_rng_state
             if self.generative_model is not None:
                 self.generative_model.beliefs = original_model_beliefs
+                self.generative_model._last_gaussian_free_energy = (
+                    original_gaussian_free_energy
+                )
             if len(self.history) > history_len:
                 self.history = self.history[:history_len]
 
@@ -713,11 +949,11 @@ class ActiveInferenceModel:
 
     def trace_over_h3_grid(
         self,
-        h3_grid: Dict[str, Any],
+        h3_grid: dict[str, Any],
         *,
         timestep: int = 0,
-        previous_beliefs: Optional[Dict[str, Any]] = None,
-        grid_result: Optional[H3GridInferenceResult] = None,
+        previous_beliefs: dict[str, Any] | None = None,
+        grid_result: H3GridInferenceResult | None = None,
         scenario: str = "h3",
     ) -> SpatialInferenceTrace:
         """
@@ -746,9 +982,9 @@ class ActiveInferenceModel:
 
     def infer_over_nested_h3_grid(
         self,
-        h3_grid: Dict[str, Any],
+        h3_grid: dict[str, Any],
         return_result: bool = False,
-        top_down_weight: Optional[float] = None,
+        top_down_weight: float | None = None,
     ) -> Any:
         """
         Run one-step inference across an enabled nested H3 hierarchy.
@@ -798,12 +1034,12 @@ class ActiveInferenceModel:
 
     def trace_over_nested_h3_grid(
         self,
-        h3_grid: Dict[str, Any],
+        h3_grid: dict[str, Any],
         *,
         timestep: int = 0,
-        previous_beliefs: Optional[Dict[str, Any]] = None,
-        grid_result: Optional[NestedH3GridInferenceResult] = None,
-        top_down_weight: Optional[float] = None,
+        previous_beliefs: dict[str, Any] | None = None,
+        grid_result: NestedH3GridInferenceResult | None = None,
+        top_down_weight: float | None = None,
         scenario: str = "h3",
     ) -> SpatialInferenceTrace:
         """
@@ -838,7 +1074,7 @@ class ActiveInferenceModel:
         )
 
     def _compute_h3_grid_consistency(
-        self, cell_beliefs: Dict[str, Optional[np.ndarray]]
+        self, cell_beliefs: dict[str, np.ndarray | None]
     ) -> H3SpatialConsistency:
         """Compute spatial consistency for an H3 grid inference result."""
         valid_beliefs = {
@@ -894,10 +1130,10 @@ class ActiveInferenceModel:
             global_coherence=global_coherence,
             neighbor_correlations=neighbor_correlations,
             cell_count=len(valid_beliefs),
-            edge_count=edge_count_from_graph(cast("Dict[str, Iterable[str]]", graph)),
+            edge_count=edge_count_from_graph(cast("dict[str, Iterable[str]]", graph)),
         )
 
-    def set_preferences(self, preferences: Union[np.ndarray, Dict[str, Any]]) -> None:
+    def set_preferences(self, preferences: np.ndarray | dict[str, Any]) -> None:
         """Override prior preferences used during inference."""
         self.preferences = copy.deepcopy(preferences)
         if self.generative_model is None:
@@ -939,10 +1175,12 @@ class ActiveInferenceModel:
             return None
 
         if isinstance(beliefs, dict):
+            if any(key.startswith("level_") for key in beliefs):
+                return copy.deepcopy(beliefs)
             if self.model_type == "categorical":
                 if "states" in beliefs:
                     # Return list/array structure as is, just wrapped in dict if not already
-                    return {"states": beliefs["states"]}
+                    return copy.deepcopy(beliefs)
                 for value in beliefs.values():
                     if isinstance(value, dict) and "states" in value:
                         return {"states": value["states"]}
@@ -967,7 +1205,7 @@ class ActiveInferenceModel:
             return None
         if isinstance(prefs, dict):
             if self.model_type == "categorical":
-                extracted: Dict[str, Any] = {}
+                extracted: dict[str, Any] = {}
                 if "states" in prefs:
                     states_flat = self._safe_flatten(prefs["states"])
                     if states_flat is not None:
@@ -980,7 +1218,7 @@ class ActiveInferenceModel:
                         )
                 return extracted or None
             if self.model_type == "gaussian":
-                result: Dict[str, Any] = {}
+                result: dict[str, Any] = {}
                 if "mean" in prefs:
                     result["mean"] = np.asarray(prefs["mean"], dtype=float).copy()
                 if "precision" in prefs:
@@ -1027,10 +1265,12 @@ class ActiveInferenceModel:
                 if isinstance(updated, np.ndarray):
                     vec = normalize_distribution(updated.astype(float))
                     return {"states": vec}
-            elif self.model_type == "gaussian":
+            elif self.model_type in {"gaussian", "hierarchical_gaussian"}:
                 updated = self.generative_model.update_beliefs(
                     {"observations": observation}
                 )
+                if self.generative_model.hierarchical:
+                    return copy.deepcopy(updated)
                 if (
                     isinstance(updated, dict)
                     and "mean" in updated
@@ -1043,12 +1283,7 @@ class ActiveInferenceModel:
                         ).copy(),
                     }
         except Exception as exc:  # pragma: no cover - defensive path
-            unsupported_factorized = (
-                self.model_type == "categorical" and not self._supports_pymdp_adapter()
-            )
-            if not unsupported_factorized and not self.parameters.get(
-                "allow_local_pymdp_fallback", False
-            ):
+            if not self.parameters.get("allow_local_pymdp_fallback", False):
                 raise
             logger.debug("Falling back to local belief update: %s", exc)
 
@@ -1114,7 +1349,7 @@ class ActiveInferenceModel:
 
         return self.current_beliefs
 
-    def _safe_flatten(self, data: Any) -> Optional[np.ndarray]:
+    def _safe_flatten(self, data: Any) -> np.ndarray | None:
         """Safely flatten data that might be a list of arrays or object array."""
         if data is None:
             return None
@@ -1153,7 +1388,7 @@ class ActiveInferenceModel:
 
         return np.array([float(data)])
 
-    def _extract_belief_vector(self, beliefs: Any) -> Optional[np.ndarray]:
+    def _extract_belief_vector(self, beliefs: Any) -> np.ndarray | None:
         if beliefs is None:
             return None
         if isinstance(beliefs, dict) and "states" in beliefs:
@@ -1166,7 +1401,7 @@ class ActiveInferenceModel:
             return None
         return normalize_distribution(flat)
 
-    def _ensure_gaussian_beliefs(self, beliefs: Any) -> Optional[Dict[str, np.ndarray]]:
+    def _ensure_gaussian_beliefs(self, beliefs: Any) -> dict[str, np.ndarray] | None:
         if isinstance(beliefs, dict) and "mean" in beliefs and "precision" in beliefs:
             return {
                 "mean": np.asarray(beliefs["mean"], dtype=float),
@@ -1185,7 +1420,7 @@ class ActiveInferenceModel:
                 }
         return None
 
-    def _get_preferences_vector(self, length: Optional[int] = None) -> np.ndarray:
+    def _get_preferences_vector(self, length: int | None = None) -> np.ndarray:
         vector = None
 
         # 1. Try to get state preferences directly
@@ -1248,8 +1483,8 @@ class ActiveInferenceModel:
 
         return normalize_distribution(vector)
 
-    def _get_gaussian_preferences(self) -> Dict[str, np.ndarray]:
-        prefs: Dict[str, np.ndarray] = {}
+    def _get_gaussian_preferences(self) -> dict[str, np.ndarray]:
+        prefs: dict[str, np.ndarray] = {}
         if isinstance(self.preferences, dict):
             if "mean" in self.preferences:
                 prefs["mean"] = np.asarray(self.preferences["mean"], dtype=float)

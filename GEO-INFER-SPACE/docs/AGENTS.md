@@ -29,6 +29,7 @@
 - `H3_DEMO_README.md`
 - `H3_MODULE_CONFIGURATION_GUIDE.md`
 - `H3_V4_MIGRATION_GUIDE.md`
+- `METHOD_CONTRACTS.md`
 - `TESTING.md`
 - `api_schema.yaml`
 - `h3_advanced_methods.md`

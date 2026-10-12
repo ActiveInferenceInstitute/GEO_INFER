@@ -178,7 +178,7 @@ def main():
     )
     print(f"✓ Stakeholder Groups: {len(stakeholder_analysis['stakeholder_groups'])}")
     print(f"✓ Decision Domains: {len(decision_domains)}")
-    print(f"✓ Institutional Framework: IAD with Ostrom's 8 principles")
+    print("✓ Institutional Framework: IAD with Ostrom's 8 principles")
     print(f"✓ Governance Platform: {governance_platform.platform_id}")
     coord_mech = ", ".join(
         [

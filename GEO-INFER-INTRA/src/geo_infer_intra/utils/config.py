@@ -6,10 +6,10 @@ import yaml
 import json
 import jsonschema
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any
 
 
-def load_config(config_path: Union[str, Path]) -> Dict[str, Any]:
+def load_config(config_path: str | Path) -> dict[str, Any]:
     """
     Load configuration from a file.
 
@@ -29,11 +29,11 @@ def load_config(config_path: Union[str, Path]) -> Dict[str, Any]:
 
     suffix = config_path.suffix.lower()
     if suffix in [".yaml", ".yml"]:
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             data = yaml.safe_load(f)
             return data if isinstance(data, dict) else {}
     elif suffix == ".json":
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             data = json.load(f)
             return data if isinstance(data, dict) else {}
     else:
@@ -66,7 +66,7 @@ def get_schema_path() -> Path:
     raise FileNotFoundError("JSON schema file not found in geo_infer_intra.data")
 
 
-def validate_config(config: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+def validate_config(config: dict[str, Any]) -> tuple[bool, str | None]:
     """
     Validate a configuration against the JSON schema.
 
@@ -78,7 +78,7 @@ def validate_config(config: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
     """
     try:
         schema_path = get_schema_path()
-        with open(schema_path, "r") as f:
+        with open(schema_path) as f:
             schema = json.load(f)
 
         jsonschema.validate(config, schema)
@@ -90,7 +90,7 @@ def validate_config(config: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
 
 
 def get_config_value(
-    config: Dict[str, Any],
+    config: dict[str, Any],
     key_path: str,
     default: Any = _MISSING,
 ) -> Any:
@@ -123,8 +123,8 @@ def get_config_value(
 
 
 def merge_configs(
-    base_config: Dict[str, Any], override_config: Dict[str, Any]
-) -> Dict[str, Any]:
+    base_config: dict[str, Any], override_config: dict[str, Any]
+) -> dict[str, Any]:
     """
     Merge two configuration dictionaries, with override_config taking precedence.
 
@@ -185,7 +185,7 @@ def get_default_config_path() -> Path:
     raise FileNotFoundError("No configuration file found")
 
 
-def load_default_config() -> Dict[str, Any]:
+def load_default_config() -> dict[str, Any]:
     """
     Load the default configuration.
 

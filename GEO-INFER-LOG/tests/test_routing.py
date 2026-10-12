@@ -59,7 +59,7 @@ class TestRoutingParameters:
         params = RoutingParameters()
 
         assert params.weight_factor == "time"
-        assert params.avoid_highways == False
+        assert params.avoid_highways is False
         assert params.traffic_model == "best_guess"
 
     def test_custom_parameters(self):
@@ -69,7 +69,7 @@ class TestRoutingParameters:
         )
 
         assert params.weight_factor == "distance"
-        assert params.avoid_highways == True
+        assert params.avoid_highways is True
 
 
 class TestFleetManager:
@@ -275,10 +275,10 @@ class TestRealTimeTracker:
         position = (-118.25, 34.05)
         stop = (-118.25, 34.05)
 
-        assert tracker._is_at_stop(position, stop, threshold_km=0.1) == True
+        assert tracker._is_at_stop(position, stop, threshold_km=0.1)
 
         far_stop = (-118.30, 34.10)
-        assert tracker._is_at_stop(position, far_stop, threshold_km=0.1) == False
+        assert not tracker._is_at_stop(position, far_stop, threshold_km=0.1)
 
     def test_calculate_eta(self, tracker):
         """Test ETA calculation."""

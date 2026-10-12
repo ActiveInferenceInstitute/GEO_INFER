@@ -7,21 +7,13 @@ across boundaries and hierarchies in nested geospatial systems.
 
 import logging
 import heapq
-from datetime import datetime
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Tuple, Set
+from typing import Any
 from enum import Enum
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
-
-try:
-    import h3 as h3
-
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available")
 
 
 class RoutingStrategy(Enum):
@@ -64,11 +56,11 @@ class RouteSegment:
 
     # Boundary information
     crosses_boundary: bool = False
-    boundary_id: Optional[str] = None
-    boundary_type: Optional[str] = None
+    boundary_id: str | None = None
+    boundary_type: str | None = None
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass
@@ -80,7 +72,7 @@ class Route:
     route_id: str
     source: str
     destination: str
-    segments: List[RouteSegment] = field(default_factory=list)
+    segments: list[RouteSegment] = field(default_factory=list)
 
     # Route metrics
     total_distance: float = 0.0
@@ -95,8 +87,8 @@ class Route:
     is_valid: bool = True
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
-    last_used: Optional[datetime] = None
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    last_used: datetime | None = None
     use_count: int = 0
 
     def __post_init__(self) -> None:
@@ -117,7 +109,7 @@ class Route:
         self.total_cost = sum(seg.cost for seg in self.segments)
         self.hop_count = len(self.segments)
 
-    def get_path(self) -> List[str]:
+    def get_path(self) -> list[str]:
         """Get the node path for this route."""
         if not self.segments:
             return []
@@ -132,7 +124,7 @@ class Route:
         """Check if route crosses any boundaries."""
         return any(seg.crosses_boundary for seg in self.segments)
 
-    def get_boundary_crossings(self) -> List[str]:
+    def get_boundary_crossings(self) -> list[str]:
         """Get list of boundary IDs crossed by this route."""
         return [
             seg.boundary_id
@@ -159,39 +151,39 @@ class MessageRouter:
         self.name = name
 
         # Network topology
-        self.nodes: Set[str] = set()
-        self.edges: Dict[Tuple[str, str], RouteSegment] = {}
-        self.adjacency: Dict[str, Set[str]] = defaultdict(set)
+        self.nodes: set[str] = set()
+        self.edges: dict[tuple[str, str], RouteSegment] = {}
+        self.adjacency: dict[str, set[str]] = defaultdict(set)
 
         # Routing tables
-        self.routing_tables: Dict[RoutingStrategy, Dict[Tuple[str, str], Route]] = {
+        self.routing_tables: dict[RoutingStrategy, dict[tuple[str, str], Route]] = {
             strategy: {} for strategy in RoutingStrategy
         }
 
         # Route cache
-        self.route_cache: Dict[Tuple[str, str, RoutingStrategy], Route] = {}
+        self.route_cache: dict[tuple[str, str, RoutingStrategy], Route] = {}
         self.cache_hits = 0
         self.cache_misses = 0
 
         # Network state
-        self.node_loads: Dict[str, float] = defaultdict(float)
-        self.edge_loads: Dict[Tuple[str, str], float] = defaultdict(float)
-        self.node_properties: Dict[str, Dict[str, Any]] = {}
+        self.node_loads: dict[str, float] = defaultdict(float)
+        self.edge_loads: dict[tuple[str, str], float] = defaultdict(float)
+        self.node_properties: dict[str, dict[str, Any]] = {}
 
         # Boundary information
         self.boundary_manager = None  # Will be set externally
 
         # Statistics
-        self.routing_stats: Dict[str, int] = defaultdict(int)
+        self.routing_stats: dict[str, int] = defaultdict(int)
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def add_node(
         self,
         node_id: str,
-        properties: Optional[Dict[str, Any]] = None,
+        properties: dict[str, Any] | None = None,
     ) -> None:
         """
         Add a node to the routing network.
@@ -207,7 +199,7 @@ class MessageRouter:
         else:
             self.node_properties.setdefault(node_id, {})
 
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def add_edge(
         self,
@@ -220,7 +212,7 @@ class MessageRouter:
         cost: float = 1.0,
         bidirectional: bool = True,
         crosses_boundary: bool = False,
-        boundary_id: Optional[str] = None,
+        boundary_id: str | None = None,
     ) -> None:
         """
         Add an edge to the routing network.
@@ -270,7 +262,7 @@ class MessageRouter:
 
         # Clear route cache as topology changed
         self.route_cache.clear()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def remove_edge(
         self,
@@ -289,7 +281,7 @@ class MessageRouter:
 
         # Clear route cache
         self.route_cache.clear()
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
     def find_route(
         self,
@@ -298,7 +290,7 @@ class MessageRouter:
         strategy: RoutingStrategy = RoutingStrategy.SHORTEST_PATH,
         metric: RouteMetric = RouteMetric.DISTANCE,
         use_cache: bool = True,
-    ) -> Optional[Route]:
+    ) -> Route | None:
         """
         Find a route between source and destination.
 
@@ -317,7 +309,7 @@ class MessageRouter:
         if use_cache and cache_key in self.route_cache:
             self.cache_hits += 1
             cached_route = self.route_cache[cache_key]
-            cached_route.last_used = datetime.now()
+            cached_route.last_used = datetime.now(UTC)
             cached_route.use_count += 1
             return cached_route
 
@@ -357,7 +349,7 @@ class MessageRouter:
 
     def _find_shortest_path(
         self, source: str, destination: str, metric: RouteMetric = RouteMetric.DISTANCE
-    ) -> Optional[Route]:
+    ) -> Route | None:
         """Find shortest path using Dijkstra's algorithm."""
         if source not in self.nodes or destination not in self.nodes:
             return None
@@ -377,7 +369,7 @@ class MessageRouter:
         visited = set()
 
         # Priority queue: (distance, node)
-        pq: List[Tuple[float, str]] = [(0, source)]
+        pq: list[tuple[float, str]] = [(0, source)]
 
         while pq:
             current_dist, current_node = heapq.heappop(pq)
@@ -440,7 +432,7 @@ class MessageRouter:
                 segments.append(edge)
 
         route = Route(
-            route_id=f"route_{source}_{destination}_{datetime.now().timestamp()}",
+            route_id=f"route_{source}_{destination}_{datetime.now(UTC).timestamp()}",
             source=source,
             destination=destination,
             segments=segments,
@@ -449,9 +441,7 @@ class MessageRouter:
 
         return route
 
-    def _find_least_congested_path(
-        self, source: str, destination: str
-    ) -> Optional[Route]:
+    def _find_least_congested_path(self, source: str, destination: str) -> Route | None:
         """Find path with least congestion."""
         # Use modified Dijkstra with congestion weights
         if source not in self.nodes or destination not in self.nodes:
@@ -462,7 +452,7 @@ class MessageRouter:
         previous = {}
         visited = set()
 
-        pq: List[Tuple[float, str]] = [(0, source)]
+        pq: list[tuple[float, str]] = [(0, source)]
 
         while pq:
             current_dist, current_node = heapq.heappop(pq)
@@ -503,15 +493,13 @@ class MessageRouter:
             source, destination, previous, RoutingStrategy.LEAST_CONGESTED
         )
 
-    def _find_hierarchical_path(self, source: str, destination: str) -> Optional[Route]:
+    def _find_hierarchical_path(self, source: str, destination: str) -> Route | None:
         """Find path using hierarchical routing."""
         # This would implement hierarchical routing based on H3 resolution levels
         # For now, fall back to shortest path
         return self._find_shortest_path(source, destination)
 
-    def _find_boundary_aware_path(
-        self, source: str, destination: str
-    ) -> Optional[Route]:
+    def _find_boundary_aware_path(self, source: str, destination: str) -> Route | None:
         """Find path that considers boundary crossings."""
         if source not in self.nodes or destination not in self.nodes:
             return None
@@ -521,7 +509,7 @@ class MessageRouter:
         previous = {}
         visited = set()
 
-        pq: List[Tuple[float, str]] = [(0, source)]
+        pq: list[tuple[float, str]] = [(0, source)]
 
         while pq:
             current_dist, current_node = heapq.heappop(pq)
@@ -558,14 +546,12 @@ class MessageRouter:
             source, destination, previous, RoutingStrategy.BOUNDARY_AWARE
         )
 
-    def _find_load_balanced_path(
-        self, source: str, destination: str
-    ) -> Optional[Route]:
+    def _find_load_balanced_path(self, source: str, destination: str) -> Route | None:
         """Find path that balances load across the network."""
         # Similar to least congested but with different load calculation
         return self._find_least_congested_path(source, destination)
 
-    def _find_geographic_path(self, source: str, destination: str) -> Optional[Route]:
+    def _find_geographic_path(self, source: str, destination: str) -> Route | None:
         """Find the path minimizing total geographic distance.
 
         Edge weights are geographic distances, so the geographic strategy
@@ -578,9 +564,9 @@ class MessageRouter:
         self,
         source: str,
         destination: str,
-        previous: Dict[str, str],
+        previous: dict[str, str],
         strategy: RoutingStrategy,
-    ) -> Optional[Route]:
+    ) -> Route | None:
         """Reconstruct route from previous node mapping."""
         if destination not in previous and destination != source:
             return None
@@ -603,7 +589,7 @@ class MessageRouter:
                 segments.append(edge)
 
         route = Route(
-            route_id=f"route_{source}_{destination}_{datetime.now().timestamp()}",
+            route_id=f"route_{source}_{destination}_{datetime.now(UTC).timestamp()}",
             source=source,
             destination=destination,
             segments=segments,
@@ -620,7 +606,7 @@ class MessageRouter:
         """Update load for an edge."""
         self.edge_loads[(from_node, to_node)] = load
 
-    def get_routing_statistics(self) -> Dict[str, Any]:
+    def get_routing_statistics(self) -> dict[str, Any]:
         """Get routing statistics."""
         cache_ratio = (
             self.cache_hits / (self.cache_hits + self.cache_misses)

@@ -3,6 +3,20 @@ phase: verifying
 ---
 # GEO-INFER Ideal State Artifact
 
+## Current candidate: 0.4.0
+
+The active preparation target is coherent SPACE/TIME composition and trustworthy
+execution evidence, with connected runtime, security, packaging and documentation
+repairs. The implementation-stage ledger and verifiable acceptance boundaries are
+recorded in
+[0.4.0 readiness](GEO-INFER-INTRA/docs/releases/0.4.0_readiness.md); breaking API
+changes are recorded in
+[0.4.0 migrations](GEO-INFER-INTRA/docs/releases/0.4.0_migration.md).
+Main integration is authorized; tagging and package publication remain outside
+this preparation. Readiness requires retained local and hosted evidence for the
+exact candidate, all 45 installed wheels, both supported interpreters and clean
+generated-document checks. Historical evidence below retains its original scope.
+
 > History note (2026-09-07): the published history was rewritten to re-attribute
 > hum-side personal commit identities to docxology
 > <docxology@users.noreply.github.com>. Every commit SHA recorded in this
@@ -77,8 +91,7 @@ Ideal state criteria:
 - Exactly 45 `GEO-INFER-*` modules are present.
 - Every module has `README.md`, `AGENTS.md`, `SKILL.md`, and `pyproject.toml`.
 - Python package directories use lowercase `geo_infer_<module>` casing.
-- `pyproject.toml` is the canonical packaging surface; `setup.py` is compatibility only.
-- Existing `setup.py` files parse successfully.
+- `pyproject.toml` is the only packaging surface; module-root `setup.py`, `setup.cfg` and `requirements.txt` mirrors are retired and rejected by `validate_repo_contracts.py`.
 - Optional dependency failures degrade gracefully or are reported as warnings by contract checks.
 - Source-language implementation debt is tracked and driven down.
 
@@ -208,7 +221,8 @@ isolation before attributing them to code.
 - A repository-wide fix wave applied the repo contract (real implementations
   instead of simplified/stub paths, deterministic RNG threading, passive
   library logging, H3 v4 API usage) across all modules; per-module outcomes are
-  recorded in `CHANGELOG.md` under `[Unreleased]`.
+  recorded in `CHANGELOG.md` under `[0.2.0]` (the September
+  `[Unreleased]` section was folded into that release).
 - The contract validators were run against the reconciled state:
   `GEO-INFER-TEST/validate_test_contracts.py --strict`,
   `GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42`,

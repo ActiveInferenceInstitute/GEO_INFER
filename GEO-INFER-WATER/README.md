@@ -7,10 +7,8 @@ Water resources management, hydrology, and water quality monitoring.
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -20,8 +18,8 @@ Water resources management, hydrology, and water quality monitoring.
 
 - Module: `GEO-INFER-WATER`
 - Package: `geo_infer_water`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-WATER`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-water`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module WATER`
 
 ## Dependencies

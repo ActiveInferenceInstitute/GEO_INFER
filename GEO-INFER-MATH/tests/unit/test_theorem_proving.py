@@ -6,12 +6,10 @@ and proof strategy classes.
 """
 
 import sys
-import os
 import types
 
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from geo_infer_math.core.theorem_proving.prover import (
     ProofResult,

@@ -11,10 +11,8 @@ Comprehensive place-based analysis framework providing deep insights into specif
 - `locations/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -24,8 +22,8 @@ Comprehensive place-based analysis framework providing deep insights into specif
 
 - Module: `GEO-INFER-PLACE`
 - Package: `geo_infer_place`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-PLACE`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-place`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module PLACE`
 
 ## Dependencies
@@ -43,7 +41,8 @@ Comprehensive place-based analysis framework providing deep insights into specif
 - `matplotlib>=3.5.0`
 - `branca>=0.6.0`
 - `requests>=2.28.0`
-- `geo-infer-space`
+- `geo-infer-space>=0.4.0`
+- `geo-infer-time>=0.4.0`
 
 
 ## Validation

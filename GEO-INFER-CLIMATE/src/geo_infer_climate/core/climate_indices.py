@@ -9,7 +9,7 @@ Implements calculation of various climate indices including:
 """
 
 import logging
-from typing import Dict, Optional, cast
+from typing import cast
 
 import numpy as np
 import xarray as xr
@@ -26,7 +26,7 @@ class ClimateIndicesCalculator:
     and climate extremes.
     """
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """
         Initialize climate indices calculator.
 
@@ -125,7 +125,7 @@ class ClimateIndicesCalculator:
         return spi
 
     def calculate_heat_index(
-        self, temperature: xr.DataArray, humidity: Optional[xr.DataArray] = None
+        self, temperature: xr.DataArray, humidity: xr.DataArray | None = None
     ) -> xr.DataArray:
         """
         Calculate heat index (apparent temperature).
@@ -177,7 +177,7 @@ class ClimateIndicesCalculator:
         return hi
 
     def calculate_extreme_indices(
-        self, temperature: xr.DataArray, precipitation: Optional[xr.DataArray] = None
+        self, temperature: xr.DataArray, precipitation: xr.DataArray | None = None
     ) -> xr.Dataset:
         """
         Calculate climate extreme indices.

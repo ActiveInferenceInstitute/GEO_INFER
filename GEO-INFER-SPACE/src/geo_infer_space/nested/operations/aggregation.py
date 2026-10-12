@@ -8,23 +8,17 @@ hierarchical data processing.
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Callable
+from typing import Any
+from collections.abc import Callable
 from enum import Enum
 from collections import defaultdict
 
+import numpy as np
+import h3
+
 logger = logging.getLogger(__name__)
-
-import numpy as np  # hard dependency (numpy<2.0 pinned); no fallback path
-
-try:
-    import h3
-
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available")
 
 
 class AggregationFunction(Enum):
@@ -68,24 +62,24 @@ class AggregationRule:
     scope: AggregationScope
 
     # Function parameters
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
 
     # Scope parameters
-    scope_parameters: Dict[str, Any] = field(default_factory=dict)
+    scope_parameters: dict[str, Any] = field(default_factory=dict)
 
     # Weights (for weighted aggregations)
-    weight_field: Optional[str] = None
+    weight_field: str | None = None
 
     # Custom function
-    custom_function: Optional[Callable] = None
+    custom_function: Callable | None = None
 
     # Metadata
     is_active: bool = True
     priority: int = 1
 
     def apply(
-        self, cells: List, context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, cells: list, context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Apply aggregation rule to cells.
 
@@ -131,7 +125,7 @@ class AggregationRule:
             logger.warning(f"Aggregation rule {self.rule_id} failed: {e}")
             return {}
 
-    def _apply_standard_function(self, values: List, weights: List) -> Any:
+    def _apply_standard_function(self, values: list, weights: list) -> Any:
         """Apply standard aggregation function."""
         values_array = np.array(values)
         weights_array = np.array(weights)
@@ -166,7 +160,7 @@ class AggregationRule:
         else:
             return np.mean(values_array)  # Default
 
-    def _apply_simple_function(self, values: List, weights: List) -> Any:
+    def _apply_simple_function(self, values: list, weights: list) -> Any:
         """Apply simple aggregation function without NumPy."""
         if self.function == AggregationFunction.SUM:
             return sum(values)
@@ -196,15 +190,15 @@ class AggregationResult:
     """
 
     operation_id: str
-    rules_applied: List[str] = field(default_factory=list)
+    rules_applied: list[str] = field(default_factory=list)
 
     # Aggregated data
-    aggregated_data: Dict[str, Dict[str, Any]] = field(
+    aggregated_data: dict[str, dict[str, Any]] = field(
         default_factory=dict
     )  # cell_id -> aggregated_values
 
     # Summary statistics
-    summary_stats: Dict[str, Any] = field(default_factory=dict)
+    summary_stats: dict[str, Any] = field(default_factory=dict)
 
     # Quality metrics
     coverage_ratio: float = 0.0
@@ -216,7 +210,7 @@ class AggregationResult:
     rules_failed: int = 0
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     processing_time: float = 0.0
 
 
@@ -239,17 +233,17 @@ class H3AggregationEngine:
         self.name = name
 
         # Aggregation rules
-        self.rules: Dict[str, AggregationRule] = {}
+        self.rules: dict[str, AggregationRule] = {}
 
         # Results storage
-        self.aggregation_results: Dict[str, AggregationResult] = {}
+        self.aggregation_results: dict[str, AggregationResult] = {}
 
         # Statistics
-        self.operation_stats: Dict[str, int] = defaultdict(int)
+        self.operation_stats: dict[str, int] = defaultdict(int)
 
         # Metadata
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def add_rule(self, rule: AggregationRule) -> str:
         """
@@ -262,7 +256,7 @@ class H3AggregationEngine:
             Rule ID
         """
         self.rules[rule.rule_id] = rule
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
         return rule.rule_id
 
     def remove_rule(self, rule_id: str) -> bool:
@@ -277,15 +271,15 @@ class H3AggregationEngine:
         """
         if rule_id in self.rules:
             del self.rules[rule_id]
-            self.updated_at = datetime.now()
+            self.updated_at = datetime.now(UTC)
             return True
         return False
 
     def aggregate_data(
         self,
         nested_grid: Any,
-        system_id: Optional[str] = None,
-        rule_ids: Optional[List[str]] = None,
+        system_id: str | None = None,
+        rule_ids: list[str] | None = None,
         **kwargs: Any,
     ) -> AggregationResult:
         """
@@ -300,7 +294,7 @@ class H3AggregationEngine:
         Returns:
             AggregationResult instance
         """
-        start_time = datetime.now()
+        start_time = datetime.now(UTC)
         operation_id = f"agg_{uuid.uuid4().hex[:8]}"
 
         # Get cells to aggregate
@@ -327,7 +321,7 @@ class H3AggregationEngine:
         rules_to_apply.sort(key=lambda r: r.priority, reverse=True)
 
         # Apply aggregation rules
-        aggregated_data: Dict[str, Dict[str, Any]] = {}
+        aggregated_data: dict[str, dict[str, Any]] = {}
         rules_applied = []
         rules_succeeded = 0
         rules_failed = 0
@@ -364,7 +358,7 @@ class H3AggregationEngine:
                 continue
 
         # Calculate processing time
-        processing_time = (datetime.now() - start_time).total_seconds()
+        processing_time = (datetime.now(UTC) - start_time).total_seconds()
 
         # Create result
         result = AggregationResult(
@@ -389,19 +383,15 @@ class H3AggregationEngine:
         # Store result
         self.aggregation_results[operation_id] = result
         self.operation_stats["total_operations"] += 1
-        self.updated_at = datetime.now()
+        self.updated_at = datetime.now(UTC)
 
         return result
 
     def _aggregate_by_neighbors(
-        self, cells: List, rule: AggregationRule
-    ) -> Dict[str, Dict[str, Any]]:
+        self, cells: list, rule: AggregationRule
+    ) -> dict[str, dict[str, Any]]:
         """Aggregate data using cell neighbors."""
         neighbor_radius = rule.scope_parameters.get("radius", 1)
-
-        if not H3_AVAILABLE:
-            logger.warning("h3-py required for neighbor-based aggregation")
-            return {}
 
         results = {}
 
@@ -433,14 +423,10 @@ class H3AggregationEngine:
         return results
 
     def _aggregate_by_resolution(
-        self, cells: List, rule: AggregationRule
-    ) -> Dict[str, Dict[str, Any]]:
+        self, cells: list, rule: AggregationRule
+    ) -> dict[str, dict[str, Any]]:
         """Aggregate data by resolution level."""
         target_resolution = rule.scope_parameters.get("resolution")
-
-        if not H3_AVAILABLE:
-            logger.warning("h3-py required for resolution-based aggregation")
-            return {}
 
         # Group cells by resolution
         resolution_groups = defaultdict(list)
@@ -459,7 +445,7 @@ class H3AggregationEngine:
         # Aggregate within each resolution group
         results = {}
 
-        for resolution, resolution_cells in resolution_groups.items():
+        for resolution_cells in resolution_groups.values():
             aggregated = rule.apply(resolution_cells)
 
             # Assign aggregated values to all cells in the group
@@ -470,8 +456,8 @@ class H3AggregationEngine:
         return results
 
     def _aggregate_system_wide(
-        self, cells: List, rule: AggregationRule
-    ) -> Dict[str, Dict[str, Any]]:
+        self, cells: list, rule: AggregationRule
+    ) -> dict[str, dict[str, Any]]:
         """Aggregate data across entire system."""
         aggregated = rule.apply(cells)
 
@@ -485,10 +471,10 @@ class H3AggregationEngine:
 
     def _aggregate_by_boundary(
         self,
-        cells: List[Any],
+        cells: list[Any],
         rule: AggregationRule,
         nested_grid: Any,
-    ) -> Dict[str, Dict[str, Any]]:
+    ) -> dict[str, dict[str, Any]]:
         """Aggregate data by boundary regions."""
 
         # This would require boundary information from the nested grid
@@ -497,15 +483,11 @@ class H3AggregationEngine:
 
     def _aggregate_hierarchical(
         self,
-        cells: List[Any],
+        cells: list[Any],
         rule: AggregationRule,
         nested_grid: Any,
-    ) -> Dict[str, Dict[str, Any]]:
+    ) -> dict[str, dict[str, Any]]:
         """Aggregate data hierarchically."""
-        if not H3_AVAILABLE:
-            logger.warning("h3-py required for hierarchical aggregation")
-            return {}
-
         # Group cells by parent-child relationships
         hierarchy_groups = defaultdict(list)
 
@@ -526,7 +508,7 @@ class H3AggregationEngine:
         # Aggregate within each hierarchy group
         results = {}
 
-        for parent, child_cells in hierarchy_groups.items():
+        for child_cells in hierarchy_groups.values():
             aggregated = rule.apply(child_cells)
 
             # Assign aggregated values to all cells in the group
@@ -537,16 +519,16 @@ class H3AggregationEngine:
         return results
 
     def _aggregate_custom_region(
-        self, cells: List, rule: AggregationRule
-    ) -> Dict[str, Dict[str, Any]]:
+        self, cells: list, rule: AggregationRule
+    ) -> dict[str, dict[str, Any]]:
         """Aggregate data in custom regions."""
         # This would implement custom region-based aggregation
         # For now, fall back to system-wide aggregation
         return self._aggregate_system_wide(cells, rule)
 
     def _calculate_summary_stats(
-        self, aggregated_data: Dict[str, Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, aggregated_data: dict[str, dict[str, Any]]
+    ) -> dict[str, Any]:
         """Calculate summary statistics for aggregated data."""
         if not aggregated_data:
             return {}
@@ -555,17 +537,17 @@ class H3AggregationEngine:
         field_values = defaultdict(list)
 
         for cell_data in aggregated_data.values():
-            for field, value in cell_data.items():
+            for field_name, value in cell_data.items():
                 if isinstance(value, (int, float)):
-                    field_values[field].append(value)
+                    field_values[field_name].append(value)
 
         # Calculate statistics for each field
         summary = {}
 
-        for field, values in field_values.items():
+        for field_name, values in field_values.items():
             if values:
                 values_array = np.array(values)
-                summary[field] = {
+                summary[field_name] = {
                     "count": len(values),
                     "mean": np.mean(values_array),
                     "std": np.std(values_array),
@@ -576,7 +558,7 @@ class H3AggregationEngine:
 
         return summary
 
-    def get_aggregation_statistics(self) -> Dict[str, Any]:
+    def get_aggregation_statistics(self) -> dict[str, Any]:
         """Get aggregation engine statistics."""
         return {
             "engine_name": self.name,

@@ -14,7 +14,7 @@ import logging
 import re
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -28,10 +28,10 @@ class ExampleResult:
     path: str
     status: str  # 'success', 'failure', 'skipped', 'error'
     execution_time: float
-    modules_used: List[str] = field(default_factory=list)
-    integration_patterns: List[str] = field(default_factory=list)
-    output_summary: Dict[str, Any] = field(default_factory=dict)
-    error_message: Optional[str] = None
+    modules_used: list[str] = field(default_factory=list)
+    integration_patterns: list[str] = field(default_factory=list)
+    output_summary: dict[str, Any] = field(default_factory=dict)
+    error_message: str | None = None
     complexity_level: int = 1  # 1-5 scale
 
 
@@ -45,11 +45,11 @@ class AssessmentReport:
     skipped_examples: int
     average_execution_time: float
     total_execution_time: float
-    examples: List[ExampleResult] = field(default_factory=list)
-    integration_coverage: Dict[str, int] = field(default_factory=dict)
-    module_usage_stats: Dict[str, int] = field(default_factory=dict)
-    pattern_usage_stats: Dict[str, int] = field(default_factory=dict)
-    recommendations: List[str] = field(default_factory=list)
+    examples: list[ExampleResult] = field(default_factory=list)
+    integration_coverage: dict[str, int] = field(default_factory=dict)
+    module_usage_stats: dict[str, int] = field(default_factory=dict)
+    pattern_usage_stats: dict[str, int] = field(default_factory=dict)
+    recommendations: list[str] = field(default_factory=list)
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
 
 
@@ -59,7 +59,7 @@ class IntegrationExampleRunner:
     def __init__(self, examples_dir: Path):
         self.examples_dir = examples_dir
         self.logger = self._setup_logging()
-        self.results: List[ExampleResult] = []
+        self.results: list[ExampleResult] = []
 
         # Known integration patterns
         self.integration_patterns = {
@@ -164,7 +164,7 @@ class IntegrationExampleRunner:
 
         return logger
 
-    def discover_examples(self) -> List[Dict[str, Any]]:
+    def discover_examples(self) -> list[dict[str, Any]]:
         """Discover all runnable examples."""
         examples = []
 
@@ -209,7 +209,7 @@ class IntegrationExampleRunner:
         self.logger.info(f"Discovered {len(examples)} runnable examples")
         return examples
 
-    def run_example(self, example_config: Dict[str, Any]) -> ExampleResult:
+    def run_example(self, example_config: dict[str, Any]) -> ExampleResult:
         """Run a single example and assess its success."""
         example_name = example_config["name"]
         self.logger.info(f"Running example: {example_name}")
@@ -277,7 +277,7 @@ class IntegrationExampleRunner:
 
         return result
 
-    def _parse_output_summary(self, stdout: str, example_name: str) -> Dict[str, Any]:
+    def _parse_output_summary(self, stdout: str, example_name: str) -> dict[str, Any]:
         """Parse the structured JSON status/result envelope printed by examples.
 
         Examples that follow the repository convention end their stdout with a
@@ -287,8 +287,8 @@ class IntegrationExampleRunner:
         entries form the summary.
         """
         decoder = json.JSONDecoder()
-        candidates: List[Dict[str, Any]] = []
-        trailing_blank: List[Dict[str, Any]] = []
+        candidates: list[dict[str, Any]] = []
+        trailing_blank: list[dict[str, Any]] = []
         for match in re.finditer(r"\{", stdout):
             try:
                 candidate, end = decoder.raw_decode(stdout[match.start() :])
@@ -310,7 +310,7 @@ class IntegrationExampleRunner:
             self.logger.warning(f"No JSON envelope found in output of {example_name}")
             return {}
 
-        summary: Dict[str, Any] = {}
+        summary: dict[str, Any] = {}
         if "status" in envelope:
             summary["status"] = envelope["status"]
         for key, value in envelope.items():
@@ -394,10 +394,10 @@ class IntegrationExampleRunner:
 
     def _generate_recommendations(
         self,
-        successful: List[ExampleResult],
-        failed: List[ExampleResult],
-        skipped: List[ExampleResult],
-    ) -> List[str]:
+        successful: list[ExampleResult],
+        failed: list[ExampleResult],
+        skipped: list[ExampleResult],
+    ) -> list[str]:
         """Generate actionable recommendations based on results."""
         recommendations = []
 
@@ -494,7 +494,7 @@ class IntegrationExampleRunner:
 
         self.logger.info(f"Results saved to {output_dir}")
 
-    def _report_to_dict(self, report: AssessmentReport) -> Dict[str, Any]:
+    def _report_to_dict(self, report: AssessmentReport) -> dict[str, Any]:
         """Convert report to dictionary for JSON serialization."""
         return {
             "total_examples": report.total_examples,
@@ -655,7 +655,7 @@ def main():
         report = runner.run_all_examples()
 
         # Display summary
-        print(f"\n📊 Assessment Complete!")
+        print("\n📊 Assessment Complete!")
         print(f"Total Examples: {report.total_examples}")
         print(
             f"Successful: {report.successful_examples} ({report.successful_examples / report.total_examples * 100:.1f}%)"
@@ -668,11 +668,11 @@ def main():
         )
         print(f"Total Time: {report.total_execution_time:.2f} seconds")
 
-        print(f"\n🎯 Top Recommendations:")
+        print("\n🎯 Top Recommendations:")
         for i, rec in enumerate(report.recommendations[:3], 1):
             print(f"{i}. {rec}")
 
-        print(f"\n📁 Detailed results saved to: assessment_results/")
+        print("\n📁 Detailed results saved to: assessment_results/")
 
         return 0 if report.failed_examples == 0 else 1
 

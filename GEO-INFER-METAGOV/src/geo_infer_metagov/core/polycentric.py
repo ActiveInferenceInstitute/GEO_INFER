@@ -1,7 +1,7 @@
 """Polycentric governance systems with multiple overlapping authorities."""
 
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -12,12 +12,12 @@ class PolycentricDesign:
     """Polycentric governance structure."""
 
     design_id: str
-    governing_bodies: List[Dict[str, Any]]
-    jurisdictional_overlaps: Dict[str, List[str]]
-    spatial_scales: List[str]
-    functional_domains: List[str]
-    feedback_mechanisms: Dict[str, Any]
-    redundancy_assessment: Dict[str, float]
+    governing_bodies: list[dict[str, Any]]
+    jurisdictional_overlaps: dict[str, list[str]]
+    spatial_scales: list[str]
+    functional_domains: list[str]
+    feedback_mechanisms: dict[str, Any]
+    redundancy_assessment: dict[str, float]
 
 
 class PolycentricGovernanceSystem:
@@ -32,15 +32,15 @@ class PolycentricGovernanceSystem:
         self.governance_model = governance_model
         self.coordination_mechanism = coordination_mechanism
         self.redundancy_level = redundancy_level
-        self.polycentric_designs: Dict[str, PolycentricDesign] = {}
+        self.polycentric_designs: dict[str, PolycentricDesign] = {}
 
     def design_polycentric_structure(
         self,
-        governing_bodies: List[Dict[str, Any]],
-        jurisdictional_overlaps: Dict[str, List[str]],
-        spatial_scales: List[str],
-        functional_domains: List[str],
-        feedback_mechanisms: Dict[str, Any],
+        governing_bodies: list[dict[str, Any]],
+        jurisdictional_overlaps: dict[str, list[str]],
+        spatial_scales: list[str],
+        functional_domains: list[str],
+        feedback_mechanisms: dict[str, Any],
     ) -> PolycentricDesign:
         """Design polycentric governance structure."""
         design_id = f"polycentric_{len(self.polycentric_designs)}"
@@ -66,9 +66,9 @@ class PolycentricGovernanceSystem:
 
     def _assess_redundancy(
         self,
-        governing_bodies: List[Dict[str, Any]],
-        jurisdictional_overlaps: Dict[str, List[str]],
-    ) -> Dict[str, float]:
+        governing_bodies: list[dict[str, Any]],
+        jurisdictional_overlaps: dict[str, list[str]],
+    ) -> dict[str, float]:
         """Assess redundancy in governance."""
         total_bodies = len(governing_bodies)
         overlap_count = sum(len(v) for v in jurisdictional_overlaps.values())
@@ -82,10 +82,10 @@ class PolycentricGovernanceSystem:
 
     def analyze_authority_relationships(
         self,
-        authorities: List[Dict[str, Any]],
-        relationships: List[str],
-        effectiveness_measures: List[str],
-    ) -> Dict[str, Any]:
+        authorities: list[dict[str, Any]],
+        relationships: list[str],
+        effectiveness_measures: list[str],
+    ) -> dict[str, Any]:
         """
         Analyze relationships between authorities using network analysis.
 
@@ -178,11 +178,11 @@ class PolycentricGovernanceSystem:
         }
 
     def _analyze_authority_overlaps(
-        self, authorities: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, authorities: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Analyze jurisdictional and functional overlaps between authorities."""
-        overlap_matrix_out: Dict[str, Dict[str, Any]] = {}
-        overlaps: Dict[str, Any] = {
+        overlap_matrix_out: dict[str, dict[str, Any]] = {}
+        overlaps: dict[str, Any] = {
             "jurisdictional_overlaps": 0,
             "functional_overlaps": 0,
             "total_overlap_pairs": 0,
@@ -224,8 +224,8 @@ class PolycentricGovernanceSystem:
         return overlaps
 
     def _calculate_redundancy_metrics(
-        self, authorities: List[Dict[str, Any]], network_edges: List[Dict[str, Any]]
-    ) -> Dict[str, float]:
+        self, authorities: list[dict[str, Any]], network_edges: list[dict[str, Any]]
+    ) -> dict[str, float]:
         """Calculate redundancy and resilience metrics."""
         if not authorities:
             return {
@@ -266,9 +266,9 @@ class PolycentricGovernanceSystem:
 
     def _assess_coordination_failure_risk(
         self,
-        authorities: List[Dict[str, Any]],
-        network_edges: List[Dict[str, Any]],
-        relationships: List[str],
+        authorities: list[dict[str, Any]],
+        network_edges: list[dict[str, Any]],
+        relationships: list[str],
     ) -> float:
         """Assess risk of coordination failure."""
         if not authorities:

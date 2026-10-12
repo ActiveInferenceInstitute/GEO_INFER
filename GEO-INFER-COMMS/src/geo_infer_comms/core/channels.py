@@ -7,10 +7,10 @@ with support for different channel types and access controls.
 """
 
 from __future__ import annotations
-from typing import Dict, List, Optional, Any, Set, cast
+from typing import Any, cast
 import threading
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
 
 from geo_infer_comms.models.message import (
@@ -38,20 +38,20 @@ class ChannelManager:
         self,
         max_channels: int = 1000,
         enable_persistence: bool = True,
-        persistence_path: Optional[str] = None,
+        persistence_path: str | None = None,
     ):
         self.max_channels = max_channels
         self.enable_persistence = enable_persistence
         self.persistence_path = persistence_path
 
         # Channel storage and management
-        self.channels: Dict[str, ChannelResponse] = {}
-        self.channel_members: Dict[str, Set[str]] = {}
-        self.channel_subscriptions: Dict[str, Dict[str, SubscriptionResponse]] = {}
-        self.channel_permissions: Dict[str, Dict[str, Any]] = {}
+        self.channels: dict[str, ChannelResponse] = {}
+        self.channel_members: dict[str, set[str]] = {}
+        self.channel_subscriptions: dict[str, dict[str, SubscriptionResponse]] = {}
+        self.channel_permissions: dict[str, dict[str, Any]] = {}
 
         # Geospatial indexing for channels
-        self.spatial_channels: Dict[str, List[str]] = {}  # location -> channel_ids
+        self.spatial_channels: dict[str, list[str]] = {}  # location -> channel_ids
 
         # Threading and concurrency
         self._lock = threading.RLock()
@@ -117,7 +117,7 @@ class ChannelManager:
         self.logger.info(f"Channel created: {channel.channel_id} by {creator_id}")
         return channel
 
-    def get_channel(self, channel_id: str) -> Optional[ChannelResponse]:
+    def get_channel(self, channel_id: str) -> ChannelResponse | None:
         """
         Retrieve a specific channel by ID.
 
@@ -132,11 +132,11 @@ class ChannelManager:
 
     def get_channels(
         self,
-        channel_type: Optional[ChannelType] = None,
-        status: Optional[ChannelStatus] = None,
-        creator_id: Optional[str] = None,
+        channel_type: ChannelType | None = None,
+        status: ChannelStatus | None = None,
+        creator_id: str | None = None,
         limit: int = 100,
-    ) -> List[ChannelResponse]:
+    ) -> list[ChannelResponse]:
         """
         Get channels with filtering options.
 
@@ -175,7 +175,7 @@ class ChannelManager:
         return filtered_channels[:limit]
 
     def update_channel(
-        self, channel_id: str, updates: Dict[str, Any], user_id: str
+        self, channel_id: str, updates: dict[str, Any], user_id: str
     ) -> bool:
         """
         Update channel properties.
@@ -218,7 +218,7 @@ class ChannelManager:
 
                 channel.geospatial_bounds = updates["geospatial_bounds"]
 
-            channel.updated_at = datetime.now(timezone.utc)
+            channel.updated_at = datetime.now(UTC)
 
         self.logger.info(f"Channel updated: {channel_id} by {user_id}")
         return True
@@ -311,7 +311,7 @@ class ChannelManager:
         )
         return True
 
-    def get_members(self, channel_id: str) -> List[str]:
+    def get_members(self, channel_id: str) -> list[str]:
         """
         Get list of members in a channel.
 
@@ -326,7 +326,7 @@ class ChannelManager:
 
     def subscribe_to_channel(
         self, channel_id: str, user_id: str, request: SubscriptionRequest
-    ) -> Optional[SubscriptionResponse]:
+    ) -> SubscriptionResponse | None:
         """
         Subscribe a user to a channel.
 
@@ -392,7 +392,7 @@ class ChannelManager:
         return self._check_permission(channel_id, user_id, permission)
 
     def set_permissions(
-        self, channel_id: str, user_id: str, permissions: Dict[str, Any], set_by: str
+        self, channel_id: str, user_id: str, permissions: dict[str, Any], set_by: str
     ) -> bool:
         """
         Set permissions for a user in a channel.
@@ -425,7 +425,7 @@ class ChannelManager:
 
     def get_channels_by_location(
         self, location: GeospatialPoint, radius_km: float = 1.0
-    ) -> List[ChannelResponse]:
+    ) -> list[ChannelResponse]:
         """
         Find channels near a specific location.
 
@@ -468,7 +468,7 @@ class ChannelManager:
 
         return nearby_channels
 
-    def get_channel_statistics(self) -> Dict[str, Any]:
+    def get_channel_statistics(self) -> dict[str, Any]:
         """Get channel system statistics."""
         with self._lock:
             total_members = sum(
@@ -532,7 +532,7 @@ class ChannelManager:
         self.channel_permissions[channel_id][user_id] = default_permissions
 
     def _add_channel_to_spatial_index(
-        self, channel_id: str, bounds: Dict[str, Any]
+        self, channel_id: str, bounds: dict[str, Any]
     ) -> None:
         """Add channel to spatial index for location-based queries."""
         # Simplified spatial indexing - in production would use proper spatial index
@@ -549,7 +549,7 @@ class ChannelManager:
                 self.spatial_channels[key].append(channel_id)
 
     def _remove_channel_from_spatial_index(
-        self, channel_id: str, bounds: Dict[str, Any]
+        self, channel_id: str, bounds: dict[str, Any]
     ) -> None:
         """Remove channel from spatial index."""
         center_lon = (bounds["min_longitude"] + bounds["max_longitude"]) / 2
@@ -575,11 +575,11 @@ class ChannelMetrics:
     members_removed: int = 0
     subscriptions_created: int = 0
     subscriptions_removed: int = 0
-    start_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    start_time: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert metrics to dictionary."""
-        uptime = datetime.now(timezone.utc) - self.start_time
+        uptime = datetime.now(UTC) - self.start_time
         return {
             "channels_created": self.channels_created,
             "channels_deleted": self.channels_deleted,
@@ -600,7 +600,7 @@ class ChannelMetrics:
         self.members_removed = 0
         self.subscriptions_created = 0
         self.subscriptions_removed = 0
-        self.start_time = datetime.now(timezone.utc)
+        self.start_time = datetime.now(UTC)
 
 
 class ChannelPermissionManager:
@@ -613,7 +613,7 @@ class ChannelPermissionManager:
 
     def __init__(self, channel_manager: ChannelManager):
         self.channel_manager = channel_manager
-        self.permission_templates: Dict[str, Dict[str, Any]] = {}
+        self.permission_templates: dict[str, dict[str, Any]] = {}
 
         self.logger = logging.getLogger(__name__)
 
@@ -621,13 +621,13 @@ class ChannelPermissionManager:
         self._register_default_templates()
 
     def create_permission_template(
-        self, template_name: str, permissions: Dict[str, Any], description: str = ""
+        self, template_name: str, permissions: dict[str, Any], description: str = ""
     ) -> None:
         """Create a reusable permission template."""
         self.permission_templates[template_name] = {
             "permissions": permissions,
             "description": description,
-            "created_at": datetime.now(timezone.utc),
+            "created_at": datetime.now(UTC),
         }
         self.logger.info(f"Created permission template: {template_name}")
 
@@ -667,7 +667,7 @@ class ChannelPermissionManager:
 
     def get_effective_permissions(
         self, channel_id: str, user_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get all effective permissions for a user in a channel."""
         with self.channel_manager._lock:
             if channel_id not in self.channel_manager.channel_permissions:
@@ -680,8 +680,8 @@ class ChannelPermissionManager:
             user_role = user_perms.get("role", "member")
             role_perms = channel_perms.get(f"role_{user_role}", {})
 
-            effective = cast(Dict[str, Any], role_perms.copy())
-            effective.update(cast(Dict[str, Any], user_perms))
+            effective = cast(dict[str, Any], role_perms.copy())
+            effective.update(cast(dict[str, Any], user_perms))
 
             return effective
 
@@ -731,11 +731,11 @@ class ChannelMessageFilter:
 
     def __init__(self, channel_manager: ChannelManager):
         self.channel_manager = channel_manager
-        self.content_filters: Dict[str, List[Dict[str, Any]]] = {}
+        self.content_filters: dict[str, list[dict[str, Any]]] = {}
         self.logger = logging.getLogger(__name__)
 
     def add_content_filter(
-        self, channel_id: str, filter_rule: Dict[str, Any], added_by: str
+        self, channel_id: str, filter_rule: dict[str, Any], added_by: str
     ) -> bool:
         """Add a content filter rule to a channel."""
         if not self.channel_manager.check_permission(
@@ -750,7 +750,7 @@ class ChannelMessageFilter:
             {
                 **filter_rule,
                 "added_by": added_by,
-                "added_at": datetime.now(timezone.utc),
+                "added_at": datetime.now(UTC),
             }
         )
 
@@ -777,7 +777,7 @@ class ChannelMessageFilter:
         return True
 
     def _evaluate_filter(
-        self, message: MessageResponse, filter_rule: Dict[str, Any]
+        self, message: MessageResponse, filter_rule: dict[str, Any]
     ) -> bool:
         """Evaluate a single filter rule against a message."""
         rule_type = filter_rule.get("type", "keyword")
@@ -846,7 +846,7 @@ class ChannelAnalytics:
 
     def __init__(self, channel_manager: ChannelManager):
         self.channel_manager = channel_manager
-        self.activity_log: List[Dict[str, Any]] = []
+        self.activity_log: list[dict[str, Any]] = []
         self.max_log_entries = 10000
 
         self.logger = logging.getLogger(__name__)
@@ -856,14 +856,14 @@ class ChannelAnalytics:
         channel_id: str,
         activity_type: str,
         user_id: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         """Log channel activity for analytics."""
         activity_entry = {
             "channel_id": channel_id,
             "activity_type": activity_type,
             "user_id": user_id,
-            "timestamp": datetime.now(timezone.utc),
+            "timestamp": datetime.now(UTC),
             "details": details or {},
         }
 
@@ -876,10 +876,10 @@ class ChannelAnalytics:
     def get_channel_activity(
         self,
         channel_id: str,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        activity_types: Optional[List[str]] = None,
-    ) -> List[Dict[str, Any]]:
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        activity_types: list[str] | None = None,
+    ) -> list[dict[str, Any]]:
         """Get activity log for a specific channel."""
         filtered = [
             entry for entry in self.activity_log if entry["channel_id"] == channel_id
@@ -896,7 +896,7 @@ class ChannelAnalytics:
 
         return filtered
 
-    def get_channel_analytics(self, channel_id: str) -> Dict[str, Any]:
+    def get_channel_analytics(self, channel_id: str) -> dict[str, Any]:
         """Get comprehensive analytics for a channel."""
         activities = self.get_channel_activity(channel_id)
 
@@ -904,9 +904,9 @@ class ChannelAnalytics:
             return {"message": "No activity data available"}
 
         # Calculate basic metrics
-        activity_counts: Dict[str, int] = {}
-        user_activity: Dict[str, int] = {}
-        hourly_activity: Dict[int, int] = {}
+        activity_counts: dict[str, int] = {}
+        user_activity: dict[str, int] = {}
+        hourly_activity: dict[int, int] = {}
 
         for activity in activities:
             # Count by type
@@ -935,13 +935,13 @@ class ChannelAnalytics:
             },
         }
 
-    def get_system_analytics(self) -> Dict[str, Any]:
+    def get_system_analytics(self) -> dict[str, Any]:
         """Get system-wide channel analytics."""
         if not self.activity_log:
             return {"message": "No activity data available"}
 
         # System-wide metrics
-        channel_activity: Dict[str, int] = {}
+        channel_activity: dict[str, int] = {}
         total_activities = len(self.activity_log)
 
         for entry in self.activity_log:

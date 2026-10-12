@@ -5,7 +5,7 @@ Pytest configuration and fixtures for GEO-INFER-HEALTH tests.
 import pytest
 import tempfile
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 import numpy as np
 import pandas as pd
@@ -78,7 +78,7 @@ def sample_disease_reports(sample_locations):
     """Create sample DiseaseReport objects for testing."""
     reports = []
     diseases = ["COVID-19", "Influenza", "RSV", "Pertussis"]
-    base_date = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    base_date = datetime(2024, 1, 1, tzinfo=UTC)
 
     for i, location in enumerate(sample_locations):
         for j in range(5):  # 5 reports per location
@@ -96,7 +96,7 @@ def sample_disease_reports(sample_locations):
 
 
 @pytest.fixture
-def sample_population_data(sample_locations):
+def sample_population_data():
     """Create sample PopulationData objects for testing."""
     population_data = []
     age_distributions = [
@@ -105,11 +105,11 @@ def sample_population_data(sample_locations):
         {"0-18": 35000, "19-65": 55000, "65+": 15000},
     ]
 
-    for i, location in enumerate(sample_locations[:3]):
+    for i, age_distribution in enumerate(age_distributions):
         pop_data = PopulationData(
             area_id=f"area_{i + 1}",
-            population_count=sum(age_distributions[i].values()),
-            age_distribution=age_distributions[i],
+            population_count=sum(age_distribution.values()),
+            age_distribution=age_distribution,
         )
         population_data.append(pop_data)
 
@@ -122,7 +122,7 @@ def sample_environmental_data(sample_locations):
     env_data = []
     parameters = ["PM2.5", "PM10", "NO2", "Temperature", "Humidity"]
     units = ["µg/m³", "µg/m³", "ppb", "°C", "%"]
-    base_timestamp = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+    base_timestamp = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
 
     for i, location in enumerate(sample_locations):
         for j, (param, unit) in enumerate(zip(parameters, units)):

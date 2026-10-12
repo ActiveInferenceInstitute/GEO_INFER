@@ -17,7 +17,7 @@ metadata, the shared lockfile, and module extras stay aligned.
 ```bash
 git clone https://github.com/ActiveInferenceInstitute/GEO_INFER.git
 cd GEO_INFER
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python -c "import geo_infer_space, geo_infer_act; print('GEO-INFER ready')"
 ```
 
@@ -45,7 +45,7 @@ bioinformatics, health, climate, performance, quality, documentation, web, and
 IoT work. The broadest local setup is:
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 ```
 
 For a smaller environment, sync the workspace first and add only the extra
@@ -76,12 +76,11 @@ For a complete pre-merge check, use the command list in the root
 - If an import resolves from an unexpected interpreter, use `uv run python` and
   inspect `python -c "import sys; print(sys.executable)"`.
 
-## Do not use these legacy setup paths
+## Environment ownership
 
-- Do not install an unrelated PyPI package named `geo-infer` and assume it is
-  this checkout.
-- Do not use `python setup.py develop` as the primary workflow.
-- Do not run examples with a system interpreter that bypasses the uv lockfile.
+Install workspace packages from their `pyproject.toml` metadata and retain the
+root `uv.lock`. Run examples through `uv run` from the checkout. A similarly named
+package from a registry does not establish that this workspace is installed.
 
 ## Next step
 

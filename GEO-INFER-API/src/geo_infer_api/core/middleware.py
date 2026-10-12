@@ -4,7 +4,8 @@ Middleware for the GEO-INFER-API.
 
 import logging
 import time
-from typing import Callable, cast
+from typing import cast
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse

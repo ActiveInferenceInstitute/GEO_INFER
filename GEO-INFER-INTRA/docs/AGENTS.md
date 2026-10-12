@@ -34,9 +34,11 @@
 - `integration/`
 - `knowledge_base/`
 - `materiality/`
+- `math/`
 - `modules/`
 - `ontology/`
 - `realms/`
+- `releases/`
 - `security/`
 - `support/`
 - `tnfd/`

@@ -11,21 +11,17 @@ This test validates:
 """
 
 import sys
-import os
-import json
 import logging
 from pathlib import Path
-from typing import Dict, Any, List
 import tempfile
 import shutil
 
-# Add the cascadia directory to the path
-cascadia_dir = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(cascadia_dir))
-
-# Import enhanced modules
-from src.core.enhanced_data_manager import create_enhanced_data_manager
-from src.core.enhanced_h3_fusion import create_enhanced_h3_fusion
+from geo_infer_place.locations.cascadia.core.enhanced_data_manager import (
+    create_enhanced_data_manager,
+)
+from geo_infer_place.locations.cascadia.core.enhanced_h3_fusion import (
+    create_enhanced_h3_fusion,
+)
 
 
 class EnhancedH3FusionTestSuite:
@@ -55,7 +51,9 @@ class EnhancedH3FusionTestSuite:
         )
 
         # Create enhanced H3 fusion engine
-        self.h3_fusion = create_enhanced_h3_fusion(h3_resolution=8, enable_spatial_analysis=True)
+        self.h3_fusion = create_enhanced_h3_fusion(
+            h3_resolution=8, enable_spatial_analysis=True
+        )
 
         self.logger.info("✅ Test environment setup complete")
 
@@ -80,7 +78,9 @@ class EnhancedH3FusionTestSuite:
 
             # Check for errors
             if validation_result.get("errors"):
-                self.logger.error(f"H3 validation errors: {validation_result['errors']}")
+                self.logger.error(
+                    f"H3 validation errors: {validation_result['errors']}"
+                )
                 return False
 
             # Check that all operations were tested
@@ -95,7 +95,9 @@ class EnhancedH3FusionTestSuite:
             ]
 
             tested_operations = validation_result.get("operations_tested", [])
-            missing_operations = [op for op in expected_operations if op not in tested_operations]
+            missing_operations = [
+                op for op in expected_operations if op not in tested_operations
+            ]
 
             if missing_operations:
                 self.logger.error(f"Missing H3 operations: {missing_operations}")
@@ -182,7 +184,9 @@ class EnhancedH3FusionTestSuite:
 
             # Test data acquisition with caching
             data_path = self.data_manager.acquire_data_with_caching(
-                module_name=module_name, data_source_func=mock_data_source, force_refresh=False
+                module_name=module_name,
+                data_source_func=mock_data_source,
+                force_refresh=False,
             )
 
             # Check that data path is returned
@@ -357,7 +361,9 @@ class EnhancedH3FusionTestSuite:
             target_hexagons = ["88281c8e89fffff", "88281c1665fffff", "88281c8513fffff"]
 
             # Test validation
-            is_valid = self.data_manager._validate_h3_cache(valid_cache, target_hexagons)
+            is_valid = self.data_manager._validate_h3_cache(
+                valid_cache, target_hexagons
+            )
 
             # Should be valid (2/3 coverage = 66.7% > 80% threshold)
             if not is_valid:
@@ -367,7 +373,9 @@ class EnhancedH3FusionTestSuite:
             # Test cache validation with invalid data
             invalid_cache = {}
 
-            is_valid = self.data_manager._validate_h3_cache(invalid_cache, target_hexagons)
+            is_valid = self.data_manager._validate_h3_cache(
+                invalid_cache, target_hexagons
+            )
 
             # Should be invalid (0% coverage)
             if is_valid:
@@ -423,7 +431,7 @@ class EnhancedH3FusionTestSuite:
             self.logger.error(f"❌ Data quality assessment test failed: {e}")
             return False
 
-    def run_all_tests(self) -> Dict[str, bool]:
+    def run_all_tests(self) -> dict[str, bool]:
         """
         Run all enhanced H3 fusion tests.
 
@@ -440,7 +448,10 @@ class EnhancedH3FusionTestSuite:
             tests = [
                 ("H3 v4 API Usage", self.test_h3_v4_api_usage),
                 ("Reproducible Data Structure", self.test_reproducible_data_structure),
-                ("Data Acquisition and Caching", self.test_data_acquisition_and_caching),
+                (
+                    "Data Acquisition and Caching",
+                    self.test_data_acquisition_and_caching,
+                ),
                 ("H3 Geospatial Fusion", self.test_h3_geospatial_fusion),
                 ("Spatial Analysis", self.test_spatial_analysis),
                 ("Cache Validation", self.test_cache_validation),
@@ -488,7 +499,9 @@ class EnhancedH3FusionTestSuite:
         )
 
         if passed_tests == total_tests:
-            self.logger.info("🎉 ALL TESTS PASSED! Enhanced H3 fusion is working correctly.")
+            self.logger.info(
+                "🎉 ALL TESTS PASSED! Enhanced H3 fusion is working correctly."
+            )
         else:
             self.logger.error("❌ Some tests failed. Please review the implementation.")
 

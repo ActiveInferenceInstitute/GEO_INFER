@@ -1,8 +1,0 @@
-flowchart LR
-    O["Cell observation"] --> L["Local Bayesian update"]
-    L --> P["Posterior belief q(s)"]
-    P --> N["Neighbor belief average"]
-    N --> D["Precision-weighted diffusion"]
-    D --> C["Spatial coherence metric"]
-    C --> FE["Spatial free-energy diagnostic"]
-    FE --> A["Spatial EFE action selection"]

@@ -10,6 +10,7 @@ Core workspace within `GEO-INFER-ACT`.
 - `civic_intel.py`
 - `dynamic_causal_model.py`
 - `efe_decomposition.py`
+- `factored_runtime.py`
 - `free_energy.py`
 - `generative_model.py`
 - `gnn_contract.py`
@@ -42,16 +43,16 @@ Core workspace within `GEO-INFER-ACT`.
 - `efe_decomposition.py:one_step_policy_terms` (function)
 - `efe_decomposition.py:support` (function)
 - `efe_decomposition.py:light_cone_violations` (function)
-- `free_energy.py:validate_spd_precision` (function)
-- `free_energy.py:compute_policy_expected_free_energy` (function)
-- `free_energy.py:FreeEnergyCalculator` (class)
+- `factored_runtime.py:is_factored_model` (function)
+- `factored_runtime.py:build_runtime_artifact` (function)
+- `factored_runtime.py:marginal_beliefs` (function)
 
 ## Module Metadata
 
 - Module: `GEO-INFER-ACT`
 - Package: `geo_infer_act`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-ACT`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-act`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module ACT`
 
 ## Dependencies
@@ -65,7 +66,7 @@ Core workspace within `GEO-INFER-ACT`.
 - `seaborn>=0.11.0`
 - `inferactively-pymdp==1.0.3`
 - `h3>=4.5.0,<5`
-- `geo-infer-bayes>=0.3.0`
+- `geo-infer-bayes>=0.4.0`
 
 
 ## Validation

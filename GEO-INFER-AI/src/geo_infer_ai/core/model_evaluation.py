@@ -5,7 +5,7 @@ Provides geospatial-specific evaluation metrics and validation methods.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -27,7 +27,7 @@ class GeospatialModelEvaluator:
     Evaluate geospatial AI models with spatial-specific metrics.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
         """Initialize model evaluator."""
         self.config = config or {}
 
@@ -35,8 +35,8 @@ class GeospatialModelEvaluator:
         self,
         y_true: np.ndarray,
         y_pred: np.ndarray,
-        labels: Optional[List[Any]] = None,
-    ) -> Dict[str, float]:
+        labels: list[Any] | None = None,
+    ) -> dict[str, float]:
         """
         Evaluate classification model.
 
@@ -65,7 +65,7 @@ class GeospatialModelEvaluator:
 
     def evaluate_regression(
         self, y_true: np.ndarray, y_pred: np.ndarray
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Evaluate regression model.
 
@@ -85,58 +85,54 @@ class GeospatialModelEvaluator:
 
         return metrics
 
-    def evaluate_spatial_accuracy(
+    def evaluate_value_tolerance(
         self,
         y_true: np.ndarray,
         y_pred: np.ndarray,
-        coordinates: np.ndarray,
-        buffer_distance: float = 100.0,
-    ) -> Dict[str, float]:
+        tolerance: float = 100.0,
+    ) -> dict[str, float]:
         """
-        Evaluate prediction accuracy as a value-error-within-tolerance metric.
-
-        The errors analyzed here are ``|y_true - y_pred|`` in the units of the
-        target values, not geographic distances: ``buffer_distance`` is a
-        tolerance on the prediction error (in target-value units), and the
-        returned ``within_buffer_percentage`` is the share of predictions
-        whose error stays within that tolerance. ``coordinates`` is accepted
-        for API compatibility with other spatial evaluators but does not
-        affect this value-based metric; no distance calculation in map units
-        is performed.
+        Evaluate absolute prediction errors in target-value units.
 
         Args:
             y_true: True values
             y_pred: Predicted values
-            coordinates: Spatial coordinates (unused; accepted for API
-                compatibility)
-            buffer_distance: Tolerance on the absolute prediction error, in
-                the same units as the target values (not meters)
+            tolerance: Finite nonnegative tolerance in target-value units.
 
         Returns:
             Error statistics in target-value units plus the
-            ``within_buffer_percentage`` tolerance score
+            ``within_tolerance_percentage`` tolerance score
         """
+        y_true = np.asarray(y_true, dtype=float)
+        y_pred = np.asarray(y_pred, dtype=float)
+        if y_true.ndim != 1 or y_true.size == 0 or y_true.shape != y_pred.shape:
+            raise ValueError("Expected nonempty, aligned one-dimensional values")
+        if not np.all(np.isfinite(y_true)) or not np.all(np.isfinite(y_pred)):
+            raise ValueError("Prediction values must be finite")
+        if isinstance(tolerance, bool) or not np.isfinite(tolerance) or tolerance < 0:
+            raise ValueError("tolerance must be finite and nonnegative")
         errors = np.abs(y_true - y_pred)
 
-        spatial_metrics = {
-            "mean_spatial_error": float(np.mean(errors)),
-            "median_spatial_error": float(np.median(errors)),
-            "max_spatial_error": float(np.max(errors)),
-            "spatial_error_std": float(np.std(errors)),
+        metrics = {
+            "mean_absolute_error": float(np.mean(errors)),
+            "median_absolute_error": float(np.median(errors)),
+            "max_absolute_error": float(np.max(errors)),
+            "absolute_error_std": float(np.std(errors)),
         }
 
-        within_buffer = np.sum(errors <= buffer_distance) / len(errors) * 100
-        spatial_metrics["within_buffer_percentage"] = float(within_buffer)
+        metrics["within_tolerance_percentage"] = float(
+            np.mean(errors <= tolerance) * 100
+        )
 
-        return spatial_metrics
+        return metrics
 
     def compute_confusion_matrix(
         self,
         y_true: np.ndarray,
         y_pred: np.ndarray,
-        labels: Optional[List[Any]] = None,
-        normalize: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        labels: list[Any] | None = None,
+        normalize: str | None = None,
+    ) -> dict[str, Any]:
         """
         Compute confusion matrix and derived statistics.
 
@@ -202,9 +198,9 @@ class GeospatialModelEvaluator:
                 "f1_score": float(f1_val),
             }
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "confusion_matrix": cm.tolist(),
-            "labels": [str(l) for l in labels],
+            "labels": [str(label) for label in labels],
             "per_class": per_class,
         }
         if cm_normalized is not None:
@@ -217,7 +213,7 @@ class GeospatialModelEvaluator:
         y_true: np.ndarray,
         y_score: np.ndarray,
         multi_class: str = "ovr",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compute ROC-AUC score.
 
@@ -237,7 +233,7 @@ class GeospatialModelEvaluator:
         unique_classes = np.unique(y_true)
         n_classes = len(unique_classes)
 
-        result: Dict[str, Any] = {"n_classes": n_classes}
+        result: dict[str, Any] = {"n_classes": n_classes}
 
         if n_classes == 2:
             # Binary case
@@ -285,7 +281,7 @@ class GeospatialModelEvaluator:
         y: np.ndarray,
         coordinates: np.ndarray,
         n_splits: int = 5,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform spatial block cross-validation.
 
@@ -319,7 +315,7 @@ class GeospatialModelEvaluator:
             coordinates
         )
 
-        scores: List[float] = []
+        scores: list[float] = []
         for block in np.unique(blocks):
             test_idx = np.where(blocks == block)[0]
             train_idx = np.where(blocks != block)[0]

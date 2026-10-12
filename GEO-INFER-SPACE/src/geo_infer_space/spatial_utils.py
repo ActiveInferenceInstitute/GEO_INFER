@@ -6,7 +6,7 @@ distance calculations, and spatial data processing.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, cast
 import numpy as np
 from shapely.geometry import Point, Polygon
 from pyproj import Transformer
@@ -28,7 +28,7 @@ class SpatialUtils:
 
     def __init__(self) -> None:
         """Initialize SpatialUtils."""
-        self.transformers: Dict[str, Transformer] = {}
+        self.transformers: dict[str, Transformer] = {}
         self.indexer = SpatialIndexingInterface()
         logger.info("SpatialUtils initialized")
 
@@ -52,10 +52,10 @@ class SpatialUtils:
 
     def transform_coordinates(
         self,
-        coords: Union[Tuple[float, float], List[Tuple[float, float]]],
+        coords: tuple[float, float] | list[tuple[float, float]],
         from_crs: str = "EPSG:4326",
         to_crs: str = "EPSG:3857",
-    ) -> Union[Tuple[float, float], List[Tuple[float, float]]]:
+    ) -> tuple[float, float] | list[tuple[float, float]]:
         """
         Transform coordinates between coordinate reference systems.
 
@@ -88,8 +88,8 @@ class SpatialUtils:
 
     def calculate_distance(
         self,
-        point1: Tuple[float, float],
-        point2: Tuple[float, float],
+        point1: tuple[float, float],
+        point2: tuple[float, float],
         method: str = "haversine",
     ) -> float:
         """
@@ -111,7 +111,7 @@ class SpatialUtils:
             raise ValueError(f"Unknown distance method: {method}")
 
     def _haversine_distance(
-        self, point1: Tuple[float, float], point2: Tuple[float, float]
+        self, point1: tuple[float, float], point2: tuple[float, float]
     ) -> float:
         """
         Calculate haversine distance between two points.
@@ -124,7 +124,7 @@ class SpatialUtils:
         return haversine_distance(point1, point2)
 
     def _euclidean_distance(
-        self, point1: Tuple[float, float], point2: Tuple[float, float]
+        self, point1: tuple[float, float], point2: tuple[float, float]
     ) -> float:
         """Calculate Euclidean distance between two points."""
         return cast(
@@ -133,7 +133,7 @@ class SpatialUtils:
         )
 
     def create_buffer(
-        self, center: Tuple[float, float], radius_km: float, resolution: int = 16
+        self, center: tuple[float, float], radius_km: float, resolution: int = 16
     ) -> Polygon:
         """
         Create a circular buffer around a point.
@@ -156,7 +156,7 @@ class SpatialUtils:
 
     def get_h3_cells_in_polygon(
         self, polygon: Polygon, resolution: int = 7
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Get H3 cells that intersect with a polygon.
 
@@ -190,7 +190,7 @@ class SpatialUtils:
 
     def snap_to_h3_grid(
         self, lat: float, lon: float, resolution: int = 7
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Snap coordinates to H3 grid center.
 
@@ -207,7 +207,7 @@ class SpatialUtils:
         return center_lat, center_lon
 
     def calculate_spatial_density(
-        self, points: List[Tuple[float, float]], area_km2: float
+        self, points: list[tuple[float, float]], area_km2: float
     ) -> float:
         """
         Calculate spatial density of points.
@@ -224,8 +224,8 @@ class SpatialUtils:
         return len(points) / area_km2
 
     def find_nearest_point(
-        self, target: Tuple[float, float], candidates: List[Tuple[float, float]]
-    ) -> Tuple[int, float]:
+        self, target: tuple[float, float], candidates: list[tuple[float, float]]
+    ) -> tuple[int, float]:
         """
         Find the nearest point from a list of candidates.
 
@@ -260,9 +260,9 @@ class SpatialUtils:
 
     def create_spatial_index(
         self,
-        points: List[Tuple[float, float]],
-        labels: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        points: list[tuple[float, float]],
+        labels: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Create a spatial index for efficient point queries.
 
@@ -306,27 +306,27 @@ class SpatialUtils:
         return index_data
 
     def _calculate_bounds(
-        self, points: List[Tuple[float, float]]
-    ) -> Tuple[float, float, float, float]:
+        self, points: list[tuple[float, float]]
+    ) -> tuple[float, float, float, float]:
         """Calculate bounding box for points."""
         lats = [p[0] for p in points]
         lons = [p[1] for p in points]
         return min(lats), min(lons), max(lats), max(lons)
 
     def _calculate_centroid(
-        self, points: List[Tuple[float, float]]
-    ) -> Tuple[float, float]:
+        self, points: list[tuple[float, float]]
+    ) -> tuple[float, float]:
         """Calculate centroid of points."""
         lats = [p[0] for p in points]
         lons = [p[1] for p in points]
-        return cast(Tuple[float, float], (np.mean(lats), np.mean(lons)))
+        return cast(tuple[float, float], (np.mean(lats), np.mean(lons)))
 
     def filter_points_by_distance(
         self,
-        center: Tuple[float, float],
-        points: List[Tuple[float, float]],
+        center: tuple[float, float],
+        points: list[tuple[float, float]],
         max_distance_km: float,
-    ) -> List[Tuple[float, float]]:
+    ) -> list[tuple[float, float]]:
         """
         Filter points within a maximum distance from center.
 

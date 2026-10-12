@@ -3,7 +3,6 @@ Color palette module for managing and applying color schemes in geospatial visua
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -42,7 +41,7 @@ class ColorPalette:
     def __init__(
         self,
         name: str = "viridis",
-        colors: Optional[List[str]] = None,
+        colors: list[str] | None = None,
         n_colors: int = 256,
     ):
         """
@@ -227,8 +226,8 @@ class ColorPalette:
 
             return cls(name=name, colors=colors, n_colors=n_colors)
 
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Image file not found: {image_path}")
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(f"Image file not found: {image_path}") from exc
         except Exception as e:
             raise ValueError(f"Failed to extract colors from image: {str(e)}") from e
 
@@ -244,7 +243,7 @@ class ColorPalette:
         """
         return LinearSegmentedColormap.from_list(self.name, self.colors, N=n_colors)
 
-    def show(self, figsize: Tuple[int, int] = (10, 2)) -> None:
+    def show(self, figsize: tuple[int, int] = (10, 2)) -> None:
         """
         Display the color palette.
 
@@ -399,7 +398,7 @@ class ColorPalette:
 
         return "\n".join(css_lines)
 
-    def analyze_harmony(self) -> Dict:
+    def analyze_harmony(self) -> dict:
         """
         Analyze the color harmony of the palette.
 

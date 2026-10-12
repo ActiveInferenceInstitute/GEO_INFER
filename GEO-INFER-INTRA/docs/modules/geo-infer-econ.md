@@ -1,120 +1,63 @@
 # GEO-INFER-ECON: Economic Analysis
 
-> **Illustrative example notice.** This page contains historical or
-> conceptual integration sketches. Names such as `SpatialAnalyzer` and
-> domain-specific facade classes are not public GEO-INFER exports in the
-> current checkout; verify imports against each module's `src/` package
-> and use the module README/tests for executable examples.
+`GEO-INFER-ECON` owns the `geo_infer_econ` package under `GEO-INFER-ECON/src/`.
+GEO-INFER-ECON: Spatial Economic Modeling, Analysis, and Policy Evaluation
 
+## Public import surface
 
-> **Explanation**: Understanding Economic Analysis in GEO-INFER
->
-> This module provides economic modeling and analysis for geospatial applications, including economic forecasting, resource allocation, and impact assessment.
+These names are exported by the current owning package:
 
-## 🎯 What is GEO-INFER-ECON?
-Note: Code examples are illustrative; see `GEO-INFER-ECON/examples` for runnable scripts.
+- `geo_infer_econ.EconomicModelingEngine`
+- `geo_infer_econ.SpatialEconometricsEngine`
+- `geo_infer_econ.PolicyAnalysisEngine`
+- `geo_infer_econ.ConsumerChoiceModels`
+- `geo_infer_econ.ProducerTheoryModels`
+- `geo_infer_econ.MarketStructureAnalysis`
+- `geo_infer_econ.GameTheoryModels`
+- `geo_infer_econ.BehavioralEconomicsEngine`
 
-### Links
-- Module README: [Module README](../../../GEO-INFER-ECON/README.md) GEO-INFER-ECON is the economic analysis engine that provides economic modeling and forecasting capabilities for geospatial information systems. It enables:
+The small example below verifies the installed import contract. It does not infer
+scientific validity or service availability from successful imports; the owning
+regression tests exercise behavior with concrete inputs.
 
-- **Economic Forecasting**: Economic trend prediction and scenario analysis - **Resource Allocation**: Optimization of resource distribution and allocation - **Impact Assessment**: Economic impact analysis for projects and policies - **Market Analysis**: Market trend analysis and demand forecasting - **Cost-Benefit Analysis**: Evaluation of economic feasibility and efficiency
-
-### Key Concepts
-
-#### Economic Forecasting
-The module provides economic forecasting capabilities:
-
-```
-python from geo_infer_econ import EconomicForecastingEngine # Create economic forecasting engine econ_engine = EconomicForecastingEngine( forecasting_parameters={ 'trend_analysis': True, 'scenario_simulation': True, 'market_dynamics': True, 'policy_impact': True } ) # Forecast economic trends economic_forecast = econ_engine.forecast_economic_trends( economic_data=historical_economic_data, scenario_data=scenario_assumptions, policy_data=policy_changes )
-```
- #### Resource Allocation Optimize resource allocation:
-```
-python from geo_infer_econ.resources import ResourceAllocationEngine # Create resource allocation engine resource_engine = ResourceAllocationEngine( allocation_parameters={ 'resource_distribution': True, 'cost_optimization': True, 'demand_forecasting': True, 'supply_chain': True } ) # Allocate resources allocation_result = resource_engine.allocate_resources( resource_data=resource_information, demand_data=demand_forecasts, supply_data=supply_chain_data )
-```
- ## 📚 Core Features ### 1. Economic Impact Assessment Engine **Purpose**: Assess economic impacts of policies, projects, and events.
 ```python
- from geo_infer_econ.impact import EconomicImpactEngine # Initialize economic impact engine impact_engine = EconomicImpactEngine() # Define impact assessment parameters impact_config = impact_engine.configure_impact_assessment({ 'direct_effects': True, 'indirect_effects': True, 'induced_effects': True, 'multiplier_analysis': True, 'regional_analysis': True }) # Assess economic impacts impact_result = impact_engine.assess_economic_impacts( economic_data=economic_indicators, policy_data=policy_impacts, spatial_data=regional_boundaries, impact_config=impact_config )
+import geo_infer_econ
+from geo_infer_econ import EconomicModelingEngine, SpatialEconometricsEngine, PolicyAnalysisEngine, ConsumerChoiceModels
+assert all(value is not None for value in (EconomicModelingEngine, SpatialEconometricsEngine, PolicyAnalysisEngine, ConsumerChoiceModels,))
+assert geo_infer_econ.__version__ == "0.4.0"
 ```
- ### 2. Market Analysis Engine **Purpose**: Analyze market dynamics and economic patterns.
-```python
- from geo_infer_econ.market import MarketAnalysisEngine # Initialize market analysis engine market_engine = MarketAnalysisEngine() # Define market analysis parameters market_config = market_engine.configure_market_analysis({ 'market_structure': True, 'competition_analysis': True, 'demand_analysis': True, 'supply_analysis': True, 'price_analysis': True }) # Analyze market dynamics market_result = market_engine.analyze_market_dynamics( market_data=market_information, economic_data=economic_indicators, spatial_data=market_boundaries, market_config=market_config )
-```
- ### 3. Cost-Benefit Analysis Engine **Purpose**: Conduct cost-benefit analysis.
-```python
- from geo_infer_econ.cba import CostBenefitAnalysisEngine # Initialize cost-benefit analysis engine cba_engine = CostBenefitAnalysisEngine() # Define CBA parameters cba_config = cba_engine.configure_cost_benefit_analysis({ 'cost_analysis': True, 'benefit_analysis': True, 'discounting': True, 'sensitivity_analysis': True, 'risk_assessment': True }) # Conduct cost-benefit analysis cba_result = cba_engine.conduct_cost_benefit_analysis( project_data=project_information, cost_data=cost_estimates, benefit_data=benefit_estimates, cba_config=cba_config )
-```
- ### 4. Economic Forecasting Engine **Purpose**: Forecast economic trends and patterns.
-```
-python from geo_infer_econ.forecasting import EconomicForecastingEngine # Initialize economic forecasting engine forecasting_engine = EconomicForecastingEngine() # Define forecasting parameters forecasting_config = forecasting_engine.configure_forecasting({ 'time_series_analysis': True, 'trend_analysis': True, 'seasonal_analysis': True, 'regression_analysis': True, 'scenario_analysis': True }) # Forecast economic trends forecasting_result = forecasting_engine.forecast_economic_trends( historical_data=economic_history, current_data=current_indicators, forecasting_config=forecasting_config )
-```
- ### 5. Spatial Economic Engine **Purpose**: Model spatial economic relationships and patterns.
-```
-python from geo_infer_econ.spatial import SpatialEconomicEngine # Initialize spatial economic engine spatial_econ_engine = SpatialEconomicEngine() # Define spatial economic parameters spatial_config = spatial_econ_engine.configure_spatial_economics({ 'regional_analysis': True, 'market_areas': True, 'economic_clusters': True, 'spatial_interaction': True, 'location_analysis': True }) # Model spatial economics spatial_result = spatial_econ_engine.model_spatial_economics( regional_data=regional_economic_data, spatial_data=geographic_boundaries, economic_data=economic_indicators, spatial_config=spatial_config )
-```
- ## 🔧 API Reference ### EconomicFramework The core economic framework class.
-```
-python class EconomicFramework: def __init__(self, economic_parameters): """ Initialize economic framework. Args: economic_parameters (dict): Economic configuration parameters """ def model_economic_systems(self, geospatial_data, economic_data, market_data, policy_data): """Model economic systems for geospatial analysis.""" def analyze_economic_impacts(self, economic_data, policy_impacts, spatial_context): """Analyze economic impacts of policies and projects.""" def forecast_economic_trends(self, historical_data, current_indicators): """Forecast economic trends and patterns.""" def assess_market_dynamics(self, market_data, economic_indicators): """Assess market dynamics and economic patterns."""
-```
- ### EconomicImpactEngine Engine for economic impact assessment.
-```
-python class EconomicImpactEngine: def __init__(self): """Initialize economic impact engine.""" def configure_impact_assessment(self, assessment_parameters): """Configure economic impact assessment parameters.""" def assess_economic_impacts(self, economic_data, policy_data, spatial_data): """Assess economic impacts of policies and projects.""" def calculate_multipliers(self, economic_data, regional_data): """Calculate economic multipliers for regional analysis.""" def analyze_direct_effects(self, economic_data, policy_impacts): """Analyze direct economic effects."""
-```
- ### MarketAnalysisEngine Engine for market analysis and dynamics.
-```
-python class MarketAnalysisEngine: def __init__(self): """Initialize market analysis engine.""" def configure_market_analysis(self, analysis_parameters): """Configure market analysis parameters.""" def analyze_market_dynamics(self, market_data, economic_data, spatial_data): """Analyze market dynamics and economic patterns.""" def assess_market_structure(self, market_data, competition_data): """Assess market structure and competition.""" def analyze_demand_supply(self, demand_data, supply_data): """Analyze demand and supply patterns."""
-```
- ## 🎯 Use Cases ### 1. Regional Economic Development **Problem**: Assess economic development potential for regions. **Solution**: Use economic analysis framework.
-```
-python from geo_infer_econ import RegionalEconomicFramework # Initialize regional economic framework regional_econ = RegionalEconomicFramework() # Define regional economic parameters regional_config = regional_econ.configure_regional_economics({ 'economic_impact': 'comprehensive', 'market_analysis': 'detailed', 'spatial_analysis': 'regional', 'forecasting': 'long_term', 'policy_analysis': True }) # Analyze regional economics regional_result = regional_econ.analyze_regional_economics( regional_system=regional_economic_system, regional_config=regional_config, economic_data=regional_economic_data )
-```
- ### 2. Policy Impact Assessment **Problem**: Assess economic impacts of policy changes. **Solution**: Use economic impact assessment for policy analysis.
-```
-python from geo_infer_econ.policy import PolicyImpactFramework # Initialize policy impact framework policy_impact = PolicyImpactFramework() # Define policy impact parameters policy_config = policy_impact.configure_policy_impact({ 'direct_effects': 'comprehensive', 'indirect_effects': 'detailed', 'induced_effects': 'modeled', 'multiplier_analysis': True, 'regional_breakdown': True }) # Assess policy impacts policy_result = policy_impact.assess_policy_impacts( policy_framework=policy_system, policy_config=policy_config, economic_data=economic_indicators )
-```
- ### 3. Investment Analysis **Problem**: Conduct cost-benefit analysis for investment decisions. **Solution**: Use cost-benefit analysis framework.
-```
-python from geo_infer_econ.investment import InvestmentAnalysisFramework # Initialize investment analysis framework investment_analysis = InvestmentAnalysisFramework() # Define investment analysis parameters investment_config = investment_analysis.configure_investment_analysis({ 'cost_analysis': 'comprehensive', 'benefit_analysis': 'detailed', 'discounting': 'appropriate_rate', 'sensitivity_analysis': True, 'risk_assessment': True }) # Conduct investment analysis investment_result = investment_analysis.conduct_investment_analysis( investment_project=project_information, investment_config=investment_config, economic_data=economic_conditions )
-```
- ## 🔗 Integration with Other Modules ### GEO-INFER-SPACE Integration
-```
-python from geo_infer_econ import EconomicFramework from geo_infer_space import SpatialAnalysisEngine # Combine economic analysis with spatial analysis econ_framework = EconomicFramework(economic_parameters) spatial_engine = SpatialAnalysisEngine() # Integrate economic analysis with spatial analysis spatial_economic_system = econ_framework.integrate_with_spatial_analysis( spatial_engine=spatial_engine, economic_config=economic_config )
-```
- ### GEO-INFER-TIME Integration
-```
-python from geo_infer_econ import TemporalEconomicEngine from geo_infer_time import TemporalAnalysisEngine # Combine economic analysis with temporal analysis temporal_econ_engine = TemporalEconomicEngine() temporal_engine = TemporalAnalysisEngine() # Integrate economic analysis with temporal analysis temporal_economic_system = temporal_econ_engine.integrate_with_temporal_analysis( temporal_engine=temporal_engine, temporal_config=temporal_config )
-```
- ### GEO-INFER-DATA Integration
-```
-python from geo_infer_econ import EconomicDataEngine from geo_infer_data import DataManager # Combine economic analysis with data management econ_data_engine = EconomicDataEngine() data_manager = DataManager() # Integrate economic analysis with data management economic_data_system = econ_data_engine.integrate_with_data_management( data_manager=data_manager, data_config=data_config )
-```
- ## 🚨 Troubleshooting ### Common Issues **Economic impact assessment problems:**
-```
-python # Improve economic impact assessment impact_engine.configure_impact_assessment({ 'direct_effects': 'comprehensive', 'indirect_effects': 'detailed', 'induced_effects': 'modeled', 'multiplier_analysis': 'advanced', 'regional_analysis': 'granular' }) # Add impact assessment diagnostics impact_engine.enable_impact_assessment_diagnostics( diagnostics=['multiplier_accuracy', 'regional_breakdown', 'effect_tracking'] )
-```
- **Market analysis issues:**
-```
-python # Improve market analysis market_engine.configure_market_analysis({ 'market_structure': 'detailed', 'competition_analysis': 'comprehensive', 'demand_analysis': 'advanced', 'supply_analysis': 'detailed', 'price_analysis': 'real_time' }) # Enable market analysis monitoring market_engine.enable_market_analysis_monitoring( monitoring=['market_dynamics', 'competition_changes', 'demand_patterns'] )
-```
- **Cost-benefit analysis issues:**
-```
-python # Improve cost-benefit analysis cba_engine.configure_cost_benefit_analysis({ 'cost_analysis': 'comprehensive', 'benefit_analysis': 'detailed', 'discounting': 'appropriate_rate', 'sensitivity_analysis': 'multiple_scenarios', 'risk_assessment': 'comprehensive' }) # Enable CBA monitoring cba_engine.enable_cba_monitoring( monitoring=['cost_accuracy', 'benefit_estimation', 'discount_rate_sensitivity'] )
-```
- ## 📊 Performance Optimization ### Efficient Economic Processing
-```
-python # Enable parallel economic processing econ_framework.enable_parallel_processing(n_workers=8) # Enable economic caching econ_framework.enable_economic_caching( cache_size=10000, cache_ttl=1800 ) # Enable adaptive economic systems econ_framework.enable_adaptive_economic_systems( adaptation_rate=0.1, adaptation_threshold=0.05 )
-```
- ### Forecasting Optimization
-```
-python # Enable efficient economic forecasting forecasting_engine.enable_efficient_forecasting( forecasting_strategy='ensemble_methods', model_selection=True, accuracy_optimization=True ) # Enable economic intelligence forecasting_engine.enable_economic_intelligence( intelligence_sources=['market_data', 'policy_changes', 'economic_indicators'], update_frequency='daily' )
-```
- ## 🔗 Related Documentation ### Tutorials - **[Economic Analysis Basics](../getting_started/index.md)** - Learn economic analysis fundamentals - **[Spatial Economics Tutorial](../getting_started/index.md)** - Build your first spatial economic system ### How-to Guides - **[Regional Economic Development](../examples_gallery.md)** - Implement regional economic analysis - **[Policy Impact Assessment](../examples_gallery.md)** - Conduct policy impact analysis ### Technical Reference - **[Economic Analysis API Reference](../api/reference.md)** - economic analysis API documentation - **[Spatial Economics Patterns](../api/reference.md)** - Spatial economics patterns and best practices ### Explanations - **Economic Analysis Theory** - Deep dive into economic concepts - **Spatial Economics Principles** - Understanding spatial economics foundations ### Related Modules - **[GEO-INFER-SPACE](../modules/geo-infer-space.md)** - Spatial analysis capabilities - **[GEO-INFER-TIME](../modules/geo-infer-time.md)** - Temporal analysis capabilities - **[GEO-INFER-DATA](../modules/geo-infer-data.md)** - Data management capabilities - **[GEO-INFER-RISK](../modules/geo-infer-risk.md)** - Risk assessment capabilities --- **Ready to get started?** Check out the **[Economic Analysis Basics Tutorial](../getting_started/index.md)** or explore **[Regional Economic Development Examples](../examples_gallery.md)**!
 
-## 🗺️ Interactive Spatial Preview
+Run examples in the shared, locked workspace environment. Constructor inputs,
+optional backends, and result shapes belong to the referenced source and tests.
+Cross-module callers should pass explicit spatial state ordering and timezone-aware
+instants when those fields are part of their data contract.
 
-Pre-rendered spatial snapshot for **GEO-INFER-ECON** (*Economic Analysis*). Reproducible preview cards are generated by `geo_infer_intra.core.documentation.visual_preview`.
+## Verification
 
-| Preview | Widget |
-| --- | --- |
-| ![GEO-INFER-ECON Leaflet Preview](previews/geo-infer-econ_preview.svg) | [Interactive map](previews/geo-infer-econ_preview.html) · [PNG](previews/geo-infer-econ_preview.png) |
+From the repository root:
 
-> **Reproducible contract:** each map ships as `geo-infer-econ_preview.html`, `geo-infer-econ_preview.svg`, `geo-infer-econ_preview.png`, and `geo-infer-econ_preview.manifest.json` beneath `previews/`. The receipt records geometry provenance and artifact SHA-256 hashes. Values are illustrative, not observations.
+```bash
+uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --module ECON --timeout 600 --workers 2
+```
+
+The module command includes its owned test files and registered nested test roots.
+The fleet's separate unit and slow categories cover complementary marker selections;
+release CI requires unit, slow, integration, performance, system, and H3 lanes on
+Python 3.11 and 3.12. Results include immutable attempt receipts under
+`.geo-infer-test-results/runs/`, with logs, current JUnit, selection inventories,
+interpreter and source custody. A missing optional dependency must be addressed by
+the declared package extra rather than by omitting its tests.
+
+## Source and examples
+
+- [Owning package](../../../GEO-INFER-ECON/src/geo_infer_econ/README.md)
+- [Module inventory and dependencies](../../../GEO-INFER-ECON/README.md)
+- [Module operating contract](../../../GEO-INFER-ECON/AGENTS.md)
+- [Regression: test_integrations.py](../../../GEO-INFER-ECON/tests/integration/test_integrations.py)
+- [Regression: test_behavioral_economics.py](../../../GEO-INFER-ECON/tests/unit/test_behavioral_economics.py)
+- [Regression: test_bioregional_economics.py](../../../GEO-INFER-ECON/tests/unit/test_bioregional_economics.py)
+- [Example source: comprehensive_economic_analysis.py](../../../GEO-INFER-ECON/examples/comprehensive_economic_analysis.py)
+- [Example source: integration_example.py](../../../GEO-INFER-ECON/examples/integration_example.py)
+
+See the [cross-module integration guide](../../../GEO-INFER-EXAMPLES/docs/INTEGRATION_GUIDE.md)
+for actual DATA, SPACE, TIME, BAYES, and ACT composition checks.

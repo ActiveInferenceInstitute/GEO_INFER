@@ -6,7 +6,7 @@ Bayesian inference, particularly useful for sequential data.
 """
 
 import numpy as np
-from typing import Dict, Any, Union, List
+from typing import Any
 from ..utils.rng import SeedLike, resolve_rng
 
 
@@ -53,7 +53,7 @@ class SequentialMonteCarlo:
         n_steps: int = 100,
         progress_bar: bool = True,
         **kwargs: Any,
-    ) -> Union[Dict[str, np.ndarray], Any]:
+    ) -> dict[str, np.ndarray] | Any:
         """
         Run SMC sampling for the model.
 
@@ -92,7 +92,7 @@ class SequentialMonteCarlo:
 
         return samples
 
-    def _initialize_particles(self) -> List[Dict[str, float]]:
+    def _initialize_particles(self) -> list[dict[str, float]]:
         """Initialize SMC particles."""
         particles = []
 
@@ -119,7 +119,7 @@ class SequentialMonteCarlo:
 
         return particles
 
-    def _effective_sample_size(self, particles: List[Dict[str, float]]) -> float:
+    def _effective_sample_size(self, particles: list[dict[str, float]]) -> float:
         """Compute effective sample size."""
         # Importance-sampling ESS from normalized particle weights.
         weights = np.asarray([p.get("weight", 1.0) for p in particles], dtype=float)
@@ -135,8 +135,8 @@ class SequentialMonteCarlo:
         return float(1.0 / np.sum(weights**2))
 
     def _resample_particles(
-        self, particles: List[Dict[str, float]]
-    ) -> List[Dict[str, float]]:
+        self, particles: list[dict[str, float]]
+    ) -> list[dict[str, float]]:
         """Resample particles based on their weights."""
         weights = np.asarray([p.get("weight", 1.0) for p in particles], dtype=float)
         if (
@@ -165,8 +165,8 @@ class SequentialMonteCarlo:
         return new_particles
 
     def _move_particles(
-        self, particles: List[Dict[str, float]], data: Any, step: int
-    ) -> List[Dict[str, float]]:
+        self, particles: list[dict[str, float]], data: Any, step: int
+    ) -> list[dict[str, float]]:
         """Move particles using MCMC steps."""
         new_particles = []
 
@@ -187,7 +187,7 @@ class SequentialMonteCarlo:
 
         return new_particles
 
-    def _propose_particle(self, particle: Dict[str, float]) -> Dict[str, float]:
+    def _propose_particle(self, particle: dict[str, float]) -> dict[str, float]:
         """Propose a new particle."""
         proposed = particle.copy()
 
@@ -208,7 +208,7 @@ class SequentialMonteCarlo:
         return proposed
 
     def _compute_acceptance_probability(
-        self, current: Dict[str, float], proposed: Dict[str, float], data: Any
+        self, current: dict[str, float], proposed: dict[str, float], data: Any
     ) -> float:
         """Compute acceptance probability for particle move."""
         # Compute log posterior for current and proposed
@@ -226,8 +226,8 @@ class SequentialMonteCarlo:
         return float(min(0, log_accept_prob))  # Metropolis acceptance
 
     def _extract_samples(
-        self, particles: List[Dict[str, float]]
-    ) -> Dict[str, np.ndarray]:
+        self, particles: list[dict[str, float]]
+    ) -> dict[str, np.ndarray]:
         """Extract samples from final particles."""
         samples = {}
 
@@ -242,9 +242,9 @@ class SequentialMonteCarlo:
     def update(
         self,
         new_data: Any,
-        previous_samples: Union[Dict[str, np.ndarray], Any],
+        previous_samples: dict[str, np.ndarray] | Any,
         **kwargs: Any,
-    ) -> Union[Dict[str, np.ndarray], Any]:
+    ) -> dict[str, np.ndarray] | Any:
         """
         Update particles with new data.
 

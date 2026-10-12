@@ -2,16 +2,17 @@
 H3 access helpers for GEO-INFER-ACT.
 
 The adapter prefers the canonical GEO-INFER-SPACE indexing interface when it is
-available and uses direct H3 v4 calls for operations SPACE does not expose.
+installed (the ``space`` extra) and uses direct h3-py v4 calls (a hard
+dependency) for every operation SPACE does not expose.
 """
 
 from __future__ import annotations
 
 import logging
-import os
-from pathlib import Path
-import sys
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any
+from collections.abc import Iterable
+
+import h3
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ class H3Adapter:
     def __init__(self, prefer_space: bool = True):
         """Initialize SPACE-backed and direct H3 access."""
         self.space_indexer = None
-        self.h3 = None
+        self.h3 = h3
         self.source = "direct"
 
         if prefer_space:
@@ -33,70 +34,43 @@ class H3Adapter:
 
                 self.space_indexer = SpatialIndexingInterface(backend="h3")
                 self.source = "geo_infer_space"
-            except Exception:
+            except ModuleNotFoundError as exc:
+                if exc.name != "geo_infer_space":
+                    raise
                 self.space_indexer = None
 
-        try:
-            import h3  # noqa: PLC0415
-
-            self.h3 = h3
-            version = tuple(
-                int(part.split("+")[0].split("-")[0])
-                for part in h3.__version__.lstrip("v").split(".")[:3]
+        version = tuple(
+            int(part.split("+")[0].split("-")[0])
+            for part in h3.__version__.lstrip("v").split(".")[:3]
+        )
+        if version < (4, 5, 0) or version >= (5, 0, 0):
+            raise RuntimeError(
+                f"Unsupported h3-py version {h3.__version__}; "
+                "GEO-INFER requires h3-py>=4.5.0,<5"
             )
-            if version < (4, 5, 0) or version >= (5, 0, 0):
-                raise RuntimeError(
-                    f"Unsupported h3-py version {h3.__version__}; "
-                    "GEO-INFER requires h3-py>=4.5.0,<5"
-                )
-        except ImportError:
-            self.h3 = None
-
-        if self.space_indexer is None and self.h3 is None:
-            raise RuntimeError("H3 is not available through GEO-INFER-SPACE or h3-py")
 
     def latlng_to_cell(self, lat: float, lng: float, resolution: int) -> str:
         """Convert latitude/longitude to an H3 cell."""
         if self.space_indexer is not None:
             return str(self.space_indexer.latlng_to_cell(lat, lng, resolution))
-        if self.h3 is not None:
-            return str(self.h3.latlng_to_cell(lat, lng, resolution))
-        raise RuntimeError("H3 backend unavailable")
+        return str(self.h3.latlng_to_cell(lat, lng, resolution))
 
     def cell_to_latlng(self, cell: str) -> tuple[float, float]:
         """Convert an H3 cell to latitude/longitude."""
         if self.space_indexer is not None:
             res = self.space_indexer.cell_to_latlng(cell)
             return (float(res[0]), float(res[1]))
-        if self.h3 is not None:
-            res = self.h3.cell_to_latlng(cell)
-            return (float(res[0]), float(res[1]))
-        raise RuntimeError("H3 backend unavailable")
+        res = self.h3.cell_to_latlng(cell)
+        return (float(res[0]), float(res[1]))
 
-    def cell_to_boundary(self, cell: str) -> List[tuple[float, float]]:
+    def cell_to_boundary(self, cell: str) -> list[tuple[float, float]]:
         """Return the H3 cell boundary as latitude/longitude pairs."""
-        if self.h3 is not None:
-            return [(lat, lng) for lat, lng in self.h3.cell_to_boundary(cell)]
-        if self.space_indexer is not None:
-            backend = getattr(self.space_indexer, "backend", None)
-            if backend is not None and hasattr(backend, "get_cell_boundary"):
-                return list(backend.get_cell_boundary(cell))
-        lat, lng = self.cell_to_latlng(cell)
-        return [(lat, lng)]
+        return [(lat, lng) for lat, lng in self.h3.cell_to_boundary(cell)]
 
-    def polygon_to_cells(self, polygon: Dict[str, Any], resolution: int) -> List[str]:
+    def polygon_to_cells(self, polygon: dict[str, Any], resolution: int) -> list[str]:
         """Convert a GeoJSON-like polygon to H3 cells."""
         if self.space_indexer is not None:
-            try:
-                cells = self.space_indexer.polygon_to_cells(polygon, resolution)
-                if cells:
-                    return list(cells)
-            except Exception:
-                if self.h3 is None:
-                    raise
-
-        if self.h3 is None:
-            return []
+            return list(self.space_indexer.polygon_to_cells(polygon, resolution))
 
         if hasattr(polygon, "__geo_interface__"):
             polygon = polygon.__geo_interface__
@@ -117,82 +91,56 @@ class H3Adapter:
             raise ValueError("polygon must contain a Polygon or MultiPolygon")
         return sorted(self.h3.geo_to_cells(geometry, resolution))
 
-    def grid_disk(self, cell: str, k: int = 1) -> List[str]:
+    def grid_disk(self, cell: str, k: int = 1) -> list[str]:
         """Return H3 cells within k grid steps of a cell."""
-        if self.h3 is not None:
-            return list(self.h3.grid_disk(cell, k))
-        if self.space_indexer is not None:
-            cells = {cell}
-            for radius in range(1, k + 1):
-                cells.update(self.space_indexer.get_cell_neighbors(cell, radius))
-            return list(cells)
-        return []
+        return list(self.h3.grid_disk(cell, k))
 
-    def grid_ring(self, cell: str, k: int = 1) -> List[str]:
+    def grid_ring(self, cell: str, k: int = 1) -> list[str]:
         """Return H3 cells exactly k grid steps from a cell."""
         if not isinstance(k, int) or k < 1:
             raise ValueError("k must be a positive integer")
-        if self.h3 is not None:
-            return sorted(
-                set(self.h3.grid_disk(cell, k)) - set(self.h3.grid_disk(cell, k - 1))
-            )
-        if self.space_indexer is not None:
-            return list(self.space_indexer.get_cell_neighbors(cell, k))
-        return []
+        return sorted(
+            set(self.h3.grid_disk(cell, k)) - set(self.h3.grid_disk(cell, k - 1))
+        )
 
     def get_resolution(self, cell: str) -> int:
         """Return the H3 resolution of a cell."""
         if self.space_indexer is not None:
             return int(self.space_indexer.get_cell_resolution(cell))
-        if self.h3 is not None:
-            return int(self.h3.get_resolution(cell))
-        raise RuntimeError("H3 backend unavailable")
+        return int(self.h3.get_resolution(cell))
 
     def cell_to_parent(self, cell: str, resolution: int) -> str:
         """Return the parent cell at a coarser resolution."""
         if self.space_indexer is not None:
             return str(self.space_indexer.get_cell_parent(cell, resolution))
-        if self.h3 is not None:
-            return str(self.h3.cell_to_parent(cell, resolution))
-        raise RuntimeError("H3 backend unavailable")
+        return str(self.h3.cell_to_parent(cell, resolution))
 
-    def cell_to_children(self, cell: str, resolution: int) -> List[str]:
+    def cell_to_children(self, cell: str, resolution: int) -> list[str]:
         """Return child cells at a finer resolution."""
         if self.space_indexer is not None:
             return [
                 str(c) for c in self.space_indexer.get_cell_children(cell, resolution)
             ]
-        if self.h3 is not None:
-            return [str(c) for c in self.h3.cell_to_children(cell, resolution)]
-        raise RuntimeError("H3 backend unavailable")
+        return [str(c) for c in self.h3.cell_to_children(cell, resolution)]
 
     def is_valid_cell(self, cell: str) -> bool:
         """Return true when a value is a valid H3 cell identifier."""
-        if self.h3 is not None:
-            try:
-                return bool(self.h3.is_valid_cell(cell))
-            except (TypeError, ValueError):
-                return False
-            except Exception:
-                logger.debug(
-                    "Unexpected error validating H3 cell %r", cell, exc_info=True
-                )
-                return False
         try:
-            self.cell_to_latlng(cell)
-            return True
+            return bool(self.h3.is_valid_cell(cell))
         except (TypeError, ValueError):
             return False
         except Exception:
             logger.debug("Unexpected error validating H3 cell %r", cell, exc_info=True)
             return False
 
-    def validate_cells(self, cells: Iterable[str]) -> List[str]:
+    def validate_cells(self, cells: Iterable[str]) -> list[str]:
         """Validate and normalize H3 cell identifiers."""
         normalized = [str(cell) for cell in cells]
         invalid = [cell for cell in normalized if not self.is_valid_cell(cell)]
         if invalid:
             raise ValueError(f"Invalid H3 cell identifiers: {invalid[:5]}")
+        if len(set(normalized)) != len(normalized):
+            raise ValueError("Duplicate H3 cell identifiers")
         return normalized
 
 
@@ -202,42 +150,19 @@ def get_h3_adapter(prefer_space: bool = True) -> H3Adapter:
 
 
 def get_nested_h3_grid_class() -> Any:
-    """Return SPACE's ``NestedH3Grid`` class in installed or repo-local runs."""
+    """Return SPACE's ``NestedH3Grid`` class.
+
+    Raises:
+        ImportError: If ``geo_infer_space`` (the ACT ``space`` extra) is not
+            installed.
+    """
     try:
         from geo_infer_space.nested import NestedH3Grid  # noqa: PLC0415
-
-        return NestedH3Grid
-    except ImportError:
-        # Monorepo-only fallback: extend sys.path with the sibling SPACE
-        # checkout. Opt-in via environment flags so installed (non-monorepo)
-        # deployments never depend on the checkout layout, and the checkout
-        # location is always supplied explicitly instead of inferred from
-        # this file's path.
-        if os.environ.get("GEO_INFER_ACT_ALLOW_REPO_PATH_FALLBACK", "").lower() not in {
-            "1",
-            "true",
-            "yes",
-        }:
-            raise
-        repo_root = os.environ.get("GEO_INFER_ACT_REPO_ROOT")
-        if not repo_root:
-            raise RuntimeError(
-                "GEO_INFER_ACT_ALLOW_REPO_PATH_FALLBACK requires "
-                "GEO_INFER_ACT_REPO_ROOT to point at the monorepo checkout "
-                "root that contains GEO-INFER-SPACE/"
-            ) from None
-        space_src = Path(repo_root) / "GEO-INFER-SPACE" / "src"
-        if space_src.exists() and str(space_src) not in sys.path:
-            sys.path.insert(0, str(space_src))
-        try:
-            from geo_infer_space.nested import NestedH3Grid  # noqa: PLC0415
-        except ImportError as exc:
-            raise RuntimeError(
-                f"NestedH3Grid not found under {space_src}; install "
-                "geo-infer-act[space] or point GEO_INFER_ACT_REPO_ROOT at "
-                "the monorepo checkout root"
-            ) from exc
-        return NestedH3Grid
+    except ImportError as exc:
+        raise ImportError(
+            "Nested H3 grids require geo_infer_space; install geo-infer-act[space]"
+        ) from exc
+    return NestedH3Grid
 
 
 def normalize_belief_vector(values: Any) -> Any:
@@ -256,7 +181,7 @@ def normalize_belief_vector(values: Any) -> Any:
     return array / total
 
 
-def edge_count_from_graph(graph: Optional[Dict[str, Iterable[str]]]) -> int:
+def edge_count_from_graph(graph: dict[str, Iterable[str]] | None) -> int:
     """Count undirected edges in a cell-neighbor graph."""
     if not graph:
         return 0

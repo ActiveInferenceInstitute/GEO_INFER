@@ -112,15 +112,15 @@ assert isinstance(trace, SpatialInferenceTrace)
 - `PolicySelector.select_policy(...)` returns selected policy metadata and a
   `PolicyEvaluation` object.
 - `ActiveInferenceModel.step(..., return_result=True)` returns an
-  `ActiveInferenceStepResult` without breaking the legacy `(beliefs, action)`
-  return shape.
+  `ActiveInferenceStepResult`; the default return is the `(beliefs, action)`
+  tuple.
 - `GenerativeModel.update_h3_beliefs(..., return_result=True)` returns an
   `H3BeliefUpdateResult` with normalized per-cell beliefs, aggregate free
   energy, and `H3SpatialConsistency`.
 - `ActiveInferenceModel.infer_over_h3_grid(..., return_result=True)` and
   `SpatialActiveInferenceAgent.step(..., return_result=True)` return
-  `H3GridInferenceResult`; their default dictionary outputs remain compatible
-  and include per-cell pymdp metadata.
+  `H3GridInferenceResult`; their default dictionary outputs include per-cell
+  pymdp metadata.
 - `GenerativeModel.compute_h3_cell_diagnostics(...)`,
   `ActiveInferenceModel.trace_over_h3_grid(...)`,
   `ActiveInferenceModel.trace_over_nested_h3_grid(...)`,

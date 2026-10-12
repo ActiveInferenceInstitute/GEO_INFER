@@ -6,7 +6,7 @@ The separate kafka_service_check.py executes the actual broker round trip.
 import asyncio
 import json
 from collections import deque
-from datetime import timedelta
+from datetime import timedelta, UTC
 from types import SimpleNamespace
 
 import pytest
@@ -58,7 +58,9 @@ def message(value=7, offset=4, partition=2):
         topic="events",
         partition=partition,
         offset=offset,
-        value=json.dumps({"timestamp": 0, "value": value}).encode(),
+        value=json.dumps(
+            {"timestamp": "1970-01-01T00:00:00Z", "value": value}
+        ).encode(),
     )
 
 
@@ -212,7 +214,7 @@ def test_delivery_controls_cannot_be_overridden(options):
 def test_broker_timestamp_is_explicit_milliseconds_and_normalized(
     kafka_client, broker_time, seconds
 ):
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     msg = message()
     msg.value = b'{"value":"7"}'
@@ -225,8 +227,7 @@ def test_broker_timestamp_is_explicit_milliseconds_and_normalized(
         try:
             record = await anext(records)
             assert (
-                record["timestamp"]
-                == datetime.fromtimestamp(seconds, timezone.utc).isoformat()
+                record["timestamp"] == datetime.fromtimestamp(seconds, UTC).isoformat()
             )
             assert record["value"] == 7.0
             assert record["topic"] == "events"
@@ -242,7 +243,7 @@ def test_broker_timestamp_is_explicit_milliseconds_and_normalized(
 @pytest.mark.parametrize("alias", ["timestamp", "time", "datetime"])
 def test_payload_timestamp_precedes_broker_timestamp(kafka_client, alias):
     msg = message()
-    msg.value = json.dumps({alias: 0, "value": 7}).encode()
+    msg.value = json.dumps({alias: "1970-01-01T00:00:00Z", "value": 7}).encode()
     msg.timestamp = 1704067200000
     kafka_client.records.append(msg)
     processor = StreamProcessor(timedelta(seconds=10))

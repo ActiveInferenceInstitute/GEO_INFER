@@ -13,29 +13,16 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
+
+import geopandas as gpd
+import rasterio
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Optional dependency availability flags
+# Optional dependency availability flags (laspy and xarray are SPACE extras)
 # ---------------------------------------------------------------------------
-
-try:
-    import geopandas as gpd
-
-    HAS_GEOPANDAS = True
-except ImportError:
-    HAS_GEOPANDAS = False
-    gpd = None
-
-try:
-    import rasterio
-
-    HAS_RASTERIO = True
-except ImportError:
-    HAS_RASTERIO = False
-    rasterio = None
 
 try:
     import laspy  # type: ignore[import-untyped]
@@ -52,14 +39,6 @@ try:
 except ImportError:
     HAS_XARRAY = False
     xr = None  # type: ignore[assignment]
-
-try:
-    import numpy as np
-
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
 
 
 # ---------------------------------------------------------------------------
@@ -90,7 +69,7 @@ class FormatHandler(ABC):
         ...
 
     @abstractmethod
-    def can_handle(self, path: Union[str, Path]) -> bool:
+    def can_handle(self, path: str | Path) -> bool:
         """Return ``True`` if *path* is a file this handler can process.
 
         The check is typically based on file extension but implementations
@@ -105,7 +84,7 @@ class FormatHandler(ABC):
         ...
 
     @abstractmethod
-    def read(self, path: Union[str, Path], **kwargs: Any) -> Any:
+    def read(self, path: str | Path, **kwargs: Any) -> Any:
         """Read geospatial data from *path*.
 
         Args:
@@ -122,7 +101,7 @@ class FormatHandler(ABC):
         ...
 
     @abstractmethod
-    def write(self, data: Any, path: Union[str, Path], **kwargs: Any) -> None:
+    def write(self, data: Any, path: str | Path, **kwargs: Any) -> None:
         """Write *data* to *path* in this handler's format.
 
         Args:
@@ -136,7 +115,7 @@ class FormatHandler(ABC):
         ...
 
     @abstractmethod
-    def validate(self, path: Union[str, Path]) -> Dict[str, Any]:
+    def validate(self, path: str | Path) -> dict[str, Any]:
         """Validate the file at *path* and return diagnostic metadata.
 
         Args:
@@ -151,25 +130,25 @@ class FormatHandler(ABC):
 
     # -- Shared helpers -----------------------------------------------------
 
-    def _match_extension(self, path: Union[str, Path]) -> bool:
+    def _match_extension(self, path: str | Path) -> bool:
         """Check whether *path* has a file extension this handler supports."""
         return Path(path).suffix.lower() in self.extensions
 
-    def _ensure_file_exists(self, path: Union[str, Path]) -> Path:
+    def _ensure_file_exists(self, path: str | Path) -> Path:
         """Resolve *path* and raise if it does not exist."""
         resolved = Path(path)
         if not resolved.exists():
             raise FileNotFoundError(f"File not found: {resolved}")
         return resolved
 
-    def _ensure_parent_dir(self, path: Union[str, Path]) -> Path:
+    def _ensure_parent_dir(self, path: str | Path) -> Path:
         """Ensure the parent directory of *path* exists."""
         resolved = Path(path)
         resolved.parent.mkdir(parents=True, exist_ok=True)
         return resolved
 
     @staticmethod
-    def _base_validation_result() -> Dict[str, Any]:
+    def _base_validation_result() -> dict[str, Any]:
         """Return a fresh validation result dict with default values."""
         return {
             "valid": False,
@@ -198,10 +177,10 @@ class GeoJSONHandler(FormatHandler):
     def format_name(self) -> str:
         return "GeoJSON"
 
-    def can_handle(self, path: Union[str, Path]) -> bool:
+    def can_handle(self, path: str | Path) -> bool:
         return self._match_extension(path)
 
-    def read(self, path: Union[str, Path], **kwargs: Any) -> Any:
+    def read(self, path: str | Path, **kwargs: Any) -> Any:
         """Read a GeoJSON file into a ``GeoDataFrame``.
 
         Args:
@@ -211,12 +190,6 @@ class GeoJSONHandler(FormatHandler):
         Returns:
             ``geopandas.GeoDataFrame``.
         """
-        if not HAS_GEOPANDAS:
-            raise ImportError(
-                "geopandas is required to read GeoJSON files. "
-                "Install it with: pip install geopandas"
-            )
-
         resolved = self._ensure_file_exists(path)
         logger.info("Reading GeoJSON file: %s", resolved)
 
@@ -228,7 +201,7 @@ class GeoJSONHandler(FormatHandler):
             logger.exception("Failed to read GeoJSON file: %s", resolved)
             raise
 
-    def write(self, data: Any, path: Union[str, Path], **kwargs: Any) -> None:
+    def write(self, data: Any, path: str | Path, **kwargs: Any) -> None:
         """Write a ``GeoDataFrame`` to a GeoJSON file.
 
         Args:
@@ -236,12 +209,6 @@ class GeoJSONHandler(FormatHandler):
             path: Output file path.
             **kwargs: Forwarded to ``GeoDataFrame.to_file``.
         """
-        if not HAS_GEOPANDAS:
-            raise ImportError(
-                "geopandas is required to write GeoJSON files. "
-                "Install it with: pip install geopandas"
-            )
-
         resolved = self._ensure_parent_dir(path)
         logger.info("Writing GeoJSON file: %s", resolved)
 
@@ -252,7 +219,7 @@ class GeoJSONHandler(FormatHandler):
             logger.exception("Failed to write GeoJSON file: %s", resolved)
             raise
 
-    def validate(self, path: Union[str, Path]) -> Dict[str, Any]:
+    def validate(self, path: str | Path) -> dict[str, Any]:
         result = self._base_validation_result()
         result["format"] = self.format_name
 
@@ -263,7 +230,7 @@ class GeoJSONHandler(FormatHandler):
             return result
 
         try:
-            with open(resolved, "r", encoding="utf-8") as fh:
+            with open(resolved, encoding="utf-8") as fh:
                 geojson_data = json.load(fh)
 
             if not isinstance(geojson_data, dict):
@@ -286,7 +253,7 @@ class GeoJSONHandler(FormatHandler):
                 result["error"] = f"Invalid GeoJSON type: {geojson_type}"
                 return result
 
-            metadata: Dict[str, Any] = {
+            metadata: dict[str, Any] = {
                 "type": geojson_type,
                 "file_size_bytes": resolved.stat().st_size,
             }
@@ -302,14 +269,13 @@ class GeoJSONHandler(FormatHandler):
                     }
                     metadata["geometry_types"] = sorted(geom_types - {None})
 
-            if HAS_GEOPANDAS:
-                try:
-                    gdf = gpd.read_file(resolved, driver="GeoJSON")
-                    metadata["crs"] = str(gdf.crs) if gdf.crs else None
-                    if len(gdf) > 0:
-                        metadata["bounds"] = gdf.total_bounds.tolist()
-                except Exception:
-                    pass  # validation still succeeds with partial metadata
+            try:
+                gdf = gpd.read_file(resolved, driver="GeoJSON")
+                metadata["crs"] = str(gdf.crs) if gdf.crs else None
+                if len(gdf) > 0:
+                    metadata["bounds"] = gdf.total_bounds.tolist()
+            except Exception:
+                pass  # validation still succeeds with partial metadata
 
             result["valid"] = True
             result["metadata"] = metadata
@@ -339,10 +305,10 @@ class ShapefileHandler(FormatHandler):
     def format_name(self) -> str:
         return "ESRI Shapefile"
 
-    def can_handle(self, path: Union[str, Path]) -> bool:
+    def can_handle(self, path: str | Path) -> bool:
         return self._match_extension(path)
 
-    def read(self, path: Union[str, Path], **kwargs: Any) -> Any:
+    def read(self, path: str | Path, **kwargs: Any) -> Any:
         """Read a Shapefile into a ``GeoDataFrame``.
 
         Args:
@@ -352,12 +318,6 @@ class ShapefileHandler(FormatHandler):
         Returns:
             ``geopandas.GeoDataFrame``.
         """
-        if not HAS_GEOPANDAS:
-            raise ImportError(
-                "geopandas is required to read Shapefiles. "
-                "Install it with: pip install geopandas"
-            )
-
         resolved = self._ensure_file_exists(path)
         logger.info("Reading Shapefile: %s", resolved)
 
@@ -369,7 +329,7 @@ class ShapefileHandler(FormatHandler):
             logger.exception("Failed to read Shapefile: %s", resolved)
             raise
 
-    def write(self, data: Any, path: Union[str, Path], **kwargs: Any) -> None:
+    def write(self, data: Any, path: str | Path, **kwargs: Any) -> None:
         """Write a ``GeoDataFrame`` to a Shapefile.
 
         Args:
@@ -377,12 +337,6 @@ class ShapefileHandler(FormatHandler):
             path: Output ``.shp`` file path.
             **kwargs: Forwarded to ``GeoDataFrame.to_file``.
         """
-        if not HAS_GEOPANDAS:
-            raise ImportError(
-                "geopandas is required to write Shapefiles. "
-                "Install it with: pip install geopandas"
-            )
-
         resolved = self._ensure_parent_dir(path)
         logger.info("Writing Shapefile: %s", resolved)
 
@@ -393,7 +347,7 @@ class ShapefileHandler(FormatHandler):
             logger.exception("Failed to write Shapefile: %s", resolved)
             raise
 
-    def validate(self, path: Union[str, Path]) -> Dict[str, Any]:
+    def validate(self, path: str | Path) -> dict[str, Any]:
         result = self._base_validation_result()
         result["format"] = self.format_name
 
@@ -413,7 +367,7 @@ class ShapefileHandler(FormatHandler):
 
         missing = [ext for ext, found in required_sidecars.items() if not found]
 
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "file_size_bytes": resolved.stat().st_size,
             "sidecar_files_present": {
                 ext: found for ext, found in required_sidecars.items()
@@ -425,24 +379,20 @@ class ShapefileHandler(FormatHandler):
             result["metadata"] = metadata
             return result
 
-        if HAS_GEOPANDAS:
-            try:
-                gdf = gpd.read_file(resolved)
-                metadata.update(
-                    {
-                        "num_features": len(gdf),
-                        "columns": list(gdf.columns),
-                        "geometry_types": list(gdf.geometry.geom_type.unique()),
-                        "crs": str(gdf.crs) if gdf.crs else None,
-                        "bounds": gdf.total_bounds.tolist() if len(gdf) > 0 else None,
-                    }
-                )
-                result["valid"] = True
-            except Exception as exc:
-                result["error"] = f"Failed to read Shapefile: {exc}"
-        else:
-            # Without geopandas we can only do the sidecar check.
+        try:
+            gdf = gpd.read_file(resolved)
+            metadata.update(
+                {
+                    "num_features": len(gdf),
+                    "columns": list(gdf.columns),
+                    "geometry_types": list(gdf.geometry.geom_type.unique()),
+                    "crs": str(gdf.crs) if gdf.crs else None,
+                    "bounds": gdf.total_bounds.tolist() if len(gdf) > 0 else None,
+                }
+            )
             result["valid"] = True
+        except Exception as exc:
+            result["error"] = f"Failed to read Shapefile: {exc}"
 
         result["metadata"] = metadata
         return result
@@ -467,33 +417,19 @@ class GeoTIFFHandler(FormatHandler):
     def format_name(self) -> str:
         return "GeoTIFF"
 
-    def can_handle(self, path: Union[str, Path]) -> bool:
+    def can_handle(self, path: str | Path) -> bool:
         return self._match_extension(path)
 
     # -- internal helpers ---------------------------------------------------
 
-    @staticmethod
-    def _require_rasterio() -> None:
-        if not HAS_RASTERIO:
-            raise ImportError(
-                "rasterio is required to handle GeoTIFF files. "
-                "Install it with: pip install rasterio"
-            )
-
     def _get_write_profile(
         self, data: Any, path: Path, **kwargs: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build a rasterio write profile from *data* and *kwargs*.
 
         Subclasses (e.g. ``COGHandler``) override this method to inject
         format-specific profile options.
         """
-        if not HAS_NUMPY:
-            raise ImportError(
-                "numpy is required to write GeoTIFF files. "
-                "Install it with: pip install numpy"
-            )
-
         # Accept either a raw numpy array or a dict with 'data' and optional
         # metadata keys that mirror a rasterio dataset.
         if isinstance(data, dict):
@@ -513,7 +449,7 @@ class GeoTIFFHandler(FormatHandler):
         else:
             raise ValueError(f"Expected 2-D or 3-D array, got shape {arr.shape}")
 
-        profile: Dict[str, Any] = {
+        profile: dict[str, Any] = {
             "driver": "GTiff",
             "dtype": str(arr.dtype),
             "width": width,
@@ -527,7 +463,7 @@ class GeoTIFFHandler(FormatHandler):
 
     # -- public interface ---------------------------------------------------
 
-    def read(self, path: Union[str, Path], **kwargs: Any) -> Any:
+    def read(self, path: str | Path, **kwargs: Any) -> Any:
         """Read a GeoTIFF into a dictionary of array + metadata.
 
         Args:
@@ -539,12 +475,11 @@ class GeoTIFFHandler(FormatHandler):
             ``'crs'``, ``'transform'``, ``'bounds'``, ``'count'``,
             ``'width'``, ``'height'``, ``'dtype'``, and ``'nodata'``.
         """
-        self._require_rasterio()
 
         resolved = self._ensure_file_exists(path)
         logger.info("Reading GeoTIFF file: %s", resolved)
 
-        bands: Optional[Union[int, List[int]]] = kwargs.pop("bands", None)
+        bands: int | list[int] | None = kwargs.pop("bands", None)
 
         try:
             with rasterio.open(resolved, "r", **kwargs) as src:
@@ -577,7 +512,7 @@ class GeoTIFFHandler(FormatHandler):
             logger.exception("Failed to read GeoTIFF: %s", resolved)
             raise
 
-    def write(self, data: Any, path: Union[str, Path], **kwargs: Any) -> None:
+    def write(self, data: Any, path: str | Path, **kwargs: Any) -> None:
         """Write raster data to a GeoTIFF file.
 
         *data* may be a numpy array (2-D single-band or 3-D multi-band
@@ -590,7 +525,6 @@ class GeoTIFFHandler(FormatHandler):
             **kwargs: Additional profile options (``crs``, ``transform``,
                 ``compress``, etc.).
         """
-        self._require_rasterio()
 
         resolved = self._ensure_parent_dir(path)
         logger.info("Writing GeoTIFF file: %s", resolved)
@@ -609,7 +543,7 @@ class GeoTIFFHandler(FormatHandler):
             logger.exception("Failed to write GeoTIFF: %s", resolved)
             raise
 
-    def validate(self, path: Union[str, Path]) -> Dict[str, Any]:
+    def validate(self, path: str | Path) -> dict[str, Any]:
         result = self._base_validation_result()
         result["format"] = self.format_name
 
@@ -617,13 +551,6 @@ class GeoTIFFHandler(FormatHandler):
             resolved = self._ensure_file_exists(path)
         except FileNotFoundError as exc:
             result["error"] = str(exc)
-            return result
-
-        if not HAS_RASTERIO:
-            result["error"] = (
-                "rasterio is required to validate GeoTIFF files. "
-                "Install it with: pip install rasterio"
-            )
             return result
 
         try:
@@ -666,7 +593,7 @@ class COGHandler(GeoTIFFHandler):
 
     def _get_write_profile(
         self, data: Any, path: Path, **kwargs: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build a COG-oriented write profile.
 
         Defaults to LZW compression, 256x256 internal tiling, and the
@@ -676,7 +603,7 @@ class COGHandler(GeoTIFFHandler):
         profile = super()._get_write_profile(data, path, **kwargs)
 
         # Apply COG-friendly defaults (caller can override via kwargs).
-        cog_defaults: Dict[str, Any] = {
+        cog_defaults: dict[str, Any] = {
             "driver": "GTiff",
             "tiled": True,
             "blockxsize": 256,
@@ -689,7 +616,7 @@ class COGHandler(GeoTIFFHandler):
 
         return profile
 
-    def write(self, data: Any, path: Union[str, Path], **kwargs: Any) -> None:
+    def write(self, data: Any, path: str | Path, **kwargs: Any) -> None:
         """Write raster data as a Cloud-Optimized GeoTIFF.
 
         After writing the base tiles this method generates internal
@@ -705,9 +632,8 @@ class COGHandler(GeoTIFFHandler):
                 (str, default ``'nearest'``) to control overview
                 generation.
         """
-        self._require_rasterio()
 
-        overview_levels: List[int] = kwargs.pop("overview_levels", [2, 4, 8, 16])
+        overview_levels: list[int] = kwargs.pop("overview_levels", [2, 4, 8, 16])
         overview_resampling: str = kwargs.pop("overview_resampling", "nearest")
 
         resolved = self._ensure_parent_dir(path)
@@ -737,7 +663,7 @@ class COGHandler(GeoTIFFHandler):
             logger.exception("Failed to write COG: %s", resolved)
             raise
 
-    def validate(self, path: Union[str, Path]) -> Dict[str, Any]:
+    def validate(self, path: str | Path) -> dict[str, Any]:
         result = super().validate(path)
 
         if not result["valid"]:
@@ -783,7 +709,7 @@ class LASHandler(FormatHandler):
     def format_name(self) -> str:
         return "LAS/LAZ"
 
-    def can_handle(self, path: Union[str, Path]) -> bool:
+    def can_handle(self, path: str | Path) -> bool:
         return self._match_extension(path)
 
     @staticmethod
@@ -794,7 +720,7 @@ class LASHandler(FormatHandler):
                 "Install it with: pip install laspy[lazrs]"
             )
 
-    def read(self, path: Union[str, Path], **kwargs: Any) -> Any:
+    def read(self, path: str | Path, **kwargs: Any) -> Any:
         """Read a LAS/LAZ file.
 
         Args:
@@ -817,7 +743,7 @@ class LASHandler(FormatHandler):
             logger.exception("Failed to read LAS file: %s", resolved)
             raise
 
-    def write(self, data: Any, path: Union[str, Path], **kwargs: Any) -> None:
+    def write(self, data: Any, path: str | Path, **kwargs: Any) -> None:
         """Write point cloud data to a LAS/LAZ file.
 
         Args:
@@ -859,7 +785,7 @@ class LASHandler(FormatHandler):
             logger.exception("Failed to write LAS file: %s", resolved)
             raise
 
-    def validate(self, path: Union[str, Path]) -> Dict[str, Any]:
+    def validate(self, path: str | Path) -> dict[str, Any]:
         result = self._base_validation_result()
         result["format"] = self.format_name
 
@@ -932,7 +858,7 @@ class NetCDFHandler(FormatHandler):
     def format_name(self) -> str:
         return "NetCDF"
 
-    def can_handle(self, path: Union[str, Path]) -> bool:
+    def can_handle(self, path: str | Path) -> bool:
         return self._match_extension(path)
 
     @staticmethod
@@ -943,7 +869,7 @@ class NetCDFHandler(FormatHandler):
                 "Install it with: pip install xarray netcdf4"
             )
 
-    def read(self, path: Union[str, Path], **kwargs: Any) -> Any:
+    def read(self, path: str | Path, **kwargs: Any) -> Any:
         """Read a NetCDF file into an ``xarray.Dataset``.
 
         Args:
@@ -970,7 +896,7 @@ class NetCDFHandler(FormatHandler):
             logger.exception("Failed to read NetCDF file: %s", resolved)
             raise
 
-    def write(self, data: Any, path: Union[str, Path], **kwargs: Any) -> None:
+    def write(self, data: Any, path: str | Path, **kwargs: Any) -> None:
         """Write an ``xarray.Dataset`` to a NetCDF file.
 
         Args:
@@ -995,7 +921,7 @@ class NetCDFHandler(FormatHandler):
             logger.exception("Failed to write NetCDF file: %s", resolved)
             raise
 
-    def validate(self, path: Union[str, Path]) -> Dict[str, Any]:
+    def validate(self, path: str | Path) -> dict[str, Any]:
         result = self._base_validation_result()
         result["format"] = self.format_name
 
@@ -1052,7 +978,7 @@ class NetCDFHandler(FormatHandler):
 # ---------------------------------------------------------------------------
 
 # Ordered list of all built-in handlers (most specific first).
-_BUILTIN_HANDLERS: List[FormatHandler] = [
+_BUILTIN_HANDLERS: list[FormatHandler] = [
     COGHandler(),
     GeoTIFFHandler(),
     GeoJSONHandler(),
@@ -1062,7 +988,7 @@ _BUILTIN_HANDLERS: List[FormatHandler] = [
 ]
 
 
-def get_handler_for_path(path: Union[str, Path]) -> Optional[FormatHandler]:
+def get_handler_for_path(path: str | Path) -> FormatHandler | None:
     """Return the first registered handler that can process *path*.
 
     Args:
@@ -1078,13 +1004,13 @@ def get_handler_for_path(path: Union[str, Path]) -> Optional[FormatHandler]:
     return None
 
 
-def list_supported_formats() -> Dict[str, List[str]]:
+def list_supported_formats() -> dict[str, list[str]]:
     """Return a mapping of format names to their supported extensions.
 
     Returns:
         Dictionary keyed by ``format_name`` with lists of extensions.
     """
-    formats: Dict[str, List[str]] = {}
+    formats: dict[str, list[str]] = {}
     for handler in _BUILTIN_HANDLERS:
         formats[handler.format_name] = list(handler.extensions)
     return formats

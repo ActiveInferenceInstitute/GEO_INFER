@@ -13,6 +13,7 @@ Integration workspace within `GEO-INFER-TEST`.
 - `test_h3_space_time_bayes_risk_act_composition.py`
 - `test_module_imports.py`
 - `test_sec_api_app_security.py`
+- `test_space_time_composition_contract.py`
 - `test_space_time_data_integration.py`
 
 ## Public Interface
@@ -23,8 +24,8 @@ Integration workspace within `GEO-INFER-TEST`.
 
 - Module: `GEO-INFER-TEST`
 - Package: `geo_infer_test`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-TEST`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-test`
 - Tests: `uv run python -m pytest GEO-INFER-TEST/tests/integration`
 
 ## Dependencies
@@ -50,7 +51,7 @@ Integration workspace within `GEO-INFER-TEST`.
 ## Validation
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python -m pytest GEO-INFER-TEST/tests/integration
 ```
 

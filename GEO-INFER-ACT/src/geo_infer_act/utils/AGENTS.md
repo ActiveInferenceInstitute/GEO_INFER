@@ -23,6 +23,7 @@
 
 - `__init__.py`
 - `analysis.py`
+- `bayeux_backend.py`
 - `config.py`
 - `flow_network_visualization.py`
 - `h3_adapter.py`

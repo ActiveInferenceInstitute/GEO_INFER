@@ -5,7 +5,7 @@ anomaly alert handlers for GEO-INFER-TIME's StreamProcessor.
 """
 
 import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 from geo_infer_time.core.stream_processing import (
     StreamProcessor,
@@ -21,7 +21,7 @@ def _ts(base, seconds_offset):
     return base + timedelta(seconds=seconds_offset)
 
 
-BASE_TIME = datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+BASE_TIME = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
 
 
 # ===================================================================
@@ -41,16 +41,16 @@ class TestStreamIngestAdapter:
 
     def test_parse_iso_datetime_record(self):
         adapter = ReplayIngestAdapter([])
-        record = {"timestamp": "2024-01-01T00:00:00", "value": 42.5, "sensor": "a"}
+        record = {"timestamp": "2024-01-01T00:00:00Z", "value": 42.5, "sensor": "a"}
         ts, value, meta = adapter.parse_record(record)
-        assert ts == datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        assert ts == datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
         assert value == 42.5
         assert meta == {"sensor": "a"}
 
     def test_parse_json_string_record(self):
         adapter = ReplayIngestAdapter([])
         ts, value, meta = adapter.parse_record(
-            '{"timestamp":"2024-01-01T00:00:00","value":7}'
+            '{"timestamp":"2024-01-01T00:00:00Z","value":7}'
         )
         assert value == 7.0
         assert meta == {}
@@ -58,13 +58,13 @@ class TestStreamIngestAdapter:
     def test_parse_bytes_record(self):
         adapter = ReplayIngestAdapter([])
         ts, value, meta = adapter.parse_record(
-            b'{"timestamp":"2024-01-01T00:00:00","value":3.0}'
+            b'{"timestamp":"2024-01-01T00:00:00Z","value":3.0}'
         )
         assert value == 3.0
 
     def test_parse_nested_data_value(self):
         adapter = ReplayIngestAdapter([])
-        record = {"timestamp": "2024-01-01T00:00:00", "data": {"measurement": 11.0}}
+        record = {"timestamp": "2024-01-01T00:00:00Z", "data": {"measurement": 11.0}}
         ts, value, meta = adapter.parse_record(record)
         assert value == 11.0
 
@@ -76,7 +76,7 @@ class TestStreamIngestAdapter:
     def test_parse_missing_value_closes_base(self):
         adapter = ReplayIngestAdapter([])
         with pytest.raises(ValueError):
-            adapter.parse_record({"timestamp": "2024-01-01T00:00:00"})
+            adapter.parse_record({"timestamp": "2024-01-01T00:00:00Z"})
 
     def test_parse_invalid_type_raises(self):
         adapter = ReplayIngestAdapter([])
@@ -140,7 +140,11 @@ class TestReplayIngest:
         processor = StreamProcessor(window_size=timedelta(minutes=1))
         records = [{"timestamp": index, "value": index} for index in range(3)]
         assert (
-            asyncio_run(processor.ingest_adapter_stream(ReplayIngestAdapter(records)))
+            asyncio_run(
+                processor.ingest_adapter_stream(
+                    ReplayIngestAdapter(records, {"timestamp_unit": "s"})
+                )
+            )
             == 3
         )
         assert processor.get_stats()["total_points"] == 3
@@ -150,7 +154,8 @@ class TestReplayIngest:
         records = [{"timestamp": index, "value": index} for index in range(2)]
         asyncio_run(
             processor.ingest_adapter_stream(
-                ReplayIngestAdapter(records), auto_process_windows=True
+                ReplayIngestAdapter(records, {"timestamp_unit": "s"}),
+                auto_process_windows=True,
             )
         )
         assert processor.get_stats()["total_windows"] == 2
@@ -351,7 +356,9 @@ def test_real_websocket_normalizes_records_and_injected_adapter_owns_url():
 
         async with serve(handler, "127.0.0.1", 0) as server:
             port = server.sockets[0].getsockname()[1]
-            adapter = WebSocketIngestAdapter({"url": f"ws://127.0.0.1:{port}"})
+            adapter = WebSocketIngestAdapter(
+                {"url": f"ws://127.0.0.1:{port}", "timestamp_unit": "s"}
+            )
             records = [record async for record in adapter.stream_data()]
             assert [record["value"] for record in records] == [0.0, 1.0, 2.0]
             assert [record["sensor"] for record in records] == ["ws-0", "ws-1", "ws-2"]

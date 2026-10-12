@@ -1,6 +1,5 @@
 """CRM specific data models."""
 
-from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -9,32 +8,32 @@ class InteractionLog(BaseModel):
     timestamp: datetime = datetime.now()
     channel: str  # e.g., "email", "call", "meeting"
     summary: str
-    agent_id: Optional[str] = None
+    agent_id: str | None = None
 
 
 class Address(BaseModel):
-    street: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    postal_code: Optional[str] = None
-    country: Optional[str] = None
+    street: str | None = None
+    city: str | None = None
+    state: str | None = None
+    postal_code: str | None = None
+    country: str | None = None
 
 
 class Customer(BaseModel):
     customer_id: str
-    first_name: Optional[str] = None
+    first_name: str | None = None
     last_name: str
-    email: Optional[str] = None
-    phone_number: Optional[str] = None
-    company: Optional[str] = None
-    job_title: Optional[str] = None
-    address: Optional[Address] = None
+    email: str | None = None
+    phone_number: str | None = None
+    company: str | None = None
+    job_title: str | None = None
+    address: Address | None = None
     created_at: datetime = datetime.now()
     updated_at: datetime = datetime.now()
-    source: Optional[str] = None  # e.g., "website_form", "referral", "cold_outreach"
-    status: Optional[str] = "active"  # e.g., "lead", "active_customer", "churned"
-    tags: List[str] = []
-    interaction_history: List[InteractionLog] = []
-    website: Optional[str] = None
-    linkedin_profile: Optional[str] = None
-    notes: Optional[str] = None
+    source: str | None = None  # e.g., "website_form", "referral", "cold_outreach"
+    status: str | None = "active"  # e.g., "lead", "active_customer", "churned"
+    tags: list[str] = []
+    interaction_history: list[InteractionLog] = []
+    website: str | None = None
+    linkedin_profile: str | None = None
+    notes: str | None = None

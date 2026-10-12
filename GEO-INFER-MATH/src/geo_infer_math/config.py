@@ -5,7 +5,7 @@ This module provides configuration management for various
 mathematical operations and backends.
 """
 
-from typing import Dict, Any, Optional
+from typing import Any
 import logging
 import os
 
@@ -25,7 +25,7 @@ class MathConfig:
 
     def __init__(self) -> None:
         """Initialize configuration with defaults."""
-        self._config: Dict[str, Dict[str, Any]] = {
+        self._config: dict[str, dict[str, Any]] = {
             "theorem_proving": {
                 "backend": "z3",
                 "timeout": 10.0,
@@ -78,7 +78,7 @@ class MathConfig:
                 parallel.lower() == "true"
             )
 
-    def get(self, section: str, key: Optional[str] = None) -> Any:
+    def get(self, section: str, key: str | None = None) -> Any:
         """
         Get configuration value.
 
@@ -107,7 +107,7 @@ class MathConfig:
         self._config[section][key] = value
         logger.debug(f"Set config: {section}.{key} = {value}")
 
-    def update(self, section: str, values: Dict[str, Any]) -> None:
+    def update(self, section: str, values: dict[str, Any]) -> None:
         """
         Update configuration section.
 
@@ -119,7 +119,7 @@ class MathConfig:
             self._config[section] = {}
         self._config[section].update(values)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Get full configuration as dictionary.
 

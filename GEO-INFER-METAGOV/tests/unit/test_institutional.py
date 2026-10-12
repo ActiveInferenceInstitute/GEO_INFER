@@ -1,10 +1,6 @@
 """Unit tests for institutional design and analysis."""
 
 import pytest
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../src"))
 
 from geo_infer_metagov.core.institutional import (
     InstitutionalDesigner,
@@ -76,10 +72,7 @@ class TestInstitutionalDesigner:
         )
 
         assert len(analysis.institutional_effectiveness) > 0
-        for (
-            institution_id,
-            effectiveness,
-        ) in analysis.institutional_effectiveness.items():
+        for effectiveness in analysis.institutional_effectiveness.values():
             assert 0 <= effectiveness <= 1.0
 
     def test_design_principles_assessment(self, designer, institutions, stakeholders):
@@ -123,7 +116,7 @@ class TestInstitutionalDesigner:
             governance_context={},
         )
 
-        for principle_name, principle_design in design["governance_design"].items():
+        for principle_design in design["governance_design"].values():
             assert "description" in principle_design
             assert "implementation_strategy" in principle_design
             assert "expected_outcomes" in principle_design

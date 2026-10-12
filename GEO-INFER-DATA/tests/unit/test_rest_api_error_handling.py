@@ -7,7 +7,7 @@ datasets to HTTP 404, and any other escaping exception to a generic
 HTTP 500 ``INTERNAL_ERROR`` body produced by ``ErrorHandlerMiddleware``.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
@@ -18,7 +18,7 @@ from geo_infer_data.api.rest_api import DataAPI
 class _StubService:
     """Stub replacing a DataAPI service whose call raises or returns."""
 
-    def __init__(self, result: Any = None, exc: Optional[Exception] = None) -> None:
+    def __init__(self, result: Any = None, exc: Exception | None = None) -> None:
         self._result = result
         self._exc = exc
 
@@ -37,7 +37,7 @@ class _StubService:
         return self._result
 
 
-def _client(stubs: Dict[str, Any]) -> TestClient:
+def _client(stubs: dict[str, Any]) -> TestClient:
     """Build a DataAPI-backed TestClient with stubbed core services."""
     api = DataAPI()
     for attr, service in stubs.items():

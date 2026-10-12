@@ -8,21 +8,15 @@ https://www.analyticsvidhya.com/blog/2025/03/ubers-h3-for-spatial-indexing/
 
 import logging
 import math
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Any
 from datetime import datetime
 from .core import H3Grid, H3Cell
 
+import h3
 import numpy as np
+from geo_infer_time import normalize_datetime_index
 
 logger = logging.getLogger(__name__)
-
-try:
-    import h3
-
-    H3_AVAILABLE = True
-except ImportError:
-    H3_AVAILABLE = False
-    logger.warning("h3-py package not available. Install with 'uv pip install h3'")
 
 
 class H3MLFeatureEngine:
@@ -45,7 +39,7 @@ class H3MLFeatureEngine:
 
     def create_spatial_features(
         self, target_column: str, neighbor_rings: int = 2
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create spatial features for machine learning models.
 
@@ -64,15 +58,18 @@ class H3MLFeatureEngine:
             >>> features = engine.create_spatial_features('demand', neighbor_rings=2)
             >>> print(f"Created features for {len(features['features'])} cells")
         """
+        from ...core.spatial_methods import SpatialMethods
+
+        SpatialMethods._integer(neighbor_rings, "neighbor_rings")
         if not self.grid.cells:
             return {"error": "No cells in grid"}
 
         features = []
 
         for cell in self.grid.cells:
-            if target_column not in cell.properties:
+            if cell.properties.get(target_column) is None:
                 continue
-
+            SpatialMethods._number(cell.properties[target_column], "target value")
             cell_features = self._extract_cell_features(
                 cell, target_column, neighbor_rings
             )
@@ -88,7 +85,7 @@ class H3MLFeatureEngine:
 
     def _extract_cell_features(
         self, cell: H3Cell, target_column: str, neighbor_rings: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Extract features for a single cell.
 
@@ -107,22 +104,17 @@ class H3MLFeatureEngine:
         }
 
         # Basic cell properties
-        try:
-            if H3_AVAILABLE:
-                # Cell area and geometry features
-                features["cell_area_km2"] = h3.cell_area(cell.index, "km^2")
-                features["cell_area_m2"] = h3.cell_area(cell.index, "m^2")
+        features["cell_area_km2"] = h3.cell_area(cell.index, "km^2")
+        features["cell_area_m2"] = h3.cell_area(cell.index, "m^2")
 
-                # Cell coordinates
-                lat, lng = h3.cell_to_latlng(cell.index)
-                features["cell_lat"] = lat
-                features["cell_lng"] = lng
+        # Cell coordinates
+        lat, lng = h3.cell_to_latlng(cell.index)
+        features["cell_lat"] = lat
+        features["cell_lng"] = lng
 
-                # Distance from equator and prime meridian
-                features["distance_from_equator"] = abs(lat)
-                features["distance_from_prime_meridian"] = abs(lng)
-        except Exception as e:
-            logger.warning(f"Failed to extract basic features for {cell.index}: {e}")
+        # Distance from equator and prime meridian
+        features["distance_from_equator"] = abs(lat)
+        features["distance_from_prime_meridian"] = abs(lng)
 
         # Neighbor-based features
         neighbor_features = self._extract_neighbor_features(
@@ -139,7 +131,7 @@ class H3MLFeatureEngine:
 
     def _extract_neighbor_features(
         self, cell: H3Cell, target_column: str, neighbor_rings: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Extract neighbor-based features.
 
@@ -153,84 +145,60 @@ class H3MLFeatureEngine:
         """
         neighbor_features = {}
 
-        try:
-            if H3_AVAILABLE:
-                # Get neighbors at different ring distances
-                for ring in range(1, neighbor_rings + 1):
-                    ring_cells = h3.grid_ring(cell.index, ring)
+        for ring in range(1, neighbor_rings + 1):
+            ring_cells = h3.grid_ring(cell.index, ring)
 
-                    # Find corresponding cells in grid
-                    ring_values = []
-                    for ring_cell_idx in ring_cells:
-                        for grid_cell in self.grid.cells:
-                            if grid_cell.index == ring_cell_idx:
-                                if target_column in grid_cell.properties:
-                                    ring_values.append(
-                                        grid_cell.properties[target_column]
-                                    )
-                                break
+            # Find corresponding cells in grid
+            ring_values = []
+            for ring_cell_idx in ring_cells:
+                for grid_cell in self.grid.cells:
+                    if grid_cell.index == ring_cell_idx:
+                        if grid_cell.properties.get(target_column) is not None:
+                            ring_values.append(grid_cell.properties[target_column])
+                        break
 
-                    if ring_values:
-                        neighbor_features[f"ring_{ring}_mean"] = float(
-                            np.mean(ring_values)
-                        )
-                        neighbor_features[f"ring_{ring}_std"] = float(
-                            np.std(ring_values)
-                        )
-                        neighbor_features[f"ring_{ring}_max"] = float(
-                            np.max(ring_values)
-                        )
-                        neighbor_features[f"ring_{ring}_min"] = float(
-                            np.min(ring_values)
-                        )
+            if ring_values:
+                neighbor_features[f"ring_{ring}_mean"] = float(np.mean(ring_values))
+                neighbor_features[f"ring_{ring}_std"] = float(np.std(ring_values))
+                neighbor_features[f"ring_{ring}_max"] = float(np.max(ring_values))
+                neighbor_features[f"ring_{ring}_min"] = float(np.min(ring_values))
 
-                        neighbor_features[f"ring_{ring}_count"] = len(ring_values)
-                    else:
-                        # No neighbors found at this ring
-                        neighbor_features[f"ring_{ring}_mean"] = 0.0
-                        neighbor_features[f"ring_{ring}_std"] = 0.0
-                        neighbor_features[f"ring_{ring}_max"] = 0.0
-                        neighbor_features[f"ring_{ring}_min"] = 0.0
-                        neighbor_features[f"ring_{ring}_count"] = 0
+                neighbor_features[f"ring_{ring}_count"] = len(ring_values)
+            else:
+                # No neighbors found at this ring
+                neighbor_features[f"ring_{ring}_mean"] = float("nan")
+                neighbor_features[f"ring_{ring}_std"] = float("nan")
+                neighbor_features[f"ring_{ring}_max"] = float("nan")
+                neighbor_features[f"ring_{ring}_min"] = float("nan")
+                neighbor_features[f"ring_{ring}_count"] = 0
 
-                # Overall neighbor statistics
-                all_neighbor_values = []
-                all_neighbors = list(h3.grid_disk(cell.index, neighbor_rings))
-                if cell.index in all_neighbors:
-                    all_neighbors.remove(cell.index)  # Remove self
+        # Overall neighbor statistics
+        all_neighbor_values = []
+        all_neighbors = list(h3.grid_disk(cell.index, neighbor_rings))
+        if cell.index in all_neighbors:
+            all_neighbors.remove(cell.index)  # Remove self
 
-                for neighbor_idx in all_neighbors:
-                    for grid_cell in self.grid.cells:
-                        if grid_cell.index == neighbor_idx:
-                            if target_column in grid_cell.properties:
-                                all_neighbor_values.append(
-                                    grid_cell.properties[target_column]
-                                )
-                            break
+        for neighbor_idx in all_neighbors:
+            for grid_cell in self.grid.cells:
+                if grid_cell.index == neighbor_idx:
+                    if grid_cell.properties.get(target_column) is not None:
+                        all_neighbor_values.append(grid_cell.properties[target_column])
+                    break
 
-                if all_neighbor_values:
-                    neighbor_features["neighbor_density"] = (
-                        len(all_neighbor_values) / len(all_neighbors)
-                        if all_neighbors
-                        else 0
-                    )
-                    neighbor_features["neighbor_total"] = float(
-                        np.sum(all_neighbor_values)
-                    )
-                    neighbor_features["neighbor_avg"] = float(
-                        np.mean(all_neighbor_values)
-                    )
-                else:
-                    neighbor_features["neighbor_density"] = 0.0
-                    neighbor_features["neighbor_total"] = 0.0
-                    neighbor_features["neighbor_avg"] = 0.0
-
-        except Exception as e:
-            logger.warning(f"Failed to extract neighbor features for {cell.index}: {e}")
+        if all_neighbor_values:
+            neighbor_features["neighbor_density"] = (
+                len(all_neighbor_values) / len(all_neighbors) if all_neighbors else 0
+            )
+            neighbor_features["neighbor_total"] = float(np.sum(all_neighbor_values))
+            neighbor_features["neighbor_avg"] = float(np.mean(all_neighbor_values))
+        else:
+            neighbor_features["neighbor_density"] = 0.0
+            neighbor_features["neighbor_total"] = 0.0
+            neighbor_features["neighbor_avg"] = float("nan")
 
         return neighbor_features
 
-    def _extract_temporal_features(self, cell: H3Cell) -> Dict[str, Any]:
+    def _extract_temporal_features(self, cell: H3Cell) -> dict[str, Any]:
         """
         Extract temporal features from cell timestamp.
 
@@ -240,76 +208,46 @@ class H3MLFeatureEngine:
         Returns:
             Dictionary of temporal features
         """
-        temporal_features: Dict[str, Any] = {}
+        temporal_features: dict[str, Any] = {}
 
-        try:
-            timestamp_str = str(cell.properties["timestamp"])
-            timestamp = self._parse_timestamp(timestamp_str)
+        timestamp = self._parse_timestamp(cell.properties["timestamp"])
+        if timestamp:
+            temporal_features["hour"] = timestamp.hour
+            temporal_features["day_of_week"] = timestamp.weekday()
+            temporal_features["day_of_month"] = timestamp.day
+            temporal_features["month"] = timestamp.month
+            temporal_features["quarter"] = (timestamp.month - 1) // 3 + 1
+            temporal_features["is_weekend"] = 1 if timestamp.weekday() >= 5 else 0
+            temporal_features["is_business_hour"] = (
+                1 if 9 <= timestamp.hour <= 17 else 0
+            )
+            temporal_features["is_rush_hour"] = (
+                1 if timestamp.hour in [7, 8, 9, 17, 18, 19] else 0
+            )
 
-            if timestamp:
-                temporal_features["hour"] = timestamp.hour
-                temporal_features["day_of_week"] = timestamp.weekday()
-                temporal_features["day_of_month"] = timestamp.day
-                temporal_features["month"] = timestamp.month
-                temporal_features["quarter"] = (timestamp.month - 1) // 3 + 1
-                temporal_features["is_weekend"] = 1 if timestamp.weekday() >= 5 else 0
-                temporal_features["is_business_hour"] = (
-                    1 if 9 <= timestamp.hour <= 17 else 0
-                )
-                temporal_features["is_rush_hour"] = (
-                    1 if timestamp.hour in [7, 8, 9, 17, 18, 19] else 0
-                )
-
-                # Cyclical encoding for temporal features
-                temporal_features["hour_sin"] = math.sin(
-                    2 * math.pi * timestamp.hour / 24
-                )
-                temporal_features["hour_cos"] = math.cos(
-                    2 * math.pi * timestamp.hour / 24
-                )
-                temporal_features["day_sin"] = math.sin(
-                    2 * math.pi * timestamp.weekday() / 7
-                )
-                temporal_features["day_cos"] = math.cos(
-                    2 * math.pi * timestamp.weekday() / 7
-                )
-                temporal_features["month_sin"] = math.sin(
-                    2 * math.pi * timestamp.month / 12
-                )
-                temporal_features["month_cos"] = math.cos(
-                    2 * math.pi * timestamp.month / 12
-                )
-
-        except Exception as e:
-            logger.warning(f"Failed to extract temporal features: {e}")
+            # Cyclical encoding for temporal features
+            temporal_features["hour_sin"] = math.sin(2 * math.pi * timestamp.hour / 24)
+            temporal_features["hour_cos"] = math.cos(2 * math.pi * timestamp.hour / 24)
+            temporal_features["day_sin"] = math.sin(
+                2 * math.pi * timestamp.weekday() / 7
+            )
+            temporal_features["day_cos"] = math.cos(
+                2 * math.pi * timestamp.weekday() / 7
+            )
+            temporal_features["month_sin"] = math.sin(
+                2 * math.pi * timestamp.month / 12
+            )
+            temporal_features["month_cos"] = math.cos(
+                2 * math.pi * timestamp.month / 12
+            )
 
         return temporal_features
 
-    def _parse_timestamp(self, timestamp_str: str) -> Optional[datetime]:
-        """Parse timestamp string into datetime object."""
-        try:
-            # Try common timestamp formats
-            formats = [
-                "%Y-%m-%d %H:%M:%S",
-                "%Y-%m-%d %H:%M:%S.%f",
-                "%Y-%m-%dT%H:%M:%S",
-                "%Y-%m-%dT%H:%M:%S.%f",
-                "%Y-%m-%d",
-            ]
+    def _parse_timestamp(self, timestamp: datetime | str) -> datetime:
+        """Require an aware instant and normalize features to UTC."""
+        return normalize_datetime_index([timestamp])[0]
 
-            for fmt in formats:
-                try:
-                    return datetime.strptime(timestamp_str, fmt)
-                except ValueError:
-                    continue
-
-            # Try parsing as ISO format
-            return datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
-
-        except Exception:
-            return None
-
-    def _get_feature_names(self, neighbor_rings: int) -> List[str]:
+    def _get_feature_names(self, neighbor_rings: int) -> list[str]:
         """Get list of feature names."""
         feature_names = [
             "cell_index",
@@ -360,7 +298,7 @@ class H3MLFeatureEngine:
 
     def create_demand_forecasting_features(
         self, demand_column: str, time_column: str = "timestamp"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create features specifically for demand forecasting models.
 
@@ -428,7 +366,7 @@ class H3MLFeatureEngine:
 
     def _calculate_demand_patterns(
         self, cell: H3Cell, demand_column: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate demand pattern features."""
         patterns = {}
 
@@ -443,11 +381,8 @@ class H3MLFeatureEngine:
 
         # Demand density (demand per unit area)
         try:
-            if H3_AVAILABLE:
-                area_km2 = h3.cell_area(cell.index, "km^2")
-                patterns["demand_density"] = (
-                    demand_value / area_km2 if area_km2 > 0 else 0
-                )
+            area_km2 = h3.cell_area(cell.index, "km^2")
+            patterns["demand_density"] = demand_value / area_km2 if area_km2 > 0 else 0
         except Exception:
             patterns["demand_density"] = 0
 
@@ -455,40 +390,37 @@ class H3MLFeatureEngine:
 
     def _calculate_demand_gradients(
         self, cell: H3Cell, demand_column: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate spatial demand gradients."""
         gradients = {}
 
         try:
-            if H3_AVAILABLE:
-                cell_demand = cell.properties.get(demand_column, 0)
+            cell_demand = cell.properties.get(demand_column, 0)
 
-                # Get immediate neighbors
-                neighbors = list(h3.grid_disk(cell.index, 1))
-                if cell.index in neighbors:
-                    neighbors.remove(cell.index)
+            # Get immediate neighbors
+            neighbors = list(h3.grid_disk(cell.index, 1))
+            if cell.index in neighbors:
+                neighbors.remove(cell.index)
 
-                neighbor_demands = []
-                for neighbor_idx in neighbors:
-                    for grid_cell in self.grid.cells:
-                        if grid_cell.index == neighbor_idx:
-                            if demand_column in grid_cell.properties:
-                                neighbor_demands.append(
-                                    grid_cell.properties[demand_column]
-                                )
-                            break
+            neighbor_demands = []
+            for neighbor_idx in neighbors:
+                for grid_cell in self.grid.cells:
+                    if grid_cell.index == neighbor_idx:
+                        if demand_column in grid_cell.properties:
+                            neighbor_demands.append(grid_cell.properties[demand_column])
+                        break
 
-                if neighbor_demands:
-                    avg_neighbor_demand = sum(neighbor_demands) / len(neighbor_demands)
-                    gradients["demand_gradient"] = cell_demand - avg_neighbor_demand
-                    gradients["demand_gradient_abs"] = abs(gradients["demand_gradient"])
-                    gradients["demand_gradient_normalized"] = gradients[
-                        "demand_gradient"
-                    ] / max(1, cell_demand + avg_neighbor_demand)
-                else:
-                    gradients["demand_gradient"] = 0
-                    gradients["demand_gradient_abs"] = 0
-                    gradients["demand_gradient_normalized"] = 0
+            if neighbor_demands:
+                avg_neighbor_demand = sum(neighbor_demands) / len(neighbor_demands)
+                gradients["demand_gradient"] = cell_demand - avg_neighbor_demand
+                gradients["demand_gradient_abs"] = abs(gradients["demand_gradient"])
+                gradients["demand_gradient_normalized"] = gradients[
+                    "demand_gradient"
+                ] / max(1, cell_demand + avg_neighbor_demand)
+            else:
+                gradients["demand_gradient"] = 0
+                gradients["demand_gradient_abs"] = 0
+                gradients["demand_gradient_normalized"] = 0
         except Exception as e:
             logger.warning(f"Failed to calculate demand gradients: {e}")
             gradients["demand_gradient"] = 0
@@ -499,7 +431,7 @@ class H3MLFeatureEngine:
 
     def _calculate_supply_demand_balance(
         self, cell: H3Cell, demand_column: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate supply-demand balance indicators."""
         balance = {}
 
@@ -523,7 +455,7 @@ class H3MLFeatureEngine:
 
         return balance
 
-    def _get_demand_feature_names(self) -> List[str]:
+    def _get_demand_feature_names(self) -> list[str]:
         """Get demand forecasting feature names."""
         base_names = self._get_feature_names(3)  # 3 neighbor rings
 
@@ -567,7 +499,7 @@ class H3DisasterResponse:
         hazard_column: str,
         population_column: str = "population",
         evacuation_radius_km: float = 5.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze evacuation zones based on hazard locations.
 
@@ -631,12 +563,9 @@ class H3DisasterResponse:
 
     def _calculate_evacuation_zone(
         self, hazard_cell: H3Cell, radius_km: float, population_column: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate evacuation zone around a hazard cell."""
         try:
-            if not H3_AVAILABLE:
-                return {"error": "H3 not available"}
-
             # Estimate number of rings needed for radius
             # Approximate: each ring adds ~edge_length to radius
             cell_resolution = h3.get_resolution(hazard_cell.index)
@@ -685,8 +614,8 @@ class H3DisasterResponse:
             return {"error": str(e)}
 
     def _analyze_evacuation_capacity(
-        self, evacuation_zones: List[Dict]
-    ) -> Dict[str, Any]:
+        self, evacuation_zones: list[dict]
+    ) -> dict[str, Any]:
         """Analyze evacuation capacity and requirements."""
         total_zones = len(evacuation_zones)
         total_population = sum(zone["total_population"] for zone in evacuation_zones)
@@ -716,7 +645,7 @@ class H3DisasterResponse:
 
     def monitor_environmental_changes(
         self, baseline_column: str, current_column: str, change_threshold: float = 0.2
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Monitor environmental changes using H3 spatial analysis.
 
@@ -803,12 +732,12 @@ class H3DisasterResponse:
             "method": "H3 Environmental Change Monitoring",
         }
 
-    def _cluster_environmental_changes(self, changes: List[Dict]) -> List[Dict]:
+    def _cluster_environmental_changes(self, changes: list[dict]) -> list[dict]:
         """Cluster spatially adjacent environmental changes."""
-        if not changes or not H3_AVAILABLE:
+        if not changes:
             return []
 
-        clusters: List[Dict[str, Any]] = []
+        clusters: list[dict[str, Any]] = []
         processed_cells = set()
 
         for change in changes:
@@ -882,14 +811,14 @@ class H3PerformanceOptimizer:
 
     def __init__(self) -> None:
         """Initialize performance optimizer."""
-        self.benchmark_results: Dict[str, Any] = {}
-        self.optimization_history: List[Dict[str, Any]] = []
+        self.benchmark_results: dict[str, Any] = {}
+        self.optimization_history: list[dict[str, Any]] = []
 
     def benchmark_h3_operations(
         self,
-        test_coordinates: List[Tuple[float, float]],
-        resolutions: Optional[List[int]] = None,
-    ) -> Dict[str, Any]:
+        test_coordinates: list[tuple[float, float]],
+        resolutions: list[int] | None = None,
+    ) -> dict[str, Any]:
         """
         Benchmark H3 operations performance.
 
@@ -906,9 +835,6 @@ class H3PerformanceOptimizer:
             >>> results = optimizer.benchmark_h3_operations(coords)
             >>> print(f"Coordinate conversion: {results['coordinate_conversion']['avg_time_ms']:.2f}ms")
         """
-        if not H3_AVAILABLE:
-            return {"error": "H3 not available for benchmarking"}
-
         if resolutions is None:
             resolutions = [6, 7, 8, 9, 10]
 
@@ -978,7 +904,7 @@ class H3PerformanceOptimizer:
             "method": "H3 Performance Benchmarking",
         }
 
-    def _estimate_memory_usage(self, test_cells: List[str]) -> Dict[str, Any]:
+    def _estimate_memory_usage(self, test_cells: list[str]) -> dict[str, Any]:
         """Estimate memory usage for H3 operations."""
         import sys
 
@@ -986,7 +912,7 @@ class H3PerformanceOptimizer:
         single_cell_size = sys.getsizeof(test_cells[0]) if test_cells else 0
 
         # Estimate neighbor storage
-        if test_cells and H3_AVAILABLE:
+        if test_cells:
             neighbors = h3.grid_disk(test_cells[0], 2)
             neighbor_storage = sys.getsizeof(neighbors) + sum(
                 sys.getsizeof(cell) for cell in neighbors
@@ -1003,9 +929,9 @@ class H3PerformanceOptimizer:
     def optimize_grid_resolution(
         self,
         area_km2: float,
-        target_cells: Optional[int] = None,
+        target_cells: int | None = None,
         analysis_type: str = "general",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Recommend optimal H3 resolution for given area and analysis type.
 
@@ -1068,7 +994,7 @@ class H3PerformanceOptimizer:
     def _calculate_suitability_score(
         self,
         estimated_cells: float,
-        target_cells: Optional[int],
+        target_cells: int | None,
         analysis_type: str,
         resolution: int,
     ) -> float:

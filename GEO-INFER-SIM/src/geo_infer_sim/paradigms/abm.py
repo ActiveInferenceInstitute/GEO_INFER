@@ -6,7 +6,7 @@ systems as collections of autonomous, interacting agents.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 import numpy as np
 
@@ -24,11 +24,11 @@ class Agent:
 
     agent_id: str
     position: np.ndarray  # Spatial position [x, y] or [lon, lat]
-    properties: Dict[str, Any] = field(default_factory=dict)
+    properties: dict[str, Any] = field(default_factory=dict)
     state: str = "active"
-    neighbors: List[str] = field(default_factory=list)
+    neighbors: list[str] = field(default_factory=list)
 
-    def step(self, time: float, environment: Dict[str, Any]) -> None:
+    def step(self, time: float, environment: dict[str, Any]) -> None:
         """
         Execute one step of agent behavior.
 
@@ -65,8 +65,8 @@ class AgentBasedModel:
 
     def __init__(
         self,
-        environment: Optional[Dict[str, Any]] = None,
-        spatial_bounds: Optional[np.ndarray] = None,
+        environment: dict[str, Any] | None = None,
+        spatial_bounds: np.ndarray | None = None,
         neighbor_radius: float = 10.0,
     ) -> None:
         """
@@ -79,7 +79,7 @@ class AgentBasedModel:
             neighbor_radius: Default search radius used by step() when
                 updating agent neighbor lists
         """
-        self.agents: Dict[str, Agent] = {}
+        self.agents: dict[str, Agent] = {}
         self.environment = environment or {}
         self.spatial_bounds = spatial_bounds
         self.neighbor_radius = neighbor_radius
@@ -111,7 +111,7 @@ class AgentBasedModel:
             return True
         return False
 
-    def get_agent(self, agent_id: str) -> Optional[Agent]:
+    def get_agent(self, agent_id: str) -> Agent | None:
         """
         Get an agent by ID.
 
@@ -124,8 +124,8 @@ class AgentBasedModel:
         return self.agents.get(agent_id)
 
     def find_neighbors(
-        self, agent: Agent, radius: float, max_neighbors: Optional[int] = None
-    ) -> List[Agent]:
+        self, agent: Agent, radius: float, max_neighbors: int | None = None
+    ) -> list[Agent]:
         """
         Find neighboring agents within a radius.
 
@@ -194,7 +194,7 @@ class AgentBasedModel:
         # Update time
         self.time += time_step
 
-    def get_state(self) -> Dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         """
         Get current model state.
 

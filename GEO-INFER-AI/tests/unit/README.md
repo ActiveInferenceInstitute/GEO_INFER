@@ -17,6 +17,7 @@ Unit workspace within `GEO-INFER-AI`.
 - `test_mlflow_integration.py`
 - `test_model_evaluation.py`
 - `test_model_evaluation_coverage.py`
+- `test_permutation_ownership.py`
 - `test_rng.py`
 - `test_spatial_lag_features.py`
 - `test_spatial_predictor.py`
@@ -32,8 +33,8 @@ Unit workspace within `GEO-INFER-AI`.
 
 - Module: `GEO-INFER-AI`
 - Package: `geo_infer_ai`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-AI`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-ai`
 - Tests: `uv run python -m pytest GEO-INFER-AI/tests/unit`
 
 ## Dependencies

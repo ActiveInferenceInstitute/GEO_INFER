@@ -1,120 +1,62 @@
 # GEO-INFER-OPS: Operations
 
-> **Illustrative example notice.** This page contains historical or
-> conceptual integration sketches. Names such as `SpatialAnalyzer` and
-> domain-specific facade classes are not public GEO-INFER exports in the
-> current checkout; verify imports against each module's `src/` package
-> and use the module README/tests for executable examples.
+`GEO-INFER-OPS` owns the `geo_infer_ops` package under `GEO-INFER-OPS/src/`.
+GEO-INFER-OPS: Operations and infrastructure management for GEO-INFER framework.
 
+## Public import surface
 
-> **Explanation**: Understanding Operations in GEO-INFER
->
-> This module provides operations management and orchestration capabilities for geospatial applications, including system operations, deployment management, and operational monitoring.
+These names are exported by the current owning package:
 
-## 🎯 What is GEO-INFER-OPS?
-Note: Code examples are illustrative; see `GEO-INFER-OPS/examples` for runnable scripts.
+- `geo_infer_ops.setup_monitoring`
+- `geo_infer_ops.load_config`
+- `geo_infer_ops.get_config`
+- `geo_infer_ops.setup_testing`
+- `geo_infer_ops.Orchestrator`
+- `geo_infer_ops.Task`
+- `geo_infer_ops.TaskStatus`
+- `geo_infer_ops.DeploymentManager`
 
-### Links
-- Module README: [Module README](../../../GEO-INFER-OPS/README.md) GEO-INFER-OPS is the operations engine that provides system operations and orchestration capabilities for GEO-INFER modules. It enables:
+The small example below verifies the installed import contract. It does not infer
+scientific validity or service availability from successful imports; the owning
+regression tests exercise behavior with concrete inputs.
 
-- **System Operations**: Manage system operations and infrastructure - **Deployment Management**: Manage deployments and system configurations - **Operational Monitoring**: Monitor system performance and health - **Resource Management**: Manage computational and storage resources - **Service Orchestration**: Orchestrate services and workflows
-
-### Key Concepts
-
-#### System Operations
-The module provides system operations capabilities:
-
-```
-python from geo_infer_ops import OperationsManager # Create operations manager ops_manager = OperationsManager( operations_parameters={ 'system_monitoring': True, 'deployment_management': True, 'resource_management': True } ) # Manage operations ops_result = ops_manager.manage_operations( system_data=system_information, deployment_data=deployment_configs, resource_data=resource_allocations )
-```
- #### Deployment Management Manage system deployments:
-```
-python from geo_infer_ops.deployment import DeploymentManager # Create deployment manager deployment_manager = DeploymentManager( deployment_parameters={ 'configuration_management': True, 'service_orchestration': True, 'health_monitoring': True } ) # Manage deployments deployment_result = deployment_manager.manage_deployments( deployment_configs=system_configurations, service_data=service_definitions, health_data=health_metrics )
-```
- ## 📚 Core Features ### 1. System Orchestration **Purpose**: Coordinate and manage all GEO-INFER modules and workflows.
 ```python
- from geo_infer_ops.orchestration import WorkflowOrchestrator # Initialize workflow orchestrator orchestrator = WorkflowOrchestrator() # Define complex workflow environmental_workflow = orchestrator.define_workflow({ 'name': 'comprehensive_environmental_analysis', 'description': 'environmental monitoring and analysis pipeline', 'steps': [ { 'name': 'data_ingestion', 'module': 'DATA', 'action': 'load_environmental_data', 'parameters': { 'data_sources': ['sensors', 'satellite', 'weather'], 'time_range': 'last_30_days' } }, { 'name': 'spatial_processing', 'module': 'SPACE', 'action': 'analyze_spatial_patterns', 'dependencies': ['data_ingestion'], 'parameters': { 'analysis_type': 'clustering', 'spatial_resolution': 0.01 } }, { 'name': 'temporal_analysis', 'module': 'TIME', 'action': 'analyze_temporal_trends', 'dependencies': ['data_ingestion'], 'parameters': { 'trend_analysis': True, 'seasonal_decomposition': True } }, { 'name': 'ai_prediction', 'module': 'AI', 'action': 'predict_environmental_conditions', 'dependencies': ['spatial_processing', 'temporal_analysis'], 'parameters': { 'prediction_horizon': 7, 'confidence_intervals': True } }, { 'name': 'report_generation', 'module': 'APP', 'action': 'generate_environmental_report', 'dependencies': ['ai_prediction'], 'parameters': { 'report_format': 'pdf', 'include_visualizations': True } } ], 'error_handling': { 'retry_failed_steps': True, 'max_retries': 3, 'fallback_actions': { 'ai_prediction': 'use_simple_regression' } } }) # Execute workflow execution_result = orchestrator.execute_workflow(environmental_workflow)
+import geo_infer_ops
+from geo_infer_ops import setup_monitoring, load_config, get_config, setup_testing
+assert all(value is not None for value in (setup_monitoring, load_config, get_config, setup_testing,))
+assert geo_infer_ops.__version__ == "0.4.0"
 ```
- ### 2. System Monitoring **Purpose**: Monitor system health and performance in real-time.
-```python
- from geo_infer_ops.monitoring import SystemMonitor # Initialize system monitor monitor = SystemMonitor() # Configure monitoring metrics monitor.configure_monitoring({ 'system_metrics': { 'cpu_usage': {'threshold': 80, 'action': 'alert'}, 'memory_usage': {'threshold': 85, 'action': 'scale_up'}, 'disk_usage': {'threshold': 90, 'action': 'cleanup'}, 'network_latency': {'threshold': 100, 'action': 'optimize'} }, 'module_metrics': { 'SPACE': { 'response_time': {'threshold': 5000, 'action': 'optimize'}, 'error_rate': {'threshold': 2, 'action': 'alert'}, 'throughput': {'threshold': 1000, 'action': 'scale'} }, 'AI': { 'model_accuracy': {'threshold': 0.8, 'action': 'retrain'}, 'prediction_latency': {'threshold': 2000, 'action': 'optimize'} } }, 'business_metrics': { 'user_satisfaction': {'threshold': 0.9, 'action': 'improve'}, 'system_uptime': {'threshold': 0.99, 'action': 'maintain'} } }) # Start monitoring monitor.start_monitoring() # Get system status system_status = monitor.get_system_status() print(f"System Health: {system_status['overall_health']}") print(f"Active Alerts: {len(system_status['active_alerts'])}")
-```
- ### 3. Deployment Management **Purpose**: Manage automated deployment and scaling of GEO-INFER systems.
-```python
- from geo_infer_ops.deployment import DeploymentManager # Initialize deployment manager deployment_manager = DeploymentManager() # Define deployment configuration deployment_config = deployment_manager.define_deployment({ 'environment': 'production', 'infrastructure': { 'cloud_provider': 'aws', 'region': 'us-west-2', 'instance_type': 't3.large', 'auto_scaling': True, 'min_instances': 2, 'max_instances': 10 }, 'modules': { 'SPACE': {'replicas': 3, 'resources': {'cpu': '2', 'memory': '4Gi'}}, 'TIME': {'replicas': 2, 'resources': {'cpu': '1', 'memory': '2Gi'}}, 'AI': {'replicas': 2, 'resources': {'cpu': '4', 'memory': '8Gi', 'gpu': 1}}, 'DATA': {'replicas': 1, 'resources': {'cpu': '2', 'memory': '4Gi'}} }, 'databases': { 'postgresql': {'version': '13', 'storage': '100Gi'}, 'redis': {'version': '6', 'storage': '10Gi'} }, 'monitoring': { 'prometheus': True, 'grafana': True, 'alertmanager': True } }) # Deploy system deployment_result = deployment_manager.deploy(deployment_config) # Scale system scaling_result = deployment_manager.scale({ 'module': 'AI', 'replicas': 4, 'reason': 'high_prediction_demand' })
-```
- ### 4. Performance Optimization **Purpose**: Optimize system performance and resource utilization.
-```
-python from geo_infer_ops.optimization import PerformanceOptimizer # Initialize performance optimizer optimizer = PerformanceOptimizer() # Analyze system performance performance_analysis = optimizer.analyze_performance({ 'time_range': 'last_24_hours', 'metrics': ['cpu_usage', 'memory_usage', 'response_time', 'throughput'], 'modules': ['SPACE', 'TIME', 'AI', 'DATA'] }) # Generate optimization recommendations recommendations = optimizer.generate_recommendations(performance_analysis) # Apply optimizations optimization_result = optimizer.apply_optimizations({ 'database_optimization': { 'query_optimization': True, 'index_creation': True, 'connection_pooling': True }, 'caching_strategy': { 'redis_caching': True, 'cache_ttl': 3600, 'cache_invalidation': 'smart' }, 'load_balancing': { 'algorithm': 'least_connections', 'health_checks': True, 'session_affinity': True } })
-```
- ### 5. Infrastructure Management **Purpose**: Manage cloud and on-premises infrastructure.
-```
-python from geo_infer_ops.infrastructure import InfrastructureManager # Initialize infrastructure manager infra_manager = InfrastructureManager() # Provision infrastructure infrastructure = infra_manager.provision_infrastructure({ 'cloud_provider': 'aws', 'region': 'us-west-2', 'vpc': { 'cidr': '10.0.0.0/16', 'subnets': [ {'cidr': '10.0.1.0/24', 'availability_zone': 'us-west-2a'}, {'cidr': '10.0.2.0/24', 'availability_zone': 'us-west-2b'} ] }, 'compute': { 'instance_type': 't3.large', 'auto_scaling_group': True, 'load_balancer': True }, 'storage': { 's3_bucket': 'geo-infer-data', 'efs_volume': '100Gi', 'backup_strategy': 'daily' }, 'security': { 'vpc_endpoints': True, 'encryption_at_rest': True, 'encryption_in_transit': True } }) # Monitor infrastructure costs cost_analysis = infra_manager.analyze_costs({ 'time_range': 'last_month', 'breakdown_by_service': True, 'cost_optimization_recommendations': True })
-```
- ## 🔧 API Reference ### OperationsManager The main operations management class.
-```
-python class OperationsManager: def __init__(self, config=None): """ Initialize operations manager. Args: config (dict): Operations configuration """ def define_workflow(self, workflow_config): """Define a workflow.""" def execute_workflow(self, workflow): """Execute a workflow.""" def monitor_system_health(self, metrics): """Monitor system health.""" def deploy_system(self, deployment_config): """Deploy the system."""
-```
- ### WorkflowOrchestrator Workflow orchestration and management.
-```
-python class WorkflowOrchestrator: def __init__(self): """Initialize workflow orchestrator.""" def define_workflow(self, workflow_config): """Define a workflow.""" def execute_workflow(self, workflow): """Execute a workflow.""" def monitor_workflow(self, workflow_id): """Monitor workflow execution.""" def handle_workflow_errors(self, workflow_id, error): """Handle workflow errors."""
-```
- ### SystemMonitor System monitoring and alerting.
-```
-python class SystemMonitor: def __init__(self): """Initialize system monitor.""" def configure_monitoring(self, monitoring_config): """Configure monitoring metrics.""" def start_monitoring(self): """Start system monitoring.""" def get_system_status(self): """Get current system status.""" def configure_alerts(self, alert_config): """Configure alerting rules."""
-```
- ## 🎯 Use Cases ### 1. Environmental Monitoring Pipeline **Problem**: Orchestrate complex environmental monitoring workflows. **Solution**: Use operations management for automated environmental analysis.
-```
-python from geo_infer_ops.orchestration import WorkflowOrchestrator from geo_infer_ops.monitoring import SystemMonitor # Initialize operations components orchestrator = WorkflowOrchestrator() monitor = SystemMonitor() # Define environmental monitoring workflow env_workflow = orchestrator.define_workflow({ 'name': 'environmental_monitoring_pipeline', 'schedule': 'hourly', 'steps': [ { 'name': 'sensor_data_collection', 'module': 'IOT', 'action': 'collect_sensor_data', 'timeout': 300 }, { 'name': 'data_validation', 'module': 'DATA', 'action': 'validate_sensor_data', 'dependencies': ['sensor_data_collection'] }, { 'name': 'spatial_analysis', 'module': 'SPACE', 'action': 'analyze_spatial_patterns', 'dependencies': ['data_validation'] }, { 'name': 'anomaly_detection', 'module': 'AI', 'action': 'detect_environmental_anomalies', 'dependencies': ['spatial_analysis'] }, { 'name': 'alert_generation', 'module': 'APP', 'action': 'generate_environmental_alerts', 'dependencies': ['anomaly_detection'] } ] }) # Execute workflow execution_result = orchestrator.execute_workflow(env_workflow) # Monitor execution monitor.monitor_workflow_execution(execution_result['workflow_id'])
-```
- ### 2. High-Performance Computing Cluster **Problem**: Manage and optimize high-performance computing resources. **Solution**: Use operations management for HPC cluster optimization.
-```
-python from geo_infer_ops.deployment import DeploymentManager from geo_infer_ops.optimization import PerformanceOptimizer # Initialize operations components deployment_manager = DeploymentManager() optimizer = PerformanceOptimizer() # Deploy HPC cluster hpc_deployment = deployment_manager.define_deployment({ 'environment': 'hpc_cluster', 'infrastructure': { 'compute_nodes': 10, 'gpu_nodes': 5, 'storage_nodes': 3, 'head_node': 1 }, 'modules': { 'SPACE': {'replicas': 5, 'resources': {'cpu': '8', 'memory': '32Gi'}}, 'AI': {'replicas': 3, 'resources': {'cpu': '16', 'memory': '64Gi', 'gpu': 4}}, 'TIME': {'replicas': 3, 'resources': {'cpu': '4', 'memory': '16Gi'}} } }) # Deploy cluster deployment_result = deployment_manager.deploy(hpc_deployment) # Optimize performance optimization_result = optimizer.optimize_hpc_cluster({ 'load_balancing': 'round_robin', 'resource_scheduling': 'fair_share', 'job_queuing': 'priority_based', 'monitoring': 'real_time' })
-```
- ### 3. Multi-Cloud Deployment **Problem**: Deploy GEO-INFER across multiple cloud providers. **Solution**: Use operations management for multi-cloud orchestration.
-```
-python from geo_infer_ops.infrastructure import InfrastructureManager from geo_infer_ops.deployment import DeploymentManager # Initialize operations components infra_manager = InfrastructureManager() deployment_manager = DeploymentManager() # Deploy across multiple clouds multi_cloud_deployment = deployment_manager.define_multi_cloud_deployment({ 'aws': { 'region': 'us-west-2', 'modules': ['SPACE', 'TIME'], 'resources': {'cpu': '8', 'memory': '32Gi'} }, 'gcp': { 'region': 'us-central1', 'modules': ['AI', 'DATA'], 'resources': {'cpu': '16', 'memory': '64Gi', 'gpu': 2} }, 'azure': { 'region': 'eastus', 'modules': ['APP', 'API'], 'resources': {'cpu': '4', 'memory': '16Gi'} }, 'load_balancing': { 'global_load_balancer': True, 'health_checks': True, 'failover': True } }) # Deploy multi-cloud system deployment_result = deployment_manager.deploy_multi_cloud(multi_cloud_deployment)
-```
- ## 🔗 Integration with Other Modules ### GEO-INFER-SEC Integration
-```
-python from geo_infer_ops import OperationsManager from geo_infer_sec import SecurityManager # Integrate operations with security ops_manager = OperationsManager() security_manager = SecurityManager() # Secure workflow execution secure_workflow = ops_manager.define_secure_workflow({ 'workflow': environmental_workflow, 'security_config': { 'authentication': 'oauth2', 'authorization': 'role_based', 'encryption': 'end_to_end', 'audit_logging': True } }) # Execute secure workflow secure_result = ops_manager.execute_secure_workflow(secure_workflow)
-```
- ### GEO-INFER-DATA Integration
-```
-python from geo_infer_ops.monitoring import SystemMonitor from geo_infer_data import DataManager # Monitor data operations monitor = SystemMonitor() data_manager = DataManager() # Monitor data pipeline performance data_monitoring = monitor.monitor_data_operations({ 'data_ingestion_rate': {'threshold': 1000, 'action': 'scale'}, 'data_processing_time': {'threshold': 300, 'action': 'optimize'}, 'data_quality_score': {'threshold': 0.95, 'action': 'alert'} })
-```
- ### GEO-INFER-API Integration
-```
-python from geo_infer_ops.deployment import DeploymentManager from geo_infer_api import APIManager # Deploy API with operations management deployment_manager = DeploymentManager() api_manager = APIManager() # Deploy API with monitoring api_deployment = deployment_manager.deploy_api({ 'api_config': api_manager.get_config(), 'monitoring': { 'response_time': {'threshold': 1000, 'action': 'scale'}, 'error_rate': {'threshold': 1, 'action': 'alert'}, 'throughput': {'threshold': 10000, 'action': 'optimize'} } })
-```
- ## 🚨 Troubleshooting ### Common Issues **Workflow execution failures:**
-```
-python # Debug workflow execution orchestrator = WorkflowOrchestrator() debug_info = orchestrator.debug_workflow_execution( workflow_id='failed_workflow_id', debug_level='verbose' ) # Retry failed workflow retry_result = orchestrator.retry_workflow( workflow_id='failed_workflow_id', retry_config={'max_retries': 3, 'backoff_strategy': 'exponential'} )
-```
- **Performance bottlenecks:**
-```
-python # Identify performance bottlenecks optimizer = PerformanceOptimizer() bottleneck_analysis = optimizer.identify_bottlenecks({ 'time_range': 'last_hour', 'analysis_depth': 'detailed' }) # Apply performance fixes fixes_applied = optimizer.apply_performance_fixes(bottleneck_analysis)
-```
- **Deployment issues:**
-```
-python # Debug deployment issues deployment_manager = DeploymentManager() deployment_debug = deployment_manager.debug_deployment({ 'deployment_id': 'failed_deployment_id', 'debug_level': 'detailed' }) # Rollback deployment rollback_result = deployment_manager.rollback_deployment( deployment_id='failed_deployment_id', target_version='previous_stable' )
-```
- ## 📊 Performance Optimization ### Efficient Operations Management
-```
-python # Enable parallel workflow execution orchestrator.enable_parallel_execution({ 'max_parallel_workflows': 10, 'resource_allocation': 'dynamic' }) # Enable scaling deployment_manager.enable_intelligent_scaling({ 'scaling_algorithm': 'predictive', 'scaling_thresholds': 'adaptive', 'resource_optimization': 'real_time' }) # Enable caching for operations ops_manager.enable_operations_caching({ 'cache_type': 'redis', 'cache_ttl': 1800, 'cache_invalidation': 'smart' })
-```
- ### Monitoring and Alerting
-```
-python # Set up systematic monitoring monitor.configure_systematic_monitoring({ 'system_metrics': ['cpu', 'memory', 'disk', 'network'], 'application_metrics': ['response_time', 'throughput', 'error_rate'], 'business_metrics': ['user_satisfaction', 'system_uptime'], 'custom_metrics': ['geo_infer_specific_metrics'], 'alerting': { 'email_alerts': True, 'slack_integration': True, 'pager_duty': True } })
-```
- ## 🔗 Related Documentation ### Tutorials - **[Operations Management Basics](../getting_started/index.md)** - Learn operations management fundamentals - **[Workflow Orchestration Tutorial](../getting_started/index.md)** - Build your first workflow ### How-to Guides - **[High-Performance Deployment](../examples_gallery.md)** - Deploy high-performance systems - **[Multi-Cloud Orchestration](../examples_gallery.md)** - Manage multi-cloud deployments ### Technical Reference - **[Operations API Reference](../api/reference.md)** - operations API documentation - **[Deployment Guide](../api/reference.md)** - Deployment and scaling guide ### Explanations - **Operations Management Theory** - Deep dive into operations concepts - **[System Architecture Guide](../architecture/index.md)** - Understanding system design ### Related Modules - **[GEO-INFER-SEC](../modules/geo-infer-sec.md)** - Security management capabilities - **[GEO-INFER-DATA](../modules/geo-infer-data.md)** - Data management capabilities - **[GEO-INFER-API](../modules/geo-infer-api.md)** - API management capabilities - **[GEO-INFER-TEST](../modules/geo-infer-test.md)** - Testing and quality assurance --- **Ready to get started?** Check out the **[Operations Management Basics Tutorial](../getting_started/index.md)** or explore **[High-Performance Deployment Examples](../examples_gallery.md)**!
 
-## 🗺️ Interactive Spatial Preview
+Run examples in the shared, locked workspace environment. Constructor inputs,
+optional backends, and result shapes belong to the referenced source and tests.
+Cross-module callers should pass explicit spatial state ordering and timezone-aware
+instants when those fields are part of their data contract.
 
-Pre-rendered spatial snapshot for **GEO-INFER-OPS** (*Operations*). Reproducible preview cards are generated by `geo_infer_intra.core.documentation.visual_preview`.
+## Verification
 
-| Preview | Widget |
-| --- | --- |
-| ![GEO-INFER-OPS Leaflet Preview](previews/geo-infer-ops_preview.svg) | [Interactive map](previews/geo-infer-ops_preview.html) · [PNG](previews/geo-infer-ops_preview.png) |
+From the repository root:
 
-> **Reproducible contract:** each map ships as `geo-infer-ops_preview.html`, `geo-infer-ops_preview.svg`, `geo-infer-ops_preview.png`, and `geo-infer-ops_preview.manifest.json` beneath `previews/`. The receipt records geometry provenance and artifact SHA-256 hashes. Values are illustrative, not observations.
+```bash
+uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --module OPS --timeout 600 --workers 2
+```
+
+The module command includes its owned test files and registered nested test roots.
+The fleet's separate unit and slow categories cover complementary marker selections;
+release CI requires unit, slow, integration, performance, system, and H3 lanes on
+Python 3.11 and 3.12. Results include immutable attempt receipts under
+`.geo-infer-test-results/runs/`, with logs, current JUnit, selection inventories,
+interpreter and source custody. A missing optional dependency must be addressed by
+the declared package extra rather than by omitting its tests.
+
+## Source and examples
+
+- [Owning package](../../../GEO-INFER-OPS/src/geo_infer_ops/README.md)
+- [Module inventory and dependencies](../../../GEO-INFER-OPS/README.md)
+- [Module operating contract](../../../GEO-INFER-OPS/AGENTS.md)
+- [Regression: test_deployment_integration.py](../../../GEO-INFER-OPS/tests/integration/test_deployment_integration.py)
+- [Regression: test_acceptance_ops.py](../../../GEO-INFER-OPS/tests/test_acceptance_ops.py)
+- [Regression: test_cache.py](../../../GEO-INFER-OPS/tests/test_cache.py)
+- [Example source: demo_framework.py](../../../GEO-INFER-OPS/examples/demo_framework.py)
+
+See the [cross-module integration guide](../../../GEO-INFER-EXAMPLES/docs/INTEGRATION_GUIDE.md)
+for actual DATA, SPACE, TIME, BAYES, and ACT composition checks.

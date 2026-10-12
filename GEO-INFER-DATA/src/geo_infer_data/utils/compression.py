@@ -6,7 +6,7 @@ and transmission of geospatial data.
 """
 
 import logging
-from typing import Dict, Optional, Any
+from typing import Any
 import gzip
 import lzma
 import bz2
@@ -66,7 +66,7 @@ class DataCompressor:
         """Check if compression is enabled."""
         return self.algorithm != "none"
 
-    def compress_data(self, data: Any, format: Optional[DataFormat] = None) -> bytes:
+    def compress_data(self, data: Any, format: DataFormat | None = None) -> bytes:
         """
         Compress geospatial data.
 
@@ -107,7 +107,7 @@ class DataCompressor:
     def decompress_data(
         self,
         compressed_data: bytes,
-        format: Optional[DataFormat] = None,
+        format: DataFormat | None = None,
         verified: bool = False,
     ) -> Any:
         """
@@ -142,7 +142,7 @@ class DataCompressor:
         )
         return data
 
-    def _serialize_data(self, data: Any, format: Optional[DataFormat] = None) -> bytes:
+    def _serialize_data(self, data: Any, format: DataFormat | None = None) -> bytes:
         """Serialize data to bytes."""
         if isinstance(data, (pd.DataFrame, gpd.GeoDataFrame)):
             if format == DataFormat.PARQUET or (format is None and len(data) > 1000):
@@ -162,7 +162,7 @@ class DataCompressor:
     def _deserialize_data(
         self,
         data: bytes,
-        format: Optional[DataFormat] = None,
+        format: DataFormat | None = None,
         verified: bool = False,
     ) -> Any:
         """Deserialize data from bytes.
@@ -194,7 +194,7 @@ class DataCompressor:
             )
         return pickle.loads(verify_payload(data, context=CONTEXT_COMPRESSION, key=None))
 
-    def get_compression_stats(self) -> Dict[str, Any]:
+    def get_compression_stats(self) -> dict[str, Any]:
         """Get compression statistics."""
         total_compressed = self.compression_stats["total_compressed"]
         total_original = self.compression_stats["total_original"]
@@ -213,7 +213,7 @@ class DataCompressor:
             "compression_count": self.compression_stats["compression_count"],
         }
 
-    def optimize_for_storage(self, data: Any) -> Dict[str, Any]:
+    def optimize_for_storage(self, data: Any) -> dict[str, Any]:
         """
         Optimize data for storage with compression recommendations.
 

@@ -9,12 +9,9 @@ Version control and repository management tools specifically designed for geospa
 - `examples/`
 - `src/`
 - `tests/`
-- `clone_repos.py`
-- `setup.py`
 - `.gitignore`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -24,8 +21,8 @@ Version control and repository management tools specifically designed for geospa
 
 - Module: `GEO-INFER-GIT`
 - Package: `geo_infer_git`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-GIT`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-git`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module GIT`
 
 ## Dependencies

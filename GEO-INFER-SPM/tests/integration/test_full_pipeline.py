@@ -33,6 +33,7 @@ class TestFullSPMPipeline:
                 "clusters": {"n_clusters": 3, "effect_size": 2.0},
             },
             noise_level=0.5,
+            random_seed=42,
         )
 
     def test_complete_spatial_analysis_pipeline(self):
@@ -71,7 +72,7 @@ class TestFullSPMPipeline:
             save_spm(spm_result, temp_path, format="json")
 
             # Verify save worked
-            with open(temp_path, "r") as f:
+            with open(temp_path) as f:
                 saved_data = json.load(f)
             assert "beta_coefficients" in saved_data
 
@@ -175,7 +176,7 @@ class TestFullSPMPipeline:
             np.testing.assert_array_equal(
                 loaded_data.coordinates, self.spm_data.coordinates
             )
-            assert loaded_data.metadata["test"] == True
+            assert loaded_data.metadata["test"]
 
             # Run analysis on loaded data
             design_matrix = create_design_matrix(loaded_data, covariates=["elevation"])
@@ -263,7 +264,10 @@ class TestFullSPMPipeline:
         )
 
         large_spm_data = generate_synthetic_data(
-            coordinates_large, effects={"trend": "east_west"}, noise_level=0.3
+            coordinates_large,
+            effects={"trend": "east_west"},
+            noise_level=0.3,
+            random_seed=42,
         )
 
         # Create design matrix

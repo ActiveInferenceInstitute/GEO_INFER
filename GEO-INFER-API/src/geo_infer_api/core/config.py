@@ -5,20 +5,11 @@ Configuration settings for the GEO-INFER-API.
 import os
 import json
 from functools import lru_cache
-from typing import List, Optional, Union
-
-from pydantic import field_validator
 
 from importlib.metadata import PackageNotFoundError, version as _distribution_version
 
-try:
-    from pydantic_settings import BaseSettings, SettingsConfigDict
-
-    _SETTINGS_CONFIG = SettingsConfigDict(env_file=".env", case_sensitive=True)
-except ImportError:
-    from pydantic import BaseSettings  # type: ignore[no-redef]
-
-    _SETTINGS_CONFIG = None  # type: ignore[assignment]
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def _installed_version(fallback: str) -> str:
@@ -45,21 +36,20 @@ class Settings(BaseSettings):
       origin list is non-empty and does not contain ``"*"``.
     """
 
-    if _SETTINGS_CONFIG is not None:
-        model_config = _SETTINGS_CONFIG
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
     # Application metadata
     app_name: str = "GEO-INFER-API"
     # Derived from the installed distribution so the version surface tracks
     # releases without a code edit; the literal is only the source-checkout
     # fallback when the package was never installed.
-    app_version: str = _installed_version("0.3.0")
+    app_version: str = _installed_version("0.4.0")
 
     # API settings
     api_prefix: str = "/api/v1"
 
     # CORS settings
-    cors_origins: List[str] = []
+    cors_origins: list[str] = []
 
     # Security settings
     secret_key: str
@@ -68,7 +58,7 @@ class Settings(BaseSettings):
     # that consumes them.
 
     # Database settings
-    database_url: Optional[str] = None
+    database_url: str | None = None
 
     # OGC API settings
     ogc_api_features_enabled: bool = True
@@ -88,7 +78,7 @@ class Settings(BaseSettings):
 
     @field_validator("cors_origins", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+    def assemble_cors_origins(cls, v: str | list[str]) -> list[str]:
         """Parse CORS origins from a JSON array string, comma list, or list."""
         if isinstance(v, str):
             v = v.strip()
@@ -98,7 +88,7 @@ class Settings(BaseSettings):
         return list(v)
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Get cached settings to avoid reloading from env every time.
 

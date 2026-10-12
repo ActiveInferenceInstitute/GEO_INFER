@@ -3,7 +3,8 @@ Gaussian Process model for spatial data.
 """
 
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any
+from collections.abc import Callable, Iterator
 
 import numpy as np
 from scipy.linalg import cholesky, solve_triangular
@@ -47,7 +48,7 @@ class SpatialGP(BayesianModel):
         variance: float = 1.0,
         noise: float = 0.1,
         degree: float = 1.5,
-        mean_function: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        mean_function: Callable[[np.ndarray], np.ndarray] | None = None,
         jitter: float = 1e-6,
         **kwargs: Any,
     ) -> None:
@@ -59,9 +60,9 @@ class SpatialGP(BayesianModel):
         self.mean_function = mean_function or (lambda x: np.zeros(len(x)))
         self.jitter = jitter
         # None until fit(); every method that needs them checks first.
-        self.X_train: Optional[np.ndarray] = None
-        self.y_train: Optional[np.ndarray] = None
-        self.L: Optional[np.ndarray] = None  # Cholesky factor of the covariance
+        self.X_train: np.ndarray | None = None
+        self.y_train: np.ndarray | None = None
+        self.L: np.ndarray | None = None  # Cholesky factor of the covariance
 
         super().__init__(name="SpatialGP", **kwargs)
 
@@ -166,7 +167,7 @@ class SpatialGP(BayesianModel):
 
         return self
 
-    def _posterior_draws(self, posterior: Any, samples: int) -> List[Dict[str, float]]:
+    def _posterior_draws(self, posterior: Any, samples: int) -> list[dict[str, float]]:
         """Return hyperparameter dicts for the draws a prediction averages over.
 
         Parameters
@@ -192,7 +193,7 @@ class SpatialGP(BayesianModel):
         ]
 
     @contextmanager
-    def _parameters_from(self, theta: Dict[str, Any]) -> Iterator[None]:
+    def _parameters_from(self, theta: dict[str, Any]) -> Iterator[None]:
         """Adopt hyperparameters from ``theta`` without touching cached state.
 
         Unlike :meth:`_temporary_parameters` this does not refactorize the
@@ -223,7 +224,7 @@ class SpatialGP(BayesianModel):
             self.kernel_fn = saved_kernel
 
     @contextmanager
-    def _temporary_parameters(self, theta: Dict[str, float]) -> Iterator[None]:
+    def _temporary_parameters(self, theta: dict[str, float]) -> Iterator[None]:
         """Adopt one hyperparameter draw, then restore the fitted state.
 
         Refactorizing the training covariance is what makes the draw usable:
@@ -282,7 +283,7 @@ class SpatialGP(BayesianModel):
         posterior: Any = None,
         samples: int = 100,
         return_std: bool = False,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """
         Make predictions at new locations.
 
@@ -342,7 +343,7 @@ class SpatialGP(BayesianModel):
             return self._conditional_mean_std(X_new)
         return self._conditional_mean(X_new)
 
-    def _fitted_state(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _fitted_state(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Return the training inputs, targets and Cholesky factor.
 
         Returns
@@ -378,7 +379,7 @@ class SpatialGP(BayesianModel):
         alpha = solve_triangular(L.T, alpha, lower=False)
         return np.asarray(self.mean_function(X_new) + K_s.T @ alpha, dtype=float)
 
-    def _conditional_mean_std(self, X_new: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _conditional_mean_std(self, X_new: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Posterior mean and standard deviation of the latent function.
 
         The standard deviation excludes observation noise, which belongs to a
@@ -408,7 +409,7 @@ class SpatialGP(BayesianModel):
     def posterior_predictive(
         self,
         posterior: Any,
-        X: Optional[np.ndarray] = None,
+        X: np.ndarray | None = None,
         samples: int = 100,
         random_seed: SeedLike = None,
     ) -> np.ndarray:
@@ -460,11 +461,11 @@ class SpatialGP(BayesianModel):
     def predictive_interval(
         self,
         posterior: Any,
-        X: Optional[np.ndarray] = None,
+        X: np.ndarray | None = None,
         level: float = 0.95,
         samples: int = 200,
         random_seed: SeedLike = None,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Return a calibrated posterior predictive interval ``(mean, lower, upper)``.
 
         Unlike a credible band on the latent function, this interval is taken
@@ -511,9 +512,9 @@ class SpatialGP(BayesianModel):
     def uncertainty_decomposition(
         self,
         posterior: Any,
-        X: Optional[np.ndarray] = None,
+        X: np.ndarray | None = None,
         samples: int = 50,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """
         Decompose predictive uncertainty into epistemic and aleatoric parts.
 
@@ -547,8 +548,8 @@ class SpatialGP(BayesianModel):
             raise ValueError("X must be provided or the model must be fitted")
         X = np.asarray(X)
         self._fitted_state()  # raises if never fitted
-        per_draw_means: List[np.ndarray] = []
-        per_draw_vars: List[np.ndarray] = []
+        per_draw_means: list[np.ndarray] = []
+        per_draw_vars: list[np.ndarray] = []
         for theta in self._posterior_draws(posterior, samples):
             with self._temporary_parameters(theta):
                 mean, latent_std = self._conditional_mean_std(X)
@@ -570,7 +571,7 @@ class SpatialGP(BayesianModel):
         }
 
     def log_likelihood(
-        self, theta: Dict[str, Any], data: Dict[str, np.ndarray]
+        self, theta: dict[str, Any], data: dict[str, np.ndarray]
     ) -> float:
         """
         Compute the marginal log-likelihood of the GP.
@@ -628,7 +629,7 @@ class SpatialGP(BayesianModel):
         return float(log_likelihood)
 
     def pointwise_log_likelihood(
-        self, theta: Dict[str, Any], data: Dict[str, np.ndarray]
+        self, theta: dict[str, Any], data: dict[str, np.ndarray]
     ) -> np.ndarray:
         """Decompose the GP marginal log-likelihood into per-observation terms.
 
@@ -680,7 +681,7 @@ class SpatialGP(BayesianModel):
             -0.5 * z**2 - np.log(np.diag(L)) - 0.5 * np.log(2 * np.pi), dtype=float
         )
 
-    def log_prior(self, theta: Dict[str, Any]) -> float:
+    def log_prior(self, theta: dict[str, Any]) -> float:
         """
         Compute the log-prior for the GP parameters.
 
@@ -766,7 +767,7 @@ class SparseSpatialGP(SpatialGP):
 
     def __init__(
         self,
-        inducing_points: Optional[np.ndarray] = None,
+        inducing_points: np.ndarray | None = None,
         n_inducing: int = 100,
         optimize_hyperparameters: bool = True,
         max_iter: int = 50,
@@ -818,17 +819,17 @@ class SparseSpatialGP(SpatialGP):
         self.max_iter = int(max_iter)
         self.batch_size = int(batch_size)
 
-        self.inducing_points_: Optional[np.ndarray] = None
-        self.n_inducing_: Optional[int] = None
-        self.variational_mean_: Optional[np.ndarray] = None
-        self.variational_covariance_: Optional[np.ndarray] = None
-        self.elbo_: Optional[float] = None
-        self.initial_elbo_: Optional[float] = None
-        self.elbo_history_: List[float] = []
-        self.optimization_result_: Optional[OptimizeResult] = None
-        self._inducing_cholesky: Optional[np.ndarray] = None
-        self._whitened_mean: Optional[np.ndarray] = None
-        self._whitened_covariance: Optional[np.ndarray] = None
+        self.inducing_points_: np.ndarray | None = None
+        self.n_inducing_: int | None = None
+        self.variational_mean_: np.ndarray | None = None
+        self.variational_covariance_: np.ndarray | None = None
+        self.elbo_: float | None = None
+        self.initial_elbo_: float | None = None
+        self.elbo_history_: list[float] = []
+        self.optimization_result_: OptimizeResult | None = None
+        self._inducing_cholesky: np.ndarray | None = None
+        self._whitened_mean: np.ndarray | None = None
+        self._whitened_covariance: np.ndarray | None = None
 
         super().__init__(**kwargs)
         self.name = "SparseSpatialGP"
@@ -836,7 +837,7 @@ class SparseSpatialGP(SpatialGP):
     @staticmethod
     def _validate_training_data(
         X: np.ndarray, y: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Return finite, aligned training arrays."""
         X_array = np.asarray(X, dtype=float)
         if X_array.ndim == 1:
@@ -922,7 +923,7 @@ class SparseSpatialGP(SpatialGP):
         inducing_points: np.ndarray,
         *,
         return_posterior: bool = False,
-    ) -> Tuple[float, Optional[Dict[str, np.ndarray]]]:
+    ) -> tuple[float, dict[str, np.ndarray] | None]:
         """Evaluate the Gaussian collapsed variational evidence lower bound."""
         self._validate_positive_hyperparameters()
         count = inducing_points.shape[0]
@@ -990,7 +991,7 @@ class SparseSpatialGP(SpatialGP):
         X: np.ndarray,
         y: np.ndarray,
         *,
-        optimize: Optional[bool] = None,
+        optimize: bool | None = None,
     ) -> "SparseSpatialGP":
         """Fit the sparse GP and optimize its collapsed variational ELBO."""
         X_array, y_array = self._validate_training_data(X, y)
@@ -1068,7 +1069,7 @@ class SparseSpatialGP(SpatialGP):
 
     def _sparse_fitted_state(
         self,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Return inducing locations and the whitened variational posterior."""
         if (
             self.inducing_points_ is None
@@ -1090,7 +1091,7 @@ class SparseSpatialGP(SpatialGP):
         posterior: Any = None,
         samples: int = 100,
         return_std: bool = False,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """Predict from the fitted inducing-point variational posterior."""
         del samples
         if posterior is not None:
@@ -1114,8 +1115,8 @@ class SparseSpatialGP(SpatialGP):
                 "X_new has a different feature dimension from training data"
             )
 
-        means: List[np.ndarray] = []
-        variances: List[np.ndarray] = []
+        means: list[np.ndarray] = []
+        variances: list[np.ndarray] = []
         for start in range(0, X_array.shape[0], self.batch_size):
             stop = min(start + self.batch_size, X_array.shape[0])
             X_batch = X_array[start:stop]
@@ -1139,8 +1140,8 @@ class SparseSpatialGP(SpatialGP):
 
     def evidence_lower_bound(
         self,
-        X: Optional[np.ndarray] = None,
-        y: Optional[np.ndarray] = None,
+        X: np.ndarray | None = None,
+        y: np.ndarray | None = None,
     ) -> float:
         """Return the collapsed ELBO at current hyperparameters."""
         if X is None and y is None:
@@ -1160,14 +1161,14 @@ class SparseSpatialGP(SpatialGP):
 
     def compute_elbo(
         self,
-        X: Optional[np.ndarray] = None,
-        y: Optional[np.ndarray] = None,
+        X: np.ndarray | None = None,
+        y: np.ndarray | None = None,
     ) -> float:
         """Alias for :meth:`evidence_lower_bound`."""
         return self.evidence_lower_bound(X, y)
 
     def log_likelihood(
-        self, theta: Dict[str, Any], data: Dict[str, np.ndarray]
+        self, theta: dict[str, Any], data: dict[str, np.ndarray]
     ) -> float:
         """Use the sparse variational bound as the large-N likelihood proxy."""
         X_array, y_array = self._validate_training_data(data["X"], data["y"])
@@ -1183,7 +1184,7 @@ class SparseSpatialGP(SpatialGP):
     def posterior_predictive(
         self,
         posterior: Any = None,
-        X: Optional[np.ndarray] = None,
+        X: np.ndarray | None = None,
         samples: int = 100,
         random_seed: SeedLike = None,
     ) -> np.ndarray:

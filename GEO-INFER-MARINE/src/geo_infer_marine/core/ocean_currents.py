@@ -5,7 +5,7 @@ pressure-gradient-driven ocean currents.
 """
 
 import logging
-from typing import Dict, Optional, cast
+from typing import cast
 
 import numpy as np
 import xarray as xr
@@ -24,7 +24,7 @@ class OceanCurrentModeler:
     from wind stress and sea surface height data.
     """
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         """Initialize ocean current modeler.
 
         Args:

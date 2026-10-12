@@ -13,36 +13,34 @@ from __future__ import annotations
 
 import sys
 import tempfile
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
-
-_ORCHESTRATORS_DIR = Path(__file__).resolve().parents[2]
-if str(_ORCHESTRATORS_DIR) not in sys.path:
-    sys.path.insert(0, str(_ORCHESTRATORS_DIR))
-
-from _lib import run_module_orchestrator  # noqa: E402
+from geo_infer_examples.orchestration import run_module_orchestrator
 
 
-def _operation() -> Dict[str, Any]:
+def _operation() -> dict[str, Any]:
     import pandas as pd
-
-    from geo_infer_sec import AuditEventSeverity, AuditEventType, AuditLogger
-    from geo_infer_sec import SecurityUtils
+    from geo_infer_sec import (
+        AuditEventSeverity,
+        AuditEventType,
+        AuditLogger,
+        SecurityUtils,
+    )
     from geo_infer_sec.utils.security_utils import SecurityConfig
 
     config = SecurityConfig(token_secret="synthetic-sec-demo-secret")
     utils = SecurityUtils(config)
 
     # 1. Input normalization on synthetic hostile payloads.
-    payloads: Dict[str, str] = {
+    payloads: dict[str, str] = {
         "sql_like": "'; DROP TABLE sensors;--",
         "xss_like": "<script>alert('x')</script>",
         "pipe_like": "cat report.txt | rm -rf /tmp",
     }
-    normalized: Dict[str, str] = {
+    normalized: dict[str, str] = {
         name: utils.strip_dangerous_chars(payload) for name, payload in payloads.items()
     }
     chars_removed = sum(
@@ -78,10 +76,8 @@ def _operation() -> Dict[str, Any]:
     )
     anonymized = utils.anonymize_spatial_data(spatial, precision=2)
     max_shift = float(
-        (
-            (anonymized["lat"] - spatial["lat"]).abs().max()
-            + (anonymized["lon"] - spatial["lon"]).abs().max()
-        )
+        (anonymized["lat"] - spatial["lat"]).abs().max()
+        + (anonymized["lon"] - spatial["lon"]).abs().max()
     )
 
     # 6. Audit trail and compliance report over synthetic events.
@@ -91,7 +87,7 @@ def _operation() -> Dict[str, Any]:
             enable_console=False,
             enable_file=True,
         )
-        events: List[Any] = [
+        events: list[Any] = [
             audit.log_event(
                 AuditEventType.DATA_ACCESS,
                 user_id="field-agent-7",
@@ -124,7 +120,7 @@ def _operation() -> Dict[str, Any]:
                 severity=AuditEventSeverity.MEDIUM,
             ),
         ]
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
         compliance = audit.generate_compliance_report(
             now - timedelta(hours=1), now + timedelta(minutes=1)
         )

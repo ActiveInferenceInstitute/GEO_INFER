@@ -30,11 +30,9 @@
 - `templates/`
 - `tests/`
 - `assess_repository.py`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
 - `requirements-dev.txt`
-- `requirements.txt`
 
 ## Validation
 

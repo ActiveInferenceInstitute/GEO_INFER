@@ -591,6 +591,8 @@ class TestAPIIntegration:
 
     def test_api_error_handling(self):
         """Test API error handling."""
+        from werkzeug.exceptions import BadRequest
+
         from geo_infer_math.api.spatial_analysis import SpatialAnalysisAPI
 
         api = SpatialAnalysisAPI()
@@ -607,8 +609,8 @@ class TestAPIIntegration:
             }
         }
 
-        # Should raise BadRequest for invalid data
-        with pytest.raises(Exception):  # Should be BadRequest from werkzeug
+        # Invalid data surfaces as an HTTP 400 BadRequest
+        with pytest.raises(BadRequest):
             api.calculate_descriptive_stats(invalid_data)
 
 

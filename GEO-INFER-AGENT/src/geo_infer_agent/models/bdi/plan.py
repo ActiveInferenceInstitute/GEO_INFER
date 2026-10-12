@@ -8,7 +8,7 @@ Plans represent procedural knowledge about how to achieve goals. This module pro
 - Plan library management for reusable plans
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
@@ -54,19 +54,19 @@ class Plan:
     description: str = ""
     goal: str = ""
     desire_name: str = ""
-    context_condition: Dict[str, Any] = field(default_factory=dict)
-    context_conditions: Dict[str, Any] = field(default_factory=dict)
-    precondition: Dict[str, Any] = field(default_factory=dict)
-    postcondition: Dict[str, Any] = field(default_factory=dict)
-    failure_condition: Dict[str, Any] = field(default_factory=dict)
-    actions: List[Dict[str, Any]] = field(default_factory=list)
+    context_condition: dict[str, Any] = field(default_factory=dict)
+    context_conditions: dict[str, Any] = field(default_factory=dict)
+    precondition: dict[str, Any] = field(default_factory=dict)
+    postcondition: dict[str, Any] = field(default_factory=dict)
+    failure_condition: dict[str, Any] = field(default_factory=dict)
+    actions: list[dict[str, Any]] = field(default_factory=list)
     status: PlanStatus = PlanStatus.PENDING
     priority: float = 1.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     current_action_index: int = 0
     complete: bool = False
-    successful: Optional[bool] = None
-    execution_record: List[Dict[str, Any]] = field(default_factory=list)
+    successful: bool | None = None
+    execution_record: list[dict[str, Any]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """Normalize goal/desire_name and context aliases."""
@@ -81,7 +81,7 @@ class Plan:
         elif self.context_condition and not self.context_conditions:
             self.context_conditions = self.context_condition
 
-    def is_applicable(self, belief_values: Dict[str, Any]) -> bool:
+    def is_applicable(self, belief_values: dict[str, Any]) -> bool:
         """
         Check if this plan is applicable in the current context.
 
@@ -97,7 +97,7 @@ class Plan:
 
         return True
 
-    def can_start(self, belief_values: Dict[str, Any]) -> bool:
+    def can_start(self, belief_values: dict[str, Any]) -> bool:
         """
         Check if this plan can start based on its precondition.
 
@@ -116,7 +116,7 @@ class Plan:
 
         return True
 
-    def has_succeeded(self, belief_values: Dict[str, Any]) -> bool:
+    def has_succeeded(self, belief_values: dict[str, Any]) -> bool:
         """
         Check if this plan has succeeded based on its postcondition.
 
@@ -132,7 +132,7 @@ class Plan:
 
         return True
 
-    def has_failed(self, belief_values: Dict[str, Any]) -> bool:
+    def has_failed(self, belief_values: dict[str, Any]) -> bool:
         """
         Check if this plan has failed based on its failure condition.
 
@@ -202,7 +202,7 @@ class Plan:
         self.execution_record = []
         logger.debug(f"Reset plan: {self.name}")
 
-    def next_action(self) -> Optional[Dict[str, Any]]:
+    def next_action(self) -> dict[str, Any] | None:
         """
         Get the current action to execute without advancing.
 
@@ -238,7 +238,7 @@ class Plan:
         self.status = PlanStatus.SUCCEEDED if successful else PlanStatus.FAILED
 
     def record_action_result(
-        self, action_index: int, result: Dict[str, Any], success: bool
+        self, action_index: int, result: dict[str, Any], success: bool
     ) -> None:
         """
         Record the result of an executed action.
@@ -256,7 +256,7 @@ class Plan:
             }
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert this plan to a dictionary representation.
 
@@ -284,7 +284,7 @@ class Plan:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Plan":
+    def from_dict(cls, data: dict[str, Any]) -> "Plan":
         """
         Create a Plan instance from a dictionary.
 
@@ -337,7 +337,7 @@ class PlanLibrary:
 
     def __init__(self) -> None:
         """Initialize an empty plan library."""
-        self._plans: Dict[str, Plan] = {}
+        self._plans: dict[str, Plan] = {}
 
     def add(self, plan: Plan) -> None:
         """
@@ -401,7 +401,7 @@ class PlanLibrary:
         """
         return name in self._plans
 
-    def get_all(self) -> Dict[str, Plan]:
+    def get_all(self) -> dict[str, Plan]:
         """
         Get all plans in the plan library.
 
@@ -410,7 +410,7 @@ class PlanLibrary:
         """
         return dict(self._plans)
 
-    def get_by_goal(self, goal: str) -> List[Plan]:
+    def get_by_goal(self, goal: str) -> list[Plan]:
         """
         Get all plans for a specific goal.
 
@@ -422,7 +422,7 @@ class PlanLibrary:
         """
         return [plan for plan in self._plans.values() if plan.goal == goal]
 
-    def select_plan(self, goal: str, belief_values: Dict[str, Any]) -> Optional[Plan]:
+    def select_plan(self, goal: str, belief_values: dict[str, Any]) -> Plan | None:
         """
         Select the most appropriate plan for a given goal in the current context.
 
@@ -452,7 +452,7 @@ class PlanLibrary:
         return applicable_plans[0]
 
     def create_plan_instance(
-        self, template_name: str, instance_name: Optional[str] = None
+        self, template_name: str, instance_name: str | None = None
     ) -> Plan:
         """
         Create a new instance of a plan from a template.
@@ -485,7 +485,7 @@ class PlanLibrary:
         # Create a new plan from the template
         return Plan.from_dict(template_dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert the plan library to a dictionary representation.
 
@@ -495,7 +495,7 @@ class PlanLibrary:
         return {"plans": {name: plan.to_dict() for name, plan in self._plans.items()}}
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "PlanLibrary":
+    def from_dict(cls, data: dict[str, Any]) -> "PlanLibrary":
         """
         Create a PlanLibrary instance from a dictionary.
 

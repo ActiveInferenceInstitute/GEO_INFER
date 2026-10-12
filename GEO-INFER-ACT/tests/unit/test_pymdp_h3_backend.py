@@ -8,19 +8,19 @@ import numpy as np
 import h3
 import pytest
 
-from geo_infer_act import ActiveInferenceModel, GenerativeModel  # noqa: E402
-from geo_infer_act.core.types import (  # noqa: E402
+from geo_infer_act import ActiveInferenceModel, GenerativeModel
+from geo_infer_act.core.types import (
     H3GridInferenceResult,
     NestedH3GridInferenceResult,
 )
-from geo_infer_act.utils import pymdp_adapter  # noqa: E402
-from geo_infer_act.utils.pymdp_adapter import (  # noqa: E402
+from geo_infer_act.utils import pymdp_adapter
+from geo_infer_act.utils.pymdp_adapter import (
     EXPECTED_PYMDP_VERSION,
     real_h3_version_metadata,
     run_model_step,
     run_pymdp_step,
     validate_pymdp_version,
-)  # noqa: E402
+)
 
 
 def _assert_probability(values: object) -> None:
@@ -132,13 +132,13 @@ def test_flat_h3_grid_inference_exposes_real_pymdp_metadata() -> None:
     )
     active.set_generative_model(model)
 
-    legacy = active.infer_over_h3_grid(_observations(cells))
+    as_dict = active.infer_over_h3_grid(_observations(cells))
     typed = active.infer_over_h3_grid(_observations(cells), return_result=True)
 
     assert isinstance(typed, H3GridInferenceResult)
     assert typed.metadata["pymdp_backend"] == "inferactively-pymdp"
     for cell in cells:
-        _assert_pymdp_metadata(legacy[cell]["pymdp"])
+        _assert_pymdp_metadata(as_dict[cell]["pymdp"])
         _assert_pymdp_metadata(typed.cell_results[cell].metadata["pymdp"])
 
 

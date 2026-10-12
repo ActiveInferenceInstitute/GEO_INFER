@@ -1,7 +1,7 @@
 """Tests for the RadiationMonitoringSystem."""
 
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from geo_infer_iot.core.ingestion import RadiationMonitoringSystem
 
@@ -39,7 +39,7 @@ class TestRadiationMonitoringSystem:
 
     def test_process_empirical_measurements(self, rad_config):
         _system = RadiationMonitoringSystem(rad_config)
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
         data = [
             {
                 "sensor_id": f"s-{index:03d}",
@@ -62,11 +62,11 @@ class TestRadiationMonitoringSystem:
     def test_quality_control_valid(self, rad_config):
         system = RadiationMonitoringSystem(rad_config)
         from geo_infer_iot.core.ingestion import SensorMeasurement
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         m = SensorMeasurement(
             sensor_id="s-001",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="gamma_radiation",
             value=0.1,
             unit="uSv/h",
@@ -79,11 +79,11 @@ class TestRadiationMonitoringSystem:
     def test_quality_control_out_of_range(self, rad_config):
         system = RadiationMonitoringSystem(rad_config)
         from geo_infer_iot.core.ingestion import SensorMeasurement
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         m = SensorMeasurement(
             sensor_id="s-001",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="gamma_radiation",
             value=150.0,  # Above max_radiation=100
             unit="uSv/h",
@@ -96,11 +96,11 @@ class TestRadiationMonitoringSystem:
     def test_anomaly_detection(self, rad_config):
         system = RadiationMonitoringSystem(rad_config)
         from geo_infer_iot.core.ingestion import SensorMeasurement
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         normal = SensorMeasurement(
             sensor_id="s-001",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="gamma_radiation",
             value=0.1,  # Normal background
             unit="uSv/h",
@@ -111,7 +111,7 @@ class TestRadiationMonitoringSystem:
 
         anomalous = SensorMeasurement(
             sensor_id="s-002",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             variable="gamma_radiation",
             value=5.0,  # Way above background
             unit="uSv/h",

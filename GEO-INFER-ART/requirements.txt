@@ -1,8 +1,0 @@
-# GEO-INFER-ART runtime requirements: generated mirror of [project.dependencies] in pyproject.toml.
-# pyproject.toml is canonical; optional/test extras live only in [project.optional-dependencies].
-geopandas>=0.13.0
-matplotlib>=3.4.0
-numpy>=1.21.0
-pillow>=8.3.0
-rasterio>=1.2.0
-scipy>=1.7.0

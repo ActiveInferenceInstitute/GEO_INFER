@@ -6,12 +6,14 @@ operations. It serves as the main entry point for the PEP system and coordinates
 different modules and data flows.
 """
 
-from typing import Dict, Any, Optional
+from typing import Any
 from datetime import datetime
 import logging
 
+import pandas as pd
+
 from ..models.hr_models import Employee, EmploymentStatus
-from .data_store import PEPDataManager, pep_data_manager  # noqa: F401 (re-export)
+from .data_store import PEPDataManager, pep_data_manager
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,7 @@ class PEPEngine:
     ``data_manager`` to isolate the engine (e.g. in tests).
     """
 
-    def __init__(self, data_manager: Optional[PEPDataManager] = None):
+    def __init__(self, data_manager: PEPDataManager | None = None):
         self.data_manager = (
             data_manager if data_manager is not None else pep_data_manager
         )
@@ -51,7 +53,7 @@ class PEPEngine:
             logger.error(f"Failed to initialize PEP Engine: {str(e)}")
             return False
 
-    def import_hr_data(self, file_path: str) -> Dict[str, Any]:
+    def import_hr_data(self, file_path: str) -> dict[str, Any]:
         """Import HR data from CSV file."""
         try:
             from ..methods import import_hr_data_from_csv
@@ -70,7 +72,7 @@ class PEPEngine:
             logger.error(f"HR data import failed: {str(e)}")
             return {"success": False, "error": str(e), "data_type": "employees"}
 
-    def import_crm_data(self, file_path: str) -> Dict[str, Any]:
+    def import_crm_data(self, file_path: str) -> dict[str, Any]:
         """Import CRM data from CSV file."""
         try:
             from ..methods import import_crm_data_from_csv
@@ -91,7 +93,7 @@ class PEPEngine:
 
     def import_talent_data(
         self, candidates_file: str, requisitions_file: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Import talent data from CSV files."""
         try:
             from ..methods import import_talent_data_from_csv
@@ -119,8 +121,8 @@ class PEPEngine:
             return {"success": False, "error": str(e), "data_type": "talent"}
 
     def process_onboarding_workflow(
-        self, employee_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, employee_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Process employee onboarding workflow."""
         try:
             from ..methods import process_employee_onboarding_workflow
@@ -140,7 +142,7 @@ class PEPEngine:
             logger.error(f"Onboarding workflow failed: {str(e)}")
             return {"success": False, "error": str(e), "workflow": "onboarding"}
 
-    def generate_hr_dashboard(self) -> Dict[str, Any]:
+    def generate_hr_dashboard(self) -> dict[str, Any]:
         """Generate comprehensive HR dashboard."""
         try:
             from ..methods import generate_comprehensive_hr_dashboard
@@ -151,7 +153,7 @@ class PEPEngine:
             logger.error(f"HR dashboard generation failed: {str(e)}")
             return {"success": False, "error": str(e), "dashboard_type": "hr"}
 
-    def generate_crm_dashboard(self) -> Dict[str, Any]:
+    def generate_crm_dashboard(self) -> dict[str, Any]:
         """Generate comprehensive CRM dashboard."""
         try:
             from ..methods import generate_comprehensive_crm_dashboard
@@ -162,7 +164,7 @@ class PEPEngine:
             logger.error(f"CRM dashboard generation failed: {str(e)}")
             return {"success": False, "error": str(e), "dashboard_type": "crm"}
 
-    def generate_talent_dashboard(self) -> Dict[str, Any]:
+    def generate_talent_dashboard(self) -> dict[str, Any]:
         """Generate comprehensive talent dashboard."""
         try:
             from ..methods import generate_comprehensive_talent_dashboard
@@ -173,9 +175,9 @@ class PEPEngine:
             logger.error(f"Talent dashboard generation failed: {str(e)}")
             return {"success": False, "error": str(e), "dashboard_type": "talent"}
 
-    def generate_all_dashboards(self) -> Dict[str, Any]:
+    def generate_all_dashboards(self) -> dict[str, Any]:
         """Generate all dashboards and return combined results."""
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "overall_success": True,
             "dashboards": {},
             "generated_at": datetime.now().isoformat(),
@@ -209,7 +211,7 @@ class PEPEngine:
 
         return results
 
-    def get_system_status(self) -> Dict[str, Any]:
+    def get_system_status(self) -> dict[str, Any]:
         """Get comprehensive system status."""
         data_summary = self.data_manager.get_data_summary()
 
@@ -221,9 +223,9 @@ class PEPEngine:
             "last_check": datetime.now().isoformat(),
         }
 
-    def run_health_check(self) -> Dict[str, Any]:
+    def run_health_check(self) -> dict[str, Any]:
         """Run comprehensive health check."""
-        health_status: Dict[str, Any] = {
+        health_status: dict[str, Any] = {
             "overall_health": "healthy",
             "checks": {},
             "timestamp": datetime.now().isoformat(),
@@ -236,20 +238,11 @@ class PEPEngine:
             "details": f"Data store contains {data_summary['employees']['total']} employees, {data_summary['customers']['total']} customers, {data_summary['candidates']['total']} candidates",
         }
 
-        # Check module availability
-        try:
-            import pandas as pd  # noqa: F401
-
-            health_status["checks"]["dependencies"] = {
-                "status": "healthy",
-                "details": "All required dependencies available",
-            }
-        except ImportError as e:
-            health_status["checks"]["dependencies"] = {
-                "status": "unhealthy",
-                "details": f"Missing dependency: {str(e)}",
-            }
-            health_status["overall_health"] = "unhealthy"
+        # Report the tabular data backend
+        health_status["checks"]["dependencies"] = {
+            "status": "healthy",
+            "details": f"pandas {pd.__version__}",
+        }
 
         # Check data processing capabilities
         try:

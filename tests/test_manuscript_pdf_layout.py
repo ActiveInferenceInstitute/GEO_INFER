@@ -124,15 +124,14 @@ class TestFloatPlacement:
             # caption's words are removed once each.
             best = min(captions, key=lambda caption: len(_remaining(words, caption)))
             remaining = _remaining(words, best)
-            if (
+            assert not (
                 len(remaining) < MINIMUM_NON_CAPTION_WORDS
                 and len(best) < SUBSTANTIVE_CAPTION_WORDS
-            ):
-                assert False, (
-                    f"page {page} carries a figure, its caption, and "
-                    f"{len(remaining)} other words ({remaining}): it is a float "
-                    "page with a caption too short to be the page's content"
-                )
+            ), (
+                f"page {page} carries a figure, its caption, and "
+                f"{len(remaining)} other words ({remaining}): it is a float "
+                "page with a caption too short to be the page's content"
+            )
 
 
 class TestTextBlock:

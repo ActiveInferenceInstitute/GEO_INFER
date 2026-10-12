@@ -8,12 +8,10 @@ Core mathematical and statistical engine providing geometric operations, spatial
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `CHANGELOG.md`
 - `IMPROVEMENTS.md`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -23,8 +21,8 @@ Core mathematical and statistical engine providing geometric operations, spatial
 
 - Module: `GEO-INFER-MATH`
 - Package: `geo_infer_math`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-MATH`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-math`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module MATH`
 
 ## Dependencies

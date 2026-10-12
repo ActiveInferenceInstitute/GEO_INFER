@@ -16,8 +16,8 @@ Tests workspace within `GEO-INFER-AI`.
 
 - Module: `GEO-INFER-AI`
 - Package: `geo_infer_ai`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-AI`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-ai`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module AI`
 
 ## Dependencies
@@ -38,7 +38,7 @@ Tests workspace within `GEO-INFER-AI`.
   `geo_infer_test.testing` fixtures for deterministic RNG, filesystem, HTTP,
   SQLite, service, model, and artifact boundaries.
 - Dependencies: required test/runtime dependencies are installed by
-  `uv sync --all-packages --all-extras`; missing backends are failures.
+  `uv sync --all-packages --all-extras --all-groups`; missing backends are failures.
 - Expected artifacts: JUnit XML under `.geo-infer-test-results/`; model and
   visualization outputs require finite statistics, sidecars, hashes, and a
   manifest.

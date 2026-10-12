@@ -26,29 +26,19 @@ Quick Start::
     print(pi.status())
 """
 
-from typing import Dict as Dict, List as List, Optional as Optional, Any as Any
 import logging
-
-# Version information
-__version__ = "0.3.0"
-__author__ = "GEO-INFER Development Team"
-__email__ = "geo-infer@activeinference.institute"
-
-# Configure logging
-logging.getLogger(__name__).addHandler(logging.NullHandler())
-
 
 # --- Local Core Imports ---
 from .core.visualization_engine import InteractiveVisualizationEngine
 from .core import CascadianAgriculturalH3Backend, BaseAnalysisModule
 
-# --- Unified Interface (new) ---
+# --- Unified Interface ---
 from .core.place_interface import PlaceInterface
 
-# --- Module Bridge (new - GEO-INFER-DATA / GEO-INFER-TIME integration) ---
+# --- Module Bridge (GEO-INFER-DATA / GEO-INFER-TIME integration) ---
 from .core.module_bridge import PlaceDataManager, PlaceTemporalAnalyzer
 
-# --- Caching infrastructure (new) ---
+# --- Caching infrastructure ---
 from .utils.caching import CachedAPIWrapper
 
 # --- Location-specific Imports ---
@@ -91,6 +81,12 @@ from .core.api_clients import (
     USGSEarthquakeClient,
     CDECClient,
 )
+
+__version__ = "0.4.0"
+__author__ = "GEO-INFER Development Team"
+__email__ = "geo-infer@activeinference.institute"
+
+logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 # Export public API
 __all__ = [
@@ -140,7 +136,7 @@ __all__ = [
 ]
 
 
-def get_supported_locations() -> List[str]:
+def get_supported_locations() -> list[str]:
     """Get list of supported analysis locations."""
     from .core.place_interface import LOCATION_PRESETS
 
@@ -148,7 +144,7 @@ def get_supported_locations() -> List[str]:
 
 
 def create_analyzer(
-    location_code: str, config_path: Optional[str] = None
+    location_code: str, config_path: str | None = None
 ) -> "PlaceInterface":
     """Create a PlaceInterface for a specific location.
 
@@ -172,7 +168,7 @@ def create_analyzer(
 
 def create_place_interface(
     location: str = "del_norte",
-    output_dir: Optional[str] = None,
+    output_dir: str | None = None,
 ) -> PlaceInterface:
     """Convenience factory for PlaceInterface.
 

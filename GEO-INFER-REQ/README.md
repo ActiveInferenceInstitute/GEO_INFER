@@ -8,10 +8,8 @@ Requirements analysis, dependency resolution, traceability, and validation for g
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
-- `requirements.txt`
 
 ## Public Interface
 
@@ -21,8 +19,8 @@ Requirements analysis, dependency resolution, traceability, and validation for g
 
 - Module: `GEO-INFER-REQ`
 - Package: `geo_infer_req`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-REQ`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-req`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module REQ`
 
 ## Dependencies

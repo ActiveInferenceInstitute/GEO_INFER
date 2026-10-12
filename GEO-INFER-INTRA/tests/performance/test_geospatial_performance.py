@@ -3,7 +3,7 @@
 import pytest
 import time
 import random
-from typing import List, Dict, Any
+from typing import Any
 
 from geo_infer_intra.utils.geospatial_utils import (
     create_point,
@@ -20,7 +20,7 @@ class TestGeospatialPerformance:
     """Test suite for geospatial performance."""
 
     @pytest.fixture
-    def random_points(self, n: int = 10000) -> List[Dict[str, Any]]:
+    def random_points(self, n: int = 10000) -> list[dict[str, Any]]:
         """Generate n random GeoJSON points."""
         return [
             create_point(lon=random.uniform(-180, 180), lat=random.uniform(-90, 90))
@@ -28,7 +28,7 @@ class TestGeospatialPerformance:
         ]
 
     @pytest.fixture
-    def random_point_features(self, n: int = 10000) -> List[Dict[str, Any]]:
+    def random_point_features(self, n: int = 10000) -> list[dict[str, Any]]:
         """Generate n random GeoJSON point features."""
         return [
             create_feature(

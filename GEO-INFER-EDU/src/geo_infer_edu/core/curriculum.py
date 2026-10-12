@@ -6,7 +6,7 @@ including learning objectives, module sequencing, and assessment design.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -47,8 +47,8 @@ class LearningObjective:
     description: str
     bloom_level: str  # remember, understand, apply, analyze, evaluate, create
     competency_area: str
-    assessment_criteria: List[str] = field(default_factory=list)
-    prerequisites: List[str] = field(default_factory=list)
+    assessment_criteria: list[str] = field(default_factory=list)
+    prerequisites: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -58,12 +58,12 @@ class CurriculumModule:
     id: str
     title: str
     description: str
-    learning_objectives: List[LearningObjective]
+    learning_objectives: list[LearningObjective]
     duration_hours: float
-    content_sections: List[Dict[str, Any]] = field(default_factory=list)
-    activities: List[Dict[str, Any]] = field(default_factory=list)
-    assessments: List[Dict[str, Any]] = field(default_factory=list)
-    resources: List[str] = field(default_factory=list)
+    content_sections: list[dict[str, Any]] = field(default_factory=list)
+    activities: list[dict[str, Any]] = field(default_factory=list)
+    assessments: list[dict[str, Any]] = field(default_factory=list)
+    resources: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -75,10 +75,10 @@ class Curriculum:
     description: str
     level: EducationLevel
     duration_weeks: int
-    modules: List[CurriculumModule] = field(default_factory=list)
-    standards_alignment: Dict[str, List[str]] = field(default_factory=dict)
-    prerequisites: List[str] = field(default_factory=list)
-    target_competencies: List[str] = field(default_factory=list)
+    modules: list[CurriculumModule] = field(default_factory=list)
+    standards_alignment: dict[str, list[str]] = field(default_factory=dict)
+    prerequisites: list[str] = field(default_factory=list)
+    target_competencies: list[str] = field(default_factory=list)
 
 
 class CurriculumDesigner:
@@ -106,7 +106,7 @@ class CurriculumDesigner:
 
     def __init__(
         self,
-        standards: Optional[List[str]] = None,
+        standards: list[str] | None = None,
         pedagogical_approach: str = "constructivist",
         assessment_framework: str = "competency_based",
     ):
@@ -130,7 +130,7 @@ class CurriculumDesigner:
         self._standards_data = self._load_standards_data()
         logger.info(f"Initialized CurriculumDesigner with standards: {self.standards}")
 
-    def _load_standards_data(self) -> Dict[str, Dict]:
+    def _load_standards_data(self) -> dict[str, dict]:
         """Load educational standards data."""
         # Embedded standards data for GIS BOK
         standards_data = {
@@ -179,7 +179,7 @@ class CurriculumDesigner:
         topic: str,
         level: str,
         duration: str,
-        learning_objectives: Optional[List[str]] = None,
+        learning_objectives: list[str] | None = None,
     ) -> Curriculum:
         """
         Design a complete curriculum for the specified topic.
@@ -240,7 +240,7 @@ class CurriculumDesigner:
             f"through hands-on exercises and real-world applications."
         )
 
-    def _identify_competencies(self, topic: str) -> List[str]:
+    def _identify_competencies(self, topic: str) -> list[str]:
         """Identify relevant competencies for topic."""
         topic_competencies = {
             "geospatial_analysis": [
@@ -266,8 +266,8 @@ class CurriculumDesigner:
         self,
         topic: str,
         level: EducationLevel,
-        custom_objectives: Optional[List[str]] = None,
-    ) -> List[LearningObjective]:
+        custom_objectives: list[str] | None = None,
+    ) -> list[LearningObjective]:
         """Generate learning objectives for curriculum."""
         objectives = []
 
@@ -316,9 +316,9 @@ class CurriculumDesigner:
         topic: str,
         level: EducationLevel,
         duration_weeks: int,
-        objectives: List[LearningObjective],
+        objectives: list[LearningObjective],
         hours_per_module: float = 4.0,
-    ) -> List[CurriculumModule]:
+    ) -> list[CurriculumModule]:
         """
         Generate curriculum modules from topic and objectives.
 
@@ -378,7 +378,7 @@ class CurriculumDesigner:
 
     def _generate_content_sections(
         self, title: str, topic: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Generate content sections for a module."""
         return [
             {
@@ -395,7 +395,7 @@ class CurriculumDesigner:
             },
             {
                 "type": "demonstration",
-                "title": f"Practical Demonstration",
+                "title": "Practical Demonstration",
                 "duration_minutes": 30,
                 "format": "video_with_code",
             },
@@ -403,7 +403,7 @@ class CurriculumDesigner:
 
     def _generate_activities(
         self, title: str, level: EducationLevel
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Generate learning activities for a module."""
         return [
             {
@@ -423,8 +423,8 @@ class CurriculumDesigner:
         ]
 
     def _generate_assessments(
-        self, objectives: List[LearningObjective]
-    ) -> List[Dict[str, Any]]:
+        self, objectives: list[LearningObjective]
+    ) -> list[dict[str, Any]]:
         """Generate assessments for module objectives."""
         assessments = []
         for obj in objectives:
@@ -439,7 +439,7 @@ class CurriculumDesigner:
             )
         return assessments
 
-    def _generate_resources(self, topic: str) -> List[str]:
+    def _generate_resources(self, topic: str) -> list[str]:
         """Generate resource list for topic."""
         return [
             f"GEO-INFER-{topic.upper()} Module Documentation",
@@ -448,8 +448,8 @@ class CurriculumDesigner:
         ]
 
     def _align_with_standards(
-        self, objectives: List[LearningObjective]
-    ) -> Dict[str, List[str]]:
+        self, objectives: list[LearningObjective]
+    ) -> dict[str, list[str]]:
         """Align learning objectives with educational standards."""
         alignment = {}
         for standard in self.standards:
@@ -464,9 +464,9 @@ class CurriculumDesigner:
     def align_with_standards(
         self,
         curriculum: Curriculum,
-        target_standards: List[str],
+        target_standards: list[str],
         coverage_report: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Align curriculum with specific educational standards.
 
@@ -478,12 +478,12 @@ class CurriculumDesigner:
         Returns:
             Alignment mapping and optional coverage report
         """
-        mappings_out: Dict[str, List[Dict[str, Any]]] = {}
-        coverage_out: Dict[str, Dict[str, Any]] = {}
-        alignment: Dict[str, Any] = {"mappings": mappings_out, "coverage": coverage_out}
+        mappings_out: dict[str, list[dict[str, Any]]] = {}
+        coverage_out: dict[str, dict[str, Any]] = {}
+        alignment: dict[str, Any] = {"mappings": mappings_out, "coverage": coverage_out}
 
         for standard in target_standards:
-            standard_objectives: List[Dict[str, Any]] = []
+            standard_objectives: list[dict[str, Any]] = []
             for module in curriculum.modules:
                 for obj in module.learning_objectives:
                     standard_objectives.append(
@@ -508,11 +508,11 @@ class CurriculumDesigner:
 
     def create_learning_pathway(
         self,
-        learner_profile: Dict[str, Any],
-        target_competencies: List[str],
+        learner_profile: dict[str, Any],
+        target_competencies: list[str],
         available_time: str,
         optimization: str = "efficiency",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create personalized learning pathway for a learner.
 

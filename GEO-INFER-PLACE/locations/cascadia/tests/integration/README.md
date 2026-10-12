@@ -4,7 +4,6 @@ Integration workspace within `GEO-INFER-PLACE`.
 
 ## Contents
 
-- `comprehensive_validation.py`
 - `focused_framework_validation.py`
 - `run_comprehensive_validation.py`
 - `test_bioregion_pipeline.py`
@@ -27,8 +26,8 @@ Integration workspace within `GEO-INFER-PLACE`.
 
 - Module: `GEO-INFER-PLACE`
 - Package: `geo_infer_place`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-PLACE`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-place`
 - Tests: `uv run python -m pytest GEO-INFER-PLACE/locations/cascadia/tests/integration`
 
 ## Dependencies
@@ -46,7 +45,8 @@ Integration workspace within `GEO-INFER-PLACE`.
 - `matplotlib>=3.5.0`
 - `branca>=0.6.0`
 - `requests>=2.28.0`
-- `geo-infer-space`
+- `geo-infer-space>=0.4.0`
+- `geo-infer-time>=0.4.0`
 
 
 ## Validation

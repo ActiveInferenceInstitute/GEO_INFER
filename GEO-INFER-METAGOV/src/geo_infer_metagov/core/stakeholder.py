@@ -1,7 +1,7 @@
 """Stakeholder governance coordination for multi-stakeholder systems."""
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Any
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ class Stakeholder:
     stakeholder_id: str
     name: str
     category: str  # government, community, business, ngo, indigenous, etc.
-    interests: List[str]
+    interests: list[str]
     influence_level: float  # 0-1 scale
     dependence_on_resource: float  # 0-1 scale
     decision_power: float  # 0-1 scale
@@ -25,12 +25,12 @@ class GovernancePlatform:
     """Multi-stakeholder governance platform."""
 
     platform_id: str
-    stakeholders: List[Stakeholder]
-    governance_mechanisms: List[str]
-    decision_domains: List[str]
+    stakeholders: list[Stakeholder]
+    governance_mechanisms: list[str]
+    decision_domains: list[str]
     conflict_resolution_capacity: bool
     participation_level: str  # information, consultation, co-management, co-production
-    decision_process: Dict[str, Any] = field(default_factory=dict)
+    decision_process: dict[str, Any] = field(default_factory=dict)
 
 
 class StakeholderGovernanceCoordinator:
@@ -66,14 +66,14 @@ class StakeholderGovernanceCoordinator:
         self.engagement_level = stakeholder_engagement_level
         self.governance_approach = governance_approach
         self.equity_focus = equity_focus
-        self.governance_platforms: Dict[str, GovernancePlatform] = {}
+        self.governance_platforms: dict[str, GovernancePlatform] = {}
 
     def analyze_stakeholders(
         self,
         governance_domain: str,
-        spatial_extent: Dict[str, Any],
-        stakeholder_categories: List[str],
-    ) -> Dict[str, Any]:
+        spatial_extent: dict[str, Any],
+        stakeholder_categories: list[str],
+    ) -> dict[str, Any]:
         """
         Identify and analyze stakeholders.
 
@@ -91,10 +91,10 @@ class StakeholderGovernanceCoordinator:
         Dict[str, Any]
             Comprehensive stakeholder analysis
         """
-        stakeholder_groups_out: List[Stakeholder] = []
-        power_dynamics_out: Dict[str, Any] = {}
-        interest_conflicts_out: List[Dict[str, Any]] = []
-        stakeholder_analysis: Dict[str, Any] = {
+        stakeholder_groups_out: list[Stakeholder] = []
+        power_dynamics_out: dict[str, Any] = {}
+        interest_conflicts_out: list[dict[str, Any]] = []
+        stakeholder_analysis: dict[str, Any] = {
             "governance_domain": governance_domain,
             "spatial_extent": spatial_extent,
             "stakeholder_groups": stakeholder_groups_out,
@@ -133,7 +133,7 @@ class StakeholderGovernanceCoordinator:
 
         return stakeholder_analysis
 
-    def _identify_interests(self, stakeholder_category: str) -> List[str]:
+    def _identify_interests(self, stakeholder_category: str) -> list[str]:
         """Identify typical interests for stakeholder category."""
         interests_map = {
             "government": ["regulation", "equity", "sustainability", "public_benefit"],
@@ -194,8 +194,8 @@ class StakeholderGovernanceCoordinator:
         return power_map.get(stakeholder_category.lower(), 0.4)
 
     def _analyze_power_dynamics(
-        self, stakeholders: List[Stakeholder]
-    ) -> Dict[str, Any]:
+        self, stakeholders: list[Stakeholder]
+    ) -> dict[str, Any]:
         """
         Analyze power dynamics among stakeholders using network analysis concepts.
 
@@ -279,7 +279,7 @@ class StakeholderGovernanceCoordinator:
             },
         }
 
-    def _calculate_std_dev(self, values: List[float]) -> float:
+    def _calculate_std_dev(self, values: list[float]) -> float:
         """Calculate standard deviation."""
         if not values or len(values) < 2:
             return 0.0
@@ -288,8 +288,8 @@ class StakeholderGovernanceCoordinator:
         return float(variance**0.5)
 
     def _identify_conflicts(
-        self, stakeholders: List[Stakeholder]
-    ) -> List[Dict[str, Any]]:
+        self, stakeholders: list[Stakeholder]
+    ) -> list[dict[str, Any]]:
         """Identify potential conflicts between stakeholders."""
         conflicts = []
 
@@ -309,7 +309,7 @@ class StakeholderGovernanceCoordinator:
 
         return conflicts
 
-    def _assess_collaboration_potential(self, stakeholders: List[Stakeholder]) -> float:
+    def _assess_collaboration_potential(self, stakeholders: list[Stakeholder]) -> float:
         """Assess potential for collaboration."""
         if not stakeholders:
             return 0.0
@@ -337,9 +337,9 @@ class StakeholderGovernanceCoordinator:
 
     def establish_governance_platform(
         self,
-        participants: List[Any],
-        governance_mechanisms: List[str],
-        decision_domains: List[str],
+        participants: list[Any],
+        governance_mechanisms: list[str],
+        decision_domains: list[str],
         conflict_resolution_capacity: bool,
     ) -> GovernancePlatform:
         """
@@ -397,11 +397,11 @@ class StakeholderGovernanceCoordinator:
 
     def design_participatory_process(
         self,
-        stakeholder_groups: List[Any],
+        stakeholder_groups: list[Any],
         decision_type: str,
-        equity_principles: List[str],
+        equity_principles: list[str],
         transparency_requirements: bool,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Design inclusive decision-making process.
 
@@ -455,8 +455,8 @@ class StakeholderGovernanceCoordinator:
         }
 
     def _design_participation_requirements(
-        self, equity_principles: List[str]
-    ) -> Dict[str, str]:
+        self, equity_principles: list[str]
+    ) -> dict[str, str]:
         """Design participation requirements."""
         return {
             "minimum_representation": "all_stakeholder_categories",
@@ -466,7 +466,7 @@ class StakeholderGovernanceCoordinator:
             "equity_focus": "yes" if self.equity_focus else "no",
         }
 
-    def _design_voice_mechanisms(self) -> List[str]:
+    def _design_voice_mechanisms(self) -> list[str]:
         """Design mechanisms for stakeholder voice."""
         return [
             "direct_participation",
@@ -475,7 +475,7 @@ class StakeholderGovernanceCoordinator:
             "public_forums",
         ]
 
-    def _design_representation_mechanisms(self) -> List[str]:
+    def _design_representation_mechanisms(self) -> list[str]:
         """Design representation mechanisms."""
         return [
             "proportional_representation",
@@ -483,7 +483,7 @@ class StakeholderGovernanceCoordinator:
             "rotational_roles",
         ]
 
-    def _design_influence_mechanisms(self) -> List[str]:
+    def _design_influence_mechanisms(self) -> list[str]:
         """Design mechanisms for stakeholder influence."""
         return [
             "consensus_decision_making",
@@ -491,7 +491,7 @@ class StakeholderGovernanceCoordinator:
             "deliberative_processes",
         ]
 
-    def _design_distribution_mechanisms(self) -> List[str]:
+    def _design_distribution_mechanisms(self) -> list[str]:
         """Design benefit and cost distribution mechanisms."""
         return [
             "needs_based_distribution",

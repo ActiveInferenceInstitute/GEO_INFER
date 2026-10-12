@@ -3,12 +3,11 @@ Validation functions for file paths and geospatial data.
 """
 
 import os
-from typing import List, Union, Optional
 import geopandas as gpd
 import numpy as np
 
 
-def validate_file_path(file_path: str, extensions: Optional[List[str]] = None) -> None:
+def validate_file_path(file_path: str, extensions: list[str] | None = None) -> None:
     """
     Validate that a file path exists and has the correct extension.
 
@@ -31,7 +30,7 @@ def validate_file_path(file_path: str, extensions: Optional[List[str]] = None) -
             )
 
 
-def validate_geospatial_data(data: Union[gpd.GeoDataFrame, np.ndarray]) -> None:
+def validate_geospatial_data(data: gpd.GeoDataFrame | np.ndarray) -> None:
     """
     Validate that the data is a valid GeoDataFrame or numpy array.
 

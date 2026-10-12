@@ -2,7 +2,7 @@
 
 import json
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from geo_infer_comms.models.message import (
     MessagePriority,
@@ -20,7 +20,7 @@ class TestMessageSerialization:
             "type": MessageType.TEXT.value,
             "content": "Hello world",
             "priority": MessagePriority.NORMAL.value,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         serialized = json.dumps(message)
         deserialized = json.loads(serialized)

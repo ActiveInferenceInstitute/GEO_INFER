@@ -7,8 +7,9 @@ management (AGENT) modules to create sophisticated collective intelligence syste
 """
 
 import numpy as np
+from copy import deepcopy
 import logging
-from typing import Dict, List, Any, Optional, cast
+from typing import Any, cast
 from datetime import datetime
 from dataclasses import dataclass, field
 
@@ -16,7 +17,9 @@ from dataclasses import dataclass, field
 # absent (the same pattern as aco.py, pso.py, population.py, stigmergy.py).
 try:
     from geo_infer_act.core.active_inference import ActiveInferenceModel
-except ImportError as e:
+except ModuleNotFoundError as e:
+    if e.name != "geo_infer_act":
+        raise
     logging.getLogger(__name__).debug(
         "Optional active-inference integration unavailable: %s", e
     )
@@ -25,14 +28,18 @@ except ImportError as e:
 try:
     from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
     from geo_infer_space.core.analytics import SpatialAnalyticsInterface
-except ImportError as e:
+except ModuleNotFoundError as e:
+    if e.name != "geo_infer_space":
+        raise
     logging.getLogger(__name__).debug("Optional spatial integration unavailable: %s", e)
     SpatialIndexingInterface = None
     SpatialAnalyticsInterface = None
 
 try:
     from geo_infer_agent.core.agent_base import BaseAgent
-except ImportError as e:
+except ModuleNotFoundError as e:
+    if e.name != "geo_infer_agent":
+        raise
     logging.getLogger(__name__).debug(
         "Optional agent-framework integration unavailable: %s", e
     )
@@ -51,21 +58,21 @@ class SensoryInput:
     for comprehensive agent perception.
     """
 
-    spatial_context: Dict[str, Any] = field(default_factory=dict)
-    environmental_signals: Dict[str, Any] = field(default_factory=dict)
-    social_signals: Dict[str, Any] = field(default_factory=dict)
-    stigmergic_signals: Dict[str, Any] = field(default_factory=dict)
-    temporal_context: Dict[str, Any] = field(default_factory=dict)
+    spatial_context: dict[str, Any] = field(default_factory=dict)
+    environmental_signals: dict[str, Any] = field(default_factory=dict)
+    social_signals: dict[str, Any] = field(default_factory=dict)
+    stigmergic_signals: dict[str, Any] = field(default_factory=dict)
+    temporal_context: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate and process sensory input after initialization."""
         self.timestamp = datetime.now()
         self.processed = False
 
-    def process(self) -> Dict[str, Any]:
+    def process(self) -> dict[str, Any]:
         """Process and integrate all sensory inputs."""
         if self.processed:
-            return self.to_dict()
+            return self.processed_data
 
         # Integrate spatial context
         processed = {
@@ -93,7 +100,7 @@ class SensoryInput:
         self.processed_data = processed
         return processed
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "spatial_context": self.spatial_context,
@@ -117,10 +124,10 @@ class ActionDecision:
     """
 
     action_type: str
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
     confidence: float = 0.0
-    expected_outcome: Dict[str, Any] = field(default_factory=dict)
-    alternative_actions: List[Dict[str, Any]] = field(default_factory=list)
+    expected_outcome: dict[str, Any] = field(default_factory=dict)
+    alternative_actions: list[dict[str, Any]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """Validate action decision after initialization."""
@@ -143,14 +150,14 @@ class ActionDecision:
         multiplier = urgency_multipliers.get(self.action_type, 1.0)
         return base_priority * multiplier
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "action_type": self.action_type,
-            "parameters": self.parameters,
+            "parameters": deepcopy(self.parameters),
             "confidence": self.confidence,
-            "expected_outcome": self.expected_outcome,
-            "alternative_actions": self.alternative_actions,
+            "expected_outcome": deepcopy(self.expected_outcome),
+            "alternative_actions": deepcopy(self.alternative_actions),
             "timestamp": self.timestamp.isoformat(),
         }
 
@@ -182,7 +189,7 @@ class SwarmAgent(_SwarmAgentBase):
         position: np.ndarray,
         sensory_range: float = 100.0,
         movement_speed: float = 1.5,
-        active_inference_enabled: bool = True,
+        active_inference_enabled: bool = False,
         spatial_backend: str = "h3",
         **kwargs: Any,
     ) -> None:
@@ -194,11 +201,15 @@ class SwarmAgent(_SwarmAgentBase):
             position: Initial spatial position as numpy array [lat, lng]
             sensory_range: Maximum distance for environmental perception (meters)
             movement_speed: Maximum movement speed (m/s)
-            active_inference_enabled: Whether to use Active Inference for decision making
+            active_inference_enabled: Enable the explicitly configured ACT model.
+                Requires active_inference_model, act_observation_encoder and
+                act_actions in kwargs. Default uses the rule policy.
             spatial_backend: Backend for spatial operations ('h3', 'srai', 'geopandas')
             **kwargs: Additional configuration parameters
         """
         # Validate inputs
+        if not isinstance(active_inference_enabled, bool):
+            raise TypeError("active_inference_enabled must be a boolean")
         position_arr = np.array(position, dtype=np.float64)
         if position_arr.shape != (2,) or not np.all(np.isfinite(position_arr)):
             raise ValueError(
@@ -217,7 +228,7 @@ class SwarmAgent(_SwarmAgentBase):
             # attributes SwarmAgent itself relies on. AGENT framework
             # features (run loop, save_state, belief state) are simply absent.
             self.agent_id = agent_id
-            self.config: Dict[str, Any] = dict(kwargs)
+            self.config: dict[str, Any] = dict(kwargs)
 
         # Swarm-specific attributes
         self.position = position_arr
@@ -226,7 +237,16 @@ class SwarmAgent(_SwarmAgentBase):
         self.active_inference_enabled = active_inference_enabled
 
         # Integration components
-        self.active_inference_model: Any = None
+        self.active_inference_model: Any = kwargs.get("active_inference_model")
+        self._act_observation_encoder = kwargs.get("act_observation_encoder")
+        self._act_actions = deepcopy(kwargs.get("act_actions"))
+        self.last_active_inference_result: Any = None
+        self.act_prediction_history: list[dict[str, Any]] = []
+        self._pending_act_decision: ActionDecision | None = None
+        self._pending_act_execution: ActionDecision | None = None
+        self._pending_act_result: dict[str, Any] | None = None
+        self._act_execution_in_progress = False
+        self._pending_act_index: int | None = None
         self.spatial_indexer: Any = None
         self.spatial_analytics: Any = None
 
@@ -238,12 +258,12 @@ class SwarmAgent(_SwarmAgentBase):
             {"min_lat": -90.0, "max_lat": 90.0, "min_lng": -180.0, "max_lng": 180.0},
         )
         self.pheromone_system = kwargs.get("pheromone_system")
-        self.task_memory: List[Dict[str, Any]] = []
-        self.social_signals: Dict[str, Any] = {}
+        self.task_memory: list[dict[str, Any]] = []
+        self.social_signals: dict[str, Any] = {}
 
         # Performance tracking
-        self.performance_history: List[Dict[str, Any]] = []
-        self.interaction_history: List[Dict[str, Any]] = []
+        self.performance_history: list[dict[str, Any]] = []
+        self.interaction_history: list[dict[str, Any]] = []
 
         # Initialize integrations
         self._initialize_integrations(spatial_backend)
@@ -252,28 +272,47 @@ class SwarmAgent(_SwarmAgentBase):
 
     def _initialize_integrations(self, spatial_backend: str) -> None:
         """Initialize integration with other GEO-INFER modules."""
-        # Initialize Active Inference model
-        if self.active_inference_enabled and ActiveInferenceModel:
-            try:
-                self.active_inference_model = ActiveInferenceModel(
-                    model_type="spatial_temporal",
-                    preferences={
-                        "energy_conservation": 0.8,
-                        "task_completion": 0.9,
-                        "social_coordination": 0.7,
-                    },
-                    precision_parameters={
-                        "observation_precision": 1.0,
-                        "action_precision": 0.8,
-                        "state_precision": 0.6,
-                    },
+        if self.active_inference_enabled:
+            if ActiveInferenceModel is None:
+                raise ImportError("Install geo-infer-ant[integrations] to enable ACT")
+            if (
+                not isinstance(self.active_inference_model, ActiveInferenceModel)
+                or self.active_inference_model.generative_model is None
+            ):
+                raise ValueError(
+                    "ACT requires a configured active_inference_model with a GenerativeModel"
                 )
-                logger.info(
-                    f"Active Inference model initialized for agent {self.agent_id}"
+            if not callable(self._act_observation_encoder):
+                raise ValueError("ACT requires an explicit act_observation_encoder")
+            if (
+                not isinstance(self._act_actions, list)
+                or not self._act_actions
+                or any(
+                    not isinstance(action, dict)
+                    or not isinstance(action.get("action_type"), str)
+                    or not action["action_type"]
+                    for action in self._act_actions
                 )
-            except Exception as e:
-                logger.warning(f"Failed to initialize Active Inference: {e}")
-                self.active_inference_enabled = False
+            ):
+                raise ValueError(
+                    "act_actions must declare ordered action dictionaries with action_type"
+                )
+            model = self.active_inference_model.generative_model
+            transition = np.asarray(model.transition_model)
+            likelihood = np.asarray(model.observation_model)
+            if (
+                model.model_type != "categorical"
+                or likelihood.ndim != 2
+                or transition.ndim not in {2, 3}
+            ):
+                raise ValueError("ANT's ACT bridge requires a flat categorical model")
+            action_count = transition.shape[2] if transition.ndim == 3 else 1
+            if len(self._act_actions) != action_count:
+                raise ValueError("act_actions must match the transition action axis")
+        elif self.active_inference_model is not None:
+            raise ValueError(
+                "active_inference_model requires active_inference_enabled=True"
+            )
 
         # Initialize spatial indexing
         if SpatialIndexingInterface:
@@ -299,11 +338,11 @@ class SwarmAgent(_SwarmAgentBase):
 
     async def perceive_environment(
         self,
-        spatial_context: Optional[Dict[str, Any]] = None,
-        environmental_signals: Optional[Dict[str, Any]] = None,
-        social_signals: Optional[Dict[str, Any]] = None,
-        stigmergic_signals: Optional[Dict[str, Any]] = None,
-        temporal_context: Optional[Dict[str, Any]] = None,
+        spatial_context: dict[str, Any] | None = None,
+        environmental_signals: dict[str, Any] | None = None,
+        social_signals: dict[str, Any] | None = None,
+        stigmergic_signals: dict[str, Any] | None = None,
+        temporal_context: dict[str, Any] | None = None,
     ) -> SensoryInput:
         """
         Perceive and integrate environmental information.
@@ -330,33 +369,10 @@ class SwarmAgent(_SwarmAgentBase):
             stigmergic_signals=stigmergic_signals or {},
             temporal_context=temporal_context or {"current_time": datetime.now()},
         )
+        sensory_input.process()
 
-        # Process through Active Inference if enabled
-        if self.active_inference_enabled and self.active_inference_model:
-            try:
-                processed_data = sensory_input.process()
-
-                # Update Active Inference observations
-                observations = self._extract_observations(processed_data)
-                beliefs = self._update_active_inference(observations)
-                sensory_input.processed_data["active_inference_observations"] = (
-                    observations
-                )
-                if beliefs is not None:
-                    # Store processed beliefs in sensory input.
-                    sensory_input.processed_data.update(
-                        {
-                            "active_inference_beliefs": beliefs,
-                            "free_energy": getattr(
-                                self.active_inference_model,
-                                "current_free_energy",
-                                0.0,
-                            ),
-                        }
-                    )
-
-            except Exception as e:
-                logger.warning(f"Active Inference processing failed: {e}")
+        # Perception gathers context. ACT executes exactly one update per
+        # decision, after the caller's declared observation mapping is applied.
 
         # Use spatial analytics if available
         if self.spatial_analytics and sensory_input.spatial_context:
@@ -374,72 +390,11 @@ class SwarmAgent(_SwarmAgentBase):
         logger.debug(f"Agent {self.agent_id} processed sensory input")
         return sensory_input
 
-    def _update_active_inference(self, observations: Dict[str, Any]) -> Optional[Any]:
-        """Store observations and update beliefs when a model is configured.
-
-        GEO-INFER-ACT exposes ``update_observations`` for structured context and
-        ``perceive`` for numeric belief updates.  A newly-created ANT agent has
-        no generative model yet, so it must retain observations without calling
-        a belief API that cannot run.  The guarded path also keeps compatibility
-        with older injected models exposing a zero-argument ``update_beliefs``.
-        """
-        model = self.active_inference_model
-        if model is None:
-            return None
-
-        update_observations = getattr(model, "update_observations", None)
-        if callable(update_observations):
-            update_observations(observations)
-
-        if getattr(model, "generative_model", None) is not None:
-            perceive = getattr(model, "perceive", None)
-            if callable(perceive):
-                numeric_observations = self._numeric_observation_vector(observations)
-                if numeric_observations.size:
-                    return perceive(numeric_observations)
-
-        update_beliefs = getattr(model, "update_beliefs", None)
-        if callable(update_beliefs):
-            return update_beliefs()
-        return None
-
-    @staticmethod
-    def _numeric_observation_vector(observations: Dict[str, Any]) -> np.ndarray:
-        """Flatten finite numeric observations for configured ACT models."""
-        values: List[float] = []
-        for value in observations.values():
-            try:
-                array = np.asarray(value, dtype=float).reshape(-1)
-            except (TypeError, ValueError):
-                continue
-            values.extend(array[np.isfinite(array)].tolist())
-        return np.asarray(values, dtype=float)
-
-    def _extract_observations(self, processed_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Extract observations for Active Inference model."""
-        observations = {}
-
-        # Extract spatial observations
-        if "spatial_position" in processed_data:
-            observations["spatial_position"] = processed_data["spatial_position"]
-
-        # Extract environmental observations
-        env_keys = [k for k in processed_data.keys() if k.startswith("env_")]
-        for key in env_keys:
-            observations[key[4:]] = processed_data[key]  # Remove 'env_' prefix
-
-        # Extract social observations
-        social_keys = [k for k in processed_data.keys() if k.startswith("social_")]
-        for key in social_keys:
-            observations[key[7:]] = processed_data[key]  # Remove 'social_' prefix
-
-        return observations
-
     def make_decision(
         self,
         sensory_input: SensoryInput,
-        internal_motivations: Optional[Dict[str, float]] = None,
-        behavioral_rules: Optional[Dict[str, Any]] = None,
+        internal_motivations: dict[str, float] | None = None,
+        behavioral_rules: dict[str, Any] | None = None,
     ) -> ActionDecision:
         """
         Make behavioral decision based on sensory input and internal state.
@@ -466,38 +421,41 @@ class SwarmAgent(_SwarmAgentBase):
                 "exploration": 0.5,
             }
 
-        # Use Active Inference for decision making if enabled
-        if self.active_inference_enabled and self.active_inference_model:
-            try:
-                # Update model with current context
-                self.active_inference_model.update_preferences(internal_motivations)
-
-                # Generate policy options
-                available_actions = self._generate_action_space(processed_data)
-                policies = self.active_inference_model.generate_policies(
-                    available_actions
+        if self.active_inference_enabled:
+            if self._pending_act_decision is not None:
+                raise ValueError(
+                    "Execute the pending ACT action before another decision"
                 )
-
-                # Select optimal action
-                optimal_policy = self.active_inference_model.select_policy(policies)
-                expected_fe = self.active_inference_model.compute_expected_free_energy(
-                    optimal_policy
+            observation = np.asarray(
+                self._act_observation_encoder(processed_data), dtype=float
+            )
+            result = self.active_inference_model.step(
+                observation, available_actions=self._act_actions, return_result=True
+            )
+            self.last_active_inference_result = result
+            action = result.action
+            evaluation = result.policy_evaluation
+            if not isinstance(action, dict) or evaluation is None:
+                raise ValueError(
+                    "Configured ACT must return a declared action and policy evaluation"
                 )
-
-                # Create action decision
-                decision = ActionDecision(
-                    action_type=optimal_policy["action_type"],
-                    parameters=optimal_policy.get("parameters", {}),
-                    confidence=1.0 - min(expected_fe, 1.0),  # Convert FE to confidence
-                    expected_outcome=optimal_policy.get("expected_outcome", {}),
-                    alternative_actions=[p for p in policies if p != optimal_policy],
-                )
-
-            except Exception as e:
-                logger.warning(f"Active Inference decision making failed: {e}")
-                decision = self._rule_based_decision_making(
-                    processed_data, internal_motivations, behavioral_rules
-                )
+            decision = ActionDecision(
+                action_type=action["action_type"],
+                parameters=deepcopy(action.get("parameters", {})),
+                confidence=float(evaluation.probability),
+                expected_outcome=deepcopy(action.get("expected_outcome", {})),
+                alternative_actions=deepcopy(
+                    [
+                        candidate
+                        for index, candidate in enumerate(self._act_actions)
+                        if index != evaluation.index
+                    ]
+                ),
+            )
+            self._pending_act_decision = decision
+            self._pending_act_execution = deepcopy(decision)
+            self._pending_act_result = None
+            self._pending_act_index = evaluation.index
 
         else:
             # Use the explicit rule-based policy when Active Inference is disabled.
@@ -509,8 +467,8 @@ class SwarmAgent(_SwarmAgentBase):
         return decision
 
     def _generate_action_space(
-        self, processed_data: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        self, processed_data: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Generate possible actions based on current context."""
         actions = []
 
@@ -597,9 +555,9 @@ class SwarmAgent(_SwarmAgentBase):
 
     def _rule_based_decision_making(
         self,
-        processed_data: Dict[str, Any],
-        internal_motivations: Dict[str, float],
-        behavioral_rules: Optional[Dict[str, Any]] = None,
+        processed_data: dict[str, Any],
+        internal_motivations: dict[str, float],
+        behavioral_rules: dict[str, Any] | None = None,
     ) -> ActionDecision:
         """Select an action with the configured rule-based policy."""
         # Simple priority-based decision making
@@ -650,7 +608,7 @@ class SwarmAgent(_SwarmAgentBase):
             expected_outcome={"information_gain": 0.2},
         )
 
-    async def execute_action(self, decision: ActionDecision) -> Dict[str, Any]:
+    async def execute_action(self, decision: ActionDecision) -> dict[str, Any]:
         """
         Execute the chosen action and return results.
 
@@ -660,9 +618,27 @@ class SwarmAgent(_SwarmAgentBase):
         Returns:
             Execution results and outcomes
         """
+        if self.active_inference_enabled:
+            if decision is not self._pending_act_decision:
+                raise ValueError(
+                    "Execute the decision selected by this agent's ACT model"
+                )
+            if self._act_execution_in_progress:
+                raise ValueError("The pending ACT action is already executing")
+            # The public decision identifies this execution. The owned snapshot
+            # binds physical parameters to the selected transition index.
+            decision = deepcopy(self._pending_act_execution)
+            self._act_execution_in_progress = True
+        try:
+            return await self._execute_bound_action(decision)
+        finally:
+            self._act_execution_in_progress = False
+
+    async def _execute_bound_action(self, decision: ActionDecision) -> dict[str, Any]:
+        """Execute owned parameters; a prediction retry cannot repeat physical work."""
         logger.info(f"Agent {self.agent_id} executing action: {decision.action_type}")
 
-        execution_result: Dict[str, Any] = {
+        execution_result: dict[str, Any] = {
             "action_type": decision.action_type,
             "start_time": datetime.now(),
             "success": False,
@@ -670,63 +646,84 @@ class SwarmAgent(_SwarmAgentBase):
             "energy_cost": 0.0,
         }
 
-        try:
-            # Route to appropriate action handler
-            if decision.action_type == "move_toward_resource":
-                result = await self._execute_movement_action(decision)
-            elif decision.action_type in {
-                "move_away_from_threat",
-                "explore_unknown",
-                "explore",
-            }:
-                result = await self._execute_movement_action(decision)
-            elif decision.action_type == "deposit_pheromone":
-                result = await self._execute_stigmergic_action(decision)
-            elif decision.action_type == "follow_pheromone":
-                result = await self._execute_follow_pheromone_action(decision)
-            elif decision.action_type == "communicate_status":
-                result = await self._execute_communication_action(decision)
-            elif decision.action_type in {
-                "communicate",
-                "request_assistance",
-                "coordinate_with_swarm",
-            }:
-                result = await self._execute_communication_action(decision)
-            elif decision.action_type == "forage":
-                result = await self._execute_foraging_action(decision)
-            elif decision.action_type == "rest":
-                result = await self._execute_rest_action(decision)
-            elif decision.action_type == "monitor_environment":
-                result = await self._execute_monitoring_action(decision)
-            else:
-                result = await self._execute_generic_action(decision)
+        if self.active_inference_enabled and self._pending_act_result is not None:
+            execution_result = deepcopy(self._pending_act_result)
+        else:
+            try:
+                # Route to appropriate action handler
+                if decision.action_type == "move_toward_resource":
+                    result = await self._execute_movement_action(decision)
+                elif decision.action_type in {
+                    "move_away_from_threat",
+                    "explore_unknown",
+                    "explore",
+                }:
+                    result = await self._execute_movement_action(decision)
+                elif decision.action_type == "deposit_pheromone":
+                    result = await self._execute_stigmergic_action(decision)
+                elif decision.action_type == "follow_pheromone":
+                    result = await self._execute_follow_pheromone_action(decision)
+                elif decision.action_type == "communicate_status":
+                    result = await self._execute_communication_action(decision)
+                elif decision.action_type in {
+                    "communicate",
+                    "request_assistance",
+                    "coordinate_with_swarm",
+                }:
+                    result = await self._execute_communication_action(decision)
+                elif decision.action_type == "forage":
+                    result = await self._execute_foraging_action(decision)
+                elif decision.action_type == "rest":
+                    result = await self._execute_rest_action(decision)
+                elif decision.action_type == "monitor_environment":
+                    result = await self._execute_monitoring_action(decision)
+                else:
+                    result = await self._execute_generic_action(decision)
 
-            # Update execution result
-            execution_result.update(result)
-            execution_result["success"] = bool(result.get("success", True))
+                # Update execution result
+                execution_result.update(result)
+                execution_result["success"] = bool(result.get("success", True))
 
-            # Update agent state based on execution
-            self._update_agent_state(decision, execution_result)
+                # Update agent state based on execution
+                self._update_agent_state(decision, execution_result)
 
-            # Record in performance history
-            self.performance_history.append(
-                {
-                    "timestamp": datetime.now(),
-                    "action": decision.to_dict(),
-                    "result": execution_result,
-                }
-            )
-
-            # Update Active Inference model if enabled
-            if self.active_inference_enabled and self.active_inference_model:
-                self.active_inference_model.update_with_outcome(
-                    decision.to_dict(), execution_result
+                # Record in performance history
+                self.performance_history.append(
+                    {
+                        "timestamp": datetime.now(),
+                        "action": decision.to_dict(),
+                        "result": execution_result,
+                    }
                 )
 
-        except Exception as e:
-            logger.error(f"Action execution failed for agent {self.agent_id}: {e}")
-            execution_result["error"] = str(e)
-            execution_result["success"] = False
+            except Exception as e:
+                logger.error(f"Action execution failed for agent {self.agent_id}: {e}")
+                execution_result["error"] = str(e)
+                execution_result["success"] = False
+
+        if self.active_inference_enabled:
+            action_index = self._pending_act_index
+            if execution_result["success"]:
+                # Preserve the completed physical outcome if prediction fails.
+                # Retrying this decision then retries only model propagation.
+                self._pending_act_result = deepcopy(execution_result)
+                transition = np.asarray(
+                    self.active_inference_model.generative_model.transition_model
+                )
+                prior = self.active_inference_model.predict_beliefs(
+                    action_index if transition.ndim == 3 else None
+                )
+                self.act_prediction_history.append(
+                    {
+                        "action_index": action_index,
+                        "action": decision.to_dict(),
+                        "next_prior": prior["states"].tolist(),
+                    }
+                )
+            self._pending_act_decision = None
+            self._pending_act_execution = None
+            self._pending_act_result = None
+            self._pending_act_index = None
 
         execution_result["end_time"] = datetime.now()
         execution_result["duration"] = (
@@ -738,7 +735,7 @@ class SwarmAgent(_SwarmAgentBase):
 
     async def _execute_movement_action(
         self, decision: ActionDecision
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute movement-related actions."""
         params = decision.parameters
         target = params.get("target", "default")
@@ -788,7 +785,7 @@ class SwarmAgent(_SwarmAgentBase):
 
     async def _execute_stigmergic_action(
         self, decision: ActionDecision
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute stigmergic (pheromone) actions."""
         params = decision.parameters
         pheromone_type = params.get("pheromone_type", "trail")
@@ -823,7 +820,7 @@ class SwarmAgent(_SwarmAgentBase):
 
     async def _execute_follow_pheromone_action(
         self, decision: ActionDecision
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Move along the strongest local pheromone gradient."""
         if self.pheromone_system is None:
             return {
@@ -860,7 +857,7 @@ class SwarmAgent(_SwarmAgentBase):
 
     async def _execute_communication_action(
         self, decision: ActionDecision
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute communication actions."""
         params = decision.parameters
         message_type = params.get("message_type", "status")
@@ -886,7 +883,7 @@ class SwarmAgent(_SwarmAgentBase):
 
     async def _execute_foraging_action(
         self, decision: ActionDecision
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute foraging actions."""
         params = decision.parameters
         target_type = params.get("target_type", "food")
@@ -907,7 +904,7 @@ class SwarmAgent(_SwarmAgentBase):
             "actual_outcome": {"foraging_completed": success},
         }
 
-    async def _execute_rest_action(self, decision: ActionDecision) -> Dict[str, Any]:
+    async def _execute_rest_action(self, decision: ActionDecision) -> dict[str, Any]:
         """Execute rest/recovery actions."""
         params = decision.parameters
         duration = params.get("duration", 10)
@@ -927,7 +924,7 @@ class SwarmAgent(_SwarmAgentBase):
 
     async def _execute_monitoring_action(
         self, decision: ActionDecision
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute environmental monitoring actions."""
         params = decision.parameters
         sensor_types = params.get("sensor_types", ["general"])
@@ -950,7 +947,7 @@ class SwarmAgent(_SwarmAgentBase):
             "actual_outcome": {"monitoring_completed": True},
         }
 
-    async def _execute_generic_action(self, decision: ActionDecision) -> Dict[str, Any]:
+    async def _execute_generic_action(self, decision: ActionDecision) -> dict[str, Any]:
         """Reject actions without a registered handler."""
         return {
             "action_type": decision.action_type,
@@ -962,7 +959,7 @@ class SwarmAgent(_SwarmAgentBase):
         }
 
     def _update_agent_state(
-        self, decision: ActionDecision, result: Dict[str, Any]
+        self, decision: ActionDecision, result: dict[str, Any]
     ) -> None:
         """Update agent internal state based on action execution."""
         # Update energy level
@@ -996,7 +993,7 @@ class SwarmAgent(_SwarmAgentBase):
         if hasattr(self, "state"):
             self.state.update_belief("status", "initialized")
 
-    async def perceive(self) -> Dict[str, Any]:
+    async def perceive(self) -> dict[str, Any]:
         """Default perception method."""
         return {
             "position": self.position,
@@ -1004,17 +1001,17 @@ class SwarmAgent(_SwarmAgentBase):
             "timestamp": datetime.now(),
         }
 
-    def update_beliefs(self, perception: Dict[str, Any]) -> None:
+    def update_beliefs(self, perception: dict[str, Any]) -> None:
         """Update beliefs based on perception."""
         for key, value in perception.items():
             if hasattr(self, "state"):
                 self.state.update_belief(key, value)
 
-    async def decide(self) -> Optional[Dict[str, Any]]:
+    async def decide(self) -> dict[str, Any] | None:
         """Default decision method."""
         return {"type": "monitor", "parameters": {}}
 
-    async def act(self, action: Dict[str, Any]) -> Dict[str, Any]:
+    async def act(self, action: dict[str, Any]) -> dict[str, Any]:
         """Default action method."""
         return {"status": "completed"}
 
@@ -1022,7 +1019,7 @@ class SwarmAgent(_SwarmAgentBase):
         """Clean up resources."""
         logger.info(f"SwarmAgent {self.agent_id} shutting down")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert agent to dictionary representation."""
         return {
             "agent_id": self.agent_id,
@@ -1031,6 +1028,7 @@ class SwarmAgent(_SwarmAgentBase):
             "movement_speed": self.movement_speed,
             "energy_level": self.energy_level,
             "active_inference_enabled": self.active_inference_enabled,
+            "act_prediction_history": deepcopy(self.act_prediction_history),
             "config": self.config,
             "state": self.state.to_dict()
             if getattr(self, "state", None) is not None

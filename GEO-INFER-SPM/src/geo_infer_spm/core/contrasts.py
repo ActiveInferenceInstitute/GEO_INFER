@@ -19,7 +19,6 @@ where β are the regression coefficients and Var(β) is their covariance matrix.
 """
 
 import numpy as np
-from typing import Dict, List, Optional, Union
 from scipy.stats import t, f
 import re
 
@@ -45,7 +44,7 @@ class Contrast:
         vector: np.ndarray,
         name: str = "",
         contrast_type: str = "t",
-        weights: Optional[Dict[str, float]] = None,
+        weights: dict[str, float] | None = None,
     ):
         """
         Initialize contrast.
@@ -69,7 +68,7 @@ class Contrast:
 
     @classmethod
     def from_string(
-        cls, contrast_str: str, design_names: List[str], contrast_type: str = "t"
+        cls, contrast_str: str, design_names: list[str], contrast_type: str = "t"
     ) -> "Contrast":
         """
         Create contrast from string specification.
@@ -121,8 +120,8 @@ class Contrast:
 
     @staticmethod
     def _parse_condition_weights(
-        condition: str, design_names: List[str], weight: float
-    ) -> Dict[str, float]:
+        condition: str, design_names: list[str], weight: float
+    ) -> dict[str, float]:
         """Parse condition weights from contrast string component."""
         weights = {}
 
@@ -157,8 +156,8 @@ class Contrast:
 
     @staticmethod
     def _parse_linear_combination(
-        expr: str, design_names: List[str]
-    ) -> Dict[str, float]:
+        expr: str, design_names: list[str]
+    ) -> dict[str, float]:
         """Parse general linear combination expression."""
         weights = {}
 
@@ -206,7 +205,7 @@ class Contrast:
 
 def contrast(
     model_result: SPMResult,
-    contrast_spec: Union[str, np.ndarray, Contrast],
+    contrast_spec: str | np.ndarray | Contrast,
     contrast_type: str = "t",
 ) -> ContrastResult:
     """
@@ -398,7 +397,7 @@ def _compute_f_contrast(
 
 def generate_common_contrasts(
     design_matrix: "DesignMatrix", design_type: str = "categorical"
-) -> List[Contrast]:
+) -> list[Contrast]:
     """
     Generate common contrasts for standard experimental designs.
 

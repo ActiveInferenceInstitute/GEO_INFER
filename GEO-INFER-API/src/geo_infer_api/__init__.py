@@ -4,16 +4,7 @@ GEO-INFER-API package.
 A standardized API for geospatial interoperability within the GEO-INFER framework.
 """
 
-__version__ = "0.3.0"
-
-
-def __getattr__(name: str):
-    """Lazily expose ``main_app`` so importing the package stays side-effect free."""
-    if name == "main_app":
-        from geo_infer_api.app import main_app
-
-        return main_app
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+__version__ = "0.4.0"
 
 
 from geo_infer_api.core.config import Settings, get_settings
@@ -31,6 +22,16 @@ from geo_infer_api.models.geojson import (
     PolygonFeature,
     PolygonFeatureCollection,
 )
+
+
+def __getattr__(name: str):
+    """Lazily expose ``main_app`` so importing the package stays side-effect free."""
+    if name == "main_app":
+        from geo_infer_api.app import main_app
+
+        return main_app
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 __all__ = [
     "__version__",

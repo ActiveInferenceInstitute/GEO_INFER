@@ -2,7 +2,7 @@
 
 import asyncio
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 import pytest
 
@@ -317,7 +317,7 @@ class TestGeospatialDataStream:
     def test_temporal_window_filters_old_points(self) -> None:
         stream = self._stream()
         point = GeospatialPoint(longitude=-122.4, latitude=37.8)
-        old_timestamp = datetime.now(timezone.utc) - timedelta(hours=1)
+        old_timestamp = datetime.now(UTC) - timedelta(hours=1)
 
         stream.add_geospatial_data(point, "old", timestamp=old_timestamp)
         stream.add_geospatial_data(point, "new")

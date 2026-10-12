@@ -9,7 +9,7 @@ Beliefs represent an agent's information about the world. This module provides:
 - Uncertainty handling with confidence levels
 """
 
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any
 import datetime
 import logging
 from dataclasses import dataclass, field
@@ -39,9 +39,9 @@ class Belief:
     source: str = "unknown"
     timestamp: datetime.datetime = field(default_factory=datetime.datetime.now)
     confidence: float = 1.0
-    spatial_reference: Optional[Dict[str, float]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    history: List[Dict[str, Any]] = field(default_factory=list)
+    spatial_reference: dict[str, float] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    history: list[dict[str, Any]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """Validate belief after initialization."""
@@ -53,9 +53,9 @@ class Belief:
     def update(
         self,
         value: Any,
-        source: Optional[str] = None,
-        confidence: Optional[float] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        source: str | None = None,
+        confidence: float | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """
         Update the value, source, and confidence of this belief.
@@ -107,7 +107,7 @@ class Belief:
         age = datetime.datetime.now() - self.timestamp
         return age.total_seconds() > max_age_seconds
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert this belief to a dictionary representation.
 
@@ -125,7 +125,7 @@ class Belief:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Belief":
+    def from_dict(cls, data: dict[str, Any]) -> "Belief":
         """
         Create a Belief instance from a dictionary.
 
@@ -155,9 +155,9 @@ class BeliefBase:
 
     def __init__(self) -> None:
         """Initialize an empty belief base."""
-        self._beliefs: Dict[str, Belief] = {}
-        self._history: List[
-            Tuple[datetime.datetime, str, str, Any, Any]
+        self._beliefs: dict[str, Belief] = {}
+        self._history: list[
+            tuple[datetime.datetime, str, str, Any, Any]
         ] = []  # (time, operation, name, old_value, new_value)
         self._max_history_size: int = 1000
 
@@ -182,8 +182,8 @@ class BeliefBase:
         self,
         name: str,
         value: Any,
-        source: Optional[str] = None,
-        confidence: Optional[float] = None,
+        source: str | None = None,
+        confidence: float | None = None,
     ) -> None:
         """
         Update an existing belief.
@@ -268,7 +268,7 @@ class BeliefBase:
         """
         return name in self._beliefs
 
-    def get_all(self) -> Dict[str, Belief]:
+    def get_all(self) -> dict[str, Belief]:
         """
         Get all beliefs in the belief base.
 
@@ -277,7 +277,7 @@ class BeliefBase:
         """
         return dict(self._beliefs)
 
-    def get_all_values(self) -> Dict[str, Any]:
+    def get_all_values(self) -> dict[str, Any]:
         """
         Get all belief values in the belief base.
 
@@ -286,7 +286,7 @@ class BeliefBase:
         """
         return {name: belief.value for name, belief in self._beliefs.items()}
 
-    def query(self, **kwargs: Any) -> List[Belief]:
+    def query(self, **kwargs: Any) -> list[Belief]:
         """
         Query beliefs by various criteria.
 
@@ -311,7 +311,7 @@ class BeliefBase:
 
         return results
 
-    def query_spatial(self, center: Dict[str, float], radius: float) -> List[Belief]:
+    def query_spatial(self, center: dict[str, float], radius: float) -> list[Belief]:
         """
         Query beliefs by spatial reference within a radius of a center point.
 
@@ -332,7 +332,7 @@ class BeliefBase:
 
         return results
 
-    def check_consistency(self) -> List[Tuple[str, str, Any, Any]]:
+    def check_consistency(self) -> list[tuple[str, str, Any, Any]]:
         """
         Check for consistency issues between beliefs.
 
@@ -378,7 +378,7 @@ class BeliefBase:
 
         return len(to_remove)
 
-    def get_history(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    def get_history(self, limit: int | None = None) -> list[dict[str, Any]]:
         """
         Get the history of belief changes.
 
@@ -404,7 +404,7 @@ class BeliefBase:
             for timestamp, operation, name, old_value, new_value in entries
         ]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert the belief base to a dictionary representation.
 
@@ -419,7 +419,7 @@ class BeliefBase:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "BeliefBase":
+    def from_dict(cls, data: dict[str, Any]) -> "BeliefBase":
         """
         Create a BeliefBase instance from a dictionary.
 
@@ -460,7 +460,7 @@ class BeliefBase:
         if len(self._history) > self._max_history_size:
             self._history = self._history[-self._max_history_size :]
 
-    def _flatten_beliefs(self) -> Dict[str, Any]:
+    def _flatten_beliefs(self) -> dict[str, Any]:
         """
         Flatten nested belief values for consistency checking.
 
@@ -478,7 +478,7 @@ class BeliefBase:
         return flat_beliefs
 
     @staticmethod
-    def _flatten_dict(d: Dict[str, Any], prefix: str = "") -> Dict[str, Any]:
+    def _flatten_dict(d: dict[str, Any], prefix: str = "") -> dict[str, Any]:
         """
         Flatten a nested dictionary.
 
@@ -503,7 +503,7 @@ class BeliefBase:
 
     @staticmethod
     def _is_in_radius(
-        location: Dict[str, float], center: Dict[str, float], radius: float
+        location: dict[str, float], center: dict[str, float], radius: float
     ) -> bool:
         """
         Check if a location is within a radius of a center point.

@@ -11,11 +11,9 @@ import pandas as pd
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
-import geopandas as gpd  # noqa: F401
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: F401
 
 
 pytestmark = [

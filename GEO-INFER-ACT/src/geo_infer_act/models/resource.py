@@ -6,11 +6,12 @@ principles. Agents allocate resources across locations, balancing exploitation
 of known high-value sites with exploration of uncertain areas.
 """
 
-from typing import Dict, Any, Optional, Tuple, List
+from typing import Any
+import copy
 import numpy as np
 import logging
 
-from geo_infer_act.models.base import BaseActiveInferenceModel
+from geo_infer_act.models.base import BaseActiveInferenceModel, _dimension
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +40,8 @@ class ResourceModel(BaseActiveInferenceModel):
         planning_horizon: int = 10,
         replenishment_rate: float = 0.05,
         depletion_rate: float = 0.1,
-        config: Optional[Dict[str, Any]] = None,
-        random_seed: Optional[int] = None,
+        config: dict[str, Any] | None = None,
+        random_seed: int | None = None,
     ):
         """Initialize the Resource Model.
 
@@ -57,9 +58,15 @@ class ResourceModel(BaseActiveInferenceModel):
             random_seed = config.get("random_seed")
         self.random_seed = random_seed
         self.rng = np.random.default_rng(random_seed)
-        self.n_resources = n_resources
-        self.n_locations = n_locations
-        self.planning_horizon = planning_horizon
+        self.n_resources = _dimension(n_resources, "n_resources")
+        self.n_locations = _dimension(n_locations, "n_locations")
+        self.planning_horizon = _dimension(planning_horizon, "planning_horizon")
+        for name, value in (
+            ("replenishment_rate", replenishment_rate),
+            ("depletion_rate", depletion_rate),
+        ):
+            if not np.isfinite(value) or not 0 <= value <= 1:
+                raise ValueError(f"{name} must be finite and between zero and one")
         self.replenishment_rate = replenishment_rate
         self.depletion_rate = depletion_rate
         self.step_count = 0
@@ -78,7 +85,7 @@ class ResourceModel(BaseActiveInferenceModel):
         self._initial_location_demand = self.location_demand.copy()
 
         # History tracking
-        self.history: List[Dict[str, Any]] = []
+        self.history: list[dict[str, Any]] = []
 
         logger.info(
             f"ResourceModel initialized: {n_resources} resources × {n_locations} locations, "
@@ -96,7 +103,7 @@ class ResourceModel(BaseActiveInferenceModel):
         conn = conn / np.where(row_sums > 0, row_sums, 1.0)
         return np.asarray(conn)
 
-    def step(self, actions: Optional[Any] = None) -> Tuple[Dict[str, Any], bool]:
+    def step(self, actions: Any | None = None) -> tuple[dict[str, Any], bool]:
         """Advance the resource model by one step.
 
         Args:
@@ -110,6 +117,21 @@ class ResourceModel(BaseActiveInferenceModel):
                 - state_dict: current resource state and metrics
                 - done_flag: True if any resource is fully depleted everywhere
         """
+        alloc = None
+        if actions is not None:
+            if isinstance(actions, dict):
+                if "allocations" not in actions:
+                    raise ValueError("Allocation action must contain allocations")
+                actions = actions["allocations"]
+            alloc = np.asarray(actions, dtype=float)
+            if (
+                alloc.shape != self.resource_distribution.shape
+                or not np.all(np.isfinite(alloc))
+                or np.any(alloc < 0)
+            ):
+                raise ValueError(
+                    "Allocation actions must be finite nonnegative arrays matching the resource grid"
+                )
         self.step_count += 1
         prev_distribution = self.resource_distribution.copy()
 
@@ -124,39 +146,23 @@ class ResourceModel(BaseActiveInferenceModel):
         # 2. Natural demand depletion at each location
         for loc in range(self.n_locations):
             self.resource_distribution[:, loc] -= self.location_demand[loc]
+        self.resource_distribution = np.maximum(self.resource_distribution, 0)
 
         # 3. Apply harvesting actions if provided
         harvest_yield = np.zeros((self.n_resources, self.n_locations))
-        if actions is not None:
-            if isinstance(actions, dict):
-                alloc = actions.get(
-                    "allocations", np.zeros_like(self.resource_distribution)
-                )
-            else:
-                alloc = np.asarray(actions)
-
-            if alloc.shape == self.resource_distribution.shape:
-                # Harvest: remove resources proportional to allocation × depletion_rate
-                harvest = np.minimum(
-                    alloc * self.depletion_rate, self.resource_distribution
-                )
-                self.resource_distribution -= harvest
-                harvest_yield = harvest
-            else:
-                logger.warning(
-                    f"Action shape {alloc.shape} doesn't match resource grid "
-                    f"{self.resource_distribution.shape}, ignoring"
-                )
+        if alloc is not None:
+            harvest = np.minimum(
+                alloc * self.depletion_rate, self.resource_distribution
+            )
+            self.resource_distribution -= harvest
+            harvest_yield = harvest
 
         # 4. Resource flow between connected locations
-        flow = np.zeros_like(self.resource_distribution)
-        for r in range(self.n_resources):
-            gradient = (
-                self.resource_distribution[r, :, np.newaxis]
-                - self.resource_distribution[r, np.newaxis, :]
-            )
-            net_flow = (self.location_connectivity * gradient).sum(axis=0) * 0.1
-            flow[r, :] = -net_flow
+        # Transport conserves resource mass under row-stochastic connectivity.
+        flow = 0.1 * (
+            self.resource_distribution @ self.location_connectivity
+            - self.resource_distribution
+        )
         self.resource_distribution += flow
 
         # 5. Clamp to [0, 1]
@@ -181,14 +187,14 @@ class ResourceModel(BaseActiveInferenceModel):
             "step": self.step_count,
         }
 
-        self.history.append(state)
+        self.history.append(copy.deepcopy(state))
 
         # Done if any resource type is depleted across all locations
         done = bool(np.any(self.resource_distribution.sum(axis=1) < 0.01))
 
         return state, done
 
-    def reset(self) -> Dict[str, Any]:
+    def reset(self) -> dict[str, Any]:
         """Reset the resource model to initial random state.
 
         Returns:

@@ -9,6 +9,6 @@ Importing this package explicitly registers every bundled interface with
 ``AgentFactory`` (currently only the BDI interface ships with APP).
 """
 
-from geo_infer_app.models.interfaces import bdi_interface  # noqa: F401  (registers BDIAgentInterface)
+from geo_infer_app.models.interfaces import bdi_interface
 
 __all__ = ["bdi_interface"]

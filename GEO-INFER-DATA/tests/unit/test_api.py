@@ -8,7 +8,7 @@ geospatial data management.
 import pytest
 from unittest.mock import Mock, AsyncMock
 from fastapi.testclient import TestClient
-from datetime import datetime
+from datetime import datetime, UTC
 
 from geo_infer_data.api.rest_api import DataAPI
 from geo_infer_data.api.service import DataService
@@ -100,8 +100,8 @@ class TestDataAPI:
                     "crs": {"epsg_code": "EPSG:4326"},
                 },
                 "temporal": {
-                    "start": "2023-01-01T00:00:00",
-                    "end": "2023-12-31T23:59:59",
+                    "start": "2023-01-01T00:00:00Z",
+                    "end": "2023-12-31T23:59:59Z",
                 },
                 "lineage": {"source": "test", "process": "test", "created_by": "test"},
             },
@@ -183,7 +183,8 @@ class TestDataService:
             description="Test dataset for service API testing",
             spatial=SpatialExtent(bbox=[-122.5, 37.7, -122.3, 37.9], crs="EPSG:4326"),
             temporal=TemporalExtent(
-                start=datetime(2023, 1, 1), end=datetime(2023, 12, 31)
+                start=datetime(2023, 1, 1, tzinfo=UTC),
+                end=datetime(2023, 12, 31, tzinfo=UTC),
             ),
             lineage=DataLineage(
                 source="test_source", process="test_process", created_by="test_system"

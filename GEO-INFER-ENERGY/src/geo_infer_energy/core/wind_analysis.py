@@ -6,11 +6,15 @@ production estimation.
 """
 
 import logging
-from typing import Dict, Optional
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+
+def _trapezoid(y: np.ndarray, x: np.ndarray) -> float:
+    """Trapezoidal-rule integral of ``y`` over ``x`` (NumPy-version independent)."""
+    return float(np.sum(np.diff(x) * (y[1:] + y[:-1]) / 2.0))
 
 
 class WindAnalyzer:
@@ -20,7 +24,7 @@ class WindAnalyzer:
     turbine power curve modeling, and energy yield estimation.
     """
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         """Initialize wind analyzer.
 
         Args:
@@ -32,7 +36,7 @@ class WindAnalyzer:
     def fit_weibull(
         self,
         wind_speeds: np.ndarray,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Fit Weibull distribution to wind speed data.
 
         Uses the empirical method (mean and standard deviation):
@@ -107,7 +111,7 @@ class WindAnalyzer:
     def wind_power_density(
         self,
         wind_speed: np.ndarray,
-        air_density: Optional[float] = None,
+        air_density: float | None = None,
     ) -> np.ndarray:
         """Calculate wind power density.
 
@@ -201,7 +205,7 @@ class WindAnalyzer:
         rated_speed: float = 12.0,
         cut_out_speed: float = 25.0,
         availability: float = 0.95,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Estimate Annual Energy Production using Weibull distribution.
 
         Integrates turbine power curve weighted by Weibull probability.
@@ -224,7 +228,7 @@ class WindAnalyzer:
             speeds, rated_power_kw, cut_in_speed, rated_speed, cut_out_speed
         )
 
-        aep_kwh = float(np.trapz(power * pdf, speeds) * 8760.0 * availability)
+        aep_kwh = float(_trapezoid(power * pdf, speeds) * 8760.0 * availability)
         capacity_factor = (
             aep_kwh / (rated_power_kw * 8760.0) if rated_power_kw > 0 else 0.0
         )

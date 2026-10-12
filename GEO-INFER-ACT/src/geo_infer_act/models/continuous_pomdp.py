@@ -8,7 +8,7 @@ generalized predictive coding and Kalman/Laplace filter dynamics.
 from __future__ import annotations
 
 import logging
-from typing import Dict, Any, Optional, Tuple, List, Union, cast
+from typing import Any, cast
 import numpy as np
 
 from geo_infer_act.core.types import FreeEnergyBreakdown
@@ -30,12 +30,12 @@ class ContinuousPOMDPActiveInference:
         obs_dim: int = 2,
         action_dim: int = 2,
         dt: float = 0.1,
-        process_noise_cov: Optional[np.ndarray] = None,
-        obs_noise_cov: Optional[np.ndarray] = None,
-        prior_mean: Optional[np.ndarray] = None,
-        prior_cov: Optional[np.ndarray] = None,
-        target_prior: Optional[np.ndarray] = None,
-        random_seed: Optional[int] = None,
+        process_noise_cov: np.ndarray | None = None,
+        obs_noise_cov: np.ndarray | None = None,
+        prior_mean: np.ndarray | None = None,
+        prior_cov: np.ndarray | None = None,
+        target_prior: np.ndarray | None = None,
+        random_seed: int | None = None,
         time_domain: str = "continuous",
     ):
         for name, value in (
@@ -102,11 +102,11 @@ class ContinuousPOMDPActiveInference:
         self.sigma = self._covariance(self.sigma, state_dim, "prior_cov")
         self.mu = self._array(self.mu, (state_dim,), "prior_mean")
         self.target_prior = self._array(self.target_prior, (obs_dim,), "target_prior")
-        self._last_update: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]] = None
-        self.history: List[Dict[str, Any]] = []
+        self._last_update: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None
+        self.history: list[dict[str, Any]] = []
 
     @staticmethod
-    def _array(value: Any, shape: Tuple[int, ...], name: str) -> np.ndarray:
+    def _array(value: Any, shape: tuple[int, ...], name: str) -> np.ndarray:
         array = np.asarray(value, dtype=float)
         if array.shape != shape or not np.all(np.isfinite(array)):
             raise ValueError(f"{name} must be finite with shape {shape}")
@@ -127,7 +127,7 @@ class ContinuousPOMDPActiveInference:
             )
         return array
 
-    def _discrete_dynamics(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _discrete_dynamics(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         if self.time_domain == "discrete":
             return self.A, self.B, self.Q
         return (
@@ -143,9 +143,9 @@ class ContinuousPOMDPActiveInference:
 
     def set_system_matrices(
         self,
-        A: Optional[np.ndarray] = None,
-        B: Optional[np.ndarray] = None,
-        C: Optional[np.ndarray] = None,
+        A: np.ndarray | None = None,
+        B: np.ndarray | None = None,
+        C: np.ndarray | None = None,
     ) -> None:
         """Set continuous transition, control, and measurement matrices."""
         new_A = (
@@ -165,8 +165,8 @@ class ContinuousPOMDPActiveInference:
         self._last_update = None
 
     def predict(
-        self, action: Optional[np.ndarray] = None
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        self, action: np.ndarray | None = None
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Propagate one interval; discrete matrices already include the interval."""
         u = (
             np.zeros(self.action_dim)
@@ -177,8 +177,8 @@ class ContinuousPOMDPActiveInference:
         return F @ self.mu + control @ u, F @ self.sigma @ F.T + noise
 
     def update_beliefs(
-        self, observation: np.ndarray, action: Optional[np.ndarray] = None
-    ) -> Tuple[np.ndarray, np.ndarray, float]:
+        self, observation: np.ndarray, action: np.ndarray | None = None
+    ) -> tuple[np.ndarray, np.ndarray, float]:
         """
         Bayesian belief update on receiving continuous measurement.
 
@@ -226,12 +226,12 @@ class ContinuousPOMDPActiveInference:
     # ------------------------------------------------------------------
     # Laplace / Kalman-Bucy filtering diagnostics
     # ------------------------------------------------------------------
-    def _innovation_covariance(self, action: Optional[np.ndarray] = None) -> np.ndarray:
+    def _innovation_covariance(self, action: np.ndarray | None = None) -> np.ndarray:
         """Return the innovation covariance S = C sigma_pred C^T + R."""
         _, sigma_pred = self.predict(action)
         return cast(np.ndarray, self.C @ sigma_pred @ self.C.T + self.R)
 
-    def _adaptive_precision(self, action: Optional[np.ndarray] = None) -> float:
+    def _adaptive_precision(self, action: np.ndarray | None = None) -> float:
         """
         Laplace-scaled precision schedule.  Agrees with the inverse
         trace of the innovation covariance so that high innovation
@@ -246,8 +246,8 @@ class ContinuousPOMDPActiveInference:
 
     def compute_variational_free_energy(
         self,
-        observation: Optional[np.ndarray] = None,
-        action: Optional[np.ndarray] = None,
+        observation: np.ndarray | None = None,
+        action: np.ndarray | None = None,
     ) -> FreeEnergyBreakdown:
         """Return F = KL(q || predictive prior) - E_q[log p(y | x)].
 
@@ -301,8 +301,8 @@ class ContinuousPOMDPActiveInference:
         horizon: int = 1,
         return_breakdown: bool = False,
         epistemic_weight: float = 1.0,
-        preference_prior: Optional[np.ndarray] = None,
-    ) -> Union[float, FreeEnergyBreakdown]:
+        preference_prior: np.ndarray | None = None,
+    ) -> float | FreeEnergyBreakdown:
         """
         Expected free energy for a continuous control action under a Laplace
         filter.
@@ -398,9 +398,9 @@ class ContinuousPOMDPActiveInference:
     def evaluate_actions(
         self,
         horizon: int = 1,
-        candidate_actions: Optional[List[np.ndarray]] = None,
+        candidate_actions: list[np.ndarray] | None = None,
         epistemic_weight: float = 1.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Score a set of continuous control actions by expected free energy,
         returning the per-action decomposition plus the arg-minimum action.
@@ -411,7 +411,7 @@ class ContinuousPOMDPActiveInference:
             ``best_efe`` and ``metadata`` (pure Python floats for logging).
         """
         if candidate_actions is None:
-            candidates: List[np.ndarray] = [
+            candidates: list[np.ndarray] = [
                 np.zeros(self.action_dim),
                 np.ones(self.action_dim) * 0.5,
                 -np.ones(self.action_dim) * 0.5,
@@ -425,9 +425,9 @@ class ContinuousPOMDPActiveInference:
             ]
         if not candidates:
             raise ValueError("candidate_actions must not be empty")
-        efe_scores: List[float] = []
-        pragmatic_values: List[float] = []
-        epistemic_values: List[float] = []
+        efe_scores: list[float] = []
+        pragmatic_values: list[float] = []
+        epistemic_values: list[float] = []
         for cand in candidates:
             breakdown = cast(
                 FreeEnergyBreakdown,

@@ -4,7 +4,7 @@ Tests for testing utilities.
 
 import os
 import pytest
-from typing import Dict, Any
+from typing import Any
 from unittest.mock import patch
 
 from fastapi import FastAPI
@@ -173,7 +173,7 @@ def test_assert_response_json():
     """Test response JSON assertion."""
 
     class MockResponse:
-        def __init__(self, data: Dict[str, Any]):
+        def __init__(self, data: dict[str, Any]):
             self._data = data
 
         def json(self):

@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 
 def setup_logging(
-    level: str = "INFO", logger_name: Optional[str] = None
+    level: str = "INFO", logger_name: str | None = None
 ) -> logging.Logger:
     """Configure and return an ANT logger without duplicating handlers."""
     logger = logging.getLogger(logger_name or "geo_infer_ant")

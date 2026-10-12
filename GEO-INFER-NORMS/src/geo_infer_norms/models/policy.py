@@ -6,7 +6,7 @@ their relationships with jurisdictions and entities.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from typing import Any
 import datetime
 from shapely.geometry import MultiPolygon
 import uuid
@@ -26,22 +26,22 @@ class Policy:
     description: str
     policy_type: str  # e.g., 'land use', 'transportation', 'environmental'
     issuing_authority: str
-    jurisdiction_ids: List[str] = field(default_factory=list)
-    adoption_date: Optional[datetime.date] = None
-    effective_date: Optional[datetime.date] = None
-    expiration_date: Optional[datetime.date] = None
-    parent_policy_id: Optional[str] = None
-    related_policies: List[str] = field(default_factory=list)
-    related_regulations: List[str] = field(default_factory=list)
-    objectives: List[Dict[str, Any]] = field(default_factory=list)
-    spatial_extent: Optional[MultiPolygon] = None
-    attributes: Dict[str, Any] = field(default_factory=dict)
+    jurisdiction_ids: list[str] = field(default_factory=list)
+    adoption_date: datetime.date | None = None
+    effective_date: datetime.date | None = None
+    expiration_date: datetime.date | None = None
+    parent_policy_id: str | None = None
+    related_policies: list[str] = field(default_factory=list)
+    related_regulations: list[str] = field(default_factory=list)
+    objectives: list[dict[str, Any]] = field(default_factory=list)
+    spatial_extent: MultiPolygon | None = None
+    attributes: dict[str, Any] = field(default_factory=dict)
     created_at: datetime.datetime = field(default_factory=datetime.datetime.now)
     updated_at: datetime.datetime = field(default_factory=datetime.datetime.now)
-    category: Optional[str] = None
-    status: Optional[str] = None
-    source_url: Optional[str] = None
-    tags: Optional[List[str]] = None
+    category: str | None = None
+    status: str | None = None
+    source_url: str | None = None
+    tags: list[str] | None = None
 
     @classmethod
     def create(
@@ -50,16 +50,16 @@ class Policy:
         description: str,
         policy_type: str,
         issuing_authority: str,
-        jurisdiction_ids: Optional[List[str]] = None,
-        adoption_date: Optional[datetime.date] = None,
-        effective_date: Optional[datetime.date] = None,
-        expiration_date: Optional[datetime.date] = None,
-        parent_policy_id: Optional[str] = None,
-        related_policies: Optional[List[str]] = None,
-        related_regulations: Optional[List[str]] = None,
-        objectives: Optional[List[Dict[str, Any]]] = None,
-        spatial_extent: Optional[MultiPolygon] = None,
-        attributes: Optional[Dict[str, Any]] = None,
+        jurisdiction_ids: list[str] | None = None,
+        adoption_date: datetime.date | None = None,
+        effective_date: datetime.date | None = None,
+        expiration_date: datetime.date | None = None,
+        parent_policy_id: str | None = None,
+        related_policies: list[str] | None = None,
+        related_regulations: list[str] | None = None,
+        objectives: list[dict[str, Any]] | None = None,
+        spatial_extent: MultiPolygon | None = None,
+        attributes: dict[str, Any] | None = None,
     ) -> "Policy":
         """
         Create a new Policy with a generated UUID.
@@ -149,7 +149,7 @@ class Policy:
         self,
         name: str,
         description: str,
-        metrics: Optional[List[Dict[str, Any]]] = None,
+        metrics: list[dict[str, Any]] | None = None,
     ) -> None:
         """
         Add an objective to the policy.
@@ -179,7 +179,7 @@ class Policy:
         self.spatial_extent = extent
         self.updated_at = datetime.datetime.now()
 
-    def is_active(self, reference_date: Optional[datetime.date] = None) -> bool:
+    def is_active(self, reference_date: datetime.date | None = None) -> bool:
         """
         Check if the policy is active as of the reference date.
 
@@ -221,20 +221,20 @@ class PolicyImplementation:
         str  # e.g., 'planned', 'in_progress', 'completed', 'suspended'
     )
     implementing_entity_id: str
-    start_date: Optional[datetime.date] = None
-    end_date: Optional[datetime.date] = None
-    actions: List[Dict[str, Any]] = field(default_factory=list)
-    resources: List[Dict[str, Any]] = field(default_factory=list)
-    outcomes: List[Dict[str, Any]] = field(default_factory=list)
-    spatial_coverage: Optional[MultiPolygon] = None
-    attributes: Dict[str, Any] = field(default_factory=dict)
+    start_date: datetime.date | None = None
+    end_date: datetime.date | None = None
+    actions: list[dict[str, Any]] = field(default_factory=list)
+    resources: list[dict[str, Any]] = field(default_factory=list)
+    outcomes: list[dict[str, Any]] = field(default_factory=list)
+    spatial_coverage: MultiPolygon | None = None
+    attributes: dict[str, Any] = field(default_factory=dict)
     created_at: datetime.datetime = field(default_factory=datetime.datetime.now)
     updated_at: datetime.datetime = field(default_factory=datetime.datetime.now)
-    geometry: Optional[Any] = None
-    jurisdiction_id: Optional[str] = None
-    budget: Optional[float] = None
-    status: Optional[str] = None
-    metrics: Optional[Dict[str, Any]] = None
+    geometry: Any | None = None
+    jurisdiction_id: str | None = None
+    budget: float | None = None
+    status: str | None = None
+    metrics: dict[str, Any] | None = None
 
     @classmethod
     def create(
@@ -244,13 +244,13 @@ class PolicyImplementation:
         description: str,
         implementation_status: str,
         implementing_entity_id: str,
-        start_date: Optional[datetime.date] = None,
-        end_date: Optional[datetime.date] = None,
-        actions: Optional[List[Dict[str, Any]]] = None,
-        resources: Optional[List[Dict[str, Any]]] = None,
-        outcomes: Optional[List[Dict[str, Any]]] = None,
-        spatial_coverage: Optional[MultiPolygon] = None,
-        attributes: Optional[Dict[str, Any]] = None,
+        start_date: datetime.date | None = None,
+        end_date: datetime.date | None = None,
+        actions: list[dict[str, Any]] | None = None,
+        resources: list[dict[str, Any]] | None = None,
+        outcomes: list[dict[str, Any]] | None = None,
+        spatial_coverage: MultiPolygon | None = None,
+        attributes: dict[str, Any] | None = None,
     ) -> "PolicyImplementation":
         """
         Create a new PolicyImplementation with a generated UUID.
@@ -304,9 +304,9 @@ class PolicyImplementation:
         name: str,
         description: str,
         status: str,
-        start_date: Optional[datetime.date] = None,
-        end_date: Optional[datetime.date] = None,
-        responsible_party: Optional[str] = None,
+        start_date: datetime.date | None = None,
+        end_date: datetime.date | None = None,
+        responsible_party: str | None = None,
     ) -> str:
         """
         Add an action to the implementation.
@@ -343,9 +343,9 @@ class PolicyImplementation:
         self,
         name: str,
         resource_type: str,
-        amount: Optional[float] = None,
-        unit: Optional[str] = None,
-        provider: Optional[str] = None,
+        amount: float | None = None,
+        unit: str | None = None,
+        provider: str | None = None,
     ) -> str:
         """
         Add a resource to the implementation.
@@ -381,8 +381,8 @@ class PolicyImplementation:
         name: str,
         description: str,
         status: str,
-        measurement: Optional[Dict[str, Any]] = None,
-        achievement_date: Optional[datetime.date] = None,
+        measurement: dict[str, Any] | None = None,
+        achievement_date: datetime.date | None = None,
     ) -> str:
         """
         Add an outcome to the implementation.
@@ -437,7 +437,7 @@ class PolicyImplementation:
         if status == "completed" and self.end_date is None:
             self.end_date = datetime.date.today()
 
-    def is_active(self, reference_date: Optional[datetime.date] = None) -> bool:
+    def is_active(self, reference_date: datetime.date | None = None) -> bool:
         """
         Check if the implementation is active as of the reference date.
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 Logging utilities for GEO-INFER-GIT.
@@ -11,7 +10,8 @@ structured logging, log formatting, and log management.
 import sys
 import logging
 import logging.handlers
-from typing import Dict, Any, Optional, Callable, cast
+from typing import Any, cast
+from collections.abc import Callable
 from pathlib import Path
 import json
 import time
@@ -111,7 +111,7 @@ class GeoInferGitLogger:
     """
 
     def __init__(
-        self, name: str = "geo_infer_git", config: Optional[Dict[str, Any]] = None
+        self, name: str = "geo_infer_git", config: dict[str, Any] | None = None
     ):
         """
         Initialize the logger.
@@ -187,7 +187,7 @@ class GeoInferGitLogger:
         self,
         endpoint: str,
         method: str,
-        status_code: Optional[int] = None,
+        status_code: int | None = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -232,7 +232,7 @@ class GeoInferGitLogger:
         )
 
     def log_error_with_context(
-        self, error: Exception, operation: Optional[str] = None, **kwargs: Any
+        self, error: Exception, operation: str | None = None, **kwargs: Any
     ) -> None:
         """
         Log an error with additional context.
@@ -252,7 +252,7 @@ class GeoInferGitLogger:
         )
 
 
-def setup_logging(config: Optional[Dict[str, Any]] = None) -> GeoInferGitLogger:
+def setup_logging(config: dict[str, Any] | None = None) -> GeoInferGitLogger:
     """
     Set up logging for GEO-INFER-GIT.
 
@@ -340,7 +340,7 @@ class PerformanceTimer:
     Timer for measuring operation performance.
     """
 
-    def __init__(self, operation: str, logger: Optional[logging.Logger] = None):
+    def __init__(self, operation: str, logger: logging.Logger | None = None):
         """
         Initialize performance timer.
 
@@ -350,7 +350,7 @@ class PerformanceTimer:
         """
         self.operation = operation
         self.logger = logger
-        self.start_time: Optional[float] = None
+        self.start_time: float | None = None
 
     def __enter__(self) -> "PerformanceTimer":
         """Start timing."""
@@ -365,7 +365,7 @@ class PerformanceTimer:
                 cast(Any, self.logger).log_performance(self.operation, duration)
 
 
-def time_operation(operation: str, logger: Optional[logging.Logger] = None) -> Callable:
+def time_operation(operation: str, logger: logging.Logger | None = None) -> Callable:
     """
     Decorator for timing function execution.
 

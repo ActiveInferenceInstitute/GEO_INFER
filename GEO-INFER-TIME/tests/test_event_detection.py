@@ -9,7 +9,7 @@ from geo_infer_time.models.timeseries import TimeSeries
 
 
 def _timeseries(values: list[float]) -> TimeSeries:
-    dates = pd.date_range("2024-01-01", periods=len(values), freq="D")
+    dates = pd.date_range("2024-01-01", periods=len(values), freq="D", tz="UTC")
     return TimeSeries(pd.Series(values, index=dates, name="value"))
 
 

@@ -38,7 +38,7 @@ _CONFIG_PATH = os.path.normpath(
 
 def _load_config() -> dict:
     """Load the real analysis_config.yaml."""
-    with open(_CONFIG_PATH, "r") as fh:
+    with open(_CONFIG_PATH) as fh:
         return yaml.safe_load(fh) or {}
 
 
@@ -330,7 +330,6 @@ class TestAdvancedDashboard(unittest.TestCase):
             from geo_infer_place.locations.del_norte_county.dashboard import (
                 AdvancedDashboard,
             )
-            import folium  # noqa: F401 — needed by dashboard
 
             cls.tmpdir = tempfile.mkdtemp(prefix="test_dashboard_")
             cls.dashboard = AdvancedDashboard(output_dir=cls.tmpdir)
@@ -387,7 +386,7 @@ class TestAdvancedDashboard(unittest.TestCase):
         self.assertIsInstance(panels, dict)
         self.assertGreater(len(panels), 0)
         # Each value should be an HTML string
-        for key, html in panels.items():
+        for html in panels.values():
             self.assertIsInstance(html, str)
             self.assertGreater(len(html), 0)
 

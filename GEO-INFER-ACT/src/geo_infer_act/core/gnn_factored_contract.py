@@ -256,7 +256,7 @@ def _entropy(probabilities):
     return float(-np.sum(positive * np.log(positive)))
 
 
-def _infer_factored_step(artifact, observation, *, prior=None):
+def _infer_factored_step(artifact, observation, *, prior=None, posterior=None):
     """Condition once and evaluate explicit policies by exact observation trees.
 
     Future factor transitions and observation modalities are conditionally
@@ -277,7 +277,11 @@ def _infer_factored_step(artifact, observation, *, prior=None):
         raise ValueError("One integer observation is required per modality")
     for value, size in zip(observation, outcome_sizes):
         _integer(value, size, "observation")
-    supplied_prior = data["initial_joint"] if prior is None else prior
+    supplied_prior = (
+        posterior
+        if posterior is not None
+        else (data["initial_joint"] if prior is None else prior)
+    )
     if isinstance(supplied_prior, np.ndarray):
         if supplied_prior.shape != (count,):
             raise ValueError("prior must be a normalized joint-state vector")
@@ -307,11 +311,16 @@ def _infer_factored_step(artifact, observation, *, prior=None):
                     state[d] for d in modality["dependencies"]
                 )
                 emissions[oi, si] *= a_arrays[mi][index]
-    likelihood = emissions[outcome_tuples.index(tuple(observation))]
-    evidence = float(likelihood @ q)
-    if evidence <= 0:
-        raise ValueError("Observation has zero evidence under the joint prior")
-    posterior = likelihood * q / evidence
+    if posterior is None:
+        likelihood = emissions[outcome_tuples.index(tuple(observation))]
+        evidence = float(likelihood @ q)
+        if evidence <= 0:
+            raise ValueError("Observation has zero evidence under the joint prior")
+        posterior = likelihood * q / evidence
+    else:
+        # Policy-only evaluation must not assimilate an observation twice.
+        posterior = q
+        evidence = None
 
     def transition(action):
         result = np.ones((count, count))
@@ -372,7 +381,7 @@ def _infer_factored_step(artifact, observation, *, prior=None):
     return {
         "posterior": posterior.tolist(),
         "evidence": evidence,
-        "free_energy": -math.log(evidence),
+        "free_energy": -math.log(evidence) if evidence is not None else None,
         "policy_posterior": policy_posterior.tolist(),
         "expected_free_energy": efe.tolist(),
         "selected_policy": selected,
@@ -383,7 +392,7 @@ def _infer_factored_step(artifact, observation, *, prior=None):
     }
 
 
-def infer_factored_step(artifact, observation, *, prior=None):
+def infer_factored_step(artifact, observation, *, prior=None, posterior=None):
     """Run exact joint inference, failing if finite inputs overflow arithmetic.
 
     See ``_infer_factored_step`` for the filtering and finite-policy objective.
@@ -392,6 +401,8 @@ def infer_factored_step(artifact, observation, *, prior=None):
     """
     try:
         with np.errstate(over="raise", invalid="raise", divide="raise"):
-            return _infer_factored_step(artifact, observation, prior=prior)
+            return _infer_factored_step(
+                artifact, observation, prior=prior, posterior=posterior
+            )
     except (FloatingPointError, OverflowError) as exc:
         raise ValueError("Factored inference exceeds finite numeric range") from exc

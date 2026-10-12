@@ -8,7 +8,7 @@ for Bayesian spatial inference.
 Key features:
 - Multi-protocol IoT data ingestion (MQTT, CoAP, LoRaWAN, HTTP)
 - Real-time H3 spatial indexing
-- Integration with OSC (Open Science Catalog) methods from GEO-INFER-SPACE
+- H3 neighbourhood context from GEO-INFER-SPACE
 - Bayesian spatial inference for converting point measurements to surfaces
 - Quality control and data validation
 """
@@ -16,20 +16,22 @@ Key features:
 import asyncio
 import logging
 import json
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Union, cast
+from datetime import datetime, UTC
+from typing import Any, cast
 from dataclasses import dataclass, field
 from collections import defaultdict
 import time
 
 # Core dependencies
+import aiomqtt as asyncio_mqtt
 import h3
 import numpy as np
 import pandas as pd
+import paho.mqtt.client as mqtt
 
 # GEO-INFER-SPACE and GEO-INFER-BAYES are required workspace dependencies for
-# this module. Import their current public paths directly so compatibility
-# drift is an explicit import failure instead of a silent fallback.
+# this module. Import their current public paths directly so API drift is an
+# explicit import failure instead of a silent fallback.
 from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
 from geo_infer_space.utils.h3_utils import (
     get_h3_neighbors,
@@ -37,8 +39,7 @@ from geo_infer_space.utils.h3_utils import (
 )
 from geo_infer_bayes import GaussianProcess, SpatialCovariance  # type: ignore[import-untyped]
 
-HAS_GEO_SPACE = True
-HAS_GEO_BAYES = True
+from geo_infer_iot.models.measurement import normalize_timestamp
 
 
 class SpatialOperations:
@@ -54,36 +55,6 @@ class SpatialOperations:
         return longitude * 111_320.0, latitude * 110_540.0
 
 
-class CoordinateTransform(SpatialOperations):
-    """Backward-compatible name for the IoT coordinate adapter."""
-
-
-class OSCCatalog:
-    """Minimal local measurement catalog owned by the IoT integration boundary."""
-
-    def __init__(self) -> None:
-        self.measurements: list[Any] = []
-
-    def add_measurement(self, measurement: "SensorMeasurement") -> None:
-        """Record a measurement for deterministic local integration tests."""
-        self.measurements.append(measurement)
-
-
-# Protocol handlers
-try:
-    import paho.mqtt.client as mqtt
-
-    HAS_MQTT = True
-except ImportError:
-    HAS_MQTT = False
-
-try:
-    import aiomqtt as asyncio_mqtt
-
-    HAS_ASYNC_MQTT = True
-except ImportError:
-    HAS_ASYNC_MQTT = False
-
 logger = logging.getLogger(__name__)
 
 
@@ -98,14 +69,19 @@ class SensorMeasurement:
     unit: str
     latitude: float
     longitude: float
-    h3_index: Optional[str] = None
+    h3_index: str | None = None
     h3_resolution: int = 8
-    quality_flags: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    quality_flags: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        """Automatically compute H3 index from coordinates."""
-        if self.h3_index is None and self.latitude and self.longitude:
+        """Normalize the timestamp to aware UTC and compute the H3 index.
+
+        Raises:
+            ValueError: If ``timestamp`` is timezone-naive.
+        """
+        self.timestamp = normalize_timestamp(self.timestamp)
+        if self.h3_index is None:
             self.h3_index = h3.latlng_to_cell(
                 self.latitude, self.longitude, self.h3_resolution
             )
@@ -124,7 +100,7 @@ class SpatialInferenceConfig:
     length_scale: float = 1000.0  # meters
     noise_variance: float = 0.01
     update_interval_minutes: int = 15
-    confidence_levels: List[float] = field(default_factory=lambda: [0.68, 0.95])
+    confidence_levels: list[float] = field(default_factory=lambda: [0.68, 0.95])
 
 
 class IoTDataIngestion:
@@ -136,49 +112,41 @@ class IoTDataIngestion:
     converting point measurements to continuous spatial distributions.
     """
 
-    def __init__(self, registry: Any, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, registry: Any, config: dict[str, Any] | None = None):
         self.registry = registry
         self.config = config or {}
 
         # Data storage
-        self.measurements: List[SensorMeasurement] = []
-        self.spatial_index: Dict[str, List[SensorMeasurement]] = defaultdict(list)
+        self.measurements: list[SensorMeasurement] = []
+        self.spatial_index: dict[str, list[SensorMeasurement]] = defaultdict(list)
 
         # Spatial inference configuration
-        self.inference_configs: Dict[str, SpatialInferenceConfig] = {}
-        self.spatial_models: Dict[str, Any] = {}
+        self.inference_configs: dict[str, SpatialInferenceConfig] = {}
+        self.spatial_models: dict[str, Any] = {}
 
-        # OSC integration
-        if HAS_GEO_SPACE:
-            self.spatial_ops = SpatialOperations()
-            self.osc_catalog = OSCCatalog()
-            self.coord_transform = CoordinateTransform()
+        # GEO-INFER-SPACE indexing and local metric projection
+        self.spatial_ops = SpatialOperations()
 
         # Protocol handlers
-        self.protocol_handlers: Dict[str, Any] = {}
+        self.protocol_handlers: dict[str, Any] = {}
         self._setup_protocol_handlers()
 
         # Processing state
         self.is_processing = False
-        self.processing_tasks: List[asyncio.Task[Any]] = []
+        self.processing_tasks: list[asyncio.Task[Any]] = []
         # Observability: last ingest duration (ms) and last error, for
         # performance monitoring and caller-side error discrimination.
         self.last_ingest_latency_ms: float = 0.0
-        self.last_ingest_error: Optional[str] = None
+        self.last_ingest_error: str | None = None
 
         logger.info("IoT Data Ingestion engine initialized")
 
     def _setup_protocol_handlers(self) -> None:
         """Setup handlers for different IoT protocols."""
-        if HAS_MQTT:
-            self.protocol_handlers["mqtt"] = self._handle_mqtt
-        if HAS_ASYNC_MQTT:
-            self.protocol_handlers["async_mqtt"] = self._handle_async_mqtt
-        # Protocol handlers are registered only when their dependencies are available.
+        self.protocol_handlers["mqtt"] = self._handle_mqtt
+        self.protocol_handlers["async_mqtt"] = self._handle_async_mqtt
 
-    async def ingest_measurement(
-        self, measurement: Union[Dict, SensorMeasurement]
-    ) -> bool:
+    async def ingest_measurement(self, measurement: dict | SensorMeasurement) -> bool:
         """
         Ingest a single sensor measurement.
 
@@ -239,20 +207,24 @@ class IoTDataIngestion:
         finally:
             self.last_ingest_latency_ms = (time.perf_counter() - start) * 1000.0
 
-    def _dict_to_measurement(self, data: Dict) -> SensorMeasurement:
+    def _dict_to_measurement(self, data: dict) -> SensorMeasurement:
         """Convert dictionary to SensorMeasurement object.
 
-        Naive timestamps are normalized to UTC here so every downstream
-        temporal comparison sees a consistent, tz-aware datetime.
+        The timestamp must be timezone-aware (ISO-8601 with an offset or an
+        aware datetime) and is normalized to UTC; a missing timestamp defaults
+        to the current UTC time.
+
+        Raises:
+            ValueError: If the timestamp is timezone-naive or not ISO-8601.
         """
-        raw_timestamp = datetime.fromisoformat(
-            data.get("timestamp", datetime.now().isoformat())
-        )
-        if raw_timestamp.tzinfo is None:
-            raw_timestamp = raw_timestamp.replace(tzinfo=timezone.utc)
+        raw_timestamp = data.get("timestamp")
         return SensorMeasurement(
             sensor_id=data["sensor_id"],
-            timestamp=raw_timestamp,
+            timestamp=(
+                datetime.now(UTC)
+                if raw_timestamp is None
+                else normalize_timestamp(raw_timestamp)
+            ),
             variable=data["variable"],
             value=float(data["value"]),
             unit=data.get("unit", ""),
@@ -284,15 +256,15 @@ class IoTDataIngestion:
         return True
 
     def _add_spatial_index(self, measurement: SensorMeasurement) -> None:
-        """Add H3 spatial index to measurement and integrate with OSC methods."""
+        """Add the H3 index plus neighbourhood and resolution context."""
         # Basic H3 indexing
         if not measurement.h3_index:
             measurement.h3_index = h3.latlng_to_cell(
                 measurement.latitude, measurement.longitude, measurement.h3_resolution
             )
 
-        # Enhanced spatial operations using GEO-INFER-SPACE OSC methods
-        if HAS_GEO_SPACE and measurement.h3_index is not None:
+        # Spatial context from GEO-INFER-SPACE
+        if measurement.h3_index is not None:
             try:
                 # Get neighbor cells for spatial context
                 neighbors = get_h3_neighbors(measurement.h3_index, ring_size=1)
@@ -302,15 +274,11 @@ class IoTDataIngestion:
                 stats = h3_resolution_stats(measurement.h3_resolution)
                 measurement.metadata["h3_stats"] = stats
 
-                # Add to OSC catalog if configured
-                if hasattr(self.osc_catalog, "add_measurement"):
-                    self.osc_catalog.add_measurement(measurement)
-
             except Exception as e:
                 logger.warning(f"Error in enhanced spatial indexing: {e}")
 
     def setup_spatial_inference(
-        self, config: Union[Dict[str, Any], SpatialInferenceConfig, Any]
+        self, config: dict[str, Any] | SpatialInferenceConfig | Any
     ) -> None:
         """
         Setup Bayesian spatial inference for a specific variable.
@@ -318,12 +286,6 @@ class IoTDataIngestion:
         Args:
             config: Configuration for spatial inference
         """
-        if not HAS_GEO_BAYES:
-            logger.error(
-                "GEO-INFER-BAYES not available, cannot setup spatial inference"
-            )
-            return
-
         if isinstance(config, dict):
             config_obj = SpatialInferenceConfig(**config)
         elif not isinstance(config, SpatialInferenceConfig):
@@ -376,7 +338,7 @@ class IoTDataIngestion:
 
     async def _update_spatial_inference(self, variable: str) -> None:
         """Update Bayesian spatial inference for a variable."""
-        if not HAS_GEO_BAYES or variable not in self.spatial_models:
+        if variable not in self.spatial_models:
             return
 
         try:
@@ -394,18 +356,13 @@ class IoTDataIngestion:
             # Prepare spatial coordinates (convert to meters)
             coords_list = []
             values_list = []
-            h3_indices_list: List[str] = []
+            h3_indices_list: list[str] = []
 
             for measurement in recent_data:
                 # Convert lat/lon to local coordinate system
-                if HAS_GEO_SPACE:
-                    x, y = self.coord_transform.latlon_to_meters(
-                        measurement.latitude, measurement.longitude
-                    )
-                else:
-                    # Simple approximation
-                    x = measurement.longitude * 111000  # rough meters per degree
-                    y = measurement.latitude * 111000
+                x, y = self.spatial_ops.latlon_to_meters(
+                    measurement.latitude, measurement.longitude
+                )
 
                 coords_list.append([x, y])
                 values_list.append(measurement.value)
@@ -439,33 +396,18 @@ class IoTDataIngestion:
 
     def _get_recent_measurements(
         self, variable: str, hours: float
-    ) -> List[SensorMeasurement]:
-        """Get recent measurements for a specific variable.
-
-        Timestamps are normalized to UTC at ingestion time, so naive
-        datetimes are not expected here; measurements constructed directly
-        with naive timestamps are still compared as UTC for consistency.
-        """
-        cutoff_time = datetime.now(timezone.utc) - pd.Timedelta(hours=hours)
-
-        recent = [
-            m
-            for m in self.measurements
-            if (
-                m.variable == variable
-                and (
-                    m.timestamp
-                    if m.timestamp.tzinfo is not None
-                    else m.timestamp.replace(tzinfo=timezone.utc)
-                )
-                > cutoff_time
-            )
+    ) -> list[SensorMeasurement]:
+        """Get recent measurements using the strict aware UTC boundary."""
+        cutoff_time = datetime.now(UTC) - pd.Timedelta(hours=hours)
+        return [
+            measurement
+            for measurement in self.measurements
+            if measurement.variable == variable
+            and normalize_timestamp(measurement.timestamp) > cutoff_time
         ]
 
-        return recent
-
     def _generate_h3_prediction_grid(
-        self, measurement_h3_indices: List[str], resolution: int
+        self, measurement_h3_indices: list[str], resolution: int
     ) -> np.ndarray:
         """Generate H3 grid for spatial predictions."""
         # Get unique H3 cells and their neighbors for prediction
@@ -473,24 +415,14 @@ class IoTDataIngestion:
 
         # Add neighbor cells for smoother interpolation
         for h3_index in list(h3_cells):
-            if HAS_GEO_SPACE:
-                neighbors = get_h3_neighbors(h3_index, ring_size=2)
-                h3_cells.update(neighbors)
-            else:
-                # Use basic H3 neighbor function
-                neighbors = h3.grid_disk(h3_index, 2)
-                h3_cells.update(neighbors)
+            h3_cells.update(get_h3_neighbors(h3_index, ring_size=2))
 
         # Convert H3 cells to coordinates
         grid_coords = []
         for h3_index in h3_cells:
             lat, lon = h3.cell_to_latlng(h3_index)
 
-            if HAS_GEO_SPACE:
-                x, y = self.coord_transform.latlon_to_meters(lat, lon)
-            else:
-                x = lon * 111000
-                y = lat * 111000
+            x, y = self.spatial_ops.latlon_to_meters(lat, lon)
 
             grid_coords.append([x, y])
 
@@ -499,7 +431,7 @@ class IoTDataIngestion:
     def _store_spatial_predictions(
         self,
         variable: str,
-        predictions: Dict,
+        predictions: dict,
         grid_coords: np.ndarray,
         config: SpatialInferenceConfig,
     ) -> None:
@@ -513,7 +445,7 @@ class IoTDataIngestion:
             "predictions": predictions,
             "grid_coords": grid_coords,
             "config": config,
-            "timestamp": datetime.now(timezone.utc),
+            "timestamp": datetime.now(UTC),
         }
 
     async def start_stream_processing(self) -> None:
@@ -526,7 +458,7 @@ class IoTDataIngestion:
         logger.info("Starting IoT stream processing")
 
         # Start protocol handlers
-        for protocol, handler in self.protocol_handlers.items():
+        for handler in self.protocol_handlers.values():
             task = asyncio.create_task(handler())
             self.processing_tasks.append(task)
 
@@ -580,12 +512,6 @@ class IoTDataIngestion:
         and ingests incoming measurements into the spatial index.
         Runs in a thread-executor to avoid blocking the event loop.
         """
-        if not HAS_MQTT:
-            logger.warning(
-                "paho-mqtt not installed; MQTT handler disabled. Install with: pip install paho-mqtt"
-            )
-            return
-
         broker_config = self.config.get("mqtt", {})
         host = broker_config.get("host", "localhost")
         port = broker_config.get("port", 1883)
@@ -655,15 +581,8 @@ class IoTDataIngestion:
     async def _handle_async_mqtt(self) -> None:
         """Handle MQTT protocol using asyncio-mqtt (coroutine-native).
 
-        Connects with asyncio-mqtt for non-blocking message consumption.
-        Falls back gracefully if asyncio-mqtt is not installed.
+        Connects with aiomqtt for non-blocking message consumption.
         """
-        if not HAS_ASYNC_MQTT:
-            logger.warning(
-                "asyncio-mqtt not installed; async MQTT handler disabled. "
-                "Install with: pip install asyncio-mqtt"
-            )
-            return
 
         broker_config = self.config.get("mqtt", {})
         host = broker_config.get("host", "localhost")
@@ -707,7 +626,7 @@ class IoTDataIngestion:
 
     def get_spatial_distribution(
         self, variable: str, confidence_level: float = 0.95
-    ) -> Optional[Dict]:
+    ) -> dict | None:
         """
         Get current spatial distribution for a variable.
 
@@ -753,7 +672,7 @@ class IoTDataIngestion:
 
         return result
 
-    def get_measurement_statistics(self) -> Dict:
+    def get_measurement_statistics(self) -> dict:
         """Get statistics about ingested measurements."""
         if not self.measurements:
             return {}
@@ -789,7 +708,7 @@ class RadiationMonitoringSystem:
     comprehensive logging and quality assurance.
     """
 
-    def __init__(self, config: Dict[str, Any], logger: Optional[Any] = None):
+    def __init__(self, config: dict[str, Any], logger: Any | None = None):
         self.config = config
         self.logger = logger or logging.getLogger(__name__)
 
@@ -801,7 +720,7 @@ class RadiationMonitoringSystem:
 
         # Performance tracking
         self.start_time = time.time()
-        self.metrics: Dict[str, Any] = {
+        self.metrics: dict[str, Any] = {
             "measurements_processed": 0,
             "spatial_inferences": 0,
             "anomalies_detected": 0,
@@ -819,7 +738,7 @@ class RadiationMonitoringSystem:
             },
         )
 
-    async def process_measurements(self, measurements: List[Dict]) -> Dict:
+    async def process_measurements(self, measurements: list[dict]) -> dict:
         """Process a batch of measurements with full logging."""
         self.logger.info(
             "Starting measurement processing",
@@ -830,7 +749,7 @@ class RadiationMonitoringSystem:
         )
 
         start_time = time.time()
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "processed": 0,
             "failed": 0,
             "spatial_cells": set(),
@@ -846,7 +765,7 @@ class RadiationMonitoringSystem:
                 # Quality control
                 quality_result = self._quality_control(sensor_measurement)
                 if not quality_result["passed"]:
-                    quality_issues = cast(List[Any], results["quality_issues"])
+                    quality_issues = cast(list[Any], results["quality_issues"])
                     quality_issues.append(
                         {
                             "sensor_id": sensor_measurement.sensor_id,
@@ -856,7 +775,7 @@ class RadiationMonitoringSystem:
 
                 # Anomaly detection
                 if self._is_anomaly(sensor_measurement):
-                    anomalies_list = cast(List[Any], results["anomalies"])
+                    anomalies_list = cast(list[Any], results["anomalies"])
                     anomalies_list.append(
                         {
                             "sensor_id": sensor_measurement.sensor_id,
@@ -912,7 +831,7 @@ class RadiationMonitoringSystem:
 
         return results
 
-    def _quality_control(self, measurement: SensorMeasurement) -> Dict:
+    def _quality_control(self, measurement: SensorMeasurement) -> dict:
         """Perform quality control on a measurement."""
         validation = self.quality_thresholds.get("sensor_validation", {})
 
@@ -933,7 +852,7 @@ class RadiationMonitoringSystem:
             issues.append(f"Invalid longitude: {measurement.longitude}")
 
         # Check timestamp validity
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         time_diff = abs((now - measurement.timestamp).total_seconds())
         if time_diff > 24 * 3600:  # More than 24 hours old
             issues.append(f"Timestamp too old: {time_diff} seconds")
@@ -1008,7 +927,7 @@ class RadiationMonitoringSystem:
 
     async def perform_spatial_inference(
         self, variable: str = "gamma_radiation"
-    ) -> Dict:
+    ) -> dict:
         """Perform Bayesian spatial inference on collected measurements."""
         self.logger.info(
             "Starting spatial inference",
@@ -1049,7 +968,7 @@ class RadiationMonitoringSystem:
 
         return results or {}
 
-    def get_system_metrics(self) -> Dict:
+    def get_system_metrics(self) -> dict:
         """Get comprehensive system performance metrics."""
         runtime = time.time() - self.start_time
 
@@ -1067,7 +986,7 @@ class RadiationMonitoringSystem:
         self.logger.info("System metrics collected", extra=metrics)
         return metrics
 
-    def validate_system_health(self) -> Dict:
+    def validate_system_health(self) -> dict:
         """Validate overall system health for testing purposes."""
         metrics = self.get_system_metrics()
 
@@ -1086,7 +1005,7 @@ class RadiationMonitoringSystem:
             "overall_healthy": overall_health,
             "checks": health_checks,
             "metrics": metrics,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         self.logger.info(
@@ -1104,14 +1023,14 @@ class RadiationMonitoringSystem:
 class GlobalRadiationMonitor:
     """Global-scale radiation monitoring orchestrator over RadiationMonitoringSystem."""
 
-    def __init__(self, config: Dict[str, Any], logger: Optional[Any] = None):
+    def __init__(self, config: dict[str, Any], logger: Any | None = None):
         self.config = config
         self.logger = logger or logging.getLogger(__name__)
         self.radiation_system = RadiationMonitoringSystem(config, logger)
 
     async def run_monitoring_cycle(
-        self, measurements: Optional[List[Dict]] = None
-    ) -> Dict:
+        self, measurements: list[dict] | None = None
+    ) -> dict:
         """Run a complete monitoring cycle."""
         self.logger.info(
             "Starting global monitoring cycle", extra={"operation": "monitoring_cycle"}

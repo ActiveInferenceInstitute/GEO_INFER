@@ -6,10 +6,12 @@ temporal geospatial data with metadata and analysis capabilities.
 """
 
 import logging
-from typing import Dict, Optional, Any, Union, cast
-from datetime import datetime, timedelta
+from copy import deepcopy
+from typing import Any
+from datetime import datetime
 import pandas as pd
 import numpy as np
+from geo_infer_time.core.timestamps import normalize_datetime_index
 
 logger = logging.getLogger(__name__)
 
@@ -24,18 +26,18 @@ class TimeSeries:
 
     def __init__(
         self,
-        data: Union[pd.Series, pd.DataFrame, np.ndarray],
-        timestamps: Optional[pd.DatetimeIndex] = None,
-        spatial_location: Optional[Dict[str, float]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        data: pd.Series | pd.DataFrame | np.ndarray,
+        timestamps: pd.DatetimeIndex | None = None,
+        spatial_location: dict[str, float | str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """
         Initialize a TimeSeries object.
 
         Args:
             data: Time series data (Series, DataFrame, or array)
-            timestamps: Optional timestamps (if None, uses data index)
-            spatial_location: Optional spatial location {"lat": float, "lon": float}
+            timestamps: Aware, unique increasing timestamps; if None uses data index.
+            spatial_location: Optional location context (lat/lon or a cell identifier).
             metadata: Optional metadata dictionary
         """
         if not isinstance(data, (pd.Series, pd.DataFrame, np.ndarray)):
@@ -44,7 +46,7 @@ class TimeSeries:
         normalized_timestamps = None
         if timestamps is not None:
             try:
-                normalized_timestamps = pd.DatetimeIndex(timestamps)
+                normalized_timestamps = normalize_datetime_index(timestamps)
             except (TypeError, ValueError) as exc:
                 raise ValueError(
                     f"Could not convert timestamps to datetime: {exc}"
@@ -56,9 +58,9 @@ class TimeSeries:
         if isinstance(data, np.ndarray):
             if normalized_timestamps is None:
                 raise ValueError("timestamps required when data is numpy array")
-            self.data = pd.DataFrame(data, index=normalized_timestamps)
+            self.data = pd.DataFrame(data.copy(), index=normalized_timestamps)
         elif isinstance(data, pd.Series):
-            self.data = data.to_frame()
+            self.data = data.to_frame().copy()
             if normalized_timestamps is not None:
                 self.data.index = normalized_timestamps
         else:
@@ -69,14 +71,12 @@ class TimeSeries:
         self.spatial_location = (
             dict(spatial_location) if spatial_location is not None else None
         )
-        self.metadata = dict(metadata) if metadata is not None else {}
+        self.metadata = deepcopy(metadata) if metadata is not None else {}
 
-        # Validate temporal index
-        if not isinstance(self.data.index, pd.DatetimeIndex):
-            try:
-                self.data.index = pd.to_datetime(self.data.index)
-            except (TypeError, ValueError) as exc:
-                raise ValueError(f"Could not convert index to datetime: {exc}") from exc
+        if not self.data.columns.is_unique:
+            raise ValueError("TimeSeries value columns must be unique")
+
+        self.data.index = normalize_datetime_index(self.data.index)
 
         logger.debug(f"Created TimeSeries with {len(self.data)} observations")
 
@@ -90,31 +90,32 @@ class TimeSeries:
         return self.data.index
 
     @property
-    def start_time(self) -> datetime:
+    def start_time(self) -> pd.Timestamp:
         """Get start time."""
         if self.data.empty:
             raise ValueError("TimeSeries is empty")
-        return cast(datetime, pd.Timestamp(self.data.index[0]).to_pydatetime())
+        return self.data.index[0]
 
     @property
-    def end_time(self) -> datetime:
+    def end_time(self) -> pd.Timestamp:
         """Get end time."""
         if self.data.empty:
             raise ValueError("TimeSeries is empty")
-        return cast(datetime, pd.Timestamp(self.data.index[-1]).to_pydatetime())
+        return self.data.index[-1]
 
     @property
-    def duration(self) -> timedelta:
+    def duration(self) -> pd.Timedelta:
         """Get time series duration."""
         return self.end_time - self.start_time
 
     @property
-    def frequency(self) -> Optional[str]:
+    def frequency(self) -> str | None:
         """Get inferred frequency."""
+        index = normalize_datetime_index(self.data.index)
         try:
-            freq = pd.infer_freq(self.data.index)
+            freq = pd.infer_freq(index)
             return str(freq) if freq is not None else None
-        except Exception:
+        except ValueError:
             return None
 
     def resample(self, frequency: str, method: str = "mean") -> "TimeSeries":
@@ -131,7 +132,7 @@ class TimeSeries:
         if method == "mean":
             resampled_data = self.data.resample(frequency).mean()
         elif method == "sum":
-            resampled_data = self.data.resample(frequency).sum()
+            resampled_data = self.data.resample(frequency).sum(min_count=1)
         elif method == "max":
             resampled_data = self.data.resample(frequency).max()
         elif method == "min":
@@ -149,7 +150,7 @@ class TimeSeries:
             metadata={**self.metadata, "resampled_from": self.frequency},
         )
 
-    def interpolate(self, method: str = "linear") -> "TimeSeries":
+    def interpolate(self, method: str = "linear", **kwargs: Any) -> "TimeSeries":
         """
         Interpolate missing values.
 
@@ -159,7 +160,7 @@ class TimeSeries:
         Returns:
             Interpolated TimeSeries
         """
-        interpolated_data = self.data.interpolate(method=method)
+        interpolated_data = self.data.interpolate(method=method, **kwargs)
 
         return TimeSeries(
             data=interpolated_data,
@@ -167,7 +168,7 @@ class TimeSeries:
             metadata={**self.metadata, "interpolated": True},
         )
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """
         Get statistical summary of the time series.
 
@@ -214,10 +215,11 @@ class TimeSeries:
         Returns:
             Sliced TimeSeries
         """
+        start = normalize_datetime_index([start])[0]
+        end = normalize_datetime_index([end])[0]
         if start > end:
             raise ValueError("slice start must not be after end")
-
-        sliced_data = self.data.loc[start:end]  # type: ignore[misc]
+        sliced_data = self.data.loc[start:end]
 
         return TimeSeries(
             data=sliced_data,

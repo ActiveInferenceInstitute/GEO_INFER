@@ -74,7 +74,7 @@ def main():
         f"✓ Created governance structure with {len(governance_structure.entities)} levels"
     )
     print(f"✓ Decision domains: {len(governance_structure.decision_domains)}")
-    print(f"✓ Governance entities:")
+    print("✓ Governance entities:")
     for entity in governance_structure.entities:
         print(
             f"  - {entity.name} ({entity.governance_level.value}): {len(entity.responsibilities)} responsibilities"
@@ -175,7 +175,7 @@ def main():
         ],
     )
 
-    print(f"✓ Institutional analysis complete")
+    print("✓ Institutional analysis complete")
     print(f"✓ Recommendations: {len(institutional_analysis.recommendations)}")
     for i, rec in enumerate(institutional_analysis.recommendations[:3], 1):
         print(f"  {i}. {rec}")
@@ -249,7 +249,7 @@ def main():
     print(
         f"✓ Transparency system: {len(transparency_system.public_access_mechanisms)} access mechanisms"
     )
-    print(f"✓ Public participation mechanisms:")
+    print("✓ Public participation mechanisms:")
     participation = accountability_framework.enable_participation(
         participation_forms=[
             "information_access",
@@ -335,10 +335,10 @@ def main():
         f"✓ Institutional Framework: IAD with {len(ostrom_design['governance_design'])} Ostrom principles"
     )
     print(f"✓ Governance Platform: {governance_platform.platform_id}")
-    print(f"✓ Accountability Directions: Multi-directional")
-    print(f"✓ Transparency Level: Full disclosure with quarterly reporting")
-    print(f"✓ Subsidiarity: Applied across all decision domains")
-    print(f"\n✓ System ready for climate action implementation!")
+    print("✓ Accountability Directions: Multi-directional")
+    print("✓ Transparency Level: Full disclosure with quarterly reporting")
+    print("✓ Subsidiarity: Applied across all decision domains")
+    print("\n✓ System ready for climate action implementation!")
     print("=" * 80)
 
 

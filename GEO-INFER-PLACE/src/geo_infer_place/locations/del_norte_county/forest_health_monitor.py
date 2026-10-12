@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Any, Tuple
+from typing import Any
 import h3
 
 logger = logging.getLogger(__name__)
@@ -95,7 +95,7 @@ class ForestHealthMonitor:
 
     def __init__(
         self,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         data_integrator: Any,
         spatial_processor: Any,
         output_dir: Path,
@@ -132,13 +132,13 @@ class ForestHealthMonitor:
         self.forest_types = self.forest_config.get("forest_types", [])
         self.change_detection = self.forest_config.get("change_detection", {})
 
-        self.last_analysis_time: Optional[datetime] = None
+        self.last_analysis_time: datetime | None = None
 
         logger.info("ForestHealthMonitor initialized for Del Norte County")
 
     def run_analysis(
-        self, temporal_range: Optional[Tuple[str, str]] = None
-    ) -> Dict[str, Any]:
+        self, temporal_range: tuple[str, str] | None = None
+    ) -> dict[str, Any]:
         """
         Run comprehensive forest health analysis for Del Norte County.
 
@@ -274,8 +274,8 @@ class ForestHealthMonitor:
         return results
 
     def _acquire_forest_data(
-        self, temporal_range: Optional[Tuple[str, str]]
-    ) -> Dict[str, Any]:
+        self, temporal_range: tuple[str, str] | None
+    ) -> dict[str, Any]:
         """Acquire forest health data from multiple sources."""
         logger.info("Acquiring forest health data from multiple sources...")
 
@@ -288,7 +288,7 @@ class ForestHealthMonitor:
             bounds.get("north"),
         )
 
-        forest_data: Dict[str, Any] = {
+        forest_data: dict[str, Any] = {
             "bbox": bbox,
             "temporal_range": temporal_range,
             "data_sources": {},
@@ -348,7 +348,7 @@ class ForestHealthMonitor:
 
         return forest_data
 
-    def _load_configured_forest_source(self, source_name: str) -> Dict[str, Any]:
+    def _load_configured_forest_source(self, source_name: str) -> dict[str, Any]:
         """Load one configured forest observation source."""
         source = self.forest_config.get("data_sources", {}).get(source_name)
         if callable(source):
@@ -384,23 +384,23 @@ class ForestHealthMonitor:
 
     def _acquire_satellite_vegetation_data(
         self,
-        bbox: Tuple[float, float, float, float],
-        temporal_range: Optional[Tuple[str, str]],
-    ) -> Dict[str, Any]:
+        bbox: tuple[float, float, float, float],
+        temporal_range: tuple[str, str] | None,
+    ) -> dict[str, Any]:
         """Acquire provider-backed satellite vegetation observations."""
         return self._load_configured_forest_source("vegetation_indices")
 
     def _acquire_forest_inventory_data(
-        self, bbox: Tuple[float, float, float, float]
-    ) -> Dict[str, Any]:
+        self, bbox: tuple[float, float, float, float]
+    ) -> dict[str, Any]:
         """Acquire provider-backed forest inventory observations."""
         return self._load_configured_forest_source("forest_inventory")
 
     def _acquire_forest_climate_data(
         self,
-        bbox: Tuple[float, float, float, float],
-        temporal_range: Optional[Tuple[str, str]],
-    ) -> Dict[str, Any]:
+        bbox: tuple[float, float, float, float],
+        temporal_range: tuple[str, str] | None,
+    ) -> dict[str, Any]:
         """Acquire climate observations from NOAA or an explicitly configured source."""
         if not hasattr(self.data_integrator, "noaa_client"):
             return self._load_configured_forest_source("climate")
@@ -415,8 +415,8 @@ class ForestHealthMonitor:
         }
 
     def _analyze_vegetation_indices(
-        self, forest_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, forest_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze vegetation indices for forest health assessment."""
         logger.info("Analyzing vegetation indices...")
 
@@ -511,7 +511,7 @@ class ForestHealthMonitor:
 
         return analysis_results
 
-    def _assess_forest_type_health(self, forest_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _assess_forest_type_health(self, forest_data: dict[str, Any]) -> dict[str, Any]:
         """Assess health by forest type."""
         logger.info("Assessing forest type health...")
 
@@ -557,7 +557,7 @@ class ForestHealthMonitor:
 
         return forest_type_analysis
 
-    def _perform_change_detection(self, forest_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _perform_change_detection(self, forest_data: dict[str, Any]) -> dict[str, Any]:
         """Perform temporal change detection analysis."""
         logger.info("Performing change detection analysis...")
 
@@ -649,7 +649,7 @@ class ForestHealthMonitor:
 
         return change_detection
 
-    def _assess_tree_mortality(self, forest_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _assess_tree_mortality(self, forest_data: dict[str, Any]) -> dict[str, Any]:
         """Assess tree mortality patterns from acquired data.
 
         Computes mortality metrics from the CAL FIRE tree mortality survey
@@ -663,8 +663,8 @@ class ForestHealthMonitor:
 
         # If we have real event data, compute from it
         if events and isinstance(events, list) and len(events) > 0:
-            cause_counts: Dict[str, int] = {}
-            h3_mortality: Dict[str, float] = {}
+            cause_counts: dict[str, int] = {}
+            h3_mortality: dict[str, float] = {}
             total_area_ha = 0.0
             for evt in events:
                 props = evt.get("properties", evt) if isinstance(evt, dict) else {}
@@ -714,8 +714,8 @@ class ForestHealthMonitor:
         }
 
     def _assess_climate_vulnerability(
-        self, forest_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, forest_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Assess climate change vulnerability from acquired climate data.
 
         Computes temperature and precipitation trends from the climate
@@ -812,8 +812,8 @@ class ForestHealthMonitor:
         }
 
     def _generate_risk_assessment(
-        self, analysis_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, analysis_results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate comprehensive forest health risk assessment."""
         logger.info("Generating forest health risk assessment...")
 
@@ -822,7 +822,7 @@ class ForestHealthMonitor:
         change_analysis = analysis_results.get("change_analysis", {})
         mortality_analysis = analysis_results.get("mortality_analysis", {})
 
-        risk_assessment: Dict[str, Any] = {
+        risk_assessment: dict[str, Any] = {
             "overall_risk_score": 0.0,
             "risk_factors": {},
             "spatial_risk_map": {},
@@ -881,7 +881,7 @@ class ForestHealthMonitor:
 
         return risk_assessment
 
-    def _prepare_spatial_data(self, analysis_results: Dict[str, Any]) -> Dict[str, Any]:
+    def _prepare_spatial_data(self, analysis_results: dict[str, Any]) -> dict[str, Any]:
         """Prepare spatial data for cross-domain integration."""
         logger.info("Preparing spatial data for integration...")
 
@@ -907,11 +907,11 @@ class ForestHealthMonitor:
 
         return spatial_data
 
-    def _check_health_alerts(self, analysis_results: Dict[str, Any]) -> Dict[str, Any]:
+    def _check_health_alerts(self, analysis_results: dict[str, Any]) -> dict[str, Any]:
         """Check for forest health alerts and warnings."""
         logger.info("Checking for forest health alerts...")
 
-        alerts: Dict[str, Any] = {
+        alerts: dict[str, Any] = {
             "critical_alerts": [],
             "warnings": [],
             "informational": [],
@@ -949,7 +949,7 @@ class ForestHealthMonitor:
 
         return alerts
 
-    def _save_analysis_results(self, results: Dict[str, Any]) -> None:
+    def _save_analysis_results(self, results: dict[str, Any]) -> None:
         """Save analysis results to file."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         results_file = self.output_dir / f"forest_health_analysis_{timestamp}.json"
@@ -1009,7 +1009,7 @@ class ForestHealthMonitor:
 
         logger.info(f"Forest health analysis results saved to: {results_file}")
 
-    def get_monitoring_status(self) -> Dict[str, Any]:
+    def get_monitoring_status(self) -> dict[str, Any]:
         """Get current monitoring system status."""
         return {
             "monitor_type": "forest_health",

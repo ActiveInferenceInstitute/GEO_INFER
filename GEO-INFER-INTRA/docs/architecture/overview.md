@@ -113,7 +113,7 @@ Reusable):
 
 GEO-INFER modules are Python packages; deployment depends on the module:
 
-1. **Workspace usage** — `uv sync --all-packages --all-extras` from the
+1. **Workspace usage** — `uv sync --all-packages --all-extras --all-groups` from the
    repository root.
 2. **Single-package usage** — `uv sync --package geo-infer-<module>`.
 3. **Containerized deployment** — modules can be packaged as containers; CI

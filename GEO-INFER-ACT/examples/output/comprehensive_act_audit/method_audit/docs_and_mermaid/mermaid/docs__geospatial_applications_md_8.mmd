@@ -1,9 +1,0 @@
-flowchart LR
-    INPUT["H3 observations"] --> V["Validate H3 v4 cells"]
-    V --> S["Check cells belong to model or agent lattice"]
-    S --> N["Normalize belief and observation vectors"]
-    N --> FE["Compute VFE and EFE diagnostics"]
-    FE --> C["Compute H3SpatialConsistency"]
-    C --> D{"return_result"}
-    D -->|false| DICT["Dictionary contract"]
-    D -->|true| TYPED["Typed dataclass contract"]

@@ -7,7 +7,6 @@ dependencies, circular imports, and syntax errors across the ecosystem.
 """
 
 import importlib
-import sys
 from pathlib import Path
 
 import pytest
@@ -65,52 +64,24 @@ MODULE_PACKAGES = {
 }
 
 
-def _add_sys_path(module_short: str):
-    """Ensure the module's src/ or package directory is on sys.path."""
-    mod_dir = REPO_ROOT / f"GEO-INFER-{module_short}"
-    src_dir = mod_dir / "src"
-    if src_dir.is_dir():
-        path_str = str(src_dir)
-        if path_str not in sys.path:
-            sys.path.insert(0, path_str)
-    else:
-        path_str = str(mod_dir)
-        if path_str not in sys.path:
-            sys.path.insert(0, path_str)
-
-
 class TestModuleImports:
     """Validate that each module's Python package imports cleanly."""
 
     @pytest.mark.parametrize("module, package", list(MODULE_PACKAGES.items()))
     def test_module_package_importable(self, module, package):
-        """Each module's top-level package should import without error."""
-        _add_sys_path(module)
-        try:
-            mod = importlib.import_module(package)
-            assert mod is not None
-        except ImportError as e:
-            # Expected for some modules with heavy optional deps
-            if "No module named" in str(e):
-                pytest.fail(f"Optional dependency missing for {package}: {e}")
-            else:
-                pytest.fail(f"Import error for {package}: {e}")
-        except Exception as e:
-            pytest.fail(f"Unexpected error importing {package}: {e}")
+        """Each package imports from its workspace ``src/`` install."""
+        mod = importlib.import_module(package)
+        expected_root = REPO_ROOT / f"GEO-INFER-{module}" / "src" / package
+        assert mod.__file__ is not None
+        assert Path(mod.__file__).resolve().parent == expected_root.resolve(), (
+            f"{package} resolved to {mod.__file__}, not the workspace src/ tree"
+        )
 
     @pytest.mark.parametrize("module, package", list(MODULE_PACKAGES.items()))
     def test_module_has_version_or_init(self, module, package):
-        """Each package should have an __init__.py with some content."""
-        mod_dir = REPO_ROOT / f"GEO-INFER-{module}"
-        src_dir = mod_dir / "src" / package
-        pkg_dir = mod_dir / package
-        init_file = None
-        if src_dir.is_dir():
-            init_file = src_dir / "__init__.py"
-        elif pkg_dir.is_dir():
-            init_file = pkg_dir / "__init__.py"
-        if init_file is None or not init_file.is_file():
-            pytest.fail(f"No __init__.py found for {package}")
+        """Each package should have a non-empty ``src/<package>/__init__.py``."""
+        init_file = REPO_ROOT / f"GEO-INFER-{module}" / "src" / package / "__init__.py"
+        assert init_file.is_file(), f"No __init__.py found for {package}"
         content = init_file.read_text()
         assert len(content) > 0, f"{package}/__init__.py is empty"
 

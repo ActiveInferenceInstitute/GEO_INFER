@@ -7,16 +7,11 @@ result presentation.
 """
 
 import numpy as np
-from typing import Optional, Any
+from typing import Any
 import warnings
 
-try:
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-
-    PLOTLY_AVAILABLE = True
-except ImportError:
-    PLOTLY_AVAILABLE = False
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from ..models.data_models import SPMResult
 
@@ -26,7 +21,7 @@ def create_interactive_map(
     contrast_idx: int = 0,
     map_type: str = "scattergeo",
     **kwargs: Any,
-) -> Optional[Any]:
+) -> Any:
     """
     Create interactive geographical map of SPM results.
 
@@ -37,12 +32,8 @@ def create_interactive_map(
         **kwargs: Additional plotting parameters
 
     Returns:
-        Plotly figure object or None if plotly not available
+        Plotly figure object
     """
-    if not PLOTLY_AVAILABLE:
-        warnings.warn("plotly not available for interactive visualization")
-        return None
-
     if not isinstance(contrast_idx, int) or contrast_idx < 0:
         raise ValueError("contrast_idx must be a non-negative integer")
     coordinates = np.asarray(spm_result.spm_data.coordinates, dtype=float)
@@ -158,7 +149,8 @@ def create_interactive_map(
         # Deferred: see docs/deferred_statistical_methods.md
         # ("Choropleth rendering (polygon data)").
         warnings.warn(
-            "Choropleth map requires polygon data. Using scatter plot instead."
+            "Choropleth map requires polygon data. Using scatter plot instead.",
+            stacklevel=2,
         )
         return create_interactive_map(spm_result, contrast_idx, "scattergeo", **kwargs)
 
@@ -168,9 +160,7 @@ def create_interactive_map(
     return fig
 
 
-def create_dashboard(
-    spm_result: SPMResult, include_diagnostics: bool = True
-) -> Optional[Any]:
+def create_dashboard(spm_result: SPMResult, include_diagnostics: bool = True) -> Any:
     """
     Create comprehensive interactive dashboard of SPM results.
 
@@ -179,12 +169,8 @@ def create_dashboard(
         include_diagnostics: Whether to include diagnostic plots
 
     Returns:
-        Plotly figure with dashboard or None if plotly not available
+        Plotly figure with dashboard
     """
-    if not PLOTLY_AVAILABLE:
-        warnings.warn("plotly not available for dashboard creation")
-        return None
-
     # Create subplot figure
     n_rows = 2 if include_diagnostics else 1
     n_cols = 3
@@ -333,7 +319,7 @@ def create_dashboard(
     return fig
 
 
-def create_time_series_explorer(spm_result: SPMResult) -> Optional[Any]:
+def create_time_series_explorer(spm_result: SPMResult) -> Any | None:
     """
     Create interactive time series explorer for temporal SPM data.
 
@@ -343,12 +329,10 @@ def create_time_series_explorer(spm_result: SPMResult) -> Optional[Any]:
     Returns:
         Plotly figure for time series exploration or None
     """
-    if not PLOTLY_AVAILABLE:
-        warnings.warn("plotly not available for time series explorer")
-        return None
-
     if not spm_result.spm_data.has_temporal:
-        warnings.warn("No temporal data available for time series explorer")
+        warnings.warn(
+            "No temporal data available for time series explorer", stacklevel=2
+        )
         return None
 
     import numpy as np

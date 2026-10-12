@@ -8,7 +8,7 @@ This module provides comprehensive data models for insurance policies including:
 - Policy metadata and tracking
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from enum import Enum
@@ -50,9 +50,9 @@ class Coverage:
     premium: float = 0.0
     coinsurance: float = 1.0  # 100% coinsurance by default
     waiting_period_days: int = 0
-    retroactive_date: Optional[datetime] = None
-    conditions: List[str] = field(default_factory=list)
-    exclusions: List[str] = field(default_factory=list)
+    retroactive_date: datetime | None = None
+    conditions: list[str] = field(default_factory=list)
+    exclusions: list[str] = field(default_factory=list)
 
     def calculate_premium_portion(self, total_premium: float) -> float:
         """Calculate the portion of total premium for this coverage."""
@@ -65,7 +65,7 @@ class Coverage:
             return datetime.now() >= active_date
         return True
 
-    def get_coverage_summary(self) -> Dict[str, Any]:
+    def get_coverage_summary(self) -> dict[str, Any]:
         """Get summary of coverage details."""
         return {
             "type": self.coverage_type.value,
@@ -91,14 +91,14 @@ class Endorsement:
     effective_date: datetime
     description: str
     premium_change: float = 0.0
-    coverage_changes: Dict[str, Any] = field(default_factory=dict)
-    conditions: List[str] = field(default_factory=list)
+    coverage_changes: dict[str, Any] = field(default_factory=dict)
+    conditions: list[str] = field(default_factory=list)
 
     def is_effective(self) -> bool:
         """Check if endorsement is currently effective."""
         return datetime.now() >= self.effective_date
 
-    def get_endorsement_summary(self) -> Dict[str, Any]:
+    def get_endorsement_summary(self) -> dict[str, Any]:
         """Get summary of endorsement details."""
         return {
             "endorsement_id": self.endorsement_id,
@@ -120,7 +120,7 @@ class Exclusion:
     exclusion_type: str
     description: str
     applicability: str = "all"  # all, specific_peril, specific_location
-    conditions: List[str] = field(default_factory=list)
+    conditions: list[str] = field(default_factory=list)
 
     def applies_to_peril(self, peril: str) -> bool:
         """Check if exclusion applies to specific peril."""
@@ -128,7 +128,7 @@ class Exclusion:
             self.applicability in ["all", "specific_peril"] and peril in self.conditions
         )
 
-    def get_exclusion_summary(self) -> Dict[str, Any]:
+    def get_exclusion_summary(self) -> dict[str, Any]:
         """Get summary of exclusion details."""
         return {
             "exclusion_id": self.exclusion_id,
@@ -154,7 +154,7 @@ class Policy:
     expiration_date: datetime
 
     # Coverage information
-    coverages: List[Coverage] = field(default_factory=list)
+    coverages: list[Coverage] = field(default_factory=list)
     term_months: int = 12
 
     # Financial information
@@ -171,14 +171,14 @@ class Policy:
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
     created_by: str = "system"
-    underwriter_id: Optional[str] = None
+    underwriter_id: str | None = None
 
     # Endorsements and amendments
-    endorsements: List[Endorsement] = field(default_factory=list)
-    exclusions: List[Exclusion] = field(default_factory=list)
+    endorsements: list[Endorsement] = field(default_factory=list)
+    exclusions: list[Exclusion] = field(default_factory=list)
 
     # Additional data
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def add_coverage(self, coverage: Coverage) -> None:
         """Add coverage to the policy."""
@@ -230,7 +230,7 @@ class Policy:
             return 0
         return (self.expiration_date - now).days
 
-    def get_coverage_for_peril(self, peril: str) -> List[Coverage]:
+    def get_coverage_for_peril(self, peril: str) -> list[Coverage]:
         """Get coverages that apply to a specific peril."""
         applicable_coverages = []
 
@@ -245,7 +245,7 @@ class Policy:
         """Calculate total policy value (sum of all coverage limits)."""
         return sum(coverage.limit for coverage in self.coverages)
 
-    def get_policy_summary(self) -> Dict[str, Any]:
+    def get_policy_summary(self) -> dict[str, Any]:
         """Get comprehensive policy summary."""
         return {
             "policy_id": self.policy_id,
@@ -270,7 +270,7 @@ class Policy:
             "updated_at": self.updated_at.isoformat(),
         }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert policy to dictionary for serialization."""
         return {
             "policy_id": self.policy_id,

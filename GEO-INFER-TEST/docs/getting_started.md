@@ -6,7 +6,7 @@ the repository root with `uv run`.
 ## Setup
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python -c "import geo_infer_test; print(geo_infer_test.__version__)"
 ```
 

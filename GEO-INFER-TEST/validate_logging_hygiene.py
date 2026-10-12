@@ -36,7 +36,6 @@ import argparse
 import ast
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MODULE_PREFIX = "GEO-INFER-"
@@ -74,7 +73,7 @@ GETLOGGER_ARG_LOCAL = "__name__"
 
 @dataclass
 class HygieneReport:
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
     def error(self, message: str) -> None:
         self.errors.append(message)
@@ -193,7 +192,7 @@ def scan_source_file(source_file: Path, report: HygieneReport) -> None:
             or is_entrypoint_path(relative)
             or inside_main_guard(tree, node)
         )
-        violation: Optional[str] = None
+        violation: str | None = None
         if attr == "basicConfig":
             violation = (
                 f"{relative}:{node.lineno}: logging.basicConfig() mutates the "
@@ -221,7 +220,7 @@ def scan_source_file(source_file: Path, report: HygieneReport) -> None:
         )
 
 
-def validate_logging_hygiene(report: Optional[HygieneReport] = None) -> HygieneReport:
+def validate_logging_hygiene(report: HygieneReport | None = None) -> HygieneReport:
     """Scan module sources and return the hygiene report."""
     if report is None:
         report = HygieneReport()

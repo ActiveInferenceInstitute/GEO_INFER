@@ -216,6 +216,26 @@ class TestProceduralArt(unittest.TestCase):
             np.array_equal(np.asarray(first.image), np.asarray(second.image))
         )
 
+    def test_seeded_generation_uses_instance_generator(self):
+        """Seeded voronoi output is reproducible and leaves numpy.random untouched."""
+        np.random.seed(1234)
+        expected_global = np.random.random()
+        np.random.seed(1234)
+
+        images = [
+            np.asarray(
+                ProceduralArt(
+                    algorithm="voronoi", params={"seed": 5}, resolution=(64, 64)
+                )
+                .generate()
+                .image
+            )
+            for _ in range(2)
+        ]
+
+        self.assertTrue(np.array_equal(images[0], images[1]))
+        self.assertEqual(np.random.random(), expected_global)
+
     def test_dla_degenerate_structure(self):
         """DLA with no stuck particles must not divide by zero (NaN -> ValueError)."""
         proc_art = ProceduralArt(

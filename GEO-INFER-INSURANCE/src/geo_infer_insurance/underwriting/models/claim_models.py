@@ -8,7 +8,7 @@ This module provides comprehensive data models for insurance claims including:
 - Claim documentation and notes
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 from datetime import datetime
 from dataclasses import dataclass, field
 from enum import Enum
@@ -65,7 +65,7 @@ class Reserve:
     calculation_method: str = "expected_value"
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
-    notes: Optional[str] = None
+    notes: str | None = None
 
     def update_amount(self, new_amount: float, reason: str = "") -> None:
         """Update reserve amount."""
@@ -80,7 +80,7 @@ class Reserve:
         """Check if reserve is adequate for paid amount."""
         return self.amount >= paid_amount
 
-    def get_reserve_summary(self) -> Dict[str, Any]:
+    def get_reserve_summary(self) -> dict[str, Any]:
         """Get summary of reserve details."""
         return {
             "reserve_id": self.reserve_id,
@@ -104,8 +104,8 @@ class Payment:
     amount: float
     payment_date: datetime
     payment_method: str = "electronic"
-    reference_number: Optional[str] = None
-    notes: Optional[str] = None
+    reference_number: str | None = None
+    notes: str | None = None
 
     def is_valid(self) -> bool:
         """Validate payment record."""
@@ -115,7 +115,7 @@ class Payment:
             and self.payment_type in ["indemnity", "expense", "salvage", "subrogation"]
         )
 
-    def get_payment_summary(self) -> Dict[str, Any]:
+    def get_payment_summary(self) -> dict[str, Any]:
         """Get summary of payment details."""
         return {
             "payment_id": self.payment_id,
@@ -150,21 +150,21 @@ class Claim:
     paid_amount: float = 0.0
 
     # Reserves
-    reserves: List[Reserve] = field(default_factory=list)
+    reserves: list[Reserve] = field(default_factory=list)
 
     # Payments
-    payments: List[Payment] = field(default_factory=list)
+    payments: list[Payment] = field(default_factory=list)
 
     # Assessment information
     cause_of_loss: str = ""
-    adjuster_id: Optional[str] = None
-    supervisor_id: Optional[str] = None
-    loss_location: Optional[str] = None
+    adjuster_id: str | None = None
+    supervisor_id: str | None = None
+    loss_location: str | None = None
 
     # Documentation
-    supporting_documents: List[str] = field(default_factory=list)
-    notes: List[str] = field(default_factory=list)
-    photos: List[str] = field(default_factory=list)
+    supporting_documents: list[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
+    photos: list[str] = field(default_factory=list)
 
     # Metadata
     created_at: datetime = field(default_factory=datetime.now)
@@ -172,8 +172,8 @@ class Claim:
     created_by: str = "system"
 
     # Error handling
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     def add_reserve(self, reserve: Reserve) -> None:
         """Add reserve estimate to claim."""
@@ -206,7 +206,7 @@ class Claim:
         """Calculate days since claim was reported."""
         return (datetime.now() - self.reported_date).days
 
-    def get_financial_summary(self) -> Dict[str, Any]:
+    def get_financial_summary(self) -> dict[str, Any]:
         """Get financial summary of the claim."""
         return {
             "claimed_amount": self.claimed_amount,
@@ -218,7 +218,7 @@ class Claim:
             "payment_count": len(self.payments),
         }
 
-    def get_claim_summary(self) -> Dict[str, Any]:
+    def get_claim_summary(self) -> dict[str, Any]:
         """Get comprehensive claim summary."""
         return {
             "claim_id": self.claim_id,
@@ -239,7 +239,7 @@ class Claim:
             "warnings_count": len(self.warnings),
         }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert claim to dictionary for serialization."""
         return {
             "claim_id": self.claim_id,
@@ -292,9 +292,9 @@ class Claim:
             "warnings": self.warnings,
         }
 
-    def validate_claim(self) -> Dict[str, Any]:
+    def validate_claim(self) -> dict[str, Any]:
         """Validate claim data and return validation results."""
-        validation_result: Dict[str, Any] = {
+        validation_result: dict[str, Any] = {
             "is_valid": True,
             "errors": [],
             "warnings": [],

@@ -1,4 +1,0 @@
-# GEO-INFER-METAGOV has no runtime dependencies (stdlib-only core).
-# Optional extras are declared in pyproject.toml:
-#   integrations: geo-infer-space
-#   dev / docs: pytest, sphinx, etc.

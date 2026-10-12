@@ -6,7 +6,7 @@ real-time tracking for emergency resources.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -43,7 +43,7 @@ class ResourceType(Enum):
 # Plural -> singular alias map so configured vocabularies such as the module
 # default ("engines", "ambulances", "rescue_units") resolve to the singular
 # ResourceType values ("engine", "ambulance", "rescue_unit").
-RESOURCE_TYPE_ALIASES: Dict[str, str] = {
+RESOURCE_TYPE_ALIASES: dict[str, str] = {
     **{f"{rt.value}s": rt.value for rt in ResourceType},
     "personnel": "personnel",
 }
@@ -57,11 +57,11 @@ class Resource:
     resource_type: ResourceType
     name: str
     status: ResourceStatus = ResourceStatus.AVAILABLE
-    location: Optional[Dict[str, float]] = None  # lat, lon
+    location: dict[str, float] | None = None  # lat, lon
     capacity: int = 1
     agency: str = ""
-    capabilities: List[str] = field(default_factory=list)
-    assigned_incident: Optional[str] = None
+    capabilities: list[str] = field(default_factory=list)
+    assigned_incident: str | None = None
 
 
 class ResourceDeployer:
@@ -75,7 +75,7 @@ class ResourceDeployer:
 
     def __init__(
         self,
-        resource_types: Optional[List[str]] = None,
+        resource_types: list[str] | None = None,
         optimization_algorithm: str = "greedy_nearest_resource",
         real_time_updates: bool = True,
     ):
@@ -106,7 +106,7 @@ class ResourceDeployer:
         }
         self.optimization_algorithm = optimization_algorithm
         self.real_time_updates = real_time_updates
-        self._resources: Dict[str, Resource] = {}
+        self._resources: dict[str, Resource] = {}
         logger.info(
             f"Initialized ResourceDeployer with {optimization_algorithm} optimization"
         )
@@ -137,11 +137,11 @@ class ResourceDeployer:
 
     def optimize_allocation(
         self,
-        resources: List[Dict[str, Any]],
-        demand_points: List[Dict[str, Any]],
-        constraints: Dict[str, Any],
-        objectives: List[str],
-    ) -> Dict[str, Any]:
+        resources: list[dict[str, Any]],
+        demand_points: list[dict[str, Any]],
+        constraints: dict[str, Any],
+        objectives: list[str],
+    ) -> dict[str, Any]:
         """
         Optimize resource allocation to demand points.
 
@@ -250,7 +250,7 @@ class ResourceDeployer:
         return result
 
     def _estimate_travel_time(
-        self, from_loc: Dict[str, float], to_loc: Dict[str, float]
+        self, from_loc: dict[str, float], to_loc: dict[str, float]
     ) -> float:
         """Estimate travel time between two locations."""
         distance_km = haversine_distance_km(from_loc, to_loc)
@@ -264,11 +264,11 @@ class ResourceDeployer:
 
     def dynamic_redeploy(
         self,
-        current_positions: List[Dict[str, Any]],
-        pending_incidents: List[Dict[str, Any]],
-        predicted_demand: Dict[str, Any],
+        current_positions: list[dict[str, Any]],
+        pending_incidents: list[dict[str, Any]],
+        predicted_demand: dict[str, Any],
         strategy: str = "move_up",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Dynamically redeploy resources based on current conditions.
 
@@ -365,11 +365,11 @@ class ResourceDeployer:
 
     def manage_staging(
         self,
-        staging_areas: List[Dict[str, Any]],
-        incoming_resources: List[Dict[str, Any]],
-        assignment_queue: List[Dict[str, Any]],
+        staging_areas: list[dict[str, Any]],
+        incoming_resources: list[dict[str, Any]],
+        assignment_queue: list[dict[str, Any]],
         prioritization: str = "incident_severity",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Manage staging area operations.
 
@@ -382,9 +382,9 @@ class ResourceDeployer:
         Returns:
             Staging management plan
         """
-        staging_areas_out: List[Dict[str, Any]] = []
-        pending_queue_out: List[Dict[str, Any]] = []
-        staging_plan: Dict[str, Any] = {
+        staging_areas_out: list[dict[str, Any]] = []
+        pending_queue_out: list[dict[str, Any]] = []
+        staging_plan: dict[str, Any] = {
             "staging_areas": staging_areas_out,
             "incoming_assignments": [],
             "pending_queue": pending_queue_out,
@@ -394,7 +394,7 @@ class ResourceDeployer:
 
         # Assign staging areas
         for i, staging in enumerate(staging_areas):
-            area_plan: Dict[str, Any] = {
+            area_plan: dict[str, Any] = {
                 "staging_id": staging.get("id", f"staging_{i}"),
                 "location": staging.get("location"),
                 "capacity": staging.get("capacity", 50),
@@ -435,10 +435,10 @@ class ResourceDeployer:
 
     def track_resources(
         self,
-        resources: List[Dict[str, Any]],
+        resources: list[dict[str, Any]],
         update_frequency: str = "real_time",
-        metrics: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        metrics: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Track resource status and locations.
 
@@ -452,8 +452,8 @@ class ResourceDeployer:
         """
         metrics = metrics or ["location", "status", "availability", "eta"]
 
-        resources_out: List[Dict[str, Any]] = []
-        summary_out: Dict[str, int] = {
+        resources_out: list[dict[str, Any]] = []
+        summary_out: dict[str, int] = {
             "total": len(resources),
             "available": 0,
             "assigned": 0,
@@ -461,7 +461,7 @@ class ResourceDeployer:
             "on_scene": 0,
             "out_of_service": 0,
         }
-        tracking: Dict[str, Any] = {
+        tracking: dict[str, Any] = {
             "update_frequency": update_frequency,
             "timestamp": datetime.now().isoformat(),
             "resources": resources_out,
@@ -472,7 +472,7 @@ class ResourceDeployer:
             res_id = res_data.get("id")
             status = res_data.get("status", "available")
 
-            resource_track: Dict[str, Any] = {
+            resource_track: dict[str, Any] = {
                 "resource_id": res_id,
                 "type": res_data.get("type", "unknown"),
             }
@@ -503,7 +503,7 @@ class ResourceDeployer:
         logger.debug(f"Tracking {len(resources)} resources")
         return tracking
 
-    def get_resource_status(self, resource_id: str) -> Optional[Dict[str, Any]]:
+    def get_resource_status(self, resource_id: str) -> dict[str, Any] | None:
         """Get status of a specific resource."""
         resource = self._resources.get(resource_id)
         if resource:

@@ -5,10 +5,11 @@ This module provides orchestration capabilities for complex PEP workflows,
 coordinating between multiple modules and handling multi-step processes.
 """
 
-from typing import Dict, List, Any, Optional, Callable
+from typing import Any
+from collections.abc import Callable
 from datetime import datetime
 import logging
-from enum import Enum
+from enum import StrEnum
 
 from .pep_engine import PEPEngine
 from ..models.talent_models import CandidateStatus
@@ -16,7 +17,7 @@ from ..models.talent_models import CandidateStatus
 logger = logging.getLogger(__name__)
 
 
-class WorkflowStatus(str, Enum):
+class WorkflowStatus(StrEnum):
     """Status of workflow execution."""
 
     PENDING = "pending"
@@ -33,8 +34,8 @@ class WorkflowStep:
         self,
         name: str,
         description: str,
-        step_function: Callable[[Dict[str, Any]], Any],
-        dependencies: Optional[List[str]] = None,
+        step_function: Callable[[dict[str, Any]], Any],
+        dependencies: list[str] | None = None,
     ):
         self.name = name
         self.description = description
@@ -42,11 +43,11 @@ class WorkflowStep:
         self.dependencies = dependencies or []
         self.status = WorkflowStatus.PENDING
         self.result: Any = None
-        self.error: Optional[str] = None
-        self.started_at: Optional[datetime] = None
-        self.completed_at: Optional[datetime] = None
+        self.error: str | None = None
+        self.started_at: datetime | None = None
+        self.completed_at: datetime | None = None
 
-    def execute(self, context: Dict[str, Any]) -> bool:
+    def execute(self, context: dict[str, Any]) -> bool:
         """Execute the workflow step."""
         self.status = WorkflowStatus.IN_PROGRESS
         self.started_at = datetime.now()
@@ -79,10 +80,10 @@ class PEPOrchestrator:
     - Complex business process automation
     """
 
-    def __init__(self, pep_engine: Optional[PEPEngine] = None):
+    def __init__(self, pep_engine: PEPEngine | None = None):
         self.engine = pep_engine or PEPEngine()
-        self.workflows: Dict[str, Any] = {}
-        self.active_workflows: Dict[str, Any] = {}
+        self.workflows: dict[str, Any] = {}
+        self.active_workflows: dict[str, Any] = {}
 
     def create_employee_onboarding_workflow(self, candidate_id: str) -> str:
         """Create a comprehensive employee onboarding workflow."""
@@ -166,7 +167,7 @@ class PEPOrchestrator:
         )
         return workflow_id
 
-    def create_bulk_hire_workflow(self, candidate_ids: List[str]) -> str:
+    def create_bulk_hire_workflow(self, candidate_ids: list[str]) -> str:
         """Create a bulk hiring workflow for multiple candidates."""
 
         workflow_id = f"bulk_hire_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -222,7 +223,7 @@ class PEPOrchestrator:
         )
         return workflow_id
 
-    def execute_workflow(self, workflow_id: str) -> Dict[str, Any]:
+    def execute_workflow(self, workflow_id: str) -> dict[str, Any]:
         """Execute a workflow by ID."""
 
         if workflow_id not in self.workflows:
@@ -313,7 +314,7 @@ class PEPOrchestrator:
             "context": workflow["context"],
         }
 
-    def get_workflow_status(self, workflow_id: str) -> Dict[str, Any]:
+    def get_workflow_status(self, workflow_id: str) -> dict[str, Any]:
         """Get the status of a workflow."""
 
         if workflow_id not in self.workflows:
@@ -353,7 +354,7 @@ class PEPOrchestrator:
 
     # Workflow step implementations
 
-    def _validate_candidate_step(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_candidate_step(self, context: dict[str, Any]) -> dict[str, Any]:
         """Validate candidate data and eligibility."""
         candidate_id = context["candidate_id"]
 
@@ -382,7 +383,7 @@ class PEPOrchestrator:
             "candidate_name": f"{candidate.first_name} {candidate.last_name}",
         }
 
-    def _process_background_check_step(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _process_background_check_step(self, context: dict[str, Any]) -> dict[str, Any]:
         """Process background check (simplified implementation)."""
         candidate_id = context["candidate_id"]
 
@@ -395,7 +396,7 @@ class PEPOrchestrator:
             "estimated_completion": "3-5 business days",
         }
 
-    def _create_employee_record_step(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _create_employee_record_step(self, context: dict[str, Any]) -> dict[str, Any]:
         """Create employee record in HR system."""
         candidate_id = context["candidate_id"]
 
@@ -412,7 +413,7 @@ class PEPOrchestrator:
 
         return {"candidate_id": candidate_id, "employee_record_created": True}
 
-    def _setup_payroll_step(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _setup_payroll_step(self, context: dict[str, Any]) -> dict[str, Any]:
         """Setup payroll and compensation."""
         candidate_id = context["candidate_id"]
 
@@ -425,7 +426,7 @@ class PEPOrchestrator:
             "compensation_processed": True,
         }
 
-    def _schedule_training_step(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _schedule_training_step(self, context: dict[str, Any]) -> dict[str, Any]:
         """Schedule training and orientation."""
         candidate_id = context["candidate_id"]
 
@@ -443,7 +444,7 @@ class PEPOrchestrator:
             ],
         }
 
-    def _setup_equipment_step(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _setup_equipment_step(self, context: dict[str, Any]) -> dict[str, Any]:
         """Setup workstation and equipment."""
         candidate_id = context["candidate_id"]
 
@@ -457,7 +458,7 @@ class PEPOrchestrator:
             "estimated_delivery": "2 business days",
         }
 
-    def _send_welcome_package_step(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _send_welcome_package_step(self, context: dict[str, Any]) -> dict[str, Any]:
         """Send welcome package and communications."""
         candidate_id = context["candidate_id"]
 
@@ -475,7 +476,7 @@ class PEPOrchestrator:
             ],
         }
 
-    def _final_verification_step(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _final_verification_step(self, context: dict[str, Any]) -> dict[str, Any]:
         """Final verification and workflow completion."""
         candidate_id = context["candidate_id"]
 
@@ -491,7 +492,7 @@ class PEPOrchestrator:
 
     # Bulk workflow step implementations
 
-    def _validate_bulk_candidates_step(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_bulk_candidates_step(self, context: dict[str, Any]) -> dict[str, Any]:
         """Validate all candidates in bulk."""
         candidate_ids = context["candidate_ids"]
 
@@ -521,7 +522,7 @@ class PEPOrchestrator:
             "total_validated": len(valid_candidates),
         }
 
-    def _prepare_bulk_documents_step(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _prepare_bulk_documents_step(self, context: dict[str, Any]) -> dict[str, Any]:
         """Prepare bulk hiring documents."""
         candidate_ids = context["candidate_ids"]
 
@@ -533,7 +534,7 @@ class PEPOrchestrator:
             "document_types": ["Offer Letters", "Tax Forms", "Benefits Enrollment"],
         }
 
-    def _bulk_employee_creation_step(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _bulk_employee_creation_step(self, context: dict[str, Any]) -> dict[str, Any]:
         """Create employee records in bulk."""
         candidate_ids = context["candidate_ids"]
 
@@ -559,7 +560,7 @@ class PEPOrchestrator:
             "success_rate": success_count / len(candidate_ids),
         }
 
-    def _bulk_system_setup_step(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _bulk_system_setup_step(self, context: dict[str, Any]) -> dict[str, Any]:
         """Setup systems and access in bulk."""
         candidate_ids = context["candidate_ids"]
 
@@ -576,7 +577,7 @@ class PEPOrchestrator:
             ],
         }
 
-    def _bulk_communications_step(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _bulk_communications_step(self, context: dict[str, Any]) -> dict[str, Any]:
         """Send bulk welcome communications."""
         candidate_ids = context["candidate_ids"]
 

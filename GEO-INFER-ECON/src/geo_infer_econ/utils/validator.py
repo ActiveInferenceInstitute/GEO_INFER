@@ -2,7 +2,7 @@
 Model validation utilities for economic analysis.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any
 import numpy as np
 from scipy import stats
 from sklearn.model_selection import cross_val_score
@@ -17,7 +17,7 @@ class ModelValidator:
     Provides methods for statistical testing, model diagnostics, and validation.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the ModelValidator.
 
@@ -31,8 +31,8 @@ class ModelValidator:
         self,
         residuals: np.ndarray,
         fitted_values: np.ndarray,
-        X: Optional[np.ndarray] = None,
-    ) -> Dict[str, Any]:
+        X: np.ndarray | None = None,
+    ) -> dict[str, Any]:
         """
         Validate regression model assumptions.
 
@@ -56,7 +56,7 @@ class ModelValidator:
 
         return validation_results
 
-    def _test_normality(self, residuals: np.ndarray) -> Dict[str, Any]:
+    def _test_normality(self, residuals: np.ndarray) -> dict[str, Any]:
         """Test normality of residuals using Shapiro-Wilk and Jarque-Bera tests."""
         try:
             # Shapiro-Wilk test (for smaller samples)
@@ -87,7 +87,7 @@ class ModelValidator:
 
     def _test_homoscedasticity(
         self, residuals: np.ndarray, fitted_values: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Test homoscedasticity using Breusch-Pagan test."""
         try:
             # Breusch-Pagan test
@@ -120,7 +120,7 @@ class ModelValidator:
             self.logger.error(f"Homoscedasticity test failed: {str(e)}")
             return {"error": str(e)}
 
-    def _test_autocorrelation(self, residuals: np.ndarray) -> Dict[str, Any]:
+    def _test_autocorrelation(self, residuals: np.ndarray) -> dict[str, Any]:
         """Test for autocorrelation using Durbin-Watson test."""
         try:
             # Durbin-Watson test
@@ -146,7 +146,7 @@ class ModelValidator:
 
     def _test_linearity(
         self, residuals: np.ndarray, fitted_values: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Test linearity assumption using RESET test."""
         try:
             # Simple linearity test using correlation
@@ -173,7 +173,7 @@ class ModelValidator:
             self.logger.error(f"Linearity test failed: {str(e)}")
             return {"error": str(e)}
 
-    def _test_multicollinearity(self, X: np.ndarray) -> Dict[str, Any]:
+    def _test_multicollinearity(self, X: np.ndarray) -> dict[str, Any]:
         """Test for multicollinearity using condition number and VIF."""
         try:
             # Condition number
@@ -204,7 +204,7 @@ class ModelValidator:
         y: np.ndarray,
         cv_folds: int = 5,
         scoring: str = "neg_mean_squared_error",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform cross-validation for model performance assessment.
 
@@ -239,7 +239,7 @@ class ModelValidator:
         actual: np.ndarray,
         model_type: str = "regression",
         additional_metrics: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Comprehensive validation of economic model results.
 
@@ -270,7 +270,7 @@ class ModelValidator:
 
     def _validate_regression_model(
         self, predictions: np.ndarray, actual: np.ndarray, additional_metrics: bool
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Comprehensive regression model validation."""
         mse = mean_squared_error(actual, predictions)
         rmse = np.sqrt(mse)
@@ -315,7 +315,7 @@ class ModelValidator:
 
     def _validate_classification_model(
         self, predictions: np.ndarray, actual: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Classification model validation."""
         from sklearn.metrics import (
             accuracy_score,
@@ -348,7 +348,7 @@ class ModelValidator:
 
     def _validate_time_series_model(
         self, predictions: np.ndarray, actual: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Time series model validation."""
         # Extend arrays to same length if needed
         min_len = min(len(predictions), len(actual))
@@ -395,8 +395,8 @@ class ModelValidator:
         model: Any,
         X: np.ndarray,
         y: np.ndarray,
-        assumptions: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        assumptions: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Validate key econometric model assumptions.
 
@@ -436,7 +436,7 @@ class ModelValidator:
 
     def _test_linearity_assumption(
         self, X: np.ndarray, y: np.ndarray, predictions: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Test linearity assumption using RESET test."""
         # Ramsey RESET test (simplified)
         # Fit model with squared and cubed predictions
@@ -469,7 +469,7 @@ class ModelValidator:
 
     def _test_homoscedasticity_assumption(
         self, residuals: np.ndarray, predictions: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Test homoscedasticity assumption."""
         # Breusch-Pagan test
         n = len(residuals)
@@ -501,7 +501,7 @@ class ModelValidator:
         except Exception:
             return {"error": "Breusch-Pagan test failed"}
 
-    def _test_normality_assumption(self, residuals: np.ndarray) -> Dict[str, Any]:
+    def _test_normality_assumption(self, residuals: np.ndarray) -> dict[str, Any]:
         """Test normality assumption."""
         # Shapiro-Wilk test
         if len(residuals) <= 5000:
@@ -532,7 +532,7 @@ class ModelValidator:
             ),
         }
 
-    def _test_independence_assumption(self, residuals: np.ndarray) -> Dict[str, Any]:
+    def _test_independence_assumption(self, residuals: np.ndarray) -> dict[str, Any]:
         """Test independence assumption using Durbin-Watson test."""
         dw_stat = self._calculate_durbin_watson(residuals)
 
@@ -551,7 +551,7 @@ class ModelValidator:
 
     def validate_spatial_model_assumptions(
         self, model: Any, X: np.ndarray, y: np.ndarray, W: np.ndarray
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Validate assumptions for spatial econometric models.
 

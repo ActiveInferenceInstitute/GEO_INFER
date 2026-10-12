@@ -111,7 +111,10 @@ def git_repo(tmp_path: Path) -> Path:
         ["commit", "-q", "-m", "seed"],
     ):
         subprocess.run(
-            ["git", "-C", str(root), *args], check=True, env=env, capture_output=True
+            ["git", "-c", "core.fsmonitor=false", "-C", str(root), *args],
+            check=True,
+            env=env,
+            capture_output=True,
         )
     return root
 
@@ -210,6 +213,9 @@ def generatable_checkout(generator: ModuleType, tmp_path: Path) -> Path:
         ["commit", "-q", "-m", "seed"],
     ):
         subprocess.run(
-            ["git", "-C", str(root), *args], check=True, env=env, capture_output=True
+            ["git", "-c", "core.fsmonitor=false", "-C", str(root), *args],
+            check=True,
+            env=env,
+            capture_output=True,
         )
     return root

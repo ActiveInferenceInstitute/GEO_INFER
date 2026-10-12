@@ -5,7 +5,8 @@ This module provides utility functions for creating design matrices,
 generating coordinates, and other common SPM analysis tasks.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
+from numbers import Real
 
 import numpy as np
 from scipy import stats
@@ -14,25 +15,11 @@ from ..models.data_models import DesignMatrix, SPMData
 from .rng import SeedLike, resolve_rng
 
 
-def _resolve_rng(random_seed: SeedLike = None) -> Any:
-    """Return the legacy global stream or an explicitly isolated generator."""
-    if random_seed is None:
-        return np.random
-    return resolve_rng(random_seed)
-
-
-def _randint(rng: Any, *args: Any, **kwargs: Any) -> Any:
-    """Draw integers from either the legacy module or a Generator."""
-    if hasattr(rng, "integers"):
-        return rng.integers(*args, **kwargs)
-    return rng.randint(*args, **kwargs)
-
-
 def create_design_matrix(
     data: SPMData,
-    formula: Optional[str] = None,
-    factors: Optional[Dict[str, List[str]]] = None,
-    covariates: Optional[List[str]] = None,
+    formula: str | None = None,
+    factors: dict[str, list[str]] | None = None,
+    covariates: list[str] | None = None,
     intercept: bool = True,
 ) -> DesignMatrix:
     """
@@ -103,13 +90,15 @@ def create_design_matrix(
 
 def _parse_formula(
     formula: str, data: SPMData, intercept: bool
-) -> Tuple[np.ndarray, List[str]]:
+) -> tuple[np.ndarray, list[str]]:
     """Parse formula string to create design matrix (see register: "Formula parser")."""
     # Deferred: see docs/deferred_statistical_methods.md ("Formula parser").
-    if "~" not in formula:
-        raise ValueError("Formula must contain '~' separator")
+    if formula.count("~") != 1:
+        raise ValueError("Formula must contain exactly one '~' separator")
 
     response, predictors = formula.split("~", 1)
+    if not response.strip() or not predictors.strip():
+        raise ValueError("Formula needs a response and predictor terms")
 
     # Parse predictors
     terms = [term.strip() for term in predictors.split("+")]
@@ -134,20 +123,29 @@ def _parse_formula(
             # Interaction term (see register: "Formula parser").
             var1, var2 = term.split("*", 1)
             var1, var2 = var1.strip(), var2.strip()
-            if var1 in covariates_map and var2 in covariates_map:
-                interaction = covariates_map[var1] * covariates_map[var2]
-                design_components.append(interaction)
-                names.append(f"{var1}:{var2}")
+            if var1 not in covariates_map or var2 not in covariates_map:
+                raise ValueError(f"Unknown interaction in formula: {term}")
+            interaction = covariates_map[var1] * covariates_map[var2]
+            design_components.append(interaction)
+            names.append(f"{var1}:{var2}")
         else:
             raise ValueError(f"Unknown term in formula: {term}")
 
+    if not design_components:
+        raise ValueError("Formula must select at least one regressor")
     return np.column_stack(design_components), names
 
 
-def _create_dummy_variables(values: np.ndarray, levels: List[str]) -> np.ndarray:
+def _create_dummy_variables(values: np.ndarray, levels: list[str]) -> np.ndarray:
     """Create dummy variables for categorical factor."""
     n_points = len(values)
     n_levels = len(levels)
+    if not levels or len(set(levels)) != n_levels:
+        raise ValueError("Factor levels must be nonempty and unique")
+    if np.asarray(values).ndim != 1:
+        raise ValueError("Factor values must be one-dimensional")
+    if any(value not in levels for value in values):
+        raise ValueError("Factor values must belong to the declared levels")
 
     # Map string levels to indices
     level_to_idx = {level: i for i, level in enumerate(levels)}
@@ -167,8 +165,8 @@ def _create_dummy_variables(values: np.ndarray, levels: List[str]) -> np.ndarray
 def generate_coordinates(
     grid_type: str = "regular",
     n_points: int = 100,
-    bounds: Optional[Tuple[float, float, float, float]] = None,
-    random_seed: Optional[int] = None,
+    bounds: tuple[float, float, float, float] | None = None,
+    random_seed: SeedLike = None,
     **kwargs: Any,
 ) -> np.ndarray:
     """
@@ -178,9 +176,8 @@ def generate_coordinates(
         grid_type: Type of coordinate grid ('regular', 'random', 'clustered')
         n_points: Number of coordinate points to generate
         bounds: Spatial bounds (min_lon, max_lon, min_lat, max_lat)
-        random_seed: Optional seed for reproducible random/clustered grids.
-            When ``None`` (default) the legacy global ``np.random`` state is
-            used, preserving existing behaviour.
+        random_seed: Seed or generator for reproducible random/clustered grids.
+            ``None`` draws fresh OS entropy without changing global random state.
         **kwargs: Additional parameters for grid generation
 
     Returns:
@@ -196,12 +193,39 @@ def generate_coordinates(
         >>> # Reproducible random coordinates
         >>> coords = generate_coordinates('random', n_points=50, random_seed=7)
     """
-    rng = _resolve_rng(random_seed)
-
+    if (
+        isinstance(n_points, (bool, np.bool_))
+        or not isinstance(n_points, (int, np.integer))
+        or n_points <= 0
+    ):
+        raise ValueError("n_points must be a positive integer")
+    if grid_type not in {"regular", "random", "clustered"}:
+        raise ValueError(f"Unknown grid type: {grid_type}")
     if bounds is None:
         bounds = (-180, 180, -90, 90)  # Global bounds
 
-    min_lon, max_lon, min_lat, max_lat = bounds
+    bounds_array = np.asarray(bounds, dtype=float)
+    if bounds_array.shape != (4,) or not np.isfinite(bounds_array).all():
+        raise ValueError("bounds must contain four finite values")
+    min_lon, max_lon, min_lat, max_lat = bounds_array
+    if min_lon > max_lon or min_lat > max_lat:
+        raise ValueError("bounds minima must not exceed maxima")
+    if grid_type == "clustered":
+        n_clusters = kwargs.get("n_clusters", 3)
+        cluster_std = kwargs.get("cluster_std", 5.0)
+        if (
+            isinstance(n_clusters, (bool, np.bool_))
+            or not isinstance(n_clusters, (int, np.integer))
+            or n_clusters <= 0
+        ):
+            raise ValueError("n_clusters must be a positive integer")
+        if (
+            not isinstance(cluster_std, Real)
+            or not np.isfinite(cluster_std)
+            or cluster_std < 0
+        ):
+            raise ValueError("cluster_std must be finite and nonnegative")
+    rng = resolve_rng(random_seed)
 
     if grid_type == "regular":
         # Create regular grid
@@ -263,11 +287,11 @@ def generate_coordinates(
 
 def generate_synthetic_data(
     coordinates: np.ndarray,
-    effects: Optional[Dict[str, Any]] = None,
+    effects: dict[str, Any] | None = None,
     noise_level: float = 0.1,
     temporal: bool = False,
     n_timepoints: int = 10,
-    random_seed: Optional[int] = None,
+    random_seed: SeedLike = None,
 ) -> SPMData:
     """
     Generate synthetic SPM data for testing and examples.
@@ -278,8 +302,8 @@ def generate_synthetic_data(
         noise_level: Standard deviation of noise
         temporal: Whether to include temporal dimension
         n_timepoints: Number of time points if temporal
-        random_seed: Optional seed for reproducible noise generation. When
-            ``None`` (default) the legacy global ``np.random`` state is used.
+        random_seed: Seed or generator for the noise draws; ``None`` (default)
+            draws fresh OS entropy. See :func:`geo_infer_spm.utils.rng.resolve_rng`.
 
     Returns:
         SPMData with synthetic data
@@ -288,7 +312,15 @@ def generate_synthetic_data(
         >>> coords = generate_coordinates('regular', 100)
         >>> data = generate_synthetic_data(coords, effects={'trend': 'north_south'})
     """
-    rng = _resolve_rng(random_seed)
+    rng = resolve_rng(random_seed)
+    coordinates = np.asarray(coordinates, dtype=float)
+    if (
+        coordinates.ndim != 2
+        or coordinates.shape[1] != 2
+        or not len(coordinates)
+        or not np.isfinite(coordinates).all()
+    ):
+        raise ValueError("coordinates must be a nonempty finite (n_points, 2) array")
     n_points = len(coordinates)
 
     if effects is None:
@@ -321,7 +353,7 @@ def generate_synthetic_data(
             # Radial pattern from center
             center = np.mean(coordinates, axis=0)
             distances = np.linalg.norm(coordinates - center, axis=1)
-            dist_norm = distances / np.max(distances)
+            dist_norm = distances / (np.max(distances) or 1.0)
             signal += 5 * (1 - dist_norm)  # Higher values near center
 
     # Spatial clusters
@@ -330,9 +362,9 @@ def generate_synthetic_data(
         cluster_effect = effects["clusters"].get("effect_size", 3.0)
 
         # Simple cluster generation
-        for i in range(n_clusters):
+        for _ in range(n_clusters):
             # Random cluster center
-            center_idx = _randint(rng, 0, n_points)
+            center_idx = rng.integers(0, n_points)
             center = coordinates[center_idx]
 
             # Points within cluster radius
@@ -401,7 +433,7 @@ def create_spatial_basis_functions(
     coordinates: np.ndarray,
     n_basis: int = 10,
     method: str = "gaussian",
-    random_seed: Optional[int] = None,
+    random_seed: SeedLike = None,
 ) -> np.ndarray:
     """
     Create spatial basis functions for modeling spatial variation.
@@ -409,7 +441,9 @@ def create_spatial_basis_functions(
     Args:
         coordinates: Spatial coordinates (n_points, 2)
         n_basis: Number of basis functions
-        method: Basis function method ('gaussian', 'polynomial', 'fourier')
+        method: Basis function method ('gaussian', 'polynomial', 'fourier').
+            Polynomial columns follow increasing total degree, starting with
+            the intercept, latitude, longitude, then quadratic terms.
         random_seed: Optional seed for reproducible Gaussian center selection.
             When ``None``, center selection uses a fresh entropy-backed
             generator without mutating the global ``np.random`` state.
@@ -417,6 +451,20 @@ def create_spatial_basis_functions(
     Returns:
         Basis function matrix (n_points, n_basis)
     """
+    coordinates = np.asarray(coordinates, dtype=float)
+    if (
+        coordinates.ndim != 2
+        or coordinates.shape[1] != 2
+        or not len(coordinates)
+        or not np.isfinite(coordinates).all()
+    ):
+        raise ValueError("coordinates must be a nonempty finite (n_points, 2) array")
+    if (
+        isinstance(n_basis, (bool, np.bool_))
+        or not isinstance(n_basis, (int, np.integer))
+        or n_basis <= 0
+    ):
+        raise ValueError("n_basis must be a positive integer")
     n_points = len(coordinates)
 
     if method == "gaussian":
@@ -432,7 +480,7 @@ def create_spatial_basis_functions(
             coordinates[:, np.newaxis] - centers[np.newaxis, :], axis=2
         )
         median_dist = np.median(distances)
-        width = median_dist / np.sqrt(n_basis)
+        width = (median_dist or 1.0) / np.sqrt(n_basis)
 
         basis = np.zeros((n_points, n_basis))
         for i in range(n_basis):
@@ -446,8 +494,8 @@ def create_spatial_basis_functions(
         lon, lat = coordinates[:, 0], coordinates[:, 1]
 
         # Normalize coordinates
-        lon_norm = (lon - np.mean(lon)) / np.std(lon)
-        lat_norm = (lat - np.mean(lat)) / np.std(lat)
+        lon_norm = (lon - np.mean(lon)) / (np.std(lon) or 1.0)
+        lat_norm = (lat - np.mean(lat)) / (np.std(lat) or 1.0)
 
         basis_list = [np.ones(n_points)]  # Constant
 
@@ -455,8 +503,9 @@ def create_spatial_basis_functions(
         while len(basis_list) < n_basis:
             for i in range(degree + 1):
                 j = degree - i
-                if i <= 2 and j <= 2:  # Limit to degree 2 to avoid overfitting
-                    basis_list.append(lon_norm**i * lat_norm**j)
+                basis_list.append(lon_norm**i * lat_norm**j)
+                if len(basis_list) == n_basis:
+                    break
 
             degree += 1
 
@@ -500,8 +549,8 @@ def compute_power_analysis(
     n_points: int,
     alpha: float = 0.05,
     n_simulations: int = 1000,
-    random_seed: Optional[int] = None,
-) -> Dict[str, Any]:
+    random_seed: SeedLike = None,
+) -> dict[str, Any]:
     """
     Perform power analysis for SPM statistical tests.
 
@@ -510,15 +559,15 @@ def compute_power_analysis(
         n_points: Number of spatial/temporal points
         alpha: Significance level
         n_simulations: Number of simulation runs
-        random_seed: Optional seed for reproducible simulations. When ``None``
-            (default) the legacy global ``np.random`` state is used.
+        random_seed: Seed or generator for the simulations; ``None`` (default)
+            draws fresh OS entropy. See :func:`geo_infer_spm.utils.rng.resolve_rng`.
 
     Returns:
         Dictionary with power analysis results
     """
     # Deferred: see docs/deferred_statistical_methods.md
     # ("Power analysis with spatial autocorrelation").
-    rng = _resolve_rng(random_seed)
+    rng = resolve_rng(random_seed)
 
     # Degrees of freedom for one-sample t-test
     df = n_points - 1

@@ -1,7 +1,6 @@
 """Hydrological modeling module."""
 
 import logging
-from typing import Dict, Optional
 
 import numpy as np
 import xarray as xr
@@ -12,14 +11,14 @@ logger = logging.getLogger(__name__)
 class HydrologicalModeler:
     """Model hydrological processes."""
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         """Initialize hydrological modeler."""
         self.config = config or {}
 
     def rainfall_runoff_model(
         self,
         precipitation: xr.DataArray,
-        soil_moisture: Optional[xr.DataArray] = None,
+        soil_moisture: xr.DataArray | None = None,
         infiltration_rate: float = 0.5,
     ) -> xr.Dataset:
         """
@@ -73,7 +72,7 @@ class HydrologicalModeler:
     def estimate_groundwater_recharge(
         self,
         infiltration: xr.DataArray,
-        evapotranspiration: Optional[xr.DataArray] = None,
+        evapotranspiration: xr.DataArray | None = None,
     ) -> xr.DataArray:
         """
         Estimate groundwater recharge.

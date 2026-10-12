@@ -4,7 +4,7 @@ Provides climate modeling, weather analysis, and climate change
 impact assessment capabilities for geospatial systems.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "GEO-INFER Development Team"
 
 from .core.climate_data import ClimateDataProcessor

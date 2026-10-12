@@ -1,474 +1,63 @@
 # GEO-INFER-MARINE: Marine and Coastal Module
-> **Illustrative example notice.** This page contains historical or
-> conceptual integration sketches. Names such as `SpatialAnalyzer` and
-> domain-specific facade classes are not public GEO-INFER exports in the
-> current checkout; verify imports against each module's `src/` package
-> and use the module README/tests for executable examples.
-> **Purpose**: Ocean monitoring, coastal zone management, and marine ecosystem analysis
->
-> This module provides marine analysis capabilities including ocean conditions, coastal dynamics, marine biodiversity, and integration with Active Inference principles.
-## Overview
-Note: Code examples are illustrative; see `GEO-INFER-MARINE/examples` for runnable scripts.
-### Links
-- Module README: [Module README](../../../GEO-INFER-MARINE/README.md)
-- Modules Overview: ../modules/index.md
-GEO-INFER-MARINE implements marine analysis for geospatial applications. It provides:
-- **Ocean Monitoring**: Sea surface temperature, salinity, currents, chlorophyll tracking
-- **Coastal Zone Management**: Shoreline dynamics, erosion monitoring, and beach profiles
-- **Marine Ecosystems**: Biodiversity assessment, habitat mapping, and species tracking
-- **Maritime Operations**: Shipping route optimization and vessel tracking
-- **Sea Level Analysis**: Rise projections, storm surge, and coastal vulnerability
-### Mathematical Foundations
-#### Ocean Current Modeling
-The module uses the Navier-Stokes equations for ocean circulation:
-```
-∂u/∂t + (u·∇)u = -∇p/ρ + ν∇²u + f×u + g
-```
-Where:
-- `u` is velocity vector
-- `p` is pressure, `ρ` is density
-- `ν` is kinematic viscosity
-- `f` is Coriolis parameter
-#### Coastal Erosion
-Shoreline change modeled using:
-```
-∂y/∂t = -1/D * ∂Q/∂x + S
-```
-Where:
-- `y` is shoreline position
-- `D` is depth of closure
-- `Q` is longshore sediment transport
-- `S` is source/sink term
-## Core Features
-### 1. Ocean Conditions Analysis
-**Purpose**: Monitor and analyze ocean conditions in real-time.
-```python
-from geo_infer_marine import OceanAnalyzer
-# Initialize ocean analyzer
-analyzer = OceanAnalyzer(
-data_sources=['satellite', 'buoy', 'argo_floats'],
-spatial_resolution=0.25, # degrees
-temporal_resolution='daily',
-depth_levels=[0, 10, 50, 100, 500, 1000]
-)
-# Analyze ocean state
-ocean_state = analyzer.analyze(
-region=ocean_area,
-parameters=['sst', 'salinity', 'chlorophyll', 'ssh'],
-time_period=('2023-01-01', '2023-12-31'),
-include_uncertainty=True
-)
-# Detect ocean fronts
-fronts = analyzer.detect_fronts(
-data=sst_data,
-front_types=['thermal', 'haline'],
-detection_method='gradient_based'
-)
-# Model ocean currents
-currents = analyzer.model_currents(
-region=study_area,
-method='geostrophic',
-surface_data=altimetry_data,
-subsurface=argo_profiles
-)
-# Analyze upwelling
-upwelling = analyzer.analyze_upwelling(
-region=coastal_zone,
-indicators=['sst_anomaly', 'wind_stress', 'chlorophyll'],
-seasonal_decomposition=True
-)
-```
-### 2. Coastal Zone Management
-**Purpose**: Monitor and manage coastal dynamics.
-```python
-from geo_infer_marine import CoastalManager
-# Initialize coastal manager
-manager = CoastalManager(
-shoreline_method='waterline',
-erosion_model='bruun',
-projection_horizon_years=50
-)
-# Assess coastal state
-coastal_state = manager.assess(
-coastline=shoreline_data,
-sea_level=tide_gauge_data,
-historical=past_shorelines,
-include_uncertainty=True
-)
-# Monitor shoreline change
-shoreline_change = manager.monitor_shoreline(
-imagery_series=satellite_timeseries,
-extraction_method='ndwi_threshold',
-change_analysis='end_point_rate'
-)
-# Model coastal erosion
-erosion = manager.model_erosion(
-shoreline=current_shoreline,
-wave_climate=wave_data,
-sediment_supply=sediment_budget,
-sea_level_rise=slr_projections
-)
-# Assess storm surge risk
-storm_surge = manager.assess_storm_surge(
-coastline=vulnerable_coast,
-storm_scenarios=['category_1', 'category_3', 'category_5'],
-tide_conditions=['spring', 'neap'],
-return_periods=[10, 50, 100]
-)
-# Analyze beach profiles
-profiles = manager.analyze_beach_profiles(
-survey_data=beach_surveys,
-profile_metrics=['slope', 'volume', 'berm_height'],
-seasonal_analysis=True
-)
-```
-### 3. Marine Ecosystem Analysis
-**Purpose**: Assess and monitor marine biodiversity and habitats.
-```python
-from geo_infer_marine import MarineEcosystemAnalyzer
-# Initialize ecosystem analyzer
-eco_analyzer = MarineEcosystemAnalyzer(
-habitat_types=['coral_reef', 'seagrass', 'mangrove', 'kelp'],
-species_groups=['fish', 'marine_mammals', 'sea_turtles', 'seabirds']
-)
-# Map marine habitats
-habitat_map = eco_analyzer.map_habitats(
-imagery=multispectral_data,
-bathymetry=depth_data,
-classification_method='random_forest',
-ground_truth=field_surveys
-)
-# Assess habitat health
-habitat_health = eco_analyzer.assess_habitat_health(
-habitat_type='coral_reef',
-indicators=['coral_cover', 'bleaching_extent', 'biodiversity'],
-stressors=['temperature', 'sedimentation', 'pollution']
-)
-# Model species distribution
-species_model = eco_analyzer.model_species_distribution(
-species='green_sea_turtle',
-occurrence_data=sightings_data,
-environmental_predictors=['sst', 'chlorophyll', 'depth', 'seagrass_cover'],
-algorithm='maxent'
-)
-# Analyze marine protected area effectiveness
-mpa_analysis = eco_analyzer.analyze_mpa_effectiveness(
-mpa_boundaries=protected_areas,
-biodiversity_data=survey_data,
-fishing_pressure=vessel_tracking,
-comparison='inside_outside'
-)
-```
-### 4. Maritime Operations
-**Purpose**: Optimize maritime operations and vessel tracking.
-```python
-from geo_infer_marine import MaritimeOperations
-# Initialize maritime operations
-maritime = MaritimeOperations(
-ais_data=vessel_tracking,
-routing_optimization=True,
-safety_compliance=True
-)
-# Optimize shipping routes
-optimal_route = maritime.optimize_route(
-origin=port_a,
-destination=port_b,
-vessel_type='container',
-objectives=['fuel_efficiency', 'time', 'safety'],
-constraints=['weather_avoidance', 'eca_compliance', 'piracy_zones']
-)
-# Analyze vessel traffic
-traffic = maritime.analyze_traffic(
-region=sea_area,
-time_period=('2023-01-01', '2023-12-31'),
-metrics=['density', 'routes', 'port_calls']
-)
-# Detect illegal fishing
-illegal_fishing = maritime.detect_illegal_fishing(
-ais_data=vessel_positions,
-mpa_boundaries=marine_protected_areas,
-fishing_licenses=licensed_vessels,
-detection_methods=['ais_gap', 'transshipment', 'dark_vessel']
-)
-# Port optimization
-port_operations = maritime.optimize_port(
-port=port_geometry,
-vessel_schedule=expected_arrivals,
-berth_allocation=berth_data,
-objectives=['waiting_time', 'throughput']
-)
-```
-### 5. Sea Level Analysis
-**Purpose**: Analyze sea level changes and coastal vulnerability.
-```python
-from geo_infer_marine import SeaLevelAnalyzer
-# Initialize sea level analyzer
-sl_analyzer = SeaLevelAnalyzer(
-data_sources=['tide_gauge', 'altimetry', 'gps'],
-reference_frame='global'
-)
-# Analyze sea level trends
-trends = sl_analyzer.analyze_trends(
-tide_gauges=gauge_data,
-time_period=('1950-01-01', '2023-12-31'),
-decomposition=['long_term', 'seasonal', 'interannual']
-)
-# Project future sea level
-projections = sl_analyzer.project_sea_level(
-location=coastal_city,
-scenarios=['ssp126', 'ssp245', 'ssp585'],
-time_horizons=['2050', '2100', '2150'],
-include_uncertainty=True
-)
-# Map coastal inundation
-inundation = sl_analyzer.map_inundation(
-coastal_dem=lidar_dem,
-sea_level_scenarios=[0.5, 1.0, 2.0], # meters
-include_wave_runup=True,
-groundwater_response=True
-)
-# Assess coastal vulnerability
-vulnerability = sl_analyzer.assess_vulnerability(
-region=coastal_zone,
-exposure=['population', 'infrastructure', 'ecosystems'],
-sensitivity=['elevation', 'land_use', 'protection'],
-adaptive_capacity=['income', 'governance', 'awareness']
-)
-```
-## API Reference
-### OceanAnalyzer
-Ocean conditions monitoring and analysis.
-```python
-class OceanAnalyzer:
-def __init__(self, data_sources, spatial_resolution=0.25, temporal_resolution='daily',
-depth_levels=None):
-"""
-Initialize ocean analyzer.
-Args:
-data_sources (list): Data sources ['satellite', 'buoy', 'argo_floats']
-spatial_resolution (float): Spatial resolution in degrees
-temporal_resolution (str): Temporal resolution
-depth_levels (list): Depth levels for 3D analysis
-"""
-def analyze(self, region, parameters, time_period, include_uncertainty):
-"""Analyze ocean state for specified parameters."""
-def detect_fronts(self, data, front_types, detection_method):
-"""Detect ocean fronts from temperature/salinity data."""
-def model_currents(self, region, method, surface_data, subsurface):
-"""Model ocean currents using multiple data sources."""
-```
-### CoastalManager
-Coastal zone monitoring and management.
-```python
-class CoastalManager:
-def __init__(self, shoreline_method='waterline', erosion_model='bruun',
-projection_horizon_years=50):
-"""
-Initialize coastal manager.
-Args:
-shoreline_method (str): Shoreline extraction method
-erosion_model (str): Erosion model type
-projection_horizon_years (int): Projection horizon
-"""
-def monitor_shoreline(self, imagery_series, extraction_method, change_analysis):
-"""Monitor shoreline changes from imagery."""
-def model_erosion(self, shoreline, wave_climate, sediment_supply, sea_level_rise):
-"""Model coastal erosion under different scenarios."""
-def assess_storm_surge(self, coastline, storm_scenarios, tide_conditions, return_periods):
-"""Assess storm surge risk for coastal areas."""
-```
-### MarineEcosystemAnalyzer
-Marine biodiversity and habitat analysis.
-```python
-class MarineEcosystemAnalyzer:
-def __init__(self, habitat_types, species_groups):
-"""
-Initialize marine ecosystem analyzer.
-Args:
-habitat_types (list): Marine habitat types to analyze
-species_groups (list): Species groups to monitor
-"""
-def map_habitats(self, imagery, bathymetry, classification_method, ground_truth):
-"""Map marine habitats from remote sensing data."""
-def assess_habitat_health(self, habitat_type, indicators, stressors):
-"""Assess health of marine habitats."""
-def model_species_distribution(self, species, occurrence_data, environmental_predictors, algorithm):
-"""Model species distribution using occurrence data."""
-```
-## Use Cases
-### 1. Coral Reef Monitoring System
-**Problem**: Monitor coral reef health and detect bleaching events.
-```python
-from geo_infer_marine import MarineEcosystemAnalyzer, OceanAnalyzer
-from geo_infer_climate import ClimateAnalyzer
-# Monitor ocean conditions
-ocean = OceanAnalyzer()
-thermal_stress = ocean.calculate_thermal_stress(
-region=reef_area,
-metric='degree_heating_weeks',
-threshold=4 # DHW bleaching threshold
-)
-# Map coral health
-eco = MarineEcosystemAnalyzer()
-coral_health = eco.assess_habitat_health(
-habitat_type='coral_reef',
-indicators=['coral_cover', 'bleaching_extent', 'mortality'],
-imagery=sentinel2_data
-)
-# Generate bleaching alerts
-alerts = eco.generate_bleaching_alerts(
-thermal_stress=thermal_stress,
-historical_bleaching=past_events,
-alert_levels=['watch', 'warning', 'alert_1', 'alert_2']
-)
-# Project future reef conditions
-climate = ClimateAnalyzer()
-future_stress = climate.project_thermal_stress(
-regions=reef_extent,
-scenarios=['ssp126', 'ssp585'],
-time_horizons=['2050', '2100']
-)
-```
-### 2. Integrated Coastal Flood Risk
-**Problem**: Assess compound coastal flood risk from sea level rise and storms.
-```python
-from geo_infer_marine import SeaLevelAnalyzer, CoastalManager
-from geo_infer_risk import RiskAssessor
-# Analyze sea level trends
-sl = SeaLevelAnalyzer()
-slr_projections = sl.project_sea_level(
-location=coastal_city,
-scenarios=['ssp245'],
-time_horizons=['2050', '2100']
-)
-# Model storm surge
-coastal = CoastalManager()
-storm_surge = coastal.assess_storm_surge(
-coastline=city_coastline,
-storm_scenarios=['category_3'],
-slr_scenarios=slr_projections
-)
-# Calculate compound flood risk
-risk = RiskAssessor()
-compound_risk = risk.assess_compound_risk(
-hazards={'sea_level': slr_projections, 'storm_surge': storm_surge},
-exposure=coastal_assets,
-vulnerability=infrastructure_vulnerability
-)
-# Identify adaptation options
-adaptations = coastal.evaluate_adaptations(
-risk=compound_risk,
-options=['seawall', 'beach_nourishment', 'managed_retreat', 'green_infrastructure'],
-evaluation_criteria=['cost', 'effectiveness', 'co_benefits']
-)
-```
-### 3. Marine Spatial Planning
-**Problem**: Optimize marine space allocation for multiple uses.
-```python
-from geo_infer_marine import MarineEcosystemAnalyzer, MaritimeOperations
-from geo_infer_space import SpatialOptimizer
-# Map existing uses and values
-eco = MarineEcosystemAnalyzer()
-biodiversity_value = eco.map_biodiversity_value(
-region=eez_boundary,
-indicators=['species_richness', 'endemism', 'habitat_diversity']
-)
-maritime = MaritimeOperations()
-shipping_intensity = maritime.analyze_traffic(
-region=eez_boundary,
-metrics=['vessel_density', 'routes']
-)
-# Optimize spatial allocation
-spatial = SpatialOptimizer()
-msp_plan = spatial.optimize_marine_spatial_plan(
-region=eez_boundary,
-sectors=['conservation', 'fishing', 'shipping', 'energy', 'aquaculture'],
-constraints=['mpa_commitments', 'traditional_rights', 'safety'],
-objectives=['biodiversity', 'economic_value', 'conflict_minimization']
-)
-```
-## Integration with Other Modules
-### GEO-INFER-SPACE Integration
-```python
-from geo_infer_marine import OceanAnalyzer
-from geo_infer_space import SpatialAnalyzer
-# Combine marine and spatial analysis
-ocean = OceanAnalyzer()
-spatial = SpatialAnalyzer()
-# Spatial aggregation of ocean data
-ocean_h3 = spatial.aggregate_by_h3(
-data=ocean_data,
-resolution=5, # Suitable for ocean scale
-metrics=['mean_sst', 'chlorophyll_std']
-)
-```
-### GEO-INFER-CLIMATE Integration
-```python
-from geo_infer_marine import SeaLevelAnalyzer
-from geo_infer_climate import ClimateProjector
-# Link sea level to climate projections
-sl = SeaLevelAnalyzer()
-projector = ClimateProjector()
-# Integrate climate projections
-integrated = sl.integrate_climate(
-climate_projections=projector.project(variables=['thermal_expansion', 'ice_sheet']),
-regional_factors=['land_subsidence', 'glacial_rebound']
-)
-```
-## Troubleshooting
-### Common Issues
-**Satellite data gaps:**
-```python
-# Use multi-source fusion
-analyzer.set_data_fusion(
-sources=['satellite', 'buoy', 'model'],
-fusion_method='optimal_interpolation'
-)
-# Gap filling
-filled = analyzer.fill_gaps(
-data=gappy_data,
-method='dineof',
-max_iterations=100
-)
-```
-**Shoreline extraction errors:**
-```python
-# Improve shoreline extraction
-manager.set_extraction_parameters(
-water_index='mndwi',
-threshold='otsu',
-morphological_cleanup=True,
-minimum_length=100 # meters
-)
-```
-## Performance Optimization
-```python
-# Enable parallel processing
-analyzer.enable_parallel_processing(n_workers=8)
-# Use cloud-optimized data
-analyzer.enable_cloud_optimized(
-format='zarr',
-chunk_size={'time': 30, 'lat': 100, 'lon': 100}
-)
-# Enable caching
-analyzer.enable_caching(cache_path='/tmp/marine_cache')
-```
-## Related Documentation
-### Related Modules
-- **[GEO-INFER-SPACE](../modules/geo-infer-space.md)** - Spatial marine mapping
-- **[GEO-INFER-TIME](../modules/geo-infer-time.md)** - Temporal patterns
-- **[GEO-INFER-BIO](../modules/geo-infer-bio.md)** - Marine biodiversity
-- **[GEO-INFER-CLIMATE](../modules/geo-infer-climate.md)** - Climate impacts
-- **[GEO-INFER-RISK](../modules/geo-infer-risk.md)** - Coastal risk
----
-**Ready to get started?** Check out the **[Ocean Monitoring Tutorial](../getting_started/index.md)** or explore **[Coastal Risk Examples](../examples_gallery.md)**!
 
-## 🗺️ Interactive Spatial Preview
+`GEO-INFER-MARINE` owns the `geo_infer_marine` package under `GEO-INFER-MARINE/src/`.
+GEO-INFER-MARINE: Marine and Oceanographic Analysis Module.
 
-Pre-rendered spatial snapshot for **GEO-INFER-MARINE** (*Marine and Coastal Module*). Reproducible preview cards are generated by `geo_infer_intra.core.documentation.visual_preview`.
+## Public import surface
 
-| Preview | Widget |
-| --- | --- |
-| ![GEO-INFER-MARINE Leaflet Preview](previews/geo-infer-marine_preview.svg) | [Interactive map](previews/geo-infer-marine_preview.html) · [PNG](previews/geo-infer-marine_preview.png) |
+These names are exported by the current owning package:
 
-> **Reproducible contract:** each map ships as `geo-infer-marine_preview.html`, `geo-infer-marine_preview.svg`, `geo-infer-marine_preview.png`, and `geo-infer-marine_preview.manifest.json` beneath `previews/`. The receipt records geometry provenance and artifact SHA-256 hashes. Values are illustrative, not observations.
+- `geo_infer_marine.OceanographicDataProcessor`
+- `geo_infer_marine.CoastalAnalyzer`
+- `geo_infer_marine.MarineEcosystemModeler`
+- `geo_infer_marine.MarineHabitatType`
+- `geo_infer_marine.SpeciesData`
+- `geo_infer_marine.SeaLevelAnalyzer`
+- `geo_infer_marine.MarineSpatialPlanner`
+- `geo_infer_marine.OceanCurrentModeler`
+
+The small example below verifies the installed import contract. It does not infer
+scientific validity or service availability from successful imports; the owning
+regression tests exercise behavior with concrete inputs.
+
+```python
+import geo_infer_marine
+from geo_infer_marine import OceanographicDataProcessor, CoastalAnalyzer, MarineEcosystemModeler, MarineHabitatType
+assert all(value is not None for value in (OceanographicDataProcessor, CoastalAnalyzer, MarineEcosystemModeler, MarineHabitatType,))
+assert geo_infer_marine.__version__ == "0.4.0"
+```
+
+Run examples in the shared, locked workspace environment. Constructor inputs,
+optional backends, and result shapes belong to the referenced source and tests.
+Cross-module callers should pass explicit spatial state ordering and timezone-aware
+instants when those fields are part of their data contract.
+
+## Verification
+
+From the repository root:
+
+```bash
+uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --module MARINE --timeout 600 --workers 2
+```
+
+The module command includes its owned test files and registered nested test roots.
+The fleet's separate unit and slow categories cover complementary marker selections;
+release CI requires unit, slow, integration, performance, system, and H3 lanes on
+Python 3.11 and 3.12. Results include immutable attempt receipts under
+`.geo-infer-test-results/runs/`, with logs, current JUnit, selection inventories,
+interpreter and source custody. A missing optional dependency must be addressed by
+the declared package extra rather than by omitting its tests.
+
+## Source and examples
+
+- [Owning package](../../../GEO-INFER-MARINE/src/geo_infer_marine/README.md)
+- [Module inventory and dependencies](../../../GEO-INFER-MARINE/README.md)
+- [Module operating contract](../../../GEO-INFER-MARINE/AGENTS.md)
+- [Regression: test_marine_integration.py](../../../GEO-INFER-MARINE/tests/integration/test_marine_integration.py)
+- [Regression: test_biodiversity.py](../../../GEO-INFER-MARINE/tests/unit/test_biodiversity.py)
+- [Regression: test_coastal_analysis.py](../../../GEO-INFER-MARINE/tests/unit/test_coastal_analysis.py)
+- [Example source: __init__.py](../../../GEO-INFER-MARINE/examples/__init__.py)
+- [Example source: basic_marine_analysis.py](../../../GEO-INFER-MARINE/examples/basic_marine_analysis.py)
+
+See the [cross-module integration guide](../../../GEO-INFER-EXAMPLES/docs/INTEGRATION_GUIDE.md)
+for actual DATA, SPACE, TIME, BAYES, and ACT composition checks.

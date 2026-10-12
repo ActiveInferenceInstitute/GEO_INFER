@@ -31,25 +31,28 @@
 
 ### Quality
 
-- [ ] Code formatted with Black and isort
-- [ ] Passes ruff check with 0 errors
-- [ ] Test coverage ≥80% for modified files
+- [ ] `ruff format` clean and `ruff check` reports 0 findings (root config)
+- [ ] Touched modules meet their coverage floor (`GEO-INFER-TEST/coverage_baseline.json`)
+- [ ] Library randomness threads a `seed`/`rng` through `utils/rng.py` `resolve_rng`
 - [ ] Performance tested with realistic data volumes
 - [ ] Security: no hardcoded secrets, inputs validated
 - [ ] Structured logging (no `print()` statements)
 
 ## Code Formatting
 
+Ruff is the only lint and format tool; its configuration lives once in the
+root `pyproject.toml` (`[tool.ruff]` target `py311`, line length 88;
+`[tool.ruff.lint]` selects `E4`, `E7`, `E9`, `F`, `UP`, `B`, `NPY`).
+
 ```bash
-# Format code
-black .
-isort .
+# Format
+uv run --with 'ruff>=0.15.6,<0.16' ruff format GEO-INFER-MODULE/
 
 # Lint
-ruff check --fix .
+uv run --with 'ruff>=0.15.6,<0.16' ruff check GEO-INFER-MODULE/
 
-# Type check (core modules)
-mypy --strict src/
+# Optional type check against the root [tool.mypy] configuration
+uv run mypy GEO-INFER-MODULE/src/
 ```
 
 ## Commit Message Conventions
@@ -75,32 +78,10 @@ Examples:
 - `fix(COMMS): resolve subscriber lookup returning empty list`
 - `docs(AGENT): update AGENTS.md with telemetry patterns`
 
-## Framework Status (2026-02-25)
-
-| Area | Status |
-|------|--------|
-| Documentation Quality | ✅ Standards established, YAML front matter applied |
-| Integration Patterns | ✅ Cross-module tutorials created |
-| Testing Framework | ✅ Unified test suite operational (416 files) |
-| H3 v4 Migration | ✅ Fully migrated (0 legacy calls) |
-| Module Maturity | Mixed — Core: Beta, Domain: Alpha-Beta |
-| Placeholder Count | ~50 remaining (down from 86) |
-
 ## Current Priorities
 
-### High Priority
-
-1. Eliminate remaining LOG placeholders (19 across delivery/transport/supply_chain)
-2. Complete RISK exposure model data loaders (6 remaining)
-3. Replace BAYES tfp_interface placeholder
-4. Achieve ≥80% test coverage across all 45 modules
-
-### Medium Priority
-
-1. Mypy strict mode passing in all analytical core modules
-2. Automated documentation generation (Sphinx)
-3. Performance benchmarks for spatial operations
-4. Expand property-based (Hypothesis) tests
+Planned work and its acceptance criteria are tracked in the root
+[`TODO.md`](../TODO.md); do not duplicate status snapshots here.
 
 ## Release Checklist
 
@@ -109,12 +90,11 @@ Before tagging any version release:
 - [ ] All tests pass: `uv run python GEO-INFER-TEST/run_unified_tests.py`
 - [ ] 0 placeholder/stub implementations in source code
 - [ ] 0 `pass` stubs (excluding `__init__.py`, `except`, abstract methods)
-- [ ] Black/isort/ruff clean
-- [ ] Coverage ≥80% per module
-- [ ] README.md + AGENTS.md up to date in all 45 modules
+- [ ] `ruff format --check .` and the CI `ruff check` selections clean
+- [ ] Every module meets its coverage floor (`check_coverage_floor.py`)
+- [ ] Generated README.md + AGENTS.md current: `uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check`
 - [ ] CHANGELOG.md entries for this version
 - [ ] `pyproject.toml` version updated
-- [ ] TODO.md progress metrics refreshed
 
 ---
 

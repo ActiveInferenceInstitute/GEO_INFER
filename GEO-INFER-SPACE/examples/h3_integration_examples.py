@@ -9,45 +9,12 @@ import logging
 from datetime import datetime, timedelta
 
 # Unified Spatial Architecture
-from geo_infer_space.core import SpatialIndexingInterface, SpatialAnalyticsInterface
+import geopandas as gpd
+from shapely.geometry import Polygon
 
-try:
-    from geo_infer_space.analytics.temporal import TemporalAnalyzer
-
-    TEMPORAL_AVAILABLE = True
-except ImportError:
-    TEMPORAL_AVAILABLE = False
-    logging.warning("TemporalAnalyzer not available")
-
-# Integration with other SPACE modules
-try:
-    from geo_infer_space.analytics.vector import (
-        geometric_calculations,
-        proximity_analysis,
-    )
-    from geo_infer_space.models.data_models import SpatialBounds
-
-    VECTOR_AVAILABLE = True
-except ImportError:
-    VECTOR_AVAILABLE = False
-    logging.warning("Vector analytics not available")
-
-try:
-    import geopandas as gpd
-    import pandas as pd
-
-    GEOPANDAS_AVAILABLE = True
-except ImportError:
-    GEOPANDAS_AVAILABLE = False
-    logging.warning("GeoPandas not available")
-
-try:
-    from shapely.geometry import Point, Polygon
-
-    SHAPELY_AVAILABLE = True
-except ImportError:
-    SHAPELY_AVAILABLE = False
-    logging.warning("Shapely not available")
+from geo_infer_space.analytics.temporal import TemporalAnalyzer
+from geo_infer_space.analytics.vector import geometric_calculations
+from geo_infer_space.core import SpatialAnalyticsInterface, SpatialIndexingInterface
 
 logger = logging.getLogger(__name__)
 
@@ -61,10 +28,6 @@ def example_h3_vector_integration():
     """
     print("H3-Vector Integration Example")
     print("=" * 40)
-
-    if not (VECTOR_AVAILABLE and GEOPANDAS_AVAILABLE and SHAPELY_AVAILABLE):
-        print("Required dependencies not available. Skipping example.")
-        return
 
     # Create H3 grid for San Francisco area
     sf_bounds = {"min_lat": 37.7, "max_lat": 37.8, "min_lng": -122.5, "max_lng": -122.4}
@@ -263,7 +226,10 @@ def example_h3_density_clustering():
         density_result = analytics.compute_density(
             [indexer.cell_to_latlng(cell) for cell in cells_list], data=data
         )
-        print(f"Density analysis completed for {len(cells_list)} cells")
+        print(
+            f"Density analysis completed for {len(cells_list)} cells "
+            f"({len(density_result)} result fields)"
+        )
     except Exception as e:
         print(f"Density analysis skipped: {e}")
 
@@ -348,10 +314,6 @@ def example_h3_temporal_analysis():
     print(f"Created temporal data with {len(temporal_data)} observations")
 
     # Temporal analysis
-    if not TEMPORAL_AVAILABLE:
-        print("Temporal analysis skipped (dependency missing)")
-        return
-
     temporal_analyzer = TemporalAnalyzer()
 
     # Analyze temporal patterns
@@ -434,13 +396,6 @@ def example_h3_multi_resolution_analysis():
         total_population = sum(d["population"] for d in cell_data)
         total_area = sum(d["area_km2"] for d in cell_data)
         avg_density = total_population / total_area if total_area > 0 else 0
-
-        # Spatial analysis usage
-        analytics = SpatialAnalyticsInterface(backend="h3")
-        data = {
-            "cells": [d["cell_index"] for d in cell_data],
-            "values": [d["population"] for d in cell_data],
-        }
 
         resolution_results[resolution] = {
             "num_cells": len(cell_data),

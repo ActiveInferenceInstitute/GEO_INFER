@@ -7,33 +7,47 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `core/`
 - `models/`
 - `__init__.py`
+- `act_research_oracles.py`
+- `coverage.py`
+- `doc_examples.py`
+- `documentation_contracts.py`
+- `execution.py`
+- `process.py`
+- `research_evidence.py`
+- `selection.py`
 - `testing.py`
+- `wheel_evidence.py`
+- `wheel_profiles.py`
 
 ## Public Interface
 
-- `testing.py:as_finite_array` (function)
-- `testing.py:assert_finite` (function)
-- `testing.py:assert_probability` (function)
-- `testing.py:assert_stochastic_matrix` (function)
-- `testing.py:assert_same_finite_values` (function)
-- `testing.py:assert_no_nan_statistics` (function)
-- `testing.py:assert_model_contract` (function)
-- `testing.py:assert_seed_replay` (function)
-- `testing.py:assert_packaged_config_loads` (function)
-- `testing.py:assert_visualization_manifest` (function)
-- `testing.py:LocalService` (class)
-- `testing.py:deterministic_rng` (function)
-- `testing.py:local_filesystem` (function)
-- `testing.py:sqlite_database` (function)
-- `testing.py:local_http_server` (function)
-- `testing.py:local_service` (function)
+- `act_research_oracles.py:research_profile_reference` (function)
+- `act_research_oracles.py:research_posterior_reference` (function)
+- `act_research_oracles.py:research_policy_reference` (function)
+- `act_research_oracles.py:assert_research_policy` (function)
+- `coverage.py:measure_module` (function)
+- `coverage.py:junit_failure_names` (function)
+- `coverage.py:junit_failure_details` (function)
+- `coverage.py:run_coverage_measurements` (function)
+- `coverage.py:main` (function)
+- `doc_examples.py:load_manifest` (function)
+- `doc_examples.py:example_code` (function)
+- `doc_examples.py:verify_page` (function)
+- `doc_examples.py:main` (function)
+- `documentation_contracts.py:module_catalog_census_errors` (function)
+- `execution.py:CommandResult` (class)
+- `execution.py:Module` (class)
+- `execution.py:SuiteReport` (class)
+- `execution.py:discover_geo_infer_modules` (function)
+- `execution.py:discover_workspace_test_targets` (function)
+- `execution.py:profile_selection_args` (function)
 
 ## Module Metadata
 
 - Module: `GEO-INFER-TEST`
 - Package: `geo_infer_test`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-TEST`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-test`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module TEST`
 
 ## Dependencies
@@ -59,7 +73,7 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 ## Validation
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python GEO-INFER-TEST/run_unified_tests.py --module TEST
 ```
 

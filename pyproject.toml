@@ -1,6 +1,6 @@
 [project]
 name = "geo-infer-framework"
-version = "0.3.0"
+version = "0.4.0"
 description = "Comprehensive geospatial inference framework for ecological, civic, and commercial applications"
 authors = [
     {name = "docxology", email = "docxology@users.noreply.github.com"}
@@ -80,7 +80,8 @@ ai = [
 
 # Bayesian inference
 bayesian = [
-    "pymc>=4.0.0",
+    "pymc>=5.0.0",
+    "pytensor>=2.31.7,<2.32",
     "arviz>=0.11.0",
     "emcee>=3.1.0",
     "corner>=2.2.0",
@@ -103,7 +104,7 @@ bio = [
 # Health applications
 health = [
     "lifelines>=0.26.0",
-    # migrate from pymc3 (theano-pymc) to pymc>=4 (aesara/aeppl stack)
+    # PyMC 5 uses the PyTensor runtime pinned by the bayesian profile.
     "pymc>=5.0.0",
 ]
 
@@ -112,6 +113,14 @@ climate = [
     "cf-units>=3.0.0",
     "cdo>=1.5.0",
     "xclim>=0.40.0",
+]
+
+# Native columnar data integrations
+data = [
+    "duckdb>=0.9.0",
+    "pyarrow>=14.0.0",
+    "pymongo>=4.5.0",
+    "xarray>=2023.1.0",
 ]
 
 # Performance optimization
@@ -126,15 +135,13 @@ performance = [
 quality = [
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
-    "pytest-asyncio>=0.20.0",
+    "pytest-asyncio>=0.24.0",
     "pytest-mock>=3.12.0",
-    "black>=21.9.0",
     "ruff>=0.15.6,<0.16",
     "mypy>=0.910",
     "hypothesis>=6.0.0",
     "ruptures>=1.1.9",
     "srai>=0.10.2",
-    "pydocstyle>=6.0.0",
 ]
 
 # Documentation
@@ -172,6 +179,7 @@ all = [
     "optuna>=2.10.0",
     # bayesian
     "arviz>=0.11.0",
+    "pytensor>=2.31.7,<2.32",
     "emcee>=3.1.0",
     "corner>=2.2.0",
     # simulation
@@ -189,6 +197,11 @@ all = [
     "cf-units>=3.0.0",
     "cdo>=1.5.0",
     "xclim>=0.40.0",
+    # data
+    "duckdb>=0.9.0",
+    "pyarrow>=14.0.0",
+    "pymongo>=4.5.0",
+    "xarray>=2023.1.0",
     # performance
     "numba>=0.54.0",
     "cupy>=9.4.0; sys_platform != 'darwin'",
@@ -197,16 +210,14 @@ all = [
     # quality
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
-    "pytest-asyncio>=0.20.0",
-    "black>=21.9.0",
+    "pytest-asyncio>=0.24.0",
     "ruff>=0.15.6,<0.16",
     "mypy>=0.910",
-    "pydocstyle>=6.0.0",
     "pytest-mock>=3.12.0",
     "hypothesis>=6.0.0",
     "ruptures>=1.1.9",
     "srai>=0.10.2",
-        # docs
+    # docs
     "sphinx>=4.2.0",
     "sphinx-rtd-theme>=1.0.0",
     "nbsphinx>=0.8.0",
@@ -234,30 +245,6 @@ Discord = "https://discord.activeinference.institute/"
 [project.scripts]
 # NOTE: Intentionally omitted at root. Use module-provided CLIs and
 # `GEO-INFER-TEST/run_unified_tests.py` for testing.
-
-
-[tool.black]
-line-length = 88
-target-version = ['py311', 'py312']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-line_length = 88
 
 [tool.mypy]
 python_version = "3.11"
@@ -361,7 +348,6 @@ testpaths = [
     "tests",
     "GEO-INFER-PLACE/locations/cascadia/tests",
 ]
-pythonpath = ["GEO-INFER-PLACE/locations/cascadia"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -387,7 +373,6 @@ filterwarnings = ["error"]
 source = ["GEO-INFER-*/src"]
 omit = [
     "*/tests/*",
-    "*/test_*",
     "*/__pycache__/*",
     "*/venv/*",
     "*/env/*",
@@ -407,9 +392,32 @@ exclude_lines = [
     "@(abc\\.)?abstractmethod",
 ]
 
+[tool.uv]
+package = false
+
 [tool.uv.workspace]
 members = ["GEO-INFER-*"]
 
 [tool.ruff]
 target-version = "py311"
 line-length = 88
+
+[tool.ruff.lint]
+# Repository-wide lint contract: pyflakes/pycodestyle errors, modern syntax for
+# the Python 3.11 floor (pyupgrade), bugbear correctness checks, and NumPy
+# Generator-only randomness in library code.
+select = ["E4", "E7", "E9", "F", "UP", "B", "NPY"]
+ignore = [
+    "B008",  # FastAPI/Typer dependency injection uses calls in defaults.
+    "B905",  # zip(strict=...) changes runtime semantics; opt in per call site.
+    "UP042", # StrEnum changes str()/format() output of existing enums.
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests, examples and orchestration scripts may seed the global NumPy stream.
+"**/tests/**" = ["NPY002"]
+"**/examples/**" = ["NPY002"]
+"**/scripts/**" = ["NPY002"]
+"GEO-INFER-PLACE/locations/**" = ["NPY002"]
+"manuscript/**" = ["NPY002"]
+"tests/**" = ["NPY002"]

@@ -12,9 +12,11 @@ import subprocess
 import tempfile
 import platform
 import sys
+import shutil
+import uuid
+from contextlib import nullcontext
 
-import numpy as np
-from geo_infer_act.core.gnn_contract import GNNArtifact, run_gnn_inference
+from geo_infer_test.process import run_process
 
 
 def revision_receipt(root: Path) -> dict:
@@ -40,46 +42,108 @@ def detect_export_module_prefix(root: Path, interpreter: Path) -> str:
     GNN revisions after its 2026-09 package reorganization ship the editable
     `gnn` package (`src/gnn/`), so the exporter is `gnn.export.geo_infer`.
     Earlier revisions expose `export.geo_infer` directly under `src/`. The
-    probe is deterministic and runs exactly once; a non-zero exit selects the
-    pre-reorg layout explicitly.
+    probe follows the declared filesystem layout. An import failure fails
+    that layout rather than selecting an unrelated legacy exporter.
     """
+    if (root / "src/gnn/export/geo_infer.py").is_file() or (
+        root / "src/gnn/export/geo_infer/__init__.py"
+    ).is_file():
+        prefix = "gnn.export"
+    elif (root / "src/export/geo_infer.py").is_file() or (
+        root / "src/export/geo_infer/__init__.py"
+    ).is_file():
+        prefix = "export"
+    else:
+        raise ValueError("GNN checkout contains no supported exporter layout")
     environment = os.environ.copy()
     environment["PYTHONPATH"] = str(root / "src")
-    probe = subprocess.run(
-        [str(interpreter), "-c", "import gnn.export.geo_infer"],
+    probe = run_process(
+        [
+            str(interpreter),
+            "-c",
+            f"import {prefix}.geo_infer as exporter; from pathlib import Path; assert Path(exporter.__file__).resolve().is_relative_to(Path({str(root / 'src')!r}).resolve())",
+        ],
         env=environment,
-        capture_output=True,
+        cwd=root,
         timeout=60,
     )
-    if probe.returncode == 0:
-        print("GNN layout: post-reorg (gnn.export.geo_infer)")
-        return "gnn.export"
-    print("GNN layout: pre-reorg (export.geo_infer)")
-    return "export"
+    if probe.returncode != 0:
+        raise RuntimeError(
+            f"GNN exporter import failed in declared layout {prefix}: {probe.stderr}"
+        )
+    print(f"GNN layout: {prefix}.geo_infer", file=sys.stderr)
+    return prefix
 
 
-def validate_interchange(gnn_repo: Path, gnn_python: Path) -> dict:
+def run_export(
+    command: list[str],
+    *,
+    cwd: Path,
+    env: dict[str, str],
+    timeout: float,
+    check: bool = True,
+    artifact_dir: Path | None = None,
+) -> None:
+    """Capture exporter diagnostics separately from the JSON receipt stream."""
+    completed = run_process(command, cwd=cwd, env=env, timeout=timeout)
+    if artifact_dir is not None:
+        attempt = artifact_dir / f"export-{uuid.uuid4().hex}"
+        attempt.mkdir()
+        (attempt / "stdout.log").write_text(completed.stdout, encoding="utf-8")
+        (attempt / "stderr.log").write_text(completed.stderr, encoding="utf-8")
+        (attempt / "command.json").write_text(
+            json.dumps(
+                {"command": command, "returncode": completed.returncode}, indent=2
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+    if completed.stdout:
+        print(completed.stdout, file=sys.stderr, end="")
+    if completed.stderr:
+        print(completed.stderr, file=sys.stderr, end="")
+    if check:
+        completed.check_returncode()
+
+
+def validate_interchange(
+    gnn_repo: Path, gnn_python: Path, *, artifact_dir: Path | None = None
+) -> dict:
     """Export the tracked gridworld, validate provenance, and verify real replay."""
     root = gnn_repo.resolve(strict=True)
+    if artifact_dir is not None:
+        artifact_dir = artifact_dir.absolute()
     interpreter = gnn_python.absolute()
     if not interpreter.is_file():
         raise ValueError("GNN interpreter must be an existing file")
     export_module_prefix = detect_export_module_prefix(root, interpreter)
+    import numpy as np
+    from geo_infer_act.core.gnn_contract import GNNArtifact, run_gnn_inference
+
     # Fixture location follows the same layout: post-reorg checkouts keep
     # interchange fixtures under tests/export/, pre-reorg ones under
     # src/tests/export/. Derived from the probe above, never re-probed.
     if export_module_prefix == "gnn.export":
         tests_root = "tests"
-        print("GNN layout: post-reorg (fixtures under tests/export/)")
+        print("GNN layout: post-reorg (fixtures under tests/export/)", file=sys.stderr)
     else:
         tests_root = "src/tests"
-        print("GNN layout: pre-reorg (fixtures under src/tests/export/)")
+        print(
+            "GNN layout: pre-reorg (fixtures under src/tests/export/)", file=sys.stderr
+        )
     source = root / "input/gnn_files/pomdp_gridworld/pomdp_gridworld_3x3.md"
-    with tempfile.TemporaryDirectory(prefix="gnn-geo-contract-") as temp:
+    if artifact_dir is not None:
+        artifact_dir.mkdir(parents=True, exist_ok=False)
+    context = (
+        nullcontext(str(artifact_dir))
+        if artifact_dir is not None
+        else tempfile.TemporaryDirectory(prefix="gnn-geo-contract-")
+    )
+    with context as temp:
         artifact_path = Path(temp) / "model.json"
         environment = os.environ.copy()
         environment["PYTHONPATH"] = str(root / "src")
-        subprocess.run(
+        run_export(
             [
                 str(interpreter),
                 "-m",
@@ -93,6 +157,7 @@ def validate_interchange(gnn_repo: Path, gnn_python: Path) -> dict:
             env=environment,
             check=True,
             timeout=120,
+            artifact_dir=Path(temp),
         )
         artifact = GNNArtifact.load(artifact_path)
         assert (
@@ -177,7 +242,7 @@ DiscreteTime=t
         ids_path = Path(temp) / "state_ids.json"
         ids_path.write_text(json.dumps(cells), encoding="utf-8")
         spatial_path = Path(temp) / "h3.json"
-        subprocess.run(
+        run_export(
             [
                 str(interpreter),
                 "-m",
@@ -195,6 +260,7 @@ DiscreteTime=t
             env=environment,
             check=True,
             timeout=120,
+            artifact_dir=Path(temp),
         )
         spatial = GNNArtifact.load(spatial_path)
         assert spatial.to_dict()["space"]["state_ids"] == cells
@@ -220,7 +286,7 @@ DiscreteTime=t
             encoding="utf-8",
         )
         gaussian_path = Path(temp) / "gaussian.json"
-        subprocess.run(
+        run_export(
             [
                 str(interpreter),
                 "-m",
@@ -238,6 +304,7 @@ DiscreteTime=t
             env=environment,
             check=True,
             timeout=120,
+            artifact_dir=Path(temp),
         )
         gaussian = GaussianGNNArtifact.load(gaussian_path)
         assert (
@@ -284,7 +351,7 @@ DiscreteTime=t
             ).read_bytes()
         )
         factored_path = Path(temp) / "factored.json"
-        subprocess.run(
+        run_export(
             [
                 str(interpreter),
                 "-m",
@@ -298,6 +365,7 @@ DiscreteTime=t
             env=environment,
             check=True,
             timeout=120,
+            artifact_dir=Path(temp),
         )
         factored = FactoredGNNArtifact.load(factored_path)
         factored_data = factored.to_dict()
@@ -315,7 +383,34 @@ DiscreteTime=t
         np.testing.assert_allclose(factored_trace["posterior"], expected)
         assert len(factored_trace["policy_posterior"]) == len(factored_data["policies"])
         assert factored_trace == infer_factored_step(factored, [0, 2])
+        retained = {}
+        if artifact_dir is not None:
+            for name, path in {
+                "categorical-source.md": source,
+                "categorical.json": artifact_path,
+                "h3-source.md": h3_source,
+                "h3-state-ids.json": ids_path,
+                "h3.json": spatial_path,
+                "gaussian-source.md": gaussian_source,
+                "gaussian.json": gaussian_path,
+                "factored-source.json": factored_source,
+                "factored.json": factored_path,
+            }.items():
+                target = artifact_dir / name
+                if path.resolve() != target.resolve():
+                    shutil.copyfile(path, target)
+                retained[name] = hashlib.sha256(target.read_bytes()).hexdigest()
+            retained = {
+                str(path.relative_to(artifact_dir)): hashlib.sha256(
+                    path.read_bytes()
+                ).hexdigest()
+                for path in artifact_dir.rglob("*")
+                if path.is_file()
+            }
         return dict(
+            schema_version="1.0",
+            success=True,
+            artifacts=retained,
             geo=revision_receipt(Path(__file__).resolve().parents[1]),
             gnn=revision_receipt(root),
             python=sys.version,
@@ -341,15 +436,65 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--gnn-repo", type=Path, required=True)
     parser.add_argument("--gnn-python", type=Path, required=True)
-    args = parser.parse_args()
-    print(
-        json.dumps(
-            validate_interchange(args.gnn_repo, args.gnn_python),
-            indent=2,
-            allow_nan=False,
-        )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Write a machine-readable receipt and retain exported source/artifact bytes beside it.",
     )
-    return 0
+    args = parser.parse_args()
+    if args.output and args.output.exists():
+        parser.error("--output already exists; choose a new immutable receipt path")
+    try:
+        receipt = validate_interchange(
+            args.gnn_repo,
+            args.gnn_python,
+            artifact_dir=args.output.parent / f"{args.output.stem}-artifacts"
+            if args.output
+            else None,
+        )
+    except (
+        OSError,
+        ValueError,
+        RuntimeError,
+        AssertionError,
+        subprocess.SubprocessError,
+    ) as exc:
+        receipt = {
+            "schema_version": "1.0",
+            "success": False,
+            "error": {"type": type(exc).__name__, "message": str(exc)},
+        }
+        print(f"Interchange failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+    from geo_infer_test.execution import runtime_receipt
+
+    receipt["geo_execution"] = runtime_receipt()
+    receipt["selection"] = {
+        "gnn_repo": str(args.gnn_repo.absolute()),
+        "gnn_python": str(args.gnn_python.absolute()),
+    }
+    gnn_lock = args.gnn_repo / "uv.lock"
+    receipt["gnn_lock_sha256"] = (
+        hashlib.sha256(gnn_lock.read_bytes()).hexdigest()
+        if gnn_lock.is_file()
+        else None
+    )
+    if args.output:
+        retained_dir = args.output.parent / f"{args.output.stem}-artifacts"
+        receipt["artifacts"] = {
+            str(path.relative_to(retained_dir)): hashlib.sha256(
+                path.read_bytes()
+            ).hexdigest()
+            for path in retained_dir.rglob("*")
+            if path.is_file()
+        }
+    serialized = json.dumps(receipt, indent=2, allow_nan=False) + "\n"
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        with args.output.open("x", encoding="utf-8") as output:
+            output.write(serialized)
+    else:
+        sys.stdout.write(serialized)
+    return 0 if receipt["success"] else 1
 
 
 if __name__ == "__main__":

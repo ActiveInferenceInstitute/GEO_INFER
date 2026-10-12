@@ -7,11 +7,12 @@ support and real-time capabilities.
 """
 
 from __future__ import annotations
-from typing import Dict, List, Optional, Callable, Any, Tuple, cast
+from typing import Any, cast
+from collections.abc import Callable
 import logging
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from dataclasses import dataclass, field
 import queue
 import uuid
@@ -50,8 +51,8 @@ class MessageBroker:
         self,
         max_queue_size: int = 10000,
         enable_persistence: bool = True,
-        persistence_path: Optional[str] = None,
-        recipient_resolver: Optional[Callable[[str, Dict[str, Any]], List[str]]] = None,
+        persistence_path: str | None = None,
+        recipient_resolver: Callable[[str, dict[str, Any]], list[str]] | None = None,
     ):
         """
         Initialize the message broker.
@@ -73,7 +74,7 @@ class MessageBroker:
         self.recipient_resolver = recipient_resolver
 
         # Message storage and routing
-        self.message_store: Dict[str, MessageResponse] = {}
+        self.message_store: dict[str, MessageResponse] = {}
         self.message_queue: queue.PriorityQueue = queue.PriorityQueue(
             maxsize=max_queue_size
         )
@@ -83,13 +84,13 @@ class MessageBroker:
         # subscription ID to its owning subscriber and callback;
         # ``spatial_subscriptions`` maps subscription IDs that carry a spatial
         # filter to their owner and filter.
-        self.subscribers: Dict[str, List[Callable]] = {}
-        self.subscription_callbacks: Dict[str, Tuple[str, Callable]] = {}
-        self.spatial_subscriptions: Dict[str, Tuple[str, SpatialFilter]] = {}
+        self.subscribers: dict[str, list[Callable]] = {}
+        self.subscription_callbacks: dict[str, tuple[str, Callable]] = {}
+        self.spatial_subscriptions: dict[str, tuple[str, SpatialFilter]] = {}
 
         # Threading and concurrency
         self._lock = threading.RLock()
-        self._processing_thread: Optional[threading.Thread] = None
+        self._processing_thread: threading.Thread | None = None
         self._running = False
 
         # Metrics and monitoring
@@ -190,7 +191,7 @@ class MessageBroker:
             raise RuntimeError("Message broker is not running")
 
         broadcast = BroadcastResponse()
-        broadcast.started_at = datetime.now(timezone.utc)
+        broadcast.started_at = datetime.now(UTC)
 
         try:
             # Find recipients based on target criteria
@@ -206,7 +207,7 @@ class MessageBroker:
                         message_type=cast(MessageType, request.message_type),
                         priority=request.priority,
                         geospatial_data=cast(
-                            Optional[GeospatialMetadata], request.geospatial_filter
+                            GeospatialMetadata | None, request.geospatial_filter
                         ),
                     )
                     self.send_message(message_request, sender_id)
@@ -231,14 +232,14 @@ class MessageBroker:
             broadcast.status = "failed"
             self.logger.error(f"Broadcast failed: {e}")
 
-        broadcast.completed_at = datetime.now(timezone.utc)
+        broadcast.completed_at = datetime.now(UTC)
         return broadcast
 
     def subscribe(
         self,
         subscriber_id: str,
         callback: Callable[[MessageResponse], None],
-        spatial_filter: Optional[SpatialFilter] = None,
+        spatial_filter: SpatialFilter | None = None,
     ) -> str:
         """
         Subscribe to messages with optional spatial filtering.
@@ -270,7 +271,7 @@ class MessageBroker:
         return subscription_id
 
     def unsubscribe(
-        self, subscriber_id: str, subscription_id: Optional[str] = None
+        self, subscriber_id: str, subscription_id: str | None = None
     ) -> bool:
         """
         Unsubscribe from messages.
@@ -314,7 +315,7 @@ class MessageBroker:
         self.logger.info(f"Subscriber {subscriber_id} unsubscribed")
         return True
 
-    def get_message(self, message_id: str) -> Optional[MessageResponse]:
+    def get_message(self, message_id: str) -> MessageResponse | None:
         """
         Retrieve a specific message by ID.
 
@@ -329,12 +330,12 @@ class MessageBroker:
 
     def get_messages(
         self,
-        sender_id: Optional[str] = None,
-        channel_id: Optional[str] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
+        sender_id: str | None = None,
+        channel_id: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
         limit: int = 100,
-    ) -> List[MessageResponse]:
+    ) -> list[MessageResponse]:
         """
         Retrieve messages with filtering options.
 
@@ -378,7 +379,7 @@ class MessageBroker:
         filtered_messages.sort(key=lambda m: m.timestamp, reverse=True)
         return filtered_messages[:limit]
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get current broker metrics."""
         return {
             "messages_stored": len(self.message_store),
@@ -413,7 +414,7 @@ class MessageBroker:
         try:
             # Update message status
             message.status = MessageStatus.DELIVERED
-            message.metadata.updated_at = datetime.now(timezone.utc)
+            message.metadata.updated_at = datetime.now(UTC)
 
             # Find matching subscribers
             matching_subscribers = self._find_matching_subscribers(message)
@@ -438,14 +439,14 @@ class MessageBroker:
 
     def _find_matching_subscribers(
         self, message: MessageResponse
-    ) -> Dict[str, List[Callable]]:
+    ) -> dict[str, list[Callable]]:
         """Find subscriber callbacks that should receive this message.
 
         Each subscription is evaluated independently: subscriptions with a
         spatial filter only receive messages carrying matching geospatial
         data, while unfiltered subscriptions receive everything.
         """
-        matching: Dict[str, List[Callable]] = {}
+        matching: dict[str, list[Callable]] = {}
 
         with self._lock:
             for sub_id, (owner_id, callback) in self.subscription_callbacks.items():
@@ -465,7 +466,7 @@ class MessageBroker:
 
     def _resolve_broadcast_recipients(
         self, request: BroadcastRequest, sender_id: str
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve broadcast recipients based on target criteria.
 
         ``all_users`` targets the broker's own subscriber registry. All other
@@ -508,11 +509,11 @@ class MessageMetrics:
     delivery_failures: int = 0
     messages_queued: int = 0
     messages_processed: int = 0
-    start_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    start_time: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert metrics to dictionary."""
-        uptime = datetime.now(timezone.utc) - self.start_time
+        uptime = datetime.now(UTC) - self.start_time
         return {
             "messages_sent": self.messages_sent,
             "messages_delivered": self.messages_delivered,
@@ -532,7 +533,7 @@ class MessageMetrics:
         self.delivery_failures = 0
         self.messages_queued = 0
         self.messages_processed = 0
-        self.start_time = datetime.now(timezone.utc)
+        self.start_time = datetime.now(UTC)
 
 
 class MessageRouter:
@@ -545,7 +546,7 @@ class MessageRouter:
 
     def __init__(self, broker: MessageBroker):
         self.broker = broker
-        self.routing_rules: List[RoutingRule] = []
+        self.routing_rules: list[RoutingRule] = []
         self.logger = logging.getLogger(__name__)
 
     def add_routing_rule(self, rule: RoutingRule) -> None:
@@ -554,7 +555,7 @@ class MessageRouter:
         self.routing_rules.append(rule)
         self.logger.info(f"Added routing rule: {rule.name}")
 
-    def route_message(self, message: MessageResponse) -> List[str]:
+    def route_message(self, message: MessageResponse) -> list[str]:
         """Route message based on configured rules."""
         routed_recipients = set()
 
@@ -565,7 +566,7 @@ class MessageRouter:
 
         return list(routed_recipients)
 
-    def get_routing_statistics(self) -> Dict[str, Any]:
+    def get_routing_statistics(self) -> dict[str, Any]:
         """Get routing performance statistics."""
         return {
             "total_rules": len(self.routing_rules),
@@ -578,13 +579,11 @@ class RoutingRule:
     """A rule for message routing and filtering."""
 
     name: str
-    condition: Dict[str, Any]
-    action: Dict[str, Any]
+    condition: dict[str, Any]
+    action: dict[str, Any]
     priority: int = 1
     enabled: bool = True
-    _broker: Optional["MessageBroker"] = (
-        None  # Use string annotation for forward reference
-    )
+    _broker: MessageBroker | None = None  # Use string annotation for forward reference
 
     def matches(self, message: MessageResponse) -> bool:
         """Check if message matches this routing rule."""
@@ -610,7 +609,7 @@ class RoutingRule:
 
         return True
 
-    def apply(self, message: MessageResponse) -> List[str]:
+    def apply(self, message: MessageResponse) -> list[str]:
         """Apply routing rule to generate recipient list."""
         recipients = []
 
@@ -644,7 +643,7 @@ class RoutingRule:
         return recipients
 
     def _check_geospatial_condition(
-        self, geo_data: GeospatialMetadata, condition: Dict[str, Any]
+        self, geo_data: GeospatialMetadata, condition: dict[str, Any]
     ) -> bool:
         """Check geospatial condition against message data."""
         # Simple geospatial condition checking
@@ -674,7 +673,7 @@ class RoutingRule:
 
         return True
 
-    def set_broker(self, broker: "MessageBroker") -> None:
+    def set_broker(self, broker: MessageBroker) -> None:
         """Set the message broker reference for this rule."""
         self._broker = broker
 
@@ -691,7 +690,7 @@ class MessageFormatter:
         return f"From {message.sender_id}: {content}"
 
     @staticmethod
-    def format_for_email(message: MessageResponse) -> Dict[str, str]:
+    def format_for_email(message: MessageResponse) -> dict[str, str]:
         """Format message for email delivery."""
         return {
             "subject": f"Message from {message.sender_id}",
@@ -710,7 +709,7 @@ class MessageFormatter:
         }
 
     @staticmethod
-    def format_for_push_notification(message: MessageResponse) -> Dict[str, str]:
+    def format_for_push_notification(message: MessageResponse) -> dict[str, str]:
         """Format message for push notification."""
         title = f"Message from {message.sender_id}"
         body = message.content
@@ -720,9 +719,9 @@ class MessageFormatter:
         return {"title": title, "body": body, "priority": message.priority.value}
 
     @staticmethod
-    def format_for_geospatial_context(message: MessageResponse) -> Dict[str, Any]:
+    def format_for_geospatial_context(message: MessageResponse) -> dict[str, Any]:
         """Format message with geospatial context information."""
-        formatted: Dict[str, Any] = {
+        formatted: dict[str, Any] = {
             "message_id": message.message_id,
             "content": message.content,
             "sender_id": message.sender_id,

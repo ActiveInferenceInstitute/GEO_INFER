@@ -5,7 +5,7 @@ This module provides powerful spatial indexing, analytics, and integration
 with external geospatial tools and libraries through a unified, backend-agnostic API.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 # Import the generic spatial interfaces
 from .core.spatial_indexing import (
@@ -19,6 +19,8 @@ from .core.geometric_operations import GeometricOperationsInterface
 from .core.analytics import SpatialAnalyticsInterface
 from .core.dispatcher import get_backend_dispatcher, configure_backends
 from .core.interfaces import UnsupportedSpatialOperationError
+from .core.state_space import H3StateSpace
+from .core.spatiotemporal import align_h3_observations
 
 
 # RISK-style policy: internal components import only declared hard
@@ -40,6 +42,8 @@ __all__ = [
     "get_backend_dispatcher",
     "configure_backends",
     "UnsupportedSpatialOperationError",
+    "H3StateSpace",
+    "align_h3_observations",
     # Convenience functions
     "latlng_to_cell",
     "cell_to_latlng",

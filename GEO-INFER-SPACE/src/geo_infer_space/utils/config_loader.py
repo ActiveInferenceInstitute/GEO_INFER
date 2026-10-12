@@ -9,11 +9,14 @@ parameters for different GEO-INFER modules.
 """
 
 import importlib.resources
+from copy import deepcopy
 import logging
+import math
 import os
+import re
 import yaml
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any
 from dataclasses import dataclass
 
 CONFIG_DIR_ENV_VAR = "GEO_INFER_SPACE_CONFIG"
@@ -29,6 +32,22 @@ class LocationBounds:
     east: float
     west: float
 
+    def __post_init__(self) -> None:
+        for name in ("north", "south", "east", "west"):
+            value = getattr(self, name)
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+            ):
+                raise ValueError(f"Location bound {name} must be finite and numeric")
+        if not -90 <= self.south < self.north <= 90:
+            raise ValueError("Expected -90 <= south < north <= 90")
+        if not (-180 <= self.west <= 180 and -180 <= self.east <= 180):
+            raise ValueError("Longitude bounds must lie between -180 and 180")
+        if self.east == self.west or (self.west == 180 and self.east == -180):
+            raise ValueError("Longitude bounds must have positive width")
+
     def to_bbox(self) -> tuple:
         """Convert to (west, south, east, north) bbox tuple."""
         return (self.west, self.south, self.east, self.north)
@@ -36,7 +55,8 @@ class LocationBounds:
     def center(self) -> tuple:
         """Get center point as (lat, lon)."""
         lat = (self.north + self.south) / 2
-        lon = (self.east + self.west) / 2
+        east = self.east + 360 if self.east < self.west else self.east
+        lon = ((east + self.west) / 2 + 180) % 360 - 180
         return (lat, lon)
 
 
@@ -45,10 +65,10 @@ class LocationConfigLoader:
     Configuration loader for place-based analysis.
 
     Handles loading, merging, and validation of configuration from
-    multiple sources including YAML, JSON, and defaults.
+    packaged base YAML, location YAML, and independent defaults.
     """
 
-    def __init__(self, config_dir: Optional[Path] = None) -> None:
+    def __init__(self, config_dir: Path | None = None) -> None:
         """
         Initialize config loader.
 
@@ -59,7 +79,7 @@ class LocationConfigLoader:
             Path(config_dir) if config_dir else self._resolve_default_config_dir()
         )
         self.default_config = self._load_default_config()
-        self.loaded_config: Dict[str, Dict[str, Any]] = {}
+        self.loaded_config: dict[str, dict[str, Any]] = {}
         logger.info(f"Config loader initialized with directory: {self.config_dir}")
 
     @staticmethod
@@ -77,7 +97,7 @@ class LocationConfigLoader:
         with importlib.resources.as_file(packaged) as config_path:
             return config_path
 
-    def load_location_config(self, location: str) -> Dict[str, Any]:
+    def load_location_config(self, location: str) -> dict[str, Any]:
         """
         Load configuration for a specific location.
 
@@ -88,30 +108,34 @@ class LocationConfigLoader:
         Returns:
             Merged configuration dictionary
         """
-        config = self.default_config.copy()
+        if not isinstance(location, str) or not re.fullmatch(
+            r"[A-Za-z0-9_-]+", location
+        ):
+            raise ValueError("location must be a simple location identifier")
+        config = deepcopy(self.default_config)
 
         # Load base config
         base_config_path = self.config_dir / "base.yaml"
         if base_config_path.exists():
-            with open(base_config_path, "r") as f:
+            with open(base_config_path) as f:
                 base_config = yaml.safe_load(f)
             config = self._merge_configs(config, base_config)
 
         # Load location-specific config
         location_config_path = self.config_dir / f"{location}.yaml"
         if location_config_path.exists():
-            with open(location_config_path, "r") as f:
+            with open(location_config_path) as f:
                 location_config = yaml.safe_load(f)
             config = self._merge_configs(config, location_config)
         else:
             logger.warning(f"Location config not found: {location_config_path}")
 
         self._validate_config(config)
-        self.loaded_config[location] = config
+        self.loaded_config[location] = deepcopy(config)
 
         return config
 
-    def get_location_bounds(self, config: Dict[str, Any]) -> LocationBounds:
+    def get_location_bounds(self, config: dict[str, Any]) -> LocationBounds:
         """Extract location bounds from config."""
         bounds = config.get("location", {}).get("bounds", {})
         return LocationBounds(
@@ -121,7 +145,7 @@ class LocationConfigLoader:
             west=bounds.get("west", -180.0),
         )
 
-    def _load_default_config(self) -> Dict[str, Any]:
+    def _load_default_config(self) -> dict[str, Any]:
         """Load default configuration values."""
         defaults = {
             "location": {
@@ -156,39 +180,44 @@ class LocationConfigLoader:
 
         return defaults
 
-    def _merge_configs(self, base: Dict, update: Dict) -> Dict:
-        """Recursively merge two configuration dictionaries."""
+    def _merge_configs(self, base: dict, update: dict) -> dict:
+        """Merge mappings into an independent result without changing inputs."""
+        if not isinstance(base, dict) or not isinstance(update, dict):
+            raise ValueError("Configuration files and sections must be mappings")
+        result = deepcopy(base)
         for key, value in update.items():
-            if isinstance(value, dict) and key in base:
-                base[key] = self._merge_configs(base[key], value)
+            if isinstance(value, dict) and isinstance(result.get(key), dict):
+                result[key] = self._merge_configs(result[key], value)
             else:
-                base[key] = value
-        return base
+                result[key] = deepcopy(value)
+        return result
 
-    def _validate_config(self, config: Dict[str, Any]) -> None:
+    def _validate_config(self, config: dict[str, Any]) -> None:
         """Validate configuration parameters."""
+        for section in self.default_config:
+            if not isinstance(config.get(section), dict):
+                raise ValueError(f"Configuration section {section} must be a mapping")
         # Validate location bounds
         if "location" in config and "bounds" in config["location"]:
             bounds = config["location"]["bounds"]
+            if not isinstance(bounds, dict):
+                raise ValueError("Location bounds must be a mapping")
             required_bounds = ["north", "south", "east", "west"]
 
             for bound in required_bounds:
                 if bound not in bounds:
                     raise ValueError(f"Missing required location bound: {bound}")
 
-                if not isinstance(bounds[bound], (int, float)):
-                    raise ValueError(f"Location bound {bound} must be numeric")
-
-            # Validate bounds make sense
-            if bounds["north"] <= bounds["south"]:
-                raise ValueError("North bound must be greater than south bound")
-            if bounds["east"] <= bounds["west"]:
-                raise ValueError("East bound must be greater than west bound")
+            LocationBounds(**{name: bounds[name] for name in required_bounds})
 
         # Validate H3 resolution
         if "spatial" in config and "h3_resolution" in config["spatial"]:
             h3_res = config["spatial"]["h3_resolution"]
-            if not isinstance(h3_res, int) or h3_res < 0 or h3_res > 15:
+            if (
+                isinstance(h3_res, bool)
+                or not isinstance(h3_res, int)
+                or not 0 <= h3_res <= 15
+            ):
                 raise ValueError("H3 resolution must be an integer between 0 and 15")
 
         logger.debug("Configuration validation passed")

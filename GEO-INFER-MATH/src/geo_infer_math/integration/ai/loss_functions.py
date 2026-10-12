@@ -5,7 +5,7 @@ relationships into training objectives for machine learning models.
 """
 
 import numpy as np
-from typing import Optional, Dict, Any
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -31,10 +31,10 @@ class SpatialLossFunctions:
         self,
         predictions: np.ndarray,
         targets: np.ndarray,
-        coordinates: Optional[np.ndarray] = None,
+        coordinates: np.ndarray | None = None,
         loss_type: str = "spatial_mse",
         **kwargs: Any,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate spatial loss.
 
         Args:
@@ -70,8 +70,8 @@ class SpatialLossFunctions:
         self,
         predictions: np.ndarray,
         targets: np.ndarray,
-        coordinates: Optional[np.ndarray] = None,
-    ) -> Dict[str, float]:
+        coordinates: np.ndarray | None = None,
+    ) -> dict[str, float]:
         """Spatial mean squared error.
 
         If coordinates are provided, weights errors by inverse distance
@@ -127,9 +127,9 @@ class SpatialLossFunctions:
         self,
         predictions: np.ndarray,
         targets: np.ndarray,
-        coordinates: Optional[np.ndarray],
+        coordinates: np.ndarray | None,
         bandwidth: float = 1.0,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Geographically weighted regression loss.
 
         Each observation is weighted by a kernel function based on
@@ -180,9 +180,9 @@ class SpatialLossFunctions:
         self,
         predictions: np.ndarray,
         targets: np.ndarray,
-        coordinates: Optional[np.ndarray],
+        coordinates: np.ndarray | None,
         lambda_dist: float = 0.1,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """MSE with distance-based regularisation penalty.
 
         L = MSE + λ * penalty, where penalty encourages nearby points

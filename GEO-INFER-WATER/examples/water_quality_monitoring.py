@@ -61,8 +61,8 @@ def main():
             samples.append(sample)
 
     print(f"   Samples collected: {len(samples)}")
-    print(f"   Stations sampled: 5")
-    print(f"   Days covered: 7")
+    print("   Stations sampled: 5")
+    print("   Days covered: 7")
 
     # 3. Calculate Water Quality Index
     print("\n3. Calculating Water Quality Index...")
@@ -163,7 +163,7 @@ def main():
     print("=" * 60)
 
     print(f"\n   Network: {monitoring_network['name']}")
-    print(f"   Period: Last 7 days")
+    print("   Period: Last 7 days")
     print(f"   Samples analyzed: {len(samples)}")
 
     print("\n   Key Findings:")

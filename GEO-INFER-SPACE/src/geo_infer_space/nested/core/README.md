@@ -14,6 +14,9 @@ Core workspace within `GEO-INFER-SPACE`.
 - `hierarchy.py:HierarchyDirection` (class)
 - `hierarchy.py:HierarchicalRelationship` (class)
 - `hierarchy.py:HierarchyManager` (class)
+- `nested_grid.py:grid_disk` (function)
+- `nested_grid.py:grid_distance` (function)
+- `nested_grid.py:neighbor_cells` (function)
 - `nested_grid.py:NestedCellType` (class)
 - `nested_grid.py:NestedSystemState` (class)
 - `nested_grid.py:NestedCell` (class)
@@ -24,12 +27,13 @@ Core workspace within `GEO-INFER-SPACE`.
 
 - Module: `GEO-INFER-SPACE`
 - Package: `geo_infer_space`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-SPACE`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-space`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module SPACE`
 
 ## Dependencies
 
+- `geo-infer-time>=0.4.0`
 - `fastapi>=0.100.0`
 - `fiona>=1.8.0`
 - `geojson-pydantic>=2.0.0`

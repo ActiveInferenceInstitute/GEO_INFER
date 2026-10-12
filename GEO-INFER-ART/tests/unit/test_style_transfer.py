@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 """
 Unit tests for the StyleTransfer class in geo_infer_art.core.aesthetics.style_transfer.
+
+Gated by tests/conftest.py: deselected at collection when the optional
+TensorFlow dependency is not installed.
 """
 
 import os
@@ -75,10 +78,6 @@ class TestStyleTransfer(unittest.TestCase):
 
     def test_init_with_content_and_style(self):
         """Test initialization with content and style images."""
-        # Gated by tests/conftest.py: deselected at collection when the
-        # heavy optional TensorFlow dependency is not installed.
-        import tensorflow as tf  # noqa: F401
-
         style_transfer = StyleTransfer(
             style_image=self.style_image_path, content_image=self.content_image_path
         )
@@ -112,10 +111,6 @@ class TestStyleTransfer(unittest.TestCase):
 
     def test_load_style_image(self):
         """Test loading a style image."""
-        # Gated by tests/conftest.py: deselected at collection when the
-        # heavy optional TensorFlow dependency is not installed.
-        import tensorflow as tf  # noqa: F401
-
         style_transfer = StyleTransfer()
 
         # Test loading from file path
@@ -135,10 +130,6 @@ class TestStyleTransfer(unittest.TestCase):
     @pytest.mark.usefixtures("offline_vgg19")
     def test_apply_style_transfer(self):
         """Test applying style transfer to geospatial data."""
-        # Gated by tests/conftest.py: deselected at collection when the
-        # heavy optional TensorFlow dependency is not installed.
-        import tensorflow as tf  # noqa: F401
-
         # Synthetic inputs and local weights exercise the real optimization,
         # without asserting the aesthetic quality of a pretrained network.
         styled_image = StyleTransfer.apply(
@@ -164,10 +155,6 @@ class TestStyleTransfer(unittest.TestCase):
     @pytest.mark.usefixtures("offline_vgg19")
     def test_apply_with_custom_weights(self):
         """Test applying style transfer with custom weights."""
-        # Gated by tests/conftest.py: deselected at collection when the
-        # heavy optional TensorFlow dependency is not installed.
-        import tensorflow as tf  # noqa: F401
-
         # Apply with custom loss weights and an explicit synthetic content image.
         styled_image = StyleTransfer.apply(
             geo_data=self.geo_data,
@@ -187,10 +174,6 @@ class TestStyleTransfer(unittest.TestCase):
 
     def test_apply_with_invalid_inputs(self):
         """Test applying style transfer with invalid inputs."""
-        # Gated by tests/conftest.py: deselected at collection when the
-        # heavy optional TensorFlow dependency is not installed.
-        import tensorflow as tf  # noqa: F401
-
         # Test with invalid style
         with self.assertRaises(ValueError):
             StyleTransfer.apply(geo_data=self.geo_data, style="nonexistent_style")

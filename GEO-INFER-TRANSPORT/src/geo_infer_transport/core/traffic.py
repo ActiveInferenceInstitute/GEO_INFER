@@ -7,7 +7,7 @@ and simulation capabilities.
 
 import logging
 import re
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -33,9 +33,9 @@ class TrafficCount:
     location_id: str
     timestamp: datetime
     count: int
-    speed_kmh: Optional[float] = None
-    occupancy: Optional[float] = None
-    direction: Optional[str] = None
+    speed_kmh: float | None = None
+    occupancy: float | None = None
+    direction: str | None = None
 
 
 @dataclass
@@ -62,7 +62,7 @@ class TrafficAnalyzer:
 
     def __init__(
         self,
-        data_sources: Optional[List[str]] = None,
+        data_sources: list[str] | None = None,
         model_type: str = "bpr",
         time_resolution: str = "15min",
     ):
@@ -86,13 +86,13 @@ class TrafficAnalyzer:
         self.data_sources = data_sources or ["sensor", "probe"]
         self.model_type = model_type
         self.time_resolution = time_resolution
-        self._traffic_counts: List[TrafficCount] = []
+        self._traffic_counts: list[TrafficCount] = []
         logger.info(f"Initialized TrafficAnalyzer with {model_type} model")
 
     def analyze_flow(
         self,
-        segment: Dict[str, Any],
-        counts: List[Dict[str, Any]],
+        segment: dict[str, Any],
+        counts: list[dict[str, Any]],
         time_period: str = "peak",
     ) -> FlowResult:
         """
@@ -192,10 +192,10 @@ class TrafficAnalyzer:
 
     def model_congestion(
         self,
-        network_flows: Dict[str, float],
-        capacity_data: Dict[str, float],
+        network_flows: dict[str, float],
+        capacity_data: dict[str, float],
         algorithm: str = "bpr",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Model congestion across the network.
 
@@ -207,14 +207,14 @@ class TrafficAnalyzer:
         Returns:
             Congestion analysis results
         """
-        segments_out: List[Dict[str, Any]] = []
+        segments_out: list[dict[str, Any]] = []
         total_segments = len(network_flows)
-        summary_out: Dict[str, Any] = {
+        summary_out: dict[str, Any] = {
             "total_segments": total_segments,
             "congested_segments": 0,
             "average_delay_factor": 0,
         }
-        congestion_results: Dict[str, Any] = {
+        congestion_results: dict[str, Any] = {
             "algorithm": algorithm,
             "timestamp": datetime.now().isoformat(),
             "segments": segments_out,
@@ -271,10 +271,10 @@ class TrafficAnalyzer:
     def simulate_traffic(
         self,
         network: Any,
-        demand_matrix: Dict[str, Any],
+        demand_matrix: dict[str, Any],
         simulation_hours: int = 1,
         time_step_seconds: int = 60,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Simulate traffic flow over time.
 
@@ -292,13 +292,13 @@ class TrafficAnalyzer:
                 f"simulate_traffic: time_step_seconds must be > 0, got {time_step_seconds}"
             )
         num_steps = (simulation_hours * 3600) // time_step_seconds
-        results_out: List[Dict[str, Any]] = []
-        statistics_out: Dict[str, Any] = {
+        results_out: list[dict[str, Any]] = []
+        statistics_out: dict[str, Any] = {
             "total_trips": 0,
             "completed_trips": 0,
             "average_travel_time": 0,
         }
-        simulation: Dict[str, Any] = {
+        simulation: dict[str, Any] = {
             "simulation_id": f"sim_{datetime.now().strftime('%Y%m%d%H%M%S')}",
             "duration_hours": simulation_hours,
             "time_step_seconds": time_step_seconds,
@@ -381,10 +381,10 @@ class TrafficAnalyzer:
 
     def detect_incidents(
         self,
-        current_data: Dict[str, Any],
-        historical_baseline: Dict[str, Any],
+        current_data: dict[str, Any],
+        historical_baseline: dict[str, Any],
         threshold: float = 0.3,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Detect traffic incidents from anomalies.
 
@@ -396,7 +396,7 @@ class TrafficAnalyzer:
         Returns:
             List of detected incidents
         """
-        incidents: List[Dict[str, Any]] = []
+        incidents: list[dict[str, Any]] = []
 
         for segment_id, current in current_data.items():
             baseline = historical_baseline.get(segment_id, {})
@@ -429,10 +429,10 @@ class TrafficAnalyzer:
 
     def forecast_traffic(
         self,
-        historical_data: List[Dict[str, Any]],
+        historical_data: list[dict[str, Any]],
         forecast_horizon: str = "1h",
         model: str = "arima",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Forecast future traffic conditions.
 
@@ -492,8 +492,8 @@ class TrafficAnalyzer:
             trend = 0
             residual_std = 200  # default uncertainty
 
-        forecasts_out: List[Dict[str, Any]] = []
-        forecast: Dict[str, Any] = {
+        forecasts_out: list[dict[str, Any]] = []
+        forecast: dict[str, Any] = {
             "model": model,
             "forecast_horizon": forecast_horizon,
             "generated_at": datetime.now().isoformat(),

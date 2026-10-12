@@ -6,8 +6,6 @@ coral reef modules, so threshold and smoothing choices cannot
 silently diverge between callers.
 """
 
-from typing import Dict
-
 import numpy as np
 
 # Log smoothing constant: avoids log(0) for zero proportions while
@@ -15,7 +13,7 @@ import numpy as np
 _LOG_SMOOTHING = 1e-10
 
 
-def biodiversity_metrics(species_counts: Dict[str, int]) -> Dict[str, float]:
+def biodiversity_metrics(species_counts: dict[str, int]) -> dict[str, float]:
     """Compute standard alpha-diversity metrics from species counts.
 
     Args:

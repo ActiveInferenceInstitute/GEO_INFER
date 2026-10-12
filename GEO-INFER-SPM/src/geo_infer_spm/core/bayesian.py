@@ -24,28 +24,25 @@ P(θ) is prior, and P(D) is marginal likelihood.
 """
 
 import numpy as np
-from typing import Dict, List, Optional, Any, cast
+from typing import Any, cast
 from scipy import stats
 from scipy.optimize import minimize
 import logging
 
+from ..models.data_models import SPMData, SPMResult
+from ..utils.rng import resolve_rng
+
 logger = logging.getLogger(__name__)
 
-try:  # Modern PyMC (v4+)
+try:  # PyMC >= 5
     import pymc as pm
 
     PYMC_AVAILABLE = True
-except ImportError:
-    try:  # Legacy PyMC3 fallback
-        import pymc3 as pm  # type: ignore[no-redef]
-
-        PYMC_AVAILABLE = True
-    except ImportError:
-        PYMC_AVAILABLE = False
-        logger.debug("PyMC is unavailable; Bayesian SPM uses empirical Bayes.")
-
-from ..models.data_models import SPMData, SPMResult  # noqa: E402
-from ..utils.rng import resolve_rng  # noqa: E402
+except ModuleNotFoundError as exc:
+    if exc.name != "pymc":
+        raise
+    PYMC_AVAILABLE = False
+    logger.debug("PyMC is unavailable; Bayesian SPM uses empirical Bayes.")
 
 
 def gelman_rubin_r_hat(chains: np.ndarray) -> np.ndarray:
@@ -125,21 +122,24 @@ class BayesianSPM:
             model_type: Type of Bayesian model ('hierarchical_glm', 'spatial_hierarchical')
         """
         self.model_type = model_type
-        self.model_spec: Optional[Dict[str, Any]] = None
-        self.priors: Dict[str, Any] = {}
+        self.model_spec: dict[str, Any] | None = None
+        self.priors: dict[str, Any] = {}
         if not PYMC_AVAILABLE and self.model_type != "empirical_bayes":
             logger.info("Using empirical Bayes approximation for %s", model_type)
-        self.posterior_samples: Optional[Dict[str, Any]] = None
-        self.diagnostics: Dict[str, Any] = {}
+        self.posterior_samples: dict[str, Any] | None = None
+        self.diagnostics: dict[str, Any] = {}
 
     def fit_bayesian_glm(
         self,
         data: SPMData,
         design_matrix: np.ndarray,
-        priors: Optional[Dict[str, Any]] = None,
+        priors: dict[str, Any] | None = None,
         n_samples: int = 1000,
         n_tune: int = 1000,
         random_seed: int = 42,
+        *,
+        chains: int = 2,
+        cores: int = 1,
     ) -> SPMResult:
         """
         Fit Bayesian GLM using MCMC sampling.
@@ -151,22 +151,50 @@ class BayesianSPM:
             n_samples: Number of MCMC samples
             n_tune: Number of tuning samples
             random_seed: Seed for the MCMC sampler (deterministic traces)
+            chains: Independent chains, at least two for split R-hat.
+            cores: Concurrent sampling processes; defaults to one so callers can
+                compose module-level parallelism without oversubscribing CPUs.
 
         Returns:
             SPMResult with posterior parameter estimates
         """
+        X = np.asarray(design_matrix, dtype=float)
+        y = np.asarray(data.data, dtype=float).reshape(-1)
+        if (
+            X.ndim != 2
+            or X.shape[0] != y.size
+            or X.shape[1] < 1
+            or y.size == 0
+            or not np.all(np.isfinite(X))
+            or not np.all(np.isfinite(y))
+        ):
+            raise ValueError(
+                "Bayesian GLM requires finite shape-aligned response/design"
+            )
+        for name, value, minimum in (
+            ("n_samples", n_samples, 4),
+            ("n_tune", n_tune, 0),
+            ("chains", chains, 2),
+            ("cores", cores, 1),
+        ):
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, np.integer))
+                or value < minimum
+            ):
+                raise ValueError(f"{name} must be an integer at least {minimum}")
+        if cores > chains:
+            raise ValueError("cores must not exceed chains")
         if priors is None:
-            priors = self._default_priors(design_matrix.shape[1])
+            priors = self._default_priors(X.shape[1])
 
         if PYMC_AVAILABLE and self.model_type != "empirical_bayes":
             return self._fit_pymc_glm(
-                data, design_matrix, priors, n_samples, n_tune, random_seed
+                data, X, priors, n_samples, n_tune, random_seed, chains, cores
             )
-        return self._fit_empirical_bayes_glm(
-            data, design_matrix, priors, random_seed=random_seed
-        )
+        return self._fit_empirical_bayes_glm(data, X, priors, random_seed=random_seed)
 
-    def _default_priors(self, n_regressors: int) -> Dict[str, Any]:
+    def _default_priors(self, n_regressors: int) -> dict[str, Any]:
         """Set default prior distributions."""
         priors = {
             "beta": {"type": "normal", "mu": 0, "sigma": 1},
@@ -182,10 +210,12 @@ class BayesianSPM:
         self,
         data: SPMData,
         design_matrix: np.ndarray,
-        priors: Dict[str, Any],
+        priors: dict[str, Any],
         n_samples: int,
         n_tune: int,
         random_seed: int = 42,
+        chains: int = 2,
+        cores: int = 1,
     ) -> SPMResult:
         """Fit GLM using PyMC MCMC sampling."""
         y = data.data.flatten() if data.data.ndim > 1 else data.data
@@ -199,14 +229,18 @@ class BayesianSPM:
                 sigma=priors["beta_intercept"]["sigma"],
             )
 
-            beta_other = pm.Normal(
-                "beta_other",
-                mu=priors["beta"]["mu"],
-                sigma=priors["beta"]["sigma"],
-                shape=X.shape[1] - 1,
-            )
-
-            beta = pm.math.concatenate([[beta_intercept], beta_other])
+            if X.shape[1] > 1:
+                beta_other = pm.Normal(
+                    "beta_other",
+                    mu=priors["beta"]["mu"],
+                    sigma=priors["beta"]["sigma"],
+                    shape=X.shape[1] - 1,
+                )
+                beta = pm.math.concatenate([[beta_intercept], beta_other])
+            else:
+                # Do not create an empty stochastic variable: convergence
+                # diagnostics cannot reduce a zero-length coefficient axis.
+                beta = pm.math.stack([beta_intercept])
 
             sigma = pm.HalfNormal("sigma", sigma=priors["sigma"]["sigma"])
 
@@ -220,14 +254,24 @@ class BayesianSPM:
                 tune=n_tune,
                 return_inferencedata=True,
                 random_seed=random_seed,
+                chains=chains,
+                cores=cores,
+                progressbar=False,
             )
 
         # Extract posterior samples
-        beta_samples = np.column_stack(
-            [
-                trace.posterior["beta_intercept"].values.flatten(),
-                trace.posterior["beta_other"].values.reshape(-1, X.shape[1] - 1),
-            ]
+        intercept_samples = trace.posterior["beta_intercept"].values.reshape(-1, 1)
+        beta_samples = (
+            np.column_stack(
+                [
+                    intercept_samples,
+                    trace.posterior["beta_other"].values.reshape(
+                        intercept_samples.shape[0], X.shape[1] - 1
+                    ),
+                ]
+            )
+            if X.shape[1] > 1
+            else intercept_samples
         )
 
         # Compute posterior means and credible intervals
@@ -259,6 +303,8 @@ class BayesianSPM:
                 "method": "Bayesian_GLM_PyMC",
                 "n_samples": n_samples,
                 "n_tune": n_tune,
+                "chains": chains,
+                "cores": cores,
                 "beta_ci_lower": beta_ci_lower,
                 "beta_ci_upper": beta_ci_upper,
                 "r_hat": self._compute_r_hat(trace),
@@ -272,8 +318,8 @@ class BayesianSPM:
         self,
         data: SPMData,
         design_matrix: np.ndarray,
-        priors: Dict[str, Any],
-        random_seed: Optional[int] = None,
+        priors: dict[str, Any],
+        random_seed: int | None = None,
     ) -> SPMResult:
         """Fit GLM using empirical Bayes approximation.
 
@@ -389,8 +435,8 @@ class BayesianSPM:
         return cast(np.ndarray, posterior_prob)
 
     def bayesian_model_comparison(
-        self, models: List[SPMResult], method: str = "bayes_factor"
-    ) -> Dict[str, Any]:
+        self, models: list[SPMResult], method: str = "bayes_factor"
+    ) -> dict[str, Any]:
         """
         Compare Bayesian models using Bayes factors or information criteria.
 
@@ -410,7 +456,7 @@ class BayesianSPM:
         else:
             raise ValueError(f"Unknown comparison method: {method}")
 
-    def _compute_bayes_factors(self, models: List[SPMResult]) -> Dict[str, Any]:
+    def _compute_bayes_factors(self, models: list[SPMResult]) -> dict[str, Any]:
         """Compute Bayes factors for model comparison."""
         # Deferred: see docs/deferred_statistical_methods.md
         # ("Bayes factors via marginal likelihoods").
@@ -440,7 +486,7 @@ class BayesianSPM:
             "best_model_index": np.argmin(bic_values),
         }
 
-    def _compute_dic(self, models: List[SPMResult]) -> Dict[str, Any]:
+    def _compute_dic(self, models: list[SPMResult]) -> dict[str, Any]:
         """Compute Deviance Information Criterion."""
         dic_values = []
 
@@ -463,7 +509,7 @@ class BayesianSPM:
             "best_model_index": np.argmin(dic_values),
         }
 
-    def _compute_waic(self, models: List[SPMResult]) -> Dict[str, Any]:
+    def _compute_waic(self, models: list[SPMResult]) -> dict[str, Any]:
         """Compute Widely Applicable Information Criterion (WAIC).
 
         WAIC = -2 * (ELPD - p_WAIC) where:
@@ -525,8 +571,8 @@ class BayesianSPM:
         self,
         data: SPMData,
         design_matrix: np.ndarray,
-        spatial_structure: Dict[str, Any],
-        random_seed: Optional[int] = None,
+        spatial_structure: dict[str, Any],
+        random_seed: int | None = None,
     ) -> SPMResult:
         """
         Fit spatial hierarchical Bayesian model.
@@ -535,9 +581,9 @@ class BayesianSPM:
             data: SPMData with spatial coordinates
             design_matrix: Design matrix for GLM
             spatial_structure: Spatial correlation structure specification
-            random_seed: Optional seed for reproducible basis selection and
-                posterior samples. When ``None`` the legacy global
-                ``np.random`` state is used.
+            random_seed: Seed or generator for basis selection and posterior
+                samples; ``None`` draws fresh OS entropy. See
+                :func:`geo_infer_spm.utils.rng.resolve_rng`.
 
         Returns:
             SPMResult with hierarchical parameter estimates
@@ -572,8 +618,8 @@ class BayesianSPM:
     def _create_spatial_basis(
         self,
         coordinates: np.ndarray,
-        spatial_structure: Dict[str, Any],
-        random_seed: Optional[int] = None,
+        spatial_structure: dict[str, Any],
+        random_seed: int | None = None,
     ) -> np.ndarray:
         """Create spatial basis functions for hierarchical model.
 
@@ -600,7 +646,7 @@ class BayesianSPM:
         return basis
 
     @staticmethod
-    def _posterior_dim_sizes(posterior: Any) -> Dict[str, int]:
+    def _posterior_dim_sizes(posterior: Any) -> dict[str, int]:
         """Return posterior dimension sizes (xarray renamed ``.dims`` to ``.sizes``)."""
         sizes = getattr(posterior, "sizes", None)
         return sizes if sizes is not None else posterior.dims
@@ -674,7 +720,7 @@ class BayesianSPM:
         a_sigma = b_sigma = 1.0  # Gamma parameters for sigma
 
         # Variational inference loop
-        for iteration in range(n_iterations):
+        for _ in range(n_iterations):
             # Update beta posterior given sigma
             sigma_sq = b_sigma / a_sigma  # Expected value of sigma^2
             Lambda_beta = X.T @ X / sigma_sq + np.eye(n_regressors)

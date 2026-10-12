@@ -21,8 +21,8 @@ Unit workspace within `GEO-INFER-ENERGY`.
 
 - Module: `GEO-INFER-ENERGY`
 - Package: `geo_infer_energy`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-ENERGY`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-energy`
 - Tests: `uv run python -m pytest GEO-INFER-ENERGY/tests/unit`
 
 ## Dependencies

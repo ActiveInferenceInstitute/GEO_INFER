@@ -5,7 +5,7 @@ Tests for CacheManager and CacheEntry in geo_infer_data.utils.caching.
 import asyncio
 import logging
 import threading
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from unittest import mock
 
 import pytest
@@ -35,7 +35,7 @@ class TestCacheEntry:
             key="k",
             data="v",
             ttl=1,
-            created_at=datetime.now(timezone.utc) - timedelta(seconds=5),
+            created_at=datetime.now(UTC) - timedelta(seconds=5),
         )
         assert entry.is_expired() is True
 
@@ -45,14 +45,21 @@ class TestCacheEntry:
         entry.update_access()
         assert entry.access_count == 1
 
-    def test_legacy_naive_timestamp_is_normalised(self):
-        entry = CacheEntry(
-            key="k",
-            data="v",
-            ttl=1,
-            created_at=datetime.now() - timedelta(seconds=5),
-        )
-        assert entry.is_expired() is True
+    def test_naive_timestamp_is_rejected(self):
+        with pytest.raises(ValueError, match="timezone-aware"):
+            CacheEntry(
+                key="k",
+                data="v",
+                ttl=1,
+                created_at=datetime.now() - timedelta(seconds=5),
+            )
+
+    def test_offset_timestamp_is_converted_to_utc(self):
+        offset = timezone(timedelta(hours=2))
+        created = datetime(2024, 1, 1, 2, 0, tzinfo=offset)
+        entry = CacheEntry(key="k", data="v", created_at=created)
+        assert entry.created_at == datetime(2024, 1, 1, tzinfo=UTC)
+        assert entry.created_at.utcoffset() == timedelta(0)
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +69,7 @@ class TestCacheEntry:
 
 class TestCacheManager:
     def _run(self, coro):
-        return asyncio.get_event_loop().run_until_complete(coro)
+        return asyncio.run(coro)
 
     def test_set_and_get(self):
         cache = CacheManager(max_size=10)
@@ -170,7 +177,7 @@ class TestCacheManager:
         cache = CacheManager(max_size=10, default_ttl=1)
         self._run(cache.set("k", "v", ttl=1))
         # Manually expire
-        cache.cache["k"].created_at = datetime.now(timezone.utc) - timedelta(seconds=10)
+        cache.cache["k"].created_at = datetime.now(UTC) - timedelta(seconds=10)
         result = self._run(cache.get("k"))
         assert result is None
 
@@ -223,7 +230,7 @@ class TestCacheManager:
             self._run(cache.set(f"k{i}", i))
         # Expire all
         for entry in cache.cache.values():
-            entry.created_at = datetime.now(timezone.utc) - timedelta(seconds=10)
+            entry.created_at = datetime.now(UTC) - timedelta(seconds=10)
         cache.optimize_cache()
         assert len(cache.cache) == 0
 
@@ -235,7 +242,7 @@ class TestCacheManager:
 
 class TestCacheMemoryAccounting:
     def _run(self, coro):
-        return asyncio.get_event_loop().run_until_complete(coro)
+        return asyncio.run(coro)
 
     def test_stats_expose_estimated_entries_for_unpicklable_data(self):
         cache = CacheManager(max_size=10)

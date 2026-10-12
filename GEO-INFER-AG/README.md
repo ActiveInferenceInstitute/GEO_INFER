@@ -9,11 +9,9 @@ Advanced agricultural analysis and precision farming applications using geospati
 - `examples/`
 - `src/`
 - `tests/`
-- `setup.py`
 - `SKILL.md`
 - `pyproject.toml`
 - `requirements-test.txt`
-- `requirements.txt`
 - `run_tests.sh`
 
 ## Public Interface
@@ -24,8 +22,8 @@ Advanced agricultural analysis and precision farming applications using geospati
 
 - Module: `GEO-INFER-AG`
 - Package: `geo_infer_ag`
-- Version: `0.3.0`
-- Install: `uv pip install -e ./GEO-INFER-AG`
+- Version: `0.4.0`
+- Install: `uv sync --package geo-infer-ag`
 - Tests: `uv run python GEO-INFER-TEST/run_unified_tests.py --module AG`
 
 ## Dependencies

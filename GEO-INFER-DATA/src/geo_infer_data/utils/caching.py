@@ -15,11 +15,12 @@ deserialisation is attempted.
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Tuple, Union
-from datetime import datetime, timedelta, timezone
+from typing import Any
+from datetime import datetime, timedelta, UTC
 import hashlib
 import pickle
 from pathlib import Path
+from geo_infer_time.core.timestamps import normalize_timestamp
 
 from .secure_serialization import (
     CONTEXT_CACHE_ENTRY,
@@ -32,12 +33,15 @@ from .secure_serialization import (
 logger = logging.getLogger(__name__)
 
 
-def _normalise_timestamp(value: Optional[datetime]) -> datetime:
-    """Return a timezone-aware UTC timestamp for cache entries."""
-    timestamp = value or datetime.now(timezone.utc)
-    if timestamp.tzinfo is None:
-        return timestamp.replace(tzinfo=timezone.utc)
-    return timestamp.astimezone(timezone.utc)
+def _normalise_timestamp(value: datetime | None) -> datetime:
+    """Return a UTC timestamp for cache entries (now when ``value`` is None).
+
+    Naive datetimes are ambiguous (local wall-clock or UTC) and raise
+    ValueError, matching the GEO-INFER-TIME stream timestamp contract.
+    """
+    if value is None:
+        return datetime.now(UTC)
+    return normalize_timestamp(value)
 
 
 class CacheEntry:
@@ -47,11 +51,11 @@ class CacheEntry:
         self,
         key: str,
         data: Any,
-        ttl: Optional[int] = None,
-        created_at: Optional[datetime] = None,
+        ttl: int | None = None,
+        created_at: datetime | None = None,
         access_count: int = 0,
-        last_accessed: Optional[datetime] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        last_accessed: datetime | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         self.key = key
         self.data = data
@@ -65,14 +69,12 @@ class CacheEntry:
         """Check if cache entry is expired."""
         if self.ttl is None:
             return False
-        return datetime.now(timezone.utc) - self.created_at > timedelta(
-            seconds=self.ttl
-        )
+        return datetime.now(UTC) - self.created_at > timedelta(seconds=self.ttl)
 
     def update_access(self) -> None:
         """Update access statistics."""
         self.access_count += 1
-        self.last_accessed = datetime.now(timezone.utc)
+        self.last_accessed = datetime.now(UTC)
 
 
 class CacheManager:
@@ -108,10 +110,10 @@ class CacheManager:
     def __init__(
         self,
         max_size: int = 1000,
-        default_ttl: Optional[int] = 3600,
+        default_ttl: int | None = 3600,
         enable_persistence: bool = False,
-        persistence_path: Optional[Path] = None,
-        signing_key: Optional[Union[bytes, str]] = None,
+        persistence_path: Path | None = None,
+        signing_key: bytes | str | None = None,
     ):
         if max_size < 1:
             raise ValueError("max_size must be at least 1")
@@ -123,7 +125,7 @@ class CacheManager:
         self.persistence_path = persistence_path or Path("/tmp/geo_infer_cache")
         self.signing_key = signing_key
 
-        self.cache: Dict[str, CacheEntry] = {}
+        self.cache: dict[str, CacheEntry] = {}
         self.access_stats = {"hits": 0, "misses": 0, "sets": 0, "deletes": 0}
 
         if self.enable_persistence:
@@ -138,8 +140,8 @@ class CacheManager:
         self,
         key: str,
         data: Any,
-        ttl: Optional[int] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        ttl: int | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> bool:
         """
         Set cache entry.
@@ -182,7 +184,7 @@ class CacheManager:
         logger.debug(f"Cached data for key: {key}")
         return True
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """
         Get cache entry.
 
@@ -270,7 +272,7 @@ class CacheManager:
         # Remove oldest 10% or at least 1 entry
         entries_to_remove = max(1, len(self.cache) // 10)
 
-        for key, entry in sorted_entries[:entries_to_remove]:
+        for key, _ in sorted_entries[:entries_to_remove]:
             del self.cache[key]
             if self.enable_persistence:
                 cache_file = self._cache_file(key)
@@ -359,7 +361,7 @@ class CacheManager:
                 logger.error(f"Failed to load cache entry {cache_file}: {e}")
                 cache_file.unlink(missing_ok=True)
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         total_requests = self.access_stats["hits"] + self.access_stats["misses"]
 
@@ -400,9 +402,9 @@ class CacheManager:
 
     def generate_cache_key(
         self,
-        spatial_bounds: Optional[List[float]] = None,
-        temporal_range: Optional[Tuple[datetime, datetime]] = None,
-        query_params: Optional[Dict[str, Any]] = None,
+        spatial_bounds: list[float] | None = None,
+        temporal_range: tuple[datetime, datetime] | None = None,
+        query_params: dict[str, Any] | None = None,
     ) -> str:
         """
         Generate cache key from query parameters.

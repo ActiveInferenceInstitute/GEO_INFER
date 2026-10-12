@@ -11,7 +11,8 @@ Implements comprehensive consumer theory models including:
 
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Optional, Tuple, Callable, Any, cast
+from typing import Any, cast
+from collections.abc import Callable
 from dataclasses import dataclass
 import geopandas as gpd
 from scipy.optimize import minimize, minimize_scalar
@@ -23,10 +24,10 @@ class ConsumerProfile:
 
     consumer_id: str
     income: float
-    location: Tuple[float, float]  # (lat, lon)
-    preferences: Dict[str, float]
-    demographic_attributes: Dict[str, Any]
-    spatial_attributes: Dict[str, float]  # accessibility, distance to markets, etc.
+    location: tuple[float, float]  # (lat, lon)
+    preferences: dict[str, float]
+    demographic_attributes: dict[str, Any]
+    spatial_attributes: dict[str, float]  # accessibility, distance to markets, etc.
 
 
 class UtilityFunctions:
@@ -90,7 +91,7 @@ class UtilityFunctions:
     def spatial_utility(
         quantities: np.ndarray,
         alpha: np.ndarray,
-        location: Tuple[float, float],
+        location: tuple[float, float],
         accessibility_weight: float = 0.1,
     ) -> float:
         """
@@ -120,7 +121,7 @@ class DemandFunctions:
 
     def __init__(self, utility_function: str = "cobb_douglas"):
         self.utility_function = utility_function
-        self.estimated_parameters: Dict[str, Any] = {}
+        self.estimated_parameters: dict[str, Any] = {}
 
     def marshallian_demand_cobb_douglas(
         self, income: float, prices: np.ndarray, alpha: np.ndarray
@@ -161,7 +162,7 @@ class DemandFunctions:
 
     def estimate_demand_system(
         self, data: pd.DataFrame, method: str = "ols"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Estimate demand system from consumer data
 
@@ -179,7 +180,7 @@ class DemandFunctions:
         else:
             return self._estimate_ols_system(data)
 
-    def _estimate_aids_system(self, data: pd.DataFrame) -> Dict[str, Any]:
+    def _estimate_aids_system(self, data: pd.DataFrame) -> dict[str, Any]:
         """Estimate Almost Ideal Demand System (AIDS).
 
         The AIDS share equation for good i is
@@ -230,9 +231,9 @@ class DemandFunctions:
         X = np.column_stack([np.ones(len(data)), log_prices, log_real_expenditure])
 
         k = len(goods)
-        parameters: Dict[str, Dict[str, Any]] = {}
-        elasticities: Dict[str, Dict[str, Any]] = {}
-        diagnostics: Dict[str, Any] = {}
+        parameters: dict[str, dict[str, Any]] = {}
+        elasticities: dict[str, dict[str, Any]] = {}
+        diagnostics: dict[str, Any] = {}
 
         for i, good in enumerate(goods):
             w = shares[:, i]
@@ -277,7 +278,7 @@ class DemandFunctions:
             "diagnostics": diagnostics,
         }
 
-    def _estimate_ols_system(self, data: pd.DataFrame) -> Dict[str, Any]:
+    def _estimate_ols_system(self, data: pd.DataFrame) -> dict[str, Any]:
         """Simple OLS estimation of demand functions"""
         from sklearn.linear_model import LinearRegression
 
@@ -300,7 +301,7 @@ class DemandFunctions:
 
         return results
 
-    def _estimate_sur_system(self, data: pd.DataFrame) -> Dict[str, Any]:
+    def _estimate_sur_system(self, data: pd.DataFrame) -> dict[str, Any]:
         """Seemingly Unrelated Regression (Zellner two-step GLS).
 
         Step 1 estimates each equation by OLS to recover the residual
@@ -325,8 +326,8 @@ class DemandFunctions:
         k = len(goods)
 
         # First step: equation-by-equation OLS
-        betas: List[np.ndarray] = []
-        residuals: List[np.ndarray] = []
+        betas: list[np.ndarray] = []
+        residuals: list[np.ndarray] = []
         for y_i, X_i in zip(y_list, X_list):
             b = np.linalg.lstsq(X_i, y_i, rcond=None)[0]
             betas.append(b)
@@ -358,7 +359,7 @@ class DemandFunctions:
             @ y_stack
         )
 
-        system_results: Dict[str, Dict[str, Any]] = {}
+        system_results: dict[str, dict[str, Any]] = {}
         col_offset = 0
         for i, good in enumerate(goods):
             k_i = X_list[i].shape[1]
@@ -386,17 +387,17 @@ class ConsumerChoiceModels:
     Consumer choice modeling with spatial considerations
     """
 
-    def __init__(self, utility_function: Optional[Callable[..., Any]] = None):
+    def __init__(self, utility_function: Callable[..., Any] | None = None):
         self.utility_function = (
             utility_function
             if utility_function is not None
             else UtilityFunctions.cobb_douglas
         )
-        self.spatial_weights: Dict[str, Any] = {}
+        self.spatial_weights: dict[str, Any] = {}
 
     def solve_utility_maximization(
-        self, consumer: ConsumerProfile, prices: np.ndarray, goods: List[str]
-    ) -> Dict[str, Any]:
+        self, consumer: ConsumerProfile, prices: np.ndarray, goods: list[str]
+    ) -> dict[str, Any]:
         """
         Solve consumer utility maximization problem
 
@@ -451,8 +452,8 @@ class ConsumerChoiceModels:
         self,
         consumer: ConsumerProfile,
         spatial_markets: gpd.GeoDataFrame,
-        transport_costs: Dict[str, float],
-    ) -> Dict[str, Any]:
+        transport_costs: dict[str, float],
+    ) -> dict[str, Any]:
         """
         Model consumer choice with spatial market selection
 
@@ -602,12 +603,12 @@ class ConsumerSurplus:
     """
 
     def __init__(self) -> None:
-        self.demand_models: Dict[str, Any] = {}
+        self.demand_models: dict[str, Any] = {}
 
     def calculate_surplus_integral(
         self,
         demand_function: Callable,
-        price_range: Tuple[float, float],
+        price_range: tuple[float, float],
         market_price: float,
     ) -> float:
         """
@@ -632,8 +633,8 @@ class ConsumerSurplus:
         return float(surplus)
 
     def spatial_surplus_analysis(
-        self, consumers: List[ConsumerProfile], spatial_markets: gpd.GeoDataFrame
-    ) -> Dict[str, Any]:
+        self, consumers: list[ConsumerProfile], spatial_markets: gpd.GeoDataFrame
+    ) -> dict[str, Any]:
         """
         Analyze consumer surplus across spatial markets
 
@@ -644,7 +645,7 @@ class ConsumerSurplus:
         Returns:
             Dictionary with spatial surplus analysis results
         """
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "total_surplus": 0,
             "market_surpluses": {},
             "consumer_surpluses": {},
@@ -680,7 +681,7 @@ class ConsumerSurplus:
 
 
 # Example usage and testing functions
-def example_consumer_analysis() -> Dict[str, Any]:
+def example_consumer_analysis() -> dict[str, Any]:
     """
     Example usage of consumer theory models
     """

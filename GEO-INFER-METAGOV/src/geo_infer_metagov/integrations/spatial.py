@@ -1,6 +1,6 @@
 """Spatial integration for governance boundaries and jurisdiction mapping."""
 
-from typing import List, Dict, Any, Optional
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ except ImportError:
     logger.warning("GEO-INFER-SPACE not available, spatial features disabled")
 
 
-def bounds_to_polygon(bounds: Dict[str, Any]) -> Dict[str, Any]:
+def bounds_to_polygon(bounds: dict[str, Any]) -> dict[str, Any]:
     """Convert a bounding-box definition to a GeoJSON Polygon.
 
     Accepts a mapping with a latitude pair and a longitude pair drawn from:
@@ -95,7 +95,7 @@ class SpatialGovernanceIntegration:
     - Spatial governance boundaries in multi-level systems
     """
 
-    def __init__(self, backend: Optional[str] = None):
+    def __init__(self, backend: str | None = None):
         """
         Initialize spatial governance integration.
 
@@ -116,8 +116,8 @@ class SpatialGovernanceIntegration:
             )
 
     def index_governance_boundary(
-        self, boundary: Dict[str, Any], resolution: int = 9
-    ) -> Dict[str, Any]:
+        self, boundary: dict[str, Any], resolution: int = 9
+    ) -> dict[str, Any]:
         """
         Index governance boundary using spatial indexing.
 
@@ -173,8 +173,8 @@ class SpatialGovernanceIntegration:
             return {"indexed": False, "error": str(e)}
 
     def detect_jurisdictional_overlaps(
-        self, boundaries: List[Dict[str, Any]], resolution: int = 9
-    ) -> Dict[str, Any]:
+        self, boundaries: list[dict[str, Any]], resolution: int = 9
+    ) -> dict[str, Any]:
         """
         Detect overlapping jurisdictions using spatial analysis.
 
@@ -250,8 +250,8 @@ class SpatialGovernanceIntegration:
             return {"overlaps_detected": False, "error": str(e)}
 
     def map_governance_entities_to_spatial_cells(
-        self, entities: List[Dict[str, Any]], resolution: int = 9
-    ) -> Dict[str, Any]:
+        self, entities: list[dict[str, Any]], resolution: int = 9
+    ) -> dict[str, Any]:
         """
         Map governance entities to spatial cells for multi-scale governance.
 
@@ -295,10 +295,10 @@ class SpatialGovernanceIntegration:
 
     def analyze_spatial_governance_coverage(
         self,
-        governance_structure: Dict[str, Any],
-        spatial_region: Dict[str, Any],
+        governance_structure: dict[str, Any],
+        spatial_region: dict[str, Any],
         resolution: int = 9,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze spatial coverage of governance structure.
 

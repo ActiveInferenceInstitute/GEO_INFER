@@ -7,14 +7,16 @@ authentication, validation, and geospatial context handling.
 """
 
 from __future__ import annotations
+from importlib.metadata import version as distribution_version
 import logging
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timezone
+from typing import Any
+from datetime import datetime, UTC
 
 from fastapi import FastAPI, HTTPException, Depends, status, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+import jwt as pyjwt
 import uvicorn
 
 from geo_infer_comms import (
@@ -52,7 +54,7 @@ class CommunicationAPI:
         port: int = 8000,
         enable_auth: bool = True,
         enable_cors: bool = True,
-        cors_origins: Optional[List[str]] = None,
+        cors_origins: list[str] | None = None,
     ):
         self.system = system
         self.host = host
@@ -64,7 +66,7 @@ class CommunicationAPI:
         self.app = FastAPI(
             title="GEO-INFER-COMMS API",
             description="Geospatial Communications Infrastructure API",
-            version="1.0.0",
+            version=distribution_version("geo-infer-comms"),
             docs_url="/docs",
             redoc_url="/redoc",
         )
@@ -96,13 +98,13 @@ class CommunicationAPI:
             return JSONResponse(status_code=status.HTTP_200_OK, content=health)
 
         @self.app.get("/")
-        async def root() -> Dict[str, Any]:
+        async def root() -> dict[str, Any]:
             """API root endpoint."""
             return {
                 "name": "GEO-INFER-COMMS API",
-                "version": "1.0.0",
+                "version": distribution_version("geo-infer-comms"),
                 "status": "running",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
     def _register_routes(self) -> None:
@@ -113,7 +115,7 @@ class CommunicationAPI:
         async def send_message(
             request: MessageRequest,
             background_tasks: BackgroundTasks,
-            credentials: Optional[HTTPAuthorizationCredentials] = (
+            credentials: HTTPAuthorizationCredentials | None = (
                 Depends(self._get_credentials) if self.enable_auth else None
             ),
         ) -> MessageResponse:
@@ -145,17 +147,17 @@ class CommunicationAPI:
                 self.logger.error(f"Error sending message: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
-        @self.app.get("/messages", response_model=List[MessageResponse])
+        @self.app.get("/messages", response_model=list[MessageResponse])
         async def get_messages(
-            sender_id: Optional[str] = None,
-            channel_id: Optional[str] = None,
+            sender_id: str | None = None,
+            channel_id: str | None = None,
             limit: int = 100,
-            credentials: Optional[HTTPAuthorizationCredentials] = (
+            credentials: HTTPAuthorizationCredentials | None = (
                 Depends(self._get_credentials) if self.enable_auth else None
             ),
-        ) -> List[MessageResponse]:
+        ) -> list[MessageResponse]:
             """Get messages with optional filtering."""
             try:
                 self._validate_credentials(credentials) if self.enable_auth else None
@@ -172,12 +174,12 @@ class CommunicationAPI:
                 self.logger.error(f"Error getting messages: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         @self.app.get("/messages/{message_id}", response_model=MessageResponse)
         async def get_message(
             message_id: str,
-            credentials: Optional[HTTPAuthorizationCredentials] = (
+            credentials: HTTPAuthorizationCredentials | None = (
                 Depends(self._get_credentials) if self.enable_auth else None
             ),
         ) -> MessageResponse:
@@ -200,13 +202,13 @@ class CommunicationAPI:
                 self.logger.error(f"Error getting message: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         # Channel endpoints
         @self.app.post("/channels", response_model=ChannelResponse)
         async def create_channel(
             request: ChannelRequest,
-            credentials: Optional[HTTPAuthorizationCredentials] = (
+            credentials: HTTPAuthorizationCredentials | None = (
                 Depends(self._get_credentials) if self.enable_auth else None
             ),
         ) -> ChannelResponse:
@@ -231,16 +233,16 @@ class CommunicationAPI:
                 self.logger.error(f"Error creating channel: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
-        @self.app.get("/channels", response_model=List[ChannelResponse])
+        @self.app.get("/channels", response_model=list[ChannelResponse])
         async def get_channels(
-            channel_type: Optional[ChannelType] = None,
+            channel_type: ChannelType | None = None,
             limit: int = 100,
-            credentials: Optional[HTTPAuthorizationCredentials] = (
+            credentials: HTTPAuthorizationCredentials | None = (
                 Depends(self._get_credentials) if self.enable_auth else None
             ),
-        ) -> List[ChannelResponse]:
+        ) -> list[ChannelResponse]:
             """Get channels with optional filtering."""
             try:
                 self._validate_credentials(credentials) if self.enable_auth else None
@@ -257,12 +259,12 @@ class CommunicationAPI:
                 self.logger.error(f"Error getting channels: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         @self.app.get("/channels/{channel_id}", response_model=ChannelResponse)
         async def get_channel(
             channel_id: str,
-            credentials: Optional[HTTPAuthorizationCredentials] = (
+            credentials: HTTPAuthorizationCredentials | None = (
                 Depends(self._get_credentials) if self.enable_auth else None
             ),
         ) -> ChannelResponse:
@@ -285,14 +287,14 @@ class CommunicationAPI:
                 self.logger.error(f"Error getting channel: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         # Notification endpoints
         @self.app.post("/notifications", response_model=NotificationResponse)
         async def create_notification(
             request: NotificationRequest,
             background_tasks: BackgroundTasks,
-            credentials: Optional[HTTPAuthorizationCredentials] = (
+            credentials: HTTPAuthorizationCredentials | None = (
                 Depends(self._get_credentials) if self.enable_auth else None
             ),
         ) -> NotificationResponse:
@@ -320,16 +322,16 @@ class CommunicationAPI:
                 self.logger.error(f"Error creating notification: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
-        @self.app.get("/notifications", response_model=List[NotificationResponse])
+        @self.app.get("/notifications", response_model=list[NotificationResponse])
         async def get_notifications(
-            status_filter: Optional[str] = None,
+            status_filter: str | None = None,
             limit: int = 100,
-            credentials: Optional[HTTPAuthorizationCredentials] = (
+            credentials: HTTPAuthorizationCredentials | None = (
                 Depends(self._get_credentials) if self.enable_auth else None
             ),
-        ) -> List[NotificationResponse]:
+        ) -> list[NotificationResponse]:
             """Get notifications with optional filtering."""
             try:
                 self._validate_credentials(credentials) if self.enable_auth else None
@@ -341,11 +343,11 @@ class CommunicationAPI:
                         from geo_infer_comms.models.message import NotificationStatus
 
                         notification_status = NotificationStatus(status_filter)
-                    except ValueError:
+                    except ValueError as exc:
                         raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
                             detail=f"Invalid notification status: {status_filter}",
-                        )
+                        ) from exc
 
                 notifications = self.system.notification_manager.get_notifications(
                     status=notification_status, limit=limit
@@ -359,14 +361,14 @@ class CommunicationAPI:
                 self.logger.error(f"Error getting notifications: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         # Event endpoints
         @self.app.post("/events", response_model=EventPublishResponse)
         async def publish_event(
             request: EventPublishRequest,
             background_tasks: BackgroundTasks,
-            credentials: Optional[HTTPAuthorizationCredentials] = (
+            credentials: HTTPAuthorizationCredentials | None = (
                 Depends(self._get_credentials) if self.enable_auth else None
             ),
         ) -> EventPublishResponse:
@@ -392,17 +394,17 @@ class CommunicationAPI:
                 self.logger.error(f"Error publishing event: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
-        @self.app.get("/events", response_model=List[EventPublishResponse])
+        @self.app.get("/events", response_model=list[EventPublishResponse])
         async def get_events(
-            event_type: Optional[str] = None,
-            source: Optional[str] = None,
+            event_type: str | None = None,
+            source: str | None = None,
             limit: int = 100,
-            credentials: Optional[HTTPAuthorizationCredentials] = (
+            credentials: HTTPAuthorizationCredentials | None = (
                 Depends(self._get_credentials) if self.enable_auth else None
             ),
-        ) -> List[EventPublishResponse]:
+        ) -> list[EventPublishResponse]:
             """Get events with optional filtering."""
             try:
                 self._validate_credentials(credentials) if self.enable_auth else None
@@ -419,14 +421,14 @@ class CommunicationAPI:
                 self.logger.error(f"Error getting events: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         # Broadcast endpoints
         @self.app.post("/messages/broadcast", response_model=BroadcastResponse)
         async def broadcast_message(
             request: BroadcastRequest,
             background_tasks: BackgroundTasks,
-            credentials: Optional[HTTPAuthorizationCredentials] = (
+            credentials: HTTPAuthorizationCredentials | None = (
                 Depends(self._get_credentials) if self.enable_auth else None
             ),
         ) -> BroadcastResponse:
@@ -450,15 +452,15 @@ class CommunicationAPI:
                 self.logger.error(f"Error broadcasting message: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         # Geospatial endpoints
         @self.app.post("/geospatial/distance")
         async def calculate_distance(
-            point1: Dict[str, float],
-            point2: Dict[str, float],
+            point1: dict[str, float],
+            point2: dict[str, float],
             method: str = "haversine",
-        ) -> Dict[str, Any]:
+        ) -> dict[str, Any]:
             """Calculate distance between two geospatial points."""
             try:
                 # Validate input points
@@ -498,12 +500,12 @@ class CommunicationAPI:
                 self.logger.error(f"Error calculating distance: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         @self.app.get("/geospatial/channels/nearby")
         async def get_nearby_channels(
             longitude: float, latitude: float, radius_km: float = 1.0, limit: int = 50
-        ) -> Dict[str, Any]:
+        ) -> dict[str, Any]:
             """Find channels near a specific location."""
             try:
                 # Validate coordinates
@@ -534,15 +536,15 @@ class CommunicationAPI:
                 self.logger.error(f"Error finding nearby channels: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
         # System metrics endpoint
         @self.app.get("/metrics")
         async def get_metrics(
-            credentials: Optional[HTTPAuthorizationCredentials] = (
+            credentials: HTTPAuthorizationCredentials | None = (
                 Depends(self._get_credentials) if self.enable_auth else None
             ),
-        ) -> Dict[str, Any]:
+        ) -> dict[str, Any]:
             """Get comprehensive system metrics."""
             try:
                 self._validate_credentials(credentials) if self.enable_auth else None
@@ -557,14 +559,14 @@ class CommunicationAPI:
                 self.logger.error(f"Error getting metrics: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-                )
+                ) from e
 
-    def _get_credentials(self) -> Optional[HTTPBearer]:
+    def _get_credentials(self) -> HTTPBearer | None:
         """Get authentication credentials dependency."""
         return self.security
 
     def _validate_credentials(
-        self, credentials: Optional[HTTPAuthorizationCredentials]
+        self, credentials: HTTPAuthorizationCredentials | None
     ) -> str:
         """Validate authentication credentials.
 
@@ -586,19 +588,13 @@ class CommunicationAPI:
                 detail="Invalid authentication token",
             )
 
-        # Attempt real JWT decode when PyJWT is available and a secret is
-        # configured. A token that fails validation is rejected outright;
-        # the hash fallback only applies when JWT validation is not
-        # configured (PyJWT missing or no COMMS_JWT_SECRET set).
-        try:
-            import jwt as pyjwt
-        except ImportError:
-            pyjwt = None  # type: ignore[assignment]
-
+        # Decode the token as an HS256 JWT when COMMS_JWT_SECRET is set. A
+        # token that fails validation is rejected outright; the hash fallback
+        # only applies when JWT validation is not configured (no secret).
         import os
 
         secret = os.environ.get("COMMS_JWT_SECRET", "")
-        if pyjwt is not None and secret:
+        if secret:
             try:
                 payload = pyjwt.decode(token, secret, algorithms=["HS256"])
             except Exception as e:
@@ -637,7 +633,7 @@ class CommunicationAPI:
 
 
 def create_api_server(
-    system: GeospatialCommunicationSystem, config: Optional[Dict[str, Any]] = None
+    system: GeospatialCommunicationSystem, config: dict[str, Any] | None = None
 ) -> CommunicationAPI:
     """
     Create and configure a communication API server.

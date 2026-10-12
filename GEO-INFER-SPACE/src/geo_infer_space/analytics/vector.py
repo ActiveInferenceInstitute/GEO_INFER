@@ -9,7 +9,7 @@ computations using GeoPandas and Shapely.
 import logging
 import numpy as np
 import geopandas as gpd
-from typing import Union, Optional, Any
+from typing import Any
 from shapely.ops import unary_union
 from shapely.ops import transform as shapely_transform
 from pyproj import Transformer
@@ -32,7 +32,7 @@ def _reproject(frame: gpd.GeoDataFrame, target_crs: Any) -> gpd.GeoDataFrame:
 def buffer_and_intersect(
     points_gdf: gpd.GeoDataFrame,
     polygons_gdf: gpd.GeoDataFrame,
-    buffer_distance_meters: Union[int, float],
+    buffer_distance_meters: int | float,
 ) -> gpd.GeoDataFrame:
     """Buffer points and intersect with polygons.
 
@@ -111,7 +111,7 @@ def overlay_analysis(
 
 
 def proximity_analysis(
-    gdf1: gpd.GeoDataFrame, gdf2: gpd.GeoDataFrame, max_distance: Optional[float] = None
+    gdf1: gpd.GeoDataFrame, gdf2: gpd.GeoDataFrame, max_distance: float | None = None
 ) -> gpd.GeoDataFrame:
     """
     Calculate proximity metrics between two sets of geometries.
@@ -270,12 +270,20 @@ def topology_operations(
     Returns:
         GeoDataFrame with processed geometries
     """
-    result = gdf.copy()
-    if operation in {"buffer", "simplify"} and tolerance <= 0:
+    operations = {"buffer", "simplify", "convex_hull", "envelope", "dissolve"}
+    if operation not in operations:
+        raise ValueError(f"Unknown operation: {operation}")
+    if operation in {"buffer", "simplify"} and (
+        isinstance(tolerance, bool) or not np.isfinite(tolerance) or tolerance <= 0
+    ):
         raise ValueError(
             "Buffer distance and simplification tolerance must be positive"
         )
-    metric_gdf = gdf.to_crs("EPSG:3857") if gdf.crs and gdf.crs.is_geographic else gdf
+    metric_gdf = (
+        _reproject(gdf, "EPSG:3857") if gdf.crs and gdf.crs.is_geographic else gdf
+    )
+    # Keep coordinate data and its CRS together through every operation.
+    result = metric_gdf.copy()
 
     if operation == "buffer":
         result["geometry"] = metric_gdf.geometry.buffer(tolerance)
@@ -296,13 +304,8 @@ def topology_operations(
         dissolved_geom = unary_union(metric_gdf.geometry.tolist())
         result = gpd.GeoDataFrame([{"geometry": dissolved_geom}], crs=metric_gdf.crs)
 
-    if gdf.crs and gdf.crs.is_geographic and operation != "dissolve":
-        result = result.to_crs(gdf.crs)
-    elif gdf.crs and gdf.crs.is_geographic and operation == "dissolve":
-        result = result.to_crs(gdf.crs)
-
-    else:
-        raise ValueError(f"Unknown operation: {operation}")
+    if gdf.crs and result.crs != gdf.crs:
+        result = _reproject(result, gdf.crs)
 
     logger.info(f"Topology operation '{operation}' completed")
     return result

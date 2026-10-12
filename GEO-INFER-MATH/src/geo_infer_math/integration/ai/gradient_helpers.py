@@ -6,7 +6,7 @@ designed for spatial machine learning models.
 """
 
 import numpy as np
-from typing import Optional, Dict, Callable
+from collections.abc import Callable
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,14 +23,14 @@ class AIGradientHelpers:
     def __init__(self) -> None:
         """Initialize gradient helpers."""
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self._cache: Dict[str, np.ndarray] = {}
+        self._cache: dict[str, np.ndarray] = {}
         self.logger.debug("AIGradientHelpers initialized")
 
     def compute_spatial_gradient(
         self,
         function: Callable,
         parameters: np.ndarray,
-        spatial_context: Optional[np.ndarray] = None,
+        spatial_context: np.ndarray | None = None,
         method: str = "finite_difference",
     ) -> np.ndarray:
         """

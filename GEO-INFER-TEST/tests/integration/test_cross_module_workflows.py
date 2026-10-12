@@ -10,11 +10,20 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import h3
-import time
 from shapely.geometry import Point, Polygon
 
 
 # Test data fixtures
+
+
+def _linear_trend(series: pd.Series) -> float:
+    """Least-squares slope of a series against its sample index."""
+    values = pd.to_numeric(series, errors="coerce").dropna().to_numpy(dtype=float)
+    if len(values) < 2:
+        return 0.0
+    return float(np.polyfit(np.arange(len(values), dtype=float), values, 1)[0])
+
+
 @pytest.fixture
 def sample_spatial_temporal_data():
     """Sample spatial-temporal data for integration testing."""
@@ -24,7 +33,7 @@ def sample_spatial_temporal_data():
 
     # Generate spatial points
     points = []
-    for i in range(10):
+    for _ in range(10):
         lat = 37.7749 + np.random.normal(0, 0.01)
         lng = -122.4194 + np.random.normal(0, 0.01)
         points.append(Point(lng, lat))
@@ -283,9 +292,9 @@ class TestAgriculturalWorkflow:
         _field_centroids = metric_fields.geometry.centroid
 
         # 2. Temporal analysis of sensor data
-        _temporal_trends = sensor_data.groupby("field_id").agg(
+        temporal_trends = sensor_data.groupby("field_id").agg(
             {
-                "temperature": ["mean", "trend"],
+                "temperature": ["mean", _linear_trend],
                 "rainfall": "sum",
                 "soil_moisture": "mean",
                 "ndvi": "mean",
@@ -313,6 +322,10 @@ class TestAgriculturalWorkflow:
         assert len(field_analysis) == 2  # 2 fields
         assert "avg_temperature" in field_analysis.columns
         assert "yield_prediction" in field_analysis.columns
+        assert len(temporal_trends) == 2
+        assert np.isfinite(
+            temporal_trends[("temperature", "_linear_trend")].to_numpy()
+        ).all()
 
     def test_crop_health_monitoring(self, sample_agricultural_workflow_data):
         """Test crop health monitoring with spatial-temporal analysis."""
@@ -736,71 +749,38 @@ class TestCrossModuleDataFlow:
 class TestPerformanceIntegration:
     """Test performance characteristics of cross-module workflows."""
 
-    def test_large_scale_spatial_temporal_processing(self):
-        """Test performance of large-scale spatial-temporal processing."""
-        # Create large dataset
-        n_points = 1000
-        n_timestamps = 100
+    def test_small_spatial_temporal_reference(self):
+        """Keep an analytical reference in integration, with real H3 indexing."""
+        from geo_infer_space import H3StateSpace, align_h3_observations
+        from geo_infer_time import TimeSeries
+        from geo_infer_time.core.analysis import TemporalAnalyzer
 
-        np.random.seed(42)
-
-        # Generate spatial points
-        lats = np.random.uniform(37.7, 37.9, n_points)
-        lons = np.random.uniform(-122.5, -122.3, n_points)
-        points = [Point(lon, lat) for lon, lat in zip(lons, lats)]
-
-        # Generate temporal data
-        dates = pd.date_range("2023-01-01", periods=n_timestamps, freq="D")
-
-        # Create large GeoDataFrame
-        data = []
-        for date in dates:
-            for i, point in enumerate(points):
-                data.append(
-                    {
-                        "timestamp": date,
-                        "geometry": point,
-                        "sensor_id": f"sensor_{i:03d}",
-                        "value": np.random.normal(0, 1),
-                    }
+        center = h3.latlng_to_cell(37.8, -122.4, 8)
+        cells = [center, *sorted(set(h3.grid_disk(center, 1)) - {center})]
+        space = H3StateSpace(cells)
+        timestamps = pd.date_range("2026-01-01", periods=4, freq="h", tz="UTC")
+        records = [
+            {"cell": cell, "timestamp": timestamp, "value": float(3 * step + index)}
+            for step, timestamp in enumerate(timestamps)
+            for index, cell in enumerate(cells)
+        ]
+        series = align_h3_observations(
+            pd.DataFrame(records), state_space=space, timestamps=timestamps
+        )
+        np.testing.assert_array_equal(
+            series.data.to_numpy(),
+            np.arange(len(cells))[None, :] + 3 * np.arange(4)[:, None],
+        )
+        for cell in cells:
+            trend = TemporalAnalyzer().detect_trend(
+                TimeSeries(
+                    series.data[[cell]],
+                    spatial_location={"cell": cell},
+                    metadata=series.metadata,
                 )
-
-        gdf = gpd.GeoDataFrame(data, crs="EPSG:4326")
-
-        # Performance test: Spatial indexing
-        start_time = time.time()
-        _spatial_index = gdf.sindex
-        indexing_time = time.time() - start_time
-
-        # Performance test: H3 indexing
-        start_time = time.time()
-        resolution = 10
-        gdf["h3_index"] = gdf.geometry.apply(
-            lambda point: h3.latlng_to_cell(point.y, point.x, resolution)
-        )
-        h3_time = time.time() - start_time
-
-        # Performance test: Temporal aggregation
-        start_time = time.time()
-        _temporal_stats = gdf.groupby(["sensor_id", "timestamp"]).agg(
-            {"value": ["mean", "std"]}
-        )
-        aggregation_time = time.time() - start_time
-
-        performance_metrics = {
-            "spatial_indexing_time": indexing_time,
-            "h3_indexing_time": h3_time,
-            "temporal_aggregation_time": aggregation_time,
-            "total_records": len(gdf),
-            "unique_sensors": gdf["sensor_id"].nunique(),
-            "unique_timestamps": gdf["timestamp"].nunique(),
-        }
-
-        # Performance assertions
-        assert indexing_time < 1.0  # Should complete within 1 second
-        assert h3_time < 5.0  # Should complete within 5 seconds
-        assert aggregation_time < 10.0  # Should complete within 10 seconds
-        assert performance_metrics["total_records"] == n_points * n_timestamps
+            )
+            assert trend["trend_direction"] == "increasing"
+            np.testing.assert_allclose(trend["slope_per_sample"], 3.0, atol=1e-12)
 
 
 if __name__ == "__main__":

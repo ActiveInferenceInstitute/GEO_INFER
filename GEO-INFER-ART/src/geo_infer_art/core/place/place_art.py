@@ -4,7 +4,7 @@ PlaceArt module for creating art based on specific locations and places.
 
 import logging
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -33,8 +33,9 @@ class PlaceArt:
 
     def __init__(
         self,
-        location: Optional[Dict[str, Any]] = None,
-        data: Optional[gpd.GeoDataFrame] = None,
+        location: dict[str, Any] | None = None,
+        data: gpd.GeoDataFrame | None = None,
+        seed: int | np.random.Generator | None = None,
     ) -> None:
         """
         Initialize a PlaceArt object.
@@ -42,19 +43,22 @@ class PlaceArt:
         Args:
             location: Dictionary with location information (name, coordinates, etc.)
             data: GeoDataFrame with geospatial data for the location
+            seed: Integer seed or ``np.random.Generator`` for texture overlays;
+                ``None`` draws fresh entropy.
         """
+        self.rng: np.random.Generator = np.random.default_rng(seed)
         self.location = location or {}
         self.data = data
-        self.image: Optional[Image.Image] = None
+        self.image: Image.Image | None = None
         self._figure = None
-        self.metadata: Dict[str, Any] = {}
+        self.metadata: dict[str, Any] = {}
 
     @staticmethod
-    def _as_pil_image(image: Union[Image.Image, np.ndarray]) -> Image.Image:
+    def _as_pil_image(image: Image.Image | np.ndarray) -> Image.Image:
         return image if isinstance(image, Image.Image) else Image.fromarray(image)
 
     @staticmethod
-    def _fetch_location_data(lat: float, lon: float, radius_km: float = 1.0) -> Dict:
+    def _fetch_location_data(lat: float, lon: float, radius_km: float = 1.0) -> dict:
         """Return deterministic location metadata for coordinate-based artwork."""
         return {
             "name": f"Location {lat:.4f}, {lon:.4f}",
@@ -63,7 +67,7 @@ class PlaceArt:
         }
 
     @staticmethod
-    def _fetch_place_data(place_name: str) -> Dict:
+    def _fetch_place_data(place_name: str) -> dict:
         """Return metadata for a named place.
 
         Raises:
@@ -98,7 +102,7 @@ class PlaceArt:
         cls,
         lat: float,
         lon: float,
-        name: Optional[str] = None,
+        name: str | None = None,
         radius_km: float = 1.0,
         style: str = "abstract",
     ) -> "PlaceArt":
@@ -468,11 +472,11 @@ class PlaceArt:
         draw = ImageDraw.Draw(img)
 
         # Try to get a font
-        font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
+        font: ImageFont.FreeTypeFont | ImageFont.ImageFont
         try:
             # Try to load a nice font
             font = ImageFont.truetype("Arial", 24)
-        except IOError:
+        except OSError:
             # Fallback to default font
             font = ImageFont.load_default()
 
@@ -561,7 +565,7 @@ class PlaceArt:
             return
         plt.show()
 
-    def create_series(self, styles: List[str], output_dir: str = "output") -> List[str]:
+    def create_series(self, styles: list[str], output_dir: str = "output") -> list[str]:
         """
         Create a series of artworks for the same location with different styles.
 
@@ -638,7 +642,7 @@ class PlaceArt:
 
         return self
 
-    def add_artistic_elements(self, elements: List[str], **kwargs: Any) -> "PlaceArt":
+    def add_artistic_elements(self, elements: list[str], **kwargs: Any) -> "PlaceArt":
         """
         Add artistic elements to the place art.
 
@@ -708,10 +712,10 @@ class PlaceArt:
         signature_color = kwargs.get("signature_color", "#666666")
         signature_position = kwargs.get("signature_position", "bottom_right")
 
-        font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
+        font: ImageFont.FreeTypeFont | ImageFont.ImageFont
         try:
             font = ImageFont.truetype("Arial", 20)
-        except IOError:
+        except OSError:
             font = ImageFont.load_default()
 
         draw = ImageDraw.Draw(img)
@@ -754,7 +758,7 @@ class PlaceArt:
 
         if texture_type == "paper":
             # Create paper-like texture
-            texture = np.random.randint(240, 255, (height, width, 3), dtype=np.uint8)
+            texture = self.rng.integers(240, 255, (height, width, 3), dtype=np.uint8)
             texture_img = Image.fromarray(texture)
 
             # Blend with original
@@ -762,7 +766,7 @@ class PlaceArt:
 
         elif texture_type == "canvas":
             # Create canvas-like texture
-            texture = np.random.randint(245, 255, (height, width, 3), dtype=np.uint8)
+            texture = self.rng.integers(245, 255, (height, width, 3), dtype=np.uint8)
             # Add some subtle variations
             texture[::10, ::10] = [240, 240, 240]
             texture_img = Image.fromarray(texture)
@@ -796,7 +800,7 @@ class PlaceArt:
             for y in range(0, height, 50):
                 draw.line([(0, y), (width, y)], fill=pattern_color, width=1)
 
-    def get_location_info(self) -> Dict:
+    def get_location_info(self) -> dict:
         """
         Get detailed information about the location.
 

@@ -13,7 +13,7 @@ only — and never mutate the root logger at import time.
 import sys
 import logging
 import structlog
-from typing import Optional, Dict, Any, cast
+from typing import Any, cast
 from pathlib import Path
 
 
@@ -33,8 +33,8 @@ _logging_configured = False
 def configure_logging(
     log_level: str = "INFO",
     json_format: bool = False,
-    log_file: Optional[str] = None,
-    module_name: Optional[str] = None,
+    log_file: str | None = None,
+    module_name: str | None = None,
     enable_console: bool = True,
 ) -> None:
     """
@@ -118,7 +118,7 @@ def configure_logging(
     _logging_configured = True
 
 
-def get_logger(name: Optional[str] = None) -> structlog.stdlib.BoundLogger:
+def get_logger(name: str | None = None) -> structlog.stdlib.BoundLogger:
     """
     Get a configured logger instance.
 
@@ -170,7 +170,7 @@ class LoggingContext:
             **kwargs: Key-value pairs to add to log context
         """
         self.temp_context = kwargs
-        self.old_context: Dict[str, Any] = {}
+        self.old_context: dict[str, Any] = {}
 
     def __enter__(self) -> "LoggingContext":
         """Enter context and bind context variables."""
@@ -197,8 +197,8 @@ class LoggingContext:
 
 def setup_module_logging(
     module_name: str,
-    log_level: Optional[str] = None,
-    log_file: Optional[str] = None,
+    log_level: str | None = None,
+    log_file: str | None = None,
 ) -> structlog.stdlib.BoundLogger:
     """
     Convenience function to set up logging for a GEO-INFER module.

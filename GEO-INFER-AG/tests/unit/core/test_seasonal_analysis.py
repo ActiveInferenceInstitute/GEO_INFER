@@ -134,7 +134,7 @@ class TestSeasonalAnalysis:
         assert len(phenology["stages"]) > 0
 
         # Check stage structure
-        for stage_name, stage_data in phenology["stages"].items():
+        for stage_data in phenology["stages"].values():
             assert "start_date" in stage_data
             assert "end_date" in stage_data
             assert "length_days" in stage_data

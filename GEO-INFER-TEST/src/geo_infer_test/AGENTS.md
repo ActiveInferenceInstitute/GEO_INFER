@@ -24,12 +24,22 @@
 - `core/`
 - `models/`
 - `__init__.py`
+- `act_research_oracles.py`
+- `coverage.py`
+- `doc_examples.py`
+- `documentation_contracts.py`
+- `execution.py`
+- `process.py`
+- `research_evidence.py`
+- `selection.py`
 - `testing.py`
+- `wheel_evidence.py`
+- `wheel_profiles.py`
 
 ## Validation
 
 ```bash
-uv sync --all-packages --all-extras
+uv sync --all-packages --all-extras --all-groups
 uv run python GEO-INFER-TEST/run_unified_tests.py --module TEST
 ```
 

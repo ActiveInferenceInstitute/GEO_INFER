@@ -6,7 +6,7 @@ policy selection away from notified municipal hazards.
 """
 
 import json
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 import pytest
@@ -18,10 +18,14 @@ from geo_infer_act import (
     hazard_policy_prior,
     parse_crescent_city_intel,
 )
+from geo_infer_act.core.civic_intel import (
+    CRESCENT_CITY_OBSERVATIONS_SCHEMA,
+    load_crescent_city_geo_observations,
+)
 from geo_infer_act.core.policy_selection import PolicySelector
 
 
-def _hazard_contract_fixture() -> Dict[str, Any]:
+def _hazard_contract_fixture() -> dict[str, Any]:
     """A small inline crescent-city-geo-intel/v1 contract with a hazard subset."""
     return {
         "schema": "crescent-city-geo-intel/v1",
@@ -288,7 +292,7 @@ class TestHazardPolicyPrior:
 
     def test_qualified_hazard_tags_use_base_weights_without_substrings(self) -> None:
         """Qualified v1 tags resolve by whole hazard terms, not substrings."""
-        parsed: Dict[str, Any] = {
+        parsed: dict[str, Any] = {
             "hazardDomains": [
                 {
                     "id": "qualified-hazards",
@@ -321,7 +325,7 @@ class TestPolicyCoupling:
         parsed = parse_crescent_city_intel(source=_hazard_contract_fixture())
         prior = hazard_policy_prior(parsed)
 
-        policies: List[Dict[str, Any]] = [
+        policies: list[dict[str, Any]] = [
             {
                 "id": "maintain_normal_ops",
                 "predicted_beliefs": [1.0, 0.0, 0.0],
@@ -365,11 +369,6 @@ class TestPolicyCoupling:
 
 
 # --- crescent-city-geo-observations/v1 delegation (2026-09-08 producer pass) ---
-
-from geo_infer_act.core.civic_intel import (  # noqa: E402
-    CRESCENT_CITY_OBSERVATIONS_SCHEMA,
-    load_crescent_city_geo_observations,
-)
 
 
 class TestObservationsDelegation:

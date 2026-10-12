@@ -9,9 +9,9 @@ message distribution based on geospatial context and network topology.
 from __future__ import annotations
 import heapq
 import logging
-from typing import Dict, List, Optional, Tuple, Any, Set
+from typing import Any
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from geo_infer_comms.models.spatial import GeospatialPoint, SpatialFilter, SpatialIndex
 from geo_infer_comms.models.message import MessageResponse, MessagePriority
@@ -39,12 +39,12 @@ class AdvancedSpatialRouter:
         self.load_balancing = load_balancing
 
         # Routing state
-        self.network_topology: Dict[
-            str, Dict[str, float]
+        self.network_topology: dict[
+            str, dict[str, float]
         ] = {}  # node -> node -> distance
-        self.node_loads: Dict[str, float] = {}
-        self.node_locations: Dict[str, GeospatialPoint] = {}
-        self.routing_history: List[Dict[str, Any]] = []
+        self.node_loads: dict[str, float] = {}
+        self.node_locations: dict[str, GeospatialPoint] = {}
+        self.routing_history: list[dict[str, Any]] = []
 
         # Performance metrics
         self.routing_metrics = SpatialRoutingMetrics()
@@ -62,9 +62,9 @@ class AdvancedSpatialRouter:
     def route_message(
         self,
         message: MessageResponse,
-        target_nodes: List[str],
-        routing_context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, List[str]]:
+        target_nodes: list[str],
+        routing_context: dict[str, Any] | None = None,
+    ) -> dict[str, list[str]]:
         """
         Route message using advanced geospatial algorithms.
 
@@ -99,8 +99,8 @@ class AdvancedSpatialRouter:
             return self._proximity_based_routing(message_location, target_nodes)
 
     def _proximity_based_routing(
-        self, message_location: GeospatialPoint, target_nodes: List[str]
-    ) -> Dict[str, List[str]]:
+        self, message_location: GeospatialPoint, target_nodes: list[str]
+    ) -> dict[str, list[str]]:
         """Route messages based on proximity to message location."""
         routes = {}
 
@@ -111,13 +111,13 @@ class AdvancedSpatialRouter:
 
         return routes
 
-    def _simple_route_message(self, target_nodes: List[str]) -> Dict[str, List[str]]:
+    def _simple_route_message(self, target_nodes: list[str]) -> dict[str, list[str]]:
         """Simple routing for non-geospatial messages."""
         return {node: [node] for node in target_nodes}
 
     def _network_aware_routing(
-        self, message_location: GeospatialPoint, target_nodes: List[str]
-    ) -> Dict[str, List[str]]:
+        self, message_location: GeospatialPoint, target_nodes: list[str]
+    ) -> dict[str, list[str]]:
         """Route messages considering network topology and latency."""
         routes = {}
 
@@ -129,8 +129,8 @@ class AdvancedSpatialRouter:
         return routes
 
     def _load_balanced_routing(
-        self, message_location: GeospatialPoint, target_nodes: List[str]
-    ) -> Dict[str, List[str]]:
+        self, message_location: GeospatialPoint, target_nodes: list[str]
+    ) -> dict[str, list[str]]:
         """Route messages with load balancing consideration."""
         routes = {}
 
@@ -146,9 +146,9 @@ class AdvancedSpatialRouter:
     def _adaptive_routing(
         self,
         message_location: GeospatialPoint,
-        target_nodes: List[str],
-        routing_context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, List[str]]:
+        target_nodes: list[str],
+        routing_context: dict[str, Any] | None = None,
+    ) -> dict[str, list[str]]:
         """Adaptive routing based on context and conditions."""
         routes = {}
 
@@ -171,7 +171,7 @@ class AdvancedSpatialRouter:
 
     def _calculate_proximity_route(
         self, message_location: GeospatialPoint, target_node: str
-    ) -> List[str]:
+    ) -> list[str]:
         """Calculate route based on proximity using Dijkstra over network topology."""
         if not self.network_topology:
             return [target_node]
@@ -179,7 +179,7 @@ class AdvancedSpatialRouter:
         # Identify the source node closest to message_location using
         # registered node locations; fall back to lexicographic selection
         # when no locations are registered.
-        source_node: Optional[str] = None
+        source_node: str | None = None
         best_dist = float("inf")
         for node_id in self.network_topology:
             loc = self.node_locations.get(node_id)
@@ -194,11 +194,11 @@ class AdvancedSpatialRouter:
             return [target_node]
 
         # Dijkstra shortest path
-        dist: Dict[str, float] = {n: float("inf") for n in self.network_topology}
-        prev: Dict[str, Optional[str]] = {n: None for n in self.network_topology}
+        dist: dict[str, float] = {n: float("inf") for n in self.network_topology}
+        prev: dict[str, str | None] = {n: None for n in self.network_topology}
         dist[source_node] = 0.0
-        visited: Set[str] = set()
-        heap: List[Tuple[float, str]] = [(0.0, source_node)]
+        visited: set[str] = set()
+        heap: list[tuple[float, str]] = [(0.0, source_node)]
 
         while heap:
             d, u = heapq.heappop(heap)
@@ -215,8 +215,8 @@ class AdvancedSpatialRouter:
                     heapq.heappush(heap, (alt, v))
 
         # Reconstruct path
-        path: List[str] = []
-        node: Optional[str] = target_node
+        path: list[str] = []
+        node: str | None = target_node
         while node is not None:
             path.append(node)
             node = prev.get(node)
@@ -226,14 +226,14 @@ class AdvancedSpatialRouter:
 
     def _calculate_network_route(
         self, message_location: GeospatialPoint, target_node: str
-    ) -> List[str]:
+    ) -> list[str]:
         """Calculate route considering network topology via Dijkstra."""
         # Delegate to the topology-aware proximity router
         return self._calculate_proximity_route(message_location, target_node)
 
     def _calculate_alternative_route(
         self, message_location: GeospatialPoint, target_node: str
-    ) -> List[str]:
+    ) -> list[str]:
         """Calculate alternative route that avoids congested (high-load) nodes."""
         primary = self._calculate_proximity_route(message_location, target_node)
 
@@ -247,7 +247,7 @@ class AdvancedSpatialRouter:
 
         # Find the single highest-load interior node to avoid
         worst_node = max(interior, key=lambda n: self.node_loads.get(n, 0))
-        reduced_topo: Dict[str, Dict[str, float]] = {}
+        reduced_topo: dict[str, dict[str, float]] = {}
         for u, neighbors in self.network_topology.items():
             if u == worst_node:
                 continue
@@ -261,12 +261,12 @@ class AdvancedSpatialRouter:
 
         return alt if alt and len(alt) > 1 else primary
 
-    def update_network_topology(self, topology: Dict[str, Dict[str, float]]) -> None:
+    def update_network_topology(self, topology: dict[str, dict[str, float]]) -> None:
         """Update network topology information."""
         self.network_topology = topology
         self.logger.info("Network topology updated")
 
-    def update_node_loads(self, node_loads: Dict[str, float]) -> None:
+    def update_node_loads(self, node_loads: dict[str, float]) -> None:
         """Update current node load information."""
         self.node_loads = node_loads
         self.logger.debug("Node loads updated")
@@ -274,9 +274,9 @@ class AdvancedSpatialRouter:
     def record_routing_result(
         self,
         message_id: str,
-        route: List[str],
+        route: list[str],
         success: bool,
-        latency: Optional[float] = None,
+        latency: float | None = None,
     ) -> None:
         """Record routing result for performance analysis."""
         routing_record = {
@@ -284,7 +284,7 @@ class AdvancedSpatialRouter:
             "route": route,
             "success": success,
             "latency": latency,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         self.routing_history.append(routing_record)
@@ -303,7 +303,7 @@ class AdvancedSpatialRouter:
             self.routing_metrics.total_latency += latency
             self.routing_metrics.route_count += 1
 
-    def get_routing_analytics(self) -> Dict[str, Any]:
+    def get_routing_analytics(self) -> dict[str, Any]:
         """Get routing performance analytics."""
         return {
             "routing_strategy": self.routing_strategy,
@@ -333,11 +333,11 @@ class SpatialRoutingMetrics:
     failed_routes: int = 0
     total_latency: float = 0.0
     route_count: int = 0
-    start_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    start_time: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert metrics to dictionary."""
-        uptime = datetime.now(timezone.utc) - self.start_time
+        uptime = datetime.now(UTC) - self.start_time
         return {
             "successful_routes": self.successful_routes,
             "failed_routes": self.failed_routes,
@@ -357,7 +357,7 @@ class SpatialRoutingMetrics:
         self.failed_routes = 0
         self.total_latency = 0.0
         self.route_count = 0
-        self.start_time = datetime.now(timezone.utc)
+        self.start_time = datetime.now(UTC)
 
 
 class GeospatialLoadBalancer:
@@ -370,7 +370,7 @@ class GeospatialLoadBalancer:
 
     def __init__(
         self,
-        nodes: List[str],
+        nodes: list[str],
         load_threshold: float = 0.8,
         rebalance_interval: int = 300,  # seconds
     ):
@@ -379,11 +379,11 @@ class GeospatialLoadBalancer:
         self.rebalance_interval = rebalance_interval
 
         # Load tracking
-        self.node_loads: Dict[str, float] = {node: 0.0 for node in nodes}
-        self.load_history: Dict[str, List[float]] = {node: [] for node in nodes}
+        self.node_loads: dict[str, float] = {node: 0.0 for node in nodes}
+        self.load_history: dict[str, list[float]] = {node: [] for node in nodes}
 
         # Geospatial mapping
-        self.node_locations: Dict[str, GeospatialPoint] = {}
+        self.node_locations: dict[str, GeospatialPoint] = {}
 
         self.logger = logging.getLogger(__name__)
 
@@ -414,8 +414,8 @@ class GeospatialLoadBalancer:
     def select_optimal_node(
         self,
         message_location: GeospatialPoint,
-        exclude_nodes: Optional[List[str]] = None,
-    ) -> Optional[str]:
+        exclude_nodes: list[str] | None = None,
+    ) -> str | None:
         """Select the optimal node for a message based on location and load."""
         exclude_nodes = exclude_nodes or []
 
@@ -461,7 +461,7 @@ class GeospatialLoadBalancer:
         )
         return best_node
 
-    def get_load_distribution(self) -> Dict[str, Any]:
+    def get_load_distribution(self) -> dict[str, Any]:
         """Get current load distribution across nodes."""
         return {
             "node_loads": self.node_loads,
@@ -489,8 +489,8 @@ class SpatialClusteringRouter:
         self.max_cluster_size = max_cluster_size
 
         # Cluster management
-        self.clusters: Dict[str, SpatialCluster] = {}
-        self.node_clusters: Dict[str, str] = {}  # node_id -> cluster_id
+        self.clusters: dict[str, SpatialCluster] = {}
+        self.node_clusters: dict[str, str] = {}  # node_id -> cluster_id
 
         self.logger = logging.getLogger(__name__)
 
@@ -510,7 +510,7 @@ class SpatialClusteringRouter:
 
     def route_to_cluster(
         self, message_location: GeospatialPoint, cluster_strategy: str = "nearest"
-    ) -> Optional[str]:
+    ) -> str | None:
         """Route message to appropriate cluster."""
         if cluster_strategy == "nearest":
             return self._find_nearest_cluster(message_location)
@@ -529,7 +529,7 @@ class SpatialClusteringRouter:
         cluster_id = f"cluster_{len(self.clusters)}"
         return cluster_id
 
-    def _find_nearest_cluster(self, location: GeospatialPoint) -> Optional[str]:
+    def _find_nearest_cluster(self, location: GeospatialPoint) -> str | None:
         """Find the nearest cluster to a location."""
         if not self.clusters:
             return None
@@ -545,7 +545,7 @@ class SpatialClusteringRouter:
 
         return nearest_cluster
 
-    def _find_load_balanced_cluster(self, location: GeospatialPoint) -> Optional[str]:
+    def _find_load_balanced_cluster(self, location: GeospatialPoint) -> str | None:
         """Find cluster with best load balance."""
         if not self.clusters:
             return None
@@ -569,7 +569,7 @@ class SpatialClusteringRouter:
 
         return best_cluster
 
-    def get_cluster_info(self, cluster_id: str) -> Optional[Dict[str, Any]]:
+    def get_cluster_info(self, cluster_id: str) -> dict[str, Any] | None:
         """Get information about a specific cluster."""
         cluster = self.clusters.get(cluster_id)
         if not cluster:
@@ -593,8 +593,8 @@ class SpatialCluster:
 
     cluster_id: str
     center: GeospatialPoint
-    nodes: Dict[str, GeospatialPoint] = field(default_factory=dict)
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    nodes: dict[str, GeospatialPoint] = field(default_factory=dict)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def add_node(self, node_id: str, location: GeospatialPoint) -> None:
         """Add a node to this cluster."""
@@ -641,15 +641,15 @@ class AdaptiveRoutingEngine:
         self.exploration_rate = exploration_rate
 
         # Routing knowledge base
-        self.route_performance: Dict[
-            str, Dict[str, float]
+        self.route_performance: dict[
+            str, dict[str, float]
         ] = {}  # route_key -> performance_metrics
-        self.message_patterns: Dict[
-            str, Dict[str, Any]
+        self.message_patterns: dict[
+            str, dict[str, Any]
         ] = {}  # pattern_key -> pattern_data
 
         # Adaptive parameters
-        self.routing_weights: Dict[str, float] = {
+        self.routing_weights: dict[str, float] = {
             "proximity": 0.4,
             "latency": 0.3,
             "reliability": 0.2,
@@ -659,7 +659,7 @@ class AdaptiveRoutingEngine:
         self.logger = logging.getLogger(__name__)
 
     def learn_from_routing_result(
-        self, message: MessageResponse, route: List[str], performance: Dict[str, Any]
+        self, message: MessageResponse, route: list[str], performance: dict[str, Any]
     ) -> None:
         """Learn from a routing result to improve future routing."""
         route_key = self._generate_route_key(message, route)
@@ -690,8 +690,8 @@ class AdaptiveRoutingEngine:
         self._update_routing_weights(route_key, performance)
 
     def predict_optimal_route(
-        self, message: MessageResponse, available_routes: Dict[str, List[str]]
-    ) -> Optional[str]:
+        self, message: MessageResponse, available_routes: dict[str, list[str]]
+    ) -> str | None:
         """Predict the optimal route for a message."""
         if not available_routes:
             return None
@@ -708,7 +708,7 @@ class AdaptiveRoutingEngine:
 
         return best_route
 
-    def _generate_route_key(self, message: MessageResponse, route: List[str]) -> str:
+    def _generate_route_key(self, message: MessageResponse, route: list[str]) -> str:
         """Generate a unique key for a route."""
         # MessageResponse uses ``use_enum_values``, so message_type and
         # priority are already plain strings; calling ``.value`` on them
@@ -726,7 +726,7 @@ class AdaptiveRoutingEngine:
         return "_".join(key_parts)
 
     def _calculate_route_score(
-        self, message: MessageResponse, route: List[str], route_id: str
+        self, message: MessageResponse, route: list[str], route_id: str
     ) -> float:
         """Calculate score for a route."""
         route_key = self._generate_route_key(message, route)
@@ -756,7 +756,7 @@ class AdaptiveRoutingEngine:
 
         return total_score
 
-    def _default_route_score(self, message: MessageResponse, route: List[str]) -> float:
+    def _default_route_score(self, message: MessageResponse, route: list[str]) -> float:
         """Calculate default score for unknown routes."""
         # Base score
         base_score = 0.5
@@ -776,7 +776,7 @@ class AdaptiveRoutingEngine:
         return base_score * priority_score * length_penalty
 
     def _update_routing_weights(
-        self, route_key: str, performance: Dict[str, Any]
+        self, route_key: str, performance: dict[str, Any]
     ) -> None:
         """Update routing weights based on performance feedback."""
         # Simple adaptive weighting - in production would be more sophisticated
@@ -791,7 +791,7 @@ class AdaptiveRoutingEngine:
                 0.1, self.routing_weights["reliability"] - 0.01
             )
 
-    def get_routing_insights(self) -> Dict[str, Any]:
+    def get_routing_insights(self) -> dict[str, Any]:
         """Get insights into routing performance and patterns."""
         total_routes = len(self.route_performance)
         successful_routes = sum(
@@ -819,11 +819,11 @@ class GeospatialMessageQueue:
 
     def __init__(self, max_size: int = 10000):
         self.max_size = max_size
-        self.queue: List[
-            Tuple[float, str, MessageResponse]
+        self.queue: list[
+            tuple[float, str, MessageResponse]
         ] = []  # (priority_score, message_id, message)
-        self.spatial_index: Dict[str, List[str]] = {}  # location_key -> message_ids
-        self.message_store: Dict[str, MessageResponse] = {}
+        self.spatial_index: dict[str, list[str]] = {}  # location_key -> message_ids
+        self.message_store: dict[str, MessageResponse] = {}
 
         self.logger = logging.getLogger(__name__)
 
@@ -853,8 +853,8 @@ class GeospatialMessageQueue:
         return True
 
     def dequeue_message(
-        self, spatial_filter: Optional[SpatialFilter] = None
-    ) -> Optional[MessageResponse]:
+        self, spatial_filter: SpatialFilter | None = None
+    ) -> MessageResponse | None:
         """Dequeue highest priority message, optionally filtered by spatial criteria."""
         if not self.queue:
             return None
@@ -899,7 +899,7 @@ class GeospatialMessageQueue:
 
     def get_messages_by_location(
         self, location: GeospatialPoint, radius_km: float = 1.0, limit: int = 100
-    ) -> List[MessageResponse]:
+    ) -> list[MessageResponse]:
         """Get messages near a specific location."""
         nearby_messages = []
 
@@ -922,7 +922,7 @@ class GeospatialMessageQueue:
         nearby_messages.sort(key=lambda m: self._calculate_priority_score(m))
         return nearby_messages[:limit]
 
-    def get_queue_stats(self) -> Dict[str, Any]:
+    def get_queue_stats(self) -> dict[str, Any]:
         """Get queue statistics."""
         return {
             "queue_size": len(self.queue),
@@ -943,7 +943,7 @@ class GeospatialMessageQueue:
         priority_score = base_priority.get(message.priority, 3)
 
         # Adjust for message age (older messages get slight priority boost)
-        age_seconds = (datetime.now(timezone.utc) - message.timestamp).total_seconds()
+        age_seconds = (datetime.now(UTC) - message.timestamp).total_seconds()
         age_adjustment = min(0.5, age_seconds / 3600)  # Max 0.5 point adjustment
 
         return priority_score - age_adjustment
@@ -964,11 +964,11 @@ class SpatialRoutingOptimizer:
 
     def __init__(self, routing_engine: AdvancedSpatialRouter):
         self.routing_engine = routing_engine
-        self.optimization_history: List[Dict[str, Any]] = []
+        self.optimization_history: list[dict[str, Any]] = []
 
         self.logger = logging.getLogger(__name__)
 
-    def analyze_routing_performance(self) -> Dict[str, Any]:
+    def analyze_routing_performance(self) -> dict[str, Any]:
         """Analyze routing performance and suggest optimizations."""
         history = self.routing_engine.routing_history[-1000:]  # Last 1000 routes
 
@@ -990,8 +990,8 @@ class SpatialRoutingOptimizer:
         }
 
     def _generate_optimization_suggestions(
-        self, history: List[Dict[str, Any]]
-    ) -> List[str]:
+        self, history: list[dict[str, Any]]
+    ) -> list[str]:
         """Generate optimization suggestions based on history."""
         suggestions = []
 
