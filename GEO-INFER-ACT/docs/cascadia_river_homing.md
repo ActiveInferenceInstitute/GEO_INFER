@@ -23,7 +23,7 @@ flowchart LR
     M --> S["GNN v1 source<br/>smith_river_homing.gnn.md"]
     S --> X["GNN strict exporter<br/>gnn.export.geo_infer"]
     X --> J["gnn-geo-infer/1 artifact"]
-    J --> R["run_gnn_inference<br/>pymdp 1.0.3 closed loop"]
+    J --> R["run_gnn_inference<br/>pymdp 1.0.4 closed loop"]
     J --> L["fep_lean slice<br/>Lean 4 instance theorems"]
     R --> V["diagnostics, maps, animation"]
 ```
@@ -159,7 +159,7 @@ Two exact facts cross-check the planes. The first observation is marine with
 faint odor; its evidence is 57/128 and the exact posterior on the sea cell is
 18/19. The contract's float posterior equals 18/19 to machine precision, and
 Lean proves the same value from the exported tables. For every belief and
-policy, pymdp 1.0.3's negative expected free energy equals
+policy, pymdp 1.0.4's negative expected free energy equals
 `log Σ exp C − (risk + ambiguity)`. Along the run the largest gap between
 pymdp's float32 report and that expression stays below 10⁻⁵.
 

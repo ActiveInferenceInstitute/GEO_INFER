@@ -53,6 +53,7 @@ from geo_infer_act.runners.io import (
 )
 from geo_infer_act.utils.analysis import ActiveInferenceAnalyzer
 from geo_infer_act.utils.h3_adapter import get_h3_adapter, normalize_belief_vector
+from geo_infer_act.utils.pymdp_adapter import EXPECTED_PYMDP_VERSION
 from geo_infer_act.utils.spatial_research import (
     apply_h3_research_profile,
     apply_spatial_agent_research_profile,
@@ -1359,7 +1360,7 @@ def _write_pymdp_policy_free_energy_html(
             )
         )
         fig.update_layout(
-            title=f"{config.scenario.upper()} pymdp 1.0.3 Policy and Free Energy",
+            title=f"{config.scenario.upper()} pymdp {EXPECTED_PYMDP_VERSION} Policy and Free Energy",
             xaxis_title="Timestep",
             yaxis={"title": "Mean VFE"},
             yaxis2={
@@ -1400,7 +1401,7 @@ def _write_pymdp_policy_free_energy_html(
         config,
         "visualizations/pymdp_policy_free_energy.html",
         html,
-        title="pymdp 1.0.3 H3 Policy and Free Energy",
+        title=f"pymdp {EXPECTED_PYMDP_VERSION} H3 Policy and Free Energy",
         description="pymdp-derived H3 policy posterior, negative expected free energy, and variational free-energy diagnostics.",
         alt_text="Interactive chart of pymdp policy posterior and free-energy diagnostics by timestep.",
         plotted_metrics=[
@@ -3211,7 +3212,7 @@ def _write_spatial_inference_research_report(
     diagnostic_cards = "\n".join(
         f"<article><strong>{label}</strong><span>{value}</span></article>"
         for label, value in [
-            ("pymdp", "inferactively-pymdp 1.0.3"),
+            ("pymdp", f"inferactively-pymdp {EXPECTED_PYMDP_VERSION}"),
             ("H3", "h3-py 4.5.0"),
             ("policy switches", int(policy.get("switch_count", 0))),
             (

@@ -32,7 +32,7 @@ Api workspace within `GEO-INFER-ACT`.
 - `requests>=2.25.0`
 - `scipy>=1.7.0`
 - `seaborn>=0.11.0`
-- `inferactively-pymdp==1.0.3`
+- `inferactively-pymdp==1.0.4`
 - `h3>=4.5.0,<5`
 - `geo-infer-bayes>=0.4.0`
 

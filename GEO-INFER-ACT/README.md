@@ -49,7 +49,7 @@ Advanced Active Inference framework implementing Free Energy Principle for geosp
 - `requests>=2.25.0`
 - `scipy>=1.7.0`
 - `seaborn>=0.11.0`
-- `inferactively-pymdp==1.0.3`
+- `inferactively-pymdp==1.0.4`
 - `h3>=4.5.0,<5`
 - `geo-infer-bayes>=0.4.0`
 
@@ -63,7 +63,7 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module ACT
 
 ## Implemented H3 Active Inference Contracts
 
-- ACT uses `inferactively-pymdp==1.0.3` through
+- ACT uses `inferactively-pymdp==1.0.4` through
   `geo_infer_act.utils.pymdp_adapter` for categorical H3 active-inference
   runtime paths. H3 runtime cells are validated with real `h3>=4.5.0,<5`.
 - Flat H3 APIs remain available through `GenerativeModel.enable_h3_spatial`,
@@ -101,7 +101,7 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module ACT
 - Research-profile runs are opt-in through
   `RunConfig.parameters["research_profile"] = True` or
   `geo-infer-act-run --research-profile`; they keep real H3 geometry and
-  `inferactively-pymdp==1.0.3` while using deterministic offline spatial
+  `inferactively-pymdp==1.0.4` while using deterministic offline spatial
   fields that avoid collapsed policy and entropy traces.
 - Generate the deterministic four-run gallery with
   `uv run python GEO-INFER-ACT/examples/spatial_active_inference_gallery.py`.
@@ -165,7 +165,7 @@ uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
   network sidecar, the artifact exported by GNN's strict exporter, and its
   export provenance; runs without `--gnn-repo` refuse stale fixtures.
 - `geo_infer_act.core.efe_decomposition` evaluates risk and ambiguity and the
-  exact relation to pymdp 1.0.3's score; see `docs/cascadia_river_homing.md`.
+  exact relation to pymdp 1.0.4's score; see `docs/cascadia_river_homing.md`.
 
 ## Documentation Notes
 

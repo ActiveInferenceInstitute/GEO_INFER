@@ -1,4 +1,4 @@
-"""Categorical expected-free-energy terms matching pymdp 1.0.3 exactly.
+"""Categorical expected-free-energy terms matching pymdp 1.0.4 exactly.
 
 For a one-step policy ``a`` with predicted states ``q(s'|a) = B[:, :, a] q(s)``
 and predicted outcomes ``q(o|a) = A q(s'|a)``:
@@ -7,7 +7,7 @@ and predicted outcomes ``q(o|a) = A q(s'|a)``:
 - ``ambiguity(a) = sum_s' q(s'|a) H[A[:, s']]``
 - ``efe(a) = risk(a) + ambiguity(a)``
 
-pymdp 1.0.3 scores ``neg_efe(a) = sum_o q(o|a) C(o) + H[q(o|a)] - ambiguity(a)``
+pymdp 1.0.4 scores ``neg_efe(a) = sum_o q(o|a) C(o) + H[q(o|a)] - ambiguity(a)``
 (expected utility plus state information gain). Therefore
 
 ``efe(a) = -neg_efe(a) + log sum_o exp C(o)``

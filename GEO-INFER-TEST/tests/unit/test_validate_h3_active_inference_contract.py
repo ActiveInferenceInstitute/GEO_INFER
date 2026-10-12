@@ -33,7 +33,7 @@ def test_pymdp_metadata_contract_rejects_cosmetic_backend_dictionary() -> None:
         validator._assert_pymdp_metadata(
             {
                 "backend": "inferactively-pymdp",
-                "pymdp_version": "1.0.3",
+                "pymdp_version": validator.REQUIRED_PYMDP_VERSION,
                 "h3_version": "4.5.0",
             },
             "cosmetic",
@@ -47,7 +47,7 @@ def test_pymdp_metadata_contract_rejects_non_normalized_posterior() -> None:
         validator._assert_pymdp_metadata(
             {
                 "backend": "inferactively-pymdp",
-                "pymdp_version": "1.0.3",
+                "pymdp_version": validator.REQUIRED_PYMDP_VERSION,
                 "h3_version": "4.5.0",
                 "action_posterior": [0.4, 0.4],
                 "negative_expected_free_energy": [0.1, 0.2],

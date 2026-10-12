@@ -38,7 +38,7 @@ package layout, not an aspirational API list.
   initialize current beliefs, and inherit model preferences when needed.
 - `perceive(observation)`: update posterior beliefs from one observation vector.
 - `act(available_actions=None)`: for supported categorical models, select an
-  action through the `inferactively-pymdp==1.0.3` adapter and expose posterior,
+  action through the `inferactively-pymdp==1.0.4` adapter and expose posterior,
   negative-EFE, and VFE metadata. Gaussian policy selection requires the
   explicit control model in `ContinuousPOMDPActiveInference` or Gaussian GNN.
 - `update_observations(observations)`: own a copy of the current observation store.
@@ -105,7 +105,7 @@ package layout, not an aspirational API list.
 - `GenerativeModel.get_model_summary()`: summarize dimensions, mode flags,
   beliefs, and integration state.
 - `GenerativeModel.update_h3_beliefs(h3_obs, return_result=False)`: validate H3
-  observations, update per-cell beliefs through pymdp 1.0.3, and optionally
+  observations, update per-cell beliefs through pymdp 1.0.4, and optionally
   return `H3BeliefUpdateResult`.
 - `GenerativeModel.compute_h3_cell_diagnostics(...)`: compute
   `SpatialInferenceTrace` diagnostics from flat or nested H3 cell results.

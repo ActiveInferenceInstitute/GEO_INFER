@@ -79,7 +79,7 @@ OBSOLETE_PYMDP_RUNTIME_IMPORTS = [
     "pymdp.control",
     "pymdp.inference",
 ]
-REQUIRED_PYMDP_VERSION = "1.0.3"
+REQUIRED_PYMDP_VERSION = "1.0.4"
 REQUIRED_H3_VERSION = "4.5.0"
 
 

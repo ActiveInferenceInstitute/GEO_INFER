@@ -12,6 +12,7 @@ import pytest
 
 from geo_infer_act.core.gnn_contract import GNNArtifact
 from geo_infer_act.models.river_homing import RiverHomingParameters
+from geo_infer_act.utils.pymdp_adapter import EXPECTED_PYMDP_VERSION
 
 EXAMPLE = Path(__file__).resolve().parents[2] / "examples/cascadia/cascadia_homing.py"
 
@@ -136,7 +137,7 @@ def test_run_manifest_hashes_written_files(manifest, tmp_path) -> None:
         "summary.json",
     }
     assert all(len(digest) == 64 for digest in manifest["files"].values())
-    assert manifest["versions"]["inferactively-pymdp"] == "1.0.3"
+    assert manifest["versions"]["inferactively-pymdp"] == EXPECTED_PYMDP_VERSION
     assert {"jax", "jaxlib", "h3", "numpy", "python"} <= set(manifest["versions"])
 
 

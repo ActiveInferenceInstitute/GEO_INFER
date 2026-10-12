@@ -14,6 +14,7 @@ from geo_infer_act import (
     SpatialActiveInferenceAgent,
     SpatialInferenceTrace,
 )
+from geo_infer_act.utils.pymdp_adapter import EXPECTED_PYMDP_VERSION
 
 
 def _cells(resolution: int = 9) -> list[str]:
@@ -52,7 +53,7 @@ def _assert_trace(trace: SpatialInferenceTrace, expected_cells: int) -> None:
             assert cell.action_posterior
             assert np.isclose(sum(cell.action_posterior), 1.0, atol=1e-6)
             assert len(cell.action_posterior) == len(cell.negative_expected_free_energy)
-            assert cell.metadata["pymdp_version"] == "1.0.3"
+            assert cell.metadata["pymdp_version"] == EXPECTED_PYMDP_VERSION
             assert cell.metadata["h3_version"] == "4.5.0"
     for edge in trace.edge_diagnostics:
         assert edge.source != edge.target

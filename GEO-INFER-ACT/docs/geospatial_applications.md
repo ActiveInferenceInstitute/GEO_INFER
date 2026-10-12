@@ -1,7 +1,7 @@
 # Geospatial Applications of Active Inference
 
 GEO-INFER-ACT treats H3 geospatial Active Inference as a first-class contract:
-real `h3>=4.5.0,<5` cells, `inferactively-pymdp==1.0.3` categorical belief and
+real `h3>=4.5.0,<5` cells, `inferactively-pymdp==1.0.4` categorical belief and
 policy inference, normalized per-cell beliefs, finite free-energy and
 negative-EFE diagnostics, GIS-ready outputs, and visualizations that are
 referenced from each run manifest.
@@ -16,7 +16,7 @@ flowchart TB
     end
     subgraph "ACT Core"
         GM["GenerativeModel H3 beliefs"]
-        PYMDP["pymdp 1.0.3 adapter"]
+        PYMDP["pymdp 1.0.4 adapter"]
         AIM["ActiveInferenceModel grid inference"]
         SA["SpatialActiveInferenceAgent"]
         MA["MultiAgentModel H3 lattice"]
@@ -381,7 +381,7 @@ the image metadata; HTML maps embed it as structured JSON in the document head.
 Research-profile runs are opt-in through
 `RunConfig.parameters["research_profile"] = True` or the shared runner flag
 `--research-profile`. This profile keeps real H3 cells and
-`inferactively-pymdp==1.0.3`, but uses deterministic offline spatial fields plus
+`inferactively-pymdp==1.0.4`, but uses deterministic offline spatial fields plus
 action-conditioned transition and preference matrices so policy posterior,
 entropy, coherence, and belief-flux diagnostics can reflect observed variation.
 A short environmental sample can legitimately select the same optimal action

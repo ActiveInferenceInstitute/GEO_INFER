@@ -124,6 +124,15 @@ def declared_dependencies(module_dir: Path, limit: int = 12) -> list[str]:
     return requirement_lines(module_dir, limit=limit)
 
 
+def pinned_version(module: ModuleInfo, distribution: str) -> str:
+    """The exact version ``module`` pins for ``distribution`` in its declared dependencies."""
+    prefix = f"{distribution}=="
+    for dependency in module.dependencies:
+        if dependency.startswith(prefix):
+            return dependency[len(prefix) :]
+    raise ValueError(f"{module.name} does not pin {distribution} exactly")
+
+
 def discover_modules() -> dict[str, ModuleInfo]:
     modules: dict[str, ModuleInfo] = {}
     for module_dir in discover_module_dirs(REPO_ROOT):
@@ -334,7 +343,7 @@ def module_readme_notes(path: Path, module: ModuleInfo | None) -> str:
         return """
 ## Implemented H3 Active Inference Contracts
 
-- ACT uses `inferactively-pymdp==1.0.3` through
+- ACT uses `inferactively-pymdp==@PYMDP@` through
   `geo_infer_act.utils.pymdp_adapter` for categorical H3 active-inference
   runtime paths. H3 runtime cells are validated with real `h3>=4.5.0,<5`.
 - Flat H3 APIs remain available through `GenerativeModel.enable_h3_spatial`,
@@ -372,7 +381,7 @@ def module_readme_notes(path: Path, module: ModuleInfo | None) -> str:
 - Research-profile runs are opt-in through
   `RunConfig.parameters["research_profile"] = True` or
   `geo-infer-act-run --research-profile`; they keep real H3 geometry and
-  `inferactively-pymdp==1.0.3` while using deterministic offline spatial
+  `inferactively-pymdp==@PYMDP@` while using deterministic offline spatial
   fields that avoid collapsed policy and entropy traces.
 - Generate the deterministic four-run gallery with
   `uv run python GEO-INFER-ACT/examples/spatial_active_inference_gallery.py`.
@@ -436,8 +445,8 @@ uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
   network sidecar, the artifact exported by GNN's strict exporter, and its
   export provenance; runs without `--gnn-repo` refuse stale fixtures.
 - `geo_infer_act.core.efe_decomposition` evaluates risk and ambiguity and the
-  exact relation to pymdp 1.0.3's score; see `docs/cascadia_river_homing.md`.
-"""
+  exact relation to pymdp @PYMDP@'s score; see `docs/cascadia_river_homing.md`.
+""".replace("@PYMDP@", pinned_version(module, "inferactively-pymdp"))
     if module.name == "GEO-INFER-SPACE":
         return """
 ## Implemented Nested H3 Contracts

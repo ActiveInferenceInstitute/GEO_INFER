@@ -358,7 +358,7 @@ class SpatialActiveInferenceAgent:
         pre_beliefs = self.beliefs.copy()
         self.latest_pymdp_cell_metadata = {}
 
-        # Step 1: pymdp 1.0.3 update at observed cells
+        # Step 1: pymdp 1.0.4 update at observed cells
         for cell_id, obs in observations.items():
             idx = self.cell_to_idx[cell_id]
             obs = np.asarray(obs).flatten()[: self.obs_dim]

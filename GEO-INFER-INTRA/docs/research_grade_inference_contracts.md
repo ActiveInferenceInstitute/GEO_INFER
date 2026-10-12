@@ -8,7 +8,7 @@ source, tests, and strict validators remain authoritative if this page drifts.
 
 - `ActiveInferenceModel.act()` accepts scalar or sequence-valued control
   configuration and validates action availability before selecting a policy.
-- Categorical H3 inference uses the real `inferactively-pymdp==1.0.3` adapter
+- Categorical H3 inference uses the real `inferactively-pymdp==1.0.4` adapter
   when its matrix contract is present. Local fallback is opt-in through
   `allow_local_pymdp_fallback`; an optional-backend failure is not silently
   reported as a backend result.

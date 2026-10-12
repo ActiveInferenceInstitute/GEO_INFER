@@ -82,7 +82,7 @@ The canonical yaml also anchors three constructs added with the
 Separately from these catalogue rows, the fep_lean slice
 `fep_lean/specs/cascadia-geo-act-proof/` (prose path) proves instance-level
 theorems about the Cascadia artifact itself, including the exact identity
-between risk plus ambiguity and pymdp 1.0.3's score. Those theorems concern
+between risk plus ambiguity and pymdp 1.0.4's score. Those theorems concern
 the exported finite model only; they do not verify any GEO-INFER code path.
 
 ## Explicit non-claims

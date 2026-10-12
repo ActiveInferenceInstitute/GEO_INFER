@@ -11,7 +11,7 @@ pipeline has five stages; each writes manifest-listed artifacts:
 2. gnn: render the GNN v1 Markdown source. With ``--gnn-repo`` the source is
    exported by GNN's own strict ``gnn.export.geo_infer`` in GNN's environment;
    otherwise the committed artifact fixture is checked against the source;
-3. infer: run the closed loop through ``run_gnn_inference`` (pymdp 1.0.3);
+3. infer: run the closed loop through ``run_gnn_inference`` (pymdp 1.0.4);
 4. analyze: EFE terms, the pymdp identity gap, the light cone, homing events;
 5. figures: context and network maps, traces, EFE panels, belief animation.
 

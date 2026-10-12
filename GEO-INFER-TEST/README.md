@@ -71,8 +71,8 @@ Unified testing framework for quality assurance across all GEO-INFER modules wit
 - `rewrite_readme_agents.py:tracked_files` (function)
 - `rewrite_readme_agents.py:requirement_lines` (function)
 - `rewrite_readme_agents.py:declared_dependencies` (function)
+- `rewrite_readme_agents.py:pinned_version` (function)
 - `rewrite_readme_agents.py:discover_modules` (function)
-- `rewrite_readme_agents.py:module_for` (function)
 
 ## Module Metadata
 

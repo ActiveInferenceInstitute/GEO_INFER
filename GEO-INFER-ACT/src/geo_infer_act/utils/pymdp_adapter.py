@@ -1,7 +1,7 @@
-"""pymdp 1.0.3 runtime adapter for GEO-INFER-ACT.
+"""pymdp 1.0.4 runtime adapter for GEO-INFER-ACT.
 
 This module is the only production bridge from GEO-INFER active-inference
-runtime code into inferactively-pymdp. It targets the JAX-first 1.0.3 API.
+runtime code into inferactively-pymdp. It targets the JAX-first 1.0.4 API.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import warnings
 
 import numpy as np
 
-EXPECTED_PYMDP_VERSION = "1.0.3"
+EXPECTED_PYMDP_VERSION = "1.0.4"
 
 
 @dataclass

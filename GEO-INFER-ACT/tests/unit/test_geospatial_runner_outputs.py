@@ -16,6 +16,7 @@ from geo_infer_act.runners import (
     run_scenario,
     run_spatial_active_inference_gallery,
 )
+from geo_infer_act.utils.pymdp_adapter import EXPECTED_PYMDP_VERSION
 
 
 GEOSPATIAL_REQUIRED_FILES = {
@@ -137,7 +138,7 @@ def _assert_h3_lattice_animation(result, *, expected_timesteps: int) -> None:
     )
     assert payload["schema_version"] == "geo-infer-act-h3-lattice-animation/v1"
     assert payload["scenario"] == result.scenario
-    assert payload["backend_metadata"]["pymdp_version"] == "1.0.3"
+    assert payload["backend_metadata"]["pymdp_version"] == EXPECTED_PYMDP_VERSION
     assert payload["backend_metadata"]["h3_version"] == "4.5.0"
     assert payload["frame_count"] == expected_timesteps
     assert len(payload["frames"]) == expected_timesteps
@@ -217,7 +218,7 @@ def test_geospatial_scenarios_emit_complete_data_and_visualizations(
         assert feature["geometry"]["type"] == "Polygon"
         assert feature["properties"]["h3_cell"]
         assert feature["properties"]["resolution"] == 8
-        assert feature["properties"]["pymdp_version"] == "1.0.3"
+        assert feature["properties"]["pymdp_version"] == EXPECTED_PYMDP_VERSION
         assert feature["properties"]["h3_version"] == "4.5.0"
 
     diagnostics = json.loads(
@@ -263,7 +264,7 @@ def test_geospatial_scenarios_emit_complete_data_and_visualizations(
     assert edge_trace_rows
     for row in cell_trace_rows:
         assert row["cell"]
-        assert row["pymdp_version"] == "1.0.3"
+        assert row["pymdp_version"] == EXPECTED_PYMDP_VERSION
         assert row["h3_version"] == "4.5.0"
         for key in (
             "entropy",
@@ -294,7 +295,7 @@ def test_geospatial_scenarios_emit_complete_data_and_visualizations(
             for key, value in row.items()
             if key.startswith("negative_expected_free_energy_")
         ]
-        assert row["pymdp_version"] == "1.0.3"
+        assert row["pymdp_version"] == EXPECTED_PYMDP_VERSION
         assert row["h3_version"] == "4.5.0"
         assert posterior
         assert len(posterior) == len(neg_efe)
@@ -305,7 +306,7 @@ def test_geospatial_scenarios_emit_complete_data_and_visualizations(
         (result.output_dir / "analysis" / "run_summary.json").read_text()
     )
     assert summary["pymdp_backend"] == "inferactively-pymdp"
-    assert summary["pymdp_version"] == "1.0.3"
+    assert summary["pymdp_version"] == EXPECTED_PYMDP_VERSION
     assert summary["h3_version"] == "4.5.0"
     assert "spatial_research_statistics_schema" in summary
 
@@ -452,7 +453,7 @@ def test_spatial_active_inference_gallery_emits_four_manifested_runs(
         assert run_manifest["validation"]["status"] == "passed"
         assert run["status"] == "passed"
         assert run["visualizations"]
-        assert run["metrics"]["pymdp_version"] == "1.0.3"
+        assert run["metrics"]["pymdp_version"] == EXPECTED_PYMDP_VERSION
         assert run["metrics"]["h3_version"] == "4.5.0"
         assert run["metrics"]["spatial_policy_probability_std"] > 1e-4
         assert any(

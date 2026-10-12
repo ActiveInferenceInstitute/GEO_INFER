@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 0.4.0 candidate preparation
 
+- Pin ACT to `inferactively-pymdp==1.0.4` (hashable policies, an exact
+  parameter info-gain fix, and a `jax<0.11.1` cap that the locked JAX 0.4.38
+  already satisfies). The Cascadia river-homing run is bit-identical under 1.0.4:
+  every observation, action, belief and float diagnostic matches 1.0.3, and only
+  the recorded version changes. The required version now lives in one constant
+  per owner (`EXPECTED_PYMDP_VERSION` in the adapter, `REQUIRED_PYMDP_VERSION` in
+  each validator); tests, run titles and the gallery read it instead of repeating
+  a literal, and the README generator derives its pymdp prose from the pin.
+
 - Make INSURANCE queue timing tests deterministic with controlled timestamps,
   exact running-mean assertions and legitimate zero waits, removing dependence
   on wall-clock resolution without changing production queue behavior.

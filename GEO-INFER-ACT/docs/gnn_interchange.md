@@ -59,7 +59,7 @@ trace = run_gnn_inference(artifact, [
 ```
 
 At time t, ACT conditions once using A and the current prior, evaluates policies
-through real pymdp 1.0.3 including E, and propagates once with the selected B
+through real pymdp 1.0.4 including E, and propagates once with the selected B
 slice to obtain the prior at t+1. Exact categorical conditioning retains
 structural zeros. Backend posterior agreement is checked at 1e-5 tolerance;
 zero-probability observations fail instead of receiving invented likelihoods.

@@ -9,6 +9,7 @@ from typing import Any
 from geo_infer_act.runners.contracts import RunConfig, ScenarioRunResult
 from geo_infer_act.runners.io import ensure_output_tree, to_jsonable, utc_now
 from geo_infer_act.runners.scenarios import run_scenario
+from geo_infer_act.utils.pymdp_adapter import EXPECTED_PYMDP_VERSION
 
 
 GALLERY_SCHEMA_VERSION = "geo-infer-act-spatial-gallery/v1"
@@ -123,7 +124,7 @@ def _build_gallery_index(gallery_manifest: dict[str, Any]) -> str:
 <body>
   <header>
     <h1>GEO-INFER-ACT Spatial Active Inference Gallery</h1>
-    <p>Deterministic real-H3 simulations using inferactively-pymdp 1.0.3 and h3-py 4.5.0. Each link opens a manifest-backed visualization with metadata and plotted-data sidecars.</p>
+    <p>Deterministic real-H3 simulations using inferactively-pymdp {EXPECTED_PYMDP_VERSION} and h3-py 4.5.0. Each link opens a manifest-backed visualization with metadata and plotted-data sidecars.</p>
     <p><a href="gallery_manifest.json">gallery_manifest.json</a></p>
   </header>
   <main class="grid">{cards}</main>

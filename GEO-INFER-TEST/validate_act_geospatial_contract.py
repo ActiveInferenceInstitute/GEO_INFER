@@ -20,6 +20,8 @@ from PIL import Image
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ACT_ROOT = REPO_ROOT / "GEO-INFER-ACT"
 ACT_SRC = ACT_ROOT / "src"
+#: The one inferactively-pymdp release ACT pins and every run must record.
+REQUIRED_PYMDP_VERSION = "1.0.4"
 
 REQUIRED_GEOSPATIAL_FILES = {
     "data/full_history.json",
@@ -167,8 +169,10 @@ def validate_packaging() -> None:
     pyproject_text = (ACT_ROOT / "pyproject.toml").read_text()
     if "h3>=4.5.0,<5" not in pyproject_text:
         fail("pyproject.toml does not require h3>=4.5.0,<5")
-    if "inferactively-pymdp==1.0.3" not in pyproject_text:
-        fail("pyproject.toml does not pin inferactively-pymdp==1.0.3")
+    if f"inferactively-pymdp=={REQUIRED_PYMDP_VERSION}" not in pyproject_text:
+        fail(
+            f"pyproject.toml does not pin inferactively-pymdp=={REQUIRED_PYMDP_VERSION}"
+        )
 
 
 def validate_geospatial_outputs() -> None:
@@ -176,8 +180,8 @@ def validate_geospatial_outputs() -> None:
     from geo_infer_act.utils.h3_adapter import get_h3_adapter
     from geo_infer_act.utils.pymdp_adapter import validate_pymdp_version
 
-    if validate_pymdp_version() != "1.0.3":
-        fail("inferactively-pymdp runtime is not exactly 1.0.3")
+    if validate_pymdp_version() != REQUIRED_PYMDP_VERSION:
+        fail(f"inferactively-pymdp runtime is not exactly {REQUIRED_PYMDP_VERSION}")
     adapter = get_h3_adapter()
     with tempfile.TemporaryDirectory() as tmp:
         for scenario in ("h3", "spatial"):
@@ -218,8 +222,10 @@ def validate_geospatial_outputs() -> None:
                 if feature["geometry"]["type"] != "Polygon":
                     fail(f"{scenario} GeoJSON feature is not a Polygon")
                 properties = feature["properties"]
-                if properties.get("pymdp_version") != "1.0.3":
-                    fail(f"{scenario} GeoJSON missing pymdp 1.0.3 metadata")
+                if properties.get("pymdp_version") != REQUIRED_PYMDP_VERSION:
+                    fail(
+                        f"{scenario} GeoJSON missing pymdp {REQUIRED_PYMDP_VERSION} metadata"
+                    )
                 if properties.get("h3_version") != "4.5.0":
                     fail(f"{scenario} GeoJSON missing h3 4.5.0 metadata")
 
@@ -256,8 +262,8 @@ def validate_geospatial_outputs() -> None:
             summary = json.loads(
                 (result.output_dir / "analysis" / "run_summary.json").read_text()
             )
-            if summary.get("pymdp_version") != "1.0.3":
-                fail(f"{scenario} summary missing pymdp 1.0.3")
+            if summary.get("pymdp_version") != REQUIRED_PYMDP_VERSION:
+                fail(f"{scenario} summary missing pymdp {REQUIRED_PYMDP_VERSION}")
             if summary.get("h3_version") != "4.5.0":
                 fail(f"{scenario} summary missing h3 4.5.0")
 
@@ -320,8 +326,8 @@ def validate_geospatial_outputs() -> None:
             expected_timesteps=1,
             nested=True,
         )
-        if summary.get("pymdp_version") != "1.0.3":
-            fail("nested H3 summary missing pymdp 1.0.3")
+        if summary.get("pymdp_version") != REQUIRED_PYMDP_VERSION:
+            fail(f"nested H3 summary missing pymdp {REQUIRED_PYMDP_VERSION}")
         if summary.get("h3_version") != "4.5.0":
             fail("nested H3 summary missing h3 4.5.0")
 
@@ -347,7 +353,7 @@ def validate_pymdp_outputs(
     if len(timesteps) != expected_timesteps:
         fail(f"{scenario} pymdp diagnostics have wrong timestep count")
     for row in diagnostics:
-        if row.get("pymdp_version") != "1.0.3":
+        if row.get("pymdp_version") != REQUIRED_PYMDP_VERSION:
             fail(f"{scenario} pymdp row has wrong version: {row}")
         if row.get("h3_version") != "4.5.0":
             fail(f"{scenario} pymdp row has wrong h3 version: {row}")
@@ -420,7 +426,7 @@ def validate_spatial_trace_outputs(
     if not leaf_rows:
         fail(f"{scenario} spatial trace has no runtime leaf-cell rows")
     for row in leaf_rows:
-        if row.get("pymdp_version") != "1.0.3":
+        if row.get("pymdp_version") != REQUIRED_PYMDP_VERSION:
             fail(f"{scenario} trace row missing pymdp version: {row}")
         if row.get("h3_version") != "4.5.0":
             fail(f"{scenario} trace row missing h3 version: {row}")

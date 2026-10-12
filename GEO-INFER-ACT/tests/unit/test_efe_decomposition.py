@@ -1,4 +1,4 @@
-"""Risk/ambiguity EFE terms and their exact relation to pymdp 1.0.3 scores."""
+"""Risk/ambiguity EFE terms and their exact relation to pymdp 1.0.4 scores."""
 
 from __future__ import annotations
 

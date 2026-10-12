@@ -62,7 +62,7 @@ assert np.isclose(np.sum(result.beliefs["states"]), 1.0)
 `return_result=True` returns `ActiveInferenceStepResult`; the default `step`
 returns the `(beliefs, action)` tuple. The categorical belief payload retains the
 model's `{"states": vector}` shape. The real categorical backend is
-`inferactively-pymdp==1.0.3`, accessed through ACT's owning adapter. Invalid model
+`inferactively-pymdp==1.0.4`, accessed through ACT's owning adapter. Invalid model
 shapes, observations or backend failures cannot justify invented uniform
 results. Soft categorical observations, categorical modality indices in factored
 models, and continuous measurements have different input contracts.

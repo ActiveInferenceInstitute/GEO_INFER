@@ -65,7 +65,7 @@
 ### pymdp
 
 - [GitHub](https://github.com/infer-actively/pymdp)
-- GEO-INFER-ACT validates and uses `inferactively-pymdp==1.0.3` for categorical
+- GEO-INFER-ACT validates and uses `inferactively-pymdp==1.0.4` for categorical
   H3 active-inference runtime paths.
 
 ### SPM

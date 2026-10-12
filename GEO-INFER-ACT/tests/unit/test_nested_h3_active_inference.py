@@ -21,6 +21,7 @@ from geo_infer_act import (
 from geo_infer_act.models.multi_agent import MultiAgentModel
 from geo_infer_act.runners import RunConfig, run_scenario
 from geo_infer_act.runners.h3 import h3_cells_for_config
+from geo_infer_act.utils.pymdp_adapter import EXPECTED_PYMDP_VERSION
 
 
 def _leaf_cells() -> list[str]:
@@ -171,7 +172,7 @@ def test_nested_h3_runner_outputs_are_manifested_and_temp_scoped(
     assert result.metrics["nested_h3"] is True
     assert result.metrics["nested_orphan_count"] == 0
     assert result.metrics["pymdp_backend"] == "inferactively-pymdp"
-    assert result.metrics["pymdp_version"] == "1.0.3"
+    assert result.metrics["pymdp_version"] == EXPECTED_PYMDP_VERSION
     assert result.metrics["h3_version"] == "4.5.0"
 
     assert scoped_status() == status_before

@@ -1,4 +1,4 @@
-"""pymdp 1.0.3 backend contracts for H3 active inference."""
+"""pymdp 1.0.4 backend contracts for H3 active inference."""
 
 from __future__ import annotations
 
@@ -55,7 +55,7 @@ def test_pymdp_version_detection_is_exact(monkeypatch: pytest.MonkeyPatch) -> No
     assert validate_pymdp_version() == EXPECTED_PYMDP_VERSION
 
     monkeypatch.setattr(pymdp_adapter, "installed_pymdp_version", lambda: "0.0.7.1")
-    with pytest.raises(RuntimeError, match="inferactively-pymdp 1.0.3 is required"):
+    with pytest.raises(RuntimeError, match="is required; installed version is 0.0.7.1"):
         validate_pymdp_version()
 
 
