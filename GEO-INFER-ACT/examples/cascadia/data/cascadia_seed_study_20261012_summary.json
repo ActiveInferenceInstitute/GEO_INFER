@@ -1,0 +1,32 @@
+[
+ {
+  "arrival_fraction": 1.0,
+  "condition": "reference",
+  "home_arrivals": 8,
+  "home_censored": 0,
+  "max_pymdp_identity_gap": 5.599037784520533e-07,
+  "min_decision_margin": 0.019205867957981404,
+  "restricted_mean_first_home_steps": 28.125,
+  "runs": 8
+ },
+ {
+  "arrival_fraction": 0.0,
+  "condition": "uniform_habit",
+  "home_arrivals": 0,
+  "home_censored": 8,
+  "max_pymdp_identity_gap": 3.3996933379576433e-07,
+  "min_decision_margin": 5.871057685347125e-06,
+  "restricted_mean_first_home_steps": 47.0,
+  "runs": 8
+ },
+ {
+  "arrival_fraction": 0.0,
+  "condition": "uninformative_odor",
+  "home_arrivals": 0,
+  "home_censored": 8,
+  "max_pymdp_identity_gap": 5.352235565858621e-07,
+  "min_decision_margin": 0.17668616508415097,
+  "restricted_mean_first_home_steps": 47.0,
+  "runs": 8
+ }
+]

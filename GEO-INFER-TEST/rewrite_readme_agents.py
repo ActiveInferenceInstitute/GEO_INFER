@@ -446,6 +446,11 @@ uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
   export provenance; runs without `--gnn-repo` refuse stale fixtures.
 - `geo_infer_act.core.efe_decomposition` evaluates risk and ambiguity and the
   exact relation to pymdp @PYMDP@'s score; see `docs/cascadia_river_homing.md`.
+- `examples/cascadia/cascadia_study.py` compares declared seed grids under
+  reference, uniform-habit and uninformative-odor assumptions. It retains
+  source custody, every trajectory and censored arrivals; `validate_study.py`
+  checks the archive without rerunning inference. The retained edition is
+  documented in `docs/cascadia_seed_study_20261012.md`.
 """.replace("@PYMDP@", pinned_version(module, "inferactively-pymdp"))
     if module.name == "GEO-INFER-SPACE":
         return """

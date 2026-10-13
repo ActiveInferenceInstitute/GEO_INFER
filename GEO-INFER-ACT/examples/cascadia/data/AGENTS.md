@@ -21,6 +21,10 @@
 
 ## Local Contents
 
+- `cascadia_seed_outcomes_20261012.svg`
+- `cascadia_seed_study_20261012.zip`
+- `cascadia_seed_study_20261012_manifest.json`
+- `cascadia_seed_study_20261012_summary.json`
 - `smith_river_homing.domain.json`
 - `smith_river_homing.export.json`
 - `smith_river_homing.geo-infer.json`

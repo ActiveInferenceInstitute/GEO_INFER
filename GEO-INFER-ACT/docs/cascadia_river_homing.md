@@ -290,8 +290,15 @@ seeds pair initial RNG streams; differing actions and likelihoods can produce
 different observation and state histories. The retained decision margin must
 be read alongside outcomes: a uniform habit can create tied one-step policies.
 Ties are reported, never rejected merely because they impair homing.
+The constant odor row also changes the cue frequencies relative to the
+reference process. This condition removes dependence on true odor; it does
+not isolate the value of information while preserving marginal cue frequencies.
 
 ## Extending the example across repositories
+
+The [2026-10-12 retained study](cascadia_seed_study_20261012.md) includes the
+full trace/source archive, an individual-seed figure, exact summaries and the
+qualification results. It is a dated edition, with separate native-proof scope.
 
 1. **GEO-INFER owns the domain and experiment.** Keep geometry custody,
    directed relations, exact model assumptions, clocks, seed grids and censored
