@@ -2679,6 +2679,9 @@ docs = [
     { name = "sphinx" },
     { name = "sphinx-rtd-theme" },
 ]
+examples = [
+    { name = "pydantic" },
+]
 gnn = [
     { name = "geo-infer-time" },
 ]
@@ -2716,6 +2719,7 @@ requires-dist = [
     { name = "pillow", marker = "extra == 'dev'", specifier = ">=8.3.0" },
     { name = "plotly", marker = "extra == 'backends'", specifier = ">=5.0.0" },
     { name = "psutil", marker = "extra == 'dev'", specifier = ">=7.0.0" },
+    { name = "pydantic", marker = "extra == 'examples'", specifier = ">=2.0,<3" },
     { name = "pymc", marker = "extra == 'backends'", specifier = ">=4.0.0" },
     { name = "pyro-ppl", marker = "extra == 'backends'", specifier = ">=1.7.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
@@ -2731,7 +2735,7 @@ requires-dist = [
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
     { name = "torch", marker = "extra == 'backends'", specifier = ">=1.9.0" },
 ]
-provides-extras = ["backends", "space", "gnn", "dev", "docs", "integrations"]
+provides-extras = ["examples", "backends", "space", "gnn", "dev", "docs", "integrations"]
 
 [[package]]
 name = "geo-infer-ag"

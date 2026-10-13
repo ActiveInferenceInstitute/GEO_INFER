@@ -216,6 +216,107 @@ transition literal. The fep_lean checks are the slice's
   about pymdp's float32 arithmetic, about H3 geometry beyond the recorded
   adjacency table, or about real fish.
 
+## Seed and assumption sensitivity
+
+The reference seed is an explanation, not an estimate of a population's
+homing rate. Run the bounded study from the GEO-INFER repository root:
+
+```bash
+uv run python GEO-INFER-ACT/examples/cascadia/cascadia_study.py \
+  --gnn-repo ../Generalized_Notation_Notation \
+  --gnn-python ../Generalized_Notation_Notation/.venv/bin/python \
+  --output GEO-INFER-ACT/examples/outputs/cascadia_seed_study_new
+```
+
+Prepare the GNN interpreter with its `geo-infer` extra in that checkout.
+The ACT `examples` extra declares Pydantic 2 for study inputs and outcomes;
+the normal workspace `uv sync --all-packages --all-extras --all-groups`
+includes it. The study also uses the existing ACT/SPACE/GNN integration
+dependencies of the reference example.
+Every output directory must be new. An interrupted or failed directory is
+retained; choose a new name for a retry. No canonical fixture is rewritten.
+The default study uses process seeds 0 through 7, agent seed 0, and 48
+observations under each condition. `--seeds`, `--steps`, `--agent-seed` and
+`--conditions` select a smaller or different declared design. Duplicate seeds,
+empty grids, out-of-range integers and designs above 8,192 observed steps are
+rejected before creating output.
+
+| Condition | Exact assumption changed | What remains shared |
+| --- | --- | --- |
+| `reference` | None | Reference configuration |
+| `uniform_habit` | E becomes `(1/4, 1/4, 1/4, 1/4)` | A, B, C, D, geometry and clock |
+| `uninformative_odor` | All three true-odor rows become `(1/2, 1/4, 1/4)` | Habitat likelihood, B, C, D, E, geometry and clock |
+
+Each condition is compiled with the exact model compiler and exported once
+through GNN's real CLI. Source, ordered H3 identifiers, domain, artifact and
+export record are retained in its directory. Every seed retains the closed
+loop, full diagnostics, summary and typed outcome. Replay, prior light-cone,
+posterior support and the numerical EFE identity are checked. Failed numerical
+qualification is retained and causes a failed exit; it cannot produce a
+qualified study. A runtime/export error aborts with its original exception and
+no successful study manifest.
+
+```bash
+uv run python GEO-INFER-ACT/examples/cascadia/validate_study.py \
+  GEO-INFER-ACT/examples/outputs/cascadia_seed_study_new
+```
+
+This read-only check re-hashes the bound files and checks the ordered grid,
+numerical qualifications and recomputed summary. It establishes static
+custody/summary consistency, not a fresh runtime replay or native proof.
+Add `--geo-infer-root .` to compare the retained source owners with this live
+checkout. The study freezes its example tools and all ACT/SPACE Python source
+files plus workspace/module dependency manifests before execution, records
+the revision and dirty-workspace flag, and
+refuses qualification if those owner bytes change during the run. A revision
+beside `workspace_dirty: true` is an ancestry reference, not a claim that the
+run used only committed code. Numerical qualification and source cleanliness
+remain separate fields.
+
+`outcomes.json` keeps every seed. `summary.json` reports arrivals and censoring,
+and `seed_outcomes.png` shows individual outcomes. First arrival T is indexed
+from the initial observed state at step 0. For H observations the last recorded
+state is H-1; the transition sampled after it is not observed. An unreached home
+therefore has a null arrival and is right-censored at H-1. The reported
+restricted mean is the empirical average of `min(T, H-1)` across **all** seeds,
+not a successful-run-only mean. An arrival exactly at H-1 is still an arrival.
+The finite seed grid is descriptive; no ecological confidence interval or
+general homing-performance claim follows from it.
+
+The process uses its own condition's A and B, so odor removal changes both the
+animal's simulated cues and the agent's likelihood. This is a matched-model
+assumption comparison, not a misspecified-sensor experiment. Equal process
+seeds pair initial RNG streams; differing actions and likelihoods can produce
+different observation and state histories. The retained decision margin must
+be read alongside outcomes: a uniform habit can create tied one-step policies.
+Ties are reported, never rejected merely because they impair homing.
+
+## Extending the example across repositories
+
+1. **GEO-INFER owns the domain and experiment.** Keep geometry custody,
+   directed relations, exact model assumptions, clocks, seed grids and censored
+   outcomes explicit. For a new watershed, change the selection/configuration,
+   check state order and locality, then export into a new edition.
+2. **GNN owns interchange.** Re-export the named source with explicit H3
+   identifiers and step seconds; reject ambiguous/transposed B axes. Preserve
+   the artifact digest and exporter revision. Do not import a sibling package
+   into the runtime environment.
+3. **fep_formal owns the exact proof instance.** The reference receipt applies
+   only to its bound fixture bytes. A condition's changed A or E needs a new
+   named instance, theorem review, native compile, axiom inspection and real
+   mutation controls before it has a proof claim. The existing slice's refresh
+   command targets the reference fixture and must not be used to overwrite it
+   with study conditions.
+4. **LectureCreate owns a frozen teaching edition.** Freeze a committed,
+   qualified source bundle, derive narration from facts and render to a new
+   directory. Do not add study results to the existing reference video's
+   metadata as though that video contains them. Visual interpolation must
+   remain distinct from inferred intermediate states.
+
+See the GNN guide at `docs/other/geo_infer/cascadia_river_homing.md`, the
+fep_formal guide at `specs/cascadia-geo-act-proof/README.md`, and LectureCreate's
+`examples/cascadia_geo_act/README.md` in their respective repositories.
+
 ## Further reading
 
 - [GNN and GEO-INFER interchange](./gnn_interchange.md): the contract this example exercises

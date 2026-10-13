@@ -23,6 +23,11 @@
 
 - `data/`
 - `cascadia_homing.py`
+- `cascadia_study.py`
+- `study_contract.py`
+- `study_custody.py`
+- `study_figure.py`
+- `validate_study.py`
 - `cascadia_homing.yaml`
 
 ## Validation

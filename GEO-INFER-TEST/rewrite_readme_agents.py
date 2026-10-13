@@ -634,7 +634,7 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
 
 - Production ACT H3 runtime paths must use
   `geo_infer_act.utils.pymdp_adapter` and fail if `inferactively-pymdp` is not
-  exactly `1.0.3`.
+  exactly `@PYMDP@`.
 - Keep flat H3 method signatures and dictionary return shapes backward-compatible.
 - Keep trace diagnostics JSON-safe and backed by typed result classes:
   `H3CellDiagnostics`, `H3EdgeDiagnostics`, `H3LevelDiagnostics`, and
@@ -697,7 +697,11 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
   `--refresh-fixtures`, then refresh the fep_lean slice fixtures.
 - `run_closed_loop` must keep replaying the full record through
   `run_gnn_inference` and raise on any disagreement.
-"""
+- Seed studies must export each assumption condition through GNN, retain every
+  trajectory and failed qualification, and count right-censored arrivals.
+- Variant studies never inherit the reference fixture's native Lean receipt;
+  qualify an explicitly named variant instance before making a proof claim.
+""".replace("@PYMDP@", pinned_version(module, "inferactively-pymdp"))
     if module.name == "GEO-INFER-SPACE":
         return """
 ## Current Nested H3 Contracts

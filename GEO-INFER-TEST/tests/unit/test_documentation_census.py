@@ -1,6 +1,7 @@
 """Catalog drift is rejected before expensive manuscript execution."""
 
 import importlib.util
+from dataclasses import replace
 import sys
 from pathlib import Path
 
@@ -67,3 +68,20 @@ def test_strict_documentation_cli_rejects_drift(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(sys, "argv", [str(script), "--strict"])
     assert validator.main() == 1
     assert "measured count is 2" in capsys.readouterr().err
+
+
+def test_act_agent_contract_reads_the_declared_pymdp_pin():
+    script = Path(__file__).resolve().parents[2] / "rewrite_readme_agents.py"
+    spec = importlib.util.spec_from_file_location("census_rewriter_pin", script)
+    assert spec and spec.loader
+    rewriter = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = rewriter
+    spec.loader.exec_module(rewriter)
+    module = rewriter.discover_modules()["GEO-INFER-ACT"]
+    pin = rewriter.pinned_version(module, "inferactively-pymdp")
+    text = rewriter.module_agent_notes(module.path / "AGENTS.md", module)
+    assert f"exactly `{pin}`" in text
+    changed = replace(module, dependencies=["inferactively-pymdp==9.8.7"])
+    control = rewriter.module_agent_notes(module.path / "AGENTS.md", changed)
+    assert "exactly `9.8.7`" in control
+    assert f"exactly `{pin}`" not in control

@@ -47,6 +47,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+examples = ["pydantic>=2.0,<3"]
 backends = [
     "torch>=1.9.0",
     "pyro-ppl>=1.7.0",
