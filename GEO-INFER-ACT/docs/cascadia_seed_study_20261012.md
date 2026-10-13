@@ -27,7 +27,7 @@ ecological homing rate or a confidence interval. The odor condition also
 changes cue frequencies, so it does not isolate information value under a
 preserved marginal observation distribution.
 
-![Every process seed's arrival or censoring, with the graph lower bound shown.](../examples/cascadia/data/cascadia_seed_outcomes_20261012.svg)
+![Every process seed's arrival or censoring, with the graph lower bound shown.](../examples/cascadia/data/cascadia_seed_outcomes_20261012_svg_v2.svg)
 
 The largest pymdp identity gap across all conditions is below 10^-5. The
 uniform-habit condition has a minimum policy-posterior decision margin of
@@ -58,7 +58,7 @@ All 149 frozen code and dependency-owner files match the named GEO-INFER
 revision byte for byte. The manifest honestly retains `workspace_dirty: true`:
 concurrent documentation generation changed `manuscript/config.yaml`; its
 simulation owners did not change. The final source-drift list is empty, and
-read-only validation against the live checkout passes. The archived config
+read-only validation against that source revision passed. The archived config
 is a custody snapshot whose data paths were originally relative to the
 reference example; use the maintained example config when generating a new
 study from a checkout.
@@ -72,13 +72,41 @@ uv run python -m zipfile -e \
   GEO-INFER-ACT/examples/outputs/cascadia_retained_check
 uv run python GEO-INFER-ACT/examples/cascadia/validate_study.py \
   GEO-INFER-ACT/examples/outputs/cascadia_retained_check/cascadia_seed_study_20261012_final \
-  --geo-infer-root .
 ```
 
 This static check is not a new execution. Generate a new seed-study edition
 to repeat the simulation with the named environments. Later owner changes
 can make the optional live comparison fail while the archived edition remains
 an intact historical record.
+
+## SVG publication edition 2
+
+The first publication's raw Matplotlib SVG contained trailing spaces. Its
+whitespace gate failed, and the shell sequence erroneously continued to commit.
+The corrected producer normalizes SVG whitespace before hashing, and its test
+parses the XML, checks every line and confirms that the plotting CLI refuses
+to overwrite an existing file without changing its bytes. The original study
+archive remains intact.
+
+A fresh 24-run study from clean GEO-INFER
+`1a57483ebe49cf09919a90d76aa4f5a97df95b80` passes every gate. Every trajectory,
+diagnostic, run summary, outcome and aggregate summary is byte-identical to
+the first edition; the visualization/source custody and exporter revision are
+new. All three exports record GNN
+`bae267688d1c03553ff0e8355db4ff62e99dde90`.
+
+- [Edition 2 archive](../examples/cascadia/data/cascadia_seed_study_20261012_svg_v2.zip):
+  2,205,125 bytes, SHA-256
+  `e0aaedc537ce78adf92782878440df0ecafac9c910d9123e3aca6ba45fea3179`.
+- [Edition 2 manifest](../examples/cascadia/data/cascadia_seed_study_20261012_svg_v2_manifest.json):
+  `workspace_dirty: false`, empty source-drift list, numerical qualification true,
+  native claim readiness false. Its SVG has zero trailing-whitespace lines.
+- The focused post-correction runner passes all seven study/custody tests,
+  including descendant ownership. The preceding full ACT run passes 683 tests.
+
+For a live source comparison, extract edition 2 into a new directory and use
+`validate_study.py .../cascadia_seed_study_20261012_svg_v2 --geo-infer-root .`.
+The checker remains fail-closed when any frozen owner has changed.
 
 ## Verification and retained failures
 
@@ -106,6 +134,13 @@ an intact historical record.
   was weakened. Failed and successful receipts remain under ignored
   `examples/outputs/cascadia_study_validation*` and
   `examples/outputs/cascadia_custody_*_probe`.
+- Hosted secret scanning found four instances of two public SPACE source
+  digests in the first manifest. Their SHA-256 values were independently
+  recomputed. The [secret-scan policy](../../GEO-INFER-TEST/docs/secret_scan_policy.md#2026-10-12-cascadia-manifest-findings)
+  requires the exact digest and edition-manifest path together. The pinned
+  scanner passes the allowlisted values; a different value in the same path
+  and the same value in a different path both fail. Full-history scanning
+  reports zero findings with that precise policy.
 
 LectureCreate's existing 15-minute reference video remains a separate frozen
 edition. Its metadata handoff now explains that distinction. Hosted

@@ -5,9 +5,12 @@ Data workspace within `GEO-INFER-ACT`.
 ## Contents
 
 - `cascadia_seed_outcomes_20261012.svg`
+- `cascadia_seed_outcomes_20261012_svg_v2.svg`
 - `cascadia_seed_study_20261012.zip`
 - `cascadia_seed_study_20261012_manifest.json`
 - `cascadia_seed_study_20261012_summary.json`
+- `cascadia_seed_study_20261012_svg_v2.zip`
+- `cascadia_seed_study_20261012_svg_v2_manifest.json`
 - `smith_river_homing.domain.json`
 - `smith_river_homing.export.json`
 - `smith_river_homing.geo-infer.json`

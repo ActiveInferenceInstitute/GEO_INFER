@@ -22,6 +22,13 @@ paths = [
 rules = ["generic-api-key", "curl-auth-header"]
 
 [[allowlists]]
+description = "Cascadia manifest: two independently checked public SPACE source SHA-256 digests, not API credentials"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['^GEO-INFER-ACT/examples/cascadia/data/cascadia_seed_study_20261012(?:_svg_v2)?_manifest\.json$']
+regexes = ['^(?:bc217359dea513d9dbf4b82094ef3ca4ec485913cd59d912844e26565e0f0ec9|7e3f6bba60139bdcbcf1882e86d185d0391ef5594ee35cb0adc56c0a95af936c)$']
+
+[[allowlists]]
 description = "synthetic-test-credentials: synthetic credentials in test fixtures and monkeypatched environments (COMMS rest-api tests, DATA compression tests, OPS conftest/config/security tests, SEC conftest)"
 paths = [
   'GEO-INFER-COMMS/tests/unit/test_rest_api\.py',

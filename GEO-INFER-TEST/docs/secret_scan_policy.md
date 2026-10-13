@@ -66,6 +66,36 @@ None is a live credential:
 - A real credential is **never** allowlisted: it is revoked with the
   provider first, then removed from the tree, then the scan is re-run.
 
+## 2026-10-12 Cascadia manifest findings
+
+The full-history scan of `4660d3cfe1752e9a5f1dda2eee29a29fed7ea9bb`
+reported four `generic-api-key` findings at lines 138, 157, 387 and 406 of
+`GEO-INFER-ACT/examples/cascadia/data/cascadia_seed_study_20261012_manifest.json`.
+The rule reads API-related filenames followed by high-entropy SHA-256 values.
+Each value occurs in the bound-files map and the source-owner map:
+
+| Public source owner | Independently recomputed SHA-256 |
+| --- | --- |
+| `GEO-INFER-SPACE/src/geo_infer_space/api/rest_api.py` | `bc217359dea513d9dbf4b82094ef3ca4ec485913cd59d912844e26565e0f0ec9` |
+| `GEO-INFER-SPACE/src/geo_infer_space/core/api_clients.py` | `7e3f6bba60139bdcbcf1882e86d185d0391ef5594ee35cb0adc56c0a95af936c` |
+
+These values match the exact public file bytes, not credentials. The new
+exception requires **both** one of the two named edition-manifest paths and
+one of these two exact extracted digests, and applies only to
+`generic-api-key`. It excludes no archive, whole manifest or rule. A different
+credential in the same manifest, or either value in a different path, remains
+subject to detection. The configuration uses the pinned version's
+[documented AND matching](https://github.com/gitleaks/gitleaks/blob/v8.30.1/README.md#configuration).
+
+The checksum-verified Darwin/arm64 8.30.1 binary was invoked on three real
+temporary Git repositories. The exact named-path/digest fixture exits 0 with
+no findings; a different 64-character value in the same manifest exits 1, and
+the allowed value in `notes.json` exits 1. Both rejected cases report
+`generic-api-key`. A full-history scan reports zero findings across 1,043
+commits and approximately 2.45 GB. Logs and redacted JSON receipts remain
+under `GEO-INFER-ACT/examples/outputs/gitleaks_controls_20261012` and
+`cascadia_gitleaks_history_20261012.*`. Later commits require a new scan.
+
 ## Pre-rewrite objects
 
 The 2026-09-07 published-history rewrite means GitHub may still serve
