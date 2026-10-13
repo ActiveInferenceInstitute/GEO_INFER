@@ -12,6 +12,8 @@ Models workspace within `GEO-INFER-ACT`.
 - `multi_agent.py`
 - `resource.py`
 - `river_homing.py`
+- `river_homing_study.py`
+- `river_homing_study_evidence.py`
 - `urban.py`
 
 ## Public Interface
@@ -27,7 +29,15 @@ Models workspace within `GEO-INFER-ACT`.
 - `river_homing.py:RiverHomingParameters` (class)
 - `river_homing.py:RiverHomingModel` (class)
 - `river_homing.py:compile_river_homing` (function)
-- `urban.py:UrbanModel` (class)
+- `river_homing_study.py:load_study_design` (function)
+- `river_homing_study.py:Condition` (class)
+- `river_homing_study.py:condition_parameters` (function)
+- `river_homing_study.py:StudyDesign` (class)
+- `river_homing_study.py:RunMeasures` (class)
+- `river_homing_study.py:SeedOutcome` (class)
+- `river_homing_study.py:ConditionSummary` (class)
+- `river_homing_study.py:summarize` (function)
+- `river_homing_study_evidence.py:retained_run_problems` (function)
 
 ## Module Metadata
 

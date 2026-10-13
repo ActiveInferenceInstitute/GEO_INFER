@@ -11,8 +11,14 @@ Runners workspace within `GEO-INFER-ACT`.
 - `gallery.py`
 - `h3.py`
 - `io.py`
+- `model_pair.py`
+- `model_pair_explorer.py`
+- `model_pair_plot.py`
 - `scenarios.py`
+- `study_diagnostics.py`
+- `study_visualization.py`
 - `wrapper.py`
+- `model_pair_explorer.html`
 
 ## Public Interface
 
@@ -20,6 +26,7 @@ Runners workspace within `GEO-INFER-ACT`.
 - `cli.py:config_from_args` (function)
 - `cli.py:main` (function)
 - `cli.py:run_all_main` (function)
+- `closed_loop.py:ClosedLoopInferenceError` (class)
 - `closed_loop.py:ClosedLoopResult` (class)
 - `closed_loop.py:run_closed_loop` (function)
 - `closed_loop.py:trace_diagnostics` (function)
@@ -35,7 +42,6 @@ Runners workspace within `GEO-INFER-ACT`.
 - `h3.py:observation_dict_to_vector` (function)
 - `h3.py:create_h3_model` (function)
 - `h3.py:run_h3_active_inference` (function)
-- `io.py:to_jsonable` (function)
 
 ## Module Metadata
 

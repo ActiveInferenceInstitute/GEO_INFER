@@ -171,6 +171,18 @@ uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
   source custody, every trajectory and censored arrivals; `validate_study.py`
   checks the archive without rerunning inference. The retained edition is
   documented in `docs/cascadia_seed_study_20261012.md`.
+- `models/river_homing_study.py` owns study semantics and bounded JSON designs;
+  `models/river_homing_study_evidence.py` checks saved run agreement. The
+  `--design` option excludes CLI study overrides.
+- `examples/cascadia/study_explorer.py` projects a qualified edition to an
+  offline interactive HTML view through `runners/study_visualization.py`.
+  See `docs/cascadia_workflow.md` for configuration, ownership and teaching.
+- `runners/study_diagnostics.py` scores recorded observation-time posteriors;
+  `examples/cascadia/study_diagnostics.py` exports manifest-bound JSON. See
+  `docs/cascadia_diagnostics.md` for units, clock alignment and score bounds.
+- `runners/model_pair.py` executes separate compatible GNN agent/process
+  artifacts with real pymdp; `examples/cascadia/run_model_pair.py` creates
+  editions and checks integrity or fresh replay. See `docs/cascadia_model_mismatch.md`.
 
 ## Documentation Notes
 

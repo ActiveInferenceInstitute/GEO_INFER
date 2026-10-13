@@ -7,11 +7,17 @@ Cascadia workspace within `GEO-INFER-ACT`.
 - `data/`
 - `cascadia_homing.py`
 - `cascadia_study.py`
+- `plot_model_pairs.py`
+- `run_model_pair.py`
 - `study_contract.py`
 - `study_custody.py`
+- `study_diagnostics.py`
+- `study_explorer.py`
 - `study_figure.py`
 - `validate_study.py`
 - `cascadia_homing.yaml`
+- `study_design.json`
+- `study_explorer.html`
 
 ## Public Interface
 
@@ -33,8 +39,8 @@ Cascadia workspace within `GEO-INFER-ACT`.
 - `cascadia_homing.py:main` (function)
 - `cascadia_study.py:StudyPaths` (class)
 - `cascadia_study.py:run_study` (function)
+- `cascadia_study.py:parse_study_arguments` (function)
 - `cascadia_study.py:main` (function)
-- `study_contract.py:Condition` (class)
 
 ## Module Metadata
 

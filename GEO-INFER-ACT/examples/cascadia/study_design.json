@@ -1,0 +1,6 @@
+{
+  "seeds": [0, 1, 2, 3, 4, 5, 6, 7],
+  "conditions": ["reference", "uniform_habit", "uninformative_odor"],
+  "steps": 48,
+  "agent_seed": 0
+}

@@ -26,6 +26,7 @@ from study_contract import (
     SeedOutcome,
     StudyDesign,
     condition_parameters,
+    load_study_design,
     summarize,
 )
 from study_figure import save_study_figure
@@ -168,27 +169,53 @@ def run_study(paths: StudyPaths, design: StudyDesign) -> Path:
     return output / "study_manifest.json"
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def parse_study_arguments(
+    argv: Sequence[str] | None = None,
+) -> tuple[StudyPaths, StudyDesign]:
     """Parse the seed grid before any outputs are created."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=homing.DEFAULT_CONFIG)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--gnn-repo", type=Path, required=True)
     parser.add_argument("--gnn-python", type=Path, required=True)
-    parser.add_argument("--seeds", nargs="+", type=int, default=list(range(8)))
     parser.add_argument(
-        "--conditions", nargs="+", choices=list(Condition), default=list(Condition)
+        "--design",
+        type=Path,
+        help="Portable study-design JSON; excludes study overrides",
     )
-    parser.add_argument("--steps", type=int, default=48)
-    parser.add_argument("--agent-seed", type=int, default=0)
+    parser.add_argument("--seeds", nargs="+", type=int)
+    parser.add_argument("--conditions", nargs="+", choices=list(Condition))
+    parser.add_argument("--steps", type=int)
+    parser.add_argument("--agent-seed", type=int)
     args = parser.parse_args(argv)
-    design = StudyDesign(
-        seeds=tuple(args.seeds),
-        conditions=tuple(Condition(value) for value in args.conditions),
-        steps=args.steps,
-        agent_seed=args.agent_seed,
-    )
+    overrides = {
+        name: getattr(args, name)
+        for name in ("seeds", "conditions", "steps", "agent_seed")
+        if getattr(args, name) is not None
+    }
+    if args.design is not None and overrides:
+        parser.error(
+            "--design cannot be combined with --seeds, --conditions, --steps or --agent-seed"
+        )
+    try:
+        if args.design is not None:
+            design = load_study_design(args.design)
+        else:
+            if "seeds" in overrides:
+                overrides["seeds"] = tuple(args.seeds)
+            if "conditions" in overrides:
+                overrides["conditions"] = tuple(
+                    Condition(value) for value in args.conditions
+                )
+            design = StudyDesign(**overrides)
+    except (OSError, ValueError) as exc:
+        parser.error(str(exc))
     paths = StudyPaths(args.config, args.output, args.gnn_repo, args.gnn_python)
+    return paths, design
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    paths, design = parse_study_arguments(argv)
     print(run_study(paths, design))
     return 0
 

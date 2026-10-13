@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
 from study_contract import ConditionSummary, SeedOutcome, StudyDesign, summarize
 from study_custody import SourceCustody, source_problems
+from geo_infer_act.models.river_homing_study_evidence import retained_run_problems
 
 
 class StudyManifest(BaseModel):
@@ -70,6 +71,8 @@ def validate_study(output: Path, geo_infer_root: Path | None = None) -> tuple[st
     ):
         if required not in manifest.files:
             problems.append(f"required file is unbound: {required}")
+    if problems:
+        return tuple(problems)
     outcomes = TypeAdapter(tuple[SeedOutcome, ...]).validate_json(
         (root / "outcomes.json").read_bytes()
     )
@@ -100,6 +103,7 @@ def validate_study(output: Path, geo_infer_root: Path | None = None) -> tuple[st
         computed = item.measures.qualification_problems()
         if computed or item.problems != computed or item.qualified != (not computed):
             problems.append(f"invalid qualification: {expected_directory}")
+        problems.extend(retained_run_problems(root, item, manifest.design))
     for condition in manifest.design.conditions:
         for suffix in (
             "gnn.md",

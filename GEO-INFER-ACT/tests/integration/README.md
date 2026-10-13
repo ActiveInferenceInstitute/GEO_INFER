@@ -6,11 +6,16 @@ Integration workspace within `GEO-INFER-ACT`.
 
 - `test_active_sensing_trajectories.py`
 - `test_bayeux_backend.py`
+- `test_cascadia_diagnostics.py`
+- `test_cascadia_explorer.py`
 - `test_cascadia_river_homing.py`
 - `test_cascadia_study.py`
 - `test_cascadia_study_custody.py`
+- `test_cascadia_study_design.py`
+- `test_gnn_model_mismatch.py`
 - `test_h3_example_smoke.py`
 - `test_integration.py`
+- `test_model_pair_explorer.py`
 - `test_space_integration.py`
 - `test_stigmergy.py`
 

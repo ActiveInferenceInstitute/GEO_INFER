@@ -241,6 +241,21 @@ observations under each condition. `--seeds`, `--steps`, `--agent-seed` and
 empty grids, out-of-range integers and designs above 8,192 observed steps are
 rejected before creating output.
 
+For portable configuration, pass
+`--design GEO-INFER-ACT/examples/cascadia/study_design.json`. This tracked JSON
+declares the same eight seeds, three conditions, 48 observations and agent seed
+0 as the defaults. Copy it to a new file to declare a different ordered grid.
+Unknown fields, duplicate JSON keys, booleans or strings in integer fields and
+invalid grids fail before output creation. `--design` cannot be combined with
+`--seeds`, `--conditions`, `--steps` or `--agent-seed`, even when an explicit
+override equals the default. Paths to the model configuration, GNN checkout,
+GNN interpreter and output remain CLI arguments so the design is portable.
+
+The importable `geo_infer_act.models.river_homing_study` module owns
+`StudyDesign`, condition transforms, numerical measures and censored summaries.
+`examples/cascadia/study_contract.py` preserves the existing import surface.
+`cascadia_study.py` orchestrates loading, export, execution and retained files.
+
 | Condition | Exact assumption changed | What remains shared |
 | --- | --- | --- |
 | `reference` | None | Reference configuration |
@@ -264,6 +279,12 @@ uv run python GEO-INFER-ACT/examples/cascadia/validate_study.py \
 This read-only check re-hashes the bound files and checks the ordered grid,
 numerical qualifications and recomputed summary. It establishes static
 custody/summary consistency, not a fresh runtime replay or native proof.
+It also compares each run's summary with its aggregate measures and each
+run's outcome with the aggregate outcome. Closed-loop process and agent seeds,
+trace seed, horizon, ordered states, artifact digest and observations must agree
+with the declared design and the retained condition artifact. Rehashing a
+contradictory run file therefore cannot make the study pass. The check does
+not recompute posterior trajectories from the observation history.
 Add `--geo-infer-root .` to compare the retained source owners with this live
 checkout. The study freezes its example tools and all ACT/SPACE Python source
 files plus workspace/module dependency manifests before execution, records

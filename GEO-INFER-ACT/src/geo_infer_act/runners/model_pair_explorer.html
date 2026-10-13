@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Recorded GNN agent/process comparisons</title>
+<style>
+body{margin:0;font:14px var(--font-sans,system-ui);color:var(--foreground,#182332);background:var(--background,#fff)}
+p{line-height:1.5}label{display:inline-block;margin:5px 16px 5px 0}select{font:inherit;padding:6px;color:inherit;background:var(--background,#fff);border:1px solid var(--border,#b8c2cf);border-radius:6px}
+svg{display:block;width:100%;height:300px}text{font:12px var(--font-sans,system-ui);fill:var(--muted-foreground,#566574)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:12px 0}.legend span:before{content:"";display:inline-block;width:16px;height:3px;background:var(--c);margin-right:6px;vertical-align:middle}
+input{max-width:65%;width:350px}table{width:100%;border-collapse:collapse}td,th{padding:8px 3px;text-align:left;border-bottom:1px solid var(--border,#d8e0e8)}td:first-child{overflow-wrap:anywhere}td:last-child,th:last-child{text-align:right;font-variant-numeric:tabular-nums}
+details{margin:14px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}.muted{font-size:12px;color:var(--muted-foreground,#566574)}
+</style>
+<body>
+<strong>Recorded GNN agent/process comparisons</strong>
+<p>Actual pymdp state and one-step policy inference. Select a named seed and recorded step; the curves show retained scores over physical elapsed time.</p>
+<label>Seed <select id="seed"></select></label><label>Metric <select id="metric"><option value="posterior_entropy_nats">Posterior entropy (nats)</option><option value="brier_score">Brier score</option></select></label>
+<div class="legend" id="legend"></div><svg id="plot" role="img" aria-label="Recorded posterior diagnostics over physical elapsed hours"></svg>
+<label>Recorded step <input id="step" type="range" min="0" value="0"></label><output id="time" aria-live="polite"></output>
+<table><thead><tr><th scope="col">Edition</th><th id="column" scope="col">Entropy (nats)</th></tr></thead><tbody id="values"></tbody></table>
+<details><summary>Input identities and evidence scope</summary><pre id="identities"></pre></details>
+<p class="muted">Descriptive simulation records; no ecological validity or population effect is established. Brier uses the full state carrier. Display qualification checks supplied-manifest integrity and finite aligned scores; fresh numerical replay is a separate command. Generic Lean bounds do not certify these numerical model instances.</p>
+<script id="pair-data" type="application/json">__PAIR_DATA__</script>
+<script>
+const data=JSON.parse(document.getElementById('pair-data').textContent),seed=document.getElementById('seed'),metric=document.getElementById('metric'),step=document.getElementById('step'),plot=document.getElementById('plot');
+const colors=['var(--chart-1,#2563eb)','var(--chart-2,#d97706)','var(--chart-3,#087f69)','var(--chart-4,#be185d)','var(--chart-5,#7c3aed)','var(--chart-6,#7b5b22)'];
+seed.replaceChildren(...data.seeds.map(s=>{const option=document.createElement('option');option.value=String(s);option.textContent=String(s);return option}));step.max=String(data.steps-1);
+data.editions.forEach((edition,i)=>{const label=document.createElement('span');label.style.setProperty('--c',colors[i%colors.length]);label.textContent=edition.name.replaceAll('_',' ');document.getElementById('legend').append(label)});
+document.getElementById('identities').textContent=data.editions.map(e=>e.name+'\nmanifest '+e.manifest_sha256+'\nagent    '+e.agent_sha256+'\nprocess  '+e.process_sha256).join('\n\n');
+function svgElement(tag,attributes,text){const element=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [key,value] of Object.entries(attributes))element.setAttribute(key,String(value));if(text!==undefined)element.textContent=text;return element}
+function format(value){return value===0?'0':value<.0001?value.toExponential(2):value.toFixed(4)}
+function draw(){
+const key=metric.value,index=Number(step.value),runs=data.editions.map(e=>e.runs.find(r=>r.seed===Number(seed.value))),width=Math.max(280,plot.clientWidth),height=300,left=42,right=20,top=16,bottom=38,last=data.hours.at(-1),span=last===0?1:last;
+const maximum=runs.reduce((maximum,run)=>run.frames.reduce((value,frame)=>Math.max(value,frame[key]),maximum),0),limit=key==='brier_score'?Math.max(2,maximum):Math.max(.5,Math.ceil(maximum*2)/2),x=h=>left+h/span*(width-left-right),y=v=>height-bottom-v/limit*(height-top-bottom);
+plot.setAttribute('viewBox','0 0 '+width+' '+height);const nodes=[];
+for(let i=0;i<=4;i++){const value=limit*i/4;nodes.push(svgElement('line',{x1:left,y1:y(value),x2:width-right,y2:y(value),stroke:'var(--border,#d8e0e8)'}),svgElement('text',{x:left-6,y:y(value)+4,'text-anchor':'end'},value.toFixed(2)))}
+for(const hour of [...new Set([0,last/3,last*2/3,last])])nodes.push(svgElement('text',{x:x(hour),y:height-20,'text-anchor':'middle'},Number(hour.toFixed(2))));nodes.push(svgElement('text',{x:width/2,y:height-3,'text-anchor':'middle'},'Elapsed physical hours'));
+runs.forEach((run,i)=>{const color=colors[i%colors.length];nodes.push(svgElement('polyline',{fill:'none',stroke:color,'stroke-width':2,points:run.frames.map((f,j)=>x(data.hours[j])+','+y(f[key])).join(' ')}),svgElement('circle',{r:4,cx:x(data.hours[index]),cy:y(run.frames[index][key]),fill:color}))});plot.replaceChildren(...nodes);
+document.getElementById('time').textContent=Number(data.hours[index].toFixed(6))+' h';document.getElementById('column').textContent=key==='brier_score'?'Brier at this step':'Entropy (nats)';
+document.getElementById('values').replaceChildren(...data.editions.map((edition,i)=>{const row=document.createElement('tr'),name=document.createElement('td'),value=document.createElement('td');name.textContent=edition.name.replaceAll('_',' ');value.textContent=format(runs[i].frames[index][key]);row.append(name,value);return row}));
+}
+seed.addEventListener('change',draw);metric.addEventListener('change',draw);step.addEventListener('input',draw);new ResizeObserver(draw).observe(plot);draw();
+</script></body></html>

@@ -110,6 +110,15 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module ACT
   trajectory and failed qualification, and count right-censored arrivals.
 - Variant studies never inherit the reference fixture's native Lean receipt;
   qualify an explicitly named variant instance before making a proof claim.
+- Keep study semantics in `models/river_homing_study.py` and saved-run checks
+  in `models/river_homing_study_evidence.py`; retain the example import surface.
+- Parse `--design` before output creation and reject CLI study overrides.
+- Static study validation must compare saved per-run records with aggregates,
+  not only their hashes. Interactive display uses raw recorded probabilities
+  and actual H3 centers, with visible censoring and no new native proof claim.
+- Recorded score diagnostics use the observation-time true state and explicit
+  artifact clock. Preserve zero-mass infinite surprisal as null in JSON;
+  never clip or renormalize probabilities to make a diagnostic pass.
 
 ## Integration Notes
 

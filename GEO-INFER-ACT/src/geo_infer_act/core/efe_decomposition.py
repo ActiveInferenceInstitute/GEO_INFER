@@ -95,7 +95,7 @@ def one_step_policy_terms(
         raise ValueError("Expected A[obs, state] and B[next, previous, action]")
     if q.shape != (A.shape[1],) or C.shape != (A.shape[0],):
         raise ValueError("Belief and preferences must match A")
-    law = preference_law(C)
+    log_law = C - log_partition(C)
     state_entropy = np.array([entropy(A[:, state]) for state in range(A.shape[1])])
     terms = []
     for action in range(B.shape[2]):
@@ -105,11 +105,11 @@ def one_step_policy_terms(
         risk = float(
             (
                 predicted_outcomes[positive]
-                * (np.log(predicted_outcomes[positive]) - np.log(law[positive]))
+                * (np.log(predicted_outcomes[positive]) - log_law[positive])
             ).sum()
         )
         ambiguity = float(predicted_states @ state_entropy)
-        pragmatic = float(-(predicted_outcomes * np.log(law)).sum())
+        pragmatic = float(-(predicted_outcomes * log_law).sum())
         outcome_entropy = entropy(predicted_outcomes)
         terms.append(
             PolicyTerms(

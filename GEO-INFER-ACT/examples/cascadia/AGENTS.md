@@ -24,11 +24,17 @@
 - `data/`
 - `cascadia_homing.py`
 - `cascadia_study.py`
+- `plot_model_pairs.py`
+- `run_model_pair.py`
 - `study_contract.py`
 - `study_custody.py`
+- `study_diagnostics.py`
+- `study_explorer.py`
 - `study_figure.py`
 - `validate_study.py`
 - `cascadia_homing.yaml`
+- `study_design.json`
+- `study_explorer.html`
 
 ## Validation
 

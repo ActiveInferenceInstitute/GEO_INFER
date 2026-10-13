@@ -29,6 +29,8 @@
 - `multi_agent.py`
 - `resource.py`
 - `river_homing.py`
+- `river_homing_study.py`
+- `river_homing_study_evidence.py`
 - `urban.py`
 
 ## Validation

@@ -11,6 +11,13 @@ Data workspace within `GEO-INFER-ACT`.
 - `cascadia_seed_study_20261012_summary.json`
 - `cascadia_seed_study_20261012_svg_v2.zip`
 - `cascadia_seed_study_20261012_svg_v2_manifest.json`
+- `cascadia_study_diagnostics_20261013.html`
+- `cascadia_study_diagnostics_20261013.json`
+- `cascadia_study_explorer_20261013.html`
+- `cascadia_study_explorer_20261013_v2.html`
+- `model_pairs_20261013.html`
+- `model_pairs_20261013.svg`
+- `model_pairs_20261013.zip`
 - `smith_river_homing.domain.json`
 - `smith_river_homing.export.json`
 - `smith_river_homing.geo-infer.json`

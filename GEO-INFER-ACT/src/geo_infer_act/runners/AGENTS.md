@@ -28,8 +28,14 @@
 - `gallery.py`
 - `h3.py`
 - `io.py`
+- `model_pair.py`
+- `model_pair_explorer.py`
+- `model_pair_plot.py`
 - `scenarios.py`
+- `study_diagnostics.py`
+- `study_visualization.py`
 - `wrapper.py`
+- `model_pair_explorer.html`
 
 ## Validation
 

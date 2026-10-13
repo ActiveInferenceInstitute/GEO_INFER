@@ -1,6 +1,11 @@
 # Bind receipt hashes to the same lock bytes on POSIX and Windows checkouts.
 /uv.lock text eol=lf
 
+/GEO-INFER-ACT/examples/cascadia/data/model_pairs_20261013.zip -text
+/GEO-INFER-ACT/examples/cascadia/data/model_pairs_20261013.html text eol=lf
+/GEO-INFER-ACT/examples/cascadia/data/model_pairs_20261013.svg text eol=lf
+/GEO-INFER-ACT/src/geo_infer_act/runners/model_pair_explorer.html text eol=lf
+
 # Preserve captured publisher bytes used by regional source SHA-256 contracts.
 /GEO-INFER-PLACE/locations/cascadia/config/cascadia_volcanoes.source.json -text
 /GEO-INFER-PLACE/locations/cascadia/config/cascadia_watersheds.source.json -text

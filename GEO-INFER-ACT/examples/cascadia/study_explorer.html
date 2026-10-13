@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cascadia study explorer</title>
+<style>
+:root{color-scheme:light dark;font-family:var(--font-sans,system-ui);color:var(--foreground,#24343b)}
+body{margin:0;background:var(--background,#fff)}main{max-width:1040px;margin:auto;padding:20px 0}h1{font-size:28px;margin:0 0 8px}h2{font-size:17px}
+p{line-height:1.5}.muted{color:var(--muted-foreground,#647278);font-size:14px}.controls{display:flex;gap:16px;align-items:end;flex-wrap:wrap;margin:20px 0}
+label{display:grid;gap:6px;font-size:14px}select,button,input{font:inherit}select,button{padding:8px;border:1px solid var(--border,#aeb9bd);border-radius:6px;background:var(--card,#f5f8f8);color:inherit}
+.grid{display:grid;grid-template-columns:1.4fr 1fr;gap:20px}.panel{padding:16px;background:var(--card,#f5f8f8);border-radius:var(--radius,8px)}
+svg{width:100%;height:300px}.metrics{display:flex;gap:22px;flex-wrap:wrap}.metric strong{display:block;font-size:20px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:8px 4px;border-bottom:1px solid var(--border,#d4dcdf)}
+.scroll{max-height:280px;overflow:auto}code{overflow-wrap:anywhere;font-size:11px}#step{width:200px}
+@media(max-width:620px){main{padding:12px 0}.grid{grid-template-columns:1fr}h1{font-size:24px}}
+</style></head><body><main>
+<h1>Cascadia: compare assumptions, inspect trajectories</h1>
+<p class="muted">Recorded categorical active inference on the lower Smith River. A changed condition changes the model and the simulated process together. Seed-grid results are descriptive, with no ecological rate or new native proof claim.</p>
+<div class="controls"><label>Condition<select id="condition"></select></label><label>Process seed<select id="seed"></select></label>
+<label>Recorded step <input id="step" type="range" min="0" value="0"></label><button id="play" type="button">Play recorded steps</button></div>
+<div class="metrics" id="metrics" aria-live="polite"></div>
+<div class="grid"><section class="panel"><h2>Belief and recorded true state</h2><svg id="map" role="img" aria-label="H3 cell centers and river relations"></svg>
+<p class="muted">Cell fill shows raw posterior probability: paper = 0, teal = 1. Orange ring = recorded true state. Lines = typed river relations. Geographic cell centers, without a basemap. Playback visits recorded steps only.</p><p id="frame" aria-live="polite"></p></section>
+<section class="panel"><h2>Observed first-home fraction</h2><svg id="arrival" role="img" aria-label="Empirical first-home fractions over recorded steps"></svg>
+<p class="muted">Each curve includes every seed of its condition. Non-arrivals remain right-censored at the last observation. Dashed line = graph step lower bound.</p></section></div>
+<div class="grid"><section class="panel"><h2>Recorded uncertainty · nats</h2><svg id="uncertainty" role="img" aria-label="Posterior and policy entropy over elapsed hours"></svg></section>
+<section class="panel"><h2>Recorded state score</h2><svg id="scores" role="img" aria-label="True-state posterior mass and Brier score over elapsed hours"></svg></section></div>
+<p id="diagnostic" aria-live="polite"></p>
+<p class="muted">Scores pair each posterior with the true state that generated its cue, before the selected action's transition. Brier = sum of squared errors over all states (0–2 for an exact simplex). Entropies use natural logarithms. These posterior diagnostics describe this simulated record; they do not measure held-out prediction skill or ecological calibration.</p>
+<section><h2>Every retained seed</h2><div class="scroll"><table><thead><tr><th>Condition</th><th>Seed</th><th>First home</th><th>Censored at</th><th>EFE identity gap</th></tr></thead><tbody id="outcomes"></tbody></table></div></section>
+<p class="muted">Static custody and summary checks passed before this file was created. Playback is a visualization of retained execution, not a fresh simulation or proof. Bound study manifest SHA-256: <code id="digest"></code></p>
+</main><script type="application/json" id="study">__STUDY_DATA__</script><script>
+"use strict";
+const study=JSON.parse(document.getElementById("study").textContent);
+const condition=document.getElementById("condition"),seed=document.getElementById("seed"),slider=document.getElementById("step");
+const colors=["#176c79","#b15e2b","#7352a0"],conditions=[...new Set(study.runs.map(r=>r.outcome.condition))];
+let timer=null;
+function el(tag,text){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;}
+function svgEl(tag,attrs){const n=document.createElementNS("http://www.w3.org/2000/svg",tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));return n;}
+function option(select,value){const o=el("option",value.replaceAll("_"," "));o.value=value;select.append(o);}
+conditions.forEach(c=>option(condition,c));
+for(const r of study.runs){const m=r.outcome.measures,row=el("tr");[r.outcome.condition,r.outcome.process_seed,m.reached_home_step===null?"not observed":m.reached_home_step,m.reached_home_step===null?m.steps-1:"—",m.max_pymdp_identity_gap.toExponential(2)].forEach(v=>row.append(el("td",v)));document.getElementById("outcomes").append(row);}
+document.getElementById("digest").textContent=study.manifest_sha256;
+function current(){return study.runs.find(r=>r.outcome.condition===condition.value&&r.outcome.process_seed===Number(seed.value));}
+function stop(){if(timer!==null)clearInterval(timer);timer=null;document.getElementById("play").textContent="Play recorded steps";}
+function choose(){stop();seed.replaceChildren();study.runs.filter(r=>r.outcome.condition===condition.value).forEach(r=>option(seed,String(r.outcome.process_seed)));slider.value="0";draw();}
+function diagnosticChart(id,r,t,series,max){
+ const chart=document.getElementById(id);chart.replaceChildren();chart.setAttribute("viewBox","0 0 500 300");
+ const seconds=r.diagnostics.at(-1).elapsed_seconds,span=seconds||1;
+ for(const fraction of [0,.5,1]){const y=240-fraction*180;chart.append(svgEl("line",{x1:42,y1:y,x2:475,y2:y,stroke:"#d4dcdf"}));const label=svgEl("text",{x:2,y:y+4,fill:"currentColor","font-size":12});label.textContent=(fraction*max).toFixed(2);chart.append(label);}
+ series.forEach(([key,label],j)=>{const points=r.diagnostics.map(d=>`${42+d.elapsed_seconds/span*433},${240-d[key]/max*180}`).join(" ");chart.append(svgEl("polyline",{points,fill:"none",stroke:colors[j],"stroke-width":2}));const legend=svgEl("text",{x:42,y:16+j*17,fill:colors[j],"font-size":12});legend.textContent=label;chart.append(legend);});
+ [0,seconds].forEach(s=>{const label=svgEl("text",{x:42+s/span*433,y:265,fill:"currentColor","font-size":12,"text-anchor":"middle"});label.textContent=`${(s/3600).toFixed(1)} h`;chart.append(label);});
+ const x=42+r.diagnostics[t].elapsed_seconds/span*433;chart.append(svgEl("line",{x1:x,y1:55,x2:x,y2:240,stroke:"#d57526"}));
+}
+function draw(){
+ const r=current(),t=Number(slider.value),m=r.outcome.measures,f=r.trajectory.trace.steps[t];slider.max=m.steps-1;
+ document.getElementById("metrics").replaceChildren();
+ [["Step",`${t} / ${m.steps-1}`],["First home",m.reached_home_step===null?`censored at ${m.steps-1}`:m.reached_home_step],["Graph lower bound",`${m.home_lower_bound_steps} steps`]].forEach(([label,value])=>{const n=el("div");n.className="metric";n.append(el("strong",value),el("span",label));document.getElementById("metrics").append(n);});
+ const map=document.getElementById("map");map.replaceChildren();map.setAttribute("viewBox","0 0 560 300");
+ const xs=r.cells.map(c=>c.longitude),ys=r.cells.map(c=>c.latitude),xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys);
+ const scale=Math.min(500/(xmax-xmin||1),240/(ymax-ymin||1));
+ const points=r.cells.map(c=>[30+(c.longitude-xmin)*scale,270-(c.latitude-ymin)*scale]);
+ r.edges.forEach(([a,b])=>map.append(svgEl("line",{x1:points[a][0],y1:points[a][1],x2:points[b][0],y2:points[b][1],stroke:"#a7b2b7","stroke-width":2})));
+ points.forEach(([x,y],i)=>{const p=f.posterior[i],circle=svgEl("circle",{cx:x,cy:y,r:7,fill:`rgb(${Math.round(247+(23-247)*p)},${Math.round(247+(108-247)*p)},${Math.round(243+(121-243)*p)})`,stroke:"#647278"});const title=svgEl("title",{});title.textContent=`${r.cells[i].label} (${r.cells[i].role}); posterior ${p.toFixed(6)}`;circle.append(title);map.append(circle);if(i===r.trajectory.true_states[t])map.append(svgEl("circle",{cx:x,cy:y,r:11,fill:"none",stroke:"#d57526","stroke-width":3}));});
+ document.getElementById("frame").textContent=`True state: ${r.cells[r.trajectory.true_states[t]].label}. Cue: ${r.observation_labels[f.observation]}. Action: ${r.action_labels[f.action]}. Policy probability: ${f.policy_posterior[f.action].toFixed(4)}. Free energy: ${f.free_energy.toFixed(4)} nats.`;
+ const d=r.diagnostics[t];
+ document.getElementById("diagnostic").textContent=`Elapsed ${(d.elapsed_seconds/3600).toFixed(1)} h. State entropy ${d.posterior_entropy_nats.toFixed(4)} nats; policy entropy ${d.policy_entropy_nats.toFixed(4)} nats. True-state mass ${d.true_state_probability.toFixed(6)}; Brier ${d.brier_score.toFixed(6)}. True-state surprisal: ${d.true_state_surprisal_nats===null?"infinite (zero probability)":d.true_state_surprisal_nats.toFixed(4)+" nats"}.`;
+ diagnosticChart("uncertainty",r,t,[["posterior_entropy_nats","State posterior entropy"],["policy_entropy_nats","Policy entropy"]],Math.max(1,Math.log(r.cells.length)));
+ diagnosticChart("scores",r,t,[["true_state_probability","True-state probability (0–1)"],["brier_score","Brier score (0–2)"]],2);
+ const chart=document.getElementById("arrival");chart.replaceChildren();chart.setAttribute("viewBox","0 0 420 300");const horizon=Math.max(1,...study.runs.map(r=>r.outcome.measures.steps-1));
+ for(const fraction of [0,.5,1]){const y=240-fraction*190;chart.append(svgEl("line",{x1:40,y1:y,x2:400,y2:y,stroke:"#d4dcdf"}));const text=svgEl("text",{x:5,y:y+4,fill:"currentColor","font-size":12});text.textContent=`${fraction*100}%`;chart.append(text);}
+ conditions.forEach((c,j)=>{const runs=study.runs.filter(r=>r.outcome.condition===c);let d="";for(let k=0;k<=horizon;k++){const fraction=runs.filter(r=>r.outcome.measures.reached_home_step!==null&&r.outcome.measures.reached_home_step<=k).length/runs.length;const x=40+k/horizon*360,y=240-fraction*190;d+=`${k===0?"M":"H"}${x}${k===0?","+y:"V"+y}`;}chart.append(svgEl("path",{d,stroke:colors[j%colors.length],fill:"none","stroke-width":2}));const text=svgEl("text",{x:40,y:16+j*16,fill:colors[j%colors.length],"font-size":12});text.textContent=c.replaceAll("_"," ");chart.append(text);});
+ [0,horizon].forEach(k=>{const text=svgEl("text",{x:40+k/horizon*360,y:263,fill:"currentColor","font-size":12,"text-anchor":"middle"});text.textContent=k;chart.append(text);});
+ chart.append(svgEl("line",{x1:40+m.home_lower_bound_steps/horizon*360,y1:48,x2:40+m.home_lower_bound_steps/horizon*360,y2:240,stroke:"#647278","stroke-dasharray":"4 4"}));
+ chart.append(svgEl("line",{x1:40+t/horizon*360,y1:48,x2:40+t/horizon*360,y2:240,stroke:"#d57526"}));
+}
+condition.addEventListener("change",choose);seed.addEventListener("change",()=>{stop();slider.value="0";draw();});slider.addEventListener("input",()=>{stop();draw();});
+document.getElementById("play").addEventListener("click",()=>{if(timer!==null){stop();return;}if(Number(slider.value)>=Number(slider.max))slider.value="0";document.getElementById("play").textContent="Pause";timer=setInterval(()=>{slider.value=Number(slider.value)+1;draw();if(Number(slider.value)>=Number(slider.max))stop();},350);});
+choose();
+</script></body></html>

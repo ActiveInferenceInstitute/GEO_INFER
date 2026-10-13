@@ -451,6 +451,18 @@ uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
   source custody, every trajectory and censored arrivals; `validate_study.py`
   checks the archive without rerunning inference. The retained edition is
   documented in `docs/cascadia_seed_study_20261012.md`.
+- `models/river_homing_study.py` owns study semantics and bounded JSON designs;
+  `models/river_homing_study_evidence.py` checks saved run agreement. The
+  `--design` option excludes CLI study overrides.
+- `examples/cascadia/study_explorer.py` projects a qualified edition to an
+  offline interactive HTML view through `runners/study_visualization.py`.
+  See `docs/cascadia_workflow.md` for configuration, ownership and teaching.
+- `runners/study_diagnostics.py` scores recorded observation-time posteriors;
+  `examples/cascadia/study_diagnostics.py` exports manifest-bound JSON. See
+  `docs/cascadia_diagnostics.md` for units, clock alignment and score bounds.
+- `runners/model_pair.py` executes separate compatible GNN agent/process
+  artifacts with real pymdp; `examples/cascadia/run_model_pair.py` creates
+  editions and checks integrity or fresh replay. See `docs/cascadia_model_mismatch.md`.
 """.replace("@PYMDP@", pinned_version(module, "inferactively-pymdp"))
     if module.name == "GEO-INFER-SPACE":
         return """
@@ -706,6 +718,15 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
   trajectory and failed qualification, and count right-censored arrivals.
 - Variant studies never inherit the reference fixture's native Lean receipt;
   qualify an explicitly named variant instance before making a proof claim.
+- Keep study semantics in `models/river_homing_study.py` and saved-run checks
+  in `models/river_homing_study_evidence.py`; retain the example import surface.
+- Parse `--design` before output creation and reject CLI study overrides.
+- Static study validation must compare saved per-run records with aggregates,
+  not only their hashes. Interactive display uses raw recorded probabilities
+  and actual H3 centers, with visible censoring and no new native proof claim.
+- Recorded score diagnostics use the observation-time true state and explicit
+  artifact clock. Preserve zero-mass infinite surprisal as null in JSON;
+  never clip or renormalize probabilities to make a diagnostic pass.
 """.replace("@PYMDP@", pinned_version(module, "inferactively-pymdp"))
     if module.name == "GEO-INFER-SPACE":
         return """

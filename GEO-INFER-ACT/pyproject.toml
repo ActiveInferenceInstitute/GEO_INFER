@@ -107,6 +107,7 @@ exclude = ["tests*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.md", "*.txt"]
+"geo_infer_act.runners" = ["*.html"]
 
 [tool.coverage.run]
 source = ["src"]

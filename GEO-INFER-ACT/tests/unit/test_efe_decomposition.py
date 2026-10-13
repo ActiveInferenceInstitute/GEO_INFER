@@ -91,3 +91,28 @@ def test_light_cone_violations_report_mass_outside_the_cone() -> None:
     beliefs = [[1.0, 0.0, 0.0], [0.5, 0.5, 0.0], [0.2, 0.3, 0.5]]
     allowed = [{0}, {0, 1}, {0, 1}]
     assert light_cone_violations(beliefs, allowed) == [(2, [2])]
+
+
+def test_extreme_finite_preferences_keep_efe_finite_and_match_real_pymdp() -> None:
+    likelihood = np.eye(2)
+    transition = np.eye(2)[:, :, None]
+    preferences = np.array([1000.0, -1000.0])
+    with np.errstate(divide="raise", invalid="raise"):
+        term = one_step_policy_terms([0.0, 1.0], likelihood, transition, preferences)[0]
+    assert term.risk == pytest.approx(2000.0)
+    assert term.pragmatic_cost == pytest.approx(2000.0)
+    assert term.expected_free_energy == pytest.approx(2000.0)
+    backend = run_pymdp_step(
+        observation=[0.0, 1.0],
+        observation_model=likelihood,
+        transition_model=transition,
+        preferences=preferences,
+        prior=[0.0, 1.0],
+        policy_prior=[1.0],
+        action_count=1,
+        strict=True,
+    )
+    assert backend.negative_expected_free_energy[0] == pytest.approx(
+        log_partition(preferences) - term.expected_free_energy,
+        abs=1e-5,
+    )

@@ -27,7 +27,8 @@ def modules():
     return tuple(loaded)
 
 
-def test_static_validator_rejects_digest_and_grid_corruption(tmp_path, modules):
+@pytest.fixture
+def static_study(tmp_path, modules):
     contract, _, validator = modules
     measures = contract.RunMeasures(
         steps=4,
@@ -55,13 +56,32 @@ def test_static_validator_rejects_digest_and_grid_corruption(tmp_path, modules):
     condition = records[0].condition.value
     run = records[0].run_directory
     (tmp_path / run).mkdir(parents=True)
-    for filename in (
-        "closed_loop.json",
-        "diagnostics.json",
-        "summary.json",
-        "outcome.json",
+    from geo_infer_act.core.gnn_contract import GNNArtifact
+
+    fixtures = Path(__file__).resolve().parents[2] / "examples/cascadia/data"
+    artifact_path = fixtures / "smith_river_homing.geo-infer.json"
+    artifact = GNNArtifact.load(artifact_path)
+    state_ids = artifact.to_dict()["space"]["state_ids"]
+    retained = {
+        "process_seed": 7,
+        "agent_seed": 0,
+        "true_states": [0] * 4,
+        "observations": [0] * 4,
+        "trace": {
+            "schema_version": "gnn-geo-infer/1",
+            "artifact_sha256": artifact.digest,
+            "random_seed": 0,
+            "state_ids": state_ids,
+            "steps": [{"observation": 0} for _ in range(4)],
+        },
+    }
+    for filename, payload in (
+        ("closed_loop.json", retained),
+        ("diagnostics.json", []),
+        ("summary.json", measures.model_dump(mode="json")),
+        ("outcome.json", records[0].model_dump(mode="json")),
     ):
-        (tmp_path / run / filename).write_text("{}\n", encoding="utf-8")
+        (tmp_path / run / filename).write_text(json.dumps(payload), encoding="utf-8")
     for suffix in (
         "gnn.md",
         "state_ids.json",
@@ -72,6 +92,10 @@ def test_static_validator_rejects_digest_and_grid_corruption(tmp_path, modules):
         (tmp_path / condition / f"smith_river_homing.{suffix}").write_text(
             "fixture\n", encoding="utf-8"
         )
+    (tmp_path / condition / artifact_path.name).write_bytes(artifact_path.read_bytes())
+    (tmp_path / condition / "smith_river_homing.state_ids.json").write_text(
+        json.dumps(state_ids)
+    )
     (tmp_path / "reference_config.yaml").write_text("fixture: true\n", encoding="utf-8")
     (tmp_path / "seed_outcomes.png").write_bytes(b"fixture")
     design = contract.StudyDesign(
@@ -117,8 +141,18 @@ def test_static_validator_rejects_digest_and_grid_corruption(tmp_path, modules):
     receipt = tmp_path / "study_manifest.json"
     receipt.write_text(json.dumps(manifest), encoding="utf-8")
     assert validator.validate_study(tmp_path) == ()
+    return manifest
+
+
+def test_static_validator_rejects_digest_and_grid_corruption(
+    tmp_path, modules, static_study
+):
+    _, _, validator = modules
+    manifest = static_study
+    run = "reference/seed_7"
+    receipt = tmp_path / "study_manifest.json"
     target = tmp_path / run / "closed_loop.json"
-    target.write_text("changed\n", encoding="utf-8")
+    target.write_text(target.read_text() + "\n", encoding="utf-8")
     assert any(
         "digest mismatch" in problem for problem in validator.validate_study(tmp_path)
     )
@@ -136,6 +170,56 @@ def test_static_validator_rejects_digest_and_grid_corruption(tmp_path, modules):
         "unsafe manifest path" in problem
         for problem in validator.validate_study(tmp_path)
     )
+
+
+@pytest.mark.parametrize(
+    ("filename", "field", "value", "message"),
+    [
+        ("summary.json", "mean_free_energy", 2.0, "run summary differs"),
+        ("outcome.json", "qualified", False, "run outcome differs"),
+        ("closed_loop.json", "process_seed", 8, "process seed differs"),
+        ("closed_loop.json", "agent_seed", 1, "agent seed differs"),
+        ("closed_loop.json", "true_states", [0], "closed-loop horizon differs"),
+        ("closed_loop.json", "observations", [1] * 4, "trace observations differ"),
+    ],
+)
+def test_rehashed_run_contradictions_fail(
+    tmp_path, modules, static_study, filename, field, value, message
+):
+    _, _, validator = modules
+    path = tmp_path / "reference/seed_7" / filename
+    payload = json.loads(path.read_text())
+    payload[field] = value
+    path.write_text(json.dumps(payload))
+    static_study["files"][str(path.relative_to(tmp_path))] = hashlib.sha256(
+        path.read_bytes()
+    ).hexdigest()
+    (tmp_path / "study_manifest.json").write_text(json.dumps(static_study))
+    assert any(message in problem for problem in validator.validate_study(tmp_path))
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("artifact_sha256", "0" * 64, "trace artifact digest differs"),
+        ("state_ids", ["wrong"], "trace state order differs"),
+        ("random_seed", 1, "agent seed differs"),
+        ("steps", [], "closed-loop horizon differs"),
+    ],
+)
+def test_rehashed_trace_contradictions_fail(
+    tmp_path, modules, static_study, field, value, message
+):
+    _, _, validator = modules
+    path = tmp_path / "reference/seed_7/closed_loop.json"
+    payload = json.loads(path.read_text())
+    payload["trace"][field] = value
+    path.write_text(json.dumps(payload))
+    static_study["files"][str(path.relative_to(tmp_path))] = hashlib.sha256(
+        path.read_bytes()
+    ).hexdigest()
+    (tmp_path / "study_manifest.json").write_text(json.dumps(static_study))
+    assert any(message in problem for problem in validator.validate_study(tmp_path))
 
 
 def test_source_snapshot_detects_real_owner_drift(tmp_path, modules):
