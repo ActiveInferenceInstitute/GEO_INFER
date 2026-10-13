@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 
 import pytest
 from pydantic import ValidationError
@@ -179,6 +180,24 @@ def test_figure_and_json_preserve_censored_outcomes(tmp_path, modules, outcomes)
     _, _, figure = modules
     path = figure.save_study_figure(tmp_path / "seeds.png", outcomes)
     assert path.stat().st_size > 1000
+    svg = figure.save_study_figure(tmp_path / "seeds.svg", outcomes)
+    assert all(line == line.rstrip() for line in svg.read_text().splitlines())
+    assert ET.parse(svg).getroot().tag == "{http://www.w3.org/2000/svg}svg"
+    records = tmp_path / "outcomes.json"
+    records.write_text(
+        json.dumps([item.model_dump(mode="json") for item in outcomes]),
+        encoding="utf-8",
+    )
+    original_svg = svg.read_bytes()
+    completed = subprocess.run(
+        [sys.executable, str(EXAMPLE / "study_figure.py"), str(records), str(svg)],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert completed.returncode != 0
+    assert "FileExistsError" in completed.stderr
+    assert svg.read_bytes() == original_svg
     payload = json.loads(outcomes[0].model_dump_json())
     assert payload["measures"]["reached_home_step"] is None
     assert payload["qualified"] is True

@@ -283,6 +283,18 @@ not a successful-run-only mean. An arrival exactly at H-1 is still an arrival.
 The finite seed grid is descriptive; no ecological confidence interval or
 general homing-performance claim follows from it.
 
+Regenerate a figure from retained, typed outcomes without rerunning inference:
+
+```bash
+uv run python GEO-INFER-ACT/examples/cascadia/study_figure.py \
+  GEO-INFER-ACT/examples/outputs/cascadia_seed_study_new/outcomes.json \
+  GEO-INFER-ACT/examples/outputs/cascadia_seed_study_new/replotted.svg
+```
+
+The plot command refuses an existing target unless `--overwrite` is explicit.
+SVG output is normalized for the repository's whitespace gate before a run
+manifest hashes it; numeric positions and censoring values are unchanged.
+
 The process uses its own condition's A and B, so odor removal changes both the
 animal's simulated cues and the agent's likelihood. This is a matched-model
 assumption comparison, not a misspecified-sensor experiment. Equal process
