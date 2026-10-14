@@ -15,6 +15,7 @@ Integration workspace within `GEO-INFER-ACT`.
 - `test_gnn_model_mismatch.py`
 - `test_h3_example_smoke.py`
 - `test_integration.py`
+- `test_model_matrix.py`
 - `test_model_pair_explorer.py`
 - `test_space_integration.py`
 - `test_stigmergy.py`

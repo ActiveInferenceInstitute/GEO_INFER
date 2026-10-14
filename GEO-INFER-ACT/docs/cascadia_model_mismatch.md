@@ -1,5 +1,9 @@
 # Cascadia: separate the agent model from the process
 
+For a portable registry and an ordered selection of these cases, use the
+[configured model matrix](cascadia_model_matrix.md). It shares a seed/horizon
+contract and retains each real pair edition in one closed experiment.
+
 The closed-loop runner executes real `inferactively-pymdp` 1.0.4 inference and
 policy evaluation from a validated GNN artifact. Its optional
 `process_artifact` supplies the sampled observation and transition laws.
@@ -73,6 +77,12 @@ Its manifests bind canonical inputs, six execution owners and every retained
 numerical file. The [SVG](../examples/cascadia/data/model_pairs_20261013.svg)
 shows all selected seeds. These are descriptive executions of the declared
 models; the seed grid does not establish a population effect.
+
+The October 13 HTML retains its captured display bytes. For the current mobile
+layout and matrix-level owner binding, use the newer
+[matrix edition](cascadia_model_matrix.md). Pair replay still checks the numerical
+records independently of that display-template change; rerender old pair
+comparisons into a new file before checking current HTML freshness.
 
 The complete records are in
 [model_pairs_20261013.zip](../examples/cascadia/data/model_pairs_20261013.zip).

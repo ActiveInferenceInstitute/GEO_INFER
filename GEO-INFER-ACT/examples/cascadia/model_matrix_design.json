@@ -1,0 +1,14 @@
+{
+  "schema_version": "geo-infer-act/model-matrix-design/1",
+  "models": [
+    {"name": "reference", "artifact": "reference/smith_river_homing.geo-infer.json"},
+    {"name": "weak_odor", "artifact": "uninformative_odor/smith_river_homing.geo-infer.json"}
+  ],
+  "cases": [
+    {"name": "matched_reference", "agent": "reference", "process": "reference"},
+    {"name": "matched_weak_odor", "agent": "weak_odor", "process": "weak_odor"},
+    {"name": "weak_agent_reference_process", "agent": "weak_odor", "process": "reference"},
+    {"name": "reference_agent_weak_process", "agent": "reference", "process": "weak_odor"}
+  ],
+  "run": {"initial_state": 0, "steps": 48, "seeds": [0, 7], "agent_seed": 0}
+}

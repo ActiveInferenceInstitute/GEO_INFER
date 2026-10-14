@@ -11,6 +11,8 @@ Runners workspace within `GEO-INFER-ACT`.
 - `gallery.py`
 - `h3.py`
 - `io.py`
+- `model_matrix.py`
+- `model_matrix_design.py`
 - `model_pair.py`
 - `model_pair_explorer.py`
 - `model_pair_plot.py`

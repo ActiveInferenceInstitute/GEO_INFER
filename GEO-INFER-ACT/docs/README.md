@@ -8,6 +8,7 @@ Docs workspace within `GEO-INFER-ACT`.
 - `active_inference_overview.md`
 - `api_schema.yaml`
 - `cascadia_diagnostics.md`
+- `cascadia_model_matrix.md`
 - `cascadia_model_mismatch.md`
 - `cascadia_river_homing.md`
 - `cascadia_seed_study_20261012.md`
