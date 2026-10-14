@@ -65,6 +65,7 @@
 - `test_unified_backend.py`
 - `test_unified_backend_geojson_seam.py`
 - `test_unified_comprehensive.py`
+- `test_vector_engine_roundtrips.py`
 - `test_visualization_engine.py`
 - `test_visualization_receipts.py`
 - `test_weight_matrix_backend_contract.py`

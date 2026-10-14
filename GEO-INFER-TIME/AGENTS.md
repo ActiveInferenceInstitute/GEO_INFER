@@ -26,6 +26,7 @@
 - `src/`
 - `tests/`
 - `.gitignore`
+- `LICENSE`
 - `SKILL.md`
 - `pyproject.toml`
 

@@ -8,6 +8,7 @@ version = "0.4.0"
 description = "Temporal analysis, time series processing, forecasting, and spatio-temporal data fusion for dynamic geospatial applications"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 authors = [
     {name = "GEO-INFER Development Team", email = "geo-infer@activeinference.institute"}

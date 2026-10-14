@@ -9,6 +9,7 @@ Temporal analysis, time series processing, forecasting, and spatio-temporal data
 - `src/`
 - `tests/`
 - `.gitignore`
+- `LICENSE`
 - `SKILL.md`
 - `pyproject.toml`
 

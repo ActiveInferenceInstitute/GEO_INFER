@@ -48,6 +48,7 @@ Unit workspace within `GEO-INFER-SPACE`.
 - `test_unified_backend.py`
 - `test_unified_backend_geojson_seam.py`
 - `test_unified_comprehensive.py`
+- `test_vector_engine_roundtrips.py`
 - `test_visualization_engine.py`
 - `test_visualization_receipts.py`
 - `test_weight_matrix_backend_contract.py`
@@ -69,7 +70,6 @@ Unit workspace within `GEO-INFER-SPACE`.
 
 - `geo-infer-time>=0.4.0`
 - `fastapi>=0.100.0`
-- `fiona>=1.8.0`
 - `geojson-pydantic>=2.0.0`
 - `geopandas>=0.13.0`
 - `h3>=4.5.0,<5`

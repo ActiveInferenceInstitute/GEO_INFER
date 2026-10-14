@@ -194,7 +194,7 @@ class GeoJSONHandler(FormatHandler):
         logger.info("Reading GeoJSON file: %s", resolved)
 
         try:
-            gdf = gpd.read_file(resolved, driver="GeoJSON", **kwargs)
+            gdf = gpd.read_file(resolved, **kwargs)
             logger.info("Read %d features from %s", len(gdf), resolved)
             return gdf
         except Exception:
@@ -270,7 +270,7 @@ class GeoJSONHandler(FormatHandler):
                     metadata["geometry_types"] = sorted(geom_types - {None})
 
             try:
-                gdf = gpd.read_file(resolved, driver="GeoJSON")
+                gdf = gpd.read_file(resolved)
                 metadata["crs"] = str(gdf.crs) if gdf.crs else None
                 if len(gdf) > 0:
                     metadata["bounds"] = gdf.total_bounds.tolist()
@@ -296,7 +296,7 @@ class GeoJSONHandler(FormatHandler):
 class ShapefileHandler(FormatHandler):
     """Handler for ESRI Shapefiles.
 
-    Reads and writes shapefiles using *geopandas* (backed by *fiona*).
+    Reads and writes shapefiles using *geopandas* and its selected I/O engine.
     """
 
     extensions = (".shp",)
