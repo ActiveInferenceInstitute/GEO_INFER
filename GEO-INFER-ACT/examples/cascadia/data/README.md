@@ -17,6 +17,7 @@ Data workspace within `GEO-INFER-ACT`.
 - `cascadia_study_explorer_20261013_v2.html`
 - `model_matrix_20261014.html`
 - `model_matrix_20261014.svg`
+- `model_matrix_20261014.zip`
 - `model_pairs_20261013.html`
 - `model_pairs_20261013.svg`
 - `model_pairs_20261013.zip`

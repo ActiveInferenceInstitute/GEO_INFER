@@ -22,6 +22,7 @@
 ## Local Contents
 
 - `demo_output/`
+- `california_observatory.py`
 - `del_norte_county_demo.py`
 
 ## Validation

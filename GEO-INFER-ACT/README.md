@@ -63,6 +63,14 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module ACT
 
 ## Implemented H3 Active Inference Contracts
 
+- `core.gnn_factored_batch.FactoredPolicyEvaluator` evaluates bounded batches
+  of exact one-step factored GNN policies, retaining information gain and
+  expected preference costs. Its results are checked against the exact joint
+  reference implementation.
+- `core.resource_allocation.allocate_resources` solves bounded multiple-choice
+  integer allocation with optional group expenditure floors. Exhaustive small
+  examples verify its objective and accounting.
+
 - ACT uses `inferactively-pymdp==1.0.4` through
   `geo_infer_act.utils.pymdp_adapter` for categorical H3 active-inference
   runtime paths. H3 runtime cells are validated with real `h3>=4.5.0,<5`.

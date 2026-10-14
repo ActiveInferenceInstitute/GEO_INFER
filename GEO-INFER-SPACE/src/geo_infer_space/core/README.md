@@ -13,6 +13,7 @@ Core workspace within `GEO-INFER-SPACE`.
 - `dispatcher.py`
 - `geolibre_projects.py`
 - `geometric_operations.py`
+- `graph_statistics.py`
 - `h3_policy.py`
 - `interfaces.py`
 - `place_analyzer.py`

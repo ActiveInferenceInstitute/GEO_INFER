@@ -5,10 +5,12 @@ Examples workspace within `GEO-INFER-PLACE`.
 ## Contents
 
 - `demo_output/`
+- `california_observatory.py`
 - `del_norte_county_demo.py`
 
 ## Public Interface
 
+- `california_observatory.py:main` (function)
 - `del_norte_county_demo.py:load_api_keys` (function)
 - `del_norte_county_demo.py:demonstrate_data_sources` (function)
 - `del_norte_county_demo.py:demonstrate_api_connections` (function)

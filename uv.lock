@@ -5008,6 +5008,12 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+california = [
+    { name = "geo-infer-act" },
+    { name = "pydantic" },
+    { name = "pyproj" },
+    { name = "scipy" },
+]
 cascadia = [
     { name = "beautifulsoup4" },
     { name = "bokeh" },
@@ -5090,6 +5096,7 @@ requires-dist = [
     { name = "fiona", marker = "extra == 'cascadia'", specifier = ">=1.8.0" },
     { name = "folium", specifier = ">=0.14.0" },
     { name = "folium", marker = "extra == 'cascadia'", specifier = ">=0.14.0" },
+    { name = "geo-infer-act", marker = "extra == 'california'", editable = "GEO-INFER-ACT" },
     { name = "geo-infer-bayes", marker = "extra == 'cascadia'", editable = "GEO-INFER-BAYES" },
     { name = "geo-infer-climate", marker = "extra == 'cascadia'", editable = "GEO-INFER-CLIMATE" },
     { name = "geo-infer-data", marker = "extra == 'cascadia'", editable = "GEO-INFER-DATA" },
@@ -5125,6 +5132,8 @@ requires-dist = [
     { name = "pandas", marker = "extra == 'cascadia'", specifier = ">=1.3.0" },
     { name = "plotly", specifier = ">=5.0.0" },
     { name = "psutil", marker = "extra == 'cascadia'", specifier = ">=5.9.0" },
+    { name = "pydantic", marker = "extra == 'california'", specifier = ">=2,<3" },
+    { name = "pyproj", marker = "extra == 'california'", specifier = ">=3.2.0" },
     { name = "pyproj", marker = "extra == 'cascadia'", specifier = ">=3.2.0" },
     { name = "pyproj", marker = "extra == 'dev'", specifier = ">=3.3.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=6.2.0" },
@@ -5138,6 +5147,7 @@ requires-dist = [
     { name = "requests", marker = "extra == 'cascadia'", specifier = ">=2.25.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.6,<0.16" },
     { name = "scikit-learn", marker = "extra == 'cascadia'", specifier = ">=1.0.0" },
+    { name = "scipy", marker = "extra == 'california'", specifier = ">=1.11.0" },
     { name = "scipy", marker = "extra == 'cascadia'", specifier = ">=1.7.0" },
     { name = "seaborn", marker = "extra == 'cascadia'", specifier = ">=0.11.0" },
     { name = "selenium", marker = "extra == 'cascadia'", specifier = ">=4.0.0" },
@@ -5151,7 +5161,7 @@ requires-dist = [
     { name = "uvicorn", marker = "extra == 'cascadia'", specifier = ">=0.22.0" },
     { name = "webdriver-manager", marker = "extra == 'cascadia'", specifier = ">=3.8.0" },
 ]
-provides-extras = ["cascadia", "full", "dev", "docs", "integrations"]
+provides-extras = ["california", "cascadia", "full", "dev", "docs", "integrations"]
 
 [[package]]
 name = "geo-infer-req"

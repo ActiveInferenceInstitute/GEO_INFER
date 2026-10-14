@@ -23,6 +23,7 @@
 
 - `agricultural_applications.md`
 - `agricultural_intelligence.md`
+- `california_statewide_monitoring.md`
 - `climate_modeling.md`
 - `environmental_monitoring.md`
 - `urban_analytics.md`

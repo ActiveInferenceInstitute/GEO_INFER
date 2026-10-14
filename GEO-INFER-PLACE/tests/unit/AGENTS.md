@@ -24,6 +24,10 @@
 - `test_api_clients.py`
 - `test_bioregion_visualization.py`
 - `test_caching.py`
+- `test_california_capture.py`
+- `test_california_geometry.py`
+- `test_california_inference.py`
+- `test_california_monitoring.py`
 - `test_cascadia_flowlines.py`
 - `test_comprehensive_dashboard.py`
 - `test_crescent_city_intel.py`
@@ -38,6 +42,7 @@
 - `test_module_bridge.py`
 - `test_place_analyzer.py`
 - `test_place_interface.py`
+- `test_place_lazy_exports.py`
 - `test_unified_backend.py`
 - `test_unified_backend_packaged_config.py`
 - `test_visualization_engine.py`

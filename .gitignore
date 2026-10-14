@@ -53,6 +53,7 @@ config/
 # enable_caching; regenerated on demand, never published.
 /cache/
 GEO-INFER-PLACE/locations/cascadia/generated/cache/region_cache_*.json
+GEO-INFER-PLACE/locations/california/generated/
 GEO-INFER-PLACE/locations/cascadia/output/data/cache/region_cache_*.json
 
 # GitNexus local knowledge-graph index (created by `gitnexus analyze`).

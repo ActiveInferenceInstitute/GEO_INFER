@@ -4,6 +4,7 @@ Locations workspace within `GEO-INFER-PLACE`.
 
 ## Contents
 
+- `california/`
 - `cascadia/`
 - `del_norte_county/`
 - `__init__.py`

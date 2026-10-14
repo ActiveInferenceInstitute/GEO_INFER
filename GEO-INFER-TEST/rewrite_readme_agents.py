@@ -308,6 +308,15 @@ def validation_commands(path: Path, module: ModuleInfo | None) -> str:
 
 def module_readme_notes(path: Path, module: ModuleInfo | None) -> str:
     """Return implemented module-specific README notes for module roots."""
+    if path.parent == REPO_ROOT / "GEO-INFER-PLACE/locations/california":
+        return """
+## California Monitoring
+
+- [GUIDE.md](GUIDE.md) contains the create-only commands and runtime binding.
+- [Methods and source guide](../../../GEO-INFER-INTRA/docs/examples/california_statewide_monitoring.md)
+  defines the measured indicators, exact local GNN evaluation, approximate
+  spatial field, shared resource budget and interpretation limits.
+"""
     if path.parent == REPO_ROOT / "manuscript":
         return """
 ## Research Verification
@@ -342,6 +351,14 @@ def module_readme_notes(path: Path, module: ModuleInfo | None) -> str:
     if module.name == "GEO-INFER-ACT":
         return """
 ## Implemented H3 Active Inference Contracts
+
+- `core.gnn_factored_batch.FactoredPolicyEvaluator` evaluates bounded batches
+  of exact one-step factored GNN policies, retaining information gain and
+  expected preference costs. Its results are checked against the exact joint
+  reference implementation.
+- `core.resource_allocation.allocate_resources` solves bounded multiple-choice
+  integer allocation with optional group expenditure floors. Exhaustive small
+  examples verify its objective and accounting.
 
 - ACT uses `inferactively-pymdp==@PYMDP@` through
   `geo_infer_act.utils.pymdp_adapter` for categorical H3 active-inference
@@ -582,6 +599,16 @@ uv run python GEO-INFER-TEST/validate_h3_active_inference_contract.py
   plotting remains usable without contextily network access.
 """,
         "GEO-INFER-PLACE": """
+## California Statewide Monitoring
+
+- `locations.california` implements bounded primary-source capture, a clipped
+  H3 carrier, empirical priors, approximate spatial inference and actual GNN
+  local policy evaluation. Sensor readings are explicitly simulated.
+- [California methods](../GEO-INFER-INTRA/docs/examples/california_statewide_monitoring.md)
+  documents measurement windows, configuration, budget objectives and limits.
+- Package imports are lazy; loading PLACE does not initialize forecasting or
+  machine-learning backends.
+
 ## Visualization Contracts
 
 - The visualization engine validates H3 resolution and finite geographic bounds
@@ -589,6 +616,12 @@ uv run python GEO-INFER-TEST/validate_h3_active_inference_contract.py
 - Dashboard configuration honors validated `zoom_start` and `tiles` values.
 """,
         "GEO-INFER-SPACE": """
+## Graph Statistics
+
+- `core.graph_statistics` supplies validated sparse Moran diagnostics and
+  allocated-area weighted group means. Permutations use fixed seeds and
+  plus-one probabilities; aggregation preserves area and weighted values.
+
 ## Visualization Contracts
 
 - The visualization engine validates H3 resolution and finite geographic bounds

@@ -22,6 +22,7 @@
 ## Local Contents
 
 - `australia/`
+- `california/`
 - `cascadia/`
 - `del_norte_county/`
 - `del_norte_county_synthetic/`

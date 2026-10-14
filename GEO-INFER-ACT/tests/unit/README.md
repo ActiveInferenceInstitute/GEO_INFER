@@ -22,6 +22,7 @@ Unit workspace within `GEO-INFER-ACT`.
 - `test_generative_efe.py`
 - `test_geospatial_runner_outputs.py`
 - `test_gnn_contract.py`
+- `test_gnn_factored_batch.py`
 - `test_gnn_factored_contract.py`
 - `test_gnn_gaussian_contract.py`
 - `test_gnn_spec.py`
@@ -45,6 +46,7 @@ Unit workspace within `GEO-INFER-ACT`.
 - `test_policy_selection.py`
 - `test_pymdp_h3_backend.py`
 - `test_research_policy_contracts.py`
+- `test_resource_allocation.py`
 - `test_runner_contracts.py`
 - `test_spatial_agent.py`
 - `test_spatial_grid_scoring.py`

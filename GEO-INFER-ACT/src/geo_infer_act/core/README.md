@@ -14,12 +14,14 @@ Core workspace within `GEO-INFER-ACT`.
 - `free_energy.py`
 - `generative_model.py`
 - `gnn_contract.py`
+- `gnn_factored_batch.py`
 - `gnn_factored_contract.py`
 - `gnn_gaussian_contract.py`
 - `gnn_spec.py`
 - `h3_flow_network.py`
 - `markov_decision_process.py`
 - `policy_selection.py`
+- `resource_allocation.py`
 - `spatial_agent.py`
 - `types.py`
 - `variational_inference.py`

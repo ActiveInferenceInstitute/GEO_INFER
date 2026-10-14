@@ -1,0 +1,215 @@
+{
+  "model_name": "California drought indicator monitoring",
+  "state_factors": [
+    {
+      "id": "indicator",
+      "states": [
+        "below_threshold",
+        "at_or_above_threshold"
+      ]
+    },
+    {
+      "id": "sensor_mode",
+      "states": [
+        "passive",
+        "coarse",
+        "detailed"
+      ]
+    }
+  ],
+  "control_factors": [
+    {
+      "id": "monitor",
+      "actions": [
+        "passive",
+        "coarse",
+        "detailed"
+      ]
+    }
+  ],
+  "modalities": [
+    {
+      "id": "indicator_report",
+      "outcomes": [
+        "no_report",
+        "negative",
+        "positive"
+      ],
+      "dependencies": [
+        0,
+        1
+      ],
+      "likelihood": [
+        [
+          [
+            1.0,
+            0.2,
+            0.05
+          ],
+          [
+            1.0,
+            0.2,
+            0.05
+          ]
+        ],
+        [
+          [
+            0.0,
+            0.6400000000000001,
+            0.9215
+          ],
+          [
+            0.0,
+            0.15999999999999998,
+            0.028500000000000025
+          ]
+        ],
+        [
+          [
+            0.0,
+            0.15999999999999998,
+            0.028500000000000025
+          ],
+          [
+            0.0,
+            0.6400000000000001,
+            0.9215
+          ]
+        ]
+      ],
+      "preferences": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "resource_use",
+      "outcomes": [
+        "zero_units",
+        "one_unit",
+        "three_units"
+      ],
+      "dependencies": [
+        1
+      ],
+      "likelihood": [
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "preferences": [
+        0.0,
+        -0.03,
+        -0.09
+      ]
+    }
+  ],
+  "transitions": [
+    {
+      "dependencies": [
+        0
+      ],
+      "control_factor": 0,
+      "probabilities": [
+        [
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            0,
+            0,
+            0
+          ]
+        ],
+        [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            1,
+            1
+          ]
+        ]
+      ]
+    },
+    {
+      "dependencies": [],
+      "control_factor": 0,
+      "probabilities": [
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ]
+    }
+  ],
+  "initial_joint": [
+    0.5,
+    0.0,
+    0.0,
+    0.5,
+    0.0,
+    0.0
+  ],
+  "policies": [
+    [
+      [
+        0
+      ]
+    ],
+    [
+      [
+        1
+      ]
+    ],
+    [
+      [
+        2
+      ]
+    ]
+  ],
+  "policy_prior": [
+    0.3333333333333333,
+    0.3333333333333333,
+    0.3333333333333333
+  ],
+  "schema_version": "gnn-geo-infer/factored/1",
+  "model_type": "categorical_factored",
+  "time": {
+    "step_seconds": 86400.0
+  },
+  "provenance": {
+    "producer": "GNN explicit factored JSON exporter",
+    "source_kind": "explicit_factored_json",
+    "source_sha256": "0031f7abb50320dfbf901600242bd0fba22b203cada9078969b7760c9a81245a"
+  }
+}

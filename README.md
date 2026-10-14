@@ -30,10 +30,10 @@ domain modeling, agent workflows, and reproducible repository validation in one
 | Metric | Value |
 | --- | ---: |
 | Modules | 45 |
-| Python source files | 1010 |
-| Python test files | 800 |
-| Repository README.md files | 809 |
-| Repository AGENTS.md files | 806 |
+| Python source files | 1021 |
+| Python test files | 808 |
+| Repository README.md files | 811 |
+| Repository AGENTS.md files | 808 |
 
 ## Quick Start
 
@@ -98,7 +98,7 @@ the exact reproducible exception list.
 
 | Module | Package | Source files | Test files |
 | --- | --- | ---: | ---: |
-| `GEO-INFER-ACT` | `geo_infer_act` | 63 | 64 |
+| `GEO-INFER-ACT` | `geo_infer_act` | 65 | 66 |
 | `GEO-INFER-AG` | `geo_infer_ag` | 16 | 12 |
 | `GEO-INFER-AGENT` | `geo_infer_agent` | 26 | 28 |
 | `GEO-INFER-AI` | `geo_infer_ai` | 18 | 21 |
@@ -132,12 +132,12 @@ the exact reproducible exception list.
 | `GEO-INFER-OPS` | `geo_infer_ops` | 17 | 18 |
 | `GEO-INFER-ORG` | `geo_infer_org` | 5 | 7 |
 | `GEO-INFER-PEP` | `geo_infer_pep` | 40 | 16 |
-| `GEO-INFER-PLACE` | `geo_infer_place` | 91 | 25 |
+| `GEO-INFER-PLACE` | `geo_infer_place` | 99 | 30 |
 | `GEO-INFER-REQ` | `geo_infer_req` | 5 | 7 |
 | `GEO-INFER-RISK` | `geo_infer_risk` | 15 | 24 |
 | `GEO-INFER-SEC` | `geo_infer_sec` | 22 | 20 |
 | `GEO-INFER-SIM` | `geo_infer_sim` | 11 | 9 |
-| `GEO-INFER-SPACE` | `geo_infer_space` | 84 | 50 |
+| `GEO-INFER-SPACE` | `geo_infer_space` | 85 | 51 |
 | `GEO-INFER-SPM` | `geo_infer_spm` | 27 | 23 |
 | `GEO-INFER-TEST` | `geo_infer_test` | 22 | 52 |
 | `GEO-INFER-TIME` | `geo_infer_time` | 20 | 23 |

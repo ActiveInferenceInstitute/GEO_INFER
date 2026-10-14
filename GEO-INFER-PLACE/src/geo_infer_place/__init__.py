@@ -26,61 +26,117 @@ Quick Start::
     print(pi.status())
 """
 
+from __future__ import annotations
+
+from importlib import import_module
 import logging
+from typing import TYPE_CHECKING
 
-# --- Local Core Imports ---
-from .core.visualization_engine import InteractiveVisualizationEngine
-from .core import CascadianAgriculturalH3Backend, BaseAnalysisModule
+if TYPE_CHECKING:
+    from .core.place_interface import PlaceInterface
+    from .core.visualization_engine import InteractiveVisualizationEngine
+    from .core import CascadianAgriculturalH3Backend, BaseAnalysisModule
+    from .core.module_bridge import PlaceDataManager, PlaceTemporalAnalyzer
+    from .utils.caching import CachedAPIWrapper
+    from .locations.del_norte_county.forest_health_monitor import ForestHealthMonitor
+    from .locations.del_norte_county.coastal_resilience_analyzer import (
+        CoastalResilienceAnalyzer,
+    )
+    from .locations.del_norte_county.fire_risk_assessor import FireRiskAssessor
+    from .locations.del_norte_county.seismic_hazard_analyzer import (
+        SeismicHazardAnalyzer,
+    )
+    from .utils.data_sources import CaliforniaDataSources
+    from .utils.h3_operations import (
+        latlng_to_cell,
+        cell_to_latlng,
+        cell_to_latlng_boundary,
+        geo_to_cells,
+        polygon_to_cells,
+        grid_disk,
+        grid_distance,
+        grid_ring,
+        cell_area,
+        get_resolution,
+        is_valid_cell,
+        are_neighbor_cells,
+        cells_to_geodataframe,
+        cell_to_parent,
+        cell_to_children,
+        compact_cells,
+        uncompact_cells,
+        estimate_cell_count,
+    )
+    from .core.api_clients import (
+        CaliforniaAPIManager,
+        NOAAClient,
+        CALFIREClient,
+        USGSClient,
+        USGSEarthquakeClient,
+        CDECClient,
+    )
 
-# --- Unified Interface ---
-from .core.place_interface import PlaceInterface
+_EXPORTS = {
+    "PlaceInterface": "core.place_interface",
+    "InteractiveVisualizationEngine": "core.visualization_engine",
+    "CascadianAgriculturalH3Backend": "core.unified_backend",
+    "BaseAnalysisModule": "core.base_module",
+    "PlaceDataManager": "core.module_bridge",
+    "PlaceTemporalAnalyzer": "core.module_bridge",
+    "CachedAPIWrapper": "utils.caching",
+    "ForestHealthMonitor": "locations.del_norte_county.forest_health_monitor",
+    "CoastalResilienceAnalyzer": "locations.del_norte_county.coastal_resilience_analyzer",
+    "FireRiskAssessor": "locations.del_norte_county.fire_risk_assessor",
+    "SeismicHazardAnalyzer": "locations.del_norte_county.seismic_hazard_analyzer",
+    "CaliforniaDataSources": "utils.data_sources",
+    **dict.fromkeys(
+        (
+            "latlng_to_cell",
+            "cell_to_latlng",
+            "cell_to_latlng_boundary",
+            "geo_to_cells",
+            "polygon_to_cells",
+            "grid_disk",
+            "grid_distance",
+            "grid_ring",
+            "cell_area",
+            "get_resolution",
+            "is_valid_cell",
+            "are_neighbor_cells",
+            "cells_to_geodataframe",
+            "cell_to_parent",
+            "cell_to_children",
+            "compact_cells",
+            "uncompact_cells",
+            "estimate_cell_count",
+        ),
+        "utils.h3_operations",
+    ),
+    **dict.fromkeys(
+        (
+            "CaliforniaAPIManager",
+            "NOAAClient",
+            "CALFIREClient",
+            "USGSClient",
+            "USGSEarthquakeClient",
+            "CDECClient",
+        ),
+        "core.api_clients",
+    ),
+}
 
-# --- Module Bridge (GEO-INFER-DATA / GEO-INFER-TIME integration) ---
-from .core.module_bridge import PlaceDataManager, PlaceTemporalAnalyzer
 
-# --- Caching infrastructure ---
-from .utils.caching import CachedAPIWrapper
+def __getattr__(name: str) -> object:
+    if name not in _EXPORTS:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    value: object = getattr(import_module(f"{__name__}.{_EXPORTS[name]}"), name)
+    globals()[name] = value
+    return value
 
-# --- Location-specific Imports ---
-from .locations.del_norte_county.forest_health_monitor import ForestHealthMonitor
-from .locations.del_norte_county.coastal_resilience_analyzer import (
-    CoastalResilienceAnalyzer,
-)
-from .locations.del_norte_county.fire_risk_assessor import FireRiskAssessor
-from .locations.del_norte_county.seismic_hazard_analyzer import SeismicHazardAnalyzer
 
-# --- Utilities ---
-from .utils.data_sources import CaliforniaDataSources
-from .utils.h3_operations import (
-    latlng_to_cell,
-    cell_to_latlng,
-    cell_to_latlng_boundary,
-    geo_to_cells,
-    polygon_to_cells,
-    grid_disk,
-    grid_distance,
-    grid_ring,
-    cell_area,
-    get_resolution,
-    is_valid_cell,
-    are_neighbor_cells,
-    cells_to_geodataframe,
-    cell_to_parent,
-    cell_to_children,
-    compact_cells,
-    uncompact_cells,
-    estimate_cell_count,
-)
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(__all__))
 
-# --- API Clients ---
-from .core.api_clients import (
-    CaliforniaAPIManager,
-    NOAAClient,
-    CALFIREClient,
-    USGSClient,
-    USGSEarthquakeClient,
-    CDECClient,
-)
 
 __version__ = "0.4.0"
 __author__ = "GEO-INFER Development Team"
@@ -145,7 +201,7 @@ def get_supported_locations() -> list[str]:
 
 def create_analyzer(
     location_code: str, config_path: str | None = None
-) -> "PlaceInterface":
+) -> PlaceInterface:
     """Create a PlaceInterface for a specific location.
 
     Args:
@@ -163,6 +219,8 @@ def create_analyzer(
         raise ValueError(
             f"Location '{location_code}' not supported. Available: {supported}"
         )
+    from .core.place_interface import PlaceInterface
+
     return PlaceInterface(location=location_code)
 
 
@@ -179,4 +237,6 @@ def create_place_interface(
     Returns:
         Configured PlaceInterface instance.
     """
+    from .core.place_interface import PlaceInterface
+
     return PlaceInterface(location=location, output_dir=output_dir)
