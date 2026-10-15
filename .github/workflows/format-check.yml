@@ -35,4 +35,4 @@ jobs:
           cache-suffix: format-check
 
       - name: Repo-wide ruff format check
-        run: uv run --with 'ruff>=0.15.6,<0.16' ruff format --check .
+        run: uv run --no-project --with 'ruff>=0.15.6,<0.16' ruff format --check .

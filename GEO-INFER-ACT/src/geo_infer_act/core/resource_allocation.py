@@ -108,7 +108,9 @@ def allocate_resources(
             try:
                 values, decisions = _frontier(gains[members], units, budget)
             except FloatingPointError as exc:
-                raise ValueError("Resource frontier exceeds finite numeric range") from exc
+                raise ValueError(
+                    "Resource frontier exceeds finite numeric range"
+                ) from exc
         values[: floors.get(group, 0)] = -np.inf
         frontiers.append(values)
         choices.append(decisions)
