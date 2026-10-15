@@ -1,6 +1,7 @@
 """Installed-wheel probes must execute package code outside the source tree."""
 
 from pathlib import Path
+import ast
 import importlib.util
 import sys
 import zipfile
@@ -12,6 +13,51 @@ import hashlib
 import pytest
 
 pytestmark = pytest.mark.unit
+
+
+def test_california_profile_covers_current_execution_owners():
+    """The isolated California gate covers every declared owner without imports."""
+    directory = Path(__file__).resolve().parents[2]
+    spec = importlib.util.spec_from_file_location(
+        "geo_wheel_profiles_inventory",
+        directory / "src/geo_infer_test/wheel_profiles.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    profiles = [
+        profile
+        for profile in module.REQUIRED_PROFILES
+        if profile.package == "geo_infer_place" and profile.extras == ("california",)
+    ]
+    assert len(profiles) == 1
+    syntax = ast.parse(profiles[0].code)
+    owner_paths = next(
+        ast.literal_eval(node.value)
+        for node in syntax.body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "owner_paths"
+            for target in node.targets
+        )
+    )
+    root = directory.parent
+    california = root / "GEO-INFER-PLACE/src/geo_infer_place/locations/california"
+    expected = {path.relative_to(root).as_posix() for path in california.glob("*.py")}
+    contract = ast.parse((california / "contracts.py").read_text())
+    owners = next(
+        ast.literal_eval(node.iter)
+        for node in ast.walk(contract)
+        if isinstance(node, ast.For)
+        and isinstance(node.target, ast.Tuple)
+        and [target.id for target in node.target.elts] == ["package", "module"]
+    )
+    expected.update(
+        f"GEO-INFER-{package.removeprefix('geo_infer_').upper()}/src/{package}/{path}"
+        for package, path in owners
+    )
+    assert set(owner_paths) == expected and len(owner_paths) == len(expected)
+    assert all((root / path).is_file() for path in owner_paths)
 
 
 def _driver():
