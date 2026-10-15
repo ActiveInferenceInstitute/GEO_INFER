@@ -299,6 +299,64 @@ assert response.status_code == 200 and all(response.json['components'].values())
     ),
     WheelProfile(
         "geo_infer_place",
+        ("california",),
+        """
+from pathlib import Path
+import hashlib
+import stat
+import sys
+import sysconfig
+from geo_infer_place.locations.california import contracts
+
+site = Path(sysconfig.get_paths()['purelib']).resolve()
+assert Path(contracts.__file__).resolve().is_relative_to(site)
+owner_paths = (
+    'GEO-INFER-PLACE/src/geo_infer_place/locations/california/__init__.py',
+    'GEO-INFER-PLACE/src/geo_infer_place/locations/california/acquisition.py',
+    'GEO-INFER-PLACE/src/geo_infer_place/locations/california/contracts.py',
+    'GEO-INFER-PLACE/src/geo_infer_place/locations/california/geometry.py',
+    'GEO-INFER-PLACE/src/geo_infer_place/locations/california/inference.py',
+    'GEO-INFER-PLACE/src/geo_infer_place/locations/california/models.py',
+    'GEO-INFER-PLACE/src/geo_infer_place/locations/california/monitoring.py',
+    'GEO-INFER-PLACE/src/geo_infer_place/locations/california/report.py',
+    'GEO-INFER-ACT/src/geo_infer_act/core/gnn_factored_batch.py',
+    'GEO-INFER-ACT/src/geo_infer_act/core/gnn_factored_contract.py',
+    'GEO-INFER-ACT/src/geo_infer_act/core/resource_allocation.py',
+    'GEO-INFER-SPACE/src/geo_infer_space/core/graph_statistics.py',
+    'GEO-INFER-PLACE/src/geo_infer_place/core/regional_layers.py',
+    'GEO-INFER-PLACE/src/geo_infer_place/core/_regional_download_worker.py',
+)
+expected = {
+    key: hashlib.sha256(site.joinpath(*key.split('/')[2:]).read_bytes()).hexdigest()
+    for key in owner_paths
+}
+assert contracts.execution_binding().owners == expected
+for name in ('geo_infer_act', 'geo_infer_space', 'geo_infer_place'):
+    assert Path(sys.modules[name].__file__).resolve().is_relative_to(site)
+
+# The wheel driver gives each operation profile its own disposable environment.
+# A missing installed owner must fail, even after its package was imported.
+target = site / 'geo_infer_act/core/gnn_factored_batch.py'
+assert target.resolve().is_relative_to(site) and not target.is_symlink()
+original = target.read_bytes()
+mode = stat.S_IMODE(target.stat().st_mode)
+try:
+    target.unlink()
+    try:
+        contracts.execution_binding()
+    except FileNotFoundError as error:
+        assert Path(error.filename).resolve() == target.resolve()
+    else:
+        raise AssertionError('Missing installed ACT owner resource was accepted')
+finally:
+    target.write_bytes(original)
+    target.chmod(mode)
+assert target.read_bytes() == original and stat.S_IMODE(target.stat().st_mode) == mode
+assert contracts.execution_binding().owners == expected
+""",
+    ),
+    WheelProfile(
+        "geo_infer_place",
         ("cascadia",),
         """
 from importlib.resources import files
