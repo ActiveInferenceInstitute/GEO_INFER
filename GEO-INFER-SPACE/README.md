@@ -12,6 +12,7 @@ H3 v4 spatial indexing and comprehensive geospatial analysis framework with adva
 - `test_output/`
 - `tests/`
 - `.gitignore`
+- `LICENSE`
 - `SKILL.md`
 - `pyproject.toml`
 
@@ -31,7 +32,6 @@ H3 v4 spatial indexing and comprehensive geospatial analysis framework with adva
 
 - `geo-infer-time>=0.4.0`
 - `fastapi>=0.100.0`
-- `fiona>=1.8.0`
 - `geojson-pydantic>=2.0.0`
 - `geopandas>=0.13.0`
 - `h3>=4.5.0,<5`
@@ -57,6 +57,21 @@ H3 v4 spatial indexing and comprehensive geospatial analysis framework with adva
 uv run python GEO-INFER-TEST/run_unified_tests.py --module SPACE
 ```
 
+
+## Vector I/O Engines
+
+- Standalone SPACE delegates native vector I/O to GeoPandas and its installed
+  default engine; it does not require a second engine alongside GeoPandas.
+- Install `geo-infer-space[fiona]` to select `engine="fiona"` explicitly.
+  Workspace root and other modules can independently require Fiona.
+- `GeoJSONHandler`, `ShapefileHandler`, and `VectorWriter` forward caller engine
+  and format options. GeoJSON writing does not inject engine-specific options;
+  serialized formatting and supported options can differ across engines.
+- `VectorReader` delegates explicit GeoJSON engine requests to GeoPandas.
+  Its default standard-library GeoJSON path accepts GeoDataFrame construction
+  options such as `crs`; other native formats use GeoPandas directly.
+- Real Unicode, geometry, CRS, sidecar, engine-selection, and invalid-file
+  contracts are tested in `tests/unit/test_vector_engine_roundtrips.py`.
 
 ## Implemented Nested H3 Contracts
 

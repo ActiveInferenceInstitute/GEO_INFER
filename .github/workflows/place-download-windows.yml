@@ -269,8 +269,15 @@ jobs:
               assert importlib.util.find_spec(module) is None, module
           negative = evidence / "isolation-negative"
           negative.mkdir(exist_ok=False)
-          shutil.copyfile(evidence / "place_windows_observer.py", negative / "place_windows_observer.py")
-          # Keep ambient observer lookup in the builder; replace only the log destination.
+          observer = negative / "place_windows_observer.py"
+          shutil.copyfile(evidence / "place_windows_observer.py", observer)
+          # PLACE exports are lazy: importing regional_layers alone no longer
+          # reaches DATA. Exercise the actual optional bridge explicitly in
+          # this negative-only plugin, before pytest can launch any worker.
+          with observer.open("a", encoding="utf-8") as handle:
+              handle.write("\nfrom geo_infer_place.core import module_bridge\n")
+          # Retain every builder-owned path; prepend the negative-only observer
+          # and direct its logs to the separate negative evidence directory.
           built = execution.build_subprocess_env()
           builder_paths = [Path(p).resolve() for p in built["PYTHONPATH"].split(os.pathsep) if p]
           assert root / "GEO-INFER-DATA/src" in builder_paths, builder_paths
@@ -287,7 +294,10 @@ jobs:
               "expected optional sibling poisoning",
               timeout=60,
               cwd=root,
-              env_overrides={"PLACE_EVIDENCE": str(negative)},
+              env_overrides={
+                  "PLACE_EVIDENCE": str(negative),
+                  "PYTHONPATH": os.pathsep.join([str(negative), built["PYTHONPATH"]]),
+              },
           )
           report.add(result)
           execution.write_summary(report, show_failures=True)

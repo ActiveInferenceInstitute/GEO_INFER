@@ -29,6 +29,7 @@
 - `test_output/`
 - `tests/`
 - `.gitignore`
+- `LICENSE`
 - `SKILL.md`
 - `pyproject.toml`
 
@@ -38,6 +39,15 @@
 uv run python GEO-INFER-TEST/run_unified_tests.py --module SPACE
 ```
 
+
+## Vector I/O Engines
+
+- Native vector I/O uses GeoPandas' selected installed engine. The optional
+  `fiona` extra supports callers explicitly requesting `engine="fiona"`.
+- Forward explicit engine/format options; do not inject options accepted only
+  by one backend. Run `tests/unit/test_vector_engine_roundtrips.py` after edits.
+- Default GeoJSON `VectorReader` uses standard-library parsing and accepts
+  GeoDataFrame construction options; explicit engine requests use GeoPandas.
 
 ## Current Nested H3 Contracts
 

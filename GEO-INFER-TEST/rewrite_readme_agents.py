@@ -483,6 +483,21 @@ uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
 """.replace("@PYMDP@", pinned_version(module, "inferactively-pymdp"))
     if module.name == "GEO-INFER-SPACE":
         return """
+## Vector I/O Engines
+
+- Standalone SPACE delegates native vector I/O to GeoPandas and its installed
+  default engine; it does not require a second engine alongside GeoPandas.
+- Install `geo-infer-space[fiona]` to select `engine="fiona"` explicitly.
+  Workspace root and other modules can independently require Fiona.
+- `GeoJSONHandler`, `ShapefileHandler`, and `VectorWriter` forward caller engine
+  and format options. GeoJSON writing does not inject engine-specific options;
+  serialized formatting and supported options can differ across engines.
+- `VectorReader` delegates explicit GeoJSON engine requests to GeoPandas.
+  Its default standard-library GeoJSON path accepts GeoDataFrame construction
+  options such as `crs`; other native formats use GeoPandas directly.
+- Real Unicode, geometry, CRS, sidecar, engine-selection, and invalid-file
+  contracts are tested in `tests/unit/test_vector_engine_roundtrips.py`.
+
 ## Implemented Nested H3 Contracts
 
 - Default H3 dispatch loads only H3. SRAI initializes on an explicit request,
@@ -763,6 +778,15 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
 """.replace("@PYMDP@", pinned_version(module, "inferactively-pymdp"))
     if module.name == "GEO-INFER-SPACE":
         return """
+## Vector I/O Engines
+
+- Native vector I/O uses GeoPandas' selected installed engine. The optional
+  `fiona` extra supports callers explicitly requesting `engine="fiona"`.
+- Forward explicit engine/format options; do not inject options accepted only
+  by one backend. Run `tests/unit/test_vector_engine_roundtrips.py` after edits.
+- Default GeoJSON `VectorReader` uses standard-library parsing and accepts
+  GeoDataFrame construction options; explicit engine requests use GeoPandas.
+
 ## Current Nested H3 Contracts
 
 - Default H3 dispatch loads only H3. SRAI initializes on an explicit request,

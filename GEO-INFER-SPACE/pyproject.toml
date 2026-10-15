@@ -8,6 +8,7 @@ version = "0.4.0"
 description = "H3 v4 spatial indexing and comprehensive geospatial analysis framework with advanced spatial methods and coordinate transformations"
 readme = "README.md"
 license = "CC-BY-NC-SA-4.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 authors = [
     {name = "GEO-INFER Development Team", email = "geo-infer@activeinference.institute"}
@@ -36,7 +37,6 @@ classifiers = [
 dependencies = [
     "geo-infer-time>=0.4.0",
     "fastapi>=0.100.0",
-    "fiona>=1.8.0",
     "geojson-pydantic>=2.0.0",
     "geopandas>=0.13.0",
     "h3>=4.5.0,<5",
@@ -57,6 +57,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+fiona = ["fiona>=1.8.21"]
 dev = [
     "pytest>=6.2.0",
     "pytest-cov>=2.12.0",
@@ -88,6 +89,7 @@ viz = [
     "folium>=0.12.0"
 ]
 all = [
+    "fiona>=1.8.21",
     "dask>=2021.10.0",
     "dask[dataframe]>=2021.10.0",
     "folium>=0.12.0",

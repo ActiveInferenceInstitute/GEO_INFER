@@ -7,6 +7,7 @@ import json
 import math
 import sys
 from importlib.metadata import version
+from importlib.resources import files
 from datetime import date, timedelta
 from enum import StrEnum
 from pathlib import Path
@@ -52,21 +53,30 @@ class ExecutionBinding(StrictModel):
 
 
 def execution_binding() -> ExecutionBinding:
-    root = Path(__file__).resolve().parents[5]
-    modules = sorted(Path(__file__).parent.glob("*.py"))
-    modules.extend(
-        root / name
-        for name in (
-            "GEO-INFER-ACT/src/geo_infer_act/core/gnn_factored_batch.py",
-            "GEO-INFER-ACT/src/geo_infer_act/core/gnn_factored_contract.py",
-            "GEO-INFER-ACT/src/geo_infer_act/core/resource_allocation.py",
-            "GEO-INFER-SPACE/src/geo_infer_space/core/graph_statistics.py",
-            "GEO-INFER-PLACE/src/geo_infer_place/core/regional_layers.py",
-            "GEO-INFER-PLACE/src/geo_infer_place/core/_regional_download_worker.py",
-        )
-    )
+    """Bind the installed owners without assuming a monorepo layout."""
+    local = files("geo_infer_place.locations.california")
+    owners = {
+        f"GEO-INFER-PLACE/src/geo_infer_place/locations/california/{item.name}": hashlib.sha256(
+            item.read_bytes()
+        ).hexdigest()
+        for item in sorted(local.iterdir(), key=lambda item: item.name)
+        if item.is_file() and item.name.endswith(".py")
+    }
+    for package, module in (
+        ("geo_infer_act", "core/gnn_factored_batch.py"),
+        ("geo_infer_act", "core/gnn_factored_contract.py"),
+        ("geo_infer_act", "core/resource_allocation.py"),
+        ("geo_infer_space", "core/graph_statistics.py"),
+        ("geo_infer_place", "core/regional_layers.py"),
+        ("geo_infer_place", "core/_regional_download_worker.py"),
+    ):
+        module_owner = package.removeprefix("geo_infer_").upper()
+        key = f"GEO-INFER-{module_owner}/src/{package}/{module}"
+        owners[key] = hashlib.sha256(
+            files(package).joinpath(module).read_bytes()
+        ).hexdigest()
     return ExecutionBinding(
-        owners={str(path.relative_to(root)): digest(path) for path in modules},
+        owners=owners,
         executable=str(Path(sys.executable).resolve()),
         prefix=str(Path(sys.prefix).resolve()),
         base_prefix=str(Path(sys.base_prefix).resolve()),

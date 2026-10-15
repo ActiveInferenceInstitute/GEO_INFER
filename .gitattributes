@@ -1,6 +1,11 @@
 # Bind receipt hashes to the same lock bytes on POSIX and Windows checkouts.
 /uv.lock text eol=lf
 
+# Keep the original notice and module copies byte-identical across checkouts.
+/LICENSE -text -whitespace
+/GEO-INFER-SPACE/LICENSE -text -whitespace
+/GEO-INFER-TIME/LICENSE -text -whitespace
+
 /GEO-INFER-ACT/examples/cascadia/data/model_pairs_20261013.zip -text
 /GEO-INFER-ACT/examples/cascadia/data/model_pairs_20261013.html text eol=lf
 /GEO-INFER-ACT/examples/cascadia/data/model_pairs_20261013.svg text eol=lf

@@ -8,6 +8,7 @@ Unit workspace within `GEO-INFER-PLACE`.
 - `test_bioregion_visualization.py`
 - `test_caching.py`
 - `test_california_capture.py`
+- `test_california_execution_binding.py`
 - `test_california_geometry.py`
 - `test_california_inference.py`
 - `test_california_monitoring.py`

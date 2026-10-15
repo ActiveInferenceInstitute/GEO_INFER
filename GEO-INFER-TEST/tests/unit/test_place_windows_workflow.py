@@ -257,8 +257,28 @@ def test_native_negative_control_uses_real_builder_and_separate_failed_receipts(
     assert keywords == {
         "timeout": "60",
         "cwd": "root",
-        "env_overrides": "{'PLACE_EVIDENCE': str(negative)}",
+        "env_overrides": (
+            "{'PLACE_EVIDENCE': str(negative), 'PYTHONPATH': "
+            "os.pathsep.join([str(negative), built['PYTHONPATH']])}"
+        ),
     }
+    # The dedicated negative observer must actually reach the optional bridge.
+    # Keep the positive observer free of this deliberately poisoned import.
+    appended = next(
+        call.args[0].value
+        for call in ast.walk(tree)
+        if isinstance(call, ast.Call) and ast.unparse(call.func) == "handle.write"
+    )
+    poison = ast.parse(appended)
+    assert len(poison.body) == 1
+    assert isinstance(poison.body[0], ast.ImportFrom)
+    assert poison.body[0].module == "geo_infer_place.core"
+    assert [(name.name, name.asname) for name in poison.body[0].names] == [
+        ("module_bridge", None)
+    ]
+    positive = step("Prepare loopback guard and real worker observations")["run"]
+    assert appended not in positive
+    assert 'shutil.copyfile(evidence / "place_windows_observer.py", observer)' in code
     for required in (
         "importlib.metadata.distribution(distribution)",
         "importlib.metadata.PackageNotFoundError",
@@ -304,7 +324,8 @@ def test_native_negative_control_uses_real_builder_and_separate_failed_receipts(
         "GEO-INFER-PLACE/tests/integration/test_regional_download_worker.py",
         "GEO-INFER-PLACE/tests/integration/test_regional_layer_acquisition.py",
     ]
-    # No overriding PYTHONPATH, simulated imports, reduced selection, or direct subprocess bypass.
+    # All builder-owned paths remain after the negative-only observer prefix;
+    # no simulated imports, reduced selection, or direct subprocess bypass.
     assert "--collect-only" not in code and "subprocess.run" not in code
     assert not any(
         isinstance(n, ast.Call)

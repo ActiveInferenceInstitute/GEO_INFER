@@ -3,7 +3,7 @@ Vector data I/O operations for various geospatial formats.
 
 This module provides reading and writing capabilities for vector data
 including GeoJSON, Shapefile, GeoPackage, KML, and other formats
-supported by GeoPandas and Fiona.
+supported by GeoPandas and its selected I/O engine.
 """
 
 import logging
@@ -82,7 +82,10 @@ class VectorReader:
             raise
 
     def _read_geojson(self, file_path: Path, **kwargs: Any) -> gpd.GeoDataFrame:
-        """Read GeoJSON file with enhanced error handling."""
+        """Read GeoJSON, delegating explicit engine requests to GeoPandas."""
+        if "engine" in kwargs:
+            return gpd.read_file(file_path, **kwargs)
+
         try:
             with open(file_path, encoding="utf-8") as f:
                 geojson_data = json.load(f)
@@ -303,11 +306,7 @@ class VectorWriter:
         file_path: Path,
         **kwargs: Any,
     ) -> None:
-        """Write GeoDataFrame as GeoJSON with formatting options."""
-        # Set default formatting options
-        kwargs.setdefault("indent", 2)
-        kwargs.setdefault("ensure_ascii", False)
-
+        """Write GeoJSON using the selected engine and explicit caller options."""
         gdf.to_file(file_path, driver="GeoJSON", **kwargs)
 
     def _write_csv(

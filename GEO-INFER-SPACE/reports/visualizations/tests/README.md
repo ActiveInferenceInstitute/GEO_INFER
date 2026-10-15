@@ -22,7 +22,6 @@ Tests workspace within `GEO-INFER-SPACE`.
 
 - `geo-infer-time>=0.4.0`
 - `fastapi>=0.100.0`
-- `fiona>=1.8.0`
 - `geojson-pydantic>=2.0.0`
 - `geopandas>=0.13.0`
 - `h3>=4.5.0,<5`
