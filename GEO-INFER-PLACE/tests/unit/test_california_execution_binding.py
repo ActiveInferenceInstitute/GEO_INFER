@@ -25,7 +25,9 @@ def test_execution_binding_does_not_require_a_checkout(monkeypatch, tmp_path):
         payload = files(package).joinpath(*relative).read_bytes()
         assert digest == hashlib.sha256(payload).hexdigest()
 
-    assert "GEO-INFER-ACT/src/geo_infer_act/core/resource_allocation.py" in binding.owners
+    assert (
+        "GEO-INFER-ACT/src/geo_infer_act/core/resource_allocation.py" in binding.owners
+    )
     assert (
         "GEO-INFER-PLACE/src/geo_infer_place/core/_regional_download_worker.py"
         in binding.owners

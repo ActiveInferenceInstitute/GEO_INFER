@@ -56,8 +56,9 @@ def execution_binding() -> ExecutionBinding:
     """Bind the installed owners without assuming a monorepo layout."""
     local = files("geo_infer_place.locations.california")
     owners = {
-        f"GEO-INFER-PLACE/src/geo_infer_place/locations/california/{item.name}":
-        hashlib.sha256(item.read_bytes()).hexdigest()
+        f"GEO-INFER-PLACE/src/geo_infer_place/locations/california/{item.name}": hashlib.sha256(
+            item.read_bytes()
+        ).hexdigest()
         for item in sorted(local.iterdir(), key=lambda item: item.name)
         if item.is_file() and item.name.endswith(".py")
     }
@@ -71,7 +72,9 @@ def execution_binding() -> ExecutionBinding:
     ):
         module_owner = package.removeprefix("geo_infer_").upper()
         key = f"GEO-INFER-{module_owner}/src/{package}/{module}"
-        owners[key] = hashlib.sha256(files(package).joinpath(module).read_bytes()).hexdigest()
+        owners[key] = hashlib.sha256(
+            files(package).joinpath(module).read_bytes()
+        ).hexdigest()
     return ExecutionBinding(
         owners=owners,
         executable=str(Path(sys.executable).resolve()),

@@ -276,7 +276,8 @@ jobs:
           # this negative-only plugin, before pytest can launch any worker.
           with observer.open("a", encoding="utf-8") as handle:
               handle.write("\nfrom geo_infer_place.core import module_bridge\n")
-          # Keep ambient observer lookup in the builder; replace only the log destination.
+          # Retain every builder-owned path; prepend the negative-only observer
+          # and direct its logs to the separate negative evidence directory.
           built = execution.build_subprocess_env()
           builder_paths = [Path(p).resolve() for p in built["PYTHONPATH"].split(os.pathsep) if p]
           assert root / "GEO-INFER-DATA/src" in builder_paths, builder_paths
