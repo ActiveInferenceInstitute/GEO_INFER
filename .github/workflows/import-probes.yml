@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python: ["3.11", "3.12"]
+        python: ["3.15", "3.11", "3.12"]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     env:
@@ -36,7 +36,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          version: "0.10.7"
+          version: "0.13.1"
           cache-dependency-glob: uv.lock
       - name: Resolve the locked pytest version for the probe tools
         # GS19-23: the probe tools previously hardcoded pytest==8.4.2 while

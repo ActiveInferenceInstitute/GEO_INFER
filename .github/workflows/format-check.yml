@@ -30,9 +30,9 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          version: "0.10.7"
+          version: "0.13.1"
           enable-cache: true
           cache-suffix: format-check
 
       - name: Repo-wide ruff format check
-        run: uv run --no-project --with 'ruff>=0.15.6,<0.16' ruff format --check .
+        run: uv run --no-project --python 3.15 --with 'ruff>=0.15.6,<0.16' ruff format --check .
