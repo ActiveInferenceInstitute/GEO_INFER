@@ -90,6 +90,11 @@ uv run python -m pytest -c pyproject.toml -W error \
   GEO-INFER-ANT/tests/unit/test_deep_contracts.py
 ```
 
+The fresh-process population RSS probe measures 100 real agents with the existing
+200 MiB ceiling and 60-second deadline. Its child excludes inherited coverage
+autostart and rejects active tracing/profiling; the parent suite remains covered.
+Import/allocation timings and delayed stack traces support timeout diagnosis.
+
 All optimizers accept `random_seed`/`seed` for reproducible local validation.
 State serialization is JSON-compatible, H3 resolutions accept integer or
 `h3_rN` forms, and malformed spatial bounds or matrices fail at the boundary.

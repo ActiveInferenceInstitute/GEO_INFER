@@ -1,5 +1,12 @@
 # GEO-INFER Changelog
 
+## Native swarm memory measurement (2026-10-16)
+
+- Keep ANT's fresh-process RSS benchmark independent of inherited coverage
+  autostart, and reject active tracing/profiling in that measurement child.
+  Preserve its real workload, 200 MiB ceiling, 60-second deadline and parent
+  suite coverage. Retain phase timings and timeout stack diagnostics.
+
 ## Complete sourced Cascadia boundary (2026-10-16)
 
 - Capture Aquila Flower's licensed watershed delineation from its named ArcGIS

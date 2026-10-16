@@ -356,15 +356,26 @@ class TestPerformanceIntegration:
         asyncio.run(large_scale_test())
 
     def test_memory_efficiency(self):
-        """Measure the same cold workload without prior-suite resident allocations."""
+        """Measure native allocation in a fresh child, independent of parent tracing."""
         import subprocess
         import sys
 
         script = """
+import faulthandler
 import json
 import os
+import sys
+import time
+faulthandler.enable()
+faulthandler.dump_traceback_later(20, repeat=True)
+assert sys.gettrace() is None, "Native RSS measurement must not use a trace function"
+assert sys.getprofile() is None, "Native RSS measurement must not use a profiler"
+started = time.monotonic()
+print("ANT memory phase: importing", file=sys.stderr, flush=True)
 import psutil
 from geo_infer_ant.core import AgentPopulation
+loaded = time.monotonic()
+print("ANT memory phase: allocating", file=sys.stderr, flush=True)
 process = psutil.Process(os.getpid())
 initial_memory = process.memory_info().rss / 1024 / 1024
 population = AgentPopulation(population_size=100)
@@ -374,19 +385,35 @@ final_memory = process.memory_info().rss / 1024 / 1024
 assert len(agents) == 100
 assert environment is population.environment
 print(json.dumps({"initial_mb": initial_memory, "final_mb": final_memory,
-                  "increase_mb": final_memory - initial_memory}))
+                  "increase_mb": final_memory - initial_memory,
+                  "import_seconds": loaded - started,
+                  "allocation_seconds": time.monotonic() - loaded}))
+print("ANT memory phase: exiting", file=sys.stderr, flush=True)
 """
+        # pytest-cov 6 autostarts tracing in children via COV_CORE_*; explicit
+        # coverage startup can use COVERAGE_PROCESS_START. Tracer allocations
+        # and import overhead do not belong in a native RSS benchmark. Only
+        # this measurement child opts out; the parent and ordinary ANT tests
+        # retain their coverage configuration and the recorded module floor.
+        benchmark_env = {
+            key: value
+            for key, value in os.environ.items()
+            if not key.startswith("COV_CORE_") and key != "COVERAGE_PROCESS_START"
+        }
         with subprocess.Popen(
             [sys.executable, "-c", script],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            env=benchmark_env,
         ) as process:
             try:
                 stdout, stderr = process.communicate(timeout=60)
-            except subprocess.TimeoutExpired:
+            except subprocess.TimeoutExpired as exc:
                 process.kill()
-                process.communicate()
-                raise
+                stdout, stderr = process.communicate()
+                raise AssertionError(
+                    f"ANT memory probe exceeded 60s: stdout={stdout!r}; stderr={stderr!r}"
+                ) from exc
             assert process.returncode == 0, (stdout, stderr)
         measurements = json.loads(stdout)
         assert measurements["increase_mb"] < 200, measurements

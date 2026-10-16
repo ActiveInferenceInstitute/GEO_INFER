@@ -98,3 +98,18 @@ print(f"Active agents: {results.performance_metrics.get('active_agents', 0)}")
 **Active Inference** provides a principled framework for agent decision-making by minimizing expected free energy. Agents select actions that reduce uncertainty about their environment while achieving preferred states.
 
 **Emergent behavior** arises from simple individual rules producing complex collective patterns. GEO-INFER-ANT tracks and analyzes these emergent patterns through spatial clustering, information flow analysis, and temporal trend detection.
+
+
+## Native population memory measurement
+
+The integration RSS probe constructs the same 100-agent population and environment
+in a fresh Python child, with a 200 MiB incremental-RSS ceiling and a 60-second
+process deadline. It excludes inherited pytest-cov/coverage autostart only from
+that measurement child and rejects active trace/profile functions. Parent-suite
+coverage and module coverage floors remain unchanged. Ordinary module tests
+continue to exercise population construction under coverage.
+
+The probe records import/allocation durations and captures delayed Python stacks
+on timeout. Earlier instrumented child timeouts remain retained failures; scoped
+Linux reruns did not reproduce their exact cause. A passing native-memory probe
+does not establish the cause of an earlier instrumented timeout.
