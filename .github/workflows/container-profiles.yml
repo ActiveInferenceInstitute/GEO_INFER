@@ -23,10 +23,13 @@ jobs:
       matrix:
         include:
           - profile: bio
+            health: healthy
             dockerfile: GEO-INFER-BIO/Dockerfile
           - profile: ops
+            health: ok
             dockerfile: GEO-INFER-OPS/Dockerfile
           - profile: iot
+            health: healthy
             dockerfile: GEO-INFER-IOT/deployment/Dockerfile
     defaults:
       run:
@@ -54,6 +57,7 @@ jobs:
       - name: Start the actual image command and check service health
         env:
           PROFILE: ${{ matrix.profile }}
+          EXPECTED_STATUS: ${{ matrix.health }}
         run: |
           docker run --detach --name geo-service-check \
             --env OMP_NUM_THREADS=1 --env OPENBLAS_NUM_THREADS=1 \
@@ -61,6 +65,7 @@ jobs:
           docker inspect geo-service-check > container-evidence/container.json
           python - <<'PY'
           import json
+          import os
           from pathlib import Path
           import subprocess
           import time
@@ -75,7 +80,7 @@ jobs:
               try:
                   with urllib.request.urlopen(url, timeout=5) as response:
                       payload = json.load(response)
-                  assert payload["status"] == "healthy", payload
+                  assert payload["status"] == os.environ["EXPECTED_STATUS"], payload
                   Path("container-evidence/health.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
                   break
               except (OSError, urllib.error.URLError):

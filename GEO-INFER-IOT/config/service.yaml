@@ -1,0 +1,13 @@
+# REST service profile. Protocol consumers require their own explicit lifecycle.
+project:
+  name: GEO-INFER-IOT Sensor API
+  version: 0.4.0
+protocols:
+  mqtt:
+    enabled: false
+  coap:
+    enabled: false
+  http_polling:
+    enabled: false
+spatial:
+  default_resolution: 8

@@ -204,3 +204,17 @@ class TestSensorAPI:
         sensors = client.get("/sensors")
         assert sensors.status_code == 200
         assert sensors.json()["sensors"] == []
+
+
+def test_checked_in_service_profile_starts_real_factory(monkeypatch):
+    """The image's selected configuration exists and admits the actual service."""
+    from pathlib import Path
+
+    profile = Path(__file__).resolve().parents[2] / "config" / "service.yaml"
+    monkeypatch.setenv("CONFIG_PATH", str(profile))
+    app = create_app()
+    assert app.state.sensor_api.config["project"]["name"] == "GEO-INFER-IOT Sensor API"
+    with TestClient(app) as client:
+        response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json()["services"]["registry"] == "available"

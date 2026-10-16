@@ -87,3 +87,8 @@ GEO-INFER-PLACE/locations/cascadia/config/data_cleanup_config.json
 
 # Regenerate ACT audit artifacts with verify_comprehensive.py; never track output.
 /GEO-INFER-ACT/examples/output/
+
+# Checked-in REST service profile; other local IoT configuration remains ignored.
+!GEO-INFER-IOT/config/
+GEO-INFER-IOT/config/*
+!GEO-INFER-IOT/config/service.yaml

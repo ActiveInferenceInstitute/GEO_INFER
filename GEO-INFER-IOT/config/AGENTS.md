@@ -22,6 +22,7 @@
 ## Local Contents
 
 - `example.yaml`
+- `service.yaml`
 
 ## Validation
 

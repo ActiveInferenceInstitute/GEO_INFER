@@ -5,6 +5,7 @@ Config workspace within `GEO-INFER-IOT`.
 ## Contents
 
 - `example.yaml`
+- `service.yaml`
 
 ## Public Interface
 
