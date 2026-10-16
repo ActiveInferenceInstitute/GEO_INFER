@@ -361,7 +361,7 @@ def test_missing_github_overview_fails_check_and_can_be_regenerated(
     monkeypatch.setattr(rewriter, "discover_modules", dict)
     monkeypatch.setattr(sys, "argv", [str(REWRITER_PATH), "--check"])
     assert rewriter.main() == 1
-    assert ".github/README.md" in capsys.readouterr().err
+    assert str(Path(".github") / "README.md") in capsys.readouterr().err
 
     monkeypatch.setattr(sys, "argv", [str(REWRITER_PATH)])
     assert rewriter.main() == 0

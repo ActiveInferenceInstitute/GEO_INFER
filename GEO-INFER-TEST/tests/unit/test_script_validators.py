@@ -121,7 +121,7 @@ class TestValidateDocumentation:
         assert module.validate_links((github,)) == []
         github.write_text("[root](README.md)\n[missing](../missing.md)\n")
         assert module.validate_links((github,)) == [
-            ".github/README.md:2: missing ../missing.md"
+            f"{github.relative_to(tmp_path)}:2: missing ../missing.md"
         ]
 
     def test_strict_flags_missing_authoritative_page(self, tmp_path, monkeypatch):
