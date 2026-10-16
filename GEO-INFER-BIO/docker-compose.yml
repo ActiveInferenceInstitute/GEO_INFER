@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   api:
-    build: .
+    build:
+      context: ..
+      dockerfile: GEO-INFER-BIO/Dockerfile
     ports:
       - "8000:8000"
     volumes:
@@ -19,7 +21,9 @@ services:
       - geo-infer-network
 
   graphql:
-    build: .
+    build:
+      context: ..
+      dockerfile: GEO-INFER-BIO/Dockerfile
     ports:
       - "8001:8000"
     volumes:
@@ -27,7 +31,7 @@ services:
       - ./output:/app/output
     environment:
       - PYTHONUNBUFFERED=1
-    command: ["uv", "run", "uvicorn", "geo_infer_bio.api.graphql_api:app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["python", "-m", "uvicorn", "geo_infer_bio.api.graphql_api:app", "--host", "0.0.0.0", "--port", "8000"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/graphql?query={__typename}')"]
       interval: 30s

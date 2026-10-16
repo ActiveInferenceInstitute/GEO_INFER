@@ -32,27 +32,37 @@ Explicit `UV_PYTHON` continues to select a named compatibility/profile runtime.
 
 ### Linux container profiles
 
-The BIO and OPS standalone base-service containers select Python 3.15 with
-exact uv 0.13.1. Earlier uv 0.13.0 notes reported successful source-image
-and offline import/runtime checks. The uv 0.13.1 images remain unqualified;
-workspace integrations, service startup and scientific gates remain separate.
-Their published Python 3.14 base supplies system libraries; uv installs the
-selected executable runtime.
+BIO, OPS, and IoT use the named frozen CPU profile: Python 3.12 and exact
+uv 0.13.1. Build each image with the workspace root as its context so its
+selected dependencies come from the existing `uv.lock`, exported with hashes.
+The runtime installs only the selected module and required workspace siblings;
+there is no unconstrained gunicorn or base-dependency resolution at image build.
+The root `.dockerignore` admits only package sources, metadata and owned service
+configuration. Repository credentials, environments, results and Git metadata
+are excluded. Base image updates still require fresh build/runtime evidence.
 
-The IoT container selects Python 3.13 for its unchanged frozen workspace
-closure. Locked pydantic-core 2.33.2 embeds PyO3 0.24.1, whose actual native
-build rejects Python 3.14 and 3.15. Its Linux closure selects pandas 2.3.1;
-the macOS pandas 2.1.4 failure above is a separate host profile. NumPy 1.26.4
-successfully built on Linux Python 3.15 and does not itself justify this
-exception. GDAL, PROJ and Fortran build prerequisites are also separate.
-The IoT source image uses the workspace-root build context to include its
-BAYES, SPACE and TIME distributions while preserving producer metadata and
-lock bytes. Offline source-image qualification does not establish running
-API, broker/database, sensor, sampling, hosted or scientific acceptance.
+```bash
+docker build -f GEO-INFER-BIO/Dockerfile -t geo-bio .
+docker build -f GEO-INFER-OPS/Dockerfile -t geo-ops .
+docker build -f GEO-INFER-IOT/deployment/Dockerfile -t geo-iot .
+```
 
-To move IoT to 3.15, separately review a producer dependency/lock update that
-removes the PyO3 refusal, rebuild the selected closure and run its source/native
-gates. Preserve prior image/campaign/publication receipts and paired revisions.
+The `Frozen service containers` workflow builds all three images, checks installed
+dependency consistency and the selected Python, then starts each actual image
+command and verifies its HTTP health response. It retains build, image, runtime,
+service and health evidence on success or failure. No images are published.
+Container health does not qualify broker/database, hardware or sampling work.
+
+IoT starts `geo_infer_iot.api.sensor_api:create_app` with uvicorn's `--factory`.
+Each worker owns independent real registry/ingestion state. An explicit
+`CONFIG_PATH` must name a readable YAML mapping; malformed/missing selections
+fail startup. The thin entrypoint executes the API as PID 1 so its lifecycle
+receives container signals; it does not start monitoring in a short-lived helper.
+Protocol consumers and performance monitoring remain explicit application work.
+
+The former Python 3.15 BIO/OPS and 3.13 IoT draft images were not qualified under
+uv 0.13.1. Their source is retained in Git history. Moving a runtime beyond this
+frozen profile needs separately reviewed dependency/native-build qualification.
 
 ## Five-minute path
 

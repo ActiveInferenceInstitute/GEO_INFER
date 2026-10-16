@@ -11,6 +11,7 @@ Api workspace within `GEO-INFER-IOT`.
 ## Public Interface
 
 - `inference_api.py:BayesianInferenceAPI` (class)
+- `sensor_api.py:create_app` (function)
 - `sensor_api.py:SensorAPI` (class)
 - `streaming_api.py:StreamingAPI` (class)
 

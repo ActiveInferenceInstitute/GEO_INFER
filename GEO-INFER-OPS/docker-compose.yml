@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   geo-infer-ops:
-    build: .
+    build:
+      context: ..
+      dockerfile: GEO-INFER-OPS/Dockerfile
     image: geo-infer-ops:latest
     container_name: geo-infer-ops
     ports:
@@ -18,7 +20,7 @@ services:
     networks:
       - geo-infer-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3

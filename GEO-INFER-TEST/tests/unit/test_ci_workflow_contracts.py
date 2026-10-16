@@ -233,7 +233,7 @@ def test_each_category_run_is_immediately_followed_by_its_own_retention():
 def test_test_matrix_covers_all_categories_per_interpreter():
     """GS-005: every category is its own matrix leg for both interpreters."""
     matrix = _load("ci.yml")["jobs"]["test"]["strategy"]["matrix"]
-    assert matrix["python-version"] == ["3.11", "3.12"]
+    assert sorted(matrix["python-version"]) == ["3.11", "3.12"]
     assert matrix["category"] == [
         "unit",
         "integration",
@@ -252,9 +252,9 @@ def test_build_smoke_builds_wheels_in_pr_ci():
     assert "--verify --verify-extras" in build
     assert "Retain installed wheel evidence" in build
     assert "include-hidden-files: true" in build
-    assert _load("ci.yml")["jobs"]["build-smoke"]["strategy"]["matrix"][
-        "python-version"
-    ] == ["3.11", "3.12"]
+    assert sorted(
+        _load("ci.yml")["jobs"]["build-smoke"]["strategy"]["matrix"]["python-version"]
+    ) == ["3.11", "3.12"]
 
 
 def test_documentation_examples_have_a_persistent_ci_gate():
@@ -726,7 +726,7 @@ def test_cpu_cache_has_one_writer_per_interpreter_and_no_environment_reuse():
         expected = (
             "cpu-workspace-py${{ matrix.python-version }}"
             if name == "test"
-            else "cpu-workspace-py3.11"
+            else "cpu-workspace-py" + jobs[name]["env"]["UV_PYTHON"]
         )
         assert setup["cache-suffix"] == expected
         assert setup["enable-cache"] is True

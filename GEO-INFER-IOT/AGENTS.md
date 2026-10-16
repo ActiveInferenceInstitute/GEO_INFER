@@ -37,11 +37,15 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module IOT
 ```
 
 
-## Visualization Guidance
+## Service Deployment Contracts
 
-- Validate sensor/interpolation coordinates and aligned values before passing
-  data to Folium or Matplotlib; create parents before writing artifacts.
-- Close saved figures and preserve explicit error dictionaries for invalid input.
+- Deploy with `geo_infer_iot.api.sensor_api:create_app --factory`; workers own
+  independent registry/ingestion state. Explicit CONFIG_PATH must be readable
+  YAML mappings; missing or malformed selections fail startup.
+- The Docker service profile uses `config/service.yaml`. Protocol consumers and
+  performance monitoring have explicit lifecycles outside factory construction.
+- Build `deployment/Dockerfile` from the workspace root; use the frozen lock,
+  the root Docker context allow-list, and the actual image health gate in CI.
 
 ## Integration Notes
 

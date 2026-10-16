@@ -1,0 +1,17 @@
+**
+!pyproject.toml
+!uv.lock
+!uv.toml
+!LICENSE
+!GEO-INFER-*/
+!GEO-INFER-*/pyproject.toml
+!GEO-INFER-*/README.md
+!GEO-INFER-*/LICENSE
+!GEO-INFER-*/src/
+!GEO-INFER-*/src/**
+!GEO-INFER-OPS/config/
+!GEO-INFER-OPS/config/**
+!GEO-INFER-IOT/config/
+!GEO-INFER-IOT/config/**
+!GEO-INFER-IOT/deployment/
+!GEO-INFER-IOT/deployment/docker-entrypoint.sh

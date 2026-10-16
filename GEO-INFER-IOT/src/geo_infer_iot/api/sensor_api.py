@@ -6,15 +6,38 @@ Integrates with FastAPI for high-performance web services.
 """
 
 import logging
+import os
+from pathlib import Path
 from typing import Any
 from datetime import datetime, UTC
 from fastapi import FastAPI, HTTPException, Query
 import h3
+import yaml
 
 from geo_infer_iot.core.ingestion import IoTDataIngestion
 from geo_infer_iot.core.registry import SensorRegistry
 
 logger = logging.getLogger(__name__)
+
+
+def create_app() -> FastAPI:
+    """Create an independent sensor service using an explicit CONFIG_PATH, if set.
+
+    Invalid or missing configured files fail startup. Construction does not start
+    protocol consumers or background monitoring processes.
+    """
+    config: dict[str, Any] = {}
+    configured_path = os.environ.get("CONFIG_PATH")
+    if configured_path:
+        with Path(configured_path).open(encoding="utf-8") as stream:
+            loaded = yaml.safe_load(stream)
+        if not isinstance(loaded, dict):
+            raise ValueError("sensor API configuration must be a mapping")
+        config = loaded
+    service = SensorAPI(config)
+    app = service.get_app()
+    app.state.sensor_api = service
+    return app
 
 
 class SensorAPI:

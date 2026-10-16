@@ -851,6 +851,18 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
 - Polygon bbox filtering uses geometry extents, so containing and crossing
   polygons are not missed when no vertex lies inside the query bbox.
 """
+    if module.name == "GEO-INFER-IOT":
+        return """
+## Service Deployment Contracts
+
+- Deploy with `geo_infer_iot.api.sensor_api:create_app --factory`; workers own
+  independent registry/ingestion state. Explicit CONFIG_PATH must be readable
+  YAML mappings; missing or malformed selections fail startup.
+- The Docker service profile uses `config/service.yaml`. Protocol consumers and
+  performance monitoring have explicit lifecycles outside factory construction.
+- Build `deployment/Dockerfile` from the workspace root; use the frozen lock,
+  the root Docker context allow-list, and the actual image health gate in CI.
+"""
     if module.name == "GEO-INFER-OPS":
         return """
 ## Cache Contracts

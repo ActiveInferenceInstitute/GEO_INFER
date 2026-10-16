@@ -9,7 +9,7 @@ import h3
 import pytest
 from fastapi.testclient import TestClient
 
-from geo_infer_iot.api.sensor_api import SensorAPI
+from geo_infer_iot.api.sensor_api import SensorAPI, create_app
 from geo_infer_iot.models.network import (
     NetworkLink,
     NetworkNode,
@@ -26,6 +26,47 @@ def _reference_data() -> list[dict[str, float]]:
         {"sensor_value": value, "reference_value": 2.0 * value + 1.0}
         for value in (0.0, 5.0, 10.0, 15.0, 20.0)
     ]
+
+
+def test_service_factory_has_real_health_and_independent_state(monkeypatch):
+    """The deployment factory owns real core services independently per worker."""
+    monkeypatch.delenv("CONFIG_PATH", raising=False)
+    first, second = create_app(), create_app()
+    assert first.state.sensor_api.registry is not second.state.sensor_api.registry
+    with TestClient(first) as client:
+        response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json()["services"] == {
+        "registry": "available",
+        "ingestion": "available",
+    }
+
+
+def test_service_factory_loads_explicit_configuration(tmp_path, monkeypatch):
+    """Deployment configuration reaches the owning service without fallback."""
+    path = tmp_path / "sensor.yaml"
+    path.write_text("deployment_name: local-service\n", encoding="utf-8")
+    monkeypatch.setenv("CONFIG_PATH", str(path))
+    assert create_app().state.sensor_api.config["deployment_name"] == "local-service"
+
+
+@pytest.mark.parametrize("content", ["[]", "null", "name: [invalid"])
+def test_service_factory_rejects_invalid_configuration(tmp_path, monkeypatch, content):
+    """Malformed/nonmapping files fail startup instead of selecting defaults."""
+    import yaml
+
+    path = tmp_path / "sensor.yaml"
+    path.write_text(content, encoding="utf-8")
+    monkeypatch.setenv("CONFIG_PATH", str(path))
+    with pytest.raises((ValueError, yaml.YAMLError)):
+        create_app()
+
+
+def test_service_factory_rejects_missing_configuration(tmp_path, monkeypatch):
+    """An explicitly selected missing file remains a startup error."""
+    monkeypatch.setenv("CONFIG_PATH", str(tmp_path / "missing.yaml"))
+    with pytest.raises(FileNotFoundError):
+        create_app()
 
 
 def _drift_data() -> tuple[list[dict[str, float]], list[dict[str, float]]]:

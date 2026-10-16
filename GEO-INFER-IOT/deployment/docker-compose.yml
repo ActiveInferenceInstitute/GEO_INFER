@@ -11,14 +11,14 @@ services:
       - "8000:8000"  # REST API
       - "8001:8001"  # WebSocket API
     environment:
-      - CONFIG_PATH=/app/config/iot_config.yaml
+      - CONFIG_PATH=/app/config/service.yaml
       - LOG_LEVEL=INFO
       - MQTT_BROKER_HOST=mqtt-broker
       - INFLUXDB_HOST=influxdb
       - POSTGRES_HOST=postgres
       - REDIS_HOST=redis
     volumes:
-      - ./config:/app/config:ro
+      - ../config:/app/config:ro
       - ./logs:/app/logs
       - ./data:/app/data
     depends_on:
@@ -30,7 +30,7 @@ services:
       - geo-infer-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3

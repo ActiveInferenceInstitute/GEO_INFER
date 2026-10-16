@@ -1,5 +1,16 @@
 # GEO-INFER Changelog
 
+## Service deployment qualification (2026-10-16)
+
+- Preserve runtime PR89 and use frozen, hash-locked Python 3.12 CPU service
+  profiles for BIO, OPS and IoT. Remove unconstrained service dependency installs,
+  align Compose build contexts, and restrict Docker context contents.
+- Add the real IoT uvicorn factory with strict explicit configuration and worker
+  ownership. Keep the entrypoint as a direct exec for signal delivery.
+- Build and start all three actual images in a dedicated CI health gate, retaining
+  failure and image/runtime evidence. Keep CI cache contracts tied to the selected
+  interpreter and require both compatibility versions independently of order.
+
 All notable changes to the GEO-INFER framework will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),

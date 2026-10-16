@@ -1,0 +1,97 @@
+name: Frozen service containers
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: service-containers-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  service:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: bio
+            dockerfile: GEO-INFER-BIO/Dockerfile
+          - profile: ops
+            dockerfile: GEO-INFER-OPS/Dockerfile
+          - profile: iot
+            dockerfile: GEO-INFER-IOT/deployment/Dockerfile
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Build the frozen service closure
+        env:
+          PROFILE: ${{ matrix.profile }}
+          DOCKERFILE: ${{ matrix.dockerfile }}
+        run: |
+          mkdir -p container-evidence
+          sha256sum uv.lock > container-evidence/lock-before.sha256
+          docker build --pull --progress=plain --file "$DOCKERFILE" \
+            --tag "geo-service:$PROFILE" . 2>&1 | tee container-evidence/build.log
+          sha256sum --check container-evidence/lock-before.sha256
+          docker image inspect "geo-service:$PROFILE" > container-evidence/image.json
+          docker run --rm --entrypoint uv "geo-service:$PROFILE" \
+            pip check --python /opt/runtime/bin/python
+          docker run --rm --entrypoint python "geo-service:$PROFILE" \
+            -c 'import json, sys; assert sys.version_info[:2] == (3, 12); print(json.dumps({"python": sys.version, "prefix": sys.prefix}))' \
+            > container-evidence/runtime.json
+      - name: Start the actual image command and check service health
+        env:
+          PROFILE: ${{ matrix.profile }}
+        run: |
+          docker run --detach --name geo-service-check \
+            --env OMP_NUM_THREADS=1 --env OPENBLAS_NUM_THREADS=1 \
+            --env MKL_NUM_THREADS=1 --publish 127.0.0.1::8000 "geo-service:$PROFILE"
+          docker inspect geo-service-check > container-evidence/container.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import subprocess
+          import time
+          import urllib.error
+          import urllib.request
+
+          record = json.loads(subprocess.check_output(["docker", "inspect", "geo-service-check"]))[0]
+          binding = record["NetworkSettings"]["Ports"]["8000/tcp"][0]
+          url = f"http://127.0.0.1:{binding['HostPort']}/health"
+          deadline = time.monotonic() + 120
+          while True:
+              try:
+                  with urllib.request.urlopen(url, timeout=5) as response:
+                      payload = json.load(response)
+                  assert payload["status"] == "healthy", payload
+                  Path("container-evidence/health.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+                  break
+              except (OSError, urllib.error.URLError):
+                  state = json.loads(subprocess.check_output(["docker", "inspect", "geo-service-check"]))[0]["State"]
+                  if not state["Running"] or time.monotonic() >= deadline:
+                      raise
+                  time.sleep(1)
+          PY
+      - name: Retain logs and stop the owned service
+        if: always()
+        run: |
+          docker logs --timestamps geo-service-check > container-evidence/service.log 2>&1 || true
+          docker rm --force geo-service-check || true
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: service-container-${{ matrix.profile }}
+          path: container-evidence
+          if-no-files-found: error
