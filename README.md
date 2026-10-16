@@ -6,15 +6,53 @@
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC_BY--NC--SA_4.0-lightgrey.svg)](LICENSE)
 [![Active Inference Institute](https://img.shields.io/badge/Active_Inference_Institute-6C3483?style=flat)](https://activeinference.org)
 
-**GEO-INFER** is a 45-module **geospatial inference monorepo** from the
-Active Inference Institute — spatial analysis, Active Inference, Bayesian modeling,
-domain modeling, agent workflows, and reproducible repository validation in one
-`uv`/Python workspace.
+**GEO-INFER** connects geospatial data, spatial and temporal analysis, and
+Active Inference in one Python workspace. Its 45 modules cover H3
+indexing, Bayesian models, agents, and domain workflows for ecological, civic,
+and commercial applications. Developed by the
+[Active Inference Institute](https://activeinference.org).
 
-> Build geospatial and place-based models, run Active-Inference and Bayesian
-> inference over them, orchestrate agents and domain workflows, and keep the
-> whole thing reproducible — served from a [user documentation hub](GEO-INFER-INTRA/docs/index.md)
-> backed by an auto-generated, validation-gated [module catalog](GEO-INFER-INTRA/docs/modules/index.md).
+[Get started](#quick-start) · [Documentation](GEO-INFER-INTRA/docs/index.md) ·
+[Module index](#module-index) · [Contribute](CONTRIBUTING.md) ·
+[Open work](TODO.md)
+
+## Start with a workflow
+
+| Goal | Modules | Starting point |
+| --- | --- | --- |
+| Index locations and align observations over time | SPACE, TIME, DATA | [First spatial analysis](GEO-INFER-INTRA/docs/getting_started/first_analysis.md) |
+| Infer hidden states and evaluate actions | ACT, BAYES, MATH | [Active Inference guide](GEO-INFER-INTRA/docs/active_inference_guide.md) |
+| Analyze places and regional indicators | PLACE, SPACE, domain modules | [PLACE documentation](GEO-INFER-PLACE/README.md) |
+| Compose applications and agents | EXAMPLES, API, APP, AGENT | [Integration guide](GEO-INFER-INTRA/docs/integration/index.md) |
+
+## Quick Start
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then clone
+the repository and start with one workspace package:
+
+```bash
+git clone https://github.com/ActiveInferenceInstitute/GEO_INFER.git
+cd GEO_INFER
+uv sync --package geo-infer-space
+uv run --package geo-infer-space python - <<'PY'
+from geo_infer_space import cell_to_latlng, latlng_to_cell
+
+cell = latlng_to_cell(41.7558, -124.2026, resolution=9)  # Crescent City, CA
+print(cell)
+print(cell_to_latlng(cell))  # Cell center as (latitude, longitude)
+PY
+```
+
+Coordinates are WGS84 degrees, in latitude/longitude order. Continue with the
+[SPACE → ACT walkthrough](GEO-INFER-INTRA/docs/getting_started/first_analysis.md)
+to attach beliefs, actions, and free-energy terms to a cell. For cross-module
+development, use the [full workspace profile](#choose-an-installation-profile).
+
+Python 3.11+ is supported; `.python-version` pins the local development runtime.
+The packages are under active development. Module tests describe implemented
+behavior; [release readiness](GEO-INFER-INTRA/docs/releases/0.4.0_readiness.md)
+and the [issue ledger](GEO-INFER-INTRA/docs/releases/issue_reconciliation_2026_10.md)
+record evidence and outstanding acceptance requirements.
 
 ## What's inside
 
@@ -24,27 +62,6 @@ domain modeling, agent workflows, and reproducible repository validation in one
 - 🏛️ **Governance, risk & domain modeling** — risk, meta-governance, norms, economics, policy, security, health, and civil domains.
 - 🗄️ **Data, API & applications** — data pipelines, APIs, applications, IoT, art, and education.
 - 🛠️ **Infrastructure & validation** — documentation hub (INTRA), the validation & test harness, logging, git, examples, and bio.
-
-## Current Repository Facts
-
-| Metric | Value |
-| --- | ---: |
-| Modules | 45 |
-| Python source files | 1021 |
-| Python test files | 810 |
-| Repository README.md files | 811 |
-| Repository AGENTS.md files | 808 |
-
-## Quick Start
-
-```bash
-uv sync --all-packages --all-extras --all-groups
-python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
-uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language --strict-import-smoke
-uv run python GEO-INFER-TEST/validate_documentation.py --strict
-uv run python manuscript/generate_research_artifacts.py
-uv run python GEO-INFER-TEST/run_unified_tests.py --category unit
-```
 
 ## Documentation Map
 
@@ -61,10 +78,10 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --category unit
 - Security reporting: [`SECURITY.md`](SECURITY.md)
 - Release history: [`CHANGELOG.md`](CHANGELOG.md)
 
-The repository root and module-level `README.md`/`AGENTS.md` files are generated
-signposts. Conceptual tutorials, integration guidance, and policy live in the
-INTRA documentation hub; executable behavior and public exports remain owned by
-the module source and its tests.
+Conceptual tutorials, integration guidance, and policy live in the INTRA
+documentation hub. Each module owns its implementation and tests. The root
+README, GitHub entrypoint, and module signposts are generated together from
+`GEO-INFER-TEST/rewrite_readme_agents.py`.
 
 ## Choose an Installation Profile
 
@@ -87,62 +104,75 @@ the exact reproducible exception list.
 
 | Theme | Modules |
 | --- | --- |
-| 🌍 Spatial & Place-based | `GEO-INFER-SPACE`, `GEO-INFER-PLACE`, `GEO-INFER-TIME`, `GEO-INFER-MARINE`, `GEO-INFER-WATER`, `GEO-INFER-FOREST`, `GEO-INFER-CLIMATE`, `GEO-INFER-ENERGY`, `GEO-INFER-TRANSPORT`, `GEO-INFER-EMERGENCY` |
-| 🧠 Bayesian & Active Inference | `GEO-INFER-BAYES`, `GEO-INFER-SIM`, `GEO-INFER-SPM`, `GEO-INFER-COG`, `GEO-INFER-ACT`, `GEO-INFER-MATH` |
-| 🤖 Agents & AI Orchestration | `GEO-INFER-AGENT`, `GEO-INFER-AG`, `GEO-INFER-AI`, `GEO-INFER-ANT`, `GEO-INFER-OPS`, `GEO-INFER-COMMS` |
-| 🏛️ Governance, Risk & Domain | `GEO-INFER-RISK`, `GEO-INFER-INSURANCE`, `GEO-INFER-METAGOV`, `GEO-INFER-NORMS`, `GEO-INFER-ECON`, `GEO-INFER-PEP`, `GEO-INFER-REQ`, `GEO-INFER-SEC`, `GEO-INFER-CIV`, `GEO-INFER-HEALTH`, `GEO-INFER-ORG` |
-| 🗄️ Data, API & Applications | `GEO-INFER-API`, `GEO-INFER-APP`, `GEO-INFER-DATA`, `GEO-INFER-IOT`, `GEO-INFER-ART`, `GEO-INFER-EDU` |
-| 🛠️ Infrastructure & Validation | `GEO-INFER-INTRA`, `GEO-INFER-TEST`, `GEO-INFER-LOG`, `GEO-INFER-GIT`, `GEO-INFER-EXAMPLES`, `GEO-INFER-BIO` |
+| 🌍 Spatial & Place-based | [GEO-INFER-SPACE](GEO-INFER-SPACE/), [GEO-INFER-PLACE](GEO-INFER-PLACE/), [GEO-INFER-TIME](GEO-INFER-TIME/), [GEO-INFER-MARINE](GEO-INFER-MARINE/), [GEO-INFER-WATER](GEO-INFER-WATER/), [GEO-INFER-FOREST](GEO-INFER-FOREST/), [GEO-INFER-CLIMATE](GEO-INFER-CLIMATE/), [GEO-INFER-ENERGY](GEO-INFER-ENERGY/), [GEO-INFER-TRANSPORT](GEO-INFER-TRANSPORT/), [GEO-INFER-EMERGENCY](GEO-INFER-EMERGENCY/) |
+| 🧠 Bayesian & Active Inference | [GEO-INFER-BAYES](GEO-INFER-BAYES/), [GEO-INFER-SIM](GEO-INFER-SIM/), [GEO-INFER-SPM](GEO-INFER-SPM/), [GEO-INFER-COG](GEO-INFER-COG/), [GEO-INFER-ACT](GEO-INFER-ACT/), [GEO-INFER-MATH](GEO-INFER-MATH/) |
+| 🤖 Agents & AI Orchestration | [GEO-INFER-AGENT](GEO-INFER-AGENT/), [GEO-INFER-AG](GEO-INFER-AG/), [GEO-INFER-AI](GEO-INFER-AI/), [GEO-INFER-ANT](GEO-INFER-ANT/), [GEO-INFER-OPS](GEO-INFER-OPS/), [GEO-INFER-COMMS](GEO-INFER-COMMS/) |
+| 🏛️ Governance, Risk & Domain | [GEO-INFER-RISK](GEO-INFER-RISK/), [GEO-INFER-INSURANCE](GEO-INFER-INSURANCE/), [GEO-INFER-METAGOV](GEO-INFER-METAGOV/), [GEO-INFER-NORMS](GEO-INFER-NORMS/), [GEO-INFER-ECON](GEO-INFER-ECON/), [GEO-INFER-PEP](GEO-INFER-PEP/), [GEO-INFER-REQ](GEO-INFER-REQ/), [GEO-INFER-SEC](GEO-INFER-SEC/), [GEO-INFER-CIV](GEO-INFER-CIV/), [GEO-INFER-HEALTH](GEO-INFER-HEALTH/), [GEO-INFER-ORG](GEO-INFER-ORG/) |
+| 🗄️ Data, API & Applications | [GEO-INFER-API](GEO-INFER-API/), [GEO-INFER-APP](GEO-INFER-APP/), [GEO-INFER-DATA](GEO-INFER-DATA/), [GEO-INFER-IOT](GEO-INFER-IOT/), [GEO-INFER-ART](GEO-INFER-ART/), [GEO-INFER-EDU](GEO-INFER-EDU/) |
+| 🛠️ Infrastructure & Validation | [GEO-INFER-INTRA](GEO-INFER-INTRA/), [GEO-INFER-TEST](GEO-INFER-TEST/), [GEO-INFER-LOG](GEO-INFER-LOG/), [GEO-INFER-GIT](GEO-INFER-GIT/), [GEO-INFER-EXAMPLES](GEO-INFER-EXAMPLES/), [GEO-INFER-BIO](GEO-INFER-BIO/) |
 
 ## Module Index
 
 | Module | Package | Source files | Test files |
 | --- | --- | ---: | ---: |
-| `GEO-INFER-ACT` | `geo_infer_act` | 65 | 66 |
-| `GEO-INFER-AG` | `geo_infer_ag` | 16 | 12 |
-| `GEO-INFER-AGENT` | `geo_infer_agent` | 26 | 28 |
-| `GEO-INFER-AI` | `geo_infer_ai` | 18 | 21 |
-| `GEO-INFER-ANT` | `geo_infer_ant` | 24 | 11 |
-| `GEO-INFER-API` | `geo_infer_api` | 14 | 11 |
-| `GEO-INFER-APP` | `geo_infer_app` | 13 | 9 |
-| `GEO-INFER-ART` | `geo_infer_art` | 20 | 12 |
-| `GEO-INFER-BAYES` | `geo_infer_bayes` | 38 | 28 |
-| `GEO-INFER-BIO` | `geo_infer_bio` | 12 | 10 |
-| `GEO-INFER-CIV` | `geo_infer_civ` | 5 | 7 |
-| `GEO-INFER-CLIMATE` | `geo_infer_climate` | 11 | 12 |
-| `GEO-INFER-COG` | `geo_infer_cog` | 21 | 16 |
-| `GEO-INFER-COMMS` | `geo_infer_comms` | 19 | 20 |
-| `GEO-INFER-DATA` | `geo_infer_data` | 30 | 28 |
-| `GEO-INFER-ECON` | `geo_infer_econ` | 36 | 18 |
-| `GEO-INFER-EDU` | `geo_infer_edu` | 7 | 7 |
-| `GEO-INFER-EMERGENCY` | `geo_infer_emergency` | 8 | 9 |
-| `GEO-INFER-ENERGY` | `geo_infer_energy` | 9 | 9 |
-| `GEO-INFER-EXAMPLES` | `geo_infer_examples` | 6 | 10 |
-| `GEO-INFER-FOREST` | `geo_infer_forest` | 9 | 8 |
-| `GEO-INFER-GIT` | `geo_infer_git` | 22 | 19 |
-| `GEO-INFER-HEALTH` | `geo_infer_health` | 18 | 15 |
-| `GEO-INFER-INSURANCE` | `geo_infer_insurance` | 21 | 12 |
-| `GEO-INFER-INTRA` | `geo_infer_intra` | 9 | 10 |
-| `GEO-INFER-IOT` | `geo_infer_iot` | 19 | 18 |
-| `GEO-INFER-LOG` | `geo_infer_log` | 21 | 20 |
-| `GEO-INFER-MARINE` | `geo_infer_marine` | 12 | 10 |
-| `GEO-INFER-MATH` | `geo_infer_math` | 67 | 22 |
-| `GEO-INFER-METAGOV` | `geo_infer_metagov` | 21 | 16 |
-| `GEO-INFER-NORMS` | `geo_infer_norms` | 20 | 15 |
-| `GEO-INFER-OPS` | `geo_infer_ops` | 17 | 18 |
-| `GEO-INFER-ORG` | `geo_infer_org` | 5 | 7 |
-| `GEO-INFER-PEP` | `geo_infer_pep` | 40 | 16 |
-| `GEO-INFER-PLACE` | `geo_infer_place` | 99 | 31 |
-| `GEO-INFER-REQ` | `geo_infer_req` | 5 | 7 |
-| `GEO-INFER-RISK` | `geo_infer_risk` | 15 | 24 |
-| `GEO-INFER-SEC` | `geo_infer_sec` | 22 | 20 |
-| `GEO-INFER-SIM` | `geo_infer_sim` | 11 | 9 |
-| `GEO-INFER-SPACE` | `geo_infer_space` | 85 | 52 |
-| `GEO-INFER-SPM` | `geo_infer_spm` | 27 | 23 |
-| `GEO-INFER-TEST` | `geo_infer_test` | 22 | 52 |
-| `GEO-INFER-TIME` | `geo_infer_time` | 20 | 23 |
-| `GEO-INFER-TRANSPORT` | `geo_infer_transport` | 7 | 10 |
-| `GEO-INFER-WATER` | `geo_infer_water` | 9 | 9 |
+| [GEO-INFER-ACT](GEO-INFER-ACT/) | `geo_infer_act` | 65 | 66 |
+| [GEO-INFER-AG](GEO-INFER-AG/) | `geo_infer_ag` | 16 | 12 |
+| [GEO-INFER-AGENT](GEO-INFER-AGENT/) | `geo_infer_agent` | 26 | 28 |
+| [GEO-INFER-AI](GEO-INFER-AI/) | `geo_infer_ai` | 18 | 21 |
+| [GEO-INFER-ANT](GEO-INFER-ANT/) | `geo_infer_ant` | 24 | 11 |
+| [GEO-INFER-API](GEO-INFER-API/) | `geo_infer_api` | 14 | 11 |
+| [GEO-INFER-APP](GEO-INFER-APP/) | `geo_infer_app` | 13 | 9 |
+| [GEO-INFER-ART](GEO-INFER-ART/) | `geo_infer_art` | 20 | 12 |
+| [GEO-INFER-BAYES](GEO-INFER-BAYES/) | `geo_infer_bayes` | 38 | 28 |
+| [GEO-INFER-BIO](GEO-INFER-BIO/) | `geo_infer_bio` | 12 | 10 |
+| [GEO-INFER-CIV](GEO-INFER-CIV/) | `geo_infer_civ` | 5 | 7 |
+| [GEO-INFER-CLIMATE](GEO-INFER-CLIMATE/) | `geo_infer_climate` | 11 | 12 |
+| [GEO-INFER-COG](GEO-INFER-COG/) | `geo_infer_cog` | 21 | 16 |
+| [GEO-INFER-COMMS](GEO-INFER-COMMS/) | `geo_infer_comms` | 19 | 20 |
+| [GEO-INFER-DATA](GEO-INFER-DATA/) | `geo_infer_data` | 30 | 28 |
+| [GEO-INFER-ECON](GEO-INFER-ECON/) | `geo_infer_econ` | 36 | 18 |
+| [GEO-INFER-EDU](GEO-INFER-EDU/) | `geo_infer_edu` | 7 | 7 |
+| [GEO-INFER-EMERGENCY](GEO-INFER-EMERGENCY/) | `geo_infer_emergency` | 8 | 9 |
+| [GEO-INFER-ENERGY](GEO-INFER-ENERGY/) | `geo_infer_energy` | 9 | 9 |
+| [GEO-INFER-EXAMPLES](GEO-INFER-EXAMPLES/) | `geo_infer_examples` | 6 | 10 |
+| [GEO-INFER-FOREST](GEO-INFER-FOREST/) | `geo_infer_forest` | 9 | 8 |
+| [GEO-INFER-GIT](GEO-INFER-GIT/) | `geo_infer_git` | 22 | 19 |
+| [GEO-INFER-HEALTH](GEO-INFER-HEALTH/) | `geo_infer_health` | 18 | 15 |
+| [GEO-INFER-INSURANCE](GEO-INFER-INSURANCE/) | `geo_infer_insurance` | 21 | 12 |
+| [GEO-INFER-INTRA](GEO-INFER-INTRA/) | `geo_infer_intra` | 9 | 10 |
+| [GEO-INFER-IOT](GEO-INFER-IOT/) | `geo_infer_iot` | 19 | 18 |
+| [GEO-INFER-LOG](GEO-INFER-LOG/) | `geo_infer_log` | 21 | 20 |
+| [GEO-INFER-MARINE](GEO-INFER-MARINE/) | `geo_infer_marine` | 12 | 10 |
+| [GEO-INFER-MATH](GEO-INFER-MATH/) | `geo_infer_math` | 67 | 22 |
+| [GEO-INFER-METAGOV](GEO-INFER-METAGOV/) | `geo_infer_metagov` | 21 | 16 |
+| [GEO-INFER-NORMS](GEO-INFER-NORMS/) | `geo_infer_norms` | 20 | 15 |
+| [GEO-INFER-OPS](GEO-INFER-OPS/) | `geo_infer_ops` | 17 | 18 |
+| [GEO-INFER-ORG](GEO-INFER-ORG/) | `geo_infer_org` | 5 | 7 |
+| [GEO-INFER-PEP](GEO-INFER-PEP/) | `geo_infer_pep` | 40 | 16 |
+| [GEO-INFER-PLACE](GEO-INFER-PLACE/) | `geo_infer_place` | 99 | 31 |
+| [GEO-INFER-REQ](GEO-INFER-REQ/) | `geo_infer_req` | 5 | 7 |
+| [GEO-INFER-RISK](GEO-INFER-RISK/) | `geo_infer_risk` | 15 | 24 |
+| [GEO-INFER-SEC](GEO-INFER-SEC/) | `geo_infer_sec` | 22 | 20 |
+| [GEO-INFER-SIM](GEO-INFER-SIM/) | `geo_infer_sim` | 11 | 9 |
+| [GEO-INFER-SPACE](GEO-INFER-SPACE/) | `geo_infer_space` | 85 | 52 |
+| [GEO-INFER-SPM](GEO-INFER-SPM/) | `geo_infer_spm` | 27 | 23 |
+| [GEO-INFER-TEST](GEO-INFER-TEST/) | `geo_infer_test` | 22 | 52 |
+| [GEO-INFER-TIME](GEO-INFER-TIME/) | `geo_infer_time` | 20 | 23 |
+| [GEO-INFER-TRANSPORT](GEO-INFER-TRANSPORT/) | `geo_infer_transport` | 7 | 10 |
+| [GEO-INFER-WATER](GEO-INFER-WATER/) | `geo_infer_water` | 9 | 9 |
+
+## Current Repository Facts
+
+| Metric | Value |
+| --- | ---: |
+| Modules | 45 |
+| Python source files | 1021 |
+| Python test files | 810 |
+| Repository README.md files | 812 |
+| Repository AGENTS.md files | 808 |
+
+These are file inventories, not executed-test or coverage counts. Regenerate
+them with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.
 
 ## Modular Hygiene
 
@@ -179,6 +209,10 @@ the exact reproducible exception list.
 3. Run the focused test, then compile and run the contract validators.
 4. Refresh generated signposts with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.
 5. Confirm generated documentation is stable with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check`.
+
+On macOS 27, native PyMC checks require the explicit
+[SPM compiler profile](GEO-INFER-SPM/docs/native_sampling_profiles.md).
+Keep native compilation enabled and retain the chosen profile with results.
 
 ## Artifact and Output Hygiene
 

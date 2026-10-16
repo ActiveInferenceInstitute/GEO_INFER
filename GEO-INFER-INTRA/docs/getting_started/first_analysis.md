@@ -7,9 +7,12 @@ categorical Active Inference step, and inspects a free-energy decomposition.
 ## Prerequisites
 
 ```bash
-uv sync --package geo-infer-space
-uv sync --package geo-infer-act
+uv sync --all-packages
 ```
+
+Both SPACE and ACT are needed throughout this walkthrough. The workspace sync
+installs their base dependencies together; use `uv run --all-packages` when
+running the snippets from the repository root.
 
 ## 1. Index a location with H3 v4
 

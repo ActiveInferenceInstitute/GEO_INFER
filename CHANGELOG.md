@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 0.4.0 candidate preparation
 
+- Generate GitHub's `.github/README.md` and the root overview from one source,
+  with a runnable Crescent City H3 example, workflow entrypoints and linked
+  module inventories. Check both pages for drift and relative-link failures,
+  including deletion of the GitHub entrypoint.
+- Remove six obsolete root handoff/scope reports and the historical ISA;
+  keep historical references pinned to their original files in Git history,
+  and point current acceptance guidance at the maintained release and issue
+  ledgers. Install SPACE and ACT together in the first-analysis walkthrough.
+
 - Pin ACT to `inferactively-pymdp==1.0.4` (hashable policies, an exact
   parameter info-gain fix, and a `jax<0.11.1` cap that the locked JAX 0.4.38
   already satisfies). The Cascadia river-homing run is bit-identical under 1.0.4:
@@ -384,7 +393,7 @@ scope pass, CODE-01 index refresh, GNN pair-pin procedure).
 
 ## [0.2.0] - 2026-09-11 — repo-wide quality campaign (189 items)
 
-Shipped as the SCOPE-2026-09-11 campaign ([spec](SCOPE-2026-09-11.md),
+Shipped as the SCOPE-2026-09-11 campaign ([spec](https://github.com/ActiveInferenceInstitute/GEO_INFER/blob/8836e516bb7f3479cfa7bb4241700989b99de215/SCOPE-2026-09-11.md),
 shipped at `f1b5b376`): a 14-lane scoping swarm over all 45 modules produced
 189 bounded items (48 Medium / 141 Minor / 0 Major), executed in six
 reviewed waves ([PR #28](https://github.com/ActiveInferenceInstitute/GEO_INFER/pull/28)

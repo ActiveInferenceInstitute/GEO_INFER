@@ -75,6 +75,10 @@ Agent-facing documentation must be operational: current paths, commands, package
 
 ## Documentation Workflow
 
+- Root `README.md` and GitHub's `.github/README.md` share one generated
+  overview. Update `GEO-INFER-TEST/rewrite_readme_agents.py`; the GitHub copy
+  uses links relative to `.github/`. Both pages are checked for drift and
+  broken relative links.
 - Put conceptual, cross-module, and user-facing guidance in
   `GEO-INFER-INTRA/docs/`.
 - Keep module READMEs focused on the current filesystem, imports, dependencies,

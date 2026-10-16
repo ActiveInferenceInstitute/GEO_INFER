@@ -111,6 +111,19 @@ class TestValidateDocumentation:
         )
         assert any("missing_target.md" in error for error in errors)
 
+    def test_github_entrypoint_is_authoritative_and_uses_parent_links(self, tmp_path):
+        module = _load_script("validate_documentation", tmp_path)
+        assert ".github/README.md" in module.AUTHORITATIVE_DOCS
+        (tmp_path / "README.md").write_text("# Root overview\n")
+        github = tmp_path / ".github" / "README.md"
+        github.parent.mkdir()
+        github.write_text("[root](../README.md)\n")
+        assert module.validate_links((github,)) == []
+        github.write_text("[root](README.md)\n[missing](../missing.md)\n")
+        assert module.validate_links((github,)) == [
+            ".github/README.md:2: missing ../missing.md"
+        ]
+
     def test_strict_flags_missing_authoritative_page(self, tmp_path, monkeypatch):
         module = self._docs_module(
             tmp_path,

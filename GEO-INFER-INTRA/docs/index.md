@@ -65,7 +65,7 @@ the source and validator as authoritative and open a documentation issue.
 - [Deployment and environments](deployment/index.md)
 - [Security guidance](security/index.md)
 - [Release history](../../CHANGELOG.md)
-- [Ideal State Artifact](../../ISA.md)
+- [Release readiness and acceptance](releases/0.4.0_readiness.md)
 - [Release TODO and evidence ledger](../../TODO.md)
 
 ## Documentation rules

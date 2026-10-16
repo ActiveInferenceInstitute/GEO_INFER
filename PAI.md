@@ -38,7 +38,8 @@ uv run python GEO-INFER-TEST/validate_skills.py --check-xrefs
 ```
 
 Replace `MODULE` with an uppercase module suffix such as `ACT`, `MATH`, or
-`SPACE`. See [ISA.md](ISA.md) for the current ideal-state criteria and
+`SPACE`. See [release readiness](GEO-INFER-INTRA/docs/releases/0.4.0_readiness.md)
+and the [backlog](TODO.md) for current acceptance criteria, and
 [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution contract.
 
 ## Ideal-state criteria
@@ -59,8 +60,9 @@ read as current test evidence unless its commands are rerun.
 ## Active Inference grounding
 
 The canonical implementation is `GEO-INFER-ACT`. Its current public contracts
-and verification commands are described in `ISA.md` and the ACT module
-README/SKILL. Other modules should call those contracts or document any
+and verification commands are described in the
+[ACT README](GEO-INFER-ACT/README.md) and [ACT skill](GEO-INFER-ACT/SKILL.md).
+Other modules should call those contracts or document any
 intentional equivalent semantics rather than copying an incompatible API.
 
 ## No-fabrication policy

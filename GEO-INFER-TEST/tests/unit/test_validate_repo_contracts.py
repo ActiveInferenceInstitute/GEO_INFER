@@ -319,6 +319,65 @@ def test_signpost_render_excludes_ignored_symbols_and_includes_new_sources(
     assert any("ignored_api" in symbol for symbol in rewriter.public_symbols(tmp_path))
 
 
+def test_github_overview_preserves_navigation_and_executable_snippets():
+    """Both entrypoints reach the same files without altering external links."""
+    import re
+
+    rewriter = load_rewriter_module()
+    modules = rewriter.discover_modules()
+    root_text = rewriter.render_readme(REPO_ROOT / "README.md", None, modules)
+    github_text = rewriter.render_readme(
+        REPO_ROOT / ".github" / "README.md", None, modules
+    )
+    root_links = re.findall(r"\]\(([^)]+)\)", root_text)
+    github_links = re.findall(r"\]\(([^)]+)\)", github_text)
+    assert len(root_links) == len(github_links) > 45
+    for root_link, github_link in zip(root_links, github_links, strict=True):
+        if root_link.startswith(("https://", "http://", "#")):
+            assert github_link == root_link
+        else:
+            assert (REPO_ROOT / root_link).resolve() == (
+                REPO_ROOT / ".github" / github_link
+            ).resolve()
+            assert (REPO_ROOT / root_link).exists()
+    assert re.findall(r"```.*?```", root_text, re.DOTALL) == re.findall(
+        r"```.*?```", github_text, re.DOTALL
+    )
+    assert "from geo_infer_space import cell_to_latlng, latlng_to_cell" in github_text
+
+
+def test_missing_github_overview_fails_check_and_can_be_regenerated(
+    tmp_path, monkeypatch, capsys
+):
+    """Missing or stale GitHub content cannot fall out of the drift gate."""
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "config", "core.fsmonitor", "false"], cwd=tmp_path, check=True
+    )
+    (tmp_path / "README.md").write_text("# initial root overview\n")
+    rewriter = load_rewriter_module()
+    monkeypatch.setattr(rewriter, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(rewriter, "_TRACKED_FILES", None)
+    monkeypatch.setattr(rewriter, "discover_modules", dict)
+    monkeypatch.setattr(sys, "argv", [str(REWRITER_PATH), "--check"])
+    assert rewriter.main() == 1
+    assert ".github/README.md" in capsys.readouterr().err
+
+    monkeypatch.setattr(sys, "argv", [str(REWRITER_PATH)])
+    assert rewriter.main() == 0
+    assert rewriter.check_docs_current() == []
+    github = tmp_path / ".github" / "README.md"
+    github.write_text("# stale GitHub overview\n")
+    assert rewriter.check_docs_current() == [github]
+    github.unlink()
+    assert rewriter.check_docs_current() == [github]
+    monkeypatch.setattr(sys, "argv", [str(REWRITER_PATH), "--check"])
+    assert rewriter.main() == 1
+    monkeypatch.setattr(sys, "argv", [str(REWRITER_PATH)])
+    assert rewriter.main() == 0
+    assert rewriter.check_docs_current() == []
+
+
 def write_root_uv_files(root: Path) -> None:
     (root / "pyproject.toml").write_text(
         "\n".join(

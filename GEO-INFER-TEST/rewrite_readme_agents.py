@@ -199,7 +199,12 @@ def repository_doc_files() -> tuple[list[Path], list[Path]]:
         and (REPO_ROOT / line).is_file()
     }
 
-    readmes = sorted(path for path in files if path.name == "README.md")
+    # GitHub prefers this entrypoint. Keep it in the contract even when it is
+    # absent so --check catches deletion and a normal render can recreate it.
+    readmes = sorted(
+        {path for path in files if path.name == "README.md"}
+        | {REPO_ROOT / ".github" / "README.md"}
+    )
     agents = sorted(path for path in files if path.name == "AGENTS.md")
     return readmes, agents
 
@@ -964,12 +969,16 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
 
 
 def render_root_readme(
-    modules: dict[str, ModuleInfo], readme_count: int, agents_count: int
+    modules: dict[str, ModuleInfo],
+    readme_count: int,
+    agents_count: int,
+    *,
+    link_prefix: str = "",
 ) -> str:
     source_files = sum(module.source_files for module in modules.values())
     test_files = sum(module.test_files for module in modules.values())
     module_rows = "\n".join(
-        f"| `{module.name}` | `{module.package}` | {module.source_files} | {module.test_files} |"
+        f"| [{module.name}]({link_prefix}{module.name}/) | `{module.package}` | {module.source_files} | {module.test_files} |"
         for module in modules.values()
     )
     theme_groups = [
@@ -1027,25 +1036,64 @@ def render_root_readme(
     theme_rows = []
     for icon, group in theme_groups:
         present = [f"GEO-INFER-{n}" for n in group if f"GEO-INFER-{n}" in name_set]
-        theme_rows.append(f"| {icon} | `{'`, `'.join(present) if present else '—'}` |")
+        links = ", ".join(f"[{name}]({link_prefix}{name}/)" for name in present)
+        theme_rows.append(f"| {icon} | {links or '—'} |")
     theme_rows = "\n".join(theme_rows)
     return f"""# GEO-INFER Framework
 
-[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](pyproject.toml)
-[![uv workspaces](https://img.shields.io/badge/uv-workspace-4C65F6?logo=astral&logoColor=white)](pyproject.toml)
-[![CI](https://img.shields.io/github/actions/workflow/status/ActiveInferenceInstitute/GEO_INFER/ci.yml?branch=main&label=CI)](.github/workflows/ci.yml)
-[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC_BY--NC--SA_4.0-lightgrey.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)]({link_prefix}pyproject.toml)
+[![uv workspaces](https://img.shields.io/badge/uv-workspace-4C65F6?logo=astral&logoColor=white)]({link_prefix}pyproject.toml)
+[![CI](https://img.shields.io/github/actions/workflow/status/ActiveInferenceInstitute/GEO_INFER/ci.yml?branch=main&label=CI)]({link_prefix}.github/workflows/ci.yml)
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC_BY--NC--SA_4.0-lightgrey.svg)]({link_prefix}LICENSE)
 [![Active Inference Institute](https://img.shields.io/badge/Active_Inference_Institute-6C3483?style=flat)](https://activeinference.org)
 
-**GEO-INFER** is a {len(modules)}-module **geospatial inference monorepo** from the
-Active Inference Institute — spatial analysis, Active Inference, Bayesian modeling,
-domain modeling, agent workflows, and reproducible repository validation in one
-`uv`/Python workspace.
+**GEO-INFER** connects geospatial data, spatial and temporal analysis, and
+Active Inference in one Python workspace. Its {len(modules)} modules cover H3
+indexing, Bayesian models, agents, and domain workflows for ecological, civic,
+and commercial applications. Developed by the
+[Active Inference Institute](https://activeinference.org).
 
-> Build geospatial and place-based models, run Active-Inference and Bayesian
-> inference over them, orchestrate agents and domain workflows, and keep the
-> whole thing reproducible — served from a [user documentation hub](GEO-INFER-INTRA/docs/index.md)
-> backed by an auto-generated, validation-gated [module catalog](GEO-INFER-INTRA/docs/modules/index.md).
+[Get started](#quick-start) · [Documentation]({link_prefix}GEO-INFER-INTRA/docs/index.md) ·
+[Module index](#module-index) · [Contribute]({link_prefix}CONTRIBUTING.md) ·
+[Open work]({link_prefix}TODO.md)
+
+## Start with a workflow
+
+| Goal | Modules | Starting point |
+| --- | --- | --- |
+| Index locations and align observations over time | SPACE, TIME, DATA | [First spatial analysis]({link_prefix}GEO-INFER-INTRA/docs/getting_started/first_analysis.md) |
+| Infer hidden states and evaluate actions | ACT, BAYES, MATH | [Active Inference guide]({link_prefix}GEO-INFER-INTRA/docs/active_inference_guide.md) |
+| Analyze places and regional indicators | PLACE, SPACE, domain modules | [PLACE documentation]({link_prefix}GEO-INFER-PLACE/README.md) |
+| Compose applications and agents | EXAMPLES, API, APP, AGENT | [Integration guide]({link_prefix}GEO-INFER-INTRA/docs/integration/index.md) |
+
+## Quick Start
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then clone
+the repository and start with one workspace package:
+
+```bash
+git clone https://github.com/ActiveInferenceInstitute/GEO_INFER.git
+cd GEO_INFER
+uv sync --package geo-infer-space
+uv run --package geo-infer-space python - <<'PY'
+from geo_infer_space import cell_to_latlng, latlng_to_cell
+
+cell = latlng_to_cell(41.7558, -124.2026, resolution=9)  # Crescent City, CA
+print(cell)
+print(cell_to_latlng(cell))  # Cell center as (latitude, longitude)
+PY
+```
+
+Coordinates are WGS84 degrees, in latitude/longitude order. Continue with the
+[SPACE → ACT walkthrough]({link_prefix}GEO-INFER-INTRA/docs/getting_started/first_analysis.md)
+to attach beliefs, actions, and free-energy terms to a cell. For cross-module
+development, use the [full workspace profile](#choose-an-installation-profile).
+
+Python 3.11+ is supported; `.python-version` pins the local development runtime.
+The packages are under active development. Module tests describe implemented
+behavior; [release readiness]({link_prefix}GEO-INFER-INTRA/docs/releases/0.4.0_readiness.md)
+and the [issue ledger]({link_prefix}GEO-INFER-INTRA/docs/releases/issue_reconciliation_2026_10.md)
+record evidence and outstanding acceptance requirements.
 
 ## What's inside
 
@@ -1056,46 +1104,25 @@ domain modeling, agent workflows, and reproducible repository validation in one
 - 🗄️ **Data, API & applications** — data pipelines, APIs, applications, IoT, art, and education.
 - 🛠️ **Infrastructure & validation** — documentation hub (INTRA), the validation & test harness, logging, git, examples, and bio.
 
-## Current Repository Facts
-
-| Metric | Value |
-| --- | ---: |
-| Modules | {len(modules)} |
-| Python source files | {source_files} |
-| Python test files | {test_files} |
-| Repository README.md files | {readme_count} |
-| Repository AGENTS.md files | {agents_count} |
-
-## Quick Start
-
-```bash
-uv sync --all-packages --all-extras --all-groups
-python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
-uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language --strict-import-smoke
-uv run python GEO-INFER-TEST/validate_documentation.py --strict
-uv run python manuscript/generate_research_artifacts.py
-uv run python GEO-INFER-TEST/run_unified_tests.py --category unit
-```
-
 ## Documentation Map
 
-- User documentation hub: [`GEO-INFER-INTRA/docs/index.md`](GEO-INFER-INTRA/docs/index.md)
-- Installation and first workflow: [`GEO-INFER-INTRA/docs/getting_started/index.md`](GEO-INFER-INTRA/docs/getting_started/index.md)
-- Framework architecture: [`GEO-INFER-INTRA/docs/overview.md`](GEO-INFER-INTRA/docs/overview.md)
-- Module catalog: [`GEO-INFER-INTRA/docs/modules/index.md`](GEO-INFER-INTRA/docs/modules/index.md)
-- Developer workflow: [`GEO-INFER-INTRA/docs/developer_guide/index.md`](GEO-INFER-INTRA/docs/developer_guide/index.md)
-- Test and release gates: [`GEO-INFER-TEST/docs/index.md`](GEO-INFER-TEST/docs/index.md)
-- Manuscript generation and evidence: [`manuscript/README.md`](manuscript/README.md)
-- Active Inference reference: [`GEO-INFER-INTRA/docs/active_inference_guide.md`](GEO-INFER-INTRA/docs/active_inference_guide.md)
-- Spatial/H3 reference: [`GEO-INFER-INTRA/docs/geospatial/data_formats/h3/index.md`](GEO-INFER-INTRA/docs/geospatial/data_formats/h3/index.md)
-- Contribution rules: [`CONTRIBUTING.md`](CONTRIBUTING.md)
-- Security reporting: [`SECURITY.md`](SECURITY.md)
-- Release history: [`CHANGELOG.md`](CHANGELOG.md)
+- User documentation hub: [`GEO-INFER-INTRA/docs/index.md`]({link_prefix}GEO-INFER-INTRA/docs/index.md)
+- Installation and first workflow: [`GEO-INFER-INTRA/docs/getting_started/index.md`]({link_prefix}GEO-INFER-INTRA/docs/getting_started/index.md)
+- Framework architecture: [`GEO-INFER-INTRA/docs/overview.md`]({link_prefix}GEO-INFER-INTRA/docs/overview.md)
+- Module catalog: [`GEO-INFER-INTRA/docs/modules/index.md`]({link_prefix}GEO-INFER-INTRA/docs/modules/index.md)
+- Developer workflow: [`GEO-INFER-INTRA/docs/developer_guide/index.md`]({link_prefix}GEO-INFER-INTRA/docs/developer_guide/index.md)
+- Test and release gates: [`GEO-INFER-TEST/docs/index.md`]({link_prefix}GEO-INFER-TEST/docs/index.md)
+- Manuscript generation and evidence: [`manuscript/README.md`]({link_prefix}manuscript/README.md)
+- Active Inference reference: [`GEO-INFER-INTRA/docs/active_inference_guide.md`]({link_prefix}GEO-INFER-INTRA/docs/active_inference_guide.md)
+- Spatial/H3 reference: [`GEO-INFER-INTRA/docs/geospatial/data_formats/h3/index.md`]({link_prefix}GEO-INFER-INTRA/docs/geospatial/data_formats/h3/index.md)
+- Contribution rules: [`CONTRIBUTING.md`]({link_prefix}CONTRIBUTING.md)
+- Security reporting: [`SECURITY.md`]({link_prefix}SECURITY.md)
+- Release history: [`CHANGELOG.md`]({link_prefix}CHANGELOG.md)
 
-The repository root and module-level `README.md`/`AGENTS.md` files are generated
-signposts. Conceptual tutorials, integration guidance, and policy live in the
-INTRA documentation hub; executable behavior and public exports remain owned by
-the module source and its tests.
+Conceptual tutorials, integration guidance, and policy live in the INTRA
+documentation hub. Each module owns its implementation and tests. The root
+README, GitHub entrypoint, and module signposts are generated together from
+`GEO-INFER-TEST/rewrite_readme_agents.py`.
 
 ## Choose an Installation Profile
 
@@ -1125,6 +1152,19 @@ the exact reproducible exception list.
 | Module | Package | Source files | Test files |
 | --- | --- | ---: | ---: |
 {module_rows}
+
+## Current Repository Facts
+
+| Metric | Value |
+| --- | ---: |
+| Modules | {len(modules)} |
+| Python source files | {source_files} |
+| Python test files | {test_files} |
+| Repository README.md files | {readme_count} |
+| Repository AGENTS.md files | {agents_count} |
+
+These are file inventories, not executed-test or coverage counts. Regenerate
+them with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.
 
 ## Modular Hygiene
 
@@ -1161,6 +1201,10 @@ the exact reproducible exception list.
 3. Run the focused test, then compile and run the contract validators.
 4. Refresh generated signposts with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.
 5. Confirm generated documentation is stable with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check`.
+
+On macOS 27, native PyMC checks require the explicit
+[SPM compiler profile]({link_prefix}GEO-INFER-SPM/docs/native_sampling_profiles.md).
+Keep native compilation enabled and retain the chosen profile with results.
 
 ## Artifact and Output Hygiene
 
@@ -1275,6 +1319,10 @@ Agent-facing documentation must be operational: current paths, commands, package
 
 ## Documentation Workflow
 
+- Root `README.md` and GitHub's `.github/README.md` share one generated
+  overview. Update `GEO-INFER-TEST/rewrite_readme_agents.py`; the GitHub copy
+  uses links relative to `.github/`. Both pages are checked for drift and
+  broken relative links.
 - Put conceptual, cross-module, and user-facing guidance in
   `GEO-INFER-INTRA/docs/`.
 - Keep module READMEs focused on the current filesystem, imports, dependencies,
@@ -1295,9 +1343,14 @@ Agent-facing documentation must be operational: current paths, commands, package
 def render_readme(
     path: Path, module: ModuleInfo | None, modules: dict[str, ModuleInfo]
 ) -> str:
-    if path.parent == REPO_ROOT:
+    if path in {REPO_ROOT / "README.md", REPO_ROOT / ".github" / "README.md"}:
         readmes, agents = repository_doc_files()
-        return render_root_readme(modules, len(readmes), len(agents))
+        return render_root_readme(
+            modules,
+            len(readmes),
+            len(agents),
+            link_prefix="../" if path.parent.name == ".github" else "",
+        )
 
     rel = path.parent.relative_to(REPO_ROOT)
     dirs, py_files, other_files = direct_contents(path.parent)
@@ -1484,8 +1537,7 @@ def check_docs_current() -> list[Path]:
     """Return generated documentation files whose tracked content is stale."""
     stale: list[Path] = []
     for path, expected_text in expected_doc_files():
-        current = path.read_text(encoding="utf-8")
-        if current != expected_text:
+        if not path.is_file() or path.read_text(encoding="utf-8") != expected_text:
             stale.append(path)
     return stale
 
@@ -1504,7 +1556,7 @@ def main() -> int:
         stale = [
             path
             for path, expected_text in expected
-            if path.read_text(encoding="utf-8") != expected_text
+            if not path.is_file() or path.read_text(encoding="utf-8") != expected_text
         ]
         if stale:
             print(
@@ -1517,6 +1569,7 @@ def main() -> int:
         return 0
 
     for path, content in expected:
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
 
     readme_count = sum(1 for path, _ in expected if path.name == "README.md")

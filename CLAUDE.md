@@ -169,7 +169,8 @@ These rules are from `.agents/` and apply to all modules:
 - `.agents/` - Framework-wide development rules and agent guidance
 - `AGENTS.md` - Repository-level operating contract for automated agents (scope, required workflow, standard commands, hygiene and documentation contracts)
 - `PAI.md` - PAI Algorithm integration and development methodology
-- `ISA.md` - Current ideal-state criteria and verification targets
+- `GEO-INFER-INTRA/docs/releases/0.4.0_readiness.md` - Candidate acceptance criteria and checkpoint evidence
+- `GEO-INFER-INTRA/docs/releases/issue_reconciliation_2026_10.md` - Outstanding acceptance and bounded next steps
 - `CLAUDE.md` - This file (Claude Code guidance)
 
 <!-- gitnexus:start -->
