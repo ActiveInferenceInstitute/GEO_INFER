@@ -10,6 +10,7 @@ Core workspace within `GEO-INFER-PLACE`.
 - `api_clients.py`
 - `base_module.py`
 - `bioregion_visualization.py`
+- `cascadia_boundary.py`
 - `module_bridge.py`
 - `place_interface.py`
 - `regional_layers.py`
@@ -26,6 +27,10 @@ Core workspace within `GEO-INFER-PLACE`.
 - `api_clients.py:CaliforniaAPIManager` (class)
 - `base_module.py:BaseAnalysisModule` (class)
 - `bioregion_visualization.py:create_bioregion_map` (function)
+- `cascadia_boundary.py:normalize_cascadia_boundary` (function)
+- `cascadia_boundary.py:capture_cascadia_boundary` (function)
+- `cascadia_boundary.py:verify_cascadia_boundary` (function)
+- `cascadia_boundary.py:main` (function)
 - `module_bridge.py:PlaceDataManager` (class)
 - `module_bridge.py:PlaceTemporalAnalyzer` (class)
 - `place_interface.py:PlaceInterface` (class)

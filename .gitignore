@@ -92,3 +92,11 @@ GEO-INFER-PLACE/locations/cascadia/config/data_cleanup_config.json
 !GEO-INFER-IOT/config/
 GEO-INFER-IOT/config/*
 !GEO-INFER-IOT/config/service.yaml
+
+# Licensed, receipt-bound complete Cascadia boundary capture.
+!GEO-INFER-PLACE/locations/cascadia/config/
+GEO-INFER-PLACE/locations/cascadia/config/*
+!GEO-INFER-PLACE/locations/cascadia/config/cascadia_boundary*.source.json
+!GEO-INFER-PLACE/locations/cascadia/config/cascadia_boundary.provenance.json
+!GEO-INFER-PLACE/locations/cascadia/config/cascadia_boundary.license.md
+!GEO-INFER-PLACE/locations/cascadia/config/cascadia_bioregion_boundary.geojson

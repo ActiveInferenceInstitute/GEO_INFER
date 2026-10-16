@@ -121,6 +121,14 @@ def test_real_geometry_ids_bounds_and_renderer_loader(kind):
 
 
 def test_real_renderer_reports_only_missing_bioregion_boundary(tmp_path, monkeypatch):
+    incomplete = tmp_path / "legacy-incomplete"
+    shutil.copytree(
+        CONFIG,
+        incomplete,
+        ignore=shutil.ignore_patterns(
+            "cascadia_boundary*", "cascadia_bioregion_boundary.geojson"
+        ),
+    )
     original_open = Path.open
 
     def cp1252_open(
@@ -133,7 +141,7 @@ def test_real_renderer_reports_only_missing_bioregion_boundary(tmp_path, monkeyp
 
     monkeypatch.setattr(Path, "open", cp1252_open)
     output = tmp_path / "regional.html"
-    create_bioregion_map(CONFIG, {}, output, allow_missing_layers=True)
+    create_bioregion_map(incomplete, {}, output, allow_missing_layers=True)
     with pytest.raises(UnicodeDecodeError):
         output.read_text()
     html = output.read_text(encoding="utf-8")
@@ -150,9 +158,17 @@ def test_real_renderer_reports_only_missing_bioregion_boundary(tmp_path, monkeyp
 
 
 def test_whole_bioregion_boundary_remains_fail_closed(tmp_path):
-    assert not (CONFIG / "cascadia_bioregion_boundary.geojson").exists()
+    incomplete = tmp_path / "missing-boundary"
+    shutil.copytree(
+        CONFIG,
+        incomplete,
+        ignore=shutil.ignore_patterns(
+            "cascadia_boundary*", "cascadia_bioregion_boundary.geojson"
+        ),
+    )
+    assert not (incomplete / "cascadia_bioregion_boundary.geojson").exists()
     with pytest.raises(FileNotFoundError, match="cascadia_bioregion_boundary"):
-        create_bioregion_map(CONFIG, {}, tmp_path / "strict.html")
+        create_bioregion_map(incomplete, {}, tmp_path / "strict.html")
 
 
 def test_tectonic_original_metadata_has_no_access_or_use_restrictions():

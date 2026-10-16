@@ -69,6 +69,13 @@ def _load_json(path: Path) -> dict[str, Any]:
         or not isinstance(data.get("features"), list)
     ):
         raise ValueError(f"Expected GeoJSON FeatureCollection: {path.name}")
+    if path.name == "cascadia_bioregion_boundary.geojson":
+        from .cascadia_boundary import RECEIPT, SCHEMA, verify_cascadia_boundary
+
+        if (path.parent / RECEIPT).exists() or data.get("provenance", {}).get(
+            "schema_version"
+        ) == SCHEMA:
+            verify_cascadia_boundary(path.parent)
     crs_name = data.get("crs", {}).get("properties", {}).get("name", "EPSG:4326")
     if crs_name not in {
         "EPSG:4326",
@@ -266,6 +273,7 @@ def create_bioregion_map(
     integration_results: dict[str, Any] | None = None,
     *,
     allow_missing_layers: bool = False,
+    tiles: str | None = "OpenStreetMap",
 ) -> str:
     """Create a lightweight bioregional Folium map.
 
@@ -278,6 +286,8 @@ def create_bioregion_map(
             forest health) to the map.
         allow_missing_layers: When True, absent layer files are skipped instead
             of raising FileNotFoundError for the missing set.
+        tiles: Named Folium basemap provider, or None for no external tiles.
+            Defaults to OpenStreetMap; online providers retain their own terms.
 
     Returns:
         Absolute path of the generated HTML file as a string.
@@ -326,7 +336,7 @@ def create_bioregion_map(
     m = folium.Map(
         location=[46.5, -121.5],
         zoom_start=6,
-        tiles="CartoDB positron",
+        tiles=tiles,
         prefer_canvas=True,
     )
 
@@ -366,6 +376,31 @@ def create_bioregion_map(
             tooltip="Cascadia Bioregion",
         )
         m.add_child(boundary_layer)
+        bounds = [
+            shape(feature["geometry"]).bounds for feature in boundary_data["features"]
+        ]
+        m.fit_bounds(
+            [
+                [min(b[1] for b in bounds), min(b[0] for b in bounds)],
+                [max(b[3] for b in bounds), max(b[2] for b in bounds)],
+            ]
+        )
+        provenance = boundary_data.get("provenance", {})
+        if (
+            isinstance(provenance, dict)
+            and provenance.get("schema_version")
+            == "geo-infer-place/cascadia-boundary/1"
+        ):
+            from .cascadia_boundary import ITEM_URL, LICENSE_URL
+
+            m.get_root().html.add_child(
+                folium.Element(
+                    '<aside id="boundary-attribution" style="position:fixed;bottom:28px;right:5px;z-index:9999;background:white;padding:6px;max-width:360px;font-size:11px">'
+                    f'Boundary: <a href="{ITEM_URL}">Aquila Flower</a>, '
+                    f'<a href="{LICENSE_URL}">CC BY-NC-SA 4.0</a>. '
+                    "Complete publisher-defined watershed delineation; other display layers retain narrower study windows.</aside>"
+                )
+            )
 
     # --- Layer 2: Watershed polygons ---
     if watersheds_data.get("features"):
@@ -570,6 +605,8 @@ def create_bioregion_map(
             for path in layer_paths
         },
     }
+    if isinstance(boundary_data.get("provenance"), dict):
+        layer_manifest["boundary_source"] = boundary_data["provenance"]
     output_path.with_suffix(".layers.json").write_text(
         json.dumps(layer_manifest, indent=2) + "\n", encoding="utf-8"
     )

@@ -24,3 +24,14 @@
 /GEO-INFER-PLACE/locations/cascadia/config/cascadia_volcanoes.geojson text eol=lf
 /GEO-INFER-PLACE/locations/cascadia/config/cascadia_major_watersheds.geojson text eol=lf
 /GEO-INFER-PLACE/locations/cascadia/config/cascadia_subduction_zone.geojson text eol=lf
+
+# Keep the full boundary publisher snapshots and replay custody portable.
+# Publisher CRLF and trailing spaces are hashed source bytes, not formatting.
+/GEO-INFER-PLACE/locations/cascadia/config/cascadia_boundary*.source.json -text -whitespace
+/GEO-INFER-PLACE/locations/cascadia/config/cascadia_bioregion_boundary.geojson text eol=lf
+/GEO-INFER-PLACE/locations/cascadia/config/cascadia_boundary.license.md text eol=lf
+/GEO-INFER-PLACE/locations/cascadia/config/cascadia_boundary.provenance.json text eol=lf
+/GEO-INFER-PLACE/src/geo_infer_place/locations/cascadia/config/cascadia_boundary*.source.json -text -whitespace
+/GEO-INFER-PLACE/src/geo_infer_place/locations/cascadia/config/cascadia_bioregion_boundary.geojson text eol=lf
+/GEO-INFER-PLACE/src/geo_infer_place/locations/cascadia/config/cascadia_boundary.license.md text eol=lf
+/GEO-INFER-PLACE/src/geo_infer_place/locations/cascadia/config/cascadia_boundary.provenance.json text eol=lf

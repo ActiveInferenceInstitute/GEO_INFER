@@ -311,6 +311,10 @@ volcano threat level is inferred from geometry alone.
 Missing required files raise `FileNotFoundError`. Explicit
 `allow_missing_layers=True` produces a partial map with a visible unavailable
 layer notice. A sibling `.layers.json` records loaded/unavailable layer status.
-The four regional datasets are not bundled: tests use declared constructed
-geometry fixtures to verify behavior, without claiming measured regional
-coverage. Legacy location import paths remain compatibility shims.
+The packaged snapshot includes Aquila Flower's complete watershed-based
+bioregion boundary and three narrower USGS display layers. Captured boundary
+metadata, geometry, attribution and receipt hashes are verified before rendering;
+the map fits the full source extent and displays its attribution/license. See
+[boundary capture and scope](cascadia_boundary.md) and
+[USGS display-layer scope](usgs_regional_layers.md). Constructed geometry fixtures
+remain separate behavior controls. Legacy location imports remain compatibility shims.

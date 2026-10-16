@@ -82,3 +82,13 @@ print(f"cell {cell}, area {cell_area(cell):.2f} km2, {len(neighbors)} neighbors"
 - **DATA** → data quality management via `PlaceDataManager` (optional, `full` extra)
 - **TIME** → temporal trend detection via `PlaceTemporalAnalyzer` (optional, `full` extra)
 - **CIV/HEALTH/TRANSPORT** → not implemented; no geo-infer-place code imports these modules
+
+## Complete Cascadia boundary
+
+Use `geo_infer_place.core.cascadia_boundary.verify_cascadia_boundary(config_dir)`
+to verify the packaged licensed publisher snapshot offline. Explicit capture uses
+`python -m geo_infer_place.core.cascadia_boundary FRESH_DIR --capture`, bounded
+to 20 MiB and a shared five-minute network deadline. Never replace captured files
+in place; retain source/license/epoch/ID/extent evidence and the original raw bytes.
+See [capture scope](docs/cascadia_boundary.md); USGS display layers retain narrower
+windows, and the boundary is the publisher's watershed delineation.

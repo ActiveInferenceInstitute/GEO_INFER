@@ -23,3 +23,6 @@ venv/
 *.zip
 *.geojson
 *.csv
+
+# Licensed source capture, replayed by geo_infer_place.core.cascadia_boundary.
+!config/cascadia_bioregion_boundary.geojson

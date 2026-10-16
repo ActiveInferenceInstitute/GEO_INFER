@@ -27,6 +27,7 @@
 - `api_clients.py`
 - `base_module.py`
 - `bioregion_visualization.py`
+- `cascadia_boundary.py`
 - `module_bridge.py`
 - `place_interface.py`
 - `regional_layers.py`

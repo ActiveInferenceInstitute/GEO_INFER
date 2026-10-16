@@ -25,6 +25,17 @@
 - `ca_del_norte_boundary.geojson`
 - `ca_humboldt_boundary.geojson`
 - `ca_lassen_boundary.geojson`
+- `cascadia_bioregion_boundary.geojson`
+- `cascadia_boundary.count.source.json`
+- `cascadia_boundary.extent.source.json`
+- `cascadia_boundary.ids.source.json`
+- `cascadia_boundary.item.source.json`
+- `cascadia_boundary.layer.source.json`
+- `cascadia_boundary.layer_final.source.json`
+- `cascadia_boundary.license.md`
+- `cascadia_boundary.provenance.json`
+- `cascadia_boundary.service.source.json`
+- `cascadia_boundary.source.json`
 - `cascadia_climate_zones.yaml`
 - `cascadia_config.yaml`
 - `cascadia_ecoregions.yaml`

@@ -1,10 +1,12 @@
 # Sourced Cascadia regional display layers
 
 The September 2026 snapshot supplies three authentic source layers for the
-existing bioregion renderer. The complete Cascadia bioregion boundary remains
-unavailable. The strict renderer therefore still rejects a complete-map request;
-`allow_missing_layers=True` produces a partial map with the missing boundary
-identified in its HTML and `.layers.json` receipt.
+existing bioregion renderer. The separate October 2026
+[licensed boundary capture](cascadia_boundary.md) now supplies the complete
+publisher-defined watershed boundary. Its receipt is independent of the retained
+September three-layer receipt. Missing files still fail strict rendering;
+`allow_missing_layers=True` explicitly records partial maps. Loading all four
+configured layers does not extend the USGS datasets beyond their captured windows.
 
 | Layer | Snapshot | Interpretation |
 | --- | --- | --- |
@@ -93,20 +95,20 @@ eruption and lahar information is labeled as not provided by this source.
   `cascadia_regional_source_metadata.json` records the metadata download URL and
   checksum. The complete 3.44 GB map package was not downloaded.
 
-For the missing boundary, the originating [Cascadia Institute](https://cascadia-institute.org/)
-and the Department of Bioregion's [maps and resources](https://cascadiabioregion.org/maps-and-resources)
-provide descriptions, raster maps and poster resources. This review did not verify
-a downloadable full-boundary vector with explicit reuse permission. A study
-rectangle, union of US-only HU4 polygons, or hand-drawn outline is not an
-acceptable substitute. The remaining task is to obtain and cite that vector,
-validate the complete intended bioregion geometry, and run the strict renderer.
+The earlier review did not verify a downloadable, licensed full-boundary vector;
+its `cascadia_layers.provenance.json` and unresolved entry are retained as dated
+three-layer evidence. The separate [boundary capture](cascadia_boundary.md) now
+verifies the publisher's licensed feature service, full native-ID inventory and
+extent, original responses and source epoch. Replaying this USGS-only acquirer
+does not qualify that separate boundary; use its named verifier as well.
 
 ## Verification
 
 `tests/integration/test_regional_layer_acquisition.py` replays the captured raw
 responses byte-for-byte, checks source/output hashes, WGS84 geometry, identities,
 study extents and original metadata restrictions. It drives the actual Folium
-renderer and confirms exactly three loaded layers plus the missing-boundary
-notice. Negative cases reject duplicate IDs/JSON keys, projected coordinates,
+renderer with an explicitly incomplete legacy fixture and confirms exactly three
+loaded layers plus the missing-boundary notice. Complete boundary tests separately
+verify all four layers, full extent, attribution and source custody. Negative cases reject duplicate IDs/JSON keys, projected coordinates,
 wrong geometry, truncated responses and feature-count overflow. HTML generation
 is verified; this is not a claim of a live interactive browser inspection.

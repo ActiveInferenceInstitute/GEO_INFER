@@ -1,0 +1,70 @@
+{
+  "id": "c6497941559d433da98e286fb3f63551",
+  "owner": "aquilaflower",
+  "ownerId": "8e07f384e0c245c771d7eedca26b3aba",
+  "orgId": "qboYD3ru0louQq4F",
+  "created": 1591115171000,
+  "modified": 1624387344000,
+  "guid": null,
+  "name": null,
+  "title": "Cascadia Bioregion Boundary",
+  "type": "Feature Service",
+  "typeKeywords": [
+    "ArcGIS Server",
+    "Data",
+    "Feature Access",
+    "Feature Service",
+    "Metadata",
+    "Service",
+    "Singlelayer",
+    "Hosted Service"
+  ],
+  "description": "<div style='font-family:&quot;Avenir Next W01&quot;, &quot;Avenir Next W00&quot;, &quot;Avenir Next&quot;, Avenir, &quot;Helvetica Neue&quot;, sans-serif; font-size:16px;'><div style='margin-bottom:3rem;'><div><div style='max-width:100%; display:inherit;'><div style='font-family:inherit;'>Cascadia Bioregion boundaries were delineated based on the boundaries of watersheds. The definition of which watersheds to use was based primarily on the Cascadia Institute's publications (cascadia-institute.org/).<\/div><div style='font-family:inherit;'><br /><\/div><div style='font-family:inherit;'>Delineation of the bioregion was completed in a Lambert Azimuthal Equal Area coordinate system using data from the North American Environmental Atlas.<\/div><div style='font-family:inherit;'><br /><\/div><div style='font-family:inherit;'>Data sources:<\/div><div style='font-family:inherit;'>1) Watershed boundaries - Center for Environmental Cooperation. 2011. Watersheds. www.cec.org/north-american-environmental-atlas/watersheds/<\/div><div style='font-family:inherit;'>2) Countries and land - Center for Environmental Cooperation. 2010. Political Boundaries. www.cec.org/north-american-environmental-atlas/political-boundaries-2010/.<\/div><\/div><\/div><\/div><\/div>",
+  "tags": [
+    "cascadia",
+    "bioregion"
+  ],
+  "snippet": "Cascadia Bioregion boundaries",
+  "thumbnail": "thumbnail/ago_downloaded.png",
+  "documentation": null,
+  "extent": [
+    [
+      -144.7934996546738,
+      38.885505043695034
+    ],
+    [
+      -109.51700171381313,
+      66.01097758886627
+    ]
+  ],
+  "categories": [],
+  "spatialReference": "102100",
+  "accessInformation": "Data analysis by Aquila Flower",
+  "classification": null,
+  "licenseInfo": "<span style='font-family:&quot;Avenir Next W01&quot;, &quot;Avenir Next W00&quot;, &quot;Avenir Next&quot;, Avenir, &quot;Helvetica Neue&quot;, sans-serif; font-size:16px;'>License: Attribution-NonCommercial-ShareAlike 4.0 International CC BY-NC-SA 4.0. Details: https://creativecommons.org/licenses/by-nc-sa/4.0/<\/span>",
+  "culture": "en-us",
+  "properties": null,
+  "advancedSettings": null,
+  "url": "https://services.arcgis.com/qboYD3ru0louQq4F/arcgis/rest/services/Cascadia_Bioregion_Boundary/FeatureServer",
+  "proxyFilter": null,
+  "access": "public",
+  "size": 360448,
+  "subInfo": 0,
+  "appCategories": [],
+  "industries": [],
+  "languages": [],
+  "largeThumbnail": null,
+  "banner": null,
+  "screenshots": [],
+  "listed": false,
+  "commentsEnabled": true,
+  "numComments": 0,
+  "numRatings": 0,
+  "avgRating": 0,
+  "numViews": 18406,
+  "scoreCompleteness": 78,
+  "groupDesignations": null,
+  "apiToken1ExpirationDate": -1,
+  "apiToken2ExpirationDate": -1,
+  "lastViewed": 1792188000000
+}

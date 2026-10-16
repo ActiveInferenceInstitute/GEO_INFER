@@ -6,9 +6,10 @@ is the current working directory.
 
 ## Runtime defaults and required profiles
 
-The profile observations below come from earlier uv 0.13.0 development notes.
-They have not been revalidated for uv 0.13.1 and do not qualify this draft.
-Fresh locked installs, container builds and declared gates remain required.
+The historical host observations below remain scoped to their recorded uv and
+interpreter versions. Each candidate needs its own locked/source/native gates;
+later runtime support is not inferred from an earlier receipt. Linux service
+profiles have their separate build and actual-health gate described below.
 
 Use the latest stable CPython by default (currently 3.15) and exact uv 0.13.1.
 This checkout's unchanged locked base has a named local runtime exception:

@@ -1,5 +1,16 @@
 # GEO-INFER Changelog
 
+## Complete sourced Cascadia boundary (2026-10-16)
+
+- Capture Aquila Flower's licensed watershed delineation from its named ArcGIS
+  service with original metadata/geometry, stable FID inventory, source epoch,
+  complete WGS84 extent, attribution and hash-bound offline replay. Preserve
+  every vertex and the historical USGS display-layer captures.
+- Verify captured boundary custody before rendering, fit the full extent, display
+  publisher/license credit, and keep narrower USGS-layer scope explicit.
+- Exercise complete, incomplete, changed-license/source/epoch/extent and tampered
+  captures, portable raw-byte checkout and installed Cascadia wheel rendering.
+
 ## Service deployment qualification (2026-10-16)
 
 - Preserve runtime PR89 and use frozen, hash-locked Python 3.12 CPU service

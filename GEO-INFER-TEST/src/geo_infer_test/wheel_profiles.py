@@ -366,6 +366,14 @@ from geo_infer_place.locations.cascadia.core.enhanced_config import EnhancedConf
 assert callable(main) and callable(create_app)
 resource = files('geo_infer_place.locations.cascadia.config').joinpath('cascadia_config.yaml')
 assert resource.is_file() and resource.read_text()
+from pathlib import Path
+from geo_infer_place.core.cascadia_boundary import verify_cascadia_boundary
+from geo_infer_place.core.bioregion_visualization import create_bioregion_map
+config = Path(str(resource.parent))
+receipt = verify_cascadia_boundary(config)
+assert receipt['native_ids'] == [1] and receipt['feature_count'] == 1
+create_bioregion_map(config, {}, Path('cascadia-boundary.html'))
+assert 'CC BY-NC-SA 4.0' in Path('cascadia-boundary.html').read_text(encoding='utf-8')
 manager = EnhancedConfigManager()
 assert manager.config.bioregion['name'] == 'Cascadia Bioregion'
 assert manager.config.visualization.default_center == [45.5, -122.5]
