@@ -134,7 +134,7 @@ the exact reproducible exception list.
 | [GEO-INFER-EDU](GEO-INFER-EDU/) | `geo_infer_edu` | 7 | 7 |
 | [GEO-INFER-EMERGENCY](GEO-INFER-EMERGENCY/) | `geo_infer_emergency` | 8 | 9 |
 | [GEO-INFER-ENERGY](GEO-INFER-ENERGY/) | `geo_infer_energy` | 9 | 9 |
-| [GEO-INFER-EXAMPLES](GEO-INFER-EXAMPLES/) | `geo_infer_examples` | 6 | 10 |
+| [GEO-INFER-EXAMPLES](GEO-INFER-EXAMPLES/) | `geo_infer_examples` | 7 | 11 |
 | [GEO-INFER-FOREST](GEO-INFER-FOREST/) | `geo_infer_forest` | 9 | 8 |
 | [GEO-INFER-GIT](GEO-INFER-GIT/) | `geo_infer_git` | 22 | 19 |
 | [GEO-INFER-HEALTH](GEO-INFER-HEALTH/) | `geo_infer_health` | 18 | 15 |
@@ -166,8 +166,8 @@ the exact reproducible exception list.
 | Metric | Value |
 | --- | ---: |
 | Modules | 45 |
-| Python source files | 1021 |
-| Python test files | 810 |
+| Python source files | 1022 |
+| Python test files | 811 |
 | Repository README.md files | 812 |
 | Repository AGENTS.md files | 808 |
 

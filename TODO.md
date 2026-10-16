@@ -15,6 +15,22 @@
 
 ## Open work and acceptance criteria
 
+### Composable integration campaign — 2026-10-16
+
+Scope: GEO_INFER and integration companions GNN, FEP_Formal, and the
+Cascadia teaching companion when locally available. Preserve existing local
+changes and existing source-pair pins. Runtime, numerical, native proof,
+installed-wheel, and publication evidence remain separate.
+
+| Work package | Deliverable | Acceptance / current state |
+| --- | --- | --- |
+| HORIZON-01 | Explicit local workflow operations through the existing EXAMPLES engine | Real SPACE→TIME→ENERGY composition; sync/async operation handling; valid DAGs; mapped parallel outputs; required failure propagation; finite opt-in retries; cancellation/deadline/identity tests. Implemented and behavior-tested; frozen distribution acceptance remains separate. |
+| HORIZON-02 | Current two-environment GNN interchange | Categorical, H3, Gaussian, factored producer/consumer replay with source receipts; no implicit pin update. Categorical/H3/Gaussian/factored replay passed after installing the declared H3 extra; original missing-extra failure is retained. |
+| HORIZON-03 | Formal and teaching companion qualification | Current Cascadia proof-impact and diagnostic tests, exact export reproduction, explicit variant-proof obligations. Native proofs require their own compilation receipt. LectureCreate arrived through the existing bootstrap; its typed companion dependencies are now declared and a real study companion passes live-tool checks. The retained native receipt is stale at the current Lean pin; fresh compilation is a separate gate. |
+| HORIZON-04 | Distribution and extended verification | All 45 wheels built; the 56 slow cases and all changed-module coverage floors pass. Frozen isolated installation/profile and Python 3.11/3.12 matrices retain separate receipts; source changes during a wheel attempt invalidate it. |
+| HORIZON-05 | Durable acceptance ledger and user guide | Runnable local composition guide, generated signposts, source-bound evidence, remaining external/resource requirements and honest failure records. Guide and generated signposts are implemented; final evidence is collected outside the source tree after freezing. |
+
+
 Completed implementation and deferred verification are tracked separately below.
 Module names identify the responsible area, not an assigned person. Acquisition
 items require an explicit area, source and resource budget before running them;

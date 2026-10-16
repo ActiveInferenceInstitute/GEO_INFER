@@ -1,5 +1,7 @@
 """Core orchestration components for GEO-INFER-EXAMPLES."""
 
+from .local_connector import LocalAPIConnector
+
 from .module_orchestrator import (
     ConfigManager,
     ExecutionStrategy,
@@ -10,6 +12,7 @@ from .module_orchestrator import (
 )
 
 __all__ = [
+    "LocalAPIConnector",
     "ConfigManager",
     "ExecutionStrategy",
     "ModuleOrchestrator",

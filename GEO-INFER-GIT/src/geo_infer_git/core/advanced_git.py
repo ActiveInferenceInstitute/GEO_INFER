@@ -474,7 +474,7 @@ class CherryPickManager:
         Returns:
             True if conflicts were resolved successfully
         """
-        if operation_index >= len(self.operations):
+        if operation_index < 0 or operation_index >= len(self.operations):
             raise ValueError(f"Operation index {operation_index} out of range")
 
         operation = self.operations[operation_index]
@@ -484,35 +484,37 @@ class CherryPickManager:
             return True
 
         try:
-            # Apply resolution strategy
-            if resolution_strategy == "ours":
-                # Keep our changes, discard theirs
-                for conflict in operation.conflicts:
-                    if conflict.conflict_type == "both_modified":
-                        # Write our content
-                        conflict_file = self.repo_path / conflict.file_path
-                        conflict_file.write_text(conflict.our_content)
-
-            elif resolution_strategy == "theirs":
-                # Keep their changes, discard ours
-                for conflict in operation.conflicts:
-                    if conflict.conflict_type == "both_modified":
-                        # Write their content
-                        conflict_file = self.repo_path / conflict.file_path
-                        conflict_file.write_text(conflict.their_content)
-
-            elif resolution_strategy == "manual":
-                # Mark as manually resolved
+            if resolution_strategy == "manual":
                 logger.info(
                     f"Manual conflict resolution required for operation {operation_index}"
                 )
                 return False
+            if resolution_strategy not in {"ours", "theirs"}:
+                raise ValueError(
+                    f"Unknown conflict resolution strategy: {resolution_strategy}"
+                )
 
-            # Add resolved files
-            self.repo.git.add(".")
+            # Restore the complete indexed side, preserving surrounding content,
+            # multiple conflict hunks, original line endings, and binary bytes.
+            resolved_paths = []
+            for conflict in operation.conflicts:
+                if conflict.conflict_type == "both_modified":
+                    self.repo.git.checkout(
+                        f"--{resolution_strategy}", "--", conflict.file_path
+                    )
+                    resolved_paths.append(conflict.file_path)
+            if resolved_paths:
+                self.repo.git.add("--", *resolved_paths)
 
-            # Continue cherry-pick
-            self.repo.git.cherry_pick("--continue")
+            if self.repo.index.unmerged_blobs():
+                raise ValueError("Unresolved index conflicts remain")
+
+            # Choosing ours can make the pick empty. Finish the sequencer
+            # without fabricating a content change or an empty commit.
+            if self.repo.index.diff("HEAD"):
+                self.repo.git.cherry_pick("--continue")
+            else:
+                self.repo.git.cherry_pick("--skip")
 
             operation.status = "applied"
             operation.message = (
@@ -575,8 +577,8 @@ class CherryPickManager:
             with open(conflict_file) as f:
                 content = f.read()
 
-            # Parse conflict markers
-            our_pattern = r"<<<<<<< HEAD\n(.*?)\n======="
+            # Stop the ours section before optional diff3/zdiff3 ancestor markers.
+            our_pattern = r"<<<<<<< [^\n]*\n(.*?)(?:\n\|{7}|\n={7})"
             their_pattern = r"=======\n(.*?)\n>>>>>>> "
 
             our_match = re.search(our_pattern, content, re.DOTALL)
@@ -769,7 +771,9 @@ class RebaseManager:
                             import re as re_mod
 
                             our_m = re_mod.search(
-                                r"<<<<<<< .+?\n(.*?)\n=======", content, re_mod.DOTALL
+                                r"<<<<<<< [^\n]*\n(.*?)(?:\n\|{7}|\n={7})",
+                                content,
+                                re_mod.DOTALL,
                             )
                             their_m = re_mod.search(
                                 r"=======\n(.*?)\n>>>>>>> ", content, re_mod.DOTALL

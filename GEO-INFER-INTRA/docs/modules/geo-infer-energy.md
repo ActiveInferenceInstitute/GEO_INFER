@@ -32,6 +32,19 @@ optional backends, and result shapes belong to the referenced source and tests.
 Cross-module callers should pass explicit spatial state ordering and timezone-aware
 instants when those fields are part of their data contract.
 
+## Demand forecast time coordinates
+
+`EnergyDemandForecaster.forecast_demand` accepts one-dimensional demand along
+`time`, with finite numeric year coordinates or valid `datetime64` timestamps.
+It fits a linear trend per calendar year. Datetimes use calendar months plus the
+fraction elapsed within each month, so monthly spacing stays uniform and daily
+or sub-daily observations remain distinct. This calendar convention is not a
+fixed 365-day elapsed-time model.
+
+Missing timestamps (`NaT`), nonfinite observations or numeric times, and fewer
+than two distinct times raise `ValueError`. The forecast extrapolates from the
+last supplied observation; provide observations in chronological order.
+
 ## Verification
 
 From the repository root:

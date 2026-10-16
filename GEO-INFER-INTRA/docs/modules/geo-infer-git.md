@@ -23,6 +23,16 @@ optional backends, and result shapes belong to the referenced source and tests.
 Cross-module callers should pass explicit spatial state ordering and timezone-aware
 instants when those fields are part of their data contract.
 
+## Cherry-pick conflict resolution
+
+`CherryPickManager` and `RebaseManager` recognize the `merge`, `diff3`, and
+`zdiff3` conflict styles. Reported ours/theirs snippets exclude the optional
+common ancestor section. `CherryPickManager.resolve_conflicts` restores the
+complete selected indexed file for `ours` or `theirs`, preserving surrounding
+content and original bytes. Only resolved conflict paths are staged; unrelated
+working files remain untouched. An empty pick after resolution is completed
+with Git's skip operation. `manual` leaves resolution to the caller.
+
 ## Verification
 
 From the repository root:

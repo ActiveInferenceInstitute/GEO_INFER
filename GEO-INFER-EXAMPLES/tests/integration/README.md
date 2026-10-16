@@ -5,6 +5,7 @@ Integration workspace within `GEO-INFER-EXAMPLES`.
 ## Contents
 
 - `test_example_orchestration.py`
+- `test_local_composition.py`
 - `test_module_orchestrator_execution.py`
 - `test_orchestrator_scripts_execute.py`
 

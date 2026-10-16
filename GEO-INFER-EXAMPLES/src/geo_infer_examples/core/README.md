@@ -5,10 +5,13 @@ Core workspace within `GEO-INFER-EXAMPLES`.
 ## Contents
 
 - `__init__.py`
+- `local_connector.py`
 - `module_orchestrator.py`
 
 ## Public Interface
 
+- `local_connector.py:LocalResponse` (class)
+- `local_connector.py:LocalAPIConnector` (class)
 - `module_orchestrator.py:ConfigManager` (class)
 - `module_orchestrator.py:setup_logging` (function)
 - `module_orchestrator.py:APIConnector` (class)

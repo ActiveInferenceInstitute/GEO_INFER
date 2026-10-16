@@ -7,6 +7,7 @@ GEO-INFER-EXAMPLES: Comprehensive demonstration framework for the GEO-INFER ecos
 
 These names are exported by the current owning package:
 
+- `geo_infer_examples.LocalAPIConnector`
 - `geo_infer_examples.core`
 - `geo_infer_examples.models`
 - `geo_infer_examples.ExecutionStrategy`
@@ -29,6 +30,75 @@ Run examples in the shared, locked workspace environment. Constructor inputs,
 optional backends, and result shapes belong to the referenced source and tests.
 Cross-module callers should pass explicit spatial state ordering and timezone-aware
 instants when those fields are part of their data contract.
+
+## Compose real local operations
+
+Supply `LocalAPIConnector` to execute native module functions without a remote
+server. Only explicitly registered `(module, endpoint)` callables are admitted.
+Each takes an independently copied input dictionary and returns a dictionary,
+synchronously or asynchronously. Native arrays and DataFrames can remain native
+objects between local steps.
+
+From the shared workspace environment:
+
+```python
+import asyncio
+from geo_infer_examples import LocalAPIConnector, ModuleOrchestrator
+from geo_infer_examples.models.integration_models import WorkflowDefinition, WorkflowStep
+from geo_infer_space.core.spatial_indexing import SpatialIndexingInterface
+
+indexer = SpatialIndexingInterface(backend="h3")
+
+def index_points(data):
+    return {"cells": [indexer.latlng_to_cell(lat, lon, resolution=9)
+                      for lat, lon in data["points"]]}
+
+def summarize(data):
+    return {"unique_cells": len(set(data["cells"]))}
+
+engine = ModuleOrchestrator(api_connector=LocalAPIConnector({
+    ("SPACE", "/index"): index_points,
+    ("SPACE", "/summarize"): summarize,
+}))
+workflow = WorkflowDefinition(
+    id="local_h3", name="Local H3", description="Index and summarize points",
+    steps=[WorkflowStep("index", "SPACE", "/index"),
+           WorkflowStep("summarize", "SPACE", "/summarize", dependencies=["index"])],
+)
+assert engine.register_workflow(workflow)
+result = asyncio.run(engine.execute_workflow("local_h3", {
+    "points": [(37.7, -122.4), (37.7, -122.4)],
+}))
+assert result.data["summarize"]["unique_cells"] == 1
+```
+
+The [local composition regression](../../../GEO-INFER-EXAMPLES/tests/integration/test_local_composition.py)
+executes a larger DATA→SPACE→TIME→ENERGY chain: persist and retrieve sensor
+observations, index real H3 cells, fit temporal trends, and forecast demand. Both
+sequential and parallel scheduling preserve mapped outputs and dependency order.
+
+Workflow definitions reject duplicate step names, absent dependencies, cycles,
+and invalid budgets. Independent parallel operations are cancelled and awaited
+when required work fails or the caller cancels. Execution identifiers are unique
+across overlapping calls. Event and feedback strategies accept the same local
+connector; feedback convergence uses the latest numeric iteration indices. Event
+signals remain available until dependencies finish; untriggered required work
+fails instead of reporting partial success. Each invocation copies its workflow
+definition so later caller edits cannot redirect an in-flight attempt.
+
+`WorkflowStep.timeout` bounds each async operation; `WorkflowDefinition.timeout`
+bounds an execution attempt. Synchronous local callables run on the event loop
+and can only be diagnosed as over-budget after returning. A hard termination
+requirement needs an owned subprocess adapter. Cancellation does not undo an
+operation's completed external side effects.
+
+Required failures propagate. Retries require `retry_policy={"max_attempts": 2,
+"delay_seconds": 0}` (two total attempts, at most ten supported); callers must
+choose operations safe to repeat. Recovery never marks required steps optional.
+A recovered result records its successful execution ID, `recovery_attempts`, and
+`recovery_of`; the original failed execution remains inspectable. No retry policy
+means one attempt. The default connector still requires an explicitly configured
+transport, and bundled remote workflow definitions do not create services.
 
 ## Verification
 

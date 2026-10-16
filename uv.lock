@@ -3791,6 +3791,16 @@ examples = [
     { name = "typer" },
 ]
 
+[package.dev-dependencies]
+test = [
+    { name = "geo-infer-data" },
+    { name = "geo-infer-energy" },
+    { name = "geo-infer-space" },
+    { name = "geo-infer-time" },
+    { name = "xarray", version = "2025.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "xarray", version = "2025.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or sys_platform != 'darwin'" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "h3", marker = "extra == 'examples'", specifier = ">=4.5.0,<5" },
@@ -3811,6 +3821,15 @@ requires-dist = [
     { name = "typer", marker = "extra == 'examples'", specifier = ">=0.7.0" },
 ]
 provides-extras = ["examples", "dev"]
+
+[package.metadata.requires-dev]
+test = [
+    { name = "geo-infer-data", editable = "GEO-INFER-DATA" },
+    { name = "geo-infer-energy", editable = "GEO-INFER-ENERGY" },
+    { name = "geo-infer-space", editable = "GEO-INFER-SPACE" },
+    { name = "geo-infer-time", editable = "GEO-INFER-TIME" },
+    { name = "xarray", specifier = ">=2023.1.0" },
+]
 
 [[package]]
 name = "geo-infer-forest"

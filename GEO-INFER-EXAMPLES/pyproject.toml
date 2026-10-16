@@ -93,3 +93,19 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+
+[dependency-groups]
+# Real cross-module composition tests; local connector imports remain lightweight.
+test = [
+    "geo-infer-data>=0.4.0",
+    "geo-infer-energy>=0.4.0",
+    "geo-infer-space>=0.4.0",
+    "geo-infer-time>=0.4.0",
+    "xarray>=2023.1.0",
+]
+
+[tool.uv.sources]
+geo-infer-data = { workspace = true }
+geo-infer-energy = { workspace = true }
+geo-infer-space = { workspace = true }
+geo-infer-time = { workspace = true }

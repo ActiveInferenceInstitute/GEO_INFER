@@ -5,23 +5,19 @@ GEO-INFER Module Orchestrator
 Advanced orchestration system for managing cross-module integrations,
 workflow execution, and pattern-based coordination across the GEO-INFER ecosystem.
 
-Execution-engine limitation
----------------------------
-``ModuleOrchestrator`` drives every workflow step through :class:`APIConnector`,
-which intentionally raises ``RuntimeError``: the local examples package ships no
-remote module API servers. Consequently ``execute_workflow`` (and the five
-execution strategies behind it) cannot succeed against the bundled
-``SAMPLE_WORKFLOWS`` unless you provide a real transport — for example by
-monkeypatching or subclassing ``APIConnector`` with an object returning
-HTTP-like responses (``status_code``, ``json()``). Module discovery/health
-reporting likewise only becomes meaningful once a transport is injected and
-modules are declared in an orchestrator config file (``modules`` section).
-The workflow *definition* surface (registration, ``list_workflows``,
-``get_workflow_definition``, dependency validation, guard-condition
-evaluation) is fully functional locally.
+Local and remote execution
+--------------------------
+Pass an explicit ``api_connector`` to compose real operations. The exported
+``LocalAPIConnector`` runs registered Python callables without a server. The
+default ``APIConnector`` refuses undeclared remote access. Sample workflows
+remain definitions until their module operations are supplied.
+
 """
 
 import asyncio
+from copy import deepcopy
+import math
+import uuid
 import importlib.resources
 import ast
 import logging
@@ -63,6 +59,8 @@ def setup_logging(name: str) -> logging.Logger:
 class APIConnector:
     """Explicit boundary for optional remote health checks in examples."""
 
+    declared_modules: tuple[str, ...] = ()
+
     def get(self, **_: Any) -> Any:
         """Reject undeclared remote calls instead of silently contacting a service."""
         raise RuntimeError("remote API connectors are not configured in local examples")
@@ -82,25 +80,25 @@ class PerformanceMonitor:
     def __init__(self) -> None:
         self._workflow_starts: dict[str, float] = {}
         self._workflow_totals: dict[str, float] = {}
-        self._step_starts: dict[str, float] = {}
+        self._step_starts: dict[tuple[str, str], float] = {}
         self._step_totals: dict[str, dict[str, float]] = {}
 
     def start_workflow_tracking(self, execution_id: str) -> None:
-        self._workflow_starts[execution_id] = time.time()
+        self._workflow_starts[execution_id] = time.monotonic()
 
     def stop_workflow_tracking(self, execution_id: str) -> None:
         started = self._workflow_starts.pop(execution_id, None)
         if started is not None:
-            self._workflow_totals[execution_id] = time.time() - started
+            self._workflow_totals[execution_id] = time.monotonic() - started
 
     def start_step_tracking(self, execution_id: str, step_name: str) -> None:
-        self._step_starts[(execution_id, step_name)] = time.time()
+        self._step_starts[(execution_id, step_name)] = time.monotonic()
 
     def stop_step_tracking(self, execution_id: str, step_name: str) -> None:
         started = self._step_starts.pop((execution_id, step_name), None)
         if started is None:
             return
-        elapsed = time.time() - started
+        elapsed = time.monotonic() - started
         self._step_totals.setdefault(execution_id, {})[step_name] = elapsed
 
     def get_workflow_metrics(self, execution_id: str) -> dict[str, Any]:
@@ -271,6 +269,8 @@ class ModuleOrchestrator:
         config_path: str | None = None,
         monitoring_enabled: bool = True,
         resilience_enabled: bool = True,
+        *,
+        api_connector: APIConnector | None = None,
     ):
         """
         Initialize the module orchestrator.
@@ -278,11 +278,12 @@ class ModuleOrchestrator:
         Args:
             config_path: Path to orchestrator configuration file
             monitoring_enabled: Enable performance and health monitoring
-            resilience_enabled: Enable automatic failover and recovery
+            resilience_enabled: Enable explicitly configured bounded retries
+            api_connector: Explicit local or remote operation transport
         """
         self.logger = setup_logging(__name__)
         self.config_manager = ConfigManager(config_path)
-        self.api_connector = APIConnector()
+        self.api_connector = APIConnector() if api_connector is None else api_connector
 
         # Core components
         self.modules: dict[str, Any] = {}
@@ -310,6 +311,13 @@ class ModuleOrchestrator:
                 "max_concurrent_workflows", 5
             )
             self.default_timeout = orchestrator_config.get("default_timeout", 300)
+            if (
+                isinstance(self.default_timeout, bool)
+                or not isinstance(self.default_timeout, (int, float))
+                or not math.isfinite(self.default_timeout)
+                or self.default_timeout <= 0
+            ):
+                raise ValueError("default_timeout must be finite and positive")
             self.retry_attempts = orchestrator_config.get("retry_attempts", 3)
 
             # Load packaged workflow definitions (see _workflow_definition_files).
@@ -355,7 +363,9 @@ class ModuleOrchestrator:
 
     def _initialize_modules(self) -> None:
         """Initialize and health-check available modules."""
-        module_configs = self.config_manager.get_config("modules", {})
+        module_configs = dict(self.config_manager.get_config("modules", {}))
+        for module_name in self.api_connector.declared_modules:
+            module_configs.setdefault(module_name, {})
 
         for module_name, module_config in module_configs.items():
             try:
@@ -431,6 +441,58 @@ class ModuleOrchestrator:
 
     def _validate_workflow(self, workflow: WorkflowDefinition) -> bool:
         """Validate workflow definition and module dependencies."""
+        if not workflow.steps or len({step.name for step in workflow.steps}) != len(
+            workflow.steps
+        ):
+            self.logger.error("Workflow requires nonempty, uniquely named steps")
+            return False
+        strategy = getattr(
+            workflow.execution_strategy, "value", workflow.execution_strategy
+        )
+        if strategy not in {item.value for item in ExecutionStrategy}:
+            return False
+        timeouts = [workflow.timeout, *(step.timeout for step in workflow.steps)]
+        if any(
+            value is not None
+            and (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                or value <= 0
+            )
+            for value in timeouts
+        ):
+            return False
+        if workflow.max_iterations is not None and (
+            type(workflow.max_iterations) is not int
+            or not 1 <= workflow.max_iterations <= 10000
+        ):
+            return False
+        threshold = workflow.convergence_threshold
+        if threshold is not None and (
+            isinstance(threshold, bool)
+            or not isinstance(threshold, (int, float))
+            or not math.isfinite(threshold)
+            or threshold < 0
+        ):
+            return False
+        policy = {} if workflow.retry_policy is None else workflow.retry_policy
+        if not isinstance(policy, dict) or set(policy) - {
+            "max_attempts",
+            "delay_seconds",
+        }:
+            return False
+        attempts = policy.get("max_attempts", 1)
+        delay = policy.get("delay_seconds", 0)
+        if type(attempts) is not int or not 1 <= attempts <= 10:
+            return False
+        if (
+            isinstance(delay, bool)
+            or not isinstance(delay, (int, float))
+            or not math.isfinite(delay)
+            or not 0 <= delay <= 60
+        ):
+            return False
         # Check if required modules are available
         for step in workflow.steps:
             module_name = step.module
@@ -452,6 +514,10 @@ class ModuleOrchestrator:
                     )
                     return False
 
+        try:
+            self._group_by_dependencies(workflow.steps)
+        except ValueError:
+            return False
         return True
 
     async def execute_workflow(
@@ -474,8 +540,12 @@ class ModuleOrchestrator:
         if workflow_id not in self.workflows:
             raise ValueError(f"Workflow {workflow_id} not found")
 
-        workflow = self.workflows[workflow_id]
-        execution_id = f"{workflow_id}_{int(time.time())}"
+        workflow = deepcopy(self.workflows[workflow_id])
+        if not self._validate_workflow(workflow):
+            raise ValueError(
+                f"Workflow {workflow_id} is invalid or its modules are unavailable"
+            )
+        execution_id = f"{workflow_id}_{uuid.uuid4().hex}"
 
         # Create execution tracking
         execution = WorkflowExecution(
@@ -492,38 +562,43 @@ class ModuleOrchestrator:
             if self.monitoring_enabled:
                 self.performance_monitor.start_workflow_tracking(execution_id)
 
-            # Execute based on strategy
-            strategy = (
-                workflow.execution_strategy.value
-                if isinstance(workflow.execution_strategy, ExecutionStrategy)
-                else str(workflow.execution_strategy)
-            )
-            if strategy == ExecutionStrategy.SEQUENTIAL.value:
-                result = await self._execute_sequential(workflow, input_data, execution)
-            elif strategy == ExecutionStrategy.PARALLEL.value:
-                result = await self._execute_parallel(workflow, input_data, execution)
-            elif strategy == ExecutionStrategy.CONDITIONAL.value:
-                result = await self._execute_conditional(
-                    workflow, input_data, execution
+            async with asyncio.timeout(workflow.timeout):
+                # Execute based on strategy
+                strategy = (
+                    workflow.execution_strategy.value
+                    if isinstance(workflow.execution_strategy, ExecutionStrategy)
+                    else str(workflow.execution_strategy)
                 )
-            elif strategy == ExecutionStrategy.EVENT_DRIVEN.value:
-                result = await self._execute_event_driven(
-                    workflow, input_data, execution
-                )
-            elif strategy == ExecutionStrategy.FEEDBACK_LOOP.value:
-                result = await self._execute_feedback_loop(
-                    workflow, input_data, execution
-                )
-            else:
-                raise ValueError(
-                    f"Unknown execution strategy: {workflow.execution_strategy}"
-                )
-
+                if strategy == ExecutionStrategy.SEQUENTIAL.value:
+                    result = await self._execute_sequential(
+                        workflow, input_data, execution
+                    )
+                elif strategy == ExecutionStrategy.PARALLEL.value:
+                    result = await self._execute_parallel(
+                        workflow, input_data, execution
+                    )
+                elif strategy == ExecutionStrategy.CONDITIONAL.value:
+                    result = await self._execute_conditional(
+                        workflow, input_data, execution
+                    )
+                elif strategy == ExecutionStrategy.EVENT_DRIVEN.value:
+                    result = await self._execute_event_driven(
+                        workflow, input_data, execution
+                    )
+                elif strategy == ExecutionStrategy.FEEDBACK_LOOP.value:
+                    result = await self._execute_feedback_loop(
+                        workflow, input_data, execution
+                    )
+                else:
+                    raise ValueError(
+                        f"Unknown execution strategy: {workflow.execution_strategy}"
+                    )
             execution.status = "completed"
             execution.end_time = time.time()
             execution.results = result.data
 
             if self.monitoring_enabled:
+                self.performance_monitor.stop_workflow_tracking(execution_id)
                 execution.performance_metrics = (
                     self.performance_monitor.get_workflow_metrics(execution_id)
                 )
@@ -531,6 +606,10 @@ class ModuleOrchestrator:
             self.logger.info(f"Workflow execution completed: {execution_id}")
             return result
 
+        except asyncio.CancelledError:
+            execution.status = "cancelled"
+            execution.end_time = time.time()
+            raise
         except Exception as e:
             execution.status = "failed"
             execution.end_time = time.time()
@@ -538,8 +617,10 @@ class ModuleOrchestrator:
 
             self.logger.error(f"Workflow execution failed: {execution_id} - {e}")
 
-            if self.resilience_enabled:
-                # Attempt recovery
+            if self.resilience_enabled and not (
+                execution_context and execution_context.resilience_mode
+            ):
+                # Attempt only explicitly configured, bounded retries.
                 recovery_result = await self._attempt_recovery(
                     workflow, input_data, execution, e
                 )
@@ -561,7 +642,11 @@ class ModuleOrchestrator:
         current_data = input_data.copy()
         results = {}
 
-        for step in workflow.steps:
+        for step in (
+            step
+            for group in self._group_by_dependencies(workflow.steps)
+            for step in group
+        ):
             self.logger.debug(f"Executing step: {step.name}")
 
             try:
@@ -613,34 +698,41 @@ class ModuleOrchestrator:
         current_data = input_data.copy()
 
         for group in dependency_groups:
-            # Execute group in parallel
-            tasks = []
-            for step in group:
-                task = asyncio.create_task(
-                    self._execute_step(step, current_data, execution)
-                )
-                tasks.append((step.name, step, task))
 
-            # Wait for group completion
-            group_results = {}
-            for step_name, step, task in tasks:
+            async def execute(step: Any) -> dict[str, Any]:
                 try:
-                    step_result = await task
-                    group_results[step_name] = step_result
-                    execution.module_statuses[step.module] = ModuleStatus.AVAILABLE
-
-                except Exception as e:
+                    result = await self._execute_step(step, current_data, execution)
+                except Exception as error:
                     execution.module_statuses[step.module] = ModuleStatus.ERROR
                     if not step.optional:
                         raise
-                    group_results[step_name] = {"error": str(e), "status": "skipped"}
+                    return {"error": str(error), "status": "skipped"}
+                execution.module_statuses[step.module] = ModuleStatus.AVAILABLE
+                return result
+
+            tasks = [asyncio.create_task(execute(step)) for step in group]
+            try:
+                outputs = await asyncio.gather(*tasks)
+                group_results = {
+                    step.name: output for step, output in zip(group, outputs)
+                }
+            finally:
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+                await asyncio.gather(*tasks, return_exceptions=True)
 
             results.update(group_results)
 
             # Update data with group results
-            for step_result in group_results.values():
+            for step in group:
+                step_result = group_results[step.name]
                 if isinstance(step_result, dict) and "error" not in step_result:
-                    current_data.update(step_result)
+                    if step.output_mapping:
+                        for key, value in step.output_mapping.items():
+                            current_data[key] = step_result.get(value, step_result)
+                    else:
+                        current_data.update(step_result)
 
         return IntegrationResult(
             success=True,
@@ -662,7 +754,11 @@ class ModuleOrchestrator:
         current_data = input_data.copy()
         results = {}
 
-        for step in workflow.steps:
+        for step in (
+            step
+            for group in self._group_by_dependencies(workflow.steps)
+            for step in group
+        ):
             # Check execution condition
             if step.condition and not self._evaluate_condition(
                 step.condition, current_data
@@ -710,45 +806,51 @@ class ModuleOrchestrator:
         execution: WorkflowExecution,
     ) -> IntegrationResult:
         """Execute workflow using event-driven pattern."""
-        # Initialize event bus for this execution
-        execution_events: dict[str, list[Any]] = {}
+        events: set[str] = set()
         results: dict[str, Any] = {}
         current_data = input_data.copy()
-
-        # Set up event listeners
-        for step in workflow.steps:
-            if step.trigger_events:
-                for event in step.trigger_events:
-                    if event not in execution_events:
-                        execution_events[event] = []
-                    execution_events[event].append(step)
-
-        # Start with steps that have no trigger events
-        initial_steps = [step for step in workflow.steps if not step.trigger_events]
-
-        # Execute initial steps
-        for step in initial_steps:
-            try:
-                step_result = await self._execute_step(step, current_data, execution)
+        remaining = list(workflow.steps)
+        while remaining:
+            ready = [
+                step
+                for step in remaining
+                if all(name in results for name in step.dependencies)
+                and (
+                    not step.trigger_events or events.intersection(step.trigger_events)
+                )
+            ]
+            if not ready:
+                required = [step.name for step in remaining if not step.optional]
+                if required:
+                    raise ValueError(
+                        f"Required event steps were not triggered: {required}"
+                    )
+                for step in remaining:
+                    results[step.name] = {
+                        "status": "skipped",
+                        "reason": "not_triggered",
+                    }
+                break
+            for step in ready:
+                remaining.remove(step)
+                try:
+                    step_result = await self._execute_step(
+                        step, current_data, execution
+                    )
+                except Exception as error:
+                    execution.module_statuses[step.module] = ModuleStatus.ERROR
+                    if not step.optional:
+                        raise
+                    results[step.name] = {"error": str(error), "status": "failed"}
+                    continue
                 results[step.name] = step_result
-                current_data.update(step_result)
-
-                # Trigger events
-                if step.emits_events:
-                    for event in step.emits_events:
-                        await self._trigger_event(
-                            event,
-                            step_result,
-                            execution_events,
-                            current_data,
-                            execution,
-                            results,
-                        )
-
-            except Exception as e:
-                if not step.optional:
-                    raise
-                results[step.name] = {"error": str(e), "status": "failed"}
+                execution.module_statuses[step.module] = ModuleStatus.AVAILABLE
+                if step.output_mapping:
+                    for key, value in step.output_mapping.items():
+                        current_data[key] = step_result.get(value, step_result)
+                else:
+                    current_data.update(step_result)
+                events.update(step.emits_events)
 
         return IntegrationResult(
             success=True,
@@ -769,15 +871,25 @@ class ModuleOrchestrator:
         """Execute workflow with feedback loops (Active Inference pattern)."""
         current_data = input_data.copy()
         results = {}
-        max_iterations = workflow.max_iterations or 10
-        convergence_threshold = workflow.convergence_threshold or 0.001
+        max_iterations = (
+            10 if workflow.max_iterations is None else workflow.max_iterations
+        )
+        convergence_threshold = (
+            0.001
+            if workflow.convergence_threshold is None
+            else workflow.convergence_threshold
+        )
 
         for iteration in range(max_iterations):
             self.logger.debug(f"Feedback loop iteration {iteration + 1}")
             iteration_results = {}
 
             # Execute all steps in current iteration
-            for step in workflow.steps:
+            for step in (
+                step
+                for group in self._group_by_dependencies(workflow.steps)
+                for step in group
+            ):
                 try:
                     step_result = await self._execute_step(
                         step, current_data, execution
@@ -837,11 +949,15 @@ class ModuleOrchestrator:
                 }
 
             # Execute via API
-            response = await self.api_connector.post_async(
-                module=module_name,
-                endpoint=step.endpoint,
-                data=step_input,
-                timeout=step.timeout or self.default_timeout,
+            timeout = step.timeout or self.default_timeout
+            response = await asyncio.wait_for(
+                self.api_connector.post_async(
+                    module=module_name,
+                    endpoint=step.endpoint,
+                    data=step_input,
+                    timeout=timeout,
+                ),
+                timeout=timeout,
             )
 
             if response.status_code == 200:
@@ -873,7 +989,7 @@ class ModuleOrchestrator:
 
             if not ready_steps:
                 # Circular dependency or other issue
-                raise Exception("Unable to resolve step dependencies")
+                raise ValueError("Unable to resolve step dependencies")
 
             groups.append(ready_steps)
             for step in ready_steps:
@@ -898,42 +1014,6 @@ class ModuleOrchestrator:
             )
             return False
 
-    async def _trigger_event(
-        self,
-        event_name: str,
-        event_data: dict[str, Any],
-        execution_events: dict[str, list[Any]],
-        current_data: dict[str, Any],
-        execution: WorkflowExecution,
-        results: dict[str, Any],
-    ) -> None:
-        """Trigger an event and execute associated steps."""
-        if event_name in execution_events:
-            for step in execution_events[event_name]:
-                if step.name not in results:  # Avoid duplicate execution
-                    try:
-                        step_result = await self._execute_step(
-                            step, current_data, execution
-                        )
-                        results[step.name] = step_result
-                        current_data.update(step_result)
-
-                        # Chain events
-                        if step.emits_events:
-                            for next_event in step.emits_events:
-                                await self._trigger_event(
-                                    next_event,
-                                    step_result,
-                                    execution_events,
-                                    current_data,
-                                    execution,
-                                    results,
-                                )
-                    except Exception as e:
-                        if not step.optional:
-                            raise
-                        results[step.name] = {"error": str(e), "status": "failed"}
-
     def _check_convergence(self, results: dict[str, Any], threshold: float) -> bool:
         """Check if feedback loop has converged by comparing last two iterations.
 
@@ -942,7 +1022,10 @@ class ModuleOrchestrator:
         e.g. integers beyond float range — are malformed data: they are logged
         and propagated instead of silently reading as "never converged".
         """
-        iterations = sorted(k for k in results.keys() if k.startswith("iteration_"))
+        iterations = sorted(
+            (k for k in results if k.startswith("iteration_")),
+            key=lambda key: int(key.removeprefix("iteration_")),
+        )
         if len(iterations) < 2:
             return False
 
@@ -972,7 +1055,7 @@ class ModuleOrchestrator:
                 for k in common_keys
             )
 
-            return bool(max_change < threshold)
+            return bool(max_change <= threshold)
 
         except (OverflowError, RecursionError) as exc:
             self.logger.error(
@@ -988,42 +1071,22 @@ class ModuleOrchestrator:
         error: Exception,
     ) -> IntegrationResult | None:
         """Attempt to recover from workflow execution failure."""
-        self.logger.info(f"Attempting recovery for execution {execution.execution_id}")
-
-        # Implement recovery strategies:
-        # 1. Retry with degraded modules
-        # 2. Skip optional failing steps
-        # 3. Use cached results if available
-        # 4. Switch to alternative workflow
-
-        try:
-            # Simple retry strategy for now
-            await asyncio.sleep(1)  # Brief delay
-
-            # Try again with optional modules marked as skippable
-            modified_workflow = self._create_resilient_workflow(workflow)
-            return await self.execute_workflow(
-                modified_workflow.id, input_data, ExecutionContext(resilience_mode=True)
-            )
-
-        except Exception as recovery_error:
-            self.logger.error(f"Recovery failed: {recovery_error}")
-            return None
-
-    def _create_resilient_workflow(
-        self, workflow: WorkflowDefinition
-    ) -> WorkflowDefinition:
-        """Create a modified workflow for resilient execution."""
-        # Mark problematic modules as optional
-        resilient_workflow = workflow.copy()
-        for step in resilient_workflow.steps:
-            if self.module_health.get(step.module) in [
-                ModuleStatus.ERROR,
-                ModuleStatus.UNAVAILABLE,
-            ]:
-                step.optional = True
-
-        return resilient_workflow
+        policy = workflow.retry_policy or {}
+        for attempt in range(policy.get("max_attempts", 1) - 1):
+            await asyncio.sleep(policy.get("delay_seconds", 0))
+            try:
+                result = await self.execute_workflow(
+                    workflow.id, input_data, ExecutionContext(resilience_mode=True)
+                )
+            except Exception as recovery_error:
+                self.logger.warning(
+                    "Workflow retry %s failed: %s", attempt + 1, recovery_error
+                )
+            else:
+                result.metadata["recovery_attempts"] = attempt + 1
+                result.metadata["recovery_of"] = execution.execution_id
+                return result
+        return None
 
     def get_workflow_status(self, execution_id: str) -> WorkflowExecution | None:
         """Get the status of a workflow execution."""

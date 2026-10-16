@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Add EXAMPLES `LocalAPIConnector` and explicit constructor injection for real
+  in-process module compositions. Validate dependency graphs and budgets, apply
+  output mappings in parallel groups, cancel and drain unfinished peers, retain
+  unique execution identities and completed timing metrics, and restrict recovery
+  to explicitly bounded retries without changing required steps to optional.
+  Feedback convergence now orders iteration indices numerically. Real persisted
+  DATA→SPACE→TIME→ENERGY compositions run through sequential and parallel modes.
+
+### Module correctness and routing additions
+
+- TRANSPORT now honors cost and emissions edge weights, uses bidirectional
+  Dijkstra when requested, preserves node identifier zero, and reports totals
+  from the selected parallel edge. Unknown route objectives fail explicitly.
+- ENERGY demand fitting preserves daily and sub-daily time spacing within
+  calendar months and rejects missing timestamps and nonfinite observations.
+- GIT conflict analysis excludes diff3/zdiff3 ancestor sections. Cherry-pick
+  resolution preserves complete indexed file bytes, stages only resolved paths,
+  and finishes empty resolved picks without creating a spurious content change.
+- TEST accepts either valid POSIX primary error when a scanner fails before
+  the deadline or during timeout cleanup, retaining output and diagnostic checks
+  without changing execution budgets.
+
 ### 0.4.0 candidate preparation
 
 - Generate GitHub's `.github/README.md` and the root overview from one source,

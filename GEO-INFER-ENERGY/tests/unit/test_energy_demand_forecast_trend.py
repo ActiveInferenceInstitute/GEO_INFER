@@ -71,3 +71,27 @@ class TestForecastTrend:
         )
         with pytest.raises(ValueError, match="distinct time values"):
             forecaster.forecast_demand(demand, forecast_years=3)
+
+    def test_daily_samples_within_one_month(self, forecaster):
+        """Daily observations retain their spacing instead of collapsing to one month."""
+        times = np.arange("2024-01-01", "2024-01-05", dtype="datetime64[D]")
+        demand = xr.DataArray(
+            [100.0, 101.0, 102.0, 103.0], dims="time", coords={"time": times}
+        )
+        result = forecaster.forecast_demand(demand, forecast_years=1)
+        # A unit per day in January is 31 units per month, or 372 per year.
+        np.testing.assert_allclose(result.demand_forecast.values, [475.0])
+
+    @pytest.mark.parametrize("bad", [float("nan"), float("inf")])
+    def test_nonfinite_demand_is_rejected(self, forecaster, bad):
+        """Invalid observed values cannot silently yield nonfinite forecasts."""
+        demand = xr.DataArray([100.0, bad], dims="time", coords={"time": [2020, 2021]})
+        with pytest.raises(ValueError, match="finite"):
+            forecaster.forecast_demand(demand)
+
+    def test_missing_datetime_is_rejected(self, forecaster):
+        """A missing timestamp cannot become a large negative integer year."""
+        times = np.array(["2024-01-01", "NaT"], dtype="datetime64[ns]")
+        demand = xr.DataArray([100.0, 101.0], dims="time", coords={"time": times})
+        with pytest.raises(ValueError, match="NaT"):
+            forecaster.forecast_demand(demand)

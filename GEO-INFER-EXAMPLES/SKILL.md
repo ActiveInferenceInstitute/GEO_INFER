@@ -32,6 +32,20 @@ GEO-INFER-EXAMPLES/examples/
 └── iot_radiation_monitoring/ # IOT + DATA + SPACE workflow
 ```
 
+### Local execution
+
+Use `LocalAPIConnector` from `geo_infer_examples` with an explicit mapping of
+`(module, endpoint)` to real module callables. Pass it as
+`ModuleOrchestrator(api_connector=connector)` before registering a workflow.
+Each operation accepts and returns a dictionary; async operations are awaited.
+The [local execution guide](../GEO-INFER-INTRA/docs/modules/geo-infer-examples.md)
+contains a runnable H3 composition and the lifecycle/deadline/retry contracts.
+Verify real DATA→SPACE→TIME→ENERGY execution with:
+
+```bash
+uv run --no-sync python -m pytest GEO-INFER-EXAMPLES/tests/integration/test_local_composition.py
+```
+
 ### Orchestrator Example
 
 ```python

@@ -1573,8 +1573,11 @@ def test_cleanup_scanner_failure_retains_target_output(tmp_path, monkeypatch) ->
 
     monkeypatch.setattr(process_module.subprocess, "run", failed_scan)
     code = f"from pathlib import Path; import sys,time; print('target stdout', flush=True); print('target stderr', file=sys.stderr, flush=True); Path({str(ready)!r}).touch(); time.sleep(30)"
+    # A POSIX scan can fail during the pre-deadline poll or during timeout
+    # cleanup. Both primary errors must retain target output and the cleanup
+    # diagnostic; scheduler timing does not determine the contract.
     expected = (
-        subprocess.CalledProcessError
+        (subprocess.CalledProcessError, subprocess.TimeoutExpired)
         if os.name == "posix"
         else subprocess.TimeoutExpired
     )

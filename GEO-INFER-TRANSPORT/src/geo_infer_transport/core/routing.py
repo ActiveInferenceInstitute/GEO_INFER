@@ -96,7 +96,9 @@ class RoutingEngine:
         Args:
             origin: Origin point or node
             destination: Destination point or node
-            optimization: Optimization criteria
+            optimization: One of time, distance, cost, or emissions. Graph
+                edges use travel_time, length, cost, or emissions respectively;
+                missing weights follow NetworkX's unit-weight convention.
 
         Returns:
             Computed Route object. ``route.route_source`` records how the
@@ -108,8 +110,19 @@ class RoutingEngine:
             not present in the graph, the returned Route has an empty
             ``path`` and zero distance/time.
         """
-        origin_id = origin.get("node_id") or origin.get("id") or "origin"
-        dest_id = destination.get("node_id") or destination.get("id") or "destination"
+        criteria = OptimizationCriteria(optimization)
+        origin_id = next(
+            (origin[key] for key in ("node_id", "id") if origin.get(key) is not None),
+            "origin",
+        )
+        dest_id = next(
+            (
+                destination[key]
+                for key in ("node_id", "id")
+                if destination.get(key) is not None
+            ),
+            "destination",
+        )
 
         # Get path from network
         path: list[str] = []
@@ -123,7 +136,12 @@ class RoutingEngine:
             graph = self.network.graph
 
             # Choose weight based on optimization
-            weight = "travel_time" if optimization == "time" else "length"
+            weight = {
+                OptimizationCriteria.TIME: "travel_time",
+                OptimizationCriteria.DISTANCE: "length",
+                OptimizationCriteria.COST: "cost",
+                OptimizationCriteria.EMISSIONS: "emissions",
+            }[criteria]
 
             try:
                 # Apply traffic adjustment if enabled
@@ -144,6 +162,10 @@ class RoutingEngine:
                     path = list(
                         nx.bellman_ford_path(graph, origin_id, dest_id, weight=weight)
                     )
+                elif self.algorithm == RoutingAlgorithm.BIDIRECTIONAL:
+                    _, path = nx.bidirectional_dijkstra(
+                        graph, origin_id, dest_id, weight=weight
+                    )
                 else:  # Default to Dijkstra
                     path = list(
                         nx.dijkstra_path(graph, origin_id, dest_id, weight=weight)
@@ -154,6 +176,10 @@ class RoutingEngine:
                 for i in range(len(path) - 1):
                     edge_data = graph.get_edge_data(path[i], path[i + 1])
                     if edge_data:
+                        if graph.is_multigraph():
+                            edge_data = min(
+                                edge_data.values(), key=lambda data: data.get(weight, 1)
+                            )
                         total_distance += float(edge_data.get("length", 0))
                         total_time += float(
                             edge_data.get(time_key, edge_data.get("travel_time", 0))

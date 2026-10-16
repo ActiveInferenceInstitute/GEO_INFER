@@ -270,10 +270,13 @@ class TestAdvancedGitCherryPick:
         assert operation.status == "applied"
         assert (repo_dir / "feature.txt").read_text() == "new file\n"
 
+    @pytest.mark.parametrize("conflict_style", ["merge", "diff3", "zdiff3"])
     def test_conflicting_cherry_pick_detects_conflicts_and_resolves_ours(
-        self, cherry_pick_conflict_repo
+        self, cherry_pick_conflict_repo, conflict_style
     ):
+        """Ancestor sections never become ours content or resolved file bytes."""
         repo_dir, feature_sha = cherry_pick_conflict_repo
+        git("config", "merge.conflictStyle", conflict_style, cwd=repo_dir)
 
         manager = CherryPickManager(repo_dir)
         operation = manager.cherry_pick_commit(feature_sha)
@@ -286,7 +289,7 @@ class TestAdvancedGitCherryPick:
 
         assert manager.resolve_conflicts(0, resolution_strategy="ours") is True
         assert operation.status == "applied"
-        assert (repo_dir / "file.txt").read_text() == "main line"
+        assert (repo_dir / "file.txt").read_text() == "main line\n"
 
     def test_unknown_commit_sha_fails_gracefully(self, clean_repo):
         manager = CherryPickManager(clean_repo)
@@ -333,8 +336,13 @@ class TestAdvancedGitCherryPick:
 class TestAdvancedGitRebase:
     """Test RebaseManager conflict, continue, and abort paths."""
 
-    def test_conflicting_rebase_reports_conflicts(self, rebase_conflict_repo):
+    @pytest.mark.parametrize("conflict_style", ["merge", "diff3", "zdiff3"])
+    def test_conflicting_rebase_reports_conflicts(
+        self, rebase_conflict_repo, conflict_style
+    ):
+        """Rebase conflict sides exclude the optional common ancestor section."""
         repo_dir, base_sha, feature_branch = rebase_conflict_repo
+        git("config", "merge.conflictStyle", conflict_style, cwd=repo_dir)
 
         manager = RebaseManager(repo_dir)
         operation = manager.start_interactive_rebase(base_sha)
@@ -427,3 +435,32 @@ class TestAdvancedGitOperationsFacade:
         assert results["overall_success"] is True
         assert results["steps"][0]["success"] is True
         assert results["steps"][0]["message"] == "Initialized 0 submodules"
+
+
+@pytest.mark.parametrize(
+    "strategy, expected", [("ours", "main"), ("theirs", "feature")]
+)
+def test_cherry_pick_resolution_preserves_whole_file_and_unrelated_work(
+    tmp_path, strategy, expected
+):
+    """Resolution retains all file bytes and does not stage unrelated working files."""
+    repo_dir = init_repo(tmp_path / "whole_file", content="prefix\nbase\nsuffix\n")
+    git("config", "merge.conflictStyle", "diff3", cwd=repo_dir)
+    git("checkout", "-b", "feature", cwd=repo_dir)
+    (repo_dir / "file.txt").write_text("prefix\nfeature\nsuffix\n")
+    commit_all(repo_dir, "feature edit")
+    feature_sha = head_sha(repo_dir)
+    git("checkout", "-", cwd=repo_dir)
+    (repo_dir / "file.txt").write_text("prefix\nmain\nsuffix\n")
+    commit_all(repo_dir, "main edit")
+    manager = CherryPickManager(repo_dir)
+    operation = manager.cherry_pick_commit(feature_sha)
+    assert operation.status == "conflicts"
+    (repo_dir / "unrelated.txt").write_text("local work\n")
+    assert manager.resolve_conflicts(0, strategy)
+    assert (repo_dir / "file.txt").read_text() == f"prefix\n{expected}\nsuffix\n"
+    assert (
+        "unrelated.txt"
+        not in manager.repo.git.ls_tree("--name-only", "HEAD").splitlines()
+    )
+    assert (repo_dir / "unrelated.txt").read_text() == "local work\n"

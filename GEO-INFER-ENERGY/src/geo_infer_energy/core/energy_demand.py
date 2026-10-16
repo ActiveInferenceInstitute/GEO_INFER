@@ -30,7 +30,9 @@ class EnergyDemandForecaster:
         Forecast future energy demand.
 
         Args:
-            historical_demand: Historical demand data
+            historical_demand: Finite historical demand with numeric years or
+                datetime64 coordinates. Daily and sub-daily timestamps retain
+                their fractional calendar-month spacing.
             temperature: Optional temperature data (for heating/cooling)
             population: Optional population data
             forecast_years: Number of years to forecast
@@ -141,10 +143,15 @@ def _slope_per_year(da: xr.DataArray) -> float:
     """Least-squares slope of ``da`` expressed per calendar year."""
     tvals = np.asarray(da.coords["time"].values)
     if np.issubdtype(tvals.dtype, np.datetime64):
-        # Fractional years via month index so monthly/weekly sampling keeps
-        # its true spacing (years-since-epoch / 12 is a pure shift+scale of
-        # calendar time and preserves the fitted slope's per-year units).
-        years = tvals.astype("datetime64[M]").astype(np.int64) / 12.0
+        if np.any(np.isnat(tvals)):
+            raise ValueError("time coordinate must not contain NaT")
+        # Retain monthly calendar spacing while preserving observations within
+        # each month, including daily and sub-daily samples.
+        months = tvals.astype("datetime64[M]")
+        starts = months.astype(tvals.dtype)
+        ends = (months + np.timedelta64(1, "M")).astype(tvals.dtype)
+        fractions = (tvals - starts) / (ends - starts)
+        years = (months.astype(np.int64) + fractions) / 12.0
     else:
         try:
             years = np.asarray(tvals, dtype=float)
@@ -153,6 +160,10 @@ def _slope_per_year(da: xr.DataArray) -> float:
                 "time coordinate must be datetime64 or numeric year values, "
                 f"got dtype {tvals.dtype}"
             ) from exc
+    if not np.all(np.isfinite(years)):
+        raise ValueError("time coordinate must contain finite values")
+    if not np.all(np.isfinite(np.asarray(da.values, dtype=float))):
+        raise ValueError("historical_demand must contain finite values")
     if years.size < 2 or np.all(years == years.flat[0]):
         raise ValueError(
             "historical_demand needs at least two distinct time values to "

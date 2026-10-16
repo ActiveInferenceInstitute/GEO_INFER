@@ -29,6 +29,21 @@ optional backends, and result shapes belong to the referenced source and tests.
 Cross-module callers should pass explicit spatial state ordering and timezone-aware
 instants when those fields are part of their data contract.
 
+## Routing objectives and graph inputs
+
+`RoutingEngine.route(origin, destination, optimization=...)` accepts `time`,
+`distance`, `cost`, and `emissions`, using edge attributes `travel_time`,
+`length`, `cost`, and `emissions`, respectively. Supply the chosen attribute on
+all edges; missing weights follow NetworkX's unit-weight convention. Unknown
+objectives raise `ValueError`. Cost and emissions select paths; the returned
+`Route` still reports distance in metres and time in seconds.
+
+The `bidirectional` algorithm uses bidirectional Dijkstra. Parallel edges in
+NetworkX multigraphs report totals from the edge minimizing the selected weight.
+Node identifiers, including `0`, are preserved. Without a network, the route is
+a geometric estimate marked `route_source="estimated_fallback"`; cost and
+emissions optimization requires a network with the corresponding attributes.
+
 ## Verification
 
 From the repository root:
