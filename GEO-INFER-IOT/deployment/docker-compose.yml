@@ -4,8 +4,8 @@ services:
   # Main IoT API service
   geo-infer-iot-api:
     build:
-      context: ..
-      dockerfile: deployment/Dockerfile
+      context: ../..
+      dockerfile: GEO-INFER-IOT/deployment/Dockerfile
     container_name: geo-infer-iot-api
     ports:
       - "8000:8000"  # REST API

@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      UV_PYTHON: "3.11"
+      UV_PYTHON: "3.12"
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -53,17 +53,17 @@ jobs:
       - name: Provision PyTensor BLAS
         uses: ./.github/actions/provision-pytensor-blas
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Set up uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          version: "0.10.7"
+          version: "0.13.1"
           enable-cache: true
-          cache-suffix: cpu-workspace-py3.11
+          cache-suffix: cpu-workspace-py3.12
           save-cache: false
           cache-dependency-glob: |
             **/pyproject.toml
@@ -224,24 +224,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      UV_PYTHON: "3.11"
+      UV_PYTHON: "3.12"
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Set up uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          version: "0.10.7"
+          version: "0.13.1"
           enable-cache: true
-          cache-suffix: cpu-workspace-py3.11
+          cache-suffix: cpu-workspace-py3.12
           save-cache: false
           cache-dependency-glob: |
             **/pyproject.toml
@@ -354,7 +354,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.12", "3.11"]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -371,7 +371,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          version: "0.10.7"
+          version: "0.13.1"
           enable-cache: true
           cache-suffix: build-smoke-py${{ matrix.python-version }}
 
@@ -437,7 +437,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.12", "3.11"]
         category: [unit, integration, performance, system, h3, slow]
 
     steps:
@@ -457,7 +457,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          version: "0.10.7"
+          version: "0.13.1"
           enable-cache: true
           cache-suffix: cpu-workspace-py${{ matrix.python-version }}
           # One complete workspace writer per interpreter; other categories
@@ -546,7 +546,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          version: "0.10.7"
+          version: "0.13.1"
           enable-cache: true
           cache-suffix: cpu-workspace-py3.11
           save-cache: false
@@ -703,7 +703,7 @@ jobs:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          version: "0.10.7"
+          version: "0.13.1"
           enable-cache: true
           save-cache: false
           cache-suffix: cpu-workspace-py3.12

@@ -1,36 +1,23 @@
-# Use Python 3.12 slim image (matches requires-python >=3.11)
-FROM python:3.12-slim
+# Runtime default: stable CPython 3.15, installed with exact uv 0.13.1.
+# The published 3.14 image supplies system libraries until a 3.15-slim tag exists.
+FROM python:3.14-slim AS builder
+COPY --from=ghcr.io/astral-sh/uv:0.13.1 /uv /usr/local/bin/uv
+ENV UV_PYTHON_INSTALL_DIR=/opt/python
+RUN test "$(uv --version | cut -d ' ' -f 2)" = "0.13.1" \
+    && uv python install 3.15 \
+    && uv venv --seed --python 3.15 /opt/runtime
+ENV PATH=/opt/runtime/bin:$PATH \
+    UV_PYTHON=/opt/runtime/bin/python \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-# Set working directory
 WORKDIR /app
-
-# Install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:$PATH"
-
-# Copy pyproject to leverage cache
-COPY pyproject.toml ./
-
-# The `geo-infer` cross-member extra maps to uv workspace members that do not
-# exist in the standalone image context; strip it and its workspace sources so
-# the base-runtime lock resolves (verified: resolves 114 packages).
-RUN sed -i '/^geo-infer = \[$/,/^\]$/d; /^\[tool\.uv\.sources\]/,$d' pyproject.toml \
-    && uv lock && uv sync --no-dev --no-install-project
-
-# Copy the rest of the application
 COPY . .
-
-# Install the project distribution itself (now that src/ is present)
-RUN uv sync --no-dev
-
-# Create necessary directories
-RUN mkdir -p /app/data /app/output
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-
-# Expose ports for API
+# Select this standalone module's declared base dependencies. Workspace-only
+# integrations remain in the producer metadata and are not installed here.
+RUN uv pip install --no-sources --python /opt/runtime/bin/python .
+RUN mkdir -p /app/data /app/output \
+    && test "$(uv --version | cut -d ' ' -f 2)" = "0.13.1" \
+    && python -c "import sys; assert sys.version_info[:2] == (3, 15)"
 EXPOSE 8000
-
-# Run the application
-CMD ["uv", "run", "uvicorn", "geo_infer_bio.api.rest_api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "--no-project", "--no-sync", "uvicorn", "geo_infer_bio.api.rest_api:app", "--host", "0.0.0.0", "--port", "8000"]

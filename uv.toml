@@ -1,0 +1,3 @@
+# Runtime exception and removal checks: GEO-INFER-INTRA/docs/getting_started/index.md.
+# Project-only package/workspace metadata stays in the unchanged pyproject.toml.
+required-version = "==0.13.1"

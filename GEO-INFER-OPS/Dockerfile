@@ -1,84 +1,53 @@
-# Build stage
-FROM python:3.10-slim as builder
+# Runtime default: stable CPython 3.15, installed with exact uv 0.13.1.
+# The published 3.14 image supplies system libraries until a 3.15-slim tag exists.
+FROM python:3.14-slim AS builder
+COPY --from=ghcr.io/astral-sh/uv:0.13.1 /uv /usr/local/bin/uv
+ENV UV_PYTHON_INSTALL_DIR=/opt/python
+RUN test "$(uv --version | cut -d ' ' -f 2)" = "0.13.1" \
+    && uv python install 3.15 \
+    && uv venv --seed --python 3.15 /opt/runtime
+ENV PATH=/opt/runtime/bin:$PATH \
+    UV_PYTHON=/opt/runtime/bin/python \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
+ENV PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
-
-# Set working directory
-WORKDIR /app
-
-# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
+    build-essential curl pkg-config \
     && rm -rf /var/lib/apt/lists/*
-
-# Install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:$PATH"
-
-# Copy dependency files
-COPY pyproject.toml ./
-
-# Lock and sync dependencies
-RUN uv lock && uv sync --no-dev --no-install-project
-
-# Copy source code
+WORKDIR /app
+COPY pyproject.toml README.md ./
 COPY src/ src/
+# Install the declared base service profile; workspace test groups are separate.
+RUN uv pip install --no-sources --python /opt/runtime/bin/python .
 
-# Final stage
-FROM python:3.10-slim
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
+FROM python:3.14-slim AS runtime
+COPY --from=ghcr.io/astral-sh/uv:0.13.1 /uv /usr/local/bin/uv
+ENV PATH=/opt/runtime/bin:$PATH \
+    UV_PYTHON=/opt/runtime/bin/python \
+    PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    GEO_INFER_OPS_CONFIG="/app/config/local.yaml" \
-    PATH="/opt/venv/bin:$PATH" \
-    PYTHONPATH="/app/src"
-
-# Set working directory
+    GEO_INFER_OPS_CONFIG=/app/config/local.yaml \
+    PYTHONPATH=/app/src
 WORKDIR /app
-
-# Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    ca-certificates \
+    curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
-
-# Copy uv virtual environment
-COPY --from=builder /.venv /.venv
-ENV PATH="/.venv/bin:$PATH"
-
-# Create non-root user
-RUN useradd --create-home --shell /bin/bash appuser \
-    && mkdir -p /app/config /app/logs \
-    && chown -R appuser:appuser /app
-
-# Copy application code
+COPY --from=builder /opt/python /opt/python
+COPY --from=builder /opt/runtime /opt/runtime
 COPY --from=builder /app/src /app/src
 COPY config /app/config
-
-# Set ownership and permissions
-RUN chown -R appuser:appuser /app \
+RUN test "$(uv --version | cut -d ' ' -f 2)" = "0.13.1" \
+    && python -c "import sys; assert sys.version_info[:2] == (3, 15)" \
+    && useradd --create-home --shell /bin/bash appuser \
+    && mkdir -p /app/config /app/logs \
+    && chown -R appuser:appuser /app \
     && chmod -R 755 /app \
     && chmod -R 777 /app/logs
-
-# Switch to non-root user
 USER appuser
-
-# Create volume for configuration and logs
 VOLUME ["/app/config", "/app/logs"]
-
-# Expose ports
-EXPOSE 8000
-EXPOSE 9090
-
-# Health check
+EXPOSE 8000 9090
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
-
-# Run the application
-CMD ["python", "-m", "geo_infer_ops.app"] 
+CMD ["python", "-m", "geo_infer_ops.app"]
