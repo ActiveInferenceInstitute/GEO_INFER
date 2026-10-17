@@ -21,7 +21,9 @@
 
 ## Local Contents
 
+- `agent_session.py`
 - `python_client.py`
+- `agent_workflow.json`
 - `curl_examples.sh`
 - `javascript_client.js`
 

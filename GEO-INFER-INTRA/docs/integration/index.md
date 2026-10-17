@@ -6,6 +6,10 @@ framework-wide event bus or hosted INTRA service in this repository.
 
 ## Integration workflow
 
+For agent execution across scripts, CLI, MCP and module skills, use the
+[shared agent interfaces](agent_interfaces.md). This includes discovery,
+runtime signatures, typed scientific inputs and process-local object handles.
+
 1. Identify the owning module for the input and output.
 2. Use public package exports or a documented adapter.
 3. Declare the dependency in the consuming module's metadata.

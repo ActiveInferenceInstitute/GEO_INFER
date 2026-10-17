@@ -97,6 +97,14 @@ x, y = gis.transform_coordinates(
 print(f"UTM Zone 10N: ({x:.0f}, {y:.0f})")
 ```
 
+### Agent interfaces
+
+Use `uv run --frozen geo-infer catalog SPACE` to discover public source
+APIs, then `geo-infer describe` before calling a selected target. Scripts use
+`geo_infer_api.agent_runtime.AgentSession`; the optional stdio MCP server is
+`geo-infer-mcp`. See [requests, native objects and composition](../GEO-INFER-INTRA/docs/integration/agent_interfaces.md).
+The adapter retains this module's dependencies and authorization requirements.
+
 ## Guidelines
 
 - Always use H3 v4 API — zero legacy calls allowed

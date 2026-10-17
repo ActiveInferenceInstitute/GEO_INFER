@@ -64,6 +64,14 @@ status = tracker.evaluate_compliance(entity, regulation, {"pm25": 28})
 print(f"Overall compliance: {status.compliance_level:.1%}")
 ```
 
+### Agent interfaces
+
+Use `uv run --frozen geo-infer catalog NORMS` to discover public source
+APIs, then `geo-infer describe` before calling a selected target. Scripts use
+`geo_infer_api.agent_runtime.AgentSession`; the optional stdio MCP server is
+`geo-infer-mcp`. See [requests, native objects and composition](../GEO-INFER-INTRA/docs/integration/agent_interfaces.md).
+The adapter retains this module's dependencies and authorization requirements.
+
 ## Guidelines
 
 - Content influence uses Jaccard similarity (real implementation)

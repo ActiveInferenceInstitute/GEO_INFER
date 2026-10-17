@@ -139,6 +139,14 @@ raise `TypeError`. Consequences worth knowing:
 - At boundaries that accept only an `int` seed, such as scikit-learn's
   `random_state`, use `geo_infer_bayes.utils.rng.derive_int_seed`.
 
+### Agent interfaces
+
+Use `uv run --frozen geo-infer catalog BAYES` to discover public source
+APIs, then `geo-infer describe` before calling a selected target. Scripts use
+`geo_infer_api.agent_runtime.AgentSession`; the optional stdio MCP server is
+`geo-infer-mcp`. See [requests, native objects and composition](../GEO-INFER-INTRA/docs/integration/agent_interfaces.md).
+The adapter retains this module's dependencies and authorization requirements.
+
 ## Guidelines
 
 - GP uses actual Cholesky decomposition

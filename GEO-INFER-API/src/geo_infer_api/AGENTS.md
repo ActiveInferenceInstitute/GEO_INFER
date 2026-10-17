@@ -26,7 +26,14 @@
 - `models/`
 - `utils/`
 - `__init__.py`
+- `agent_catalog.py`
+- `agent_cli.py`
+- `agent_mcp.py`
+- `agent_runtime.py`
+- `agent_schema.py`
+- `agent_skills.py`
 - `app.py`
+- `agent_skills.json`
 
 ## Validation
 

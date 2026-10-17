@@ -1,0 +1,396 @@
+"""Shared trusted-local execution for scripts, JSON CLI and MCP.
+
+This is a Python API bridge, not a sandbox. Calls have the authority and side
+effects of the underlying API. No eval, pickle, implicit network service or
+automatic retries are used. Handles retain native scientific objects in memory.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import contextlib
+import importlib
+import inspect
+import math
+import sys
+from datetime import date, datetime
+from enum import Enum
+from pathlib import Path
+from typing import Any
+from uuid import uuid4
+
+from geo_infer_api.agent_catalog import MODULES, catalog, module_inventory, package_name
+from geo_infer_api.agent_schema import request_schema, validate_request
+from geo_infer_api.agent_skills import read_guidance, skill_inventory
+
+
+def resolve(target: str) -> Any:
+    """Resolve an explicit public GEO member; imports retain native failures."""
+    module, separator, member = target.partition(":")
+    parts = module.split(".")
+    if (
+        not separator
+        or not member
+        or any(
+            not part.isidentifier() or part.startswith("_")
+            for part in (*parts, *member.split("."))
+        )
+    ):
+        raise ValueError("Use a public target 'geo_infer_module.submodule:Member'")
+    if parts[0] not in {package_name(name) for name in MODULES}:
+        raise ValueError("Only GEO-INFER packages may be resolved")
+    value = importlib.import_module(module)
+    for name in member.split("."):
+        value = getattr(value, name)
+    return value
+
+
+def _public_member(value: Any, name: str) -> Any:
+    if not name.isidentifier() or name.startswith("_"):
+        raise ValueError("Object member must be one public identifier")
+    return getattr(value, name)
+
+
+def describe(value: Any) -> dict[str, Any]:
+    """Return runtime signatures, parameter kinds and docs without calling APIs."""
+    parameters = []
+    try:
+        signature = inspect.signature(value)
+    except (TypeError, ValueError):
+        signature = None
+    if signature is not None:
+        for parameter in signature.parameters.values():
+            parameters.append(
+                {
+                    "name": parameter.name,
+                    "kind": parameter.kind.name,
+                    "required": parameter.default is inspect.Parameter.empty
+                    and parameter.kind
+                    not in (parameter.VAR_POSITIONAL, parameter.VAR_KEYWORD),
+                    "annotation": None
+                    if parameter.annotation is inspect.Parameter.empty
+                    else inspect.formatannotation(parameter.annotation),
+                    "default": None
+                    if parameter.default is inspect.Parameter.empty
+                    else repr(parameter.default)[:500],
+                }
+            )
+    return {
+        "type": f"{type(value).__module__}.{type(value).__qualname__}",
+        "callable": callable(value),
+        "signature": str(signature) if signature is not None else None,
+        "parameters": parameters,
+        "doc": inspect.getdoc(value) or "",
+        "members": sorted(name for name in dir(value) if not name.startswith("_")),
+    }
+
+
+class AgentSession:
+    """Explicit object lifecycle and sequential composition for agent operations.
+
+    JSON arguments support $ref handles, $callable GEO targets, and tagged numpy,
+    pandas, date/time, path, tuple, set and nonfinite-float values. Native objects
+    that exceed JSON limits stay in memory and return a handle, never repr data.
+    """
+
+    def __init__(self, max_handles: int = 256, max_items: int = 10000) -> None:
+        if any(
+            type(bound) is not int or bound < 1 for bound in (max_handles, max_items)
+        ):
+            raise ValueError("Session bounds must be positive")
+        self.max_handles = max_handles
+        self.max_items = max_items
+        self.objects: dict[str, Any] = {}
+        self.contexts: dict[str, Any] = {}
+
+    def _store(self, value: Any, name: str | None = None) -> dict[str, str]:
+        name = name or uuid4().hex
+        if not isinstance(name, str) or not name or len(name) > 128:
+            raise ValueError("Handle name must contain 1 to 128 characters")
+        if name in self.objects:
+            raise ValueError(f"Handle already exists: {name}")
+        if len(self.objects) >= self.max_handles:
+            raise ValueError("Handle limit reached; release unused objects")
+        self.objects[name] = value
+        return {
+            "$ref": name,
+            "type": f"{type(value).__module__}.{type(value).__qualname__}",
+        }
+
+    def decode(self, value: Any) -> Any:
+        """Decode explicit native types without interpreting arbitrary Python."""
+        if isinstance(value, list):
+            return [self.decode(item) for item in value]
+        if not isinstance(value, dict):
+            return value
+        if set(value) == {"$literal"}:
+            return value["$literal"]
+        if "$ref" in value and set(value) <= {"$ref", "type", "path"}:
+            result = self.objects[value["$ref"]]
+            for part in value.get("path", []):
+                result = result[part]
+            return result
+        if set(value) == {"$callable"}:
+            result = resolve(value["$callable"])
+            if not callable(result):
+                raise ValueError("$callable must resolve to a callable")
+            return result
+        tag = value.get("$type")
+        if tag:
+            data = self.decode(value.get("data"))
+            if tag == "ndarray":
+                import numpy as np
+
+                return np.asarray(data, dtype=value.get("dtype"))
+            if tag in {"dataframe", "series"}:
+                import pandas as pd
+
+                if tag == "dataframe":
+                    return pd.DataFrame(
+                        data, columns=value.get("columns"), index=value.get("index")
+                    )
+                return pd.Series(
+                    data,
+                    index=value.get("index"),
+                    name=value.get("name"),
+                    dtype=value.get("dtype"),
+                )
+            if tag == "dataarray":
+                import xarray as xr
+
+                return xr.DataArray(
+                    data,
+                    dims=value.get("dims"),
+                    coords=self.decode(value.get("coords")),
+                    name=value.get("name"),
+                )
+            if tag == "dataset":
+                import xarray as xr
+
+                return xr.Dataset.from_dict(data)
+            if tag == "geodataframe":
+                import geopandas as gpd
+
+                if isinstance(data, dict) and data.get("features") == []:
+                    return gpd.GeoDataFrame(
+                        geometry=[], crs=value.get("crs", "EPSG:4326")
+                    )
+                return gpd.GeoDataFrame.from_features(
+                    data, crs=value.get("crs", "EPSG:4326")
+                )
+            if tag == "geometry":
+                from shapely.geometry import shape
+
+                return shape(data)
+            if tag == "datetime":
+                return datetime.fromisoformat(data)
+            if tag == "date":
+                return date.fromisoformat(data)
+            if tag == "path":
+                return Path(data)
+            if tag == "tuple":
+                return tuple(data)
+            if tag == "set":
+                return set(data)
+            if tag == "float" and data in {"nan", "inf", "-inf"}:
+                return float(data)
+            raise ValueError(f"Unknown or invalid $type: {tag}")
+        return {key: self.decode(item) for key, item in value.items()}
+
+    def _json(self, value: Any, budget: list[int], seen: set[int]) -> Any:
+        budget[0] -= 1
+        if budget[0] < 0:
+            raise ValueError("Result exceeds JSON item limit")
+        if isinstance(value, Enum):
+            return self._json(value.value, budget, seen)
+        if value is None or isinstance(value, (str, bool, int)):
+            return value
+        if isinstance(value, float):
+            return (
+                value
+                if math.isfinite(value)
+                else {"$type": "float", "data": str(value)}
+            )
+        if isinstance(value, (datetime, date, Path)):
+            tag = (
+                "datetime"
+                if isinstance(value, datetime)
+                else "date"
+                if isinstance(value, date)
+                else "path"
+            )
+            return {"$type": tag, "data": str(value)}
+        if id(value) in seen:
+            raise ValueError("Cyclic result requires a native handle")
+        seen.add(id(value))
+        try:
+            if isinstance(value, dict):
+                if not all(isinstance(key, str) for key in value):
+                    raise ValueError(
+                        "Non-string dictionary keys require a native handle"
+                    )
+                return {
+                    key: self._json(item, budget, seen) for key, item in value.items()
+                }
+            if isinstance(value, (list, tuple)):
+                return [self._json(item, budget, seen) for item in value]
+            # Import no optional backend just to encode an unrelated result.
+            root = type(value).__module__.split(".")[0]
+            if root == "numpy" and hasattr(value, "tolist"):
+                if getattr(value, "size", 1) > budget[0]:
+                    raise ValueError("Array exceeds JSON item limit")
+                return self._json(value.tolist(), budget, seen)
+            if root == "pydantic" or any(
+                base.__module__.startswith("pydantic") for base in type(value).__mro__
+            ):
+                return self._json(value.model_dump(mode="python"), budget, seen)
+            raise ValueError("Result requires a native handle")
+        finally:
+            seen.remove(id(value))
+
+    def encode(self, value: Any) -> Any:
+        """Encode finite JSON losslessly where possible; retain opaque objects."""
+        try:
+            return self._json(value, [self.max_items], set())
+        except (TypeError, ValueError, RecursionError):
+            return self._store(value)
+
+    async def _dispatch(self, request: dict[str, Any]) -> Any:
+        op = request["op"]
+        if op == "schema":
+            return request_schema()
+        if op == "skills":
+            return skill_inventory()
+        if op in {"skill", "guide"}:
+            return read_guidance("GUIDE" if op == "guide" else request["module"])
+        if op == "modules":
+            return module_inventory()
+        if op == "catalog":
+            return catalog(
+                request["module"],
+                request.get("query", ""),
+                request.get("offset", 0),
+                request.get("limit", 50),
+            )
+        if op == "release":
+            name = request["handle"]
+            if name in self.contexts:
+                raise ValueError("Exit the active context before releasing its handle")
+            del self.objects[name]
+            return {"released": name}
+        if op in {"enter", "exit"}:
+            name = request["handle"]
+            manager = self.objects[name]
+            if op == "enter":
+                if name in self.contexts:
+                    raise ValueError("Context is already entered")
+                if hasattr(manager, "__aenter__"):
+                    value = await manager.__aenter__()
+                else:
+                    value = manager.__enter__()
+                self.contexts[name] = manager
+                return (
+                    self._store(value, request["save_as"])
+                    if "save_as" in request
+                    else self.encode(value)
+                )
+            if name not in self.contexts:
+                raise ValueError("Context was not entered by this session")
+            try:
+                if hasattr(manager, "__aexit__"):
+                    await manager.__aexit__(None, None, None)
+                else:
+                    manager.__exit__(None, None, None)
+            finally:
+                del self.contexts[name]
+            return {"exited": name}
+        if op == "handles":
+            return [
+                {
+                    "$ref": name,
+                    "type": f"{type(value).__module__}.{type(value).__qualname__}",
+                }
+                for name, value in self.objects.items()
+            ]
+        if op == "batch":
+            steps = request["steps"]
+            if not isinstance(steps, list) or not 1 <= len(steps) <= 100:
+                raise ValueError("batch requires 1 to 100 steps")
+            results = []
+            for step in steps:
+                if not isinstance(step, dict) or step.get("op") == "batch":
+                    raise ValueError("Each step must be a non-batch request")
+                result = await self.aexecute(step)
+                results.append(result)
+                if not result["ok"]:
+                    break
+            return {
+                "completed": len(results),
+                "total": len(steps),
+                "steps": results,
+                "ok": len(results) == len(steps) and all(row["ok"] for row in results),
+            }
+        if op not in {"describe", "call", "get"}:
+            raise ValueError(f"Unknown operation: {op}")
+        if "handle" in request:
+            value = self.objects[request["handle"]]
+            if request.get("member"):
+                value = _public_member(value, request["member"])
+        else:
+            value = resolve(request["target"])
+        if op == "describe":
+            return describe(value)
+        if op == "call":
+            args = self.decode(request.get("args", []))
+            kwargs = self.decode(request.get("kwargs", {}))
+            if not isinstance(args, list) or not isinstance(kwargs, dict):
+                raise ValueError("args must be an array and kwargs an object")
+            if not callable(value):
+                raise ValueError("Selected value is not callable; use get")
+            # Binding validates arguments before running code; extension types
+            # without signatures retain their own native argument validation.
+            try:
+                signature = inspect.signature(value)
+            except (ValueError, TypeError):
+                signature = None
+            if signature is not None:
+                signature.bind(*args, **kwargs)
+            value = value(*args, **kwargs)
+            if inspect.isawaitable(value):
+                value = await value
+        if "save_as" in request:
+            return self._store(value, request["save_as"])
+        return self.encode(value)
+
+    async def aexecute(self, request: dict[str, Any]) -> dict[str, Any]:
+        """Execute once, returning a uniform result/error envelope.
+
+        Redirect library prints to stderr so CLI/MCP stdout stays machine-safe.
+        Calls are sequential per session; callers must not run them concurrently.
+        A failure may follow side effects; a batch is not a transaction.
+        """
+        try:
+            request = validate_request(request)
+            if "save_as" in request:
+                name = request["save_as"]
+                if not isinstance(name, str) or not name or len(name) > 128:
+                    raise ValueError("save_as must contain 1 to 128 characters")
+                if name in self.objects or len(self.objects) >= self.max_handles:
+                    raise ValueError("save_as exists or handle limit reached")
+            with contextlib.redirect_stdout(sys.stderr):
+                result = await self._dispatch(request)
+            ok = not (request.get("op") == "batch" and not result["ok"])
+            return {"ok": ok, "result": result}
+        except (Exception, SystemExit) as error:
+            return {
+                "ok": False,
+                "error": {"type": type(error).__name__, "message": str(error)},
+            }
+
+    def execute(self, request: dict[str, Any]) -> dict[str, Any]:
+        """Synchronous script API; async applications use ``await aexecute``."""
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(self.aexecute(request))
+        raise RuntimeError("Use await session.aexecute(request) inside an event loop")

@@ -63,6 +63,14 @@ sample = WaterSample("s1", (0.0, 0.0), "2024-07-15", ph=7.2, dissolved_oxygen=8.
 wqi = assessor.calculate_wqi(sample)
 ```
 
+### Agent interfaces
+
+Use `uv run --frozen geo-infer catalog WATER` to discover public source
+APIs, then `geo-infer describe` before calling a selected target. Scripts use
+`geo_infer_api.agent_runtime.AgentSession`; the optional stdio MCP server is
+`geo-infer-mcp`. See [requests, native objects and composition](../GEO-INFER-INTRA/docs/integration/agent_interfaces.md).
+The adapter retains this module's dependencies and authorization requirements.
+
 ## Guidelines
 
 - `WatershedDelineator` is the canonical watershed module; the older `WatershedAnalyzer` has been removed.

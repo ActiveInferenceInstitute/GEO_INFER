@@ -41,6 +41,16 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module API
 - Polygon bbox filtering uses geometry extents, so containing and crossing
   polygons are not missed when no vertex lies inside the query bbox.
 
+## Agent Interfaces
+
+- `geo-infer` and `python -m geo_infer_api.agent_cli` share the script
+  `geo_infer_api.agent_runtime.AgentSession` execution contract.
+- `geo-infer-mcp` uses the optional `mcp` extra and the official SDK over stdio.
+- Import-free catalogs cover all 45 modules; runtime calls retain native
+  dependencies and authority. Native object handles are process-local.
+- See `GEO-INFER-INTRA/docs/integration/agent_interfaces.md` from the repository
+  root for request schemas, codecs, composition and failure semantics.
+
 ## Integration Notes
 
 - Update this AGENTS.md and the sibling README.md when commands, exports, dependencies, or generated outputs change.

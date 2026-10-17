@@ -9,6 +9,20 @@ A 45-module Python monorepo implementing Active Inference principles for geospat
 
 ## Instructions
 
+### Agent execution
+
+Use `uv run --frozen geo-infer modules` to check which of the 45 modules are
+installed, `geo-infer catalog MODULE --query TERM` for import-free discovery,
+and `geo-infer describe package.module:Member` for actual signatures and docs.
+Call functions, constructors and object methods through `geo-infer call` or a
+`geo-infer run @workflow.json` batch. Python scripts use
+`geo_infer_api.agent_runtime.AgentSession`; MCP hosts launch `geo-infer-mcp`
+with the optional API `mcp` extra installed. Native object handles and typed
+scientific inputs preserve composition across calls in one process.
+Read [agent interfaces](GEO-INFER-INTRA/docs/integration/agent_interfaces.md)
+for schemas, examples, lifecycle and error semantics. Operations retain the
+underlying API's authority and side effects; skill loading grants none.
+
 ### Module Discovery
 
 Modules are in `GEO-INFER-{NAME}/` directories. Each has its own `SKILL.md` for detailed guidance.

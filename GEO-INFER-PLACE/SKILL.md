@@ -69,6 +69,14 @@ neighbors = grid_disk(cell, 1)
 print(f"cell {cell}, area {cell_area(cell):.2f} km2, {len(neighbors)} neighbors")
 ```
 
+### Agent interfaces
+
+Use `uv run --frozen geo-infer catalog PLACE` to discover public source
+APIs, then `geo-infer describe` before calling a selected target. Scripts use
+`geo_infer_api.agent_runtime.AgentSession`; the optional stdio MCP server is
+`geo-infer-mcp`. See [requests, native objects and composition](../GEO-INFER-INTRA/docs/integration/agent_interfaces.md).
+The adapter retains this module's dependencies and authorization requirements.
+
 ## Guidelines
 
 - Uses H3 v4 API exclusively (`latlng_to_cell`/`cell_to_latlng`, `[lat, lng]` ordering)

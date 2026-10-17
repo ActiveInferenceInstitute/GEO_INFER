@@ -98,6 +98,14 @@ geo-infer-sec --help   # anonymize / encrypt / decrypt / check-compliance /
                        # audit / risk-assessment / generate-token
 ```
 
+### Agent interfaces
+
+Use `uv run --frozen geo-infer catalog SEC` to discover public source
+APIs, then `geo-infer describe` before calling a selected target. Scripts use
+`geo_infer_api.agent_runtime.AgentSession`; the optional stdio MCP server is
+`geo-infer-mcp`. See [requests, native objects and composition](../GEO-INFER-INTRA/docs/integration/agent_interfaces.md).
+The adapter retains this module's dependencies and authorization requirements.
+
 ## Guidelines
 
 - `location_perturbation` assumes EPSG:4326 input and converts meters to

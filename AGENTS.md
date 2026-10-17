@@ -23,6 +23,17 @@ New to this repo? In order:
 
 ## Required Workflow
 
+For public API automation, use `uv run --frozen geo-infer modules`, then
+`geo-infer catalog MODULE` and `geo-infer describe package.module:Member`.
+Scripts share `geo_infer_api.agent_runtime.AgentSession`; MCP uses
+`geo-infer-mcp` with the API `mcp` extra. Read
+[agent interfaces](GEO-INFER-INTRA/docs/integration/agent_interfaces.md) for
+typed scientific inputs, native handles, context lifecycle and batch failures.
+After changing module skills or the shared guide, regenerate the packaged
+reference bundle with `python -m geo_infer_api.agent_skills --repo . --output
+GEO-INFER-API/src/geo_infer_api/agent_skills.json`; its source-sync test checks
+all 46 skills and the guide.
+
 1. Inspect the relevant module before editing.
 2. Keep functionality in the owning module under `src/`.
 3. Keep scripts and examples as thin orchestration surfaces.

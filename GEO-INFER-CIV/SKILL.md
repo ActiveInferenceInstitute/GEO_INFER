@@ -78,6 +78,14 @@ result = cba.analyze()
 print(result.net_present_value, result.benefit_cost_ratio, result.payback_period_years)
 ```
 
+### Agent interfaces
+
+Use `uv run --frozen geo-infer catalog CIV` to discover public source
+APIs, then `geo-infer describe` before calling a selected target. Scripts use
+`geo_infer_api.agent_runtime.AgentSession`; the optional stdio MCP server is
+`geo-infer-mcp`. See [requests, native objects and composition](../GEO-INFER-INTRA/docs/integration/agent_interfaces.md).
+The adapter retains this module's dependencies and authorization requirements.
+
 ## Guidelines
 
 - `compute_participation_index` returns `actual_rate / baseline_rate`: 1.0 means participation exactly at the baseline, values above 1.0 mean the baseline was exceeded. It is not bounded to [0, 1].

@@ -76,6 +76,14 @@ result = checker.validate_measurement({
 print(f"Passed: {result.passed}, score: {result.quality_score:.2f}, issues: {result.issues}")
 ```
 
+### Agent interfaces
+
+Use `uv run --frozen geo-infer catalog IOT` to discover public source
+APIs, then `geo-infer describe` before calling a selected target. Scripts use
+`geo_infer_api.agent_runtime.AgentSession`; the optional stdio MCP server is
+`geo-infer-mcp`. See [requests, native objects and composition](../GEO-INFER-INTRA/docs/integration/agent_interfaces.md).
+The adapter retains this module's dependencies and authorization requirements.
+
 ## Guidelines
 
 - MQTT handlers use real paho-mqtt (thread bridge) or aiomqtt (async); broker connection happens in `start_stream_processing` inside a running event loop

@@ -1,0 +1,16 @@
+{
+  "op": "batch",
+  "steps": [
+    {"op": "call", "target": "geo_infer_space:latlng_to_cell", "args": [37.7749, -122.4194, 9], "save_as": "cell"},
+    {"op": "call", "target": "geo_infer_space:cell_to_latlng", "args": [{"$ref": "cell"}]},
+    {"op": "call", "target": "geo_infer_energy:EnergyDemandForecaster", "save_as": "forecaster"},
+    {"op": "call", "handle": "forecaster", "member": "forecast_demand", "kwargs": {
+      "historical_demand": {"$type": "dataarray", "data": [100, 110, 120], "dims": ["time"], "coords": {"time": [2020, 2021, 2022]}},
+      "forecast_years": 2
+    }, "save_as": "forecast"},
+    {"op": "call", "handle": "forecast", "member": "to_dict"},
+    {"op": "release", "handle": "forecast"},
+    {"op": "release", "handle": "forecaster"},
+    {"op": "release", "handle": "cell"}
+  ]
+}

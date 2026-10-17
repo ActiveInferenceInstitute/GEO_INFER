@@ -1,6 +1,6 @@
 ---
 name: geo-infer-api
-description: REST API endpoints for geospatial services. Use when building API routes, defining spatial query endpoints, or exposing GEO-INFER functionality as web services.
+description: GEO-INFER script, CLI and MCP access plus REST geospatial endpoints. Use to discover and invoke public module APIs, compose native scientific objects, or build spatial web services.
 prerequisites:
   required:
     - geo-infer-data
@@ -18,6 +18,11 @@ examples_dir: ../GEO-INFER-EXAMPLES/examples/
 
 ### Core Capabilities
 
+- **Agent interfaces**: `AgentSession` script API, `geo-infer` JSON CLI and
+  `geo-infer-mcp` stdio tools share public API discovery and execution across
+  all 45 modules. Native handles, typed inputs and context entry/exit support
+  stateful scientific workflows. Installed wheels include all 46 skill texts.
+
 - **REST endpoints**: FastAPI app with health, GeoJSON feature, and processing-algorithm routes (`/api/v1`)
 - **GeoJSON utilities**: RFC 7946 models plus validation, ray-cast containment, buffering, and RDP simplification helpers
 - **Middleware**: error handling and request logging wired into `create_app`
@@ -29,6 +34,7 @@ Out of scope for this module: GraphQL schema, JWT/API-key authentication middlew
 
 ```python
 from geo_infer_api.app import create_app
+from geo_infer_api import AgentSession
 from geo_infer_api.core.config import Settings, get_settings
 from geo_infer_api.core.middleware import ErrorHandlerMiddleware, RequestLoggingMiddleware
 from geo_infer_api import (
@@ -61,6 +67,14 @@ square = {"type": "Polygon", "coordinates": [[(0, 0), (10, 0), (10, 10), (0, 10)
 assert polygon_contains_point(square, (5.0, 5.0)) is True
 buffered = create_buffer(square, distance=1.0, unit="kilometers")
 ```
+
+### Agent interfaces
+
+Use `uv run --frozen geo-infer catalog API` to discover public source
+APIs, then `geo-infer describe` before calling a selected target. Scripts use
+`geo_infer_api.agent_runtime.AgentSession`; the optional stdio MCP server is
+`geo-infer-mcp`. See [requests, native objects and composition](../GEO-INFER-INTRA/docs/integration/agent_interfaces.md).
+The adapter retains this module's dependencies and authorization requirements.
 
 ## Guidelines
 

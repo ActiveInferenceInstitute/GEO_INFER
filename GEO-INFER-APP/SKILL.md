@@ -80,6 +80,14 @@ feature = AgentVisualization.state_to_map_feature(state)  # GeoJSON Point, [lng,
 - `geo_infer_app.core.dashboard` / map & dashboard components (MapView, DashboardBuilder): design docs only — see `docs/api_schema.yaml` (a design spec; no HTTP server ships).
 - Agent interface types beyond BDI (`active_inference`, `reinforcement_learning`, `rule_based`, `hybrid`): `AgentFactory.create_interface` raises `ValueError` for them.
 
+### Agent interfaces
+
+Use `uv run --frozen geo-infer catalog APP` to discover public source
+APIs, then `geo-infer describe` before calling a selected target. Scripts use
+`geo_infer_api.agent_runtime.AgentSession`; the optional stdio MCP server is
+`geo-infer-mcp`. See [requests, native objects and composition](../GEO-INFER-INTRA/docs/integration/agent_interfaces.md).
+The adapter retains this module's dependencies and authorization requirements.
+
 ## Guidelines
 
 - Agent types for `AgentAPIClient.create_agent` are `AgentType` values: `bdi`, `active_inference`, `reinforcement_learning`, `rule_based`, `hybrid` (`rl` is accepted as an alias of `reinforcement_learning`; unknown types raise `ValueError`).

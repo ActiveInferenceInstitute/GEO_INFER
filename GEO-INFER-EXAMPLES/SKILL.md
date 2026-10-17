@@ -120,6 +120,14 @@ from geo_infer_examples.core import ModuleOrchestrator as CoreOrchestrator
 from geo_infer_examples.models import WorkflowDefinition, GEO_INFER_MODULES
 ```
 
+### Agent interfaces
+
+Use `uv run --frozen geo-infer catalog EXAMPLES` to discover public source
+APIs, then `geo-infer describe` before calling a selected target. Scripts use
+`geo_infer_api.agent_runtime.AgentSession`; the optional stdio MCP server is
+`geo-infer-mcp`. See [requests, native objects and composition](../GEO-INFER-INTRA/docs/integration/agent_interfaces.md).
+The adapter retains this module's dependencies and authorization requirements.
+
 ## Guidelines
 
 - `module_orchestrator.py` convergence check uses numeric relative-change

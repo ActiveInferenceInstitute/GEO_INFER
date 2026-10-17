@@ -26,6 +26,10 @@ from geo_infer_api.models.geojson import (
 
 def __getattr__(name: str):
     """Lazily expose ``main_app`` so importing the package stays side-effect free."""
+    if name == "AgentSession":
+        from geo_infer_api.agent_runtime import AgentSession
+
+        return AgentSession
     if name == "main_app":
         from geo_infer_api.app import main_app
 
@@ -34,6 +38,7 @@ def __getattr__(name: str):
 
 
 __all__ = [
+    "AgentSession",
     "__version__",
     "main_app",
     "Settings",

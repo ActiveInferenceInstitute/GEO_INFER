@@ -63,6 +63,14 @@ filtered = github.filter_repositories(repos, min_stars=10, exclude_forks=True)
 The package installs a `geo-infer-git` console script (`geo_infer_git.cli:main`) with
 `clone`, `sync`, `status`, and `branch` commands over `RepoManager`.
 
+### Agent interfaces
+
+Use `uv run --frozen geo-infer catalog GIT` to discover public source
+APIs, then `geo-infer describe` before calling a selected target. Scripts use
+`geo_infer_api.agent_runtime.AgentSession`; the optional stdio MCP server is
+`geo-infer-mcp`. See [requests, native objects and composition](../GEO-INFER-INTRA/docs/integration/agent_interfaces.md).
+The adapter retains this module's dependencies and authorization requirements.
+
 ## Guidelines
 
 - `RepoCloner` and `RepoManager` create their output/base directories lazily on first write;

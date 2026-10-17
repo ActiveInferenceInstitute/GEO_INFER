@@ -81,6 +81,14 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module SPACE
 uv run python GEO-INFER-TEST/run_unified_tests.py --module ACT
 ```
 
+### Agent interfaces
+
+Use `uv run --frozen geo-infer catalog TEST` to discover public source
+APIs, then `geo-infer describe` before calling a selected target. Scripts use
+`geo_infer_api.agent_runtime.AgentSession`; the optional stdio MCP server is
+`geo-infer-mcp`. See [requests, native objects and composition](../GEO-INFER-INTRA/docs/integration/agent_interfaces.md).
+The adapter retains this module's dependencies and authorization requirements.
+
 ## Guidelines
 
 - Use real objects in tests

@@ -25,6 +25,11 @@ and commercial applications. Developed by the
 | Analyze places and regional indicators | PLACE, SPACE, domain modules | [PLACE documentation](GEO-INFER-PLACE/README.md) |
 | Compose applications and agents | EXAMPLES, API, APP, AGENT | [Integration guide](GEO-INFER-INTRA/docs/integration/index.md) |
 
+Agent automation: [script, CLI, MCP and skills](GEO-INFER-INTRA/docs/integration/agent_interfaces.md)
+share discovery and execution across all 45 modules. After a full
+workspace sync, use `uv run --frozen geo-infer modules` and
+`uv run --frozen geo-infer catalog SPACE`.
+
 ## Quick Start
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then clone
@@ -120,7 +125,7 @@ the exact reproducible exception list.
 | [GEO-INFER-AGENT](GEO-INFER-AGENT/) | `geo_infer_agent` | 26 | 28 |
 | [GEO-INFER-AI](GEO-INFER-AI/) | `geo_infer_ai` | 18 | 21 |
 | [GEO-INFER-ANT](GEO-INFER-ANT/) | `geo_infer_ant` | 24 | 11 |
-| [GEO-INFER-API](GEO-INFER-API/) | `geo_infer_api` | 14 | 11 |
+| [GEO-INFER-API](GEO-INFER-API/) | `geo_infer_api` | 20 | 12 |
 | [GEO-INFER-APP](GEO-INFER-APP/) | `geo_infer_app` | 13 | 9 |
 | [GEO-INFER-ART](GEO-INFER-ART/) | `geo_infer_art` | 20 | 12 |
 | [GEO-INFER-BAYES](GEO-INFER-BAYES/) | `geo_infer_bayes` | 38 | 28 |
@@ -166,8 +171,8 @@ the exact reproducible exception list.
 | Metric | Value |
 | --- | ---: |
 | Modules | 45 |
-| Python source files | 1023 |
-| Python test files | 812 |
+| Python source files | 1029 |
+| Python test files | 813 |
 | Repository README.md files | 812 |
 | Repository AGENTS.md files | 808 |
 

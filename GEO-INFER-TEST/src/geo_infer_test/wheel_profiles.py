@@ -22,6 +22,71 @@ class WheelProfile:
 
 REQUIRED_PROFILES = (
     WheelProfile(
+        "geo_infer_api",
+        (),
+        """
+import json, subprocess, sys
+from pathlib import Path
+from geo_infer_api.agent_runtime import AgentSession
+session = AgentSession()
+inventory = session.execute({'op':'modules'})
+assert inventory['ok'] and len(inventory['result']) == 45
+assert [row['module'] for row in inventory['result'] if row['installed']] == ['API']
+assert session.execute({'op':'catalog','module':'API'})['result']['total'] > 50
+assert len(session.execute({'op':'skills'})['result']) == 46
+assert session.execute({'op':'skill','module':'SPACE'})['result']['name'] == 'SPACE'
+point = session.execute({'op':'call','target':'geo_infer_api:Point','kwargs':{'coordinates':[1,2]}})
+assert point == {'ok':True,'result':{'type':'Point','coordinates':[1.,2.]}}
+cli = Path(sys.executable).with_name('geo-infer.exe' if sys.platform == 'win32' else 'geo-infer')
+result = subprocess.run([str(cli),'schema'], capture_output=True, text=True, check=True, timeout=30)
+assert 'oneOf' in json.loads(result.stdout)['result']
+assert not session.execute({'op':'call','target':'geo_infer_space:latlng_to_cell','args':[0,0,1]})['ok']
+""",
+    ),
+    WheelProfile(
+        "geo_infer_api",
+        ("mcp",),
+        """
+import asyncio, sys
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+async def check():
+    parameters = StdioServerParameters(command=sys.executable,args=['-I','-m','geo_infer_api.agent_mcp'])
+    async with stdio_client(parameters) as (reader,writer), ClientSession(reader,writer) as client:
+        await client.initialize()
+        tools = await client.list_tools()
+        assert len(tools.tools) == 9
+        result = await client.call_tool('geo_call',{'target':'geo_infer_api:Point','kwargs':{'coordinates':[1,2]}})
+        assert not result.isError and result.structuredContent['result']['coordinates'] == [1.,2.]
+        error = await client.call_tool('geo_call',{'target':'os:system'})
+        assert error.isError
+        resource = await client.read_resource('geo-infer://schema')
+        assert resource.contents[0].text
+        skill = await client.read_resource('geo-infer://skills/SPACE')
+        assert skill.contents[0].text
+asyncio.run(check())
+""",
+    ),
+    WheelProfile(
+        "geo_infer_api",
+        ("scientific",),
+        """
+import numpy as np
+from geo_infer_api.agent_runtime import AgentSession
+session = AgentSession()
+array = session.decode({'$type':'ndarray','data':[[1,2],[3,4]],'dtype':'float64'})
+np.testing.assert_array_equal(array.sum(axis=0),[4,6])
+frame = session.decode({'$type':'dataframe','data':[[1,2]],'columns':['a','b']})
+assert frame['b'].sum() == 2
+series = session.decode({'$type':'dataarray','data':[100,110,120],'dims':['time'],'coords':{'time':[2020,2021,2022]}})
+assert float(series.mean()) == 110
+geometry = session.decode({'$type':'geometry','data':{'type':'Point','coordinates':[1,2]}})
+assert geometry.x == 1 and geometry.y == 2
+handle = session.encode(frame)
+assert session.decode(handle) is frame
+""",
+    ),
+    WheelProfile(
         "geo_infer_act",
         ("backends",),
         """

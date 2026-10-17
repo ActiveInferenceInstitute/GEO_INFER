@@ -4,12 +4,15 @@ Examples workspace within `GEO-INFER-API`.
 
 ## Contents
 
+- `agent_session.py`
 - `python_client.py`
+- `agent_workflow.json`
 - `curl_examples.sh`
 - `javascript_client.js`
 
 ## Public Interface
 
+- `agent_session.py:main` (function)
 - `python_client.py:list_collections` (function)
 - `python_client.py:get_polygon_collection` (function)
 - `python_client.py:list_polygon_features` (function)

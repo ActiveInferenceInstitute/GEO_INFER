@@ -4,6 +4,7 @@ Unit workspace within `GEO-INFER-API`.
 
 ## Contents
 
+- `test_agent_surfaces.py`
 - `test_algorithms_router.py`
 - `test_config.py`
 - `test_exceptions.py`

@@ -62,6 +62,14 @@ heatwaves = analyzer.detect_heatwaves(temp, threshold_percentile=90.0, min_durat
 print(heatwaves["events_detected"], heatwaves["threshold_temp"])
 ```
 
+### Agent interfaces
+
+Use `uv run --frozen geo-infer catalog CLIMATE` to discover public source
+APIs, then `geo-infer describe` before calling a selected target. Scripts use
+`geo_infer_api.agent_runtime.AgentSession`; the optional stdio MCP server is
+`geo-infer-mcp`. See [requests, native objects and composition](../GEO-INFER-INTRA/docs/integration/agent_interfaces.md).
+The adapter retains this module's dependencies and authorization requirements.
+
 ## Guidelines
 
 - SPI, drought, and bias-correction routines expect a `time` dimension; per-grid-cell computation is handled along `time` regardless of axis position.

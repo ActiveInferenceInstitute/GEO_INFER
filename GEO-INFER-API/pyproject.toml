@@ -44,6 +44,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+mcp = ["mcp>=1.28,<2"]
+scientific = [
+    "numpy>=1.24.0",
+    "pandas>=1.5.0",
+    "xarray>=2023.1.0",
+    "geopandas>=0.12.0",
+    "shapely>=2.0.0",
+]
 dev = [
     "pytest>=7.3.1",
     "pytest-cov>=4.1.0",
@@ -67,6 +75,10 @@ Homepage = "https://github.com/ActiveInferenceInstitute/GEO_INFER"
 Documentation = "https://geo-infer.readthedocs.io/"
 Repository = "https://github.com/ActiveInferenceInstitute/GEO_INFER"
 "Bug Tracker" = "https://github.com/ActiveInferenceInstitute/GEO_INFER/issues"
+
+[project.scripts]
+geo-infer = "geo_infer_api.agent_cli:main"
+geo-infer-mcp = "geo_infer_api.agent_mcp:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

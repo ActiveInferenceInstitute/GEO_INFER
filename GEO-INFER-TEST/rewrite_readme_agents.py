@@ -850,6 +850,16 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
 - GeoJSON positions must be finite WGS84 longitude/latitude values.
 - Polygon bbox filtering uses geometry extents, so containing and crossing
   polygons are not missed when no vertex lies inside the query bbox.
+
+## Agent Interfaces
+
+- `geo-infer` and `python -m geo_infer_api.agent_cli` share the script
+  `geo_infer_api.agent_runtime.AgentSession` execution contract.
+- `geo-infer-mcp` uses the optional `mcp` extra and the official SDK over stdio.
+- Import-free catalogs cover all 45 modules; runtime calls retain native
+  dependencies and authority. Native object handles are process-local.
+- See `GEO-INFER-INTRA/docs/integration/agent_interfaces.md` from the repository
+  root for request schemas, codecs, composition and failure semantics.
 """
     if module.name == "GEO-INFER-IOT":
         return """
@@ -1078,6 +1088,11 @@ and commercial applications. Developed by the
 | Analyze places and regional indicators | PLACE, SPACE, domain modules | [PLACE documentation]({link_prefix}GEO-INFER-PLACE/README.md) |
 | Compose applications and agents | EXAMPLES, API, APP, AGENT | [Integration guide]({link_prefix}GEO-INFER-INTRA/docs/integration/index.md) |
 
+Agent automation: [script, CLI, MCP and skills]({link_prefix}GEO-INFER-INTRA/docs/integration/agent_interfaces.md)
+share discovery and execution across all {len(modules)} modules. After a full
+workspace sync, use `uv run --frozen geo-infer modules` and
+`uv run --frozen geo-infer catalog SPACE`.
+
 ## Quick Start
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then clone
@@ -1278,6 +1293,17 @@ New to this repo? In order:
 - Python target: 3.11+
 
 ## Required Workflow
+
+For public API automation, use `uv run --frozen geo-infer modules`, then
+`geo-infer catalog MODULE` and `geo-infer describe package.module:Member`.
+Scripts share `geo_infer_api.agent_runtime.AgentSession`; MCP uses
+`geo-infer-mcp` with the API `mcp` extra. Read
+[agent interfaces](GEO-INFER-INTRA/docs/integration/agent_interfaces.md) for
+typed scientific inputs, native handles, context lifecycle and batch failures.
+After changing module skills or the shared guide, regenerate the packaged
+reference bundle with `python -m geo_infer_api.agent_skills --repo . --output
+GEO-INFER-API/src/geo_infer_api/agent_skills.json`; its source-sync test checks
+all 46 skills and the guide.
 
 1. Inspect the relevant module before editing.
 2. Keep functionality in the owning module under `src/`.
