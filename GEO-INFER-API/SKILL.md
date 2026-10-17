@@ -90,3 +90,14 @@ The adapter retains this module's dependencies and authorization requirements.
 - **SPACE** → H3 and geographic query parameters (algorithms router proxies `geo_infer_space.core.algorithm_registry` when installed; 503 otherwise)
 - **OPS** → API monitoring via `/health`
 - **APP** → Frontend consuming API endpoints
+
+### Persistent sessions and performance
+
+Use `geo-infer doctor` to inspect actual runtime and unprobed native status.
+Use `geo-infer session` for JSON Lines with persistent handles, or Python
+`with AgentSession()` / `async with` for deterministic entered-context cleanup.
+MCP exposes `geo_diagnostics` and `geo_close`; close ends execution until restart.
+Benchmark the real adapter with `python -m geo_infer_api.agent_benchmarks` or
+call `geo_infer_api.agent_benchmarks:benchmark_agent` through any surface.
+Read [profiling controls and evidence](../GEO-INFER-INTRA/docs/integration/backend_profiling.md)
+before selecting Python 3.15 sampling or interpreting throughput results.

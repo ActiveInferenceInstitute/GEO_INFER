@@ -55,7 +55,7 @@ async def check():
     async with stdio_client(parameters) as (reader,writer), ClientSession(reader,writer) as client:
         await client.initialize()
         tools = await client.list_tools()
-        assert len(tools.tools) == 9
+        assert len(tools.tools) == 11
         result = await client.call_tool('geo_call',{'target':'geo_infer_api:Point','kwargs':{'coordinates':[1,2]}})
         assert not result.isError and result.structuredContent['result']['coordinates'] == [1.,2.]
         error = await client.call_tool('geo_call',{'target':'os:system'})

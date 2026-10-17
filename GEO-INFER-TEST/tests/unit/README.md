@@ -23,8 +23,10 @@ Unit workspace within `GEO-INFER-TEST`.
 - `test_module_health.py`
 - `test_parametric_load_benchmarks.py`
 - `test_performance_monitor.py`
+- `test_performance_ownership.py`
 - `test_place_windows_workflow.py`
 - `test_process_ownership_contracts.py`
+- `test_profiling.py`
 - `test_research_evidence.py`
 - `test_root_pytest_policy.py`
 - `test_run_unified_tests.py`

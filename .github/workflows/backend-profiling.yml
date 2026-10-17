@@ -1,0 +1,101 @@
+name: Backend profiling
+
+on:
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: "3.11"
+            engine: tracing
+          - python: "3.12"
+            engine: tracing
+          - python: "3.15"
+            engine: tracing
+          - python: "3.15"
+            engine: sampling
+    env:
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      UV_PYTHON: ${{ matrix.python }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
+        with:
+          version: "0.13.1"
+          enable-cache: false
+      - name: Resolve test and process pins
+        id: pins
+        shell: python
+        run: |
+          import os, tomllib
+          from pathlib import Path
+          packages = tomllib.loads(Path("uv.lock").read_text())["package"]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              for name in ("pytest", "psutil"):
+                  version = next(p["version"] for p in packages if p["name"] == name)
+                  output.write(f"{name}={version}\n")
+      - name: Qualify real tracing, timeout, lifecycle and monitor ownership
+        env:
+          PYTHONPATH: GEO-INFER-TEST/src
+        run: >-
+          uv run --frozen --package geo-infer-api --extra mcp --no-default-groups
+          --with "pytest==${{ steps.pins.outputs.pytest }}"
+          --with "psutil==${{ steps.pins.outputs.psutil }}"
+          python -m pytest --noconftest -c GEO-INFER-TEST/config/import-probes.ini -q
+          GEO-INFER-API/tests/unit/test_agent_sessions.py
+          GEO-INFER-TEST/tests/unit/test_profiling.py
+          GEO-INFER-TEST/tests/unit/test_performance_ownership.py
+          --junitxml="${{ runner.temp }}/profile-tests.xml"
+      - name: Profile actual agent requests with source custody
+        env:
+          PROFILE_OUTPUT: ${{ runner.temp }}/agent-profile
+          PROFILE_ENGINE: ${{ matrix.engine }}
+        run: >-
+          uv run --frozen --package geo-infer-api --extra mcp --no-default-groups
+          --with "psutil==${{ steps.pins.outputs.psutil }}"
+          python GEO-INFER-TEST/profile_backend.py
+          --module geo_infer_api.agent_benchmarks
+          --output "$PROFILE_OUTPUT" --engine "$PROFILE_ENGINE" --timeout 120
+          -- --iterations 3000 --repeats 3 --warmup 1
+          > "${{ runner.temp }}/profile-result.json"
+      - name: Require native completion, source identity and nonempty measurements
+        shell: python
+        env:
+          PROFILE_OUTPUT: ${{ runner.temp }}/agent-profile
+        run: |
+          import hashlib, json, os
+          from pathlib import Path
+          root = Path(os.environ["PROFILE_OUTPUT"])
+          receipt = json.loads((root / "receipt.json").read_text())
+          assert receipt["success"] and receipt["source_bound"] and receipt["source_unchanged"], receipt
+          assert receipt["completion"]["success"]
+          metric = "thread_samples" if receipt["engine"] == "sampling" else "total_calls"
+          assert receipt["summary"][metric] > 0
+          for name, expected in receipt["artifacts"].items():
+              assert hashlib.sha256((root / name).read_bytes()).hexdigest() == expected
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: backend-profile-${{ matrix.python }}-${{ matrix.engine }}
+          path: |
+            ${{ runner.temp }}/agent-profile
+            ${{ runner.temp }}/profile-result.json
+            ${{ runner.temp }}/profile-tests.xml
+          if-no-files-found: error
+          retention-days: 14

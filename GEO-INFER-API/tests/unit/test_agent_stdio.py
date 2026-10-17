@@ -141,3 +141,70 @@ def test_mcp_survives_native_and_inherited_child_stdout(tmp_path):
             assert json.loads(skill.contents[0].text)["result"]["name"] == "SPACE"
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("explicit_close", [False, True])
+def test_mcp_releases_entered_file_on_close_and_server_shutdown(
+    tmp_path, explicit_close
+):
+    """Actual server lifecycle flushes entered resources without manual exit."""
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+
+    output = tmp_path / "owned-context.txt"
+
+    async def scenario():
+        parameters = StdioServerParameters(
+            command=sys.executable,
+            args=["-I", "-m", "geo_infer_api.agent_mcp"],
+            cwd=str(tmp_path),
+        )
+        async with (
+            stdio_client(parameters) as (reader, writer),
+            ClientSession(
+                reader, writer, read_timeout_seconds=timedelta(seconds=30)
+            ) as client,
+        ):
+            await client.initialize()
+            steps = [
+                dict(
+                    op="call",
+                    target="geo_infer_api.agent_runtime:Path",
+                    args=[str(output)],
+                    save_as="path",
+                ),
+                dict(
+                    op="call", handle="path", member="open", args=["w"], save_as="file"
+                ),
+                dict(op="enter", handle="file", save_as="stream"),
+                dict(
+                    op="call",
+                    handle="stream",
+                    member="write",
+                    args=["flushed by native context exit"],
+                ),
+            ]
+            result = await client.call_tool("geo_batch", {"steps": steps})
+            assert not result.isError, result
+            diagnostics = await client.call_tool("geo_diagnostics", {})
+            assert (
+                diagnostics.structuredContent["result"]["session"]["active_contexts"]
+                == 1
+            )
+            if explicit_close:
+                closed = await client.call_tool("geo_close", {})
+                assert closed.structuredContent["result"]["exited_contexts"] == 1
+                assert output.read_text() == "flushed by native context exit"
+                after = await client.call_tool("geo_diagnostics", {})
+                assert after.structuredContent["result"]["session"]["closed"]
+                failure = await client.call_tool(
+                    "geo_call",
+                    {
+                        "target": "geo_infer_api:Point",
+                        "kwargs": {"coordinates": [1, 2]},
+                    },
+                )
+                assert failure.isError
+
+    asyncio.run(scenario())
+    assert output.read_text() == "flushed by native context exit"

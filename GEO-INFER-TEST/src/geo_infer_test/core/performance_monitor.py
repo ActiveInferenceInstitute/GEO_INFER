@@ -6,16 +6,49 @@ and custom benchmarks.
 """
 
 import json
+import math
+import threading
+from contextlib import contextmanager
 import logging
 import statistics
 import time
 import tracemalloc
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 from dataclasses import dataclass
 from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any
 from collections.abc import Callable
+
+
+_TRACE_LOCK = threading.RLock()
+_TRACE_USERS = 0
+_TRACE_OWNED = False
+
+
+def _positive_integer(value: int, name: str, *, minimum: int = 1) -> None:
+    if type(value) is not int or value < minimum:
+        raise ValueError(f"{name} must be an integer >= {minimum}")
+
+
+def _acquire_trace() -> None:
+    global _TRACE_USERS, _TRACE_OWNED
+    with _TRACE_LOCK:
+        if _TRACE_USERS == 0:
+            _TRACE_OWNED = not tracemalloc.is_tracing()
+            if _TRACE_OWNED:
+                tracemalloc.start()
+        _TRACE_USERS += 1
+
+
+def _release_trace() -> None:
+    global _TRACE_USERS, _TRACE_OWNED
+    with _TRACE_LOCK:
+        _TRACE_USERS -= 1
+        if _TRACE_USERS == 0:
+            if _TRACE_OWNED:
+                tracemalloc.stop()
+            _TRACE_OWNED = False
 
 
 @dataclass
@@ -51,8 +84,7 @@ class PerformanceMonitor:
         so an inner section's ``stop()`` does not kill tracing for the outer
         section. Overlapping sections each get their own record.
         """
-        if self._trace_depth == 0:
-            tracemalloc.start()
+        _acquire_trace()
         self._trace_depth += 1
         self._section_stack.append(
             _TimingRecord(label=label, start_time=time.perf_counter())
@@ -69,8 +101,7 @@ class PerformanceMonitor:
         _, peak = tracemalloc.get_traced_memory()
         rec.peak_memory_bytes = peak
         self._trace_depth = max(self._trace_depth - 1, 0)
-        if self._trace_depth == 0:
-            tracemalloc.stop()
+        _release_trace()
 
         self._records.append(rec)
 
@@ -97,7 +128,18 @@ class PerformanceMonitor:
             for r in self._records
         ]
 
+    @contextmanager
+    def section(self, label: str):
+        """Balance timing and tracer ownership even when the body raises."""
+        self.start(label)
+        try:
+            yield self
+        finally:
+            self.stop()
+
     def reset(self) -> None:
+        if self._section_stack:
+            raise RuntimeError("Stop active timing sections before reset")
         self._records.clear()
         self._section_stack.clear()
         self._trace_depth = 0
@@ -115,6 +157,8 @@ class BenchmarkRunner:
         warmup: int = 2,
         logger: logging.Logger | None = None,
     ):
+        _positive_integer(iterations, "iterations")
+        _positive_integer(warmup, "warmup", minimum=0)
         self.iterations = iterations
         self.warmup = warmup
         self.logger = logger or logging.getLogger(__name__)
@@ -149,6 +193,11 @@ class BenchmarkRunner:
             "median_s": statistics.median(durations),
             "stdev_s": statistics.stdev(durations) if len(durations) > 1 else 0.0,
             "total_s": sum(durations),
+            "p95_s": LoadTester._percentile(durations, 0.95),
+            "p99_s": LoadTester._percentile(durations, 0.99),
+            "operations_per_second": self.iterations / sum(durations)
+            if sum(durations)
+            else 0.0,
         }
         self.logger.info(
             "Benchmark '%s': mean=%.4fs, stdev=%.4fs (%d iters)",
@@ -172,6 +221,8 @@ class LoadTester:
         total_requests: int = 20,
         logger: logging.Logger | None = None,
     ):
+        _positive_integer(concurrency, "concurrency")
+        _positive_integer(total_requests, "total_requests")
         self.concurrency = concurrency
         self.total_requests = total_requests
         self.logger = logger or logging.getLogger(__name__)
@@ -191,15 +242,21 @@ class LoadTester:
         overall_start = time.perf_counter()
 
         with ThreadPoolExecutor(max_workers=self.concurrency) as pool:
-            futures = []
-            for _ in range(self.total_requests):
-                futures.append(pool.submit(self._timed_call, func, args, kwargs))
-
-            for future in as_completed(futures):
-                dur, err = future.result()
-                durations.append(dur)
-                if err:
-                    errors.append(err)
+            submitted = min(self.concurrency, self.total_requests)
+            pending = {
+                pool.submit(self._timed_call, func, args, kwargs)
+                for _ in range(submitted)
+            }
+            while pending:
+                done, pending = wait(pending, return_when=FIRST_COMPLETED)
+                for future in done:
+                    dur, err = future.result()
+                    durations.append(dur)
+                    if err is not None:
+                        errors.append(err)
+                    if submitted < self.total_requests:
+                        pending.add(pool.submit(self._timed_call, func, args, kwargs))
+                        submitted += 1
 
         total_time = time.perf_counter() - overall_start
 
@@ -238,11 +295,12 @@ class LoadTester:
 
     @staticmethod
     def _percentile(data: list[float], pct: float) -> float:
+        if not math.isfinite(pct) or not 0 <= pct <= 1:
+            raise ValueError("Percentile must be finite and between 0 and 1")
         if not data:
             return 0.0
         sorted_data = sorted(data)
-        idx = int(len(sorted_data) * pct)
-        return sorted_data[min(idx, len(sorted_data) - 1)]
+        return sorted_data[max(0, math.ceil(len(sorted_data) * pct) - 1)]
 
 
 class MetricsCollector:

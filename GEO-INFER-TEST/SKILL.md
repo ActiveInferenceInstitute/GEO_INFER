@@ -100,3 +100,16 @@ The adapter retains this module's dependencies and authorization requirements.
 - **EXAMPLES** → Example code treated as integration tests
 - **OPS** → CI/CD test results feed monitoring
 - **All modules** → Unified test runner spans all 45 modules
+
+### Profile actual backend workloads
+
+Use `geo-infer-profile --module geo_infer_api.agent_benchmarks --output
+.geo-infer-test-results/profiles/agent-run --timeout 120` for tracing. Select
+`--python python3.15 --engine sampling` only in a target environment with its
+dependencies and OS inspection permission. Script and MCP target is
+`geo_infer_test.profiling:profile_command`; check receipt `success`,
+`source_bound` and `source_unchanged` as well as transport `ok`. Retain failed
+runs. Read [profiling controls and native evidence](../GEO-INFER-INTRA/docs/integration/backend_profiling.md)
+for sampler modes, runtime/JIT facts, artifact custody and timing interpretation.
+Use `PerformanceMonitor.section` for balanced tracer ownership and the bounded
+`LoadTester` for concurrent local workloads.

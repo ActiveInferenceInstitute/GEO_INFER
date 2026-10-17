@@ -27,13 +27,22 @@ def create_server(*, quiet_stdout: bool = False) -> Any:
     from mcp.server.fastmcp import FastMCP
     from mcp.types import CallToolResult, TextContent, ToolAnnotations
 
-    server = FastMCP(
-        "GEO-INFER",
-        lifespan=_quiet_lifespan if quiet_stdout else None,
-        instructions="Discover modules, search catalog, describe targets, then call. Read geo-infer://guide for scientific codecs and geo-infer://skills/{module} for reference guidance. Native object handles are process-local; release them when finished. Calls may write files, use credentials, access networks or mutate repositories. Use only authorized operations. Batches stop on failure and do not roll back side effects.",
-    )
     session = AgentSession()
     lock = asyncio.Lock()
+
+    @contextlib.asynccontextmanager
+    async def lifespan(server: Any) -> Any:
+        async with contextlib.AsyncExitStack() as stack:
+            if quiet_stdout:
+                await stack.enter_async_context(_quiet_lifespan(server))
+            await stack.enter_async_context(session)
+            yield {}
+
+    server = FastMCP(
+        "GEO-INFER",
+        lifespan=lifespan,
+        instructions="Discover modules, search catalog, describe targets, then call. Read geo-infer://guide for scientific codecs and geo-infer://skills/{module} for reference guidance. Native object handles are process-local; release them when finished. Calls may write files, use credentials, access networks or mutate repositories. Use only authorized operations. Batches stop on failure and do not roll back side effects.",
+    )
 
     async def execute(request: dict[str, Any]) -> CallToolResult:
         async with lock:
@@ -49,6 +58,22 @@ def create_server(*, quiet_stdout: bool = False) -> Any:
     # Do not mark runtime introspection read-only: importing a selected package
     # can initialize scientific backends. Only import-free discovery is read-only.
     read_only = ToolAnnotations(readOnlyHint=True, openWorldHint=False)
+
+    @server.tool(name="geo_diagnostics", annotations=read_only)
+    async def diagnostics() -> CallToolResult:
+        """Report actual runtime/dependency/JIT facts and session capacity.
+
+        Compiler qualification and sampling permissions remain explicitly unprobed.
+        """
+        return await execute({"op": "diagnostics"})
+
+    @server.tool(name="geo_close")
+    async def close_session() -> CallToolResult:
+        """Exit active contexts in reverse order and release this session.
+
+        Further execution requires a new server; diagnostics/handles remain readable.
+        """
+        return await execute({"op": "close"})
 
     @server.tool(name="geo_modules", annotations=read_only)
     async def modules() -> CallToolResult:
@@ -201,6 +226,11 @@ def create_server(*, quiet_stdout: bool = False) -> Any:
     async def schema_resource() -> str:
         """Complete request schemas for batching and script/CLI interoperability."""
         return json.dumps(await session.aexecute({"op": "schema"}))
+
+    @server.resource("geo-infer://diagnostics")
+    async def diagnostics_resource() -> str:
+        """Runtime and session facts, without backend initialization."""
+        return json.dumps(await session.aexecute({"op": "diagnostics"}))
 
     @server.resource("geo-infer://skills")
     async def skills_resource() -> str:

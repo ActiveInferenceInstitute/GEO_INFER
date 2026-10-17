@@ -19,6 +19,7 @@ Unified testing framework for quality assurance across all GEO-INFER modules wit
 - `measure_module_coverage.py`
 - `orchestrator_coverage_metric.py`
 - `preview_receipt_metric.py`
+- `profile_backend.py`
 - `record_validation.py`
 - `render_lane_metric.py`
 - `rewrite_readme_agents.py`

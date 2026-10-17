@@ -13,6 +13,7 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `documentation_contracts.py`
 - `execution.py`
 - `process.py`
+- `profiling.py`
 - `research_evidence.py`
 - `selection.py`
 - `testing.py`

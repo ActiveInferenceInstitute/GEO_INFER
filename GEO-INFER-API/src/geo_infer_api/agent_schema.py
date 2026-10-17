@@ -1,6 +1,8 @@
 """Transport-independent request validation and machine-readable JSON schemas."""
 
 from typing import Annotated, Any, Literal
+from functools import lru_cache
+import json
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
 
@@ -10,7 +12,9 @@ class _Request(BaseModel):
 
 
 class _Modules(_Request):
-    op: Literal["modules", "handles", "schema", "skills", "guide"]
+    op: Literal[
+        "modules", "handles", "schema", "skills", "guide", "diagnostics", "close"
+    ]
 
 
 class _Skill(_Request):
@@ -103,13 +107,21 @@ def validate_request(request: Any) -> dict[str, Any]:
         if getattr(model, name) is not None
     }
     if validated["op"] == "batch":
+        steps = []
         for step in validated["steps"]:
             if step.get("op") == "batch":
                 raise ValueError("Nested batches are not supported")
-            validate_request(step)
+            steps.append(validate_request(step))
+        validated["steps"] = steps
     return validated
 
 
 def request_schema() -> dict[str, Any]:
     """Return the exact JSON Schema used by the script and CLI request surface."""
-    return REQUEST.json_schema()
+    # Decode a canonical cached encoding so callers cannot mutate the cache.
+    return json.loads(_schema_json())
+
+
+@lru_cache(maxsize=1)
+def _schema_json() -> str:
+    return json.dumps(REQUEST.json_schema(), allow_nan=False)

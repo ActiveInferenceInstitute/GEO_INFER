@@ -106,6 +106,8 @@ Use `describe` to inspect parameter kinds, defaults, annotations and docstrings.
 | Operation | Input | Behavior |
 | --- | --- | --- |
 | `modules` | none | 45 package installation dispositions |
+| `diagnostics` | none | Actual interpreter, dependencies and session bounds; unprobed native qualifications remain explicit |
+| `close` | none | Exit entered contexts in reverse order, release handles and close execution |
 | `catalog` | `module`, optional `query`, `offset`, `limit` | Import-free source search |
 | `schema` | none | Exact transport request JSON Schema |
 | `skills` | none | Inventory of 46 packaged skill references |
@@ -139,12 +141,18 @@ failure, and runtime failures can occur after partial work inside an API call.
 Call an object's public cleanup/close methods before `release`; dropping a
 reference does not promise to close external resources. Handles last only for
 the script/session/server process. Each ordinary CLI command starts a fresh
-session, so compose dependent CLI calls in a single batch. No pickle or hidden
-state file is written.
+session. Use a batch or `geo-infer session` for dependent requests. No pickle
+or hidden state file is written.
 
 Public APIs that return context managers use `enter` and `exit` to run their
 native sync/async protocols. Exit an entered manager before releasing it or
-closing the process. `exit` performs normal completion, without injecting an
+closing the process. Use `with AgentSession() as session` or `async with` to
+exit entered contexts in reverse order and release handles even on failure;
+Python context exits receive the actual body exception. Explicit `close()` /
+`await aclose()` performs normal completion. Every exit is attempted even if
+an earlier cleanup fails. Closed sessions accept only diagnostics, handles and
+idempotent close. Objects never entered as contexts require their own explicit
+cleanup methods. `exit` performs normal completion, without injecting an
 exception; call explicit rollback methods when required by the owning API.
 There is no automatic transaction rollback on an unrelated batch failure.
 
@@ -199,9 +207,12 @@ installation. Stdio is the supported deployment transport; the adapter opens
 no HTTP port and is not an authenticated remote execution service.
 
 Tools are `geo_modules`, `geo_catalog`, `geo_describe`, `geo_call`, `geo_get`,
-`geo_batch`, `geo_handles`, `geo_release` and `geo_context`. Their input schemas are provided
+`geo_batch`, `geo_handles`, `geo_release`, `geo_context`, `geo_diagnostics` and
+`geo_close` (11 tools). Closing ends execution for this server session; restart
+the server to execute again. Their input schemas are provided
 by the official SDK. Tool results include the shared envelope in text and
 `structuredContent`; operation failures set MCP `isError`. The
+`geo-infer://diagnostics` exposes runtime facts, the
 `geo-infer://modules` resource exposes inventory, `geo-infer://schema` provides
 request schemas, and `compose_analysis` is a
 discovery-oriented prompt. Only import-free discovery tools are annotated
@@ -246,8 +257,45 @@ The API unit suite exercises every module's source inventory, installed CLI
 outside the checkout, real H3/matrix/energy operations, native data codecs,
 handle/error/batch contracts and an actual SDK client talking to a spawned
 stdio MCP server. The portability gate also runs native/child stdout contracts
-on Linux and Windows with Python 3.11/3.12 using a minimal API/MCP
-installation. The separate Python 3.15 checks qualify standalone tooling only;
-the locked native runtime is not qualified there. Scientific validity still requires the selected module's
+on Linux and Windows with Python 3.11/3.12/3.15 using a minimal API/MCP
+installation. These checks qualify the adapter and its selected dependencies;
+full scientific workspace qualification remains separate. Scientific validity
+still requires the selected module's
 tests and domain-specific checks; a general adapter cannot validate every
 possible scientific input or qualify absent hardware/services.
+
+## Persistent JSON Lines and runtime diagnostics
+
+`geo-infer session --max-handles 256 --max-items 10000` reads one request per
+line and emits exactly one envelope per request, sharing native handles and
+one event loop. Send `{"op":"close"}` or EOF to exit and clean up entered
+contexts. Blank lines are ignored; malformed requests produce errors and the
+next line can continue. Any failed request makes the final process exit 1;
+oversized lines stop the session. Duplicate JSON keys and nonfinite JSON
+numbers are rejected, including nested values. This sequential transport uses
+blocking line input; use the official MCP transport for an MCP host.
+
+```bash
+printf '%s\n' '{"op":"diagnostics"}' '{"op":"close"}' | uv run --frozen geo-infer session
+uv run --frozen geo-infer doctor
+uv run --frozen geo-infer --version
+```
+
+`doctor` is the CLI form of `diagnostics`. It reports actual interpreter/JIT,
+selected installed dependency versions, module installation and session bounds.
+A discoverable profiler does not prove OS memory access or native scientific
+compiler qualification: these dispositions remain `not_probed` until exercised.
+
+## Backend profiling and benchmarks
+
+Use [performance profiling](backend_profiling.md) for actual Python 3.15
+sampling/tracing, deadline and source custody controls, raw artifacts and
+benchmark interpretation. Scripts call `geo_infer_test.profiling:profile_command`;
+CLI uses `geo-infer-profile` or the thin `GEO-INFER-TEST/profile_backend.py`.
+MCP uses `geo_call` with that same public target and keyword arguments. A
+returned profile receipt can describe a failed target: check both the adapter
+`ok` envelope and the receipt's `success`, `source_bound` and `source_unchanged`.
+The public async `geo_infer_api.agent_benchmarks:benchmark_agent` is also
+available through scripts, CLI and MCP, with explicit workload bounds and raw
+unprofiled timing samples. Its control workload does not qualify scientific
+backends, external services or accelerator hardware.

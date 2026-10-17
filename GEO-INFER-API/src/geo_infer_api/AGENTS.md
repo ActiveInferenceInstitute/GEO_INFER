@@ -26,8 +26,10 @@
 - `models/`
 - `utils/`
 - `__init__.py`
+- `agent_benchmarks.py`
 - `agent_catalog.py`
 - `agent_cli.py`
+- `agent_diagnostics.py`
 - `agent_mcp.py`
 - `agent_runtime.py`
 - `agent_schema.py`

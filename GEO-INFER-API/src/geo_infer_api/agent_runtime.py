@@ -22,6 +22,9 @@ from uuid import uuid4
 from geo_infer_api.agent_catalog import MODULES, catalog, module_inventory, package_name
 from geo_infer_api.agent_schema import request_schema, validate_request
 from geo_infer_api.agent_skills import read_guidance, skill_inventory
+from geo_infer_api.agent_diagnostics import runtime_diagnostics
+
+_PACKAGE_NAMES = frozenset(package_name(name) for name in MODULES)
 
 _CODEC_FIELDS = {
     "ndarray": {"dtype"},
@@ -53,7 +56,7 @@ def resolve(target: str) -> Any:
         )
     ):
         raise ValueError("Use a public target 'geo_infer_module.submodule:Member'")
-    if parts[0] not in {package_name(name) for name in MODULES}:
+    if parts[0] not in _PACKAGE_NAMES:
         raise ValueError("Only GEO-INFER packages may be resolved")
     value = importlib.import_module(module)
     for name in member.split("."):
@@ -118,6 +121,66 @@ class AgentSession:
         self.max_items = max_items
         self.objects: dict[str, Any] = {}
         self.contexts: dict[str, Any] = {}
+        self.closed = False
+
+    async def _close(self, exc_info: tuple = (None, None, None)) -> dict[str, Any]:
+        counts = {
+            "closed": True,
+            "released_handles": len(self.objects),
+            "exited_contexts": len(self.contexts),
+        }
+        stack = contextlib.AsyncExitStack()
+        for manager in self.contexts.values():
+            if hasattr(manager, "__aexit__"):
+                stack.push_async_exit(manager)
+            else:
+                stack.push(manager)
+        try:
+            await stack.__aexit__(*exc_info)
+        finally:
+            self.contexts.clear()
+            self.objects.clear()
+            self.closed = True
+        return counts
+
+    async def aclose(self) -> dict[str, Any]:
+        """Exit owned contexts in reverse order and release all handles.
+
+        Arbitrary objects' close methods are never invoked implicitly. Use
+        enter/exit for resources requiring deterministic native cleanup.
+        """
+        with contextlib.redirect_stdout(sys.stderr):
+            return await self._close()
+
+    def close(self) -> dict[str, Any]:
+        """Synchronous cleanup; async applications use ``await aclose``."""
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(self.aclose())
+        raise RuntimeError("Use await session.aclose() inside an event loop")
+
+    def __enter__(self) -> AgentSession:
+        if self.closed:
+            raise RuntimeError("Session is closed")
+        return self
+
+    def __exit__(self, *exc_info) -> bool:
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            with contextlib.redirect_stdout(sys.stderr):
+                asyncio.run(self._close(exc_info))
+            return False
+        raise RuntimeError("Use async with AgentSession() inside an event loop")
+
+    async def __aenter__(self) -> AgentSession:
+        return self.__enter__()
+
+    async def __aexit__(self, *exc_info) -> bool:
+        with contextlib.redirect_stdout(sys.stderr):
+            await self._close(exc_info)
+        return False
 
     def _store(self, value: Any, name: str | None = None) -> dict[str, str]:
         name = name or uuid4().hex
@@ -292,6 +355,19 @@ class AgentSession:
 
     async def _dispatch(self, request: dict[str, Any]) -> Any:
         op = request["op"]
+        if op == "diagnostics":
+            return {
+                **runtime_diagnostics(),
+                "session": {
+                    "closed": self.closed,
+                    "handles": len(self.objects),
+                    "active_contexts": len(self.contexts),
+                    "max_handles": self.max_handles,
+                    "max_items": self.max_items,
+                },
+            }
+        if op == "close":
+            return await self.aclose()
         if op == "schema":
             return request_schema()
         if op == "skills":
@@ -355,7 +431,7 @@ class AgentSession:
             for step in steps:
                 if not isinstance(step, dict) or step.get("op") == "batch":
                     raise ValueError("Each step must be a non-batch request")
-                result = await self.aexecute(step)
+                result = await self._execute_validated(step)
                 results.append(result)
                 if not result["ok"]:
                     break
@@ -408,6 +484,21 @@ class AgentSession:
         """
         try:
             request = validate_request(request)
+        except (Exception, SystemExit) as error:
+            return self._error(error)
+        return await self._execute_validated(request)
+
+    @staticmethod
+    def _error(error: BaseException) -> dict[str, Any]:
+        return {
+            "ok": False,
+            "error": {"type": type(error).__name__, "message": str(error)},
+        }
+
+    async def _execute_validated(self, request: dict[str, Any]) -> dict[str, Any]:
+        try:
+            if self.closed and request["op"] not in {"close", "diagnostics", "handles"}:
+                raise RuntimeError("Session is closed; create a new AgentSession")
             if "save_as" in request:
                 name = request["save_as"]
                 if not isinstance(name, str) or not name or len(name) > 128:
@@ -419,10 +510,7 @@ class AgentSession:
             ok = not (request.get("op") == "batch" and not result["ok"])
             return {"ok": ok, "result": result}
         except (Exception, SystemExit) as error:
-            return {
-                "ok": False,
-                "error": {"type": type(error).__name__, "message": str(error)},
-            }
+            return self._error(error)
 
     def execute(self, request: dict[str, Any]) -> dict[str, Any]:
         """Synchronous script API; async applications use ``await aexecute``."""

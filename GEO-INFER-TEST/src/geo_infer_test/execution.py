@@ -158,8 +158,9 @@ def run_results_dir() -> Path:
     return RESULTS_DIR / "runs" / RUN_ID
 
 
-def runtime_receipt(*, timeout: float = 10) -> dict:
+def runtime_receipt(*, timeout: float = 10, root: Path | None = None) -> dict:
     """Bind results to revision, dirty source bytes, interpreter, and lock."""
+    root = PROJECT_ROOT if root is None else Path(root).resolve()
     deadline = time.monotonic() + timeout
     receipt = {"run_id": RUN_ID, "python": sys.version, "executable": sys.executable}
     commands = (
@@ -182,7 +183,7 @@ def runtime_receipt(*, timeout: float = 10) -> dict:
             if remaining <= 0:
                 raise subprocess.TimeoutExpired(args, timeout)
             completed = run_process(
-                args, cwd=PROJECT_ROOT, env=os.environ.copy(), timeout=remaining
+                args, cwd=root, env=os.environ.copy(), timeout=remaining
             )
             receipt[name] = (
                 (
@@ -200,7 +201,7 @@ def runtime_receipt(*, timeout: float = 10) -> dict:
     hashes = {}
     if modified is not None and staged is not None:
         for name in sorted(set((modified + staged).split("\0")) - {""}):
-            path = PROJECT_ROOT / name
+            path = root / name
             if not path.is_file():
                 hashes[name] = None
                 continue
@@ -220,7 +221,7 @@ def runtime_receipt(*, timeout: float = 10) -> dict:
         and modified is not None
         and staged is not None
     )
-    lock = PROJECT_ROOT / "uv.lock"
+    lock = root / "uv.lock"
     receipt["lock_sha256"] = (
         hashlib.sha256(lock.read_bytes()).hexdigest() if lock.is_file() else None
     )

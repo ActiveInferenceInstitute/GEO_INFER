@@ -125,7 +125,7 @@ the exact reproducible exception list.
 | [GEO-INFER-AGENT](../GEO-INFER-AGENT/) | `geo_infer_agent` | 26 | 28 |
 | [GEO-INFER-AI](../GEO-INFER-AI/) | `geo_infer_ai` | 18 | 21 |
 | [GEO-INFER-ANT](../GEO-INFER-ANT/) | `geo_infer_ant` | 24 | 11 |
-| [GEO-INFER-API](../GEO-INFER-API/) | `geo_infer_api` | 21 | 13 |
+| [GEO-INFER-API](../GEO-INFER-API/) | `geo_infer_api` | 23 | 14 |
 | [GEO-INFER-APP](../GEO-INFER-APP/) | `geo_infer_app` | 13 | 9 |
 | [GEO-INFER-ART](../GEO-INFER-ART/) | `geo_infer_art` | 20 | 12 |
 | [GEO-INFER-BAYES](../GEO-INFER-BAYES/) | `geo_infer_bayes` | 38 | 28 |
@@ -161,7 +161,7 @@ the exact reproducible exception list.
 | [GEO-INFER-SIM](../GEO-INFER-SIM/) | `geo_infer_sim` | 11 | 9 |
 | [GEO-INFER-SPACE](../GEO-INFER-SPACE/) | `geo_infer_space` | 85 | 52 |
 | [GEO-INFER-SPM](../GEO-INFER-SPM/) | `geo_infer_spm` | 27 | 23 |
-| [GEO-INFER-TEST](../GEO-INFER-TEST/) | `geo_infer_test` | 22 | 52 |
+| [GEO-INFER-TEST](../GEO-INFER-TEST/) | `geo_infer_test` | 23 | 54 |
 | [GEO-INFER-TIME](../GEO-INFER-TIME/) | `geo_infer_time` | 20 | 23 |
 | [GEO-INFER-TRANSPORT](../GEO-INFER-TRANSPORT/) | `geo_infer_transport` | 7 | 10 |
 | [GEO-INFER-WATER](../GEO-INFER-WATER/) | `geo_infer_water` | 9 | 9 |
@@ -171,8 +171,8 @@ the exact reproducible exception list.
 | Metric | Value |
 | --- | ---: |
 | Modules | 45 |
-| Python source files | 1030 |
-| Python test files | 814 |
+| Python source files | 1033 |
+| Python test files | 817 |
 | Repository README.md files | 812 |
 | Repository AGENTS.md files | 808 |
 

@@ -81,7 +81,13 @@ def _definitions(
                 rows.extend(_definitions(node.body, module, name + "."))
         else:
             # Include conditional definitions, but never local function bodies.
-            rows.extend(_definitions(list(ast.iter_child_nodes(node)), module, prefix))
+            children = [
+                child
+                for child in ast.iter_child_nodes(node)
+                if isinstance(child, (ast.stmt, ast.ExceptHandler, ast.match_case))
+            ]
+            if children:
+                rows.extend(_definitions(children, module, prefix))
     return rows
 
 
@@ -122,16 +128,22 @@ def catalog(
         raise ValueError("offset must be a nonnegative integer")
     if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 200:
         raise ValueError("limit must be an integer from 1 to 200")
-    matches = [
-        dict(row)
-        for row in definitions(module)
-        if query.casefold() in (row["target"] + " " + row["summary"]).casefold()
-    ]
+    rows = definitions(module)
+    needle = query.casefold()
+    matches = (
+        tuple(
+            row
+            for row in rows
+            if needle in (row["target"] + " " + row["summary"]).casefold()
+        )
+        if needle
+        else rows
+    )
     next_offset = offset + limit if offset + limit < len(matches) else None
     return {
         "module": package_name(module),
         "total": len(matches),
         "offset": offset,
         "next_offset": next_offset,
-        "items": matches[offset : offset + limit],
+        "items": [dict(row) for row in matches[offset : offset + limit]],
     }

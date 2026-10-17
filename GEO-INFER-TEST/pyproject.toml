@@ -112,6 +112,9 @@ integrations = [
     "geo-infer-time>=0.4.0",
 ]
 
+[project.scripts]
+geo-infer-profile = "geo_infer_test.profiling:main"
+
 [project.urls]
 Homepage = "https://github.com/ActiveInferenceInstitute/GEO_INFER"
 Documentation = "https://geo-infer.readthedocs.io/"

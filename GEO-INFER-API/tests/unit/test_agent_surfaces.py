@@ -477,6 +477,8 @@ def test_real_mcp_sdk_stdio_discovery_call_error_and_resource(tmp_path):
                 "geo_handles",
                 "geo_release",
                 "geo_context",
+                "geo_diagnostics",
+                "geo_close",
             }
             modules = await client.call_tool("geo_modules", {})
             assert not modules.isError
@@ -506,6 +508,7 @@ def test_real_mcp_sdk_stdio_discovery_call_error_and_resource(tmp_path):
                 "geo-infer://schema",
                 "geo-infer://skills",
                 "geo-infer://guide",
+                "geo-infer://diagnostics",
             }
             resource = await client.read_resource("geo-infer://modules")
             assert len(json.loads(resource.contents[0].text)["result"]) == 45
