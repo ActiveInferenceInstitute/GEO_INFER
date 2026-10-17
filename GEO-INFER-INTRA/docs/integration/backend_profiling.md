@@ -53,16 +53,25 @@ paths and output; share them under the target data's normal access policy.
 All execution surfaces use this same callable:
 
 ```python
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from geo_infer_test.profiling import profile_command
 
-receipt = profile_command(
-    module="geo_infer_api.agent_benchmarks",
-    args=["--iterations", "1000", "--repeats", "5"],
-    output=".geo-infer-test-results/profiles/script-tracing",
-    timeout=120,
-)
-assert receipt["success"] and receipt["source_bound"] and receipt["source_unchanged"]
+with TemporaryDirectory(prefix="geo-profile-example-") as temporary:
+    receipt = profile_command(
+        module="geo_infer_api.agent_benchmarks",
+        args=["--iterations", "100", "--repeats", "2"],
+        output=Path(temporary) / "tracing",
+        timeout=120,
+    )
+    assert receipt["success"] and receipt["completion"]["success"]
+    assert receipt["summary"]["total_calls"] > 0
 ```
+
+This portable example runs from a checkout or installed environment. For
+repository qualification, explicitly select a checkout `cwd` and additionally
+require `source_bound` and `source_unchanged`; a temporary non-Git working
+directory cannot establish repository custody.
 
 CLI `geo-infer call geo_infer_test.profiling:profile_command --kwargs ...`
 and MCP `geo_call` accept the same keyword fields; use tagged path values or
