@@ -8,13 +8,13 @@ from typing import Any
 from typing import Literal
 
 from geo_infer_api.agent_runtime import AgentSession
-from geo_infer_api.agent_stdio import protocol_stdout
+from geo_infer_api.agent_stdio import _redirect_stdin, protocol_stdio
 
 
 @contextlib.asynccontextmanager
 async def _quiet_lifespan(server: Any) -> Any:
     """The SDK already captured its protocol stream before entering lifespan."""
-    with contextlib.redirect_stdout(sys.stderr):
+    with contextlib.redirect_stdout(sys.stderr), _redirect_stdin(sys.__stdin__):
         yield {}
 
 
@@ -30,7 +30,7 @@ def create_server(*, quiet_stdout: bool = False) -> Any:
     server = FastMCP(
         "GEO-INFER",
         lifespan=_quiet_lifespan if quiet_stdout else None,
-        instructions="Discover modules, search catalog, describe targets, then call. Native object handles are process-local; release them when finished. Calls may write files, use credentials, access networks or mutate repositories. Use only authorized operations. Batches stop on failure and do not roll back side effects.",
+        instructions="Discover modules, search catalog, describe targets, then call. Read geo-infer://guide for scientific codecs and geo-infer://skills/{module} for reference guidance. Native object handles are process-local; release them when finished. Calls may write files, use credentials, access networks or mutate repositories. Use only authorized operations. Batches stop on failure and do not roll back side effects.",
     )
     session = AgentSession()
     lock = asyncio.Lock()
@@ -108,8 +108,9 @@ def create_server(*, quiet_stdout: bool = False) -> Any:
         """Invoke a real function, constructor or object method, sync or async.
 
         Supply target OR handle/member. JSON arguments support {$ref: handle},
-        {$callable: GEO_target} and {$type: ndarray|dataframe|series|datetime|
-        date|path|tuple|set|float, data: ...}. save_as retains native objects for
+        {$callable: GEO_target} and typed NumPy/pandas/xarray/geometry/date/path
+        inputs. Read geo-infer://guide for all $type codecs and exact formats.
+        save_as retains native objects for
         composition. Calls have full local authority; never automatically retry.
         """
         return await execute(
@@ -231,10 +232,14 @@ def main() -> int:
     except ImportError as error:
         sys.stderr.write(f"MCP unavailable: {error}. Install geo-infer-api[mcp].\n")
         return 1
-    # The public SDK stdio transport captures sys.stdout.buffer before its
-    # server lifespan starts. Give it a dedicated duplicate, then lifespan
-    # routes Python prints to stderr; native and child stdout use fd 1/stderr.
-    with protocol_stdout() as stream, contextlib.redirect_stdout(stream):
+    # The public SDK captures protocol stream buffers before its lifespan;
+    # libraries/children then use EOF stdin and stderr stdout. Only the SDK
+    # retains the original protocol input/output duplicates.
+    with (
+        protocol_stdio() as (reader, writer),
+        _redirect_stdin(reader),
+        contextlib.redirect_stdout(writer),
+    ):
         server.run(transport="stdio")
     return 0
 

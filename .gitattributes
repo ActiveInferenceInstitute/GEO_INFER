@@ -35,3 +35,6 @@
 /GEO-INFER-PLACE/src/geo_infer_place/locations/cascadia/config/cascadia_bioregion_boundary.geojson text eol=lf
 /GEO-INFER-PLACE/src/geo_infer_place/locations/cascadia/config/cascadia_boundary.license.md text eol=lf
 /GEO-INFER-PLACE/src/geo_infer_place/locations/cascadia/config/cascadia_boundary.provenance.json text eol=lf
+
+# Reproducible packaged agent guidance; inner text is normalized UTF-8/LF.
+/GEO-INFER-API/src/geo_infer_api/agent_skills.json text eol=lf

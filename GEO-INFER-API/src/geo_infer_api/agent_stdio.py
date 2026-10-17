@@ -1,4 +1,4 @@
-"""Keep native libraries and inherited child stdout off machine transports."""
+"""Reserve stdin/stdout for machine protocols; isolate native child streams."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import io
 import os
 import sys
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 from typing import TextIO
 
 
@@ -20,9 +20,9 @@ def _flush_native() -> None:
     flush(None)
 
 
-def _windows_stdout(descriptor: int) -> None:
-    """Keep Windows child-process standard handles aligned with CRT stdout."""
-    if os.name != "nt" or descriptor != 1:
+def _windows_standard_handle(descriptor: int) -> None:
+    """Align Windows child-process standard handles with CRT stdin/stdout."""
+    if os.name != "nt" or descriptor not in (0, 1):
         return
     import msvcrt
     from ctypes import wintypes
@@ -31,41 +31,76 @@ def _windows_stdout(descriptor: int) -> None:
     setter = kernel.SetStdHandle
     setter.argtypes = [wintypes.DWORD, wintypes.HANDLE]
     setter.restype = wintypes.BOOL
-    if not setter(wintypes.DWORD(-11), msvcrt.get_osfhandle(descriptor)):
+    if not setter(
+        wintypes.DWORD(-10 if descriptor == 0 else -11),
+        msvcrt.get_osfhandle(descriptor),
+    ):
         raise ctypes.WinError(ctypes.get_last_error())
 
 
 @contextmanager
-def protocol_stdout() -> Iterator[TextIO]:
-    """Yield a dedicated protocol stream while fd 1 points at stderr.
+def protocol_stdio() -> Iterator[tuple[TextIO, TextIO]]:
+    """Yield dedicated protocol streams; native stdin gets EOF, stdout stderr.
 
     Only process entrypoints use this process-wide redirection. The script
     session API leaves native descriptors alone. The dedicated duplicate is
-    non-inheritable, so child processes retain stderr as their native stdout.
+    non-inheritable. Child processes cannot consume MCP input or write to its
+    output. Native stdin receives EOF, preventing interactive/forwarding hangs.
     Restoration runs on error and normal completion; stream encodings are UTF-8.
     """
     original = sys.stdout
     original.flush()
     sys.stderr.flush()
     _flush_native()
-    descriptor = original.fileno()
-    saved = os.dup(descriptor)
-    stream = io.TextIOWrapper(
-        os.fdopen(os.dup(descriptor), "wb", buffering=0),
-        encoding="utf-8",
-        write_through=True,
-    )
+    input_descriptor, output_descriptor = sys.stdin.fileno(), original.fileno()
+    with ExitStack() as resources:
+        saved_input = os.dup(input_descriptor)
+        resources.callback(os.close, saved_input)
+        saved_output = os.dup(output_descriptor)
+        resources.callback(os.close, saved_output)
+        reader = resources.enter_context(
+            io.TextIOWrapper(
+                os.fdopen(os.dup(input_descriptor), "rb", buffering=0), encoding="utf-8"
+            )
+        )
+        writer = resources.enter_context(
+            io.TextIOWrapper(
+                os.fdopen(os.dup(output_descriptor), "wb", buffering=0),
+                encoding="utf-8",
+                write_through=True,
+            )
+        )
+        null = resources.enter_context(open(os.devnull, "rb", buffering=0))
+        try:
+            os.dup2(null.fileno(), input_descriptor)
+            _windows_standard_handle(input_descriptor)
+            os.dup2(sys.stderr.fileno(), output_descriptor)
+            _windows_standard_handle(output_descriptor)
+            yield reader, writer
+        finally:
+            try:
+                original.flush()
+                sys.stderr.flush()
+                _flush_native()
+            finally:
+                os.dup2(saved_input, input_descriptor)
+                _windows_standard_handle(input_descriptor)
+                os.dup2(saved_output, output_descriptor)
+                _windows_standard_handle(output_descriptor)
+
+
+@contextmanager
+def protocol_stdout() -> Iterator[TextIO]:
+    """CLI wrapper after reading its JSON request, reserving native stdio."""
+    with protocol_stdio() as (_reader, writer):
+        yield writer
+
+
+@contextmanager
+def _redirect_stdin(stream: TextIO) -> Iterator[None]:
+    previous = sys.stdin
+    sys.stdin = stream
     try:
-        os.dup2(sys.stderr.fileno(), descriptor)
-        _windows_stdout(descriptor)
-        yield stream
+        yield
     finally:
-        # CPython stream writes and buffered C printf output must reach stderr
-        # before restoring the JSON/MCP destination.
-        original.flush()
-        sys.stderr.flush()
-        _flush_native()
-        os.dup2(saved, descriptor)
-        _windows_stdout(descriptor)
-        os.close(saved)
-        stream.close()
+        sys.stdin = previous

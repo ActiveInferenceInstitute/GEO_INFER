@@ -26,7 +26,6 @@ jobs:
     timeout-minutes: 15
     env:
       PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
-      UV_PYTHON: ${{ matrix.python }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
@@ -87,19 +86,78 @@ jobs:
       - name: Record platform and revision
         if: always()
         run: python -c "import platform,sys,subprocess,json; print(json.dumps(dict(platform=platform.platform(),python=sys.version,revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip())))"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: import-probes-${{ matrix.os }}-${{ matrix.python }}
+          path: probe-results.xml
+          if-no-files-found: error
+          retention-days: 14
+
+  agent-transports:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.12"]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      UV_PYTHON: ${{ matrix.python }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
+        with:
+          version: "0.13.1"
+          enable-cache: false
+      - name: Resolve the workspace pytest pin
+        id: locked_tools
+        shell: python
+        run: |
+          import os
+          import tomllib
+          from pathlib import Path
+          packages = tomllib.loads(Path("uv.lock").read_text(encoding="utf-8"))["package"]
+          version = next(p["version"] for p in packages if p["name"] == "pytest")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"pytest_version={version}\n")
       - name: Exercise native agent CLI and MCP transports
         run: >-
           uv run --frozen --package geo-infer-api --extra mcp --no-default-groups
           --with "pytest==${{ steps.locked_tools.outputs.pytest_version }}"
           python -m pytest --noconftest -c GEO-INFER-TEST/config/import-probes.ini -q
           GEO-INFER-API/tests/unit/test_agent_stdio.py
-          --junitxml=agent-transports.xml
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+          --junitxml="${{ runner.temp }}/agent-transports.xml"
+      - name: Bind platform, source and lock
+        if: always()
+        shell: python
+        run: |
+          import hashlib
+          import json
+          import os
+          import platform
+          import subprocess
+          import sys
+          from pathlib import Path
+          paths = subprocess.check_output(["git", "ls-files", "GEO-INFER-API", ".github/workflows/import-probes.yml", "uv.lock"], text=True).splitlines()
+          record = dict(platform=platform.platform(), python=sys.version,
+                        revision=subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+                        dirty=subprocess.check_output(["git", "status", "--porcelain"], text=True),
+                        files={p:hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths if Path(p).is_file()})
+          Path(os.environ["RUNNER_TEMP"], "agent-platform.json").write_text(json.dumps(record, indent=2), encoding="utf-8")
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
-          name: import-probes-${{ matrix.os }}-${{ matrix.python }}
+          name: agent-transports-${{ matrix.os }}-${{ matrix.python }}
           path: |
-            probe-results.xml
-            agent-transports.xml
+            ${{ runner.temp }}/agent-transports.xml
+            ${{ runner.temp }}/agent-platform.json
           if-no-files-found: error
           retention-days: 14

@@ -367,7 +367,8 @@ class AgentSession:
 
         Redirect Python prints to stderr; process entrypoints also isolate
         native/child stdout at the OS descriptor level.
-        Calls are sequential per session; callers must not run them concurrently.
+        Stdout redirection is process-wide: execute sessions sequentially in
+        one process, using separate worker processes for parallel execution.
         A failure may follow side effects; a batch is not a transaction.
         """
         try:

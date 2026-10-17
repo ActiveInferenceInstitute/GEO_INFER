@@ -14,7 +14,11 @@ pytestmark = pytest.mark.unit
 
 
 def _child_request() -> dict:
-    arguments = [sys.executable, "-c", "print('CHILD_STDOUT_PROBE')"]
+    arguments = [
+        sys.executable,
+        "-c",
+        "import sys; print('CHILD_STDOUT_PROBE',repr(sys.stdin.read()))",
+    ]
     command = (
         subprocess.list2cmdline(arguments) if os.name == "nt" else shlex.join(arguments)
     )
@@ -44,7 +48,7 @@ def _native_request() -> dict:
             {
                 "op": "call",
                 "handle": "library",
-                "member": "printf",
+                "member": "puts",
                 "args": [{"$ref": "buffer"}],
             },
             {"op": "call", "handle": "library", "member": "fflush", "args": [None]},
