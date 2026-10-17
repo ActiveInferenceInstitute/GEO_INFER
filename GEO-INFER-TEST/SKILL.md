@@ -113,3 +113,15 @@ runs. Read [profiling controls and native evidence](../GEO-INFER-INTRA/docs/inte
 for sampler modes, runtime/JIT facts, artifact custody and timing interpretation.
 Use `PerformanceMonitor.section` for balanced tracer ownership and the bounded
 `LoadTester` for concurrent local workloads.
+
+Await `BenchmarkRunner.run_async` or `LoadTester.run_async` for async functions,
+callable objects and wrappers returning awaitables. Measurements include awaited
+completion. Async load owns at most `concurrency` workers and drains them on
+cancellation; ordinary request errors count in metrics. Benchmark failures
+propagate. Synchronous `run` rejects async work instead of timing coroutine
+creation. Async methods do not offload blocking synchronous functions.
+
+`TestDiscoverer` includes async test definitions and reports malformed files,
+actual file totals, ROOT categories, extra roots and cross-module imports.
+Discovery metadata alone does not prove tests executed; retain runner receipts
+and JUnit results for qualification.

@@ -16,6 +16,7 @@ from ..execution import (
     discover_workspace_test_targets,
     Module,
     category_test_paths,
+    module_test_files,
 )
 
 logger = logging.getLogger(__name__)
@@ -108,7 +109,8 @@ class TestDiscoverer:
             base = tests_path / test_type
             # Direct tests retain the historical "general" reporting bucket;
             # execution treats that bucket as unit, without double-counting.
-            files = [path for path in files if path.parent != tests_path]
+            if module != "ROOT":
+                files = [path for path in files if path.parent != tests_path]
             if files:
                 module_tests[test_type] = [
                     str(path.relative_to(base))
@@ -193,7 +195,7 @@ class TestDiscoverer:
 
             # Analyze the AST
             for node in ast.walk(tree):
-                if isinstance(node, ast.FunctionDef):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     if node.name.startswith("test_"):
                         funcs_out.append(
                             {
@@ -219,7 +221,7 @@ class TestDiscoverer:
 
                 elif isinstance(node, ast.ImportFrom):
                     if node.module:
-                        imports_out.append(node.module)
+                        imports_out.append("." * node.level + node.module)
 
             # Detect testing framework
             metadata["framework"] = self._detect_framework(imports_out)
@@ -244,7 +246,7 @@ class TestDiscoverer:
 
         for framework, patterns in frameworks.items():
             for pattern in patterns:
-                if any(pattern in imp for imp in imports):
+                if any(pattern == imp.split(".", 1)[0] for imp in imports):
                     return framework
 
         return "unknown"
@@ -271,38 +273,57 @@ class TestDiscoverer:
                     tests_by_type[test_type] = 0
                 tests_by_type[test_type] += len(files)
 
+        stats["total_test_files"] = total_files
         return stats
 
     def find_cross_module_tests(self) -> list[tuple[str, str, str]]:
         """Find tests that appear to test cross-module functionality."""
         cross_module_tests = []
+        seen: set[tuple[str, str, str]] = set()
 
         for module, test_types in self.discovered_tests.items():
+            module_path = (
+                self.base_path
+                if module == "ROOT"
+                else self.base_path / f"GEO-INFER-{module}"
+            )
+            tests_dir = module_path / "tests"
+            descriptor = Module(module, module_path, tests_dir, True)
             for test_type, files in test_types.items():
+                base_dir = tests_dir / test_type
+                if test_type == "general":
+                    resolved_paths = {
+                        path.name: path
+                        for path in tests_dir.iterdir()
+                        if path.is_file() and self._is_test_file(path)
+                    }
+                else:
+                    resolved_paths = {
+                        str(path.relative_to(base_dir))
+                        if path.is_relative_to(base_dir)
+                        else str(path.relative_to(module_path)): path
+                        for path in category_test_paths(descriptor, test_type)
+                    }
                 for file_path in files:
-                    # Check if the test file mentions other modules. Files
-                    # discovered directly under tests/ are stored under the
-                    # synthetic key "general"; reconstruct their real location
-                    # (tests/<file>) instead of the non-existent tests/general/.
-                    tests_dir = self.base_path / f"GEO-INFER-{module}" / "tests"
-                    base_dir = (
-                        tests_dir if test_type == "general" else tests_dir / test_type
-                    )
-                    full_path = base_dir / file_path
+                    # Resolve the same canonical category paths used by discovery;
+                    # extra roots and ROOT files are relative to their owner.
+                    full_path = resolved_paths.get(file_path)
 
-                    if full_path.exists():
+                    if full_path is not None and full_path.is_file():
                         metadata = self.analyze_test_file(full_path)
 
                         # Look for imports of other GEO-INFER modules
                         for import_name in metadata["imports"]:
-                            if "geo_infer_" in import_name:
-                                imported_module = import_name.replace(
-                                    "geo_infer_", ""
+                            package_name = import_name.split(".", 1)[0]
+                            if package_name.startswith("geo_infer_"):
+                                imported_module = package_name.removeprefix(
+                                    "geo_infer_"
                                 ).upper()
                                 if imported_module != module:
-                                    cross_module_tests.append(
-                                        (module, imported_module, file_path)
-                                    )
+                                    match = (module, imported_module, file_path)
+                                    if match not in seen:
+                                        seen.add(match)
+                                        cross_module_tests.append(match)
 
         return cross_module_tests
 
@@ -320,7 +341,11 @@ class TestDiscoverer:
         }
 
         for module in self._find_all_modules():
-            module_path = self.base_path / f"GEO-INFER-{module}"
+            module_path = (
+                self.base_path
+                if module == "ROOT"
+                else self.base_path / f"GEO-INFER-{module}"
+            )
             tests_path = module_path / "tests"
 
             if not tests_path.exists():
@@ -328,9 +353,20 @@ class TestDiscoverer:
                 continue
 
             # Check for empty test directories
-            test_files = list(tests_path.rglob("test_*.py"))
+            descriptor = Module(module, module_path, tests_path, True)
+            test_files = module_test_files(descriptor)
             if not test_files:
                 empty_dirs.append(module)
+
+            for test_file in test_files:
+                try:
+                    ast.parse(
+                        test_file.read_text(encoding="utf-8"), filename=str(test_file)
+                    )
+                except (SyntaxError, UnicodeError, OSError):
+                    malformed_files.append(
+                        f"{module}/{test_file.relative_to(module_path).as_posix()}"
+                    )
 
             # Check for __init__.py files in test directories
             for test_type in self.SUPPORTED_TEST_TYPES:

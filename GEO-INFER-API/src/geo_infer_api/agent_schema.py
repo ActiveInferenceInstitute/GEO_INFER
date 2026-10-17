@@ -31,15 +31,15 @@ class _Catalog(_Request):
 
 
 class _Selection(_Request):
-    target: str | None = None
-    handle: str | None = None
-    member: str | None = None
+    target: str | None = Field(default=None, min_length=1)
+    handle: str | None = Field(default=None, min_length=1)
+    member: str | None = Field(default=None, min_length=1)
 
     @model_validator(mode="after")
     def selection(self) -> "_Selection":
-        if bool(self.target) == bool(self.handle):
+        if (self.target is None) == (self.handle is None):
             raise ValueError("Supply exactly one of target or handle")
-        if self.member is not None and not self.handle:
+        if self.member is not None and self.handle is None:
             raise ValueError("member requires a handle")
         return self
 

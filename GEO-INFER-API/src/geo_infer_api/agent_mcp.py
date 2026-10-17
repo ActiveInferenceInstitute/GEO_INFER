@@ -8,7 +8,46 @@ from typing import Any
 from typing import Literal
 
 from geo_infer_api.agent_runtime import AgentSession
+from geo_infer_api.agent_schema import validate_request
 from geo_infer_api.agent_stdio import _redirect_stdin, protocol_stdio
+
+_TOOL_OPERATIONS = {
+    "geo_diagnostics": "diagnostics",
+    "geo_close": "close",
+    "geo_modules": "modules",
+    "geo_catalog": "catalog",
+    "geo_describe": "describe",
+    "geo_call": "call",
+    "geo_get": "get",
+    "geo_batch": "batch",
+    "geo_handles": "handles",
+    "geo_release": "release",
+    "geo_context": "context",
+}
+_NULLABLE_TOOL_FIELDS = {
+    "describe": {"target", "handle", "member"},
+    "call": {"target", "handle", "member", "args", "kwargs", "save_as"},
+    "get": {"target", "handle", "member", "path", "save_as"},
+    "context": {"save_as"},
+}
+
+
+def _validate_tool_request(name: str, arguments: dict[str, Any]) -> None:
+    """Check raw tool fields before the SDK can coerce or drop them."""
+    operation = _TOOL_OPERATIONS[name]
+    if "op" in arguments:
+        raise ValueError("Tool arguments must not contain op")
+    nullable = _NULLABLE_TOOL_FIELDS.get(operation, set())
+    request = {
+        key: value
+        for key, value in arguments.items()
+        if value is not None or key not in nullable
+    }
+    if operation == "context":
+        operation = request.pop("action", None)
+        if operation not in {"enter", "exit"}:
+            raise ValueError("Context action must be enter or exit")
+    validate_request({**request, "op": operation})
 
 
 @contextlib.asynccontextmanager
@@ -30,6 +69,27 @@ def create_server(*, quiet_stdout: bool = False) -> Any:
     session = AgentSession()
     lock = asyncio.Lock()
 
+    def tool_result(result: dict[str, Any]) -> CallToolResult:
+        return CallToolResult(
+            content=[
+                TextContent(type="text", text=json.dumps(result, allow_nan=False))
+            ],
+            structuredContent=result,
+            isError=not result["ok"],
+        )
+
+    class _StrictFastMCP(FastMCP):
+        async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
+            # FastMCP intentionally permits coercion and ignores extra fields.
+            # Validate at its public dispatch boundary, before that conversion,
+            # so scripts, CLI and MCP use the same execution contract.
+            if name in _TOOL_OPERATIONS:
+                try:
+                    _validate_tool_request(name, arguments)
+                except (Exception, SystemExit) as error:
+                    return tool_result(session._error(error))
+            return await super().call_tool(name, arguments)
+
     @contextlib.asynccontextmanager
     async def lifespan(server: Any) -> Any:
         async with contextlib.AsyncExitStack() as stack:
@@ -38,7 +98,7 @@ def create_server(*, quiet_stdout: bool = False) -> Any:
             await stack.enter_async_context(session)
             yield {}
 
-    server = FastMCP(
+    server = _StrictFastMCP(
         "GEO-INFER",
         lifespan=lifespan,
         instructions="Discover modules, search catalog, describe targets, then call. Read geo-infer://guide for scientific codecs and geo-infer://skills/{module} for reference guidance. Native object handles are process-local; release them when finished. Calls may write files, use credentials, access networks or mutate repositories. Use only authorized operations. Batches stop on failure and do not roll back side effects.",
@@ -47,13 +107,7 @@ def create_server(*, quiet_stdout: bool = False) -> Any:
     async def execute(request: dict[str, Any]) -> CallToolResult:
         async with lock:
             result = await session.aexecute(request)
-        return CallToolResult(
-            content=[
-                TextContent(type="text", text=json.dumps(result, allow_nan=False))
-            ],
-            structuredContent=result,
-            isError=not result["ok"],
-        )
+        return tool_result(result)
 
     # Do not mark runtime introspection read-only: importing a selected package
     # can initialize scientific backends. Only import-free discovery is read-only.

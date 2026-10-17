@@ -1,6 +1,7 @@
 """Persistent transports and real native context lifecycle without scientific extras."""
 
 import asyncio
+import contextlib
 import json
 import subprocess
 import sys
@@ -122,6 +123,263 @@ def test_async_session_context_and_sync_misuse_are_explicit():
 
     asyncio.run(scenario())
     assert events == ["enter", "exit"]
+
+
+def test_session_preserves_native_sync_exception_suppression():
+    observed = []
+
+    @contextlib.contextmanager
+    def outer():
+        try:
+            yield
+        except BaseException as error:
+            observed.append(type(error))
+            raise
+        else:
+            observed.append(None)
+
+    with AgentSession() as session:
+        session.objects.update(outer=outer(), inner=contextlib.suppress(ValueError))
+        assert session.execute(dict(op="enter", handle="outer"))["ok"]
+        assert session.execute(dict(op="enter", handle="inner"))["ok"]
+        raise ValueError("suppressed by the native inner context")
+    assert observed == [None]
+    assert session.closed and not session.contexts and not session.objects
+
+
+def test_session_preserves_native_async_exception_suppression():
+    observed = []
+
+    @contextlib.asynccontextmanager
+    async def manager():
+        try:
+            yield
+        except ValueError as error:
+            observed.append(str(error))
+
+    async def scenario():
+        async with AgentSession() as session:
+            session.objects["manager"] = manager()
+            assert (await session.aexecute(dict(op="enter", handle="manager")))["ok"]
+            raise ValueError("suppressed asynchronously")
+        assert session.closed and not session.contexts and not session.objects
+
+    asyncio.run(scenario())
+    assert observed == ["suppressed asynchronously"]
+
+
+@pytest.mark.parametrize(
+    "selection",
+    [
+        dict(target=""),
+        dict(handle=""),
+        dict(target="geo_infer_api:__version__", handle=""),
+        dict(target="", handle="existing"),
+        dict(handle="existing", member=""),
+    ],
+)
+def test_empty_selections_fail_before_any_batch_side_effects(selection):
+    with AgentSession() as session:
+        request = dict(
+            op="batch",
+            steps=[
+                dict(
+                    op="call",
+                    target="geo_infer_api.agent_catalog:package_name",
+                    args=["API"],
+                    save_as="would-be-created",
+                ),
+                dict(op="get", **selection),
+            ],
+        )
+        result = session.execute(request)
+        assert not result["ok"] and result["error"]["type"] == "ValidationError"
+        assert not session.objects
+
+
+@pytest.mark.parametrize("operator", ["$ref", "$type", "$callable", "$literal"])
+def test_reserved_result_keys_retain_native_data_and_support_index_selection(operator):
+    from datetime import UTC, datetime
+
+    payload = {
+        operator: "business-data",
+        "timestamp": datetime(2026, 10, 17, tzinfo=UTC),
+        "measurement": float("inf"),
+    }
+    with AgentSession(max_handles=1) as session:
+        encoded = session.encode(payload)
+        assert session.decode(encoded) is payload
+        assert (
+            session.execute(dict(op="get", handle=encoded["$ref"]))["result"] == encoded
+        )
+        assert session.execute(
+            dict(op="get", handle=encoded["$ref"], path=[operator])
+        ) == dict(ok=True, result="business-data")
+        assert (
+            session.decode({**encoded, "path": ["timestamp"]}) is payload["timestamp"]
+        )
+        assert session.decode({"$literal": {operator: "business-data"}}) == {
+            operator: "business-data"
+        }
+        assert len(session.objects) == 1
+
+
+def test_nested_reserved_result_keys_retain_the_complete_native_result():
+    payload = {"results": [{"$ref": "customer-record", "amount": 5}]}
+    with AgentSession() as session:
+        encoded = session.encode(payload)
+        assert session.decode(encoded) is payload
+        assert (
+            session.decode({**encoded, "path": ["results", 0, "$ref"]})
+            == "customer-record"
+        )
+        assert len(session.objects) == 1
+
+
+def test_jsonl_composes_reserved_result_maps_and_explicit_literals(tmp_path):
+    payload = {"$ref": "customer-record", "amount": 5}
+    requests = [
+        dict(
+            op="call",
+            target="geo_infer_api.agent_schema:json.loads",
+            args=[json.dumps(payload)],
+            save_as="payload",
+        ),
+        dict(op="get", handle="payload"),
+        dict(op="get", handle="payload", path=["$ref"]),
+        dict(
+            op="call",
+            target="geo_infer_api.agent_schema:json.dumps",
+            args=[{"$ref": "payload"}],
+        ),
+        dict(
+            op="call",
+            target="geo_infer_api.agent_schema:json.dumps",
+            args=[{"$literal": payload}],
+        ),
+    ]
+    result = _cli(
+        tmp_path, "session", input="".join(json.dumps(r) + "\n" for r in requests)
+    )
+    assert result.returncode == 0, result.stderr
+    responses = [json.loads(line) for line in result.stdout.splitlines()]
+    assert len(responses) == 5 and all(row["ok"] for row in responses)
+    assert responses[1]["result"]["$ref"] == "payload"
+    assert responses[2]["result"] == "customer-record"
+    assert json.loads(responses[3]["result"]) == payload
+    assert json.loads(responses[4]["result"]) == payload
+
+
+def test_real_mcp_rejects_raw_coercion_typos_and_conflicting_selections(tmp_path):
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+
+    output = tmp_path / "must-not-be-written.txt"
+
+    async def scenario():
+        parameters = StdioServerParameters(
+            command=sys.executable,
+            args=["-m", "geo_infer_api.agent_mcp"],
+            cwd=str(tmp_path),
+        )
+        async with (
+            stdio_client(parameters) as (reader, writer),
+            ClientSession(reader, writer) as client,
+        ):
+            await client.initialize()
+            invalid = [
+                ("geo_catalog", dict(module="API", limit=True)),
+                ("geo_catalog", dict(module="API", limit="1")),
+                ("geo_catalog", dict(module="API", offset="0")),
+                ("geo_catalog", dict(module="API", query=None)),
+                ("geo_catalog", dict(module="API", limt=1)),
+                ("geo_catalog", dict(module="API", limt=None)),
+                ("geo_modules", dict(unexpected=True)),
+                ("geo_modules", dict(op="close")),
+                (
+                    "geo_call",
+                    dict(
+                        target="geo_infer_api.agent_catalog:module_inventory", args="[]"
+                    ),
+                ),
+                (
+                    "geo_call",
+                    dict(
+                        target="geo_infer_api.agent_catalog:module_inventory",
+                        kwargs="{}",
+                    ),
+                ),
+                (
+                    "geo_get",
+                    dict(target="geo_infer_api.agent_catalog:MODULES", handle=""),
+                ),
+                (
+                    "geo_describe",
+                    dict(target="geo_infer_api.agent_catalog:MODULES", handle="path"),
+                ),
+            ]
+            for tool, arguments in invalid:
+                result = await client.call_tool(tool, arguments)
+                assert result.isError, (tool, arguments, result)
+                assert result.structuredContent["ok"] is False
+                assert result.structuredContent["error"]["message"]
+
+            created = await client.call_tool(
+                "geo_call",
+                dict(
+                    target="geo_infer_api.agent_cli:Path",
+                    args=[str(output)],
+                    save_as="path",
+                ),
+            )
+            assert not created.isError
+            rejected = await client.call_tool(
+                "geo_call",
+                dict(
+                    handle="path",
+                    member="write_text",
+                    args=["unexpected"],
+                    saveAs="typo",
+                ),
+            )
+            assert rejected.isError and not output.exists()
+
+            # Explicit nulls on advertised optional fields keep their existing
+            # meaning, while an unknown null-valued field above is an error.
+            inventory = await client.call_tool(
+                "geo_call",
+                dict(
+                    target="geo_infer_api.agent_catalog:module_inventory",
+                    handle=None,
+                    member=None,
+                    args=None,
+                    kwargs=None,
+                    save_as=None,
+                ),
+            )
+            assert not inventory.isError
+            assert len(inventory.structuredContent["result"]) == 45
+            selected = await client.call_tool(
+                "geo_get",
+                dict(
+                    target="geo_infer_api.agent_catalog:MODULES",
+                    handle=None,
+                    member=None,
+                    path=None,
+                    save_as=None,
+                ),
+            )
+            assert (
+                not selected.isError and len(selected.structuredContent["result"]) == 45
+            )
+            valid = await client.call_tool(
+                "geo_call",
+                dict(handle="path", member="write_text", args=["authorized"]),
+            )
+            assert not valid.isError
+            assert output.read_text() == "authorized"
+
+    asyncio.run(scenario())
 
 
 def _cli(tmp_path, *arguments, input=None):

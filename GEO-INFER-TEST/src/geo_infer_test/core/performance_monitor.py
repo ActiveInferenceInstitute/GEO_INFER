@@ -5,6 +5,8 @@ Track execution time, memory usage, and throughput for test runs
 and custom benchmarks.
 """
 
+import asyncio
+import inspect
 import json
 import math
 import threading
@@ -29,6 +31,37 @@ _TRACE_OWNED = False
 def _positive_integer(value: int, name: str, *, minimum: int = 1) -> None:
     if type(value) is not int or value < minimum:
         raise ValueError(f"{name} must be an integer >= {minimum}")
+
+
+def _require_sync_callable(func: Callable[..., Any]) -> None:
+    if inspect.iscoroutinefunction(func) or (
+        callable(func) and inspect.iscoroutinefunction(type(func).__call__)
+    ):
+        raise TypeError("Async work requires run_async()")
+
+
+def _invoke_sync(func: Callable[..., Any], args: tuple, kwargs: dict) -> None:
+    result = func(*args, **kwargs)
+    if inspect.isawaitable(result):
+        # A wrapper can return a coroutine without being a coroutine function.
+        # Close only that unstarted native coroutine; other awaitables retain
+        # their caller's ownership and are never cancelled implicitly.
+        if (
+            inspect.iscoroutine(result)
+            and inspect.getcoroutinestate(result) == inspect.CORO_CREATED
+        ):
+            result.close()
+        raise TypeError("Async work requires run_async()")
+
+
+def _raise_new_cancellation(task: asyncio.Task | None, baseline: int) -> int:
+    """Retain a run's cancellation even if measured work swallows its delivery."""
+    observed = task.cancelling() if task is not None else baseline
+    if observed > baseline:
+        raise asyncio.CancelledError()
+    # Work may explicitly clear an older cancellation. Remember that observed
+    # decrease so a later, distinct cancellation cannot hide below entry count.
+    return observed
 
 
 def _acquire_trace() -> None:
@@ -148,7 +181,8 @@ class PerformanceMonitor:
 class BenchmarkRunner:
     """
     Run a callable *iterations* times (with optional warmup) and
-    report min / max / mean / median / stdev timing.
+    report min / max / mean / median / stdev timing. Use ``run_async``
+    when the callable returns awaitable work.
     """
 
     def __init__(
@@ -170,19 +204,55 @@ class BenchmarkRunner:
         label: str = "",
         **kwargs: Any,
     ) -> dict[str, Any]:
-        """Execute *func* and return timing statistics."""
+        """Time synchronous calls; awaitable work requires ``run_async``."""
+        _require_sync_callable(func)
         label = label or getattr(func, "__name__", "benchmark")
 
         # Warmup
         for _ in range(self.warmup):
-            func(*args, **kwargs)
+            _invoke_sync(func, args, kwargs)
 
         durations: list[float] = []
         for _ in range(self.iterations):
             start = time.perf_counter()
-            func(*args, **kwargs)
+            _invoke_sync(func, args, kwargs)
             durations.append(time.perf_counter() - start)
 
+        return self._summarize(durations, label)
+
+    async def run_async(
+        self,
+        func: Callable[..., Any],
+        *args: Any,
+        label: str = "",
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Time sequential awaited calls, including warmup and completion.
+
+        Synchronous return values are accepted as completed work. Exceptions
+        and cancellation propagate; no partial benchmark is reported as success.
+        New outstanding cancellation stops measurement even if the callable
+        catches its delivery. Explicit ``uncancel`` retains native semantics.
+        """
+        label = label or getattr(func, "__name__", "benchmark")
+        owner = asyncio.current_task()
+        cancellation_baseline = owner.cancelling() if owner is not None else 0
+        durations: list[float] = []
+        for index in range(self.warmup + self.iterations):
+            start = time.perf_counter()
+            try:
+                result = func(*args, **kwargs)
+                if inspect.isawaitable(result):
+                    await result
+            finally:
+                cancellation_baseline = _raise_new_cancellation(
+                    owner, cancellation_baseline
+                )
+            if index >= self.warmup:
+                durations.append(time.perf_counter() - start)
+        return self._summarize(durations, label)
+
+    def _summarize(self, durations: list[float], label: str) -> dict[str, Any]:
         result = {
             "label": label,
             "iterations": self.iterations,
@@ -211,8 +281,8 @@ class BenchmarkRunner:
 
 class LoadTester:
     """
-    Tests concurrent load by running a callable across multiple threads
-    and measuring aggregate throughput and error rate.
+    Measure concurrent throughput and error rate using threads for ``run``
+    or bounded native async workers for ``run_async``.
     """
 
     def __init__(
@@ -234,7 +304,8 @@ class LoadTester:
         label: str = "",
         **kwargs: Any,
     ) -> dict[str, Any]:
-        """Execute load test and return throughput stats."""
+        """Run synchronous threaded load; awaitables require ``run_async``."""
+        _require_sync_callable(func)
         label = label or getattr(func, "__name__", "load_test")
         durations: list[float] = []
         errors: list[str] = []
@@ -260,6 +331,69 @@ class LoadTester:
 
         total_time = time.perf_counter() - overall_start
 
+        return self._summarize(durations, errors, total_time, label)
+
+    async def run_async(
+        self,
+        func: Callable[..., Any],
+        *args: Any,
+        label: str = "",
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Await requests with at most ``concurrency`` owned worker tasks.
+
+        Per-request exceptions count as errors. Cancelling the run cancels
+        and awaits every worker before propagating cancellation to its caller.
+        Swallowed delivery cannot start more requests while new cancellation
+        remains outstanding on either the worker or the overall run task.
+        """
+        label = label or getattr(func, "__name__", "load_test")
+        owner = asyncio.current_task()
+        owner_cancellation_baseline = owner.cancelling() if owner is not None else 0
+        durations: list[float] = []
+        errors: list[str] = []
+        requests = iter(range(self.total_requests))
+
+        async def worker() -> None:
+            nonlocal owner_cancellation_baseline
+            task = asyncio.current_task()
+            cancellation_baseline = task.cancelling() if task is not None else 0
+            for _ in requests:
+                start = time.perf_counter()
+                try:
+                    result = func(*args, **kwargs)
+                    if inspect.isawaitable(result):
+                        await result
+                except Exception as exc:
+                    errors.append(str(exc))
+                cancellation_baseline = _raise_new_cancellation(
+                    task, cancellation_baseline
+                )
+                owner_cancellation_baseline = _raise_new_cancellation(
+                    owner, owner_cancellation_baseline
+                )
+                durations.append(time.perf_counter() - start)
+
+        overall_start = time.perf_counter()
+        async with asyncio.TaskGroup() as group:
+            workers = []
+            for _ in range(min(self.concurrency, self.total_requests)):
+                workers.append(group.create_task(worker()))
+            # Awaiting the workers also propagates a request's own
+            # CancelledError; TaskGroup alone treats a cancelled child as a
+            # normal exit and could otherwise report an incomplete run.
+            await asyncio.gather(*workers)
+        return self._summarize(
+            durations, errors, time.perf_counter() - overall_start, label
+        )
+
+    def _summarize(
+        self,
+        durations: list[float],
+        errors: list[str],
+        total_time: float,
+        label: str,
+    ) -> dict[str, Any]:
         result = {
             "label": label,
             "concurrency": self.concurrency,
@@ -288,7 +422,7 @@ class LoadTester:
         start = time.perf_counter()
         error: str | None = None
         try:
-            func(*args, **kwargs)
+            _invoke_sync(func, args, kwargs)
         except Exception as exc:
             error = str(exc)
         return time.perf_counter() - start, error

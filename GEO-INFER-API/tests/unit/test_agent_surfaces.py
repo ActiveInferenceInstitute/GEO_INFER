@@ -502,6 +502,33 @@ def test_real_mcp_sdk_stdio_discovery_call_error_and_resource(tmp_path):
             assert failed.isError
             released = await client.call_tool("geo_release", {"handle": "engine"})
             assert not released.isError
+            payload = {"$ref": "customer-record", "amount": 5}
+            mapped = await client.call_tool(
+                "geo_call",
+                {
+                    "target": "geo_infer_api.agent_schema:json.loads",
+                    "args": [json.dumps(payload)],
+                },
+            )
+            assert not mapped.isError
+            mapped_ref = mapped.structuredContent["result"]
+            selected = await client.call_tool(
+                "geo_get", {"handle": mapped_ref["$ref"], "path": ["$ref"]}
+            )
+            assert selected.structuredContent == dict(ok=True, result="customer-record")
+            composed = await client.call_tool(
+                "geo_call",
+                {
+                    "target": "geo_infer_api.agent_schema:json.dumps",
+                    "args": [mapped_ref],
+                },
+            )
+            assert not composed.isError
+            assert json.loads(composed.structuredContent["result"]) == payload
+            released = await client.call_tool(
+                "geo_release", {"handle": mapped_ref["$ref"]}
+            )
+            assert not released.isError
             resources = await client.list_resources()
             assert {str(resource.uri) for resource in resources.resources} == {
                 "geo-infer://modules",

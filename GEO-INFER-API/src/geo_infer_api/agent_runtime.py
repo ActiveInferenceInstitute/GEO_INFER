@@ -25,6 +25,7 @@ from geo_infer_api.agent_skills import read_guidance, skill_inventory
 from geo_infer_api.agent_diagnostics import runtime_diagnostics
 
 _PACKAGE_NAMES = frozenset(package_name(name) for name in MODULES)
+_ARGUMENT_OPERATORS = frozenset({"$literal", "$ref", "$callable", "$type"})
 
 _CODEC_FIELDS = {
     "ndarray": {"dtype"},
@@ -124,7 +125,9 @@ class AgentSession:
         self.contexts: dict[str, contextlib.AsyncExitStack] = {}
         self.closed = False
 
-    async def _close(self, exc_info: tuple = (None, None, None)) -> dict[str, Any]:
+    async def _close(
+        self, exc_info: tuple = (None, None, None)
+    ) -> tuple[dict[str, Any], bool]:
         counts = {
             "closed": True,
             "released_handles": len(self.objects),
@@ -134,12 +137,12 @@ class AgentSession:
         try:
             for entry in self.contexts.values():
                 stack.push_async_exit(entry)
-            await stack.__aexit__(*exc_info)
+            suppressed = await stack.__aexit__(*exc_info)
         finally:
             self.contexts.clear()
             self.objects.clear()
             self.closed = True
-        return counts
+        return counts, suppressed
 
     async def aclose(self) -> dict[str, Any]:
         """Exit owned contexts in reverse order and release all handles.
@@ -148,7 +151,8 @@ class AgentSession:
         enter/exit for resources requiring deterministic native cleanup.
         """
         with contextlib.redirect_stdout(sys.stderr):
-            return await self._close()
+            counts, _suppressed = await self._close()
+            return counts
 
     def close(self) -> dict[str, Any]:
         """Synchronous cleanup; async applications use ``await aclose``."""
@@ -168,8 +172,8 @@ class AgentSession:
             asyncio.get_running_loop()
         except RuntimeError:
             with contextlib.redirect_stdout(sys.stderr):
-                asyncio.run(self._close(exc_info))
-            return False
+                _counts, suppressed = asyncio.run(self._close(exc_info))
+            return suppressed
         raise RuntimeError("Use async with AgentSession() inside an event loop")
 
     async def __aenter__(self) -> AgentSession:
@@ -177,8 +181,8 @@ class AgentSession:
 
     async def __aexit__(self, *exc_info) -> bool:
         with contextlib.redirect_stdout(sys.stderr):
-            await self._close(exc_info)
-        return False
+            _counts, suppressed = await self._close(exc_info)
+        return suppressed
 
     def _store(self, value: Any, name: str | None = None) -> dict[str, str]:
         name = name or uuid4().hex
@@ -340,6 +344,11 @@ class AgentSession:
                     raise ValueError(
                         "Non-string dictionary keys require a native handle"
                     )
+                if _ARGUMENT_OPERATORS.intersection(value):
+                    # Returning these keys as ordinary JSON would reinterpret
+                    # business data as instructions when composed into a call.
+                    # A literal wrapper cannot preserve nested native codecs.
+                    raise ValueError("Reserved result keys require a native handle")
                 return {
                     key: self._json(item, budget, seen) for key, item in value.items()
                 }

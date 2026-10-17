@@ -101,3 +101,33 @@ external or overlapping tracemalloc ownership. Its memory peak is the observed
 process-wide traced peak, not a section's exclusive allocation. `BenchmarkRunner`
 reports nearest-rank p95/p99 and throughput; `LoadTester` keeps only concurrency-
 bounded pending work and counts exceptions even when their messages are empty.
+
+For asynchronous workloads, await `BenchmarkRunner.run_async` or
+`LoadTester.run_async`; both include actual awaited completion. The synchronous
+`run` methods reject known async callables and unexpected awaitable returns.
+Async benchmarks propagate failures; async load counts ordinary request errors,
+keeps at most `concurrency` workers, and cancels and awaits owned workers before
+propagating cancellation. Both async methods accept completed synchronous return
+values but do not move blocking functions to threads.
+
+```python
+import asyncio
+from geo_infer_test.core.performance_monitor import BenchmarkRunner, LoadTester
+
+async def measure_async_work():
+    async def operation():
+        await asyncio.sleep(0)
+        return 7
+
+    benchmark = await BenchmarkRunner(iterations=5, warmup=1).run_async(operation)
+    load = await LoadTester(concurrency=2, total_requests=6).run_async(operation)
+    assert benchmark["iterations"] == 5
+    assert load["completed"] == 6 and load["errors"] == 0
+
+asyncio.run(measure_async_work())
+```
+
+These public methods are also discoverable through `geo-infer catalog TEST`
+and callable on retained instances through `AgentSession`, persistent JSON Lines
+CLI and MCP `geo_call`. Supply a public callable via `$callable` or an existing
+native handle. Keep one session and event loop for async resources.

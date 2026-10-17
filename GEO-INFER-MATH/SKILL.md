@@ -120,3 +120,20 @@ The adapter retains this module's dependencies and authorization requirements.
 Import `MemoryConstraintError` from `geo_infer_math.utils` for module memory-budget
 failures. Python's builtin `MemoryError` is distinct. MATH imports defer GPU runtime
 initialization; explicit accelerator operations perform capability probing.
+
+### Interpolation and cached computation
+
+`RBFInterpolator(InterpolationConfig(method="rbf", rbf_function="thin_plate_spline"))`
+uses SciPy's native RBF kernel. `rbf_epsilon` (default `1.0`) scales distances
+in the supplied coordinate system; normalize coordinates or choose a scale
+appropriate to the data. Native solver/configuration errors propagate. A failed
+refit preserves the previous successful model. Real and complex observations
+retain their native numeric support.
+
+`cache_result(maxsize=128, ttl=None)` uses bounded LRU storage and monotonic TTL.
+Array shape, dtype and content participate in keys. Cached results retain native
+identity and mutability; callers share that value. Concurrent misses may compute
+the same key independently. Zero capacity or TTL disables storage; unpickleable
+arguments execute uncached. Key generation serializes inputs without loading
+serialized data. Use the wrapper's `cache_info()` and `cache_clear()` for metrics
+and explicit lifecycle management.

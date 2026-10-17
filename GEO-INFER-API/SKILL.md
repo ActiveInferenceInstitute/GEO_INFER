@@ -112,3 +112,15 @@ Use `save_as` when retaining a selected native view and its dtype matters.
 Automatic opaque reads reuse an existing identity handle; explicit aliases
 still consume capacity. Read a public value directly with
 `geo-infer get TARGET --path JSON`.
+
+### Strict requests and native maps
+
+Selectors must name exactly one nonempty target or handle; optional members
+must also be nonempty. The MCP adapter validates raw arguments before SDK
+coercion, rejecting unknown keys and incorrect types before execution. Optional
+null defaults retain their advertised meaning. Returned dictionaries containing
+reserved `$ref`, `$type`, `$literal` or `$callable` keys are retained as native
+handles, including nested collisions. Use `$ref` and `get.path` to compose or
+select them. Explicit caller `$literal` inputs remain exact user data. Python
+session context managers preserve an entered native context's exception
+suppression as well as cleanup.

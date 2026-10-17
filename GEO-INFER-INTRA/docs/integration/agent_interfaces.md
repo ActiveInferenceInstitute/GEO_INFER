@@ -195,6 +195,13 @@ Install the `scientific` extra for NumPy/pandas/xarray/GeoPandas/Shapely codecs;
 reserved operators reject unknown fields, and every `$type` requires `data`.
 Use `$literal` for data containing reserved keys. Xarray attributes (including
 units), pandas dtypes and referenced native indexes are preserved explicitly.
+
+Returned dictionaries with reserved operator keys are retained as native handles,
+including dictionaries containing nested collisions. Passing their `$ref` into
+the next operation preserves the original map and any scientific values inside
+it; `get.path` can select a reserved key. Explicit `$literal` inputs still decode
+as exact user data. Python `with AgentSession()` and `async with` preserve native
+context exception suppression during cleanup.
 other optional backend dependencies belong to their owning modules. Convert a
 handle through its real public methods, such as `to_dict`, `tolist` or `item`,
 when JSON output is needed. Enum constructors accept their native values;
@@ -267,6 +274,13 @@ by the official SDK. Tool results include the shared envelope in text and
 request schemas, and `compose_analysis` is a
 discovery-oriented prompt. Only import-free discovery tools are annotated
 read-only; runtime imports can initialize scientific backends.
+
+Raw MCP arguments pass the shared strict request validator before SDK argument
+conversion: unknown keys, boolean/string pagination bounds, empty selectors and
+conflicting selectors fail before target execution. Optional null defaults
+retain their advertised behavior. A selector requires exactly one nonempty
+target or handle; a supplied member must be nonempty. Batches validate every
+request's structure before executing the first operation.
 
 `geo-infer://skills` lists all 46 packaged skill references. The resource
 template `geo-infer://skills/{module}` reads `ROOT` or a module such as `SPACE`;

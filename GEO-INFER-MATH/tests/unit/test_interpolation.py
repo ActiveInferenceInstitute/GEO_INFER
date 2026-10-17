@@ -13,6 +13,7 @@ from geo_infer_math.core.interpolation import (
     InterpolationConfig,
     IDWInterpolator,
     KrigingInterpolator,
+    RBFInterpolator,
     LinearInterpolator,
     CubicInterpolator,
     InterpolationManager,
@@ -138,6 +139,101 @@ class TestKrigingInterpolator:
         kriging = KrigingInterpolator()
         with pytest.raises(ValueError, match="at most 500"):
             kriging.fit(coords, values)
+
+
+class TestRBFInterpolator:
+    """Requested kernels must use native radial basis interpolation."""
+
+    def test_default_kernel_is_native_and_interpolates_training_values(
+        self, sample_data
+    ):
+        from scipy.interpolate import RBFInterpolator as ScipyRBF
+
+        coords, values = sample_data
+        model = RBFInterpolator().fit(coords, values)
+        assert isinstance(model.rbf_model, ScipyRBF)
+        np.testing.assert_allclose(model.predict(coords), values, atol=1e-10)
+
+    def test_thin_plate_spline_reproduces_affine_plane(self):
+        coords = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [1.0, 1.0]])
+        values = coords[:, 0] + 2 * coords[:, 1]
+        model = RBFInterpolator(
+            InterpolationConfig(rbf_function="thin_plate_spline")
+        ).fit(coords, values)
+        query = np.array([[0.25, 0.25], [0.75, 0.25]])
+        np.testing.assert_allclose(model.predict(query), [0.75, 1.25], atol=1e-12)
+        coords[:] = -100
+        values[:] = -100
+        np.testing.assert_allclose(model.predict(query), [0.75, 1.25], atol=1e-12)
+
+    def test_configured_epsilon_and_smoothing_match_native_scipy(self, sample_data):
+        from scipy.interpolate import RBFInterpolator as ScipyRBF
+
+        coords, values = sample_data
+        query = np.array([[2.0, 3.0], [4.0, 5.0]])
+        config = InterpolationConfig(
+            rbf_function="gaussian", rbf_epsilon=0.5, smoothing=0.1
+        )
+        expected = ScipyRBF(
+            coords, values, kernel="gaussian", epsilon=0.5, smoothing=0.1
+        )
+        result = RBFInterpolator(config).fit(coords, values).predict(query)
+        np.testing.assert_allclose(result, expected(query), atol=1e-12)
+
+    def test_complex_values_preserve_native_affine_solution(self):
+        coords = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [1.0, 1.0]])
+        values = (
+            coords[:, 0] + 2 * coords[:, 1] + 1j * (2 * coords[:, 0] - coords[:, 1])
+        )
+        model = RBFInterpolator(
+            InterpolationConfig(rbf_function="thin_plate_spline")
+        ).fit(coords, values)
+        np.testing.assert_allclose(
+            model.predict(np.array([[0.25, 0.25]])), [0.75 + 0.25j], atol=1e-12
+        )
+
+    def test_invalid_kernel_propagates_without_fitting_another_algorithm(
+        self, sample_data
+    ):
+        coords, values = sample_data
+        model = RBFInterpolator(InterpolationConfig(rbf_function="invalid_kernel"))
+        with pytest.raises(ValueError, match="kernel"):
+            model.fit(coords, values)
+        assert not model.is_fitted
+        assert model.rbf_model is None
+
+    @pytest.mark.parametrize(
+        "epsilon", [0, -1, float("inf"), float("nan"), True, None, [1], "1", 1j]
+    )
+    def test_invalid_shape_parameter_is_rejected(self, sample_data, epsilon):
+        coords, values = sample_data
+        model = RBFInterpolator(InterpolationConfig(rbf_epsilon=epsilon))
+        with pytest.raises(ValueError, match="rbf_epsilon"):
+            model.fit(coords, values)
+        assert not model.is_fitted
+
+    def test_predict_failure_does_not_change_native_model(self, sample_data):
+        coords, values = sample_data
+        model = RBFInterpolator().fit(coords, values)
+        native = model.rbf_model
+        with pytest.raises(ValueError):
+            model.predict(np.array([[0.0, 0.0, 0.0]]))
+        assert model.rbf_model is native
+
+    def test_prediction_requires_a_successful_fit(self):
+        with pytest.raises(ValueError, match="must be fitted"):
+            RBFInterpolator().predict(np.array([[0.0, 0.0]]))
+
+    def test_manager_rbf_uses_requested_kernel(self):
+        coords = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [1.0, 1.0]])
+        values = coords[:, 0] + 2 * coords[:, 1]
+        manager = InterpolationManager(
+            InterpolationConfig(rbf_function="thin_plate_spline")
+        )
+        result = manager.interpolate(
+            coords, values, np.array([[0.25, 0.25]]), method="rbf"
+        )
+        np.testing.assert_allclose(result, [0.75], atol=1e-12)
 
 
 class TestLinearInterpolator:

@@ -108,6 +108,7 @@ class TestTestDiscovererBasic:
         stats = d.get_test_statistics()
         assert stats["tests_by_module"]["AAA"] == 3
         assert stats["tests_by_type"]["general"] == 1
+        assert stats["total_test_files"] == 3
 
     def test_discover_unknown_module(self, repo):
         d = _TestDiscoverer(base_path=repo)
@@ -224,6 +225,119 @@ def test_all_selector_expands_to_owning_modules(tmp_path):
     results = _TestDiscoverer(base_path=base).discover_all_tests(["ALL"])
     assert "ALL" not in results
     assert {"ALPHA", "BETA"} <= set(results)
+
+
+def test_statistics_total_matches_all_module_and_category_counts(tmp_path):
+    base = _make_repo(tmp_path, ["SPACE", "TIME"])
+    d = _TestDiscoverer(base_path=base)
+    d.discover_all_tests(["SPACE", "TIME"])
+    stats = d.get_test_statistics()
+    assert stats["total_test_files"] == 2
+    assert stats["total_test_files"] == sum(stats["tests_by_module"].values())
+    assert stats["total_test_files"] == sum(stats["tests_by_type"].values())
+
+
+def test_analysis_includes_async_test_functions_and_relative_import_identity(tmp_path):
+    source = tmp_path / "test_async.py"
+    source.write_text(
+        "import pytest.asyncio\n"
+        "from .geo_infer_space import helper\n"
+        "async def test_async_example():\n"
+        '    """An async behavior test."""\n'
+        "    pass\n"
+    )
+    metadata = _TestDiscoverer(base_path=tmp_path).analyze_test_file(source)
+    assert metadata["functions"] == [
+        {
+            "name": "test_async_example",
+            "line": 3,
+            "docstring": "An async behavior test.",
+        }
+    ]
+    assert metadata["imports"] == ["pytest.asyncio", ".geo_infer_space"]
+    assert metadata["framework"] == "pytest"
+
+
+def test_framework_detection_requires_an_absolute_package_boundary(tmp_path):
+    d = _TestDiscoverer(base_path=tmp_path)
+    assert d._detect_framework(["my_pytest_helpers", ".pytest"]) == "unknown"
+    assert d._detect_framework(["unittest.mock"]) == "unittest"
+
+
+def test_cross_module_imports_use_package_roots_and_are_unique(tmp_path):
+    base = _make_repo(tmp_path, ["API"])
+    source = base / "GEO-INFER-API/tests/unit/test_api.py"
+    source.write_text(
+        "from geo_infer_api.agent_runtime import AgentSession\n"
+        "from geo_infer_space.core import helper\n"
+        "import geo_infer_space.indexing\n"
+        "from .geo_infer_time import local_helper\n"
+        "import unrelated_geo_infer_ai\n"
+    )
+    d = _TestDiscoverer(base_path=base)
+    d.discover_all_tests(["API"])
+    assert d.find_cross_module_tests() == [("API", "SPACE", "test_api.py")]
+
+
+def test_registered_extra_paths_participate_in_cross_module_analysis(tmp_path):
+    base = _make_repo(tmp_path, ["PLACE"])
+    extra = base / "GEO-INFER-PLACE/locations/cascadia/tests/unit"
+    extra.mkdir(parents=True)
+    (extra / "test_extra.py").write_text("from geo_infer_data.core import helper\n")
+    d = _TestDiscoverer(base_path=base)
+    discovered = d.discover_all_tests(["PLACE"])
+    reported = "locations/cascadia/tests/unit/test_extra.py"
+    assert reported in discovered["PLACE"]["unit"]
+    assert d.find_cross_module_tests() == [("PLACE", "DATA", reported)]
+
+
+def test_root_manuscript_profiles_are_discovered_and_resolved(tmp_path):
+    root_tests = tmp_path / "tests"
+    root_tests.mkdir()
+    (root_tests / "test_manuscript.py").write_text("import geo_infer_act.core\n")
+    (root_tests / "test_manuscript_pdf_layout.py").write_text(
+        "import geo_infer_art.core\n"
+    )
+    (root_tests / "test_manuscript_paths.py").write_text("import geo_infer_data.core\n")
+    d = _TestDiscoverer(base_path=tmp_path)
+    results = d.discover_all_tests(["ROOT"])
+    assert results["ROOT"]["manuscript"] == [
+        "tests/test_manuscript.py",
+        "tests/test_manuscript_paths.py",
+    ]
+    assert results["ROOT"]["manuscript-render"] == [
+        "tests/test_manuscript_pdf_layout.py",
+        "tests/test_manuscript_paths.py",
+    ]
+    assert d.find_cross_module_tests() == [
+        ("ROOT", "ACT", "tests/test_manuscript.py"),
+        ("ROOT", "DATA", "tests/test_manuscript_paths.py"),
+        ("ROOT", "ART", "tests/test_manuscript_pdf_layout.py"),
+    ]
+    assert d.validate_test_structure()["missing_test_dirs"] == []
+
+
+def test_structure_validation_detects_malformed_registered_test_files(tmp_path):
+    base = _make_repo(tmp_path, ["PLACE"])
+    extra = base / "GEO-INFER-PLACE/locations/cascadia/tests/unit"
+    extra.mkdir(parents=True)
+    (extra / "test_broken.py").write_text("def test_broken(:\n")
+    (extra / "test_encoding.py").write_bytes(b"\xff")
+    d = _TestDiscoverer(base_path=base)
+    report = d.validate_test_structure()
+    assert report["malformed_test_files"] == [
+        "PLACE/locations/cascadia/tests/unit/test_broken.py",
+        "PLACE/locations/cascadia/tests/unit/test_encoding.py",
+    ]
+
+
+def test_structure_validation_accepts_canonical_suffix_test_names(tmp_path):
+    tests = tmp_path / "GEO-INFER-API/tests"
+    tests.mkdir(parents=True)
+    (tests / "behavior_test.py").write_text("def test_behavior():\n    pass\n")
+    report = _TestDiscoverer(base_path=tmp_path).validate_test_structure()
+    assert report["empty_test_dirs"] == []
+    assert report["malformed_test_files"] == []
 
 
 class TestHypothesisTestDiscoverer:

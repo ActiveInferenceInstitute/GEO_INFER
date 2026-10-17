@@ -8,6 +8,7 @@ analysis in the GEO-INFER framework.
 import numpy as np
 from typing import Any
 from dataclasses import dataclass
+from numbers import Real
 import logging
 from abc import ABC, abstractmethod
 from scipy.interpolate import griddata, RBFInterpolator as ScipyRBF
@@ -37,6 +38,8 @@ class InterpolationConfig:
     # RBF parameters
     rbf_function: str = "multiquadric"
     smoothing: float = 0.0
+    # SciPy scales native coordinate distances by this shape parameter.
+    rbf_epsilon: float = 1.0
 
 
 class SpatialInterpolator(ABC):
@@ -358,7 +361,7 @@ class KrigingInterpolator(SpatialInterpolator):
 
 
 class RBFInterpolator(SpatialInterpolator):
-    """Radial Basis Function interpolator."""
+    """Native SciPy radial basis interpolation without algorithm substitution."""
 
     def __init__(self, config: InterpolationConfig | None = None):
         super().__init__(config)
@@ -374,28 +377,36 @@ class RBFInterpolator(SpatialInterpolator):
 
         Returns:
             Self for method chaining
+
+        Raises:
+            ValueError: If training data, kernel, smoothing, or the positive
+                finite ``rbf_epsilon`` shape parameter is invalid. Distances
+                use the supplied coordinate units and are scaled by epsilon.
         """
         if len(coordinates) < self.config.min_points:
             raise ValueError(
                 f"Need at least {self.config.min_points} points for interpolation"
             )
 
-        try:
-            self.rbf_model = ScipyRBF(
-                coordinates,
-                values,
-                function=self.config.rbf_function,
-                smoothing=self.config.smoothing,
-            )
-            self.is_fitted = True
-            logger.info(f"Fitted RBF interpolator with {len(coordinates)} points")
-        except Exception as e:
-            logger.error(f"Failed to fit RBF interpolator: {e}")
-            # Fallback to IDW
-            logger.info("Falling back to IDW interpolation")
-            self.rbf_model = IDWInterpolator(self.config)
-            self.rbf_model.fit(coordinates, values)
-            self.is_fitted = True
+        epsilon = self.config.rbf_epsilon
+        if (
+            isinstance(epsilon, bool)
+            or not isinstance(epsilon, Real)
+            or not np.isfinite(epsilon)
+            or epsilon <= 0
+        ):
+            raise ValueError("rbf_epsilon must be a finite positive number")
+
+        model = ScipyRBF(
+            np.asarray(coordinates, dtype=float).copy(),
+            np.asarray(values).copy(),
+            kernel=self.config.rbf_function,
+            epsilon=float(epsilon),
+            smoothing=self.config.smoothing,
+        )
+        self.rbf_model = model
+        self.is_fitted = True
+        logger.info(f"Fitted RBF interpolator with {len(coordinates)} points")
 
         return self
 
@@ -412,17 +423,7 @@ class RBFInterpolator(SpatialInterpolator):
         if not self.is_fitted:
             raise ValueError("Interpolator must be fitted before prediction")
 
-        try:
-            return np.asarray(self.rbf_model(coordinates))
-        except Exception as e:
-            logger.error(f"RBF prediction failed: {e}")
-            # Fallback to IDW
-            if isinstance(self.rbf_model, IDWInterpolator):
-                return self.rbf_model.predict(coordinates)
-            else:
-                idw_model = IDWInterpolator(self.config)
-                idw_model.fit(self.rbf_model.y, self.rbf_model.d)
-                return idw_model.predict(coordinates)
+        return np.asarray(self.rbf_model(coordinates))
 
 
 class LinearInterpolator(SpatialInterpolator):

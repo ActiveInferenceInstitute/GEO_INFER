@@ -21,6 +21,8 @@ examples_dir: ../GEO-INFER-EXAMPLES/examples/
 - **Logging**: Configurable structured logging via ``configure_logging``/``get_logger`` (see ``src/geo_infer_ops/core/logging.py``)
 - **Deployment**: Configuration management for spatial services
 - **Observability**: Prometheus metrics for cross-module operations
+- **Orchestration**: Validated dependency graphs, bounded async scheduling,
+  cancellation cleanup and native task results through `Orchestrator`
 
 ### Key Imports
 
@@ -29,6 +31,7 @@ from geo_infer_ops.core.monitoring import record_request, record_error, start_me
 from geo_infer_ops.core.deployment import DeploymentManager
 from geo_infer_ops.utils.shared_logging import configure_logging
 from geo_infer_ops.core.logging import get_logger
+from geo_infer_ops.core.orchestrator import Orchestrator
 ```
 
 ## Examples
@@ -81,3 +84,18 @@ The adapter retains this module's dependencies and authorization requirements.
 Metrics servers require `prometheus-client>=0.20.0`; the context manager reports
 the bound port (including a kernel-selected port 0), shuts down and closes the
 server and joins its worker thread on normal or exceptional exit.
+
+### Compose workflow results
+
+Create an `Orchestrator`, add uniquely identified callables, then await
+`execute_workflow()`. Missing dependencies and cycles fail before any task runs.
+Dependencies start as soon as their upstream tasks complete. Functions execute
+inline; returned awaitables run on the current event loop. Blocking synchronous
+functions block that loop, and cancellation requires cooperative asynchronous
+work. Do not assume thread offloading or a hard execution deadline.
+
+Set `max_retries=0` for operations that cannot safely repeat; the existing
+default is three retries. `get_task_result(task_id)` returns the original native
+value after completion, while status/history summaries retain string results.
+Cancelling the workflow cancels and awaits its owned workers. Concurrent
+execute/add/reset operations are rejected until cleanup completes.

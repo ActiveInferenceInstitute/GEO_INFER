@@ -47,20 +47,24 @@ jobs:
           from pathlib import Path
           packages = tomllib.loads(Path("uv.lock").read_text())["package"]
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-              for name in ("pytest", "psutil"):
+              for name in ("pytest", "pytest-asyncio", "psutil"):
                   version = next(p["version"] for p in packages if p["name"] == name)
-                  output.write(f"{name}={version}\n")
+                  output.write(f"{name.replace('-', '_')}={version}\n")
       - name: Qualify real tracing, timeout, lifecycle and monitor ownership
         env:
           PYTHONPATH: GEO-INFER-TEST/src
         run: >-
           uv run --frozen --package geo-infer-api --extra mcp --no-default-groups
           --with "pytest==${{ steps.pins.outputs.pytest }}"
+          --with "pytest-asyncio==${{ steps.pins.outputs.pytest_asyncio }}"
           --with "psutil==${{ steps.pins.outputs.psutil }}"
-          python -m pytest --noconftest -c GEO-INFER-TEST/config/import-probes.ini -q
+          python -m pytest -p pytest_asyncio.plugin
+          -o asyncio_default_fixture_loop_scope=function
+          --noconftest -c GEO-INFER-TEST/config/import-probes.ini -q
           GEO-INFER-API/tests/unit/test_agent_sessions.py
           GEO-INFER-TEST/tests/unit/test_profiling.py
           GEO-INFER-TEST/tests/unit/test_performance_ownership.py
+          GEO-INFER-TEST/tests/unit/test_async_performance.py
           --junitxml="${{ runner.temp }}/profile-tests.xml"
       - name: Profile actual agent requests with source custody
         env:
