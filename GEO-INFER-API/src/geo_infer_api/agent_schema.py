@@ -50,6 +50,7 @@ class _Describe(_Selection):
 
 class _Get(_Selection):
     op: Literal["get"]
+    path: list[Any] = Field(default_factory=list)
     save_as: str | None = Field(default=None, min_length=1, max_length=128)
 
 

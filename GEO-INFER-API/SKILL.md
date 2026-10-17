@@ -101,3 +101,14 @@ Benchmark the real adapter with `python -m geo_infer_api.agent_benchmarks` or
 call `geo_infer_api.agent_benchmarks:benchmark_agent` through any surface.
 Read [profiling controls and evidence](../GEO-INFER-INTRA/docs/integration/backend_profiling.md)
 before selecting Python 3.15 sampling or interpreting throughput results.
+
+### Native result selection
+
+Use `get` / MCP `geo_get` with a `path` array to index a retained result after
+public member selection. Tagged `slice` values use `data: [start, stop, step]`
+with integers/null and a nonzero step; tagged `tuple` indexes select multiple
+scientific axes. These indexes also work in `$ref.path` for native composition.
+Use `save_as` when retaining a selected native view and its dtype matters.
+Automatic opaque reads reuse an existing identity handle; explicit aliases
+still consume capacity. Read a public value directly with
+`geo-infer get TARGET --path JSON`.

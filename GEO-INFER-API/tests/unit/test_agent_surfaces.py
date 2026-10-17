@@ -526,3 +526,100 @@ def test_real_mcp_sdk_stdio_discovery_call_error_and_resource(tmp_path):
             assert prompts.prompts[0].name == "compose_analysis"
 
     asyncio.run(scenario())
+
+
+def test_opaque_reads_reuse_identity_at_capacity_and_preserve_aliases():
+    with AgentSession(max_items=2, max_handles=2) as session:
+        array = np.arange(100).reshape(10, 10)
+        session.objects["first"] = array
+        alias = session.execute(dict(op="get", handle="first", save_as="alias"))
+        assert alias["ok"], alias
+        for _ in range(10):
+            result = session.execute(dict(op="get", handle="alias"))
+            assert result["ok"], result
+            reference = session.execute(dict(op="get", handle="alias"))
+            assert reference["result"]["$ref"] == "first"
+            assert session.decode(reference["result"]) is array
+        assert len(session.objects) == 2
+        assert session.execute(dict(op="release", handle="first"))["ok"]
+        assert session.encode(array)["$ref"] == "alias"
+        assert session.execute(dict(op="release", handle="alias"))["ok"]
+        assert session.decode(session.encode(array)) is array
+        assert len(session.objects) == 1
+        distinct = array.copy()
+        assert session.decode(session.encode(distinct)) is distinct
+        assert len(session.objects) == 2
+
+
+def test_native_windows_preserve_shape_dtype_views_and_reference_composition():
+    with AgentSession(max_items=20) as session:
+        array = np.arange(120, dtype=np.int16).reshape(10, 12)
+        session.objects["source"] = {"measurements": array}
+        path = [
+            "measurements",
+            {
+                "$type": "tuple",
+                "data": [
+                    {"$type": "slice", "data": [2, 5, None]},
+                    {"$type": "slice", "data": [1, 7, 2]},
+                ],
+            },
+        ]
+        native = session.execute(
+            dict(op="get", handle="source", path=path, save_as="window")
+        )
+        assert native["ok"], native
+        window = session.decode(native["result"])
+        assert window.dtype == np.int16 and window.shape == (3, 3)
+        assert np.shares_memory(window, array)
+        np.testing.assert_array_equal(window, array[2:5, 1:7:2])
+        assert session.decode({"$ref": "source", "path": path}).shape == (3, 3)
+        assert (
+            session.execute(dict(op="get", handle="window"))["result"]
+            == window.tolist()
+        )
+        reverse = session.execute(
+            dict(
+                op="get",
+                handle="window",
+                path=[
+                    {"$type": "slice", "data": [None, None, -1]},
+                    0,
+                ],
+            )
+        )
+        assert reverse["result"] == window[::-1][0].tolist()
+        empty = session.execute(
+            dict(
+                op="get",
+                handle="window",
+                path=[
+                    {"$type": "slice", "data": [0, 0, None]},
+                ],
+            )
+        )
+        assert empty["result"] == []
+        property_index = session.execute(
+            dict(op="get", handle="window", member="shape", path=[1])
+        )
+        assert property_index["result"] == 3
+        assert (
+            session.execute(dict(op="get", handle="source", path=["missing"]))["error"][
+                "type"
+            ]
+            == "KeyError"
+        )
+        assert (
+            session.execute(dict(op="get", handle="window", path=[100]))["error"][
+                "type"
+            ]
+            == "IndexError"
+        )
+
+
+@pytest.mark.parametrize(
+    "data", [[], [1], [1, 2], [None, None, 0], [False, 2, None], [1.5, 2, None], "all"]
+)
+def test_slice_codec_rejects_ambiguous_or_invalid_indexes(data):
+    with pytest.raises(ValueError, match="slice data"):
+        AgentSession().decode({"$type": "slice", "data": data})

@@ -208,3 +208,110 @@ def test_mcp_releases_entered_file_on_close_and_server_shutdown(
 
     asyncio.run(scenario())
     assert output.read_text() == "flushed by native context exit"
+
+
+def test_cli_native_selection_and_capacity_safe_persistent_reads(tmp_path):
+    selection = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-m",
+            "geo_infer_api.agent_cli",
+            "get",
+            "geo_infer_api.agent_catalog:MODULES",
+            "--path",
+            '[{"$type":"slice","data":[0,3,null]}]',
+        ],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        timeout=30,
+    )
+    assert selection.returncode == 0, selection.stderr
+    expected = json.loads(selection.stdout)["result"]
+    assert len(expected) == 3 and expected[0] == "ACT"
+    requests = [
+        dict(
+            op="call",
+            target="geo_infer_api.agent_runtime:AgentSession",
+            save_as="native",
+        )
+    ]
+    requests += [dict(op="get", handle="native") for _ in range(5)]
+    requests += [
+        dict(op="get", handle="native", member="objects", path=[]),
+        dict(op="close"),
+    ]
+    persistent = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-m",
+            "geo_infer_api.agent_cli",
+            "session",
+            "--max-handles",
+            "1",
+        ],
+        input="".join(json.dumps(request) + "\n" for request in requests),
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        timeout=30,
+    )
+    assert persistent.returncode == 0, persistent.stderr
+    results = [json.loads(line) for line in persistent.stdout.splitlines()]
+    assert len(results) == len(requests) and all(row["ok"] for row in results)
+    assert all(row["result"]["$ref"] == "native" for row in results[:6])
+    assert results[-2]["result"] == {}
+    assert results[-1]["result"]["released_handles"] == 1
+
+
+def test_mcp_native_selection_and_handle_identity(tmp_path):
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+
+    async def scenario():
+        parameters = StdioServerParameters(
+            command=sys.executable,
+            args=["-I", "-m", "geo_infer_api.agent_mcp"],
+            cwd=str(tmp_path),
+        )
+        async with (
+            stdio_client(parameters) as (reader, writer),
+            ClientSession(
+                reader, writer, read_timeout_seconds=timedelta(seconds=30)
+            ) as client,
+        ):
+            await client.initialize()
+            created = await client.call_tool(
+                "geo_call",
+                dict(
+                    target="geo_infer_api.agent_runtime:AgentSession",
+                    save_as="native",
+                ),
+            )
+            assert not created.isError
+            for _ in range(3):
+                read = await client.call_tool("geo_get", dict(handle="native"))
+                assert read.structuredContent["result"]["$ref"] == "native"
+            selected = await client.call_tool(
+                "geo_get",
+                dict(
+                    target="geo_infer_api.agent_catalog:MODULES",
+                    path=[{"$type": "slice", "data": [0, 3, None]}],
+                ),
+            )
+            assert not selected.isError
+            assert len(selected.structuredContent["result"]) == 3
+            malformed = await client.call_tool(
+                "geo_get",
+                dict(
+                    target="geo_infer_api.agent_catalog:MODULES",
+                    path=[{"$type": "slice", "data": [None, None, 0]}],
+                ),
+            )
+            assert malformed.isError
+            handles = await client.call_tool("geo_handles", {})
+            assert len(handles.structuredContent["result"]) == 1
+
+    asyncio.run(scenario())

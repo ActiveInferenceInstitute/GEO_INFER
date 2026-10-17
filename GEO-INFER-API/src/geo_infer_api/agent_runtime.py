@@ -39,6 +39,7 @@ _CODEC_FIELDS = {
     "path": set(),
     "tuple": set(),
     "set": set(),
+    "slice": set(),
     "float": set(),
 }
 
@@ -209,9 +210,7 @@ class AgentSession:
             if not isinstance(value.get("path", []), list):
                 raise ValueError("$ref path must be an array of index values")
             result = self.objects[value["$ref"]]
-            for part in value.get("path", []):
-                result = result[self.decode(part)]
-            return result
+            return self._select(result, value.get("path", []))
         if "$callable" in value:
             if set(value) != {"$callable"}:
                 raise ValueError("$callable must be the only field")
@@ -287,10 +286,27 @@ class AgentSession:
                 return tuple(data)
             if tag == "set":
                 return set(data)
+            if tag == "slice":
+                if (
+                    not isinstance(data, list)
+                    or len(data) != 3
+                    or any(part is not None and type(part) is not int for part in data)
+                    or data[2] == 0
+                ):
+                    raise ValueError(
+                        "slice data must be [start, stop, step] integers/null with nonzero step"
+                    )
+                return slice(*data)
             if tag == "float" and data in {"nan", "inf", "-inf"}:
                 return float(data)
             raise ValueError(f"Unknown or invalid $type: {tag}")
         return {key: self.decode(item) for key, item in value.items()}
+
+    def _select(self, value: Any, path: list[Any]) -> Any:
+        """Apply native indexing, including explicit slice and tuple codecs."""
+        for part in path:
+            value = value[self.decode(part)]
+        return value
 
     def _json(self, value: Any, budget: list[int], seen: set[int]) -> Any:
         budget[0] -= 1
@@ -348,6 +364,14 @@ class AgentSession:
         try:
             return self._json(value, [self.max_items], set())
         except (TypeError, ValueError, RecursionError):
+            # Re-reading an opaque object must not consume another slot.
+            # Identity avoids scientific equality and preserves explicit aliases.
+            for name, existing in self.objects.items():
+                if existing is value:
+                    return {
+                        "$ref": name,
+                        "type": f"{type(value).__module__}.{type(value).__qualname__}",
+                    }
             return self._store(value)
 
     async def _dispatch(self, request: dict[str, Any]) -> Any:
@@ -446,6 +470,8 @@ class AgentSession:
             value = resolve(request["target"])
         if op == "describe":
             return describe(value)
+        if op == "get":
+            value = self._select(value, request["path"])
         if op == "call":
             args = self.decode(request.get("args", []))
             kwargs = self.decode(request.get("kwargs", {}))

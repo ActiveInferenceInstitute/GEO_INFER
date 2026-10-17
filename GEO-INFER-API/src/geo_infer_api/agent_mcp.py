@@ -160,8 +160,14 @@ def create_server(*, quiet_stdout: bool = False) -> Any:
         handle: str | None = None,
         member: str | None = None,
         save_as: str | None = None,
+        path: list[Any] | None = None,
     ) -> CallToolResult:
-        """Read a public constant, enum member, object property or result value."""
+        """Read a public constant, property or native result, optionally indexed.
+
+        path applies successive native indexes after member selection. Tagged
+        slice [start, stop, step] and tuple indexes select scientific windows.
+        Opaque values reuse an existing handle unless save_as requests an alias.
+        """
         return await execute(
             {
                 key: value
@@ -171,6 +177,7 @@ def create_server(*, quiet_stdout: bool = False) -> Any:
                     "handle": handle,
                     "member": member,
                     "save_as": save_as,
+                    "path": path,
                 }.items()
                 if value is not None
             }

@@ -115,7 +115,7 @@ Use `describe` to inspect parameter kinds, defaults, annotations and docstrings.
 | `guide` | none | Packaged version of this agent interface guide |
 | `describe` | `target` OR `handle` and optional `member` | Runtime signature, docs and members |
 | `call` | same selection, optional `args`, `kwargs`, `save_as` | Function, constructor or bound method |
-| `get` | same selection, optional `save_as` | Constant, enum, public property or stored result |
+| `get` | same selection, optional `path` and `save_as` | Constant, enum, public property or stored result |
 | `batch` | `steps` | 1–100 sequential requests; stop on first failure |
 | `handles` | none | Retained object references and native types |
 | `release` | `handle` | Drop an owned reference |
@@ -130,11 +130,16 @@ iterators and other native objects that cannot be converted to JSON.
 
 Use `save_as` to retain a result before later steps consume it. `{"$ref":"id"}`
 passes the original native value; optional `"path":["key",0]` indexes a retained
-mapping/sequence. Constructor results become handles automatically. Small
+mapping/sequence. `get` also accepts a `path` index array, applied after any
+public `member` selection. Constructor results become handles automatically. Small
 arrays and Pydantic models become JSON, while opaque, cyclic, oversized and
 non-string-keyed results remain native handles. Tuple outputs use JSON arrays;
 use `save_as` when native tuple identity matters. Default limits are 256 handles
 and 10,000 JSON items; Python sessions may set different positive limits.
+Automatic opaque results reuse the first retained handle for the identical
+object, including at capacity; no scientific equality comparison is performed.
+An explicit `save_as` creates a separate named alias and still requires capacity.
+Releasing one alias preserves other aliases.
 
 Batches are sequential, not transactions. Earlier side effects remain after
 failure, and runtime failures can occur after partial work inside an API call.
@@ -183,6 +188,7 @@ the authority of imported/re-exported functions or native object methods.
 | `{"$type":"date","data":"2026-10-16"}` | date.fromisoformat |
 | `{"$type":"path","data":"results/output.json"}` | pathlib.Path; no file is opened by decoding |
 | `{"$type":"tuple","data":[1,2]}` / `{"$type":"set","data":[1,2]}` | Native tuple/set |
+| `{"$type":"slice","data":[0,10,2]}` | Native slice `[start, stop, step]`; each integer or null, step nonzero |
 | `{"$type":"float","data":"nan"}` | Explicit nonfinite float; also `inf`, `-inf` |
 
 Install the `scientific` extra for NumPy/pandas/xarray/GeoPandas/Shapely codecs;
@@ -193,6 +199,47 @@ other optional backend dependencies belong to their owning modules. Convert a
 handle through its real public methods, such as `to_dict`, `tolist` or `item`,
 when JSON output is needed. Enum constructors accept their native values;
 `get` can retain an enum member with `save_as` before passing its `$ref`.
+
+### Selecting native result windows
+
+Use `get.path` to retrieve a small result without exporting the entire native
+object. Each path element applies one native index; a tagged tuple combines
+axes in one index. The same indexes work inside `$ref.path` when passing a
+window directly into the next operation.
+
+```python
+from geo_infer_api import AgentSession
+
+with AgentSession() as session:
+    saved = session.execute({
+        "op": "get", "target": "geo_infer_api.agent_catalog:MODULES",
+        "save_as": "modules",
+    })
+    assert saved["ok"]
+    result = session.execute({
+        "op": "get", "handle": "modules",
+        "path": [{"$type": "slice", "data": [0, 3, None]}],
+    })
+    assert result["result"] == ["ACT", "AG", "AGENT"]
+```
+
+For a retained NumPy matrix, use a single index such as
+`{"$type":"tuple","data":[{"$type":"slice","data":[0,5,null]},0]}`
+to select its first five rows in column zero. `save_as` retains the resulting
+native view with its original dtype; indexing follows the backend's own view,
+copy, bounds and exception behavior. A slice is not a computational or memory
+quota: choose appropriate indexes before expensive native operations. Small
+results are exported within the session item limit; oversized results retain
+handles. Negative strides and empty windows follow native Python semantics.
+
+The short CLI also reads public values with indexes:
+
+```bash
+geo-infer get geo_infer_api.agent_catalog:MODULES --path '[{"$type":"slice","data":[0,3,null]}]'
+```
+
+For retained handles, send `get` requests through `geo-infer session`, a batch,
+or `geo_get` in MCP. A standalone CLI invocation starts a fresh session.
 
 ## MCP
 

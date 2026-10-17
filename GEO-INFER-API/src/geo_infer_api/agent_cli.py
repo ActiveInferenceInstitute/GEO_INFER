@@ -123,6 +123,11 @@ def main(argv: list[str] | None = None) -> int:
     discovery.add_argument("--limit", type=int, default=50)
     descriptor = commands.add_parser("describe", help="Inspect a runtime API signature")
     descriptor.add_argument("target")
+    getter = commands.add_parser("get", help="Read a public value or indexed window")
+    getter.add_argument("target")
+    getter.add_argument(
+        "--path", default="[]", help="JSON index array, @file, or - for stdin"
+    )
     call = commands.add_parser("call", help="Call a function or constructor")
     call.add_argument("target")
     call.add_argument("--args", default="[]", help="JSON array, @file, or - for stdin")
@@ -156,6 +161,12 @@ def main(argv: list[str] | None = None) -> int:
             operation = {"op": "diagnostics"}
         elif options.command == "run":
             operation = _load(options.request)
+        elif options.command == "get":
+            operation = {
+                "op": "get",
+                "target": options.target,
+                "path": _load(options.path),
+            }
         elif options.command == "call":
             if options.args == options.kwargs == "-":
                 raise ValueError("stdin may supply only one of --args and --kwargs")
