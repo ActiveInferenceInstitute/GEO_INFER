@@ -120,7 +120,7 @@ class AgentSession:
         self.max_handles = max_handles
         self.max_items = max_items
         self.objects: dict[str, Any] = {}
-        self.contexts: dict[str, Any] = {}
+        self.contexts: dict[str, contextlib.AsyncExitStack] = {}
         self.closed = False
 
     async def _close(self, exc_info: tuple = (None, None, None)) -> dict[str, Any]:
@@ -130,12 +130,9 @@ class AgentSession:
             "exited_contexts": len(self.contexts),
         }
         stack = contextlib.AsyncExitStack()
-        for manager in self.contexts.values():
-            if hasattr(manager, "__aexit__"):
-                stack.push_async_exit(manager)
-            else:
-                stack.push(manager)
         try:
+            for entry in self.contexts.values():
+                stack.push_async_exit(entry)
             await stack.__aexit__(*exc_info)
         finally:
             self.contexts.clear()
@@ -391,15 +388,18 @@ class AgentSession:
             return {"released": name}
         if op in {"enter", "exit"}:
             name = request["handle"]
-            manager = self.objects[name]
             if op == "enter":
                 if name in self.contexts:
                     raise ValueError("Context is already entered")
-                if hasattr(manager, "__aenter__"):
-                    value = await manager.__aenter__()
+                manager = self.objects[name]
+                entry = contextlib.AsyncExitStack()
+                # Native protocols look up special methods on the type, and
+                # bind the exit before entry. Retain that exact callback.
+                if hasattr(type(manager), "__aenter__"):
+                    value = await entry.enter_async_context(manager)
                 else:
-                    value = manager.__enter__()
-                self.contexts[name] = manager
+                    value = entry.enter_context(manager)
+                self.contexts[name] = entry
                 return (
                     self._store(value, request["save_as"])
                     if "save_as" in request
@@ -407,13 +407,8 @@ class AgentSession:
                 )
             if name not in self.contexts:
                 raise ValueError("Context was not entered by this session")
-            try:
-                if hasattr(manager, "__aexit__"):
-                    await manager.__aexit__(None, None, None)
-                else:
-                    manager.__exit__(None, None, None)
-            finally:
-                del self.contexts[name]
+            entry = self.contexts.pop(name)
+            await entry.aclose()
             return {"exited": name}
         if op == "handles":
             return [

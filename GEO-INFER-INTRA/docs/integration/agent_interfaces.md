@@ -148,7 +148,10 @@ Public APIs that return context managers use `enter` and `exit` to run their
 native sync/async protocols. Exit an entered manager before releasing it or
 closing the process. Use `with AgentSession() as session` or `async with` to
 exit entered contexts in reverse order and release handles even on failure;
-Python context exits receive the actual body exception. Explicit `close()` /
+Python context exits receive the actual body exception. Native special methods
+are selected on the manager type, and exits are bound at entry; instance
+attribute hooks or later method replacement cannot change the registered exit.
+Explicit `close()` /
 `await aclose()` performs normal completion. Every exit is attempted even if
 an earlier cleanup fails. Closed sessions accept only diagnostics, handles and
 idempotent close. Objects never entered as contexts require their own explicit

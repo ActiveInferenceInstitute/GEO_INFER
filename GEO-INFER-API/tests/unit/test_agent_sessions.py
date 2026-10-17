@@ -289,3 +289,101 @@ def test_cli_rejects_overflowed_json_numbers_and_session_can_continue(tmp_path, 
     assert persistent.returncode == 1 and len(results) == 3
     assert not results[0]["ok"] and results[1] == {"ok": True, "result": True}
     assert results[2]["result"]["closed"]
+
+
+def test_native_sync_protocol_bypasses_instance_attribute_hooks():
+    events = []
+
+    class Manager:
+        def __getattribute__(self, name):
+            if name in {"__enter__", "__exit__", "__aenter__", "__aexit__"}:
+                raise RuntimeError("special methods must be resolved on the type")
+            return object.__getattribute__(self, name)
+
+        def __enter__(self):
+            events.append("enter")
+            return self
+
+        def __exit__(self, *error):
+            events.append("exit")
+
+    with Manager():
+        pass
+    assert events == ["enter", "exit"]
+    events.clear()
+    with AgentSession() as session:
+        session.objects["manager"] = Manager()
+        assert session.execute(dict(op="enter", handle="manager", save_as="value"))[
+            "ok"
+        ]
+    assert events == ["enter", "exit"]
+    assert session.closed and not session.contexts and not session.objects
+
+
+@pytest.mark.parametrize("explicit_exit", [False, True])
+def test_native_exit_is_bound_before_entry_and_survives_method_replacement(
+    explicit_exit,
+):
+    events = []
+
+    class Manager:
+        def __enter__(self):
+            Manager.__exit__ = lambda *args: events.append("replacement")
+            return self
+
+        def __exit__(self, *error):
+            events.append("original")
+
+    with AgentSession() as session:
+        session.objects["manager"] = Manager()
+        assert session.execute(dict(op="enter", handle="manager", save_as="value"))[
+            "ok"
+        ]
+        if explicit_exit:
+            assert session.execute(dict(op="exit", handle="manager"))["ok"]
+    assert events == ["original"]
+
+
+def test_incomplete_native_protocol_is_rejected_before_enter_side_effects():
+    events = []
+
+    class Incomplete:
+        def __enter__(self):
+            events.append("entered")
+            return self
+
+    with AgentSession() as session:
+        session.objects["manager"] = Incomplete()
+        result = session.execute(dict(op="enter", handle="manager", save_as="value"))
+        assert not result["ok"] and result["error"]["type"] == "TypeError"
+        assert not events and not session.contexts
+
+
+def test_native_async_protocol_bypasses_instance_attribute_hooks():
+    events = []
+
+    class Manager:
+        def __getattribute__(self, name):
+            if name in {"__aenter__", "__aexit__"}:
+                raise RuntimeError("special methods must be resolved on the type")
+            return object.__getattribute__(self, name)
+
+        async def __aenter__(self):
+            events.append("enter")
+            return self
+
+        async def __aexit__(self, *error):
+            events.append("exit")
+
+    async def scenario():
+        async with AgentSession() as session:
+            session.objects["manager"] = Manager()
+            assert (
+                await session.aexecute(
+                    dict(op="enter", handle="manager", save_as="value")
+                )
+            )["ok"]
+        assert session.closed and not session.contexts
+
+    asyncio.run(scenario())
+    assert events == ["enter", "exit"]
