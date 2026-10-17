@@ -478,6 +478,8 @@ uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
   `--design` option excludes CLI study overrides.
 - `examples/cascadia/study_explorer.py` projects a qualified edition to an
   offline interactive HTML view through `runners/study_visualization.py`.
+  Existing destinations are refused before scientific imports; new outputs
+  retain full qualification and an atomic exclusive create.
   See `docs/cascadia_workflow.md` for configuration, ownership and teaching.
 - `runners/study_diagnostics.py` scores recorded observation-time posteriors;
   `examples/cascadia/study_diagnostics.py` exports manifest-bound JSON. See
@@ -702,6 +704,10 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
         return """
 ## Current H3 Contracts
 
+- The Cascadia explorer CLI rejects existing destinations before scientific
+  imports. New HTML still requires full archive qualification and an atomic
+  exclusive create. Its integration child keeps coverage enabled, a finite
+  120-second budget, and 45-second diagnostic stack dumps.
 - Production ACT H3 runtime paths must use
   `geo_infer_act.utils.pymdp_adapter` and fail if `inferactively-pymdp` is not
   exactly `@PYMDP@`.

@@ -41,6 +41,10 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module ACT
 
 ## Current H3 Contracts
 
+- The Cascadia explorer CLI rejects existing destinations before scientific
+  imports. New HTML still requires full archive qualification and an atomic
+  exclusive create. Its integration child keeps coverage enabled, a finite
+  120-second budget, and 45-second diagnostic stack dumps.
 - Production ACT H3 runtime paths must use
   `geo_infer_act.utils.pymdp_adapter` and fail if `inferactively-pymdp` is not
   exactly `1.0.4`.

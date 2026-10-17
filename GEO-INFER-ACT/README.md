@@ -184,6 +184,8 @@ uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
   `--design` option excludes CLI study overrides.
 - `examples/cascadia/study_explorer.py` projects a qualified edition to an
   offline interactive HTML view through `runners/study_visualization.py`.
+  Existing destinations are refused before scientific imports; new outputs
+  retain full qualification and an atomic exclusive create.
   See `docs/cascadia_workflow.md` for configuration, ownership and teaching.
 - `runners/study_diagnostics.py` scores recorded observation-time posteriors;
   `examples/cascadia/study_diagnostics.py` exports manifest-bound JSON. See

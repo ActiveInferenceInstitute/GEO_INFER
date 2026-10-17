@@ -1,4 +1,4 @@
-"""Real archived trajectories, invalid vectors and create-only visual output."""
+"""Real archived trajectories and bounded instrumented explorer qualification."""
 
 from __future__ import annotations
 
@@ -13,6 +13,43 @@ import pytest
 from geo_infer_act.runners.study_visualization import project_study
 
 EXAMPLE = Path(__file__).resolve().parents[2] / "examples/cascadia"
+
+
+def _run_explorer(command: list[str]) -> subprocess.CompletedProcess[str]:
+    """Retain full qualification under coverage with a finite child budget.
+
+    The global coverage gate exceeded the old 60-second child deadline while
+    the ordinary integration matrices passed. Keep coverage instrumentation and
+    all custody/output assertions; capture pre-import stacks if it stalls again.
+    """
+    bootstrap = """
+import faulthandler,os,runpy,sys,time
+started=time.perf_counter()
+faulthandler.dump_traceback_later(45,repeat=True)
+sys.argv=sys.argv[1:]
+sys.path.insert(0,os.path.dirname(sys.argv[0]))
+try:
+    runpy.run_path(sys.argv[0],run_name='__main__')
+finally:
+    faulthandler.cancel_dump_traceback_later()
+    print(f'EXPLORER_ELAPSED_SECONDS={time.perf_counter()-started:.6f}',file=sys.stderr)
+"""
+    try:
+        return subprocess.run(
+            [command[0], "-c", bootstrap, *command[1:]],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as error:
+        stdout = error.stdout or b""
+        stderr = error.stderr or b""
+        if isinstance(stdout, bytes):
+            stdout = stdout.decode("utf-8", errors="replace")
+        if isinstance(stderr, bytes):
+            stderr = stderr.decode("utf-8", errors="replace")
+        pytest.fail(f"Explorer exceeded 120s; stdout={stdout}\nstderr={stderr}")
 
 
 @pytest.fixture
@@ -66,23 +103,32 @@ def test_explorer_qualifies_before_writing_and_preserves_existing_html(
         str(study),
         str(output),
     ]
-    first = subprocess.run(
-        command, capture_output=True, text=True, timeout=60, check=False
-    )
+    first = _run_explorer(command)
     assert first.returncode == 0, first.stderr
     content = output.read_bytes()
     assert b"__STUDY_DATA__" not in content and b"application/json" in content
-    again = subprocess.run(
-        command, capture_output=True, text=True, timeout=60, check=False
-    )
+    again = _run_explorer(command)
     assert again.returncode != 0 and output.read_bytes() == content
     (study / "summary.json").write_text("[]", encoding="utf-8")
     refused = tmp_path / "refused.html"
-    failed = subprocess.run(
-        [*command[:-1], str(refused)],
-        capture_output=True,
-        text=True,
-        timeout=60,
-        check=False,
-    )
+    failed = _run_explorer([*command[:-1], str(refused)])
     assert failed.returncode != 0 and not refused.exists()
+
+
+def test_existing_output_is_refused_before_reading_a_missing_study(
+    tmp_path: Path,
+) -> None:
+    """An existing destination never triggers an unnecessary qualification."""
+    output = tmp_path / "existing.html"
+    content = b"retained prior explorer"
+    output.write_bytes(content)
+    completed = _run_explorer(
+        [
+            sys.executable,
+            str(EXAMPLE / "study_explorer.py"),
+            str(tmp_path / "missing-study"),
+            str(output),
+        ]
+    )
+    assert completed.returncode != 0 and "FileExistsError" in completed.stderr
+    assert output.read_bytes() == content
