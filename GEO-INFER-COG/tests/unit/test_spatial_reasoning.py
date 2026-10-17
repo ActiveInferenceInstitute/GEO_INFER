@@ -213,7 +213,12 @@ class TestConstraintSolverBounded:
         # Conclusions are deduplicated novel relations for the six
         # premise-free pairs; none may restate a premise pair.
         premise_pairs = {(p.source_region, p.target_region) for p in premises}
-        assert 1 <= len(conclusions) <= 6 * 6
+        assert {
+            (c.source_region, c.target_region, c.relation_type) for c in conclusions
+        } == {
+            ("A", "C", relation)
+            for relation in engine.spatial_knowledge_base["topological_relations"]
+        }
         for conclusion in conclusions:
             assert (conclusion.source_region, conclusion.target_region) not in (
                 premise_pairs
@@ -227,7 +232,7 @@ class TestConstraintSolverBounded:
         )
         solutions = engine._solve_spatial_constraints(variables, domains, constraints)
 
-        assert solutions, "pinned premise chain must still yield solutions"
+        assert len(solutions) == 6**6, "all satisfying assignments must be retained"
         for solution in solutions:
             assert solution["A_B"] == "disconnected"
             assert solution["B_C"] == "disconnected"
@@ -265,3 +270,19 @@ class TestConstraintSolverBounded:
         # Cap triggers early: only a few solutions are collected, far fewer
         # than the full 6**6 Cartesian product of the six free pairs.
         assert len(solutions) < 6**6
+
+    def test_conflicting_and_out_of_domain_fixed_relations_are_unsatisfiable(self):
+        engine = SpatialReasoningEngine(reasoning_type="constraint_based")
+        for second in ("externally_connected", "unknown"):
+            constraints = [
+                {"type": "fixed_relation", "variable": "A_B", "value": value}
+                for value in ("disconnected", second)
+            ]
+            assert (
+                engine._solve_spatial_constraints(
+                    ["A", "B"],
+                    {"A_B": ["disconnected", "externally_connected"]},
+                    constraints,
+                )
+                == []
+            )

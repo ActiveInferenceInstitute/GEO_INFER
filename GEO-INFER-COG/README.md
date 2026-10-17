@@ -43,6 +43,9 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module COG
   and proximity thresholds and color counts are validated at construction.
 - Proximity grouping uses connected components and similarity grouping returns
   explicit geometry groups with confidence metadata.
+- Spatial constraint search checks unary fixed constraints once, retains all
+  satisfying assignments within its existing cap, and deduplicates equivalent
+  first-novel relations before constructing conclusions.
 
 ## Documentation Notes
 

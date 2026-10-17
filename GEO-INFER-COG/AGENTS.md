@@ -41,6 +41,8 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module COG
   cognitive thresholds/color counts at construction.
 - Return meaningful grouping clusters and confidence metadata rather than
   placeholder groups.
+- Preserve the constraint solver's assignment cap and complete satisfying set;
+  resolve unary constraints once and avoid constructing duplicate conclusions.
 
 ## Integration Notes
 

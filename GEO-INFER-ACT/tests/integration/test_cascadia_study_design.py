@@ -1,6 +1,7 @@
 """Portable study-design parsing, bounded inputs, and real CLI rejection controls."""
 
 from pathlib import Path
+import json
 import subprocess
 import sys
 
@@ -131,3 +132,34 @@ def test_default_and_explicit_cli_designs_are_preserved(tmp_path):
     )
     assert completed.returncode == 0, completed.stderr
     assert StudyDesign.model_validate_json(completed.stdout) == StudyDesign()
+
+
+def test_design_parser_does_not_load_scientific_backends(tmp_path):
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import json, sys; from cascadia_study import parse_study_arguments; "
+            "paths, design = parse_study_arguments(sys.argv[1:]); "
+            "print(json.dumps(dict(design=design.model_dump(mode='json'), "
+            "heavy=sorted(set(sys.modules) & "
+            "{'numpy','scipy','matplotlib','geopandas','jax','pymc','torch'}))))",
+            "--output",
+            str(tmp_path / "output"),
+            "--gnn-repo",
+            str(tmp_path),
+            "--gnn-python",
+            sys.executable,
+        ],
+        cwd=EXAMPLE,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["heavy"] == []
+    assert (
+        StudyDesign.model_validate_json(json.dumps(payload["design"])) == StudyDesign()
+    )
+    assert not (tmp_path / "output").exists()

@@ -16,10 +16,6 @@ from importlib.metadata import version
 from pathlib import Path
 import platform
 
-import h3
-import numpy as np
-
-import cascadia_homing as homing
 from study_contract import (
     Condition,
     RunMeasures,
@@ -29,12 +25,6 @@ from study_contract import (
     load_study_design,
     summarize,
 )
-from study_figure import save_study_figure
-from study_custody import freeze_sources, source_problems
-
-from geo_infer_act.core.gnn_contract import GNNArtifact
-from geo_infer_act.models.river_homing import compile_river_homing
-from geo_infer_act.runners.closed_loop import run_closed_loop, trace_diagnostics
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +37,16 @@ class StudyPaths:
 
 def run_study(paths: StudyPaths, design: StudyDesign) -> Path:
     """Retain inputs and each run before qualifying; never overwrite an edition."""
+    import h3
+    import numpy as np
+
+    import cascadia_homing as homing
+    from study_figure import save_study_figure
+    from study_custody import freeze_sources, source_problems
+    from geo_infer_act.core.gnn_contract import GNNArtifact
+    from geo_infer_act.models.river_homing import compile_river_homing
+    from geo_infer_act.runners.closed_loop import run_closed_loop, trace_diagnostics
+
     config = homing.load_config(paths.config)
     reference, _, provenance = homing.build_model(config)
     output = paths.output.resolve()
@@ -174,7 +174,11 @@ def parse_study_arguments(
 ) -> tuple[StudyPaths, StudyDesign]:
     """Parse the seed grid before any outputs are created."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, default=homing.DEFAULT_CONFIG)
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=Path(__file__).resolve().with_name("cascadia_homing.yaml"),
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--gnn-repo", type=Path, required=True)
     parser.add_argument("--gnn-python", type=Path, required=True)

@@ -475,7 +475,9 @@ uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
   documented in `docs/cascadia_seed_study_20261012.md`.
 - `models/river_homing_study.py` owns study semantics and bounded JSON designs;
   `models/river_homing_study_evidence.py` checks saved run agreement. The
-  `--design` option excludes CLI study overrides.
+  `--design` option excludes CLI study overrides. CLI design rejection uses
+  lazy ACT package exports and defers scientific execution/plot imports until
+  after parsing; invalid input never initializes the scientific stack.
 - `examples/cascadia/study_explorer.py` projects a qualified edition to an
   offline interactive HTML view through `runners/study_visualization.py`.
   Existing destinations are refused before scientific imports; new outputs
@@ -595,6 +597,9 @@ uv run python GEO-INFER-TEST/validate_h3_active_inference_contract.py
   and proximity thresholds and color counts are validated at construction.
 - Proximity grouping uses connected components and similarity grouping returns
   explicit geometry groups with confidence metadata.
+- Spatial constraint search checks unary fixed constraints once, retains all
+  satisfying assignments within its existing cap, and deduplicates equivalent
+  first-novel relations before constructing conclusions.
 """,
         "GEO-INFER-ECON": """
 ## Visualization Contracts
@@ -938,6 +943,8 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
   cognitive thresholds/color counts at construction.
 - Return meaningful grouping clusters and confidence metadata rather than
   placeholder groups.
+- Preserve the constraint solver's assignment cap and complete satisfying set;
+  resolve unary constraints once and avoid constructing duplicate conclusions.
 """,
         "GEO-INFER-ECON": """
 ## Visualization Guidance

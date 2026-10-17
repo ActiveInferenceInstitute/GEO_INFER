@@ -181,7 +181,9 @@ uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
   documented in `docs/cascadia_seed_study_20261012.md`.
 - `models/river_homing_study.py` owns study semantics and bounded JSON designs;
   `models/river_homing_study_evidence.py` checks saved run agreement. The
-  `--design` option excludes CLI study overrides.
+  `--design` option excludes CLI study overrides. CLI design rejection uses
+  lazy ACT package exports and defers scientific execution/plot imports until
+  after parsing; invalid input never initializes the scientific stack.
 - `examples/cascadia/study_explorer.py` projects a qualified edition to an
   offline interactive HTML view through `runners/study_visualization.py`.
   Existing destinations are refused before scientific imports; new outputs

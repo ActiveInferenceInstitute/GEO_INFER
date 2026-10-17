@@ -757,8 +757,30 @@ class SpatialReasoningEngine:
         # conclusion set stays proportional to the number of distinct novel
         # (source, target, relation) tuples rather than to the number of
         # solutions.
+        # Every solution has the same ordered variable pairs. Only its first
+        # novel pair contributes a conclusion, so equivalent values can be
+        # discarded before constructing relations or rescanning all premises.
+        first_novel_pair = next(
+            (
+                pair
+                for pair in domains
+                if len(pair.split("_")) == 2
+                and not any(
+                    p.source_region in pair and p.target_region in pair
+                    for p in premises
+                )
+            ),
+            None,
+        )
+        if first_novel_pair is None:
+            return conclusions
+        seen_values: set[str] = set()
         seen_conclusions: set = set()
         for solution in solutions:
+            value = solution[first_novel_pair]
+            if value in seen_values:
+                continue
+            seen_values.add(value)
             conclusion = self._create_constraint_conclusion(solution, premises)
             if conclusion:
                 key = (
@@ -856,6 +878,19 @@ class SpatialReasoningEngine:
         for constraint in constraints:
             constraints_by_var.setdefault(constraint["variable"], []).append(constraint)
 
+        # All current constraints are unary fixed relations. Resolve their
+        # consistency once instead of repeating generator checks at every node.
+        candidate_domains = []
+        for var in variable_pairs:
+            fixed = constraints_by_var.get(var, [])
+            if fixed:
+                value = fixed[0]["value"]
+                if value not in domains[var] or any(c["value"] != value for c in fixed):
+                    return solutions
+                candidate_domains.append((value,))
+            else:
+                candidate_domains.append(domains[var])
+
         assignment: dict[str, str] = {}
         evaluated = 0
         degraded = False
@@ -868,25 +903,16 @@ class SpatialReasoningEngine:
                 solutions.append(dict(assignment))
                 return
             var = variable_pairs[index]
-            var_constraints = constraints_by_var.get(var, [])
-            if var_constraints:
-                # Fixed constraint: only the required value can succeed.
-                candidate_values: list[str] = [var_constraints[0]["value"]]
-                if candidate_values[0] not in domains[var]:
-                    return  # Unsatisfiable pair: prune the branch.
-            else:
-                candidate_values = domains[var]
-            for value in candidate_values:
+            for value in candidate_domains[index]:
                 evaluated += 1
                 if evaluated > _MAX_EVALUATED_CONSTRAINT_ASSIGNMENTS:
                     degraded = True
-                    return
+                    break
                 assignment[var] = value
-                if all(
-                    assignment.get(c["variable"]) == c["value"] for c in var_constraints
-                ):
-                    backtrack(index + 1)
-                assignment.pop(var, None)
+                backtrack(index + 1)
+                if degraded:
+                    break
+            assignment.pop(var, None)
 
         backtrack(0)
 
