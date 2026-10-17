@@ -23,6 +23,22 @@ from geo_infer_api.agent_catalog import MODULES, catalog, module_inventory, pack
 from geo_infer_api.agent_schema import request_schema, validate_request
 from geo_infer_api.agent_skills import read_guidance, skill_inventory
 
+_CODEC_FIELDS = {
+    "ndarray": {"dtype"},
+    "dataframe": {"columns", "index", "dtype"},
+    "series": {"index", "name", "dtype"},
+    "dataarray": {"dims", "coords", "name", "attrs"},
+    "dataset": set(),
+    "geodataframe": {"crs"},
+    "geometry": set(),
+    "datetime": set(),
+    "date": set(),
+    "path": set(),
+    "tuple": set(),
+    "set": set(),
+    "float": set(),
+}
+
 
 def resolve(target: str) -> Any:
     """Resolve an explicit public GEO member; imports retain native failures."""
@@ -123,46 +139,65 @@ class AgentSession:
             return [self.decode(item) for item in value]
         if not isinstance(value, dict):
             return value
-        if set(value) == {"$literal"}:
+        if "$literal" in value:
+            if set(value) != {"$literal"}:
+                raise ValueError("$literal must be the only field")
             return value["$literal"]
-        if "$ref" in value and set(value) <= {"$ref", "type", "path"}:
+        if "$ref" in value:
+            if set(value) - {"$ref", "type", "path"}:
+                raise ValueError("Unknown $ref fields; use $literal for literal data")
+            if not isinstance(value.get("path", []), list):
+                raise ValueError("$ref path must be an array of index values")
             result = self.objects[value["$ref"]]
             for part in value.get("path", []):
-                result = result[part]
+                result = result[self.decode(part)]
             return result
-        if set(value) == {"$callable"}:
+        if "$callable" in value:
+            if set(value) != {"$callable"}:
+                raise ValueError("$callable must be the only field")
             result = resolve(value["$callable"])
             if not callable(result):
                 raise ValueError("$callable must resolve to a callable")
             return result
-        tag = value.get("$type")
-        if tag:
-            data = self.decode(value.get("data"))
+        if "$type" in value:
+            tag = value["$type"]
+            if not isinstance(tag, str) or tag not in _CODEC_FIELDS:
+                raise ValueError(f"Unknown $type: {tag}")
+            unexpected = set(value) - {"$type", "data"} - _CODEC_FIELDS[tag]
+            if unexpected or "data" not in value:
+                raise ValueError(
+                    f"$type {tag!r} requires data and rejects unknown fields: {sorted(unexpected)}"
+                )
+            data = self.decode(value["data"])
             if tag == "ndarray":
                 import numpy as np
 
-                return np.asarray(data, dtype=value.get("dtype"))
+                return np.asarray(data, dtype=self.decode(value.get("dtype")))
             if tag in {"dataframe", "series"}:
                 import pandas as pd
 
                 if tag == "dataframe":
                     return pd.DataFrame(
-                        data, columns=value.get("columns"), index=value.get("index")
+                        data,
+                        columns=self.decode(value.get("columns")),
+                        index=self.decode(value.get("index")),
+                        dtype=self.decode(value.get("dtype")),
                     )
                 return pd.Series(
                     data,
-                    index=value.get("index"),
+                    index=self.decode(value.get("index")),
                     name=value.get("name"),
-                    dtype=value.get("dtype"),
+                    dtype=self.decode(value.get("dtype")),
                 )
             if tag == "dataarray":
                 import xarray as xr
 
                 return xr.DataArray(
                     data,
-                    dims=value.get("dims"),
+                    dims=self.decode(value.get("dims")),
                     coords=self.decode(value.get("coords")),
                     name=value.get("name"),
+                    attrs=self.decode(value.get("attrs")),
                 )
             if tag == "dataset":
                 import xarray as xr
@@ -173,10 +208,10 @@ class AgentSession:
 
                 if isinstance(data, dict) and data.get("features") == []:
                     return gpd.GeoDataFrame(
-                        geometry=[], crs=value.get("crs", "EPSG:4326")
+                        geometry=[], crs=self.decode(value.get("crs", "EPSG:4326"))
                     )
                 return gpd.GeoDataFrame.from_features(
-                    data, crs=value.get("crs", "EPSG:4326")
+                    data, crs=self.decode(value.get("crs", "EPSG:4326"))
                 )
             if tag == "geometry":
                 from shapely.geometry import shape

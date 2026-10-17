@@ -162,9 +162,9 @@ the authority of imported/re-exported functions or native object methods.
 | `{"$callable":"geo_infer_module:Function"}` | Existing public callable |
 | `{"$literal":{"$type":"user-data"}}` | Exact JSON data without interpreting reserved keys |
 | `{"$type":"ndarray","data":[1,2],"dtype":"float64"}` | NumPy array; dtype optional |
-| `{"$type":"dataframe","data":[[1,2]],"columns":["a","b"]}` | pandas DataFrame; index optional |
+| `{"$type":"dataframe","data":[[1,2]],"columns":["a","b"]}` | pandas DataFrame; index/dtype optional |
 | `{"$type":"series","data":[1,2],"name":"value"}` | pandas Series; index/dtype optional |
-| `{"$type":"dataarray","data":[1,2],"dims":["time"],"coords":{"time":[2020,2021]}}` | xarray DataArray; name optional |
+| `{"$type":"dataarray","data":[1,2],"dims":["time"],"coords":{"time":[2020,2021]}}` | xarray DataArray; name/attrs optional |
 | `{"$type":"dataset","data":{"coords":{},"attrs":{},"dims":{},"data_vars":{}}}` | xarray Dataset.from_dict |
 | `{"$type":"geometry","data":{"type":"Point","coordinates":[1,2]}}` | Shapely geometry |
 | `{"$type":"geodataframe","data":{"type":"FeatureCollection","features":[]}}` | GeoDataFrame.from_features; CRS defaults EPSG:4326 |
@@ -175,6 +175,9 @@ the authority of imported/re-exported functions or native object methods.
 | `{"$type":"float","data":"nan"}` | Explicit nonfinite float; also `inf`, `-inf` |
 
 Install the `scientific` extra for NumPy/pandas/xarray/GeoPandas/Shapely codecs;
+reserved operators reject unknown fields, and every `$type` requires `data`.
+Use `$literal` for data containing reserved keys. Xarray attributes (including
+units), pandas dtypes and referenced native indexes are preserved explicitly.
 other optional backend dependencies belong to their owning modules. Convert a
 handle through its real public methods, such as `to_dict`, `tolist` or `item`,
 when JSON output is needed. Enum constructors accept their native values;

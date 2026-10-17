@@ -229,6 +229,51 @@ def test_batch_reports_failure_without_running_later_steps():
     assert "engine" in session.objects
 
 
+def test_scientific_codecs_preserve_units_dtype_and_native_index_references():
+    session = AgentSession()
+    array = session.decode(
+        {
+            "$type": "dataarray",
+            "data": [100, 110],
+            "dims": ["time"],
+            "attrs": {"units": "kWh"},
+        }
+    )
+    assert array.attrs == {"units": "kWh"}
+    frame = session.decode(
+        {
+            "$type": "dataframe",
+            "data": [[1, 2]],
+            "columns": ["a", "b"],
+            "dtype": "float32",
+        }
+    )
+    assert all(dtype == np.dtype("float32") for dtype in frame.dtypes)
+    session.objects["matrix"] = np.arange(4).reshape(2, 2)
+    assert (
+        session.decode({"$ref": "matrix", "path": [{"$type": "tuple", "data": [1, 0]}]})
+        == 2
+    )
+
+
+@pytest.mark.parametrize(
+    "argument",
+    [
+        {"$type": "dataarray", "data": [1], "atrs": {"units": "kWh"}},
+        {"$type": "geodataframe", "data": {}, "crss": "EPSG:3857"},
+        {"$type": "ndarray"},
+        {"$type": ""},
+        {"$callable": "geo_infer_api:Point", "unexpected": True},
+        {"$literal": {}, "unexpected": True},
+        {"$ref": "missing", "pah": [0]},
+        {"$ref": "missing", "path": "key"},
+    ],
+)
+def test_reserved_argument_operators_reject_silent_typos(argument):
+    with pytest.raises(ValueError):
+        AgentSession().decode(argument)
+
+
 def test_entire_batch_structure_validated_before_side_effects():
     session = AgentSession()
     result = session.execute(
