@@ -32,6 +32,7 @@
 - `agent_runtime.py`
 - `agent_schema.py`
 - `agent_skills.py`
+- `agent_stdio.py`
 - `app.py`
 - `agent_skills.json`
 

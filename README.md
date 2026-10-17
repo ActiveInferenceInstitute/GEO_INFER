@@ -125,7 +125,7 @@ the exact reproducible exception list.
 | [GEO-INFER-AGENT](GEO-INFER-AGENT/) | `geo_infer_agent` | 26 | 28 |
 | [GEO-INFER-AI](GEO-INFER-AI/) | `geo_infer_ai` | 18 | 21 |
 | [GEO-INFER-ANT](GEO-INFER-ANT/) | `geo_infer_ant` | 24 | 11 |
-| [GEO-INFER-API](GEO-INFER-API/) | `geo_infer_api` | 20 | 12 |
+| [GEO-INFER-API](GEO-INFER-API/) | `geo_infer_api` | 21 | 13 |
 | [GEO-INFER-APP](GEO-INFER-APP/) | `geo_infer_app` | 13 | 9 |
 | [GEO-INFER-ART](GEO-INFER-ART/) | `geo_infer_art` | 20 | 12 |
 | [GEO-INFER-BAYES](GEO-INFER-BAYES/) | `geo_infer_bayes` | 38 | 28 |
@@ -171,8 +171,8 @@ the exact reproducible exception list.
 | Metric | Value |
 | --- | ---: |
 | Modules | 45 |
-| Python source files | 1029 |
-| Python test files | 813 |
+| Python source files | 1030 |
+| Python test files | 814 |
 | Repository README.md files | 812 |
 | Repository AGENTS.md files | 808 |
 

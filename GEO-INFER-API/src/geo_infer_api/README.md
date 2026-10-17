@@ -15,6 +15,7 @@ Geo Infer Api workspace within `GEO-INFER-API`.
 - `agent_runtime.py`
 - `agent_schema.py`
 - `agent_skills.py`
+- `agent_stdio.py`
 - `app.py`
 - `agent_skills.json`
 
@@ -37,6 +38,7 @@ Geo Infer Api workspace within `GEO-INFER-API`.
 - `agent_skills.py:read_guidance` (function)
 - `agent_skills.py:skill_inventory` (function)
 - `agent_skills.py:main` (function)
+- `agent_stdio.py:protocol_stdout` (function)
 - `app.py:cors_allow_credentials` (function)
 - `app.py:create_app` (function)
 

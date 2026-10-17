@@ -84,8 +84,11 @@ uv run --frozen python GEO-INFER-API/examples/agent_session.py
 
 `run` accepts a JSON request, `@file`, or `-` for stdin. `call` accepts these
 same input forms for `--args` and `--kwargs`. Requests are limited to 8 MiB.
-Results are a single strict JSON envelope on stdout; library prints go to
-stderr. Execution/input failures return `{"ok":false,"error":{"type":...,
+Results are a single strict JSON envelope on stdout. CLI/MCP process
+entrypoints isolate OS stdout as well as Python prints: inherited subprocess
+output and buffered C-library output go to stderr through a dedicated protocol
+stream. The embedded script session redirects Python prints but leaves native
+process descriptors alone. Execution/input failures return `{"ok":false,"error":{"type":...,
 "message":...}}` and exit 1. Successful requests exit 0. Argparse usage errors
 exit 2 and report usage on stderr. Batch failure returns `ok:false`, completed
 step envelopes and the failing step; it also exits 1.
@@ -235,6 +238,8 @@ uv run --frozen python GEO-INFER-TEST/validate_packaging.py --strict
 The API unit suite exercises every module's source inventory, installed CLI
 outside the checkout, real H3/matrix/energy operations, native data codecs,
 handle/error/batch contracts and an actual SDK client talking to a spawned
-stdio MCP server. Scientific validity still requires the selected module's
+stdio MCP server. The portability gate also runs native/child stdout contracts
+on Linux and Windows with Python 3.11, 3.12 and 3.15 using a minimal API/MCP
+installation. Scientific validity still requires the selected module's
 tests and domain-specific checks; a general adapter cannot validate every
 possible scientific input or qualify absent hardware/services.

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from geo_infer_api.agent_runtime import AgentSession
+from geo_infer_api.agent_stdio import protocol_stdout
 
 MAX_REQUEST_BYTES = 8 * 1024 * 1024
 
@@ -86,13 +87,14 @@ def main(argv: list[str] | None = None) -> int:
                     if key != "command"
                 },
             }
-        result = AgentSession().execute(operation)
+        with protocol_stdout():
+            result = AgentSession().execute(operation)
     except (ValueError, OSError) as error:
         result = {
             "ok": False,
             "error": {"type": type(error).__name__, "message": str(error)},
         }
-    sys.stdout.write(json.dumps(result, allow_nan=False, ensure_ascii=False) + "\n")
+    sys.stdout.write(json.dumps(result, allow_nan=False, ensure_ascii=True) + "\n")
     return 0 if result["ok"] else 1
 
 

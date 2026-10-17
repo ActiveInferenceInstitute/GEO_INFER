@@ -26,6 +26,7 @@ jobs:
     timeout-minutes: 15
     env:
       PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      UV_PYTHON: ${{ matrix.python }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
@@ -86,10 +87,19 @@ jobs:
       - name: Record platform and revision
         if: always()
         run: python -c "import platform,sys,subprocess,json; print(json.dumps(dict(platform=platform.platform(),python=sys.version,revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip())))"
+      - name: Exercise native agent CLI and MCP transports
+        run: >-
+          uv run --frozen --package geo-infer-api --extra mcp --no-default-groups
+          --with "pytest==${{ steps.locked_tools.outputs.pytest_version }}"
+          python -m pytest --noconftest -c GEO-INFER-TEST/config/import-probes.ini -q
+          GEO-INFER-API/tests/unit/test_agent_stdio.py
+          --junitxml=agent-transports.xml
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: import-probes-${{ matrix.os }}-${{ matrix.python }}
-          path: probe-results.xml
+          path: |
+            probe-results.xml
+            agent-transports.xml
           if-no-files-found: error
           retention-days: 14

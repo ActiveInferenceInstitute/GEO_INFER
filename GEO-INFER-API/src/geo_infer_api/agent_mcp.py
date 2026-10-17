@@ -2,13 +2,23 @@
 
 import asyncio
 import json
+import contextlib
+import sys
 from typing import Any
 from typing import Literal
 
 from geo_infer_api.agent_runtime import AgentSession
+from geo_infer_api.agent_stdio import protocol_stdout
 
 
-def create_server() -> Any:
+@contextlib.asynccontextmanager
+async def _quiet_lifespan(server: Any) -> Any:
+    """The SDK already captured its protocol stream before entering lifespan."""
+    with contextlib.redirect_stdout(sys.stderr):
+        yield {}
+
+
+def create_server(*, quiet_stdout: bool = False) -> Any:
     """Build tools/resources around one process-local session.
 
     Install ``geo-infer-api[mcp]``. Stdio is intentionally the only deployed
@@ -19,6 +29,7 @@ def create_server() -> Any:
 
     server = FastMCP(
         "GEO-INFER",
+        lifespan=_quiet_lifespan if quiet_stdout else None,
         instructions="Discover modules, search catalog, describe targets, then call. Native object handles are process-local; release them when finished. Calls may write files, use credentials, access networks or mutate repositories. Use only authorized operations. Batches stop on failure and do not roll back side effects.",
     )
     session = AgentSession()
@@ -215,14 +226,16 @@ def create_server() -> Any:
 
 def main() -> int:
     """Run the installed stdio MCP entrypoint."""
-    import sys
-
     try:
-        server = create_server()
+        server = create_server(quiet_stdout=True)
     except ImportError as error:
         sys.stderr.write(f"MCP unavailable: {error}. Install geo-infer-api[mcp].\n")
         return 1
-    server.run(transport="stdio")
+    # The public SDK stdio transport captures sys.stdout.buffer before its
+    # server lifespan starts. Give it a dedicated duplicate, then lifespan
+    # routes Python prints to stderr; native and child stdout use fd 1/stderr.
+    with protocol_stdout() as stream, contextlib.redirect_stdout(stream):
+        server.run(transport="stdio")
     return 0
 
 

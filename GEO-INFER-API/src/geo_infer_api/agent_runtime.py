@@ -365,7 +365,8 @@ class AgentSession:
     async def aexecute(self, request: dict[str, Any]) -> dict[str, Any]:
         """Execute once, returning a uniform result/error envelope.
 
-        Redirect library prints to stderr so CLI/MCP stdout stays machine-safe.
+        Redirect Python prints to stderr; process entrypoints also isolate
+        native/child stdout at the OS descriptor level.
         Calls are sequential per session; callers must not run them concurrently.
         A failure may follow side effects; a batch is not a transaction.
         """
