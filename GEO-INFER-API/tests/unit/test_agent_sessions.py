@@ -266,3 +266,26 @@ match 1:
             "matched",
         ]
     }
+
+
+@pytest.mark.parametrize("number", ["1e999", "-1e999"])
+def test_cli_rejects_overflowed_json_numbers_and_session_can_continue(tmp_path, number):
+    request = (
+        '{"op":"call","target":"geo_infer_api.agent_runtime:math.isfinite","args":['
+        + number
+        + "]}"
+    )
+    single = _cli(tmp_path, "run", request)
+    assert single.returncode == 1
+    assert "tagged float" in json.loads(single.stdout)["error"]["message"]
+    valid = dict(
+        op="call", target="geo_infer_api.agent_runtime:math.isfinite", args=[1e300]
+    )
+    lines = (
+        request + "\n" + json.dumps(valid) + "\n" + json.dumps(dict(op="close")) + "\n"
+    )
+    persistent = _cli(tmp_path, "session", input=lines)
+    results = [json.loads(line) for line in persistent.stdout.splitlines()]
+    assert persistent.returncode == 1 and len(results) == 3
+    assert not results[0]["ok"] and results[1] == {"ok": True, "result": True}
+    assert results[2]["result"]["closed"]

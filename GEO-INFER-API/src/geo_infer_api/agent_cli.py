@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import math
 import sys
 from pathlib import Path
 from typing import Any, TextIO
@@ -40,8 +41,18 @@ def _unique_fields(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 def _parse(raw: bytes) -> Any:
     return json.loads(
-        raw, parse_constant=_invalid_constant, object_pairs_hook=_unique_fields
+        raw,
+        parse_constant=_invalid_constant,
+        parse_float=_finite_float,
+        object_pairs_hook=_unique_fields,
     )
+
+
+def _finite_float(value: str) -> float:
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("Use a tagged float for a nonfinite JSON number")
+    return number
 
 
 async def _session(
