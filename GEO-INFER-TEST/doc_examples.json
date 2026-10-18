@@ -19,6 +19,7 @@
   "GEO-INFER-INTRA/docs/geospatial/data_formats/h3/h3_comparative_analysis.md",
   "GEO-INFER-INTRA/docs/geospatial/data_formats/h3/h3_mobility_analysis.md",
   "GEO-INFER-INTRA/docs/geospatial/getting_started/index.md",
+  "GEO-INFER-INTRA/docs/geospatial/visualization/index.md",
   "GEO-INFER-INTRA/docs/guides/ENVIRONMENTAL_MONITORING_INTEGRATION.md",
   "GEO-INFER-INTRA/docs/guides/MODULE_INTEGRATION_GUIDE.md",
   "GEO-INFER-INTRA/docs/integration/agent_interfaces.md",
@@ -78,5 +79,6 @@
   "GEO-INFER-INTRA/docs/support/faq.md",
   "GEO-INFER-INTRA/docs/temporal_analysis_guide.md",
   "GEO-INFER-INTRA/docs/user_guide/active_inference_principles.md",
-  "GEO-INFER-INTRA/docs/user_guide/cookbook.md"
+  "GEO-INFER-INTRA/docs/user_guide/cookbook.md",
+  "GEO-INFER-MATH/docs/channel_capacity.md"
 ]

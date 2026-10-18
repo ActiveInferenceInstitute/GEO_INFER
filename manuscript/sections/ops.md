@@ -1,6 +1,6 @@
 ## GEO-INFER-OPS — Operations and Orchestration
 
-GEO-INFER-OPS provides system orchestration, monitoring, infrastructure management, and deployment automation for the GEO-INFER ecosystem (per its `README.md`). The module carries operational weight beyond code: a `Dockerfile`, `docker-compose.yml`, `deployment/` and `monitoring/` directories, plus `config/` and `logs/`. Its package `geo_infer_ops` contains `app.py`, `config/`, `core/`, `deployment/`, `health/`, and `utils/`.
+GEO-INFER-OPS provides system orchestration, monitoring, infrastructure management, and deployment automation for the GEO-INFER ecosystem (per its `README.md`). The module carries operational weight beyond code: a `Dockerfile`, `docker-compose.yml`, `deployment/` and `monitoring/` directories, plus `config/`. Runtime log destinations are generated output rather than tracked source. Its package `geo_infer_ops` contains `app.py`, `config/`, `core/`, `deployment/`, `health/`, and `utils/`.
 
 The public interface, verified from `__init__.py`, exports `Orchestrator` and `Task` with `TaskStatus` for workflow coordination; `DeploymentManager` for release and infrastructure lifecycle; `HealthChecker`, `HealthStatus`, and `HealthCheck` for service condition probes; and `setup_monitoring`, `load_config`, `get_config`, and `setup_testing` for configuration, observability, and test bootstrap.
 

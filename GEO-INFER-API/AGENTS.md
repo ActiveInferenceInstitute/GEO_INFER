@@ -40,6 +40,8 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module API
 - GeoJSON positions must be finite WGS84 longitude/latitude values.
 - Polygon bbox filtering uses geometry extents, so containing and crossing
   polygons are not missed when no vertex lies inside the query bbox.
+- Integer and string polygon IDs share canonical storage identity; updates
+  validate any supplied body ID, including zero.
 
 ## Agent Interfaces
 
@@ -48,6 +50,7 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module API
 - `geo-infer-mcp` uses the optional `mcp` extra and the official SDK over stdio.
 - Import-free catalogs cover all 45 modules; runtime calls retain native
   dependencies and authority. Native object handles are process-local.
+- Failed retention after context entry unwinds that new context immediately.
 - See `GEO-INFER-INTRA/docs/integration/agent_interfaces.md` from the repository
   root for request schemas, codecs, composition and failure semantics.
 

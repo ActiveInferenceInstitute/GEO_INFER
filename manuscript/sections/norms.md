@@ -2,7 +2,7 @@
 
 GEO-INFER-NORMS performs social-technical compliance modeling with deterministic and probabilistic analysis of norms, regulations, and spatial governance (per its `README.md`). The package `geo_infer_norms` comprises `api/`, `core/`, and `models/`.
 
-The public interface, verified from `__init__.py`, exports module-level names organized as domain surfaces: `legal_frameworks` for jurisdiction-level legal structures, `zoning_analysis` for spatial regulation checks, `compliance_tracking` for ongoing adherence state, `policy_impact` for counterfactual policy evaluation, and `normative_inference` for reasoning over obligations. Alongside these, dataclass-style symbols `legal_entity`, `regulation`, `compliance_status`, `zoning`, and `policy` define the interoperable record types that the analysis surfaces consume and produce.
+The public interface, verified from `__init__.py`, exports module objects organized as domain surfaces: `legal_frameworks` for jurisdiction-level legal structures, `zoning_analysis` for spatial regulation checks, `compliance_tracking` for adherence state, `policy_impact` for policy scenarios, and `normative_inference` for reasoning over obligations. The lowercase exports `legal_entity`, `regulation`, `compliance_status`, `zoning`, and `policy` are also modules. Their record classes include `LegalEntity`, `Regulation`, `ComplianceStatus`, `ZoningCode`, and `Policy`, importable from `geo_infer_norms.models`.
 
 The tests exercise rule modeling, jurisdictional structures, zoning, and compliance tracking. Passing software fixtures do not establish that a legal interpretation is authoritative or current.
 

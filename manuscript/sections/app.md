@@ -2,7 +2,9 @@
 
 **Purpose.** GEO-INFER-APP is the human-computer interaction layer, providing accessible geospatial applications, dashboards, and UI components. Its README places the user-facing surface of the framework here: dashboards that visualize spatial analyses and interfaces through which humans direct and observe the agent stack.
 
-**Public API.** The `geo_infer_app` package exports an agent-centric UI contract: `AgentInterface`, `AgentState`, and `AgentType` (from `models/agent_interface`), with `AgentFactory` constructing configured agents, `AgentVisualization` rendering them, and `AgentConfiguration` managing settings. The client side is served by `AgentAPIClient` and `AgentManager` from `api/agent_api`, which bridge the UI layer to backend services. A `components/` subpackage holds the reusable UI building blocks referenced by the README.
+**Public API.** The `geo_infer_app` package exports an agent-centric UI contract: `AgentInterface`, `AgentState`, and `AgentType` (from `models/agent_interface`), with `AgentFactory` constructing configured agents, `AgentVisualization` rendering them, and `AgentConfiguration` managing settings. `AgentAPIClient` and `AgentManager` from `api/agent_api` maintain an in-process agent registry; they do not supply an HTTP transport. A `components/` subpackage holds reusable UI building blocks.
+
+Map features and all dashboard widgets return independent strict-JSON snapshots. Non-JSON native values use their string form, while nonfinite floating values fail before a payload is returned. This preserves a browser-facing serialization contract without silently choosing how a study represents missing observations.
 
 The tests exercise interface construction, factories, and API clients. The shared repository runner selects this module with `--module APP`.
 

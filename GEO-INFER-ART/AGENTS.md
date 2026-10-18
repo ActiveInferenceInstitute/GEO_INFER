@@ -40,6 +40,8 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module ART
 - Validate style alpha, line width, animation timing, and supported scale names
   at the public API boundary.
 - Do not use mutable defaults for scale/style collections.
+- Preserve band axes, masked NoData and affine footprints during raster resizing;
+  validate dimensions and keep the active geometry column during simplification.
 
 ## Integration Notes
 

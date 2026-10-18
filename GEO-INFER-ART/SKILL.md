@@ -135,6 +135,16 @@ artwork and `.png` for raster output. Folium exports reproject declared vector
 CRS to WGS84 and retain geometry holes/multipart features; Plotly scatter maps
 require point geometry.
 
+`optimize_for_performance(target_resolution=(height, width), raster_layout=...)`
+returns a new raster with unchanged band order and spatial footprint. Dimensions
+must be positive integers. Bilinear samples use the full pixel extent and
+replicated boundary pixels; masked values contribute no weight and cells with
+no valid contribution remain masked. Integer inputs retain their dtype, while
+masked inputs use floating interpolation. This is a display resampler, without
+area-conservation guarantees. The affine transform scales with the pixel grid;
+source data and metadata remain unchanged. Vector `simplify_tolerance` must be
+finite and nonnegative, uses CRS units and preserves the active geometry column.
+
 Discover the current signatures with `geo-infer describe
 geo_infer_art.core.visualization.geo_art:GeoArt.apply_style`. Use a retained
 `GeoArt` handle in one script, persistent CLI session or MCP session to compose

@@ -495,6 +495,9 @@ def summarize_profile(
     authenticate the manifest too; an unanchored local manifest is trusted input.
     A report preserves its original success/failure and historical source
     custody; reading old evidence does not qualify the current checkout.
+    Failed or interrupted attempts can end before a profile is written. Their
+    verified reports retain the failure evidence with ``profile_available``
+    false and ``summary`` None; successful attempts always require a profile.
 
     Tracing ranks by cumulative time, own time or calls and returns at most
     ``limit`` caller edges into its hotspots. Cumulative times overlap and
@@ -536,13 +539,22 @@ def summarize_profile(
         raise ValueError("Invalid owned profiling receipt")
     if payload["success"] and (
         payload.get("status") != "passed"
-        or payload.get("returncode") != 0
+        or type(payload.get("returncode")) is not int
+        or payload["returncode"] != 0
         or payload.get("failures") != []
         or not payload.get("completion", {}).get("success")
         or "summary" not in payload
         or payload.get("source_unchanged") is False
     ):
         raise ValueError("Successful receipt lacks valid completion/source evidence")
+    if not payload["success"] and (
+        not isinstance(payload.get("failures"), list)
+        or not payload["failures"]
+        or any(
+            not isinstance(reason, str) or not reason for reason in payload["failures"]
+        )
+    ):
+        raise ValueError("Failed receipt lacks a failure disposition")
     engine = payload["engine"]
     ranking = (
         ("cumulative" if engine == "tracing" else "samples")
@@ -586,7 +598,7 @@ def summarize_profile(
             verified_data = content
         elif name in {"completion.json", "target.json"}:
             sealed_metadata[name] = content
-    if verified_data is None:
+    if verified_data is None and payload["success"]:
         raise ValueError("Receipt has no sealed profiling artifact")
     if payload["success"]:
         required = {
@@ -637,16 +649,20 @@ def summarize_profile(
                 "Receipt source custody does not match its sealed disposition"
             )
     summary = (
-        _tracing_summary(
-            receipt_path.parent / artifact_name,
-            limit,
-            sort_by=ranking,
-            verified_data=verified_data,
-            call_graph=True,
-        )
-        if engine == "tracing"
-        else _sampling_summary(
-            receipt_path.parent / artifact_name, limit, verified_data=verified_data
+        None
+        if verified_data is None
+        else (
+            _tracing_summary(
+                receipt_path.parent / artifact_name,
+                limit,
+                sort_by=ranking,
+                verified_data=verified_data,
+                call_graph=True,
+            )
+            if engine == "tracing"
+            else _sampling_summary(
+                receipt_path.parent / artifact_name, limit, verified_data=verified_data
+            )
         )
     )
     return dict(
@@ -656,6 +672,11 @@ def summarize_profile(
         success=payload["success"],
         status=payload["status"],
         failures=payload.get("failures", []),
+        returncode=payload.get("returncode"),
+        completion=payload.get("completion"),
+        elapsed_seconds=payload.get("elapsed_seconds"),
+        timeout=payload.get("timeout"),
+        profile_available=verified_data is not None,
         engine=engine,
         mode=payload.get("mode"),
         runtime=payload["runtime"],

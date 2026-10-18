@@ -5,6 +5,7 @@ import json
 import os
 import pstats
 from pathlib import Path
+import shutil
 import sys
 
 import pytest
@@ -92,7 +93,7 @@ def test_invalid_profile_options_fail_before_output_creation(tmp_path, options):
     assert not output.exists()
 
 
-def test_real_timeout_retains_failed_receipt(tmp_path):
+def test_real_timeout_retains_failed_receipt(tmp_path, capsys):
     script = tmp_path / "wait.py"
     script.write_text("import time;time.sleep(30)")
     result = profile_command(
@@ -102,6 +103,22 @@ def test_real_timeout_retains_failed_receipt(tmp_path):
         "Timeout" in reason for reason in result["failures"]
     )
     assert Path(result["receipt"]).is_file()
+    folder = Path(result["receipt"]).parent
+    assert "profile.pstats" not in result["artifacts"]
+    before = {path.name: path.read_bytes() for path in folder.iterdir()}
+    digest = hashlib.sha256(before["receipt.json"]).hexdigest()
+    report = summarize_profile(result["receipt"], expected_receipt_sha256=digest)
+    assert report["success"] is False and report["status"] == "failed"
+    assert report["failures"] == result["failures"]
+    assert report["profile_available"] is False and report["summary"] is None
+    assert report["returncode"] == result.get("returncode")
+    assert report["elapsed_seconds"] == result["elapsed_seconds"]
+    assert report["process_evidence"] == result["process_evidence"]
+    assert report["artifacts_verified"] == len(result["artifacts"])
+    assert main(["--report", result["receipt"], "--receipt-sha256", digest]) == 1
+    cli = json.loads(capsys.readouterr().out)
+    assert cli == report
+    assert before == {path.name: path.read_bytes() for path in folder.iterdir()}
 
 
 def test_git_custody_uses_checkout_root_when_target_cwd_is_nested(tmp_path):
@@ -255,6 +272,45 @@ def test_report_rejects_missing_successful_completion_artifact(saved_profile):
         summarize_profile(saved_profile)
 
 
+@pytest.mark.parametrize(
+    "modification,message",
+    [
+        ("missing-profile", "no sealed profiling artifact"),
+        ("corrupt-profile", "artifact hash mismatch"),
+        ("inconsistent-status", "Invalid owned profiling receipt"),
+        ("empty-failure", "Failed receipt lacks a failure disposition"),
+        ("rewritten-failure", "independently retained hash"),
+    ],
+)
+def test_failed_report_support_cannot_admit_modified_successful_profiles(
+    saved_profile, modification, message
+):
+    original = {path.name: path.read_bytes() for path in saved_profile.parent.iterdir()}
+    folder = saved_profile.parent.with_name("modified-profile")
+    shutil.copytree(saved_profile.parent, folder)
+    receipt = folder / "receipt.json"
+    payload = json.loads(receipt.read_text())
+    digest = None
+    if modification in {"missing-profile", "empty-failure", "rewritten-failure"}:
+        (folder / "profile.pstats").unlink()
+        del payload["artifacts"]["profile.pstats"]
+    if modification == "corrupt-profile":
+        (folder / "profile.pstats").write_bytes(b"not a native tracing profile")
+    if modification == "inconsistent-status":
+        payload["success"] = False
+    if modification in {"empty-failure", "rewritten-failure"}:
+        payload.update(success=False, status="failed")
+    if modification == "rewritten-failure":
+        payload["failures"] = ["invented failure cannot replace the original receipt"]
+        digest = hashlib.sha256(original["receipt.json"]).hexdigest()
+    receipt.write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match=message):
+        summarize_profile(receipt, expected_receipt_sha256=digest)
+    assert original == {
+        path.name: path.read_bytes() for path in saved_profile.parent.iterdir()
+    }
+
+
 def test_report_rejects_inconsistent_source_custody_claim(saved_profile):
     payload = json.loads(saved_profile.read_text())
     assert payload["source_bound"] is False
@@ -362,7 +418,7 @@ def test_native_controller_interruption_drains_children_and_seals_failed_receipt
     controller.write_text(
         "import _thread,hashlib,json,threading,time\n"
         "from pathlib import Path\nimport psutil\n"
-        "from geo_infer_test.profiling import profile_command\n"
+        "from geo_infer_test.profiling import profile_command,summarize_profile\n"
         "def interrupt_started():\n"
         " deadline=time.monotonic()+15\n"
         " while not Path('started.json').is_file():\n"
@@ -381,6 +437,13 @@ def test_native_controller_interruption_drains_children_and_seals_failed_receipt
         " assert not psutil.pid_exists(json.loads(Path('started.json').read_text())['pid'])\n"
         " for name,digest in record['artifacts'].items():\n"
         "  assert hashlib.sha256((Path('profile')/name).read_bytes()).hexdigest()==digest\n"
+        " before={p.name:p.read_bytes() for p in Path('profile').iterdir()}\n"
+        " report=summarize_profile('profile',expected_receipt_sha256=hashlib.sha256(before['receipt.json']).hexdigest())\n"
+        " assert report['success'] is False and report['status']=='interrupted',report\n"
+        " assert report['profile_available'] is False and report['summary'] is None\n"
+        " assert report['failures']==record['failures']\n"
+        " assert report['process_evidence']==record['process_evidence']\n"
+        " assert before=={p.name:p.read_bytes() for p in Path('profile').iterdir()}\n"
         " print('interruption propagated after owned cleanup and failed receipt')\n"
         "else:\n raise AssertionError('native interruption was swallowed')\n"
     )

@@ -1,6 +1,19 @@
 """Tests for API configuration settings."""
 
 
+def test_lazy_application_is_cached_on_actual_submodule(monkeypatch):
+    import importlib
+
+    module = importlib.import_module("geo_infer_api.app")
+    monkeypatch.delitem(module.__dict__, "main_app", raising=False)
+    first = module.main_app
+    marker = object()
+    first.state.cache_marker = marker
+    assert module.main_app is first
+    assert module.__dict__["main_app"] is first
+    assert module.main_app.state.cache_marker is marker
+
+
 class TestSettings:
     def test_app_version_tracks_distribution(self):
         """app_version matches the installed distribution, so it survives any release bump."""

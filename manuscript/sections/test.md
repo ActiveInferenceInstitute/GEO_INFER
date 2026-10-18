@@ -10,4 +10,6 @@ The owning submodule `geo_infer_test.core.performance_monitor` exposes `Benchmar
 
 Profiling helpers retain interpreter and command provenance and distinguish deterministic tracing from sampled stacks. Native Python 3.15 profiler availability is a property of that runtime; optional scientific dependencies must be qualified separately. A successful transport or standard-library workload cannot be generalized to an unexecuted scientific module.
 
+Checked subprocess failures preserve native exception types, captured output and process-ownership evidence. A failed or interrupted profiling attempt can be inspected after receipt and artifact verification even when no profile bytes were produced; its summary remains absent and its failure disposition remains explicit. Missing or corrupt successful profiles still fail validation. These reports diagnose an attempt without rerunning its target or turning a permission denial into a successful measurement.
+
 Under the root README's Module Themes, TEST anchors Infrastructure & Validation with INTRA, LOG, GIT, EXAMPLES, and BIO. Its role is the evidence engine: the manuscript's reproducibility section cites its validator fleet, and every module section's claims ultimately trace to gates TEST defines and enforces.

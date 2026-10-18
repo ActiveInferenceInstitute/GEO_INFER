@@ -345,3 +345,131 @@ def test_rotated_geotiff_uses_native_affine_coordinates(tmp_path):
         bounds = art.metadata["bounds"]
         np.testing.assert_allclose(art._ax.get_xlim(), [bounds.left, bounds.right])
         np.testing.assert_allclose(art._ax.get_ylim(), [bounds.bottom, bounds.top])
+
+
+@pytest.mark.parametrize("layout", ["band_first", "channel_last"])
+def test_raster_resize_preserves_channels_pixel_extent_and_source(layout):
+    # At half resolution each destination centre lies halfway between four
+    # source centres. Channel constants must never mix across the band axis.
+    scalar = np.arange(8 * 10, dtype=float).reshape(8, 10)
+    channels = np.stack([scalar, scalar + 100, scalar + 200], axis=-1)
+    data = np.moveaxis(channels, -1, 0) if layout == "band_first" else channels
+    art = GeoArt(data, metadata={"raster_layout": layout})
+    result = art.optimize_for_performance((4, 5))
+    actual = np.moveaxis(result.data, 0, -1) if layout == "band_first" else result.data
+    expected = channels.reshape(4, 2, 5, 2, 3).mean(axis=(1, 3))
+    np.testing.assert_allclose(actual, expected)
+    np.testing.assert_array_equal(art.data, data)
+    assert result.metadata["shape"] == result.data.shape
+    assert result.metadata["original_shape"] == data.shape
+    assert not np.shares_memory(result.data, data)
+
+
+def test_raster_resize_masks_nodata_before_interpolation():
+    data = np.ma.array(
+        [[2.0, -9999, 10, 14], [6, 8, 18, 22], [-9999] * 4, [-9999] * 4],
+        mask=[[False, True, False, False], [False] * 4, [True] * 4, [True] * 4],
+    )
+    result = GeoArt(data).optimize_for_performance((2, 2))
+    assert np.ma.isMaskedArray(result.data)
+    np.testing.assert_allclose(result.data[0], [16 / 3, 16])
+    np.testing.assert_array_equal(
+        np.ma.getmaskarray(result.data), [[False, False], [True, True]]
+    )
+    assert data.data[0, 1] == -9999
+
+
+@pytest.mark.parametrize("masked", [False, True])
+def test_complex_resize_uses_same_pixel_coordinates_for_both_components(masked):
+    data = np.arange(16).reshape(4, 4).astype(float) * (1 + 2j)
+    expected = np.array([[2.5, 4.5], [10.5, 12.5]]) * (1 + 2j)
+    if masked:
+        data = np.ma.array(data, mask=False)
+        data.mask[0, 0] = True
+        data.data[0, 0] = -9999 + 9999j
+        expected[0, 0] = (1 + 4 + 5) / 3 * (1 + 2j)
+    result = GeoArt(data).optimize_for_performance((2, 2))
+    np.testing.assert_allclose(result.data, expected)
+    assert np.iscomplexobj(result.data)
+
+
+def test_raster_resize_scales_rotated_affine_without_moving_footprint():
+    from rasterio.transform import Affine
+
+    transform = (
+        Affine.translation(100, 500) * Affine.rotation(20) * Affine.scale(10, -20)
+    )
+    bounds = (100, 300, 250, 550)
+    art = GeoArt(
+        np.arange(80).reshape(8, 10),
+        metadata={"transform": transform, "bounds": bounds},
+    )
+    result = art.optimize_for_performance((4, 5))
+    for column, row in [(0, 0), (5, 4), (2.5, 2)]:
+        np.testing.assert_allclose(
+            result.metadata["transform"] * (column, row),
+            transform * (column * 2, row * 2),
+        )
+    assert result.metadata["bounds"] == bounds
+    assert art.metadata["transform"] == transform
+
+
+@pytest.mark.parametrize(
+    "resolution", [(0, 2), (2, -1), (True, 2), (2.5, 2), (2,), "2x2"]
+)
+def test_raster_resize_rejects_invalid_resolution(resolution):
+    with pytest.raises(ValueError, match="target_resolution"):
+        GeoArt(np.ones((4, 4))).optimize_for_performance(resolution)
+
+
+def test_vector_optimization_preserves_active_geometry_and_accepts_zero():
+    from shapely.geometry import LineString
+
+    frame = gpd.GeoDataFrame(
+        {"value": [4]}, geometry=[LineString([(0, 0), (1, 0.01), (2, 0)])], crs=3857
+    ).rename_geometry("footprint")
+    original = frame.copy()
+    result = GeoArt(frame).optimize_for_performance(simplify_tolerance=0.1)
+    assert result.data.geometry.name == "footprint"
+    assert list(result.data.columns) == list(frame.columns)
+    assert list(result.data.geometry.iloc[0].coords) == [(0, 0), (2, 0)]
+    assert frame.equals(original)
+    unchanged = GeoArt(frame).optimize_for_performance(simplify_tolerance=0)
+    assert unchanged.data.equals(frame)
+
+
+@pytest.mark.parametrize("tolerance", [-1, np.nan, np.inf, True, 1 + 0j, "1"])
+def test_vector_optimization_rejects_invalid_tolerance(tolerance):
+    frame = gpd.GeoDataFrame(geometry=[Point(0, 0)], crs=4326)
+    with pytest.raises(ValueError, match="simplify_tolerance"):
+        GeoArt(frame).optimize_for_performance(simplify_tolerance=tolerance)
+
+
+@pytest.mark.parametrize("bands", [1, 5])
+def test_explicit_resize_layout_retains_every_band_and_integer_dtype(bands):
+    data = np.full((bands, 2, 3), 17, dtype=np.uint8)
+    result = GeoArt(data).optimize_for_performance(
+        (4, 6), raster_layout="band_first", cache_data=False
+    )
+    assert result.data.shape == (bands, 4, 6)
+    assert result.data.dtype == data.dtype
+    np.testing.assert_array_equal(result.data, 17)
+    assert result.metadata["raster_layout"] == "band_first"
+    assert "cached" not in result.metadata
+
+
+@pytest.mark.parametrize("scale", [(-10, -20), (10, 20)])
+def test_mirrored_and_south_up_rasters_preserve_pixel_coordinates(scale):
+    from rasterio.transform import Affine, array_bounds
+
+    transform = Affine.translation(100, 500) * Affine.scale(*scale)
+    with GeoArt(
+        np.arange(20).reshape(4, 5),
+        metadata={"transform": transform, "bounds": array_bounds(4, 5, transform)},
+    ) as art:
+        art.apply_style()
+        image = art._ax.images[0]
+        point = art._ax.transData.inverted().transform(
+            image.get_transform().transform((0.5, 0.5))
+        )
+        np.testing.assert_allclose(point, transform * (0.5, 0.5))

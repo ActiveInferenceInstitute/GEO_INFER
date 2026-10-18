@@ -164,6 +164,13 @@ cleanup methods. `exit` performs normal completion, without injecting an
 exception; call explicit rollback methods when required by the owning API.
 There is no automatic transaction rollback on an unrelated batch failure.
 
+When `enter` succeeds natively but its yielded value cannot be retained or
+encoded, the new context is exited immediately with that actual exception.
+Previously entered contexts and aliases remain owned by the session. The
+request still fails if a native exit suppresses the retention exception: a
+missing result cannot become a successful response. Native cleanup exceptions
+keep their normal precedence.
+
 Synchronous scientific calls run to completion in the process. This adapter
 does not impose a computational deadline or promise hard cancellation of a
 native backend. Use host process/resource limits for untrusted or costly jobs.

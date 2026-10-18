@@ -320,6 +320,9 @@ assert '<html' in Path('map.html').read_text().lower()
         "geo_infer_art",
         (),
         """
+import numpy as np
+from pathlib import Path
+from geo_infer_art import GeoArt
 from geo_infer_art.core.aesthetics.style_transfer import StyleTransfer
 try:
     StyleTransfer()
@@ -327,6 +330,48 @@ except ImportError as exc:
     assert 'neural' in str(exc)
 else:
     raise AssertionError('Base installation unexpectedly includes TensorFlow')
+data = np.arange(48, dtype=float).reshape(3, 4, 4)
+resized = GeoArt(data, metadata={'raster_layout':'band_first'}).optimize_for_performance((2, 2))
+assert resized.data.shape == (3, 2, 2)
+np.testing.assert_allclose(resized.data[0], [[2.5,4.5],[10.5,12.5]])
+with resized:
+    resized.apply_style(raster_band=0).save('resampled.png')
+assert Path('resampled.png').stat().st_size > 100
+""",
+    ),
+    WheelProfile(
+        "geo_infer_math",
+        (),
+        """
+import math
+import numpy as np
+from geo_infer_math.core.information_theory.channel_capacity import mimo_channel_capacity, waterfilling_power_allocation
+from geo_infer_math.core.information_theory.entropy import spatial_entropy
+assert mimo_channel_capacity(np.eye(2), 1, 0) == 0
+assert math.isclose(mimo_channel_capacity(np.eye(2), 1, 10), 2*math.log2(6), rel_tol=1e-12)
+allocation, rate = waterfilling_power_allocation([0,4,1],1,2)
+np.testing.assert_allclose(allocation,[0,1.375,.625])
+assert math.isclose(rate,math.log2(6.5)+math.log2(1.625),rel_tol=1e-12)
+assert math.isclose(spatial_entropy([[0,0],[0,1],[1,0],[1,1]],bins=2,base=math.e),math.log(4),rel_tol=1e-12)
+""",
+    ),
+    WheelProfile(
+        "geo_infer_app",
+        (),
+        """
+import json
+from datetime import date
+from geo_infer_app import AgentState, AgentType, AgentVisualization
+state=AgentState('wheel',AgentType.BDI,'active',beliefs={'observed':date(2026,10,18)})
+result=AgentVisualization.state_to_dashboard_data(state)
+assert json.loads(json.dumps(result,allow_nan=False))['widgets']['beliefs']['value']['observed']=='2026-10-18'
+state.beliefs['confidence']=float('nan')
+try:
+    AgentVisualization.state_to_dashboard_data(state)
+except ValueError as error:
+    assert 'finite JSON' in str(error)
+else:
+    raise AssertionError('Nonfinite dashboard payload was accepted')
 """,
     ),
     WheelProfile(

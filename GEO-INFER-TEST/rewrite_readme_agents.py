@@ -571,7 +571,8 @@ uv run python GEO-INFER-TEST/validate_h3_active_inference_contract.py
 ## Visualization Contracts
 
 - Agent map features validate finite longitude/latitude values and geographic
-  bounds, and normalize metadata to JSON-safe values.
+  bounds. Map features and every dashboard widget return independent JSON
+  snapshots; native non-JSON values stringify and nonfinite floats are rejected.
 - Active-inference prediction and reinforcement-learning reward series are
   exposed in dashboard widgets when present in agent metadata.
 """,
@@ -581,6 +582,19 @@ uv run python GEO-INFER-TEST/validate_h3_active_inference_contract.py
 - Map styling validates alpha and line-width values before applying them.
 - Animation and multi-scale rendering validate nonempty supported styles,
   positive timing values, and use an immutable-safe default scale selection.
+- Raster optimization resizes spatial axes only, retains masks and affine
+  footprints, and shares plotting's explicit band-layout convention. Vector
+  simplification preserves the active geometry column and validates tolerance.
+""",
+        "GEO-INFER-MATH": """
+## Information Theory Contracts
+
+- MIMO rates honor explicit total power divided among transmitters; `None`
+  preserves unit power per transmitter. Singular-mode evaluation avoids forming
+  overflowing Gram matrices or determinants.
+- Waterfilling uses power gains and leaves zero-gain channels unallocated.
+- Spatial information-theory entropy preserves its selected logarithm base.
+- See [communication and entropy conventions](docs/channel_capacity.md).
 """,
         "GEO-INFER-BAYES": """
 ## Visualization Contracts
@@ -869,6 +883,8 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
 - GeoJSON positions must be finite WGS84 longitude/latitude values.
 - Polygon bbox filtering uses geometry extents, so containing and crossing
   polygons are not missed when no vertex lies inside the query bbox.
+- Integer and string polygon IDs share canonical storage identity; updates
+  validate any supplied body ID, including zero.
 
 ## Agent Interfaces
 
@@ -877,6 +893,7 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
 - `geo-infer-mcp` uses the optional `mcp` extra and the official SDK over stdio.
 - Import-free catalogs cover all 45 modules; runtime calls retain native
   dependencies and authority. Native object handles are process-local.
+- Failed retention after context entry unwinds that new context immediately.
 - See `GEO-INFER-INTRA/docs/integration/agent_interfaces.md` from the repository
   root for request schemas, codecs, composition and failure semantics.
 """
@@ -920,7 +937,8 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
 ## Visualization Guidance
 
 - Validate geographic coordinates before creating map features and keep emitted
-  metadata JSON-safe for downstream GeoJSON/dashboard clients.
+  map/dashboard snapshots strict JSON, including every widget payload.
+- Reject nonfinite floats; stringify other non-JSON native values consistently.
 - Preserve dashboard widget schemas when adding agent state visualizations.
 """,
         "GEO-INFER-ART": """
@@ -929,6 +947,17 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
 - Validate style alpha, line width, animation timing, and supported scale names
   at the public API boundary.
 - Do not use mutable defaults for scale/style collections.
+- Preserve band axes, masked NoData and affine footprints during raster resizing;
+  validate dimensions and keep the active geometry column during simplification.
+""",
+        "GEO-INFER-MATH": """
+## Information Theory Guidance
+
+- Preserve `None` as unit power per transmitter; explicit MIMO power is a total
+  budget with isotropic allocation, not an optimized transmit covariance.
+- Keep zero-gain allocations, native finite singular modes and entropy units
+  covered by independent numeric references.
+- Read `docs/channel_capacity.md` before changing communication conventions.
 """,
         "GEO-INFER-BAYES": """
 ## Visualization Guidance

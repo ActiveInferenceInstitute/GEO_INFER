@@ -38,6 +38,10 @@ the health endpoints alone sit at the application root (`/health`,
 
 Feature bodies are `PolygonFeature` documents (`type`, `geometry`, optional
 `id` and `properties`); `POST` requires an `id`.
+Storage keys use string identity: integer `1` and string `"1"` identify the
+same feature and a second creation returns 409. Zero is a valid ID. `PUT`
+accepts an omitted body ID, but any supplied ID must match the path after
+string conversion, including zero.
 
 ### Polygon operations
 
@@ -58,6 +62,12 @@ Set operations take a body of the form `{"polygons": [ ... ]}`; distance takes
 The registered processing-algorithm registry lives at `/api/v1/algorithms`
 and is documented in `algorithms_api.md`.
 
+Area and containment use the exterior ring only. Area converts planar degrees
+using a fixed 111 km/degree approximation; it is not a geodesic area. Buffer,
+intersection and union operate on bounding rectangles. Select an appropriate
+analysis CRS and a native geometry library for exact polygon topology or
+measurement requirements.
+
 ## Response Formats
 
 - `application/json` for collection metadata and operation results
@@ -66,18 +76,21 @@ and is documented in `algorithms_api.md`.
 
 ## Error Responses
 
-Application errors return the middleware error envelope:
+The default FastAPI handler catches HTTP exceptions, including the custom
+`APIError` subclasses. Their wire response contains `detail`:
 
 ```json
 {
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid bbox format. Expected 'minLon,minLat,maxLon,maxLat'",
-    "status_code": 422,
-    "field": "bbox"
-  }
+  "detail": "Invalid bbox format. Expected 'minLon,minLat,maxLon,maxLat'"
 }
 ```
 
-`VALIDATION_ERROR` maps to 422, `NOT_FOUND_ERROR` to 404, and
-`CONFLICT_ERROR` to 409.
+Custom validation, missing-resource and conflict exceptions use HTTP 422,
+404 and 409 respectively. FastAPI request-schema validation also returns 422,
+with a list of field errors in `detail`.
+
+`APIError.to_dict()` can produce an explicit `error` envelope for library
+callers; its codes include `VALIDATION_ERROR`, `RESOURCE_NOT_FOUND` and
+`RESOURCE_CONFLICT`. Those codes are not part of the default HTTP exception
+response. Unexpected errors handled by `ErrorHandlerMiddleware` return HTTP
+500 with `error.code` equal to `INTERNAL_ERROR` and a generic message.

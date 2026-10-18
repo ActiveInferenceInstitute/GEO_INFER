@@ -238,7 +238,8 @@ async def create_polygon_feature_endpoint(
     if feature.id is None:
         raise ValidationError("Feature must have an ID", field="id")
 
-    if feature.id in POLYGON_FEATURES:
+    identifier = str(feature.id)
+    if identifier in POLYGON_FEATURES:
         raise ConflictError("Polygon feature", "already exists", str(feature.id))
 
     if len(POLYGON_FEATURES) >= settings.polygon_store_max_size:
@@ -249,7 +250,7 @@ async def create_polygon_feature_endpoint(
             additional_info={"max_size": settings.polygon_store_max_size},
         )
 
-    POLYGON_FEATURES[str(feature.id)] = feature
+    POLYGON_FEATURES[identifier] = feature
     return feature
 
 
@@ -266,7 +267,7 @@ async def update_polygon_feature(
     if feature_id not in POLYGON_FEATURES:
         raise NotFoundError("Polygon feature", feature_id)
 
-    if feature.id and str(feature.id) != feature_id:
+    if feature.id is not None and str(feature.id) != feature_id:
         raise ValidationError(
             "Feature ID in body does not match path parameter", field="id"
         )
@@ -389,7 +390,7 @@ async def create_buffer_endpoint(
             "buffer_unit": unit,
             "buffer_segments": segments,
         },
-        id=f"{feature.id}_buffer" if feature.id else None,
+        id=f"{feature.id}_buffer" if feature.id is not None else None,
     )
 
 

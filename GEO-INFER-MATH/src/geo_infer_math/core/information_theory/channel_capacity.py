@@ -12,6 +12,46 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _real_scalar(value: float, name: str, *, positive: bool = False) -> float:
+    """Validate physical scalar parameters without accepting complex powers."""
+    if np.ndim(value) != 0 or np.iscomplexobj(value):
+        raise ValueError(f"{name} must be a finite real scalar")
+    try:
+        result = float(value)
+    except (TypeError, ValueError, OverflowError):
+        raise ValueError(f"{name} must be a finite real scalar") from None
+    if not np.isfinite(result) or result < 0 or (positive and result == 0):
+        constraint = "positive" if positive else "non-negative"
+        raise ValueError(f"{name} must be finite and {constraint}")
+    return result
+
+
+def _log_base(base: float) -> float:
+    value = _real_scalar(base, "base", positive=True)
+    if value <= 1:
+        raise ValueError("base must be greater than one")
+    return float(np.log(value))
+
+
+def _real_array(values: np.ndarray, name: str) -> np.ndarray:
+    if np.iscomplexobj(values):
+        raise ValueError(f"{name} must be finite and real")
+    try:
+        result = np.asarray(values, dtype=float)
+    except (TypeError, ValueError, OverflowError):
+        raise ValueError(f"{name} must be finite and real") from None
+    if not np.all(np.isfinite(result)):
+        raise ValueError(f"{name} must be finite and real")
+    return result
+
+
+def _log_one_plus_snr(log_snr: np.ndarray | float) -> np.ndarray:
+    # A vanishing contribution may underflow to zero; neither SNR itself nor
+    # its exponential needs to be representable to obtain a finite log-rate.
+    with np.errstate(under="ignore"):
+        return np.logaddexp(0.0, log_snr)
+
+
 def channel_capacity(
     channel_matrix: np.ndarray,
     noise_power: float | None = None,
@@ -50,7 +90,7 @@ def channel_capacity(
     # KL between successive input distributions is below tolerance.
     max_iterations = 500
     tolerance = 1e-6
-    ln_base = np.log(base)
+    ln_base = _log_base(base)
 
     p_x = np.ones(n_inputs) / n_inputs
 
@@ -112,37 +152,51 @@ def spatial_channel_capacity(
     Models capacity considering spatial path loss and interference.
 
     Args:
-        coordinates: Spatial coordinates of transmitters/receivers (n x 2)
-        signal_power: Signal power at each location (n)
-        noise_power: Noise power
-        path_loss_exponent: Path loss exponent (typically 2-4)
-        base: Logarithm base
+        coordinates: Finite transmitter coordinates relative to the origin (n x d)
+        signal_power: Non-negative signal power at each location (n)
+        noise_power: Finite positive noise power
+        path_loss_exponent: Finite positive exponent (typically 2-4)
+        base: Finite logarithm base greater than one
 
     Returns:
         Spatial channel capacity
     """
-    coordinates = np.asarray(coordinates)
-    signal_power = np.asarray(signal_power).flatten()
+    coordinates = _real_array(coordinates, "coordinates")
+    signal_power = _real_array(signal_power, "signal_power").flatten()
+    noise_power = _real_scalar(noise_power, "noise_power", positive=True)
+    path_loss_exponent = _real_scalar(
+        path_loss_exponent, "path_loss_exponent", positive=True
+    )
+    ln_base = _log_base(base)
 
+    if coordinates.ndim != 2 or coordinates.shape[1] == 0:
+        raise ValueError("Coordinates must have shape (n, d) with d positive")
     if len(signal_power) != len(coordinates):
         raise ValueError("Signal power must have same length as coordinates")
+    if np.any(signal_power < 0):
+        raise ValueError("Signal power must be non-negative")
+    if len(coordinates) == 0:
+        return 0.0
 
     # Single-receiver geometry: transmitter-to-receiver distance is measured
-    # from the origin, the reference point of the path-loss model
-    distances = np.sqrt(np.sum(coordinates**2, axis=1))
-    distances = np.maximum(distances, 1e-6)  # Avoid division by zero
-
-    # Calculate received power with path loss
-    received_power = signal_power / (distances**path_loss_exponent)
-
-    # Calculate signal-to-noise ratio
-    snr = received_power / noise_power
-    snr = np.maximum(snr, 1e-10)  # Avoid log(0)
-
-    # Channel capacity: C = log(1 + SNR)
-    capacity = np.sum(np.log(1 + snr) / np.log(base))
-
-    return float(capacity)
+    # from the origin. Preserve the existing minimum distance of 1e-6 in
+    # coordinate units, computing norms in scaled/log form to avoid squaring
+    # large finite coordinates or overflowing path-loss powers.
+    scales = np.max(np.abs(coordinates), axis=1)
+    log_distances = np.full(len(scales), np.log(1e-6))
+    nonzero = scales > 0
+    scaled = coordinates[nonzero] / scales[nonzero, np.newaxis]
+    log_distances[nonzero] = np.maximum(
+        np.log(scales[nonzero]) + 0.5 * np.log(np.sum(scaled**2, axis=1)),
+        np.log(1e-6),
+    )
+    positive = signal_power > 0
+    log_snr = (
+        np.log(signal_power[positive])
+        - np.log(noise_power)
+        - path_loss_exponent * log_distances[positive]
+    )
+    return float(np.sum(_log_one_plus_snr(log_snr)) / ln_base)
 
 
 def awgn_channel_capacity(
@@ -154,21 +208,22 @@ def awgn_channel_capacity(
     Shannon capacity: C = B * log(1 + P/N)
 
     Args:
-        signal_power: Signal power P
-        noise_power: Noise power N
-        bandwidth: Channel bandwidth B
-        base: Logarithm base
+        signal_power: Finite non-negative signal power P
+        noise_power: Finite positive noise power N
+        bandwidth: Finite non-negative channel bandwidth B
+        base: Finite logarithm base greater than one
 
     Returns:
         Channel capacity
     """
-    if signal_power <= 0 or noise_power <= 0:
-        raise ValueError("Power values must be positive")
-
-    snr = signal_power / noise_power
-    capacity = bandwidth * (np.log(1 + snr) / np.log(base))
-
-    return float(capacity)
+    signal_power = _real_scalar(signal_power, "signal_power")
+    noise_power = _real_scalar(noise_power, "noise_power", positive=True)
+    bandwidth = _real_scalar(bandwidth, "bandwidth")
+    ln_base = _log_base(base)
+    if signal_power == 0 or bandwidth == 0:
+        return 0.0
+    log_snr = np.log(signal_power) - np.log(noise_power)
+    return float(bandwidth * _log_one_plus_snr(log_snr) / ln_base)
 
 
 def mimo_channel_capacity(
@@ -178,42 +233,67 @@ def mimo_channel_capacity(
     base: float = 2.0,
 ) -> float:
     """
-    Calculate capacity of Multiple-Input Multiple-Output (MIMO) channel.
+    Calculate the MIMO rate for independent equal-power transmit streams.
 
-    MIMO capacity: C = log(det(I + (1/N) * H * H^H))
+    With total power P, C = log(det(I + P/(n_t*N) * H * H^H)).
+    This is an isotropic transmit covariance, rather than an optimization
+    over channel-dependent transmit covariances. Singular values evaluate
+    the log-determinant without forming H * H^H or a determinant.
 
     Args:
-        channel_matrix: MIMO channel matrix H (n_r x n_t)
-        noise_power: Noise power N
-        power_constraint: Optional power constraint
-        base: Logarithm base
+        channel_matrix: Finite real or complex channel matrix H (n_r x n_t)
+        noise_power: Finite positive noise power N
+        power_constraint: Finite non-negative total transmit power P, divided
+            equally among n_t transmitters. None preserves the original unit
+            power per transmitter (total power n_t).
+        base: Finite logarithm base greater than one
 
     Returns:
         MIMO channel capacity
     """
-    channel_matrix = np.asarray(channel_matrix)
+    dtype = complex if np.iscomplexobj(channel_matrix) else float
+    channel_matrix = np.asarray(channel_matrix, dtype=dtype)
+    if channel_matrix.ndim != 2 or 0 in channel_matrix.shape:
+        raise ValueError("Channel matrix must be non-empty and 2D")
+    if not np.all(np.isfinite(channel_matrix)):
+        raise ValueError("Channel matrix must be finite")
+    noise_power = _real_scalar(noise_power, "noise_power", positive=True)
+    ln_base = _log_base(base)
+    if power_constraint is None:
+        log_power_per_transmitter = 0.0
+    else:
+        power_constraint = _real_scalar(power_constraint, "power_constraint")
+        if power_constraint == 0:
+            return 0.0
+        log_power_per_transmitter = np.log(power_constraint) - np.log(
+            channel_matrix.shape[1]
+        )
 
-    if channel_matrix.ndim != 2:
-        raise ValueError("Channel matrix must be 2D")
-
-    n_r, n_t = channel_matrix.shape
-
-    # Calculate H * H^H
-    h_hh = np.dot(channel_matrix, channel_matrix.conj().T)
-
-    # Calculate capacity
-    identity = np.eye(n_r)
-    capacity_matrix = identity + (1.0 / noise_power) * h_hh
-
-    # Calculate determinant
-    det = np.linalg.det(capacity_matrix)
-
-    if det <= 0:
-        return 0.0
-
-    capacity = np.log(det) / np.log(base)
-
-    return float(capacity)
+    # Preserve finite native singular values. Unconditional normalization can
+    # erase a small but material mode when gains span a large dynamic range.
+    singular_values = np.linalg.svd(channel_matrix, compute_uv=False)
+    positive = singular_values > 0
+    log_gains = np.empty(len(singular_values))
+    finite = positive & np.isfinite(singular_values)
+    log_gains[finite] = np.log(singular_values[finite])
+    overflowing = np.isposinf(singular_values)
+    if np.any(overflowing):
+        # A finite matrix can have a singular value above float's maximum.
+        # Re-evaluate only those modes in log scale; retain every finite mode
+        # from the native computation. Component scaling also avoids abs(H)
+        # overflowing when both complex components are large finite numbers.
+        scale = max(
+            float(np.max(np.abs(channel_matrix.real))),
+            float(np.max(np.abs(channel_matrix.imag))),
+        )
+        with np.errstate(under="ignore"):
+            normalized = channel_matrix.real / scale
+            if np.iscomplexobj(channel_matrix):
+                normalized = normalized + 1j * (channel_matrix.imag / scale)
+        scaled_values = np.linalg.svd(normalized, compute_uv=False)
+        log_gains[overflowing] = np.log(scaled_values[overflowing]) + np.log(scale)
+    log_snr = 2 * log_gains[positive] + log_power_per_transmitter - np.log(noise_power)
+    return float(np.sum(_log_one_plus_snr(log_snr)) / ln_base)
 
 
 def waterfilling_power_allocation(
@@ -225,51 +305,59 @@ def waterfilling_power_allocation(
     Waterfilling allocates more power to channels with better gains.
 
     Args:
-        channel_gains: Channel gains for each subchannel
-        noise_power: Noise power
-        total_power: Total power constraint
-        base: Logarithm base
+        channel_gains: Finite non-negative power gains for each subchannel
+        noise_power: Finite positive noise power
+        total_power: Finite non-negative total power budget
+        base: Finite logarithm base greater than one
 
     Returns:
-        Tuple of (power_allocation, capacity)
+        Tuple of (power_allocation in original channel order, capacity).
+        Zero-gain channels receive zero power; if every gain is zero the
+        budget is left unused. A zero budget produces zero capacity.
     """
-    channel_gains = np.asarray(channel_gains).flatten()
-    n_channels = len(channel_gains)
+    channel_gains = _real_array(channel_gains, "channel_gains").flatten()
+    if np.any(channel_gains < 0):
+        raise ValueError("Channel gains must be non-negative")
+    noise_power = _real_scalar(noise_power, "noise_power", positive=True)
+    total_power = _real_scalar(total_power, "total_power")
+    ln_base = _log_base(base)
+    power_allocation = np.zeros(len(channel_gains))
+    positive_indices = np.flatnonzero(channel_gains > 0)
+    if total_power == 0 or len(positive_indices) == 0:
+        return power_allocation, 0.0
 
-    # Sort channels by gain (descending)
-    sorted_indices = np.argsort(channel_gains)[::-1]
-    sorted_gains = channel_gains[sorted_indices]
-
-    # Waterfilling algorithm
-    power_allocation = np.zeros(n_channels)
-    water_level = 0.0
-
-    # Find water level
-    remaining_power = total_power
-
-    for k in range(1, n_channels + 1):
-        # Calculate water level for k channels
-        inv_gains_sum = np.sum(1.0 / sorted_gains[:k])
-        water_level_candidate = (remaining_power + inv_gains_sum * noise_power) / k
-
-        # Check if water level is valid
-        if k == n_channels or water_level_candidate <= noise_power / sorted_gains[k]:
-            water_level = water_level_candidate
-            break
-
-    # Allocate power
-    for i in range(n_channels):
-        power = water_level - noise_power / sorted_gains[i]
-        power_allocation[sorted_indices[i]] = max(0.0, power)
-
-    # Calculate capacity
-    capacity = 0.0
-    for i in range(n_channels):
-        if power_allocation[i] > 0:
-            snr = (channel_gains[i] * power_allocation[i]) / noise_power
-            capacity += np.log(1 + snr) / np.log(base)
-
-    return power_allocation, float(capacity)
+    sorted_indices = positive_indices[np.argsort(channel_gains[positive_indices])[::-1]]
+    gains = channel_gains[sorted_indices]
+    # Subtract the best channel's floor N/g_max before waterfilling. Floors
+    # themselves can overflow, even when their differences and allocation
+    # are representable. Express the differences in units of total_power:
+    # (N/g_i - N/g_max) / P = N*(g_max-g_i)/(g_i*g_max*P).
+    log_offsets = np.full(len(gains), -np.inf)
+    weaker = gains < gains[0]
+    log_offsets[weaker] = (
+        np.log(noise_power)
+        + np.log(gains[0] - gains[weaker])
+        - np.log(gains[weaker])
+        - np.log(gains[0])
+        - np.log(total_power)
+    )
+    eligible = log_offsets <= 0  # A floor difference above P cannot be active.
+    sorted_indices = sorted_indices[eligible]
+    with np.errstate(under="ignore"):
+        offsets = np.exp(log_offsets[eligible])
+    levels = (1 + np.cumsum(offsets)) / np.arange(1, len(offsets) + 1)
+    stops = np.flatnonzero(levels[:-1] <= offsets[1:])
+    active = int(stops[0] + 1) if len(stops) else len(offsets)
+    power_allocation[sorted_indices[:active]] = total_power * np.maximum(
+        levels[active - 1] - offsets[:active], 0
+    )
+    used = power_allocation > 0
+    log_snr = (
+        np.log(channel_gains[used])
+        + np.log(power_allocation[used])
+        - np.log(noise_power)
+    )
+    return power_allocation, float(np.sum(_log_one_plus_snr(log_snr)) / ln_base)
 
 
 class ChannelCapacityCalculator:

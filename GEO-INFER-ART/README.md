@@ -45,6 +45,9 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module ART
 - Map styling validates alpha and line-width values before applying them.
 - Animation and multi-scale rendering validate nonempty supported styles,
   positive timing values, and use an immutable-safe default scale selection.
+- Raster optimization resizes spatial axes only, retains masks and affine
+  footprints, and shares plotting's explicit band-layout convention. Vector
+  simplification preserves the active geometry column and validates tolerance.
 
 ## Documentation Notes
 

@@ -609,5 +609,12 @@ def run_process(
     evidence["process_seconds"] = time.monotonic() - started
     cast(Any, result).process_evidence = evidence
     if check:
-        result.check_returncode()
+        try:
+            result.check_returncode()
+        except subprocess.CalledProcessError as error:
+            # CompletedProcess creates a fresh exception when checking a
+            # nonzero exit. Preserve the completed ownership/timing audit
+            # alongside its native type, return code and captured output.
+            cast(Any, error).process_evidence = evidence
+            raise
     return result

@@ -38,7 +38,8 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module APP
 ## Visualization Guidance
 
 - Validate geographic coordinates before creating map features and keep emitted
-  metadata JSON-safe for downstream GeoJSON/dashboard clients.
+  map/dashboard snapshots strict JSON, including every widget payload.
+- Reject nonfinite floats; stringify other non-JSON native values consistently.
 - Preserve dashboard widget schemas when adding agent state visualizations.
 
 ## Integration Notes

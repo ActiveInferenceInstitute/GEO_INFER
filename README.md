@@ -149,7 +149,7 @@ the exact reproducible exception list.
 | [GEO-INFER-IOT](GEO-INFER-IOT/) | `geo_infer_iot` | 19 | 18 |
 | [GEO-INFER-LOG](GEO-INFER-LOG/) | `geo_infer_log` | 21 | 20 |
 | [GEO-INFER-MARINE](GEO-INFER-MARINE/) | `geo_infer_marine` | 12 | 10 |
-| [GEO-INFER-MATH](GEO-INFER-MATH/) | `geo_infer_math` | 67 | 23 |
+| [GEO-INFER-MATH](GEO-INFER-MATH/) | `geo_infer_math` | 67 | 24 |
 | [GEO-INFER-METAGOV](GEO-INFER-METAGOV/) | `geo_infer_metagov` | 21 | 16 |
 | [GEO-INFER-NORMS](GEO-INFER-NORMS/) | `geo_infer_norms` | 20 | 15 |
 | [GEO-INFER-OPS](GEO-INFER-OPS/) | `geo_infer_ops` | 17 | 18 |
@@ -173,7 +173,7 @@ the exact reproducible exception list.
 | --- | ---: |
 | Modules | 45 |
 | Python source files | 1035 |
-| Python test files | 822 |
+| Python test files | 823 |
 | Repository README.md files | 812 |
 | Repository AGENTS.md files | 808 |
 

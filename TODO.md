@@ -1,6 +1,6 @@
 # GEO-INFER Open Task & Backlog Ledger
 
-> Last reviewed: 2026-10-18 (publication and documentation accuracy; historical evidence retains its original dates)
+> Last reviewed: 2026-10-18 (composable runtime, numerical and visualization continuation; historical evidence retains its original dates)
 > Scope: Multi-package repository (`GEO-INFER`) across workspace packages and 45 domain modules.
 > Centralization Rule: All planned, open, or deferred engineering work across all modules is tracked exclusively in this ledger. Module source code and tests must never carry local task markers (`TODO`, `FIXME`, `XXX`, `HACK`).
 > History note (2026-09-07): the published history was rewritten to re-attribute
@@ -18,19 +18,31 @@
 ### Current GEO-INFER continuation — 2026-10-18
 
 The latest accepted checkpoint before this continuation is
-`15056e11e319988deb48e89cc91ba394bdcce368`, published through
-[PR #97](https://github.com/ActiveInferenceInstitute/GEO_INFER/pull/97).
+`0ea7341e99ec80488238672ebed4d0f358b986b2`, published through
+[PR #98](https://github.com/ActiveInferenceInstitute/GEO_INFER/pull/98).
 Its 45 PR and 27 post-main check executions passed. Source-bound evidence
 includes 45 installed wheels/imports and 24 operation profiles per scientific
 interpreter, 46 coverage measurements with 45 unchanged historical floors,
-the native eleven-group publication verification, 190 ROOT cases and the
-reviewed 33-page native PDF. These outcomes remain bound to that checkpoint.
+the native eleven-group publication verification, 192 ROOT cases, 80 executable
+documentation pages and the reviewed 38-page docxology/template PDF with its
+informative cover. These outcomes remain bound to that checkpoint.
 
-Current work corrects inaccurate legacy guides and manuscript claims, adds
-regression checks for fabricated imports and broken code fences, and provides
-an explicit docxology/template render with the generated graphical abstract
-on its cover. Changed sources and new rendering paths require fresh validation;
-the accepted checkpoint's green checks do not qualify this continuation.
+The documentation and template publication phase is complete. The new review
+targets reproduced functionality defects in composable agent sessions, REST
+identity handling, information-theory calculations, raster resampling and
+structured visualization/profiling outputs. Changed sources require fresh
+validation; the accepted checkpoint's green checks do not qualify this continuation.
+
+| Work package | Concrete scope | Acceptance |
+| --- | --- | --- |
+| COMPOSE-01 | Unwind contexts when result retention fails; stable lazy app identity; canonical REST polygon IDs | Native resource lifecycle and actual HTTP regressions, then shared transport checks |
+| SCIENCE-01 | Honor MIMO power constraints without unstable determinants; propagate entropy bases; handle zero-gain channels | Independent analytic/numerical references, finite-input rejection and owning-module suites |
+| VISUAL-01 | Resize raster spatial axes with masks and affine footprints; retain active vector geometry; strict dashboard/map JSON snapshots | Numeric pixel/coordinate references, source immutability and actual render/export tests |
+| PROFILE-01 | Retain checked-process failure evidence and report failed profiles without hiding their disposition | Real process/profile failures, corrupt-receipt controls and actual Python 3.15 profiling |
+
+The reproduced defects have implementation and focused regressions. Fresh
+source-bound validation is required for acceptance; no performance speedup or
+scientific-stack Python 3.15 qualification is implied.
 
 Scope is GEO-INFER. Further companion-repository implementation is deferred;
 using docxology/template for rendering does not authorize changes to that repo.

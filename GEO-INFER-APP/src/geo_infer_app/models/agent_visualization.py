@@ -47,8 +47,13 @@ class VisualizationConfig:
 
 
 def _json_safe(value: Any) -> Any:
-    """Convert metadata into values that can be sent as GeoJSON/JSON."""
-    return json.loads(json.dumps(value, default=str))
+    """Snapshot JSON data, stringify other native values, reject nonfinite floats."""
+    try:
+        return json.loads(json.dumps(value, default=str, allow_nan=False))
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            "Visualization data must be serializable as finite JSON"
+        ) from exc
 
 
 class AgentVisualization:
@@ -168,7 +173,7 @@ class AgentVisualization:
             },
         }
 
-        return feature
+        return _json_safe(feature)
 
     @staticmethod
     def state_to_dashboard_data(agent_state: AgentState) -> dict[str, Any]:
@@ -246,4 +251,4 @@ class AgentVisualization:
                     "value": _json_safe(agent_state.metadata["rewards"]),
                 }
 
-        return dashboard_data
+        return _json_safe(dashboard_data)

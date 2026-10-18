@@ -1,6 +1,6 @@
 ## GEO-INFER-WATER — Water Resources and Hydrology
 
-GEO-INFER-WATER provides water resources management, hydrology, and water quality monitoring (per its `README.md`). Its package `geo_infer_water` contains `api/`, `core/`, and `utils/` for its water-domain interfaces.
+GEO-INFER-WATER provides water resources management, hydrology, and water quality monitoring (per its `README.md`). Its package `geo_infer_water` contains a `core/` subpackage and its package export module for water-domain interfaces.
 
 The public interface, verified from `__init__.py`, exports components spanning modeling, assessment, and planning. Process modeling: `HydrologicalModeler` for catchment-scale water movement, `WatershedDelineator` for deriving basin boundaries from terrain, `WaterBalanceModeler` for precipitation–runoff–storage accounting, and `InfiltrationModeler` for soil-water processes. Assessment: `WaterQualityAssessor` with `WaterSample`, `WaterBodyType`, and `PollutantType` typed records for monitoring contamination. Planning: `WaterInfrastructurePlanner` for infrastructure siting and `FloodDroughtAnalyzer` for hazard-side analysis of both surplus and scarcity.
 

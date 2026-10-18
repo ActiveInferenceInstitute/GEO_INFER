@@ -35,6 +35,39 @@ its legend. For raster data specify `raster_layout="band_first"` or
 `"channel_last"` when the shape is ambiguous; `raster_band` selects a zero-based
 scalar band. Rasterio-loaded data retains its band-first layout and NoData mask.
 
+`GeoArt.optimize_for_performance` takes a positive integer `(height, width)`
+and the same `raster_layout` selection. It resizes spatial axes, retaining the
+band axis, original footprint and scaled affine transform. Bilinear display
+sampling uses full pixel extents, replicates boundary pixels and weights only
+valid masked contributors. An output without valid contributors remains masked.
+Integer arrays retain their dtype; masked arrays use floating interpolation.
+This resampler does not promise area averages or conservation of cell totals.
+Vector simplification uses a finite nonnegative tolerance in CRS units and
+preserves the active geometry column. Both operations return a copy.
+
+```python
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import numpy as np
+from geo_infer_art import GeoArt
+
+bands = np.arange(48, dtype=float).reshape(3, 4, 4)
+source = GeoArt(bands, metadata={"raster_layout": "band_first"})
+with source.optimize_for_performance((2, 2)) as resized:
+    assert resized.data.shape == (3, 2, 2)
+    np.testing.assert_allclose(resized.data[0], [[2.5, 4.5], [10.5, 12.5]])
+    with TemporaryDirectory() as temporary:
+        output = Path(temporary) / "resized.png"
+        resized.apply_style(raster_band=0).save(str(output))
+        assert output.stat().st_size > 100
+assert source.data.shape == (3, 4, 4)
+```
+
+APP's `AgentVisualization` emits independent strict-JSON snapshots for both map
+features and all dashboard widgets. Other native values use their string form;
+NaN and Infinity raise `ValueError`. Callers choose how to represent missing
+measurements before rendering.
+
 An internally created figure is owned by `GeoArt`; `close()` and its context
 manager release it. Caller-provided axes stay caller-owned. `save` can retain
 the figure with `close=False` for multiple exports, creates output parents,
@@ -66,8 +99,12 @@ H3's `cell_to_boundary` returns native `(latitude, longitude)` pairs. Convert
 explicitly at the output boundary:
 
 ```python
+import h3
+
+cell = h3.latlng_to_cell(37.7749, -122.4194, 9)
 ring = [[lng, lat] for lat, lng in h3.cell_to_boundary(cell)]
 ring.append(ring[0])
+assert ring[0] == ring[-1] and len(ring) >= 7
 ```
 
 Use `[lat, lng]` only when passing coordinates to Folium. Never pass the

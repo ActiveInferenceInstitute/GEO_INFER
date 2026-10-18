@@ -16,6 +16,41 @@ from geo_infer_test import execution
 from geo_infer_test.process import run_process
 
 
+@pytest.mark.parametrize("returncode", [0, 7])
+@pytest.mark.parametrize("check", [False, True])
+def test_checked_process_outcomes_retain_native_attempt_evidence(
+    tmp_path, returncode, check
+):
+    """Checking an exit status must not discard the completed ownership audit."""
+    command = [
+        sys.executable,
+        "-c",
+        "import sys; print('native stdout', flush=True); "
+        "print('native stderr', file=sys.stderr, flush=True); "
+        f"raise SystemExit({returncode})",
+    ]
+    if check and returncode:
+        with pytest.raises(subprocess.CalledProcessError) as caught:
+            run_process(command, cwd=tmp_path, timeout=10, check=check)
+        outcome = caught.value
+        assert outcome.cmd == command
+        assert type(outcome) is subprocess.CalledProcessError
+    else:
+        outcome = run_process(command, cwd=tmp_path, timeout=10, check=check)
+        assert outcome.args == command
+        assert type(outcome) is subprocess.CompletedProcess
+    assert outcome.returncode == returncode
+    assert outcome.stdout == "native stdout\n"
+    assert outcome.stderr == "native stderr\n"
+    evidence = outcome.process_evidence
+    assert evidence["target_returncode"] == returncode
+    assert evidence["failure_phase"] is None
+    assert 0 <= evidence["target_completed_seconds"] <= evidence["process_seconds"]
+    assert evidence["census_calls"] >= 1
+    assert evidence["census_seconds"] >= 0
+    assert evidence["cleanup_seconds"] == 0
+
+
 @pytest.fixture
 def engine(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)

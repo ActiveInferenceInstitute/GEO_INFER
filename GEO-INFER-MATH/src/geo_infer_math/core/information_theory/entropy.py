@@ -194,6 +194,7 @@ def spatial_entropy(
         method: Entropy method ('shannon', 'renyi', 'tsallis')
         bins: Number of bins for discretization (int or (int, int) for 2D)
         bandwidth: Bandwidth for kernel density estimation
+        base: Logarithm base passed to the selected entropy measure
 
     Returns:
         Spatial entropy value
@@ -222,11 +223,11 @@ def spatial_entropy(
         probabilities = hist / np.sum(hist)
 
         if method == "shannon":
-            return shannon_entropy(probabilities)
+            return shannon_entropy(probabilities, base=base)
         elif method == "renyi":
-            return renyi_entropy(probabilities, alpha=2.0)
+            return renyi_entropy(probabilities, alpha=2.0, base=base)
         elif method == "tsallis":
-            return tsallis_entropy(probabilities, q=2.0)
+            return tsallis_entropy(probabilities, q=2.0, base=base)
         else:
             raise ValueError(f"Unknown method: {method}")
 
@@ -254,11 +255,11 @@ def spatial_entropy(
         probabilities = probabilities[probabilities > 0]  # Remove empty cells
 
         if method == "shannon":
-            return shannon_entropy(probabilities)
+            return shannon_entropy(probabilities, base=base)
         elif method == "renyi":
-            return renyi_entropy(probabilities, alpha=2.0)
+            return renyi_entropy(probabilities, alpha=2.0, base=base)
         elif method == "tsallis":
-            return tsallis_entropy(probabilities, q=2.0)
+            return tsallis_entropy(probabilities, q=2.0, base=base)
         else:
             raise ValueError(f"Unknown method: {method}")
 

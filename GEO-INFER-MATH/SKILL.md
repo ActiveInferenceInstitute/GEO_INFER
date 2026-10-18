@@ -11,6 +11,11 @@ examples_dir: ../GEO-INFER-EXAMPLES/examples/
 
 # GEO-INFER-MATH
 
+For MIMO power budgets, zero-gain parallel channels or spatial entropy units,
+read [communication and entropy conventions](docs/channel_capacity.md). Explicit
+MIMO power is divided equally across transmitters; `None` retains unit power
+per transmitter. These equal-stream rates do not optimize a transmit covariance.
+
 ## Instructions
 
 Foundation module with zero internal dependencies. Provides mathematical primitives consumed by all other modules.

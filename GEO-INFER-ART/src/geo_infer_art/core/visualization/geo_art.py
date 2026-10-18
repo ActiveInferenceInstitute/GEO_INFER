@@ -315,7 +315,9 @@ class GeoArt:
                     left, bottom, right, top = bounds
                     image_kwargs["extent"] = (left, right, bottom, top)
                     image_kwargs["origin"] = "upper"
-                    if transform is not None and (transform.b or transform.d):
+                    if transform is not None and (
+                        transform.b or transform.d or transform.a < 0 or transform.e > 0
+                    ):
                         height, width = image.shape[:2]
                         image_kwargs["extent"] = (0, width, height, 0)
                         image_kwargs["transform"] = (
@@ -373,20 +375,9 @@ class GeoArt:
         self, layout: str | None = None, band: int | None = None
     ) -> np.ndarray:
         """Normalize native arrays without transposing ambiguous channel-last data."""
-        if not isinstance(self.data, np.ndarray) or self.data.ndim not in (2, 3):
-            raise ValueError("Raster data must be a 2D or 3D numpy array")
-        if 0 in self.data.shape:
-            raise ValueError("Raster dimensions must be nonempty")
-        if layout is None or layout == "auto":
-            layout = self.metadata.get("raster_layout", "auto")
-        if layout not in ("auto", "band_first", "channel_last"):
-            raise ValueError("raster_layout must be auto, band_first, or channel_last")
+        layout = self._raster_layout(layout)
         image = self.data
         if image.ndim == 3:
-            if layout == "auto":
-                layout = (
-                    "channel_last" if image.shape[-1] in (1, 3, 4) else "band_first"
-                )
             if layout == "band_first":
                 image = np.moveaxis(image, 0, -1)
             if band is not None:
@@ -404,6 +395,24 @@ class GeoArt:
         elif band is not None and (type(band) is not int or band != 0):
             raise ValueError("A 2D raster only has raster_band=0")
         return image
+
+    def _raster_layout(self, layout: str | None) -> str:
+        """Resolve the shared plotting/resampling band-axis convention."""
+        if not isinstance(self.data, np.ndarray) or self.data.ndim not in (2, 3):
+            raise ValueError("Raster data must be a 2D or 3D numpy array")
+        if 0 in self.data.shape:
+            raise ValueError("Raster dimensions must be nonempty")
+        if layout is None or layout == "auto":
+            layout = self.metadata.get("raster_layout", "auto")
+        if layout not in ("auto", "band_first", "channel_last"):
+            raise ValueError("raster_layout must be auto, band_first, or channel_last")
+        if layout == "auto":
+            layout = (
+                "channel_last"
+                if self.data.ndim == 2 or self.data.shape[-1] in (1, 3, 4)
+                else "band_first"
+            )
+        return layout
 
     def close(self) -> None:
         """Release this visualization, closing only an internally created figure."""
@@ -1093,14 +1102,25 @@ class GeoArt:
         target_resolution: tuple[int, int] | None = None,
         simplify_tolerance: float | None = None,
         cache_data: bool = True,
+        *,
+        raster_layout: str | None = None,
     ) -> "GeoArt":
         """
         Optimize the visualization for better performance.
 
         Args:
-            target_resolution: Target resolution for raster data
-            simplify_tolerance: Tolerance for geometry simplification
-            cache_data: Whether to cache processed data
+            target_resolution: Positive integer ``(height, width)`` for raster
+                data. Bilinear sampling preserves the full pixel extent and
+                band axis. Integer arrays retain their native dtype; masked
+                arrays use floating interpolation of valid contributions only.
+                Cells without valid contributions remain masked. This is not
+                an area-average or conservation-preserving resampler.
+            simplify_tolerance: Finite nonnegative geometry tolerance in CRS
+                units; preserves topology and the active geometry column.
+            cache_data: Whether to mark the returned copy as cached and retain
+                its original shape. This does not create a disk cache.
+            raster_layout: Same layout convention as ``apply_style``; use an
+                explicit layout for ambiguous three-dimensional arrays.
 
         Returns:
             Optimized GeoArt object
@@ -1110,28 +1130,83 @@ class GeoArt:
         """
         if self.data is None:
             raise ValueError("No data loaded for optimization")
+        if target_resolution is not None and (
+            not isinstance(target_resolution, (tuple, list))
+            or len(target_resolution) != 2
+            or any(type(size) is not int or size <= 0 for size in target_resolution)
+        ):
+            raise ValueError(
+                "target_resolution must contain positive integer height and width"
+            )
+        if simplify_tolerance is not None and (
+            isinstance(simplify_tolerance, (bool, np.bool_))
+            or not isinstance(simplify_tolerance, (int, float, np.integer, np.floating))
+            or not np.isfinite(simplify_tolerance)
+            or simplify_tolerance < 0
+        ):
+            raise ValueError("simplify_tolerance must be finite and nonnegative")
 
         # Create optimized copy
         optimized = GeoArt(
             data=self.data.copy(), metadata=self.metadata.copy(), crs=self.crs
         )
 
-        if isinstance(self.data, gpd.GeoDataFrame) and simplify_tolerance:
+        if isinstance(self.data, gpd.GeoDataFrame) and simplify_tolerance is not None:
             # Simplify geometries for better performance
             assert isinstance(optimized.data, gpd.GeoDataFrame)
-            optimized.data["geometry"] = optimized.data["geometry"].simplify(
-                simplify_tolerance
+            optimized.data = optimized.data.set_geometry(
+                optimized.data.geometry.simplify(
+                    simplify_tolerance, preserve_topology=True
+                )
             )
 
-        if not isinstance(self.data, gpd.GeoDataFrame) and target_resolution:
-            # Downsample raster data
+        if (
+            not isinstance(self.data, gpd.GeoDataFrame)
+            and target_resolution is not None
+        ):
             from scipy.ndimage import zoom
 
-            scale_factor = (
-                target_resolution[0] / self.data.shape[0],
-                target_resolution[1] / self.data.shape[1],
+            layout = self._raster_layout(raster_layout)
+            spatial_axes = (
+                (1, 2) if self.data.ndim == 3 and layout == "band_first" else (0, 1)
             )
-            optimized.data = zoom(self.data, scale_factor, order=1)
+            old_height, old_width = (self.data.shape[axis] for axis in spatial_axes)
+            factors = [1.0] * self.data.ndim
+            for axis, size in zip(spatial_axes, target_resolution):
+                factors[axis] = size / self.data.shape[axis]
+            options = {
+                "order": 1,
+                "mode": "nearest",
+                "grid_mode": True,
+                "prefilter": False,
+            }
+
+            def resample(values: np.ndarray) -> np.ndarray:
+                # SciPy's complex zoom does not forward grid_mode to its
+                # component calls. Use identical pixel coordinates explicitly.
+                if np.iscomplexobj(values):
+                    return zoom(values.real, factors, **options) + 1j * zoom(
+                        values.imag, factors, **options
+                    )
+                return zoom(values, factors, **options)
+
+            if np.ma.isMaskedArray(self.data):
+                valid = (~np.ma.getmaskarray(self.data)).astype(float)
+                weights = resample(valid)
+                values = resample(
+                    self.data.astype(np.result_type(self.data.dtype, float)).filled(0)
+                )
+                np.divide(values, weights, out=values, where=weights > 0)
+                optimized.data = np.ma.array(values, mask=weights <= 0)
+            else:
+                optimized.data = resample(self.data)
+            optimized.metadata["raster_layout"] = layout
+            optimized.metadata["shape"] = optimized.data.shape
+            transform = self.metadata.get("transform")
+            if transform is not None:
+                optimized.metadata["transform"] = transform * transform.scale(
+                    old_width / target_resolution[1], old_height / target_resolution[0]
+                )
 
         if cache_data:
             # Cache the optimized data

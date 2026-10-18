@@ -124,3 +124,10 @@ handles, including nested collisions. Use `$ref` and `get.path` to compose or
 select them. Explicit caller `$literal` inputs remain exact user data. Python
 session context managers preserve an entered native context's exception
 suppression as well as cleanup.
+
+If retaining an `enter` result fails (including handle capacity), its newly
+entered context is unwound immediately with that exception. Existing entered
+contexts and aliases remain owned. Native suppression still runs cleanup, but
+the missing response remains a failure; native cleanup exceptions propagate.
+REST polygon IDs use string storage identity, so integer `1` and string `"1"`
+conflict. Updates validate supplied body IDs even when the ID is zero.

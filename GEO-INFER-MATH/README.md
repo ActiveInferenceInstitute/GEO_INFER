@@ -41,6 +41,15 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module MATH
 ```
 
 
+## Information Theory Contracts
+
+- MIMO rates honor explicit total power divided among transmitters; `None`
+  preserves unit power per transmitter. Singular-mode evaluation avoids forming
+  overflowing Gram matrices or determinants.
+- Waterfilling uses power gains and leaves zero-gain channels unallocated.
+- Spatial information-theory entropy preserves its selected logarithm base.
+- See [communication and entropy conventions](docs/channel_capacity.md).
+
 ## Documentation Notes
 
 This README describes current repository state only. Keep examples and claims tied to importable code, tracked files, or validation commands.

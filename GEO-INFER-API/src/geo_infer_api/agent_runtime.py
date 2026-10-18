@@ -432,12 +432,20 @@ class AgentSession:
                     value = await entry.enter_async_context(manager)
                 else:
                     value = entry.enter_context(manager)
+                try:
+                    result = (
+                        self._store(value, request["save_as"])
+                        if "save_as" in request
+                        else self.encode(value)
+                    )
+                except BaseException:
+                    # Entry is incomplete until its value can be returned.
+                    # Unwind only this manager, with the actual failure, while
+                    # preserving existing handles and other active contexts.
+                    await entry.__aexit__(*sys.exc_info())
+                    raise
                 self.contexts[name] = entry
-                return (
-                    self._store(value, request["save_as"])
-                    if "save_as" in request
-                    else self.encode(value)
-                )
+                return result
             if name not in self.contexts:
                 raise ValueError("Context was not entered by this session")
             entry = self.contexts.pop(name)

@@ -336,6 +336,57 @@ def test_create_feature_with_integer_zero_id():
     assert stored.json()["id"] == 0
 
 
+@pytest.mark.parametrize(
+    "first_id, duplicate_id",
+    [(0, 0), (1, 1), (0, "0"), ("0", 0), (1, "1"), ("1", 1), (-1, "-1")],
+)
+def test_duplicate_ids_use_same_identity_as_storage(first_id, duplicate_id):
+    original = {**SAMPLE_POLYGON_FEATURE, "id": first_id}
+    assert (
+        client.post("/api/v1/collections/polygons/items", json=original).status_code
+        == 201
+    )
+    duplicate = {**original, "id": duplicate_id, "properties": {"name": "overwrite"}}
+    response = client.post("/api/v1/collections/polygons/items", json=duplicate)
+    assert response.status_code == 409
+    assert len(POLYGON_FEATURES) == 1
+    stored = client.get(f"/api/v1/collections/polygons/items/{first_id}")
+    assert stored.json() == original
+
+
+@pytest.mark.parametrize("body_id", [0, "", "different"])
+def test_update_rejects_falsy_mismatched_ids_without_mutating_store(body_id):
+    original = {**SAMPLE_POLYGON_FEATURE, "id": "1"}
+    assert (
+        client.post("/api/v1/collections/polygons/items", json=original).status_code
+        == 201
+    )
+    response = client.put(
+        "/api/v1/collections/polygons/items/1", json={**original, "id": body_id}
+    )
+    assert response.status_code == 422
+    assert client.get("/api/v1/collections/polygons/items/1").json() == original
+
+
+def test_update_accepts_matching_integer_zero_id():
+    assert (
+        client.post(
+            "/api/v1/collections/polygons/items", json=ZERO_ID_FEATURE
+        ).status_code
+        == 201
+    )
+    response = client.put("/api/v1/collections/polygons/items/0", json=ZERO_ID_FEATURE)
+    assert response.status_code == 200 and response.json()["id"] == "0"
+
+
+def test_buffer_preserves_integer_zero_feature_identity():
+    response = client.post(
+        "/api/v1/operations/polygon/buffer?distance=1", json=ZERO_ID_FEATURE
+    )
+    assert response.status_code == 200
+    assert response.json()["id"] == "0_buffer"
+
+
 def test_create_polygon_feature_rejects_beyond_store_cap(monkeypatch):
     """Regression: the in-memory polygon store must be bounded.
 

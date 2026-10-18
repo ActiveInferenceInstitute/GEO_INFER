@@ -64,9 +64,8 @@ def create_app() -> FastAPI:
 def __getattr__(name: str):
     """Construct ``main_app`` lazily on first attribute access."""
     if name == "main_app":
-        module = __import__(__name__)
         app = create_app()
-        module.main_app = app
+        globals()[name] = app
         return app
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 

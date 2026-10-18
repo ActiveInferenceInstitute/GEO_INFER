@@ -7,6 +7,7 @@ Unit workspace within `GEO-INFER-MATH`.
 - `test_ai_convenience.py`
 - `test_bayes_convenience.py`
 - `test_caching.py`
+- `test_channel_capacity_contracts.py`
 - `test_circulation.py`
 - `test_clustering.py`
 - `test_config_contract.py`

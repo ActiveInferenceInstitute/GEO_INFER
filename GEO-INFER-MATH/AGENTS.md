@@ -37,6 +37,14 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module MATH
 ```
 
 
+## Information Theory Guidance
+
+- Preserve `None` as unit power per transmitter; explicit MIMO power is a total
+  budget with isotropic allocation, not an optimized transmit covariance.
+- Keep zero-gain allocations, native finite singular modes and entropy units
+  covered by independent numeric references.
+- Read `docs/channel_capacity.md` before changing communication conventions.
+
 ## Integration Notes
 
 - Update this AGENTS.md and the sibling README.md when commands, exports, dependencies, or generated outputs change.

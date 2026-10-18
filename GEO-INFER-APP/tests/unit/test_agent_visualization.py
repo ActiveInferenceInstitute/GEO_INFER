@@ -10,6 +10,44 @@ from geo_infer_app.models.agent_interface import AgentState, AgentType
 
 
 class TestAgentVisualization:
+    @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+    @pytest.mark.parametrize("surface", ["map", "dashboard"])
+    def test_visualization_rejects_nonfinite_json_values(self, value, surface):
+        state = AgentState(
+            agent_id="nonfinite",
+            agent_type=AgentType.BDI,
+            status="active",
+            location={"lat": 10, "lng": 20},
+            beliefs={"confidence": value},
+            metadata={"confidence": value},
+        )
+        render = (
+            AgentVisualization.state_to_map_feature
+            if surface == "map"
+            else AgentVisualization.state_to_dashboard_data
+        )
+        with pytest.raises(ValueError, match="JSON"):
+            render(state)
+
+    def test_dashboard_normalizes_every_widget_and_returns_a_snapshot(self):
+        from datetime import date
+
+        state = AgentState(
+            agent_id="snapshot",
+            agent_type=AgentType.BDI,
+            status="active",
+            tasks=[{"due": date(2026, 10, 18)}],
+            beliefs={"observed": date(2026, 10, 17)},
+            metadata={"intentions": [{"when": date(2026, 10, 19)}]},
+        )
+        data = AgentVisualization.state_to_dashboard_data(state)
+        encoded = json.loads(json.dumps(data, allow_nan=False))
+        assert encoded["widgets"]["tasks"]["value"][0]["due"] == "2026-10-18"
+        assert encoded["widgets"]["beliefs"]["value"]["observed"] == "2026-10-17"
+        assert encoded["widgets"]["intentions"]["value"][0]["when"] == "2026-10-19"
+        state.tasks[0]["due"] = "changed"
+        assert data["widgets"]["tasks"]["value"][0]["due"] == "2026-10-18"
+
     def test_default_configs(self):
         configs = AgentVisualization.get_default_config(AgentType.BDI)
         assert "map" in configs

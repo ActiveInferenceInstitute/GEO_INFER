@@ -93,6 +93,10 @@ The adapter retains this module's dependencies and authorization requirements.
 - Agent types for `AgentAPIClient.create_agent` are `AgentType` values: `bdi`, `active_inference`, `reinforcement_learning`, `rule_based`, `hybrid` (`rl` is accepted as an alias of `reinforcement_learning`; unknown types raise `ValueError`).
 - `AgentAPIClient` is an in-process registry — there is no HTTP transport.
 - HTML form inputs use standard `placeholder` attributes (legitimate usage).
+- Map features and dashboard widgets are independent JSON snapshots. Dates and
+  other non-JSON native values stringify consistently; nonfinite floating values
+  raise `ValueError` before a payload is returned. Prepare missing values in the
+  caller when needed rather than sending NaN/Infinity to a browser.
 
 ### Integrations
 

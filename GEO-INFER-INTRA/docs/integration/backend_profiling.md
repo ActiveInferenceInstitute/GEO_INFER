@@ -96,6 +96,16 @@ and successful completion evidence before reading tracing bytes. It preserves
 the run's original success/failure and historical source identity. It never
 qualifies the current checkout by reading old evidence.
 
+Failed or interrupted attempts that produced no profile return
+`profile_available: false` and `summary: null`, after receipt and artifact-set
+verification. Reports retain failures, return code, elapsed time and process
+cleanup evidence for agent triage. This does not qualify missing or corrupt
+successful profiles. Reading a failed receipt never reruns its workload.
+
+`geo_infer_test.process.run_process(..., check=True)` keeps the native
+`CalledProcessError`, captured stdout/stderr and the same `process_evidence`
+ownership/timing fields carried by completed results.
+
 Only read receipts produced by the trusted local profiling API. An unanchored
 manifest is trusted input, not authentication of an attacker-written profile.
 For independently retained evidence, pass its receipt hash through

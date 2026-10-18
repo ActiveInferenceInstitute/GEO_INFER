@@ -25,6 +25,7 @@
 - `INTEGRATION_GUIDE.md`
 - `QUICK_START.md`
 - `api_schema.yaml`
+- `channel_capacity.md`
 - `mathematical_foundations.md`
 - `module_architecture.md`
 

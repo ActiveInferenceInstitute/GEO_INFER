@@ -38,7 +38,8 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module APP
 ## Visualization Contracts
 
 - Agent map features validate finite longitude/latitude values and geographic
-  bounds, and normalize metadata to JSON-safe values.
+  bounds. Map features and every dashboard widget return independent JSON
+  snapshots; native non-JSON values stringify and nonfinite floats are rejected.
 - Active-inference prediction and reinforcement-learning reward series are
   exposed in dashboard widgets when present in agent metadata.
 

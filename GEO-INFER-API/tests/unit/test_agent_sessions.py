@@ -46,6 +46,86 @@ def test_session_context_closes_real_file_and_releases_handles(tmp_path):
     assert session.execute(dict(op="diagnostics"))["result"]["session"]["closed"]
 
 
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("suppress", [False, True])
+@pytest.mark.parametrize("cleanup_failure", [False, True])
+def test_failed_enter_unwinds_only_new_context_at_handle_capacity(
+    tmp_path, asynchronous, suppress, cleanup_failure
+):
+    events = []
+    observed = []
+    files = []
+
+    class Resource:
+        def enter(self):
+            events.append("enter")
+            stream = (tmp_path / "native.txt").open("w")
+            files.append(stream)
+            return stream
+
+        def exit(self, kind, error, trace):
+            events.append("exit")
+            observed.append((kind, error, trace))
+            files[-1].close()
+            if cleanup_failure:
+                raise OSError("native cleanup failed")
+            return suppress
+
+    class SyncManager(Resource):
+        def __enter__(self):
+            return self.enter()
+
+        def __exit__(self, *error):
+            return self.exit(*error)
+
+    class AsyncManager(Resource):
+        async def __aenter__(self):
+            await asyncio.sleep(0)
+            return self.enter()
+
+        async def __aexit__(self, *error):
+            await asyncio.sleep(0)
+            return self.exit(*error)
+
+    @contextlib.contextmanager
+    def outer():
+        yield
+        events.append("outer exit")
+
+    async def scenario():
+        async with AgentSession(max_handles=3) as session:
+            manager = AsyncManager() if asynchronous else SyncManager()
+            session.objects.update(manager=manager, alias=manager, outer=outer())
+            assert (await session.aexecute(dict(op="enter", handle="outer")))["ok"]
+            result = await session.aexecute(dict(op="enter", handle="manager"))
+            assert result["ok"] is False
+            assert result["error"]["type"] == (
+                "OSError" if cleanup_failure else "ValueError"
+            )
+            assert files[0].closed
+            assert events == ["enter", "exit"]
+            assert list(session.contexts) == ["outer"]
+            assert session.objects["manager"] is session.objects["alias"] is manager
+            assert set(session.objects) == {"manager", "alias", "outer"}
+        assert events == ["enter", "exit", "outer exit"]
+
+    asyncio.run(scenario())
+    assert len(observed) == 1
+    kind, error, trace = observed[0]
+    assert kind is ValueError and "Handle limit reached" in str(error)
+    assert trace is not None
+
+
+def test_enter_at_capacity_reuses_existing_native_value(tmp_path):
+    stream = (tmp_path / "native.txt").open("w")
+    with AgentSession(max_handles=1) as session:
+        session.objects["stream"] = stream
+        result = session.execute(dict(op="enter", handle="stream"))
+        assert result["ok"] and result["result"]["$ref"] == "stream"
+        assert list(session.contexts) == ["stream"]
+    assert stream.closed
+
+
 def test_session_exception_reaches_all_native_exits_in_reverse_order():
     events = []
 
@@ -391,6 +471,94 @@ def _cli(tmp_path, *arguments, input=None):
         text=True,
         timeout=60,
     )
+
+
+@pytest.mark.parametrize("transport", ["cli", "mcp"])
+def test_real_transport_failed_enter_closes_yielded_file_at_capacity(
+    tmp_path, transport
+):
+    capacity = 2 if transport == "cli" else 256
+    requests = [
+        dict(
+            op="call",
+            target="geo_infer_api.agent_runtime:Path",
+            args=[str(tmp_path / "native.txt")],
+            save_as="path",
+        ),
+        dict(op="call", handle="path", member="open", args=["w"], save_as="file"),
+        dict(op="release", handle="path"),
+        dict(
+            op="call",
+            target="geo_infer_api.agent_runtime:contextlib.closing",
+            args=[{"$ref": "file"}],
+            save_as="manager",
+        ),
+        dict(op="release", handle="file"),
+    ]
+    aliases = [
+        dict(op="get", handle="manager", save_as=f"alias-{index}")
+        for index in range(capacity - 1)
+    ]
+    requests.extend(
+        dict(op="batch", steps=aliases[start : start + 100])
+        for start in range(0, len(aliases), 100)
+    )
+    failed_index = len(requests)
+    requests.extend(
+        [
+            dict(op="enter", handle="manager"),
+            dict(op="diagnostics"),
+            dict(op="release", handle="alias-0"),
+            dict(op="get", handle="manager", member="thing", save_as="file"),
+            dict(op="get", handle="file", member="closed"),
+            dict(op="close"),
+        ]
+    )
+    if transport == "cli":
+        run = _cli(
+            tmp_path,
+            "session",
+            "--max-handles",
+            str(capacity),
+            input="\n".join(json.dumps(request) for request in requests) + "\n",
+        )
+        assert run.returncode == 1, run.stderr
+        responses = [json.loads(line) for line in run.stdout.splitlines()]
+    else:
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client
+
+        async def scenario():
+            parameters = StdioServerParameters(
+                command=sys.executable,
+                args=["-I", "-m", "geo_infer_api.agent_mcp"],
+                cwd=str(tmp_path),
+            )
+            async with (
+                stdio_client(parameters) as (reader, writer),
+                ClientSession(reader, writer) as client,
+            ):
+                await client.initialize()
+                responses = []
+                for request in requests:
+                    operation = request["op"]
+                    arguments = {k: v for k, v in request.items() if k != "op"}
+                    if operation == "enter":
+                        operation = "context"
+                        arguments["action"] = "enter"
+                    result = await client.call_tool("geo_" + operation, arguments)
+                    responses.append(result.structuredContent)
+                    assert result.isError is (not result.structuredContent["ok"])
+                return responses
+
+        responses = asyncio.run(scenario())
+    assert len(responses) == len(requests)
+    assert [i for i, row in enumerate(responses) if not row["ok"]] == [failed_index]
+    assert responses[failed_index]["error"]["type"] == "ValueError"
+    facts = responses[failed_index + 1]["result"]["session"]
+    assert facts["handles"] == capacity and facts["active_contexts"] == 0
+    assert responses[failed_index + 4] == {"ok": True, "result": True}
+    assert responses[-1]["result"]["exited_contexts"] == 0
 
 
 def test_jsonl_retains_handles_rejects_duplicates_and_exits_explicitly(tmp_path):
