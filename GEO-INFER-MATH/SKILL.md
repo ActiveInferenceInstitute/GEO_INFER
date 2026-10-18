@@ -1,6 +1,6 @@
 ---
 name: geo-infer-math
-description: Spatial statistics, topology, and graph theory for geospatial analysis. Use when computing Moran's I, spatial autocorrelation, geodesic distances, graph connectivity, kernel density estimation, or any mathematical operation on geographic data.
+description: Spatial statistics, native RBF interpolation, computation caching, topology, and graph theory for geospatial analysis. Use when computing spatial autocorrelation, interpolating observations, caching numerical work, calculating geodesic distances, graph connectivity, or kernel density estimates.
 prerequisites:
   required: []
   recommended: []

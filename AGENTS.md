@@ -76,6 +76,7 @@ Keep native compilation enabled and retain the chosen profile in evidence.
 - Sync the shared workspace with `uv sync --all-packages --all-extras --all-groups`.
 - Keep module behavior in the owning `GEO-INFER-*` package under `src/`; keep scripts and examples as orchestration surfaces.
 - Treat `manuscript/generate_research_artifacts.py` as the only producer of manuscript variables, figure captions, figure registries, and resolved manuscript copies; never hand-edit ignored `output/`.
+- After source commits, run `uv run python manuscript/generate_research_artifacts.py --refresh-config` and commit only `manuscript/config.yaml` separately. Clean generation must not mutate tracked source; never restore stale config after generating hash-bound output.
 - Keep every module's local test inventory above the minimum release gate of four pytest files.
 - Put planned work in root `TODO.md` or a tracked issue; do not leave task markers in module source or tests.
 - Use module loggers in libraries and configure handlers only from CLI entrypoints.

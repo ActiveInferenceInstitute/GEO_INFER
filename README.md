@@ -206,6 +206,7 @@ them with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.
 - Reproducible model audit: `uv run python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible`
 - Lint contract: `uv run --with 'ruff>=0.15.6,<0.16' ruff check .`
 - Manuscript variables, figures, captions, and resolved copies: `uv run python manuscript/generate_research_artifacts.py`
+- After source commits, refresh metadata with `uv run python manuscript/generate_research_artifacts.py --refresh-config`, then commit only `manuscript/config.yaml` separately before generating evidence.
 
 ## Repo-wide Change Workflow
 

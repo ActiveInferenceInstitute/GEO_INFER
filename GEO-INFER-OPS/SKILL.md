@@ -1,6 +1,6 @@
 ---
 name: geo-infer-ops
-description: Operations, monitoring, and observability for geospatial infrastructure. Use when setting up monitoring dashboards, configuring alerts, tracking system health, or managing deployment of spatial services.
+description: Operations, workflow orchestration, monitoring, and observability for geospatial infrastructure. Use when composing task dependency graphs, retrieving native workflow results, cancelling async work, configuring metrics and alerts, or managing spatial services.
 prerequisites:
   required: []
   recommended:

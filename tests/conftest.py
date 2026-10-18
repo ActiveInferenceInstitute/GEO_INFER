@@ -218,4 +218,17 @@ def generatable_checkout(generator: ModuleType, tmp_path: Path) -> Path:
             env=env,
             capture_output=True,
         )
+    # Clean generation now requires its generator-owned tracked metadata to
+    # have been explicitly refreshed and committed after the source commit.
+    generator.refresh_config_metadata(root, generator.config_metadata_values(root))
+    for args in (
+        ["add", "manuscript/config.yaml"],
+        ["commit", "-q", "-m", "record manuscript metadata"],
+    ):
+        subprocess.run(
+            ["git", "-c", "core.fsmonitor=false", "-C", str(root), *args],
+            check=True,
+            env=env,
+            capture_output=True,
+        )
     return root

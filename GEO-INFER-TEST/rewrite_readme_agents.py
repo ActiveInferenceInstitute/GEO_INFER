@@ -326,6 +326,10 @@ def module_readme_notes(path: Path, module: ModuleInfo | None) -> str:
         return """
 ## Research Verification
 
+- After committing source changes, run `uv run python manuscript/generate_research_artifacts.py --refresh-config`
+  and commit only `manuscript/config.yaml` separately. Config-only commits do
+  not move the measured source date. Clean generation rejects stale metadata
+  before any write; never restore old config after producing hash-bound output.
 - `uv run python manuscript/generate_research_artifacts.py --verify` runs the
   producer's verification groups and retains immutable execution receipts.
 - Ordinary failures and timeouts continue the diagnostic sweep. An interruption
@@ -1233,6 +1237,7 @@ them with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.
 - Reproducible model audit: `uv run python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible`
 - Lint contract: `uv run --with 'ruff>=0.15.6,<0.16' ruff check .`
 - Manuscript variables, figures, captions, and resolved copies: `uv run python manuscript/generate_research_artifacts.py`
+- After source commits, refresh metadata with `uv run python manuscript/generate_research_artifacts.py --refresh-config`, then commit only `manuscript/config.yaml` separately before generating evidence.
 
 ## Repo-wide Change Workflow
 
@@ -1360,6 +1365,7 @@ Keep native compilation enabled and retain the chosen profile in evidence.
 - Sync the shared workspace with `uv sync --all-packages --all-extras --all-groups`.
 - Keep module behavior in the owning `GEO-INFER-*` package under `src/`; keep scripts and examples as orchestration surfaces.
 - Treat `manuscript/generate_research_artifacts.py` as the only producer of manuscript variables, figure captions, figure registries, and resolved manuscript copies; never hand-edit ignored `output/`.
+- After source commits, run `uv run python manuscript/generate_research_artifacts.py --refresh-config` and commit only `manuscript/config.yaml` separately. Clean generation must not mutate tracked source; never restore stale config after generating hash-bound output.
 - Keep every module's local test inventory above the minimum release gate of four pytest files.
 - Put planned work in root `TODO.md` or a tracked issue; do not leave task markers in module source or tests.
 - Use module loggers in libraries and configure handlers only from CLI entrypoints.

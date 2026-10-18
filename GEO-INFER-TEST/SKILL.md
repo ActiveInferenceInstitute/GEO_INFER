@@ -1,6 +1,6 @@
 ---
 name: geo-infer-test
-description: Unified test runner and testing infrastructure for the GEO-INFER ecosystem. Use when running cross-module tests, configuring test categories, setting up test fixtures for spatial data, or analyzing test results.
+description: Unified tests, async benchmarks and load measurement, and source-bound backend profiling for GEO-INFER. Use when running cross-module test categories, discovering tests, measuring awaited workloads, profiling Python backends, or analyzing immutable test results.
 prerequisites:
   required: []
   recommended: []

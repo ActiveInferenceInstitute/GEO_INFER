@@ -2652,9 +2652,10 @@ def generate(
 ) -> dict[str, Any]:
     """Generate the complete evidence bundle and resolved manuscript.
 
-    The working-tree dirtiness is measured once, before anything is written,
-    so the commit stamp describes the state that was actually measured and the
-    generator's own outputs are never counted against it.
+    Clean builds require committed, current config metadata and never refresh
+    tracked source implicitly. Explicit dirty builds may refresh that metadata;
+    their working-tree dirtiness is measured again before inventory and hashing.
+    Ignored generated outputs are never counted against source provenance.
 
     A failing verification command is recorded and published, not swallowed
     and not fatal: ``VERIFICATION_STATUS`` reports ``N passed, M failed`` and
@@ -2685,14 +2686,20 @@ def generate(
     denominator every published verification count is taken against.
 
     Raises:
-        RuntimeError: when the checkout is dirty (or git cannot say) and
-            ``allow_dirty`` is not set.  A publication build must not attribute
+        ValueError: when ``publication`` and ``allow_dirty`` are both set.
+        RuntimeError: when the checkout is dirty (or git cannot say), or its
+            tracked config metadata is stale, and ``allow_dirty`` is not set.
+            A publication build must not attribute
             uncommitted work to a commit that does not contain it.  Also when
             ``publication`` is set and the evidence record is empty or
             contains a failed group.  A publication build cannot carry a
             record forward: it is refused unless it verifies, and a build that
             verifies publishes what it measured.
     """
+    if publication and allow_dirty:
+        raise ValueError(
+            "publication requires clean source; allow_dirty is incompatible"
+        )
     dirty_files = _dirty_file_count(root)
     if dirty_files != 0 and not allow_dirty:
         detail = (
@@ -2711,10 +2718,22 @@ def generate(
             "a publication build must execute its verification commands; "
             "re-run with --verify or --full-validation"
         )
-    # config.yaml is a hashed input, so refresh it before the digest is taken.
-    # Writing it afterwards would publish a fingerprint of a tree that no
-    # longer exists by the time the run ends.
-    refresh_config_metadata(root, config_metadata_values(root))
+    metadata = config_metadata_values(root)
+    stale_metadata = refresh_config_metadata(root, metadata, dry_run=True)
+    if stale_metadata and not allow_dirty:
+        raise RuntimeError(
+            "refusing to generate with stale tracked config metadata: "
+            + ", ".join(stale_metadata)
+            + ". After committing source changes, run "
+            "python manuscript/generate_research_artifacts.py --refresh-config "
+            "and commit only manuscript/config.yaml before generation."
+        )
+    if allow_dirty:
+        # config.yaml is a hashed input. An explicitly authorized refresh must
+        # precede both the source digest and its dirtiness/commit stamp.
+        if stale_metadata:
+            refresh_config_metadata(root, metadata)
+        dirty_files = _dirty_file_count(root)
     inventory = collect_inventory(root, dirty_file_count=dirty_files)
     # The catalog census audit needs only the inventory, so it runs before
     # any figure or resolved file is written: a drifted section fails the
@@ -2963,6 +2982,14 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--refresh-config",
+        action="store_true",
+        help=(
+            "only refresh generator-owned tracked config metadata and report "
+            "changed fields; commit only manuscript/config.yaml afterward"
+        ),
+    )
+    parser.add_argument(
         "--rerun-verification",
         action="store_true",
         help=(
@@ -2980,7 +3007,23 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "'<sha>-dirty' and the uncommitted entry count is published"
         ),
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.refresh_config and any(
+        (
+            args.check,
+            args.verify,
+            args.full_validation,
+            args.publication,
+            args.rerun_verification,
+            args.allow_dirty,
+        )
+    ):
+        parser.error("--refresh-config cannot be combined with generation/check flags")
+    if args.publication and args.allow_dirty:
+        parser.error(
+            "--publication requires clean source; --allow-dirty is incompatible"
+        )
+    return args
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -2995,6 +3038,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("manuscript artifacts match the current tree")
         return 0
     try:
+        if args.refresh_config:
+            changed = refresh_config_metadata(root, config_metadata_values(root))
+            print(json.dumps({"changed_fields": list(changed)}, sort_keys=True))
+            return 0
         manifest = generate(
             root,
             verify=args.verify or args.full_validation,

@@ -55,6 +55,10 @@ uv run python GEO-INFER-TEST/validate_repo_contracts.py --skip-import-smoke
 
 ## Research Verification
 
+- After committing source changes, run `uv run python manuscript/generate_research_artifacts.py --refresh-config`
+  and commit only `manuscript/config.yaml` separately. Config-only commits do
+  not move the measured source date. Clean generation rejects stale metadata
+  before any write; never restore old config after producing hash-bound output.
 - `uv run python manuscript/generate_research_artifacts.py --verify` runs the
   producer's verification groups and retains immutable execution receipts.
 - Ordinary failures and timeouts continue the diagnostic sweep. An interruption

@@ -23,6 +23,17 @@ Read [agent interfaces](GEO-INFER-INTRA/docs/integration/agent_interfaces.md)
 for schemas, examples, lifecycle and error semantics. Operations retain the
 underlying API's authority and side effects; skill loading grants none.
 
+### Research source custody
+
+Commit source changes before preparing manuscript evidence. Run
+`uv run python manuscript/generate_research_artifacts.py --refresh-config`, then
+commit only `manuscript/config.yaml` as a separate final commit. Its measured
+date excludes config-only commits, so that metadata reaches a fixed point.
+Clean generation refuses stale config before writing. Explicit `--allow-dirty`
+development builds retain their actual dirty source stamp; publication requires
+clean source. Generate evidence after the final metadata commit and use `--check`
+to verify it. Never restore old config bytes after generating hash-bound output.
+
 ### Module Discovery
 
 Modules are in `GEO-INFER-{NAME}/` directories. Each has its own `SKILL.md` for detailed guidance.
@@ -46,9 +57,9 @@ Modules are in `GEO-INFER-{NAME}/` directories. Each has its own `SKILL.md` for 
 | TIME | `geo_infer_time` | Time series, temporal analysis, forecasting |
 | IOT | `geo_infer_iot` | IoT sensor ingestion (MQTT, streaming) |
 | DATA | `geo_infer_data` | ETL pipelines, connectors, format loaders |
-| API | `geo_infer_api` | FastAPI REST/GraphQL endpoints |
+| API | `geo_infer_api` | Script, CLI, MCP and FastAPI REST endpoints |
 | SEC | `geo_infer_sec` | Security, threat detection, access control |
-| OPS | `geo_infer_ops` | Monitoring, alerting, observability |
+| OPS | `geo_infer_ops` | Workflow orchestration, monitoring, alerts |
 
 #### Domain Modules
 
@@ -98,7 +109,7 @@ Modules are in `GEO-INFER-{NAME}/` directories. Each has its own `SKILL.md` for 
 | PLACE | `geo_infer_place` | Geocoding, catchment analysis, H3 |
 | INSURANCE | `geo_infer_insurance` | Exposure assessment, underwriting, premium and claim flow |
 | GIT | `geo_infer_git` | Spatial data versioning, lineage |
-| TEST | `geo_infer_test` | Unified test runner, fixtures, markers |
+| TEST | `geo_infer_test` | Unified tests, async benchmarks, load and profiling |
 | EXAMPLES | `geo_infer_examples` | Orchestration patterns, workflows |
 | INTRA | `geo_infer_intra` | Documentation hub, integration guides |
 

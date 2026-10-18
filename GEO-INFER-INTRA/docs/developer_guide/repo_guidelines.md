@@ -14,11 +14,11 @@ automation.
 
 ## Working safely
 
-`bash
+```bash
 git status --short
 uv sync --all-packages --all-extras --all-groups
 uv run python -m pytest GEO-INFER-MODULE/tests/unit -q
-`
+```
 
 Inspect diffs before staging. Preserve unrelated work in a shared checkout and
 do not use destructive reset, checkout, or clean commands as a shortcut.
@@ -45,13 +45,22 @@ do not use destructive reset, checkout, or clean commands as a shortcut.
 
 ## Validation
 
-`bash
+Manuscript metadata is tracked source. After committing all source and generated
+signpost changes, run
+`uv run python manuscript/generate_research_artifacts.py --refresh-config` and commit only `manuscript/config.yaml` separately. The source
+date excludes config-only commits, so this final commit leaves metadata stable.
+Clean generation rejects stale metadata before writing. Explicit `--allow-dirty`
+development builds record their actual dirty state; publication requires clean
+source. Generate evidence after the metadata commit. Restoring an older config
+after generation would invalidate the published source fingerprint.
+
+```bash
 uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language
 uv run python GEO-INFER-TEST/validate_test_contracts.py --strict
 uv run python GEO-INFER-TEST/validate_skills.py --check-xrefs
 uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check
 git diff --check
-`
+```
 
 Use the root README and CI workflow for the full unit, integration, performance,
 model, source-hygiene, and H3 release gates.
