@@ -317,7 +317,7 @@ def test_web_map_uses_active_geometry_column_and_rejects_invalid_latitude(tmp_pa
 
 
 def test_rotated_geotiff_uses_native_affine_coordinates(tmp_path):
-    from affine import Affine
+    from rasterio.transform import Affine
 
     transform = (
         Affine.translation(100, 500) * Affine.rotation(25) * Affine.scale(10, -20)
