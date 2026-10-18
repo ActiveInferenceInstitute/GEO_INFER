@@ -72,6 +72,13 @@ the figures; the manifest binds that registry and the resolved bibliography.
 Retain this entire bundle when sharing a PDF so its measurements remain
 inspectable and reusable.
 
+Bibliography preflight checks the resolved top-level text in memory and the
+authored module chapters that the PDF renderer appends after the catalog.
+Fatal preflight findings stop before verification and output writes. The
+post-generation audit and `--check` apply the same citation scope.
+Module chapters are appended literally; generated variable substitution applies
+to the top-level manuscript files.
+
 ## Visualization and profiling interfaces
 
 For reusable map construction, use the owning `GeoArt` APIs described in

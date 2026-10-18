@@ -45,6 +45,12 @@ Catalog entry files are plain prose with these constraints:
 
 Use Pandoc citation syntax only, for example `[@real_key]`. Every key must exist in `references.bib` before it appears in prose.
 
+Citation validation covers both the resolved top-level publication sections
+and every `sections/*.md` chapter appended by the PDF renderer. Module chapters
+are rendered literally; place generated variable tokens in top-level sections.
+Fatal preflight findings stop generation before verification or output
+writes, and `--check` audits the same combined citation scope.
+
 ## Figures
 
 Generated figures are produced by `generate_research_artifacts.py`, registered

@@ -212,7 +212,7 @@ def _output_bytes(root: Path) -> dict[str, bytes]:
     }
 
 
-@pytest.mark.parametrize("problem", ["orphan", "undefined"])
+@pytest.mark.parametrize("problem", ["orphan", "undefined", "chapter-undefined"])
 def test_static_citation_failure_precedes_verification_and_output_writes(
     generator: ModuleType,
     generatable_checkout: Path,
@@ -225,15 +225,17 @@ def test_static_citation_failure_precedes_verification_and_output_writes(
         (root / "manuscript/references.bib").write_text(
             "@book{orphan_entry, title={Uncited}}\n"
         )
-        # Neither excluded operational docs nor nested module entries belong
-        # to the generator's resolved top-level publication selection.
+        # Operational docs are excluded from the rendered publication. Module
+        # chapters are included and are exercised separately below.
         for name in generator.EXCLUDED_MANUSCRIPT_DOCS:
             (root / "manuscript" / name).write_text("[@orphan_entry]\n")
-        (root / "manuscript/sections").mkdir()
-        (root / "manuscript/sections/example.md").write_text("[@orphan_entry]\n")
         match = "bibliography entries are never cited: orphan_entry"
-    else:
+    elif problem == "undefined":
         (root / "manuscript/00_abstract.md").write_text("# Abstract\n[@ghost]\n")
+        match = "citations with no bibliography entry: ghost"
+    else:
+        (root / "manuscript/sections").mkdir()
+        (root / "manuscript/sections/example.md").write_text("## Example\n[@ghost]\n")
         match = "citations with no bibliography entry: ghost"
     _settle_source(generator, root, git_environment)
     prior = root / "output/data/research_verification.json"
@@ -257,7 +259,7 @@ def test_static_citation_failure_precedes_verification_and_output_writes(
     assert generator._dirty_file_count(root) == 0
 
 
-@pytest.mark.parametrize("problem", ["orphan", "undefined"])
+@pytest.mark.parametrize("problem", ["orphan", "undefined", "chapter-undefined"])
 def test_false_policy_allows_generation_and_only_final_audit_warns(
     generator: ModuleType,
     generatable_checkout: Path,
@@ -273,13 +275,16 @@ def test_false_policy_allows_generation_and_only_final_audit_warns(
         (root / "manuscript/references.bib").write_text(
             "@book{orphan_entry, title={Uncited}}\n"
         )
-    else:
+    elif problem == "undefined":
         (root / "manuscript/00_abstract.md").write_text("# Abstract\n[@ghost]\n")
+    else:
+        (root / "manuscript/sections").mkdir()
+        (root / "manuscript/sections/example.md").write_text("## Example\n[@ghost]\n")
     _settle_source(generator, root, git_environment)
     generator.generate(root)
     written = root / "output/manuscript/00_abstract.md"
     assert written.is_file()
-    uncited, undefined = generator.audit_bibliography(root, [written])
+    uncited, undefined = generator._audit_publication_bibliography(root, [written])
     assert (uncited, undefined) == (
         (("orphan_entry",), ()) if problem == "orphan" else ((), ("ghost",))
     )
@@ -310,6 +315,100 @@ def test_existing_variable_can_supply_a_valid_bibliography_citation(
     assert (
         "MIT [@cited_entry]" in (root / "output/manuscript/00_abstract.md").read_text()
     )
+
+
+def test_chapter_only_citation_is_included_without_expanding_resolved_outputs(
+    generator: ModuleType,
+    generatable_checkout: Path,
+    git_environment: dict[str, str],
+) -> None:
+    root = generatable_checkout
+    (root / "manuscript/references.bib").write_text(
+        "@book{chapter_entry, title={Cited only by the rendered module catalog}}\n"
+    )
+    chapters = root / "manuscript/sections"
+    chapters.mkdir()
+    chapter = chapters / "example.md"
+    chapter.write_text("## Example\nSee [@chapter_entry].\n")
+    _settle_source(generator, root, git_environment)
+    manifest = generator.generate(root)
+    assert manifest["resolved_manuscript_files"] == ["output/manuscript/00_abstract.md"]
+    assert not (root / "output/manuscript/example.md").exists()
+    assert generator.check_published_artifacts(root) == ()
+    # The generic audit still examines exactly its caller's supplied paths.
+    assert generator.audit_bibliography(
+        root, [root / "output/manuscript/00_abstract.md"]
+    ) == (("chapter_entry",), ())
+    before = _output_bytes(root)
+    chapter.write_text(chapter.read_text() + "See [@chapter_ghost].\n")
+    problems = generator.check_published_artifacts(root)
+    assert "citations with no bibliography entry: chapter_ghost" in problems
+    assert _output_bytes(root) == before
+
+
+def test_publication_preflight_keeps_catalog_chapter_text_literal(
+    generator: ModuleType, bib_tree: Path
+) -> None:
+    chapters = bib_tree / "manuscript/sections"
+    chapters.mkdir()
+    (chapters / "example.md").write_text("{{PROJECT_LICENSE}}\n")
+    top_level = _body(bib_tree, "[@cited_entry]\n")
+    assert generator._audit_publication_bibliography(
+        bib_tree,
+        top_level,
+        variables={"PROJECT_LICENSE": "[@orphan_entry]"},
+    ) == (("orphan_entry",), ())
+
+
+def test_check_does_not_use_extra_output_markdown_to_rescue_orphan(
+    generator: ModuleType,
+    generatable_checkout: Path,
+    git_environment: dict[str, str],
+) -> None:
+    root = generatable_checkout
+    (root / "manuscript/references.bib").write_text(
+        "@book{cited_entry, title={Used in authored prose}}\n"
+    )
+    chapters = root / "manuscript/sections"
+    chapters.mkdir()
+    chapter = chapters / "example.md"
+    chapter.write_text("## Example\n[@cited_entry]\n")
+    _settle_source(generator, root, git_environment)
+    generator.generate(root)
+    assert generator.check_published_artifacts(root) == ()
+    chapter.write_text("## Example\nThe reference is no longer used.\n")
+    (root / "output/manuscript/extra.md").write_text("[@cited_entry]\n")
+    before = _output_bytes(root)
+    assert "bibliography entries are never cited: cited_entry" in (
+        generator.check_published_artifacts(root)
+    )
+    assert _output_bytes(root) == before
+
+
+def test_resolved_audit_also_reads_rendered_catalog_chapters(
+    generator: ModuleType,
+    generatable_checkout: Path,
+    git_environment: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = generatable_checkout
+    chapters = root / "manuscript/sections"
+    chapters.mkdir()
+    chapter = chapters / "example.md"
+    chapter.write_text("## Example\nNo citation.\n")
+    _settle_source(generator, root, git_environment)
+    original = generator.write_resolved_manuscript
+
+    def changed_chapter(*args, **kwargs):
+        written = original(*args, **kwargs)
+        chapter.write_text("## Example\n[@late_chapter_ghost]\n")
+        return written
+
+    monkeypatch.setattr(generator, "write_resolved_manuscript", changed_chapter)
+    with pytest.raises(
+        ValueError, match="citations with no bibliography entry: late_chapter_ghost"
+    ):
+        generator.generate(root)
 
 
 def test_generated_citation_still_rejected_by_resolved_audit(

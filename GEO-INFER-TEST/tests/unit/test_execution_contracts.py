@@ -575,8 +575,8 @@ def test_validator_arguments_do_not_advertise_pytest_or_report_promises(
     receipt = json.loads(Path(result.receipt).read_text(encoding="utf-8"))
     evidence = receipt["process_evidence"]
     assert evidence["target_returncode"] == 0 and evidence["failure_phase"] is None
-    assert evidence["target_completed_seconds"] > 0
-    assert evidence["census_calls"] >= 1 and evidence["census_seconds"] > 0
+    assert evidence["target_completed_seconds"] >= 0
+    assert evidence["census_calls"] >= 1 and evidence["census_seconds"] >= 0
     assert evidence["cleanup_seconds"] == 0
     assert all(value >= 0 for value in receipt["timing"].values())
     assert not Path(result.receipt).with_name("junit.xml").exists()
@@ -1795,7 +1795,13 @@ class _CensusPhaseProbe:
     """Observe real target completion and native scans without merging cleanup."""
 
     def __init__(
-        self, monkeypatch, command, *, final_refresh=None, release_marker=None
+        self,
+        monkeypatch,
+        command,
+        *,
+        final_refresh=None,
+        release_marker=None,
+        same_initial_tick=False,
     ):
         import geo_infer_test.process as process_module
 
@@ -1884,6 +1890,29 @@ class _CensusPhaseProbe:
         monkeypatch.setattr(process_module._DescendantCensus, "refresh", refresh)
         monkeypatch.setattr(process_module, "terminate_tree", terminate_tree)
 
+        if same_initial_tick:
+            # A monotonic clock need not advance between completed observations.
+            # Keep the initial observation on one tick; the real delayed final
+            # census and every subsequent cleanup clock observation advance.
+            from types import SimpleNamespace
+
+            native_time = process_module.time
+            origin = None
+
+            def same_tick_monotonic():
+                nonlocal origin
+                if origin is None:
+                    origin = native_time.monotonic()
+                if not any(scan["phase"] == "final" for scan in self.scans):
+                    return 1000.0
+                return 1000.0 + native_time.monotonic() - origin
+
+            monkeypatch.setattr(
+                process_module,
+                "time",
+                SimpleNamespace(monotonic=same_tick_monotonic, sleep=native_time.sleep),
+            )
+
     def assert_phases(self, evidence, *, attempt_budget, final_completed):
         import geo_infer_test.process as process_module
 
@@ -1918,12 +1947,14 @@ class _CensusPhaseProbe:
             ("communicate", "cleanup"),
         ]
         assert not self.in_cleanup
-        assert evidence["cleanup_seconds"] > 0
+        # Phase events establish cleanup; a fast phase may occupy one tick.
+        assert evidence["cleanup_seconds"] >= 0
         assert not process_module._ACTIVE_PROCESSES
 
 
+@pytest.mark.parametrize("same_initial_tick", [False, True])
 def test_exited_target_census_deadline_retains_distinct_phase_evidence(
-    engine, monkeypatch
+    engine, monkeypatch, same_initial_tick
 ):
     """Zero exit before a late ownership scan cannot make a timeout pass."""
     import threading
@@ -1941,7 +1972,12 @@ def test_exited_target_census_deadline_retains_distinct_phase_evidence(
         threading.Event().wait(timeout + 0.02)
         raise error
 
-    probe = _CensusPhaseProbe(monkeypatch, command, final_refresh=late_refresh)
+    probe = _CensusPhaseProbe(
+        monkeypatch,
+        command,
+        final_refresh=late_refresh,
+        same_initial_tick=same_initial_tick,
+    )
     result = engine.run_command(command, "exited target late census", 1)
     assert not result.success and result.status == "TIMEOUT"
     assert result.returncode is None and result.executed == 0
@@ -1950,13 +1986,15 @@ def test_exited_target_census_deadline_retains_distinct_phase_evidence(
     receipt = json.loads(Path(result.receipt).read_text())
     evidence = receipt["process_evidence"]
     assert evidence["target_returncode"] == 0
-    assert 0 < evidence["target_completed_seconds"] < 1
+    assert 0 <= evidence["target_completed_seconds"] < 1
+    if same_initial_tick:
+        assert evidence["target_completed_seconds"] == 0.0
     assert evidence["failure_phase"] == "census"
     probe.assert_phases(evidence, attempt_budget=1, final_completed=False)
     assert len(injected_errors) == 1
     assert injected_errors[0].process_evidence == evidence
     assert evidence["census_seconds"] > probe.scans[-2]["timeout"]
-    assert evidence["cleanup_seconds"] > 0
+    assert evidence["cleanup_seconds"] >= 0
     # Preliminary census time is already inside target_completed_seconds;
     # adding all census time there would double-count legitimate pipe polls.
     assert evidence["process_seconds"] >= (
@@ -2012,11 +2050,11 @@ def test_post_census_liveness_deadline_rejects_observed_zero_exit(engine, monkey
     receipt = json.loads(Path(result.receipt).read_text())
     evidence = receipt["process_evidence"]
     assert evidence["target_returncode"] == 0
-    assert 0 < evidence["target_completed_seconds"] < 1
+    assert 0 <= evidence["target_completed_seconds"] < 1
     assert evidence["failure_phase"] == "ownership"
     probe.assert_phases(evidence, attempt_budget=1, final_completed=True)
-    assert evidence["census_seconds"] > 0
-    assert evidence["cleanup_seconds"] > 0
+    assert evidence["census_seconds"] >= 0
+    assert evidence["cleanup_seconds"] >= 0
     assert evidence["process_seconds"] >= 1
     assert not Path(result.receipt).with_name("junit.xml").exists()
     assert not process_module._ACTIVE_PROCESSES
@@ -2069,7 +2107,7 @@ print('ordinary validator')
     evidence = caught.value.process_evidence
     assert caught.value.output == "ordinary validator\n"
     assert evidence["target_returncode"] == 0
-    assert 0 < evidence["target_completed_seconds"] < 5
+    assert 0 <= evidence["target_completed_seconds"] < 5
     assert evidence["failure_phase"] == "census"
     assert len(injections) == 1
     probe.assert_phases(evidence, attempt_budget=5, final_completed=False)

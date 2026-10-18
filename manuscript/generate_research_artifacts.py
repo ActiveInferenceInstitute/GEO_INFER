@@ -2843,20 +2843,56 @@ def audit_bibliography(
         ``(uncited, undefined)`` — bibliography keys that no manuscript file
         cites, and citation keys with no bibliography entry.
     """
-    bib = root / "manuscript" / "references.bib"
-    if not bib.is_file():
+    if not (root / "manuscript/references.bib").is_file():
         return (), ()
-    entries = set(BIB_ENTRY_RE.findall(bib.read_text(encoding="utf-8")))
+    return _bibliography_findings(
+        root, _manuscript_citations(manuscript_files, variables=variables)
+    )
+
+
+def _manuscript_citations(
+    manuscript_files: Sequence[Path],
+    *,
+    variables: Mapping[str, str] | None = None,
+) -> set[str]:
     cited: set[str] = set()
     for path in manuscript_files:
         text = path.read_text(encoding="utf-8")
         if variables is not None:
             text, _missing = substitute_manuscript_text(text, variables)
         cited.update(CITATION_RE.findall(text))
+    return cited
+
+
+def _bibliography_findings(
+    root: Path, cited: set[str]
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    bib = root / "manuscript" / "references.bib"
+    if not bib.is_file():
+        return (), ()
+    entries = set(BIB_ENTRY_RE.findall(bib.read_text(encoding="utf-8")))
     undefined = {
         key for key in cited - entries if not key.startswith(CROSSREF_PREFIXES)
     }
     return tuple(sorted(entries - cited)), tuple(sorted(undefined))
+
+
+def _audit_publication_bibliography(
+    root: Path,
+    top_level_files: Sequence[Path],
+    *,
+    variables: Mapping[str, str] | None = None,
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Audit resolved top-level prose plus the renderer's raw catalog chapters.
+
+    Only top-level source preflight uses substitution. The renderer appends
+    every authored ``manuscript/sections/*.md`` unchanged after the catalog.
+    """
+    cited = _manuscript_citations(top_level_files, variables=variables)
+    cited.update(
+        _manuscript_citations(sorted((root / "manuscript/sections").glob("*.md")))
+    )
+    return _bibliography_findings(root, cited)
 
 
 def audit_module_census(root: Path, inventory: RepositoryInventory) -> None:
@@ -2970,7 +3006,7 @@ def generate(
         inventory, _figure_specs(inventory, unmeasured), unmeasured
     )
     policy = bibliography_policy(root)
-    uncited, undefined = audit_bibliography(
+    uncited, undefined = _audit_publication_bibliography(
         root,
         _publication_manuscript_sources(root),
         variables=preflight_variables,
@@ -3019,7 +3055,7 @@ def generate(
             f"pre-scan refresh: {', '.join(stale_config)}"
         )
     written = write_resolved_manuscript(root, variables)
-    uncited, undefined = audit_bibliography(root, written)
+    uncited, undefined = _audit_publication_bibliography(root, written)
     policy = bibliography_policy(root)
     if undefined and policy["fail_on_missing"]:
         raise ValueError(
@@ -3327,6 +3363,26 @@ def check_published_artifacts(root: Path) -> tuple[str, ...]:
         )
     problems.extend(_published_verification_problems(root, published))
     problems.extend(_published_artifact_problems(root, published))
+    try:
+        uncited, undefined = _audit_publication_bibliography(
+            root,
+            tuple(
+                root / "output/manuscript" / source.name
+                for source in _publication_manuscript_sources(root)
+            ),
+        )
+        if uncited or undefined:
+            policy = bibliography_policy(root)
+            if undefined and policy["fail_on_missing"]:
+                problems.append(
+                    "citations with no bibliography entry: " + ", ".join(undefined)
+                )
+            if uncited and policy["fail_on_unused"]:
+                problems.append(
+                    "bibliography entries are never cited: " + ", ".join(uncited)
+                )
+    except (OSError, ValueError) as exc:
+        problems.append(f"published bibliography is unreadable: {exc}")
     return tuple(problems)
 
 
