@@ -117,3 +117,26 @@ Custom algorithm persistence accepts schema version 1 registry references only.
 Supply trusted callables to `CustomAlgorithmFramework(algorithm_registry=...)`;
 legacy source-bearing JSON is rejected before any state change. Direct callable
 registration remains available, but only registry-listed functions can be saved.
+
+### Compose and export maps
+
+`GeoArt.apply_style` accepts caller-owned `ax`, a vector `column`, and shared
+scalar `vmin`/`vmax` limits for comparable panels. A legend requires its color
+attribute; specify `column` explicitly. Raster inputs support 2D scalar arrays,
+band-first `(bands, height, width)` and channel-last `(height, width, channels)`.
+Use `raster_layout` for ambiguous shapes and zero-based `raster_band` for a
+selected scalar band. Loaded rasters retain band-first layout and NoData masks.
+
+Use a `with GeoArt(...) as art` context or `close()` to release owned figures.
+Caller-provided axes remain caller-owned. `save` creates nested directories and
+accepts `close`, `transparent` and native Matplotlib `metadata`; retain a figure
+with `close=False` when exporting several formats. Choose `.svg` for vector
+artwork and `.png` for raster output. Folium exports reproject declared vector
+CRS to WGS84 and retain geometry holes/multipart features; Plotly scatter maps
+require point geometry.
+
+Discover the current signatures with `geo-infer describe
+geo_infer_art.core.visualization.geo_art:GeoArt.apply_style`. Use a retained
+`GeoArt` handle in one script, persistent CLI session or MCP session to compose
+`apply_style`, `save` and `close`; the shared interfaces preserve native arrays
+and GeoDataFrames. See [visualization contracts](../GEO-INFER-INTRA/docs/geospatial/visualization/index.md).

@@ -19,6 +19,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 AUTHORITATIVE_DOCS = (
     "GEO-INFER-INTRA/docs/integration/agent_interfaces.md",
     "GEO-INFER-INTRA/docs/integration/backend_profiling.md",
+    "GEO-INFER-INTRA/docs/integration/research_artifacts.md",
     "GEO-INFER-ACT/docs/cascadia_river_homing.md",
     "GEO-INFER-ACT/docs/cascadia_seed_study_20261012.md",
     "GEO-INFER-ACT/docs/gnn_interchange.md",

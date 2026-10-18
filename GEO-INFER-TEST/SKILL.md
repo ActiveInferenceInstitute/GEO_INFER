@@ -111,6 +111,14 @@ dependencies and OS inspection permission. Script and MCP target is
 `source_bound` and `source_unchanged` as well as transport `ok`. Retain failed
 runs. Read [profiling controls and native evidence](../GEO-INFER-INTRA/docs/integration/backend_profiling.md)
 for sampler modes, runtime/JIT facts, artifact custody and timing interpretation.
+Read retained evidence through `geo-infer-profile --report RECEIPT --sort-by own`
+or `geo_infer_test.profiling:summarize_profile` in Python, CLI or MCP. The report
+verifies sealed bytes without rerunning targets; preserve historical success
+and source identity. Use an independently retained receipt hash through
+`--receipt-sha256` / `expected_receipt_sha256` when authenticity matters. Trusted
+local receipts remain required; artifact hashes alone do not authenticate a
+rewritten manifest. Sampling ranks weighted stacks, tracing ranks function
+time/calls, and overlapping cumulative times are not additive percentages.
 Use `PerformanceMonitor.section` for balanced tracer ownership and the bounded
 `LoadTester` for concurrent local workloads.
 

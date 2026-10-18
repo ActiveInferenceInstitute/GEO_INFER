@@ -7,8 +7,11 @@ processes, privilege elevation, implicit fallback, or automatic retry is used.
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import hashlib
+import heapq
 import json
+import marshal
 import math
 import os
 from pathlib import Path
@@ -55,8 +58,22 @@ def _hash(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _tracing_summary(path: Path, limit: int) -> dict[str, Any]:
-    stats = pstats.Stats(str(path))
+def _tracing_summary(
+    path: Path,
+    limit: int,
+    *,
+    sort_by: str = "cumulative",
+    verified_data: bytes | None = None,
+    call_graph: bool = False,
+) -> dict[str, Any]:
+    if verified_data is None:
+        stats = pstats.Stats(str(path))
+    else:
+        # Load the exact bytes whose sealed hash was checked, rather than
+        # reopening a path that could have changed between verification/read.
+        stats = pstats.Stats()
+        stats.stats = marshal.loads(verified_data)
+        stats.get_top_level_stats()
     rows = []
     for (filename, line, function), (
         primitive,
@@ -74,44 +91,103 @@ def _tracing_summary(path: Path, limit: int) -> dict[str, Any]:
                 calls=calls,
                 own_seconds=own,
                 cumulative_seconds=cumulative,
+                own_percent=100 * own / stats.total_tt if stats.total_tt else 0.0,
             )
         )
     if not rows or not stats.total_calls:
         raise ValueError("Tracing profile contains no executed functions")
-    rows.sort(
+    metric = {
+        "cumulative": "cumulative_seconds",
+        "own": "own_seconds",
+        "calls": "calls",
+    }[sort_by]
+    hotspots = heapq.nsmallest(
+        limit,
+        rows,
         key=lambda row: (
-            -row["cumulative_seconds"],
+            -row[metric],
             row["file"],
             row["line"],
             row["function"],
-        )
+        ),
     )
-    return dict(
+    summary = dict(
         measurement="instrumented function time",
+        ranking=sort_by,
+        function_count=len(rows),
         total_calls=stats.total_calls,
         primitive_calls=stats.prim_calls,
         instrumented_seconds=stats.total_tt,
-        hotspots=rows[:limit],
+        hotspots=hotspots,
     )
+    if call_graph:
+        edges = []
+        for row in hotspots:
+            callee = (row["file"], row["line"], row["function"])
+            for caller, measurements in stats.stats[callee][4].items():
+                # Native tracing uses (primitive, total, own, cumulative).
+                # The older profile module may store an integer call count.
+                if isinstance(measurements, tuple):
+                    primitive, calls, own, cumulative = measurements
+                else:
+                    primitive = calls = measurements
+                    own = cumulative = None
+                edges.append(
+                    dict(
+                        caller=dict(zip(("file", "line", "function"), caller)),
+                        callee=dict(zip(("file", "line", "function"), callee)),
+                        primitive_calls=primitive,
+                        calls=calls,
+                        own_seconds=own,
+                        cumulative_seconds=cumulative,
+                    )
+                )
+        summary["call_graph"] = dict(
+            measurement="caller edges into reported hotspots; cumulative times overlap",
+            total_candidate_edges=len(edges),
+            edges=heapq.nsmallest(
+                limit,
+                edges,
+                key=lambda edge: (
+                    -(edge["cumulative_seconds"] or 0),
+                    edge["caller"]["file"],
+                    edge["caller"]["line"],
+                    edge["callee"]["file"],
+                    edge["callee"]["line"],
+                ),
+            ),
+        )
+    return summary
 
 
-def _sampling_summary(path: Path, limit: int) -> dict[str, Any]:
-    stacks = []
-    with path.open(encoding="utf-8") as source:
-        for line in source:
-            stack, count = line.rstrip().rsplit(" ", 1)
-            count = int(count)
-            if count <= 0 or not stack:
-                raise ValueError("Invalid collapsed sample weight")
-            stacks.append(dict(stack=stack, thread_samples=count))
+def _sampling_summary(
+    path: Path, limit: int, *, verified_data: bytes | None = None
+) -> dict[str, Any]:
+    stacks: Counter[str] = Counter()
+    if verified_data is not None:
+        lines = verified_data.decode("utf-8").splitlines()
+    else:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    for line in lines:
+        stack, count = line.rstrip().rsplit(" ", 1)
+        count = int(count)
+        if count <= 0 or not stack:
+            raise ValueError("Invalid collapsed sample weight")
+        stacks[stack] += count
     if not stacks:
         raise ValueError("Sampling profile contains no samples")
-    stacks.sort(key=lambda row: (-row["thread_samples"], row["stack"]))
+    total = sum(stacks.values())
     return dict(
         measurement="sampled thread stacks; not function call counts",
-        thread_samples=sum(row["thread_samples"] for row in stacks),
+        ranking="samples",
+        thread_samples=total,
         unique_stacks=len(stacks),
-        hotspots=stacks[:limit],
+        hotspots=[
+            dict(stack=stack, thread_samples=count, sample_percent=100 * count / total)
+            for stack, count in heapq.nsmallest(
+                limit, stacks.items(), key=lambda row: (-row[1], row[0])
+            )
+        ],
     )
 
 
@@ -299,11 +375,13 @@ def profile_command(
     )
     start = time.monotonic()
     stdout = stderr = ""
+    interrupted = False
     try:
         result = run_process(
             command, cwd=directory, env=environment, timeout=remaining()
         )
         stdout, stderr = result.stdout, result.stderr
+        receipt["process_evidence"] = getattr(result, "process_evidence", {})
         receipt["returncode"] = result.returncode
         if result.returncode:
             receipt["failures"].append(f"Profiler exited {result.returncode}")
@@ -325,10 +403,18 @@ def profile_command(
         receipt["summary"] = (
             _sampling_summary if engine == "sampling" else _tracing_summary
         )(artifact, limit)
-    except (Exception, SystemExit) as error:
+    except BaseException as error:
         stdout = getattr(error, "output", None) or stdout
         stderr = getattr(error, "stderr", None) or stderr
+        receipt["process_evidence"] = getattr(
+            error, "process_evidence", receipt.get("process_evidence", {})
+        )
         receipt["failures"].append(f"{type(error).__name__}: {error}")
+        interrupted = not isinstance(error, (Exception, SystemExit))
+        if interrupted:
+            # run_process has already drained and reaped its owned children.
+            # Retain a failed receipt before preserving native interruption.
+            raise
     finally:
         receipt["elapsed_seconds"] = time.monotonic() - start
         (destination / "stdout.log").write_text(
@@ -377,12 +463,211 @@ def profile_command(
             if p.is_file() and not p.is_symlink()
         }
         receipt["success"] = not receipt["failures"]
-        receipt["status"] = "passed" if receipt["success"] else "failed"
+        receipt["status"] = (
+            "interrupted"
+            if interrupted
+            else "passed"
+            if receipt["success"]
+            else "failed"
+        )
         receipt["receipt"] = str(destination / "receipt.json")
         (destination / "receipt.json").write_text(
             json.dumps(receipt, indent=2, allow_nan=False) + "\n", encoding="utf-8"
         )
     return receipt
+
+
+def summarize_profile(
+    receipt: str | Path,
+    *,
+    limit: int = 30,
+    sort_by: str = "auto",
+    max_artifact_bytes: int = 128 * 1024 * 1024,
+    expected_receipt_sha256: str | None = None,
+) -> dict[str, Any]:
+    """Read a trusted local profile receipt without executing its target again.
+
+    Every listed artifact must be a regular file inside the receipt directory
+    with its original SHA256. Verified tracing bytes are parsed only after all
+    hashes match. This is integrity checking for receipts produced by this API,
+    not a sandbox for arbitrary profiling files or attacker-authored manifests.
+    Supply ``expected_receipt_sha256`` from independently retained evidence to
+    authenticate the manifest too; an unanchored local manifest is trusted input.
+    A report preserves its original success/failure and historical source
+    custody; reading old evidence does not qualify the current checkout.
+
+    Tracing ranks by cumulative time, own time or calls and returns at most
+    ``limit`` caller edges into its hotspots. Cumulative times overlap and
+    cannot be summed as percentages. Sampling ranks collapsed stack weights;
+    its percentages describe sampled thread stacks, never function call counts.
+    """
+    for name, value, maximum in [
+        ("limit", limit, 200),
+        ("max_artifact_bytes", max_artifact_bytes, 2**40),
+    ]:
+        if type(value) is not int or not 1 <= value <= maximum:
+            raise ValueError(f"{name} must be an integer from 1 to {maximum}")
+    provided = Path(receipt)
+    if provided.is_dir():
+        provided = provided / "receipt.json"
+    if provided.is_symlink() or not provided.is_file():
+        raise ValueError("receipt must be an existing regular receipt file")
+    receipt_path = provided.resolve()
+    with receipt_path.open("rb") as stream:
+        raw_receipt = stream.read(max_artifact_bytes + 1)
+    if len(raw_receipt) > max_artifact_bytes:
+        raise ValueError("Profile receipt exceeds max_artifact_bytes")
+    if expected_receipt_sha256 is not None and (
+        not isinstance(expected_receipt_sha256, str)
+        or hashlib.sha256(raw_receipt).hexdigest() != expected_receipt_sha256
+    ):
+        raise ValueError(
+            "Profile receipt SHA256 does not match independently retained hash"
+        )
+    payload = json.loads(raw_receipt)
+    if (
+        payload.get("schema") != "geo-infer-profile/1"
+        or type(payload.get("success")) is not bool
+        or payload.get("status") not in {"passed", "failed", "interrupted"}
+        or payload["success"] != (payload.get("status") == "passed")
+        or payload.get("engine") not in {"tracing", "sampling"}
+        or not isinstance(payload.get("artifacts"), dict)
+    ):
+        raise ValueError("Invalid owned profiling receipt")
+    if payload["success"] and (
+        payload.get("status") != "passed"
+        or payload.get("returncode") != 0
+        or payload.get("failures") != []
+        or not payload.get("completion", {}).get("success")
+        or "summary" not in payload
+        or payload.get("source_unchanged") is False
+    ):
+        raise ValueError("Successful receipt lacks valid completion/source evidence")
+    engine = payload["engine"]
+    ranking = (
+        ("cumulative" if engine == "tracing" else "samples")
+        if sort_by == "auto"
+        else sort_by
+    )
+    if ranking not in (
+        {"cumulative", "own", "calls"} if engine == "tracing" else {"samples"}
+    ):
+        raise ValueError("sort_by is incompatible with the profiling engine")
+    artifact_name = "profile.pstats" if engine == "tracing" else "profile.collapsed"
+    verified_data = None
+    sealed_metadata = {}
+    actual_files = {
+        path.name
+        for path in receipt_path.parent.iterdir()
+        if path.is_file() or path.is_symlink()
+    } - {receipt_path.name}
+    if actual_files != set(payload["artifacts"]):
+        raise ValueError("Unsealed or missing files in the profile artifact directory")
+    for name, expected_hash in payload["artifacts"].items():
+        if (
+            not name
+            or name in {".", "..", "receipt.json"}
+            or "/" in name
+            or "\\" in name
+            or not isinstance(expected_hash, str)
+            or len(expected_hash) != 64
+        ):
+            raise ValueError("Unsafe profile artifact manifest")
+        artifact = receipt_path.parent / name
+        if artifact.is_symlink() or not artifact.is_file():
+            raise ValueError("Missing or unsafe profile artifact: " + name)
+        with artifact.open("rb") as stream:
+            content = stream.read(max_artifact_bytes + 1)
+        if len(content) > max_artifact_bytes:
+            raise ValueError("Profile artifact exceeds max_artifact_bytes: " + name)
+        if hashlib.sha256(content).hexdigest() != expected_hash:
+            raise ValueError("Profile artifact hash mismatch: " + name)
+        if name == artifact_name:
+            verified_data = content
+        elif name in {"completion.json", "target.json"}:
+            sealed_metadata[name] = content
+    if verified_data is None:
+        raise ValueError("Receipt has no sealed profiling artifact")
+    if payload["success"]:
+        required = {
+            "completion.json",
+            "target.json",
+            "profile_target.py",
+            "stdout.log",
+            "stderr.log",
+        }
+        if not required.issubset(payload["artifacts"]):
+            raise ValueError(
+                "Successful receipt lacks sealed target/completion artifacts"
+            )
+        completion = json.loads(sealed_metadata["completion.json"])
+        target = json.loads(sealed_metadata["target.json"])
+        runtime = payload["runtime"]
+        if (
+            completion != payload["completion"]
+            or target != payload.get("target")
+            or completion.get("token") != target.get("token")
+            or completion.get("success") is not True
+            or type(completion.get("pid")) is not int
+            or completion["pid"] <= 0
+            or completion.get("python") != runtime.get("version")
+            or completion.get("executable") != runtime.get("executable")
+        ):
+            raise ValueError(
+                "Sealed completion does not match the owned target/runtime"
+            )
+        before, after = (
+            payload.get("source_before", {}),
+            payload.get("source_after", {}),
+        )
+        bound = bool(before.get("custody_complete") and after.get("custody_complete"))
+        unchanged = (
+            all(
+                before.get(key) == after.get(key)
+                for key in ("revision", "dirty", "dirty_sha256", "lock_sha256")
+            )
+            if bound
+            else None
+        )
+        if (
+            payload.get("source_bound") is not bound
+            or payload.get("source_unchanged") is not unchanged
+        ):
+            raise ValueError(
+                "Receipt source custody does not match its sealed disposition"
+            )
+    summary = (
+        _tracing_summary(
+            receipt_path.parent / artifact_name,
+            limit,
+            sort_by=ranking,
+            verified_data=verified_data,
+            call_graph=True,
+        )
+        if engine == "tracing"
+        else _sampling_summary(
+            receipt_path.parent / artifact_name, limit, verified_data=verified_data
+        )
+    )
+    return dict(
+        schema="geo-infer-profile-report/1",
+        receipt=str(receipt_path),
+        receipt_sha256=hashlib.sha256(raw_receipt).hexdigest(),
+        success=payload["success"],
+        status=payload["status"],
+        failures=payload.get("failures", []),
+        engine=engine,
+        mode=payload.get("mode"),
+        runtime=payload["runtime"],
+        source_bound=payload.get("source_bound"),
+        source_unchanged=payload.get("source_unchanged"),
+        source_before=payload.get("source_before"),
+        source_after=payload.get("source_after"),
+        process_evidence=payload.get("process_evidence", {}),
+        artifacts_verified=len(payload["artifacts"]),
+        limit=limit,
+        summary=summary,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -391,23 +676,81 @@ def main(argv: list[str] | None = None) -> int:
     selection = parser.add_mutually_exclusive_group(required=True)
     selection.add_argument("--script", type=Path)
     selection.add_argument("--module")
+    selection.add_argument(
+        "--report",
+        type=Path,
+        help="read and verify a saved receipt without target execution",
+    )
     parser.add_argument("--python")
     parser.add_argument("--cwd", type=Path)
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--engine", choices=["tracing", "sampling"], default="tracing")
-    parser.add_argument(
-        "--mode", choices=["wall", "cpu", "gil", "exception"], default="wall"
-    )
-    parser.add_argument("--sampling-rate", type=int, default=1000)
-    parser.add_argument("--timeout", type=float, default=60)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--engine", choices=["tracing", "sampling"])
+    parser.add_argument("--mode", choices=["wall", "cpu", "gil", "exception"])
+    parser.add_argument("--sampling-rate", type=int)
+    parser.add_argument("--timeout", type=float)
     parser.add_argument("--limit", type=int, default=30)
+    parser.add_argument(
+        "--sort-by",
+        choices=["auto", "cumulative", "own", "calls", "samples"],
+        default="auto",
+    )
+    parser.add_argument("--max-artifact-bytes", type=int, default=128 * 1024 * 1024)
+    parser.add_argument(
+        "--receipt-sha256",
+        help="independently retained receipt SHA256; requires --report",
+    )
     parser.add_argument("args", nargs=argparse.REMAINDER)
     options = vars(parser.parse_args(argv))
     options["args"] = (
         options["args"][1:] if options["args"][:1] == ["--"] else options["args"]
     )
+    report = options.pop("report")
+    sort_by = options.pop("sort_by")
+    expected_receipt_sha256 = options.pop("receipt_sha256")
+    if report is not None:
+        if (
+            any(
+                options[name] is not None
+                for name in (
+                    "python",
+                    "cwd",
+                    "output",
+                    "engine",
+                    "mode",
+                    "sampling_rate",
+                    "timeout",
+                )
+            )
+            or options["args"]
+        ):
+            parser.error("--report cannot be combined with target execution options")
+    elif (
+        options["output"] is None
+        or sort_by != "auto"
+        or expected_receipt_sha256 is not None
+    ):
+        parser.error("target execution requires --output; --sort-by requires --report")
+    else:
+        for name, default in [
+            ("engine", "tracing"),
+            ("mode", "wall"),
+            ("sampling_rate", 1000),
+            ("timeout", 60),
+        ]:
+            if options[name] is None:
+                options[name] = default
     try:
-        result = profile_command(**options)
+        result = (
+            summarize_profile(
+                report,
+                limit=options["limit"],
+                sort_by=sort_by,
+                max_artifact_bytes=options["max_artifact_bytes"],
+                expected_receipt_sha256=expected_receipt_sha256,
+            )
+            if report is not None
+            else profile_command(**options)
+        )
     except (Exception, SystemExit) as error:
         print(
             json.dumps(

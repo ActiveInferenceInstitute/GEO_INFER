@@ -8,6 +8,7 @@ irreproducible by the procedure its own glossary describes.
 from __future__ import annotations
 
 import json
+import hashlib
 import subprocess
 from pathlib import Path
 from types import ModuleType
@@ -98,6 +99,10 @@ class TestSourceHashCoversConfig:
 
 def _publish(generator: ModuleType, root: Path, **overrides: str) -> None:
     """Write a published-variables file that matches ``root`` unless overridden."""
+    (root / "manuscript/00_abstract.md").write_text(
+        "# Fixture abstract\n", encoding="utf-8"
+    )
+    (root / "manuscript/references.bib").write_text("", encoding="utf-8")
     generator.refresh_config_metadata(root, generator.config_metadata_values(root))
     published = dict(generator.config_metadata_values(root))
     published["RESEARCH_SOURCE_HASH"] = generator._source_hash(root)
@@ -111,11 +116,97 @@ def _publish(generator: ModuleType, root: Path, **overrides: str) -> None:
     published["VERIFICATION_UNRUN_COUNT"] = str(len(defined))
     published["VERIFICATION_STATUS"] = "not run"
     published["VERIFICATION_RECORD_TIER"] = "default"
+    inventory = generator.collect_inventory(root)
+    published["RESEARCH_COMMIT"] = inventory.commit
+    published["FIGURE_COUNT"] = "1"
+    record_path = generator._verification_record_path(root)
+    if not record_path.exists():
+        generator._write_json(
+            record_path,
+            generator._verification_payload(
+                generator.VerificationRecord(
+                    results=(),
+                    source_commit=inventory.commit,
+                    source_hash=inventory.source_hash,
+                    full_validation_requested=False,
+                )
+            ),
+        )
+    record = json.loads(record_path.read_text(encoding="utf-8"))
+    published["VERIFICATION_RECORD_COMMIT"] = record["source_commit"]
+    published["VERIFICATION_RECORD_SOURCE_HASH"] = record["source_hash"]
     published.update(overrides)
     data = root / "output" / "data"
     data.mkdir(parents=True, exist_ok=True)
     (data / "manuscript_variables.json").write_text(
         json.dumps(published), encoding="utf-8"
+    )
+    # These focused metadata tests use a complete, byte-sealed miniature
+    # publication. Figure rendering is exercised separately with real PNG/SVG.
+    figure_dir = root / "output/figures"
+    figure_dir.mkdir(parents=True, exist_ok=True)
+    figure = figure_dir / "example.png"
+    figure.write_bytes(b"metadata-fixture-figure")
+    companions = []
+    for suffix, media_type in (
+        (".svg", "image/svg+xml"),
+        (".json", "application/json"),
+        (".csv", "text/csv"),
+    ):
+        artifact = figure.with_suffix(suffix)
+        artifact.write_bytes(b"metadata-fixture-companion")
+        companions.append(
+            generator.FigureArtifact(
+                artifact.name,
+                media_type,
+                hashlib.sha256(artifact.read_bytes()).hexdigest(),
+            )
+        )
+    spec = generator.FigureSpec(
+        "fig:example",
+        figure.name,
+        "Fixture caption",
+        "tests",
+        "Fixture alt text",
+        hashlib.sha256(figure.read_bytes()).hexdigest(),
+        tuple(companions),
+    )
+    generator.write_figure_registry(
+        figure_dir / "figure_registry.json", [spec], inventory
+    )
+    resolved = root / "output/manuscript/00_abstract.md"
+    resolved.parent.mkdir(parents=True, exist_ok=True)
+    resolved.write_text("# Fixture abstract\n", encoding="utf-8")
+    for filename in ("config.yaml", "references.bib"):
+        (resolved.parent / filename).write_bytes(
+            (root / "manuscript" / filename).read_bytes()
+        )
+    generator._write_json(data / "research_inventory.json", inventory.to_dict())
+    files = [
+        figure,
+        *(figure_dir / item.filename for item in companions),
+        figure_dir / "figure_registry.json",
+        resolved,
+        data / "research_inventory.json",
+        data / "manuscript_variables.json",
+        record_path,
+        resolved.parent / "config.yaml",
+        resolved.parent / "references.bib",
+    ]
+    generator._write_json(
+        data / "research_manifest.json",
+        {
+            "schema_version": generator.RESEARCH_SCHEMA,
+            "source_commit": inventory.commit,
+            "source_hash": inventory.source_hash,
+            "resolved_manuscript_files": [resolved.relative_to(root).as_posix()],
+            "artifact_sha256": {
+                file.relative_to(root).as_posix(): hashlib.sha256(
+                    file.read_bytes()
+                ).hexdigest()
+                for file in files
+            },
+        },
     )
 
 
@@ -174,6 +265,97 @@ class TestConfigDateIsSettleable:
 
 
 class TestCheckMode:
+    def test_publication_requires_companions_even_when_omitted_from_both_manifests(
+        self,
+        generator: ModuleType,
+        manuscript_tree: Path,
+    ) -> None:
+        _publish(generator, manuscript_tree)
+        registry = manuscript_tree / "output/figures/figure_registry.json"
+        payload = json.loads(registry.read_text("utf-8"))
+        payload["figures"][0]["artifacts"] = []
+        registry.write_text(json.dumps(payload), "utf-8")
+        manifest = manuscript_tree / "output/data/research_manifest.json"
+        bundle = json.loads(manifest.read_text("utf-8"))
+        for suffix in (".svg", ".json", ".csv"):
+            name = "output/figures/example" + suffix
+            (manuscript_tree / name).unlink()
+            bundle["artifact_sha256"].pop(name)
+        bundle["artifact_sha256"]["output/figures/figure_registry.json"] = (
+            hashlib.sha256(registry.read_bytes()).hexdigest()
+        )
+        manifest.write_text(json.dumps(bundle), "utf-8")
+        assert any(
+            "lacks its SVG/JSON/CSV companions" in problem
+            for problem in generator.check_published_artifacts(manuscript_tree)
+        )
+
+    def test_manifest_cannot_hide_an_omitted_authored_section(
+        self,
+        generator: ModuleType,
+        manuscript_tree: Path,
+    ) -> None:
+        _publish(generator, manuscript_tree)
+        manifest = manuscript_tree / "output/data/research_manifest.json"
+        payload = json.loads(manifest.read_text("utf-8"))
+        # A matching digest of an incomplete set is still an incomplete set.
+        payload["resolved_manuscript_files"] = ["output/manuscript/unrelated.md"]
+        payload["artifact_sha256"].pop("output/manuscript/00_abstract.md")
+        manifest.write_text(json.dumps(payload), "utf-8")
+        assert any(
+            "authored manuscript sections" in problem
+            for problem in generator.check_published_artifacts(manuscript_tree)
+        )
+
+    @pytest.mark.parametrize("directory", ["figures", "data", "manuscript"])
+    def test_symlinked_publication_directories_fail_closed(
+        self,
+        generator: ModuleType,
+        manuscript_tree: Path,
+        directory: str,
+    ) -> None:
+        _publish(generator, manuscript_tree)
+        original = manuscript_tree / "output" / directory
+        moved = manuscript_tree / f"external-{directory}"
+        original.rename(moved)
+        original.symlink_to(moved, target_is_directory=True)
+        assert any(
+            "must not be symlinked" in problem
+            for problem in generator.check_published_artifacts(manuscript_tree)
+        )
+
+    @pytest.mark.parametrize(
+        "relative",
+        [
+            "output/figures/example.png",
+            "output/figures/figure_registry.json",
+            "output/manuscript/00_abstract.md",
+            "output/manuscript/config.yaml",
+            "output/manuscript/references.bib",
+            "output/data/research_inventory.json",
+            "output/data/research_manifest.json",
+        ],
+    )
+    @pytest.mark.parametrize("operation", ["change", "delete"])
+    def test_changed_or_missing_delivered_artifacts_fail_closed(
+        self,
+        generator: ModuleType,
+        manuscript_tree: Path,
+        relative: str,
+        operation: str,
+    ) -> None:
+        _publish(generator, manuscript_tree)
+        assert generator.check_published_artifacts(manuscript_tree) == ()
+        artifact = manuscript_tree / relative
+        if operation == "delete":
+            artifact.unlink()
+        else:
+            artifact.write_bytes(b"changed delivered artifact")
+        assert any(
+            "artifact integrity" in problem
+            for problem in generator.check_published_artifacts(manuscript_tree)
+        )
+
     def test_missing_published_variables_fail_closed(
         self, generator: ModuleType, manuscript_tree: Path
     ) -> None:

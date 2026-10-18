@@ -26,6 +26,7 @@
 - `external_systems.md`
 - `geo_infer_modules.md`
 - `index.md`
+- `research_artifacts.md`
 
 ## Validation
 

@@ -2,6 +2,7 @@
 GeoArt module for artistic visualization of geospatial data.
 """
 
+import html
 import logging
 import os
 import threading
@@ -18,13 +19,26 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
+from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
+from matplotlib.transforms import Affine2D
 
 from geo_infer_art.core.aesthetics import ColorPalette
 from geo_infer_art.utils.animation import save_animation_with_fallback
 from geo_infer_art.utils.validators import validate_file_path, validate_geospatial_data
 
 logger = logging.getLogger(__name__)
+
+
+def _popup_text(value: Any) -> str:
+    """Escape label text for both HTML and Folium's JavaScript template literal."""
+    return (
+        html.escape(str(value))
+        .replace("\\", "&#92;")
+        .replace("`", "&#96;")
+        .replace("$", "&#36;")
+    )
+
 
 if TYPE_CHECKING:
     from geo_infer_art.core.visualization.map_styling import MapStyle
@@ -86,6 +100,8 @@ class GeoArt:
         self.crs = crs
         self._figure: Figure | None = None
         self._ax: Axes | None = None
+        self._owns_figure = False
+        self._colorbar: Colorbar | None = None
 
     @classmethod
     def load_geojson(cls, file_path: str) -> "GeoArt":
@@ -137,15 +153,20 @@ class GeoArt:
 
         try:
             with rasterio.open(file_path) as src:
-                data = src.read()
+                data = src.read(masked=True)
                 metadata = {
                     "source": file_path,
                     "type": "raster",
                     "shape": data.shape,
                     "bounds": src.bounds,
                     "transform": src.transform,
+                    "raster_layout": "band_first",
                 }
-                return cls(data=data, metadata=metadata, crs=src.crs.to_string())
+                return cls(
+                    data=data,
+                    metadata=metadata,
+                    crs=src.crs.to_string() if src.crs else None,
+                )
         except Exception as e:
             raise ValueError(f"Failed to load raster: {str(e)}") from e
 
@@ -159,6 +180,13 @@ class GeoArt:
         map_style: Union[str, "MapStyle"] | None = None,
         legend: bool = False,
         title: str | None = None,
+        *,
+        ax: Axes | None = None,
+        column: str | None = None,
+        raster_layout: str | None = None,
+        raster_band: int | None = None,
+        vmin: float | None = None,
+        vmax: float | None = None,
     ) -> "GeoArt":
         """
         Apply an artistic style to the geospatial data.
@@ -172,6 +200,14 @@ class GeoArt:
             map_style: MapStyle name or MapStyle object for advanced styling
             legend: Whether to add a legend to the visualization
             title: Custom title for the visualization
+            ax: Existing axes for a composed figure. The caller owns its lifecycle.
+            column: Vector attribute used for colors and the optional legend.
+            raster_layout: ``band_first``, ``channel_last``, or ``auto``. Auto
+                honors loaded-raster metadata, then prefers channel-last when
+                both ends could contain channels. Specify ambiguous layouts.
+            raster_band: Zero-based band to display as a scalar raster.
+            vmin: Lower scalar color limit, reusable across comparable panels.
+            vmax: Upper scalar color limit, reusable across comparable panels.
 
         Returns:
             Self for method chaining
@@ -186,7 +222,18 @@ class GeoArt:
         if not np.isfinite(line_width) or line_width <= 0:
             raise ValueError("line_width must be finite and positive")
 
-        validate_geospatial_data(self.data)
+        for limit in (vmin, vmax):
+            if limit is not None and not np.isfinite(limit):
+                raise ValueError("Color limits must be finite")
+        if vmin is not None and vmax is not None and vmin >= vmax:
+            raise ValueError("vmin must be less than vmax")
+        if isinstance(self.data, gpd.GeoDataFrame):
+            validate_geospatial_data(self.data)
+            if column is not None and column not in self.data.columns:
+                raise ValueError(f"Unknown color column: {column}")
+            image = None
+        else:
+            image = self._raster_image(raster_layout, raster_band)
 
         # Handle color palette
         if isinstance(color_palette, str):
@@ -218,76 +265,182 @@ class GeoArt:
         else:
             map_style_obj = None
 
-        # Keep repeated rendering calls bounded in long-running analysis jobs.
-        # Matplotlib otherwise emits a figure-leak warning after 20 figures.
-        if len(plt.get_fignums()) >= int(plt.rcParams["figure.max_open_warning"]):
-            plt.close("all")
-
-        # Create figure and apply style
-        fig, ax = plt.subplots(figsize=(10, 8), facecolor=background_color)
-
-        if isinstance(self.data, gpd.GeoDataFrame):
-            # Vector data visualization
-            plot_kwargs = {
-                "ax": ax,
-                "cmap": palette.cmap,
-                "linewidth": line_width,
-                "alpha": alpha,
-            }
-
-            # Add legend if requested
-            if legend and len(self.data.columns) > 1:
-                # Try to use a categorical column for legend
-                categorical_cols = self.data.select_dtypes(include=["object"]).columns
-                if len(categorical_cols) > 0:
-                    plot_kwargs["legend"] = True
-                    plot_kwargs["c"] = categorical_cols[0]
-
-            self.data.plot(**plot_kwargs)
-
+        # Never close unrelated pyplot figures. Replace only figures we own.
+        previous_figure, previous_owned = self._figure, self._owns_figure
+        owns_figure = ax is None
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 8), facecolor=background_color)
         else:
-            # Raster data visualization
-            if self.data.ndim == 3 and self.data.shape[0] == 3:
-                # RGB image
-                rgb = np.dstack([self.data[0], self.data[1], self.data[2]])
-                ax.imshow(rgb)
+            fig = ax.figure
+
+        try:
+            if isinstance(self.data, gpd.GeoDataFrame):
+                # Vector data visualization
+                plot_kwargs = {
+                    "ax": ax,
+                    "cmap": palette.cmap,
+                    "linewidth": line_width,
+                    "alpha": alpha,
+                }
+
+                # Add legend if requested
+                if column is not None:
+                    plot_kwargs["column"] = column
+                    plot_kwargs["legend"] = legend
+                elif legend and len(self.data.columns) > 1:
+                    # Try to use a categorical column for legend
+                    categorical_cols = self.data.select_dtypes(
+                        include=["object"]
+                    ).columns
+                    if len(categorical_cols) > 0:
+                        plot_kwargs["legend"] = True
+                        plot_kwargs["column"] = categorical_cols[0]
+
+                if vmin is not None:
+                    plot_kwargs["vmin"] = vmin
+                if vmax is not None:
+                    plot_kwargs["vmax"] = vmax
+
+                self.data.plot(**plot_kwargs)
+
             else:
-                # Single band or other raster
-                ax.imshow(self.data, cmap=palette.cmap, alpha=alpha)
+                # Raster data visualization
+                assert image is not None
+                image_kwargs: dict[str, Any] = {"alpha": alpha}
+                if image.ndim == 2:
+                    image_kwargs.update(cmap=palette.cmap, vmin=vmin, vmax=vmax)
+                bounds = self.metadata.get("bounds")
+                transform = self.metadata.get("transform")
+                if bounds is not None:
+                    left, bottom, right, top = bounds
+                    image_kwargs["extent"] = (left, right, bottom, top)
+                    image_kwargs["origin"] = "upper"
+                    if transform is not None and (transform.b or transform.d):
+                        height, width = image.shape[:2]
+                        image_kwargs["extent"] = (0, width, height, 0)
+                        image_kwargs["transform"] = (
+                            Affine2D.from_values(
+                                transform.a,
+                                transform.d,
+                                transform.b,
+                                transform.e,
+                                transform.c,
+                                transform.f,
+                            )
+                            + ax.transData
+                        )
+                ax.imshow(image, **image_kwargs)
+                if bounds is not None:
+                    ax.set_xlim(left, right)
+                    ax.set_ylim(bottom, top)
 
-        # Apply MapStyle if provided
-        if map_style_obj is not None:
-            map_style_obj.apply_to_axes(ax)
+            # Apply MapStyle if provided
+            if map_style_obj is not None:
+                map_style_obj.apply_to_axes(ax)
 
-        # Apply style-specific settings
-        if style == "watercolor":
-            ax.patch.set_alpha(0.3)
-            ax.grid(False)
-        elif style == "minimal":
-            ax.axis("off")
-            ax.grid(False)
-        elif style == "blueprint":
-            ax.set_facecolor("#072448")
-            ax.grid(True, color="#1E88E5", alpha=0.3, linestyle="-")
+            # Apply style-specific settings
+            if style == "watercolor":
+                ax.patch.set_alpha(0.3)
+                ax.grid(False)
+            elif style == "minimal":
+                ax.axis("off")
+                ax.grid(False)
+            elif style == "blueprint":
+                ax.set_facecolor("#072448")
+                ax.grid(True, color="#1E88E5", alpha=0.3, linestyle="-")
 
-        # Set title
-        if title is not None:
-            ax.set_title(title)
-        else:
-            ax.set_title(f"Artistic Visualization - {style.capitalize()}")
+            # Set title
+            if title is not None:
+                ax.set_title(title)
+            else:
+                ax.set_title(f"Artistic Visualization - {style.capitalize()}")
+
+        except BaseException:
+            if owns_figure:
+                plt.close(fig)
+            raise
 
         self._figure = fig
         self._ax = ax
+        self._colorbar = None
+        self._owns_figure = owns_figure or (previous_owned and previous_figure is fig)
+        if previous_owned and previous_figure is not fig:
+            plt.close(previous_figure)
 
         return self
 
-    def save(self, output_path: str, dpi: int = 300) -> str:
+    def _raster_image(
+        self, layout: str | None = None, band: int | None = None
+    ) -> np.ndarray:
+        """Normalize native arrays without transposing ambiguous channel-last data."""
+        if not isinstance(self.data, np.ndarray) or self.data.ndim not in (2, 3):
+            raise ValueError("Raster data must be a 2D or 3D numpy array")
+        if 0 in self.data.shape:
+            raise ValueError("Raster dimensions must be nonempty")
+        if layout is None or layout == "auto":
+            layout = self.metadata.get("raster_layout", "auto")
+        if layout not in ("auto", "band_first", "channel_last"):
+            raise ValueError("raster_layout must be auto, band_first, or channel_last")
+        image = self.data
+        if image.ndim == 3:
+            if layout == "auto":
+                layout = (
+                    "channel_last" if image.shape[-1] in (1, 3, 4) else "band_first"
+                )
+            if layout == "band_first":
+                image = np.moveaxis(image, 0, -1)
+            if band is not None:
+                if type(band) is not int or not 0 <= band < image.shape[-1]:
+                    raise ValueError(
+                        "raster_band must be a valid zero-based band index"
+                    )
+                image = image[..., band]
+            elif image.shape[-1] == 1:
+                image = image[..., 0]
+            elif image.shape[-1] not in (3, 4):
+                raise ValueError(
+                    "Select raster_band for rasters with other than 1, 3, or 4 bands"
+                )
+        elif band is not None and (type(band) is not int or band != 0):
+            raise ValueError("A 2D raster only has raster_band=0")
+        return image
+
+    def close(self) -> None:
+        """Release this visualization, closing only an internally created figure."""
+        if self._owns_figure and self._figure is not None:
+            plt.close(self._figure)
+        self._figure = None
+        self._ax = None
+        self._owns_figure = False
+        self._colorbar = None
+
+    def __enter__(self) -> "GeoArt":
+        """Return a visualization whose owned figure closes on context exit."""
+        return self
+
+    def __exit__(self, exc_type: Any, exc: Any, traceback: Any) -> None:
+        """Release owned rendering resources, including on failed exports."""
+        self.close()
+
+    def save(
+        self,
+        output_path: str,
+        dpi: int = 300,
+        *,
+        close: bool = True,
+        transparent: bool = False,
+        metadata: dict[str, Any] | None = None,
+    ) -> str:
         """
         Save the visualization to a file.
 
         Args:
             output_path: Path where the file should be saved
             dpi: Resolution for the output image
+            close: Release an owned pyplot figure after saving; caller axes are
+                never closed. The figure remains available for further exports.
+            transparent: Export transparent axes and figure backgrounds.
+            metadata: Native Matplotlib format-specific export metadata.
 
         Returns:
             The path to the saved file
@@ -302,8 +455,15 @@ class GeoArt:
         if directory and not os.path.exists(directory):
             os.makedirs(directory)
 
-        self._figure.savefig(output_path, dpi=dpi, bbox_inches="tight")
-        plt.close(self._figure)
+        self._figure.savefig(
+            output_path,
+            dpi=dpi,
+            bbox_inches="tight",
+            transparent=transparent,
+            metadata=metadata,
+        )
+        if close and self._owns_figure:
+            plt.close(self._figure)
         return output_path
 
     def show(self) -> None:
@@ -356,26 +516,37 @@ class GeoArt:
         if not isinstance(fps, int) or fps <= 0:
             raise ValueError("fps must be a positive integer")
 
-        # Create frames for each style
-        frames: list[Any] = []
-        for style in style_sequence:
-            # Apply style and capture the figure
-            self.apply_style(style=style, **kwargs)
-            frames.append(self._figure)
+        num_frames = max(1, round(duration * fps))
+        # Render into a separate owner so the current visualization and caller
+        # axes remain intact. Animation must update artists on a single canvas;
+        # returning a different Figure from the callback never changed its pixels.
+        if "ax" in kwargs:
+            raise ValueError("Animation owns its canvas; ax is not supported")
+        frames = []
+        with GeoArt(self.data, dict(self.metadata), self.crs) as renderer:
+            for style in style_sequence:
+                renderer.apply_style(style=style, **kwargs)
+                assert renderer._figure is not None
+                renderer._figure.canvas.draw()
+                frames.append(np.asarray(renderer._figure.canvas.buffer_rgba()).copy())
 
-        # Create animation
-        def animate(frame_num: int) -> Any:
-            return frames[frame_num % len(frames)]
+        fig, ax = plt.subplots(figsize=(10, 8))
+        try:
+            ax.set_position([0, 0, 1, 1])
+            ax.axis("off")
+            artist = ax.imshow(frames[0])
 
-        # Calculate number of frames
-        num_frames = int(duration * fps)
+            def animate(frame_num: int) -> tuple[Any, ...]:
+                index = min(frame_num * len(frames) // num_frames, len(frames) - 1)
+                artist.set_data(frames[index])
+                return (artist,)
 
-        # Create the animation
-        anim = animation.FuncAnimation(
-            frames[0], animate, frames=num_frames, interval=1000 / fps, blit=False
-        )
-
-        return save_animation_with_fallback(anim, output_path, fps)
+            anim = animation.FuncAnimation(
+                fig, animate, frames=num_frames, interval=1000 / fps, blit=False
+            )
+            return save_animation_with_fallback(anim, output_path, fps)
+        finally:
+            plt.close(fig)
 
     def add_interactive_elements(self, interactive_type: str = "zoom") -> "GeoArt":
         """
@@ -430,12 +601,20 @@ class GeoArt:
 
         return self
 
-    def export_svg(self, output_path: str) -> str:
+    def export_svg(
+        self,
+        output_path: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+        text_as_paths: bool = False,
+    ) -> str:
         """
         Export the visualization as an SVG file.
 
         Args:
             output_path: Path for the SVG output file
+            metadata: SVG metadata overrides, such as Title and Description.
+            text_as_paths: Convert fonts to paths instead of selectable text.
 
         Returns:
             Path to the exported SVG file
@@ -450,7 +629,19 @@ class GeoArt:
         if directory and not os.path.exists(directory):
             os.makedirs(directory)
 
-        self._figure.savefig(output_path, format="svg", bbox_inches="tight")
+        export_metadata: dict[str, Any] = {"Date": None}
+        if self._ax is not None:
+            export_metadata["Title"] = self._ax.get_title()
+        export_metadata.update(metadata or {})
+        with plt.rc_context(
+            {
+                "svg.fonttype": "path" if text_as_paths else "none",
+                "svg.hashsalt": "geo-infer-art",
+            }
+        ):
+            self._figure.savefig(
+                output_path, format="svg", bbox_inches="tight", metadata=export_metadata
+            )
         return output_path
 
     def get_colorbar(self, label: str = "Value") -> "GeoArt":
@@ -470,13 +661,24 @@ class GeoArt:
             raise ValueError("No visualization to enhance. Apply a style first.")
         assert self._ax is not None
 
-        # Add colorbar for raster data or styled vector data
-        if not isinstance(self.data, gpd.GeoDataFrame):
-            plt.colorbar(
-                self._ax.images[0] if self._ax.images else None,
-                ax=self._ax,
-                label=label,
+        candidates = [*self._ax.images, *self._ax.collections]
+        scalar = next(
+            (
+                item
+                for item in reversed(candidates)
+                if item.get_array() is not None and item.get_array().ndim <= 2
+            ),
+            None,
+        )
+        if scalar is None:
+            raise ValueError(
+                "A colorbar requires scalar raster data or a colored vector column"
             )
+        if self._colorbar is None:
+            self._colorbar = self._figure.colorbar(scalar, ax=self._ax, label=label)
+        else:
+            self._colorbar.update_normal(scalar)
+            self._colorbar.set_label(label)
 
         return self
 
@@ -659,7 +861,7 @@ class GeoArt:
     def create_interactive_web_map(
         self,
         output_file: str = "interactive_map.html",
-        tiles: str = "OpenStreetMap",
+        tiles: str | None = "OpenStreetMap",
         **kwargs: Any,
     ) -> str:
         """
@@ -668,7 +870,9 @@ class GeoArt:
         Args:
             output_file: Path for the HTML output file
             tiles: Map tiles to use ("OpenStreetMap", "Stamen Terrain", etc.)
-            **kwargs: Additional parameters for the web map
+            **kwargs: Native Folium map parameters. ``fit_bounds`` defaults to
+                true unless ``zoom_start`` is explicit. Data is transformed to
+                EPSG:4326; multipart geometries and polygon holes are retained.
 
         Returns:
             Path to the created HTML file
@@ -685,56 +889,29 @@ class GeoArt:
         if self.data is None:
             raise ValueError("No data loaded for web map creation")
 
-        # Create base map
-        if isinstance(self.data, gpd.GeoDataFrame) and len(self.data) > 0:
-            # Get center point from data bounds
-            bounds = self.data.total_bounds
-            center_lat = (bounds[1] + bounds[3]) / 2
-            center_lon = (bounds[0] + bounds[2]) / 2
-        else:
-            # Default to world center
-            center_lat, center_lon = 0, 0
-
-        web_map = folium.Map(
-            location=[center_lat, center_lon],
-            zoom_start=kwargs.get("zoom_start", 10),
-            tiles=tiles,
-        )
-
-        if isinstance(self.data, gpd.GeoDataFrame):
-            # Add vector data to map
-            for idx, row in self.data.iterrows():
-                # Create popup with feature information
-                popup_content = f"<b>{row.get('name', f'Feature {idx}')}</b><br>"
-                for col in self.data.columns:
-                    if col != "geometry" and col in row:
-                        popup_content += f"{col}: {row[col]}<br>"
-
-                # Add geometry based on type
-                geom = row.geometry
-                if geom.geom_type == "Point":
-                    folium.CircleMarker(
-                        location=[geom.y, geom.x],
-                        radius=5,
-                        popup=popup_content,
-                        color="blue",
-                        fill=True,
-                        fillColor="blue",
-                    ).add_to(web_map)
-                elif geom.geom_type in ["LineString", "MultiLineString"]:
-                    coords = [(point[1], point[0]) for point in geom.coords]
-                    folium.PolyLine(
-                        coords, popup=popup_content, color="red", weight=3
-                    ).add_to(web_map)
-                elif geom.geom_type in ["Polygon", "MultiPolygon"]:
-                    coords = [(point[1], point[0]) for point in geom.exterior.coords]
-                    folium.Polygon(
-                        coords,
-                        popup=popup_content,
-                        color="green",
-                        fill=True,
-                        fillOpacity=0.4,
-                    ).add_to(web_map)
+        data = self._web_geodataframe()
+        bounds = data.total_bounds
+        center_lat = float((bounds[1] + bounds[3]) / 2)
+        center_lon = float((bounds[0] + bounds[2]) / 2)
+        options = dict(kwargs)
+        fit_bounds = options.pop("fit_bounds", "zoom_start" not in options)
+        options.setdefault("zoom_start", 10)
+        web_map = folium.Map(location=[center_lat, center_lon], tiles=tiles, **options)
+        # GeoJSON preserves polygon interior rings and every multipart geometry.
+        # Escape attribute text before passing it to the popup's HTML boundary.
+        for idx, row in data.iterrows():
+            title = _popup_text(row.get("name", f"Feature {idx}"))
+            popup_content = f"<b>{title}</b><br>"
+            for col in data.columns:
+                if col != data.geometry.name:
+                    popup_content += f"{_popup_text(col)}: {_popup_text(row[col])}<br>"
+            folium.GeoJson(
+                row[data.geometry.name].__geo_interface__,
+                popup=folium.Popup(popup_content),
+                marker=folium.CircleMarker(radius=5, fill=True),
+            ).add_to(web_map)
+        if fit_bounds:
+            web_map.fit_bounds([[bounds[1], bounds[0]], [bounds[3], bounds[2]]])
 
         # Save the map
         directory = os.path.dirname(output_file)
@@ -744,6 +921,27 @@ class GeoArt:
         web_map.save(output_file)
         return output_file
 
+    def _web_geodataframe(self) -> gpd.GeoDataFrame:
+        """Return valid geographic features without mutating the source frame."""
+        if not isinstance(self.data, gpd.GeoDataFrame):
+            raise ValueError("Web maps require vector GeoDataFrame data")
+        if self.data.crs is None:
+            raise ValueError(
+                "Web maps require a CRS to transform coordinates to EPSG:4326"
+            )
+        data = self.data.loc[self.data.geometry.notna() & ~self.data.geometry.is_empty]
+        if data.empty or not data.geometry.is_valid.all():
+            raise ValueError("Web maps require nonempty, valid geometries")
+        data = data.to_crs("EPSG:4326")
+        if not np.isfinite(data.total_bounds).all():
+            raise ValueError("Web map coordinates must be finite")
+        left, bottom, right, top = data.total_bounds
+        if left < -180 or right > 180 or bottom < -90 or top > 90:
+            raise ValueError(
+                "Web map coordinates must be valid WGS84 longitude and latitude"
+            )
+        return data
+
     def create_plotly_visualization(
         self, plot_type: str = "scatter", **kwargs: Any
     ) -> Any:
@@ -752,7 +950,11 @@ class GeoArt:
 
         Args:
             plot_type: Type of plot ("scatter", "choropleth", "heatmap", "3d")
-            **kwargs: Additional parameters for the plot
+            **kwargs: Native Plotly Express map options, including title,
+                labels, hover_data, range_color, and map_style. Legacy aliases
+                color_column, size_column and mapbox_style remain supported.
+                Scalar raster plots accept raster_layout, raster_band, vmin,
+                vmax, and colorscale. Map data is transformed to EPSG:4326.
 
         Returns:
             Plotly figure object
@@ -778,31 +980,52 @@ class GeoArt:
         """Create Plotly visualization from GeoDataFrame."""
         if not isinstance(self.data, gpd.GeoDataFrame):
             raise ValueError("Raster data not supported for GeoDataFrame plot")
+        data = self._web_geodataframe()
+        bounds = data.total_bounds
+        options = dict(kwargs)
+        options["hover_name"] = options.pop(
+            "hover_name", "name" if "name" in data else None
+        )
+        options["color"] = options.pop("color_column", options.pop("color", None))
+        options.setdefault("zoom", 10)
+        options.setdefault(
+            "center",
+            {
+                "lat": float((bounds[1] + bounds[3]) / 2),
+                "lon": float((bounds[0] + bounds[2]) / 2),
+            },
+        )
+        map_style = options.pop(
+            "map_style", options.pop("mapbox_style", "carto-positron")
+        )
+        # Plotly 5.24+ uses MapLibre; retain native Mapbox APIs for the declared
+        # older Plotly versions rather than forcing a dependency-floor upgrade.
+        modern_maps = hasattr(px, "scatter_map")
+        options["map_style" if modern_maps else "mapbox_style"] = map_style
         if plot_type == "scatter":
-            # Create scatter plot on map
-            fig = px.scatter_mapbox(
-                self.data,
-                lat=self.data.geometry.y,
-                lon=self.data.geometry.x,
-                hover_name=kwargs.get("hover_name", "name"),
-                color=kwargs.get("color_column"),
-                size=kwargs.get("size_column"),
-                zoom=kwargs.get("zoom", 10),
-                mapbox_style=kwargs.get("mapbox_style", "carto-positron"),
-            )
-
+            if not data.geometry.geom_type.eq("Point").all():
+                raise ValueError("Scatter maps require Point geometries")
+            options["size"] = options.pop("size_column", options.pop("size", None))
+            scatter = px.scatter_map if modern_maps else px.scatter_mapbox
+            fig = scatter(data, lat=data.geometry.y, lon=data.geometry.x, **options)
         elif plot_type == "choropleth":
-            # Create choropleth map
-            fig = px.choropleth_mapbox(
-                self.data,
-                geojson=self.data.geometry,
-                locations=self.data.index,
-                color=kwargs.get("color_column"),
-                hover_name=kwargs.get("hover_name", "name"),
-                mapbox_style=kwargs.get("mapbox_style", "carto-positron"),
-                zoom=kwargs.get("zoom", 10),
+            if not data.geometry.geom_type.isin(["Polygon", "MultiPolygon"]).all():
+                raise ValueError(
+                    "Choropleth maps require Polygon or MultiPolygon geometries"
+                )
+            # Reset feature ids so duplicate/custom dataframe indices cannot
+            # silently join several regions to the same GeoJSON feature.
+            data = data.reset_index(drop=True)
+            features = data.geometry.__geo_interface__
+            locations = [feature["id"] for feature in features["features"]]
+            choropleth = px.choropleth_map if modern_maps else px.choropleth_mapbox
+            fig = choropleth(
+                data,
+                geojson=features,
+                locations=locations,
+                featureidkey="id",
+                **options,
             )
-
         else:
             raise ValueError(f"Unsupported plot type for GeoDataFrame: {plot_type}")
 
@@ -812,9 +1035,25 @@ class GeoArt:
         """Create Plotly visualization from raster data."""
         if not isinstance(self.data, np.ndarray):
             raise ValueError("GeoDataFrame not supported for raster plot")
+        image = self._raster_image(
+            kwargs.get("raster_layout"), kwargs.get("raster_band")
+        )
+        if image.ndim != 2:
+            raise ValueError(
+                "Heatmap and surface plots require a scalar raster; select raster_band"
+            )
+        if np.ma.isMaskedArray(image):
+            image = image.astype(float).filled(np.nan)
         if plot_type == "heatmap":
             # Create heatmap from raster
-            fig = go.Figure(data=go.Heatmap(z=self.data))
+            fig = go.Figure(
+                data=go.Heatmap(
+                    z=image,
+                    zmin=kwargs.get("vmin"),
+                    zmax=kwargs.get("vmax"),
+                    colorscale=kwargs.get("colorscale", "Viridis"),
+                )
+            )
             fig.update_layout(
                 title=kwargs.get("title", "Raster Heatmap"),
                 xaxis_title=kwargs.get("x_label", "X"),
@@ -823,11 +1062,22 @@ class GeoArt:
 
         elif plot_type == "3d":
             # Create 3D surface plot
-            x = np.arange(self.data.shape[1])
-            y = np.arange(self.data.shape[0])
+            x = np.arange(image.shape[1])
+            y = np.arange(image.shape[0])
             X, Y = np.meshgrid(x, y)
 
-            fig = go.Figure(data=[go.Surface(z=self.data, x=X, y=Y)])
+            fig = go.Figure(
+                data=[
+                    go.Surface(
+                        z=image,
+                        x=X,
+                        y=Y,
+                        cmin=kwargs.get("vmin"),
+                        cmax=kwargs.get("vmax"),
+                        colorscale=kwargs.get("colorscale", "Viridis"),
+                    )
+                ]
+            )
             fig.update_layout(
                 title=kwargs.get("title", "3D Surface"),
                 scene=dict(xaxis_title="X", yaxis_title="Y", zaxis_title="Z"),

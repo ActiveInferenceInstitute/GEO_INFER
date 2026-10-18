@@ -239,3 +239,82 @@ def test_preview_rejects_attribute_injection(monkeypatch):
     monkeypatch.setitem(MODULE_PROFILES, "SPACE", profile)
     with pytest.raises(ValueError, match="colors"):
         render_svg_card("SPACE")
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("center", [(60.0, 20.0), (45.0, 179.9999), (90.0, 0.0)])
+def test_static_projection_preserves_local_geodesic_proportions(monkeypatch, center):
+    """High latitude and date-line previews retain physical H3 edge proportions."""
+    import math
+    import h3
+    from geo_infer_intra.core.documentation.visual_preview import (
+        _cells,
+        _projected_rings,
+    )
+
+    monkeypatch.setitem(
+        MODULE_PROFILES, "SPACE", dict(MODULE_PROFILES["SPACE"], center=center)
+    )
+    geographic = _cells("SPACE")
+    projected = _projected_rings("SPACE", 700, 380)
+    scales = []
+    for (_, ring), pixels in zip(geographic, projected):
+        for start, end, p0, p1 in zip(ring, ring[1:], pixels, pixels[1:]):
+            scales.append(
+                math.dist(p0, p1) / h3.great_circle_distance(start, end, unit="km")
+            )
+    assert max(scales) / min(scales) < 1.00001
+    assert all(0 <= x <= 700 and 0 <= y <= 380 for ring in projected for x, y in ring)
+
+
+@pytest.mark.unit
+def test_leaflet_longitude_unwrap_prevents_world_spanning_polygons(monkeypatch):
+    """Equivalent longitudes stay adjacent when an H3 cell crosses the date line."""
+    import re
+
+    monkeypatch.setitem(
+        MODULE_PROFILES, "SPACE", dict(MODULE_PROFILES["SPACE"], center=(45, 179.9999))
+    )
+    markup = render_leaflet_html("SPACE")
+    payload = json.loads(
+        re.search(
+            r'<script id="preview-data" type="application/json">(.*?)</script>',
+            markup,
+            re.S,
+        ).group(1)
+    )
+    longitudes = [longitude for _, ring in payload["cells"] for _, longitude in ring]
+    assert max(longitudes) - min(longitudes) < 1
+    assert min(longitudes) > 179
+    assert 'role="region"' in markup
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "center", [(float("nan"), 0), (0, float("inf")), (91, 0), (0, 181), (True, 0), [0]]
+)
+def test_invalid_profile_coordinates_fail_before_writing(monkeypatch, tmp_path, center):
+    """Extension profiles cannot introduce invalid coordinates into receipts."""
+    monkeypatch.setitem(
+        MODULE_PROFILES, "SPACE", dict(MODULE_PROFILES["SPACE"], center=center)
+    )
+    for render, suffix in [
+        (render_svg_card, "svg"),
+        (render_png_card, "png"),
+        (render_leaflet_html, "html"),
+    ]:
+        path = tmp_path / f"invalid.{suffix}"
+        with pytest.raises(ValueError, match="center"):
+            render("SPACE", path)
+        assert not path.exists()
+
+
+@pytest.mark.unit
+def test_png_contains_named_module_description_and_projection():
+    """Raster cards carry text equivalents and honest projection provenance."""
+    from io import BytesIO
+    from PIL import Image
+
+    with Image.open(BytesIO(render_png_card("SPACE"))) as image:
+        assert MODULE_PROFILES["SPACE"]["name"] in image.info["Description"]
+        assert image.info["Projection"] == "Local orthographic on a unit sphere"

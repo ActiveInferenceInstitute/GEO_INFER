@@ -9,6 +9,10 @@ legible print.  These tests hold the drawn size to the printed size.
 from __future__ import annotations
 
 import hashlib
+import csv
+import json
+import shutil
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from types import ModuleType
 
@@ -36,6 +40,30 @@ def _print_scale(generator: ModuleType, path: Path) -> float:
 
 
 class TestFigureLegibility:
+    def test_abstract_panel_borders_are_inside_the_export_viewport(
+        self, generator: ModuleType, repo_inventory
+    ) -> None:
+        from matplotlib.patches import FancyBboxPatch
+
+        _matplotlib, plt = generator._import_matplotlib()
+        fig = generator._draw_graphical_abstract(plt, repo_inventory, None)
+        try:
+            fig.canvas.draw()
+            axis = fig.axes[0]
+            panels = [
+                patch for patch in axis.patches if isinstance(patch, FancyBboxPatch)
+            ]
+            assert len(panels) == 4
+            for panel in panels:
+                bounds = panel.get_window_extent(fig.canvas.get_renderer())
+                half_stroke = panel.get_linewidth() * fig.dpi / 72 / 2
+                assert bounds.x0 - half_stroke >= axis.bbox.x0
+                assert bounds.x1 + half_stroke <= axis.bbox.x1
+                assert bounds.y0 - half_stroke >= axis.bbox.y0
+                assert bounds.y1 + half_stroke <= axis.bbox.y1
+        finally:
+            plt.close(fig)
+
     def test_every_figure_prints_at_least_eighty_percent_of_native_width(
         self, generator: ModuleType, rendered_figures
     ) -> None:
@@ -155,6 +183,119 @@ class TestFigureLegibility:
 
 
 class TestFigureProvenance:
+    def test_vector_and_data_exports_are_accessible_and_reconcile_to_inventory(
+        self, repo_inventory, rendered_figures
+    ) -> None:
+        output_dir, specs = rendered_figures
+        for spec in specs:
+            assert {item.media_type for item in spec.artifacts} == {
+                "image/svg+xml",
+                "application/json",
+                "text/csv",
+            }
+            for item in spec.artifacts:
+                assert (
+                    item.sha256
+                    == hashlib.sha256(
+                        (output_dir / item.filename).read_bytes()
+                    ).hexdigest()
+                )
+            vector = ET.parse(output_dir / Path(spec.filename).with_suffix(".svg"))
+            text = " ".join(vector.getroot().itertext())
+            assert spec.alt_text in text
+            assert vector.findall(".//{http://www.w3.org/2000/svg}text")
+            data = json.loads(
+                (output_dir / Path(spec.filename).with_suffix(".json")).read_text(
+                    "utf-8"
+                )
+            )
+            assert data["source_hash"] == repo_inventory.source_hash
+            assert data["figure_label"] == spec.label
+            with (output_dir / Path(spec.filename).with_suffix(".csv")).open(
+                newline="", encoding="utf-8"
+            ) as stream:
+                rows = list(csv.DictReader(stream))
+            assert len(rows) == sum(len(table) for table in data["tables"].values())
+            assert {row["source_hash"] for row in rows} == {repo_inventory.source_hash}
+            if spec.label == "fig:module_inventory":
+                measured = {
+                    module.name: (module.source_files, module.test_files)
+                    for module in repo_inventory.modules
+                }
+                assert {
+                    row["module"]: (row["source_files"], row["test_files"])
+                    for row in data["tables"]["modules"]
+                } == measured
+                assert (
+                    sum(int(row["source_files"]) for row in rows)
+                    == repo_inventory.source_files
+                )
+
+    @pytest.mark.parametrize("extension", [".png", ".svg", ".json", ".csv"])
+    def test_registry_rejects_corrupted_delivered_bytes(
+        self,
+        generator: ModuleType,
+        repo_inventory,
+        rendered_figures,
+        tmp_path: Path,
+        extension: str,
+    ) -> None:
+        output_dir, specs = rendered_figures
+        spec = specs[0]
+        for name in [spec.filename, *(item.filename for item in spec.artifacts)]:
+            shutil.copyfile(output_dir / name, tmp_path / name)
+        target = tmp_path / Path(spec.filename).with_suffix(extension)
+        target.write_bytes(target.read_bytes() + b"corruption")
+        with pytest.raises(ValueError, match="digest disagrees"):
+            generator.write_figure_registry(
+                tmp_path / "registry.json", [spec], repo_inventory
+            )
+
+    def test_registry_rejects_external_or_linked_artifacts(
+        self,
+        generator: ModuleType,
+        repo_inventory,
+        rendered_figures,
+        tmp_path: Path,
+    ) -> None:
+        import dataclasses
+
+        output_dir, specs = rendered_figures
+        spec = specs[0]
+        with pytest.raises(ValueError, match="unsafe artifact filename"):
+            generator.write_figure_registry(
+                tmp_path / "registry.json",
+                [dataclasses.replace(spec, filename="../outside.png")],
+                repo_inventory,
+            )
+        (tmp_path / spec.filename).symlink_to(output_dir / spec.filename)
+        with pytest.raises(ValueError, match="regular file"):
+            generator.write_figure_registry(
+                tmp_path / "registry.json", [spec], repo_inventory
+            )
+
+    def test_failed_export_closes_only_the_owned_figure(
+        self,
+        generator: ModuleType,
+        repo_inventory,
+        tmp_path: Path,
+        monkeypatch,
+    ) -> None:
+        _matplotlib, plt = generator._import_matplotlib()
+        caller = plt.figure()
+        before = set(plt.get_fignums())
+
+        def fail(*args, **kwargs):
+            raise OSError("export failed")
+
+        monkeypatch.setattr(generator, "_save_figure", fail)
+        try:
+            with pytest.raises(OSError, match="export failed"):
+                generator.generate_figures(repo_inventory, tmp_path)
+            assert set(plt.get_fignums()) == before
+        finally:
+            plt.close(caller)
+
     def test_each_spec_carries_the_digest_of_its_own_bytes(
         self, rendered_figures
     ) -> None:

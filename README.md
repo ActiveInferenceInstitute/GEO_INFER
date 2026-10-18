@@ -77,6 +77,7 @@ record evidence and outstanding acceptance requirements.
 - Developer workflow: [`GEO-INFER-INTRA/docs/developer_guide/index.md`](GEO-INFER-INTRA/docs/developer_guide/index.md)
 - Test and release gates: [`GEO-INFER-TEST/docs/index.md`](GEO-INFER-TEST/docs/index.md)
 - Manuscript generation and evidence: [`manuscript/README.md`](manuscript/README.md)
+- Reusable figures and artifact verification: [`research artifacts`](GEO-INFER-INTRA/docs/integration/research_artifacts.md)
 - Active Inference reference: [`GEO-INFER-INTRA/docs/active_inference_guide.md`](GEO-INFER-INTRA/docs/active_inference_guide.md)
 - Spatial/H3 reference: [`GEO-INFER-INTRA/docs/geospatial/data_formats/h3/index.md`](GEO-INFER-INTRA/docs/geospatial/data_formats/h3/index.md)
 - Contribution rules: [`CONTRIBUTING.md`](CONTRIBUTING.md)
@@ -127,7 +128,7 @@ the exact reproducible exception list.
 | [GEO-INFER-ANT](GEO-INFER-ANT/) | `geo_infer_ant` | 24 | 11 |
 | [GEO-INFER-API](GEO-INFER-API/) | `geo_infer_api` | 23 | 14 |
 | [GEO-INFER-APP](GEO-INFER-APP/) | `geo_infer_app` | 13 | 9 |
-| [GEO-INFER-ART](GEO-INFER-ART/) | `geo_infer_art` | 20 | 12 |
+| [GEO-INFER-ART](GEO-INFER-ART/) | `geo_infer_art` | 20 | 13 |
 | [GEO-INFER-BAYES](GEO-INFER-BAYES/) | `geo_infer_bayes` | 38 | 28 |
 | [GEO-INFER-BIO](GEO-INFER-BIO/) | `geo_infer_bio` | 12 | 10 |
 | [GEO-INFER-CIV](GEO-INFER-CIV/) | `geo_infer_civ` | 5 | 7 |
@@ -172,7 +173,7 @@ the exact reproducible exception list.
 | --- | ---: |
 | Modules | 45 |
 | Python source files | 1033 |
-| Python test files | 819 |
+| Python test files | 820 |
 | Repository README.md files | 812 |
 | Repository AGENTS.md files | 808 |
 
@@ -207,6 +208,7 @@ them with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.
 - Lint contract: `uv run --with 'ruff>=0.15.6,<0.16' ruff check .`
 - Manuscript variables, figures, captions, and resolved copies: `uv run python manuscript/generate_research_artifacts.py`
 - After source commits, refresh metadata with `uv run python manuscript/generate_research_artifacts.py --refresh-config`, then commit only `manuscript/config.yaml` separately before generating evidence.
+- Verify delivered PNG/SVG/JSON/CSV and resolved manuscript bytes with `uv run python manuscript/generate_research_artifacts.py --check`.
 
 ## Repo-wide Change Workflow
 

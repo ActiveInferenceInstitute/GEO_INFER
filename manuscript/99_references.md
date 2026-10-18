@@ -1,5 +1,12 @@
 # References {#sec:references}
 
+References supply theoretical context, methodological guidance, or an external
+interface definition. A resolved citation does not verify the repository's
+implementation; software claims also require inspectable source and execution
+evidence. Books and articles retain verified publication metadata and DOI
+links where available. Mutable documentation cites a version and access date
+without inventing a publication year.
+
 Bibliography lives in `manuscript/references.bib` and is read by Pandoc during
 PDF render; citations in the manuscript must resolve to real entries in that
 file, and repository-derived counts and captions are not substitutes for

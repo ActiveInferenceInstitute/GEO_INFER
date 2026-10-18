@@ -8,15 +8,18 @@ none is introduced only for exposition.
 
 - $q(s)$ — the agent's belief over hidden states, held as a probability vector
   and coerced to one before any free-energy term is computed.
-- $p(s)$ — prior preferences over states, defaulting to the uniform
-  distribution when a caller supplies none.
+- $r(s)$ — the normalized reference state distribution supplied through the
+  categorical calculator's `preferences` argument, with a uniform default.
+  Its role as a generative prior requires a modeling decision.
+- $c(s)$ — the normalized state-aligned preference vector used by the local
+  computed policy score when preferences are configured.
 - $\hat{p}(o \mid s)$ — the coerced observation likelihood used in the accuracy
   term.
 - $F$ — variational free energy for a single inference calculation
   (\eqref{eq:free_energy}), returned with its `accuracy`, `complexity`, and
   `entropy` components.
 - $\pi$ — a candidate policy, evaluated and returned as a `PolicyEvaluation`.
-- $G(\pi)$ — expected free energy of a policy (\eqref{eq:expected_free_energy}),
+- $G(\pi)$ — the local policy score (\eqref{eq:expected_free_energy}),
   returned with its pragmatic, epistemic, risk, and ambiguity components.
 - $\tilde{q}$, $\tilde{q}^{+}$ — the policy-conditioned predictive
   distribution and, where the policy supplies one, the expected posterior.
@@ -35,9 +38,9 @@ The repository-wide framework measured by the manuscript generator: the set of
 
 ## H3
 
-Uber's hexagonal hierarchical geospatial index [@h3_docs]. Cells at resolution
-0 through 15 tile the globe, and each cell has a parent at the next coarser
-resolution and children at the next finer one. GEO-INFER uses that hierarchy
+Uber's hierarchical geospatial index with predominantly hexagonal cells
+[@h3_docs]. The hierarchy spans resolutions 0 through 15; parent and child
+operations are defined within those bounds. GEO-INFER uses that hierarchy
 as an evidence surface for nesting and aggregation, not as a claim of exact
 geometric containment: hexagon children do not tile their parent exactly, so a
 value aggregated across resolutions carries the hierarchy's approximation with
@@ -54,32 +57,36 @@ a free-energy quantity rather than by separate objectives
 
 $F$, the scalar a single inference calculation minimizes. In the categorical
 implementation it is complexity minus accuracy: the divergence of the belief
-from the prior preference, less the expected log likelihood of the
+from the reference state distribution, less the expected log likelihood of the
 observation under that belief. It is returned as a `FreeEnergyBreakdown`
 carrying those components separately, so a consumer can see which term moved.
+The implementation's `preferences` parameter name does not equate a
+generative state prior with a desired outcome distribution.
 
 ## Expected free energy
 
-$G(\pi)$, the scalar used to rank candidate policies before acting. It sums a
+$G(\pi)$, the scalar used to rank candidate policies before acting. The local
+helper's preference-bearing computed branch sums a
 pragmatic term (expected cross-entropy against preferences), a negatively
 weighted epistemic term (information the policy is expected to yield, measured
 as $D_{\mathrm{KL}}(\tilde{q}^{+} \| \tilde{q})$ or, where no expected
-posterior is supplied, as the predictive entropy), and declared risk and
+posterior is supplied, by the predictive entropy as a proxy), and declared risk and
 ambiguity terms. It is distinct from $F$: $F$ scores a belief given an
 observation already received, $G$ scores a policy over observations not yet
-received.
+received. This glossary describes the local helper's scoring convention;
+external backend outputs retain their own interpretation and provenance.
 
 ## Bayesian inference
 
 Probabilistic inference methods implemented and tested in `GEO-INFER-BAYES`,
 covering approximate Bayesian computation, sequential Monte Carlo, MCMC,
 Hamiltonian Monte Carlo, variational inference, and spatio-temporal Gaussian
-processes [@gelman_bda_2014].
+processes [@gelman_bda_2013].
 
 ## Posterior
 
-The distribution over parameters after conditioning on data, held in
-`GEO-INFER-BAYES` as a set of draws rather than as a closed form.
+The distribution over parameters after conditioning on data. The draw-based
+workflows discussed here represent it as a set of samples.
 Interval summaries are equal-tailed percentile intervals of those draws, and
 the module refuses to summarize a draw set that is empty or contains
 non-finite values.

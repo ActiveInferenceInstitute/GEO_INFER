@@ -93,3 +93,11 @@ The adapter retains this module's dependencies and authorization requirements.
 - **EXAMPLES** → Working code examples referenced from docs
 - **All modules** → Central hub linking all module documentation
 - **TEST** → Documentation-driven testing patterns
+
+For manuscript generation, use the repository-local producer and the explicit
+source commit → `--refresh-config` → config-only commit sequence in
+[research artifacts](docs/integration/research_artifacts.md). Preserve the PNG,
+SVG, JSON and CSV companions, figure registry, verification record and manifest
+together. Run `--check` before sharing generated output; a source fingerprint
+alone cannot detect altered delivered files. File counts are not coverage or
+scientific validation.

@@ -28,8 +28,8 @@ symbol in the checkout that can be read, called, and tested.
 
 ### Typed results
 
-The contract is expressed over typed return objects rather than dictionaries,
-so a caller can depend on a shape instead of a key spelling.
+The ACT part of the contract exposes typed return objects, so a caller can
+inspect declared fields before adapting them to another module's inputs.
 `geo_infer_act.core.types` declares three of them.
 `FreeEnergyBreakdown` carries a scalar free energy together with its
 `accuracy`, `complexity`, `entropy`, `pragmatic_value`, `epistemic_value`,
@@ -44,35 +44,49 @@ bespoke encoder.
 
 ### Active Inference
 
-For a categorical model with belief $q(s)$, prior preferences $p(s)$, and a
-coerced observation likelihood $\hat{p}(o \mid s)$, `FreeEnergyCalculator`
-computes the variational free energy as complexity minus accuracy in
-\eqref{eq:free_energy},
+For a categorical model with belief $q(s)$, reference state distribution
+$r(s)$, and a coerced observation likelihood $\hat{p}(o \mid s)$,
+`FreeEnergyCalculator.compute_categorical_free_energy()` computes complexity
+minus accuracy in \eqref{eq:free_energy},
 
 \begin{equation}\label{eq:free_energy}
-F = \sum_{s} q(s)\,\bigl[\log q(s) - \log p(s)\bigr] \;-\; \sum_{s} q(s)\,\log \hat{p}(o \mid s),
+F = \sum_{s} q(s)\,\bigl[\log q(s) - \log r(s)\bigr] \;-\; \sum_{s} q(s)\,\log \hat{p}(o \mid s),
 \end{equation}
 
 and reports the belief entropy $-\sum_s q(s) \log q(s)$ alongside it. Terms
 are computed with a small additive constant inside each logarithm for
-numerical stability, and belief and preference vectors are coerced to
-probability vectors before use.
+numerical stability, and the vectors are normalized before use. The current
+API populates $r(s)$ from its argument named `preferences`, or uses a uniform
+reference when none is supplied. In the usual variational interpretation,
+$r(s)$ would represent a generative state prior; a desired outcome
+distribution has a different modeling role [@parr_active_inference_2022].
+The API's argument name does not establish that those roles are scientifically
+interchangeable. This equation describes the local categorical calculator;
+factored and external-backend paths must be interpreted using their own
+generative-model contracts.
 
-Expected free energy for a policy is assembled from the same components. With
-a policy-conditioned predictive distribution $\tilde{q}$, an expected
-posterior $\tilde{q}^{+}$ where the policy supplies one, a temporal discount
-$\gamma$, and an exploration weight $\beta$,
+The local `compute_policy_expected_free_energy()` helper implements a
+configurable policy score. For its preference-bearing branch, let $c(s)$ be
+the normalized preference vector aligned to the predictive state vector
+$\tilde{q}$, with an expected posterior $\tilde{q}^{+}$ where supplied,
+a temporal discount $\gamma$, and an exploration weight $\beta$:
 
 \begin{equation}\label{eq:expected_free_energy}
-G(\pi) = \gamma \Bigl(-\sum_{s} \tilde{q}(s) \log p(s)\Bigr) \;-\; \beta\, D_{\mathrm{KL}}\bigl(\tilde{q}^{+} \,\|\, \tilde{q}\bigr) \;+\; \text{risk} \;+\; \text{ambiguity},
+G(\pi) = \gamma \Bigl(-\sum_{s} \tilde{q}(s) \log c(s)\Bigr) \;-\; \beta\, D_{\mathrm{KL}}\bigl(\tilde{q}^{+} \,\|\, \tilde{q}\bigr) \;+\; \text{risk} \;+\; \text{ambiguity},
 \end{equation}
 
 where the risk term is a declared risk preference scaled by the variance of
 the predictive distribution and the ambiguity term is supplied by the policy.
-When no expected posterior is supplied, the epistemic term falls back to the
-predictive entropy. Every term in \eqref{eq:expected_free_energy} is returned as a named field
-of `FreeEnergyBreakdown`, so a reported $G$ can be decomposed by its consumer
-rather than taken on trust.
+When no expected posterior is supplied, predictive entropy replaces the KL
+term as an exploration proxy. Without configured preferences, the pragmatic
+term is uniform-reference cross-entropy when an expected observation is
+supplied, and zero otherwise. A policy may instead supply a finite score
+directly; the returned metadata identifies that case and does not reconstruct
+an unavailable decomposition. Computed terms are exposed in
+`FreeEnergyBreakdown`. This operational convention, including its
+variance-based risk and entropy proxy, is not asserted to be a general
+derivation of expected free energy or identical to the external `pymdp`
+backend [@heins_pymdp_2022].
 
 Three further obligations bind the module:
 
@@ -93,7 +107,7 @@ Three further obligations bind the module:
 ### Bayesian inference
 
 `GEO-INFER-BAYES` supplies the posterior machinery the spine consumes
-[@gelman_bda_2014]. Its obligations are about reproducibility and about
+[@gelman_bda_2013]. Its obligations are about reproducibility and about
 refusing to report a diagnostic that is not defined:
 
 - ABC, SMC, MCMC, HMC, variational inference, and spatio-temporal Gaussian
@@ -119,6 +133,14 @@ refusing to report a diagnostic that is not defined:
   predictions fit a concrete spatial GP for each draw without mutating the
   fitted model.
 
+These diagnostics summarize the supplied draws. Finite effective sample size
+or a between-chain statistic does not establish identifiability, posterior
+calibration, or suitability of a likelihood. A study still needs checks of
+sampling behavior, prior sensitivity, and predictions against its stated
+observational target [@gelman_bda_2013]. The manuscript does not attribute a
+particular modern diagnostic estimator to a method merely because it returns
+a field named effective sample size or $\hat{R}$.
+
 ### Risk modeling
 
 `GEO-INFER-RISK` is where the spine's output becomes a decision quantity, and
@@ -143,7 +165,7 @@ its obligations are correspondingly about declared bounds
   return level is derived by moment matching from the fitted mean $\bar{x}$
   and standard deviation $s$ of the intensity sample: the scale is
   $\sigma = s\sqrt{6}/\pi$, the location is $\mu = \bar{x} - \gamma_{E}\sigma$
-  with $\gamma_{E}$ the Euler-Mascheroni constant, and the $T$-year return
+  with $\gamma_{E}$ the Euler-Mascheroni constant, and the $T$-period return
   level is
   $z_{T} = \mu + \sigma\bigl(-\log(-\log(1 - 1/T))\bigr)$.
 - `EnhancedRiskEngine` validates configuration before creating output
@@ -153,6 +175,13 @@ its obligations are correspondingly about declared bounds
   Bayesian requests explicitly; only validated cross-validation inputs produce
   calibration results.
 
+Interpreting a return period in years requires observations with the declared
+annual support and a defensible extreme-value sampling model. The algebraic
+quantile alone does not establish stationarity, independence, tail fit, or
+uncertainty in extrapolation [@coles_extremes_2001]. Likewise, a model's
+internal fitted/calibrated state is an execution prerequisite rather than
+evidence of calibration against independent field data.
+
 ### What the contract does and does not establish
 
 The contract constrains interfaces, provenance, and refusal behavior. It does
@@ -160,19 +189,87 @@ not establish that any model in the checkout is well-calibrated against field
 data, and it makes no claim about predictive skill. Its purpose is narrower
 and checkable: a value crossing a module boundary carries a declared shape, a
 declared source, and declared bounds, and a module that cannot honor one of
-those raises instead of substituting a plausible number.
+those should fail explicitly within the checked path. These obligations are
+scoped to the named contracts, not a claim that every method in the framework
+checks every scientific assumption.
+
+### Scientific obligations across a boundary
+
+The following review questions accompany a composed study. They distinguish
+software checks already named above from scientific decisions that cannot be
+inferred from serialization or successful execution.
+
+| Boundary | Software evidence | Study-level obligation |
+|---|---|---|
+| Observation to spatial state | H3 cell order, shape, duplicate and allocation checks; explicit missing values | Declare coordinate reference, units, observation error, spatial support, and aggregation weights. |
+| Observation to time step | UTC alignment and declared scheduling interval | Distinguish an instant from an interval total or mean; justify handling of gaps and temporal dependence. |
+| State to inference | Model dimensions, typed components, explicit backend identity | Specify state and observation meanings, priors, likelihoods, preference interpretation, and approximation assumptions. |
+| Posterior to risk | Finite draws, declared parameter shapes and component bounds | Preserve dependence and distinguish parameter, observation, and decision uncertainty when propagating draws. |
+| Risk to decision | Declared horizons, probability bounds and return-period inputs | Justify exposure, vulnerability, loss units, decision costs, and external calibration. |
+
+: Review obligations for a composed analysis. The software column names
+inspectable contracts; the study column is not represented as an automated
+guarantee. Shared indexing does not solve the statistical change-of-support
+problem [@gotway_spatial_support_2002]. {#tbl:composition_obligations}
+
+## Script, CLI, and Agent Composition
+
+`geo_infer_api.AgentSession` is a common execution layer for Python scripts,
+the persistent JSONL CLI, and the stdio Model Context Protocol server.
+`agent_catalog.py` discovers public definitions without importing each
+scientific backend, while describing or calling a target resolves its owning
+module in the active environment. Catalog presence therefore establishes
+discoverability, not availability of every optional dependency.
+
+The session validates operation fields and selectors before dispatch. JSON
+requests can construct scientific values through declared codecs and pass
+native results onward through process-local references. For example, a
+completed OPS task's `get_task_result()` retains its native value even though
+the workflow's historical status summary renders results as strings. Typed
+codecs and native handles prevent an array's shape or an object's identity
+from being reduced to its printed representation during composition.
+
+Lifecycle is explicit: retained references belong to one live session, context
+operations enter and exit native context managers, and releasing a reference
+does not imply calling an arbitrary object's cleanup method. Calls execute
+with the authority of the local Python process. A batch stops on failure but
+does not roll back preceding effects. These are execution interfaces, not a
+sandbox, a scientific workflow specification, or a guarantee of recovery from
+partial external effects.
+
+## Performance Measurement Boundary
+
+Execution profiling and timing experiments answer different questions. Python
+3.15's `profiling.tracing` records deterministic call events;
+`profiling.sampling` estimates stack occupancy. Instrumentation changes the
+execution being measured, and sampled counts are not exact call counts
+[@python315_profiling_docs]. A comparative speed claim requires a separate
+timing design with a declared workload, warmup, repetitions, environment,
+cache state, and uncertainty; profile durations alone do not establish a
+speedup.
+
+Repository profile receipts should identify the interpreter, profiler,
+command, source fingerprint, dependency environment, and produced artifacts.
+A successful Python 3.15 profile qualifies only the named workload in that
+environment. It does not establish that the full scientific dependency stack
+or every module is supported on Python 3.15. The asynchronous timing helpers
+in `geo_infer_test.core.performance_monitor` await work to completion;
+constructing a coroutine is not counted as completing an inference task.
 
 ## Figure and Caption Method
 
 The figure producer builds `{{FIGURE_COUNT}}` figures from the same measured
-inventory used for the manuscript variables. Figure files, captions, labels,
-generator paths, commit, source hash, and a SHA-256 digest of each written
-image are recorded in the figure registry, `figure_registry.json`, under
+inventory used for the manuscript variables. PNG figures, SVG companions,
+JSON and CSV datasets, captions, labels, generator paths, commit, source hash,
+and content digests are recorded in the figure registry, `figure_registry.json`, under
 `output/figures`. Each caption is a complete sentence that names the
 population, encoding, provenance, and interpretation boundary. Figures are
 drawn at the printed size of the render's text block, so the type in a
 figure is set at the point size it is authored at rather than being scaled
-down by the renderer.
+down by the renderer. This medium-aware layout and explicit captioning follow
+scientific figure-design guidance [@rougier_figures_2014]. The companion data
+expose the values and encodings used to draw each figure; they are checked
+against recorded hashes along with the rendered representations.
 
 The first figure, the graphical abstract, is additionally wired into the
 title page: `config.yaml` points the renderer's cover slot at the same

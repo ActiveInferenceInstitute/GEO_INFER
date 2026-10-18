@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import html as html_lib
 import json
+import math
 import os
 import re
 from dataclasses import dataclass
@@ -546,6 +547,20 @@ def _profile(module_id: str) -> dict[str, Any]:
             r"#[0-9a-fA-F]{6}", profile[field]
         ):
             raise ValueError("Preview colors must be six-digit hex values")
+    center = profile.get("center")
+    if (
+        not isinstance(center, (tuple, list))
+        or len(center) != 2
+        or any(
+            type(value) not in (int, float) or not math.isfinite(value)
+            for value in center
+        )
+        or not -90 <= center[0] <= 90
+        or not -180 <= center[1] <= 180
+    ):
+        raise ValueError(
+            "Preview center must contain finite WGS84 latitude and longitude"
+        )
     return profile
 
 
@@ -569,19 +584,39 @@ def _cells(module_id: str) -> list[tuple[str, list[tuple[float, float]]]]:
 def _projected_rings(
     module_id: str, width: int, height: int
 ) -> list[list[tuple[float, float]]]:
-    """Fit the same geographic H3 boundaries into a static canvas."""
-    rings = [ring for _, ring in _cells(module_id)]
-    xs = [lng for ring in rings for lat, lng in ring]
-    ys = [lat for ring in rings for lat, lng in ring]
+    """Fit a local orthographic projection of the geographic H3 geometry.
+
+    A spherical tangent view corrects longitude/latitude aspect ratios, remains
+    defined at the poles, and avoids spanning the world at the antimeridian.
+    This illustrative view is not an equal-area analysis projection.
+    """
+    center_lat, center_lon = _profile(module_id)["center"]
+    cos_center = math.cos(math.radians(center_lat))
+    sin_center = math.sin(math.radians(center_lat))
+    rings = [
+        [
+            (
+                math.cos(math.radians(lat)) * math.sin(math.radians(lng - center_lon)),
+                cos_center * math.sin(math.radians(lat))
+                - sin_center
+                * math.cos(math.radians(lat))
+                * math.cos(math.radians(lng - center_lon)),
+            )
+            for lat, lng in ring
+        ]
+        for _, ring in _cells(module_id)
+    ]
+    xs = [x for ring in rings for x, y in ring]
+    ys = [y for ring in rings for x, y in ring]
     x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
     scale = min(width * 0.42 / (x1 - x0), height * 0.56 / (y1 - y0))
     return [
         [
             (
-                width * 0.72 + (lng - (x0 + x1) / 2) * scale,
-                height * 0.54 - (lat - (y0 + y1) / 2) * scale,
+                width * 0.72 + (x - (x0 + x1) / 2) * scale,
+                height * 0.54 - (y - (y0 + y1) / 2) * scale,
             )
-            for lat, lng in ring
+            for x, y in ring
         ]
         for ring in rings
     ]
@@ -637,10 +672,20 @@ def render_leaflet_html(
     profile = _profile(module_id)
     mod = module_id.upper()
     _dimensions(width, height)
+    center_lon = profile["center"][1]
     payload = {
         "center": profile["center"],
         "zoom": profile["zoom"],
-        "cells": _cells(mod),
+        "cells": [
+            (
+                cell,
+                [
+                    (lat, center_lon + (lng - center_lon + 180) % 360 - 180)
+                    for lat, lng in ring
+                ],
+            )
+            for cell, ring in _cells(mod)
+        ],
         "color": profile["primary_color"],
         "label": ILLUSTRATION_LABEL,
     }
@@ -659,7 +704,7 @@ def render_leaflet_html(
 <link rel="stylesheet" href="{LEAFLET_CSS}">
 <style>body{{margin:1rem;font-family:system-ui,sans-serif;color:#0f172a;background:#f8fafc}}main{{max-width:{width}px;margin:auto}}#map{{height:{height}px;display:none}}svg{{max-width:100%;height:auto}}summary{{cursor:pointer}}p{{line-height:1.5}}</style></head>
 <body><main><h1>GEO-INFER-{mod}: {name}</h1><p>{ILLUSTRATION_LABEL}</p>
-<div id="map" aria-label="Interactive H3 geometry"></div>
+<div id="map" role="region" aria-label="Interactive H3 geometry for GEO-INFER-{mod}"></div>
 <details id="static-preview" open><summary>Static preview (available offline)</summary>{svg}</details>
 <script id="preview-data" type="application/json">{encoded}</script>
 <script src="{LEAFLET_JS}"></script>
@@ -706,6 +751,8 @@ def render_png_card(
             width=2,
         )
     draw.text((12, 12), f"GEO-INFER-{mod}", fill="#0f172a")
+    draw.text((12, 30), profile["name"], fill="#334155")
+    draw.text((12, 46), profile["category"], fill="#475569")
     draw.text(
         (12, height - 34), "Illustrative overview; no measured values.", fill="#334155"
     )
@@ -713,6 +760,8 @@ def render_png_card(
     metadata = PngImagePlugin.PngInfo()
     metadata.add_text("Title", f"GEO-INFER-{mod} Preview")
     metadata.add_text("Provenance", ILLUSTRATION_LABEL)
+    metadata.add_text("Description", f"{profile['name']}: {profile['description']}")
+    metadata.add_text("Projection", "Local orthographic on a unit sphere")
     buffer = BytesIO()
     canvas.save(buffer, format="PNG", pnginfo=metadata)
     data = buffer.getvalue()
@@ -744,6 +793,7 @@ def generate_module_preview_suite(
         "h3_version": h3.__version__,
         "resolution": RESOLUTION,
         "crs": "EPSG:4326",
+        "static_projection": "local orthographic on a unit sphere",
         "label": ILLUSTRATION_LABEL,
     }
     digest = hashlib.sha256(

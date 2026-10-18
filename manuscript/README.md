@@ -25,11 +25,13 @@ Manuscript workspace within GEO-INFER.
 ## Public Interface
 
 - `generate_research_artifacts.py:ModuleMetrics` (class)
+- `generate_research_artifacts.py:FigureArtifact` (class)
 - `generate_research_artifacts.py:FigureSpec` (class)
 - `generate_research_artifacts.py:RepositoryInventory` (class)
 - `generate_research_artifacts.py:VerificationResult` (class)
 - `generate_research_artifacts.py:VerificationRecord` (class)
 - `generate_research_artifacts.py:collect_inventory` (function)
+- `generate_research_artifacts.py:figure_data` (function)
 - `generate_research_artifacts.py:generate_figures` (function)
 - `generate_research_artifacts.py:write_figure_registry` (function)
 - `generate_research_artifacts.py:load_matching_verification` (function)
@@ -42,8 +44,6 @@ Manuscript workspace within GEO-INFER.
 - `generate_research_artifacts.py:refresh_config_metadata` (function)
 - `generate_research_artifacts.py:write_resolved_manuscript` (function)
 - `generate_research_artifacts.py:bibliography_policy` (function)
-- `generate_research_artifacts.py:audit_bibliography` (function)
-- `generate_research_artifacts.py:audit_module_census` (function)
 
 
 ## Validation
@@ -67,6 +67,10 @@ uv run python GEO-INFER-TEST/validate_repo_contracts.py --skip-import-smoke
 - Add `--full-validation` for the unit, integration, performance and H3 groups.
   Run ROOT manuscript and manuscript-render profiles separately; the render
   profile requires the actual generated PDF.
+- Each figure exports PNG, text-preserving SVG, typed JSON and source-stamped
+  CSV with per-file SHA-256. `--check` also verifies the complete delivered
+  byte set, including resolved manuscript files and the figure registry.
+  See [research artifact contracts](../GEO-INFER-INTRA/docs/integration/research_artifacts.md).
 
 ## Documentation Notes
 

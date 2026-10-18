@@ -6,4 +6,6 @@ The public interface, verified from `__init__.py`, exports H3 primitives, backen
 
 The tests exercise indexing, backend behavior, topology, geometry, and composition. `H3StateSpace` fixes a caller-supplied cell order, and `align_h3_observations` returns a UTC `TimeSeries` in that order while distinguishing missing values from observed zero. Allocation limits and duplicate observation rejection are part of this interface.
 
+Index and axis agreement does not establish equivalence of spatial support. A point observation, cell mean, and population total need different aggregation and uncertainty rules even when all are addressed by the same H3 identifier. The logical parent-child hierarchy also differs from exact geometric containment. Studies must preserve those distinctions when regridding observations or interpreting model output.
+
 Under the root README's Module Themes, SPACE leads Spatial & Place-based together with PLACE, TIME, MARINE, WATER, TRANSPORT, and others. Its role is the shared spatial vocabulary: H3 cell addressing and backend-dispatched geometry give PLACE's regional analyses, TIME's spatio-temporal fusion, and MARINE's ocean analytics a common indexing layer. Its axis and topology contracts define the boundaries checked by composition tests.

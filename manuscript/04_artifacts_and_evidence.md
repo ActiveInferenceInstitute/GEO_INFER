@@ -7,7 +7,8 @@
 | `output/data/research_inventory.json` | Machine-readable repository measurements and source provenance. |
 | `output/data/manuscript_variables.json` | Complete token map used for manuscript injection. |
 | `output/data/research_verification.json` | Commands actually run, statuses, return codes, durations, output tails, and execution receipt references. |
-| `figure_registry.json` under `output/figures` | Figure labels, dynamic captions, generator paths, and a SHA-256 digest of each written image. |
+| `figure_registry.json` under `output/figures` | Figure labels, captions, provenance, and byte hashes for PNG, SVG, JSON, and CSV artifacts. |
+| Per-figure JSON and CSV under `output/figures` | Machine-readable measurements and encoding data used by each figure. |
 | `output/manuscript/` | Resolved publication copies consumed by a renderer. |
 
 : Evidence inventory of the generated artifacts. Each row names one artifact
@@ -15,7 +16,7 @@
 produced this manuscript's figures and variables, together with the role it
 plays: the inventory and the variable map record what was measured, the
 verification record what was executed, the figure registry what was drawn and
-how each image is digested, and `output/manuscript/` is what the renderer
+how each representation is digested, and `output/manuscript/` is what the renderer
 consumes. None of the rows is authored by hand, so a stale or missing row is
 a build defect rather than a documentation gap. {#tbl:evidence_inventory}
 
@@ -156,6 +157,39 @@ The registry declares `{{FIGURE_COUNT}}` publication figures:
   modules named by the research agenda.
 - [@fig:validation_surface] compares discovered test categories with
   repository documentation and validator surfaces.
+
+Each figure has a PNG for the existing render layout, an SVG vector companion,
+and JSON and CSV data companions. These are representations of the same
+measured evidence, not additional independent results. The registry records
+their paths and SHA-256 digests; `--check` validates the complete
+published artifact closure rather than trusting file existence or a token map
+alone. A matching digest establishes correspondence to the recorded bytes,
+while interpretation still depends on the inventory's definitions and scope.
+
+Figure design separates the measured population, visual encoding, and
+interpretation boundary in the caption, following guidance to adapt figures
+to their medium and communicate their evidence clearly
+[@rougier_figures_2014]. Vector output preserves scalable marks and text;
+machine-readable companions allow readers to inspect values without estimating
+them from bar lengths. Neither format establishes the scientific validity of
+what is counted.
+
+## Evidence Levels
+
+The manuscript distinguishes three levels of evidence. Inventory establishes
+which files, public interfaces, and checks are present. Execution receipts
+establish the outcomes of named commands against a recorded source and
+environment. Empirical evaluation would establish how a specified model
+performs on an independently justified dataset and target population. The
+first two levels support software review and reproduction; they cannot be
+promoted to the third by adding tests or increasing source counts
+[@oreskes_model_validation_1994].
+
+External CI, historical qualification bundles, and profiling receipts may
+provide additional evidence, but they enter a manuscript claim only through
+their own identifiable provenance. Their successful outcomes are not silently
+added to the generated verification table, and an earlier commit's result is
+not presented as a measurement of this checkout.
 
 ## Claim Discipline
 

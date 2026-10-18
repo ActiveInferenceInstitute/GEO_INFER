@@ -33,6 +33,9 @@ Clean generation refuses stale config before writing. Explicit `--allow-dirty`
 development builds retain their actual dirty source stamp; publication requires
 clean source. Generate evidence after the final metadata commit and use `--check`
 to verify it. Never restore old config bytes after generating hash-bound output.
+Keep figure PNG/SVG/JSON/CSV companions with their registry and the research
+manifest. `--check` verifies delivered bytes as well as source identity; see
+[research artifact contracts](GEO-INFER-INTRA/docs/integration/research_artifacts.md).
 
 ### Module Discovery
 

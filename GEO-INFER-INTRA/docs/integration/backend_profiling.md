@@ -79,6 +79,41 @@ plain path strings. Check the returned receipt's `success` in addition to the
 transport envelope. Library calls return failed receipts; the profiling CLI
 also exits 1. There is no automatic repair or re-execution of failed targets.
 
+Read an existing trusted receipt without executing its target again:
+
+```bash
+uv run --frozen geo-infer-profile --report .geo-infer-test-results/profiles/agent-tracing \
+  --limit 20 --sort-by own
+uv run --frozen geo-infer call geo_infer_test.profiling:summarize_profile \
+  --kwargs '{"receipt":".geo-infer-test-results/profiles/agent-tracing","limit":20,"sort_by":"calls"}'
+```
+
+The Python function is `summarize_profile(receipt, *, limit=30, sort_by="auto",
+max_artifact_bytes=134217728, expected_receipt_sha256=None)`. MCP `geo_call`
+accepts those same fields. `receipt` may name its directory or `receipt.json`.
+The report verifies the exact artifact set, regular-file confinement, hashes,
+and successful completion evidence before reading tracing bytes. It preserves
+the run's original success/failure and historical source identity. It never
+qualifies the current checkout by reading old evidence.
+
+Only read receipts produced by the trusted local profiling API. An unanchored
+manifest is trusted input, not authentication of an attacker-written profile.
+For independently retained evidence, pass its receipt hash through
+`expected_receipt_sha256` or CLI `--receipt-sha256`; hashes inside a rewritten
+manifest alone cannot authenticate that manifest.
+
+Tracing reports rank by `cumulative`, `own` or `calls`, return bounded caller
+edges, and express own time as a share of total instrumented function time.
+Cumulative times overlap, so their sum is not a percentage partition. Sampling
+uses `samples`, aggregates identical collapsed stacks, and reports shares of
+weighted thread stacks. Both rankings have deterministic tie ordering; `auto`
+selects the engine's native ranking. `limit` is bounded to 1–200. Reading a
+report does not write new files or silently run a failed workload again.
+
+Controller interruption propagates after owned-process cleanup and seals an
+`interrupted` failed receipt with retained output and process disposition.
+Missing completion or a missing summary can never certify a successful run.
+
 For throughput comparisons, run the benchmark without a profiler:
 
 ```bash

@@ -15,10 +15,11 @@ geometric containment [@h3_docs].
 
 A module is a top-level directory named `GEO-INFER-<NAME>` that ships one
 installable package under `src/`, its own `tests/` tree, and its own
-`README.md` and `AGENTS.md`. Nothing in the framework is a shared library that
-other modules must be edited to extend: a module is added by adding a
-directory, and it becomes part of the measured surface below without any
-central registration step.
+`README.md` and `AGENTS.md`. The inventory discovers these source directories;
+discovery is distinct from integration. A new module also needs a declared
+theme, packaging and dependency configuration, an agent catalog entry, and
+any adapters required by its consumers. The measured inventory therefore
+establishes presence, not automatic interoperability.
 
 The generator groups the measured modules into `{{MODULE_THEME_COUNT}}`
 themes. The grouping is an editorial one, declared in the generator beside the
@@ -89,8 +90,9 @@ Supplemental Module Catalog ([@sec:module_catalog]).
 
 ## Spatial Substrate
 
-The framework's spatial substrate is the part every other theme depends on,
-and it is carried by three modules.
+The framework's spatial substrate supplies indexing, place, and time contracts
+through three modules. The theme map does not establish an import dependency
+from every module to each member of this substrate.
 
 `GEO-INFER-SPACE` owns indexing and geometry. Its
 `SpatialIndexingInterface` is a backend-dispatching facade rather than a
@@ -119,6 +121,15 @@ missing interval instead of interpolating one: a gap in observations is
 treated as something the model must be asked to predict, not something the
 scheduler may fill. Offsets are normalized to UTC before instants are
 compared.
+
+These checks address representational alignment. A cell identifier and UTC
+timestamp do not specify whether a value is a point measurement, an area
+average, a population count, or an estimate over a time interval. Regridding
+and aggregation can change the estimand and its uncertainty
+[@gotway_spatial_support_2002]. In particular, H3's exact logical hierarchy
+must be distinguished from approximate geometric parent-child containment
+[@h3_docs]. A study must declare spatial and temporal support, units, and
+aggregation assumptions in addition to satisfying the software contract.
 
 ## Source Surfaces
 

@@ -1,9 +1,13 @@
 ## GEO-INFER-API — API Services and Ecosystem Interoperability
 
-**Purpose.** GEO-INFER-API provides comprehensive API development and integration services enabling interoperability across the GEO-INFER ecosystem and external systems. Its README positions it as the service layer through which module capabilities become network-accessible, with FastAPI declared as the primary dependency (`fastapi>=0.100.0`).
+**Purpose.** GEO-INFER-API provides service models and local agent interfaces for invoking the framework's public Python capabilities. HTTP endpoints, Python scripts, a persistent JSONL CLI, and a stdio Model Context Protocol server are distinct access surfaces; using a local agent session does not require deploying an HTTP service.
 
 **Public API.** The `geo_infer_api` package exports application configuration (`Settings`, `get_settings`, `main_app`) alongside a complete GeoJSON type system: `Feature`, `FeatureCollection`, `Geometry`, `Point`, `MultiPoint`, `LineString`, `MultiLineString`, `MultiPolygon`, `Polygon`, `PolygonFeature`, `PolygonFeatureCollection`, and `GeoJSONType` — the vocabulary with which spatial data crosses service boundaries. The subpackage layout (`core/`, `endpoints/`, `models/`, `utils/`) separates server configuration, route definitions, wire models, and helpers.
 
-The tests exercise endpoint and data-model behavior. The shared repository runner selects this module with `--module API`.
+`AgentSession` is lazily exported at package level. It provides one validated operation schema for discovery, inspection, calls, result selection, batching, and native context management. The `agent_cli` and `agent_mcp` entrypoints delegate to that session. Scientific argument codecs retain declared array, tabular, geometric, temporal, and container structure; process-local handles preserve native results for subsequent calls. Results whose reserved operator keys cannot be represented unambiguously remain handles, and `$literal` lets a caller supply exact JSON data deliberately.
 
-**Theme role.** Infrastructure: API is the interoperability spine of the framework, translating the geospatial core's data structures into service contracts so that domain science and agent modules can be consumed by external systems and by the APP layer.
+Requests reject unknown fields and conflicting selectors before dispatch, including through the official MCP SDK. A catalog entry does not import or qualify every optional backend. Calls retain the authority and possible effects of local Python execution; batches stop at an error without rolling back earlier effects. Reference release and API-specific resource cleanup are separate operations, and handles do not survive a process restart.
+
+The tests exercise endpoint and data-model behavior, schema rejection before effects, native codecs and identity, context suppression, session cleanup, persistent JSONL operation, and actual SDK client/server transport. These are local interface checks rather than evidence that every scientific workflow is valid. The shared repository runner selects this module with `--module API`.
+
+**Theme role.** API belongs to Data, API and applications. It translates public capabilities into inspectable service and agent contracts, while each owning module remains responsible for its scientific algorithm and lifecycle.

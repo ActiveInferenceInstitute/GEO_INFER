@@ -15,6 +15,7 @@ as a passing research result.
 from __future__ import annotations
 
 import argparse
+import csv
 import glob
 import hashlib
 import json
@@ -195,6 +196,15 @@ class ModuleMetrics:
 
 
 @dataclass(frozen=True)
+class FigureArtifact:
+    """An independently reusable companion to a publication PNG."""
+
+    filename: str
+    media_type: str
+    sha256: str
+
+
+@dataclass(frozen=True)
 class FigureSpec:
     """Publication figure metadata generated with the corresponding image.
 
@@ -211,6 +221,7 @@ class FigureSpec:
     generated_by: str
     alt_text: str
     sha256: str = ""
+    artifacts: tuple[FigureArtifact, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -1098,8 +1109,10 @@ def _draw_graphical_abstract(
     # crop out to figsize + the 0.1in savefig pad on every side, past the
     # printable box.  Data inches map 1:1 onto figure inches inside this
     # viewport, so the panel geometry below is authored in printed inches.
-    content_x0, content_y0 = 0.12, 0.17
-    content_x1, content_y1 = width - 0.12, height - 0.05
+    # Include rounded-box padding and stroke inside the viewport.  A viewport
+    # starting at the panel origin clips the left/right borders on export.
+    content_x0, content_y0 = 0.08, 0.17
+    content_x1, content_y1 = width - 0.08, height - 0.05
     ax = fig.add_axes(
         (
             content_x0 / width,
@@ -1443,6 +1456,105 @@ GRAPHICAL_ABSTRACT_THEME_SHORT: dict[str, str] = {
 }
 
 
+def figure_data(
+    inventory: RepositoryInventory,
+    label: str,
+    verification: VerificationRecord | None = None,
+) -> dict[str, Any]:
+    """Return the measured tables behind a figure without importing plotting.
+
+    File counts measure repository surfaces, not coverage, scientific model
+    quality, or executed tests. Theme membership is an editorial declaration.
+    A missing verification result remains ``not-run``.
+    """
+    themes = _theme_assignments(module.name for module in inventory.modules)
+    rows = [
+        {
+            "module": module.name,
+            "package": module.package,
+            "source_files": module.source_files,
+            "test_files": module.test_files,
+            "research_spine": module.name in FOCUS_MODULES,
+            "theme": themes[module.name],
+        }
+        for module in sorted(
+            inventory.modules, key=lambda item: (-item.source_files, item.name)
+        )
+    ]
+    if label == "fig:module_inventory":
+        tables = {"modules": rows}
+    elif label == "fig:research_spine":
+        indexed = {row["module"]: row for row in rows}
+        tables = {
+            "modules": [indexed[module.name] for module in inventory.focused_modules]
+        }
+    elif label == "fig:validation_surface":
+        tables = {
+            "test_categories": [
+                {"category": key, "test_files": value}
+                for key, value in inventory.test_files_by_category.items()
+            ],
+            "repository_surfaces": [
+                {"surface": "modules", "count": inventory.module_count},
+                {
+                    "surface": "documentation_pages",
+                    "count": inventory.documentation_pages,
+                },
+                {"surface": "validator_files", "count": inventory.validator_files},
+            ],
+        }
+    elif label == "fig:graphical_abstract":
+        tables = {
+            "modules": rows,
+            "verification_groups": [
+                {"group": group, "status": status}
+                for group, status in _record_statuses(verification).items()
+            ],
+        }
+    else:
+        raise ValueError(f"unknown publication figure: {label!r}")
+    return {
+        "schema_version": "geo-infer-manuscript-figure-data/v1",
+        "source_commit": inventory.commit,
+        "source_hash": inventory.source_hash,
+        "figure_label": label,
+        "measurement": "tracked repository file counts; not coverage or model validation",
+        "tables": tables,
+    }
+
+
+def _write_figure_data(
+    path: Path, payload: Mapping[str, Any]
+) -> tuple[FigureArtifact, ...]:
+    """Export the same typed tables as JSON and a source-stamped flat CSV."""
+    json_path, csv_path = path.with_suffix(".json"), path.with_suffix(".csv")
+    _write_json(json_path, payload)
+    rows = [
+        {
+            "table": table,
+            "source_commit": payload["source_commit"],
+            "source_hash": payload["source_hash"],
+            **row,
+        }
+        for table, values in payload["tables"].items()
+        for row in values
+    ]
+    fields = list(dict.fromkeys(key for row in rows for key in row))
+    with csv_path.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    return tuple(
+        FigureArtifact(
+            file.name, media_type, hashlib.sha256(file.read_bytes()).hexdigest()
+        )
+        for file, media_type in (
+            (json_path, "application/json"),
+            (csv_path, "text/csv"),
+        )
+    )
+
+
 def generate_figures(
     inventory: RepositoryInventory,
     output_dir: Path,
@@ -1486,7 +1598,42 @@ def generate_figures(
             _alt_validation_surface(inventory),
         ),
     )
-    digests: dict[str, str] = {}
+    completed: dict[str, FigureSpec] = {}
+
+    def save(index: int, figure: Any) -> None:
+        """Close only this build's figure, including on failed export."""
+        spec = specs[index]
+        path = output_dir / spec.filename
+        try:
+            digest = _save_figure(figure, path, spec.caption, inventory.source_hash)
+            vector = path.with_suffix(".svg")
+            with plt.rc_context(
+                {"svg.fonttype": "none", "svg.hashsalt": inventory.source_hash}
+            ):
+                figure.savefig(
+                    vector,
+                    bbox_inches="tight",
+                    metadata={
+                        "Title": spec.label,
+                        "Description": spec.alt_text,
+                        "Source": f"commit {inventory.commit}; source {inventory.source_hash}",
+                        "Date": None,
+                    },
+                )
+            artifacts = (
+                FigureArtifact(
+                    vector.name,
+                    "image/svg+xml",
+                    hashlib.sha256(vector.read_bytes()).hexdigest(),
+                ),
+                *_write_figure_data(
+                    path, figure_data(inventory, spec.label, verification)
+                ),
+            )
+            completed[spec.filename] = replace(spec, sha256=digest, artifacts=artifacts)
+        finally:
+            plt.close(figure)
+
     module_rows = sorted(
         inventory.modules, key=lambda item: (-item.source_files, item.name)
     )
@@ -1499,10 +1646,7 @@ def generate_figures(
     }
 
     fig = _draw_graphical_abstract(plt, inventory, verification)
-    digests[specs[0].filename] = _save_figure(
-        fig, output_dir / specs[0].filename, specs[0].caption, inventory.source_hash
-    )
-    plt.close(fig)
+    save(0, fig)
     with plt.rc_context(
         {
             "axes.spines.top": False,
@@ -1569,10 +1713,7 @@ def generate_figures(
             "GEO-INFER module evidence inventory", fontsize=11, fontweight="bold"
         )
         fig.tight_layout()
-        digests[specs[1].filename] = _save_figure(
-            fig, output_dir / specs[1].filename, specs[1].caption, inventory.source_hash
-        )
-        plt.close(fig)
+        save(1, fig)
 
         focus = inventory.focused_modules
         focus_labels = [item.name.removeprefix("GEO-INFER-") for item in focus]
@@ -1602,10 +1743,7 @@ def generate_figures(
         ax.legend(frameon=False, loc="upper center", ncols=2, fontsize=8)
         ax.set_axisbelow(True)
         fig.tight_layout()
-        digests[specs[2].filename] = _save_figure(
-            fig, output_dir / specs[2].filename, specs[2].caption, inventory.source_hash
-        )
-        plt.close(fig)
+        save(2, fig)
 
         categories = tuple(inventory.test_files_by_category)
         category_counts = [
@@ -1635,11 +1773,8 @@ def generate_figures(
             "Validation and documentation evidence", fontsize=10.5, fontweight="bold"
         )
         fig.tight_layout()
-        digests[specs[3].filename] = _save_figure(
-            fig, output_dir / specs[3].filename, specs[3].caption, inventory.source_hash
-        )
-        plt.close(fig)
-    return tuple(replace(spec, sha256=digests[spec.filename]) for spec in specs)
+        save(3, fig)
+    return tuple(completed[spec.filename] for spec in specs)
 
 
 def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
@@ -1657,32 +1792,94 @@ def write_figure_registry(
     """Write a fail-closed registry for the generated figure set."""
     if not specs:
         raise ValueError("figure registry requires at least one generated figure")
-    filenames = [spec.filename for spec in specs]
-    labels = [spec.label for spec in specs]
-    if len(set(filenames)) != len(filenames) or len(set(labels)) != len(labels):
-        raise ValueError("figure registry labels and filenames must be unique")
-    for spec in specs:
-        if not spec.label.startswith("fig:") or not spec.caption.strip():
-            raise ValueError(f"invalid figure specification: {spec!r}")
-        if not spec.alt_text.strip():
-            raise ValueError(f"invalid figure specification: {spec!r}")
-        if len(spec.sha256) != 64:
-            raise ValueError(
-                f"figure {spec.filename} carries no content digest: {spec.sha256!r}"
+    payload = {
+        "schema_version": FIGURE_SCHEMA,
+        "source_commit": inventory.commit,
+        "source_hash": inventory.source_hash,
+        "figures": [
+            asdict(spec) for spec in sorted(specs, key=lambda item: item.label)
+        ],
+    }
+    _validate_figure_registry(path.parent, payload)
+    _write_json(path, payload)
+
+
+def _verified_artifact(directory: Path, filename: str, digest: str) -> Path:
+    """Resolve a local artifact name and verify its actual regular-file bytes."""
+    if not isinstance(filename, str) or not re.fullmatch(
+        r"[A-Za-z0-9][A-Za-z0-9_.-]*", filename
+    ):
+        raise ValueError(f"unsafe artifact filename: {filename!r}")
+    if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+        raise ValueError(f"artifact {filename} carries no content digest: {digest!r}")
+    artifact = directory / filename
+    if artifact.is_symlink() or not artifact.is_file():
+        raise ValueError(f"artifact must be a regular file: {filename}")
+    if hashlib.sha256(artifact.read_bytes()).hexdigest() != digest:
+        raise ValueError(f"artifact content digest disagrees with bytes: {filename}")
+    return artifact
+
+
+def _validate_figure_registry(directory: Path, payload: Mapping[str, Any]) -> set[Path]:
+    """Validate metadata and every PNG, vector, and data companion in a registry."""
+    if payload.get("schema_version") != FIGURE_SCHEMA:
+        raise ValueError("unsupported figure registry schema")
+    figures = payload.get("figures")
+    if not isinstance(figures, (list, tuple)) or not figures:
+        raise ValueError("figure registry requires at least one generated figure")
+    labels: set[str] = set()
+    files: set[Path] = set()
+    supported = {
+        "image/svg+xml": ".svg",
+        "application/json": ".json",
+        "text/csv": ".csv",
+    }
+    for spec in figures:
+        if not isinstance(spec, dict):
+            raise ValueError("invalid figure specification")
+        label = spec.get("label")
+        if (
+            not isinstance(label, str)
+            or not label.startswith("fig:")
+            or label in labels
+        ):
+            raise ValueError("figure registry labels must be valid and unique")
+        labels.add(label)
+        if not all(
+            isinstance(spec.get(key), str) and spec[key].strip()
+            for key in ("caption", "alt_text", "generated_by")
+        ):
+            raise ValueError(f"invalid figure metadata: {label}")
+        primary = _verified_artifact(
+            directory, spec.get("filename"), spec.get("sha256")
+        )
+        if primary.suffix != ".png":
+            raise ValueError(f"primary publication figure must be PNG: {primary.name}")
+        artifacts = spec.get("artifacts", ())
+        if not isinstance(artifacts, (list, tuple)):
+            raise ValueError(f"invalid figure artifacts: {label}")
+        registered = [primary]
+        for artifact in artifacts:
+            if (
+                not isinstance(artifact, dict)
+                or artifact.get("media_type") not in supported
+            ):
+                raise ValueError(f"unsupported figure companion: {label}")
+            file = _verified_artifact(
+                directory, artifact.get("filename"), artifact.get("sha256")
             )
-        if not (path.parent / spec.filename).is_file():
-            raise FileNotFoundError(path.parent / spec.filename)
-    _write_json(
-        path,
-        {
-            "schema_version": FIGURE_SCHEMA,
-            "source_commit": inventory.commit,
-            "source_hash": inventory.source_hash,
-            "figures": [
-                asdict(spec) for spec in sorted(specs, key=lambda item: item.label)
-            ],
-        },
-    )
+            if file.suffix != supported[artifact["media_type"]]:
+                raise ValueError(
+                    f"figure companion type disagrees with suffix: {file.name}"
+                )
+            registered.append(file)
+        for file in registered:
+            if file in files:
+                raise ValueError(
+                    f"figure registry filenames must be unique: {file.name}"
+                )
+            files.add(file)
+    return files
 
 
 def _verification_payload(record: VerificationRecord) -> dict[str, Any]:
@@ -2490,6 +2687,17 @@ def refresh_config_metadata(
     return tuple(updated)
 
 
+def _resolved_artifact_files(root: Path) -> set[Path]:
+    """Derive required resolved outputs from authored inputs, not a manifest."""
+    return {
+        root / "output/manuscript" / source.name
+        for source in (root / "manuscript").iterdir()
+        if source.is_file()
+        and source.name not in EXCLUDED_MANUSCRIPT_DOCS
+        and (source.suffix in {".md", ".bib"} or source.name == "config.yaml")
+    }
+
+
 def write_resolved_manuscript(
     root: Path, variables: Mapping[str, str]
 ) -> tuple[Path, ...]:
@@ -2796,6 +3004,24 @@ def generate(
         "variables": "output/data/manuscript_variables.json",
         "verification": "output/data/research_verification.json",
     }
+    figure_files = _validate_figure_registry(
+        figures_dir,
+        json.loads((figures_dir / "figure_registry.json").read_text(encoding="utf-8")),
+    )
+    artifacts = (
+        _resolved_artifact_files(root)
+        | figure_files
+        | {
+            figures_dir / "figure_registry.json",
+            data_dir / "research_inventory.json",
+            data_dir / "manuscript_variables.json",
+            _verification_record_path(root),
+        }
+    )
+    manifest["artifact_sha256"] = {
+        path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in sorted(artifacts)
+    }
     _write_json(data_dir / "research_manifest.json", manifest)
     if publication and not verification:
         raise RuntimeError(
@@ -2890,6 +3116,114 @@ def _published_verification_problems(
     return problems
 
 
+def _published_artifact_problems(root: Path, published: Mapping[str, Any]) -> list[str]:
+    """Check the complete delivered byte set, not just its measured source tree."""
+    try:
+        for relative in (
+            "output",
+            "output/data",
+            "output/figures",
+            "output/manuscript",
+        ):
+            if (root / relative).is_symlink():
+                raise ValueError(
+                    f"publication directories must not be symlinked: {relative}"
+                )
+        directory = root / "output" / "figures"
+        registry = json.loads(
+            (directory / "figure_registry.json").read_text(encoding="utf-8")
+        )
+        if not isinstance(registry, dict):
+            raise ValueError("figure registry must be an object")
+        figure_files = _validate_figure_registry(directory, registry)
+        for spec in registry["figures"]:
+            stem = Path(spec["filename"]).stem
+            expected_companions = {
+                (stem + ".svg", "image/svg+xml"),
+                (stem + ".json", "application/json"),
+                (stem + ".csv", "text/csv"),
+            }
+            companions = spec.get("artifacts", ())
+            if (
+                len(companions) != 3
+                or {(item["filename"], item["media_type"]) for item in companions}
+                != expected_companions
+            ):
+                raise ValueError(
+                    f"publication figure lacks its SVG/JSON/CSV companions: {spec['filename']}"
+                )
+        if registry.get("source_hash") != published.get(
+            "RESEARCH_SOURCE_HASH"
+        ) or registry.get("source_commit") != published.get("RESEARCH_COMMIT"):
+            raise ValueError(
+                "figure registry source identity disagrees with published variables"
+            )
+        if published.get("FIGURE_COUNT") != str(len(registry["figures"])):
+            raise ValueError("FIGURE_COUNT disagrees with the figure registry")
+        manifest = json.loads(
+            (root / "output/data/research_manifest.json").read_text(encoding="utf-8")
+        )
+        if (
+            not isinstance(manifest, dict)
+            or manifest.get("schema_version") != RESEARCH_SCHEMA
+        ):
+            raise ValueError("unsupported research manifest")
+        if manifest.get("source_hash") != published.get(
+            "RESEARCH_SOURCE_HASH"
+        ) or manifest.get("source_commit") != published.get("RESEARCH_COMMIT"):
+            raise ValueError(
+                "research manifest source identity disagrees with published variables"
+            )
+        resolved = manifest.get("resolved_manuscript_files")
+        if (
+            not isinstance(resolved, list)
+            or not resolved
+            or len(set(resolved)) != len(resolved)
+        ):
+            raise ValueError(
+                "research manifest must list unique resolved manuscript files"
+            )
+        resolved_files: set[Path] = set()
+        for name in resolved:
+            if not isinstance(name, str) or not name.startswith("output/manuscript/"):
+                raise ValueError(f"invalid resolved manuscript artifact: {name!r}")
+            filename = name.removeprefix("output/manuscript/")
+            if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", filename):
+                raise ValueError(f"unsafe resolved manuscript artifact: {name!r}")
+            resolved_files.add(root / name)
+        required_resolved = _resolved_artifact_files(root)
+        if resolved_files != {
+            file for file in required_resolved if file.suffix == ".md"
+        }:
+            raise ValueError(
+                "research manifest omits or adds authored manuscript sections"
+            )
+        expected = (
+            {
+                directory / "figure_registry.json",
+                root / "output/data/research_inventory.json",
+                root / "output/data/manuscript_variables.json",
+                _verification_record_path(root),
+            }
+            | required_resolved
+            | figure_files
+        )
+        digests = manifest.get("artifact_sha256")
+        if not isinstance(digests, dict) or set(digests) != {
+            file.relative_to(root).as_posix() for file in expected
+        }:
+            raise ValueError(
+                "research manifest artifact digests do not cover the delivered file set"
+            )
+        for file in sorted(expected):
+            _verified_artifact(
+                file.parent, file.name, digests[file.relative_to(root).as_posix()]
+            )
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return [f"published artifact integrity: {exc}"]
+    return []
+
+
 def check_published_artifacts(root: Path) -> tuple[str, ...]:
     """Return every reason the published artifacts no longer describe the tree.
 
@@ -2926,6 +3260,8 @@ def check_published_artifacts(root: Path) -> tuple[str, ...]:
         published = json.loads(variables_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         return (f"published variables are unreadable: {exc}",)
+    if not isinstance(published, dict):
+        return ("published variables must be a JSON object",)
     measured = _source_hash(root)
     if published.get("RESEARCH_SOURCE_HASH") != measured:
         problems.append(
@@ -2945,6 +3281,7 @@ def check_published_artifacts(root: Path) -> tuple[str, ...]:
             for field in refresh_config_metadata(root, published, dry_run=True)
         )
     problems.extend(_published_verification_problems(root, published))
+    problems.extend(_published_artifact_problems(root, published))
     return tuple(problems)
 
 
@@ -2978,7 +3315,8 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "write nothing; exit non-zero when the published source hash, the "
             "generator-owned config.yaml metadata, or the published "
             "verification counts no longer match the tree and the stored "
-            "evidence record"
+            "evidence record, or any delivered figure/data/manuscript bytes "
+            "disagree with their recorded digests"
         ),
     )
     parser.add_argument(
