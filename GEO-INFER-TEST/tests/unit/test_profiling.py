@@ -349,11 +349,14 @@ def test_native_controller_interruption_drains_children_and_seals_failed_receipt
     tmp_path,
 ):
     target = tmp_path / "wait.py"
+    # Publishing readiness admits interruption, so flush the output required
+    # by the receipt assertions before the controller can observe the marker.
     target.write_text(
         "import json,os,time\nfrom pathlib import Path\n"
+        "print('owned target started',flush=True)\n"
         "Path('started.tmp').write_text(json.dumps({'pid':os.getpid()}))\n"
         "Path('started.tmp').replace('started.json')\n"
-        "print('owned target started',flush=True)\ntime.sleep(30)\n"
+        "time.sleep(30)\n"
     )
     controller = tmp_path / "controller.py"
     controller.write_text(

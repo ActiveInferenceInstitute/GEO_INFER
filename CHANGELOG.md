@@ -15,6 +15,8 @@
 - Correct manuscript metric, fingerprint and interruption descriptions and
   verify bibliography metadata against primary sources. Historical acceptance
   measurements remain labelled with their original source checkpoint.
+- Flush the interruption fixture's required stdout before publishing readiness,
+  preserving child cleanup, failed receipts, hash checks and existing deadlines.
 
 ## Native swarm memory measurement (2026-10-16)
 
