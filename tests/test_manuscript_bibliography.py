@@ -8,6 +8,7 @@ them, so these tests pin that the gate is real rather than declared.
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
 from types import ModuleType
 
 import pytest
@@ -182,3 +183,154 @@ class TestRealBibliography:
                 "fail_on_unused is set, so an uncited entry must fail the build "
                 f"rather than reach this assertion: {uncited}"
             )
+
+
+def _settle_source(generator: ModuleType, root: Path, env: dict[str, str]) -> None:
+    """Commit authored fixture changes and explicitly settle tracked metadata."""
+
+    def git(*args: str) -> None:
+        subprocess.run(
+            ["git", "-c", "core.fsmonitor=false", "-C", str(root), *args],
+            check=True,
+            capture_output=True,
+            env=env,
+        )
+
+    git("add", "-A")
+    git("commit", "-q", "-m", "bibliography fixture")
+    generator.refresh_config_metadata(root, generator.config_metadata_values(root))
+    if generator._dirty_file_count(root):
+        git("add", "manuscript/config.yaml")
+        git("commit", "-q", "-m", "settle bibliography metadata")
+
+
+def _output_bytes(root: Path) -> dict[str, bytes]:
+    return {
+        str(path.relative_to(root)): path.read_bytes()
+        for path in (root / "output").rglob("*")
+        if path.is_file()
+    }
+
+
+@pytest.mark.parametrize("problem", ["orphan", "undefined"])
+def test_static_citation_failure_precedes_verification_and_output_writes(
+    generator: ModuleType,
+    generatable_checkout: Path,
+    git_environment: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    problem: str,
+) -> None:
+    root = generatable_checkout
+    if problem == "orphan":
+        (root / "manuscript/references.bib").write_text(
+            "@book{orphan_entry, title={Uncited}}\n"
+        )
+        # Neither excluded operational docs nor nested module entries belong
+        # to the generator's resolved top-level publication selection.
+        for name in generator.EXCLUDED_MANUSCRIPT_DOCS:
+            (root / "manuscript" / name).write_text("[@orphan_entry]\n")
+        (root / "manuscript/sections").mkdir()
+        (root / "manuscript/sections/example.md").write_text("[@orphan_entry]\n")
+        match = "bibliography entries are never cited: orphan_entry"
+    else:
+        (root / "manuscript/00_abstract.md").write_text("# Abstract\n[@ghost]\n")
+        match = "citations with no bibliography entry: ghost"
+    _settle_source(generator, root, git_environment)
+    prior = root / "output/data/research_verification.json"
+    prior.parent.mkdir(parents=True)
+    prior.write_bytes(b'{"prior": "retained evidence"}\n')
+    (root / "output/prior.pdf").write_bytes(b"retained publication bytes\x00")
+    before = _output_bytes(root)
+    config_before = (root / "manuscript/config.yaml").read_bytes()
+    admitted: list[bool] = []
+
+    def unexpected_verification(*args, **kwargs):
+        admitted.append(True)
+        pytest.fail("static bibliography failure admitted expensive verification")
+
+    monkeypatch.setattr(generator, "run_verification", unexpected_verification)
+    with pytest.raises(ValueError, match=match):
+        generator.generate(root, verify=True, reuse_verification=False)
+    assert admitted == []
+    assert _output_bytes(root) == before
+    assert (root / "manuscript/config.yaml").read_bytes() == config_before
+    assert generator._dirty_file_count(root) == 0
+
+
+@pytest.mark.parametrize("problem", ["orphan", "undefined"])
+def test_false_policy_allows_generation_and_only_final_audit_warns(
+    generator: ModuleType,
+    generatable_checkout: Path,
+    git_environment: dict[str, str],
+    capsys: pytest.CaptureFixture[str],
+    problem: str,
+) -> None:
+    root = generatable_checkout
+    config = root / "manuscript/config.yaml"
+    key = "fail_on_unused" if problem == "orphan" else "fail_on_missing"
+    config.write_text(config.read_text().replace(f"{key}: true", f"{key}: false"))
+    if problem == "orphan":
+        (root / "manuscript/references.bib").write_text(
+            "@book{orphan_entry, title={Uncited}}\n"
+        )
+    else:
+        (root / "manuscript/00_abstract.md").write_text("# Abstract\n[@ghost]\n")
+    _settle_source(generator, root, git_environment)
+    generator.generate(root)
+    written = root / "output/manuscript/00_abstract.md"
+    assert written.is_file()
+    uncited, undefined = generator.audit_bibliography(root, [written])
+    assert (uncited, undefined) == (
+        (("orphan_entry",), ()) if problem == "orphan" else ((), ("ghost",))
+    )
+    warnings = capsys.readouterr().err
+    assert warnings.count("bibliography entries are never cited") == (
+        1 if problem == "orphan" else 0
+    )
+
+
+def test_existing_variable_can_supply_a_valid_bibliography_citation(
+    generator: ModuleType,
+    generatable_checkout: Path,
+    git_environment: dict[str, str],
+) -> None:
+    root = generatable_checkout
+    project = root / "pyproject.toml"
+    project.write_text(
+        project.read_text().replace('license = "MIT"', 'license = "MIT [@cited_entry]"')
+    )
+    (root / "manuscript/references.bib").write_text(
+        "@book{cited_entry, title={Used through existing variable}}\n"
+    )
+    (root / "manuscript/00_abstract.md").write_text(
+        "# Abstract\nLicense: {{PROJECT_LICENSE}}\n"
+    )
+    _settle_source(generator, root, git_environment)
+    generator.generate(root)
+    assert (
+        "MIT [@cited_entry]" in (root / "output/manuscript/00_abstract.md").read_text()
+    )
+
+
+def test_generated_citation_still_rejected_by_resolved_audit(
+    generator: ModuleType,
+    generatable_checkout: Path,
+    git_environment: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = generatable_checkout
+    (root / "manuscript/00_abstract.md").write_text("# Abstract\nNo static citation.\n")
+    _settle_source(generator, root, git_environment)
+    original = generator.write_resolved_manuscript
+
+    def generated_citation(*args, **kwargs):
+        written = original(*args, **kwargs)
+        written[0].write_text(written[0].read_text() + "\n[@dynamic_ghost]\n")
+        return written
+
+    monkeypatch.setattr(generator, "write_resolved_manuscript", generated_citation)
+    with pytest.raises(
+        ValueError, match="citations with no bibliography entry: dynamic_ghost"
+    ):
+        generator.generate(root)
+    assert "[@dynamic_ghost]" in (root / "output/manuscript/00_abstract.md").read_text()

@@ -39,6 +39,7 @@ validation; the accepted checkpoint's green checks do not qualify this continuat
 | SCIENCE-01 | Honor MIMO power constraints without unstable determinants; propagate entropy bases; handle zero-gain channels | Independent analytic/numerical references, finite-input rejection and owning-module suites |
 | VISUAL-01 | Resize raster spatial axes with masks and affine footprints; retain active vector geometry; strict dashboard/map JSON snapshots | Numeric pixel/coordinate references, source immutability and actual render/export tests |
 | PROFILE-01 | Retain checked-process failure evidence and report failed profiles without hiding their disposition | Real process/profile failures, corrupt-receipt controls and actual Python 3.15 profiling |
+| PUBLICATION-01 | Check static bibliography before expensive verification or output mutation; retain the resolved-text audit | Undefined/orphan citations fail without executing verification or changing prior outputs; policy-disabled behavior stays explicit |
 
 The reproduced defects have implementation and focused regressions. Fresh
 source-bound validation is required for acceptance; no performance speedup or

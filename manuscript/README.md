@@ -61,6 +61,8 @@ uv run python GEO-INFER-TEST/validate_repo_contracts.py --skip-import-smoke
   before any write; never restore old config after producing hash-bound output.
 - `uv run python manuscript/generate_research_artifacts.py --verify` runs the
   producer's verification groups and retains immutable execution receipts.
+- Static bibliography errors fail before verification or generated-output writes;
+  the resolved manuscript is checked again after substitution.
 - Ordinary failures and timeouts continue the diagnostic sweep. An interruption
   retains its failed attempt and stops admission; later groups remain visibly
   not run. An incomplete sweep cannot establish acceptance.

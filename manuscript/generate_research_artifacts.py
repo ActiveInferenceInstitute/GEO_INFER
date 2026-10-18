@@ -1555,20 +1555,12 @@ def _write_figure_data(
     )
 
 
-def generate_figures(
+def _figure_specs(
     inventory: RepositoryInventory,
-    output_dir: Path,
     verification: VerificationRecord | None = None,
 ) -> tuple[FigureSpec, ...]:
-    """Generate publication figures from the measured inventory.
-
-    ``verification`` is the record this build publishes, when it holds one;
-    the graphical abstract draws each command group's recorded outcome from
-    it.  Callers without a record (the figure regression suite) get neutral
-    outcome dots.
-    """
-    _matplotlib, plt = _import_matplotlib()
-    specs = (
+    """Describe figures from measured inputs without importing/rendering plots."""
+    return (
         FigureSpec(
             "fig:graphical_abstract",
             "graphical_abstract.png",
@@ -1598,6 +1590,22 @@ def generate_figures(
             _alt_validation_surface(inventory),
         ),
     )
+
+
+def generate_figures(
+    inventory: RepositoryInventory,
+    output_dir: Path,
+    verification: VerificationRecord | None = None,
+) -> tuple[FigureSpec, ...]:
+    """Generate publication figures from the measured inventory.
+
+    ``verification`` is the record this build publishes, when it holds one;
+    the graphical abstract draws each command group's recorded outcome from
+    it.  Callers without a record (the figure regression suite) get neutral
+    outcome dots.
+    """
+    _matplotlib, plt = _import_matplotlib()
+    specs = _figure_specs(inventory, verification)
     completed: dict[str, FigureSpec] = {}
 
     def save(index: int, figure: Any) -> None:
@@ -2698,6 +2706,15 @@ def _resolved_artifact_files(root: Path) -> set[Path]:
     }
 
 
+def _publication_manuscript_sources(root: Path) -> tuple[Path, ...]:
+    """Select the same authored publication Markdown for preflight and output."""
+    return tuple(
+        source
+        for source in sorted((root / "manuscript").glob("*.md"))
+        if source.name not in EXCLUDED_MANUSCRIPT_DOCS
+    )
+
+
 def write_resolved_manuscript(
     root: Path, variables: Mapping[str, str]
 ) -> tuple[Path, ...]:
@@ -2715,9 +2732,7 @@ def write_resolved_manuscript(
             stale.unlink()
     written: list[Path] = []
     unresolved: dict[str, tuple[str, ...]] = {}
-    for source in sorted(source_dir.glob("*.md")):
-        if source.name in EXCLUDED_MANUSCRIPT_DOCS:
-            continue
+    for source in _publication_manuscript_sources(root):
         resolved, missing = substitute_manuscript_text(
             source.read_text(encoding="utf-8"), variables
         )
@@ -2814,9 +2829,15 @@ def bibliography_policy(root: Path) -> dict[str, bool]:
 
 
 def audit_bibliography(
-    root: Path, manuscript_files: Sequence[Path]
+    root: Path,
+    manuscript_files: Sequence[Path],
+    *,
+    variables: Mapping[str, str] | None = None,
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Compare the reference database against the citations that use it.
+
+    Optional ``variables`` apply the same literal manuscript substitution in
+    memory before extracting citations; source and output files are not written.
 
     Returns:
         ``(uncited, undefined)`` — bibliography keys that no manuscript file
@@ -2828,7 +2849,10 @@ def audit_bibliography(
     entries = set(BIB_ENTRY_RE.findall(bib.read_text(encoding="utf-8")))
     cited: set[str] = set()
     for path in manuscript_files:
-        cited.update(CITATION_RE.findall(path.read_text(encoding="utf-8")))
+        text = path.read_text(encoding="utf-8")
+        if variables is not None:
+            text, _missing = substitute_manuscript_text(text, variables)
+        cited.update(CITATION_RE.findall(text))
     undefined = {
         key for key in cited - entries if not key.startswith(CROSSREF_PREFIXES)
     }
@@ -2936,13 +2960,34 @@ def generate(
             "python manuscript/generate_research_artifacts.py --refresh-config "
             "and commit only manuscript/config.yaml before generation."
         )
+    # Resolve the existing variable surface in memory before checking source
+    # citations: a reference used through a known substitution is not orphaned.
+    # No verification or rendering is admitted here. The final resolved audit
+    # remains authoritative for generated content and emits warnings once.
+    inventory = collect_inventory(root, dirty_file_count=dirty_files)
+    unmeasured = VerificationRecord.unmeasured(full_validation=full_validation)
+    preflight_variables = build_variables(
+        inventory, _figure_specs(inventory, unmeasured), unmeasured
+    )
+    policy = bibliography_policy(root)
+    uncited, undefined = audit_bibliography(
+        root,
+        _publication_manuscript_sources(root),
+        variables=preflight_variables,
+    )
+    if undefined and policy["fail_on_missing"]:
+        raise ValueError(
+            "citations with no bibliography entry: " + ", ".join(undefined)
+        )
+    if uncited and policy["fail_on_unused"]:
+        raise ValueError("bibliography entries are never cited: " + ", ".join(uncited))
     if allow_dirty:
         # config.yaml is a hashed input. An explicitly authorized refresh must
         # precede both the source digest and its dirtiness/commit stamp.
         if stale_metadata:
             refresh_config_metadata(root, metadata)
         dirty_files = _dirty_file_count(root)
-    inventory = collect_inventory(root, dirty_file_count=dirty_files)
+        inventory = collect_inventory(root, dirty_file_count=dirty_files)
     # The catalog census audit needs only the inventory, so it runs before
     # any figure or resolved file is written: a drifted section fails the
     # build without paying for output it cannot correct.

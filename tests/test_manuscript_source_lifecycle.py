@@ -114,9 +114,13 @@ def test_failure_after_clean_generation_preflight_preserves_source_config(
     config = root / "manuscript/config.yaml"
     config.chmod(0o640)
     before = _snapshot(config)
+    retained = root / "output/data/prior-evidence.json"
+    retained.parent.mkdir(parents=True)
+    retained.write_text('{"retained": "prior evidence"}\n')
+    outputs = _outputs(root)
     with pytest.raises(ValueError, match="citations with no bibliography entry"):
         generator.generate(root)
-    assert (root / "output/data/manuscript_variables.json").is_file()
+    assert _outputs(root) == outputs
     assert _snapshot(config) == before
     assert generator._dirty_file_count(root) == 0
 

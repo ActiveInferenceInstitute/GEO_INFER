@@ -143,6 +143,25 @@ observational target [@gelman_bda_2013]. The manuscript does not attribute a
 particular modern diagnostic estimator to a method merely because it returns
 a field named effective sample size or $\hat{R}$.
 
+### Numerical conventions in composed analyses
+
+MATH's MIMO helper evaluates independent equal-power transmit streams using
+the isotropic covariance expression described by Tse and Viswanath
+[@tse_wireless_2005, chap. 8]. An explicit total power is divided among
+transmitters; the default retains unit power per transmitter. Singular-mode
+log-rates avoid constructing a Gram matrix or determinant. This fixed
+covariance rate does not optimize a channel-dependent transmit covariance.
+Parallel-channel waterfilling takes power gains and leaves zero-gain channels
+unallocated. Spatial Shannon and Rényi entropy preserve the requested
+logarithm base. Analytic and constrained-optimization references check these
+software conventions; they do not establish a physical channel model.
+
+ART's bilinear display resampling preserves band axes and affine footprints,
+including rotated grids, while excluding masked contributors. It does not promise area
+averages or conservation of cell totals. A composed analysis must choose
+resampling semantics appropriate to its measured quantity before interpreting
+an output as scientific evidence.
+
 ### Risk modeling
 
 `GEO-INFER-RISK` is where the spine's output becomes a decision quantity, and
