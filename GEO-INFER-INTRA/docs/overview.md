@@ -22,7 +22,7 @@ states, uncertainty, observations, and decisions can be analyzed together.
 
 ## A typical analysis
 
-`mermaid
+```mermaid
 flowchart LR
     INPUT["Files, sensors, APIs, surveys"]
     DATA["DATA: ingest and validate"]
@@ -33,7 +33,7 @@ flowchart LR
     DOMAIN["Domain module"]
     OUTPUT["API / APP / ART / artifact"]
     INPUT --> DATA --> SPACE --> TIME --> INFER --> DECIDE --> DOMAIN --> OUTPUT
-`
+```
 
 Not every workflow uses every stage. Choose the module that owns the behavior,
 then use public exports and explicit cross-module adapters.

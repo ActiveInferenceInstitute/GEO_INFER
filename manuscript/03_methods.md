@@ -115,8 +115,10 @@ refusing to report a diagnostic that is not defined:
   state is not part of the sampler contract.
 - MCMC and HMC flatten scalar and array-valued parameters internally and
   restore the declared parameter shapes in returned draws. The HMC no-U-turn
-  path performs recursive tree construction with a genuine no-U-turn check; it
-  is not an alias for a fixed-step sampler.
+  path performs recursive tree construction with an explicit no-U-turn check.
+  The methodological reference for that construction is Hoffman and Gelman
+  [@hoffman_nuts_2014]; the citation does not establish numerical equivalence
+  between the local sampler and another implementation.
 - Variational inference accepts vector mean-field parameters and preserves the
   caller's initial variational parameters during updates. Full-rank covariance
   currently carries an explicit scalar-parameter boundary.
@@ -161,9 +163,11 @@ its obligations are correspondingly about declared bounds
 - Monte Carlo runs use a local seeded generator and expose the configured
   percentile keys alongside the established result names. Hazard event
   timestamps are reproducible for seeded runs.
-- Return-period intensities require a fitted, calibrated model. The Gumbel
-  return level is derived by moment matching from the fitted mean $\bar{x}$
-  and standard deviation $s$ of the intensity sample: the scale is
+- Return-period intensities require a fitted hazard model exposing a finite
+  intensity mean and a finite, positive standard deviation; the return period
+  $T$ must be finite and greater than one. The local helper uses a Gumbel
+  approximation, with moment matching from the fitted mean $\bar{x}$ and
+  standard deviation $s$: the scale is
   $\sigma = s\sqrt{6}/\pi$, the location is $\mu = \bar{x} - \gamma_{E}\sigma$
   with $\gamma_{E}$ the Euler-Mascheroni constant, and the $T$-period return
   level is
@@ -178,9 +182,9 @@ its obligations are correspondingly about declared bounds
 Interpreting a return period in years requires observations with the declared
 annual support and a defensible extreme-value sampling model. The algebraic
 quantile alone does not establish stationarity, independence, tail fit, or
-uncertainty in extrapolation [@coles_extremes_2001]. Likewise, a model's
-internal fitted/calibrated state is an execution prerequisite rather than
-evidence of calibration against independent field data.
+uncertainty in extrapolation [@coles_extremes_2001]. Likewise, an internal
+fit or calibration flag records local model state rather than evidence of
+calibration against independent field data.
 
 ### What the contract does and does not establish
 
@@ -271,12 +275,13 @@ scientific figure-design guidance [@rougier_figures_2014]. The companion data
 expose the values and encodings used to draw each figure; they are checked
 against recorded hashes along with the rendered representations.
 
-The first figure, the graphical abstract, is additionally wired into the
-title page: `config.yaml` points the renderer's cover slot at the same
-generated PNG, so the cover page and the Abstract section carry one artifact
-whose panel content and caption come from the declared themes, the Methods
-section, and the published verification record rather than from hand-drawn
-artwork.
+The optional template-backed render lane additionally places the graphical
+abstract on its title page: `config.yaml` points the template's cover slot at
+the same generated PNG used by the Abstract section. The cover and Abstract
+therefore share panel content derived from the declared themes, the Methods
+section, and the published verification record. The in-repository render lane
+uses its own Pandoc and XeLaTeX path; configuring a template cover slot alone
+does not establish that this lane renders a cover.
 
 ![{{MODULE_INVENTORY_CAPTION}}](../output/figures/module_inventory.png){#fig:module_inventory width=100%}
 

@@ -1,5 +1,26 @@
 # Issue reconciliation, 2026-10-08
 
+## Checkpoint context, reviewed 2026-10-18
+
+The table below is a historical source-bound reconciliation, not the current
+open-issue inventory. The accepted baseline for the new documentation and
+template-rendering continuation is `15056e11e319988deb48e89cc91ba394bdcce368`
+through [PR #97](https://github.com/ActiveInferenceInstitute/GEO_INFER/pull/97):
+72 PR/main check executions, 45 installed wheels/imports and 24 operation
+profiles per scientific interpreter, 46 coverage measurements, native
+eleven-group verification, 190 ROOT cases and a reviewed 33-page native PDF.
+These measurements qualify that baseline only. Later source changes and a
+template-backed PDF require their own validation and page review.
+
+The five open issues are #69 (physical GPU evidence), #72 (historical PROJ
+cause), #73 (configured-advisor review), #74 (release decisions) and #78
+(historical owned-process denial class). Issue #70's complete sourced boundary
+was integrated subsequently; its historical table row does not reopen it.
+See [the working ledger](../../../TODO.md) and the live issue records for
+current scope. Original acceptance criteria and failed evidence remain intact.
+
+## Historical reconciliation
+
 The owner requested repository improvements, issue/PR reconciliation and ordinary
 integration into main. Closing an issue means its actual requirements are met;
 the owner explicitly requested that unmet issues remain open. Deferral does
@@ -17,7 +38,7 @@ formatting workflows passed. All 32 raw main archives and all 46 coverage
 dispositions were audited; TEST measured 2,976/3,383 lines (87.9693%). Evidence
 is specific to this accepted checkpoint; a later patch needs fresh gates.
 
-The current follow-up adds GID equality and restricts Linux denial LSM modes to
+That checkpoint's follow-up adds GID equality and restricts Linux denial LSM modes to
 known values. It reconciles the tracked ledger with completed readiness issues.
 Implementation does not identify the historical denied-task class; #78 remains
 open pending actual reproduction and causal evidence.
@@ -30,7 +51,7 @@ open pending actual reproduction and causal evidence.
 | #63 (closed) | All 46 coverage dispositions audited; TEST 87.9693% exceeds its unchanged 85% floor. | Renew measurement for later source changes. |
 | #64 (closed) | Strict/analytical, security, reproducibility and full-eleven gates accepted. | Retain failures and renew appropriate gates for later changes. |
 | #65 (closed) | 45 installed wheels, 45 base imports and 20 operation profiles per interpreter; real PostGIS/Redis/MinIO operations and pinned four-family GNN evidence accepted. | Real-service evidence is S3-compatible local CI, not live AWS acceptance. |
-| #66 (closed) | Source hash 06e90a509dfd4c55: eleven-group producer, 144+7 ROOT/native cases, all four figures/30 native pages, generated docs/index and 2,038-file whole-output snapshot accepted. | Scientific review covers the current bundle; historical failed outputs remain preserved. |
+| #66 (closed) | Source hash 06e90a509dfd4c55: eleven-group producer, 144+7 ROOT/native cases, all four figures/30 native pages, generated docs/index and 2,038-file whole-output snapshot accepted. | Scientific review covers that checkpoint's bundle; historical failed outputs remain preserved. |
 | #67 (closed) | Exact-candidate and fresh same-SHA main hosted packets independently accepted. | Main packet comprises 32 raw archives; default-seven hosted producer evidence remains distinct from local eleven-group evidence. |
 | #68 (closed) | Ordinary fast-forward to fea9f9570 through PR #81; local/API/remote parity verified. | Retain rollback checkpoint 42d2964b4; later changes need a new review and publication audit. |
 | #69 | Local diagnostics report no usable CuPy, Torch CUDA or JAX GPU backend; CPU operation preserved. | Supported physical hardware and precision/parity/timing/memory evidence. |

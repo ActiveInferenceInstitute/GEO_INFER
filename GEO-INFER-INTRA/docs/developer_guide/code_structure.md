@@ -6,7 +6,7 @@ module pyproject.toml files provide package metadata and local extras.
 
 ## Repository layout
 
-`text
+```text
 GEO-INFER/
 ├── GEO-INFER-*/src/             # importable module behavior
 ├── GEO-INFER-*/tests/           # module tests and inventories
@@ -19,11 +19,11 @@ GEO-INFER/
 ├── pyproject.toml               # root workspace and shared tooling
 ├── uv.lock                      # resolved dependency graph
 └── .python-version              # supported interpreter selection
-`
+```
 
 ## Inside a module
 
-`text
+```text
 GEO-INFER-MODULE/
 ├── src/geo_infer_module/
 │   ├── __init__.py               # public exports and package metadata
@@ -41,7 +41,7 @@ GEO-INFER-MODULE/
 ├── AGENTS.md                     # generated local instructions
 ├── SKILL.md
 └── pyproject.toml
-`
+```
 
 Not every module uses every subdirectory. Follow the actual directory and
 public exports instead of copying a template blindly.

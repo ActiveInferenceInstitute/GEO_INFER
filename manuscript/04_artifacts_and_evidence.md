@@ -53,9 +53,11 @@ also carry a repository-relative `receipt` reference into
 command, complete captured output, and artifact hashes in its own directory;
 failed attempts survive subsequent executions. The bounded output tails and
 table rows summarize those receipts. Older stored records may have no receipt
-reference. Execution uses monotonic deadlines and process-tree cleanup;
-failures and timeouts are recorded without assertion retries, and later
-groups still run. The record also carries
+reference. Execution uses monotonic deadlines and process-tree cleanup.
+Ordinary failures and timeouts are recorded without assertion retries, and
+later groups still run. An interruption retains the interrupted attempt's
+failure and stops admission; the remaining groups are reported as not run.
+The record also carries
 the commit and source fingerprint of the checkout its commands ran against,
 because those commands take minutes while a render is bounded: a build that
 executes none of them republishes the stored record rather than emptying it,
@@ -77,11 +79,9 @@ Which tier a record was measured at is a property of the record, not of the
 build that republishes it, and it travels with the results for that reason.
 The record published here was measured at the `{{VERIFICATION_RECORD_TIER}}`
 tier, which defines `{{VERIFICATION_DEFINED_COUNT}}` command groups in total,
-and every count below is taken against that definition. Reading the
-denominator from the build's own request instead was what let this manuscript
-publish nine passes and two failures against seven defined groups: the
-numerator was counted over the whole record and the denominator over the tier
-the build happened to ask for. `build_variables` now refuses to render a
+and every count below is taken against that definition. The numerator and
+denominator therefore describe the same command population, including when a
+build republishes a record from a wider tier. `build_variables` refuses to render a
 record whose outcomes do not sum to its own defined-group count, and
 `--check` refuses a published bundle whose counts disagree with the record
 it republishes.
@@ -150,7 +150,7 @@ The registry declares `{{FIGURE_COUNT}}` publication figures:
 
 - [@fig:graphical_abstract] summarises the composition contract end to end,
   from the themed module set through the verification loop to executable
-  claims, and is configured as the publication cover image.
+  claims, and supplies the cover image for the template-backed render lane.
 - [@fig:module_inventory] measures implementation and test surfaces across
   all modules.
 - [@fig:research_spine] isolates the Active Inference, Bayesian, and RISK

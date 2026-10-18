@@ -1244,6 +1244,7 @@ them with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.
 - Manuscript variables, figures, captions, and resolved copies: `uv run python manuscript/generate_research_artifacts.py`
 - After source commits, refresh metadata with `uv run python manuscript/generate_research_artifacts.py --refresh-config`, then commit only `manuscript/config.yaml` separately before generating evidence.
 - Verify delivered PNG/SVG/JSON/CSV and resolved manuscript bytes with `uv run python manuscript/generate_research_artifacts.py --check`.
+- For an actual docxology/template PDF with the graphical-abstract cover, use the explicit optional [template rendering lane]({link_prefix}GEO-INFER-INTRA/docs/integration/manuscript_rendering.md); retain its template commit, interpreter and render receipt separately from publication verification.
 
 ## Repo-wide Change Workflow
 

@@ -7,11 +7,13 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `core/`
 - `models/`
 - `__init__.py`
+- `_template_worker.py`
 - `act_research_oracles.py`
 - `coverage.py`
 - `doc_examples.py`
 - `documentation_contracts.py`
 - `execution.py`
+- `manuscript_rendering.py`
 - `process.py`
 - `profiling.py`
 - `research_evidence.py`
@@ -35,13 +37,13 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `doc_examples.py:example_code` (function)
 - `doc_examples.py:verify_page` (function)
 - `doc_examples.py:main` (function)
+- `documentation_contracts.py:skill_python_syntax_errors` (function)
+- `documentation_contracts.py:documentation_snippet_errors` (function)
 - `documentation_contracts.py:module_catalog_census_errors` (function)
 - `execution.py:CommandResult` (class)
 - `execution.py:Module` (class)
 - `execution.py:SuiteReport` (class)
 - `execution.py:discover_geo_infer_modules` (function)
-- `execution.py:discover_workspace_test_targets` (function)
-- `execution.py:profile_selection_args` (function)
 
 ## Module Metadata
 

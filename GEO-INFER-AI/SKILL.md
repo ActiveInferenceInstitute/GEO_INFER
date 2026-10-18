@@ -45,6 +45,7 @@ from geo_infer_ai import (
     MLflowPipeline,
     EnvironmentalActiveInferenceEngine,
     MultiScaleHierarchicalAnalyzer,
+)
 ```
 
 ## Examples

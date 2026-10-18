@@ -59,14 +59,12 @@ the artifact's contents.
 - Never delete an executed-command record a build did not re-measure; carry it
   forward with its own commit and source hash and publish the gap instead.
   A build that does re-measure is widened to cover every group the stored
-  record holds, so replacing the record can never be a way of narrowing it:
-  `--verify` at the default tier over a full-validation record used to drop
-  the two failed suites it never re-ran and republish the result as passing.
+  record holds, so replacing the record cannot narrow the measured command
+  population or omit a previously recorded failure without re-measuring it.
 - Publish every verification count against the tier the record was measured
   at, and check that the counts sum to it. The tier is a property of the
-  record, not of the build republishing it; counting a numerator over the
-  record and a denominator over the build's own request is what shipped
-  "9 of 7" in this manuscript's own abstract.
+  record, not of the build republishing it. Both the numerator and denominator
+  must refer to that same command population.
 
 ## Generator-Owned Tracked Source
 

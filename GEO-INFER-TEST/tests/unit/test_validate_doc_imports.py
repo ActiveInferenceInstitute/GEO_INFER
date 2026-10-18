@@ -87,3 +87,24 @@ def test_single_line_parenthesized_imports_are_extracted(tmp_path):
     doc.write_text("python from geo_infer_demo import (Ghost, SpatialIndex) x = 1\n")
     errors, _, _ = validator.validate(repo)
     assert any("paren.md" in e and "Ghost" in e for e in errors)
+
+
+def test_import_validator_rejects_fences_and_nonexistent_root(
+    tmp_path, monkeypatch, capsys
+):
+    validator = load_validator()
+    docs = tmp_path / "GEO-INFER-DEMO" / "docs"
+    docs.mkdir(parents=True)
+    (docs / "guide.md").write_text(
+        "`python\nfrom geo_infer.spatial import Missing\n`\n"
+    )
+    errors, diagnostics, count = validator.validate(tmp_path)
+    assert count == 1
+    assert len(errors) == 3
+    assert diagnostics == []
+    monkeypatch.setattr(validator, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(sys, "argv", [str(VALIDATOR_PATH), "--strict"])
+    assert validator.main() == 1
+    output = capsys.readouterr().err
+    assert "guide.md:1: malformed single-backtick" in output
+    assert "guide.md:2: nonexistent umbrella package geo_infer" in output

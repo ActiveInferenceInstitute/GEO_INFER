@@ -6,6 +6,9 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
+from geo_infer_test.documentation_contracts import skill_python_syntax_errors
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SKILLS_PATH = REPO_ROOT / "GEO-INFER-TEST" / "validate_skills.py"
@@ -136,3 +139,95 @@ def test_cross_reference_warnings_stay_advisory_without_flag(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["validate_skills.py", "--check-xrefs"])
 
     assert skills.main() == 0
+
+
+@pytest.mark.parametrize(
+    "opening, closing",
+    [
+        ("```python", "```"),
+        ("~~~py", "~~~"),
+        ("````python3", "````"),
+        ("```{.python}", "```"),
+        ('~~~{#example .python title="Skill example"}', "~~~"),
+    ],
+)
+def test_explicit_python_skill_fences_reject_actual_missing_parenthesis(
+    opening, closing
+):
+    errors = skill_python_syntax_errors(
+        f"# Skill\n{opening}\nmodel = Model(\n{closing}\n", "SKILL.md"
+    )
+    assert len(errors) == 1
+    assert "SKILL.md:3: invalid Python example" in errors[0]
+
+
+def test_skill_syntax_check_never_executes_and_blocks_parse_independently():
+    assert (
+        skill_python_syntax_errors(
+            "```python\nraise AssertionError('must never execute')\n```\n", "[TEST]"
+        )
+        == []
+    )
+    errors = skill_python_syntax_errors(
+        "```python\nvalue = (\n```\n```python\n1)\n```\n", "[TEST]"
+    )
+    assert len(errors) == 2
+    assert "[TEST]:2:" in errors[0]
+    assert "[TEST]:5:" in errors[1]
+
+
+def test_skill_only_explicit_python_is_parsed_with_real_markdown_indentation():
+    content = (
+        "````markdown\n```python\ninvalid = (\n```\n````\n"
+        "~~~text\ninvalid = (\n~~~\n"
+        "```\npartial_signature(\n```\n"
+        "  ~~~python\n  def complete():\n      return 1\n  ~~~\n"
+    )
+    assert skill_python_syntax_errors(content, "[TEST]", require_example=True) == []
+
+
+def test_skill_python_fence_must_close_and_required_example_is_explicit():
+    assert skill_python_syntax_errors("```python\nx = 1\n", "[TEST]") == [
+        "[TEST]:1: unclosed Python code fence"
+    ]
+    assert skill_python_syntax_errors(
+        "```text\npython\n```", "[TEST]", require_example=True
+    ) == ["[TEST] No Python code examples found"]
+
+
+def test_module_and_root_skill_validators_reject_syntax_from_real_files(
+    tmp_path, monkeypatch
+):
+    skills = load_skills_module()
+    sections = "\n".join(
+        ["## Instructions", "## Examples", "### Integrations", "## Guidelines"]
+    )
+    body = sections + "\n```python\nmodel = Model(\n```\n" + "\n" * 30
+    module = tmp_path / "GEO-INFER-DEMO" / "SKILL.md"
+    module.parent.mkdir()
+    module.write_text(
+        "---\nname: geo-infer-demo\ndescription: Validated instructions\n---\n" + body
+    )
+    errors = skills.validate_skill_file(module, "geo-infer-demo")
+    assert len(errors) == 1
+    assert "[geo-infer-demo]" in errors[0] and "invalid Python example" in errors[0]
+    (tmp_path / "SKILL.md").write_text(
+        "---\nname: geo-infer\ndescription: Instructions\n---\n" + body
+    )
+    monkeypatch.setattr(skills, "REPO_ROOT", tmp_path)
+    assert any(
+        "[ROOT]" in error and "invalid Python example" in error
+        for error in skills.validate_root_skill()
+    )
+
+
+def test_pandoc_python_example_satisfies_module_example_requirement(tmp_path):
+    skills = load_skills_module()
+    content = (
+        "---\nname: geo-infer-demo\ndescription: Operational example\n---\n"
+        "## Instructions\n## Examples\n### Integrations\n## Guidelines\n"
+        "```{#example .python}\nassert 1 + 1 == 2\n```\n" + "\n" * 30
+    )
+    path = tmp_path / "SKILL.md"
+    path.write_text(content)
+    assert skills.validate_skill_file(path, "geo-infer-demo") == []

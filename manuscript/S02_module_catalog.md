@@ -20,8 +20,9 @@ this generated index rather than being copied into each authored entry.
 These counts describe inventory, while command receipts record collection,
 execution and results. Neither inventory size nor a module's theme establishes
 method correctness, security, field calibration or operational effectiveness.
-For the tracked checkout's current inventory and verification commands, use
-the [root README Module Index](../README.md#module-index).
+For current repository navigation and verification commands, use the
+[public root README Module Index](https://github.com/ActiveInferenceInstitute/GEO_INFER/blob/main/README.md#module-index).
+The source-stamped tables in this manuscript describe its measured checkout.
 
 {{GEO_MODULE_TABLE}}
 
@@ -29,9 +30,10 @@ the [root README Module Index](../README.md#module-index).
 measured module with its declared theme, purpose, and measured source and
 test surfaces. The rows are alphabetical and self-contained, so a row can be
 read on its own or as the index into the prose entries below. The purpose
-column quotes the module's own README; the LOC and Tests columns are the
-same measurements the inventory figure and the module inventory table
-publish.
+column quotes the module's own README. LOC counts non-empty Python source
+lines under `src/`, whereas the inventory figure and module inventory table
+count source files. Tests counts Python test files, using the same definition
+as those other inventory displays.
 {#tbl:module_catalog_index}
 
 Read the catalog alongside the theme map rather than instead of it: theme

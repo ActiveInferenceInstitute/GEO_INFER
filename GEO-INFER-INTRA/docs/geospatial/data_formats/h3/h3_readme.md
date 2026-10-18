@@ -33,26 +33,25 @@ H3 is built on several key technical principles:
 
 ## Key Benefits of H3
 
-### Uniform Cell Size
-Unlike latitude/longitude grid systems that have varying cell sizes by latitude, H3 provides relatively uniform area across the globe, which simplifies:
+### Cell size and aggregation
 
-- Area-based statistics - Density calculations - Spatial aggregation
+H3 supports global cell keys at a selected resolution, but cell areas vary and
+pentagons differ from hexagons. Use actual cell area for density calculations;
+see the [official statistics](https://h3geo.org/docs/core-library/restable/).
 
-### Hierarchical Analysis
-The multi-resolution system enables:
+### Hierarchy and neighborhoods
 
-- Drill-down analytics - Efficient data storage - Resolution-appropriate visualization - Multi-scale modeling
+Use logical parent/child membership for roll-up, with explicit resolution and
+allocation bounds. Geographic child boundaries need not be fully contained by
+the parent polygon. Grid adjacency is not a distance in metres or a road-network
+connection; pentagons require explicit handling.
 
-### Neighbor Traversal
-The hexagonal grid facilitates:
+### Indexing and exact predicates
 
-- Uniform adjacency (each hexagon has exactly 6 neighbors)
-- Simplified pathfinding - Network analysis - Spatial clustering
-
-### Indexing Performance
-As an indexing system, H3 delivers:
-
-- Fast point-in-polygon operations - Efficient spatial joins - Compact representation of spatial data - Optimized storage and retrieval
+Cell keys can support joins and candidate selection. Exact polygon containment,
+metric proximity, and movement questions still need their declared geometry or
+distance predicates. Performance depends on the workload and implementation;
+no universal speedup is established by choosing H3.
 
 ## Getting Started
 For developers to H3, we recommend:

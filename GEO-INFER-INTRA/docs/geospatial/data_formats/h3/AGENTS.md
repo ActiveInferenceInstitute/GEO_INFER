@@ -22,7 +22,6 @@
 ## Local Contents
 
 - `ecosystem.md`
-- `h3_README.md`
 - `h3_api_reference.md`
 - `h3_architecture.md`
 - `h3_code_examples.md`

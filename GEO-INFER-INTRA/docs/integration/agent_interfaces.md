@@ -202,7 +202,7 @@ the next operation preserves the original map and any scientific values inside
 it; `get.path` can select a reserved key. Explicit `$literal` inputs still decode
 as exact user data. Python `with AgentSession()` and `async with` preserve native
 context exception suppression during cleanup.
-other optional backend dependencies belong to their owning modules. Convert a
+Other optional backend dependencies belong to their owning modules. Convert a
 handle through its real public methods, such as `to_dict`, `tolist` or `item`,
 when JSON output is needed. Enum constructors accept their native values;
 `get` can retain an enum member with `save_as` before passing its `$ref`.

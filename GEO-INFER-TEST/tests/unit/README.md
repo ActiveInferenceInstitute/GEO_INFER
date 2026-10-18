@@ -19,6 +19,8 @@ Unit workspace within `GEO-INFER-TEST`.
 - `test_execution_contracts.py`
 - `test_gnn_interchange_receipts.py`
 - `test_log_integration.py`
+- `test_manuscript_rendering.py`
+- `test_manuscript_rendering_failures.py`
 - `test_manuscript_research.py`
 - `test_measure_module_coverage.py`
 - `test_module_health.py`

@@ -1,6 +1,6 @@
 ---
 name: geo-infer-test
-description: Unified tests, async benchmarks and load measurement, and source-bound backend profiling for GEO-INFER. Use when running cross-module test categories, discovering tests, measuring awaited workloads, profiling Python backends, or analyzing immutable test results.
+description: Unified tests, async benchmarks, source-bound profiling and optional template PDF rendering for GEO-INFER. Use when running cross-module categories, discovering tests, measuring awaited workloads, reviewing profiling receipts or rendering a prepared manuscript with docxology/template.
 prerequisites:
   required: []
   recommended: []
@@ -59,7 +59,6 @@ coords = make_test_coordinates(200)
 ```python
 # Property-based test example with Hypothesis
 from hypothesis import given, strategies as st
-import numpy as np
 
 @given(
     lat=st.floats(min_value=-90, max_value=90),
@@ -67,11 +66,11 @@ import numpy as np
     resolution=st.integers(min_value=0, max_value=15)
 )
 def test_h3_roundtrip(lat, lng, resolution):
-    """H3 cell encoding/decoding preserves approximate coordinates."""
+    """The cell center re-encodes to the same cell at the same resolution."""
     import h3
     cell = h3.latlng_to_cell(lat, lng, resolution)
     rlat, rlng = h3.cell_to_latlng(cell)
-    assert abs(rlat - lat) < 1.0  # Within ~1 degree
+    assert h3.latlng_to_cell(rlat, rlng, resolution) == cell
 ```
 
 ```bash
@@ -93,7 +92,8 @@ The adapter retains this module's dependencies and authorization requirements.
 
 - Use real objects in tests
 - Property-based tests (Hypothesis) in ≥10 modules
-- Results saved to `.geo-infer-test-results/{MODULE}_results.xml`
+- Retain the runner's immutable attempt receipts, selection and JUnit files
+  under `.geo-infer-test-results/runs/`; discovery does not prove execution.
 
 ### Integrations
 
@@ -133,3 +133,15 @@ creation. Async methods do not offload blocking synchronous functions.
 actual file totals, ROOT categories, extra roots and cross-module imports.
 Discovery metadata alone does not prove tests executed; retain runner receipts
 and JUnit results for qualification.
+
+### Render with docxology/template
+
+After a clean publication build, use the explicit optional template lane in
+`scripts/render_manuscript_pdf.py --template-root PATH --template-python PYTHON
+--template-revision FULL_COMMIT`. The separate interpreter must already have
+template's dependencies. The template checkout must be clean. Script, CLI and
+MCP target `geo_infer_test.manuscript_rendering:render_template_pdf` consumes
+the prepared combined Markdown and records template source hashes, runtime,
+inputs, owned-process evidence and the final PDF hash. This runs trusted local
+code and does not install dependencies or replace publication verification.
+See [template rendering and cover checks](../GEO-INFER-INTRA/docs/integration/manuscript_rendering.md).

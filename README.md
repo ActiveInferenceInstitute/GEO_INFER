@@ -162,7 +162,7 @@ the exact reproducible exception list.
 | [GEO-INFER-SIM](GEO-INFER-SIM/) | `geo_infer_sim` | 11 | 9 |
 | [GEO-INFER-SPACE](GEO-INFER-SPACE/) | `geo_infer_space` | 85 | 52 |
 | [GEO-INFER-SPM](GEO-INFER-SPM/) | `geo_infer_spm` | 27 | 23 |
-| [GEO-INFER-TEST](GEO-INFER-TEST/) | `geo_infer_test` | 23 | 55 |
+| [GEO-INFER-TEST](GEO-INFER-TEST/) | `geo_infer_test` | 25 | 57 |
 | [GEO-INFER-TIME](GEO-INFER-TIME/) | `geo_infer_time` | 20 | 23 |
 | [GEO-INFER-TRANSPORT](GEO-INFER-TRANSPORT/) | `geo_infer_transport` | 7 | 10 |
 | [GEO-INFER-WATER](GEO-INFER-WATER/) | `geo_infer_water` | 9 | 9 |
@@ -172,8 +172,8 @@ the exact reproducible exception list.
 | Metric | Value |
 | --- | ---: |
 | Modules | 45 |
-| Python source files | 1033 |
-| Python test files | 820 |
+| Python source files | 1035 |
+| Python test files | 822 |
 | Repository README.md files | 812 |
 | Repository AGENTS.md files | 808 |
 
@@ -209,6 +209,7 @@ them with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.
 - Manuscript variables, figures, captions, and resolved copies: `uv run python manuscript/generate_research_artifacts.py`
 - After source commits, refresh metadata with `uv run python manuscript/generate_research_artifacts.py --refresh-config`, then commit only `manuscript/config.yaml` separately before generating evidence.
 - Verify delivered PNG/SVG/JSON/CSV and resolved manuscript bytes with `uv run python manuscript/generate_research_artifacts.py --check`.
+- For an actual docxology/template PDF with the graphical-abstract cover, use the explicit optional [template rendering lane](GEO-INFER-INTRA/docs/integration/manuscript_rendering.md); retain its template commit, interpreter and render receipt separately from publication verification.
 
 ## Repo-wide Change Workflow
 

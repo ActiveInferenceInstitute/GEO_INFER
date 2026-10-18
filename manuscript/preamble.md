@@ -16,6 +16,13 @@ needs additional math, table, or figure support.
 \usepackage{hyperref}
 \usepackage[capitalise,noabbrev]{cleveref}
 \usepackage{natbib}
+% Shared line-breaking policy for both the local and template-backed renderers.
+\tolerance=4000
+\setlength{\emergencystretch}{8em}
+% Four-digit subsection numbers need more than article's default 2.3em TOC box.
+\makeatletter
+\renewcommand*\l@subsection{\@dottedtocline{2}{1.5em}{2.8em}}
+\makeatother
 ```
 
 ## Float placement

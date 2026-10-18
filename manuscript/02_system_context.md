@@ -37,9 +37,9 @@ installable package directory it ships under `src/`, and its counted Python
 source and test files; the counts are measured by the same inventory pass that
 produces every other quantity in this manuscript, and the build refuses to
 render if any measured module is unthemed, absent, or declared twice. Read the
-table as a map of where implementation and verification surface live — the
-largest module is `GEO-INFER-SPACE`, and several modules carry more test files
-than source files — not as a statement about correctness or maturity.
+table as a map of where implementation and verification surface live. Its
+source-file and test-file counts describe files, rather than lines of code,
+correctness, or maturity.
 {#tbl:module_inventory}
 
 The themes divide the framework by the kind of claim each module is
@@ -62,9 +62,10 @@ documentation in `GEO-INFER-INTRA`, worked integration examples in
 `GEO-INFER-EXAMPLES`, and repository tooling.
 
 Theme membership is a statement about intent, not about size or maturity.
-[@tbl:module_inventory] shows the spread directly: the largest module in the
-checkout is `GEO-INFER-SPACE`, and several modules carry more test files than
-source files.
+[@tbl:module_inventory] reports source-file and test-file counts; the
+supplemental catalog's index reports non-empty source lines. These are
+different measures of implementation surface and need not rank modules in
+the same order.
 
 ## Theme Map
 

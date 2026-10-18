@@ -1,6 +1,12 @@
 # External Systems Integration
 
-This document covers how GEO-INFER connects to external databases, data providers, cloud storage, and third-party services.
+This page presents application-level patterns for external databases, files,
+providers, and services. Its network/file examples require caller-provisioned
+inputs, dependencies, endpoints, credentials, and authorization; they are not
+self-contained offline examples or evidence that those services were qualified.
+Example hosts, database names, paths, and credentials are illustrative.
+Use the owning package's source and tests to establish which adapter is actually
+implemented. Third-party client usage is identified separately below.
 
 ## Overview
 
@@ -8,7 +14,12 @@ GEO-INFER modules consume external data through several patterns: direct databas
 
 ## PostGIS / PostgreSQL
 
-PostGIS is the primary spatial database backend. GEO-INFER-SPACE and GEO-INFER-DATA both support direct PostGIS connections for spatial queries, feature storage, and index-backed lookups.
+PostGIS is an optional application database choice, not a repository-wide
+default service. The following examples use GeoPandas and SQLAlchemy directly
+and require a provisioned PostgreSQL/PostGIS instance and client dependencies.
+SPACE configuration metadata alone does not establish a database connector or a
+completed connection. DATA's PostgreSQL integration has its own dependency and
+connection contract.
 
 ```python
 import geopandas as gpd
@@ -34,7 +45,9 @@ gdf = gpd.read_postgis(query, engine, geom_col="geom", crs="EPSG:4326")
 gdf.to_postgis("analysis_results", engine, if_exists="replace", index=False)
 ```
 
-Connection pooling is handled through SQLAlchemy's `pool_size` and `max_overflow` parameters. For production deployments, use PgBouncer as a connection pooler between the application and PostgreSQL.
+The next third-party example configures SQLAlchemy pool parameters against an
+application-provisioned pooler. This repository does not provision or qualify
+that service. Choose connection limits for the actual server and workload.
 
 ```python
 engine = create_engine(
@@ -87,7 +100,10 @@ gdf = gpd.read_file(
 
 ## REST API Consumption
 
-GEO-INFER connects to external geospatial data providers through their REST APIs. The examples below show the most common integrations.
+These third-party request examples illustrate provider integration patterns.
+Provider APIs, credentials, quotas, dataset identifiers, and availability must
+be checked for the application; these snippets do not establish a maintained
+GEO-INFER client for every named provider.
 
 ### NOAA Weather and Climate Data
 
@@ -182,7 +198,12 @@ def download_copernicus_era5(
 
 ## Apache Kafka for Streaming Data
 
-GEO-INFER-IOT and GEO-INFER-DATA use Kafka for ingesting real-time geospatial data streams (sensor readings, vehicle positions, satellite telemetry).
+DATA's `geo_infer_data.connectors.stream.KafkaConnector` currently raises
+`NotImplementedError` for connect/send/receive because no Kafka client backend
+is implemented or declared. IOT does not ship the Kafka consumer shown below.
+The following is a separate third-party application pattern requiring a Kafka
+client and broker; it is not an executable use of the DATA connector or evidence
+of a running ingestion service.
 
 ```python
 from confluent_kafka import Consumer, Producer
@@ -231,7 +252,10 @@ def produce_analysis_result(
 
 ## Cloud Storage
 
-GEO-INFER-DATA provides a unified interface to cloud object stores. Rasterio and GeoPandas can read directly from cloud paths using GDAL's virtual filesystem drivers.
+Cloud support is adapter-specific. DATA has explicit optional integrations;
+that does not establish a unified implemented backend for every cloud provider.
+The examples below use third-party storage clients or GDAL virtual filesystems
+and require the selected dependencies, drivers, credentials, and service access.
 
 ### Amazon S3
 
@@ -291,9 +315,12 @@ with rasterio.open("/vsiaz/spatial-data/rasters/dem.tif") as src:
     elevation = src.read(1)
 ```
 
-## OGC Standards Compliance
+## OGC Client Patterns
 
-GEO-INFER supports OGC service protocols for interoperability with GIS platforms (QGIS, ArcGIS, GeoServer, MapServer).
+The examples below use OWSLib against caller-provisioned OGC services. They do
+not show a GEO-INFER WMS/WFS/WCS server or establish formal OGC conformance.
+Inspect each service's capabilities, supported version, CRS axis order, layer
+identifiers, and response format before executing a request.
 
 ### WMS (Web Map Service)
 
@@ -356,15 +383,16 @@ with open("elevation_subset.tif", "wb") as f:
 
 ## GeoLibre & optional integrations
 
-GEO-INFER interoperates with the open-source GeoLibre GIS viewer and with a set
-of optional high-performance engines, all kept dependency-free by default.
+GEO-INFER includes a GeoLibre project-file writer and selected optional engine
+adapters. Exporting a file and importing an optional dependency do not establish
+viewer execution, native engine availability, or a performance gain.
 
 ### GeoLibre project emission
 
-GeoLibre is a cloud-native GIS platform (MapLibre + DuckDB-WASM + deck.gl) that
-runs in the browser, on the desktop, and inside Jupyter. GEO-INFER emits
-GeoLibre's documented `.geolibre.json` project format (v0.1.0) so analysis
-results open directly in the viewer — no JavaScript is added to this repo.
+The writer emits schema-versioned `.geolibre.json` project data with format
+version `0.1.0`. It does not launch or vendor a GeoLibre viewer. Retain the
+selected viewer version and actual load/render evidence when qualifying a
+consumer of that format.
 
 ```python
 from geo_infer_space import polygon_to_cells
@@ -383,26 +411,28 @@ project = build_h3_grid_project("H3 grid", {"type": "FeatureCollection", "featur
 write_project(project, "./h3_grid.geolibre.json")
 ```
 
-License note: GEO-INFER is CC BY-NC-SA 4.0; GeoLibre is MIT. MIT code may be
-incorporated into GEO-INFER with attribution, but GEO-INFER source is **not**
-licensable back into a MIT project. The integration is intentionally one-way —
-GEO-INFER produces `.geolibre.json`, GeoLibre presents it.
+The integration emits project data and does not copy viewer JavaScript into
+this repository. The repository license and any separately selected component
+license remain in their respective source distributions.
 
 Runnable example:
 `GEO-INFER-EXAMPLES/examples/getting_started/geolibre_export/scripts/run_example.py`.
 
-### Optional engines (graceful fallbacks)
+### Optional engines and explicit availability
 
 - **DuckDB-Spatial** (`geo_infer_data.utils.duckdb_spatial`): fast
   GeoParquet/FlatGeobuf/Shapefile reads when DuckDB+Spatial is installed;
   otherwise `read_cloud_native_vector` transparently uses GeoPandas/Fiona.
-  Gate: `HAS_DUCKDB`.
+  `HAS_DUCKDB` indicates the Python dependency, not installed native extensions.
+  Use `require_duckdb=True` when fallback is unacceptable and provision the
+  required native extensions explicitly; see the [migration contract](../releases/0.4.0_migration.md#optional-integrations-and-persisted-algorithms).
 - **WhiteboxTools** (`geo_infer_space.core.whitebox_bridge`): terrain/hydrology
   helpers such as `flow_accumulation` for the WATER/FOREST/EMERGENCY modules.
   Gate: `HAS_WHITEBOX`; install `whitebox-workflows` to enable.
-- **LLM proxy** (`geo_infer_agent.core.llm_proxy`): model allowlist, size caps,
-  and per-client rate limiting for server-side LLM serving (OpenAI-compatible),
-  mirroring GeoLibre's `ai-proxy` shape.
+- **LLM policy helper** (`geo_infer_agent.core.llm_proxy`): validates model
+  allowlists, size caps, and per-client rate limits. The helper does not itself
+  start a proxy server, provide credentials, call a model provider, or qualify
+  an OpenAI-compatible endpoint.
 
 ## Authentication Patterns
 

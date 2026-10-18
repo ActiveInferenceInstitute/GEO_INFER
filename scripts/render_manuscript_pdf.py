@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """Render the GEO-INFER manuscript PDF with the repository's own render path.
 
+Select ``--template-root`` to use the actual docxology/template PDFRenderer
+with the configured graphical-abstract cover and a table of contents. Supply
+its interpreter and full commit explicitly when environments differ. The
+default local Pandoc/XeLaTeX lane remains available without template installed.
+The optional lane retains source/runtime/input/output and ownership receipts;
+neither render lane replaces fresh publication verification.
+
 This is the in-repo render stage that ROOT-01 deferred to the receipts
 variant: it hydrates the evidence bundle and resolved manuscript with the
 generator, combines the published sections into
@@ -38,6 +45,7 @@ tree already holds, and never empties one.
 from __future__ import annotations
 
 import json
+import argparse
 import re
 import shutil
 import subprocess
@@ -377,11 +385,51 @@ def _publish(pdf_path: Path) -> Path:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    del argv  # the render takes no options: one deterministic build
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--template-root", type=Path, help="clean local docxology/template checkout"
+    )
+    parser.add_argument(
+        "--template-python",
+        type=Path,
+        help="interpreter with template dependencies installed",
+    )
+    parser.add_argument("--template-revision", help="required full template Git commit")
+    parser.add_argument(
+        "--allow-dirty-template-render",
+        action="store_true",
+        help="explicit development render; receipt retains dirty state",
+    )
+    args = parser.parse_args(argv)
+    if args.template_root is None and (
+        args.template_python
+        or args.template_revision
+        or args.allow_dirty_template_render
+    ):
+        parser.error("template options require --template-root")
     _require_tools()
     _hydrate()
     _check_resolved_manuscript()
     combined = _combine_sections()
+    if args.template_root is not None:
+        from geo_infer_test.manuscript_rendering import render_template_pdf
+
+        try:
+            receipt = render_template_pdf(
+                REPO_ROOT,
+                args.template_root,
+                python_executable=args.template_python,
+                expected_revision=args.template_revision,
+                require_clean=not args.allow_dirty_template_render,
+            )
+        except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+            raise RenderError(str(error)) from error
+        print(
+            json.dumps(
+                {key: receipt[key] for key in ("success", "pdf_sha256", "receipt")}
+            )
+        )
+        return 0
     header = _preamble_header()
     metadata = _metadata_file()
     _run_pandoc(header, metadata)

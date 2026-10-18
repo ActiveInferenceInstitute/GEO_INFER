@@ -228,15 +228,17 @@ LineString, Polygon, or their Multi- variants. Implemented using Shapely in
 Python. See also: *vector*, *point*, *polygon*, *linestring*.
 
 **H3**: A hierarchical hexagonal geospatial indexing system developed by Uber.
-Provides 16 resolutions (0-15) of hexagonal cells covering the globe. GEO-INFER
+Provides 16 resolutions (0-15) of hexagonal and pentagonal cells covering the globe. GEO-INFER
 uses H3 v4 API exclusively. See also: *cell*, *resolution*, *hexagonal grid*.
 
-**hexagonal grid**: A tessellation of the plane using regular hexagons. Preferred
-over square grids because hexagons have uniform adjacency (6 neighbors, all
-equidistant from center) and less sampling bias. See also: *H3*, *tessellation*.
+**hexagonal grid**: A tessellation of the plane using regular hexagons. Such a
+planar grid has six equidistant edge neighbors. H3 is a spherical grid with
+distortion and pentagons, so that exact planar metric property does not apply
+globally. Grid choice alone does not establish lower sampling bias. See also:
+*H3*, *tessellation*.
 
-**intersection**: A spatial operation producing the area shared by two
-geometries. See also: *union*, *difference*, *clip*.
+**intersection**: A spatial operation producing the points shared by two
+geometries; the result may be a point, line, area, or empty geometry. See also: *union*, *difference*, *clip*.
 
 **linestring**: A geometry type representing an ordered sequence of connected
 points forming a line. Used for roads, rivers, trails. See also: *geometry*,

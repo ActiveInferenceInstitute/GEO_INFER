@@ -85,7 +85,7 @@ The adapter retains this module's dependencies and authorization requirements.
 
 ### Integrations
 
-- **SEC** → JWT/API-key authentication middleware
+- **SEC** → Security utilities; authentication middleware requires explicit application integration
 - **DATA** → Spatial query endpoint data sources
 - **SPACE** → H3 and geographic query parameters (algorithms router proxies `geo_infer_space.core.algorithm_registry` when installed; 503 otherwise)
 - **OPS** → API monitoring via `/health`

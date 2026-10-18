@@ -1348,7 +1348,7 @@ def _draw_graphical_abstract(
     if complete:
         stat, stat_color = (
             f"{sum(status == 'passed' for status in statuses.values())} / "
-            f"{len(statuses)} command groups passed",
+            f"{len(statuses)} default-tier groups passed",
             STATUS_COLORS["passed"],
         )
     elif failed:

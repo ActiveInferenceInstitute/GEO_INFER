@@ -40,6 +40,48 @@ def _print_scale(generator: ModuleType, path: Path) -> float:
 
 
 class TestFigureLegibility:
+    @pytest.mark.parametrize("full_validation", [False, True])
+    def test_standalone_cover_names_its_default_tier(
+        self, generator: ModuleType, repo_inventory, full_validation: bool
+    ) -> None:
+        """A seven-check cover label must stay explicit beside a full record."""
+        commands = (
+            *generator.VERIFICATION_COMMANDS,
+            *(generator.FULL_VALIDATION_COMMANDS if full_validation else ()),
+        )
+        record = generator.VerificationRecord(
+            results=tuple(
+                generator.VerificationResult(
+                    name, command, "passed", 0, 1.0, "unit fixture"
+                )
+                for name, command in commands
+            ),
+            source_commit="unit-fixture",
+            source_hash="unit-fixture",
+            full_validation_requested=full_validation,
+        )
+        _matplotlib, plt = generator._import_matplotlib()
+        fig = generator._draw_graphical_abstract(plt, repo_inventory, record)
+        try:
+            fig.canvas.draw()
+            count = len(generator.VERIFICATION_COMMANDS)
+            labels = [
+                text
+                for text in fig.axes[0].texts
+                if text.get_text() == f"{count} / {count} default-tier groups passed"
+            ]
+            assert len(labels) == 1
+            from matplotlib.patches import FancyBboxPatch
+
+            panels = [
+                patch
+                for patch in fig.axes[0].patches
+                if isinstance(patch, FancyBboxPatch)
+            ]
+            assert labels[0].get_window_extent().x1 < panels[3].get_window_extent().x1
+        finally:
+            plt.close(fig)
+
     def test_abstract_panel_borders_are_inside_the_export_viewport(
         self, generator: ModuleType, repo_inventory
     ) -> None:

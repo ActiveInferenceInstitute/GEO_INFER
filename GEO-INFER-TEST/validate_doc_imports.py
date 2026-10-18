@@ -24,6 +24,8 @@ import re
 import sys
 from pathlib import Path
 
+from geo_infer_test.documentation_contracts import documentation_snippet_errors
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 DOC_GLOB = "GEO-INFER-*/docs"
@@ -166,7 +168,6 @@ def extract_imports(path: Path) -> list[tuple[int, str, list[str]]]:
 
 def validate(repo_root: Path) -> tuple[list[str], list[str], int]:
     """Return (errors, diagnostics, pages_checked)."""
-    errors: list[str] = []
     diagnostics: list[str] = []
     mapping = package_dirs(repo_root)
     text_cache: dict[Path, str] = {}
@@ -174,6 +175,7 @@ def validate(repo_root: Path) -> tuple[list[str], list[str], int]:
     pages = sorted(
         page for doc_root in repo_root.glob(DOC_GLOB) for page in doc_root.rglob("*.md")
     )
+    errors = documentation_snippet_errors(repo_root, pages)
     for page in pages:
         rel = str(page.relative_to(repo_root))
         text = page.read_text(encoding="utf-8", errors="replace")

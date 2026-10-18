@@ -22,6 +22,8 @@ import re
 import sys
 from pathlib import Path
 
+from geo_infer_test.documentation_contracts import skill_python_syntax_errors
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(levelname)s  %(message)s",
@@ -144,9 +146,9 @@ def validate_skill_file(
         if subsection not in content:
             errors.append(f"{label} Missing subsection: {subsection}")
 
-    # Python code examples check
-    if "```python" not in content:
-        errors.append(f"{label} No Python code examples found")
+    # Operational skill examples are complete Python, unlike authored API
+    # signature fragments; validate each explicit block independently.
+    errors.extend(skill_python_syntax_errors(content, label, require_example=True))
 
     errors.extend(validate_skill_claim_language(content, label))
 
@@ -181,6 +183,7 @@ def validate_root_skill(verbose: bool = False) -> list[str]:
         if section not in content:
             errors.append(f"{label} Missing section: {section}")
 
+    errors.extend(skill_python_syntax_errors(content, label))
     errors.extend(validate_skill_claim_language(content, label))
 
     if verbose and not errors:

@@ -1,5 +1,21 @@
 # GEO-INFER Changelog
 
+## Documentation accuracy and template publication (2026-10-18)
+
+- Correct legacy guides that advertised nonexistent umbrella imports, commands,
+  ontology runtime APIs, Kafka integration and authentication middleware. Keep
+  conceptual designs and external application patterns explicitly labelled.
+- Validate malformed code fences and nonexistent imports across module docs;
+  check explicit skill Python syntax. Preserve executable example assertions.
+  Canonicalize the duplicate H3 README case alias for portable checkouts.
+- Add optional source-bound docxology/template PDF rendering in a separate
+  interpreter, with exact template revision, input/runtime/owned-process
+  receipts and the generated graphical abstract on the cover. Share the
+  manuscript's line-breaking settings across rendering lanes.
+- Correct manuscript metric, fingerprint and interruption descriptions and
+  verify bibliography metadata against primary sources. Historical acceptance
+  measurements remain labelled with their original source checkpoint.
+
 ## Native swarm memory measurement (2026-10-16)
 
 - Keep ANT's fresh-process RSS benchmark independent of inherited coverage

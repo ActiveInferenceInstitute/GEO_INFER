@@ -1,88 +1,106 @@
 # GEO-INFER-INSURANCE: Insurance Operations
 
-> **Explanation**: Understanding Insurance Operations in GEO-INFER
->
-> This module provides underwriting, policy, claims, and pricing operations for geospatial insurance workflows, including risk-scored underwriting decisions, premium calculation, claims processing, and portfolio management.
+GEO-INFER-INSURANCE provides Python components for underwriting cases, risk
+assessment, premium calculations, policies, claims, and portfolio operations.
+It is an independently packaged workspace module. Its outputs reflect the
+configured software rules and available inputs; this page does not establish
+actuarial calibration, current regulatory compliance, or production acceptance.
 
-## 🎯 What is GEO-INFER-INSURANCE?
-Note: Code examples are illustrative; see `GEO-INFER-INSURANCE` package sources and tests for runnable usage.
+## Find the implemented interface
 
-### Links
-- Module README: [Module README](../../../GEO-INFER-INSURANCE/README.md) GEO-INFER-INSURANCE is the insurance operations layer of GEO-INFER. It packages the underwriting subsystem (previously shipped inside GEO-INFER-RISK) as an independently installable workspace module. It enables:
+- [Module README](../../../GEO-INFER-INSURANCE/README.md) gives installation and
+  validation commands.
+- [Package exports](../../../GEO-INFER-INSURANCE/src/geo_infer_insurance/__init__.py)
+  define the top-level names.
+- [Underwriting implementation](../../../GEO-INFER-INSURANCE/src/geo_infer_insurance/underwriting/core/underwriting_engine.py)
+  defines the orchestrator and its configuration.
+- [Integration tests](../../../GEO-INFER-INSURANCE/tests/integration/test_integration.py)
+  exercise the actual local lifecycle.
 
-- **Underwriting**: Score applications and produce approve/refer/decline decisions - **Pricing**: Calculate premiums from coverage limits and assessed risk - **Claims**: Intake, validate, and process claims with reserves and payments - **Policy Management**: Policy lifecycle, coverage, and endorsements - **Portfolio**: Aggregate policies and claims, optimize capacity - **Compliance**: Check operations against declared regulatory frameworks
+```bash
+uv run --frozen geo-infer catalog INSURANCE --query UnderwritingEngine --limit 20
+uv run --frozen geo-infer describe geo_infer_insurance:UnderwritingEngine
+uv run --frozen geo-infer describe geo_infer_insurance:process_claim
+```
 
-### Key Concepts
+Runtime discovery requires the package's actual dependencies. Agent access uses
+the shared [script, CLI, and MCP contract](../integration/agent_interfaces.md),
+including native object handles and explicit resource cleanup.
 
-#### Underwriting Decisions
-The module turns an application into a scored underwriting case:
+## Main public components
 
-```
-python from geo_infer_insurance import create_underwriting_system, underwrite_insurance_policy # Create the underwriting system underwriting_system = create_underwriting_system() # Underwrite a policy application decision = underwrite_insurance_policy(application_data=insurance_application)
-```
- #### Claims Processing Process a claim through intake, validation, and settlement:
-```
-python from geo_infer_insurance import process_insurance_claim # Process a claim claim_result = process_insurance_claim(claim_data=claim)
-```
- ## 📚 Core Features ### 1. Underwriting Engine **Purpose**: Orchestrate underwriting cases end to end.
-```python from geo_infer_insurance import UnderwritingEngine, UnderwritingConfig, create_underwriting_engine # Initialize the engine engine = create_underwriting_engine() # or with explicit configuration engine = UnderwritingEngine(UnderwritingConfig()) # Underwrite an application case = engine.underwrite_policy(application_data) # case.status -> 'approved' | 'declined'; case.decision carries reason, # confidence, risk_score, conditions, and requirements
-```
- ### 2. Risk Assessment Engine **Purpose**: Score insured entities; uses `geo_infer_risk.core.risk_engine.EnhancedRiskEngine` when the optional geo-infer-risk package is installed (guarded import, degrades gracefully).
-```python from geo_infer_insurance import assess_risk, RiskAssessmentEngine # Convenience scoring risk = assess_risk({"entity_type": "property", "value": 500_000}) # risk is a dict: risk_score, risk_level, assessment_method, confidence, # detailed_results, factors, location_analysis, uncertainty_analysis
-```
- ### 3. Pricing Engine **Purpose**: Premium calculation from coverage and risk inputs.
-```python from geo_infer_insurance import PricingEngine, calculate_premium pricing = PricingEngine() # PremiumCalculator and PricingMethod are available on the pricing module # calculate_premium(application_data, risk_assessment, rule_evaluation) -> PremiumCalculation premium = calculate_premium(application_data, risk_assessment, rule_evaluation)
-```
- ### 4. Policy and Claims Management **Purpose**: Policy lifecycle and claims processing.
-```python from geo_infer_insurance import PolicyManager, ClaimsProcessor, Policy, Claim policy_manager = PolicyManager() claims = ClaimsProcessor() # Required application fields: 'property', 'applicant', 'coverage_requests' # Required claim fields: 'policy_id', 'date_of_loss', 'claimed_amount', 'description'
-```
- ### 5. Portfolio and Compliance **Purpose**: Portfolio aggregation and regulatory checks.
-```python from geo_infer_insurance import PortfolioManager from geo_infer_insurance.underwriting.utils.compliance import ComplianceEngine portfolio = PortfolioManager() compliance = ComplianceEngine()
-```
- ## 🔧 API Reference ### Top-level exports (`geo_infer_insurance`) All names below are importable from the package root.
+| Surface | Implemented role |
+| --- | --- |
+| `UnderwritingEngine`, `UnderwritingConfig` | Coordinate validation, risk, rules, premium, and decision processing |
+| `RiskAssessmentEngine`, `assess_risk` | Return an assessment with its selected method and diagnostic fields |
+| `PricingEngine`, `calculate_premium` | Calculate a premium from policy, assessment, and rule inputs |
+| `PolicyManager`, `Policy` | Manage the module's policy objects and lifecycle |
+| `ClaimsProcessor`, `Claim`, `process_claim` | Validate and process claims using selected processing configuration |
+| `PortfolioManager` | Aggregate the policies and claims supplied to its own state |
+| `UnderwritingRulesEngine`, `UnderwritingDecisionEngine` | Apply configured rule and decision logic |
+| `UnderwritingCase`, `Decision` | Carry case state, rationale, and results |
 
-```
-python from geo_infer_insurance import ( UnderwritingEngine, UnderwritingConfig, RiskAssessmentEngine, PolicyManager, ClaimsProcessor, PortfolioManager, UnderwritingRulesEngine, PricingEngine, UnderwritingDecisionEngine, Policy, Claim, UnderwritingCase, Decision, create_underwriting_engine, underwrite_policy, process_claim, assess_risk, calculate_premium, # aliases create_underwriting_system, underwrite_insurance_policy, process_insurance_claim, )
-```
- ### UnderwritingEngine The core orchestrator class.
+`create_underwriting_system`, `underwrite_insurance_policy`, and
+`process_insurance_claim` are compatibility wrappers around the corresponding
+underwriting factory and convenience functions. Configuration shapes differ:
+`underwrite_policy` takes an `UnderwritingConfig`, while `process_claim` accepts
+a mapping onto `ClaimsProcessingConfig` fields. Use the actual signature rather
+than sharing an unvalidated configuration dictionary between them.
 
-```
-python class UnderwritingEngine: def __init__(self, config): """Initialize with an UnderwritingConfig.""" def underwrite_policy(self, application_data): """Run the full underwriting flow; returns an UnderwritingCase with .status, .premium, and a .decision (approved, reason, confidence, risk_score, conditions)."""
-```
- ### UnderwritingCase Dataclass produced by underwriting.
+## Executable validation example
 
-```
-python class UnderwritingCase: case_id: str application_data: dict status: str # 'approved' | 'declined' risk_assessment premium: float decision: Decision # approved, reason, confidence, risk_score, conditions, requirements
-```
- ### Convenience functions
+This example deliberately submits an empty application and checks the software's
+rejection path. It uses no real applicant, policy, payment, or underwriting
+recommendation:
 
-```
-python underwrite_policy(application_data, config=None) -> UnderwritingCase process_claim(claim_data, config=None) -> Claim assess_risk(entity_data, assessment_type="comprehensive") -> dict calculate_premium(application_data, risk_assessment, rule_evaluation) -> PremiumCalculation
-```
- ## 🎯 Use Cases ### 1. Property Underwriting **Problem**: Decide whether to underwrite a property insurance application. **Solution**: Use the end-to-end underwriting flow.
-```python from geo_infer_insurance import underwrite_policy application = { "property": { "address": "1420 Cedar Lane, Coastal County", "property_value": 750_000.0, "year_built": 1998, "construction_type": "masonry", "occupancy": "primary_residence", }, "applicant": { "name": "Jordan Rivera", "contact_info": {"email": "jordan.rivera@example.com", "phone": "555-0100"}, "credit_score": 760, }, "coverage_requests": [{"coverage_type": "fire", "limit": 600_000.0}], } case = underwrite_policy(application) print(case.case_id, case.status, case.premium, case.decision.reason)
-```
- ### 2. Claims Intake **Problem**: Validate and process a filed claim. **Solution**: Use the claims processor.
-```python from geo_infer_insurance import process_claim claim = process_claim({ "policy_id": "POL-1001", "date_of_loss": "2026-08-01", "claimed_amount": 12_000.0, "description": "Wind damage to roof", }) print(claim.claim_id, claim.status)
-```
- ### 3. Risk Scoring for Pricing **Problem**: Score an insured entity before rating. **Solution**: Use `assess_risk`; feed its result into `calculate_premium` for pricing.
-```python from geo_infer_insurance import assess_risk risk = assess_risk({"entity_type": "property", "value": 500_000}) print(risk["risk_score"], risk["risk_level"], risk["confidence"])
-```
- ## 🔗 Integration with Other Modules ### GEO-INFER-RISK Integration The risk assessment engine uses `geo_infer_risk.core.risk_engine.EnhancedRiskEngine` for hazard scoring when the optional geo-infer-risk dependency is installed. All cross-module imports are guarded; the module works without them and reports degraded scoring rather than guessing.
+```python
+from geo_infer_insurance import UnderwritingConfig, create_underwriting_engine
 
-### GEO-INFER-SPACE Integration `geo_infer_space` spatial indexing/analytics interfaces support location-aware rating when the optional geo-infer-space dependency is installed.
-
-## 🚨 Troubleshooting ### Common Issues **Application validation failures:** Underwriting requires the fields `property`, `applicant`, and `coverage_requests` (each coverage request needs `coverage_type` and `limit`). Missing fields produce a declined case with `decision.reason = 'Application validation failed'` and the missing fields listed in `decision.conditions`.
-
+engine = create_underwriting_engine(UnderwritingConfig(
+    risk_assessment_method="basic",
+    external_data_sources=[],
+))
+try:
+    case = engine.underwrite_policy({})
+    assert case.status == "declined"
+    assert case.decision is not None
+    assert case.decision.reason == "Application validation failed"
+    assert case.decision.conditions
+finally:
+    engine.shutdown()
 ```
-python # Inspect validation errors before underwriting from geo_infer_insurance.underwriting.utils.validation import validate_underwriting_application result = validate_underwriting_application(application_data) print(result.errors)
+
+The engine owns a thread pool; call `shutdown()` when finished. An agent handle
+release alone does not call that method. Reuse an explicitly owned engine when
+its state and cleanup lifecycle matter.
+
+## Inputs, integrations, and result limits
+
+Application validation requires `property`, `applicant`, and `coverage_requests`;
+individual fields and coverage entries have additional checks in the
+[validator](../../../GEO-INFER-INSURANCE/src/geo_infer_insurance/underwriting/utils/validation.py).
+Claims require their own policy, loss-date, amount, and description fields.
+Validation success alone does not prove that coverage exists or a payment was
+made outside the process.
+
+Optional RISK and SPACE imports and initialization have guarded paths. Inspect
+the assessment method, diagnostics, errors, and actual integration state rather
+than assuming an installed package means an integrated backend succeeded.
+Local fallback scores and reported confidence fields are not independent
+empirical validation. External data sources need explicitly configured,
+authorized, and tested integrations.
+
+A `processing_mode="batch"` configuration value is not a measured throughput
+claim or proof of a public multi-application batch method. Inspect the actual
+API before designing a batch runner. Compliance helpers evaluate their declared
+software requirements; their names do not certify current legal compliance.
+
+## Validate a change
+
+```bash
+uv run --frozen python GEO-INFER-TEST/run_unified_tests.py --module INSURANCE
 ```
- **Claim validation failures:** Claims require `policy_id`, `date_of_loss`, `claimed_amount`, and `description`.
 
-**Optional integrations missing:** If geo-infer-risk or geo-infer-space are not installed, risk scoring degrades gracefully; check `assessment_method` in the risk result to see which path was used.
-
-## 📊 Performance Optimization ### Batch Underwriting The `UnderwritingEngine` initializes with batch mode enabled for processing multiple applications in one pass.
-
-### Efficient Claims Processing Use the `ClaimsEngine` for high-volume claim intake instead of one-off `process_claim` calls.
-
-## 🔗 Related Documentation ### Tutorials - **[Risk Assessment](geo-infer-risk.md)** — the upstream risk engine feeding hazard scores ### How-to Guides - **[Examples Gallery](../../../GEO-INFER-EXAMPLES/docs/index.md)** — runnable examples including the INSURANCE orchestrator ### Technical Reference - **[Module README](../../../GEO-INFER-INSURANCE/README.md)** — install and validation commands - **[Skill Notes](../../../GEO-INFER-INSURANCE/SKILL.md)** — capability map and guidelines
+Run integration tests with the actual optional backend profile required by your
+application. Preserve input provenance, configuration, selected method, numerical
+outputs, and failures when evaluating a model or operational workflow.

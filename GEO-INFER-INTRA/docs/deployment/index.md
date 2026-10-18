@@ -7,11 +7,11 @@ topology.
 
 ## Reproducible environment
 
-`bash
+```bash
 uv sync --all-packages --all-extras --all-groups
 uv run python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
 uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language
-`
+```
 
 Pin the repository state with Git and retain pyproject.toml, uv.lock, and
 .python-version together.
@@ -19,16 +19,20 @@ Pin the repository state with Git and retain pyproject.toml, uv.lock, and
 ## Running a module API
 
 Only deploy a module that exposes the required application surface. For
-GEO-INFER-API, inspect geo_infer_api.main_app and the module's current README
-before choosing an ASGI command:
+GEO-INFER-API, application construction requires a nonempty process-environment
+`SECRET_KEY`. This local example generates an ephemeral value for that command:
 
-`bash
-uv run uvicorn geo_infer_api.app:main_app --host 127.0.0.1 --port 8000
-`
+```bash
+SECRET_KEY="$(uv run --frozen python -c 'import secrets; print(secrets.token_urlsafe(32))')" \
+  uv run --frozen uvicorn geo_infer_api.app:main_app --host 127.0.0.1 --port 8000
+```
 
 This command is a local example, not a claim that a hosted service or public
-endpoint exists. Configure authentication, CORS, secrets, logging, and
-resource limits in the owning module before exposing an API.
+endpoint exists. The current application has no authentication middleware; the
+required secret does not add authentication. Polygon features use a process-local
+in-memory store, so restarts lose data and workers do not share it. Configure and
+qualify authentication, persistence, CORS, secrets, logging, and resource limits
+for the intended deployment. See the [GeoJSON API contract](../../../GEO-INFER-API/docs/geojson_api.md).
 
 ## Batch and scenario jobs
 

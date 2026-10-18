@@ -1,6 +1,6 @@
 # GEO-INFER Open Task & Backlog Ledger
 
-> Last reviewed: 2026-10-16 (documentation navigation; historical evidence retains its original dates)
+> Last reviewed: 2026-10-18 (publication and documentation accuracy; historical evidence retains its original dates)
 > Scope: Multi-package repository (`GEO-INFER`) across workspace packages and 45 domain modules.
 > Centralization Rule: All planned, open, or deferred engineering work across all modules is tracked exclusively in this ledger. Module source code and tests must never carry local task markers (`TODO`, `FIXME`, `XXX`, `HACK`).
 > History note (2026-09-07): the published history was rewritten to re-attribute
@@ -15,7 +15,35 @@
 
 ## Open work and acceptance criteria
 
-### Composable integration campaign — 2026-10-16
+### Current GEO-INFER continuation — 2026-10-18
+
+The latest accepted checkpoint before this continuation is
+`15056e11e319988deb48e89cc91ba394bdcce368`, published through
+[PR #97](https://github.com/ActiveInferenceInstitute/GEO_INFER/pull/97).
+Its 45 PR and 27 post-main check executions passed. Source-bound evidence
+includes 45 installed wheels/imports and 24 operation profiles per scientific
+interpreter, 46 coverage measurements with 45 unchanged historical floors,
+the native eleven-group publication verification, 190 ROOT cases and the
+reviewed 33-page native PDF. These outcomes remain bound to that checkpoint.
+
+Current work corrects inaccurate legacy guides and manuscript claims, adds
+regression checks for fabricated imports and broken code fences, and provides
+an explicit docxology/template render with the generated graphical abstract
+on its cover. Changed sources and new rendering paths require fresh validation;
+the accepted checkpoint's green checks do not qualify this continuation.
+
+Scope is GEO-INFER. Further companion-repository implementation is deferred;
+using docxology/template for rendering does not authorize changes to that repo.
+Issues [#69](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/69),
+[#72](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/72),
+[#73](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/73),
+[#74](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/74) and
+[#78](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/78) remain
+open for physical GPU evidence, historical PROJ cause, configured-advisor
+review, release decisions and historical denied-process classification.
+Passing current tests cannot establish those unmet criteria.
+
+### Historical composable integration campaign — 2026-10-16
 
 Scope: GEO_INFER and integration companions GNN, FEP_Formal, and the
 Cascadia teaching companion when locally available. Preserve existing local
@@ -42,7 +70,7 @@ audit: the previously open rows verified current against the tree, delivered
 claims were spot-checked, and module/package surfaces were swept for untracked
 next steps.
 
-### 0.4.0 continuation — current scope (2026-10-08)
+### Historical 0.4.0 continuation checkpoint (2026-10-08)
 
 See the [issue reconciliation ledger](GEO-INFER-INTRA/docs/releases/issue_reconciliation_2026_10.md)
 for current evidence and explicitly unmet acceptance across all open issues.
@@ -65,7 +93,7 @@ reviews passed. All 22 main CI jobs and four supplementary workflows passed;
 32 raw archives, all 46 coverage dispositions and both interpreters' 45-wheel,
 45-base-import and 20-operation-profile inventories were independently audited. TEST main coverage
 is 2,976/3,383 lines (87.9693%); the unchanged floor is 85%.
-The current four figures and 30-page native manuscript passed independent
+At that checkpoint, the four figures and 30-page native manuscript passed independent
 scientific/readability review. Evidence remains bound to that accepted revision;
 new changes require fresh validation. See [accepted checkpoint evidence](GEO-INFER-INTRA/docs/releases/0.4.0_readiness.md).
 The remaining external issues #69, #72, #73, #74 and #78 retain their unmet acceptance.

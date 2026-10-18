@@ -24,11 +24,13 @@
 - `core/`
 - `models/`
 - `__init__.py`
+- `_template_worker.py`
 - `act_research_oracles.py`
 - `coverage.py`
 - `doc_examples.py`
 - `documentation_contracts.py`
 - `execution.py`
+- `manuscript_rendering.py`
 - `process.py`
 - `profiling.py`
 - `research_evidence.py`
