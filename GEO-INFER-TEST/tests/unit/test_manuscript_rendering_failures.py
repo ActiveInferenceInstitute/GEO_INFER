@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -27,6 +28,8 @@ def commit_fixture(root: Path) -> str:
     git(root, "init")
     git(root, "config", "user.name", "Native failure fixture")
     git(root, "config", "user.email", "fixture@example.invalid")
+    # A developer's global ignore rules must not hide worker cache writes.
+    git(root, "config", "core.excludesFile", os.devnull)
     git(root, "add", ".")
     git(root, "-c", "commit.gpgsign=false", "commit", "-m", "native failure fixture")
     return git(root, "rev-parse", "HEAD")
@@ -95,6 +98,7 @@ def failed_attempt(
         assert receipt["input_sha256"][name] == hashlib.sha256(data).hexdigest()
     assert git(repo, "status", "--porcelain", "--untracked-files=all") == ""
     assert git(template, "status", "--porcelain", "--untracked-files=all") == ""
+    assert not list(template.rglob("*.pyc"))
     return receipt, attempt
 
 

@@ -40,6 +40,10 @@ selected template interpreter. The default command without template options
 uses the existing local Pandoc/XeLaTeX lane; that fallback does not consume
 the template title-page cover slot or add a table of contents.
 
+The template worker uses isolated Python with bytecode writing disabled
+(`-I -B`), so importing template modules creates no Python cache files in
+the supplied checkout. Its installed dependencies must already be available.
+
 The template lane requires a clean GEO-INFER tree by default. For an explicit
 development render, `--allow-dirty-template-render` retains the dirty state in
 its receipt. A development render cannot establish clean-source publication

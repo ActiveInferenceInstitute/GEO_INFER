@@ -160,6 +160,7 @@ def render_template_pdf(
     command = [
         str(python_executable or sys.executable),
         "-I",
+        "-B",
         str(worker),
         str(template),
         str(repo),

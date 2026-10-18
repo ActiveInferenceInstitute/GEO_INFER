@@ -12,6 +12,8 @@
   interpreter, with exact template revision, input/runtime/owned-process
   receipts and the generated graphical abstract on the cover. Share the
   manuscript's line-breaking settings across rendering lanes.
+- Disable bytecode writes in the isolated template worker; verify clean
+  failure paths independently of a developer's global Git ignore settings.
 - Correct manuscript metric, fingerprint and interruption descriptions and
   verify bibliography metadata against primary sources. Historical acceptance
   measurements remain labelled with their original source checkpoint.
