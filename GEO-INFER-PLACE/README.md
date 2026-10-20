@@ -57,6 +57,9 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module PLACE
 - `locations.california` implements bounded primary-source capture, a clipped
   H3 carrier, empirical priors, approximate spatial inference and actual GNN
   local policy evaluation. Sensor readings are explicitly simulated.
+- The create-only `--workflow` command retains inputs and runs preparation,
+  monitoring and reporting. `--check-workflow` and `--check-report` verify
+  retained bytes; comparison CSV tables recompute scores and selected-area coverage.
 - [California methods](../GEO-INFER-INTRA/docs/examples/california_statewide_monitoring.md)
   documents measurement windows, configuration, budget objectives and limits.
 - Package imports are lazy; loading PLACE does not initialize forecasting or

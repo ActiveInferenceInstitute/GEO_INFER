@@ -347,6 +347,97 @@ def test_report_reads_real_trace_and_conserves_spatial_aggregations(
     assert not tmp_path.joinpath("unbound-report").exists()
 
 
+def test_report_rejects_changed_experiment_before_creating_output(tmp_path: Path) -> None:
+    """Reject a valid-shaped edited score before creating any report artifacts."""
+    from geo_infer_place.locations.california.report import build_report
+
+    landscape = tmp_path / "landscape.json"
+    write_record(landscape, numerical_landscape())
+    experiment = run_experiment(landscape, MODELS, tmp_path / "experiment")
+    changed = json.loads(experiment.read_bytes())
+    changed["scenarios"][0]["frames"][0]["fields"][0]["scores"]["brier"] = 0.99
+    experiment.write_text(json.dumps(changed), encoding="utf-8")
+    output = tmp_path / "report"
+    with pytest.raises(CaliforniaError, match="sealed bytes"):
+        build_report(landscape, experiment, output)
+    assert not output.exists()
+
+
+def test_evaluation_recomputes_scores_and_counts_unique_area() -> None:
+    """Compare losses and cumulative coverage with independently derived numerical values."""
+    from geo_infer_place.locations.california.evaluation import evaluate_experiment
+
+    landscape = numerical_landscape()
+    artifacts, records = qualify_models(landscape.config, MODELS)
+    scenarios = tuple(
+        run_scenario(landscape, artifacts, strategy, 0) for strategy in Strategy
+    )
+    experiment = Experiment(
+        schema_version="geo-infer-place/california-experiment/1",
+        config=landscape.config, landscape_sha256="0" * 64, models=records,
+        backend="geo-infer-exact-joint", spatial_backend="binary-mean-field/1",
+        observations_kind="simulated-sensors-on-historical-indicators", scenarios=scenarios,
+    )
+    rows, comparisons = evaluate_experiment(landscape, experiment)
+    areas = np.asarray([cell.area_km2 for cell in landscape.cells])
+    for row in rows:
+        scenario = next(item for item in scenarios if item.strategy.value == row.strategy)
+        hazard_index = list(Hazard).index(Hazard(row.hazard))
+        selected = {
+            index
+            for frame in scenario.frames[1:row.round + 1]
+            for index, mode in enumerate(frame.modes[hazard_index * 3:(hazard_index + 1) * 3])
+            if mode > 0
+        }
+        assert row.unique_selected_cells == len(selected)
+        assert row.cumulative_selected_area_fraction == pytest.approx(
+            sum(areas[index] for index in selected) / areas.sum()
+        )
+        q = np.asarray(scenario.frames[row.round].fields[hazard_index].posterior)
+        truth = np.asarray(landscape.indicators[hazard_index].positive[-1])
+        assert row.area_weighted_brier == pytest.approx(float(((q - truth) ** 2 @ areas) / areas.sum()))
+    for comparison in comparisons:
+        assert comparison.brier_reduction == pytest.approx(comparison.initial_brier - comparison.final_brier)
+        if comparison.strategy == "rotating":
+            assert comparison.rotating_brier_advantage == 0
+    changed = json.loads(experiment.model_dump_json())
+    changed["scenarios"][0]["frames"][0]["fields"][0]["scores"]["brier"] = 0.99
+    with pytest.raises(CaliforniaError, match="recorded scores"):
+        evaluate_experiment(landscape, Experiment.model_validate_json(json.dumps(changed)))
+
+
+@pytest.mark.parametrize("mutation", ["changed", "extra", "missing", "symlink", "resealed-roster"])
+def test_report_integrity_rejects_file_mutations(tmp_path: Path, mutation: str) -> None:
+    """Reject changed, missing, additional, linked and resealed-incomplete report files."""
+    from geo_infer_place.locations.california.report_integrity import check_report
+    from geo_infer_place.locations.california.report import build_report
+
+    path = tmp_path / "landscape.json"
+    write_record(path, numerical_landscape())
+    experiment = run_experiment(path, MODELS, tmp_path / "experiment")
+    report = build_report(path, experiment, tmp_path / "report")
+    assert check_report(report.parent).files["report.json"]
+    target = report.parent / "comparison.csv"
+    match mutation:
+        case "changed":
+            target.write_text("altered", encoding="utf-8")
+        case "extra":
+            (report.parent / "extra.txt").write_text("extra", encoding="utf-8")
+        case "missing":
+            target.rename(tmp_path / "preserved.csv")
+        case "symlink":
+            target.rename(tmp_path / "preserved.csv")
+            target.symlink_to(tmp_path / "preserved.csv")
+        case "resealed-roster":
+            target.rename(tmp_path / "preserved.csv")
+            manifest_path = report.parent / "files.json"
+            manifest = json.loads(manifest_path.read_bytes())
+            del manifest["comparison.csv"]
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(CaliforniaError):
+        check_report(report.parent)
+
+
 def test_landscape_semantics_reject_resealed_structural_mutations() -> None:
     """Reject reserialized carrier, temporal and empirical-prior semantic mutations."""
     original = numerical_landscape().model_dump_json()

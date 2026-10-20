@@ -1,5 +1,14 @@
 # California: three environmental indicators and a shared monitoring budget
 
+The [complete-edition commands](../../../GEO-INFER-PLACE/locations/california/GUIDE.md)
+retain source bytes, independently exported GNN models, the prepared landscape,
+monitoring traces and report under one create-only workflow receipt. The report
+checks execution custody before publication and recomputes losses from retained
+posterior probabilities and target labels. Portable CSV and Markdown comparisons
+preserve each seed and hazard separately, include clipped-area-weighted loss,
+and distinguish cumulative selected area from repeat resource expenditure.
+Integrity checks do not constitute a new numerical replay or a native theorem.
+
 The question is how to allocate limited monitoring while keeping different
 hazards, evidence types and approximation levels explicit. PLACE owns the
 California orchestration. SPACE supplies sparse graph statistics and area

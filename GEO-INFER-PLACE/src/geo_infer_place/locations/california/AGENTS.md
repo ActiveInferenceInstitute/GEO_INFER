@@ -24,11 +24,14 @@
 - `__init__.py`
 - `acquisition.py`
 - `contracts.py`
+- `evaluation.py`
 - `geometry.py`
 - `inference.py`
 - `models.py`
 - `monitoring.py`
 - `report.py`
+- `report_integrity.py`
+- `workflow.py`
 
 ## Validation
 

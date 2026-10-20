@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import time
 from pathlib import Path
 from typing import Final, Self
@@ -37,6 +38,11 @@ FIRES: Final = "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/servic
 EARTHQUAKES: Final = "https://earthquake.usgs.gov/fdsnws/event/1/query"
 DROUGHT: Final = "https://droughtmonitor.unl.edu/data/shapefiles_m"
 CAPTURE_BYTES: Final = 128 * 1024 * 1024
+LOGGER = logging.getLogger(__name__)
+RETRYABLE_FAILURES: Final = {
+    "Source network request failed",
+    *(f"Source returned HTTP status {status}" for status in (408, 429, 500, 502, 503, 504)),
+}
 
 
 class SourceEndpoints(StrictModel):
@@ -114,7 +120,20 @@ def acquire_sources(
         remaining = CAPTURE_BYTES - sum(item.bytes for item in captured)
         if remaining <= 0:
             raise CaliforniaError("capture exceeds 128 MiB")
-        raw = _download(url, deadline, min(RAW_BYTES, remaining))
+        attempt = 1
+        while True:
+            try:
+                raw = _download(url, deadline, min(RAW_BYTES, remaining))
+                break
+            except TimeoutError:
+                if attempt == 3 or time.monotonic() >= deadline:
+                    raise
+                LOGGER.warning("Retrying %s after timeout (attempt %d/3)", name, attempt)
+            except RuntimeError as error:
+                if str(error) not in RETRYABLE_FAILURES or attempt == 3:
+                    raise
+                LOGGER.warning("Retrying %s after %s (attempt %d/3)", name, error, attempt)
+            attempt += 1
         path = output / name
         with path.open("xb") as stream:
             stream.write(raw)

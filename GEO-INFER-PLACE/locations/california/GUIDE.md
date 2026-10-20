@@ -49,6 +49,47 @@ uv run python GEO-INFER-PLACE/examples/california_observatory.py \
   --report GEO-INFER-PLACE/locations/california/generated/report
 ```
 
+For a complete edition after acquisition, retain all input bytes and run the
+remaining stages through the same thin command interface:
+
+```bash
+uv run python GEO-INFER-PLACE/examples/california_observatory.py \
+  --design GEO-INFER-PLACE/locations/california/design.json \
+  --sources GEO-INFER-PLACE/locations/california/generated/sources \
+  --models GEO-INFER-PLACE/locations/california/models \
+  --workflow GEO-INFER-PLACE/locations/california/generated/edition
+
+uv run python GEO-INFER-PLACE/examples/california_observatory.py \
+  --check-workflow GEO-INFER-PLACE/locations/california/generated/edition
+
+uv run python GEO-INFER-PLACE/examples/california_observatory.py \
+  --check-report GEO-INFER-PLACE/locations/california/generated/edition/report
+```
+
+The edition contains `design.json`, copied `sources/` and `models/`, prepared
+`landscape/`, sealed `experiment/`, `report/` and `workflow.json`. Output must be
+new and outside the input folders. The receipt binds the complete retained file
+inventory and the links between stages. An edition may be copied to a new path
+and checked offline. This checks supplied-receipt integrity, not source
+authenticity or fresh numerical replay. The Python `check_workflow` API also
+accepts `current_execution=True` to compare the installed owners and runtime.
+
+Reports now require a sealed aggregate experiment. Reporting rechecks its
+execution receipt and recomputes the recorded Brier, log and entropy scores.
+`trajectory.csv` records per-round, per-hazard resource expenditure, cell-average
+and clipped-area-weighted Brier loss, selected cells and cumulative selected area.
+`comparison.csv` and `COMPARISON.md` compare final losses to the initial belief
+and rotating strategy for the same seed. Positive reduction or advantage means
+lower Brier loss. Seeds are displayed separately; these are descriptive simulation
+contrasts without confidence intervals or empirical calibration claims.
+
+Selected-area coverage measures attempted observation, including missing
+reports. Repeat visits consume resources but count once in cumulative coverage.
+It is neither population coverage nor a count of successful physical sensors.
+Primary-source capture logs at most three attempts per transient timeout or
+network/service failure, bounded by the original batch deadline. Other failures
+are immediate; an incomplete capture never receives a successful source receipt.
+
 When using a separately preserved runtime, set `UV_PROJECT_ENVIRONMENT`,
 `UV_PYTHON`, `UV_CACHE_DIR` and `TMPDIR` to its qualified external paths and use
 `uv run --no-sync --python "$UV_PYTHON"`. Verify both Python prefixes. A source

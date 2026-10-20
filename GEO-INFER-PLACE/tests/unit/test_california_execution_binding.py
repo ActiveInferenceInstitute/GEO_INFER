@@ -17,7 +17,7 @@ def test_execution_binding_does_not_require_a_checkout(monkeypatch, tmp_path):
     assert set(binding.packages) == expected_packages
     assert all(binding.packages.values())
     assert binding.owners
-    assert len(binding.owners) == 14
+    assert len(binding.owners) == 17
     for key, digest in binding.owners.items():
         module, source, package, *relative = key.split("/")
         assert source == "src"

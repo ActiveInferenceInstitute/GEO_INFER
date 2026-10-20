@@ -38,6 +38,13 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module PLACE
 ```
 
 
+## California Workflow Guidance
+
+- Use `examples/california_observatory.py --workflow` with an existing qualified
+  source capture and independently exported models; preserve partial failed editions.
+- Keep retained-byte checks separate from current execution qualification and
+  simulated selected-area coverage separate from successful field observation.
+
 ## Visualization Guidance
 
 - Validate H3 resolution, bounds, dashboard result mappings, and user-facing map

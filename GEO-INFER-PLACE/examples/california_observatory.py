@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 from pathlib import Path
 
 from geo_infer_place.locations.california.acquisition import (
@@ -18,6 +19,8 @@ def main() -> int:
     parser.add_argument("--acquire", type=Path)
     parser.add_argument("--check-sources", type=Path)
     parser.add_argument("--check-experiment", type=Path)
+    parser.add_argument("--check-report", type=Path)
+    parser.add_argument("--check-workflow", type=Path)
     parser.add_argument("--sources", type=Path)
     parser.add_argument("--prepare", type=Path)
     parser.add_argument("--write-models", type=Path)
@@ -26,7 +29,22 @@ def main() -> int:
     parser.add_argument("--run", type=Path)
     parser.add_argument("--experiment", type=Path)
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--workflow", type=Path)
     args = parser.parse_args()
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    if args.check_report is not None or args.check_workflow is not None:
+        supplied = {name for name, value in vars(args).items() if value is not None}
+        if len(supplied) != 1:
+            parser.error("an integrity check excludes all other inputs")
+        if args.check_report is not None:
+            from geo_infer_place.locations.california.report_integrity import check_report
+
+            print(check_report(args.check_report).model_dump_json())
+        else:
+            from geo_infer_place.locations.california.workflow import check_workflow
+
+            print(check_workflow(args.check_workflow).model_dump_json())
+        return 0
     if args.check_experiment is not None:
         if any(
             value is not None
@@ -49,7 +67,7 @@ def main() -> int:
         return 0
     operations = tuple(
         name
-        for name in ("acquire", "prepare", "write_models", "run", "report")
+        for name in ("acquire", "prepare", "write_models", "run", "report", "workflow")
         if getattr(args, name) is not None
     )
     if len(operations) != 1:
@@ -61,6 +79,7 @@ def main() -> int:
         "write_models": {"design", "write_models"},
         "run": {"landscape", "models", "run"},
         "report": {"landscape", "experiment", "report"},
+        "workflow": {"design", "sources", "models", "workflow"},
     }[operation]
     supplied = {name for name, value in vars(args).items() if value is not None}
     if supplied != required:
@@ -88,6 +107,10 @@ def main() -> int:
             from geo_infer_place.locations.california.report import build_report
 
             print(build_report(args.landscape, args.experiment, args.report))
+        case "workflow":
+            from geo_infer_place.locations.california.workflow import run_workflow
+
+            print(run_workflow(args.design, args.sources, args.models, args.workflow))
         case _:
             parser.error("unsupported California operation")
     return 0

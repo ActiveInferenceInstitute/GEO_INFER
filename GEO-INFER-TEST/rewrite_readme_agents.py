@@ -661,6 +661,9 @@ uv run python GEO-INFER-TEST/validate_h3_active_inference_contract.py
 - `locations.california` implements bounded primary-source capture, a clipped
   H3 carrier, empirical priors, approximate spatial inference and actual GNN
   local policy evaluation. Sensor readings are explicitly simulated.
+- The create-only `--workflow` command retains inputs and runs preparation,
+  monitoring and reporting. `--check-workflow` and `--check-report` verify
+  retained bytes; comparison CSV tables recompute scores and selected-area coverage.
 - [California methods](../GEO-INFER-INTRA/docs/examples/california_statewide_monitoring.md)
   documents measurement windows, configuration, budget objectives and limits.
 - Package imports are lazy; loading PLACE does not initialize forecasting or
@@ -1019,6 +1022,13 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
   resolution against actual index formats 2, 3 and 4 without changing global settings.
 """,
         "GEO-INFER-PLACE": """
+## California Workflow Guidance
+
+- Use `examples/california_observatory.py --workflow` with an existing qualified
+  source capture and independently exported models; preserve partial failed editions.
+- Keep retained-byte checks separate from current execution qualification and
+  simulated selected-area coverage separate from successful field observation.
+
 ## Visualization Guidance
 
 - Validate H3 resolution, bounds, dashboard result mappings, and user-facing map
