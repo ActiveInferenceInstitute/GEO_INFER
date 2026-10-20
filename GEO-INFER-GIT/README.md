@@ -46,6 +46,11 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module GIT
 ```
 
 
+## Conflict Resolution
+
+- Cherry-pick conflict checks use native Git index queries for index formats
+  2, 3 and 4. Resolution preserves the complete selected file and unrelated work.
+
 ## Documentation Notes
 
 This README describes current repository state only. Keep examples and claims tied to importable code, tracked files, or validation commands.

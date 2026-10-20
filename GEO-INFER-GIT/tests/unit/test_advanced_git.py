@@ -437,14 +437,18 @@ class TestAdvancedGitOperationsFacade:
         assert results["steps"][0]["message"] == "Initialized 0 submodules"
 
 
+@pytest.mark.parametrize("index_version", [2, 3, 4])
 @pytest.mark.parametrize(
     "strategy, expected", [("ours", "main"), ("theirs", "feature")]
 )
 def test_cherry_pick_resolution_preserves_whole_file_and_unrelated_work(
-    tmp_path, strategy, expected
+    tmp_path, strategy, expected, index_version
 ):
     """Resolution retains all file bytes and does not stage unrelated working files."""
     repo_dir = init_repo(tmp_path / "whole_file", content="prefix\nbase\nsuffix\n")
+    if index_version == 3:
+        (repo_dir / "index-flags.txt").write_text("preserved\n", encoding="utf-8")
+        commit_all(repo_dir, "Add an extended-index flag carrier")
     git("config", "merge.conflictStyle", "diff3", cwd=repo_dir)
     git("checkout", "-b", "feature", cwd=repo_dir)
     (repo_dir / "file.txt").write_text("prefix\nfeature\nsuffix\n")
@@ -456,6 +460,10 @@ def test_cherry_pick_resolution_preserves_whole_file_and_unrelated_work(
     manager = CherryPickManager(repo_dir)
     operation = manager.cherry_pick_commit(feature_sha)
     assert operation.status == "conflicts"
+    if index_version == 3:
+        git("update-index", "--skip-worktree", "index-flags.txt", cwd=repo_dir)
+    git("update-index", f"--index-version={index_version}", cwd=repo_dir)
+    assert int.from_bytes((repo_dir / ".git" / "index").read_bytes()[4:8], "big") == index_version
     (repo_dir / "unrelated.txt").write_text("local work\n")
     assert manager.resolve_conflicts(0, strategy)
     assert (repo_dir / "file.txt").read_text() == f"prefix\n{expected}\nsuffix\n"

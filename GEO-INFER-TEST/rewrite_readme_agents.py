@@ -649,6 +649,12 @@ uv run python GEO-INFER-TEST/validate_h3_active_inference_contract.py
 - Interactive map zoom and optional map basemaps are validated/guarded so
   plotting remains usable without contextily network access.
 """,
+        "GEO-INFER-GIT": """
+## Conflict Resolution
+
+- Cherry-pick conflict checks use native Git index queries for index formats
+  2, 3 and 4. Resolution preserves the complete selected file and unrelated work.
+""",
         "GEO-INFER-PLACE": """
 ## California Statewide Monitoring
 
@@ -1005,6 +1011,12 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
 - Validate route points, zoom bounds, and network highlight nodes at public
   boundaries; draw route lines from the ordered input path, not its hull.
 - Guard optional basemap integrations when contextily is unavailable.
+""",
+        "GEO-INFER-GIT": """
+## Conflict Resolution Guidance
+
+- Use native Git queries for unmerged and staged state; exercise conflict
+  resolution against actual index formats 2, 3 and 4 without changing global settings.
 """,
         "GEO-INFER-PLACE": """
 ## Visualization Guidance

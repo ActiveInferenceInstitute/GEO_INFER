@@ -506,12 +506,12 @@ class CherryPickManager:
             if resolved_paths:
                 self.repo.git.add("--", *resolved_paths)
 
-            if self.repo.index.unmerged_blobs():
+            if self.repo.git.ls_files("--unmerged", "-z"):
                 raise ValueError("Unresolved index conflicts remain")
 
             # Choosing ours can make the pick empty. Finish the sequencer
             # without fabricating a content change or an empty commit.
-            if self.repo.index.diff("HEAD"):
+            if self.repo.git.diff("--cached", "--name-only", "-z", "HEAD", "--"):
                 self.repo.git.cherry_pick("--continue")
             else:
                 self.repo.git.cherry_pick("--skip")

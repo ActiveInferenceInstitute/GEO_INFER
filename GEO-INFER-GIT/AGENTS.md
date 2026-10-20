@@ -37,6 +37,11 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module GIT
 ```
 
 
+## Conflict Resolution Guidance
+
+- Use native Git queries for unmerged and staged state; exercise conflict
+  resolution against actual index formats 2, 3 and 4 without changing global settings.
+
 ## Integration Notes
 
 - Update this AGENTS.md and the sibling README.md when commands, exports, dependencies, or generated outputs change.
