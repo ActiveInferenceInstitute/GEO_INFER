@@ -130,6 +130,11 @@ def test_git_custody_uses_checkout_root_when_target_cwd_is_nested(tmp_path):
     script = child / "calculate.py"
     script.write_text("print(sum(range(100)))\n")
     subprocess.run(["git", "init", "-q", str(root)], check=True, timeout=10)
+    subprocess.run(
+        ["git", "-C", str(root), "config", "core.fsmonitor", "false"],
+        check=True,
+        timeout=10,
+    )
     subprocess.run(["git", "-C", str(root), "add", "."], check=True, timeout=10)
     subprocess.run(
         [
@@ -313,8 +318,7 @@ def test_failed_report_support_cannot_admit_modified_successful_profiles(
 
 def test_report_rejects_inconsistent_source_custody_claim(saved_profile):
     payload = json.loads(saved_profile.read_text())
-    assert payload["source_bound"] is False
-    payload["source_bound"] = True
+    payload["source_bound"] = not payload["source_bound"]
     saved_profile.write_text(json.dumps(payload))
     with pytest.raises(ValueError, match="source custody"):
         summarize_profile(saved_profile)

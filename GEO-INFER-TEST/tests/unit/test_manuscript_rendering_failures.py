@@ -26,6 +26,7 @@ def git(root: Path, *arguments: str) -> str:
 
 def commit_fixture(root: Path) -> str:
     git(root, "init")
+    git(root, "config", "core.fsmonitor", "false")
     git(root, "config", "user.name", "Native failure fixture")
     git(root, "config", "user.email", "fixture@example.invalid")
     # A developer's global ignore rules must not hide worker cache writes.

@@ -27,6 +27,7 @@ def template_checkout(tmp_path: Path) -> Path:
     root = tmp_path / "template"
     root.mkdir()
     git(root, "init")
+    git(root, "config", "core.fsmonitor", "false")
     git(root, "config", "user.name", "Source identity fixture")
     git(root, "config", "user.email", "fixture@example.invalid")
     directory = root / "infrastructure/rendering"
