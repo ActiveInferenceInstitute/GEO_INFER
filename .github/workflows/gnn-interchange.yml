@@ -77,23 +77,27 @@ jobs:
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.13.1"
-          cache-dependency-glob: |
-            geo/uv.lock
-            gnn/uv.lock
+          cache-dependency-glob: geo/uv.lock
       - name: Record both checkouts before installing
         run: |
           mkdir receipts
           git -C geo rev-parse HEAD > receipts/geo-revision.txt
           git -C gnn rev-parse HEAD > receipts/gnn-revision.txt
           cp geo/.github/gnn-pair.json receipts/pair.json
-      - name: Install independent locked runtimes
+      - name: Install GEO locked runtime
         env:
           GEO_PYTHON: ${{ matrix.python }}
         run: |
           uv sync --project geo --locked --python "$GEO_PYTHON" --all-packages --all-extras --all-groups \
             --no-install-package cupy --no-install-package mayavi \
             --no-install-package vaex --no-install-package vaex-core
-          uv sync --project gnn --locked --python 3.11 --extra dev --extra geo-infer
+      - name: Install GNN uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.13.4"
+          cache-dependency-glob: gnn/uv.lock
+      - name: Install GNN locked runtime
+        run: uv sync --project gnn --locked --python 3.11 --extra dev --extra geo-infer
       - name: Export in GNN and infer in GEO
         run: |
           geo/.venv/bin/python geo/GEO-INFER-TEST/validate_gnn_interchange.py \
