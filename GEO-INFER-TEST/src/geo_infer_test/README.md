@@ -21,8 +21,10 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `research_evidence.py`
 - `selection.py`
 - `testing.py`
+- `torch_variant.py`
 - `wheel_evidence.py`
 - `wheel_profiles.py`
+- `torch_cu126_variant.json`
 
 ## Public Interface
 
@@ -37,6 +39,7 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `coverage.py:run_coverage_measurements` (function)
 - `coverage.py:main` (function)
 - `dependency_audit.py:canonical_name` (function)
+- `dependency_audit.py:advisory_inventory` (function)
 - `dependency_audit.py:locked_inventory` (function)
 - `dependency_audit.py:requirement_batches` (function)
 - `dependency_audit.py:validate_response` (function)
@@ -45,7 +48,6 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `doc_examples.py:load_manifest` (function)
 - `doc_examples.py:example_code` (function)
 - `doc_examples.py:verify_page` (function)
-- `doc_examples.py:main` (function)
 
 ## Module Metadata
 

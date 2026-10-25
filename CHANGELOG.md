@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation compatibility
 
+- Select official Torch 2.13.0 CUDA 12.6 on Linux x86_64 so Torch and
+  XGBoost share one NCCL distribution. Bind isolated wheel installation to
+  the exact locked artifact and hash; retain explicit advisory mappings
+  for the released variant and preserve other platforms and minimal profiles.
+- Compare nested Windows test timings within one synthetic clock coordinate,
+  preserving the production timing code and exact deadline assertions.
 - Use Starlette's canonical 422 status with the same numeric fallback for
   older declared versions, preserving invalid-GeoJSON validation responses
   under strict warning handling.

@@ -1,15 +1,19 @@
 # Frozen workspace dependency audit
 
-The standalone audit checks every PyPI name/version row in the universal
+The standalone audit checks every registry node in the universal
 `uv.lock`. It includes all locked Python/platform forks, extras and dependency
 groups, even packages excluded from CPU installation such as accelerator extras.
 Only local workspace/root nodes whose name, version and source match committed
-project metadata are excluded. An unknown registry, VCS source, missing package
+project metadata are excluded. One hash-bound official Torch CUDA12 variant
+retains its complete source/version/wheel identity and maps explicitly to the
+public Torch 2.13.0 advisory query. Every other unknown registry, VCS source, missing package
 response or skipped advisory query fails; there is no advisory ignore list.
 
 The audit uses exact uv 0.13.1 to check lock freshness and exact pip-audit 2.10.1
 against the PyPI advisory service. Fully pinned requirements are split only when
-a package has multiple locked versions. Every pair must appear exactly once in
+a package has multiple advisory-query versions. The receipt retains every full
+locked node separately, even when ordinary PyPI Torch and the reviewed CUDA12
+variant share one public-release query. Every queried pair must appear exactly once in
 the tool's JSON responses. A fresh temporary advisory cache is used for each
 attempt. The tool receives
 `--strict --no-deps --disable-pip`: it neither
@@ -35,7 +39,7 @@ parent and `--timeout` bounds the complete attempt. Existing attempts are never
 overwritten. The default output is
 `.geo-infer-test-results/dependency-audit/<time>-<id>/`.
 
-Each receipt retains the complete queried pair list, explicit local exclusions,
+Each v2 receipt retains the complete locked-node-to-query map, queried pair list, explicit local exclusions,
 source/lock/configuration hashes and bookends, tool versions, per-batch fully
 pinned requirements, raw JSON/stdout/stderr, advisory findings and errors. A
 network/tool failure, malformed/incomplete response, changed source, or any
@@ -65,3 +69,26 @@ and [uv universal-lock semantics](https://docs.astral.sh/uv/concepts/projects/la
 The OSV batch API was considered; its empty result means no matching published
 advisories, rather than proving that a package/version exists. The selected PyPI
 service's skipped/unknown rows are rejected along with any coverage mismatch.
+
+
+## Linux Torch CUDA library ownership
+
+On Linux x86_64, the frozen source selects official Torch 2.13.0+cu126 from its
+explicit PyTorch index. Other platforms retain their PyPI source. This keeps
+Torch and XGBoost 3.0.3 on one CUDA12 NCCL distribution instead of installing
+different CUDA12/CUDA13 binaries at the same nvidia/nccl/lib/libnccl.so.2 path.
+Project Python requirements and the Python 3.11/3.12 native profiles remain.
+
+The geo_infer_test/torch_variant.py owner and its hash-bound release record
+authenticate the one source/version and each locked wheel URL/digest. The released
+CUDA12 wheel and PyPI Torch 2.13.0 wheel report the same upstream Git revision,
+while their CUDA flavors differ. Only this explicit release mapping queries public
+Torch 2.13.0 advisories; other registries or local versions are refused. The
+record does not claim binary equivalence, absence of upstream unsafe PT2 APIs,
+native ABI acceptance, or physical GPU execution.
+
+The isolated wheel validator carries a separately retained, hash-bound direct
+Torch wheel constraint selected from the lock for its actual target interpreter.
+It does not add Torch to minimal environments that did not require it. This
+preserves the locked source when installation runs outside the workspace;
+adding a global index-priority fallback would not provide that guarantee.

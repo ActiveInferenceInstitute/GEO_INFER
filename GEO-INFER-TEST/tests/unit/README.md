@@ -43,6 +43,7 @@ Unit workspace within `GEO-INFER-TEST`.
 - `test_test_orchestrator.py`
 - `test_test_runner.py`
 - `test_testing_helpers.py`
+- `test_torch_variant.py`
 - `test_unified_runner_extra_test_paths.py`
 - `test_validate_doc_imports.py`
 - `test_validate_h3_active_inference_contract.py`

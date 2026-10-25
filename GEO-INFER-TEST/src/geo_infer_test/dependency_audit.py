@@ -2,7 +2,9 @@
 
 No target-package resolution or installation occurs. Platform, extra and group
 markers never filter this inventory. Only authenticated local workspace members
-are outside the PyPI advisory query; unknown sources and skipped packages fail.
+are outside the advisory query. The one hash-bound official Torch variant keeps
+its full locked identity and maps explicitly to its public release; all unknown
+sources and skipped packages fail.
 """
 
 from __future__ import annotations
@@ -24,6 +26,7 @@ import uuid
 
 from .execution import runtime_receipt
 from .process import run_process
+from .torch_variant import official_variant_record, provenance_hashes
 
 AUDITOR_VERSION = "2.10.1"
 UV_VERSION = "0.13.1"
@@ -34,8 +37,10 @@ def canonical_name(value: str) -> str:
     return re.sub(r"[-_.]+", "-", value).lower()
 
 
-def locked_inventory(root: Path) -> tuple[list[tuple[str, str]], list[dict], dict]:
-    """Read all universal lock nodes; authenticate every excluded local node."""
+def advisory_inventory(
+    root: Path,
+) -> tuple[list[tuple[str, str]], list[dict], dict, list[dict]]:
+    """Retain every locked node and its exact, explicit advisory-query identity."""
     paths = [root / "pyproject.toml", *sorted(root.glob("GEO-INFER-*/pyproject.toml"))]
     metadata = {path: tomllib.loads(path.read_text(encoding="utf-8")) for path in paths}
     local = {
@@ -52,6 +57,7 @@ def locked_inventory(root: Path) -> tuple[list[tuple[str, str]], list[dict], dic
     if not isinstance(packages, list) or not packages:
         raise ValueError("Missing resolved lock package inventory")
     registry, excluded, seen_local = set(), [], set()
+    nodes, seen_nodes, has_variant = [], set(), False
     for package in packages:
         name, version, source = (
             package.get("name"),
@@ -69,8 +75,29 @@ def locked_inventory(root: Path) -> tuple[list[tuple[str, str]], list[dict], dic
             r"[A-Za-z0-9][A-Za-z0-9.!+_-]*", version
         ):
             raise ValueError("Invalid pinned distribution identity")
+        identity = {"name": name, "version": version, "source": source}
+        node_key = json.dumps(identity, sort_keys=True)
+        if node_key in seen_nodes:
+            raise ValueError("Duplicate full locked dependency identity")
+        seen_nodes.add(node_key)
         if source == {"registry": "https://pypi.org/simple"}:
+            query = {"name": name, "version": version}
             registry.add((name, version))
+            nodes.append(
+                {
+                    "locked_identity": identity,
+                    "resolution_markers": package.get("resolution-markers", []),
+                    "advisory_identity": query,
+                }
+            )
+        elif name == "torch" and source == {
+            "registry": "https://download.pytorch.org/whl/cu126"
+        }:
+            node = official_variant_record(root, package)
+            query = node["advisory_identity"]
+            registry.add((query["name"], query["version"]))
+            nodes.append(node)
+            has_variant = True
         elif set(source) in ({"editable"}, {"virtual"}):
             location = source.get("editable", source.get("virtual"))
             if (
@@ -94,7 +121,20 @@ def locked_inventory(root: Path) -> tuple[list[tuple[str, str]], list[dict], dic
         str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
         for path in paths
     }
-    return sorted(registry), sorted(excluded, key=lambda row: row["name"]), hashes
+    if has_variant:
+        hashes.update(provenance_hashes())
+    return (
+        sorted(registry),
+        sorted(excluded, key=lambda row: row["name"]),
+        hashes,
+        nodes,
+    )
+
+
+def locked_inventory(root: Path) -> tuple[list[tuple[str, str]], list[dict], dict]:
+    """Keep the existing inventory API; full node mappings live in the receipt."""
+    pairs, local, hashes, _ = advisory_inventory(root)
+    return pairs, local, hashes
 
 
 def requirement_batches(pairs: list[tuple[str, str]]) -> list[list[tuple[str, str]]]:
@@ -172,9 +212,9 @@ def audit(root: Path, output: Path, *, uv: str, auditor: str, timeout: float) ->
     attempt.mkdir()
     deadline = time.monotonic() + timeout
     report = {
-        "schema": "geo-infer-dependency-audit-v1",
+        "schema": "geo-infer-dependency-audit-v2",
         "status": "failed",
-        "scope": "All PyPI name/version nodes in the frozen universal lock, including all platform/Python forks, extras and groups. Known Python-package advisories only; not a source scan or native shared-library security claim.",
+        "scope": "Every registry node in the frozen universal lock, including all platform/Python forks, extras and groups. PyPI nodes retain exact advisory identities; only the hash-bound official Torch CUDA12 variant maps explicitly to public Torch2.13.0. Variant artifacts/native ABI are separate from advisory results.",
         "errors": [],
         "findings": [],
         "batches": [],
@@ -225,10 +265,12 @@ def audit(root: Path, output: Path, *, uv: str, auditor: str, timeout: float) ->
         if not before["custody_complete"]:
             raise ValueError("Source custody unavailable")
         report["source_before"] = before
-        pairs, excluded, hashes = locked_inventory(root)
+        pairs, excluded, hashes, nodes = advisory_inventory(root)
         report.update(
             expected_pairs=[list(pair) for pair in pairs],
-            expected_package_versions=len(pairs),
+            expected_package_versions=len(nodes),
+            expected_advisory_queries=len(pairs),
+            locked_node_advisory_mappings=nodes,
             excluded_local_workspace=excluded,
             input_sha256=hashes,
         )
@@ -284,6 +326,15 @@ def audit(root: Path, output: Path, *, uv: str, auditor: str, timeout: float) ->
             findings = validate_response(
                 result_path.read_bytes(), batch, result.returncode
             )
+            for finding in findings:
+                finding["locked_identities"] = [
+                    node["locked_identity"]
+                    for node in nodes
+                    if node["advisory_identity"]
+                    == {"name": finding["name"], "version": finding["version"]}
+                ]
+                if not finding["locked_identities"]:
+                    raise ValueError("Advisory result is not bound to a locked node")
             report["findings"].extend(findings)
             report["batches"].append(
                 {
@@ -296,6 +347,11 @@ def audit(root: Path, output: Path, *, uv: str, auditor: str, timeout: float) ->
             )
         if sum(row["package_versions"] for row in report["batches"]) != len(pairs):
             raise ValueError("Incomplete audit batch inventory")
+        if {
+            (node["advisory_identity"]["name"], node["advisory_identity"]["version"])
+            for node in nodes
+        } != set(pairs):
+            raise ValueError("Locked-node advisory mapping is incomplete")
         report["all_package_versions_audited"] = True
         if not report["findings"]:
             report["status"] = "passed"

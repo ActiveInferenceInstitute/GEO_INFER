@@ -38,8 +38,10 @@
 - `research_evidence.py`
 - `selection.py`
 - `testing.py`
+- `torch_variant.py`
 - `wheel_evidence.py`
 - `wheel_profiles.py`
+- `torch_cu126_variant.json`
 
 ## Validation
 
