@@ -26,7 +26,9 @@
 - `__init__.py`
 - `_template_worker.py`
 - `act_research_oracles.py`
+- `companion_releases.py`
 - `coverage.py`
+- `dependency_audit.py`
 - `doc_examples.py`
 - `documentation_contracts.py`
 - `execution.py`

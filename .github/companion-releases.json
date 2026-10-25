@@ -1,0 +1,38 @@
+{
+  "schema": "geo-infer-companion-releases/v1",
+  "geo": {
+    "repository": "ActiveInferenceInstitute/GEO_INFER",
+    "target_version": "0.4.0",
+    "baseline_revision": "21b65a26dd15288d6e578baef86a8bcfd6a7b5db"
+  },
+  "companions": {
+    "gnn": {
+      "repository": "ActiveInferenceInstitute/Generalized_Notation_Notation",
+      "version": "5.0.1",
+      "tag": "v5.0.1",
+      "revision": "e54813b4197df36f7ae0054d5e79f3ad2d5db0ff",
+      "tree": "c81cb1848585e86c0feda51ec230f7abd3544dd5",
+      "tag_object": "35e71d1a6f109f6e0d08fda2acd5a94376482cf4",
+      "source_doi": "10.5281/zenodo.23631909"
+    },
+    "fep": {
+      "repository": "ActiveInferenceInstitute/fep_formal",
+      "version": "2.1.0",
+      "tag": "v2.1.0",
+      "revision": "96bf714d91c088e79b9dea54af0f9151f70de64f",
+      "tree": "15af656a15fc86b6d89804277ea030502a4f9168",
+      "tag_object": "6bc61ffa58428190055245781328820c7c86abac",
+      "source_doi": "10.5281/zenodo.23631895"
+    }
+  },
+  "interchange_schemas": [
+    "gnn-geo-infer/1",
+    "gnn-geo-infer/2",
+    "gnn-geo-infer/factored/1"
+  ],
+  "evidence_boundaries": {
+    "gnn_release_pins_this_geo_release": false,
+    "fep_proves_geo_implementation": false,
+    "doi_metadata_verified_by_this_gate": false
+  }
+}

@@ -3,10 +3,17 @@
 ## Introduction
 
 This page maps the Active Inference constructs implemented in GEO-INFER-ACT
-onto the corresponding topics of the `fep_lean` catalogue, a separate
-repository of 155 Lean 4 theorem-proxies spanning FEP, Active Inference,
-Bayesian Mechanics, Information Geometry and Thermodynamics
-(`fep_lean` topics `fep-001` through `fep-155` in 20 families).
+onto the corresponding topics of the FEP_Formal 2.1.0 (`fep_lean`) catalogue,
+a separate repository with 168 Lean 4 topics (`fep-001` through `fep-168`)
+in 22 declared families. These include FEP, Active Inference, Bayesian
+Mechanics, Information Geometry and Thermodynamics. The source identity is
+`96bf714d91c088e79b9dea54af0f9151f70de64f`; each topic retains its own
+statement, assumptions and semantic maturity.
+
+The [companion release guide](../../GEO-INFER-INTRA/docs/integration/companion_releases.md)
+records the published GNN 5.0.1 and FEP_Formal 2.1.0 identities and the
+direction of their pins. New GEO compatibility evidence belongs to the new
+GEO source; neither published companion release certifies it.
 
 The mapping is **documentation-level**: it states correspondence of symbols
 and constructs between two independent artifacts. It does not state, and
@@ -84,6 +91,10 @@ Separately from these catalogue rows, the fep_lean slice
 theorems about the Cascadia artifact itself, including the exact identity
 between risk plus ambiguity and pymdp 1.0.4's score. Those theorems concern
 the exported finite model only; they do not verify any GEO-INFER code path.
+The retained fixture provenance names historical GEO
+`2e20fe2e86d19c1f5dfb6184ae88b5f224731a9c`, and its native receipt uses
+Lean 4.34.1. Inclusion in the newer FEP_Formal release preserves those
+epochs; it does not renew that proof for a later GEO source or variant.
 
 ## Explicit non-claims
 

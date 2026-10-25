@@ -347,7 +347,9 @@ def test_report_reads_real_trace_and_conserves_spatial_aggregations(
     assert not tmp_path.joinpath("unbound-report").exists()
 
 
-def test_report_rejects_changed_experiment_before_creating_output(tmp_path: Path) -> None:
+def test_report_rejects_changed_experiment_before_creating_output(
+    tmp_path: Path,
+) -> None:
     """Reject a valid-shaped edited score before creating any report artifacts."""
     from geo_infer_place.locations.california.report import build_report
 
@@ -374,19 +376,27 @@ def test_evaluation_recomputes_scores_and_counts_unique_area() -> None:
     )
     experiment = Experiment(
         schema_version="geo-infer-place/california-experiment/1",
-        config=landscape.config, landscape_sha256="0" * 64, models=records,
-        backend="geo-infer-exact-joint", spatial_backend="binary-mean-field/1",
-        observations_kind="simulated-sensors-on-historical-indicators", scenarios=scenarios,
+        config=landscape.config,
+        landscape_sha256="0" * 64,
+        models=records,
+        backend="geo-infer-exact-joint",
+        spatial_backend="binary-mean-field/1",
+        observations_kind="simulated-sensors-on-historical-indicators",
+        scenarios=scenarios,
     )
     rows, comparisons = evaluate_experiment(landscape, experiment)
     areas = np.asarray([cell.area_km2 for cell in landscape.cells])
     for row in rows:
-        scenario = next(item for item in scenarios if item.strategy.value == row.strategy)
+        scenario = next(
+            item for item in scenarios if item.strategy.value == row.strategy
+        )
         hazard_index = list(Hazard).index(Hazard(row.hazard))
         selected = {
             index
-            for frame in scenario.frames[1:row.round + 1]
-            for index, mode in enumerate(frame.modes[hazard_index * 3:(hazard_index + 1) * 3])
+            for frame in scenario.frames[1 : row.round + 1]
+            for index, mode in enumerate(
+                frame.modes[hazard_index * 3 : (hazard_index + 1) * 3]
+            )
             if mode > 0
         }
         assert row.unique_selected_cells == len(selected)
@@ -395,18 +405,26 @@ def test_evaluation_recomputes_scores_and_counts_unique_area() -> None:
         )
         q = np.asarray(scenario.frames[row.round].fields[hazard_index].posterior)
         truth = np.asarray(landscape.indicators[hazard_index].positive[-1])
-        assert row.area_weighted_brier == pytest.approx(float(((q - truth) ** 2 @ areas) / areas.sum()))
+        assert row.area_weighted_brier == pytest.approx(
+            float(((q - truth) ** 2 @ areas) / areas.sum())
+        )
     for comparison in comparisons:
-        assert comparison.brier_reduction == pytest.approx(comparison.initial_brier - comparison.final_brier)
+        assert comparison.brier_reduction == pytest.approx(
+            comparison.initial_brier - comparison.final_brier
+        )
         if comparison.strategy == "rotating":
             assert comparison.rotating_brier_advantage == 0
     changed = json.loads(experiment.model_dump_json())
     changed["scenarios"][0]["frames"][0]["fields"][0]["scores"]["brier"] = 0.99
     with pytest.raises(CaliforniaError, match="recorded scores"):
-        evaluate_experiment(landscape, Experiment.model_validate_json(json.dumps(changed)))
+        evaluate_experiment(
+            landscape, Experiment.model_validate_json(json.dumps(changed))
+        )
 
 
-@pytest.mark.parametrize("mutation", ["changed", "extra", "missing", "symlink", "resealed-roster"])
+@pytest.mark.parametrize(
+    "mutation", ["changed", "extra", "missing", "symlink", "resealed-roster"]
+)
 def test_report_integrity_rejects_file_mutations(tmp_path: Path, mutation: str) -> None:
     """Reject changed, missing, additional, linked and resealed-incomplete report files."""
     from geo_infer_place.locations.california.report_integrity import check_report

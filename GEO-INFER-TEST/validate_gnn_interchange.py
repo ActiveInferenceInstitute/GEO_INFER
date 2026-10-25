@@ -106,6 +106,168 @@ def run_export(
         completed.check_returncode()
 
 
+def step7_export_paths(output_dir: Path) -> dict[str, Path]:
+    """Select both successful derived exports from the actual numbered-step receipt."""
+    receipt_path = output_dir / "7_export_output/export_results.json"
+    with receipt_path.open("rb") as stream:
+        raw = stream.read(1024 * 1024 + 1)
+    if len(raw) > 1024 * 1024:
+        raise ValueError("Step 7 export receipt exceeds one MiB")
+    receipt = json.loads(raw)
+    if not isinstance(receipt, dict) or not isinstance(receipt.get("summary"), dict):
+        raise ValueError("Step 7 export receipt requires an object summary")
+    if receipt["summary"].get("successful_exports") != 2:
+        raise ValueError("Step 7 must report both successful GEO exports")
+    rows = receipt.get("files_exported")
+    expected = {"categorical.md", "gaussian.md"}
+    if not isinstance(rows, list) or len(rows) != len(expected):
+        raise ValueError("Step 7 must retain exactly the selected two models")
+    selected = {}
+    for row in rows:
+        name = row.get("file_name") if isinstance(row, dict) else None
+        if not isinstance(name, str) or name not in expected or name in selected:
+            raise ValueError("Step 7 model roster differs from the selected inputs")
+        exports = row.get("exports")
+        if not isinstance(exports, dict) or set(exports) != {"geo_infer"}:
+            raise ValueError("Step 7 must contain the selected GEO format only")
+        item = exports["geo_infer"]
+        if not isinstance(item, dict) or item.get("success") is not True:
+            raise ValueError("Step 7 GEO export did not succeed")
+        value = item.get("export_file")
+        if not isinstance(value, str):
+            raise ValueError("Step 7 GEO export path is missing")
+        path = Path(value)
+        if (
+            path.is_symlink()
+            or not path.is_file()
+            or not path.resolve().is_relative_to(output_dir.resolve())
+        ):
+            raise ValueError(
+                "Step 7 GEO export must remain inside its output directory"
+            )
+        selected[name] = path
+    return selected
+
+
+def run_step7_derived_exports(
+    root: Path,
+    interpreter: Path,
+    prefix: str,
+    retained: Path,
+    environment: dict[str, str],
+    categorical_source: Path,
+    gaussian_source: Path,
+    categorical,
+    gaussian,
+    categorical_records: list[dict],
+    gaussian_records: list[dict],
+    categorical_trace: dict,
+    gaussian_trace: dict,
+) -> dict:
+    """Run real GNN Steps 3/7 and compare derived metadata with explicit exports.
+
+    Inputs and outputs live in the retained receipt directory; the pinned GNN
+    checkout and its fixtures are read only. Each consumer checks the complete
+    wire artifact before numerical trace parity is considered.
+    """
+    from geo_infer_act.core.gnn_contract import GNNArtifact, run_gnn_inference
+    from geo_infer_act.core.gnn_gaussian_contract import (
+        GaussianGNNArtifact,
+        run_gaussian_gnn_inference,
+    )
+
+    stage = retained / "step7-derived"
+    source = stage / "input"
+    source.mkdir(parents=True)
+    text = categorical_source.read_text(encoding="utf-8")
+    marker = "ModelTimeHorizon=15"
+    if text.count(marker) != 1:
+        raise ValueError(
+            "The selected categorical fixture must expose its declared time horizon"
+        )
+    (source / "categorical.md").write_text(
+        text.replace(marker, marker + "\nTimeStep=60s"), encoding="utf-8", newline="\n"
+    )
+    (source / "gaussian.md").write_bytes(gaussian_source.read_bytes())
+    options = stage / "options.json"
+    options.write_text(
+        json.dumps(
+            {
+                "categorical.md": {},
+                "gaussian.md": {
+                    "model_type": "linear_gaussian",
+                    "units": gaussian.to_dict()["units"],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    scripts = root / ("src/gnn" if prefix == "gnn.export" else "src")
+    output = stage / "output"
+    common = ["--target-dir", str(source), "--output-dir", str(output)]
+    for number in ("3_gnn.py", "7_export.py"):
+        command = [str(interpreter), str(scripts / number), *common]
+        if number == "7_export.py":
+            command += [
+                "--formats",
+                "geo_infer",
+                "--geo-derive-metadata",
+                "--geo-infer-options-file",
+                str(options),
+            ]
+        run_export(
+            command, cwd=root, env=environment, timeout=120, artifact_dir=retained
+        )
+    paths = step7_export_paths(output)
+    results = {}
+    for name, factory, baseline, records, baseline_trace, runner in (
+        (
+            "categorical",
+            GNNArtifact,
+            categorical,
+            categorical_records,
+            categorical_trace,
+            lambda artifact, rows: run_gnn_inference(artifact, rows, random_seed=42),
+        ),
+        (
+            "gaussian",
+            GaussianGNNArtifact,
+            gaussian,
+            gaussian_records,
+            gaussian_trace,
+            run_gaussian_gnn_inference,
+        ),
+    ):
+        artifact = factory.load(paths[name + ".md"])
+        data, explicit = artifact.to_dict(), baseline.to_dict()
+        provenance = data["provenance"]
+        if "metadata_derivation" not in provenance:
+            raise ValueError("Step 7 did not retain its notation derivation record")
+        source_sha = hashlib.sha256((source / (name + ".md")).read_bytes()).hexdigest()
+        if provenance["source_sha256"] != source_sha:
+            raise ValueError("Step 7 provenance differs from its exact staged source")
+        if {k: v for k, v in data.items() if k != "provenance"} != {
+            k: v for k, v in explicit.items() if k != "provenance"
+        }:
+            raise ValueError("Step 7 derivation changed the explicit model contract")
+        trace = runner(artifact, records)
+        if {k: v for k, v in trace.items() if k != "artifact_sha256"} != {
+            k: v for k, v in baseline_trace.items() if k != "artifact_sha256"
+        }:
+            raise ValueError("Step 7 derived and explicit numerical traces disagree")
+        results[name] = {
+            "schema_version": data["schema_version"],
+            "artifact_sha256": artifact.digest,
+            "source_sha256": source_sha,
+            "explicit_artifact_sha256": baseline.digest,
+            "metadata_derivation": provenance["metadata_derivation"],
+            "model_payload_equal": True,
+            "numerical_trace_equal": True,
+            "trace": trace,
+        }
+    return {"numbered_steps": [3, 7], "success": True, "models": results}
+
+
 def validate_interchange(
     gnn_repo: Path, gnn_python: Path, *, artifact_dir: Path | None = None
 ) -> dict:
@@ -337,6 +499,21 @@ DiscreteTime=t
             np.diag([43 / 30, 43 / 30, 47 / 20]),
         )
         assert gaussian_trace == run_gaussian_gnn_inference(gaussian, gaussian_records)
+        step7_derived = run_step7_derived_exports(
+            root,
+            interpreter,
+            export_module_prefix,
+            Path(temp),
+            environment,
+            source,
+            gaussian_source,
+            artifact,
+            gaussian,
+            records,
+            gaussian_records,
+            first,
+            gaussian_trace,
+        )
         from geo_infer_act.core.gnn_factored_contract import (
             FactoredGNNArtifact,
             infer_factored_step,
@@ -415,6 +592,7 @@ DiscreteTime=t
             gnn=revision_receipt(root),
             python=sys.version,
             platform=platform.platform(),
+            step7_derived=step7_derived,
             gaussian_artifact_sha256=gaussian.digest,
             gaussian_trace=gaussian_trace,
             factored_artifact_sha256=factored.digest,

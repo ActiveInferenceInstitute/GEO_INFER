@@ -25,6 +25,7 @@ Unit workspace within `GEO-INFER-ACT`.
 - `test_gnn_factored_batch.py`
 - `test_gnn_factored_contract.py`
 - `test_gnn_gaussian_contract.py`
+- `test_gnn_metadata_derivation.py`
 - `test_gnn_spec.py`
 - `test_h3.py`
 - `test_h3_active_inference.py`

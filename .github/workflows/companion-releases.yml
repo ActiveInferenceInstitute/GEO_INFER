@@ -1,0 +1,68 @@
+name: Published companion release identities
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: companion-identities-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  exact-source-identities:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact GEO event source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          path: geo
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check out published GNN 5.0.1 source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: ActiveInferenceInstitute/Generalized_Notation_Notation
+          ref: e54813b4197df36f7ae0054d5e79f3ad2d5db0ff
+          path: gnn
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check out published FEP_Formal 2.1.0 source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: ActiveInferenceInstitute/fep_formal
+          ref: 96bf714d91c088e79b9dea54af0f9151f70de64f
+          path: fep
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Select the stdlib-only identity interpreter
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - name: Check identities, annotated tags, versions, pins and GEO ancestry
+        env:
+          PYTHONPATH: geo/GEO-INFER-TEST/src
+          PYTHONDONTWRITEBYTECODE: "1"
+          GEO_EVENT_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          mkdir -p receipts
+          python -B geo/GEO-INFER-TEST/validate_companion_releases.py \
+            --geo-root geo --gnn-root gnn --fep-root fep \
+            --expected-geo-revision "$GEO_EVENT_REVISION" \
+            > receipts/companion-identities.json
+      - name: Retain the actual offline identity disposition
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: geo-infer-companion-release-identities
+          path: receipts/companion-identities.json
+          if-no-files-found: error
+          retention-days: 30

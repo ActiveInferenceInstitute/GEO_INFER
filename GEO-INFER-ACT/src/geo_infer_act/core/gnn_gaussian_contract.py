@@ -16,6 +16,8 @@ from collections.abc import Iterable
 
 import numpy as np
 
+from .gnn_metadata_derivation import validate_metadata_derivation
+
 from .gnn_contract import (
     GNNArtifact,
     MAX_ARTIFACT_BYTES,
@@ -108,7 +110,7 @@ def validate_gaussian_artifact(data: dict[str, Any]) -> None:
         )
     if type(seconds) not in (int, float) or not np.isfinite(seconds) or seconds <= 0:
         raise ValueError("step_seconds must be finite and positive")
-    _keys(data["provenance"], {"producer", "source_sha256"}, "provenance")
+    validate_metadata_derivation(data["provenance"], step_seconds=seconds)
     provenance = data["provenance"]
     if (
         not isinstance(provenance["producer"], str)

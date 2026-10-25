@@ -8,7 +8,11 @@ from pathlib import Path
 
 import numpy as np
 
-from geo_infer_place.locations.california.contracts import CaliforniaError, Hazard, Strategy
+from geo_infer_place.locations.california.contracts import (
+    CaliforniaError,
+    Hazard,
+    Strategy,
+)
 from geo_infer_place.locations.california.geometry import Landscape
 from geo_infer_place.locations.california.inference import COSTS
 from geo_infer_place.locations.california.monitoring import Experiment, score_beliefs
@@ -61,7 +65,9 @@ def evaluate_experiment(
         for frame in scenario.frames
         for field in frame.fields
     ):
-        raise CaliforniaError("evaluation landscape differs from the experiment carrier")
+        raise CaliforniaError(
+            "evaluation landscape differs from the experiment carrier"
+        )
     areas = np.asarray([cell.area_km2 for cell in landscape.cells])
     rows: list[EvaluationRow] = []
     for scenario in experiment.scenarios:
@@ -80,9 +86,13 @@ def evaluate_experiment(
                     rtol=0,
                     atol=1e-12,
                 ):
-                    raise CaliforniaError("recorded scores differ from posterior and target labels")
+                    raise CaliforniaError(
+                        "recorded scores differ from posterior and target labels"
+                    )
                 modes = frame.modes[index * count : (index + 1) * count]
-                selected = np.asarray(modes) > 0 if modes else np.zeros(count, dtype=bool)
+                selected = (
+                    np.asarray(modes) > 0 if modes else np.zeros(count, dtype=bool)
+                )
                 spent = sum(COSTS[mode] for mode in modes)
                 seen[index] |= selected
                 cumulative[index] += spent
@@ -93,15 +103,21 @@ def evaluate_experiment(
                         round=frame.round,
                         hazard=field.hazard.value,
                         brier=scores.brier,
-                        area_weighted_brier=float(np.average((posterior - truth) ** 2, weights=areas)),
+                        area_weighted_brier=float(
+                            np.average((posterior - truth) ** 2, weights=areas)
+                        ),
                         log_score=scores.log_score,
                         mean_entropy=scores.mean_entropy,
                         spent=spent,
                         cumulative_spent=cumulative[index],
                         selected_cells=int(selected.sum()),
                         unique_selected_cells=int(seen[index].sum()),
-                        selected_area_fraction=float(areas[selected].sum() / areas.sum()),
-                        cumulative_selected_area_fraction=float(areas[seen[index]].sum() / areas.sum()),
+                        selected_area_fraction=float(
+                            areas[selected].sum() / areas.sum()
+                        ),
+                        cumulative_selected_area_fraction=float(
+                            areas[seen[index]].sum() / areas.sum()
+                        ),
                     )
                 )
     lookup = {(row.seed, row.strategy, row.hazard, row.round): row for row in rows}
@@ -110,8 +126,15 @@ def evaluate_experiment(
         for strategy in Strategy:
             for hazard in Hazard:
                 initial = lookup[seed, strategy.value, hazard.value, 0]
-                final = lookup[seed, strategy.value, hazard.value, experiment.config.rounds]
-                rotating = lookup[seed, Strategy.ROTATING.value, hazard.value, experiment.config.rounds]
+                final = lookup[
+                    seed, strategy.value, hazard.value, experiment.config.rounds
+                ]
+                rotating = lookup[
+                    seed,
+                    Strategy.ROTATING.value,
+                    hazard.value,
+                    experiment.config.rounds,
+                ]
                 comparisons.append(
                     ComparisonRow(
                         seed=seed,
@@ -130,7 +153,9 @@ def evaluate_experiment(
 
 
 def export_evaluation(
-    rows: tuple[EvaluationRow, ...], comparisons: tuple[ComparisonRow, ...], output: Path
+    rows: tuple[EvaluationRow, ...],
+    comparisons: tuple[ComparisonRow, ...],
+    output: Path,
 ) -> None:
     """Write portable CSV tables and a Markdown interpretation of the exact trace."""
     for filename, records, schema in (
@@ -138,7 +163,9 @@ def export_evaluation(
         ("comparison.csv", comparisons, ComparisonRow),
     ):
         with (output / filename).open("x", encoding="utf-8", newline="") as stream:
-            writer = csv.DictWriter(stream, fieldnames=[field.name for field in fields(schema)])
+            writer = csv.DictWriter(
+                stream, fieldnames=[field.name for field in fields(schema)]
+            )
             writer.writeheader()
             writer.writerows(asdict(record) for record in records)
     lines = [

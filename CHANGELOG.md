@@ -1,6 +1,40 @@
 # GEO-INFER Changelog
 
-## Documentation accuracy and template publication (2026-10-18)
+All notable changes to the GEO-INFER framework will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.4.0] - 2026-10-25
+
+### GNN 5.0.1 and FEP_Formal 2.1.0 compatibility
+
+- Pin the released GNN source and record exact companion commits, annotated tags,
+  versions and source DOIs. Validate the three checkouts and their actual pin
+  relationships; retain the published GNN release's earlier GEO baseline.
+- Accept GNN's optional Step 7 notation audit metadata in categorical and Gaussian
+  artifacts with strict structure and timestep consistency. Retain provenance in
+  canonical snapshots and exercise real derived exports through paired replay.
+- Keep matrices, axes, explicit units, inference algorithms and existing Cascadia
+  proof fixtures unchanged. Source compatibility and numerical replay remain
+  distinct from historical Lean compilation and broader formal proof.
+- Upgrade the locked Brotli decoder to 1.2.1 and apply reviewed security updates
+  to affected dependency branches, preserving project metadata and the named
+  Python 3.11/3.12 profiles. Add frozen universal dependency auditing with exact
+  package-roster and source/lock custody checks. Keep the upstream Torch pt2
+  limitation explicit; catalogue coverage does not establish its remediation.
+- Repair interchange commands and paths, publish a current companion compatibility
+  guide, and link the released software versions from citation metadata.
+
+### Validation compatibility
+
+- Collect all 15 optional-import boundary cases separately under pytest 9,
+  preserving isolated child processes, assertions and timeouts. Keep strict
+  JUnit counts and selected/executed test identity checks unchanged.
+
+### Documentation accuracy and template publication (2026-10-18)
 
 - Correct legacy guides that advertised nonexistent umbrella imports, commands,
   ontology runtime APIs, Kafka integration and authentication middleware. Keep
@@ -20,14 +54,14 @@
 - Flush the interruption fixture's required stdout before publishing readiness,
   preserving child cleanup, failed receipts, hash checks and existing deadlines.
 
-## Native swarm memory measurement (2026-10-16)
+### Native swarm memory measurement (2026-10-16)
 
 - Keep ANT's fresh-process RSS benchmark independent of inherited coverage
   autostart, and reject active tracing/profiling in that measurement child.
   Preserve its real workload, 200 MiB ceiling, 60-second deadline and parent
   suite coverage. Retain phase timings and timeout stack diagnostics.
 
-## Complete sourced Cascadia boundary (2026-10-16)
+### Complete sourced Cascadia boundary (2026-10-16)
 
 - Capture Aquila Flower's licensed watershed delineation from its named ArcGIS
   service with original metadata/geometry, stable FID inventory, source epoch,
@@ -38,7 +72,7 @@
 - Exercise complete, incomplete, changed-license/source/epoch/extent and tampered
   captures, portable raw-byte checkout and installed Cascadia wheel rendering.
 
-## Service deployment qualification (2026-10-16)
+### Service deployment qualification (2026-10-16)
 
 - Preserve runtime PR89 and use frozen, hash-locked Python 3.12 CPU service
   profiles for BIO, OPS and IoT. Remove unconstrained service dependency installs,
@@ -49,12 +83,7 @@
   failure and image/runtime evidence. Keep CI cache contracts tied to the selected
   interpreter and require both compatibility versions independently of order.
 
-All notable changes to the GEO-INFER framework will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
+### Module composition
 
 - Add EXAMPLES `LocalAPIConnector` and explicit constructor injection for real
   in-process module compositions. Validate dependency graphs and budgets, apply
@@ -1230,6 +1259,7 @@ pass at that SHA.
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 0.4.0 | 2026-10-25 | Versioned GNN/FEP integration and qualified fleet release |
 | 0.3.0 | 2026-09-17 | Per-module manuscript catalog wave |
 | 0.2.1 | 2026-09-15 | Fleet-wide error-handling hardening |
 | 0.2.0 | 2026-09-11 | Repo-wide quality campaign (189 items) |
@@ -1239,6 +1269,7 @@ pass at that SHA.
 
 [0.2.0]: https://github.com/ActiveInferenceInstitute/GEO_INFER/compare/v0.1.0...v0.2.0
 [0.2.1]: https://github.com/ActiveInferenceInstitute/GEO_INFER/compare/v0.2.0...v0.2.1
-[Unreleased]: https://github.com/ActiveInferenceInstitute/GEO_INFER/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/ActiveInferenceInstitute/GEO_INFER/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/ActiveInferenceInstitute/GEO_INFER/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ActiveInferenceInstitute/GEO_INFER/compare/v0.2.1...v0.3.0
 [0.1.0]: https://github.com/ActiveInferenceInstitute/GEO_INFER/releases/tag/v0.1.0

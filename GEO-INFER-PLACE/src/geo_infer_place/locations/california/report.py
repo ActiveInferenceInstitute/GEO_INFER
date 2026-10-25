@@ -31,7 +31,10 @@ from geo_infer_place.locations.california.contracts import (
 )
 from geo_infer_place.locations.california.geometry import Landscape
 from geo_infer_place.locations.california.monitoring import Experiment, check_experiment
-from geo_infer_place.locations.california.evaluation import evaluate_experiment, export_evaluation
+from geo_infer_place.locations.california.evaluation import (
+    evaluate_experiment,
+    export_evaluation,
+)
 from geo_infer_place.locations.california.report_integrity import check_report
 from geo_infer_space.core.graph_statistics import graph_moran, weighted_group_means
 
@@ -234,7 +237,9 @@ def build_report(landscape_path: Path, experiment_path: Path, output: Path) -> P
     ):
         raise CaliforniaError("experiment is bound to another landscape or design")
     receipt = check_experiment(experiment_path.parent, current_execution=False)
-    if experiment_path.name != "experiment.json" or receipt.files["experiment.json"] != digest(experiment_path):
+    if experiment_path.name != "experiment.json" or receipt.files[
+        "experiment.json"
+    ] != digest(experiment_path):
         raise CaliforniaError("report requires the sealed aggregate experiment")
     trajectory, comparisons = evaluate_experiment(landscape, experiment)
     output.mkdir(parents=True, exist_ok=False)
