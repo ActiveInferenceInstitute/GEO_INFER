@@ -48,7 +48,7 @@ class ValidationError(APIError):
             error_info.update(additional_info)
 
         super().__init__(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422),
             detail=detail,
             error_code="VALIDATION_ERROR",
             additional_info=error_info,

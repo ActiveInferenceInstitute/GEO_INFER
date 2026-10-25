@@ -30,6 +30,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation compatibility
 
+- Use Starlette's canonical 422 status with the same numeric fallback for
+  older declared versions, preserving invalid-GeoJSON validation responses
+  under strict warning handling.
+- Align the ECON missing-credentials regression with FastAPI's current 401
+  Bearer challenge. Production authentication checks retain their behavior.
+- Declare security-patched HTTPX2 in the workspace development group for
+  Starlette's current test client. Retain existing HTTPX consumers, runtime
+  package requirements and strict warning handling.
 - Collect all 15 optional-import boundary cases separately under pytest 9,
   preserving isolated child processes, assertions and timeouts. Keep strict
   JUnit counts and selected/executed test identity checks unchanged.

@@ -246,6 +246,10 @@ Discord = "https://discord.activeinference.institute/"
 # NOTE: Intentionally omitted at root. Use module-provided CLIs and
 # `GEO-INFER-TEST/run_unified_tests.py` for testing.
 
+[dependency-groups]
+# Security-patched client used by Starlette TestClient in workspace tests.
+dev = ["httpx2>=2.12.0"]
+
 [tool.mypy]
 python_version = "3.11"
 warn_return_any = true

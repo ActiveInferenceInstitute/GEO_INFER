@@ -42,6 +42,14 @@ network/tool failure, malformed/incomplete response, changed source, or any
 advisory makes the command fail. Findings without a published fix also fail.
 The scheduled/PR/main/tag workflow retains these files on success or failure.
 
+The workspace development group declares `httpx2>=2.12.0` for Starlette
+1.3.1 TestClient. Its earlier HTTPX fallback emits a deprecation warning and
+therefore fails the strict test profile. The selected HTTPX2 floor includes
+its [upstream security fix](https://github.com/pydantic/httpx2/security/advisories/GHSA-8xx6-hgc6-gc2m).
+Use the documented full-workspace sync with `--all-groups`; existing HTTPX
+consumers and member runtime requirements remain in place. The universal
+audit includes the new client and every locked platform branch.
+
 This reports known Python-package advisories at the query time. It does not
 certify application exploitability, absence of unknown vulnerabilities, or the
 security of native libraries bundled inside a wheel. Actual scientific/native,
