@@ -1,6 +1,6 @@
 # GEO-INFER Open Task & Backlog Ledger
 
-> Last reviewed: 2026-10-18 (composable runtime, numerical and visualization continuation; historical evidence retains its original dates)
+> Last reviewed: 2026-10-26 (published 0.4.0 reconciliation and next cross-repository handoff; historical evidence retains its original dates)
 > Scope: Multi-package repository (`GEO-INFER`) across workspace packages and 45 domain modules.
 > Centralization Rule: All planned, open, or deferred engineering work across all modules is tracked exclusively in this ledger. Module source code and tests must never carry local task markers (`TODO`, `FIXME`, `XXX`, `HACK`).
 > History note (2026-09-07): the published history was rewritten to re-attribute
@@ -15,7 +15,50 @@
 
 ## Open work and acceptance criteria
 
-### Current GEO-INFER continuation — 2026-10-18
+### Current disposition after 0.4.0 publication — 2026-10-26
+
+[GEO-INFER 0.4.0](https://github.com/ActiveInferenceInstitute/GEO_INFER/releases/tag/v0.4.0)
+is published from main `71ce1f77418c6f8c6edc8f83c7682c8eab207e01`, tree
+`46a4febd0a5a794c275afc5f74f4412bca8885b4`, under annotated tag object
+`891d4bb6774c31028891180d4dc1d0a90a28f127`. Issue
+[#74](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/74) is closed
+as completed. All 52 GitHub release assets were verified through both anonymous
+and authenticated downloads; `CHECKSUMS.txt` covers the other 51 assets.
+The 46 qualification jobs across eight tag workflows and the separate two-job
+release workflow succeeded. That operational workflow completed before the
+release object existed; the later explicit publication and destination-byte
+verification establish the release assets. These are distinct acceptance steps.
+See [0.4.0 release evidence](GEO-INFER-INTRA/docs/releases/0.4.0_readiness.md)
+and the [current issue reconciliation](GEO-INFER-INTRA/docs/releases/issue_reconciliation_2026_10.md#current-disposition-2026-10-26).
+
+The release links published GNN 5.0.1 and FEP_Formal 2.1.0 through the
+[companion contract](GEO-INFER-INTRA/docs/integration/companion_releases.md).
+Their source, pin and proof identities remain unchanged. Later roadmap work
+requires its own acceptance and cannot inherit the released source's receipts.
+GitHub publication does not establish a registry deployment or a separately
+uploaded manuscript DOI.
+
+| Open item | Next action | Evidence required for closure |
+| --- | --- | --- |
+| SPACE-01 / [#69](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/69) | Retain the owner hold on GPU experiments; first define a Mac-compatible backend and precision contract when resumed. | Actual physical-backend numerical parity, failure/chunk behavior, memory and cold/warm timing. CPU operation and host-CPU H3 do not qualify GPU hardware. |
+| TEST-GNN-01 / [#72](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/72) | Investigate a bounded recurrence of the historical PROJ SQLite I/O failure. | Loaded versions, import/file state and a demonstrated causal chain; successful current CRS tests alone leave the cause unknown. |
+| TEST-04 / [#73](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/73) | Await the account owner's configured-advisor availability decision. | An actual successful configured-service review bound to the chosen source; native independent review remains separate. |
+| TEST-CENSUS-01 / [#78](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/78) | Capture the actual owned live-process denial class if it recurs. | Positive kernel/credential/LSM evidence with fail-closed ownership and privacy; nonrecurrence does not identify the historical task. |
+
+The next cross-repository work is a scoped handoff, not completion of GNN's
+broader E4/S1 roadmap. Detailed responsibilities and admission checks are in
+[the companion handoff](GEO-INFER-INTRA/docs/integration/companion_releases.md#next-cross-repository-handoff-e4-and-s1).
+
+| Handoff | GEO-owned next deliverable | Acceptance boundary |
+| --- | --- | --- |
+| E4 — formal-to-numerical semantics | Agree one admitted finite or Gaussian interchange fixture with GNN's independent semantic-witness owner and the relevant FEP theorem owner; declare source, quantities, axes, conditioning/time, units and precision before implementation. | Independent source extraction and numerical references, mismatch counterexamples, and separate current native/proof/custody receipts. Compatible values or shapes do not prove equivalence. |
+| S1 — source-preserving multi-request processing | Supply an immutable selected-source/prompt manifest if a GEO workflow participates in GNN's synthesis acceptance; agree required cross-part questions and completion/refusal criteria. | Every selected byte and required prompt accounted for, exact provider/model/context identities, genuine joint synthesis and resume/cancellation/deadline controls. Fragment answers do not establish joint interpretation. |
+
+### Historical GEO-INFER continuation — 2026-10-18
+
+The following campaign description retains its original source epochs and
+then-open issue decisions. The current disposition above supersedes its release
+status; it does not reinterpret the historical measurements.
 
 The latest accepted checkpoint before this continuation is
 `0ea7341e99ec80488238672ebed4d0f358b986b2`, published through
@@ -156,8 +199,10 @@ the issue ledger distinguishes completed candidate verification from unmet scope
 Implemented preparation changes remain recorded in [CHANGELOG.md](CHANGELOG.md);
 do not reopen completed work without a concrete source/behavior finding.
 The older standing rows below retain their historical evidence. CODE-01 was refreshed at fea9f9570 and recurs after major source changes.
-The current release boundary is REL-04,
-not the historical 0.2.x/0.3.x actions described in REL-01.
+At that checkpoint the release boundary was REL-04, rather than the historical
+0.2.x/0.3.x actions described in REL-01. REL-04 / #74 subsequently completed in
+the published 0.4.0 disposition above; the older release narratives are history,
+not instructions to repeat publication.
 
 ### Major — external resources or release-scale decisions
 

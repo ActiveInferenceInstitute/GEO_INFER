@@ -1,5 +1,26 @@
 # Issue reconciliation, 2026-10-08
 
+## Current disposition, 2026-10-26
+
+[GEO-INFER 0.4.0](https://github.com/ActiveInferenceInstitute/GEO_INFER/releases/tag/v0.4.0)
+is published at source `71ce1f77418c6f8c6edc8f83c7682c8eab207e01`, tree
+`46a4febd0a5a794c275afc5f74f4412bca8885b4`, annotated tag object
+`891d4bb6774c31028891180d4dc1d0a90a28f127`.
+[#74](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/74) is closed
+as completed after tag qualification, explicit GitHub publication and anonymous
+plus authenticated byte verification of all 52 assets (`CHECKSUMS.txt`: 51
+entries). [Release evidence](0.4.0_readiness.md) separates the 46 qualification
+jobs from the two operational release jobs and the later asset publication.
+
+The current open inventory is #69 (physical GPU evidence, owner hold), #72
+(historical PROJ cause), #73 (configured-advisor review) and #78 (historical
+owned-process denial class). Their acceptance criteria remain unmet. Issue #70's
+complete sourced boundary was integrated; its earlier acquisition row below
+does not reopen it. The [working ledger](../../../TODO.md#current-disposition-after-040-publication--2026-10-26)
+owns current next actions and the [companion handoff](../integration/companion_releases.md#next-cross-repository-handoff-e4-and-s1)
+defines the next E4/S1 coordination boundary. New work must retain its own source
+and evidence identities; it cannot refresh a published receipt by changing prose.
+
 ## Checkpoint context, reviewed 2026-10-18
 
 The table below is a historical source-bound reconciliation, not the current
@@ -12,8 +33,8 @@ eleven-group verification, 190 ROOT cases and a reviewed 33-page native PDF.
 These measurements qualify that baseline only. Later source changes and a
 template-backed PDF require their own validation and page review.
 
-The five open issues are #69 (physical GPU evidence), #72 (historical PROJ
-cause), #73 (configured-advisor review), #74 (release decisions) and #78
+At that checkpoint, the five open issues were #69 (physical GPU evidence), #72
+(historical PROJ cause), #73 (configured-advisor review), #74 (release decisions) and #78
 (historical owned-process denial class). Issue #70's complete sourced boundary
 was integrated subsequently; its historical table row does not reopen it.
 See [the working ledger](../../../TODO.md) and the live issue records for
@@ -65,7 +86,13 @@ Completed implementation, hosted receipts, historical failed attempts and
 unmet acceptance criteria must remain distinguishable. Public issue comments
 must not include private host inventories, credentials or conversation artifacts.
 
-## Bounded next steps for open issues
+## Historical next steps recorded before publication
+
+These preserve the original acceptance decisions and failed evidence. The #70
+acquisition and #74 release steps subsequently completed and are not current
+instructions. The current four open scopes are identified above; successful
+0.4.0 tests and publication do not supply their missing hardware, advisor or
+historical-cause evidence.
 
 - **#69:** retain CPU operation while the owner holds GPU experiments. A future
   backend must work from the Mac target and meet the float64 contract on actual
