@@ -7,12 +7,31 @@ authors:
   - name: Active Inference Institute
     website: https://activeinference.org
 version: 0.4.0
+date-released: "2026-10-25"
 license: CC-BY-NC-SA-4.0
 repository-code: "https://github.com/ActiveInferenceInstitute/GEO_INFER"
 abstract: "GEO-INFER is a comprehensive geospatial inference framework organized as a fleet of 45 domain modules (GEO-INFER-*) applying active-inference principles to geospatial analysis across ecological, civic, and commercial domains."
-doi: ""
 keywords:
   - geospatial
   - active inference
   - free energy principle
   - geographic information systems
+references:
+  - type: software
+    title: "Generalized_Notation_Notation (GNN)"
+    authors:
+      - family-names: Friedman
+        given-names: Daniel Ari
+        orcid: https://orcid.org/0000-0001-6232-9096
+    version: "5.0.1"
+    doi: 10.5281/zenodo.23631909
+    url: https://github.com/ActiveInferenceInstitute/Generalized_Notation_Notation/releases/tag/v5.0.1
+  - type: software
+    title: "FEP_Formal: Towards Lean 4 Formalization of the Free Energy Principle"
+    authors:
+      - family-names: Friedman
+        given-names: Daniel Ari
+        orcid: https://orcid.org/0000-0001-6232-9096
+    version: "2.1.0"
+    doi: 10.5281/zenodo.23631895
+    url: https://github.com/ActiveInferenceInstitute/fep_formal/releases/tag/v2.1.0

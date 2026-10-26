@@ -6,6 +6,77 @@ import hashlib
 import json
 from pathlib import Path
 
+from .torch_variant import locked_torch_constraint, provenance_hashes
+
+
+def installation_source(root: Path, target: dict, constraints: str) -> dict:
+    """Bind an actual child ABI and exported pins to the single source owner."""
+    if (
+        not isinstance(target, dict)
+        or set(target)
+        != {"implementation", "version", "sys_platform", "machine", "soabi"}
+        or any(
+            not isinstance(target.get(k), str) or not target[k]
+            for k in ("implementation", "sys_platform", "machine")
+        )
+        or not isinstance(target.get("version"), list)
+        or len(target["version"]) != 2
+        or any(type(n) is not int or n < 0 for n in target["version"])
+        or (target.get("soabi") is not None and not isinstance(target["soabi"], str))
+        or not isinstance(constraints, str)
+        or not constraints
+        or len(constraints.encode("utf-8")) > 4 * 1024**2
+        or "\0" in constraints
+    ):
+        raise ValueError("Invalid wheel installation target or exported constraints")
+    binding = locked_torch_constraint(root, target)
+    text = binding["requirement"] + "\n" if binding is not None else ""
+    lock_sha256 = hashlib.sha256((root / "uv.lock").read_bytes()).hexdigest()
+    if binding is not None and binding["lock_sha256"] != lock_sha256:
+        raise ValueError("Torch binding belongs to another lock")
+    return {
+        "schema": "geo-infer-wheel-installation-source/1",
+        "target": target,
+        "lock_sha256": lock_sha256,
+        "exported_constraints": {
+            "text": constraints,
+            "sha256": hashlib.sha256(constraints.encode()).hexdigest(),
+        },
+        "variant_constraints": {
+            "text": text,
+            "sha256": hashlib.sha256(text.encode()).hexdigest(),
+        },
+        "torch_binding": binding,
+        "owner_sha256": {
+            Path(path).name: digest for path, digest in provenance_hashes().items()
+        },
+    }
+
+
+def installation_source_sha256(value: dict) -> str:
+    """Use one deterministic digest for producer, child output and reader."""
+    return hashlib.sha256(
+        json.dumps(
+            value, sort_keys=True, separators=(",", ":"), allow_nan=False
+        ).encode()
+    ).hexdigest()
+
+
+def validate_installation_source(value: dict, *, root: Path, lock_sha256: str) -> str:
+    """Refuse missing, altered or unauthenticated installed-source evidence."""
+    if not isinstance(value, dict) or not isinstance(
+        value.get("exported_constraints"), dict
+    ):
+        raise ValueError("Wheel installation-source role is missing or malformed")
+    expected = installation_source(
+        root, value.get("target"), value["exported_constraints"].get("text")
+    )
+    if value != expected or value["lock_sha256"] != lock_sha256:
+        raise ValueError(
+            "Wheel installation-source evidence differs from the frozen source contract"
+        )
+    return installation_source_sha256(value)
+
 
 def validate_wheel_receipt(
     path: Path,
@@ -133,6 +204,17 @@ def validate_wheel_receipt(
         if not probe.get("probe_token") or probe["probe_token"] in tokens:
             raise ValueError("Installed probe completion token is missing or repeated")
         tokens.add(probe["probe_token"])
+        installation = probe.get("installation_source")
+        installation_digest = validate_installation_source(
+            installation,
+            root=Path(__file__).resolve().parents[3],
+            lock_sha256=source["lock_sha256"],
+        )
+        if (
+            probe.get("installation_source_sha256") != installation_digest
+            or probe.get("installation_target") != installation["target"]
+        ):
+            raise ValueError("Installed child target/source binding differs")
         artifacts = probe["artifacts"]
         if not isinstance(artifacts, dict):
             raise ValueError("Installed probe artifacts must be a JSON object")
@@ -166,6 +248,8 @@ def validate_wheel_receipt(
                 "version",
                 "origin",
                 "resources",
+                "installation_source_sha256",
+                "installation_target",
             )
         ):
             raise ValueError(

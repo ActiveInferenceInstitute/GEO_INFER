@@ -1,3 +1,12 @@
 # Runtime exception and removal checks: GEO-INFER-INTRA/docs/getting_started/index.md.
 # Project-only package/workspace metadata stays in the unchanged pyproject.toml.
 required-version = "==0.13.1"
+constraint-dependencies = [
+    "torch==2.13.0+cu126; sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+
+# Mirror effective resolver settings; source selectors stay in pyproject.
+[[index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true

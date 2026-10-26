@@ -8,6 +8,7 @@ Developer Guide workspace within `GEO-INFER-INTRA`.
 - `autonomous_agent_guide.md`
 - `code_structure.md`
 - `contributing.md`
+- `dependency_audit.md`
 - `index.md`
 - `repo_guidelines.md`
 - `testing_guide.md`

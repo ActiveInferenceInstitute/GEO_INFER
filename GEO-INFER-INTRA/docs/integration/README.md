@@ -6,6 +6,7 @@ Integration workspace within `GEO-INFER-INTRA`.
 
 - `agent_interfaces.md`
 - `backend_profiling.md`
+- `companion_releases.md`
 - `external_systems.md`
 - `geo_infer_modules.md`
 - `index.md`

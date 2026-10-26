@@ -112,6 +112,10 @@ def test_wheel_probe_reads_packaged_resources(tmp_path):
     assert len(receipts) == 1
     receipt = receipts[0]
     assert receipt["status"] == "ok" and receipt["returncode"] == 0
+    assert receipt["installation_target"] == receipt["installation_source"]["target"]
+    assert receipt[
+        "installation_source_sha256"
+    ] == _driver().installation_source_sha256(receipt["installation_source"])
     assert receipt["wheel_sha256"] == hashlib.sha256(wheel.read_bytes()).hexdigest()
     assert "geo_infer_probe/data.json" in receipt["resources"]
     stdout = next(name for name in receipt["artifacts"] if name.endswith("stdout.log"))
@@ -401,7 +405,17 @@ def test_cli_retains_failed_build_and_changed_source(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize(
     "fault",
-    ["revision", "escape", "empty", "output_identity", "probe_hash", "build_output"],
+    [
+        "revision",
+        "escape",
+        "empty",
+        "output_identity",
+        "probe_hash",
+        "build_output",
+        "installation_role",
+        "installation_target",
+        "installation_digest",
+    ],
 )
 def test_wheel_receipt_rejects_false_evidence(tmp_path, monkeypatch, fault):
     """Independent artifact and inventory defects cannot validate as acceptance."""
@@ -419,6 +433,14 @@ def test_wheel_receipt_rejects_false_evidence(tmp_path, monkeypatch, fault):
         receipt["probes"] = []
     elif fault == "probe_hash":
         receipt["probes"][0]["probe_sha256"] = "0" * 64
+    elif fault == "installation_role":
+        receipt["probes"][0]["installation_source"]["variant_constraints"]["text"] = (
+            "torch==0\n"
+        )
+    elif fault == "installation_target":
+        receipt["probes"][0]["installation_target"]["version"] = [0, 0]
+    elif fault == "installation_digest":
+        receipt["probes"][0]["installation_source_sha256"] = "0" * 64
     elif fault == "build_output":
         name = next(iter(receipt["wheels"][0]["artifacts"]))
         (path.parent / name).write_text("replaced build output")
@@ -585,3 +607,178 @@ def test_nested_receipt_shapes_fail_with_controlled_verdict(
         validate_wheel_receipt(
             path, modules=[module.name], profiles=[], require_imports=True
         )
+
+
+def test_installation_source_retains_child_and_exact_constraint(tmp_path, monkeypatch):
+    """An additive direct constraint binds bytes without requesting the package."""
+    from geo_infer_test import wheel_evidence as evidence
+
+    (tmp_path / "uv.lock").write_bytes(b"frozen lock")
+    target = {
+        "implementation": "cpython",
+        "version": [3, 11],
+        "sys_platform": "linux",
+        "machine": "x86_64",
+        "soabi": "cpython-311-x86_64-linux-gnu",
+    }
+    binding = {
+        "requirement": "torch @ https://download.pytorch.org/fixture.whl#sha256="
+        + "a" * 64,
+        "lock_sha256": hashlib.sha256(b"frozen lock").hexdigest(),
+        "target": target,
+    }
+    monkeypatch.setattr(
+        evidence,
+        "locked_torch_constraint",
+        lambda root, actual: binding if actual == target else None,
+    )
+    value = evidence.installation_source(tmp_path, target, "fixture==1\n")
+    assert value["variant_constraints"]["text"] == binding["requirement"] + "\n"
+    assert value["torch_binding"] == binding
+    assert evidence.validate_installation_source(
+        value, root=tmp_path, lock_sha256=binding["lock_sha256"]
+    ) == evidence.installation_source_sha256(value)
+
+
+@pytest.mark.parametrize(
+    "fault",
+    ["target", "constraint", "constraint_hash", "lock", "binding", "owner", "missing"],
+)
+def test_installation_source_rejects_changed_roles(tmp_path, fault):
+    """Source roles are authenticated, not merely included as informational JSON."""
+    from geo_infer_test import wheel_evidence as evidence
+
+    (tmp_path / "uv.lock").write_bytes(b"frozen lock")
+    target = {
+        "implementation": "cpython",
+        "version": [3, 12],
+        "sys_platform": "darwin",
+        "machine": "arm64",
+        "soabi": "cpython-312-darwin",
+    }
+    value = evidence.installation_source(tmp_path, target, "fixture==1\n")
+    if fault == "target":
+        value["target"]["version"] = [3, True]
+    elif fault == "constraint":
+        value["variant_constraints"]["text"] = "torch==0\n"
+    elif fault == "constraint_hash":
+        value["exported_constraints"]["sha256"] = "0" * 64
+    elif fault == "lock":
+        value["lock_sha256"] = "0" * 64
+    elif fault == "binding":
+        value["torch_binding"] = {"requirement": "torch==0"}
+    elif fault == "owner":
+        value["owner_sha256"] = {}
+    else:
+        value = None
+    with pytest.raises(
+        ValueError, match="installation|Installation|source|Source|target"
+    ):
+        evidence.validate_installation_source(
+            value, root=tmp_path, lock_sha256=hashlib.sha256(b"frozen lock").hexdigest()
+        )
+
+
+@pytest.mark.parametrize("bad_hash", [False, True])
+def test_uv_direct_constraint_authenticates_actual_wheel_bytes(tmp_path, bad_hash):
+    """The real uv constraint path verifies a tiny local wheel's URL hash."""
+    driver = _driver()
+    wheel = _wheel(tmp_path, '__version__ = "0.0.1"\n')
+    digest = hashlib.sha256(wheel.read_bytes()).hexdigest()
+    if bad_hash:
+        _wheel(tmp_path, '__version__ = "0.0.1"\nchanged = True\n')
+    constraint = tmp_path / "direct-constraint.txt"
+    constraint.write_text(
+        "geo-infer-probe @ " + wheel.as_uri() + "#sha256=" + digest + "\n"
+    )
+    environment = tmp_path / "venv"
+    driver.run_process(
+        ["uv", "venv", "--python", sys.executable, str(environment)],
+        cwd=tmp_path,
+        check=True,
+        timeout=120,
+    )
+    executable = environment / (
+        "Scripts/python.exe" if sys.platform == "win32" else "bin/python"
+    )
+    command = [
+        "uv",
+        "--no-cache",
+        "pip",
+        "install",
+        "--no-index",
+        "--python",
+        str(executable),
+        "--constraint",
+        str(constraint),
+        str(wheel),
+    ]
+    if bad_hash:
+        with pytest.raises(subprocess.CalledProcessError) as error:
+            driver.run_process(command, cwd=tmp_path, check=True, timeout=120)
+        assert "hash" in error.value.stderr.lower()
+    else:
+        driver.run_process(command, cwd=tmp_path, check=True, timeout=120)
+        driver.run_process(
+            [
+                str(executable),
+                "-I",
+                "-c",
+                "import geo_infer_probe; assert geo_infer_probe.__version__ == '0.0.1'",
+            ],
+            cwd=tmp_path,
+            check=True,
+            timeout=30,
+        )
+
+
+def test_uv_constraint_does_not_install_unrequested_package(tmp_path):
+    """An unused URL constraint cannot inflate a minimal wheel environment."""
+    driver = _driver()
+    wheel = _wheel(tmp_path, "")
+    constraint = tmp_path / "unused-constraint.txt"
+    constraint.write_text(
+        "unrequested-package @ "
+        + (tmp_path / "unrequested_package-0.0.1-py3-none-any.whl").as_uri()
+        + "#sha256="
+        + "0" * 64
+        + "\n"
+    )
+    environment = tmp_path / "venv"
+    driver.run_process(
+        ["uv", "venv", "--python", sys.executable, str(environment)],
+        cwd=tmp_path,
+        check=True,
+        timeout=120,
+    )
+    executable = environment / (
+        "Scripts/python.exe" if sys.platform == "win32" else "bin/python"
+    )
+    driver.run_process(
+        [
+            "uv",
+            "--no-cache",
+            "pip",
+            "install",
+            "--no-index",
+            "--python",
+            str(executable),
+            "--constraint",
+            str(constraint),
+            str(wheel),
+        ],
+        cwd=tmp_path,
+        check=True,
+        timeout=120,
+    )
+    driver.run_process(
+        [
+            str(executable),
+            "-I",
+            "-c",
+            "import importlib.util; assert importlib.util.find_spec('unrequested_package') is None; import geo_infer_probe",
+        ],
+        cwd=tmp_path,
+        check=True,
+        timeout=30,
+    )

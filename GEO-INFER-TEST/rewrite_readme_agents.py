@@ -465,6 +465,16 @@ uv run python GEO-INFER-TEST/validate_h3_active_inference_contract.py
 uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
 ```
 
+## Versioned GNN provenance
+
+Categorical and Gaussian GNN artifacts accept the optional Step 7
+`metadata_derivation` audit record with strict structure and exact timestep
+agreement. Complete metadata stays in canonical snapshots and artifact digests;
+it does not authenticate the source or change matrices, axes, explicit units or
+inference methods. Explicit space options remain authoritative over recorded
+declarations. Factored artifacts retain their existing provenance contract.
+See [GNN interchange](docs/gnn_interchange.md) for released producer commands.
+
 ## Cascadia River Homing Example
 
 - `examples/cascadia/cascadia_homing.py` compiles the retained NHDPlus HR
@@ -1166,6 +1176,11 @@ Agent automation: [script, CLI, MCP and skills]({link_prefix}GEO-INFER-INTRA/doc
 share discovery and execution across all {len(modules)} modules. After a full
 workspace sync, use `uv run --frozen geo-infer modules` and
 `uv run --frozen geo-infer catalog SPACE`.
+
+Companion releases: [GNN 5.0.1](https://github.com/ActiveInferenceInstitute/Generalized_Notation_Notation/releases/tag/v5.0.1)
+and [FEP_Formal 2.1.0](https://github.com/ActiveInferenceInstitute/fep_formal/releases/tag/v2.1.0).
+The [compatibility guide]({link_prefix}GEO-INFER-INTRA/docs/integration/companion_releases.md)
+describes exact source pins, supported interchange contracts and separate proof boundaries.
 
 ## Quick Start
 

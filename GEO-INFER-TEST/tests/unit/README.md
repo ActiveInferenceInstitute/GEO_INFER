@@ -9,11 +9,13 @@ Unit workspace within `GEO-INFER-TEST`.
 - `test_build_package_wheels.py`
 - `test_check_coverage_floor_gate.py`
 - `test_ci_workflow_contracts.py`
+- `test_companion_releases.py`
 - `test_crescent_city_bundled_seed_uniqueness.py`
 - `test_crescent_city_civic_intel_demo.py`
 - `test_crescent_city_geo_intel_contract_sync.py`
 - `test_data_domains.py`
 - `test_data_quality_contract.py`
+- `test_dependency_audit.py`
 - `test_doc_examples.py`
 - `test_documentation_census.py`
 - `test_execution_contracts.py`
@@ -41,6 +43,7 @@ Unit workspace within `GEO-INFER-TEST`.
 - `test_test_orchestrator.py`
 - `test_test_runner.py`
 - `test_testing_helpers.py`
+- `test_torch_variant.py`
 - `test_unified_runner_extra_test_paths.py`
 - `test_validate_doc_imports.py`
 - `test_validate_h3_active_inference_contract.py`

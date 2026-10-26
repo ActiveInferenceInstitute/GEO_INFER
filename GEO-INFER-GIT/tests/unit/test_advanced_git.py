@@ -463,7 +463,10 @@ def test_cherry_pick_resolution_preserves_whole_file_and_unrelated_work(
     if index_version == 3:
         git("update-index", "--skip-worktree", "index-flags.txt", cwd=repo_dir)
     git("update-index", f"--index-version={index_version}", cwd=repo_dir)
-    assert int.from_bytes((repo_dir / ".git" / "index").read_bytes()[4:8], "big") == index_version
+    assert (
+        int.from_bytes((repo_dir / ".git" / "index").read_bytes()[4:8], "big")
+        == index_version
+    )
     (repo_dir / "unrelated.txt").write_text("local work\n")
     assert manager.resolve_conflicts(0, strategy)
     assert (repo_dir / "file.txt").read_text() == f"prefix\n{expected}\nsuffix\n"

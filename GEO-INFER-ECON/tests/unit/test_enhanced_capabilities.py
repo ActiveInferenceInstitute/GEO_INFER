@@ -423,7 +423,8 @@ class TestAPI(unittest.TestCase):
             "parameters": {},
         }
         response = self.client.post("/api/models/execute", json=request_data)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.headers.get("WWW-Authenticate"), "Bearer")
 
     def test_model_execution_rejects_invalid_token(self):
         """Test model execution endpoint rejects unknown bearer tokens with 401."""

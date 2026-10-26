@@ -195,16 +195,25 @@ def test_real_http_capture_closed_roster_and_polygon_rasterization(
         check_sources(sources)
 
 
-def test_workflow_cli_retains_inputs_and_checks_a_relocated_edition(tmp_path: Path) -> None:
+def test_workflow_cli_retains_inputs_and_checks_a_relocated_edition(
+    tmp_path: Path,
+) -> None:
     """Exercise real CLI orchestration, transient HTTP recovery and relocated custody."""
     import shutil
     from geo_infer_place.locations.california.contracts import write_record
-    from geo_infer_place.locations.california.workflow import check_workflow, run_workflow
+    from geo_infer_place.locations.california.workflow import (
+        check_workflow,
+        run_workflow,
+    )
 
     features, drought = fixture_payloads(tmp_path)
     config = ObservatoryConfig(
-        first_year=2016, target_year=2018, rounds=1, seeds=(0,),
-        budget=12, hazard_budget_floor=1,
+        first_year=2016,
+        target_year=2018,
+        rounds=1,
+        seeds=(0,),
+        budget=12,
+        hazard_budget_floor=1,
     )
     sources = tmp_path / "sources"
     with source_server(features, drought, "transient") as endpoints:
@@ -216,9 +225,21 @@ def test_workflow_cli_retains_inputs_and_checks_a_relocated_edition(tmp_path: Pa
     models = module / "locations" / "california" / "models"
     output = tmp_path / "edition"
     result = subprocess.run(
-        [sys.executable, str(cli), "--design", str(design), "--sources", str(sources),
-         "--models", str(models), "--workflow", str(output)],
-        capture_output=True, text=True, check=True,
+        [
+            sys.executable,
+            str(cli),
+            "--design",
+            str(design),
+            "--sources",
+            str(sources),
+            "--models",
+            str(models),
+            "--workflow",
+            str(output),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
     )
     assert result.stdout.strip() == str(output / "workflow.json")
     receipt = check_workflow(output, current_execution=True)
@@ -227,7 +248,9 @@ def test_workflow_cli_retains_inputs_and_checks_a_relocated_edition(tmp_path: Pa
     shutil.copytree(output, moved)
     checked = subprocess.run(
         [sys.executable, str(cli), "--check-workflow", str(moved)],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     assert json.loads(checked.stdout)["files"] == receipt.files
     with pytest.raises(FileExistsError):
@@ -243,7 +266,9 @@ def test_workflow_cli_retains_inputs_and_checks_a_relocated_edition(tmp_path: Pa
         check_workflow(moved)
 
 
-def test_transient_retry_budget_exhaustion_does_not_seal_sources(tmp_path: Path, caplog) -> None:
+def test_transient_retry_budget_exhaustion_does_not_seal_sources(
+    tmp_path: Path, caplog
+) -> None:
     """A real persistent HTTP 503 must stop after three attempts without sealing input custody."""
     features, drought = fixture_payloads(tmp_path)
     output = tmp_path / "unavailable"
@@ -251,7 +276,11 @@ def test_transient_retry_budget_exhaustion_does_not_seal_sources(tmp_path: Path,
     with source_server(features, drought, "unavailable") as endpoints:
         with pytest.raises(RuntimeError, match="HTTP status 503"):
             acquire_sources(config, output, endpoints=endpoints, timeout=30)
-    retries = [record for record in caplog.records if record.name.endswith("california.acquisition")]
+    retries = [
+        record
+        for record in caplog.records
+        if record.name.endswith("california.acquisition")
+    ]
     assert len(retries) == 2
     assert not (output / "sources_receipt.json").exists()
 

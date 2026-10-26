@@ -161,6 +161,16 @@ uv run python GEO-INFER-TEST/validate_h3_active_inference_contract.py
 uv run python GEO-INFER-TEST/validate_act_geospatial_contract.py
 ```
 
+## Versioned GNN provenance
+
+Categorical and Gaussian GNN artifacts accept the optional Step 7
+`metadata_derivation` audit record with strict structure and exact timestep
+agreement. Complete metadata stays in canonical snapshots and artifact digests;
+it does not authenticate the source or change matrices, axes, explicit units or
+inference methods. Explicit space options remain authoritative over recorded
+declarations. Factored artifacts retain their existing provenance contract.
+See [GNN interchange](docs/gnn_interchange.md) for released producer commands.
+
 ## Cascadia River Homing Example
 
 - `examples/cascadia/cascadia_homing.py` compiles the retained NHDPlus HR

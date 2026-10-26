@@ -31,13 +31,17 @@ def main() -> int:
     parser.add_argument("--report", type=Path)
     parser.add_argument("--workflow", type=Path)
     args = parser.parse_args()
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"
+    )
     if args.check_report is not None or args.check_workflow is not None:
         supplied = {name for name, value in vars(args).items() if value is not None}
         if len(supplied) != 1:
             parser.error("an integrity check excludes all other inputs")
         if args.check_report is not None:
-            from geo_infer_place.locations.california.report_integrity import check_report
+            from geo_infer_place.locations.california.report_integrity import (
+                check_report,
+            )
 
             print(check_report(args.check_report).model_dump_json())
         else:

@@ -26,7 +26,9 @@
 - `__init__.py`
 - `_template_worker.py`
 - `act_research_oracles.py`
+- `companion_releases.py`
 - `coverage.py`
+- `dependency_audit.py`
 - `doc_examples.py`
 - `documentation_contracts.py`
 - `execution.py`
@@ -36,8 +38,10 @@
 - `research_evidence.py`
 - `selection.py`
 - `testing.py`
+- `torch_variant.py`
 - `wheel_evidence.py`
 - `wheel_profiles.py`
+- `torch_cu126_variant.json`
 
 ## Validation
 

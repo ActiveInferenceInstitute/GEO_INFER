@@ -9,7 +9,9 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `__init__.py`
 - `_template_worker.py`
 - `act_research_oracles.py`
+- `companion_releases.py`
 - `coverage.py`
+- `dependency_audit.py`
 - `doc_examples.py`
 - `documentation_contracts.py`
 - `execution.py`
@@ -19,8 +21,10 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `research_evidence.py`
 - `selection.py`
 - `testing.py`
+- `torch_variant.py`
 - `wheel_evidence.py`
 - `wheel_profiles.py`
+- `torch_cu126_variant.json`
 
 ## Public Interface
 
@@ -28,22 +32,22 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `act_research_oracles.py:research_posterior_reference` (function)
 - `act_research_oracles.py:research_policy_reference` (function)
 - `act_research_oracles.py:assert_research_policy` (function)
+- `companion_releases.py:validate_companion_releases` (function)
 - `coverage.py:measure_module` (function)
 - `coverage.py:junit_failure_names` (function)
 - `coverage.py:junit_failure_details` (function)
 - `coverage.py:run_coverage_measurements` (function)
 - `coverage.py:main` (function)
+- `dependency_audit.py:canonical_name` (function)
+- `dependency_audit.py:advisory_inventory` (function)
+- `dependency_audit.py:locked_inventory` (function)
+- `dependency_audit.py:requirement_batches` (function)
+- `dependency_audit.py:validate_response` (function)
+- `dependency_audit.py:audit` (function)
+- `dependency_audit.py:main` (function)
 - `doc_examples.py:load_manifest` (function)
 - `doc_examples.py:example_code` (function)
 - `doc_examples.py:verify_page` (function)
-- `doc_examples.py:main` (function)
-- `documentation_contracts.py:skill_python_syntax_errors` (function)
-- `documentation_contracts.py:documentation_snippet_errors` (function)
-- `documentation_contracts.py:module_catalog_census_errors` (function)
-- `execution.py:CommandResult` (class)
-- `execution.py:Module` (class)
-- `execution.py:SuiteReport` (class)
-- `execution.py:discover_geo_infer_modules` (function)
 
 ## Module Metadata
 

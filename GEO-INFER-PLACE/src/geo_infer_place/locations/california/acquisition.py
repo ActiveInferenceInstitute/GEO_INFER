@@ -41,7 +41,10 @@ CAPTURE_BYTES: Final = 128 * 1024 * 1024
 LOGGER = logging.getLogger(__name__)
 RETRYABLE_FAILURES: Final = {
     "Source network request failed",
-    *(f"Source returned HTTP status {status}" for status in (408, 429, 500, 502, 503, 504)),
+    *(
+        f"Source returned HTTP status {status}"
+        for status in (408, 429, 500, 502, 503, 504)
+    ),
 }
 
 
@@ -128,11 +131,15 @@ def acquire_sources(
             except TimeoutError:
                 if attempt == 3 or time.monotonic() >= deadline:
                     raise
-                LOGGER.warning("Retrying %s after timeout (attempt %d/3)", name, attempt)
+                LOGGER.warning(
+                    "Retrying %s after timeout (attempt %d/3)", name, attempt
+                )
             except RuntimeError as error:
                 if str(error) not in RETRYABLE_FAILURES or attempt == 3:
                     raise
-                LOGGER.warning("Retrying %s after %s (attempt %d/3)", name, error, attempt)
+                LOGGER.warning(
+                    "Retrying %s after %s (attempt %d/3)", name, error, attempt
+                )
             attempt += 1
         path = output / name
         with path.open("xb") as stream:

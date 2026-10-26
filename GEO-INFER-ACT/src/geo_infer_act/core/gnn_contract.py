@@ -16,6 +16,8 @@ from collections.abc import Iterable
 
 import numpy as np
 
+from .gnn_metadata_derivation import validate_metadata_derivation
+
 CONTRACT_VERSION = "gnn-geo-infer/1"
 MAX_ARTIFACT_BYTES = 32 * 1024 * 1024
 MAX_MATRIX_ENTRIES = 1_000_000
@@ -164,7 +166,7 @@ def _validate(data: dict[str, Any]) -> None:
     seconds = data["time"]["step_seconds"]
     if type(seconds) not in (int, float) or not np.isfinite(seconds) or seconds <= 0:
         raise ValueError("step_seconds must be finite and positive")
-    _keys(data["provenance"], {"producer", "source_sha256"}, "provenance")
+    validate_metadata_derivation(data["provenance"], step_seconds=seconds)
     if (
         not isinstance(data["provenance"]["producer"], str)
         or not data["provenance"]["producer"]

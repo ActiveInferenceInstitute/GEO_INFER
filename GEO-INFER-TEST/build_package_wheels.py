@@ -43,9 +43,12 @@ from validate_packaging import (
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 runtime_receipt = importlib.import_module("geo_infer_test.execution").runtime_receipt
-validate_wheel_receipt = importlib.import_module(
-    "geo_infer_test.wheel_evidence"
-).validate_wheel_receipt
+_wheel_evidence = importlib.import_module("geo_infer_test.wheel_evidence")
+validate_wheel_receipt = _wheel_evidence.validate_wheel_receipt
+installation_source = _wheel_evidence.installation_source
+installation_source_sha256 = _wheel_evidence.installation_source_sha256
+
+_TARGET_EXPRESSION = "{'implementation':sys.implementation.name,'version':[sys.version_info.major,sys.version_info.minor],'sys_platform':sys.platform,'machine':platform.machine(),'soabi':sysconfig.get_config_var('SOABI')}"
 
 # This CLI also runs in the stdlib-only build/import portability lane.
 _profile_spec = importlib.util.spec_from_file_location(
@@ -289,6 +292,34 @@ def verify_wheels(
             check=True,
             timeout=120,
         )
+        target_query = run_process(
+            [
+                executable,
+                "-I",
+                "-c",
+                "import json,platform,sys,sysconfig;print(json.dumps("
+                + _TARGET_EXPRESSION
+                + "))",
+            ],
+            cwd=root,
+            env=env,
+            check=True,
+            timeout=30,
+        )
+        target = json.loads(target_query.stdout)
+        source_role = installation_source(
+            repository, target, constraints.read_text(encoding="utf-8")
+        )
+        source_digest = installation_source_sha256(source_role)
+        source_constraints = root / "locked-source-constraints.txt"
+        source_constraints.write_text(
+            source_role["variant_constraints"]["text"], encoding="utf-8"
+        )
+        source_args = (
+            ["--constraint", str(source_constraints)]
+            if source_role["torch_binding"] is not None
+            else []
+        )
         run_process(
             [
                 "uv",
@@ -298,6 +329,7 @@ def verify_wheels(
                 executable,
                 "--constraint",
                 str(constraints),
+                *source_args,
                 "--find-links",
                 str(wheels[0].parent),
                 *[
@@ -310,7 +342,7 @@ def verify_wheels(
             check=True,
             timeout=600,
         )
-        probe = """import faulthandler, importlib, importlib.metadata, importlib.resources, json, pathlib, sys, sysconfig
+        probe = """import faulthandler, importlib, importlib.metadata, importlib.resources, json, pathlib, platform, sys, sysconfig
 faulthandler.dump_traceback_later(min(float(sys.argv[2]) / 2, 30))
 name = sys.argv[1]
 package = importlib.import_module(name)
@@ -329,9 +361,11 @@ for path in dist.files or []:
         resources.append(str(path))
 # EXTRA_PROBE
 faulthandler.cancel_dump_traceback_later()
-print(json.dumps({'package':name,'profile':sys.argv[3],'version':dist.version,'origin':str(origin),'resources':resources,'probe_token':sys.argv[-1],'status':'ok'}))
+print(json.dumps({'package':name,'profile':sys.argv[3],'version':dist.version,'origin':str(origin),'resources':resources,'probe_token':sys.argv[-1],'status':'ok','installation_source_sha256':sys.argv[4],'installation_target':TARGET_EXPRESSION}))
 """
-        probe = probe.replace("# EXTRA_PROBE", probe_code)
+        probe = probe.replace("TARGET_EXPRESSION", _TARGET_EXPRESSION).replace(
+            "# EXTRA_PROBE", probe_code
+        )
         for wheel in wheels:
             package = wheel.name.split("-")[0]
             command = [
@@ -342,6 +376,7 @@ print(json.dumps({'package':name,'profile':sys.argv[3],'version':dist.version,'o
                 package,
                 str(import_timeout),
                 ",".join(extras) or "base",
+                source_digest,
             ]
             started = time.monotonic()
             stdout = stderr = ""
@@ -353,6 +388,8 @@ print(json.dumps({'package':name,'profile':sys.argv[3],'version':dist.version,'o
                 "probe_sha256": hashlib.sha256(probe_code.encode()).hexdigest(),
                 "status": "failed",
                 "returncode": None,
+                "installation_source": source_role,
+                "installation_source_sha256": source_digest,
             }
             try:
                 result = run_import_probe(
@@ -363,6 +400,8 @@ print(json.dumps({'package':name,'profile':sys.argv[3],'version':dist.version,'o
                 if (
                     completed.get("package") != package
                     or completed.get("status") != "ok"
+                    or completed.get("installation_target") != target
+                    or completed.get("installation_source_sha256") != source_digest
                 ):
                     raise ValueError(
                         "Installed probe did not finish with its validated receipt"

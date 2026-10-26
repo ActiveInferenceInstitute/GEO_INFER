@@ -8,7 +8,7 @@ needed. `gnn-geo-infer/1` supports one categorical state factor, one observation
 modality and one control factor, with one-step policies.
 
 The producer and normative format description are in GNN's
-`src/gnn/export/geo_infer.py` and `src/gnn/export/geo_infer_contract.md` (GNN revisions before its 2026-09 package reorganization, including pinned pairing commit 903b9c339, use `src/export/geo_infer.py`). ACT's
+`src/gnn/export/geo_infer.py` and `src/gnn/export/geo_infer_contract.md` (GNN revisions before its 2026-09 package reorganization use `src/export/geo_infer.py`). ACT's
 `geo_infer_act.core.gnn_contract.GNNArtifact` validates the consumer boundary.
 The contract version must change when axis meanings or inference timing change.
 
@@ -41,7 +41,7 @@ In the GNN checkout, install its optional H3 support when exporting spatial IDs:
 
 ```bash
 uv sync --extra dev --extra geo-infer
-uv run --no-sync python -m gnn.export.geo_infer \  # `gnn` package at src/gnn/, installed editable; pre-reorg revisions use `PYTHONPATH=src python -m export.geo_infer`
+uv run --no-sync python -m gnn.export.geo_infer \
   input/gnn_files/pomdp_gridworld/pomdp_gridworld_3x3.md \
   /tmp/gridworld.geo-infer.json --step-seconds 60
 ```
@@ -83,14 +83,67 @@ separate environment with its `geo-infer` extra:
 
 ```bash
 uv run --no-sync python GEO-INFER-TEST/validate_gnn_interchange.py \
-  --gnn-repo ../GeneralizedNotationNotation \
-  --gnn-python ../GeneralizedNotationNotation/.venv/bin/python
+  --gnn-repo ../Generalized_Notation_Notation \
+  --gnn-python ../Generalized_Notation_Notation/.venv/bin/python
 ```
 
 It exports the real 3×3 GNN example, checks source provenance, executes repeatable
 pymdp traces, and builds a seven-cell H3 model in SPACE. It passes that model
 through the GNN exporter and verifies exact state order and transition values
 before executing spatial inference. Both paths use real code in each environment.
+
+## Optional notation-derived metadata
+
+The categorical v1 and Gaussian v2 consumers also accept the GNN 5.0.1
+producer's optional `provenance.metadata_derivation` record. The full record
+is retained in the immutable artifact snapshot and its canonical digest.
+Existing artifacts without the record retain their original digest. Factored
+interchange has no such extension and continues to reject it.
+
+The record has exactly `step_seconds`, `space_kind`, `units`, `time_index`
+and `discrete_time_declared`. Its derived timestep must be finite, positive
+and equal the artifact's `time.step_seconds`, with a nonempty list of explicit
+`Time` or `ModelParameters` declaration records. Unknown fields, malformed
+records and conflicting timesteps fail visibly; no provenance is discarded.
+
+Space declarations, the time-index corroboration and the boolean discrete-time
+marker are audit metadata. Explicit caller space options can override the
+producer's recorded declaration. In particular, Gaussian records may retain
+`space_kind={value: categorical, derived: false, source: writer default}`;
+that producer label supplies no Gaussian coordinates or units. Coordinate units
+remain explicitly required by the Gaussian contract, and H3 IDs remain explicitly
+required and validated by the categorical contract. The consumer checks the
+record's structure and internal values; it does not reopen the original source,
+authenticate its digest, infer metadata, or establish a formal proof.
+
+The paired validator now runs the real numbered GNN Steps 3 and 7 for a
+categorical source with `TimeStep=60s` and the tracked rectangular Gaussian
+fixture. It retains the exact staged source, options, parser/export receipts,
+command logs and both derived artifacts. It checks complete model-payload and
+numerical-trace equality against the explicit-metadata exports, allowing only
+the digest change caused by provenance.
+
+For example, from the GNN checkout with its locked environment prepared:
+
+```bash
+work=$(mktemp -d)
+mkdir "$work/input"
+cp tests/export/gaussian_rectangular.md "$work/input/gaussian.md"
+cat > "$work/options.json" <<'JSON'
+{"gaussian.md":{"model_type":"linear_gaussian","units":{"states":["m","m/s","K"],"observations":["m","m/s"],"controls":["N"]}}}
+JSON
+uv run --frozen --no-sync python src/gnn/3_gnn.py \
+  --target-dir "$work/input" --output-dir "$work/output"
+uv run --frozen --no-sync python src/gnn/7_export.py \
+  --target-dir "$work/input" --output-dir "$work/output" \
+  --formats geo_infer --geo-derive-metadata \
+  --geo-infer-options-file "$work/options.json"
+```
+
+The Gaussian source declares its timestep; the options supply its model type
+and coordinate units. The exported artifact path is recorded in
+`$work/output/7_export_output/export_results.json`. Load that artifact with
+`GaussianGNNArtifact.load` in the separate GEO environment.
 
 ## Worked H3 example: Cascadia river homing
 
@@ -160,7 +213,7 @@ This filtering runner evaluates supplied controls and does not select a policy.
 The trace records prior/posterior/next-prior mean and covariance plus controls,
 observations and timestamps, supporting direct analytic replay.
 
-The GNN fixture `src/tests/export/gaussian_rectangular.md` uses three state
+The GNN fixture `tests/export/gaussian_rectangular.md` uses three state
 coordinates, two observations and one control. Corresponding ACT regressions in
 `test_gnn_gaussian_contract.py` prove exact initial conditioning, unequal axes,
 control timing, evidence and covariance, immutable JSON snapshots and rejection

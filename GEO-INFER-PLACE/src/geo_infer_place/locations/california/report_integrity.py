@@ -43,16 +43,23 @@ class ReportIntegrity(StrictModel):
 
 def report_roster(config: ObservatoryConfig) -> set[str]:
     """Return the complete report surface required by the selected design."""
-    return {
-        "report.json", "historical_indicators.png", "empirical_priors.png",
-        "score_comparison.png", "trajectory.csv", "comparison.csv", "COMPARISON.md",
-    } | {
-        f"{strategy.value}_allocation.png" for strategy in Strategy
-    } | {
-        f"{strategy.value}_{round_index:02d}.png"
-        for strategy in Strategy
-        for round_index in range(config.rounds + 1)
-    }
+    return (
+        {
+            "report.json",
+            "historical_indicators.png",
+            "empirical_priors.png",
+            "score_comparison.png",
+            "trajectory.csv",
+            "comparison.csv",
+            "COMPARISON.md",
+        }
+        | {f"{strategy.value}_allocation.png" for strategy in Strategy}
+        | {
+            f"{strategy.value}_{round_index:02d}.png"
+            for strategy in Strategy
+            for round_index in range(config.rounds + 1)
+        }
+    )
 
 
 def check_report(folder: Path) -> ReportIntegrity:
@@ -60,10 +67,10 @@ def check_report(folder: Path) -> ReportIntegrity:
     if folder.is_symlink():
         raise CaliforniaError("report folder is a symlink")
     manifest = FILE_DIGESTS.validate_json(strict_bytes(folder / "files.json"))
-    if (
-        any(Path(name).name != name or name in {".", "..", "files.json"} for name in manifest)
-        or {path.name for path in folder.iterdir()} != set(manifest) | {"files.json"}
-    ):
+    if any(
+        Path(name).name != name or name in {".", "..", "files.json"}
+        for name in manifest
+    ) or {path.name for path in folder.iterdir()} != set(manifest) | {"files.json"}:
         raise CaliforniaError("report output roster differs from its manifest")
     for name, checksum in manifest.items():
         path = folder / name

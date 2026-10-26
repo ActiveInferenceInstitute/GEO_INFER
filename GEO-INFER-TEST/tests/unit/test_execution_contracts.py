@@ -1978,6 +1978,11 @@ def test_exited_target_census_deadline_retains_distinct_phase_evidence(
         final_refresh=late_refresh,
         same_initial_tick=same_initial_tick,
     )
+    if same_initial_tick:
+        import geo_infer_test.process as process_module
+
+        # Compare nested timing in one synthetic clock coordinate.
+        monkeypatch.setattr(engine, "time", process_module.time)
     result = engine.run_command(command, "exited target late census", 1)
     assert not result.success and result.status == "TIMEOUT"
     assert result.returncode is None and result.executed == 0
