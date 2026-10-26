@@ -108,7 +108,7 @@ def locked_torch_constraint(root: Path, target: dict) -> dict | None:
     version = target["version"]
     if (
         target["implementation"] != "cpython"
-        or version not in ([3, 11], [3, 12])
+        or version not in ([3, 11], [3, 12], [3, 15])
         or not re.fullmatch(
             rf"cpython-{version[0]}{version[1]}-x86_64-linux-gnu", target["soabi"] or ""
         )
@@ -127,7 +127,10 @@ def locked_torch_constraint(root: Path, target: dict) -> dict | None:
     record = official_variant_record(root, variants[0])
     minor = f"{version[0]}{version[1]}"
     filename = f"torch-2.13.0+cu126-cp{minor}-cp{minor}-manylinux_2_28_x86_64.whl"
-    wheel = next(row for row in record["locked_wheels"] if row["filename"] == filename)
+    matches = [row for row in record["locked_wheels"] if row["filename"] == filename]
+    if len(matches) != 1:
+        raise ValueError("Reviewed Torch wheel for target ABI is missing")
+    wheel = matches[0]
     url, digest = wheel["url"], wheel["hash"].removeprefix("sha256:")
     return {
         "requirement": f"torch @ {url}#sha256={digest}",

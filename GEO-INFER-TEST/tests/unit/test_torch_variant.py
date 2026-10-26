@@ -48,7 +48,7 @@ def variant_workspace(tmp_path: Path) -> tuple[Path, dict]:
         '[project]\nname="geo-infer-test"\nversion="0.4.0"\n'
     )
     wheels = []
-    for minor in ("311", "312"):
+    for minor in ("311", "312", "315"):
         filename = f"torch-2.13.0+cu126-cp{minor}-cp{minor}-manylinux_2_28_x86_64.whl"
         row = contract["wheels"][filename]
         wheels.append({"url": row["url"], "hash": "sha256:" + row["sha256"]})
@@ -118,14 +118,16 @@ def test_variant_refuses_unbound_wheel_inventory(variant_workspace, mode):
     elif mode == "duplicate":
         package["wheels"].append(package["wheels"][0])
     elif mode == "missing312":
-        package["wheels"].pop()
+        package["wheels"] = [
+            row for row in package["wheels"] if "cp312-cp312" not in row["url"]
+        ]
     else:
         package["sdist"] = {"url": "https://invalid/source.tar.gz"}
     with pytest.raises(ValueError):
         torch_variant.official_variant_record(root, package)
 
 
-@pytest.mark.parametrize("minor", [11, 12])
+@pytest.mark.parametrize("minor", [11, 12, 15])
 def test_constraint_selects_exact_locked_current_tag(variant_workspace, minor):
     root, _ = variant_workspace
     target = {
@@ -139,6 +141,12 @@ def test_constraint_selects_exact_locked_current_tag(variant_workspace, minor):
     assert (
         f"cp3{minor}-cp3{minor}-manylinux_2_28_x86_64.whl#sha256="
         in result["requirement"]
+    )
+    filename = f"torch-2.13.0+cu126-cp3{minor}-cp3{minor}-manylinux_2_28_x86_64.whl"
+    released = torch_variant.official_variant_contract()["wheels"][filename]
+    assert (
+        result["requirement"]
+        == "torch @ " + released["url"] + "#sha256=" + released["sha256"]
     )
     assert result["locked_identity"]["version"] == "2.13.0+cu126"
     assert len(result["lock_sha256"]) == 64
@@ -198,3 +206,58 @@ def test_source_and_tag_binding_fail_closed(variant_workspace, mode):
         path.write_text(text)
     with pytest.raises(ValueError):
         torch_variant.official_variant_record(root, package)
+
+
+@pytest.mark.parametrize(
+    "version,soabi",
+    [
+        ([3, 13], "cpython-313-x86_64-linux-gnu"),
+        ([3, 14], "cpython-314-x86_64-linux-gnu"),
+        ([3, 16], "cpython-316-x86_64-linux-gnu"),
+        ([3, 15], "cpython-315t-x86_64-linux-gnu"),
+        ([3, 15], "cpython-315-x86_64-linux-musl"),
+    ],
+)
+def test_tooling_constraint_refuses_unreviewed_version_or_abi(
+    variant_workspace, version, soabi
+):
+    """Normal 3.15 tooling admission cannot widen other versions or ABI forms."""
+    root, _ = variant_workspace
+    target = {
+        "implementation": "cpython",
+        "version": version,
+        "sys_platform": "linux",
+        "machine": "x86_64",
+        "soabi": soabi,
+    }
+    with pytest.raises(ValueError, match="Unreviewed Linux Torch installation ABI"):
+        torch_variant.locked_torch_constraint(root, target)
+
+
+def test_tooling_constraint_refuses_missing_315_lock_wheel(variant_workspace):
+    """Required native rows cannot substitute for the selected tooling wheel."""
+    root, _ = variant_workspace
+    filename = "torch-2.13.0+cu126-cp315-cp315-manylinux_2_28_x86_64.whl"
+    released = torch_variant.official_variant_contract()["wheels"][filename]
+    entry = (
+        "{url="
+        + json.dumps(released["url"])
+        + ",hash="
+        + json.dumps("sha256:" + released["sha256"])
+        + "}"
+    )
+    path = root / "uv.lock"
+    text = path.read_text()
+    assert text.count("," + entry) == 1
+    path.write_text(text.replace("," + entry, ""))
+    target = {
+        "implementation": "cpython",
+        "version": [3, 15],
+        "sys_platform": "linux",
+        "machine": "x86_64",
+        "soabi": "cpython-315-x86_64-linux-gnu",
+    }
+    with pytest.raises(
+        ValueError, match="Reviewed Torch wheel for target ABI is missing"
+    ):
+        torch_variant.locked_torch_constraint(root, target)
