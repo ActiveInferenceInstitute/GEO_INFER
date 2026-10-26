@@ -1,9 +1,13 @@
 # GEO-INFER 0.4.0 companion compatibility
 
-The release identities in `.github/companion-releases.json` connect GEO-INFER's
-0.4.0 candidate to published GNN 5.0.1 and FEP_Formal 2.1.0. They identify
-sources and declared pins. New GEO source, numerical behavior, manuscript
-output and hosted results require their own acceptance.
+The release identities in `.github/companion-releases.json` connect published
+[GEO-INFER 0.4.0](https://github.com/ActiveInferenceInstitute/GEO_INFER/releases/tag/v0.4.0)
+to published GNN 5.0.1 and FEP_Formal 2.1.0. GEO's released source is
+`71ce1f77418c6f8c6edc8f83c7682c8eab207e01`, tree
+`46a4febd0a5a794c275afc5f74f4412bca8885b4`, annotated tag object
+`891d4bb6774c31028891180d4dc1d0a90a28f127`. These identities and pins do
+not qualify subsequent source, numerical behavior, manuscript output or
+hosted results; later changes require their own acceptance.
 
 | Project | Published tag | Exact source commit | Exact annotated tag object | Automatic source DOI |
 | --- | --- | --- | --- | --- |
@@ -83,10 +87,43 @@ finite-model and implementation boundaries.
 
 ## Current GEO release evidence
 
-Follow [0.4.0 readiness](../releases/0.4.0_readiness.md) and
-[research artifact contracts](research_artifacts.md). Freeze source, refresh
-generator-owned config in a separate commit, then collect current local and
-hosted evidence. The current wheel-operation registry defines 26 independent
-profiles; derive the required roster from that registry rather than reusing a
-historical receipt's 20 or 24 profiles. Keep hardware, configured-advisor and
-historical-cause limitations explicit.
+The published [0.4.0 evidence](../releases/0.4.0_readiness.md) separates exact
+source identity, paired numerical interchange, native proof, installed profiles,
+manuscript review and publication. All 52 GitHub assets passed anonymous and
+authenticated byte verification; the checksum file lists the other 51 assets.
+The 46 successful tag-qualification jobs and separate two operational release
+jobs precede the explicit asset publication and do not substitute for it.
+Hardware, configured-advisor and historical-cause limitations remain open.
+
+For later releases, follow the [research artifact contracts](research_artifacts.md):
+freeze source, refresh generator-owned config in a separate commit when required,
+and collect fresh local and hosted evidence. The 0.4.0 wheel-operation registry
+defines 26 independent profiles; derive a future required roster from its actual
+registry rather than reusing a historical count. Preserve the published sources,
+annotated tags, assets and original receipts.
+
+## Next cross-repository handoff: E4 and S1
+
+E4 and S1 are GNN roadmap identifiers, not new GEO interchange schemas or claims
+that the linked releases completed those workstreams. The
+[maintained GNN roadmap](https://github.com/ActiveInferenceInstitute/Generalized_Notation_Notation/blob/main/TO-DO.md)
+and its [bounded contracts](https://github.com/ActiveInferenceInstitute/Generalized_Notation_Notation/blob/main/docs/development/remaining_roadmap_contracts.md)
+own their current implementation scope; these links can advance beyond the
+published 5.0.1 source. FEP's [maintained backlog](https://github.com/ActiveInferenceInstitute/fep_formal/blob/main/TODO.md)
+retains its independently governed proof and empirical lanes.
+
+| Workstream | Ownership and first handoff | Acceptance before extending claims |
+| --- | --- | --- |
+| E4: formal-to-numerical semantics | GNN extraction/semantic-witness owners, GEO ACT/SPACE/TIME consumer owners and the relevant FEP theorem owner agree one explicitly admitted finite or Gaussian fixture. Record exact source identities, independent extraction, quantities, axes, conditioning/time, authored actions, units and precision. | Compare independently specified numerical references and actual native results. Include source, axis, action-time, conditioning and covariance mismatch controls. Bind any formal statement to its actual assumptions and current native compiler receipt separately; matching hashes, shapes or values and successful runners do not prove general equivalence. |
+| S1: source-preserving multi-request processing | GNN Step 13 scheduler/provider owners define the synthesis/checkpoint contract. A participating GEO workflow supplies an immutable manifest of every selected source byte and required prompt, plus cross-part questions whose answer requires the full selection. | Verify provider/model/context admission, genuine terminal completion and joint synthesis for every required task, cross-part evidence, source-preserving resume, cancellation/deadline behavior and explicit unfinished/refused work. Independent fragment answers or displayed saved receipts do not establish joint interpretation or new model execution. |
+
+Before implementation, agree the bounded contract, owning files, source baselines,
+required negative controls and which companion owners change. An extension beyond
+the admitted model grammar or proof assumptions needs a new explicit contract.
+After implementation, collect fresh native, numerical, formal and custody evidence
+for their separate scopes, and use the
+[paired-revision procedure](../../../GEO-INFER-TEST/docs/gnn_space_time_2026_09.md#gnn-pair-pin-bump-procedure)
+when source/pin changes require it. This documentation handoff changes no pins,
+formal statements or runtime behavior. GNN's historical GEO `21b65a26` baseline
+and the historical Cascadia GEO `2e20fe2e` / Lean 4.34.1 receipt remain historical;
+neither is refreshed by this roadmap.
