@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Maintenance
+
+- Remove obsolete optional-TIME availability scaffolding from the PLACE bridge,
+  retaining its public capability property and value-only sequence statistics;
+  convert seismic event epochs with an explicit UTC timezone.
+- Correct PLACE skill dependency guidance and regenerate the packaged skill
+  reference bundle. Share SPACE's H3 version parser while preserving backend
+  unavailability and utility import errors for unsupported versions.
+- Replace the stale data-format guide with actual vector/raster I/O contracts
+  and a maintained executable GeoJSON/GeoTIFF round-trip example.
+
 ## [0.4.0] - 2026-10-25
 
 ### GNN 5.0.1 and FEP_Formal 2.1.0 compatibility

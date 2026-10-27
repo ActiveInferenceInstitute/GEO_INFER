@@ -6,6 +6,8 @@ Validates PlaceDataManager (dataset validation, provenance) and
 PlaceTemporalAnalyzer (trend detection, anomalies, forecast).
 """
 
+from datetime import datetime
+
 import pytest
 
 from geo_infer_place.core.module_bridge import (
@@ -138,3 +140,28 @@ class TestPlaceTemporalAnalyzer:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_time_availability_property_remains_available() -> None:
+    """The public bridge capability remains true with its required dependency."""
+    assert PlaceTemporalAnalyzer().has_time_module is True
+
+
+def test_seismic_rates_bin_epoch_milliseconds_at_utc_midnight() -> None:
+    """USGS event epochs retain UTC day boundaries without naive conversions."""
+    instants = (
+        "2026-10-01T23:59:59+00:00",
+        "2026-10-02T00:00:00+00:00",
+        "2026-10-02T23:59:59+00:00",
+    )
+    events = [
+        {"time": int(datetime.fromisoformat(instant).timestamp() * 1000)}
+        for instant in instants
+    ]
+    result = PlaceTemporalAnalyzer().analyze_seismic_rates(
+        {"events": [*events, {"time": None}, {"time": "invalid"}]}
+    )
+    assert result["daily_counts"] == [1, 2]
+    assert result["total_days"] == 2
+    assert result["total_events"] == 3
+    assert result["mean_daily_rate"] == 1.5

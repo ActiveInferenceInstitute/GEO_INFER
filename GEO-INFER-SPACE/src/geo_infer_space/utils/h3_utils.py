@@ -12,26 +12,21 @@ from typing import Any, cast
 
 import h3
 
+from .._h3_version import (
+    MAX_H3_MAJOR,
+    MIN_H3_VERSION,
+    parse_h3_version as _version_tuple,
+)
+
 logger = logging.getLogger(__name__)
-
-MIN_H3_VERSION = (4, 5, 0)
-
-
-def _version_tuple(version: str) -> tuple[int, int, int] | None:
-    """Parse an H3 semantic version for the supported v4 API surface."""
-    try:
-        parts = version.lstrip("v").split(".")
-        return cast(
-            tuple[int, int, int],
-            tuple(int(part.split("+")[0].split("-")[0]) for part in parts[:3])
-            + (0,) * max(0, 3 - len(parts)),
-        )
-    except (AttributeError, TypeError, ValueError):
-        return None
 
 
 _h3_version = _version_tuple(cast(str, getattr(h3, "__version__", None)))
-if _h3_version is None or _h3_version < MIN_H3_VERSION or _h3_version[0] >= 5:
+if (
+    _h3_version is None
+    or _h3_version < MIN_H3_VERSION
+    or _h3_version[0] >= MAX_H3_MAJOR
+):
     raise RuntimeError(
         "GEO-INFER-SPACE requires h3-py >=4.5.0,<5; "
         f"found {getattr(h3, '__version__', 'unknown')!r}"

@@ -4,9 +4,9 @@ description: Place-based analysis with H3 hexagonal indexing. Use when running l
 prerequisites:
   required:
     - geo-infer-space
+    - geo-infer-time
   recommended:
     - geo-infer-data
-    - geo-infer-time
 difficulty: intermediate
 estimated_time: 45min
 examples_dir: ../GEO-INFER-EXAMPLES/examples/
@@ -88,7 +88,7 @@ The adapter retains this module's dependencies and authorization requirements.
 
 - **SPACE** → H3 tessellation and spatial processing (`unified_backend` builds on `geo_infer_space`)
 - **DATA** → data quality management via `PlaceDataManager` (optional, `full` extra)
-- **TIME** → temporal trend detection via `PlaceTemporalAnalyzer` (optional, `full` extra)
+- **TIME** → required dependency for timestamped trend, anomaly, and forecast operations via `PlaceTemporalAnalyzer`; value-only inputs use sequence statistics
 - **CIV/HEALTH/TRANSPORT** → not implemented; no geo-infer-place code imports these modules
 
 ## Complete Cascadia boundary

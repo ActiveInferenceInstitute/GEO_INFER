@@ -89,6 +89,7 @@ AUTHORITATIVE_DOCS = (
     "GEO-INFER-INTRA/docs/modules/geo-infer-time.md",
     "GEO-INFER-INTRA/docs/modules/geo-infer-transport.md",
     "GEO-INFER-INTRA/docs/modules/geo-infer-water.md",
+    "GEO-INFER-INTRA/docs/geospatial/data_formats/index.md",
     "GEO-INFER-INTRA/docs/geospatial/data_formats/h3/index.md",
     "GEO-INFER-INTRA/docs/geospatial/visualization/index.md",
     "GEO-INFER-INTRA/docs/api/index.md",

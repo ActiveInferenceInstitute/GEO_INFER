@@ -14,6 +14,12 @@ from collections.abc import Callable
 
 import h3
 
+from ..._h3_version import (
+    MAX_H3_MAJOR,
+    MIN_H3_VERSION,
+    parse_h3_version as _version_tuple,
+)
+
 from ...core.interfaces import H3UnavailableError
 
 if TYPE_CHECKING:
@@ -21,8 +27,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-MIN_H3_VERSION = (4, 5, 0)
-MAX_H3_MAJOR = 5
 F = TypeVar("F", bound=Callable[..., Any])
 
 
@@ -52,19 +56,6 @@ def _disk_budget(cell: str, k: int, max_cells: int, *, minimum: int = 0) -> None
     _integer(max_cells, "max_cells", 1)
     if 1 + 3 * k * (k + 1) > max_cells:
         raise ValueError("Neighborhood allocation exceeds max_cells")
-
-
-def _version_tuple(version: str) -> tuple[int, int, int] | None:
-    """Parse a semantic H3 version without accepting an unsupported major release."""
-    try:
-        parts = version.lstrip("v").split(".")
-        return cast(
-            tuple[int, int, int],
-            tuple(int(part.split("+")[0].split("-")[0]) for part in parts[:3])
-            + (0,) * max(0, 3 - len(parts)),
-        )
-    except (AttributeError, TypeError, ValueError):
-        return None
 
 
 def _require_h3(operation: str) -> Callable[[F], F]:

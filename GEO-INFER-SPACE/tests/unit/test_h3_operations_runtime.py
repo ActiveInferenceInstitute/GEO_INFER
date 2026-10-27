@@ -1,5 +1,8 @@
 """Regression tests for the public H3 operation helpers."""
 
+import importlib.util
+from pathlib import Path
+
 import pytest
 import h3
 
@@ -32,6 +35,8 @@ from geo_infer_space.backends.h3.operations import (
     polygon_to_cells,
     uncompact_cells,
 )
+from geo_infer_space.core.interfaces import H3UnavailableError
+from geo_infer_space.utils import h3_utils
 from geo_infer_space.utils.h3_utils import (
     cell_to_latlngjson,
     polygon_to_cells as geojson_polygon_to_cells,
@@ -300,3 +305,24 @@ def test_public_space_h3_exports_cover_the_native_helpers() -> None:
     assert callable(exported_geojson_to_h3)
     cell = coordinate_to_cell(37.7749, -122.4194, 9)
     assert set(exported_grid_ring(cell, 1)) == set(h3.grid_disk(cell, 1)) - {cell}
+
+
+@pytest.mark.parametrize("version", ["4.4.9", "5.0.0", "invalid", None])
+def test_unsupported_h3_version_retains_backend_and_utility_refusals(
+    monkeypatch, version
+) -> None:
+    """One version policy retains unavailable backends and fail-fast utilities."""
+    monkeypatch.setattr(h3, "__version__", version)
+    backend = H3Backend()
+    assert backend.is_available() is False
+    assert backend.get_capabilities()["available"] is False
+    with pytest.raises(H3UnavailableError):
+        backend.latlng_to_cell(37.7749, -122.4194, 9)
+
+    specification = importlib.util.spec_from_file_location(
+        "geo_infer_space.utils._h3_version_refusal_probe", Path(h3_utils.__file__)
+    )
+    assert specification is not None and specification.loader is not None
+    module = importlib.util.module_from_spec(specification)
+    with pytest.raises(RuntimeError, match="requires h3-py >=4.5.0,<5"):
+        specification.loader.exec_module(module)

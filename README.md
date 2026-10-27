@@ -165,7 +165,7 @@ the exact reproducible exception list.
 | [GEO-INFER-RISK](GEO-INFER-RISK/) | `geo_infer_risk` | 15 | 24 |
 | [GEO-INFER-SEC](GEO-INFER-SEC/) | `geo_infer_sec` | 22 | 20 |
 | [GEO-INFER-SIM](GEO-INFER-SIM/) | `geo_infer_sim` | 11 | 9 |
-| [GEO-INFER-SPACE](GEO-INFER-SPACE/) | `geo_infer_space` | 85 | 52 |
+| [GEO-INFER-SPACE](GEO-INFER-SPACE/) | `geo_infer_space` | 86 | 52 |
 | [GEO-INFER-SPM](GEO-INFER-SPM/) | `geo_infer_spm` | 27 | 23 |
 | [GEO-INFER-TEST](GEO-INFER-TEST/) | `geo_infer_test` | 28 | 60 |
 | [GEO-INFER-TIME](GEO-INFER-TIME/) | `geo_infer_time` | 20 | 23 |
@@ -177,7 +177,7 @@ the exact reproducible exception list.
 | Metric | Value |
 | --- | ---: |
 | Modules | 45 |
-| Python source files | 1042 |
+| Python source files | 1043 |
 | Python test files | 827 |
 | Repository README.md files | 812 |
 | Repository AGENTS.md files | 808 |

@@ -32,6 +32,7 @@
 - `nested/`
 - `utils/`
 - `__init__.py`
+- `_h3_version.py`
 - `place_analyzer.py`
 - `spatial_utils.py`
 
