@@ -42,6 +42,8 @@ dependencies = [
 [project.optional-dependencies]
 grib = [
     "cfgrib>=0.9.9",
+    # Keep the native runtime explicit across platform-specific wheel metadata.
+    "eccodeslib; platform_system != 'Windows'",
 ]
 dev = [
     "pytest>=6.2.0",
