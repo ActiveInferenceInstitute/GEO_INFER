@@ -146,8 +146,8 @@ def test_signpost_standalone_queries_observe_same_size_mutation_and_reset(
         "GEO-INFER-SAMPLE", module_path, "geo_infer_sample", "Sample", "0.4.0", [], 0, 1
     )
     readme = tests / "README.md"
-    assert rewriter.test_command(readme, module).endswith(
-        f"-m pytest {tests.relative_to(tmp_path)}"
+    assert rewriter.test_command(readme, module) == (
+        "uv run python -m pytest GEO-INFER-SAMPLE/tests"
     )
     inventory.remove(old)
     inventory.add(new)
