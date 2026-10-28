@@ -513,6 +513,62 @@ jobs:
           include-hidden-files: true
           retention-days: 14
 
+
+      - name: Diagnose native I/O in isolated processes
+        if: always() && matrix.category == 'unit' && (steps.category_tests.outcome == 'failure' || steps.category_tests.outcome == 'success')
+        timeout-minutes: 5
+        run: |
+          # [DEBUG-geo-native-io] Temporary isolated probes; original failures remain required.
+          uv run --no-sync python - <<'PY'
+          import hashlib
+          import importlib.metadata
+          import json
+          from pathlib import Path
+          import platform
+          import subprocess
+          import sys
+
+          output = Path('.geo-infer-test-results/native-io-diagnostic')
+          output.mkdir(parents=True, exist_ok=True)
+          cases = {
+              'rasterio': 'import rasterio; print(rasterio.__gdal_version__, flush=True)',
+              'eccodes-rasterio': 'import eccodes; print("eccodes loaded", flush=True); import rasterio; print(rasterio.__gdal_version__, flush=True)',
+              'rasterio-eccodes': 'import rasterio; print(rasterio.__gdal_version__, flush=True); import eccodes; print("eccodes loaded", flush=True)',
+              'netcdf-rasterio': 'import netCDF4; print("netCDF4 loaded", flush=True); import rasterio; print(rasterio.__gdal_version__, flush=True)',
+              'h5py-rasterio': 'import h5py; print("h5py loaded", flush=True); import rasterio; print(rasterio.__gdal_version__, flush=True)',
+              'pyogrio-rasterio': 'import pyogrio; print("pyogrio loaded", flush=True); import rasterio; print(rasterio.__gdal_version__, flush=True)',
+              'pyproj-rasterio': 'import pyproj; print("pyproj loaded", flush=True); import rasterio; print(rasterio.__gdal_version__, flush=True)',
+              'xarray-engines': 'import xarray; print(xarray.backends.list_engines(), flush=True)',
+          }
+          results = []
+          for name, code in cases.items():
+              try:
+                  result = subprocess.run([sys.executable, '-X', 'faulthandler', '-u', '-c', code], capture_output=True, text=True, timeout=30)
+                  (output / (name + '.stdout')).write_text(result.stdout)
+                  (output / (name + '.stderr')).write_text(result.stderr)
+                  row = {'name': name, 'returncode': result.returncode, 'timed_out': False}
+              except subprocess.TimeoutExpired as error:
+                  for suffix, value in (('stdout', error.stdout), ('stderr', error.stderr)):
+                      (output / (name + '.' + suffix)).write_bytes(value if isinstance(value, bytes) else (value or '').encode())
+                  row = {'name': name, 'returncode': None, 'timed_out': True}
+              results.append(row)
+              print('[DEBUG-geo-native-io]', json.dumps(row), flush=True)
+          versions = {name: importlib.metadata.version(name) for name in ('rasterio', 'rioxarray', 'eccodes', 'eccodeslib', 'eckitlib', 'netCDF4', 'h5py', 'pyogrio', 'pyproj', 'xarray')}
+          report = {'python': sys.version, 'platform': platform.platform(), 'lock_sha256': hashlib.sha256(Path('uv.lock').read_bytes()).hexdigest(), 'versions': versions, 'results': results}
+          (output / 'receipt.json').write_text(json.dumps(report, indent=2) + '\n')
+          print('[DEBUG-geo-native-io]', json.dumps(report), flush=True)
+          raise SystemExit(int(any(row['returncode'] != 0 or row['timed_out'] for row in results)))
+          PY
+
+      - name: Retain native I/O diagnostics
+        if: always() && matrix.category == 'unit' && (steps.category_tests.outcome == 'failure' || steps.category_tests.outcome == 'success')
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: geo-native-io-diagnostic-py${{ matrix.python-version }}
+          path: .geo-infer-test-results/native-io-diagnostic/
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Prune uv cache
         # Readers do not save a cache; prune only the selected cache writer.
         if: always() && matrix.category == 'unit'
