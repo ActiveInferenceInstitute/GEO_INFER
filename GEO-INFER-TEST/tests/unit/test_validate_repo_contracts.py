@@ -6,7 +6,7 @@ import importlib.util
 import subprocess
 import sys
 import time
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 import pytest
 
@@ -945,3 +945,30 @@ def test_module_doc_check_leaves_global_index_bytes_unchanged() -> None:
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert {path: path.read_bytes() for path in watched} == before
+
+
+@pytest.mark.parametrize(
+    "path_type", [PurePosixPath, PureWindowsPath], ids=["posix", "windows"]
+)
+@pytest.mark.parametrize("doc_name", ["README.md", "AGENTS.md"])
+def test_signpost_test_commands_use_portable_paths(path_type, doc_name):
+    """Generated guide commands have identical bytes for either path flavor."""
+    rewriter = load_rewriter_module()
+    root = path_type("C:/repo") if path_type is PureWindowsPath else path_type("/repo")
+    module_path = root / "GEO-INFER-ACT"
+    test_file = module_path / "tests/unit/test_behavior.py"
+    rewriter.REPO_ROOT = root
+    rewriter._DIRECTORY_INDEX = rewriter._build_directory_index({test_file})
+    module = rewriter.ModuleInfo(
+        name="GEO-INFER-ACT",
+        path=module_path,
+        package="geo_infer_act",
+        description="Active inference",
+        version="0.4.0",
+        dependencies=[],
+        source_files=0,
+        test_files=1,
+    )
+    assert rewriter.test_command(test_file.parent / doc_name, module) == (
+        "uv run python -m pytest GEO-INFER-ACT/tests/unit"
+    )

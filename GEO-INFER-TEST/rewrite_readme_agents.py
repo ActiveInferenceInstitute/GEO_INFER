@@ -296,7 +296,7 @@ def test_command(path: Path, module: ModuleInfo | None) -> str:
                 f"{module.name.removeprefix(MODULE_PREFIX)}"
             )
         rel = path.parent.relative_to(REPO_ROOT)
-        return f"uv run python -m pytest {rel}"
+        return f"uv run python -m pytest {rel.as_posix()}"
     if module:
         return f"uv run python GEO-INFER-TEST/run_unified_tests.py --module {module.name.removeprefix(MODULE_PREFIX)}"
     return "uv run python GEO-INFER-TEST/validate_repo_contracts.py --skip-import-smoke"
