@@ -341,9 +341,13 @@ def test_structure_validation_accepts_canonical_suffix_test_names(tmp_path):
 
 
 class TestHypothesisTestDiscoverer:
-    """Fuzzing tests for TestDiscoverer."""
+    """Functional properties over real files, bounded by the test runner.
 
-    @settings(max_examples=200)
+    Filesystem latency is outside these properties; retain the example budgets
+    without Hypothesis's implicit 200 ms per-example performance assertion.
+    """
+
+    @settings(max_examples=200, deadline=None)
     @given(
         st.text(
             min_size=1,
@@ -363,7 +367,7 @@ class TestHypothesisTestDiscoverer:
             results = d.discover_all_tests([module_name])
             assert isinstance(results, dict)
 
-    @settings(max_examples=200)
+    @settings(max_examples=200, deadline=None)
     @given(
         st.lists(
             st.text(
@@ -389,7 +393,7 @@ class TestHypothesisTestDiscoverer:
             for name in module_names:
                 assert name in results
 
-    @settings(max_examples=100)
+    @settings(max_examples=100, deadline=None)
     @given(st.text(min_size=1, max_size=20))
     def test_is_test_file_never_crashes(self, filename):
         """_is_test_file should handle any filename string."""
