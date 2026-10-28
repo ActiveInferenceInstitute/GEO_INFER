@@ -100,3 +100,6 @@ GEO-INFER-PLACE/locations/cascadia/config/*
 !GEO-INFER-PLACE/locations/cascadia/config/cascadia_boundary.provenance.json
 !GEO-INFER-PLACE/locations/cascadia/config/cascadia_boundary.license.md
 !GEO-INFER-PLACE/locations/cascadia/config/cascadia_bioregion_boundary.geojson
+
+# Private agent verification state.
+/.omo/
