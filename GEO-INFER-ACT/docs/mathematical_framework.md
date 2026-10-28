@@ -250,4 +250,4 @@ The expected free energy formulas are implemented in:
 
 - [Active Inference Overview](./active_inference_overview.md)
 - [Free Energy Principle](./free_energy_principle.md)
-- [fep_lean Notation Bridge](./fep_lean_notation_bridge.md) — correspondence of the notation and implemented constructs to the fep_lean formalization catalogue
+- [FEP_Formal Notation Bridge](./fep_lean_notation_bridge.md) — correspondence of the notation and implemented constructs to the FEP_Formal formalization catalogue

@@ -14,7 +14,7 @@ pymdp 1.0.4 scores ``neg_efe(a) = sum_o q(o|a) C(o) + H[q(o|a)] - ambiguity(a)``
 
 for every belief, with no full-support hypothesis on predicted states or
 outcomes: only the preference law ``softmax(C)`` must be positive, and it
-always is. The fep_lean ``cascadia-geo-act-proof`` slice proves this identity
+always is. The FEP_Formal ``cascadia-geo-act-proof`` slice proves this identity
 for finite laws; this module evaluates both sides numerically.
 """
 

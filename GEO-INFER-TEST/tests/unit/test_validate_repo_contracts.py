@@ -916,3 +916,32 @@ def test_rng_helper_parity_rejects_behavioral_drift(tmp_path, monkeypatch):
     contracts.validate_rng_helper_parity(report)
 
     assert any("GEO-INFER-BBB" in error for error in report.errors)
+
+
+@pytest.mark.parametrize("module", ["GEO-INFER-UNKNOWN", "../GEO-INFER-ACT", "."])
+def test_module_doc_generation_rejects_unknown_or_escaping_selector(
+    module: str,
+) -> None:
+    result = subprocess.run(
+        [sys.executable, str(REWRITER_PATH), "--module", module],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 2
+    assert "invalid choice" in result.stderr
+
+
+def test_module_doc_check_leaves_global_index_bytes_unchanged() -> None:
+    watched = [REPO_ROOT / "README.md", REPO_ROOT / ".github/README.md"]
+    before = {path: path.read_bytes() for path in watched}
+    result = subprocess.run(
+        [sys.executable, str(REWRITER_PATH), "--module", "GEO-INFER-ACT", "--check"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert {path: path.read_bytes() for path in watched} == before

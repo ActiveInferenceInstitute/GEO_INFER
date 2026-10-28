@@ -8,12 +8,12 @@ References:
     - Friston, K. (2010). The free-energy principle: a unified brain theory?
     - Friston, K., FitzGerald, T., Rigoli, F., Schwartenbeck, P., &
       Pezzulo, G. (2017). Active inference: a process theory
-    - Formal analogue: fep_lean topic fep-021 (EFE epistemic-pragmatic
+    - Formal analogue: FEP_Formal topic fep-021 (EFE epistemic-pragmatic
       balance), fep-008 (finite policy objective minimizer)
 
-The fep_lean topic ids are correspondence-of-constructs references into a
+The FEP_Formal topic ids are correspondence-of-constructs references into a
 separate Lean formalization catalogue, canonically mapped in
-`fep_lean/specs/geo-infer-notation-bridge/data/notation-map.yaml` and
+`fep_formal/specs/geo-infer-notation-bridge/data/notation-map.yaml` and
 documented in `GEO-INFER-ACT/docs/fep_lean_notation_bridge.md`. They state
 no verification relationship between this numerical implementation and the
 Lean proofs.
@@ -64,7 +64,7 @@ class PolicySelector:
 
     References:
         - Parr, T., Pezzulo, G., & Friston, K. (2022). Active Inference
-        - Formal analogue: fep_lean topic fep-028 (support-aware finite softmax
+        - Formal analogue: FEP_Formal topic fep-028 (support-aware finite softmax
           policy), fep-031 (finite Boltzmann-Gibbs weights for the inverse
           temperature), fep-008 (finite policy objective minimizer)
     """

@@ -814,11 +814,11 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
 ## Cascadia Example Contracts
 
 - Keep every river-homing probability an exact dyadic fraction; floats and
-  non-dyadic fractions are rejected so GNN, ACT and the fep_lean slice read
+  non-dyadic fractions are rejected so GNN, ACT and the FEP_Formal slice read
   identical numbers.
 - After changing the network selection, model, or GNN rendering, rerun
   `examples/cascadia/cascadia_homing.py` with `--gnn-repo`, `--gnn-python` and
-  `--refresh-fixtures`, then refresh the fep_lean slice fixtures.
+  `--refresh-fixtures`, then refresh the FEP_Formal slice fixtures.
 - `run_closed_loop` must keep replaying the full record through
   `run_gnn_inference` and raise on any disagreement.
 - Seed studies must export each assumption condition through GNN, retain every
@@ -1681,9 +1681,19 @@ def main() -> int:
         action="store_true",
         help="Fail if generated README.md or AGENTS.md files are stale.",
     )
+    parser.add_argument(
+        "--module",
+        choices=sorted(discover_modules()),
+        help="Write or check only this module's guides; leave global indexes untouched.",
+    )
     args = parser.parse_args()
 
     expected = expected_doc_files()
+    if args.module is not None:
+        owner = REPO_ROOT / args.module
+        expected = [
+            (path, content) for path, content in expected if path.is_relative_to(owner)
+        ]
     if args.check:
         stale = [
             path

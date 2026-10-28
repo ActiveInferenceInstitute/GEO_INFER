@@ -17,7 +17,7 @@ a typed tree toward one terminal cell with three relations:
 Every relation joins H3 neighbors and is checked when the network is built.
 Any transition kernel supported on the identity and these relations is
 therefore local for H3 adjacency, which is the hypothesis of the light-cone
-theorem in the fep_lean ``cascadia-geo-act-proof`` slice.
+theorem in the FEP_Formal ``cascadia-geo-act-proof`` slice.
 """
 
 from __future__ import annotations
