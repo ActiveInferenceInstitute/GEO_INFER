@@ -526,6 +526,7 @@ jobs:
         probe.write_text(chr(10).join(lines[2:-1]) + chr(10))
         with (output / 'probe.stdout').open('w') as out, (output / 'probe.stderr').open('w') as err:
             result = subprocess.run([sys.executable, str(probe)], stdout=out, stderr=err, timeout=300)
+        print((output / 'probe.stdout').read_text(), end='', flush=True)
         results = [{'name': 'eight-import-probes', 'returncode': result.returncode}]
         roundtrip = '''
         import json, os
@@ -592,6 +593,7 @@ jobs:
         name: geo-native-cohort-${{ matrix.variant }}
         path: .geo-infer-test-results/native-io*/
         if-no-files-found: error
+        include-hidden-files: true
         retention-days: 14
 
   test:
