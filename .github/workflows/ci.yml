@@ -425,6 +425,175 @@ jobs:
       - name: Lint workflow definitions
         run: actionlint -color
 
+  native-io-experiment:
+    name: Native I/O experiment (${{ matrix.variant }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+        - locked
+        - wrapper250
+        - native248
+        - click-control
+        - rasterio144
+    env:
+      NATIVE_VARIANT: ${{ matrix.variant }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      with:
+        persist-credentials: false
+    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      with:
+        python-version: '3.12'
+    - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
+      with:
+        version: 0.13.1
+        enable-cache: false
+    - name: Export exact unrelated requirements
+      run: uv export --frozen --all-packages --all-extras --all-groups --no-emit-workspace --no-hashes --no-annotate --no-header --format requirements-txt --quiet --output-file "$RUNNER_TEMP/native-all-constraints.txt"
+    - name: Install one isolated native cohort
+      run: |
+        python - <<'PY'
+        import json
+        import os
+        import pathlib
+        import re
+        import subprocess
+        import sys
+
+        output = pathlib.Path('.geo-infer-test-results/native-io-experiment')
+        output.mkdir(parents=True, exist_ok=True)
+        variants = {
+            'locked': {},
+            'wrapper250': {'eccodes': '2.50.0'},
+            'native248': {'eccodeslib': '2.48.3.29', 'eckitlib': '2.3.0.29'},
+            'click-control': {'click': '8.3.1'},
+            'rasterio144': {'rasterio': '1.4.4', 'click': '8.3.1'},
+        }
+        variant = os.environ['NATIVE_VARIANT']
+        overrides = variants[variant]
+        all_constraints = pathlib.Path(os.environ['RUNNER_TEMP']) / 'native-all-constraints.txt'
+        filtered = []
+        removed = []
+        for row in all_constraints.read_text().splitlines():
+            match = re.match(r'^([A-Za-z0-9_.-]+)', row)
+            name = match.group(1).lower().replace('_', '-') if match else None
+            if name in overrides:
+                removed.append(row)
+            else:
+                filtered.append(row)
+        assert {re.match(r'^([A-Za-z0-9_.-]+)', row).group(1).lower() for row in removed} == set(overrides)
+        constraints = output / 'constraints.txt'
+        constraints.write_text(chr(10).join(filtered) + chr(10))
+        environment = pathlib.Path(os.environ['RUNNER_TEMP']) / 'native-cohort-env'
+        subprocess.run(['uv', 'venv', str(environment), '--python', sys.executable], check=True)
+        python = environment / 'bin/python'
+        identity = json.loads(subprocess.check_output([str(python), '-c', 'import json,pathlib,sys; print(json.dumps({"prefix":str(pathlib.Path(sys.prefix).resolve()),"base_prefix":str(pathlib.Path(sys.base_prefix).resolve())}))'], text=True))
+        assert identity['prefix'] == str(environment.resolve())
+        assert identity['base_prefix'] == str(pathlib.Path(sys.base_prefix).resolve())
+        packages = ['rasterio', 'rioxarray', 'eccodes', 'eccodeslib', 'eckitlib', 'netCDF4', 'h5py', 'pyogrio', 'pyproj', 'xarray', 'cfgrib', 'pyyaml']
+        requirements = [name + '==' + overrides[name] if name in overrides else name for name in packages]
+        if 'click' in overrides:
+            requirements.append('click==' + overrides['click'])
+        subprocess.run(['uv', 'pip', 'install', '--python', str(python), '--only-binary', ':all:', '--constraint', str(constraints), *requirements], check=True)
+        subprocess.run(['uv', 'pip', 'check', '--python', str(python)], check=True)
+        (output / 'selection.json').write_text(json.dumps({'variant': variant, 'overrides': overrides, 'removed_constraints': removed, 'python': str(python), 'identity': identity, 'scope': 'temporary native differential experiment; not workspace acceptance'}, indent=2) + chr(10))
+        PY
+    - name: Exercise imports and real GRIB raster round-trips
+      timeout-minutes: 8
+      run: |
+        "$RUNNER_TEMP/native-cohort-env/bin/python" - <<'PY'
+        import hashlib
+        import json
+        import os
+        import pathlib
+        import platform
+        import shutil
+        import subprocess
+        import sys
+
+        import yaml
+
+        output = pathlib.Path('.geo-infer-test-results/native-io-experiment')
+        selection = json.loads((output / 'selection.json').read_text())
+        workflow = yaml.safe_load(pathlib.Path('.github/workflows/ci.yml').read_text())
+        step = next(row for row in workflow['jobs']['test']['steps'] if row.get('name') == 'Diagnose native I/O in isolated processes')
+        lines = step['run'].splitlines()
+        assert lines[1] == "uv run --no-sync python - <<'PY'" and lines[-1] == 'PY'
+        probe = output / 'probe.py'
+        probe.write_text(chr(10).join(lines[2:-1]) + chr(10))
+        with (output / 'probe.stdout').open('w') as out, (output / 'probe.stderr').open('w') as err:
+            result = subprocess.run([sys.executable, str(probe)], stdout=out, stderr=err, timeout=300)
+        results = [{'name': 'eight-import-probes', 'returncode': result.returncode}]
+        roundtrip = '''
+        import json, os
+        from pathlib import Path
+        import numpy as np
+        from rasterio.transform import from_origin
+
+        output = Path(os.environ['NATIVE_IO_OUTPUT'])
+        output.mkdir(parents=True, exist_ok=True)
+        handle = eccodes.codes_grib_new_from_samples('regular_ll_sfc_grib2')
+        assert handle is not None
+        try:
+            eccodes.codes_set(handle, 'Ni', 2)
+            eccodes.codes_set(handle, 'Nj', 2)
+            eccodes.codes_set_values(handle, [1., 2., 3., 4.])
+            with (output / 'sample.grib2').open('wb') as stream:
+                eccodes.codes_write(handle, stream)
+        finally:
+            eccodes.codes_release(handle)
+        with (output / 'sample.grib2').open('rb') as stream:
+            handle = eccodes.codes_grib_new_from_file(stream)
+        assert handle is not None
+        try:
+            assert eccodes.codes_get(handle, 'edition') == 2
+            assert np.array_equal(eccodes.codes_get_values(handle), [1., 2., 3., 4.])
+        finally:
+            eccodes.codes_release(handle)
+        values = np.array([[1, 2], [3, 4]], dtype='uint8')
+        with rasterio.open(output / 'raster.tif', 'w', driver='GTiff', height=2, width=2, count=1, dtype='uint8', crs='EPSG:4326', transform=from_origin(0, 2, 1, 1)) as dataset:
+            dataset.write(values, 1)
+        with rasterio.open(output / 'raster.tif') as dataset:
+            assert dataset.crs.to_epsg() == 4326
+            assert np.array_equal(dataset.read(1), values)
+        print(json.dumps({'grib_edition': 2, 'grib_values': [1, 2, 3, 4], 'raster_sum': 10, 'raster_crs': 'EPSG:4326'}), flush=True)
+        '''
+        for name, prefix in [('eccodes-first', 'import eccodes; import rasterio'), ('rasterio-first', 'import rasterio; import eccodes')]:
+            script = output / (name + '.py')
+            script.write_text(prefix + chr(10) + roundtrip)
+            env = dict(os.environ, NATIVE_IO_OUTPUT=str((output / name).resolve()))
+            with (output / (name + '.stdout')).open('w') as out, (output / (name + '.stderr')).open('w') as err:
+                child = subprocess.run([sys.executable, '-X', 'faulthandler', '-W', 'error', str(script)], env=env, stdout=out, stderr=err, timeout=60)
+            results.append({'name': name, 'returncode': child.returncode})
+        debugger = {'status': 'not requested for this variant'}
+        if selection['variant'] == 'locked' and platform.system() == 'Linux':
+            env = dict(os.environ, LD_DEBUG='bindings')
+            with (output / 'loader.stdout').open('w') as out, (output / 'loader.stderr').open('w') as err:
+                child = subprocess.run([sys.executable, '-X', 'faulthandler', '-c', 'import eccodes; import rasterio'], env=env, stdout=out, stderr=err, timeout=60)
+            debugger = {'loader_returncode': child.returncode, 'gdb_status': 'not installed'}
+            gdb = shutil.which('gdb')
+            # Backtrace is supplemental; actual native return codes above remain the gate.
+            if gdb:
+                with (output / 'gdb.stdout').open('w') as out, (output / 'gdb.stderr').open('w') as err:
+                    child = subprocess.run([gdb, '--batch', '--return-child-result', '-ex', 'run', '-ex', 'bt', '--args', sys.executable, '-c', 'import eccodes; import rasterio'], stdout=out, stderr=err, timeout=60)
+                debugger.update(gdb_status='executed', gdb_returncode=child.returncode)
+        report = {'selection': selection, 'python': sys.version, 'platform': platform.platform(), 'lock_sha256': hashlib.sha256(pathlib.Path('uv.lock').read_bytes()).hexdigest(), 'probe_source_sha256': hashlib.sha256(probe.read_bytes()).hexdigest(), 'results': results, 'debugger': debugger}
+        (output / 'receipt.json').write_text(json.dumps(report, indent=2) + chr(10))
+        print('[DEBUG-geo-native-io]', json.dumps(report), flush=True)
+        raise SystemExit(int(any(row['returncode'] != 0 for row in results)))
+        PY
+    - name: Retain differential native diagnostics
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: geo-native-cohort-${{ matrix.variant }}
+        path: .geo-infer-test-results/native-io*/
+        if-no-files-found: error
+        retention-days: 14
+
   test:
     # GS-005: one leg per interpreter x category instead of two legs each
     # running all categories serially. Keep fail-fast=false; the artifact
