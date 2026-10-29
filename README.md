@@ -167,7 +167,7 @@ the exact reproducible exception list.
 | [GEO-INFER-SIM](GEO-INFER-SIM/) | `geo_infer_sim` | 11 | 9 |
 | [GEO-INFER-SPACE](GEO-INFER-SPACE/) | `geo_infer_space` | 86 | 52 |
 | [GEO-INFER-SPM](GEO-INFER-SPM/) | `geo_infer_spm` | 27 | 23 |
-| [GEO-INFER-TEST](GEO-INFER-TEST/) | `geo_infer_test` | 28 | 60 |
+| [GEO-INFER-TEST](GEO-INFER-TEST/) | `geo_infer_test` | 29 | 61 |
 | [GEO-INFER-TIME](GEO-INFER-TIME/) | `geo_infer_time` | 20 | 23 |
 | [GEO-INFER-TRANSPORT](GEO-INFER-TRANSPORT/) | `geo_infer_transport` | 7 | 10 |
 | [GEO-INFER-WATER](GEO-INFER-WATER/) | `geo_infer_water` | 9 | 9 |
@@ -177,8 +177,8 @@ the exact reproducible exception list.
 | Metric | Value |
 | --- | ---: |
 | Modules | 45 |
-| Python source files | 1043 |
-| Python test files | 827 |
+| Python source files | 1044 |
+| Python test files | 828 |
 | Repository README.md files | 812 |
 | Repository AGENTS.md files | 808 |
 
@@ -227,6 +227,12 @@ them with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.
 On macOS 27, native PyMC checks require the explicit
 [SPM compiler profile](GEO-INFER-SPM/docs/native_sampling_profiles.md).
 Keep native compilation enabled and retain the chosen profile with results.
+
+On Linux, the complete GRIB/GIS wheel environment requires the
+[native I/O startup profile](GEO-INFER-TEST/docs/native_io_profiles.md).
+Launch runtime commands and programmatic workloads through
+`uv run --frozen python GEO-INFER-TEST/native_io_profile.py -- python -c 'import xarray; print(xarray.backends.list_engines())'`.
+CI configures the same lookup profile before its Python processes start.
 
 ## Artifact and Output Hygiene
 

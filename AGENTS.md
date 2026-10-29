@@ -68,6 +68,12 @@ Prefix validation commands with
 `PYTENSOR_FLAGS="cxx=$PWD/GEO-INFER-SPM/pytensor_clang++_macos27.py"`.
 Keep native compilation enabled and retain the chosen profile in evidence.
 
+On Linux, configure the complete GRIB/GIS environment before process startup
+with the [native I/O profile](GEO-INFER-TEST/docs/native_io_profiles.md).
+After synchronization, launch runtime/validation commands or Python workloads
+through `uv run --frozen python GEO-INFER-TEST/native_io_profile.py -- COMMAND`.
+The shared CPU CI action applies the same profile to subsequent processes.
+
 ## Modular Hygiene Contract
 
 - Use root `pyproject.toml`, `uv.lock`, and `.python-version` as the shared uv environment contract.

@@ -12,3 +12,8 @@ runs:
         uv sync --locked --python "$(command -v python)" --all-packages --all-extras --all-groups \
           --no-install-package cupy --no-install-package mayavi \
           --no-install-package vaex --no-install-package vaex-core
+
+    - name: Configure Linux native I/O lookup before process startup
+      if: runner.os == 'Linux'
+      shell: bash
+      run: uv run --frozen --no-sync python GEO-INFER-TEST/native_io_profile.py --github-env "$GITHUB_ENV"

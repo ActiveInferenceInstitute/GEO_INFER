@@ -26,6 +26,7 @@ Unit workspace within `GEO-INFER-TEST`.
 - `test_manuscript_research.py`
 - `test_measure_module_coverage.py`
 - `test_module_health.py`
+- `test_native_io_environment.py`
 - `test_parametric_load_benchmarks.py`
 - `test_performance_monitor.py`
 - `test_performance_ownership.py`

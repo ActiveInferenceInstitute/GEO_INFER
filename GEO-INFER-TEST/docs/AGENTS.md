@@ -29,6 +29,7 @@
 - `gnn_space_time_2026_09.md`
 - `import_latency_2026_09.md`
 - `index.md`
+- `native_io_profiles.md`
 - `perf01-act-importtime.txt`
 - `perf01-pandas-importtime.txt`
 - `pin_review_2026-Q3.md`

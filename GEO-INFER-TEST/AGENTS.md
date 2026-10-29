@@ -35,6 +35,7 @@
 - `coverage_baseline_metric.py`
 - `import_probe.py`
 - `measure_module_coverage.py`
+- `native_io_profile.py`
 - `orchestrator_coverage_metric.py`
 - `preview_receipt_metric.py`
 - `profile_backend.py`

@@ -1326,6 +1326,12 @@ On macOS 27, native PyMC checks require the explicit
 [SPM compiler profile]({link_prefix}GEO-INFER-SPM/docs/native_sampling_profiles.md).
 Keep native compilation enabled and retain the chosen profile with results.
 
+On Linux, the complete GRIB/GIS wheel environment requires the
+[native I/O startup profile]({link_prefix}GEO-INFER-TEST/docs/native_io_profiles.md).
+Launch runtime commands and programmatic workloads through
+`uv run --frozen python GEO-INFER-TEST/native_io_profile.py -- python -c 'import xarray; print(xarray.backends.list_engines())'`.
+CI configures the same lookup profile before its Python processes start.
+
 ## Artifact and Output Hygiene
 
 - Test reports belong under `.geo-infer-test-results/`.
@@ -1431,6 +1437,12 @@ profile described in [SPM native sampling profiles](GEO-INFER-SPM/docs/native_sa
 Prefix validation commands with
 `PYTENSOR_FLAGS="cxx=$PWD/GEO-INFER-SPM/pytensor_clang++_macos27.py"`.
 Keep native compilation enabled and retain the chosen profile in evidence.
+
+On Linux, configure the complete GRIB/GIS environment before process startup
+with the [native I/O profile](GEO-INFER-TEST/docs/native_io_profiles.md).
+After synchronization, launch runtime/validation commands or Python workloads
+through `uv run --frozen python GEO-INFER-TEST/native_io_profile.py -- COMMAND`.
+The shared CPU CI action applies the same profile to subsequent processes.
 
 ## Modular Hygiene Contract
 

@@ -145,3 +145,19 @@ the prepared combined Markdown and records template source hashes, runtime,
 inputs, owned-process evidence and the final PDF hash. This runs trusted local
 code and does not install dependencies or replace publication verification.
 See [template rendering and cover checks](../GEO-INFER-INTRA/docs/integration/manuscript_rendering.md).
+
+
+## Linux GRIB/GIS workloads
+
+After installing the complete frozen workspace, use the explicit
+[native I/O startup profile](docs/native_io_profiles.md) for Linux runtime
+commands and programmatic Python consumers:
+
+```bash
+uv run --frozen python GEO-INFER-TEST/native_io_profile.py -- python -c 'import xarray; print(xarray.backends.list_engines())'
+```
+
+The profile configures native library lookup before the child process starts.
+Its description is advisory; real GRIB/GeoTIFF, backend-discovery and projection
+tests provide the scoped interoperability checks. Retain full unit/coverage
+results separately. Other platforms keep their declared native profiles.
