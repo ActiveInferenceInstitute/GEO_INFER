@@ -6,7 +6,7 @@ import importlib.util
 import subprocess
 import sys
 import time
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 import pytest
 
@@ -146,8 +146,8 @@ def test_signpost_standalone_queries_observe_same_size_mutation_and_reset(
         "GEO-INFER-SAMPLE", module_path, "geo_infer_sample", "Sample", "0.4.0", [], 0, 1
     )
     readme = tests / "README.md"
-    assert rewriter.test_command(readme, module).endswith(
-        f"-m pytest {tests.relative_to(tmp_path)}"
+    assert rewriter.test_command(readme, module) == (
+        "uv run python -m pytest GEO-INFER-SAMPLE/tests"
     )
     inventory.remove(old)
     inventory.add(new)
@@ -916,3 +916,59 @@ def test_rng_helper_parity_rejects_behavioral_drift(tmp_path, monkeypatch):
     contracts.validate_rng_helper_parity(report)
 
     assert any("GEO-INFER-BBB" in error for error in report.errors)
+
+
+@pytest.mark.parametrize("module", ["GEO-INFER-UNKNOWN", "../GEO-INFER-ACT", "."])
+def test_module_doc_generation_rejects_unknown_or_escaping_selector(
+    module: str,
+) -> None:
+    result = subprocess.run(
+        [sys.executable, str(REWRITER_PATH), "--module", module],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 2
+    assert "invalid choice" in result.stderr
+
+
+def test_module_doc_check_leaves_global_index_bytes_unchanged() -> None:
+    watched = [REPO_ROOT / "README.md", REPO_ROOT / ".github/README.md"]
+    before = {path: path.read_bytes() for path in watched}
+    result = subprocess.run(
+        [sys.executable, str(REWRITER_PATH), "--module", "GEO-INFER-ACT", "--check"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert {path: path.read_bytes() for path in watched} == before
+
+
+@pytest.mark.parametrize(
+    "path_type", [PurePosixPath, PureWindowsPath], ids=["posix", "windows"]
+)
+@pytest.mark.parametrize("doc_name", ["README.md", "AGENTS.md"])
+def test_signpost_test_commands_use_portable_paths(path_type, doc_name):
+    """Generated guide commands have identical bytes for either path flavor."""
+    rewriter = load_rewriter_module()
+    root = path_type("C:/repo") if path_type is PureWindowsPath else path_type("/repo")
+    module_path = root / "GEO-INFER-ACT"
+    test_file = module_path / "tests/unit/test_behavior.py"
+    rewriter.REPO_ROOT = root
+    rewriter._DIRECTORY_INDEX = rewriter._build_directory_index({test_file})
+    module = rewriter.ModuleInfo(
+        name="GEO-INFER-ACT",
+        path=module_path,
+        package="geo_infer_act",
+        description="Active inference",
+        version="0.4.0",
+        dependencies=[],
+        source_files=0,
+        test_files=1,
+    )
+    assert rewriter.test_command(test_file.parent / doc_name, module) == (
+        "uv run python -m pytest GEO-INFER-ACT/tests/unit"
+    )

@@ -296,7 +296,7 @@ def test_command(path: Path, module: ModuleInfo | None) -> str:
                 f"{module.name.removeprefix(MODULE_PREFIX)}"
             )
         rel = path.parent.relative_to(REPO_ROOT)
-        return f"uv run python -m pytest {rel}"
+        return f"uv run python -m pytest {rel.as_posix()}"
     if module:
         return f"uv run python GEO-INFER-TEST/run_unified_tests.py --module {module.name.removeprefix(MODULE_PREFIX)}"
     return "uv run python GEO-INFER-TEST/validate_repo_contracts.py --skip-import-smoke"
@@ -814,11 +814,11 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
 ## Cascadia Example Contracts
 
 - Keep every river-homing probability an exact dyadic fraction; floats and
-  non-dyadic fractions are rejected so GNN, ACT and the fep_lean slice read
+  non-dyadic fractions are rejected so GNN, ACT and the FEP_Formal slice read
   identical numbers.
 - After changing the network selection, model, or GNN rendering, rerun
   `examples/cascadia/cascadia_homing.py` with `--gnn-repo`, `--gnn-python` and
-  `--refresh-fixtures`, then refresh the fep_lean slice fixtures.
+  `--refresh-fixtures`, then refresh the FEP_Formal slice fixtures.
 - `run_closed_loop` must keep replaying the full record through
   `run_gnn_inference` and raise on any disagreement.
 - Seed studies must export each assumption condition through GNN, retain every
@@ -1326,6 +1326,12 @@ On macOS 27, native PyMC checks require the explicit
 [SPM compiler profile]({link_prefix}GEO-INFER-SPM/docs/native_sampling_profiles.md).
 Keep native compilation enabled and retain the chosen profile with results.
 
+On Linux, the complete GRIB/GIS wheel environment requires the
+[native I/O startup profile]({link_prefix}GEO-INFER-TEST/docs/native_io_profiles.md).
+Launch runtime commands and programmatic workloads through
+`uv run --frozen python GEO-INFER-TEST/native_io_profile.py -- python -c 'import xarray; print(xarray.backends.list_engines())'`.
+CI configures the same lookup profile before its Python processes start.
+
 ## Artifact and Output Hygiene
 
 - Test reports belong under `.geo-infer-test-results/`.
@@ -1431,6 +1437,12 @@ profile described in [SPM native sampling profiles](GEO-INFER-SPM/docs/native_sa
 Prefix validation commands with
 `PYTENSOR_FLAGS="cxx=$PWD/GEO-INFER-SPM/pytensor_clang++_macos27.py"`.
 Keep native compilation enabled and retain the chosen profile in evidence.
+
+On Linux, configure the complete GRIB/GIS environment before process startup
+with the [native I/O profile](GEO-INFER-TEST/docs/native_io_profiles.md).
+After synchronization, launch runtime/validation commands or Python workloads
+through `uv run --frozen python GEO-INFER-TEST/native_io_profile.py -- COMMAND`.
+The shared CPU CI action applies the same profile to subsequent processes.
 
 ## Modular Hygiene Contract
 
@@ -1681,9 +1693,19 @@ def main() -> int:
         action="store_true",
         help="Fail if generated README.md or AGENTS.md files are stale.",
     )
+    parser.add_argument(
+        "--module",
+        choices=sorted(discover_modules()),
+        help="Write or check only this module's guides; leave global indexes untouched.",
+    )
     args = parser.parse_args()
 
     expected = expected_doc_files()
+    if args.module is not None:
+        owner = REPO_ROOT / args.module
+        expected = [
+            (path, content) for path, content in expected if path.is_relative_to(owner)
+        ]
     if args.check:
         stale = [
             path

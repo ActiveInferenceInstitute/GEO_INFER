@@ -17,7 +17,7 @@ actions:
 Habitat classes, odor levels and every probability are declared modeling
 assumptions applied to real network geometry; they are not fitted to fish
 movement data. All probabilities are exact dyadic fractions, so the generated
-GNN source, the ``gnn-geo-infer/1`` artifact and the fep_lean proof read the
+GNN source, the ``gnn-geo-infer/1`` artifact and the FEP_Formal proof read the
 same numbers without rounding.
 """
 

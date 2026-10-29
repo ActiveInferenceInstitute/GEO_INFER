@@ -1,4 +1,4 @@
-# fep_lean Notation Bridge
+# FEP_Formal Notation Bridge
 
 ## Introduction
 
@@ -15,23 +15,26 @@ records the published GNN 5.0.1 and FEP_Formal 2.1.0 identities and the
 direction of their pins. New GEO compatibility evidence belongs to the new
 GEO source; neither published companion release certifies it.
 
+Current checkout paths and commands use `fep_formal` and `fep-formal`.
+The published identity above and this page's retained filename remain unchanged.
+
 The mapping is **documentation-level**: it states correspondence of symbols
 and constructs between two independent artifacts. It does not state, and
 must never be read as stating, that any GEO-INFER implementation is
-verified or proved by `fep_lean`, or that any `fep_lean` proof is
+verified or proved by FEP_Formal, or that any FEP_Formal proof is
 validated by GEO-INFER numerical behavior.
 
 ## Evidence boundary
 
 The two repositories are distinct evidence planes, mirroring the evidence
-firewall of the `fep_lean` bridge contract at
-`fep_lean/docs/design/gnn-bridge/bridge-contract.md` (referenced by prose
+firewall of the FEP_Formal bridge contract at
+`fep_formal/docs/design/gnn-bridge/bridge-contract.md` (referenced by prose
 path only; cross-repository references are never Markdown links):
 
-- **`fep_lean` is the formalization surface.** Native Lean compilation
-  (`fep-lean verify`) establishes that the named theorem body compiles
+- **FEP_Formal is the formalization surface.** Native Lean compilation
+  (`fep-formal verify`) establishes that the named theorem body compiles
   without warnings; the catalogue's own semantic-review layer
-  (`fep_lean/config/theorem_maturity.yaml`) bounds how far each theorem
+  (`fep_formal/config/theorem_maturity.yaml`) bounds how far each theorem
   proxy reaches toward its topic label. Neither establishes numerical
   behavior of any implementation.
 - **GEO-INFER-ACT is the numerical implementation surface.** Its unit and
@@ -42,20 +45,20 @@ path only; cross-repository references are never Markdown links):
   Lean proof claim into this module's documentation or a simulation
   statistic into a proved property.
 
-The canonical machine-readable mapping artifact lives in the `fep_lean`
-checkout at `fep_lean/specs/geo-infer-notation-bridge/data/notation-map.yaml`
-(prose path; it is owned and versioned by the `fep_lean` slice). This page
+The canonical machine-readable mapping artifact lives in the FEP_Formal
+checkout at `fep_formal/specs/geo-infer-notation-bridge/data/notation-map.yaml`
+(prose path; it is owned and versioned by the FEP_Formal slice). This page
 is the human-readable GEO-INFER-side view of that mapping's machine-checked
-core subset: the YAML carries the rows that have landed in the `fep_lean`
+core subset: the YAML carries the rows that have landed in the FEP_Formal
 slice so far and is not exhaustive of the tables below, which cover the
 implemented constructs this module actually uses.
 
 ## Notation correspondence
 
 The symbols of [Mathematical Framework](./mathematical_framework.md)
-correspond to `fep_lean` constructs as follows:
+correspond to FEP_Formal constructs as follows:
 
-| ACT symbol | ACT reading | `fep_lean` counterpart |
+| ACT symbol | ACT reading | FEP_Formal counterpart |
 | --- | --- | --- |
 | `q(·)` | Approximate posterior | Approximate posterior law of the variational bound topics (`fep-001`, `fep-002`); posterior kernel reconstruction (`fep-017`) (canonical machine-checked row: fep-090) |
 | `p(·)` | Generative model | Generative measures/kernels over the finite and Gaussian carrier families |
@@ -66,7 +69,7 @@ correspond to `fep_lean` constructs as follows:
 
 ## Implemented-construct mapping
 
-| GEO-INFER-ACT construct | Implementation | `fep_lean` formal analogue | FEP literature |
+| GEO-INFER-ACT construct | Implementation | FEP_Formal formal analogue | FEP literature |
 | --- | --- | --- | --- |
 | Categorical VFE, `F = complexity − accuracy`, returning `FreeEnergyBreakdown` | [`core/free_energy.py`](../src/geo_infer_act/core/free_energy.py) `FreeEnergyCalculator.compute_categorical_free_energy()` | `fep-001` (variational free energy bound), `fep-002` (variational evidence bound via KL divergence), `fep-011` (surprise and self-information), `fep-014` (KL nonnegativity, identity, chain rule) | Friston 2010; Parr, Pezzulo & Friston 2022 (ch. 4) |
 | Gaussian VFE with precision matrices | [`core/free_energy.py`](../src/geo_infer_act/core/free_energy.py) `FreeEnergyCalculator.compute_gaussian_free_energy()` | `fep-002` (evidence bound), `fep-014` (KL laws), with `fep-016` (exact scalar quadratic Laplace kernel) as the finite Gaussian analogue | Parr, Pezzulo & Friston 2022 (ch. 4); Friston 2010 |
@@ -80,14 +83,14 @@ correspond to `fep_lean` constructs as follows:
 The canonical yaml also anchors three constructs added with the
 [Cascadia river homing](cascadia_river_homing.md) example:
 
-| GEO-INFER-ACT construct | Implementation | `fep_lean` counterpart |
+| GEO-INFER-ACT construct | Implementation | FEP_Formal counterpart |
 | --- | --- | --- |
 | Risk as KL divergence of predicted outcomes from `softmax(C)` | `core/efe_decomposition.py` `one_step_policy_terms()` | `fep-014` (KL nonnegativity and zero characterization) |
 | Preference law from log-preferences | `core/efe_decomposition.py` `preference_law()` | `fep-031` (finite Boltzmann–Gibbs weights normalize) |
 | Deterministic choice of the best one-step policy | `runners/closed_loop.py` `run_closed_loop()` | `fep-008` (a finite nonempty policy set attains a minimum) |
 
-Separately from these catalogue rows, the fep_lean slice
-`fep_lean/specs/cascadia-geo-act-proof/` (prose path) proves instance-level
+Separately from these catalogue rows, the FEP_Formal slice
+`fep_formal/specs/cascadia-geo-act-proof/` (prose path) proves instance-level
 theorems about the Cascadia artifact itself, including the exact identity
 between risk plus ambiguity and pymdp 1.0.4's score. Those theorems concern
 the exported finite model only; they do not verify any GEO-INFER code path.
@@ -99,17 +102,17 @@ epochs; it does not renew that proof for a later GEO source or variant.
 ## Explicit non-claims
 
 1. No GEO-INFER-ACT implementation is verified, proved or certified by any
-   `fep_lean` topic.
-2. No `fep_lean` theorem is validated, corroborated or exercised by any
+   FEP_Formal topic.
+2. No FEP_Formal theorem is validated, corroborated or exercised by any
    GEO-INFER-ACT test, simulation or trace.
 3. Topic ids above name correspondence of constructs at the granularity of
-   the `fep_lean` catalogue's own semantic-review boundaries; each topic's
-   assumption scope (see `fep_lean/config/topics.yaml`) bounds the
+   the FEP_Formal catalogue's own semantic-review boundaries; each topic's
+   assumption scope (see `fep_formal/config/topics.yaml`) bounds the
    correspondence, and several rows deliberately cover only a fragment of
    the ACT behavior (for example, the policy-selection row covers argmin
    and softmax layers, not exploration bonuses or habit priors).
 4. Numerical agreement or disagreement between a GEO-INFER trace and a
-   `fep_lean` witness is a finding to be reported through the bridge
+   FEP_Formal witness is a finding to be reported through the bridge
    contract's certificate mechanism, never averaged away and never
    reclassified as proof or validation on either side.
 
@@ -119,5 +122,5 @@ epochs; it does not renew that proof for a later GEO source or variant.
 - [Free Energy Principle](./free_energy_principle.md) — conceptual background
 - [GNN and GEO-INFER interchange](./gnn_interchange.md) — the executable artifact-level collaboration with GNN, distinct from this notation mapping
 - [References](./references.md) — full citations for the literature above
-- `fep_lean/specs/geo-infer-notation-bridge/data/notation-map.yaml` — canonical mapping artifact (in the `fep_lean` checkout, prose path)
-- `fep_lean/docs/design/gnn-bridge/bridge-contract.md` — bridge contract including the evidence firewall (in the `fep_lean` checkout, prose path)
+- `fep_formal/specs/geo-infer-notation-bridge/data/notation-map.yaml` — canonical mapping artifact (in the `fep_formal` checkout, prose path)
+- `fep_formal/docs/design/gnn-bridge/bridge-contract.md` — bridge contract including the evidence firewall (in the `fep_formal` checkout, prose path)

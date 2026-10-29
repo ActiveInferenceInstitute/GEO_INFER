@@ -756,3 +756,39 @@ def test_cpu_cache_readers_do_not_prune_unsaved_cache():
     ]
     assert len(pruning) == 1
     assert pruning[0]["if"] == "always() && matrix.category == 'unit'"
+
+
+def test_cpu_workspace_binds_native_lookup_after_frozen_install():
+    action = yaml.safe_load(
+        (REPO_ROOT / ".github/actions/sync-cpu-workspace/action.yml").read_text()
+    )
+    install, configure = action["runs"]["steps"]
+    assert "uv sync --locked" in install["run"]
+    assert configure["if"] == "runner.os == 'Linux'"
+    assert (
+        "uv run --frozen --no-sync python GEO-INFER-TEST/native_io_profile.py"
+        in configure["run"]
+    )
+    assert '--github-env "$GITHUB_ENV"' in configure["run"]
+    jobs = _load("ci.yml")["jobs"]
+    assert "native-io-experiment" not in jobs
+    assert "DEBUG-geo-native-io" not in _dump(jobs)
+    for name in (
+        "validate",
+        "fast-contracts",
+        "test",
+        "manuscript",
+        "optional-data-services",
+    ):
+        steps = jobs[name]["steps"]
+        sync = next(
+            i
+            for i, step in enumerate(steps)
+            if step.get("uses") == "./.github/actions/sync-cpu-workspace"
+        )
+        assert sync < next(
+            i for i, step in enumerate(steps) if i > sync and "run" in step
+        )
+
+    assert "./.github/actions/sync-cpu-workspace" not in _dump(jobs["build-smoke"])
+    assert "--no-project" in _dump(jobs["build-smoke"])

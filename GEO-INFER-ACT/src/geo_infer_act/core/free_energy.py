@@ -7,12 +7,12 @@ types of active inference models, including categorical and Gaussian models.
 References:
     - Friston, K. (2010). The free-energy principle: a unified brain theory?
     - Parr, T., Pezzulo, G., & Friston, K. (2022). Active Inference
-    - Formal analogue: fep_lean topic fep-001 (variational free energy bound),
+    - Formal analogue: FEP_Formal topic fep-001 (variational free energy bound),
       fep-002 (variational evidence bound via KL divergence)
 
-The fep_lean topic ids are correspondence-of-constructs references into a
+The FEP_Formal topic ids are correspondence-of-constructs references into a
 separate Lean formalization catalogue, canonically mapped in
-`fep_lean/specs/geo-infer-notation-bridge/data/notation-map.yaml` and
+`fep_formal/specs/geo-infer-notation-bridge/data/notation-map.yaml` and
 documented in `GEO-INFER-ACT/docs/fep_lean_notation_bridge.md`. They state
 no verification relationship between this numerical implementation and the
 Lean proofs.
@@ -264,7 +264,7 @@ class FreeEnergyCalculator:
 
     References:
         - Friston, K. (2010). The free-energy principle: a unified brain theory?
-        - Formal analogue: fep_lean topic fep-002 (variational evidence bound
+        - Formal analogue: FEP_Formal topic fep-002 (variational evidence bound
           via KL divergence)
     """
 
