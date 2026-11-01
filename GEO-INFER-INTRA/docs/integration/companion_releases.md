@@ -24,12 +24,26 @@ identity check performs no network requests or DOI resolution.
 
 ## Direction of the pins
 
-GEO's `.github/gnn-pair.json` selects the exact GNN source above. That GNN
-release's `.github/fep-lean-pair.json` selects the exact FEP_Formal source above.
-GNN 5.0.1's own GEO pin remains the accepted historical GEO commit
+The manifest records the published release identities above: GEO 0.4.0 was
+released with GNN 5.0.1 and FEP_Formal 2.1.0, and that GNN release's own
+`.github/fep-lean-pair.json` selects the exact FEP_Formal source above. GNN
+5.0.1's own GEO pin remains the accepted historical GEO commit
 `21b65a26dd15288d6e578baef86a8bcfd6a7b5db`. A new GEO candidate must retain
 that commit as an ancestor and obtain its own paired interchange evidence.
 GNN's already published tag does not pin a later GEO release.
+
+GEO's `.github/gnn-pair.json` is the current interchange pin and its only home.
+It advances through the documented
+[pair-pin bump procedure](../../../GEO-INFER-TEST/docs/gnn_space_time_2026_09.md#gnn-pair-pin-bump-procedure),
+so it may select a later GNN revision than the published companion. The identity
+check verifies the pin's shape and records whether it still equals the published
+companion; the revision pair's conformance is owned by the paired GNN
+interchange workflow, which exports in a locked GNN environment and consumes in
+GEO.
+
+| Date | Interchange pin | Basis |
+| --- | --- | --- |
+| 2026-11-01 | `8f293d9ba810e6eda5c09842d9c7ed9ffa5f92c1` (GNN v5.0.3) | Advanced from `e54813b4…` (v5.0.1) after reviewing the delta: `src/gnn/export/`, `src/gnn/parsers/` and `src/gnn/extract/` are byte-identical between the two revisions and the schema roster is unchanged, so the exported contract surface does not move. Supersedes the earlier `codex/gnn-companion-pin-20261028` attempt, whose target `4582f99c…` is an ancestor of v5.0.3. |
 
 The supported interchange schemas remain `gnn-geo-infer/1`,
 `gnn-geo-infer/2` and `gnn-geo-infer/factored/1`. The existing
@@ -56,11 +70,31 @@ PYTHONPATH=GEO-INFER-TEST/src python -B GEO-INFER-TEST/validate_companion_releas
 ```
 
 The result binds exact HEAD/tree/tag identities, project and citation versions,
-all three pin files, manifest bytes, GEO baseline ancestry and unchanged
-before/after inputs. A dirty checkout, lightweight or moved companion tag,
-wrong version, disconnected GEO history or inconsistent pin fails the check.
-The local check trusts the reviewed manifest and supplied Git objects; it does
-not authenticate a remote origin or establish publication acceptance.
+the released GNN pins, GEO's current interchange pin and whether it still equals
+the published companion revision, manifest bytes, GEO baseline ancestry and
+unchanged before/after inputs. A dirty checkout, lightweight or moved companion
+tag, wrong version, disconnected GEO history or malformed interchange pin fails
+the check. The local check trusts the reviewed pin and manifest and the supplied
+Git objects; it does not authenticate a remote origin, resolve an advanced pin's
+revision or establish publication acceptance.
+
+## Review the interchange pin's release lineage
+
+The identity check verifies the pin's shape and records whether it equals the
+published companion; it does not resolve an advanced revision. The separate
+bounded check reads the pin's lineage from a local GNN checkout without
+fetching, and reports the release tags at the pin, how far the checkout has
+moved past it and whether the pin is behind the newest release tag.
+`--require-current` turns a pin behind the newest release tag into a refusal:
+
+```bash
+PYTHONPATH=GEO-INFER-TEST/src python -B GEO-INFER-TEST/validate_gnn_pin_freshness.py \
+  --gnn-root /absolute/path/to/Generalized_Notation_Notation --require-current
+```
+
+The pin must exist in the checkout and retain the published companion revision
+as an ancestor. The receipt is local Git evidence only; it does not fetch,
+authenticate tags or execute any model.
 
 The standalone `companion-releases.yml` workflow checks out the actual GEO
 event SHA and the two literal companion SHAs. It retains the resulting JSON

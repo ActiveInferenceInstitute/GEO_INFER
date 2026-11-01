@@ -55,6 +55,7 @@
 - `validate_doc_imports.py`
 - `validate_documentation.py`
 - `validate_gnn_interchange.py`
+- `validate_gnn_pin_freshness.py`
 - `validate_h3_active_inference_contract.py`
 - `validate_logging_hygiene.py`
 - `validate_model_contracts.py`

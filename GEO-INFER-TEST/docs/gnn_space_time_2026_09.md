@@ -93,9 +93,13 @@ automatic:
    must still accept the `schema_version` values the target GNN exporters emit
    (`gnn-geo-infer/1`, `gnn-geo-infer/2`, `gnn-geo-infer/factored/1`).
 3. Open a PR that updates **only** `.github/gnn-pair.json` to the target
-   revision; never mix a pin bump with consumer-contract code changes.
-4. Let the paired interchange CI validate the new pair on the PR (the workflow
-   triggers on the manifest path) and merge once it is green.
+   revision; never mix a pin bump with consumer-contract code changes. The
+   published-companion identity check verifies the pin's shape, records whether
+   it still equals the published companion and accepts a reviewed pin ahead of it.
+4. Record the bounded lineage receipt
+   (`validate_gnn_pin_freshness.py --gnn-root <gnn> --require-current`) in the
+   PR, and let the paired interchange CI validate the new pair on the PR (the
+   workflow triggers on the pin path); merge once it is green.
 
 ## Publication receipt
 

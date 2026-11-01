@@ -94,8 +94,9 @@ before executing spatial inference. Both paths use real code in each environment
 
 ## Optional notation-derived metadata
 
-The categorical v1 and Gaussian v2 consumers also accept the GNN 5.0.1
-producer's optional `provenance.metadata_derivation` record. The full record
+The categorical v1 and Gaussian v2 consumers also accept the pinned GNN
+producer's optional `provenance.metadata_derivation` record (introduced at GNN
+5.0.1). The full record
 is retained in the immutable artifact snapshot and its canonical digest.
 Existing artifacts without the record retain their original digest. Factored
 interchange has no such extension and continues to reject it.
