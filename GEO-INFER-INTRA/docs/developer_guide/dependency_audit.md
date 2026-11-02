@@ -9,7 +9,7 @@ retains its complete source/version/wheel identity and maps explicitly to the
 public Torch 2.13.0 advisory query. Every other unknown registry, VCS source, missing package
 response or skipped advisory query fails; there is no advisory ignore list.
 
-The audit uses exact uv 0.13.1 to check lock freshness and exact pip-audit 2.10.1
+The audit uses exact uv 0.13.6 to check lock freshness and exact pip-audit 2.10.1
 against the PyPI advisory service. Fully pinned requirements are split only when
 a package has multiple advisory-query versions. The receipt retains every full
 locked node separately, even when ordinary PyPI Torch and the reviewed CUDA12
@@ -22,7 +22,7 @@ environment does not qualify the GEO scientific runtime.
 
 The controller uses the shared process-tree cleanup and runtime-custody helpers,
 which require psutil. From the repository root, provision the minimal isolated
-controller with exact uv 0.13.1 (no GEO scientific packages are installed):
+controller with exact uv 0.13.6 (no GEO scientific packages are installed):
 
 ```bash
 uv venv /absolute/path/to/audit-tools --python 3.12
