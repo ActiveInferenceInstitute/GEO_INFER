@@ -22,7 +22,7 @@ print(geo_infer_forest.__version__)
 
 ### Spatial Forest Inventory
 
-GEO-INFER-FOREST treats forests as spatially explicit datasets. Every analysis -- from biomass estimation to deforestation detection -- operates on georeferenced rasters (`xarray.DataArray`); vector stand polygons are supported via the optional `vector` extra (`pip install geo-infer-forest[vector]`).
+GEO-INFER-FOREST treats forests as spatially explicit datasets. Every analysis -- from biomass estimation to deforestation detection -- operates on georeferenced rasters (`xarray.DataArray`); vector stand polygons are supported via the optional `vector` extra (`uv sync --package geo-infer-forest --extra vector` in this workspace; `pip install geo-infer-forest[vector]` is not available yet, since the distribution is not published to PyPI).
 
 The standard unit of measurement is tons per hectare (t/ha) for biomass and tons of carbon per hectare (tC/ha) for carbon stock.
 
