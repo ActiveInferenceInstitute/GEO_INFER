@@ -10,6 +10,10 @@ from geo_infer_act.core.gnn_gaussian_contract import (
     run_gaussian_gnn_inference,
 )
 
+# Declared comparison precision for the admitted E4 fixture (GNN witness v2).
+REFERENCE_RTOL = 1e-10
+REFERENCE_ATOL = 1e-12
+
 
 def gaussian_data():
     return dict(
@@ -45,17 +49,40 @@ def test_exact_rectangular_posterior_and_one_transition(tmp_path):
     artifact = GaussianGNNArtifact.from_dict(data)
     trace = run_gaussian_gnn_inference(artifact, records())
     first, second = trace["steps"]
-    np.testing.assert_allclose(first["posterior_mean"], [2 / 3, 4 / 3, 0])
     np.testing.assert_allclose(
-        first["posterior_covariance"], np.diag([1 / 3, 4 / 3, 9])
+        first["posterior_mean"],
+        [2 / 3, 4 / 3, 0],
+        rtol=REFERENCE_RTOL,
+        atol=REFERENCE_ATOL,
     )
-    np.testing.assert_allclose(first["next_prior_mean"], [19 / 12, 11 / 6, 0])
     np.testing.assert_allclose(
-        first["next_prior_covariance"], np.diag([43 / 30, 43 / 30, 47 / 20])
+        first["posterior_covariance"],
+        np.diag([1 / 3, 4 / 3, 9]),
+        rtol=REFERENCE_RTOL,
+        atol=REFERENCE_ATOL,
     )
-    np.testing.assert_allclose(second["prior_mean"], first["next_prior_mean"])
+    np.testing.assert_allclose(
+        first["next_prior_mean"],
+        [19 / 12, 11 / 6, 0],
+        rtol=REFERENCE_RTOL,
+        atol=REFERENCE_ATOL,
+    )
+    np.testing.assert_allclose(
+        first["next_prior_covariance"],
+        np.diag([43 / 30, 43 / 30, 47 / 20]),
+        rtol=REFERENCE_RTOL,
+        atol=REFERENCE_ATOL,
+    )
+    np.testing.assert_allclose(
+        second["prior_mean"],
+        first["next_prior_mean"],
+        rtol=REFERENCE_RTOL,
+        atol=REFERENCE_ATOL,
+    )
     expected = 0.5 * (2 * np.log(2 * np.pi) + np.log(9) + 1 / 1.5 + 4 / 6)
-    assert first["negative_log_evidence"] == pytest.approx(expected)
+    assert first["negative_log_evidence"] == pytest.approx(
+        expected, rel=REFERENCE_RTOL, abs=REFERENCE_ATOL
+    )
     assert run_gaussian_gnn_inference(artifact, records()) == trace
     dest = tmp_path / "model.json"
     artifact.write(dest)

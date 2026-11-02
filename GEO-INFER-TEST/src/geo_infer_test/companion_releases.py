@@ -275,12 +275,6 @@ def validate_companion_releases(
         _require(versions == [expected], f"{name} citation version differs")
     pin_expectations = (
         (
-            "geo",
-            ".github/gnn-pair.json",
-            REPOSITORIES["gnn"],
-            companions["gnn"]["revision"],
-        ),
-        (
             "gnn",
             ".github/fep-lean-pair.json",
             REPOSITORIES["fep"],
@@ -295,6 +289,15 @@ def validate_companion_releases(
             pin == {"repository": repository, "revision": revision},
             f"{name} companion pin differs",
         )
+    # GEO's interchange pin is the reviewed current pin in `.github/gnn-pair.json`
+    # and may advance between releases through the documented pair-pin bump
+    # procedure. This gate checks its shape and records whether it still equals
+    # the published companion; the paired GNN interchange workflow owns that
+    # revision pair's conformance.
+    geo_pin = _json(read("geo", ".github/gnn-pair.json"))
+    _keys(geo_pin, {"repository", "revision"}, "geo companion pin")
+    _require(geo_pin["repository"] == REPOSITORIES["gnn"], "geo pin repository differs")
+    _require(_oid(geo_pin["revision"]), "geo pin revision is invalid")
     for name, relative, original in raw_inputs:
         _require(
             _tracked_bytes(roots[name], relative) == original,
@@ -315,6 +318,13 @@ def validate_companion_releases(
         "manifest_sha256": inputs[f"geo:{MANIFEST_PATH}"],
         "input_sha256": inputs,
         "interchange_schemas": list(INTERCHANGE_SCHEMAS),
+        "interchange_pin": {
+            "repository": geo_pin["repository"],
+            "revision": geo_pin["revision"],
+            "equals_released_revision": geo_pin["revision"]
+            == companions["gnn"]["revision"],
+            "conformance_owner": "paired GNN interchange workflow",
+        },
         "source_dois": {
             name: declaration["source_doi"] for name, declaration in companions.items()
         },

@@ -24,6 +24,7 @@
 - `agent_interfaces.md`
 - `backend_profiling.md`
 - `companion_releases.md`
+- `e4_fixture_admission.md`
 - `external_systems.md`
 - `geo_infer_modules.md`
 - `index.md`

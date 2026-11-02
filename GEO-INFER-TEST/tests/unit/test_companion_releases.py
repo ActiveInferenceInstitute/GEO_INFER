@@ -145,6 +145,50 @@ class CompanionReleaseTests(unittest.TestCase):
         self.assertFalse(result["claims"]["native_Lean_proof"])
         self.assertFalse(result["claims"]["public_bytes_or_DOI_metadata"])
         self.assertEqual(len(result["input_sha256"]), 10)
+        self.assertTrue(result["interchange_pin"]["equals_released_revision"])
+        self.assertEqual(
+            result["interchange_pin"]["conformance_owner"],
+            "paired GNN interchange workflow",
+        )
+
+    def test_advanced_interchange_pin_is_recorded_not_refused(self):
+        released = self.revision("gnn")
+        self.write("gnn", "post-release.txt", "reviewed later source\n")
+        advanced = self.commit("gnn", "reviewed post-release source")
+        git(self.roots["gnn"], "reset", "--hard", released)
+        self.pin("geo", ".github/gnn-pair.json", "gnn", advanced)
+        self.commit("geo", "advance the interchange pin")
+        result = self.review()
+        self.assertFalse(result["interchange_pin"]["equals_released_revision"])
+        self.assertEqual(result["interchange_pin"]["revision"], advanced)
+        self.assertEqual(
+            result["interchange_pin"]["conformance_owner"],
+            "paired GNN interchange workflow",
+        )
+
+    def test_malformed_or_foreign_interchange_pin_fails(self):
+        self.pin("geo", ".github/gnn-pair.json", "geo", self.revision("gnn"))
+        self.commit("geo", "foreign interchange pin repository")
+        with self.assertRaisesRegex(ValueError, "geo pin repository differs"):
+            self.review()
+        self.pin("geo", ".github/gnn-pair.json", "gnn", "not-a-revision")
+        self.commit("geo", "malformed interchange pin revision")
+        with self.assertRaisesRegex(ValueError, "geo pin revision is invalid"):
+            self.review()
+        self.write(
+            "geo",
+            ".github/gnn-pair.json",
+            json.dumps(
+                {
+                    "repository": REPOSITORIES["gnn"],
+                    "revision": self.revision("gnn"),
+                    "extra": True,
+                }
+            ),
+        )
+        self.commit("geo", "extra interchange pin key")
+        with self.assertRaisesRegex(ValueError, "geo companion pin keys"):
+            self.review()
 
     def test_wrong_event_source_and_nonroot_or_alias_inputs_fail(self):
         with self.assertRaisesRegex(ValueError, "event revision"):

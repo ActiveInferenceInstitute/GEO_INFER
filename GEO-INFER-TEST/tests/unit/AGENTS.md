@@ -37,6 +37,7 @@
 - `test_documentation_census.py`
 - `test_execution_contracts.py`
 - `test_gnn_interchange_receipts.py`
+- `test_gnn_pin_freshness.py`
 - `test_log_integration.py`
 - `test_manuscript_rendering.py`
 - `test_manuscript_rendering_failures.py`

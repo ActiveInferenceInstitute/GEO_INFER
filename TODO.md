@@ -54,6 +54,31 @@ broader E4/S1 roadmap. Detailed responsibilities and admission checks are in
 | E4 — formal-to-numerical semantics | Agree one admitted finite or Gaussian interchange fixture with GNN's independent semantic-witness owner and the relevant FEP theorem owner; declare source, quantities, axes, conditioning/time, units and precision before implementation. | Independent source extraction and numerical references, mismatch counterexamples, and separate current native/proof/custody receipts. Compatible values or shapes do not prove equivalence. |
 | S1 — source-preserving multi-request processing | Supply an immutable selected-source/prompt manifest if a GEO workflow participates in GNN's synthesis acceptance; agree required cross-part questions and completion/refusal criteria. | Every selected byte and required prompt accounted for, exact provider/model/context identities, genuine joint synthesis and resume/cancellation/deadline controls. Fragment answers do not establish joint interpretation. |
 
+### GNN pin and E4 handoff progress — 2026-11-01
+
+- **Pin advanced.** `.github/gnn-pair.json` now selects GNN
+  `8f293d9ba810e6eda5c09842d9c7ed9ffa5f92c1` (v5.0.3). The reviewed delta
+  changes no file under GNN `src/gnn/export/`, `src/gnn/parsers/` or
+  `src/gnn/extract/`, and the supported interchange schema roster is unchanged.
+  Supersedes the `codex/gnn-companion-pin-20261028` attempt, which targeted the
+  intermediate `4582f99c…` revision. The published 0.4.0 companion identities
+  (GNN 5.0.1, FEP_Formal 2.1.0) remain historical and unchanged.
+- **Pin gates.** The published-companion identity check accepts a reviewed pin
+  ahead of the published revision, verifies its shape and records
+  `equals_released_revision`, so the pin file stays the pin's only home. A
+  bounded lineage check (`GEO-INFER-TEST/validate_gnn_pin_freshness.py`) reports
+  the pin's release tags, ancestry and distance from the GNN checkout, with
+  `--require-current` escalating a pin behind the newest release tag.
+- **E4.** The GEO-side fixture admission proposal is published in
+  [the E4 fixture admission](GEO-INFER-INTRA/docs/integration/e4_fixture_admission.md):
+  the Gaussian v2 rectangular interchange fixture at the canonical pin, its
+  quantities, axes, conditioning/time, units and precision, the existing
+  consumer-side analytic references and mismatch controls, and the precise
+  remaining gap (the independent witness does not yet read this source, and
+  authored controls are outside its passive contract). The E4 row above stays
+  open until the GNN semantic-witness and FEP theorem owners agree the fixture
+  and its independent receipts exist.
+
 ### Historical GEO-INFER continuation — 2026-10-18
 
 The following campaign description retains its original source epochs and

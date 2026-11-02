@@ -15,6 +15,7 @@ Geo Infer Test workspace within `GEO-INFER-TEST`.
 - `doc_examples.py`
 - `documentation_contracts.py`
 - `execution.py`
+- `gnn_pin_freshness.py`
 - `manuscript_rendering.py`
 - `native_io_environment.py`
 - `process.py`
