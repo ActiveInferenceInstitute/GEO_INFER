@@ -25,7 +25,7 @@ def workspace(tmp_path: Path) -> Path:
     (tmp_path / "GEO-INFER-TEST/pyproject.toml").write_text(
         '[project]\nname="geo-infer-test"\nversion="0.4.0"\n'
     )
-    (tmp_path / "uv.toml").write_text('required-version="==0.13.1"\n')
+    (tmp_path / "uv.toml").write_text('required-version="==0.13.6"\n')
     (tmp_path / ".python-version").write_text("3.12\n")
     (tmp_path / "uv.lock").write_text(
         "version=1\n"
@@ -150,7 +150,7 @@ def test_network_tool_failure_retains_evidence_and_fails(
     tool.write_text(
         "import sys\n"
         "if '--version' in sys.argv:\n"
-        " print('uv 0.13.1 fixture' if 'uv-tool' in sys.argv[0] else 'pip-audit 2.10.1')\n"
+        " print('uv 0.13.6 fixture' if 'uv-tool' in sys.argv[0] else 'pip-audit 2.10.1')\n"
         "elif 'lock' not in sys.argv:\n"
         " print('network unavailable',file=sys.stderr);sys.exit(2)\n"
     )
