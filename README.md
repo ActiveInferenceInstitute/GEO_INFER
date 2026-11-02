@@ -34,6 +34,8 @@ Companion releases: [GNN 5.0.1](https://github.com/ActiveInferenceInstitute/Gene
 and [FEP_Formal 2.1.0](https://github.com/ActiveInferenceInstitute/fep_formal/releases/tag/v2.1.0).
 The [compatibility guide](GEO-INFER-INTRA/docs/integration/companion_releases.md)
 describes exact source pins, supported interchange contracts and separate proof boundaries.
+GNN maintains a [downstream adoption guide](https://github.com/ActiveInferenceInstitute/Generalized_Notation_Notation/blob/main/docs/gnn/integration/downstream_adoption.md)
+for repositories that consume the notation.
 
 ## Quick Start
 
