@@ -86,7 +86,7 @@ The adapter retains this module's dependencies and authorization requirements.
 ## Guidelines
 
 - Deterministic-by-default: pass `random_seed` to `SimulationConfig`; use `np.random.default_rng(seed)` for your own stochastic functions rather than global NumPy seeding
-- Mesa is optional (`pip install geo-infer-sim[mesa]`); `MesaModelBridge` raises a clear ImportError on construction without it
+- Mesa is optional (`uv sync --package geo-infer-sim --extra mesa`; `pip install geo-infer-sim[mesa]` is not available yet, since the distribution is not published to PyPI); `MesaModelBridge` raises a clear ImportError on construction without it
 - ABM `spatial_bounds` is advisory metadata — agent positions are not clamped; `AgentBasedModel(neighbor_radius=...)` controls step() neighbor search
 - Test: `uv run python GEO-INFER-TEST/run_unified_tests.py --module SIM`
 

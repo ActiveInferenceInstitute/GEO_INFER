@@ -76,8 +76,11 @@ class TheoremProver:
                         "The z3 backend was explicitly requested, but "
                         "z3-solver is not installed. Install the "
                         "theorem-proving extra with: "
-                        "`uv pip install geo-infer-math[theorem-proving]` "
-                        "(or `uv sync --all-extras` in the monorepo), or "
+                        "`uv sync --package geo-infer-math --extra theorem-proving` "
+                        "(or `uv sync --all-extras` in the monorepo); "
+                        "`pip install geo-infer-math[theorem-proving]` is not "
+                        "available yet, since the distribution is not "
+                        "published to PyPI. Or "
                         "omit the backend argument to select numpy."
                     ) from exc
                 logger.warning("Z3 not available, using numpy backend")
