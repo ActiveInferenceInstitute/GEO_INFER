@@ -334,14 +334,6 @@ DIRECTORY_README_NOTES: dict[str, str] = {
   `uv run python manuscript/generate_research_artifacts.py` first when a test
   reports missing outputs.
 """,
-    "manuscript/sections": """
-## Section Sources
-
-- One tracked Markdown section per module, resolved by
-  `manuscript/generate_research_artifacts.py` into the manuscript.
-- Edit section text here, then regenerate; do not hand-edit the resolved copies
-  under generated `output/`.
-""",
     ".github/workflows": """
 ## CI Workflows
 
@@ -479,14 +471,6 @@ DIRECTORY_AGENT_NOTES: dict[str, str] = {
 - Run `uv run python -m pytest tests/` after regenerating artifacts.
 - A missing artifact is a generation failure; regenerate rather than editing
   expected data.
-""",
-    "manuscript/sections": """
-## Section Editing Rules
-
-- Edit only the tracked section Markdown; the resolved manuscript is generated.
-- After changing a section, run
-  `uv run python manuscript/generate_research_artifacts.py` and commit
-  `manuscript/config.yaml` separately when the source date moves.
 """,
     ".github/workflows": """
 ## Workflow Rules
