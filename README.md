@@ -181,8 +181,8 @@ the exact reproducible exception list.
 | Modules | 45 |
 | Python source files | 1045 |
 | Python test files | 829 |
-| Repository README.md files | 812 |
-| Repository AGENTS.md files | 808 |
+| Repository README.md files | 871 |
+| Repository AGENTS.md files | 871 |
 
 These are file inventories, not executed-test or coverage counts. Regenerate
 them with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.

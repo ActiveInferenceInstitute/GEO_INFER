@@ -1,0 +1,73 @@
+# Agent Instructions: GEO-INFER-PLACE/src/geo_infer_place/locations/cascadia/config
+
+## Scope
+
+- Owning module: `GEO-INFER-PLACE`
+- Python package: `geo_infer_place`
+- Directory role: Config workspace within `GEO-INFER-PLACE`.
+
+## Capabilities
+
+- Maintains the tracked files and subdirectories listed below for this workspace.
+- Validates behavior with the command in the Validation section.
+- Integrates through `geo_infer_place` and the owning module's public contracts.
+
+## Working Rules
+
+- Keep changes scoped to this directory unless an import, test, or documented command requires a coordinated edit.
+- Prefer existing module patterns and public exports over new orchestration layers.
+- Do not add planned, fake, mock, stub, or placeholder behavior to user-facing docs.
+- If external services are involved, keep deterministic local validation available.
+
+## Local Contents
+
+- `__init__.py`
+- `county_boundary_loader.py`
+- `analysis_config.yaml`
+- `ca_del_norte_boundary.geojson`
+- `ca_humboldt_boundary.geojson`
+- `ca_lassen_boundary.geojson`
+- `cascadia_bioregion_boundary.geojson`
+- `cascadia_boundary.count.source.json`
+- `cascadia_boundary.extent.source.json`
+- `cascadia_boundary.ids.source.json`
+- `cascadia_boundary.item.source.json`
+- `cascadia_boundary.layer.source.json`
+- `cascadia_boundary.layer_final.source.json`
+- `cascadia_boundary.license.md`
+- `cascadia_boundary.provenance.json`
+- `cascadia_boundary.service.source.json`
+- `cascadia_boundary.source.json`
+- `cascadia_climate_zones.yaml`
+- `cascadia_config.yaml`
+- `cascadia_ecoregions.yaml`
+- `cascadia_indigenous_territories.yaml`
+- `cascadia_layers.provenance.json`
+- `cascadia_major_watersheds.geojson`
+- `cascadia_regional_source_metadata.json`
+- `cascadia_salmon_esus.yaml`
+- `cascadia_subduction_zone.geojson`
+- `cascadia_tectonics.source.json`
+- `cascadia_volcanoes.geojson`
+- `cascadia_volcanoes.source.json`
+- `cascadia_watersheds.source.json`
+- `county_boundaries.yaml`
+- `data_urls.json`
+
+## Validation
+
+```bash
+uv run python GEO-INFER-TEST/run_unified_tests.py --module PLACE
+```
+
+
+## Capture Preservation
+
+- These files are hash-bound publisher captures; preserve their bytes exactly.
+- Do not normalize, regenerate, or replace them without a reviewed capture update
+  and the root `AGENTS.md` preservation rules.
+
+## Integration Notes
+
+- Update this AGENTS.md and the sibling README.md when commands, exports, dependencies, or generated outputs change.
+- Keep cross-module references anchored to real package imports and tracked files.

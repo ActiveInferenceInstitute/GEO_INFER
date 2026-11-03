@@ -311,8 +311,206 @@ def validation_commands(path: Path, module: ModuleInfo | None) -> str:
     return "\n".join(commands)
 
 
+DIRECTORY_README_NOTES: dict[str, str] = {
+    "scripts": """
+## Manuscript Tooling
+
+- These seven tracked helpers build the manuscript figures and render the PDF;
+  the manuscript source and artifact generator live in `manuscript/`.
+- The `manuscript_fig_*.py` scripts export the framework, theme, and verification
+  figures into generated `output/figures/`.
+- `z_generate_manuscript_variables.py` and `render_manuscript_pdf.py` hydrate the
+  template variables and render the PDF; regenerate artifacts rather than
+  hand-editing the produced files.
+""",
+    "tests": """
+## Manuscript Test Suite
+
+- These fourteen tracked tests validate manuscript structure, bibliography,
+  figures, provenance, fingerprints, and PDF layout; module behavior is tested
+  under each `GEO-INFER-*/tests/`.
+- Run them from the repository root with `uv run python -m pytest tests/`.
+- Tests read the generated artifact set; run
+  `uv run python manuscript/generate_research_artifacts.py` first when a test
+  reports missing outputs.
+""",
+    "manuscript/sections": """
+## Section Sources
+
+- One tracked Markdown section per module, resolved by
+  `manuscript/generate_research_artifacts.py` into the manuscript.
+- Edit section text here, then regenerate; do not hand-edit the resolved copies
+  under generated `output/`.
+""",
+    ".github/workflows": """
+## CI Workflows
+
+- Ten tracked workflows cover repository validation, model contracts, formatting,
+  import probes, companion releases, container profiles, and wheel releases.
+- Validate workflow syntax with `actionlint`; CI runs the `workflow-lint` job.
+- Do not add a workflow that weakens the strict repository, test, model, or
+  source-hygiene gates.
+""",
+    ".github/ISSUE_TEMPLATE": """
+## Issue Templates
+
+- Three templates structure bug, feature, and documentation reports.
+- Keep required fields aligned with commands and diagnostics that exist in this
+  checkout.
+""",
+    ".github/actions/provision-pytensor-blas": """
+## Composite Action
+
+- Installs and selects the Linux reference BLAS runtime used by CI model checks.
+- Change the action together with the workflow jobs that consume it, then re-run
+  the model-contract gate.
+""",
+    ".github/actions/sync-cpu-workspace": """
+## Composite Action
+
+- Installs every locked workspace member, extra, and dependency group on CPU
+  runners; a cache hit never substitutes for the locked sync.
+- Keep the sync command aligned with root `AGENTS.md` Standard Commands.
+""",
+    "GEO-INFER-PLACE/src/geo_infer_place/locations/cascadia/config": """
+## Hash-Bound Captures
+
+- These boundary and source files are captured publisher bytes referenced by the
+  Cascadia pipeline; preserve them byte-for-byte.
+- Follow the root `AGENTS.md` capture-preservation rules; do not normalize,
+  regenerate, or replace these files without a reviewed capture update.
+""",
+    "GEO-INFER-TEST/tools": """
+## Performance Tooling
+
+- `perf01_import_probe.py` times `import <module>` in a child interpreter with a
+  faulthandler dump and a hard subprocess timeout.
+- Keep probes read-only and independent of clone writers; record the command and
+  environment with any reported timing.
+""",
+    "GEO-INFER-INTRA/docs/releases": """
+## Release Records
+
+- Three tracked readiness, migration, and issue-reconciliation records for the
+  0.4.0 release line.
+- Treat metrics and acceptance claims as dated evidence; verify current state
+  against the validators before relying on them.
+""",
+    "GEO-INFER-INTRA/docs/math": """
+## Mathematical Notes
+
+- `circulation.md` documents finite probability currents and graph decomposition
+  against the `geo_infer_math.core.circulation` API.
+""",
+    "GEO-INFER-INTRA/scripts/markdown_to_pdf": """
+## Markdown to PDF Tool
+
+- Converts Markdown documentation to PDF with the bundled `md2pdf.sh` wrapper and
+  `markdown_to_pdf.py`; `README_markdown_to_pdf.md` documents configuration and
+  usage.
+- Node.js is a manual prerequisite; the script installs its remaining npm
+  dependencies on first run.
+""",
+    "GEO-INFER-EXAMPLES/src/geo_infer_examples/workflows": """
+## Workflow Definitions
+
+- `health_surveillance_basic.yaml` is a packaged sequential workflow definition
+  consumed by the examples module's orchestration surfaces.
+""",
+    "GEO-INFER-GIT/src/geo_infer_git/config": """
+## Configuration Examples
+
+- `example.yaml`, `target_repos.yaml`, and `target_users.yaml` are sample inputs
+  for the GIT module's repository tooling.
+- Copy and edit them locally; keep credentials out of tracked configuration.
+""",
+    "GEO-INFER-INSURANCE/src/geo_infer_insurance": """
+## Package Layout
+
+- `__init__.py` exports the package surface; implementation lives in the
+  `underwriting/` subpackage.
+- Run module tests with
+  `uv run python GEO-INFER-TEST/run_unified_tests.py --module INSURANCE`.
+""",
+    "GEO-INFER-INSURANCE/tests/unit": """
+## Unit Tests
+
+- Eleven tracked unit tests cover underwriting, pricing, claims, compliance,
+  identifiers, and portfolio logic without external services.
+- Run `uv run python -m pytest GEO-INFER-INSURANCE/tests/unit`.
+""",
+    "GEO-INFER-INSURANCE/tests/integration": """
+## Integration Tests
+
+- `test_integration.py` exercises the module's integration surface.
+- Run `uv run python -m pytest GEO-INFER-INSURANCE/tests/integration`.
+""",
+}
+
+DIRECTORY_AGENT_NOTES: dict[str, str] = {
+    ".agents": """
+## Framework Rules
+
+- These documents define framework-wide development rules referenced by the root
+  `AGENTS.md`.
+- Keep them operational and cross-module; module-specific contracts belong in
+  each module's `AGENTS.md` and `SKILL.md`.
+""",
+    ".github": """
+## GitHub Configuration
+
+- `README.md` here is the generated GitHub landing page, not a folder guide; edit
+  the generator instead of this file.
+- Workflows, composite actions, and issue templates live in the subdirectories
+  listed above.
+""",
+    "scripts": """
+## Manuscript Tooling Rules
+
+- Keep these scripts as thin orchestration surfaces over tracked data.
+- Regenerate with `uv run python manuscript/generate_research_artifacts.py`;
+  never hand-edit generated figures or the resolved manuscript.
+""",
+    "tests": """
+## Manuscript Test Rules
+
+- These tests validate the manuscript pipeline, not module behavior; module tests
+  live under each `GEO-INFER-*/tests/`.
+- Run `uv run python -m pytest tests/` after regenerating artifacts.
+- A missing artifact is a generation failure; regenerate rather than editing
+  expected data.
+""",
+    "manuscript/sections": """
+## Section Editing Rules
+
+- Edit only the tracked section Markdown; the resolved manuscript is generated.
+- After changing a section, run
+  `uv run python manuscript/generate_research_artifacts.py` and commit
+  `manuscript/config.yaml` separately when the source date moves.
+""",
+    ".github/workflows": """
+## Workflow Rules
+
+- Validate edits with `actionlint`; do not weaken strict repository, test, model,
+  or source-hygiene gates.
+- Keep action pins on stable releases and update `.github/dependabot.yml` when the
+  pinned action set changes.
+""",
+    "GEO-INFER-PLACE/src/geo_infer_place/locations/cascadia/config": """
+## Capture Preservation
+
+- These files are hash-bound publisher captures; preserve their bytes exactly.
+- Do not normalize, regenerate, or replace them without a reviewed capture update
+  and the root `AGENTS.md` preservation rules.
+""",
+}
+
+
 def module_readme_notes(path: Path, module: ModuleInfo | None) -> str:
     """Return implemented module-specific README notes for module roots."""
+    relative_dir = path.parent.relative_to(REPO_ROOT).as_posix()
+    if relative_dir in DIRECTORY_README_NOTES:
+        return DIRECTORY_README_NOTES[relative_dir]
     if path.parent == REPO_ROOT / "GEO-INFER-PLACE/locations/california":
         return """
 ## California Monitoring
@@ -729,6 +927,9 @@ uv run python GEO-INFER-TEST/validate_h3_active_inference_contract.py
 
 def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
     """Return implemented module-specific AGENTS notes for module roots."""
+    relative_dir = path.parent.relative_to(REPO_ROOT).as_posix()
+    if relative_dir in DIRECTORY_AGENT_NOTES:
+        return DIRECTORY_AGENT_NOTES[relative_dir]
     if path.parent == REPO_ROOT / "manuscript":
         return module_readme_notes(path, module)
     if not module or path.parent != module.path:
