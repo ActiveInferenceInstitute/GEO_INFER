@@ -35,6 +35,7 @@ Unit workspace within `GEO-INFER-TEST`.
 - `test_process_ownership_contracts.py`
 - `test_profiling.py`
 - `test_research_evidence.py`
+- `test_rewrite_readme_agents_coverage.py`
 - `test_root_pytest_policy.py`
 - `test_run_unified_tests.py`
 - `test_runtime_metadata.py`
