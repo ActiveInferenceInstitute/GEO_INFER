@@ -71,13 +71,13 @@ Unified testing framework for quality assurance across all GEO-INFER modules wit
 - `import_probe.py:run_import_probe` (function)
 - `orchestrator_coverage_metric.py:main` (function)
 - `preview_receipt_metric.py:main` (function)
+- `rewrite_readme_agents.py:CoverageError` (class)
 - `rewrite_readme_agents.py:ModuleInfo` (class)
 - `rewrite_readme_agents.py:git_ls_files` (function)
 - `rewrite_readme_agents.py:tracked_files` (function)
+- `rewrite_readme_agents.py:tracked_directories` (function)
 - `rewrite_readme_agents.py:requirement_lines` (function)
 - `rewrite_readme_agents.py:declared_dependencies` (function)
-- `rewrite_readme_agents.py:pinned_version` (function)
-- `rewrite_readme_agents.py:discover_modules` (function)
 
 ## Module Metadata
 

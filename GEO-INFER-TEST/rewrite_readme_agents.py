@@ -22,6 +22,12 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 MODULE_PREFIX = "GEO-INFER-"
 MAX_SYMBOLS = 20
 _TRACKED_FILES: set[Path] | None = None
+_COVERAGE_OUTPUT_SEGMENTS = frozenset({"output", "previews", "cache", "raw"})
+_COVERAGE_EXACT_SKIPS = frozenset({"manuscript/sections"})
+
+
+class CoverageError(RuntimeError):
+    """Raised when tracked-directory documentation coverage cannot be checked."""
 
 
 @dataclass
@@ -92,6 +98,69 @@ def tracked_files() -> set[Path]:
     if _TRACKED_FILES is None:
         _TRACKED_FILES = set(git_ls_files())
     return _TRACKED_FILES
+
+
+def tracked_directories(repo_root: Path = REPO_ROOT) -> list[Path]:
+    """Return directories holding at least one tracked file.
+
+    Only the index counts. An untracked worktree file cannot hide a missing
+    guide, and an empty or failing ``git ls-files`` is an error rather than a
+    clean result.
+    """
+    result = subprocess.run(
+        ["git", "ls-files", "-z", "--cached"],
+        cwd=repo_root,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        message = f"git ls-files failed in {repo_root}"
+        raise CoverageError(f"{message}: {detail}" if detail else message)
+    raw_paths = result.stdout.decode("utf-8", errors="surrogateescape").split("\0")
+    paths = [Path(raw) for raw in raw_paths if raw]
+    if not paths:
+        raise CoverageError(f"git ls-files returned no tracked files in {repo_root}")
+    return sorted({path.parent for path in paths})
+
+
+def _coverage_exclusion(directory: Path) -> str | None:
+    """Return the rule that exempts a tracked directory, if any."""
+    parts = directory.parts
+    if any(part in _COVERAGE_OUTPUT_SEGMENTS for part in parts):
+        return "generated output, preview, cache, or raw subtree"
+    if "data" in parts:
+        return "data payload"
+    if ".aii" in parts:
+        return "InstituteOS metadata sidecar"
+    if directory.as_posix() in _COVERAGE_EXACT_SKIPS:
+        return "authored manuscript chapters"
+    if "locations" in parts and "models" in parts:
+        return "model payload"
+    return None
+
+
+def _ignored_directories(directories: list[Path], repo_root: Path) -> set[Path]:
+    """Return directories matched by the repository ignore rules.
+
+    ``--no-index`` is required because a directory can stay ignored while one
+    file inside it was force-added to the index.
+    """
+    if not directories:
+        return set()
+    payload = "\0".join(directory.as_posix() for directory in directories) + "\0"
+    result = subprocess.run(
+        ["git", "check-ignore", "--no-index", "--stdin", "-z"],
+        cwd=repo_root,
+        input=payload.encode("utf-8", errors="surrogateescape"),
+        capture_output=True,
+    )
+    if result.returncode not in (0, 1):
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        message = f"git check-ignore failed in {repo_root}"
+        raise CoverageError(f"{message}: {detail}" if detail else message)
+    raw_paths = result.stdout.decode("utf-8", errors="surrogateescape").split("\0")
+    return {Path(raw) for raw in raw_paths if raw}
 
 
 def requirement_lines(module_dir: Path, limit: int = 12) -> list[str]:
@@ -1873,12 +1942,47 @@ def check_docs_current() -> list[Path]:
     return stale
 
 
+def coverage_gaps(repo_root: Path = REPO_ROOT) -> list[Path]:
+    """Return tracked directories without both README.md and AGENTS.md."""
+    directories = tracked_directories(repo_root)
+    candidates = [
+        directory for directory in directories if _coverage_exclusion(directory) is None
+    ]
+    ignored = _ignored_directories(candidates, repo_root)
+    gaps = [
+        directory
+        for directory in candidates
+        if directory not in ignored
+        and not (
+            (repo_root / directory / "README.md").is_file()
+            and (repo_root / directory / "AGENTS.md").is_file()
+        )
+    ]
+    return sorted(gaps)
+
+
+def check_doc_coverage(repo_root: Path = REPO_ROOT) -> None:
+    """Raise CoverageError when a tracked directory lacks a guide pair."""
+    gaps = coverage_gaps(repo_root)
+    if not gaps:
+        return
+    listed = ", ".join(gap.as_posix() for gap in gaps[:20])
+    remaining = len(gaps) - 20
+    suffix = f" (+{remaining} more)" if remaining > 0 else ""
+    raise CoverageError(
+        f"tracked directories missing README.md and AGENTS.md: {listed}{suffix}"
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Fail if generated README.md or AGENTS.md files are stale.",
+        help=(
+            "Fail if generated README.md or AGENTS.md files are stale, or if "
+            "a tracked directory lacks either file (full check only)."
+        ),
     )
     parser.add_argument(
         "--module",
@@ -1887,7 +1991,11 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    expected = expected_doc_files()
+    try:
+        expected = expected_doc_files()
+    except (OSError, subprocess.CalledProcessError) as exc:
+        print(f"error: git ls-files failed: {exc}", file=sys.stderr)
+        return 1
     if args.module is not None:
         owner = REPO_ROOT / args.module
         expected = [
@@ -1906,7 +2014,15 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 1
+        if args.module is None:
+            try:
+                check_doc_coverage(REPO_ROOT)
+            except CoverageError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 1
         print(f"All {len(expected)} generated README.md/AGENTS.md files are current.")
+        if args.module is None:
+            print("Every tracked directory has both README.md and AGENTS.md.")
         return 0
 
     for path, content in expected:
