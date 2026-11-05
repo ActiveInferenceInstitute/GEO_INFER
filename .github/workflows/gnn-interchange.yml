@@ -45,6 +45,8 @@ jobs:
   interchange:
     # The 3.12 leg carries the stable fleet check name; the other matrix leg
     # keeps its interpreter in the name so both runs remain distinguishable.
+    # Do not gate or exclude the 3.12 leg: this display name is the required
+    # context, and a skipped leg publishes no check run.
     name: ${{ matrix.python == '3.12' && 'gnn conformance (pinned)' || format('gnn interchange ({0})', matrix.python) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
