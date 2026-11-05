@@ -355,6 +355,21 @@ def test_gnn_interchange_only_runs_on_contract_relevant_changes():
     assert ".github/workflows/gnn-interchange.yml" in paths
 
 
+def test_gnn_interchange_publishes_stable_check_name_and_records_tag():
+    """The 3.12 matrix leg carries the stable fleet check name."""
+    job = _load("gnn-interchange.yml")["jobs"]["interchange"]
+    assert "matrix.python" in job["name"]
+    assert "gnn conformance (pinned)" in job["name"]
+    assert job["strategy"]["matrix"]["python"] == ["3.11", "3.12"]
+    assert "if" not in job
+    pair_reader = next(
+        step["run"]
+        for step in job["steps"]
+        if step.get("name") == "Read reviewed companion revision"
+    )
+    assert "pair['tag']" in pair_reader
+
+
 def test_every_workflow_definition_parses():
     for workflow in sorted(WORKFLOWS.glob("*.yml")):
         document = yaml.safe_load(workflow.read_text(encoding="utf-8"))

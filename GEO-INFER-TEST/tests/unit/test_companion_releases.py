@@ -76,13 +76,12 @@ class CompanionReleaseTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
 
-    def pin(self, owner, relative, companion, revision):
-        """Write a real two-field pin, never a synthetic validation result."""
-        self.write(
-            owner,
-            relative,
-            json.dumps({"repository": REPOSITORIES[companion], "revision": revision}),
-        )
+    def pin(self, owner, relative, companion, revision, tag=None):
+        """Write a real pin, never a synthetic validation result."""
+        data = {"repository": REPOSITORIES[companion], "revision": revision}
+        if tag is not None:
+            data["tag"] = tag
+        self.write(owner, relative, json.dumps(data))
 
     def commit(self, name, message):
         """Commit all fixture changes and return their actual Git identity."""
@@ -150,6 +149,18 @@ class CompanionReleaseTests(unittest.TestCase):
             result["interchange_pin"]["conformance_owner"],
             "paired GNN interchange workflow",
         )
+
+    def test_interchange_pin_records_optional_release_tag(self):
+        self.pin(
+            "geo",
+            ".github/gnn-pair.json",
+            "gnn",
+            self.revision("gnn"),
+            tag="v5.0.1",
+        )
+        self.commit("geo", "record the interchange release tag")
+        result = self.review()
+        self.assertEqual(result["interchange_pin"]["tag"], "v5.0.1")
 
     def test_advanced_interchange_pin_is_recorded_not_refused(self):
         released = self.revision("gnn")
