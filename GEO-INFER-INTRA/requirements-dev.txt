@@ -1,4 +1,4 @@
--r requirements.txt
+# Developer tool list. Project dependencies are declared in pyproject.toml.
 pytest>=7.0.0
 pytest-cov>=4.0.0
 black>=23.0.0
