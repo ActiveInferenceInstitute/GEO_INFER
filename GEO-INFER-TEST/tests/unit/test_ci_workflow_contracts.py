@@ -360,6 +360,8 @@ def test_gnn_interchange_publishes_stable_check_name_and_records_tag():
     job = _load("gnn-interchange.yml")["jobs"]["interchange"]
     assert "matrix.python" in job["name"]
     assert "gnn conformance (pinned)" in job["name"]
+    assert job["strategy"]["matrix"]["python"] == ["3.11", "3.12"]
+    assert "if" not in job
     pair_reader = next(
         step["run"]
         for step in job["steps"]
