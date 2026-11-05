@@ -123,13 +123,23 @@ def validate_gnn_pin_freshness(
     gnn = gnn_root.resolve(strict=True)
     _require(gnn.is_dir(), "GNN checkout is absent")
     pin_data = _read_json(geo, PIN_PATH)
-    _require(set(pin_data) == {"repository", "revision"}, "invalid pin keys")
+    _require(
+        set(pin_data)
+        in ({"repository", "revision"}, {"repository", "revision", "tag"}),
+        "invalid pin keys",
+    )
     _require(pin_data["repository"] == GNN_REPOSITORY, "unexpected pin repository")
     _require(
         isinstance(pin_data["revision"], str)
         and re.fullmatch(r"[0-9a-f]{40}", pin_data["revision"]) is not None,
         "invalid pin revision",
     )
+    if "tag" in pin_data:
+        _require(
+            isinstance(pin_data["tag"], str)
+            and re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", pin_data["tag"]) is not None,
+            "invalid pin tag",
+        )
     manifest = _read_json(geo, MANIFEST_PATH)
     _require(
         manifest.get("schema") == "geo-infer-companion-releases/v1",
@@ -191,6 +201,7 @@ def validate_gnn_pin_freshness(
         "pin": {
             "repository": pin_data["repository"],
             "revision": pin_commit,
+            "tag": pin_data.get("tag"),
             "tags_at_pin": tags_at_pin,
             "release_tags_at_pin": [
                 tag for tag in tags_at_pin if RELEASE_TAG.fullmatch(tag)

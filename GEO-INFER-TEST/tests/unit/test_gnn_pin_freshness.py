@@ -67,13 +67,12 @@ class GnnPinFreshnessTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
 
-    def pin(self, revision):
-        """Write a real two-field pin, never a synthetic validation result."""
-        self.write(
-            self.geo,
-            ".github/gnn-pair.json",
-            json.dumps({"repository": GNN_REPOSITORY, "revision": revision}),
-        )
+    def pin(self, revision, tag=None):
+        """Write a real pin, never a synthetic validation result."""
+        data = {"repository": GNN_REPOSITORY, "revision": revision}
+        if tag is not None:
+            data["tag"] = tag
+        self.write(self.geo, ".github/gnn-pair.json", json.dumps(data))
 
     def commit(self, root, message):
         """Commit all fixture changes and return their actual Git identity."""
@@ -90,6 +89,14 @@ class GnnPinFreshnessTests(unittest.TestCase):
         self.assertEqual(result["checkout"]["commits_ahead_of_pin"], 1)
         self.assertTrue(result["newest_release"]["equals_pin"])
         self.assertTrue(result["claims"]["release_currency"])
+
+    def test_optional_release_tag_is_validated_and_recorded(self):
+        self.pin(self.second, tag="v1.1.0")
+        result = validate_gnn_pin_freshness(self.geo, self.gnn)
+        self.assertEqual(result["pin"]["tag"], "v1.1.0")
+        self.pin(self.second, tag="release")
+        with self.assertRaisesRegex(ValueError, "invalid pin tag"):
+            validate_gnn_pin_freshness(self.geo, self.gnn)
 
     def test_pin_ahead_of_the_newest_release_is_current(self):
         self.pin(self.head)

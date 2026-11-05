@@ -295,9 +295,18 @@ def validate_companion_releases(
     # the published companion; the paired GNN interchange workflow owns that
     # revision pair's conformance.
     geo_pin = _json(read("geo", ".github/gnn-pair.json"))
-    _keys(geo_pin, {"repository", "revision"}, "geo companion pin")
+    _require(
+        set(geo_pin) in ({"repository", "revision"}, {"repository", "revision", "tag"}),
+        "invalid geo companion pin keys",
+    )
     _require(geo_pin["repository"] == REPOSITORIES["gnn"], "geo pin repository differs")
     _require(_oid(geo_pin["revision"]), "geo pin revision is invalid")
+    if "tag" in geo_pin:
+        _require(
+            isinstance(geo_pin["tag"], str)
+            and re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", geo_pin["tag"]) is not None,
+            "geo pin tag is invalid",
+        )
     for name, relative, original in raw_inputs:
         _require(
             _tracked_bytes(roots[name], relative) == original,
@@ -321,6 +330,7 @@ def validate_companion_releases(
         "interchange_pin": {
             "repository": geo_pin["repository"],
             "revision": geo_pin["revision"],
+            "tag": geo_pin.get("tag"),
             "equals_released_revision": geo_pin["revision"]
             == companions["gnn"]["revision"],
             "conformance_owner": "paired GNN interchange workflow",

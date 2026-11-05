@@ -80,11 +80,13 @@ GNN topic publication verified at `8005e37c668e91b85f6d54b1a989983098ee99a8`.
 ## GNN pair-pin bump procedure
 
 The paired interchange pins the companion GNN revision in
-`.github/gnn-pair.json` (`revision`); `.github/workflows/gnn-interchange.yml`
-checks out GEO at the PR head SHA and GNN at that pin in two locked
-environments (Python 3.11 and 3.12). GNN `main` usually runs ahead of the pin,
-so bumping is a deliberate, reviewed companion-revision decision, never
-automatic:
+`.github/gnn-pair.json` (`revision`) and records the reviewed release label
+alongside it (`tag`); `.github/workflows/gnn-interchange.yml` checks out GEO at
+the PR head SHA and GNN at that pin in two locked environments (Python 3.11 and
+3.12). The revision is authoritative; the tag is a review label and CI rejects
+a pin without a valid `vMAJOR.MINOR.PATCH` tag. GNN `main` usually runs ahead
+of the pin, so bumping is a deliberate, reviewed companion-revision decision,
+never automatic:
 
 1. Diff GNN from the current pin to the target revision
    (`git diff <pin>..<target>` in the GNN checkout) and review the change.
@@ -93,9 +95,10 @@ automatic:
    must still accept the `schema_version` values the target GNN exporters emit
    (`gnn-geo-infer/1`, `gnn-geo-infer/2`, `gnn-geo-infer/factored/1`).
 3. Open a PR that updates **only** `.github/gnn-pair.json` to the target
-   revision; never mix a pin bump with consumer-contract code changes. The
-   published-companion identity check verifies the pin's shape, records whether
-   it still equals the published companion and accepts a reviewed pin ahead of it.
+   revision and its release tag; never mix a pin bump with consumer-contract
+   code changes. The published-companion identity check verifies the pin's
+   shape, records whether it still equals the published companion and accepts a
+   reviewed pin ahead of it.
 4. Record the bounded lineage receipt
    (`validate_gnn_pin_freshness.py --gnn-root <gnn> --require-current`) in the
    PR, and let the paired interchange CI validate the new pair on the PR (the
