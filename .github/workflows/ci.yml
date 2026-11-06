@@ -61,7 +61,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          version: "0.13.6"
+          version: "0.13.7"
           enable-cache: true
           cache-suffix: cpu-workspace-py3.12
           save-cache: false
@@ -239,7 +239,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          version: "0.13.6"
+          version: "0.13.7"
           enable-cache: true
           cache-suffix: cpu-workspace-py3.12
           save-cache: false
@@ -371,7 +371,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          version: "0.13.6"
+          version: "0.13.7"
           enable-cache: true
           cache-suffix: build-smoke-py${{ matrix.python-version }}
 
@@ -457,7 +457,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          version: "0.13.6"
+          version: "0.13.7"
           enable-cache: true
           cache-suffix: cpu-workspace-py${{ matrix.python-version }}
           # One complete workspace writer per interpreter; other categories
@@ -547,7 +547,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          version: "0.13.6"
+          version: "0.13.7"
           enable-cache: true
           cache-suffix: cpu-workspace-py3.11
           save-cache: false
@@ -704,7 +704,7 @@ jobs:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          version: "0.13.6"
+          version: "0.13.7"
           enable-cache: true
           save-cache: false
           cache-suffix: cpu-workspace-py3.12
