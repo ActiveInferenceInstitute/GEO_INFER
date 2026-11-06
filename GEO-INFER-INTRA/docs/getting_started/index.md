@@ -11,7 +11,7 @@ interpreter versions. Each candidate needs its own locked/source/native gates;
 later runtime support is not inferred from an earlier receipt. Linux service
 profiles have their separate build and actual-health gate described below.
 
-Use the latest stable CPython by default (currently 3.15) and exact uv 0.13.6.
+Use the latest stable CPython by default (currently 3.15) and exact uv 0.13.7.
 This checkout's unchanged locked base has a named local runtime exception:
 `.python-version` selects the latest 3.12 patch. Isolated frozen base installs on
 macOS passed on 3.12; 3.14 and 3.15 attempted the locked Fiona 1.10.1 source
@@ -34,7 +34,7 @@ Explicit `UV_PYTHON` continues to select a named compatibility/profile runtime.
 ### Linux container profiles
 
 BIO, OPS, and IoT use the named frozen CPU profile: Python 3.12 and exact
-uv 0.13.6. Build each image with the workspace root as its context so its
+uv 0.13.7. Build each image with the workspace root as its context so its
 selected dependencies come from the existing `uv.lock`, exported with hashes.
 The runtime installs only the selected module and required workspace siblings;
 there is no unconstrained gunicorn or base-dependency resolution at image build.
@@ -62,7 +62,7 @@ receives container signals; it does not start monitoring in a short-lived helper
 Protocol consumers and performance monitoring remain explicit application work.
 
 The former Python 3.15 BIO/OPS and 3.13 IoT draft images were not qualified under
-uv 0.13.6. Their source is retained in Git history. Moving a runtime beyond this
+uv 0.13.7. Their source is retained in Git history. Moving a runtime beyond this
 frozen profile needs separately reviewed dependency/native-build qualification.
 
 ## Five-minute path
