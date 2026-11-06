@@ -29,7 +29,7 @@ from .process import run_process
 from .torch_variant import official_variant_record, provenance_hashes
 
 AUDITOR_VERSION = "2.10.1"
-UV_VERSION = "0.13.6"
+UV_VERSION = "0.13.7"
 
 
 def canonical_name(value: str) -> str:

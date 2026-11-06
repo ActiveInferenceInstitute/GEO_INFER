@@ -1,6 +1,6 @@
 # Runtime exception and removal checks: GEO-INFER-INTRA/docs/getting_started/index.md.
 # Project-only package/workspace metadata stays in the unchanged pyproject.toml.
-required-version = "==0.13.6"
+required-version = "==0.13.7"
 constraint-dependencies = [
     "torch==2.13.0+cu126; sys_platform == 'linux' and platform_machine == 'x86_64'",
 ]
