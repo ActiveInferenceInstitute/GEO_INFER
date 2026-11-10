@@ -380,6 +380,32 @@ def rotating_allocation(
     return Allocation(tuple(map(int, modes)), int(modes.sum()), gain)
 
 
+def validate_generator_model(
+    artifact: FactoredGNNArtifact, generator_artifact: FactoredGNNArtifact
+) -> None:
+    """Allow measurement likelihood mismatch only, retaining the planner's semantics.
+
+    Provenance may differ because the generator is a distinct model. Costs,
+    transitions, preferences, policies, axes and passive readings may not differ.
+    """
+    planner, generator = artifact.to_dict(), generator_artifact.to_dict()
+    assumed = np.asarray(planner["modalities"][0]["likelihood"], dtype=float)
+    actual = np.asarray(generator["modalities"][0]["likelihood"], dtype=float)
+    if (
+        assumed.shape != (3, 2, 3)
+        or actual.shape != assumed.shape
+        or not np.array_equal(actual[:, :, 0], assumed[:, :, 0])
+        or np.any((actual > 0) & (assumed == 0))
+    ):
+        raise CaliforniaError("generator likelihood changes passive mode or support")
+    generator["modalities"][0]["likelihood"] = planner["modalities"][0]["likelihood"]
+    generator["provenance"] = planner["provenance"]
+    if generator != planner:
+        raise CaliforniaError(
+            "generator may differ only in report likelihood and provenance"
+        )
+
+
 def simulated_report(
     artifact: FactoredGNNArtifact,
     truth: int,
@@ -388,7 +414,14 @@ def simulated_report(
     hazard: Hazard,
     cell: str,
     round_index: int,
+    *,
+    generator_artifact: FactoredGNNArtifact | None = None,
 ) -> tuple[int, np.ndarray]:
+    """Sample a reading from the world model; return its *planner* likelihood.
+
+    Omitting the override retains the historical counterseed and sampling path.
+    Generator likelihoods are never returned for use in belief updates.
+    """
     if (
         type(truth) is not int
         or truth not in (0, 1)
@@ -398,10 +431,16 @@ def simulated_report(
         raise CaliforniaError("simulation truth or sensor mode is invalid")
     spec = artifact.to_dict()["modalities"][0]
     likelihood = np.asarray(spec["likelihood"], dtype=float)
+    generator_likelihood = likelihood
+    if generator_artifact is not None:
+        validate_generator_model(artifact, generator_artifact)
+        generator_likelihood = np.asarray(
+            generator_artifact.to_dict()["modalities"][0]["likelihood"], dtype=float
+        )
     key = f"{seed}/{hazard.value}/{cell}/{round_index}/{mode}".encode()
     counter = int.from_bytes(hashlib.sha256(key).digest()[:8], "little")
     outcome = int(
-        np.random.default_rng(counter).choice(3, p=likelihood[:, truth, mode])
+        np.random.default_rng(counter).choice(3, p=generator_likelihood[:, truth, mode])
     )
     return outcome, likelihood[outcome, :, mode]
 
@@ -411,10 +450,23 @@ def run_scenario(
     artifacts: tuple[FactoredGNNArtifact, ...],
     strategy: Strategy,
     seed: int,
+    *,
+    generator_artifacts: tuple[FactoredGNNArtifact, ...] | None = None,
 ) -> Scenario:
+    """Run existing allocation/inference with an optional separate sensor world.
+
+    The override is consumed only after allocation, by ``simulated_report``.
+    Callers using it must retain both model identities alongside the Scenario;
+    the legacy Experiment receipt schema intentionally remains unchanged.
+    """
     config, count = landscape.config, len(landscape.cells)
     if len(artifacts) != 3 or seed not in config.seeds or strategy not in Strategy:
         raise CaliforniaError("scenario model, seed or strategy is outside its design")
+    if generator_artifacts is not None:
+        if len(generator_artifacts) != len(artifacts):
+            raise CaliforniaError("generator model roster differs from planner roster")
+        for artifact, generator in zip(artifacts, generator_artifacts, strict=True):
+            validate_generator_model(artifact, generator)
     log_likelihood = [np.zeros((count, 2)) for _ in Hazard]
     evaluators = tuple(FactoredPolicyEvaluator(artifact) for artifact in artifacts)
     priors = [np.asarray(item.prior) for item in landscape.indicators]
@@ -500,6 +552,11 @@ def run_scenario(
                 indicator.hazard,
                 cell.id,
                 round_index,
+                generator_artifact=(
+                    generator_artifacts[hazard_index]
+                    if generator_artifacts is not None
+                    else None
+                ),
             )
             observations.append(observation)
             if mode:

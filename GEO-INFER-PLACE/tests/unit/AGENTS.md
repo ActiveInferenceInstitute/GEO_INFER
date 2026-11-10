@@ -29,6 +29,7 @@
 - `test_california_geometry.py`
 - `test_california_inference.py`
 - `test_california_monitoring.py`
+- `test_california_robustness.py`
 - `test_cascadia_flowlines.py`
 - `test_comprehensive_dashboard.py`
 - `test_crescent_city_intel.py`

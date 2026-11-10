@@ -79,6 +79,20 @@ The adapter retains this module's dependencies and authorization requirements.
 
 ## Guidelines
 
+### Local synthetic monitoring robustness probe
+
+`geo_infer_place.locations.california.monitoring.run_scenario` accepts a
+keyword-only `generator_artifacts` override. Only report likelihood and source
+provenance may differ from the planner models; evaluation and assimilation keep
+the planner assumptions. Retain both model identities when using this low-level
+override. The ordinary historical experiment/receipt workflow is unchanged.
+
+For the bounded, local research probe, see
+[`research/measurement-quality/README.md`](../research/measurement-quality/README.md).
+It runs the existing active, quota_active and rotating strategies on a synthetic
+fixture, with separately recorded model assumptions and runtime. It is not a
+qualified historical workflow or an accepted upstream experiment.
+
 - Uses H3 v4 API exclusively (`latlng_to_cell`/`cell_to_latlng`, `[lat, lng]` ordering)
 - Supported locations: `del_norte`, `cascadia` (`get_supported_locations()`)
 - `locations/cascadia/` is a standalone application (own entry point, `cascadia_main.py`) — `run_full_analysis` does not drive it; run its `cascadia_main.py` directly
