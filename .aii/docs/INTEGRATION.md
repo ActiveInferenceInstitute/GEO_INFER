@@ -52,6 +52,8 @@
 | Task | Command | Working directory | Description |
 | --- | --- | --- | --- |
 | `test` | `uv run python GEO-INFER-TEST/run_unified_tests.py --category unit` | `.` | Run the test suite. |
+| `lint` | `uv run --with 'ruff>=0.15.6,<0.16' ruff check .` | `.` | Run the repository lint gate. |
+| `validate` | `uv run python GEO-INFER-TEST/validate_repo_contracts.py --skip-import-smoke` | `.` | Validate repository layout and documentation contracts. |
 
 ## Validation
 

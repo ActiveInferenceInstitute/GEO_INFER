@@ -1,7 +1,7 @@
 # AII sidecar — InstituteOS metadata. Schema: aii_platform.aii_sidecar
 meta:
   sidecar_version: 1.2.1
-  updated: '2026-11-10'
+  updated: '2026-11-11'
 repo:
   name: GEO_INFER
   slug: geo_infer
@@ -71,6 +71,12 @@ tasks:
   test:
     cmd: uv run python GEO-INFER-TEST/run_unified_tests.py --category unit
     description: Run the test suite.
+  lint:
+    cmd: uv run --with 'ruff>=0.15.6,<0.16' ruff check .
+    description: Run the repository lint gate.
+  validate:
+    cmd: uv run python GEO-INFER-TEST/validate_repo_contracts.py --skip-import-smoke
+    description: Validate repository layout and documentation contracts.
 docs:
 - README.md
 - AGENTS.md
