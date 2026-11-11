@@ -1,6 +1,7 @@
-# AII sidecar — InstituteOS metadata. Schema: instituteos.platform.aii_sidecar
+# AII sidecar — InstituteOS metadata. Schema: aii_platform.aii_sidecar
 meta:
-  updated: '2026-09-07'
+  sidecar_version: 1.2.1
+  updated: '2026-11-10'
 repo:
   name: GEO_INFER
   slug: geo_infer
@@ -18,6 +19,9 @@ ecosystem:
     note: Federated via the InstituteOS .aii manifest.
   - repo: ActiveInferenceInstitute/Active_Inference_Ontology
     note: Uses Active Inference Ontology terms.
+  - repo: ActiveInferenceInstitute/pymdp
+    relation: depends-on
+    note: Consumes the pymdp active-inference library.
   links:
     github: https://github.com/ActiveInferenceInstitute/GEO_INFER
     website: https://www.activeinference.org
@@ -31,22 +35,46 @@ artifacts:
 - path: LICENSE
   kind: doc
   description: License.
+- path: AGENTS.md
+  kind: doc
+  description: Agent guidance.
+- path: CITATION.cff
+  kind: citation
+  description: Machine-readable citation metadata.
+- path: tests
+  kind: test
+  description: Test suite.
+- path: manuscript
+  kind: publication
+  description: Manuscript sources and artifacts.
+- path: CHANGELOG.md
+  kind: doc
+  description: Changelog.
 provenance:
-  license: see-license-file
+  license: CC-BY-NC-SA-4.0
   citation:
     text: Active Inference Institute — GEO-INFER.
 instituteos:
   tags:
-  - geo
-  - infer
-  - module
+  - geo-infer
   - geospatial
-  - inference
+  - active-inference
+  - modules
   - html
 capabilities:
 - python-package
 - tested
+- ci
+- citation
+- manuscript-publication
 tasks:
   test:
     cmd: uv run python GEO-INFER-TEST/run_unified_tests.py --category unit
     description: Run the test suite.
+docs:
+- README.md
+- AGENTS.md
+- docs/INTEGRATION.md
+- docs/README.md
+- docs/AGENTS.md
+schema: aii-sidecar/v1

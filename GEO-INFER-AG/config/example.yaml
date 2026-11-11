@@ -117,9 +117,9 @@ remote_sensing:
     - ndwi
     - ndre
     - savi
-    custom_indices:
-      enabled: true
-      definition_file: custom_indices.yaml
+  custom_indices:
+    enabled: true
+    definition_file: custom_indices.yaml
 
 # Water Management Configuration
 water_management:

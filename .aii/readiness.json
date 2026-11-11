@@ -1,0 +1,11 @@
+{
+  "schema": "aii-readiness/v1",
+  "repo": "ActiveInferenceInstitute/GEO_INFER",
+  "tier": "python-service",
+  "standard_version": "1.0.0",
+  "baseline": {
+    "commit": "56a4ddfac70d58d510fd9ecb783911cc646a4b21",
+    "measured_at": "2026-11-10"
+  },
+  "waivers": []
+}

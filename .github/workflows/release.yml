@@ -34,6 +34,7 @@ permissions:
 # `dispatch` group instead of fanning out per branch.
 concurrency:
   group: geo-infer-release-${{ github.ref_type == 'tag' && format('tag-{0}', github.ref_name) || 'dispatch' }}
+  cancel-in-progress: false
 
 jobs:
   ci-gate:
