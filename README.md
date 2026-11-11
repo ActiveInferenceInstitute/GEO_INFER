@@ -77,6 +77,7 @@ record evidence and outstanding acceptance requirements.
 
 ## Documentation Map
 
+- Modular documentation index: [`docs/index.md`](docs/index.md)
 - User documentation hub: [`GEO-INFER-INTRA/docs/index.md`](GEO-INFER-INTRA/docs/index.md)
 - Installation and first workflow: [`GEO-INFER-INTRA/docs/getting_started/index.md`](GEO-INFER-INTRA/docs/getting_started/index.md)
 - Framework architecture: [`GEO-INFER-INTRA/docs/overview.md`](GEO-INFER-INTRA/docs/overview.md)
@@ -181,8 +182,8 @@ the exact reproducible exception list.
 | Modules | 45 |
 | Python source files | 1045 |
 | Python test files | 830 |
-| Repository README.md files | 870 |
-| Repository AGENTS.md files | 870 |
+| Repository README.md files | 871 |
+| Repository AGENTS.md files | 871 |
 
 These are file inventories, not executed-test or coverage counts. Regenerate
 them with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.

@@ -1482,6 +1482,7 @@ record evidence and outstanding acceptance requirements.
 
 ## Documentation Map
 
+- Modular documentation index: [`docs/index.md`]({link_prefix}docs/index.md)
 - User documentation hub: [`GEO-INFER-INTRA/docs/index.md`]({link_prefix}GEO-INFER-INTRA/docs/index.md)
 - Installation and first workflow: [`GEO-INFER-INTRA/docs/getting_started/index.md`]({link_prefix}GEO-INFER-INTRA/docs/getting_started/index.md)
 - Framework architecture: [`GEO-INFER-INTRA/docs/overview.md`]({link_prefix}GEO-INFER-INTRA/docs/overview.md)

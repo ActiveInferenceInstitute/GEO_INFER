@@ -26,6 +26,7 @@ AUTHORITATIVE_DOCS = (
     "GEO-INFER-ACT/docs/fep_lean_notation_bridge.md",
     "README.md",
     ".github/README.md",
+    "docs/index.md",
     "AGENTS.md",
     "CONTRIBUTING.md",
     "SECURITY.md",
