@@ -41,9 +41,9 @@ Institute repositories without touching this project's own content. The schema i
 
 | Task | Command | Working directory | Description |
 | --- | --- | --- | --- |
-| `test` | `uv run python GEO-INFER-TEST/run_unified_tests.py --category unit` | `.` | Run the test suite. |
-| `lint` | `uv run --with 'ruff>=0.15.6,<0.16' ruff check .` | `.` | Run the repository lint gate. |
-| `validate` | `uv run python GEO-INFER-TEST/validate_repo_contracts.py --skip-import-smoke` | `.` | Validate repository layout and documentation contracts. |
+| `test` | `uv run --frozen python scripts/gate.py test-unit` | `.` | Run the canonical unit-test arm. |
+| `lint` | `uv run --frozen python scripts/gate.py lint` | `.` | Run repository lint and format checks. |
+| `validate` | `uv run --frozen python scripts/gate.py gates` | `.` | Run strict repository, import, model, and secret gates. |
 
 ## Links
 
