@@ -1,6 +1,6 @@
 # Named frozen CPU service profile; independent of the formatter/tool runtime.
 FROM python:3.12-slim-bookworm AS builder
-COPY --from=ghcr.io/astral-sh/uv:0.13.6 /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.13.7 /uv /usr/local/bin/uv
 ENV UV_PYTHON=/opt/runtime/bin/python
 RUN uv venv --python /usr/local/bin/python /opt/runtime
 WORKDIR /build
@@ -12,7 +12,7 @@ RUN uv export --quiet --frozen --package geo-infer-bio --no-default-groups \
     && uv pip check --python /opt/runtime/bin/python
 
 FROM python:3.12-slim-bookworm AS runtime
-COPY --from=ghcr.io/astral-sh/uv:0.13.6 /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.13.7 /uv /usr/local/bin/uv
 ENV PATH=/opt/runtime/bin:$PATH \
     UV_PYTHON=/opt/runtime/bin/python \
     PYTHONUNBUFFERED=1 \
@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /opt/runtime /opt/runtime
 WORKDIR /app
-RUN test "$(uv --version | cut -d ' ' -f 2)" = "0.13.6" \
+RUN test "$(uv --version | cut -d ' ' -f 2)" = "0.13.7" \
     && python -c "import sys; assert sys.version_info[:2] == (3, 12)" \
     && useradd --create-home --shell /bin/bash appuser \
     && mkdir -p /app/config /app/logs /app/data /app/output \

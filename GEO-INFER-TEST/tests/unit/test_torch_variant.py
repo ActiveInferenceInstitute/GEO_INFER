@@ -35,7 +35,7 @@ def variant_workspace(tmp_path: Path) -> tuple[Path, dict]:
         + "\nexplicit=true\n"
     )
     (tmp_path / "uv.toml").write_text(
-        'required-version="==0.13.6"\nconstraint-dependencies=['
+        'required-version="==0.13.7"\nconstraint-dependencies=['
         + json.dumps(torch_variant.CONSTRAINT)
         + ']\n[[index]]\nname="pytorch-cu126"\nurl='
         + json.dumps(index["url"])
