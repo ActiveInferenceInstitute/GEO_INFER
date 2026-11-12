@@ -1,14 +1,35 @@
-# Synthetic measurement-quality robustness probe
+# research/measurement-quality
 
-Public-source local research based on GEO_INFER commit
-`8bbe89ce409ffedde198be20cc48ae3d5272794e`. GEO-INFER © 2025 by Daniel Ari
-Friedman (@docxology), CC-BY-NC-SA-4.0; the root LICENSE is unchanged.
+Measurement Quality workspace within GEO-INFER.
 
-The probe checks whether a separate observation-generating likelihood can be
-used while retaining the planner's assumptions. It establishes an implementation
-boundary, not when a monitoring strategy generally helps or fails.
+## Contents
 
-## API and boundary
+- `baseline-scenarios.json`
+- `fixture.json`
+
+## Public Interface
+
+- No public Python symbols are defined directly in this directory.
+
+
+## Validation
+
+```bash
+uv run python GEO-INFER-TEST/validate_repo_contracts.py --skip-import-smoke
+```
+
+
+## Synthetic measurement-quality probe
+
+- Public-source local research based on GEO_INFER commit
+  `8bbe89ce409ffedde198be20cc48ae3d5272794e`. GEO-INFER © 2025 by Daniel Ari
+  Friedman (@docxology), CC-BY-NC-SA-4.0; the root LICENSE is unchanged.
+- The probe asks whether a separate observation-generating likelihood can feed
+  the monitoring workflow while allocation and assimilation keep the planner's
+  assumptions. It establishes an implementation boundary, not when a monitoring
+  strategy generally helps or fails.
+
+### API and boundary
 
 `monitoring.simulated_report(..., generator_artifact=None)` samples using the
 optional generating artifact and returns the planner likelihood for the sampled
@@ -19,11 +40,11 @@ solver are used. The omitted override preserves the checked default behavior.
 The compatibility guard allows report-likelihood and provenance differences.
 Model identity, axes, outcomes, transitions, policies, preferences, resource
 semantics, time and passive readings remain fixed. Generated outcomes must stay
-within the planner's support. Standalone Scenario does not carry generator
+within the planner's support. A standalone `Scenario` does not carry generator
 identity: retain both identities, or use this harness's bundle. The ordinary
 historical experiment/receipt workflow is unchanged.
 
-## Synthetic design and interpretation
+### Synthetic design and interpretation
 
 The fixture adapts the pinned `test_california_monitoring.py` numerical
 landscape: three H3 cells, three synthetic indicators, nominal 2016–2018 slots,
@@ -38,7 +59,7 @@ output distinguishes these derived labels, simulated readings and inferred
 probabilities.
 
 | Condition | Generator coarse accuracy / coverage | Generator detailed accuracy / coverage |
-|---|---|---|
+| --- | --- | --- |
 | matched | 0.8 / 0.8 | 0.97 / 0.95 |
 | overoptimistic planner | 0.55 / 0.5 | 0.65 / 0.7 |
 | pessimistic planner | 0.9 / 0.9 | 0.995 / 0.99 |
@@ -59,40 +80,35 @@ configurations, model/source identities, loaded PLACE/ACT source hashes and
 package versions, actions, readings, posteriors, scores and modeled expenditure.
 `timings.json` separately records wall time around each scenario including
 evaluator construction; host/order effects make this unsuitable as a benchmark.
-`files.sha256.json` inventories the outputs. The execution binding is deliberately
-narrower than a full California workflow receipt.
+`files.sha256.json` inventories the outputs. The execution binding is
+deliberately narrower than a full California workflow receipt.
 
-## Reproduce locally
+### Reproduce locally
 
-Use the repository's required uv 0.13.6 and Python selection, then synchronize
-the PLACE dependencies and its California, development and integration extras.
-The integration extra supplies the shared repository pytest plugin. This is a
-locked module-scoped environment; it does not install every workspace extra.
-Run from the repository root:
+Run from the repository root after the locked workspace sync documented in the
+root `README.md`; no second environment is created:
 
-```sh
-uv sync --locked --package geo-infer-place --extra california --extra dev --extra integrations --no-default-groups
-export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
-uv run --frozen --no-sync python -m pytest -p pytest_asyncio.plugin GEO-INFER-PLACE/tests/unit/test_california_robustness.py GEO-INFER-PLACE/tests/unit/test_california_inference.py GEO-INFER-PLACE/tests/unit/test_california_monitoring.py -o addopts= -W error --strict-config --strict-markers --import-mode=importlib -q
+```bash
+uv sync --all-packages --all-extras --all-groups
+uv run --frozen --no-sync python -m pytest GEO-INFER-PLACE/tests/unit/test_california_robustness.py GEO-INFER-PLACE/tests/unit/test_california_inference.py GEO-INFER-PLACE/tests/unit/test_california_monitoring.py -q
 uv run --frozen --no-sync python -m geo_infer_place.locations.california.robustness --fixture research/measurement-quality/fixture.json --models GEO-INFER-PLACE/locations/california/models --output research/measurement-quality/smoke-reproduction
 ```
 
-Use a new output path for each CLI run. On 10 November 2026, the three test files
-passed all 67 cases on Python 3.12.12 in this locked environment, without
-source-path overrides, deselection or inference substitutes. This includes the
-historical experiment/receipt, reporting and integrity checks excluded from the
-initial minimal-environment run. The harness is exercised by its regression
-test; the separate CLI command above was not rerun during submission preparation.
+Use a new output path for each CLI run. On 12 November 2026 the three test
+files passed all 67 cases with uv 0.13.7 and CPython 3.12.16 in the locked
+workspace environment, without source-path overrides, deselection or inference
+substitutes, including the historical experiment/receipt, reporting and
+integrity checks. The harness is also exercised by its regression test; the
+separate CLI command above is a create-only local reproduction.
 
-The initial 7 November review used Python 3.11.13 with inherited system packages
-and five local wheels. It passed 58 selected tests and excluded nine broader
-workflow/reporting cases. Its original fixture outputs and independent
-posterior-reconstruction evidence remain historical evidence, distinct from
-the new test execution. `baseline-scenarios.json` is the retained original-source
-reference; the tests compare both the omitted and explicit matched override
-with it. No full workspace, release, Docker or performance suite was run.
+`baseline-scenarios.json` is the retained original-source reference; the tests
+compare both the omitted and explicit matched override with it.
 
 No sensor calibration, ecological observation, field experiment, financial
 benefit or upstream acceptance follows from this fixture. A subsequent
 accuracy-only comparison, with coverage and costs fixed, remains a proposal to
 design before running it.
+
+## Documentation Notes
+
+This README describes current repository state only. Keep examples and claims tied to importable code, tracked files, or validation commands.

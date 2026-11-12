@@ -34,6 +34,7 @@ central [documentation hub](../GEO-INFER-INTRA/docs/index.md).
 - [Test and release gates](../GEO-INFER-TEST/docs/index.md)
 - [Local gate arms and measured wall time](../GEO-INFER-TEST/docs/gate.md)
 - [Manuscript generation and evidence](../manuscript/README.md)
+- [Synthetic measurement-quality probe](../research/measurement-quality/README.md)
 
 ## Modules by theme
 

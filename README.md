@@ -164,7 +164,7 @@ the exact reproducible exception list.
 | [GEO-INFER-OPS](GEO-INFER-OPS/) | `geo_infer_ops` | 17 | 18 |
 | [GEO-INFER-ORG](GEO-INFER-ORG/) | `geo_infer_org` | 5 | 7 |
 | [GEO-INFER-PEP](GEO-INFER-PEP/) | `geo_infer_pep` | 40 | 16 |
-| [GEO-INFER-PLACE](GEO-INFER-PLACE/) | `geo_infer_place` | 103 | 32 |
+| [GEO-INFER-PLACE](GEO-INFER-PLACE/) | `geo_infer_place` | 104 | 33 |
 | [GEO-INFER-REQ](GEO-INFER-REQ/) | `geo_infer_req` | 5 | 7 |
 | [GEO-INFER-RISK](GEO-INFER-RISK/) | `geo_infer_risk` | 15 | 24 |
 | [GEO-INFER-SEC](GEO-INFER-SEC/) | `geo_infer_sec` | 22 | 20 |
@@ -181,10 +181,10 @@ the exact reproducible exception list.
 | Metric | Value |
 | --- | ---: |
 | Modules | 45 |
-| Python source files | 1045 |
-| Python test files | 831 |
-| Repository README.md files | 871 |
-| Repository AGENTS.md files | 871 |
+| Python source files | 1046 |
+| Python test files | 832 |
+| Repository README.md files | 872 |
+| Repository AGENTS.md files | 872 |
 
 These are file inventories, not executed-test or coverage counts. Regenerate
 them with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.
