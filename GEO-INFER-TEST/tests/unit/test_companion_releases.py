@@ -162,6 +162,38 @@ class CompanionReleaseTests(unittest.TestCase):
         result = self.review()
         self.assertEqual(result["interchange_pin"]["tag"], "v5.0.1")
 
+    def test_canonical_schema_fields_are_accepted(self):
+        data = {
+            "schema": "gnn-importer-pin/v1",
+            "repository": REPOSITORIES["gnn"],
+            "revision": self.revision("gnn"),
+            "tag": "v5.0.1",
+            "recorded": "2026-11-12",
+        }
+        self.write("geo", ".github/gnn-pair.json", json.dumps(data))
+        self.commit("geo", "record the canonical pin schema")
+        result = self.review()
+        self.assertEqual(result["status"], "passed_local_identity_and_pin_review")
+        self.assertEqual(result["interchange_pin"]["tag"], "v5.0.1")
+        self.assertTrue(result["interchange_pin"]["equals_released_revision"])
+
+    def test_malformed_schema_fields_are_refused(self):
+        for override, message in (
+            ({"schema": "geo-infer-gnn-pin/v1"}, "geo pin schema is invalid"),
+            ({"recorded": "12-11-2026"}, "geo pin recorded date is invalid"),
+        ):
+            data = {
+                "schema": "gnn-importer-pin/v1",
+                "repository": REPOSITORIES["gnn"],
+                "revision": self.revision("gnn"),
+                "recorded": "2026-11-12",
+            }
+            data.update(override)
+            self.write("geo", ".github/gnn-pair.json", json.dumps(data))
+            self.commit("geo", "malformed canonical pin schema")
+            with self.assertRaisesRegex(ValueError, message):
+                self.review()
+
     def test_advanced_interchange_pin_is_recorded_not_refused(self):
         released = self.revision("gnn")
         self.write("gnn", "post-release.txt", "reviewed later source\n")

@@ -28,6 +28,17 @@ INTERCHANGE_SCHEMAS = (
     "gnn-geo-infer/2",
     "gnn-geo-infer/factored/1",
 )
+#: Canonical GNN importer pin schema. A pin that declares it also records the
+#: date the pin was recorded, alongside the identity keys this gate already
+#: requires; the two fields are accepted only together.
+GNN_PIN_SCHEMA = "gnn-importer-pin/v1"
+GEO_PIN_KEY_SETS = (
+    {"repository", "revision"},
+    {"repository", "revision", "tag"},
+    {"repository", "revision", "schema", "recorded"},
+    {"repository", "revision", "tag", "schema", "recorded"},
+)
+RECORDED_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 EVIDENCE_BOUNDARIES = {
     "gnn_release_pins_this_geo_release": False,
     "fep_proves_geo_implementation": False,
@@ -295,10 +306,7 @@ def validate_companion_releases(
     # the published companion; the paired GNN interchange workflow owns that
     # revision pair's conformance.
     geo_pin = _json(read("geo", ".github/gnn-pair.json"))
-    _require(
-        set(geo_pin) in ({"repository", "revision"}, {"repository", "revision", "tag"}),
-        "invalid geo companion pin keys",
-    )
+    _require(set(geo_pin) in GEO_PIN_KEY_SETS, "invalid geo companion pin keys")
     _require(geo_pin["repository"] == REPOSITORIES["gnn"], "geo pin repository differs")
     _require(_oid(geo_pin["revision"]), "geo pin revision is invalid")
     if "tag" in geo_pin:
@@ -306,6 +314,13 @@ def validate_companion_releases(
             isinstance(geo_pin["tag"], str)
             and re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", geo_pin["tag"]) is not None,
             "geo pin tag is invalid",
+        )
+    if "schema" in geo_pin:
+        _require(geo_pin["schema"] == GNN_PIN_SCHEMA, "geo pin schema is invalid")
+        _require(
+            isinstance(geo_pin["recorded"], str)
+            and RECORDED_DATE.fullmatch(geo_pin["recorded"]) is not None,
+            "geo pin recorded date is invalid",
         )
     for name, relative, original in raw_inputs:
         _require(
