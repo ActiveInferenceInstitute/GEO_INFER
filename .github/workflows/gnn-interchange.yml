@@ -105,30 +105,19 @@ jobs:
           cache-dependency-glob: gnn/uv.lock
       - name: Install GNN locked runtime
         run: uv sync --project gnn --locked --python 3.11 --extra dev --extra geo-infer
-      - name: Export in GNN and infer in GEO
+      - name: Run paired conformance and verify the exact candidate receipt
+        # The validator invocation and every receipt assertion (schema,
+        # success, both exact revisions, both clean worktrees, execution
+        # custody, retained artifact digests, immutable receipt path) live in
+        # geo/scripts/gate.py's `gnn` arm, so this job and a local run execute
+        # one definition. The step supplies only the CI layout and the event's
+        # exact candidate revision.
         run: |
-          geo/.venv/bin/python geo/GEO-INFER-TEST/validate_gnn_interchange.py \
-            --gnn-repo "$PWD/gnn" --gnn-python "$PWD/gnn/.venv/bin/python" \
-            --output receipts/interchange.json
-      - name: Verify exact candidate receipt and retained artifacts
-        run: |
-          python - <<'PY'
-          import hashlib, json, os
-          from pathlib import Path
-          receipt = json.loads(Path('receipts/interchange.json').read_text())
-          pair = json.loads(Path('geo/.github/gnn-pair.json').read_text())
-          assert receipt['schema_version'] == '1.0' and receipt['success'] is True
-          assert receipt['geo']['revision'] == os.environ['GITHUB_SHA']
-          assert receipt['gnn']['revision'] == pair['revision']
-          assert receipt['geo']['dirty'] is False and receipt['gnn']['dirty'] is False
-          assert receipt['geo_execution']['custody_complete'] is True
-          assert receipt['artifacts']
-          for relative, digest in receipt['artifacts'].items():
-              root = Path('receipts/interchange-artifacts').resolve()
-              artifact = (root / relative).resolve()
-              assert artifact.is_relative_to(root)
-              assert hashlib.sha256(artifact.read_bytes()).hexdigest() == digest
-          PY
+          geo/.venv/bin/python geo/scripts/gate.py gnn \
+            --gnn-repo "$PWD/gnn" \
+            --gnn-python "$PWD/gnn/.venv/bin/python" \
+            --output receipts/interchange.json \
+            --expect-geo-revision "$GITHUB_SHA"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

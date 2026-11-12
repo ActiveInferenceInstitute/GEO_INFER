@@ -83,6 +83,12 @@ def _workflow_text(name: str) -> str:
     return _normalize((WORKFLOWS / name).read_text(encoding="utf-8"))
 
 
+def _trigger_paths(workflow: dict) -> list[str]:
+    # PyYAML resolves a bare `on:` key to the boolean True (YAML 1.1).
+    trigger = workflow.get("on", workflow.get(True, {}))
+    return list(trigger["pull_request"]["paths"])
+
+
 def test_workflows_call_arms_instead_of_copying_commands():
     """Every gate command is written once, in the gate module."""
     ci = _workflow_text("ci.yml")
@@ -149,26 +155,36 @@ def test_tests_arm_covers_every_matrix_category():
     )
 
 
-def test_gnn_arm_runs_the_conformance_validator_its_workflow_runs():
-    """The GNN arm calls the same validator with the same receipt contract."""
+def test_gnn_arm_owns_the_conformance_invocation_and_receipt_checks():
+    """The GNN job runs the arm for its exact candidate; the arm asserts it."""
     source = _workflow_text("gnn-interchange.yml")
+    assert "geo/scripts/gate.py gnn" in source
+    assert '--gnn-repo "$PWD/gnn"' in source
+    assert '--gnn-python "$PWD/gnn/.venv/bin/python"' in source
+    assert "--output receipts/interchange.json" in source
+    assert '--expect-geo-revision "$GITHUB_SHA"' in source
+    # No second copy of the validator invocation in any step; the validator
+    # path may still appear in the trigger's path filter, which is not a
+    # command and must keep retriggering the job.
+    workflow = yaml.safe_load(
+        (WORKFLOWS / "gnn-interchange.yml").read_text(encoding="utf-8")
+    )
+    runs = "\n".join(
+        str(step.get("run", "")) for step in workflow["jobs"]["interchange"]["steps"]
+    )
+    assert "validate_gnn_interchange.py" not in runs
+    assert "GEO-INFER-TEST/validate_gnn_interchange.py" in _trigger_paths(workflow)
+    gate_source = _normalize(GATE.read_text(encoding="utf-8"))
     for marker in (
         "validate_gnn_interchange.py",
-        "--gnn-repo",
-        "--gnn-python",
-        "--output",
-        "receipt['gnn']['revision'] == pair['revision']",
+        'document.get("schema_version") != "1.0"',
+        'document["gnn"]["revision"] != pin["revision"]',
+        "expect_geo_revision",
         "custody_complete",
+        "hashlib.sha256",
     ):
-        assert marker in source, marker
-    # The arm builds the validator invocation itself (it takes a local
-    # checkout and interpreter), so assert the source still names it once.
-    assert (
-        _normalize(GATE.read_text(encoding="utf-8")).count(
-            "validate_gnn_interchange.py"
-        )
-        == 1
-    )
+        assert marker in gate_source, marker
+    assert gate_source.count("validate_gnn_interchange.py") == 1
 
 
 def test_gate_has_no_type_arm_the_repository_cannot_run():

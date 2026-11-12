@@ -677,21 +677,25 @@ def test_paired_interchange_consumers_trigger_and_receipt_custody():
         step for step in job["steps"] if step.get("with", {}).get("path") == "geo"
     )
     assert geo_checkout["with"]["ref"] == "${{ github.sha }}"
-    validator = next(
+    conformance = next(
         step["run"]
         for step in job["steps"]
-        if "validate_gnn_interchange.py" in step.get("run", "")
+        if "scripts/gate.py gnn" in step.get("run", "")
     )
-    assert "--output receipts/interchange.json" in validator
-    assert "> receipts/interchange.json" not in validator
-    verification = next(
-        step["run"]
+    assert "--output receipts/interchange.json" in conformance
+    assert '--expect-geo-revision "$GITHUB_SHA"' in conformance
+    assert "> receipts" not in conformance
+    # The invocation and every receipt assertion live in the arm; this job
+    # keeps no second copy and no separate verification step.
+    job_text = _dump(job)
+    assert "validate_gnn_interchange.py" not in job_text
+    assert not any(
+        step.get("name") == "Verify exact candidate receipt and retained artifacts"
         for step in job["steps"]
-        if step.get("name") == "Verify exact candidate receipt and retained artifacts"
     )
-    assert "GITHUB_SHA" in verification and "sha256" in verification
-    assert "receipt['gnn']['revision'] == pair['revision']" in verification
-    assert "custody_complete" in verification
+    gate_source = (REPO_ROOT / "scripts" / "gate.py").read_text(encoding="utf-8")
+    for marker in ("custody_complete", "sha256", 'document["gnn"]["revision"]'):
+        assert marker in gate_source, marker
 
 
 def test_cpu_jobs_explicitly_provision_real_duckdb_spatial_runtime():
