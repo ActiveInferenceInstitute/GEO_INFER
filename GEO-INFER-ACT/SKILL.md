@@ -109,7 +109,7 @@ The adapter retains this module's dependencies and authorization requirements.
 ### Method Contracts
 
 - `geo_infer_act.utils.pymdp_adapter` is the only production runtime bridge to
-  `inferactively-pymdp==1.0.4`; it builds JAX `pymdp.agent.Agent` instances,
+  `inferactively-pymdp==1.0.5`; it builds JAX `pymdp.agent.Agent` instances,
   validates the exact installed version, uses explicit RNG-key action sampling,
   and returns normalized posterior, action posterior, negative EFE, and VFE/free
   energy metadata.
@@ -166,7 +166,7 @@ The adapter retains this module's dependencies and authorization requirements.
 - Research-profile H3 runs are opt-in with
   `RunConfig.parameters["research_profile"] = True` or
   `geo-infer-act-run --research-profile`. They keep real H3 cells and real
-  `inferactively-pymdp==1.0.4` while installing deterministic likelihoods,
+  `inferactively-pymdp==1.0.5` while installing deterministic likelihoods,
   preferences, and action-conditioned transitions that avoid collapsed traces.
 - The deterministic visualization gallery is generated with
   `uv run python GEO-INFER-ACT/examples/spatial_active_inference_gallery.py`.

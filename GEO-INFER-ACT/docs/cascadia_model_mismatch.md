@@ -4,7 +4,7 @@ For a portable registry and an ordered selection of these cases, use the
 [configured model matrix](cascadia_model_matrix.md). It shares a seed/horizon
 contract and retains each real pair edition in one closed experiment.
 
-The closed-loop runner executes real `inferactively-pymdp` 1.0.4 inference and
+The closed-loop runner executes real `inferactively-pymdp` 1.0.5 inference and
 policy evaluation from a validated GNN artifact. Its optional
 `process_artifact` supplies the sampled observation and transition laws.
 The default remains a matched agent/process simulation.
