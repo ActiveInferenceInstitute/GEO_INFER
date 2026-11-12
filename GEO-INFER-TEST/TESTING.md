@@ -23,9 +23,14 @@ surface, so it was replaced rather than kept as a second copy of the gate.
 | `docs` | authoritative-documentation links/claims and generated-signpost drift |
 | `fast` | the eight-file execution, runner, workflow and SPACE TIME selection |
 | `gates` | repository, packaging, logging, doc-example, skill, Active Inference, syntax, test-contract, model-contract, model-audit and secret-scan gates |
-| `tests` | `unit`, `integration`, `performance`, `system`, `h3` and `slow` categories |
+| `test-<category>` | one matrix category (`unit`, `integration`, `performance`, `system`, `slow`, `h3`) |
+| `tests` | every `test-<category>` arm |
 | `gnn` | paired GNN conformance against the pinned companion revision |
-| `manuscript` | research-artifact producer, convergence, PDF render and `ROOT` profiles |
+| `manuscript-artifacts` / `manuscript-convergence` / `manuscript-render` | producer verification, convergence check, PDF render and `ROOT` profiles |
+| `manuscript` | those three arms in order |
+
+`ci.yml` calls the same arms (`scripts/gate.py <arm>`) rather than repeating
+their commands, so a gate command is written once in this repository.
 
 Arm contents, host requirements, measured wall time and the CI surfaces no arm
 covers are in [the gate guide](docs/gate.md).

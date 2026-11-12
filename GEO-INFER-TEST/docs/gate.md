@@ -1,27 +1,30 @@
 # Local gate
 
-`scripts/gate.py` is the repository's one local gate entry point. An arm is a
-named list of the commands one GitHub Actions job runs, copied from the
-workflow sources rather than re-derived. A local arm and CI therefore measure
-the same thing, and `GEO-INFER-TEST/tests/unit/test_gate_contracts.py` fails
-when an arm and its workflow disagree.
+`scripts/gate.py` is the repository's gate entry point and the only place a
+gate command is written down. An arm is a named list of commands; `ci.yml` and
+the other workflows call the arms instead of repeating the commands, so a
+workflow step and a local run are the same command by construction.
+`GEO-INFER-TEST/tests/unit/test_gate_contracts.py` fails when a workflow copies
+a gate command back into itself, when a workflow stops calling an arm, when two
+arms own the same command, or when an arm loses a command whose flags a
+workflow contract pins.
 
 ```bash
 uv run --frozen python scripts/gate.py --list
 uv run --frozen python scripts/gate.py lint
-uv run --frozen python scripts/gate.py docs
+uv run --frozen python scripts/gate.py docs gates      # several arms in one run
 uv run --frozen python scripts/gate.py fast
-uv run --frozen python scripts/gate.py gates
-uv run --frozen python scripts/gate.py tests
+uv run --frozen python scripts/gate.py test-unit       # one matrix category
+uv run --frozen python scripts/gate.py tests           # every category
 uv run --frozen python scripts/gate.py gnn
-uv run --frozen python scripts/gate.py manuscript
+uv run --frozen python scripts/gate.py manuscript      # all three producer/render arms
 uv run --frozen python scripts/gate.py all
 ```
 
 Every arm runs against the single locked workspace environment
 (`uv sync --all-packages --all-extras --all-groups`); no arm installs a second
 environment. `scripts/gate.py` puts `.venv/bin` first on `PATH`, so a bare
-`python` in a copied CI command means the workspace interpreter, matching the
+`python` inside an arm command means the workspace interpreter, matching the
 interpreter CI selects with `actions/setup-python`. An arm stops at its first
 failing command and prints that command.
 
@@ -30,13 +33,27 @@ failing command and prints that command.
 | Arm | CI source | Commands |
 | --- | --- | --- |
 | `lint` | `ci.yml`, `validate` job, `Run source runtime hygiene` | `ruff check .`, `ruff format --check .` |
-| `docs` | `ci.yml`, `validate` job, `Validate repository contracts` | `validate_documentation.py --strict`, `rewrite_readme_agents.py --check` |
+| `docs` | `ci.yml`, `validate` job, `Run documentation gates` | `validate_documentation.py --strict`, `rewrite_readme_agents.py --check` |
 | `fast` | `ci.yml`, `fast-contracts` job | the eight-file `--paths` selection |
-| `gates` | `ci.yml`, `validate` job | repository contracts, packaging, logging hygiene, doc examples, skills, Active Inference contract, syntax, test contracts, model contracts, model audit, secret scan |
-| `tests` | `ci.yml`, `test` job | `unit`, `integration`, `performance`, `system`, `--h3-migration`, `slow` |
+| `gates` | `ci.yml`, `validate` job, `Run repository, model and secret gates` | repository contracts, packaging, logging hygiene, doc examples, skills, Active Inference contract, syntax, test contracts, model contracts, model audit, secret scan |
+| `test-<category>` | `ci.yml`, `test` job, `Run ${{ matrix.category }} tests` | that category's `run_unified_tests.py` command; `test-h3` is `--h3-migration` |
 | `gnn` | `gnn-interchange.yml`, `interchange` job | the paired GNN conformance validator |
-| `manuscript` | `ci.yml`, `manuscript` job | producer verification, convergence, PDF render, `ROOT` manuscript profiles |
-| `all` | every arm above | each arm exactly once, in the order listed |
+| `manuscript-artifacts` | `ci.yml`, `manuscript` job, `Generate research artifacts` | the producer's verification sweep |
+| `manuscript-convergence` | `ci.yml`, `manuscript` job, `Check published artifacts converge` | the producer's `--check` |
+| `manuscript-render` | `ci.yml`, `manuscript` job, `Render the manuscript and run root profiles` | PDF render plus both `ROOT` profiles |
+
+Three groups expand to leaves, so `all` never runs a command twice:
+
+| Group | Leaves |
+| --- | --- |
+| `tests` | every `test-<category>` arm |
+| `manuscript` | `manuscript-artifacts`, `manuscript-convergence`, `manuscript-render` |
+| `all` | every leaf, in workflow order |
+
+Steps whose command cannot be an arm keep it: the coverage floor needs the
+event's base commit, and the research-custody and DuckDB-provisioning steps
+need the CI filesystem. `test_ci_workflow_contracts.py` pins those as CI-only
+and forbids every other gate command from appearing in `ci.yml`.
 
 `gates` wraps each validator in `GEO-INFER-TEST/record_validation.py`, exactly
 as the workflow does, so a local run leaves the same receipts under
@@ -62,8 +79,8 @@ had no fast or GNN arm at all. "After" is the arm, CI-wrapped, in one process.
 | `fast` | 177.4 s | 155.5 s | The removed duplicate `validate_test_contracts.py --strict` was 1.90 s; the eight-file selection that dominates the arm measured 175.5 s before and 155.5 s after, so per-run variance (155–176 s observed) is larger than the dedupe saving. |
 | `gates` | 341.5 s for the six validators alone | 570.8 s summed from eleven bounded runs | The arm runs the same commands, so there is no speed claim to make; the sum is per-command, not one arm process. |
 | `gnn` | no local arm | 8.2 s (34.3 s on a loaded host) | A new arm, not a faster one: it runs the pinned conformance validator against a GNN checkout at `v5.0.3`. |
-| `manuscript` | no local arm | 147.1 s | Convergence check 1.1 s, PDF render 15.7 s, `ROOT manuscript-render` profile 6.2 s, `ROOT manuscript` profile 124.1 s. |
-| `tests` | no local arm | not measured | The full matrix is a CI lane (45 modules x six categories); it was not run here. |
+| `manuscript` (three arms) | no local arm | 147.1 s | Convergence check 1.1 s, PDF render 15.7 s, `ROOT manuscript-render` profile 6.2 s, `ROOT manuscript` profile 124.1 s. |
+| `test-<category>` | no local arm | not measured | The full matrix is a CI lane (45 modules x six categories); it was not run here. |
 
 Bounded runs are recorded with the exact command, not as a green arm. The
 `gates` arm was stopped at `timeout 600` inside its first validator while other
@@ -171,4 +188,5 @@ The `manuscript` arm runs the repository's own producer and render path:
 Add the commands to `ARMS` in `scripts/gate.py` with the workflow step that
 owns them, then extend
 `GEO-INFER-TEST/tests/unit/test_gate_contracts.py`. A command that is not in
-the workflow, or a gate that appears in two jobs, fails that test.
+the workflow, a gate that appears in two jobs, or a command owned by two arms
+fails that test.

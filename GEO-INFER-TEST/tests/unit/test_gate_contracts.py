@@ -1,9 +1,10 @@
-"""Contracts for the local gate entry point and the GNN pointer it documents.
+"""Contracts for the shared gate arms and the GNN pointer they document.
 
-``scripts/gate.py`` is the one place a maintainer runs the gate, and every arm
-command is copied from a workflow step. These contracts fail when the two
-disagree, when a gate is duplicated across jobs, or when the committed GNN
-pointer stops describing the pin file and the conformance job it names.
+``scripts/gate.py`` is the only place a gate command is written down. These
+contracts fail when a workflow copies a gate command back into itself, when a
+workflow stops calling an arm, when two arms repeat a command, when an arm
+loses a command a workflow contract pins, or when the committed GNN pointer
+stops describing the pin file and the conformance job it names.
 """
 
 from __future__ import annotations
@@ -23,6 +24,37 @@ WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 PIN = REPO_ROOT / ".github" / "gnn-pair.json"
 POINTER = REPO_ROOT / ".github" / "GNN.md"
 
+# Gate commands are CI-only when the measurement needs the event (a base SHA)
+# or a disposable service; those steps own their command and are not arms.
+CI_ONLY_MARKERS = (
+    "check_coverage_floor.py",
+    "validate_research_evidence.py",
+    "provision_duckdb_spatial.py",
+)
+
+GATE_MARKERS = (
+    "validate_repo_contracts.py --strict-source-language --strict-import-smoke",
+    "validate_packaging.py --strict",
+    "validate_logging_hygiene.py",
+    "validate_doc_examples.py",
+    "validate_skills.py --check-xrefs --warnings-fatal",
+    "validate_active_inference_contract.py",
+    "validate_test_contracts.py --strict",
+    "validate_model_contracts.py --strict --seed 42",
+    "run_model_audit.py --seed 42 --reproducible",
+    "gitleaks detect --source . --config .gitleaks.toml --redact --verbose",
+    "validate_documentation.py --strict",
+    "rewrite_readme_agents.py --check",
+    "ruff check .",
+    "ruff format --check .",
+    "test_space_time_composition_contract.py",
+    "generate_research_artifacts.py --verify --rerun-verification",
+    "generate_research_artifacts.py --check",
+    "render_manuscript_pdf.py",
+    "--module ROOT --category manuscript-render",
+    "--module ROOT --category manuscript",
+)
+
 
 def _normalize(text: str) -> str:
     # Join shell line continuations first, then collapse YAML block whitespace.
@@ -40,49 +72,86 @@ def _gate():
     return module
 
 
+def _all_commands() -> list[tuple[str, str]]:
+    gate = _gate()
+    return [
+        (arm.name, command) for arm in gate.ARMS.values() for command in arm.commands
+    ]
+
+
 def _workflow_text(name: str) -> str:
     return _normalize((WORKFLOWS / name).read_text(encoding="utf-8"))
 
 
-def test_every_arm_command_is_a_workflow_command():
-    """Each arm command must appear verbatim in the workflow it mirrors."""
+def test_workflows_call_arms_instead_of_copying_commands():
+    """Every gate command is written once, in the gate module."""
+    ci = _workflow_text("ci.yml")
+    for arm, command in _all_commands():
+        assert _normalize(command) not in ci, (arm, command)
+    for marker in GATE_MARKERS:
+        assert marker not in ci, f"gate command copied into ci.yml: {marker}"
+
+
+def test_ci_calls_every_arm_its_jobs_own():
+    """The jobs run arms by name; a renamed arm breaks here, not in CI."""
     gate = _gate()
-    for arm in gate.ARMS.values():
-        if arm.name == "gnn":
-            continue
-        source = _workflow_text(arm.source.split(":")[0])
-        for command in arm.commands:
-            normalized = _normalize(command)
-            if arm.name == "tests":
-                # The matrix supplies the category; keep the arm's literal
-                # category in lock step with the workflow matrix below.
-                normalized = re.sub(
-                    r"--category [a-z0-9]+",
-                    "--category ${{ matrix.category }}",
-                    normalized,
-                )
-            assert normalized in source, (arm.name, command)
+    ci = _workflow_text("ci.yml")
+    for arm in (
+        "docs",
+        "gates",
+        "lint",
+        "fast",
+        "manuscript-artifacts",
+        "manuscript-convergence",
+        "manuscript-render",
+    ):
+        assert arm in gate.ARMS, arm
+        assert "scripts/gate.py" in ci and arm in ci, f"ci.yml does not call {arm}"
+    for category in gate.TEST_CATEGORY_COMMANDS:
+        assert f"test-{category}" in gate.ARMS
+    assert "scripts/gate.py test-${{ matrix.category }}" in ci
+    # CI-only steps keep their own command (event base, disposable services).
+    for marker in CI_ONLY_MARKERS:
+        assert marker in ci, f"CI-only command vanished: {marker}"
+
+
+def test_no_command_appears_in_two_arms():
+    """An arm is the only owner of its command."""
+    owner: dict[str, str] = {}
+    for arm, command in _all_commands():
+        assert command not in owner, (command, arm, owner.get(command))
+        owner[command] = arm
+
+
+def test_arms_keep_every_command_a_workflow_contract_pins():
+    """Moving a command into the gate must not weaken or drop it."""
+    joined = "\n".join(command for _, command in _all_commands())
+    for marker in GATE_MARKERS:
+        assert marker in joined, marker
+    # The root pyproject [tool.ruff.lint] table is the only lint contract; a
+    # --select override would silently narrow it.
+    assert "--select" not in joined
+    assert joined.count("ruff check .") == 1
+    assert "xargs -0" not in joined
 
 
 def test_tests_arm_covers_every_matrix_category():
-    """The local tests arm runs exactly the categories the matrix defines."""
+    """The local tests group runs exactly the categories the matrix defines."""
+    gate = _gate()
     workflow = yaml.safe_load((WORKFLOWS / "ci.yml").read_text(encoding="utf-8"))
     matrix = workflow["jobs"]["test"]["strategy"]["matrix"]
-    commands = _gate().ARMS["tests"].commands
-    categories = {
-        match
-        for command in commands
-        for match in re.findall(r"--category ([a-z0-9]+)", command)
+    assert set(gate.TEST_ARMS) == {
+        f"test-{category}" for category in matrix["category"]
     }
-    # The h3 leg runs the dedicated migration validator instead of
-    # `--category h3`, exactly as the workflow branches.
-    assert categories | {"h3"} == set(matrix["category"])
-    assert any("--h3-migration" in command for command in commands)
+    commands = {arm: gate.ARMS[arm].commands for arm in gate.TEST_ARMS}
+    assert any(
+        "--h3-migration" in command for cmds in commands.values() for command in cmds
+    )
 
 
 def test_gnn_arm_runs_the_conformance_validator_its_workflow_runs():
     """The GNN arm calls the same validator with the same receipt contract."""
-    source = _workflow_text(_gate().ARMS["gnn"].source.split(":")[0])
+    source = _workflow_text("gnn-interchange.yml")
     for marker in (
         "validate_gnn_interchange.py",
         "--gnn-repo",
@@ -102,27 +171,21 @@ def test_gnn_arm_runs_the_conformance_validator_its_workflow_runs():
     )
 
 
-def test_arms_do_not_repeat_a_gate_across_jobs():
-    """One gate, one job: the duplicated validate/lint steps stay removed."""
-    ci = yaml.safe_load((WORKFLOWS / "ci.yml").read_text(encoding="utf-8"))
-    jobs = ci["jobs"]
-    validate = _normalize(str(jobs["validate"]))
-    fast = _normalize(str(jobs["fast-contracts"]))
-    assert validate.count("validate_test_contracts.py") == 1
-    assert "validate_test_contracts.py" not in fast
-    assert validate.count("xargs -0 uv run") == 0, (
-        "changed-file lint duplicated the whole-tree lint"
-    )
-    assert validate.count("ruff check .") == 1
-    assert validate.count("ruff format --check .") == 1
-    assert "ruff check" not in fast
-
-
 def test_gate_has_no_type_arm_the_repository_cannot_run():
     """mypy is declared but ungated; a type arm would invent a contract."""
-    gate = _gate()
-    assert "types" not in gate.ARMS
+    assert "types" not in _gate().ARMS
     assert "mypy" in (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+
+
+def test_groups_expand_to_leaf_arms_once():
+    """`all`, `tests` and `manuscript` are aliases, not second definitions."""
+    gate = _gate()
+    assert gate._expand(["all"]) == list(gate.LEAVES)
+    assert len(gate.LEAVES) == len(set(gate.LEAVES))
+    assert gate._expand(["tests"]) == list(gate.TEST_ARMS)
+    assert gate._expand(["manuscript"]) == list(gate.MANUSCRIPT_ARMS)
+    assert gate._expand(["lint", "lint"]) == ["lint"]
+    assert "all" not in gate.ARMS and "tests" not in gate.ARMS
 
 
 def test_gnn_pointer_records_the_pin_and_the_conformance_job():

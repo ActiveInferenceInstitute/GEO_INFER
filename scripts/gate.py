@@ -1,27 +1,31 @@
 #!/usr/bin/env python3
-"""GEO-INFER local gate: one entry point, one command string per CI step.
+"""GEO-INFER local gate: the single definition of every gate command.
 
-An arm is a named list of the exact commands a GitHub Actions job runs. The
-commands are copied from the workflow sources, never re-derived, and
-``GEO-INFER-TEST/tests/unit/test_gate_contracts.py`` fails when an arm and its
-workflow disagree. GitHub Actions is unavailable to this estate, so these arms
-are the gate: run every arm locally before landing a change.
+Each arm is a named list of commands. The workflows do not repeat those
+commands: ``ci.yml`` calls ``scripts/gate.py <arm>`` with the same arms a
+developer runs locally, so a command exists once in the repository. Structural
+contract tests in ``GEO-INFER-TEST/tests/unit/test_gate_contracts.py`` fail when
+a workflow step stops calling an arm, when an inline copy of a gate command
+reappears, or when an arm loses a command a workflow contract pins.
 
 Arms run against the single locked workspace ``.venv`` (``uv sync
 --all-packages --all-extras --all-groups``); an arm never creates a second
-environment. ``.venv/bin`` is prepended to ``PATH`` so a bare ``python`` means
-the workspace interpreter, matching the interpreter CI selects with
-``setup-python``.
+environment. ``.venv/bin`` is prepended to ``PATH`` so a bare ``python`` in a
+command means the workspace interpreter, matching the interpreter CI selects
+with ``actions/setup-python``.
 
 Usage:
     uv run --frozen python scripts/gate.py --list
     uv run --frozen python scripts/gate.py lint
+    uv run --frozen python scripts/gate.py docs gates
     uv run --frozen python scripts/gate.py all
 
-Arms: ``lint``, ``docs``, ``fast``, ``gates``, ``tests``, ``gnn``,
-``manuscript``, and ``all``. There is no ``types`` arm: the repository declares
-``[tool.mypy]`` and a ``mypy`` dependency but runs no type gate, so a type arm
-would invent a contract rather than mirror one.
+Leaf arms: ``lint``, ``docs``, ``fast``, ``gates``, ``test-<category>`` for each
+matrix category, ``gnn``, ``manuscript-artifacts``, ``manuscript-convergence``,
+``manuscript-render``. ``tests``, ``manuscript`` and ``all`` expand to leaves.
+There is no ``types`` arm: the repository declares ``[tool.mypy]`` and a
+``mypy`` dependency but runs no type gate, so a type arm would invent a
+contract rather than define one.
 """
 
 from __future__ import annotations
@@ -43,19 +47,20 @@ PIN_FILE = REPO_ROOT / ".github" / "gnn-pair.json"
 PIN_SCHEMA = "gnn-importer-pin/v1"
 GITLEAKS_VERSION = "8.30.1"
 
-# The exact commands of ci.yml "validate" -> "Run source runtime hygiene".
+# `ci.yml` "validate" -> "Run source runtime hygiene"; also the documented
+# whole-tree formatting contract.
 LINT_COMMANDS = (
     "uv run --with 'ruff>=0.15.6,<0.16' ruff check .",
     "uv run --with 'ruff>=0.15.6,<0.16' ruff format --check .",
 )
 
-# ci.yml "validate" -> "Validate repository contracts" documentation steps.
+# `ci.yml` "validate" -> "Run documentation gates".
 DOCS_COMMANDS = (
     "uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_documentation.py --strict",
     "uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/rewrite_readme_agents.py --check",
 )
 
-# ci.yml "fast-contracts" -> "Run execution and SPACE TIME composition contracts".
+# `ci.yml` "fast-contracts" -> "Run execution and SPACE TIME composition contracts".
 FAST_COMMAND = (
     "uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --timeout 600 --paths"
     " GEO-INFER-TEST/tests/unit/test_execution_contracts.py"
@@ -68,7 +73,7 @@ FAST_COMMAND = (
     " GEO-INFER-TEST/tests/integration/test_space_time_composition_contract.py"
 )
 
-# ci.yml "validate" gates that are not documentation or lint.
+# `ci.yml` "validate" -> "Run repository, model and secret gates".
 GATE_COMMANDS = (
     "uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language --strict-import-smoke",
     "uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_packaging.py --strict",
@@ -83,20 +88,29 @@ GATE_COMMANDS = (
     "uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 1200 -- gitleaks detect --source . --config .gitleaks.toml --redact --verbose",
 )
 
-# ci.yml "test" -> one leg per interpreter x category (the 3.12 legs here).
-TEST_COMMANDS = (
-    "uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --category unit --timeout 600",
-    "uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --category integration --timeout 600",
-    "uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --category performance --timeout 600",
-    "uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --category system --timeout 600",
-    "uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --h3-migration",
-    "uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --category slow --timeout 600",
-)
+# `ci.yml` "test" -> one arm per matrix category. The h3 leg runs the dedicated
+# migration validator instead of `--category h3`, exactly as the branched step
+# did before the arm owned the branch.
+TEST_CATEGORY_COMMANDS: dict[str, str] = {
+    "unit": "uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --category unit --timeout 600",
+    "integration": "uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --category integration --timeout 600",
+    "performance": "uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --category performance --timeout 600",
+    "system": "uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --category system --timeout 600",
+    "slow": "uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --category slow --timeout 600",
+    "h3": "uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --h3-migration",
+}
 
-# ci.yml "manuscript": producer, convergence, render, then the ROOT profiles.
-MANUSCRIPT_COMMANDS = (
-    "uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 1800 -- python manuscript/generate_research_artifacts.py --verify --rerun-verification",
-    "uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 600 -- python manuscript/generate_research_artifacts.py --check",
+# `ci.yml` "manuscript": the producer, its convergence check, and the render
+# followed by the two registered ROOT profiles.
+MANUSCRIPT_ARTIFACT_COMMAND = (
+    "uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 1800 -- "
+    "python manuscript/generate_research_artifacts.py --verify --rerun-verification"
+)
+MANUSCRIPT_CONVERGENCE_COMMAND = (
+    "uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 600 -- "
+    "python manuscript/generate_research_artifacts.py --check"
+)
+MANUSCRIPT_RENDER_COMMANDS = (
     "uv run python scripts/render_manuscript_pdf.py",
     "uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --module ROOT --category manuscript-render --timeout 600 --show-failures",
     "uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --module ROOT --category manuscript --timeout 600 --show-failures",
@@ -111,14 +125,30 @@ class Arm:
     needs: tuple[str, ...] = ()
 
 
+TEST_ARMS = tuple(f"test-{category}" for category in TEST_CATEGORY_COMMANDS)
+MANUSCRIPT_ARMS = (
+    "manuscript-artifacts",
+    "manuscript-convergence",
+    "manuscript-render",
+)
+
 ARMS: dict[str, Arm] = {
     "lint": Arm("lint", "ci.yml: validate > Run source runtime hygiene", LINT_COMMANDS),
-    "docs": Arm(
-        "docs", "ci.yml: validate > Validate repository contracts", DOCS_COMMANDS
-    ),
+    "docs": Arm("docs", "ci.yml: validate > Run documentation gates", DOCS_COMMANDS),
     "fast": Arm("fast", "ci.yml: fast-contracts", (FAST_COMMAND,)),
-    "gates": Arm("gates", "ci.yml: validate (non-lint, non-docs)", GATE_COMMANDS),
-    "tests": Arm("tests", "ci.yml: test", TEST_COMMANDS),
+    "gates": Arm(
+        "gates",
+        "ci.yml: validate > Run repository, model and secret gates",
+        GATE_COMMANDS,
+    ),
+    **{
+        f"test-{category}": Arm(
+            f"test-{category}",
+            f"ci.yml: test (matrix category {category})",
+            (command,),
+        )
+        for category, command in TEST_CATEGORY_COMMANDS.items()
+    },
     "gnn": Arm(
         "gnn",
         "gnn-interchange.yml: interchange",
@@ -127,10 +157,38 @@ ARMS: dict[str, Arm] = {
             "geometry: a clean worktree, a GNN checkout at the pin, and that checkout's interpreter",
         ),
     ),
-    "manuscript": Arm("manuscript", "ci.yml: manuscript", MANUSCRIPT_COMMANDS),
+    "manuscript-artifacts": Arm(
+        "manuscript-artifacts",
+        "ci.yml: manuscript > Generate research artifacts",
+        (MANUSCRIPT_ARTIFACT_COMMAND,),
+    ),
+    "manuscript-convergence": Arm(
+        "manuscript-convergence",
+        "ci.yml: manuscript > Check published artifacts converge",
+        (MANUSCRIPT_CONVERGENCE_COMMAND,),
+    ),
+    "manuscript-render": Arm(
+        "manuscript-render",
+        "ci.yml: manuscript > Render the manuscript and run root profiles",
+        MANUSCRIPT_RENDER_COMMANDS,
+    ),
 }
 
-ALL_ORDER = ("lint", "docs", "fast", "gates", "tests", "gnn", "manuscript")
+GROUPS: dict[str, tuple[str, ...]] = {
+    "tests": TEST_ARMS,
+    "manuscript": MANUSCRIPT_ARMS,
+    "all": (
+        "lint",
+        "docs",
+        "fast",
+        "gates",
+        *TEST_ARMS,
+        "gnn",
+        *MANUSCRIPT_ARMS,
+    ),
+}
+
+LEAVES = GROUPS["all"]
 
 
 def _shell_env() -> dict[str, str]:
@@ -208,7 +266,7 @@ def _gnn_interchange(args: argparse.Namespace) -> int:
     )
     elapsed = time.monotonic() - started
     print(
-        f"[gate] gnn command=1/{1} seconds={elapsed:.2f} status={'ok' if result.returncode == 0 else 'failed'}"
+        f"[gate] gnn command=1/1 seconds={elapsed:.2f} status={'ok' if result.returncode == 0 else 'failed'}"
     )
     if result.returncode != 0:
         return result.returncode
@@ -277,11 +335,6 @@ def _run_arm(name: str, args: argparse.Namespace) -> int:
     arm = ARMS[name]
     if name == "gnn":
         return _gnn_interchange(args)
-    if name in ("gates", "all"):
-        reason = _check_gitleaks()
-        if reason:
-            print(f"gate {name}: {reason}", file=sys.stderr)
-            return 2
     environment = _shell_env()
     wall = 0.0
     for index, command in enumerate(arm.commands, start=1):
@@ -302,13 +355,20 @@ def _run_arm(name: str, args: argparse.Namespace) -> int:
     return 0
 
 
+def _expand(names: list[str]) -> list[str]:
+    leaves: list[str] = []
+    for name in names:
+        for leaf in GROUPS.get(name, (name,)):
+            if leaf not in leaves:
+                leaves.append(leaf)
+    return leaves
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument(
-        "arm", nargs="?", choices=(*ALL_ORDER, "all"), help="arm to run"
-    )
+    parser.add_argument("arms", nargs="*", help="arms or groups to run; see --list")
     parser.add_argument(
         "--list", action="store_true", help="print every arm and its commands"
     )
@@ -326,23 +386,34 @@ def main(argv: list[str] | None = None) -> int:
         help="interpreter inside that checkout (default: <checkout>/.venv/bin/python)",
     )
     args = parser.parse_args(argv)
-    if args.list or not args.arm:
-        for name in ALL_ORDER:
+    if args.list or not args.arms:
+        for name in LEAVES:
             arm = ARMS[name]
             print(f"{name}: {arm.source}")
             for need in arm.needs:
                 print(f"  needs {need}")
             for command in arm.commands:
                 print(f"  $ {command}")
+        print("groups: " + ", ".join(sorted(GROUPS)))
         return 0
-    names = ALL_ORDER if args.arm == "all" else (args.arm,)
+    unknown = [name for name in args.arms if name not in ARMS and name not in GROUPS]
+    if unknown:
+        parser.error(
+            f"unknown arm(s) {unknown}; known arms are {sorted(ARMS)} and groups {sorted(GROUPS)}"
+        )
+    names = _expand(args.arms)
+    if "gates" in names or "all" in args.arms:
+        reason = _check_gitleaks()
+        if reason:
+            print(f"gate: {reason}", file=sys.stderr)
+            return 2
     started = time.monotonic()
     for name in names:
         code = _run_arm(name, args)
         if code != 0:
             print(f"[gate] arm {name} failed", file=sys.stderr)
             return code
-    print(f"[gate] {args.arm} green wall={time.monotonic() - started:.2f}s")
+    print(f"[gate] {', '.join(args.arms)} green wall={time.monotonic() - started:.2f}s")
     return 0
 
 

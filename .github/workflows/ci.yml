@@ -85,44 +85,13 @@ jobs:
           assert receipt['status'] == 'verified' and receipt['extension'] == 'spatial'
           PY
 
-      - name: Validate repository contracts
+      - name: Run documentation gates
         run: |
-          # GS-003: import-smoke and skills cross-reference problems used to
-          # be advisory-only; both gates are now fatal so a package that
-          # raises on import (or resolves from site-packages) and a broken
-          # README/AGENTS<->SKILL cross-reference fail the job.
-          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_repo_contracts.py \
-            --strict-source-language --strict-import-smoke
-          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_packaging.py --strict
-          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_logging_hygiene.py
-          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_documentation.py --strict
-          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_doc_examples.py
-          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_skills.py --check-xrefs --warnings-fatal
-          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_active_inference_contract.py
-          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/rewrite_readme_agents.py --check
-
-      - name: Run syntax and strict test contracts
-        run: |
-          python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
-          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_test_contracts.py --strict
-
-      - name: Run model contracts and reproducibility audit
-        run: |
-          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42
-          uv run --no-sync python GEO-INFER-TEST/record_validation.py -- python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible
-
-      - name: Run source runtime hygiene
-        run: |
-          # The whole tree (src, tests, examples, scripts, manuscript) is
-          # clean under the root pyproject [tool.ruff.lint] contract
-          # (E4/E7/E9/F/UP/B/NPY); any new finding fails the gate.
-          # This whole-tree lint is the only ruff check in the job: the
-          # former changed-file `ruff check` measured a strict subset of
-          # this one four steps earlier, so it was removed rather than
-          # run twice. Formatting is measured here too; the scheduled
-          # format-check.yml keeps the same command on a weekly cadence.
-          uv run --with 'ruff>=0.15.6,<0.16' ruff check .
-          uv run --with 'ruff>=0.15.6,<0.16' ruff format --check .
+          # Documentation links/claims and generated-signpost drift live in
+          # scripts/gate.py, and this step calls the same arm a developer
+          # runs, so the two commands exist once in the repository
+          # (GEO-INFER-TEST/tests/unit/test_gate_contracts.py).
+          uv run --no-sync python scripts/gate.py docs
 
       - name: Install pinned gitleaks
         run: |
@@ -132,23 +101,30 @@ jobs:
           sudo tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin --no-same-owner gitleaks
           gitleaks version
 
-      - name: Scan full history for secrets
-        # SEC-02: fail-closed scan over the full history with the committed
-        # policy; allowlists are file- and rule-scoped with written
-        # justifications (GEO-INFER-TEST/docs/secret_scan_policy.md).
+      - name: Run repository, model and secret gates
+        # GS-003: import-smoke and skills cross-reference problems are fatal.
+        # SEC-02: the fail-closed full-history secret scan is the final
+        # command of this arm, using the committed policy and file- and
+        # rule-scoped allowlists (GEO-INFER-TEST/docs/secret_scan_policy.md).
         run: |
-          uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 1200 -- \
-            gitleaks detect --source . --config .gitleaks.toml --redact --verbose
+          uv run --no-sync python scripts/gate.py gates
+
+      - name: Run source runtime hygiene
+        run: |
+          # The whole tree (src, tests, examples, scripts, manuscript) is
+          # clean under the root pyproject [tool.ruff.lint] contract
+          # (E4/E7/E9/F/UP/B/NPY), and formatted. Both commands live in
+          # scripts/gate.py's `lint` arm; the scheduled format-check.yml
+          # keeps the same command on a weekly cadence.
+          uv run --no-sync python scripts/gate.py lint
 
       - name: Prepare verified manuscript artifacts for ROOT coverage
         # ROOT's ordinary profile reads the published bundle and copies it
         # into an isolated hydration checkout. output/ is ignored, so every
-        # fresh validation checkout must run its owning producer first.
+        # fresh validation checkout must run its owning producer first; the
+        # producer and convergence commands are the `manuscript-*` arms.
         run: |
-          uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 1800 -- \
-            python manuscript/generate_research_artifacts.py --verify --rerun-verification
-          uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 600 -- \
-            python manuscript/generate_research_artifacts.py --check
+          uv run --no-sync python scripts/gate.py manuscript-artifacts manuscript-convergence
 
       - name: Enforce module coverage floors
         env:
@@ -235,16 +211,10 @@ jobs:
 
       - name: Run execution and SPACE TIME composition contracts
         id: fast_tests
+        # The selection lives in scripts/gate.py's `fast` arm so this job and
+        # a local run cannot diverge.
         run: |
-          uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --timeout 600 --paths \
-            GEO-INFER-TEST/tests/unit/test_execution_contracts.py \
-            GEO-INFER-TEST/tests/unit/test_run_unified_tests.py \
-            GEO-INFER-TEST/tests/unit/test_ci_workflow_contracts.py \
-            GEO-INFER-TEST/tests/unit/test_check_coverage_floor_gate.py \
-            GEO-INFER-TEST/tests/unit/test_documentation_census.py \
-            GEO-INFER-TEST/tests/unit/test_process_ownership_contracts.py \
-            GEO-INFER-TEST/tests/unit/test_measure_module_coverage.py \
-            GEO-INFER-TEST/tests/integration/test_space_time_composition_contract.py
+          uv run --no-sync python scripts/gate.py fast
       - name: Retain fast contract receipts
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -450,20 +420,11 @@ jobs:
 
       - name: Run ${{ matrix.category }} tests
         id: category_tests
+        # `test-<category>` owns the category command (the h3 leg runs the
+        # dedicated migration validator instead of `--category h3`), so the
+        # matrix selects an arm rather than repeating its command.
         run: |
-          # ACT's real-H3 and visualization unit surface is CPU-bound on the
-          # hosted runner; keep the per-module timeout explicit without
-          # converting a slow but valid module into a false CI failure. The
-          # per-category summary in run_unified_tests.py keeps a leg
-          # approaching its ceiling visible before the job timeout trips.
-          if [ "${{ matrix.category }}" = "h3" ]; then
-            uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py --h3-migration
-          else
-            uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py \
-              --category ${{ matrix.category }} \
-              --timeout 600
-          fi
-
+          uv run --no-sync python scripts/gate.py test-${{ matrix.category }}
       - name: Retain ${{ matrix.category }} test reports
         # GS-001: every category uploads its reports immediately after its
         # own run, so the shared results dir can never be wiped by a later
@@ -526,7 +487,7 @@ jobs:
 
       - name: Generate research artifacts
         run: |
-          uv run python manuscript/generate_research_artifacts.py --verify
+          uv run --no-sync python scripts/gate.py manuscript-artifacts
 
       - name: Validate bounded research evidence custody
         id: research_evidence
@@ -563,7 +524,7 @@ jobs:
         # output/ is gitignored: --check runs AFTER regeneration as the
         # shim-style post-condition, failing when the render did not converge.
         run: |
-          uv run python manuscript/generate_research_artifacts.py --check
+          uv run --no-sync python scripts/gate.py manuscript-convergence
           echo "Manuscript staleness gate (--check): converged" >> "$GITHUB_STEP_SUMMARY"
       - name: Install the LaTeX render toolchain
         # Minimal fail-closed set: xelatex plus the packages the preamble
@@ -593,18 +554,13 @@ jobs:
           pandoc --version | head -1
           pandoc-crossref --version | head -1
 
-      - name: Render the manuscript PDF
-        # The in-repo render stage ROOT-01 deferred: it hydrates the
-        # evidence bundle, combines the published sections, and runs pandoc
-        # and XeLaTeX fail-closed. Its artifacts are the receipts the
-        # render-dependent tests read.
+      - name: Render the manuscript and run root profiles
+        # The render stage hydrates the evidence bundle, combines the
+        # published sections, and runs pandoc and XeLaTeX fail-closed; the
+        # two registered ROOT profiles then read its artifacts. All three
+        # commands are the `manuscript-render` arm.
         run: |
-          uv run python scripts/render_manuscript_pdf.py
-
-      - name: Run render-dependent root tests
-        run: |
-          uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py \
-            --module ROOT --category manuscript-render --timeout 600 --show-failures
+          uv run --no-sync python scripts/gate.py manuscript-render
 
       - name: Retain render receipts
         if: always()
@@ -618,14 +574,6 @@ jobs:
             output/pdf/_combined_manuscript.log
           if-no-files-found: warn
           retention-days: 14
-
-      - name: Run root manuscript regression tests
-        # ROOT is a registered target. Its ordinary manuscript profile
-        # records render-dependent deselections; the complementary profile
-        # above runs after producing the actual PDF and combined sources.
-        run: |
-          uv run --no-sync python GEO-INFER-TEST/run_unified_tests.py \
-            --module ROOT --category manuscript --timeout 600 --show-failures
 
       - name: Retain root manuscript execution evidence
         if: always()

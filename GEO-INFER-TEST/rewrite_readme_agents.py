@@ -1688,7 +1688,7 @@ all 46 skills and the guide.
 
 ```bash
 uv sync --all-packages --all-extras --all-groups
-uv run --frozen python scripts/gate.py all   # or one arm: lint|docs|fast|gates|tests|gnn|manuscript
+uv run --frozen python scripts/gate.py all   # or one arm: lint|docs|fast|gates|test-<category>|tests|gnn|manuscript
 python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
 uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language --strict-import-smoke
 uv run python GEO-INFER-TEST/validate_logging_hygiene.py
