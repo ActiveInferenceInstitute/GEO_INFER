@@ -54,6 +54,31 @@ broader E4/S1 roadmap. Detailed responsibilities and admission checks are in
 | E4 — formal-to-numerical semantics | Agree one admitted finite or Gaussian interchange fixture with GNN's independent semantic-witness owner and the relevant FEP theorem owner; declare source, quantities, axes, conditioning/time, units and precision before implementation. | Independent source extraction and numerical references, mismatch counterexamples, and separate current native/proof/custody receipts. Compatible values or shapes do not prove equivalence. |
 | S1 — source-preserving multi-request processing | Supply an immutable selected-source/prompt manifest if a GEO workflow participates in GNN's synthesis acceptance; agree required cross-part questions and completion/refusal criteria. | Every selected byte and required prompt accounted for, exact provider/model/context identities, genuine joint synthesis and resume/cancellation/deadline controls. Fragment answers do not establish joint interpretation. |
 
+### GNN–FEP shared-reader migration — blocked
+
+The [GNN–FEP workflow contract](https://github.com/ActiveInferenceInstitute/Generalized_Notation_Notation/blob/b0da6caca954509894cdead55f52efcaa3aef981/docs/workflows/gnn-fep.md)
+requires GEO_INFER to retain `.github/gnn-pair.json` and call
+`python -m gnn.importers check --repo . --require-pointer --workflow
+.github/workflows/gnn-interchange.yml --job interchange` from the pinned GNN
+environment before removing the local pin readers and pin-shape tests.
+
+The current pin, `8f293d9ba810e6eda5c09842d9c7ed9ffa5f92c1` (`v5.0.3`),
+contains no `src/gnn/importers.py`: the GitHub contents request returns
+`404`, and `git ls-tree` at that revision returns no entry. The shared reader
+was introduced later, in GNN commit
+`b0da6caca954509894cdead55f52efcaa3aef981`. Loading that later reader beside the
+pinned parser would violate the contract's single-revision environment.
+
+**Unblock:** first complete the separate, reviewed
+[pin-only bump procedure](GEO-INFER-TEST/docs/gnn_space_time_2026_09.md#gnn-pair-pin-bump-procedure)
+to a compatible GNN revision containing the reader. Then replace the local
+parsing in `scripts/gate.py`,
+`GEO-INFER-TEST/src/geo_infer_test/gnn_pin_freshness.py` and
+`GEO-INFER-TEST/src/geo_infer_test/companion_releases.py`, remove duplicate
+pin-shape/pointer assertions, and preserve GEO's lineage, published-companion
+and interchange-custody checks. No pin, schema, reader or gate has been changed
+as part of this blocked migration; its PR must remain open.
+
 ### GNN pin and E4 handoff progress — 2026-11-01
 
 - **Pin advanced.** `.github/gnn-pair.json` now selects GNN
