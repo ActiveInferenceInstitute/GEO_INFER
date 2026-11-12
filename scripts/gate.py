@@ -254,7 +254,17 @@ def _gnn_interchange(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 2
-    receipt = RESULTS / "gnn" / f"interchange-{datetime.now(UTC):%Y%m%dT%H%M%SZ}.json"
+    receipt = (
+        Path(args.output).absolute()
+        if args.output
+        else RESULTS / "gnn" / f"interchange-{datetime.now(UTC):%Y%m%dT%H%M%SZ}.json"
+    )
+    if receipt.exists():
+        print(
+            f"gate gnn: receipt {receipt} already exists; receipts are immutable",
+            file=sys.stderr,
+        )
+        return 2
     command = (
         "python GEO-INFER-TEST/validate_gnn_interchange.py"
         f" --gnn-repo '{gnn_repo}' --gnn-python '{gnn_python}'"
@@ -272,6 +282,8 @@ def _gnn_interchange(args: argparse.Namespace) -> int:
         return result.returncode
     document = json.loads(receipt.read_text(encoding="utf-8"))
     problems: list[str] = []
+    if document.get("schema_version") != "1.0":
+        problems.append(f"receipt schema_version={document.get('schema_version')!r}")
     if document.get("success") is not True:
         problems.append(
             f"receipt success={document.get('success')!r} {document.get('error')}"
@@ -279,6 +291,19 @@ def _gnn_interchange(args: argparse.Namespace) -> int:
     if document["gnn"]["revision"] != pin["revision"]:
         problems.append(
             f"gnn revision {document['gnn']['revision']} != pin {pin['revision']}"
+        )
+    expected_geo = (
+        args.expect_geo_revision
+        or subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    )
+    if document["geo"]["revision"] != expected_geo:
+        problems.append(
+            f"geo revision {document['geo']['revision']} != candidate {expected_geo}"
         )
     if document["geo_execution"].get("custody_complete") is not True:
         problems.append("geo_execution.custody_complete is not true")
@@ -306,9 +331,11 @@ def _gnn_interchange(args: argparse.Namespace) -> int:
         for problem in problems:
             print(f"gate gnn: {problem}", file=sys.stderr)
         return 1
-    print(
-        f"[gate] gnn receipt {receipt.relative_to(REPO_ROOT)} verified against {PIN_FILE.name}"
-    )
+    try:
+        shown = receipt.relative_to(REPO_ROOT)
+    except ValueError:  # a caller-supplied receipt may live outside the checkout
+        shown = receipt
+    print(f"[gate] gnn receipt {shown} verified against {PIN_FILE.name}")
     return 0
 
 
@@ -384,6 +411,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--gnn-python",
         help="interpreter inside that checkout (default: <checkout>/.venv/bin/python)",
+    )
+    parser.add_argument(
+        "--output",
+        help=(
+            "immutable receipt path for the GNN arm "
+            "(default: .geo-infer-test-results/gnn/interchange-<utc>.json)"
+        ),
+    )
+    parser.add_argument(
+        "--expect-geo-revision",
+        help=(
+            "exact GEO candidate commit the receipt must record "
+            "(default: this checkout's HEAD)"
+        ),
     )
     args = parser.parse_args(argv)
     if args.list or not args.arms:

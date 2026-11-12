@@ -104,8 +104,8 @@ commands was then run alone under `timeout 300` (600 for the model gates):
 Every `gates` command passed. The arm was measured as eleven bounded runs
 rather than one process because other work held the host and a single arm run
 crosses the ten-minute local ceiling; 570.8 s is the sum of those runs. Two
-lanes were not completed locally: the `tests` matrix and the `manuscript` arm's
-`--verify --rerun-verification` group sweep. The four render legs (convergence,
+lanes were not completed locally: the `tests` matrix and the `manuscript-artifacts`
+arm's `--verify --rerun-verification` group sweep. The four render legs (convergence,
 render, `ROOT manuscript-render`, `ROOT manuscript`) were completed, and the
 render produced `output/pdf/GEO-INFER_combined.pdf` from the 11 published
 sections.
@@ -142,6 +142,15 @@ The `gnn` arm mirrors the required fleet check, not a new contract:
   and the `3.11` leg reports as `gnn interchange (3.11)`.
 - Caller: `ci.yml` job `paired-interchange` (`uses: ./.github/workflows/gnn-interchange.yml`).
 - Validator: `GEO-INFER-TEST/validate_gnn_interchange.py --gnn-repo … --gnn-python … --output …`.
+- The workflow runs this arm, not its own copy of the command: `geo/.venv/bin/python
+  geo/scripts/gate.py gnn --gnn-repo "$PWD/gnn" --gnn-python
+  "$PWD/gnn/.venv/bin/python" --output receipts/interchange.json
+  --expect-geo-revision "$GITHUB_SHA"`. The arm performs every receipt
+  assertion the job used to inline: schema `1.0`, success, both exact
+  revisions (GNN against the pin, GEO against the event's candidate), both
+  clean worktrees, complete execution custody, and each retained artifact
+  digest against its bytes. `--output` is immutable: an existing receipt is
+  refused rather than overwritten.
 - [`.github/GNN.md`](../../.github/GNN.md) records what the job parses and what
   it deliberately does not cover.
 - `.github/companion-releases.json` (schema `geo-infer-companion-releases/v1`)
