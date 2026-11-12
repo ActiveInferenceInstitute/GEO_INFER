@@ -14,6 +14,7 @@ California workspace within `GEO-INFER-PLACE`.
 - `monitoring.py`
 - `report.py`
 - `report_integrity.py`
+- `robustness.py`
 - `workflow.py`
 
 ## Public Interface
