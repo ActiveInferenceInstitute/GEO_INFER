@@ -87,12 +87,16 @@ the source and validator as authoritative and open a documentation issue.
 From the repository root:
 
 ```bash
-uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check
-uv run python GEO-INFER-TEST/validate_documentation.py --strict
-uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language
-uv run python GEO-INFER-TEST/validate_skills.py --check-xrefs
+uv run --frozen python scripts/gate.py docs
 git diff --check
 ```
+
+`docs` runs `validate_documentation.py --strict` and
+`rewrite_readme_agents.py --check` exactly as `ci.yml` does. `uv run --frozen
+python scripts/gate.py lint` covers the whole tree's `ruff check` and
+`ruff format --check`; the remaining arms (`fast`, `gates`, `tests`, `gnn`,
+`manuscript`) and their measured wall time are in the
+[gate guide](../../GEO-INFER-TEST/docs/gate.md).
 
 For a focused change, run the affected module gate after the documentation
 checks. Keep generated output under `.geo-infer-test-results/` or an explicit
