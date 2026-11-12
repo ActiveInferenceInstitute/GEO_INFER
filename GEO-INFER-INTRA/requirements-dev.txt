@@ -1,12 +1,12 @@
 # Developer tool list. Project dependencies are declared in pyproject.toml.
 pytest>=7.0.0
 pytest-cov>=4.0.0
-black>=23.0.0
-isort>=5.0.0
+black>=26.10.1
+isort>=9.0.2
 mypy>=1.0.0
-flake8>=6.0.0
+flake8>=7.5.0
 sphinx>=6.0.0
-pre-commit>=3.0.0
-tox>=4.0.0
-pyright>=1.1.0
+pre-commit>=4.7.0
+tox>=4.67.9
+pyright>=1.1.414
 faker>=13.0.0 
