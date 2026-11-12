@@ -61,7 +61,7 @@ had no fast or GNN arm at all. "After" is the arm, CI-wrapped, in one process.
 | `docs` | 4.65 s, failing | 8.08 s, green | The two validators now run once, CI-wrapped (`record_validation.py` writes receipts), and the stale `.github/AGENTS.md` signpost they reported is fixed. The extra seconds are the receipt wrapper. |
 | `fast` | 177.4 s | 155.5 s | The removed duplicate `validate_test_contracts.py --strict` was 1.90 s; the eight-file selection that dominates the arm measured 175.5 s before and 155.5 s after, so per-run variance (155–176 s observed) is larger than the dedupe saving. |
 | `gates` | 341.5 s for the six validators alone | bounded, see below | The arm runs the same commands, so there is no speed claim to make. |
-| `gnn` | no local arm | 8.2 s | A new arm, not a faster one: it runs the pinned conformance validator against a GNN checkout at `v5.0.3`. |
+| `gnn` | no local arm | 8.2 s (34.3 s on a loaded host) | A new arm, not a faster one: it runs the pinned conformance validator against a GNN checkout at `v5.0.3`. |
 | `manuscript` | no local arm | 147.1 s | Convergence check 1.1 s, PDF render 15.7 s, `ROOT manuscript-render` profile 6.2 s, `ROOT manuscript` profile 124.1 s. |
 | `tests` | no local arm | not measured | The full matrix is a CI lane (45 modules x six categories); it was not run here. |
 
