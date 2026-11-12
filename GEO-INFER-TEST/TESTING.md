@@ -4,27 +4,31 @@ The repository test contract is zero-warning, zero-failure, and zero-skip. The s
 
 ## Canonical gate
 
-Run from the repository root:
+`scripts/gate.py` is the one entry point; each arm runs the commands one CI job
+runs, copied from the workflow definition. Run from the repository root:
 
 ```bash
 uv sync --all-packages --all-extras --all-groups
-uv run python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
-uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language
-uv run python GEO-INFER-TEST/validate_packaging.py --strict
-uv run python GEO-INFER-TEST/validate_logging_hygiene.py
-uv run python GEO-INFER-TEST/validate_documentation.py --strict
-uv run python GEO-INFER-TEST/validate_skills.py --check-xrefs
-uv run python GEO-INFER-TEST/validate_active_inference_contract.py
-uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check
-uv run python GEO-INFER-TEST/validate_test_contracts.py --strict
-uv run python GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42
-uv run python GEO-INFER-TEST/validate_skills.py --check-xrefs
-uv run python GEO-INFER-TEST/run_unified_tests.py --category unit
-uv run python GEO-INFER-TEST/run_unified_tests.py --category integration
-uv run python GEO-INFER-TEST/run_unified_tests.py --category performance
-uv run python GEO-INFER-TEST/run_unified_tests.py --h3-migration
-uv run python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible
+uv run --frozen python scripts/gate.py all
 ```
+
+Run one arm while iterating; `all` runs each arm exactly once. The previous
+inline list here ran `validate_skills.py` twice, omitted the `--warnings-fatal`
+and `--strict-import-smoke` flags CI enforces, and had no fast, GNN or render
+surface, so it was replaced rather than kept as a second copy of the gate.
+
+| Arm | Purpose |
+| --- | --- |
+| `lint` | `ruff check .` and `ruff format --check .` under the root lint contract |
+| `docs` | authoritative-documentation links/claims and generated-signpost drift |
+| `fast` | the eight-file execution, runner, workflow and SPACE TIME selection |
+| `gates` | repository, packaging, logging, doc-example, skill, Active Inference, syntax, test-contract, model-contract, model-audit and secret-scan gates |
+| `tests` | `unit`, `integration`, `performance`, `system`, `h3` and `slow` categories |
+| `gnn` | paired GNN conformance against the pinned companion revision |
+| `manuscript` | research-artifact producer, convergence, PDF render and `ROOT` profiles |
+
+Arm contents, host requirements, measured wall time and the CI surfaces no arm
+covers are in [the gate guide](docs/gate.md).
 
 Use `env -u VIRTUAL_ENV` before `uv` when a different shell environment is active. This avoids an environment-selection warning and ensures the workspace `.venv` is used.
 

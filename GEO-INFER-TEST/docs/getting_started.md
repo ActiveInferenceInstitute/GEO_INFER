@@ -69,13 +69,14 @@ For reusable assertions use the package exports such as `assert_finite`,
 ## Contract bundle
 
 ```bash
-uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check
-uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language
-uv run python GEO-INFER-TEST/validate_skills.py --check-xrefs
-uv run python GEO-INFER-TEST/validate_test_contracts.py --strict
-uv run python GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42
-uv run python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible
+uv run --frozen python scripts/gate.py gates
 ```
+
+That arm runs the repository, packaging, logging, doc-example, skill, Active
+Inference, syntax, test-contract, model-contract, model-audit and secret-scan
+gates with the exact commands `ci.yml` runs, wrapped in
+`record_validation.py` so receipts land under `.geo-infer-test-results/`. The
+[gate guide](gate.md) lists every arm and the host requirements.
 
 For the full explanation of categories, strict policy, artifacts, and triage,
 read the [GEO-INFER-TEST module guide](index.md) and the repository

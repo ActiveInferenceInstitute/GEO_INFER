@@ -101,6 +101,7 @@ AUTHORITATIVE_DOCS = (
     "GEO-INFER-INTRA/docs/security/index.md",
     "GEO-INFER-INTRA/docs/support/index.md",
     "GEO-INFER-TEST/docs/index.md",
+    "GEO-INFER-TEST/docs/gate.md",
     "GEO-INFER-TEST/docs/api_reference.md",
     "GEO-INFER-TEST/docs/getting_started.md",
     "GEO-INFER-TEST/docs/examples/basic_example.md",

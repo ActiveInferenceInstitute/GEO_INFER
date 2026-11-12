@@ -84,6 +84,7 @@ record evidence and outstanding acceptance requirements.
 - Module catalog: [`GEO-INFER-INTRA/docs/modules/index.md`](../GEO-INFER-INTRA/docs/modules/index.md)
 - Developer workflow: [`GEO-INFER-INTRA/docs/developer_guide/index.md`](../GEO-INFER-INTRA/docs/developer_guide/index.md)
 - Test and release gates: [`GEO-INFER-TEST/docs/index.md`](../GEO-INFER-TEST/docs/index.md)
+- Local gate arms and measured wall time: [`GEO-INFER-TEST/docs/gate.md`](../GEO-INFER-TEST/docs/gate.md)
 - Manuscript generation and evidence: [`manuscript/README.md`](../manuscript/README.md)
 - Reusable figures and artifact verification: [`research artifacts`](../GEO-INFER-INTRA/docs/integration/research_artifacts.md)
 - Active Inference reference: [`GEO-INFER-INTRA/docs/active_inference_guide.md`](../GEO-INFER-INTRA/docs/active_inference_guide.md)
@@ -170,7 +171,7 @@ the exact reproducible exception list.
 | [GEO-INFER-SIM](../GEO-INFER-SIM/) | `geo_infer_sim` | 11 | 9 |
 | [GEO-INFER-SPACE](../GEO-INFER-SPACE/) | `geo_infer_space` | 86 | 52 |
 | [GEO-INFER-SPM](../GEO-INFER-SPM/) | `geo_infer_spm` | 27 | 23 |
-| [GEO-INFER-TEST](../GEO-INFER-TEST/) | `geo_infer_test` | 30 | 63 |
+| [GEO-INFER-TEST](../GEO-INFER-TEST/) | `geo_infer_test` | 30 | 64 |
 | [GEO-INFER-TIME](../GEO-INFER-TIME/) | `geo_infer_time` | 20 | 23 |
 | [GEO-INFER-TRANSPORT](../GEO-INFER-TRANSPORT/) | `geo_infer_transport` | 7 | 10 |
 | [GEO-INFER-WATER](../GEO-INFER-WATER/) | `geo_infer_water` | 9 | 9 |
@@ -181,7 +182,7 @@ the exact reproducible exception list.
 | --- | ---: |
 | Modules | 45 |
 | Python source files | 1045 |
-| Python test files | 830 |
+| Python test files | 831 |
 | Repository README.md files | 871 |
 | Repository AGENTS.md files | 871 |
 

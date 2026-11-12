@@ -81,12 +81,24 @@ GNN topic publication verified at `8005e37c668e91b85f6d54b1a989983098ee99a8`.
 
 The paired interchange pins the companion GNN revision in
 `.github/gnn-pair.json` (`revision`) and records the reviewed release label
-alongside it (`tag`); `.github/workflows/gnn-interchange.yml` checks out GEO at
-the PR head SHA and GNN at that pin in two locked environments (Python 3.11 and
-3.12). The revision is authoritative; the tag is a review label and CI rejects
-a pin without a valid `vMAJOR.MINOR.PATCH` tag. GNN `main` usually runs ahead
-of the pin, so bumping is a deliberate, reviewed companion-revision decision,
-never automatic:
+alongside it (`tag`). The file carries the canonical importer schema
+`gnn-importer-pin/v1` together with `repository` and `recorded` fields; the
+current pin is `v5.0.3` at `8f293d9ba810e6eda5c09842d9c7ed9ffa5f92c1`.
+`.github/workflows/gnn-interchange.yml` checks out GEO at the PR head SHA and
+GNN at that pin in two locked environments (Python 3.11 and 3.12); the job key
+is `interchange`, and its `3.12` leg publishes the required check name
+`gnn conformance (pinned)` while the `3.11` leg publishes
+`gnn interchange (3.11)`. `.github/GNN.md` records what that job parses and
+what it deliberately does not cover.
+
+The revision is authoritative; the tag is a review label and CI rejects a pin
+without a valid `vMAJOR.MINOR.PATCH` tag. The importer pin is not the
+release-facing companion identity in `.github/companion-releases.json`
+(schema `geo-infer-companion-releases/v1`, GNN `5.0.1` and FEP_Formal `2.1.0`
+for GEO-INFER `0.4.0`): a reviewed importer pin may run ahead of the published
+companion, and neither file substitutes for the other. GNN `main` usually runs
+ahead of the pin, so bumping is a deliberate, reviewed companion-revision
+decision, never automatic:
 
 1. Diff GNN from the current pin to the target revision
    (`git diff <pin>..<target>` in the GNN checkout) and review the change.

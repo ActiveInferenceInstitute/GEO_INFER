@@ -17,8 +17,19 @@ Use `uv run` so the command uses the shared workspace interpreter.
 
 ## Canonical command matrix
 
+The gate is `uv run --frozen python scripts/gate.py <arm>`; each arm runs the
+same commands as one CI job. See the [gate guide](gate.md) for arm contents,
+host requirements, measured wall time and the CI surfaces no arm covers.
+
 | Command | Purpose |
 | --- | --- |
+| `scripts/gate.py lint` | Whole-tree `ruff check` and `ruff format --check`. |
+| `scripts/gate.py docs` | Authoritative documentation links/claims and generated-signpost drift. |
+| `scripts/gate.py fast` | Fast contract selection (execution, runner, workflow, SPACE TIME). |
+| `scripts/gate.py gates` | Interpreter-independent validators, model contracts and secret scan. |
+| `scripts/gate.py tests` | Every test category the CI matrix runs. |
+| `scripts/gate.py gnn` | Paired GNN conformance against the pinned revision. |
+| `scripts/gate.py manuscript` | Research-artifact producer, render and `ROOT` profiles. |
 | `run_unified_tests.py --module NAME` | Run all discoverable tests for one module. |
 | `run_unified_tests.py --category unit` | Run unit tests module by module. |
 | `run_unified_tests.py --category integration` | Run integration tests module by module. |
@@ -31,7 +42,7 @@ Use `uv run` so the command uses the shared workspace interpreter.
 | `run_model_audit.py --seed 42 --reproducible` | Emit deterministic model statistics and visual artifacts. |
 | `rewrite_readme_agents.py --check` | Fail if generated README/AGENTS files drift. |
 | `validate_documentation.py --strict` | Check authoritative documentation links and stale claims. |
-| `validate_skills.py --check-xrefs` | Check SKILL metadata and referenced paths. |
+| `validate_skills.py --check-xrefs --warnings-fatal` | Check SKILL metadata and referenced paths; warnings fail. |
 
 All report-producing commands write under `.geo-infer-test-results/` unless an
 explicit output directory is part of the command contract.
@@ -72,6 +83,26 @@ print(report)
 For lower-level reusable assertions, import from `geo_infer_test.testing` or
 the package exports: finite arrays, normalized probabilities, stochastic
 matrices, model contracts, seed replay, and visualization manifests.
+
+## GNN companion conformance
+
+The paired-interchange conformance check is owned by
+`.github/workflows/gnn-interchange.yml`; `ci.yml` calls it as the
+`paired-interchange` job. The job key is `interchange`, and its `3.12` matrix
+leg publishes the required check name `gnn conformance (pinned)` while the
+`3.11` leg publishes `gnn interchange (3.11)`.
+
+- Pin file: `.github/gnn-pair.json`, schema `gnn-importer-pin/v1`, pinning
+  `ActiveInferenceInstitute/Generalized_Notation_Notation` at `v5.0.3`
+  (`8f293d9ba810e6eda5c09842d9c7ed9ffa5f92c1`).
+- What the job parses, and what it deliberately does not cover:
+  [`.github/GNN.md`](../../.github/GNN.md).
+- Validator: `validate_gnn_interchange.py`; run it locally with
+  `scripts/gate.py gnn` and a GNN checkout at the pinned revision. The
+  [gate guide](gate.md) lists the exact interpreter requirement.
+- Raising the pin is a reviewed change to `.github/gnn-pair.json`; the
+  procedure is in
+  [the pair-pin bump section](gnn_space_time_2026_09.md#gnn-pair-pin-bump-procedure).
 
 ## Results and triage
 

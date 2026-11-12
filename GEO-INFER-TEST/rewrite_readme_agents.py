@@ -1489,6 +1489,7 @@ record evidence and outstanding acceptance requirements.
 - Module catalog: [`GEO-INFER-INTRA/docs/modules/index.md`]({link_prefix}GEO-INFER-INTRA/docs/modules/index.md)
 - Developer workflow: [`GEO-INFER-INTRA/docs/developer_guide/index.md`]({link_prefix}GEO-INFER-INTRA/docs/developer_guide/index.md)
 - Test and release gates: [`GEO-INFER-TEST/docs/index.md`]({link_prefix}GEO-INFER-TEST/docs/index.md)
+- Local gate arms and measured wall time: [`GEO-INFER-TEST/docs/gate.md`]({link_prefix}GEO-INFER-TEST/docs/gate.md)
 - Manuscript generation and evidence: [`manuscript/README.md`]({link_prefix}manuscript/README.md)
 - Reusable figures and artifact verification: [`research artifacts`]({link_prefix}GEO-INFER-INTRA/docs/integration/research_artifacts.md)
 - Active Inference reference: [`GEO-INFER-INTRA/docs/active_inference_guide.md`]({link_prefix}GEO-INFER-INTRA/docs/active_inference_guide.md)
@@ -1687,6 +1688,7 @@ all 46 skills and the guide.
 
 ```bash
 uv sync --all-packages --all-extras --all-groups
+uv run --frozen python scripts/gate.py all   # or one arm: lint|docs|fast|gates|tests|gnn|manuscript
 python -m compileall GEO-INFER-*/src GEO-INFER-*/examples
 uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language --strict-import-smoke
 uv run python GEO-INFER-TEST/validate_logging_hygiene.py

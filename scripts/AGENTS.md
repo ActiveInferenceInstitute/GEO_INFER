@@ -22,6 +22,7 @@
 
 - `_manuscript_fig_common.py`
 - `_render_pdf_override.py`
+- `gate.py`
 - `manuscript_fig_framework_data_flow.py`
 - `manuscript_fig_module_theme_map.py`
 - `manuscript_fig_verification_landscape.py`
