@@ -93,8 +93,12 @@ leg publishes the required check name `gnn conformance (pinned)` while the
 `3.11` leg publishes `gnn interchange (3.11)`.
 
 - Pin file: `.github/gnn-pair.json`, schema `gnn-importer-pin/v1`, pinning
-  `ActiveInferenceInstitute/Generalized_Notation_Notation` at `v5.0.3`
-  (`8f293d9ba810e6eda5c09842d9c7ed9ffa5f92c1`).
+  `ActiveInferenceInstitute/Generalized_Notation_Notation` at `v5.1.0`
+  (`75c834bd8519dc7b5adc4d24f16bf393cfd1ecdf`).
+- Reader: `python -m gnn.importers check --repo . --require-pointer
+  --workflow .github/workflows/gnn-interchange.yml --job interchange`, run from
+  the pinned checkout's interpreter. The arm carries no pin shape or pointer
+  assertion of its own.
 - What the job parses, and what it deliberately does not cover:
   [`.github/GNN.md`](../../.github/GNN.md).
 - Validator: `validate_gnn_interchange.py`; run it locally with

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Maintenance
 
+- Adopt the GNN–FEP shared pin reader. Advance `.github/gnn-pair.json` to GNN
+  `v5.1.0` (`75c834bd8519dc7b5adc4d24f16bf393cfd1ecdf`) and run
+  `python -m gnn.importers check --repo . --require-pointer` from the pinned
+  checkout in the `gnn` arm, then delete this repository's own pin reading:
+  `scripts/gate.py` no longer asserts the pin schema or revision shape, the
+  companion-revision workflow step selects the revision alone, and the pin
+  freshness review consumes the reader's `pin` record. Retain the lineage,
+  published-companion identity and interchange-custody checks.
 - Remove obsolete optional-TIME availability scaffolding from the PLACE bridge,
   retaining its public capability property and value-only sequence statistics;
   convert seismic event epochs with an explicit UTC timezone.

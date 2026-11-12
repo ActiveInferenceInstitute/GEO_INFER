@@ -43,6 +43,7 @@ GEO.
 
 | Date | Interchange pin | Basis |
 | --- | --- | --- |
+| 2026-11-12 | `75c834bd8519dc7b5adc4d24f16bf393cfd1ecdf` (GNN v5.1.0) | Advanced from `8f293d9b…` (v5.0.3) to adopt the shipped `gnn.importers` pin reader, which `v5.0.3` predates. In the reviewed delta the three consumer exporters (`src/gnn/export/geo_infer*.py`) and the supported schema roster are unchanged; `src/gnn/parsers/` and two export helpers (`notation_metadata.py`, `processor.py`) moved with the release. |
 | 2026-11-01 | `8f293d9ba810e6eda5c09842d9c7ed9ffa5f92c1` (GNN v5.0.3) | Advanced from `e54813b4…` (v5.0.1) after reviewing the delta: `src/gnn/export/`, `src/gnn/parsers/` and `src/gnn/extract/` are byte-identical between the two revisions and the schema roster is unchanged, so the exported contract surface does not move. Supersedes the earlier `codex/gnn-companion-pin-20261028` attempt, whose target `4582f99c…` is an ancestor of v5.0.3. |
 
 The supported interchange schemas remain `gnn-geo-infer/1`,
@@ -85,11 +86,18 @@ published companion; it does not resolve an advanced revision. The separate
 bounded check reads the pin's lineage from a local GNN checkout without
 fetching, and reports the release tags at the pin, how far the checkout has
 moved past it and whether the pin is behind the newest release tag.
-`--require-current` turns a pin behind the newest release tag into a refusal:
+`--require-current` turns a pin behind the newest release tag into a refusal.
+
+The check does not parse `.github/gnn-pair.json` itself. The estate's single pin
+reader, `gnn.importers`, supplies the pin record from the environment built
+from the pinned revision:
 
 ```bash
+python -m gnn.importers check --repo /absolute/path/to/GEO_INFER --json \
+  > /tmp/gnn-pin-report.json
 PYTHONPATH=GEO-INFER-TEST/src python -B GEO-INFER-TEST/validate_gnn_pin_freshness.py \
-  --gnn-root /absolute/path/to/Generalized_Notation_Notation --require-current
+  --gnn-root /absolute/path/to/Generalized_Notation_Notation \
+  --pin-report /tmp/gnn-pin-report.json --require-current
 ```
 
 The pin must exist in the checkout and retain the published companion revision

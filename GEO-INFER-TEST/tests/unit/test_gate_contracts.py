@@ -10,7 +10,6 @@ stops describing the pin file and the conformance job it names.
 from __future__ import annotations
 
 import importlib.util
-import json
 import re
 import sys
 from functools import cache
@@ -21,8 +20,6 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[3]
 GATE = REPO_ROOT / "scripts" / "gate.py"
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
-PIN = REPO_ROOT / ".github" / "gnn-pair.json"
-POINTER = REPO_ROOT / ".github" / "GNN.md"
 
 # Gate commands are CI-only when the measurement needs the event (a base SHA)
 # or a disposable service; those steps own their command and are not arms.
@@ -178,13 +175,24 @@ def test_gnn_arm_owns_the_conformance_invocation_and_receipt_checks():
     for marker in (
         "validate_gnn_interchange.py",
         'document.get("schema_version") != "1.0"',
-        'document["gnn"]["revision"] != pin["revision"]',
+        'document["gnn"]["revision"] != pin["commit"]',
         "expect_geo_revision",
         "custody_complete",
         "hashlib.sha256",
     ):
         assert marker in gate_source, marker
     assert gate_source.count("validate_gnn_interchange.py") == 1
+    # The pin, the pointer and the specifications are the shared reader's: the
+    # arm calls `python -m gnn.importers` and keeps no pin shape of its own.
+    for marker in (
+        "gnn.importers",
+        "--require-pointer",
+        ".github/workflows/gnn-interchange.yml",
+        "interchange",
+    ):
+        assert marker in gate_source, marker
+    for absent in ("PIN_SCHEMA", "gnn-pair.json", "def _read_pin("):
+        assert absent not in gate_source, absent
 
 
 def test_gate_has_no_type_arm_the_repository_cannot_run():
@@ -202,25 +210,6 @@ def test_groups_expand_to_leaf_arms_once():
     assert gate._expand(["manuscript"]) == list(gate.MANUSCRIPT_ARMS)
     assert gate._expand(["lint", "lint"]) == ["lint"]
     assert "all" not in gate.ARMS and "tests" not in gate.ARMS
-
-
-def test_gnn_pointer_records_the_pin_and_the_conformance_job():
-    """`.github/GNN.md` must keep naming the real pin, job and command."""
-    pin = json.loads(PIN.read_text(encoding="utf-8"))
-    pointer = POINTER.read_text(encoding="utf-8")
-    assert pin["schema"] == "gnn-importer-pin/v1"
-    assert re.fullmatch("[0-9a-f]{40}", pin["revision"])
-    assert re.fullmatch(r"v\d+\.\d+\.\d+", pin["tag"])
-    for marker in (
-        ".github/gnn-pair.json",
-        "gnn-importer-pin/v1",
-        pin["tag"],
-        pin["revision"],
-        "gnn conformance (pinned)",
-        "gnn-interchange.yml",
-        "GEO-INFER-TEST/validate_gnn_interchange.py",
-    ):
-        assert marker in pointer, marker
 
 
 def test_gnn_conformance_job_key_and_display_name_are_stable():

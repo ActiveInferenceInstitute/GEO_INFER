@@ -26,6 +26,13 @@ matrix category, ``gnn``, ``manuscript-artifacts``, ``manuscript-convergence``,
 There is no ``types`` arm: the repository declares ``[tool.mypy]`` and a
 ``mypy`` dependency but runs no type gate, so a type arm would invent a
 contract rather than define one.
+
+The ``gnn`` arm reads no pin of its own: it runs ``python -m gnn.importers
+check --repo . --require-pointer --workflow .github/workflows/gnn-interchange.yml
+--job interchange`` in the interpreter of the GNN checkout at the pinned
+revision, so the pin, ``.github/GNN.md`` and every ``*.gnn.md`` are validated by
+the reader and the parser the pin names. The arm keeps the interchange custody
+checks that belong to this repository.
 """
 
 from __future__ import annotations
@@ -43,9 +50,12 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RESULTS = REPO_ROOT / ".geo-infer-test-results"
-PIN_FILE = REPO_ROOT / ".github" / "gnn-pair.json"
-PIN_SCHEMA = "gnn-importer-pin/v1"
 GITLEAKS_VERSION = "8.30.1"
+
+#: The conformance job GEO_INFER's pointer names. The shared reader receives
+#: both facts so it can check `.github/GNN.md` against the pin it reads.
+GNN_WORKFLOW = ".github/workflows/gnn-interchange.yml"
+GNN_JOB = "interchange"
 
 # `ci.yml` "validate" -> "Run source runtime hygiene"; also the documented
 # whole-tree formatting contract.
@@ -154,7 +164,8 @@ ARMS: dict[str, Arm] = {
         "gnn-interchange.yml: interchange",
         (),
         needs=(
-            "geometry: a clean worktree, a GNN checkout at the pin, and that checkout's interpreter",
+            "geometry: a clean worktree, a GNN checkout at the pin, and that checkout's "
+            "interpreter, which runs the shared gnn.importers reader",
         ),
     ),
     "manuscript-artifacts": Arm(
@@ -199,24 +210,53 @@ def _shell_env() -> dict[str, str]:
     return env
 
 
-def _read_pin() -> dict[str, object]:
-    pin = json.loads(PIN_FILE.read_text(encoding="utf-8"))
-    if pin.get("schema") != PIN_SCHEMA:
+def _reader_pin(gnn_python: Path) -> dict[str, object]:
+    """Return the pin the shared GNN reader resolves for this checkout.
+
+    ``gnn.importers`` is the one pin reader the GNN–FEP contract names, and it
+    runs here in the interpreter of the GNN checkout, so the pin, the pointer
+    and every ``*.gnn.md`` are read and validated by the parser installed at
+    the pinned revision. This arm keeps none of that logic: it starts the
+    reader and holds the pin it reports for the interchange receipt checks.
+    """
+    command = [
+        str(gnn_python),
+        "-m",
+        "gnn.importers",
+        "check",
+        "--repo",
+        str(REPO_ROOT),
+        "--require-pointer",
+        "--workflow",
+        GNN_WORKFLOW,
+        "--job",
+        GNN_JOB,
+        "--json",
+    ]
+    started = time.monotonic()
+    result = subprocess.run(command, capture_output=True, text=True)
+    elapsed = time.monotonic() - started
+    if result.returncode != 0:
+        for stream in (result.stdout, result.stderr):
+            if stream.strip():
+                print(stream.rstrip(), file=sys.stderr)
         raise SystemExit(
-            f"gate: {PIN_FILE} schema is {pin.get('schema')!r}, expected {PIN_SCHEMA!r}"
+            "gate gnn: the shared reader refused the pin "
+            f"(exit {result.returncode}); no interchange run was started"
         )
-    revision = str(pin.get("revision", ""))
-    if len(revision) != 40 or any(
-        character not in "0123456789abcdef" for character in revision
-    ):
-        raise SystemExit(
-            f"gate: {PIN_FILE} revision {revision!r} is not a full lowercase object id"
-        )
+    report = json.loads(result.stdout)
+    pin = report.get("pin")
+    if not isinstance(pin, dict) or not pin.get("commit"):
+        raise SystemExit("gate gnn: the shared reader reported no pin")
+    print(
+        f"[gate] gnn reader pin={pin.get('path')} tag={pin.get('tag')} "
+        f"commit={str(pin['commit'])[:10]} specs={report.get('specs', {}).get('count')} "
+        f"pointer={report.get('pointer', {}).get('path')} seconds={elapsed:.2f} status=ok"
+    )
     return pin
 
 
 def _gnn_interchange(args: argparse.Namespace) -> int:
-    pin = _read_pin()
     override = args.gnn_repo or os.environ.get("GEO_INFER_GNN_REPO")
     gnn_repo = (
         Path(override).resolve()
@@ -242,15 +282,16 @@ def _gnn_interchange(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 2
+    pin = _reader_pin(gnn_python)
     head = subprocess.run(
         ["git", "-C", str(gnn_repo), "rev-parse", "HEAD"],
         capture_output=True,
         text=True,
         check=True,
     ).stdout.strip()
-    if head != pin["revision"]:
+    if head != pin["commit"]:
         print(
-            f"gate gnn: checkout {gnn_repo} is at {head}, pin records {pin['revision']} ({pin['tag']})",
+            f"gate gnn: checkout {gnn_repo} is at {head}, pin records {pin['commit']} ({pin['tag']})",
             file=sys.stderr,
         )
         return 2
@@ -288,9 +329,9 @@ def _gnn_interchange(args: argparse.Namespace) -> int:
         problems.append(
             f"receipt success={document.get('success')!r} {document.get('error')}"
         )
-    if document["gnn"]["revision"] != pin["revision"]:
+    if document["gnn"]["revision"] != pin["commit"]:
         problems.append(
-            f"gnn revision {document['gnn']['revision']} != pin {pin['revision']}"
+            f"gnn revision {document['gnn']['revision']} != pin {pin['commit']}"
         )
     expected_geo = (
         args.expect_geo_revision
@@ -335,7 +376,7 @@ def _gnn_interchange(args: argparse.Namespace) -> int:
         shown = receipt.relative_to(REPO_ROOT)
     except ValueError:  # a caller-supplied receipt may live outside the checkout
         shown = receipt
-    print(f"[gate] gnn receipt {shown} verified against {PIN_FILE.name}")
+    print(f"[gate] gnn receipt {shown} verified against {pin['path']}")
     return 0
 
 

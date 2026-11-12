@@ -135,8 +135,12 @@ green local gate is never read as a green CI:
 The `gnn` arm mirrors the required fleet check, not a new contract:
 
 - Pin file: `.github/gnn-pair.json`, schema `gnn-importer-pin/v1`.
-- Pin: `ActiveInferenceInstitute/Generalized_Notation_Notation` at `v5.0.3`,
-  revision `8f293d9ba810e6eda5c09842d9c7ed9ffa5f92c1`.
+- Pin: `ActiveInferenceInstitute/Generalized_Notation_Notation` at `v5.1.0`,
+  revision `75c834bd8519dc7b5adc4d24f16bf393cfd1ecdf`.
+- Reader: `python -m gnn.importers check --repo . --require-pointer
+  --workflow .github/workflows/gnn-interchange.yml --job interchange`, run by
+  the pinned checkout's interpreter. It is the estate's single pin reader: the
+  arm asserts no pin shape and no pointer text of its own.
 - Workflow: `.github/workflows/gnn-interchange.yml`; job key `interchange`;
   the required check name `gnn conformance (pinned)` is the `3.12` matrix leg,
   and the `3.11` leg reports as `gnn interchange (3.11)`.
@@ -145,12 +149,12 @@ The `gnn` arm mirrors the required fleet check, not a new contract:
 - The workflow runs this arm, not its own copy of the command: `geo/.venv/bin/python
   geo/scripts/gate.py gnn --gnn-repo "$PWD/gnn" --gnn-python
   "$PWD/gnn/.venv/bin/python" --output receipts/interchange.json
-  --expect-geo-revision "$GITHUB_SHA"`. The arm performs every receipt
-  assertion the job used to inline: schema `1.0`, success, both exact
-  revisions (GNN against the pin, GEO against the event's candidate), both
-  clean worktrees, complete execution custody, and each retained artifact
-  digest against its bytes. `--output` is immutable: an existing receipt is
-  refused rather than overwritten.
+  --expect-geo-revision "$GITHUB_SHA"`. The arm runs the reader, then performs
+  every receipt assertion the job used to inline: schema `1.0`, success, both
+  exact revisions (GNN against the pin the reader reports, GEO against the
+  event's candidate), both clean worktrees, complete execution custody, and
+  each retained artifact digest against its bytes. `--output` is immutable: an
+  existing receipt is refused rather than overwritten.
 - [`.github/GNN.md`](../../.github/GNN.md) records what the job parses and what
   it deliberately does not cover.
 - `.github/companion-releases.json` (schema `geo-infer-companion-releases/v1`)
@@ -167,10 +171,11 @@ uv sync --project "$GEO_INFER_GNN_REPO" --locked --python 3.11 --extra dev --ext
 uv run --frozen python scripts/gate.py gnn
 ```
 
-It verifies the pin file, the checkout revision, the receipt's success flag,
-both recorded revisions, execution custody, every retained artifact digest, and
-a clean worktree pair. `--allow-dirty` records a non-publication run instead of
-failing on a dirty tree.
+It runs the shared reader against the pin, the pointer and every `*.gnn.md`,
+then verifies the checkout revision, the receipt's success flag, both recorded
+revisions, execution custody, every retained artifact digest, and a clean
+worktree pair. `--allow-dirty` records a non-publication run instead of failing
+on a dirty tree.
 
 This repository's workflows use `astral-sh/setup-uv` directly; they do not use
 the shared `ActiveInferenceInstitute/.github/.github/actions/setup-python-uv`

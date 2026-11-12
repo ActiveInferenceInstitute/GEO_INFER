@@ -9,7 +9,10 @@ from pathlib import Path
 import subprocess
 import sys
 
-from geo_infer_test.gnn_pin_freshness import validate_gnn_pin_freshness
+from geo_infer_test.gnn_pin_freshness import (
+    read_pin_report,
+    validate_gnn_pin_freshness,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -19,6 +22,15 @@ def main(argv: list[str] | None = None) -> int:
         "--geo-root", type=Path, default=Path(__file__).resolve().parents[1]
     )
     parser.add_argument("--gnn-root", type=Path, required=True)
+    parser.add_argument(
+        "--pin-report",
+        type=Path,
+        required=True,
+        help=(
+            "JSON from `python -m gnn.importers check --repo . --json`, run in "
+            "the environment built from the pinned revision"
+        ),
+    )
     parser.add_argument("--gnn-ref", default="HEAD")
     parser.add_argument("--require-current", action="store_true")
     args = parser.parse_args(argv)
@@ -26,6 +38,7 @@ def main(argv: list[str] | None = None) -> int:
         result = validate_gnn_pin_freshness(
             args.geo_root,
             args.gnn_root,
+            pin=read_pin_report(args.pin_report),
             gnn_ref=args.gnn_ref,
             require_current=args.require_current,
         )

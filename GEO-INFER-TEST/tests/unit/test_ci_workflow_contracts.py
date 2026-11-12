@@ -357,19 +357,26 @@ def test_gnn_interchange_only_runs_on_contract_relevant_changes():
     assert ".github/workflows/gnn-interchange.yml" in paths
 
 
-def test_gnn_interchange_publishes_stable_check_name_and_records_tag():
+def test_gnn_interchange_publishes_stable_check_name_and_selects_the_pin():
     """The 3.12 matrix leg carries the stable fleet check name."""
     job = _load("gnn-interchange.yml")["jobs"]["interchange"]
     assert "matrix.python" in job["name"]
     assert "gnn conformance (pinned)" in job["name"]
     assert job["strategy"]["matrix"]["python"] == ["3.11", "3.12"]
     assert "if" not in job
+    steps = job["steps"]
     pair_reader = next(
         step["run"]
-        for step in job["steps"]
-        if step.get("name") == "Read reviewed companion revision"
+        for step in steps
+        if step.get("name") == "Select the reviewed companion revision"
     )
-    assert "pair['tag']" in pair_reader
+    # The step selects the revision the companion checkout is made at; the pin
+    # shape, the pointer and the specifications belong to the shared reader the
+    # `gnn` arm runs from that checkout's interpreter.
+    assert "pair['revision']" in pair_reader
+    assert "re.fullmatch" not in pair_reader
+    runs = "\n".join(str(step.get("run", "")) for step in steps)
+    assert "cp geo/.github/gnn-pair.json receipts/pair.json" in runs
 
 
 def test_every_workflow_definition_parses():
