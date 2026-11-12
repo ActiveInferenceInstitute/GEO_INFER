@@ -395,6 +395,9 @@ DIRECTORY_README_NOTES: dict[str, str] = {
 - `z_generate_manuscript_variables.py` and `render_manuscript_pdf.py` hydrate the
   template variables and render the PDF; regenerate artifacts rather than
   hand-editing the produced files.
+- The default render writes `docs/default-render-receipt.json` with the source
+  revision, generated-source fingerprint, PDF path, byte count, and SHA-256.
+  Commit the receipt to retain the last render; it is not publication acceptance.
 """,
     "tests": """
 ## Manuscript Test Suite
@@ -535,6 +538,8 @@ DIRECTORY_AGENT_NOTES: dict[str, str] = {
 - Keep these scripts as thin orchestration surfaces over tracked data.
 - Regenerate with `uv run python manuscript/generate_research_artifacts.py`;
   never hand-edit generated figures or the resolved manuscript.
+- Retain `docs/default-render-receipt.json` for default-lane PDF custody; do not
+  mistake its source/byte record for fresh publication verification.
 """,
     "tests": """
 ## Manuscript Test Rules
@@ -1776,7 +1781,12 @@ def render_readme(
     symbols = public_symbols(path.parent)
     title = rel.as_posix()
     content_lines = (
-        "\n".join(f"- `{item}`" for item in dirs + py_files + other_files)
+        "\n".join(
+            f"- [{item}]({item})"
+            if rel == Path("docs") and item.endswith(".md")
+            else f"- `{item}`"
+            for item in dirs + py_files + other_files
+        )
         or "- No direct tracked child entries."
     )
     symbol_lines = (

@@ -20,6 +20,7 @@
 
 ## Local Contents
 
+- `documentation-index.md`
 - `index.md`
 
 ## Validation

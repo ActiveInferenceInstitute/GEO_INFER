@@ -4,7 +4,8 @@ Docs workspace within GEO-INFER.
 
 ## Contents
 
-- `index.md`
+- [documentation-index.md](documentation-index.md)
+- [index.md](index.md)
 
 ## Public Interface
 

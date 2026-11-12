@@ -244,3 +244,11 @@ def test_workflows_do_not_use_the_shared_setup_python_uv_action():
         assert "setup-python-uv" not in workflow.read_text(encoding="utf-8"), (
             workflow.name
         )
+
+
+def test_sidecar_tasks_use_the_canonical_gate_arms():
+    sidecar = yaml.safe_load((REPO_ROOT / ".aii/config.yaml").read_text())
+    for task, arm in (("test", "test-unit"), ("lint", "lint"), ("validate", "gates")):
+        assert sidecar["tasks"][task]["cmd"] == (
+            f"uv run --frozen python scripts/gate.py {arm}"
+        )

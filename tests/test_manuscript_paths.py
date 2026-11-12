@@ -16,7 +16,11 @@ ends — the authored source, and the combined document the renderer produced.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
+import runpy
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -83,3 +87,55 @@ class TestFigurePathLiterals:
         assert not offenders, (
             f"the renderer rewrote prose to {REWRITE_RESULT!r}: {offenders}"
         )
+
+
+def test_default_render_receipt_binds_source_and_pdf_bytes(
+    repo_root: Path, git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    renderer = runpy.run_path(str(repo_root / "scripts/render_manuscript_pdf.py"))
+    record = renderer["_record_default_render"]
+    monkeypatch.setitem(record.__globals__, "REPO_ROOT", git_repo)
+    (git_repo / "docs").mkdir()
+    data = git_repo / "output/data"
+    data.mkdir(parents=True)
+    revision = subprocess.check_output(
+        ["git", "-C", str(git_repo), "rev-parse", "HEAD"], text=True
+    ).strip()
+    manifest = {
+        "source_commit": revision[:7] + "-dirty",
+        "source_hash": "measured-input-fingerprint",
+        "dirty_file_count": 2,
+    }
+    (data / "research_manifest.json").write_text(json.dumps(manifest))
+    pdf = git_repo / "output/GEO-INFER_combined.pdf"
+    pdf.write_bytes(b"%PDF-1.4\nreceipt test bytes\n")
+    record(pdf, revision)
+    receipt_path = git_repo / "docs/default-render-receipt.json"
+    receipt = json.loads(receipt_path.read_text())
+    assert receipt == {
+        "schema": "geo-infer-default-render/v1",
+        "source_revision": revision,
+        **manifest,
+        "pdf_path": "output/GEO-INFER_combined.pdf",
+        "pdf_bytes": len(pdf.read_bytes()),
+        "pdf_sha256": hashlib.sha256(pdf.read_bytes()).hexdigest(),
+    }
+    ignored = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repo_root),
+            "check-ignore",
+            "--no-index",
+            "--",
+            "docs/default-render-receipt.json",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert ignored.returncode == 1 and not ignored.stdout
+    pdf.write_bytes(pdf.read_bytes() + b"changed\n")
+    record(pdf, revision)
+    refreshed = json.loads(receipt_path.read_text())
+    assert refreshed["pdf_sha256"] != receipt["pdf_sha256"]
+    assert refreshed["pdf_bytes"] == pdf.stat().st_size

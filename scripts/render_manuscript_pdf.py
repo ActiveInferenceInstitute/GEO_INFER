@@ -22,6 +22,8 @@ tests read:
 - ``output/pdf/_combined_manuscript.tex`` / ``.log``  the final LaTeX pass
   (the box-warning test reads the log);
 - ``output/figures/`` and ``output/manuscript/``  hydrated by the generator.
+- ``docs/default-render-receipt.json`` the Git-visible default-lane PDF custody
+  record (source revision and fingerprint, PDF path, byte count, and SHA-256).
 
 Fail-closed contract: every external tool must be present, every published
 section must exist exactly once and in the documented order, LaTeX errors
@@ -45,6 +47,7 @@ tree already holds, and never empties one.
 from __future__ import annotations
 
 import json
+import hashlib
 import argparse
 import re
 import shutil
@@ -384,6 +387,28 @@ def _publish(pdf_path: Path) -> Path:
     return destination
 
 
+def _record_default_render(published: Path, source_revision: str) -> None:
+    """Retain PDF custody outside ignored output, not publication acceptance."""
+    manifest = json.loads(
+        (REPO_ROOT / "output/data/research_manifest.json").read_text(encoding="utf-8")
+    )
+    with published.open("rb") as handle:
+        pdf_sha256 = hashlib.file_digest(handle, "sha256").hexdigest()
+    receipt = {
+        "schema": "geo-infer-default-render/v1",
+        "source_revision": source_revision,
+        "source_commit": manifest["source_commit"],
+        "source_hash": manifest["source_hash"],
+        "dirty_file_count": manifest["dirty_file_count"],
+        "pdf_path": published.relative_to(REPO_ROOT).as_posix(),
+        "pdf_bytes": published.stat().st_size,
+        "pdf_sha256": pdf_sha256,
+    }
+    (REPO_ROOT / "docs/default-render-receipt.json").write_text(
+        json.dumps(receipt, indent=2) + "\n", encoding="utf-8"
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -430,11 +455,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         )
         return 0
+    source_revision = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, text=True
+    ).strip()
     header = _preamble_header()
     metadata = _metadata_file()
     _run_pandoc(header, metadata)
     pdf = _run_xelatex()
     published = _publish(pdf)
+    _record_default_render(published, source_revision)
     print(
         f"rendered {published.relative_to(REPO_ROOT)} from "
         f"{len(SECTION_ORDER)} sections ({combined.relative_to(REPO_ROOT)})"

@@ -41,6 +41,8 @@ uv run python GEO-INFER-TEST/validate_repo_contracts.py --skip-import-smoke
 - Keep these scripts as thin orchestration surfaces over tracked data.
 - Regenerate with `uv run python manuscript/generate_research_artifacts.py`;
   never hand-edit generated figures or the resolved manuscript.
+- Retain `docs/default-render-receipt.json` for default-lane PDF custody; do not
+  mistake its source/byte record for fresh publication verification.
 
 ## Integration Notes
 

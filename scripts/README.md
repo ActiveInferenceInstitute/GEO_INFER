@@ -41,6 +41,9 @@ uv run python GEO-INFER-TEST/validate_repo_contracts.py --skip-import-smoke
 - `z_generate_manuscript_variables.py` and `render_manuscript_pdf.py` hydrate the
   template variables and render the PDF; regenerate artifacts rather than
   hand-editing the produced files.
+- The default render writes `docs/default-render-receipt.json` with the source
+  revision, generated-source fingerprint, PDF path, byte count, and SHA-256.
+  Commit the receipt to retain the last render; it is not publication acceptance.
 
 ## Documentation Notes
 
