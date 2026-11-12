@@ -23,6 +23,17 @@ MAX_RELEASE_TAGS = 200
 MAX_GIT_BYTES = 2 * 1024 * 1024
 GNN_REPOSITORY = "ActiveInferenceInstitute/Generalized_Notation_Notation"
 RELEASE_TAG = re.compile(r"v(\d+)\.(\d+)\.(\d+)$")
+#: Canonical GNN importer pin schema. A pin that declares it also records the
+#: date the pin was recorded; the two fields are accepted only together and
+#: never replace the identity keys this review requires.
+GNN_PIN_SCHEMA = "gnn-importer-pin/v1"
+PIN_KEY_SETS = (
+    {"repository", "revision"},
+    {"repository", "revision", "tag"},
+    {"repository", "revision", "schema", "recorded"},
+    {"repository", "revision", "tag", "schema", "recorded"},
+)
+RECORDED_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 
 def _require(condition: bool, message: str) -> None:
@@ -123,11 +134,7 @@ def validate_gnn_pin_freshness(
     gnn = gnn_root.resolve(strict=True)
     _require(gnn.is_dir(), "GNN checkout is absent")
     pin_data = _read_json(geo, PIN_PATH)
-    _require(
-        set(pin_data)
-        in ({"repository", "revision"}, {"repository", "revision", "tag"}),
-        "invalid pin keys",
-    )
+    _require(set(pin_data) in PIN_KEY_SETS, "invalid pin keys")
     _require(pin_data["repository"] == GNN_REPOSITORY, "unexpected pin repository")
     _require(
         isinstance(pin_data["revision"], str)
@@ -139,6 +146,13 @@ def validate_gnn_pin_freshness(
             isinstance(pin_data["tag"], str)
             and re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", pin_data["tag"]) is not None,
             "invalid pin tag",
+        )
+    if "schema" in pin_data:
+        _require(pin_data["schema"] == GNN_PIN_SCHEMA, "invalid pin schema")
+        _require(
+            isinstance(pin_data["recorded"], str)
+            and RECORDED_DATE.fullmatch(pin_data["recorded"]) is not None,
+            "invalid pin recorded date",
         )
     manifest = _read_json(geo, MANIFEST_PATH)
     _require(

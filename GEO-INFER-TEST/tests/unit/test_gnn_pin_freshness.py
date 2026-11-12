@@ -90,6 +90,40 @@ class GnnPinFreshnessTests(unittest.TestCase):
         self.assertTrue(result["newest_release"]["equals_pin"])
         self.assertTrue(result["claims"]["release_currency"])
 
+    def test_canonical_schema_fields_are_accepted(self):
+        self.write(
+            self.geo,
+            ".github/gnn-pair.json",
+            json.dumps(
+                {
+                    "schema": "gnn-importer-pin/v1",
+                    "repository": GNN_REPOSITORY,
+                    "revision": self.second,
+                    "tag": "v1.1.0",
+                    "recorded": "2026-11-12",
+                }
+            ),
+        )
+        result = validate_gnn_pin_freshness(self.geo, self.gnn, require_current=True)
+        self.assertEqual(result["status"], "passed_pin_freshness_review")
+        self.assertEqual(result["pin"]["tag"], "v1.1.0")
+
+    def test_malformed_schema_fields_are_refused(self):
+        for override, message in (
+            ({"schema": "geo-infer-gnn-pin/v1"}, "invalid pin schema"),
+            ({"recorded": "12-11-2026"}, "invalid pin recorded date"),
+        ):
+            data = {
+                "schema": "gnn-importer-pin/v1",
+                "repository": GNN_REPOSITORY,
+                "revision": self.second,
+                "recorded": "2026-11-12",
+            }
+            data.update(override)
+            self.write(self.geo, ".github/gnn-pair.json", json.dumps(data))
+            with self.assertRaisesRegex(ValueError, message):
+                validate_gnn_pin_freshness(self.geo, self.gnn)
+
     def test_optional_release_tag_is_validated_and_recorded(self):
         self.pin(self.second, tag="v1.1.0")
         result = validate_gnn_pin_freshness(self.geo, self.gnn)
