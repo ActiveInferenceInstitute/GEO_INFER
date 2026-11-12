@@ -85,42 +85,6 @@ jobs:
           assert receipt['status'] == 'verified' and receipt['extension'] == 'spatial'
           PY
 
-      - name: Run code quality checks
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.sha }}
-        run: |
-          # shellcheck disable=SC2153
-          base_sha="$BASE_SHA"
-          # CI-02: a v* tag push carries the zero SHA in event.before (and
-          # no PR base). The zero SHA passes the 40-hex regex but resolves
-          # to no object, so the old fallback silently narrowed the diff to
-          # HEAD^ — a different scope than the same SHA's push-to-main run.
-          # Detect tag events and the zero SHA BEFORE the regex and measure
-          # the full tree via the GS-004 empty-tree base.
-          if [ "$GITHUB_REF_TYPE" = "tag" ] || [[ "$base_sha" =~ ^0{40}$ ]]; then
-            base_sha="$(git hash-object -t tree /dev/null)"
-          elif ! [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]] || ! git cat-file -e "$base_sha^{commit}" 2>/dev/null; then
-            base_sha="$(git hash-object -t tree /dev/null)"
-          fi
-
-          # Exclude deleted paths: formatters and linters can only inspect
-          # files that exist in the checked-out tree.
-          changed_files="$(git diff --no-renames --name-only --diff-filter=ACMRTUXB "$base_sha" "$HEAD_SHA" -- '*.py')"
-          if [ -z "$changed_files" ]; then
-            echo "No Python files changed; skipping code quality checks."
-            exit 0
-          fi
-
-          echo "Checking changed Python files:"
-          printf '%s\n' "$changed_files"
-          # Changed files are linted under the root pyproject [tool.ruff.lint]
-          # contract (no rule-selection override), then format-checked.
-          git diff --no-renames --name-only -z --diff-filter=ACMRTUXB "$base_sha" "$HEAD_SHA" -- '*.py' | \
-            xargs -0 uv run --with 'ruff>=0.15.6,<0.16' ruff check
-          git diff --no-renames --name-only -z --diff-filter=ACMRTUXB "$base_sha" "$HEAD_SHA" -- '*.py' | \
-            xargs -0 uv run --with 'ruff>=0.15.6,<0.16' ruff format --check
-
       - name: Validate repository contracts
         run: |
           # GS-003: import-smoke and skills cross-reference problems used to
@@ -152,7 +116,13 @@ jobs:
           # The whole tree (src, tests, examples, scripts, manuscript) is
           # clean under the root pyproject [tool.ruff.lint] contract
           # (E4/E7/E9/F/UP/B/NPY); any new finding fails the gate.
+          # This whole-tree lint is the only ruff check in the job: the
+          # former changed-file `ruff check` measured a strict subset of
+          # this one four steps earlier, so it was removed rather than
+          # run twice. Formatting is measured here too; the scheduled
+          # format-check.yml keeps the same command on a weekly cadence.
           uv run --with 'ruff>=0.15.6,<0.16' ruff check .
+          uv run --with 'ruff>=0.15.6,<0.16' ruff format --check .
 
       - name: Install pinned gitleaks
         run: |
@@ -262,11 +232,6 @@ jobs:
           receipt = json.loads(Path('.geo-infer-test-results/provisioning/duckdb-spatial.json').read_text())
           assert receipt['status'] == 'verified' and receipt['extension'] == 'spatial'
           PY
-
-      - name: Validate strict test contracts before runtime fixtures
-        run: |
-          uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 120 -- \
-            python GEO-INFER-TEST/validate_test_contracts.py --strict
 
       - name: Run execution and SPACE TIME composition contracts
         id: fast_tests

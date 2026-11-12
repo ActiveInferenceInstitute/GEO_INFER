@@ -6,6 +6,7 @@ Scripts workspace within GEO-INFER.
 
 - `_manuscript_fig_common.py`
 - `_render_pdf_override.py`
+- `gate.py`
 - `manuscript_fig_framework_data_flow.py`
 - `manuscript_fig_module_theme_map.py`
 - `manuscript_fig_verification_landscape.py`
@@ -14,6 +15,8 @@ Scripts workspace within GEO-INFER.
 
 ## Public Interface
 
+- `gate.py:Arm` (class)
+- `gate.py:main` (function)
 - `manuscript_fig_framework_data_flow.py:main` (function)
 - `manuscript_fig_module_theme_map.py:main` (function)
 - `manuscript_fig_verification_landscape.py:main` (function)

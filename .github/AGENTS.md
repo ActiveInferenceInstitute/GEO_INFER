@@ -23,6 +23,7 @@
 - `ISSUE_TEMPLATE/`
 - `actions/`
 - `workflows/`
+- `GNN.md`
 - `PULL_REQUEST_TEMPLATE.md`
 - `companion-releases.json`
 - `dependabot.yml`

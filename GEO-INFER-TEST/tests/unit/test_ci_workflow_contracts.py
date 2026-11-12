@@ -147,9 +147,10 @@ def test_validate_job_runs_gates_once_outside_test_matrix():
         "run_model_audit.py",
         "gitleaks detect",
         "check_coverage_floor.py",
-        # CI-04: the ruff surfaces (changed-file check and format under the
-        # root lint contract; the repository-wide check is pinned below).
-        "xargs -0 uv run --with 'ruff>=0.15.6,<0.16' ruff check",
+        # CI-04: the ruff surfaces (whole-tree check and format under the
+        # root lint contract) are pinned on the hygiene step below; a
+        # changed-file `ruff check` would measure a strict subset of the
+        # same contract twice in one job.
         "ruff format --check",
         # CI-04: the validator commands the marker list did not pin.
         "validate_packaging.py --strict",
@@ -167,6 +168,9 @@ def test_validate_job_runs_gates_once_outside_test_matrix():
         if step.get("name") == "Run source runtime hygiene"
     )
     assert "uv run --with 'ruff>=0.15.6,<0.16' ruff check .\n" in hygiene
+    assert "uv run --with 'ruff>=0.15.6,<0.16' ruff format --check .\n" in hygiene
+    assert gate_text.count("ruff check .") == 1
+    assert "xargs -0" not in gate_text
 
     test_text = _dump(jobs["test"])
     for marker in (
@@ -183,18 +187,21 @@ def test_coverage_floor_falls_back_to_empty_tree():
     assert "git hash-object -t tree /dev/null" in gate_text
 
 
-def test_tag_push_diff_gates_resolve_full_tree_not_head_parent():
-    """CI-02: a v* tag push carries a zero event.before and no PR base; both
-    diff-scope gates must branch to the GS-004 empty-tree (full-tree)
-    measurement instead of silently degrading to HEAD^, whose scope covers
-    only the tagged commit."""
+def test_coverage_floor_diff_gate_resolves_full_tree_not_head_parent():
+    """CI-02: a v* tag push carries a zero event.before and no PR base; the
+    remaining diff-scope gate (module coverage floors) must branch to the
+    GS-004 empty-tree (full-tree) measurement instead of silently degrading
+    to HEAD^, whose scope covers only the tagged commit. The former
+    changed-file lint gate was a strict subset of the whole-tree hygiene
+    step, so it no longer carries a diff base."""
     steps = _load("ci.yml")["jobs"]["validate"]["steps"]
     gate_scripts = [
         str(step["run"])
         for step in steps
         if isinstance(step, dict) and 'base_sha="$BASE_SHA"' in str(step.get("run", ""))
     ]
-    assert len(gate_scripts) == 2
+    assert len(gate_scripts) == 1
+    assert "check_coverage_floor.py" in gate_scripts[0]
     tag_branch = (
         'if [ "$GITHUB_REF_TYPE" = "tag" ] || [[ "$base_sha" =~ ^0{40}$ ]]; then'
     )
