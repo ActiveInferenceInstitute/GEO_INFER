@@ -365,7 +365,8 @@ VERIFICATION_COMMANDS: tuple[tuple[str, str], ...] = (
     ),
     (
         "repository-contracts",
-        "uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language",
+        "uv run python GEO-INFER-TEST/validate_repo_contracts.py "
+        "--strict-source-language --strict-import-smoke",
     ),
     (
         "documentation",
@@ -373,7 +374,7 @@ VERIFICATION_COMMANDS: tuple[tuple[str, str], ...] = (
     ),
     (
         "skills",
-        "uv run python GEO-INFER-TEST/validate_skills.py --check-xrefs",
+        "uv run python GEO-INFER-TEST/validate_skills.py --check-xrefs --warnings-fatal",
     ),
     (
         "test-contracts",
