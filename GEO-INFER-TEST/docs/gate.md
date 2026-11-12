@@ -55,7 +55,42 @@ the `## Canonical gate` block of `GEO-INFER-TEST/TESTING.md`, which listed the
 same validators unwrapped, ran `validate_skills.py --check-xrefs` twice, and
 had no fast or GNN arm at all. "After" is the arm, CI-wrapped, in one process.
 
-<!-- MEASUREMENTS -->
+| Arm | Before | After | What the difference is |
+| --- | ---: | ---: | --- |
+| `lint` | 1.02 s | 0.19 s | CI paid a whole-tree `ruff check .` (0.71 s) and a diff-scoped `ruff check`/`ruff format --check` (0.31 s); the arm pays one whole-tree check plus a whole-tree format check. |
+| `docs` | 4.65 s, failing | 8.08 s, green | The two validators now run once, CI-wrapped (`record_validation.py` writes receipts), and the stale `.github/AGENTS.md` signpost they reported is fixed. The extra seconds are the receipt wrapper. |
+| `fast` | 177.4 s | 155.5 s | The removed duplicate `validate_test_contracts.py --strict` was 1.90 s; the eight-file selection that dominates the arm measured 175.5 s before and 155.5 s after, so per-run variance (155–176 s observed) is larger than the dedupe saving. |
+| `gates` | 341.5 s for the six validators alone | bounded, see below | The arm runs the same commands, so there is no speed claim to make. |
+| `gnn` | no local arm | 8.2 s | A new arm, not a faster one: it runs the pinned conformance validator against a GNN checkout at `v5.0.3`. |
+| `manuscript` | no local arm | 147.1 s | Convergence check 1.1 s, PDF render 15.7 s, `ROOT manuscript-render` profile 6.2 s, `ROOT manuscript` profile 124.1 s. |
+| `tests` | no local arm | not measured | The full matrix is a CI lane (45 modules x six categories); it was not run here. |
+
+Bounded runs are recorded with the exact command, not as a green arm. The
+`gates` arm was stopped at `timeout 600` inside its first validator while other
+work on the host held every core, so it is not reported as green. Each of its
+commands was then run alone under `timeout 300` (600 for the model gates):
+
+| Command | Wall time | Result |
+| --- | ---: | --- |
+| `python -m compileall GEO-INFER-*/src GEO-INFER-*/examples` | 0.2 s | green |
+| `validate_repo_contracts.py --strict-source-language --strict-import-smoke` | 76.2 s | green |
+| `validate_packaging.py --strict` | 5.9 s | green |
+| `validate_logging_hygiene.py` | 3.8 s | green |
+| `validate_doc_examples.py` | 218.2 s | green |
+| `validate_skills.py --check-xrefs --warnings-fatal` | 0.1 s | green |
+| `validate_active_inference_contract.py` | 11.6 s | green |
+| `validate_test_contracts.py --strict` | 5.1 s | green |
+| `validate_model_contracts.py --strict --seed 42` | 4.9 s | green |
+| `run_model_audit.py --seed 42 --reproducible` | 3.8 s | green |
+| `gitleaks detect --source . --config .gitleaks.toml --redact --verbose` | > 600 s | not completed |
+
+The secret scan does not finish inside a ten-minute local bound on this host;
+CI allows the same command 1200 s. Two other lanes were not completed locally
+for the same reason: the `tests` matrix and the `manuscript` arm's `--verify
+--rerun-verification` group sweep. The four render legs (convergence, render,
+`ROOT manuscript-render`, `ROOT manuscript`) were completed, and the render
+produced `output/pdf/GEO-INFER_combined.pdf` from the 11 published sections.
+
 
 ## What an arm does not cover
 
