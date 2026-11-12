@@ -132,51 +132,50 @@ def test_release_attaches_wheels_to_the_release_object_after_verification():
     assert '"$attached" -lt "$built"' in script
 
 
-def test_validate_job_runs_gates_once_outside_test_matrix():
-    """GS-005: interpreter-independent gates live in one non-matrix validate job."""
+def test_validate_job_delegates_gates_to_the_shared_arms():
+    """GS-005: gates live in one non-matrix job, and that job runs arms.
+
+    The command text lives in scripts/gate.py only; a workflow that repeats a
+    validator, lint or secret-scan command is the duplication that
+    test_gate_contracts.py forbids.
+    """
     jobs = _load("ci.yml")["jobs"]
     assert "validate" in jobs
     assert "strategy" not in jobs["validate"], "gate job must not be a matrix leg"
     gate_text = _dump(jobs["validate"])
-    for marker in (
+    for call in (
+        "scripts/gate.py docs",
+        "scripts/gate.py gates",
+        "scripts/gate.py lint",
+        "scripts/gate.py manuscript-artifacts manuscript-convergence",
+    ):
+        assert call in gate_text, f"missing arm call: {call}"
+    for inline in (
         "validate_repo_contracts.py",
-        "--strict-source-language --strict-import-smoke",
-        "validate_skills.py --check-xrefs --warnings-fatal",
+        "validate_packaging.py",
+        "validate_logging_hygiene.py",
+        "validate_documentation.py",
+        "validate_doc_examples.py",
+        "validate_skills.py",
         "validate_test_contracts.py",
         "validate_model_contracts.py",
         "run_model_audit.py",
         "gitleaks detect",
-        "check_coverage_floor.py",
-        # CI-04: the ruff surfaces (whole-tree check and format under the
-        # root lint contract) are pinned on the hygiene step below; a
-        # changed-file `ruff check` would measure a strict subset of the
-        # same contract twice in one job.
-        "ruff format --check",
-        # CI-04: the validator commands the marker list did not pin.
-        "validate_packaging.py --strict",
-        "validate_logging_hygiene.py",
-        "validate_documentation.py --strict",
-        "rewrite_readme_agents.py --check",
+        "ruff check",
+        "ruff format",
+        "generate_research_artifacts.py",
     ):
-        assert marker in gate_text, f"missing gate marker: {marker}"
-    # The root pyproject [tool.ruff.lint] table is the only lint contract; a
-    # --select override would silently narrow it.
-    assert "--select" not in gate_text
-    hygiene = next(
-        step["run"]
-        for step in jobs["validate"]["steps"]
-        if step.get("name") == "Run source runtime hygiene"
-    )
-    assert "uv run --with 'ruff>=0.15.6,<0.16' ruff check .\n" in hygiene
-    assert "uv run --with 'ruff>=0.15.6,<0.16' ruff format --check .\n" in hygiene
-    assert gate_text.count("ruff check .") == 1
-    assert "xargs -0" not in gate_text
+        assert inline not in gate_text, f"gate command copied into ci.yml: {inline}"
+    # The coverage floor needs this event's base commit; it is CI-only.
+    assert "check_coverage_floor.py" in gate_text
 
     test_text = _dump(jobs["test"])
+    assert "scripts/gate.py test-${{ matrix.category }}" in test_text
     for marker in (
         "validate_repo_contracts.py",
         "gitleaks",
         "check_coverage_floor.py",
+        "run_unified_tests.py",
     ):
         assert marker not in test_text, f"gate duplicated in test legs: {marker}"
 
@@ -229,6 +228,9 @@ def test_each_category_run_is_immediately_followed_by_its_own_retention():
         if not (name.startswith("Run ") and name.endswith(" tests")):
             continue
         category = name[len("Run ") : -len(" tests")]
+        assert "scripts/gate.py test-${{ matrix.category }}" in str(
+            steps[index]["run"]
+        ), f"{name} does not run the shared arm"
         retain = steps[index + 1].get("name", "")
         assert retain == f"Retain {category} test reports", (
             f"{name} is not immediately followed by its own retention step"
@@ -265,27 +267,20 @@ def test_build_smoke_builds_wheels_in_pr_ci():
 
 
 def test_documentation_examples_have_a_persistent_ci_gate():
+    """The doc-example validator runs in the gate job through the gates arm."""
     validate = _dump(_load("ci.yml")["jobs"]["validate"])
-    assert (
-        "record_validation.py -- python GEO-INFER-TEST/validate_doc_examples.py"
-        in validate
-    )
+    assert "scripts/gate.py gates" in validate
 
 
 def test_manuscript_jobs_use_registered_root_profiles_and_receipts():
+    """The render arm owns the render and both registered ROOT profiles."""
     steps = _load("ci.yml")["jobs"]["manuscript"]["steps"]
-    source = next(
-        step["run"]
-        for step in steps
-        if step.get("name") == "Run root manuscript regression tests"
-    )
     render = next(
         step["run"]
         for step in steps
-        if step.get("name") == "Run render-dependent root tests"
+        if step.get("name") == "Render the manuscript and run root profiles"
     )
-    assert "--module ROOT --category manuscript " in source
-    assert "--module ROOT --category manuscript-render " in render
+    assert "scripts/gate.py manuscript-render" in render
     upload = next(
         step
         for step in steps
@@ -647,7 +642,7 @@ def test_fast_and_validation_jobs_retain_full_attempt_artifacts():
         assert uploads[0]["with"]["path"] == ".geo-infer-test-results/"
     assert "needs" not in jobs["fast-contracts"]
     fast = _dump(jobs["fast-contracts"])
-    assert "--paths" in fast and "test_space_time_composition_contract.py" in fast
+    assert "scripts/gate.py fast" in fast
     assert "./.github/actions/sync-cpu-workspace" in fast
 
 
