@@ -254,10 +254,34 @@ def _gnn_interchange(args: argparse.Namespace) -> int:
     return 0
 
 
+def _check_gitleaks() -> str | None:
+    """Return a failure reason when the pinned secret scanner is unavailable."""
+    try:
+        probe = subprocess.run(
+            ["gitleaks", "version"], capture_output=True, text=True, timeout=60
+        )
+    except (OSError, subprocess.SubprocessError):
+        return (
+            f"gitleaks is not on PATH; CI installs {GITLEAKS_VERSION} "
+            "from a pinned release tarball"
+        )
+    version = (probe.stdout or probe.stderr).strip()
+    if version != GITLEAKS_VERSION:
+        return (
+            f"gitleaks {version or 'reports no version'} != required {GITLEAKS_VERSION}"
+        )
+    return None
+
+
 def _run_arm(name: str, args: argparse.Namespace) -> int:
     arm = ARMS[name]
     if name == "gnn":
         return _gnn_interchange(args)
+    if name in ("gates", "all"):
+        reason = _check_gitleaks()
+        if reason:
+            print(f"gate {name}: {reason}", file=sys.stderr)
+            return 2
     environment = _shell_env()
     wall = 0.0
     for index, command in enumerate(arm.commands, start=1):
