@@ -60,20 +60,21 @@ jobs:
           path: geo
           ref: ${{ github.sha }}
           persist-credentials: false
-      - name: Read reviewed companion revision
+      - name: Select the reviewed companion revision
+        # This step only reads the revision the GNN checkout is made at. The
+        # pin, `.github/GNN.md` and every `*.gnn.md` are validated by the shared
+        # reader (`python -m gnn.importers`), which the `gnn` arm runs from the
+        # pinned checkout's interpreter once that checkout exists, so no pin
+        # shape is asserted twice.
         id: pair
         working-directory: geo
         run: |
           python - <<'PY'
-          import json, os, re
+          import json, os
           from pathlib import Path
           pair = json.loads(Path('.github/gnn-pair.json').read_text())
-          assert pair['repository'] == 'ActiveInferenceInstitute/Generalized_Notation_Notation'
-          assert re.fullmatch('[0-9a-f]{40}', pair['revision'])
-          assert re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+', pair['tag'])
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('revision=' + pair['revision'] + '\n')
-              output.write('tag=' + pair['tag'] + '\n')
           PY
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

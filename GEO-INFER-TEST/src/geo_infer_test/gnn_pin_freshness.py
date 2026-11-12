@@ -1,14 +1,19 @@
 """Bounded lineage and freshness review for the reviewed GNN interchange pin.
 
-The published companion-identity gate checks that GEO's interchange pin equals
-the reviewed declaration. This separate check answers the next question with
-local Git reads only: which release the pin descends from, which release tags
-point at it, and how far the GNN checkout has moved past it. It never fetches,
-executes scientific code or treats tag names as authenticity.
+The pin itself is read by ``gnn.importers`` — the one reader the GNN–FEP
+contract names — in the environment built from the pinned revision. This review
+consumes that reader's report as an input and never parses
+``.github/gnn-pair.json`` itself, so GEO_INFER carries no second pin reader and
+no second pin shape. What it adds is what the reader does not answer, with local
+Git reads only: which release the pin descends from, which release tags point at
+it, whether it retains the published companion revision, and how far the GNN
+checkout has moved past it. It never fetches, executes scientific code or treats
+tag names as authenticity.
 """
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 import json
 import os
 from pathlib import Path
@@ -16,24 +21,11 @@ import re
 import subprocess
 from typing import Any
 
-PIN_PATH = ".github/gnn-pair.json"
 MANIFEST_PATH = ".github/companion-releases.json"
 MAX_INPUT_BYTES = 128 * 1024
 MAX_RELEASE_TAGS = 200
 MAX_GIT_BYTES = 2 * 1024 * 1024
-GNN_REPOSITORY = "ActiveInferenceInstitute/Generalized_Notation_Notation"
 RELEASE_TAG = re.compile(r"v(\d+)\.(\d+)\.(\d+)$")
-#: Canonical GNN importer pin schema. A pin that declares it also records the
-#: date the pin was recorded; the two fields are accepted only together and
-#: never replace the identity keys this review requires.
-GNN_PIN_SCHEMA = "gnn-importer-pin/v1"
-PIN_KEY_SETS = (
-    {"repository", "revision"},
-    {"repository", "revision", "tag"},
-    {"repository", "revision", "schema", "recorded"},
-    {"repository", "revision", "tag", "schema", "recorded"},
-)
-RECORDED_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 
 def _require(condition: bool, message: str) -> None:
@@ -48,6 +40,37 @@ def _read_json(root: Path, relative: str) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
     _require(isinstance(value, dict), f"input must be an object: {relative}")
     return value
+
+
+def read_pin_report(path: Path) -> dict[str, Any]:
+    """Return the ``pin`` record of a ``gnn.importers check --json`` report.
+
+    The report is produced in the environment built from the pinned revision::
+
+        python -m gnn.importers check --repo . --json
+
+    This review then works from the reader's normalized ``commit``, ``tag`` and
+    ``repository`` instead of reading ``.github/gnn-pair.json`` itself, so there
+    is one pin reader and one pin shape in the estate. Shape findings such as
+    ``pin-commit-shape`` or ``pin-schema-unversioned`` are the reader's.
+    """
+    try:
+        data = path.read_bytes()
+    except OSError as exc:
+        raise ValueError(f"pin report is unreadable: {path.name} ({exc})") from exc
+    _require(len(data) <= MAX_INPUT_BYTES, "oversized pin report")
+    try:
+        document = json.loads(data.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"pin report is not JSON: {path.name} ({exc})") from exc
+    _require(isinstance(document, dict), "pin report must be an object")
+    pin = document.get("pin")
+    _require(isinstance(pin, dict), "pin report records no pin")
+    _require(
+        isinstance(pin.get("commit"), str) and pin["commit"].strip() != "",
+        "pin report records no commit",
+    )
+    return pin
 
 
 def _git(root: Path, *arguments: str) -> str:
@@ -119,41 +142,25 @@ def validate_gnn_pin_freshness(
     geo_root: Path,
     gnn_root: Path,
     *,
+    pin: Mapping[str, Any],
     gnn_ref: str = "HEAD",
     require_current: bool = False,
 ) -> dict[str, Any]:
     """Report the reviewed pin's release lineage; never fetch or execute models.
 
-    ``.github/gnn-pair.json`` is the canonical home of the current pin. The pin
-    must exist in the GNN checkout and retain the published companion revision
-    in the release manifest as an ancestor. Release currency is reported, and
-    only ``require_current`` turns a pin behind the newest release tag into a
-    refusal.
+    ``pin`` is the ``pin`` record of a ``gnn.importers check --json`` report. The
+    reader has already normalized the pin's keys, reported its schema, tag and
+    repository findings and refused one that names a fork, so this review repeats
+    none of that. What is left is the local Git question: the pin must exist in
+    the GNN checkout and retain the published companion revision in the release
+    manifest as an ancestor. Release currency is reported, and only
+    ``require_current`` turns a pin behind the newest release tag into a refusal.
     """
     geo = geo_root.resolve(strict=True)
     gnn = gnn_root.resolve(strict=True)
     _require(gnn.is_dir(), "GNN checkout is absent")
-    pin_data = _read_json(geo, PIN_PATH)
-    _require(set(pin_data) in PIN_KEY_SETS, "invalid pin keys")
-    _require(pin_data["repository"] == GNN_REPOSITORY, "unexpected pin repository")
-    _require(
-        isinstance(pin_data["revision"], str)
-        and re.fullmatch(r"[0-9a-f]{40}", pin_data["revision"]) is not None,
-        "invalid pin revision",
-    )
-    if "tag" in pin_data:
-        _require(
-            isinstance(pin_data["tag"], str)
-            and re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", pin_data["tag"]) is not None,
-            "invalid pin tag",
-        )
-    if "schema" in pin_data:
-        _require(pin_data["schema"] == GNN_PIN_SCHEMA, "invalid pin schema")
-        _require(
-            isinstance(pin_data["recorded"], str)
-            and RECORDED_DATE.fullmatch(pin_data["recorded"]) is not None,
-            "invalid pin recorded date",
-        )
+    revision = str(pin.get("commit", "")).strip()
+    _require(bool(revision), "pin report records no commit")
     manifest = _read_json(geo, MANIFEST_PATH)
     _require(
         manifest.get("schema") == "geo-infer-companion-releases/v1",
@@ -166,9 +173,9 @@ def validate_gnn_pin_freshness(
         "invalid published companion revision",
     )
 
-    pin_commit = _commit(gnn, pin_data["revision"])
+    pin_commit = _commit(gnn, revision)
     _require(
-        pin_commit == pin_data["revision"],
+        pin_commit == revision,
         "pinned revision is absent from the checkout",
     )
     released_commit = _commit(gnn, released)
@@ -213,9 +220,9 @@ def validate_gnn_pin_freshness(
         "schema": "geo-infer-gnn-pin-freshness/v1",
         "status": "passed_pin_freshness_review",
         "pin": {
-            "repository": pin_data["repository"],
+            "repository": pin.get("repository"),
             "revision": pin_commit,
-            "tag": pin_data.get("tag"),
+            "tag": pin.get("tag"),
             "tags_at_pin": tags_at_pin,
             "release_tags_at_pin": [
                 tag for tag in tags_at_pin if RELEASE_TAG.fullmatch(tag)

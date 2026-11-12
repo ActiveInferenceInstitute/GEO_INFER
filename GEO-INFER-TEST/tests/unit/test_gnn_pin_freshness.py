@@ -8,7 +8,12 @@ import sys
 import tempfile
 import unittest
 
-from geo_infer_test.gnn_pin_freshness import GNN_REPOSITORY, validate_gnn_pin_freshness
+from geo_infer_test.gnn_pin_freshness import (
+    read_pin_report,
+    validate_gnn_pin_freshness,
+)
+
+REPOSITORY = "ActiveInferenceInstitute/Generalized_Notation_Notation"
 
 
 def git(root, *arguments):
@@ -19,7 +24,7 @@ def git(root, *arguments):
 
 
 class GnnPinFreshnessTests(unittest.TestCase):
-    """Exercise pin existence, lineage, release tags and currency escalation."""
+    """Exercise lineage, release tags and currency escalation."""
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="geo-gnn-pin-freshness-")
@@ -59,7 +64,6 @@ class GnnPinFreshnessTests(unittest.TestCase):
         self.write(
             self.geo, ".github/companion-releases.json", json.dumps(self.manifest)
         )
-        self.pin(self.second)
 
     def write(self, root, relative, text):
         """Write one fixture-owned path."""
@@ -68,11 +72,21 @@ class GnnPinFreshnessTests(unittest.TestCase):
         path.write_text(text, encoding="utf-8")
 
     def pin(self, revision, tag=None):
-        """Write a real pin, never a synthetic validation result."""
-        data = {"repository": GNN_REPOSITORY, "revision": revision}
-        if tag is not None:
-            data["tag"] = tag
-        self.write(self.geo, ".github/gnn-pair.json", json.dumps(data))
+        """Return the ``pin`` record a ``gnn.importers check --json`` report holds.
+
+        The review never reads ``.github/gnn-pair.json`` itself, so the fixture
+        supplies the reader's normalized record instead of a second pin shape.
+        """
+        return {
+            "commit": revision,
+            "repository": REPOSITORY,
+            "party": None,
+            "path": ".github/gnn-pair.json",
+            "schema": "gnn-importer-pin/v1",
+            "recorded": "2026-11-12",
+            "spec_files": [],
+            "tag": tag,
+        }
 
     def commit(self, root, message):
         """Commit all fixture changes and return their actual Git identity."""
@@ -81,7 +95,9 @@ class GnnPinFreshnessTests(unittest.TestCase):
         return git(root, "rev-parse", "HEAD")
 
     def test_released_pin_reports_lineage_and_release_tag(self):
-        result = validate_gnn_pin_freshness(self.geo, self.gnn, require_current=True)
+        result = validate_gnn_pin_freshness(
+            self.geo, self.gnn, pin=self.pin(self.second), require_current=True
+        )
         self.assertEqual(result["status"], "passed_pin_freshness_review")
         self.assertEqual(result["pin"]["revision"], self.second)
         self.assertEqual(result["pin"]["release_tags_at_pin"], ["v1.1.0"])
@@ -90,116 +106,64 @@ class GnnPinFreshnessTests(unittest.TestCase):
         self.assertTrue(result["newest_release"]["equals_pin"])
         self.assertTrue(result["claims"]["release_currency"])
 
-    def test_canonical_schema_fields_are_accepted(self):
+    def test_pin_record_comes_from_the_shared_reader_report(self):
+        """A stale pin file cannot change the answer: only the report is read."""
         self.write(
             self.geo,
             ".github/gnn-pair.json",
-            json.dumps(
-                {
-                    "schema": "gnn-importer-pin/v1",
-                    "repository": GNN_REPOSITORY,
-                    "revision": self.second,
-                    "tag": "v1.1.0",
-                    "recorded": "2026-11-12",
-                }
-            ),
+            json.dumps({"repository": "example/other", "revision": self.released}),
         )
-        result = validate_gnn_pin_freshness(self.geo, self.gnn, require_current=True)
-        self.assertEqual(result["status"], "passed_pin_freshness_review")
+        result = validate_gnn_pin_freshness(
+            self.geo, self.gnn, pin=self.pin(self.second, tag="v1.1.0")
+        )
+        self.assertEqual(result["pin"]["revision"], self.second)
         self.assertEqual(result["pin"]["tag"], "v1.1.0")
-
-    def test_malformed_schema_fields_are_refused(self):
-        for override, message in (
-            ({"schema": "geo-infer-gnn-pin/v1"}, "invalid pin schema"),
-            ({"recorded": "12-11-2026"}, "invalid pin recorded date"),
-        ):
-            data = {
-                "schema": "gnn-importer-pin/v1",
-                "repository": GNN_REPOSITORY,
-                "revision": self.second,
-                "recorded": "2026-11-12",
-            }
-            data.update(override)
-            self.write(self.geo, ".github/gnn-pair.json", json.dumps(data))
-            with self.assertRaisesRegex(ValueError, message):
-                validate_gnn_pin_freshness(self.geo, self.gnn)
-
-    def test_optional_release_tag_is_validated_and_recorded(self):
-        self.pin(self.second, tag="v1.1.0")
-        result = validate_gnn_pin_freshness(self.geo, self.gnn)
-        self.assertEqual(result["pin"]["tag"], "v1.1.0")
-        self.pin(self.second, tag="release")
-        with self.assertRaisesRegex(ValueError, "invalid pin tag"):
-            validate_gnn_pin_freshness(self.geo, self.gnn)
+        self.assertEqual(result["pin"]["repository"], REPOSITORY)
 
     def test_pin_ahead_of_the_newest_release_is_current(self):
-        self.pin(self.head)
-        result = validate_gnn_pin_freshness(self.geo, self.gnn, require_current=True)
+        result = validate_gnn_pin_freshness(
+            self.geo, self.gnn, pin=self.pin(self.head), require_current=True
+        )
         self.assertFalse(result["newest_release"]["equals_pin"])
         self.assertTrue(result["newest_release"]["is_ancestor_of_pin"])
         self.assertTrue(result["newest_release"]["pin_is_current"])
         self.assertEqual(result["pin"]["release_tags_at_pin"], [])
 
     def test_pin_behind_the_newest_release_escalates_only_when_required(self):
-        self.pin(self.released)
-        result = validate_gnn_pin_freshness(self.geo, self.gnn)
+        pin = self.pin(self.released)
+        result = validate_gnn_pin_freshness(self.geo, self.gnn, pin=pin)
         self.assertFalse(result["newest_release"]["pin_is_current"])
         self.assertTrue(result["newest_release"]["pin_is_ancestor"])
         self.assertEqual(result["newest_release"]["commits_behind"], 1)
         self.assertFalse(result["claims"]["release_currency"])
         with self.assertRaisesRegex(ValueError, "behind the newest GNN release tag"):
-            validate_gnn_pin_freshness(self.geo, self.gnn, require_current=True)
+            validate_gnn_pin_freshness(
+                self.geo, self.gnn, pin=pin, require_current=True
+            )
 
     def test_absent_or_divergent_pins_refuse(self):
-        self.pin("0" * 40)
         with self.assertRaisesRegex(ValueError, "absent from the checkout"):
-            validate_gnn_pin_freshness(self.geo, self.gnn)
-        self.pin(self.second)
+            validate_gnn_pin_freshness(self.geo, self.gnn, pin=self.pin("0" * 40))
         git(self.gnn, "checkout", "--quiet", "--orphan", "divergent")
         self.write(self.gnn, "source.txt", "divergent source\n")
         divergent = self.commit(self.gnn, "divergent source")
-        self.pin(divergent)
         with self.assertRaisesRegex(
             ValueError, "does not retain the published companion revision"
         ):
-            validate_gnn_pin_freshness(self.geo, self.gnn)
+            validate_gnn_pin_freshness(self.geo, self.gnn, pin=self.pin(divergent))
         git(self.gnn, "checkout", "--quiet", self.head)
 
-    def test_malformed_pin_or_manifest_refuses(self):
-        self.write(
-            self.geo,
-            ".github/gnn-pair.json",
-            json.dumps({"repository": GNN_REPOSITORY, "revision": "not-an-oid"}),
-        )
-        with self.assertRaisesRegex(ValueError, "invalid pin revision"):
-            validate_gnn_pin_freshness(self.geo, self.gnn)
-        self.write(
-            self.geo,
-            ".github/gnn-pair.json",
-            json.dumps({"repository": "example/other", "revision": self.second}),
-        )
-        with self.assertRaisesRegex(ValueError, "unexpected pin repository"):
-            validate_gnn_pin_freshness(self.geo, self.gnn)
-        self.write(
-            self.geo,
-            ".github/gnn-pair.json",
-            json.dumps(
-                {
-                    "repository": GNN_REPOSITORY,
-                    "revision": self.second,
-                    "extra": True,
-                }
-            ),
-        )
-        with self.assertRaisesRegex(ValueError, "invalid pin keys"):
-            validate_gnn_pin_freshness(self.geo, self.gnn)
-        self.pin(self.second)
+    def test_unresolvable_commit_or_malformed_manifest_refuses(self):
+        with self.assertRaisesRegex(ValueError, "absent from the checkout"):
+            validate_gnn_pin_freshness(self.geo, self.gnn, pin=self.pin("not-an-oid"))
+        with self.assertRaisesRegex(ValueError, "pin report records no commit"):
+            validate_gnn_pin_freshness(self.geo, self.gnn, pin={"commit": ""})
         self.manifest["schema"] = "geo-infer-companion-releases/v2"
         self.write(
             self.geo, ".github/companion-releases.json", json.dumps(self.manifest)
         )
         with self.assertRaisesRegex(ValueError, "unknown companion manifest schema"):
-            validate_gnn_pin_freshness(self.geo, self.gnn)
+            validate_gnn_pin_freshness(self.geo, self.gnn, pin=self.pin(self.second))
         self.manifest["schema"] = "geo-infer-companion-releases/v1"
         self.manifest["companions"]["gnn"]["revision"] = "0" * 40
         self.write(
@@ -208,11 +172,35 @@ class GnnPinFreshnessTests(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError, "published companion revision is absent"
         ):
-            validate_gnn_pin_freshness(self.geo, self.gnn)
+            validate_gnn_pin_freshness(self.geo, self.gnn, pin=self.pin(self.second))
+
+    def test_pin_report_reader_refuses_a_report_without_a_pin(self):
+        report = Path(self.temp.name) / "report.json"
+        report.write_text("not json", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "pin report is not JSON"):
+            read_pin_report(report)
+        report.write_text(json.dumps({"ok": True, "pin": None}), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "pin report records no pin"):
+            read_pin_report(report)
+        report.write_text(json.dumps({"pin": {"path": "x"}}), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "pin report records no commit"):
+            read_pin_report(report)
+        accepted = read_pin_report(
+            self.write_report(self.pin(self.second, tag="v1.1.0"))
+        )
+        self.assertEqual(accepted["commit"], self.second)
+        self.assertEqual(accepted["tag"], "v1.1.0")
+
+    def write_report(self, pin):
+        """Write a reader report and return its path."""
+        report = Path(self.temp.name) / "gnn-importer-report.json"
+        report.write_text(json.dumps({"ok": True, "pin": pin}), encoding="utf-8")
+        return report
 
     def test_cli_emits_actual_result_or_bounded_refusal(self):
         module = Path(__file__).resolve().parents[2]
         environment = dict(os.environ, PYTHONPATH=str(module / "src"))
+        report = self.write_report(self.pin(self.second))
         command = [
             sys.executable,
             "-B",
@@ -221,6 +209,8 @@ class GnnPinFreshnessTests(unittest.TestCase):
             str(self.geo),
             "--gnn-root",
             str(self.gnn),
+            "--pin-report",
+            str(report),
             "--require-current",
         ]
         accepted = subprocess.run(
@@ -234,7 +224,7 @@ class GnnPinFreshnessTests(unittest.TestCase):
         self.assertEqual(accepted.returncode, 0, accepted.stderr)
         payload = json.loads(accepted.stdout)
         self.assertEqual(payload["pin"]["revision"], self.second)
-        self.pin(self.released)
+        self.write_report(self.pin(self.released))
         refused = subprocess.run(
             command,
             env=environment,

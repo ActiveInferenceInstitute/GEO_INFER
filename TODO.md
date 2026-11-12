@@ -54,6 +54,41 @@ broader E4/S1 roadmap. Detailed responsibilities and admission checks are in
 | E4 — formal-to-numerical semantics | Agree one admitted finite or Gaussian interchange fixture with GNN's independent semantic-witness owner and the relevant FEP theorem owner; declare source, quantities, axes, conditioning/time, units and precision before implementation. | Independent source extraction and numerical references, mismatch counterexamples, and separate current native/proof/custody receipts. Compatible values or shapes do not prove equivalence. |
 | S1 — source-preserving multi-request processing | Supply an immutable selected-source/prompt manifest if a GEO workflow participates in GNN's synthesis acceptance; agree required cross-part questions and completion/refusal criteria. | Every selected byte and required prompt accounted for, exact provider/model/context identities, genuine joint synthesis and resume/cancellation/deadline controls. Fragment answers do not establish joint interpretation. |
 
+### GNN–FEP shared-reader migration — adopted
+
+The [GNN–FEP workflow contract](https://github.com/ActiveInferenceInstitute/Generalized_Notation_Notation/blob/75c834bd8519dc7b5adc4d24f16bf393cfd1ecdf/docs/workflows/gnn-fep.md)
+gives the estate one pin reader, and GEO_INFER now calls it instead of carrying
+its own. The pin stays `.github/gnn-pair.json` and the pointer stays
+`.github/GNN.md`; the `gnn` arm starts with the reader, executed by the pinned
+checkout's interpreter:
+
+```bash
+python -m gnn.importers check --repo . --require-pointer \
+    --workflow .github/workflows/gnn-interchange.yml --job interchange
+```
+
+- **Pin.** `8f293d9ba810e6eda5c09842d9c7ed9ffa5f92c1` (`v5.0.3`) advanced to
+  `75c834bd8519dc7b5adc4d24f16bf393cfd1ecdf` (`v5.1.0`). The earlier attempt
+  was blocked because `v5.0.3` predates `src/gnn/importers.py`; the released
+  `v5.1.0` contains it, so the blocker is retired rather than bypassed.
+- **Local pin reading removed.** `scripts/gate.py` no longer reads the pin JSON
+  or asserts its schema and revision shape — `PIN_FILE`, `PIN_SCHEMA` and
+  `_read_pin` are gone, and the arm holds the pin record the reader reports for
+  its interchange receipt assertions. The companion-revision step in
+  `.github/workflows/gnn-interchange.yml` reads the revision alone, and
+  `GEO-INFER-TEST/src/geo_infer_test/gnn_pin_freshness.py` takes the reader's
+  `pin` record (`validate_gnn_pin_freshness(pin=...)`,
+  `validate_gnn_pin_freshness.py --pin-report`) instead of parsing the pin.
+  The pin-shape and pointer assertions that duplicated the reader's
+  `pin-*`/`pointer-*` findings are deleted with their tests.
+- **What stays GEO's.** The published-companion identity review keeps its
+  direction-aware pin reads: it runs against the companions at their released
+  revisions (`companion-releases.yml` pins GNN `5.0.1`, which predates the
+  reader), so invoking the reader there would break the contract's
+  single-revision environment rule. The lineage review keeps its local Git
+  facts — release tags at the pin, ancestry and currency — and the `gnn` arm
+  keeps the interchange receipt, custody and artifact-digest assertions.
+
 ### GNN pin and E4 handoff progress — 2026-11-01
 
 - **Pin advanced.** `.github/gnn-pair.json` now selects GNN
