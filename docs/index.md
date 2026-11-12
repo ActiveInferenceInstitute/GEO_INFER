@@ -32,6 +32,7 @@ central [documentation hub](../GEO-INFER-INTRA/docs/index.md).
 - [Integration guide](../GEO-INFER-INTRA/docs/integration/index.md)
 - [Spatial / H3 reference](../GEO-INFER-INTRA/docs/geospatial/data_formats/h3/index.md)
 - [Test and release gates](../GEO-INFER-TEST/docs/index.md)
+- [Local gate arms and measured wall time](../GEO-INFER-TEST/docs/gate.md)
 - [Manuscript generation and evidence](../manuscript/README.md)
 
 ## Modules by theme
