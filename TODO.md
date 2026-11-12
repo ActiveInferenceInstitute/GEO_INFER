@@ -1,6 +1,6 @@
 # GEO-INFER Open Task & Backlog Ledger
 
-> Last reviewed: 2026-10-26 (published 0.4.0 reconciliation and next cross-repository handoff; historical evidence retains its original dates)
+> Last reviewed: 2026-11-12 (estate pin adoption recorded, local gate residuals filed, #70 closure corrected; historical evidence retains its original dates)
 > Scope: Multi-package repository (`GEO-INFER`) across workspace packages and 45 domain modules.
 > Centralization Rule: All planned, open, or deferred engineering work across all modules is tracked exclusively in this ledger. Module source code and tests must never carry local task markers (`TODO`, `FIXME`, `XXX`, `HACK`).
 > History note (2026-09-07): the published history was rewritten to re-attribute
@@ -89,10 +89,80 @@ python -m gnn.importers check --repo . --require-pointer \
   facts — release tags at the pin, ancestry and currency — and the `gnn` arm
   keeps the interchange receipt, custody and artifact-digest assertions.
 
+### Estate pin adoption — 2026-11-12
+
+Both estate pins now resolve to released revisions, and each adoption is
+recorded by its merge rather than by a local note:
+
+- **GNN–FEP.** `.github/gnn-pair.json` selects GNN
+  `75c834bd8519dc7b5adc4d24f16bf393cfd1ecdf` (`v5.1.0`) and the `gnn` arm runs
+  the shared reader instead of reading the pin itself — see the migration
+  section above. Evidence: PR
+  [#130](https://github.com/ActiveInferenceInstitute/GEO_INFER/pull/130), merge
+  `f58268693`.
+- **inferactively-pymdp.** `GEO-INFER-ACT` pins `inferactively-pymdp==1.0.5`
+  (`GEO-INFER-ACT/pyproject.toml`) and `uv.lock` re-resolves only that package.
+  `EXPECTED_PYMDP_VERSION`
+  (`GEO-INFER-ACT/src/geo_infer_act/utils/pymdp_adapter.py`) and
+  `REQUIRED_PYMDP_VERSION` in
+  `GEO-INFER-TEST/validate_act_geospatial_contract.py` and
+  `GEO-INFER-TEST/validate_h3_active_inference_contract.py` agree on it, so the
+  adapter, the geospatial contract and the H3 contract share one installed
+  release. ACT SKILL, the ACT docs, the INTRA inference contracts and the
+  generated README/AGENTS signposts state the current pin; the 0.4.0 changelog
+  entry, the dated Cascadia seed study and its frozen manifests stay at the
+  versions they ran under. Evidence: PR
+  [#134](https://github.com/ActiveInferenceInstitute/GEO_INFER/pull/134), merge
+  `a15c4a5d80f9423cfbb08ecfece2ff35a9c39274`.
+  1.0.5 keeps structural zeros out of Dirichlet expectations, draws each
+  stochastic control factor with its own PRNG key, batches marginal multiaction
+  probabilities and drops pymdp's `jax<0.11.1` cap; ACT builds one control
+  factor with `batch_size=1`, explicit keys and `sampling_mode="marginal"` and
+  uses no learning or MCTS path, so the exact EFE-identity, version-contract, H3
+  and Cascadia closed-loop tests pass unchanged.
+- **What adoption does not establish.** No release: 0.4.0 is still the only
+  published artifact set, and a later release needs its own authorization,
+  readiness candidates and acceptance. No hosted receipt: GitHub Actions is
+  billing-locked org-wide, so the evidence for both pins is the local gate.
+
+### Local gate residuals — 2026-11-12
+
+`scripts/gate.py <arm>` is the only current gate evidence, so the arms that are
+red stay in this ledger instead of being folded into the pin pull requests. Each
+row names the surface that fails and who can clear it. That entry point is
+itself new: PRs [#127](https://github.com/ActiveInferenceInstitute/GEO_INFER/pull/127)
+(one local gate entry point, with the guide in `GEO-INFER-TEST/docs/gate.md`),
+[#128](https://github.com/ActiveInferenceInstitute/GEO_INFER/pull/128) (workflows
+call arms instead of copying gate commands) and
+[#129](https://github.com/ActiveInferenceInstitute/GEO_INFER/pull/129) (the GNN
+job runs the conformance arm) merged on 2026-11-12, so a local run and a
+workflow step are the same command by construction.
+
+| Item | Failure and cause | Next action / owner |
+| --- | --- | --- |
+| CAL-CUSTODY-01 | `GEO-INFER-PLACE/tests/unit/test_california_execution_binding.py::test_execution_binding_does_not_require_a_checkout` asserts 17 owners, but `contracts.execution_binding()` enumerates every `*.py` in `locations/california/` (11 modules, before #133) plus six fixed owners. `robustness.py` arrived with #133 (`3bf668e61`), so the directory holds 12 modules and the binding holds 18. `GEO-INFER-TEST/tests/unit/test_build_package_wheels.py::test_california_profile_covers_current_execution_owners` fails for the same reason: the `owner_paths` tuple in `GEO-INFER-TEST/src/geo_infer_test/wheel_profiles.py` does not list `robustness.py`. | Update the count to 18 and add `robustness.py` to `owner_paths`; this is a stale custody count from #133, not new behaviour. Owner: the next maintainer to touch California custody — no issue is filed, so fix it forward with the count. |
+| ECON-AUTH-01 / [#132](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/132) | An unauthenticated `POST /api/models/execute` returns HTTP 403 where `GEO-INFER-ECON/tests/unit/test_enhanced_capabilities.py::TestAPI::test_model_execution_requires_auth` expects 401. It fails identically on pre-change base `4e461f00f`, so it predates the #131 audit. | The security/API owner decides which status the contract promises, then implementation, test and docs move together. Owner: authenticated repository maintainer; no assertion tightened or relaxed before that decision. |
+| GNN-ARM-01 | The `gnn` arm refuses before it runs: it needs a GNN companion checkout at the pinned `75c834bd`, and the sibling checkout `../Generalized_Notation_Notation` is at `e48b1568`. | Sync that companion to the pin (or pass `--gnn-repo`/`--gnn-python`) and record a fresh interchange receipt; the arm is environment-gated, not skipped. Owner: whoever runs the gnn arm locally. |
+| TEST-ENV-01 | `GEO-INFER-TEST/tests/unit/test_native_io_environment.py::test_native_grib_gis_and_array_backends_coexist[eccodes-first]` and `[rasterio-first]` failed in the #131 audit run with `RuntimeError: Cannot find the ecCodes library`, and did not appear in the #134 red list. The profile constant is `linux-ecmwf-local-v1` (`GEO-INFER-TEST/src/geo_infer_test/native_io_environment.py`), and `eccodeslib` is declared only in CLIMATE's `grib` extra (`GEO-INFER-CLIMATE/pyproject.toml`). | Decide the supported-host contract for the native profile on macOS, then either provision ecCodes in the locked workspace or scope the test explicitly; no silent skip. Owner: repository environment/packaging owner — no issue is filed. |
+| DOC-CHANGELOG-01 | #133 (`3bf668e61`) changed user-facing California monitoring behaviour (separate measurement generators), added `GEO-INFER-PLACE/src/geo_infer_place/locations/california/robustness.py` and the `research/measurement-quality/` corpus, but `CHANGELOG.md` `[Unreleased]` has no entry for it — the file states that all notable changes are documented there. | Add the `[Unreleased]` entry describing the adopted feature; owner is the maintainer who merged #133. Release notes are otherwise incomplete for the next version. |
+
+The other red families in those two runs are environment selection, not source
+defects: eight SPM cases fail on PyTensor's `ld: library 'd64' not found` until
+the documented `PYTENSOR_FLAGS` profile
+(`GEO-INFER-SPM/pytensor_clang++_macos27.py`) is selected, and
+`manuscript-render` was red because the retained verification chain records a
+failed `test-unit`, so the arm never reached Pandoc/XeLaTeX or the ROOT
+profiles; the isolated non-publication render in #131 (34 pages, SHA-256
+`2fc89e4a…`) rehearses receipt plumbing only. Clear CAL-CUSTODY-01 and
+ECON-AUTH-01, produce a fresh passing unit verification, then run
+`scripts/gate.py manuscript`.
+
 ### GNN pin and E4 handoff progress — 2026-11-01
 
-- **Pin advanced.** `.github/gnn-pair.json` now selects GNN
-  `8f293d9ba810e6eda5c09842d9c7ed9ffa5f92c1` (v5.0.3). The reviewed delta
+- **Pin advanced.** `.github/gnn-pair.json` selected GNN
+  `8f293d9ba810e6eda5c09842d9c7ed9ffa5f92c1` (v5.0.3) at this date; superseded
+  on 2026-11-12 by the v5.1.0 shared-reader adoption above, and retained as the
+  2026-11-01 record. The reviewed delta
   changes no file under GNN `src/gnn/export/`, `src/gnn/parsers/` or
   `src/gnn/extract/`, and the supported interchange schema roster is unchanged.
   Supersedes the `codex/gnn-companion-pin-20261028` attempt, which targeted the
@@ -212,9 +282,15 @@ is 2,976/3,383 lines (87.9693%); the unchanged floor is 85%.
 At that checkpoint, the four figures and 30-page native manuscript passed independent
 scientific/readability review. Evidence remains bound to that accepted revision;
 new changes require fresh validation. See [accepted checkpoint evidence](GEO-INFER-INTRA/docs/releases/0.4.0_readiness.md).
-The remaining external issues #69, #72, #73, #74 and #78 retain their unmet acceptance.
-Issue #70 has a licensed complete-boundary implementation and scoped validation;
-its candidate acceptance and main integration are tracked in the linked issue. Historical
+The remaining external issues #69, #72, #73 and #78 retain their unmet
+acceptance; #74 closed with the 0.4.0 publication recorded above.
+Issue #70 closed as completed on 2026-10-17 through PR
+[#91](https://github.com/ActiveInferenceInstitute/GEO_INFER/pull/91), merge
+`ae78301973e2382cc21f7208c954f568c30623d7`: the packaged Aquila Flower
+boundary with its eight original responses, native FID inventory, source epoch,
+full WGS84 extent, attribution and hash-bound replay was accepted at that
+candidate, and installed Cascadia operations verify and render the packaged
+capture outside the checkout. Historical
 failures and older source-bound receipts remain preserved.
 
 The modernization pass replaces obsolete H3 setup guidance with supported APIs,
@@ -250,7 +326,7 @@ the issue ledger distinguishes completed candidate verification from unmet scope
 | **R04-06** | CI / accepted at fea9f9570; #67 closed | [#67: complete hosted evidence](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/67): run declared workflows once on the reviewed candidate and audit actual receipts/artifact bytes. | Required unit/integration/performance/system/slow/H3 matrix on 3.11/3.12, native Windows and early contracts; actual profile/inventory reconciliation, all 46 floors, wheels/paired/ROOT/models/security and complete uploaded artifacts. Derive fresh counts; preserve failures. Depends on R04-01 through R04-05. |
 | **R04-07** | Git/main / accepted at fea9f9570; #68 closed | [#68: accepted main integration](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/68): for subsequent changes when fresh candidate GO exists, recheck remote/protection/ancestry, integrate ordinarily and verify exact published/main-triggered evidence. | No force-push, ancestry rewrite, stale-SHA acceptance or protection bypass; preserve rollback and unrelated work. Main SHA parity plus actual same-SHA hosted results. Depends on R04-03 through R04-06. |
 | **SPACE-01** | SPACE / owner-deferred GPU work | [#69: physical backend validation](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/69). GPU experiments are on hold; future work must be usable from a Mac laptop. | Establish a backend compatible with the Mac target and the declared precision contract before physical numerical parity, failure/chunk boundaries, memory and cold/warm timings. Preserve laptop CPU operation; H3 remains host CPU. No CPU-fallback hardware claim. |
-| **PLACE-V14** | PLACE / licensed capture implemented | [#70: complete Cascadia boundary](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/70). | Aquila Flower watershed delineation: publisher CC BY-NC-SA 4.0 metadata, complete FID inventory/source epoch/extent, preserved raw responses, offline replay and strict full-map attribution. Exact-candidate hosted/installed acceptance and main integration remain the closure gate. |
+| **PLACE-V14** | PLACE / #70 closed 2026-10-17 (completed) | [#70: complete Cascadia boundary](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/70), closed by PR [#91](https://github.com/ActiveInferenceInstitute/GEO_INFER/pull/91). | Aquila Flower watershed delineation: publisher CC BY-NC-SA 4.0 metadata, complete FID inventory/source epoch/extent, preserved raw responses, offline replay and strict full-map attribution. Met at the #91 candidate, including installed-wheel verification of the packaged capture; retained here as the acceptance definition, not as pending work. |
 | **TEST-GNN-01** | SPACE/TIME/ACT / historical cause unresolved | [#72: PROJ SQLite I/O causality](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/72). | Bounded evidence-driven reproduction with version/import/file state; respect prior negative lock probes and distinguish non-recurrence from explanation. Do not suppress CRS tests. |
 | **TEST-04** | TEST / deferred configured-advisor review | [#73: advisor review](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/73). | Human-owned account/authentication decisions; actual configured-service review bound to the candidate when available. No auth/key/model/billing/hook changes or review claim from service errors. |
 | **REL-04 / REL-01** | Release / separate future authorization | [#74: 0.4.0 release decision and execution](https://github.com/ActiveInferenceInstitute/GEO_INFER/issues/74). | Explicit tag/release/attachment/registry authorization after exact-main readiness; verify destination bytes and retain rollback. Main preparation does not authorize publication or deployment. |
