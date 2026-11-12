@@ -1,4 +1,4 @@
-"""pymdp 1.0.4 backend contracts for H3 active inference."""
+"""pymdp 1.0.5 backend contracts for H3 active inference."""
 
 from __future__ import annotations
 

@@ -47,7 +47,7 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module ACT
   120-second budget, and 45-second diagnostic stack dumps.
 - Production ACT H3 runtime paths must use
   `geo_infer_act.utils.pymdp_adapter` and fail if `inferactively-pymdp` is not
-  exactly `1.0.4`.
+  exactly `1.0.5`.
 - Keep flat H3 method signatures and dictionary return shapes backward-compatible.
 - Keep trace diagnostics JSON-safe and backed by typed result classes:
   `H3CellDiagnostics`, `H3EdgeDiagnostics`, `H3LevelDiagnostics`, and

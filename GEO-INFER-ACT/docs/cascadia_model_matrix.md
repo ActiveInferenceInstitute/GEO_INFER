@@ -4,7 +4,7 @@ A matrix names exported categorical GNN models and an ordered selection of
 agent/process pairs. Every case shares the same initial true state, observation
 horizon, process seeds and agent seed. The runner delegates each case to the
 [real model-pair runner](cascadia_model_mismatch.md), which conditions beliefs
-and evaluates policies with `inferactively-pymdp` 1.0.4. No inference equations
+and evaluates policies with `inferactively-pymdp` 1.0.5. No inference equations
 are duplicated in the matrix entry point.
 
 ## Declare and run

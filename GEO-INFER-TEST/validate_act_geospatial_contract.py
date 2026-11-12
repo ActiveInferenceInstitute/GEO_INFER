@@ -21,7 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 ACT_ROOT = REPO_ROOT / "GEO-INFER-ACT"
 ACT_SRC = ACT_ROOT / "src"
 #: The one inferactively-pymdp release ACT pins and every run must record.
-REQUIRED_PYMDP_VERSION = "1.0.4"
+REQUIRED_PYMDP_VERSION = "1.0.5"
 
 REQUIRED_GEOSPATIAL_FILES = {
     "data/full_history.json",

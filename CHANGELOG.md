@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Maintenance
 
+- Bump ACT's `inferactively-pymdp` pin from `1.0.4` to the released `1.0.5`
+  and regenerate `uv.lock` (only the pymdp resolution changes). `1.0.5` is a
+  correctness release: it keeps structural zeros out of Dirichlet expectations,
+  draws each stochastic control factor with its own PRNG key, batches marginal
+  multiaction probabilities, preserves the action axis for empty
+  `B_action_dependencies`, fixes `dot_likelihood` to squeeze only axis 0, and
+  drops pymdp's `jax<0.11.1` cap. ACT builds one control factor with
+  `batch_size=1`, explicit RNG keys and `sampling_mode="marginal"`, so the
+  adapter's version contract, the exact EFE-identity tests and the H3 posterior
+  contracts stay green under `1.0.5`.
 - Adopt the GNN–FEP shared pin reader. Advance `.github/gnn-pair.json` to GNN
   `v5.1.0` (`75c834bd8519dc7b5adc4d24f16bf393cfd1ecdf`) and run
   `python -m gnn.importers check --repo . --require-pointer` from the pinned
