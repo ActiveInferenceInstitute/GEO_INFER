@@ -12,13 +12,14 @@ later runtime support is not inferred from an earlier receipt. Linux service
 profiles have their separate build and actual-health gate described below.
 
 Use the latest stable CPython by default (currently 3.15) and exact uv 0.13.7.
-This checkout's unchanged locked base has a named local runtime exception:
+This checkout has a named local runtime exception:
 `.python-version` selects the latest 3.12 patch. Isolated frozen base installs on
 macOS passed on 3.12; 3.14 and 3.15 attempted the locked Fiona 1.10.1 source
 build and failed because `gdal-config`/GDAL were unavailable. On 3.13, locked
 pandas 2.1.4 failed compiling its generated `_PyLong_AsByteArray` calls. These
 are locked dependency and host prerequisites, not a claim that CPython 3.15
-cannot run GEO-INFER. The declared Python 3.11 compatibility floor is unchanged.
+cannot run GEO-INFER. The frozen workspace requires Python 3.11.5 or later.
+Individually published packages declare their own Python requirements.
 Optional AI/Torch/JAX, all-workspace, native sampling and scientific publication
 profiles require their own dependency and native qualification.
 
