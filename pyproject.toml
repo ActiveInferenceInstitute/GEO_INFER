@@ -7,7 +7,7 @@ authors = [
 ]
 readme = "README.md"
 license = {text = "CC BY-NC-SA 4.0"}
-requires-python = ">=3.11"
+requires-python = ">=3.11.5"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -398,8 +398,10 @@ exclude_lines = [
 
 [tool.uv]
 package = false
-# Keep the official Torch CUDA12 build coherent with XGBoost on Linux x86_64.
 constraint-dependencies = [
+    # SoupSieve 4 fixes the audited selector issues and requires Python 3.11.5.
+    "soupsieve>=4.0.0",
+    # Keep the official Torch CUDA12 build coherent with XGBoost on Linux x86_64.
     "torch==2.13.0+cu126; sys_platform == 'linux' and platform_machine == 'x86_64'",
 ]
 

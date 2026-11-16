@@ -57,7 +57,7 @@ source-hygiene, and H3 gates listed in the root README and CI workflow.
 
 ## Code conventions
 
-- Python target: 3.11+; use the shared uv workspace.
+- Use Python 3.11.5 or later in the shared uv workspace.
 - Package imports are lowercase `geo_infer_<module>`.
 - Use type hints and Google-style docstrings for public behavior.
 - Validate finite numeric inputs, coordinate bounds, CRS, units, and output paths

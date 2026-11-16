@@ -5,7 +5,7 @@ first-time use.
 
 ## Prerequisites
 
-- Python 3.11 or newer
+- Python 3.11.5 or newer
 - `uv` (Python package manager)
 - Git
 - A text editor

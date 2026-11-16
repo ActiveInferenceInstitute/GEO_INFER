@@ -1571,7 +1571,8 @@ Coordinates are WGS84 degrees, in latitude/longitude order. Continue with the
 to attach beliefs, actions, and free-energy terms to a cell. For cross-module
 development, use the [full workspace profile](#choose-an-installation-profile).
 
-Python 3.11+ is supported; `.python-version` pins the local development runtime.
+The frozen workspace requires Python 3.11.5 or later for its audited SoupSieve dependency.
+`.python-version` selects the local Python series.
 The packages are under active development. Module tests describe implemented
 behavior; [release readiness]({link_prefix}GEO-INFER-INTRA/docs/releases/0.4.0_readiness.md)
 and the [issue ledger]({link_prefix}GEO-INFER-INTRA/docs/releases/issue_reconciliation_2026_10.md)
@@ -1756,7 +1757,7 @@ Use this file as the repository-level operating contract for automated agents wo
 
 New to this repo? In order:
 
-1. **What this is**: a multi-module geospatial inference monorepo (uv workspace, Python 3.11+); see [README.md](README.md) "What's inside".
+1. **What this is**: a multi-module geospatial inference monorepo (uv workspace, Python 3.11.5 or later); see [README.md](README.md) "What's inside".
 2. **Module map**: [README.md Module Index](README.md#module-index) (source/test counts per module) and [GEO-INFER-INTRA/docs/modules/index.md](GEO-INFER-INTRA/docs/modules/index.md) (conceptual catalog).
 3. **Where to change what**: module behavior in `GEO-INFER-*/src/` (owning package); cross-module docs in `GEO-INFER-INTRA/docs/`; tests/validation in `GEO-INFER-TEST/`.
 4. **Health in one command**: `uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check` (generated-signpost drift) plus the validators under Standard Commands.
@@ -1769,7 +1770,7 @@ New to this repo? In order:
 - Root path: repository root (`.`; resolve it from the checkout in use)
 - Modules: {module_names}
 - Package manager: `uv`
-- Python target: 3.11+
+- Workspace Python minimum: 3.11.5
 
 ## Required Workflow
 
