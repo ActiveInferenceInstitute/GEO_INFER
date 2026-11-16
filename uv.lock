@@ -66,10 +66,7 @@ members = [
     "geo-infer-transport",
     "geo-infer-water",
 ]
-constraints = [
-    { name = "soupsieve", specifier = ">=4.0.0" },
-    { name = "torch", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'", specifier = "==2.13.0+cu126", index = "https://download.pytorch.org/whl/cu126" },
-]
+constraints = [{ name = "torch", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'", specifier = "==2.13.0+cu126", index = "https://download.pytorch.org/whl/cu126" }]
 
 [[package]]
 name = "absl-py"

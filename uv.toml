@@ -2,7 +2,6 @@
 # Project-only package/workspace metadata stays in pyproject.toml.
 required-version = "==0.13.7"
 constraint-dependencies = [
-    "soupsieve>=4.0.0",
     "torch==2.13.0+cu126; sys_platform == 'linux' and platform_machine == 'x86_64'",
 ]
 
