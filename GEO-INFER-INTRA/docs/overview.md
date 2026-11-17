@@ -1,6 +1,6 @@
 # GEO-INFER Framework Overview
 
-GEO-INFER is a 45-module Python 3.11+ workspace for geospatial analysis,
+GEO-INFER is a 45-module Python 3.11.5+ workspace for geospatial analysis,
 probabilistic inference, Active Inference, domain workflows, applications, and
 repository validation. It treats spatial systems as data-rich processes whose
 states, uncertainty, observations, and decisions can be analyzed together.
