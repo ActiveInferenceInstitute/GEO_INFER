@@ -431,6 +431,7 @@ owner_paths = (
     'GEO-INFER-PLACE/src/geo_infer_place/locations/california/monitoring.py',
     'GEO-INFER-PLACE/src/geo_infer_place/locations/california/report.py',
     'GEO-INFER-PLACE/src/geo_infer_place/locations/california/report_integrity.py',
+    'GEO-INFER-PLACE/src/geo_infer_place/locations/california/robustness.py',
     'GEO-INFER-PLACE/src/geo_infer_place/locations/california/workflow.py',
     'GEO-INFER-ACT/src/geo_infer_act/core/gnn_factored_batch.py',
     'GEO-INFER-ACT/src/geo_infer_act/core/gnn_factored_contract.py',

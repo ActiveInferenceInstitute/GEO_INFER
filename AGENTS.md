@@ -6,7 +6,7 @@ Use this file as the repository-level operating contract for automated agents wo
 
 New to this repo? In order:
 
-1. **What this is**: a multi-module geospatial inference monorepo (uv workspace, Python 3.11+); see [README.md](README.md) "What's inside".
+1. **What this is**: a multi-module geospatial inference monorepo (uv workspace, Python 3.11.5 or later); see [README.md](README.md) "What's inside".
 2. **Module map**: [README.md Module Index](README.md#module-index) (source/test counts per module) and [GEO-INFER-INTRA/docs/modules/index.md](GEO-INFER-INTRA/docs/modules/index.md) (conceptual catalog).
 3. **Where to change what**: module behavior in `GEO-INFER-*/src/` (owning package); cross-module docs in `GEO-INFER-INTRA/docs/`; tests/validation in `GEO-INFER-TEST/`.
 4. **Health in one command**: `uv run python GEO-INFER-TEST/rewrite_readme_agents.py --check` (generated-signpost drift) plus the validators under Standard Commands.
@@ -19,7 +19,7 @@ New to this repo? In order:
 - Root path: repository root (`.`; resolve it from the checkout in use)
 - Modules: `GEO-INFER-ACT`, `GEO-INFER-AG`, `GEO-INFER-AGENT`, `GEO-INFER-AI`, `GEO-INFER-ANT`, `GEO-INFER-API`, `GEO-INFER-APP`, `GEO-INFER-ART`, `GEO-INFER-BAYES`, `GEO-INFER-BIO`, `GEO-INFER-CIV`, `GEO-INFER-CLIMATE`, `GEO-INFER-COG`, `GEO-INFER-COMMS`, `GEO-INFER-DATA`, `GEO-INFER-ECON`, `GEO-INFER-EDU`, `GEO-INFER-EMERGENCY`, `GEO-INFER-ENERGY`, `GEO-INFER-EXAMPLES`, `GEO-INFER-FOREST`, `GEO-INFER-GIT`, `GEO-INFER-HEALTH`, `GEO-INFER-INSURANCE`, `GEO-INFER-INTRA`, `GEO-INFER-IOT`, `GEO-INFER-LOG`, `GEO-INFER-MARINE`, `GEO-INFER-MATH`, `GEO-INFER-METAGOV`, `GEO-INFER-NORMS`, `GEO-INFER-OPS`, `GEO-INFER-ORG`, `GEO-INFER-PEP`, `GEO-INFER-PLACE`, `GEO-INFER-REQ`, `GEO-INFER-RISK`, `GEO-INFER-SEC`, `GEO-INFER-SIM`, `GEO-INFER-SPACE`, `GEO-INFER-SPM`, `GEO-INFER-TEST`, `GEO-INFER-TIME`, `GEO-INFER-TRANSPORT`, `GEO-INFER-WATER`
 - Package manager: `uv`
-- Python target: 3.11+
+- Workspace Python minimum: 3.11.5
 
 ## Required Workflow
 

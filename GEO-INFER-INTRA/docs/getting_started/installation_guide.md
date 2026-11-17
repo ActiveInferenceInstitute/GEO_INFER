@@ -6,7 +6,7 @@ metadata, the shared lockfile, and module extras stay aligned.
 
 ## Requirements
 
-- Python 3.11 or newer.
+- Python 3.11.5 or newer.
 - `uv` installed and available on `PATH`.
 - Git for obtaining the repository and inspecting generated documentation.
 - A compiler and native geospatial libraries only when an optional dependency

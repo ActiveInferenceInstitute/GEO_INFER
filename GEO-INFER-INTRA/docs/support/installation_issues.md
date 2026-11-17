@@ -6,7 +6,7 @@ This guide covers common installation problems for the GEO-INFER framework, incl
 
 ### Python Version
 
-GEO-INFER requires Python 3.11+ (the workspace target). Check your version:
+GEO-INFER requires Python 3.11.5+ (the workspace target). Check your version:
 
 ```bash
 python3 --version
@@ -252,7 +252,7 @@ Run these checks to verify your installation:
 
 ```bash
 # 1. Check Python version
-uv run python --version  # Should be 3.11+
+uv run python --version  # Should be 3.11.5+
 
 # 2. Check core imports
 uv run python -c "
