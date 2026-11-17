@@ -18,6 +18,9 @@ from geo_infer_sec.core.compliance import ComplianceFramework, ComplianceRegime
 
 
 # Create a Blueprint for security API endpoints
+# RFC 9110 section 11.6.1: a 401 response carries the scheme challenge.
+BEARER_CHALLENGE = {"WWW-Authenticate": "Bearer"}
+
 security_api = Blueprint("security_api", __name__)
 
 _SECURITY_STATE_KEY = "geo_infer_sec"
@@ -68,7 +71,7 @@ def init_security_api(
     # Add error handlers
     @app.errorhandler(401)
     def unauthorized(error: Any) -> Any:
-        return jsonify({"error": "Unauthorized access"}), 401
+        return jsonify({"error": "Unauthorized access"}), 401, BEARER_CHALLENGE
 
     @app.errorhandler(403)
     def forbidden(error: Any) -> Any:
@@ -88,7 +91,7 @@ def token_required(f: Callable[..., Any]) -> Callable[..., Any]:
             token = auth_header.split(" ")[1]
 
         if not token:
-            return jsonify({"error": "Token is missing"}), 401
+            return jsonify({"error": "Token is missing"}), 401, BEARER_CHALLENGE
 
         try:
             # Validate token
@@ -99,7 +102,11 @@ def token_required(f: Callable[..., Any]) -> Callable[..., Any]:
                 return jsonify({"error": "Security service unavailable"}), 503
             payload = access_manager.validate_token(token)
             if not payload:
-                return jsonify({"error": "Invalid or expired token"}), 401
+                return (
+                    jsonify({"error": "Invalid or expired token"}),
+                    401,
+                    BEARER_CHALLENGE,
+                )
 
             # Store user info in g for use in the route function
             g.user_id = payload["user_id"]
@@ -109,7 +116,11 @@ def token_required(f: Callable[..., Any]) -> Callable[..., Any]:
             # Security API never initialized for this app.
             return jsonify({"error": str(e)}), 503
         except Exception as e:
-            return jsonify({"error": f"Token validation error: {str(e)}"}), 401
+            return (
+                jsonify({"error": f"Token validation error: {str(e)}"}),
+                401,
+                BEARER_CHALLENGE,
+            )
 
         return f(*args, **kwargs)
 

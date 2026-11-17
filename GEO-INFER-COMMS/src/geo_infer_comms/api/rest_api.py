@@ -12,7 +12,7 @@ import logging
 from typing import Any
 from datetime import datetime, UTC
 
-from fastapi import FastAPI, HTTPException, Depends, status, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Security, status, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -36,6 +36,10 @@ from geo_infer_comms import (
     validate_coordinates,
     validate_message_content,
 )
+
+
+# RFC 9110 section 11.6.1: a 401 response carries the scheme challenge.
+BEARER_CHALLENGE = {"WWW-Authenticate": "Bearer"}
 
 
 class CommunicationAPI:
@@ -81,8 +85,11 @@ class CommunicationAPI:
                 allow_headers=["*"],
             )
 
-        # Set up authentication
-        self.security = HTTPBearer() if enable_auth else None
+        # Set up authentication. ``auto_error=False`` keeps the missing or
+        # non-Bearer credentials response independent of the installed
+        # FastAPI version (releases before 0.122 answered 403); every
+        # rejection is raised by ``_validate_credentials`` as a 401 challenge.
+        self.security = HTTPBearer(auto_error=False) if enable_auth else None
 
         # Set up logging
         self.logger = logging.getLogger(__name__)
@@ -116,7 +123,7 @@ class CommunicationAPI:
             request: MessageRequest,
             background_tasks: BackgroundTasks,
             credentials: HTTPAuthorizationCredentials | None = (
-                Depends(self._get_credentials) if self.enable_auth else None
+                Security(self.security) if self.enable_auth else None
             ),
         ) -> MessageResponse:
             """Send a new message."""
@@ -155,7 +162,7 @@ class CommunicationAPI:
             channel_id: str | None = None,
             limit: int = 100,
             credentials: HTTPAuthorizationCredentials | None = (
-                Depends(self._get_credentials) if self.enable_auth else None
+                Security(self.security) if self.enable_auth else None
             ),
         ) -> list[MessageResponse]:
             """Get messages with optional filtering."""
@@ -180,7 +187,7 @@ class CommunicationAPI:
         async def get_message(
             message_id: str,
             credentials: HTTPAuthorizationCredentials | None = (
-                Depends(self._get_credentials) if self.enable_auth else None
+                Security(self.security) if self.enable_auth else None
             ),
         ) -> MessageResponse:
             """Get a specific message by ID."""
@@ -209,7 +216,7 @@ class CommunicationAPI:
         async def create_channel(
             request: ChannelRequest,
             credentials: HTTPAuthorizationCredentials | None = (
-                Depends(self._get_credentials) if self.enable_auth else None
+                Security(self.security) if self.enable_auth else None
             ),
         ) -> ChannelResponse:
             """Create a new communication channel."""
@@ -240,7 +247,7 @@ class CommunicationAPI:
             channel_type: ChannelType | None = None,
             limit: int = 100,
             credentials: HTTPAuthorizationCredentials | None = (
-                Depends(self._get_credentials) if self.enable_auth else None
+                Security(self.security) if self.enable_auth else None
             ),
         ) -> list[ChannelResponse]:
             """Get channels with optional filtering."""
@@ -265,7 +272,7 @@ class CommunicationAPI:
         async def get_channel(
             channel_id: str,
             credentials: HTTPAuthorizationCredentials | None = (
-                Depends(self._get_credentials) if self.enable_auth else None
+                Security(self.security) if self.enable_auth else None
             ),
         ) -> ChannelResponse:
             """Get a specific channel by ID."""
@@ -295,7 +302,7 @@ class CommunicationAPI:
             request: NotificationRequest,
             background_tasks: BackgroundTasks,
             credentials: HTTPAuthorizationCredentials | None = (
-                Depends(self._get_credentials) if self.enable_auth else None
+                Security(self.security) if self.enable_auth else None
             ),
         ) -> NotificationResponse:
             """Create a new notification."""
@@ -329,7 +336,7 @@ class CommunicationAPI:
             status_filter: str | None = None,
             limit: int = 100,
             credentials: HTTPAuthorizationCredentials | None = (
-                Depends(self._get_credentials) if self.enable_auth else None
+                Security(self.security) if self.enable_auth else None
             ),
         ) -> list[NotificationResponse]:
             """Get notifications with optional filtering."""
@@ -369,7 +376,7 @@ class CommunicationAPI:
             request: EventPublishRequest,
             background_tasks: BackgroundTasks,
             credentials: HTTPAuthorizationCredentials | None = (
-                Depends(self._get_credentials) if self.enable_auth else None
+                Security(self.security) if self.enable_auth else None
             ),
         ) -> EventPublishResponse:
             """Publish a new event."""
@@ -402,7 +409,7 @@ class CommunicationAPI:
             source: str | None = None,
             limit: int = 100,
             credentials: HTTPAuthorizationCredentials | None = (
-                Depends(self._get_credentials) if self.enable_auth else None
+                Security(self.security) if self.enable_auth else None
             ),
         ) -> list[EventPublishResponse]:
             """Get events with optional filtering."""
@@ -429,7 +436,7 @@ class CommunicationAPI:
             request: BroadcastRequest,
             background_tasks: BackgroundTasks,
             credentials: HTTPAuthorizationCredentials | None = (
-                Depends(self._get_credentials) if self.enable_auth else None
+                Security(self.security) if self.enable_auth else None
             ),
         ) -> BroadcastResponse:
             """Broadcast a message to multiple recipients."""
@@ -542,7 +549,7 @@ class CommunicationAPI:
         @self.app.get("/metrics")
         async def get_metrics(
             credentials: HTTPAuthorizationCredentials | None = (
-                Depends(self._get_credentials) if self.enable_auth else None
+                Security(self.security) if self.enable_auth else None
             ),
         ) -> dict[str, Any]:
             """Get comprehensive system metrics."""
@@ -561,10 +568,6 @@ class CommunicationAPI:
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
                 ) from e
 
-    def _get_credentials(self) -> HTTPBearer | None:
-        """Get authentication credentials dependency."""
-        return self.security
-
     def _validate_credentials(
         self, credentials: HTTPAuthorizationCredentials | None
     ) -> str:
@@ -579,6 +582,7 @@ class CommunicationAPI:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required",
+                headers=BEARER_CHALLENGE,
             )
 
         token = credentials.credentials
@@ -586,6 +590,7 @@ class CommunicationAPI:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authentication token",
+                headers=BEARER_CHALLENGE,
             )
 
         # Decode the token as an HS256 JWT when COMMS_JWT_SECRET is set. A
@@ -602,12 +607,14 @@ class CommunicationAPI:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid authentication token",
+                    headers=BEARER_CHALLENGE,
                 ) from e
             user_id = payload.get("sub", payload.get("user_id"))
             if not user_id:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid authentication token",
+                    headers=BEARER_CHALLENGE,
                 )
             return str(user_id)
 

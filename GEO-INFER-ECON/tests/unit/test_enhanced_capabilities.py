@@ -439,6 +439,35 @@ class TestAPI(unittest.TestCase):
             "/api/models/execute", json=request_data, headers=headers
         )
         self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.headers.get("WWW-Authenticate"), "Bearer")
+
+    def test_model_execution_rejects_non_bearer_scheme(self):
+        """Test non-Bearer credentials are a 401 challenge, never 403 (#132)."""
+        request_data = {
+            "model_type": "sar_model",
+            "model_configuration": {},
+            "data_source": "test_data",
+            "parameters": {},
+        }
+        for authorization in ("Basic dGVzdF9rZXk6", "test_key", "Bearer"):
+            with self.subTest(authorization=authorization):
+                response = self.client.post(
+                    "/api/models/execute",
+                    json=request_data,
+                    headers={"Authorization": authorization},
+                )
+                self.assertEqual(response.status_code, 401)
+                self.assertEqual(response.headers.get("WWW-Authenticate"), "Bearer")
+
+    def test_missing_credentials_contract_is_owned_by_the_api(self):
+        """Test the 401 contract does not depend on FastAPI's HTTPBearer default.
+
+        FastAPI releases before 0.122 answer a missing Bearer header with 403
+        when ``auto_error`` is enabled, and the package accepts
+        ``fastapi>=0.100.0`` (#132). The API therefore raises the challenge
+        itself.
+        """
+        self.assertFalse(self.api.security.auto_error)
 
     def test_hourly_rate_limit_enforced(self):
         """Test hourly rate limit can trigger with requests spread over one hour."""

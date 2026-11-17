@@ -63,3 +63,19 @@ def test_uninitialized_app_returns_503():
     response = app.test_client().post("/api/security/token", json={"user_id": "x"})
     assert response.status_code == 503
     assert "not initialized" in response.get_json()["error"]
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {},
+        {"Authorization": "Basic dXNlcjpwYXNz"},
+        {"Authorization": "Bearer not-a-valid-token"},
+    ],
+    ids=["missing", "non-bearer", "invalid-token"],
+)
+def test_rejected_credentials_are_a_401_bearer_challenge(client, headers):
+    response = client.get("/api/security/roles", headers=headers)
+
+    assert response.status_code == 401
+    assert response.headers.get("WWW-Authenticate") == "Bearer"
