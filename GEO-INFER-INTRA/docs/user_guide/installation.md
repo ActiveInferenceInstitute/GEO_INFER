@@ -7,7 +7,7 @@ The canonical, workspace-wide instructions are in the
 
 ## Prerequisites
 
-- Python 3.11 or newer
+- Python 3.11.5 or newer
 - `uv` on `PATH`
 - Git
 

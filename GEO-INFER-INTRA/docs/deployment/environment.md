@@ -4,12 +4,12 @@ This document covers Python environment configuration, package management, envir
 
 ## Python Requirements
 
-GEO-INFER requires Python 3.11+ (pinned for the workspace in `.python-version`).
+The frozen workspace requires Python 3.11.5 or later. `.python-version` selects the local Python series.
 The framework uses `uv` as its package manager (not pip, conda, or poetry).
 
 ```bash
 # Verify Python version
-python3 --version  # Must be 3.11+
+python3 --version  # Must be 3.11.5+
 
 # Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh

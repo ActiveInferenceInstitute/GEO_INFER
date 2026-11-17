@@ -80,7 +80,7 @@ TASK_MARKER_SCAN_GLOBS = (
 # User-facing example code keeps a softer contract: markers are surfaced as
 # warnings so example authors still see them, without failing CI on demos.
 TASK_MARKER_EXAMPLE_SCAN_GLOBS = ("GEO-INFER-*/examples/**/*.py",)
-PYTHON_VERSION_PIN_PATTERN = re.compile(r"^3\.(11|12)(?:\.\d+)?$")
+PYTHON_VERSION_PIN_PATTERN = re.compile(r"^3\.(11|12)(?:\.(\d+))?$")
 LOGGING_BASIC_CONFIG_ATTR = "basicConfig"
 SOURCE_LANGUAGE_ALLOWLIST = (
     "placeholder=",
@@ -195,9 +195,9 @@ def validate_uv_environment(report: ContractReport) -> None:
         return
 
     requires_python = root_config.get("project", {}).get("requires-python")
-    if requires_python != ">=3.11":
+    if requires_python != ">=3.11.5":
         report.error(
-            "Root pyproject.toml must declare project.requires-python = '>=3.11'"
+            "Root pyproject.toml must declare project.requires-python = '>=3.11.5'"
         )
 
     workspace_members = (
@@ -214,9 +214,14 @@ def validate_uv_environment(report: ContractReport) -> None:
         report.error("Root .python-version is required for reproducible uv runs")
         return
     python_version = python_version_file.read_text(encoding="utf-8").strip()
-    if not PYTHON_VERSION_PIN_PATTERN.match(python_version):
+    version_pin = PYTHON_VERSION_PIN_PATTERN.fullmatch(python_version)
+    if version_pin is None:
         report.error(
             f".python-version must pin Python 3.11 or 3.12, got {python_version!r}"
+        )
+    elif version_pin[1] == "11" and version_pin[2] and int(version_pin[2]) < 5:
+        report.error(
+            f".python-version must pin Python 3.11.5 or later, got {python_version!r}"
         )
 
 

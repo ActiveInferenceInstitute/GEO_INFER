@@ -2,7 +2,7 @@
 
 ## What is GEO-INFER?
 
-GEO-INFER is a Python 3.11+ geospatial inference monorepo with 45 owning packages.
+GEO-INFER is a Python 3.11.5+ geospatial inference monorepo with 45 owning packages.
 SPACE supplies spatial operations, TIME temporal contracts and analysis, DATA
 transport and storage, and domain modules apply these components. ACT implements
 active inference models; using another package does not require describing every

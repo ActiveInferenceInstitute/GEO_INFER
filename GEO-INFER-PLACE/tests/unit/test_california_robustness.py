@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from pydantic import JsonValue
 
 from geo_infer_act.core.gnn_factored_contract import FactoredGNNArtifact
 from geo_infer_place.locations.california.contracts import (
@@ -40,6 +41,24 @@ def fixture_models() -> tuple[Landscape, tuple[FactoredGNNArtifact, ...]]:
     return landscape, qualify_models(landscape.config, MODELS)[0]
 
 
+def assert_baseline_trace(actual: JsonValue, expected: JsonValue, path: str) -> None:
+    """Match discrete trace data exactly and allow numerical roundoff only."""
+    assert type(actual) is type(expected), path
+    if isinstance(expected, dict):
+        assert actual.keys() == expected.keys(), path
+        for key in expected:
+            assert_baseline_trace(actual[key], expected[key], f"{path}.{key}")
+    elif isinstance(expected, list):
+        assert len(actual) == len(expected), path
+        for index, (value, baseline) in enumerate(zip(actual, expected, strict=True)):
+            assert_baseline_trace(value, baseline, f"{path}[{index}]")
+    elif isinstance(expected, float):
+        # Hosted runtimes differed by at most 4.45e-16 in the stored trace.
+        assert actual == pytest.approx(expected, rel=0, abs=1e-15), path
+    else:
+        assert actual == expected, path
+
+
 @pytest.mark.parametrize("strategy", tuple(Strategy))
 def test_matched_generator_preserves_pinned_baseline(strategy: Strategy) -> None:
     landscape, planners = fixture_models()
@@ -55,7 +74,7 @@ def test_matched_generator_preserves_pinned_baseline(strategy: Strategy) -> None
             for item in baseline
             if item["strategy"] == strategy and item["seed"] == seed
         )
-        assert default.model_dump(mode="json") == expected
+        assert_baseline_trace(default.model_dump(mode="json"), expected, "scenario")
 
 
 def test_generator_changes_readings_but_returns_planner_likelihood() -> None:
