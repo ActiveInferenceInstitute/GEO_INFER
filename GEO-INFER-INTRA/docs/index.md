@@ -1,7 +1,7 @@
 # GEO-INFER Documentation
 
 This is the documentation hub for the GEO-INFER repository. GEO-INFER is a
-uv-managed Python 3.11+ monorepo containing 45 modules for spatial indexing,
+uv-managed Python 3.11.5+ monorepo containing 45 modules for spatial indexing,
 probabilistic inference, Active Inference, domain analysis, applications, and
 repository validation.
 

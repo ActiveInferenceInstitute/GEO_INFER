@@ -383,7 +383,7 @@ def write_root_uv_files(root: Path) -> None:
         "\n".join(
             [
                 "[project]",
-                'requires-python = ">=3.11"',
+                'requires-python = ">=3.11.5"',
                 "",
                 "[tool.uv.workspace]",
                 'members = ["GEO-INFER-*"]',
@@ -402,15 +402,36 @@ def write_canonical_uv_docs(root: Path, contracts) -> None:
         doc_path.write_text(f"Setup command: `{contracts.CANONICAL_UV_SYNC_COMMAND}`\n")
 
 
-def test_uv_environment_contract_accepts_root_workspace(tmp_path, monkeypatch):
+@pytest.mark.parametrize("python_pin", ["3.11", "3.11.5", "3.12.11"])
+def test_uv_environment_contract_accepts_root_workspace(
+    tmp_path, monkeypatch, python_pin
+):
     contracts = load_contracts_module()
     monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
     write_root_uv_files(tmp_path)
+    (tmp_path / ".python-version").write_text(python_pin + "\n")
     report = contracts.ContractReport()
 
     contracts.validate_uv_environment(report)
 
     assert report.errors == []
+
+
+def test_uv_environment_contract_rejects_older_workspace_python(tmp_path, monkeypatch):
+    contracts = load_contracts_module()
+    monkeypatch.setattr(contracts, "REPO_ROOT", tmp_path)
+    write_root_uv_files(tmp_path)
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text(pyproject.read_text().replace(">=3.11.5", ">=3.11"))
+    (tmp_path / ".python-version").write_text("3.11.4\n")
+    report = contracts.ContractReport()
+
+    contracts.validate_uv_environment(report)
+
+    assert any("project.requires-python" in error for error in report.errors)
+    assert any(
+        ".python-version must pin Python 3.11.5" in error for error in report.errors
+    )
 
 
 def test_uv_environment_contract_rejects_missing_lock(tmp_path, monkeypatch):

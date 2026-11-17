@@ -7,7 +7,7 @@ contracts. Detailed component documentation lives in the
 
 ## System Architecture
 
-GEO-INFER is a uv-managed Python 3.11+ monorepo of 45 modules. Each module is
+GEO-INFER is a uv-managed Python 3.11.5+ monorepo of 45 modules. Each module is
 a `GEO-INFER-*` directory owning an importable package under `src/`, tests
 under `tests/`, examples, and generated `README.md`/`AGENTS.md` signposts.
 
@@ -102,7 +102,7 @@ Reusable):
 
 ## Technical Stack
 
-- **Python 3.11+** with the **uv** workspace manager (root `pyproject.toml`,
+- **Python 3.11.5+** with the **uv** workspace manager (root `pyproject.toml`,
   `uv.lock`, `.python-version`).
 - **H3 v4** (h3>=4.5.0,<5) for hierarchical spatial indexing.
 - **pytest** with a zero-warning, zero-skip policy; **ruff** for linting.

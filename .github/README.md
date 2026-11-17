@@ -60,7 +60,8 @@ Coordinates are WGS84 degrees, in latitude/longitude order. Continue with the
 to attach beliefs, actions, and free-energy terms to a cell. For cross-module
 development, use the [full workspace profile](#choose-an-installation-profile).
 
-Python 3.11+ is supported; `.python-version` pins the local development runtime.
+The frozen workspace requires Python 3.11.5 or later for its audited SoupSieve dependency.
+`.python-version` selects the local Python series.
 The packages are under active development. Module tests describe implemented
 behavior; [release readiness](../GEO-INFER-INTRA/docs/releases/0.4.0_readiness.md)
 and the [issue ledger](../GEO-INFER-INTRA/docs/releases/issue_reconciliation_2026_10.md)
