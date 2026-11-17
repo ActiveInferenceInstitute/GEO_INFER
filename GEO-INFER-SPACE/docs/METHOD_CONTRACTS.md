@@ -8,6 +8,14 @@ integration and missing observations.
 
 ## Native H3 methods
 
+The H3 and SRAI point-indexing methods use latitude-first WGS84 inputs in
+degrees. Both reject out-of-range or nonfinite coordinates, booleans, and
+resolutions outside the integer range 0–15 before assigning a cell.
+`H3StateSpace.locate` applies the same coordinate rules within its fixed
+domain. A containing-cell identifier records point support. Allocating an
+extensive quantity such as demand in MWh requires a separate area or weight
+crosswalk that conserves the source total.
+
 `core.spatial_methods.SpatialMethods` validates canonical, unique,
 same-resolution cell domains for observation operations. Set overlay and
 coverage deduplicate repeated cells explicitly. Filters retain input order.

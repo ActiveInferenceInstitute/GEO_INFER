@@ -329,6 +329,34 @@ class TestSRAIBackendWithLibrary:
         cell = srai_backend.latlng_to_cell(37.7749, -122.4194, 9)
         assert isinstance(cell, str)
 
+    def test_srai_point_contract_matches_h3(self, h3_backend, srai_backend):
+        backends = [h3_backend]
+        if srai_backend.is_available():
+            backends.append(srai_backend)
+            for latitude, longitude in [(37.7749, -122.4194), (37.8044, -122.2712)]:
+                expected = h3_backend.latlng_to_cell(latitude, longitude, 6)
+                assert srai_backend.latlng_to_cell(latitude, longitude, 6) == expected
+        else:
+            from geo_infer_space.core.interfaces import SRAIUnavailableError
+
+            with pytest.raises(SRAIUnavailableError):
+                srai_backend.latlng_to_cell(37.7749, -122.4194, 6)
+
+        for backend in backends:
+            for latitude, longitude in [
+                (100.0, -122.4194),
+                (37.7749, 220.0),
+                (True, -122.4194),
+                (37.7749, float("nan")),
+                (float("inf"), -122.4194),
+                (10**400, -122.4194),
+            ]:
+                with pytest.raises(ValueError, match="finite WGS84"):
+                    backend.latlng_to_cell(latitude, longitude, 6)
+            for resolution in (True, 6.5, -1, 16):
+                with pytest.raises(ValueError, match="resolution must be an integer"):
+                    backend.latlng_to_cell(37.7749, -122.4194, resolution)
+
     def test_srai_cell_to_latlng(self, srai_backend):
         """Test SRAI cell to coordinate conversion."""
         if not srai_backend.is_available():

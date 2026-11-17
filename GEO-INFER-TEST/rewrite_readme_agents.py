@@ -895,6 +895,8 @@ See [GNN interchange](docs/gnn_interchange.md) for released producer commands.
   its interface; broken installed dependencies propagate when it is loaded.
 - `dispatcher.backends` contains realized implementations. Use
   `get_available_backends()` or `get_backend_info()` for full discovery.
+- H3 and SRAI point indexing share the same latitude-first WGS84 and integer
+  resolution validation. See [method contracts](docs/METHOD_CONTRACTS.md).
 
 
 - `geo_infer_space.nested.NestedH3Grid` builds real `h3>=4.5.0,<5`
@@ -1217,6 +1219,8 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
   its interface; broken installed dependencies propagate when it is loaded.
 - `dispatcher.backends` contains realized implementations. Use
   `get_available_backends()` or `get_backend_info()` for full discovery.
+- H3 and SRAI point indexing share the same latitude-first WGS84 and integer
+  resolution validation. See [method contracts](docs/METHOD_CONTRACTS.md).
 
 
 - `NestedH3Grid` owns H3 parent/child closure, validation, same-resolution

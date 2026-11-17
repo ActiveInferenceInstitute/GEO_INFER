@@ -76,6 +76,18 @@ def _resolution(value: int, name: str) -> None:
         raise ValueError(f"{name} must be an integer between 0 and 15")
 
 
+def _wgs84_coordinates(latitude: float, longitude: float) -> None:
+    if (
+        isinstance(latitude, bool)
+        or isinstance(longitude, bool)
+        or not isinstance(latitude, (int, float))
+        or not isinstance(longitude, (int, float))
+        or not -90 <= latitude <= 90
+        or not -180 <= longitude <= 180
+    ):
+        raise ValueError("Expected finite WGS84 latitude/longitude")
+
+
 def _positive_integer(value: int, name: str) -> None:
     if isinstance(value, bool) or not isinstance(value, int) or value < 1:
         raise ValueError(f"{name} must be a positive integer")

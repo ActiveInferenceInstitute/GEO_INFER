@@ -1,12 +1,13 @@
 """Ordered H3 state spaces with bounded, stochastic movement operators."""
 
 from dataclasses import dataclass
-import math
 from collections.abc import Iterable
 
 import h3
 import numpy as np
 from scipy.sparse import csc_matrix, eye
+
+from .h3_policy import _wgs84_coordinates
 
 
 @dataclass(frozen=True, init=False)
@@ -41,17 +42,7 @@ class H3StateSpace:
 
     def locate(self, latitude: float, longitude: float) -> int:
         """Return the state for a WGS84 point; outside-domain points raise."""
-        if (
-            isinstance(latitude, bool)
-            or isinstance(longitude, bool)
-            or not isinstance(latitude, (int, float))
-            or not isinstance(longitude, (int, float))
-            or not math.isfinite(latitude)
-            or not math.isfinite(longitude)
-            or not -90 <= latitude <= 90
-            or not -180 <= longitude <= 180
-        ):
-            raise ValueError("Expected finite WGS84 latitude/longitude")
+        _wgs84_coordinates(latitude, longitude)
         cell = h3.latlng_to_cell(latitude, longitude, h3.get_resolution(self.cells[0]))
         try:
             return self.cells.index(cell)

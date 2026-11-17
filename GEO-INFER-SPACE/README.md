@@ -80,6 +80,8 @@ uv run python GEO-INFER-TEST/run_unified_tests.py --module SPACE
   its interface; broken installed dependencies propagate when it is loaded.
 - `dispatcher.backends` contains realized implementations. Use
   `get_available_backends()` or `get_backend_info()` for full discovery.
+- H3 and SRAI point indexing share the same latitude-first WGS84 and integer
+  resolution validation. See [method contracts](docs/METHOD_CONTRACTS.md).
 
 
 - `geo_infer_space.nested.NestedH3Grid` builds real `h3>=4.5.0,<5`

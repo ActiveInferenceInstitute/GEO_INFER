@@ -20,6 +20,7 @@ from ..._h3_version import (
     parse_h3_version as _version_tuple,
 )
 
+from ...core.h3_policy import _resolution, _wgs84_coordinates
 from ...core.interfaces import H3UnavailableError
 
 if TYPE_CHECKING:
@@ -189,23 +190,8 @@ class H3Backend:
             ValueError: If coordinates or resolution are invalid
         """
         logger.debug(f"Converting ({lat}, {lng}) to H3 cell at resolution {resolution}")
-        if (
-            isinstance(lat, bool)
-            or isinstance(lng, bool)
-            or not isinstance(lat, (int, float))
-            or not isinstance(lng, (int, float))
-            or not math.isfinite(lat)
-            or not math.isfinite(lng)
-            or not -90 <= lat <= 90
-            or not -180 <= lng <= 180
-        ):
-            raise ValueError("Expected finite WGS84 latitude/longitude")
-        if (
-            isinstance(resolution, bool)
-            or not isinstance(resolution, int)
-            or not 0 <= resolution <= 15
-        ):
-            raise ValueError("resolution must be an integer between 0 and 15")
+        _wgs84_coordinates(lat, lng)
+        _resolution(resolution, "resolution")
         return cast(str, self.h3.latlng_to_cell(lat, lng, resolution))
 
     @_require_h3("cell_to_latlng")
