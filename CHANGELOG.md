@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Answer missing, non-Bearer and invalid REST credentials with HTTP 401 and a
+  `WWW-Authenticate: Bearer` challenge in ECON, COMMS and SEC (#132). ECON and
+  COMMS use `HTTPBearer(auto_error=False)` and raise the challenge themselves,
+  because their declared `fastapi>=0.100.0` range includes releases before
+  0.122 that answer a missing Bearer header with 403. 403 remains reserved for
+  authenticated callers without a permission.
+- Repair COMMS REST authentication: routes received the `HTTPBearer` scheme
+  object instead of parsed credentials, so every authenticated request failed
+  with HTTP 500. Routes now resolve credentials through `Security`.
+
 ### Maintenance
 
 - Bump ACT's `inferactively-pymdp` pin from `1.0.4` to the released `1.0.5`

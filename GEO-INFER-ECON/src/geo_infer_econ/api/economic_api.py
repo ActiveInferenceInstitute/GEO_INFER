@@ -42,6 +42,10 @@ from ..utils.visualizer import ResultsVisualizer
 
 
 # Request/Response Models
+# RFC 9110 section 11.6.1: a 401 response carries the scheme challenge.
+BEARER_CHALLENGE = {"WWW-Authenticate": "Bearer"}
+
+
 class APIResponse(BaseModel):
     """Standard API response format"""
 
@@ -197,7 +201,11 @@ class EconomicAnalysisAPI:
 
     def _setup_security(self) -> None:
         """Setup authentication and authorization."""
-        self.security = HTTPBearer()
+        # ``auto_error=False`` keeps the missing or non-Bearer credentials
+        # response independent of the installed FastAPI version (releases
+        # before 0.122 answered 403); ``_authenticate_request`` raises every
+        # credential rejection as a 401 Bearer challenge.
+        self.security = HTTPBearer(auto_error=False)
         self.api_keys = self.config.get("api_keys", {})
         self.jwt_secret = self.config.get("jwt_secret", "your-secret-key")
 
@@ -237,9 +245,21 @@ class EconomicAnalysisAPI:
         )
 
     async def _authenticate_request(
-        self, credentials: HTTPAuthorizationCredentials
+        self, credentials: HTTPAuthorizationCredentials | None
     ) -> str:
-        """Authenticate API request."""
+        """Authenticate API request.
+
+        Missing, non-Bearer and unknown credentials are all answered with
+        HTTP 401 and a ``WWW-Authenticate: Bearer`` challenge (RFC 9110
+        section 11.6.1). 403 is reserved for authenticated callers that lack
+        a permission.
+        """
+        if credentials is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated",
+                headers=BEARER_CHALLENGE,
+            )
         token = credentials.credentials
 
         # Simple API key authentication (in production, use JWT)
@@ -251,6 +271,7 @@ class EconomicAnalysisAPI:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
+            headers=BEARER_CHALLENGE,
         )
 
     def _create_execution_id(self) -> str:
@@ -360,7 +381,7 @@ class EconomicAnalysisAPI:
         @self.app.post("/api/models/execute", response_model=ModelExecutionResponse)
         async def execute_model(
             request: ModelExecutionRequest,
-            credentials: HTTPAuthorizationCredentials = Security(self.security),
+            credentials: HTTPAuthorizationCredentials | None = Security(self.security),
         ) -> ModelExecutionResponse:
             """Execute economic model with comprehensive monitoring."""
             start_time = time.time()

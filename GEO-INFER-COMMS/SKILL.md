@@ -96,7 +96,7 @@ The adapter retains this module's dependencies and authorization requirements.
 ## Guidelines
 
 - Broadcasts with `target_type in {"channel", "role", "location_based"}` require a `recipient_resolver` on the broker; without one they raise `ValueError`.
-- REST auth: set `COMMS_JWT_SECRET` to enable HS256 JWT validation (PyJWT); invalid tokens are rejected with 401. Without a secret, a deterministic hash fallback derives the user ID from the token. WebSocket auth follows the same policy.
+- REST auth: set `COMMS_JWT_SECRET` to enable HS256 JWT validation (PyJWT); missing, non-Bearer and invalid credentials are rejected with 401 and a `WWW-Authenticate: Bearer` challenge, independent of the installed FastAPI version. Without a secret, a deterministic hash fallback derives the user ID from the token. WebSocket auth follows the same policy.
 - Notification delivery handlers for email/SMS/push log intended delivery; register custom handlers via `NotificationManager.register_delivery_handler` for real transports.
 - System metrics are nested: `metrics["message_metrics"]["metrics"]["messages_sent"]`, etc.
 - Test: `uv run python GEO-INFER-TEST/run_unified_tests.py --module COMMS`

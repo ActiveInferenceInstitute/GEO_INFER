@@ -108,3 +108,68 @@ class TestCredentialValidation:
 
         expected = "user_" + hashlib.sha256(b"raw-opaque-token").hexdigest()[:8]
         assert user_id == expected
+
+
+class TestAuthenticatedHttpContract:
+    """End-to-end REST authentication contract (#132 repo-wide consistency)."""
+
+    SECRET = "http-contract-secret-0123456789abcdef-0123456789abcdef"
+
+    def _client(self, monkeypatch: pytest.MonkeyPatch):
+        from fastapi.testclient import TestClient
+
+        monkeypatch.setenv("COMMS_JWT_SECRET", self.SECRET)
+        system = GeospatialCommunicationSystem(config={"enable_persistence": False})
+        api = CommunicationAPI(system, enable_auth=True, enable_cors=False)
+        return api, TestClient(api.app, raise_server_exceptions=False)
+
+    @pytest.mark.parametrize(
+        "headers",
+        [
+            {},
+            {"Authorization": "Basic dXNlcjpwYXNz"},
+            {"Authorization": "Bearer short"},
+            {"Authorization": "Bearer not-a-valid-jwt-token"},
+        ],
+        ids=["missing", "non-bearer", "too-short", "invalid-jwt"],
+    )
+    def test_rejected_credentials_are_a_401_bearer_challenge(
+        self, monkeypatch: pytest.MonkeyPatch, headers: dict[str, str]
+    ) -> None:
+        _, client = self._client(monkeypatch)
+
+        for method, path, kwargs in (
+            ("GET", "/messages", {}),
+            ("POST", "/messages", {"json": {"content": "hi", "recipients": ["r"]}}),
+        ):
+            response = client.request(method, path, headers=headers, **kwargs)
+
+            assert response.status_code == 401, (method, path, response.text)
+            assert response.headers.get("WWW-Authenticate") == "Bearer"
+
+    def test_valid_bearer_token_reaches_the_endpoint(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import jwt as pyjwt
+
+        _, client = self._client(monkeypatch)
+        token = pyjwt.encode(
+            {"sub": "alice", "exp": int(time.time()) + 60},
+            self.SECRET,
+            algorithm="HS256",
+        )
+
+        response = client.get("/messages", headers={"Authorization": f"Bearer {token}"})
+
+        assert response.status_code == 200, response.text
+        assert isinstance(response.json(), list)
+
+    def test_missing_credentials_contract_is_owned_by_the_api(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        api, _ = self._client(monkeypatch)
+
+        # FastAPI < 0.122 answers a missing Bearer header with 403 when
+        # auto_error is enabled; the package accepts fastapi>=0.100.0.
+        assert api.security is not None
+        assert api.security.auto_error is False
