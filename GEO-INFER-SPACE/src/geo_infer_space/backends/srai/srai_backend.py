@@ -16,6 +16,7 @@ from functools import wraps
 from typing import Any, TypeVar, cast
 from collections.abc import Callable
 
+from ...core.h3_policy import _resolution, _wgs84_coordinates
 from ...core.interfaces import (
     SRAIUnavailableError,
 )
@@ -179,7 +180,8 @@ class SraiBackend:
         logger.debug(f"Converting ({lat}, {lng}) to cell at resolution {resolution}")
 
         if self.default_regionalizer == "h3":
-            # SRAI uses H3 under the hood for H3 regionalizer
+            _wgs84_coordinates(lat, lng)
+            _resolution(resolution, "resolution")
             import h3
 
             cell = h3.latlng_to_cell(lat, lng, resolution)
