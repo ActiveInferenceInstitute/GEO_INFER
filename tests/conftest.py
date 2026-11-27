@@ -173,7 +173,7 @@ def generatable_checkout(generator: ModuleType, tmp_path: Path) -> Path:
     root = tmp_path / "checkout"
     root.mkdir()
     manuscript = root / "docs" / "manuscript"
-    manuscript.mkdir()
+    manuscript.mkdir(parents=True)
     (manuscript / "config.yaml").write_text(
         "paper:\n"
         '  version: "0.0.0"\n'
