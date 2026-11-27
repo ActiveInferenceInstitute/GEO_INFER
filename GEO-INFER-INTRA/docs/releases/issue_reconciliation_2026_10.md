@@ -51,7 +51,7 @@ Accepted main `fea9f95706e618b61ff9b2cd1e955ef84eae007e` incorporated the DATA a
 disposable-service continuation through [PR #81](https://github.com/ActiveInferenceInstitute/GEO_INFER/pull/81).
 It preserves the PR #80 modernization and accepted GNN 4.1.0 ancestry. Local
 full-eleven verification, 45 unit suites / 10,883 cases, 144+7 ROOT/native tests,
-30-page manuscript/four-figure scientific inspection and fresh independent
+30-page docs/manuscript/four-figure scientific inspection and fresh independent
 source, hosted-artifact and whole-output custody reviews passed.
 [Main CI](https://github.com/ActiveInferenceInstitute/GEO_INFER/actions/runs/37855057244)
 passed all 22 jobs. Supplementary Windows, portability, paired GNN and whole-tree

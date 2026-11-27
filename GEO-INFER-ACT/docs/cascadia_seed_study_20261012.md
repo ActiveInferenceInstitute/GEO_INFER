@@ -56,7 +56,7 @@ for the unrounded measurements.
 
 All 149 frozen code and dependency-owner files match the named GEO-INFER
 revision byte for byte. The manifest honestly retains `workspace_dirty: true`:
-concurrent documentation generation changed `manuscript/config.yaml`; its
+concurrent documentation generation changed `docs/manuscript/config.yaml`; its
 simulation owners did not change. The final source-drift list is empty, and
 read-only validation against that source revision passed. The archived config
 is a custody snapshot whose data paths were originally relative to the

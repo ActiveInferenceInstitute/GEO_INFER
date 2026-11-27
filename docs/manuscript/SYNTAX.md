@@ -23,7 +23,7 @@ This manuscript uses the shared template conventions from `docs/guides/manuscrip
 The per-module entries of the Supplemental Module Catalog live in
 `sections/<lowercase-slug>.md` (one file per module, e.g. `sections/sec.md`
 for GEO-INFER-SEC). They are not published files in the table above: the
-render script concatenates every `manuscript/sections/*.md` in alphabetical
+render script concatenates every `docs/manuscript/sections/*.md` in alphabetical
 stem order after `S02_module_catalog.md` when it builds the combined
 document (`MODULE_CATALOG_ENTRY` and `_module_catalog_sections` in
 `scripts/render_manuscript_pdf.py`). A missing or empty `sections/`
@@ -54,7 +54,7 @@ writes, and `--check` audits the same combined citation scope.
 ## Figures
 
 Generated figures are produced by `generate_research_artifacts.py`, registered
-with dynamic captions, and live under `../output/figures/` in the authored
+with dynamic captions, and live under `../../output/figures/` in the authored
 manuscript source. They are referenced with labels such as:
 
 ```markdown

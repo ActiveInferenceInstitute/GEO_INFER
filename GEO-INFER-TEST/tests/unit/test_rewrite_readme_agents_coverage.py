@@ -113,7 +113,7 @@ def test_gate_skips_rule_based_classes(tmp_path):
         "raw/input.bin": "x\n",
         "data/payload.csv": "a,b\n",
         ".aii/config.yaml": "version: 1\n",
-        "manuscript/sections/ch1.md": "# Chapter\n",
+        "docs/manuscript/sections/ch1.md": "# Chapter\n",
         "locations/california/models/model.bin": "x\n",
     }
     for name, content in files.items():

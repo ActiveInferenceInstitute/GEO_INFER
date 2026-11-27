@@ -3,7 +3,7 @@
 The float-placement defect — a page carrying one figure, its caption, and the
 folio, against 1,800-2,000 characters on an ordinary page — was previously
 covered by asserting that four ``\\renewcommand`` lines were present in
-``manuscript/preamble.md``.  That assertion passed while the defect was still
+``docs/manuscript/preamble.md``.  That assertion passed while the defect was still
 visible in the PDF: the parameters were relaxed enough for two of the three
 figures and the third still cleared ``\\floatpagefraction``.  These tests read
 the artifact.
@@ -306,7 +306,7 @@ class TestPreambleDoesNotLeakIntoTheBody:
     def test_no_preamble_token_reaches_the_page(
         self, repo_root: Path, rendered_pdf: Path
     ) -> None:
-        preamble = (repo_root / "manuscript" / "preamble.md").read_text(
+        preamble = (repo_root / "docs" / "manuscript" / "preamble.md").read_text(
             encoding="utf-8"
         )
         names = sorted(

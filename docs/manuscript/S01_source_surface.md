@@ -33,18 +33,18 @@ writes what, which is the invariant the Reproducibility contract depends on.
 
 | Path | Written by | Tracked |
 |---|---|---|
-| `manuscript/0*.md`, `manuscript/9*.md`, `manuscript/S*.md` | Author | yes |
-| `manuscript/sections/*.md` | Author | yes |
-| `manuscript/references.bib` | Author | yes |
-| `manuscript/preamble.md` | Author | yes |
-| `manuscript/generate_research_artifacts.py` | Author | yes |
-| `manuscript/config.yaml` | Author, except four generator-owned fields marked in place | yes |
+| `docs/manuscript/0*.md`, `docs/manuscript/9*.md`, `docs/manuscript/S*.md` | Author | yes |
+| `docs/manuscript/sections/*.md` | Author | yes |
+| `docs/manuscript/references.bib` | Author | yes |
+| `docs/manuscript/preamble.md` | Author | yes |
+| `docs/manuscript/generate_research_artifacts.py` | Author | yes |
+| `docs/manuscript/config.yaml` | Author, except four generator-owned fields marked in place | yes |
 | `output/data/`, `output/figures`, `output/manuscript/` | Generator | no |
 | `output/pdf/`, `output/web/` | Renderer | no |
 
 : Authored versus generated files. Every tracked file under `manuscript/` is
 authored except four generator-owned fields marked in place in
-`manuscript/config.yaml` (project version, title-page date, publication year,
+`docs/manuscript/config.yaml` (project version, title-page date, publication year,
 licence); everything under `output/` is disposable, rebuilt each build. Read
 the table as the write-ownership contract behind Reproducibility: every value
 is hand-reviewable at a tracked path or regenerated from a measured one.
@@ -57,7 +57,7 @@ resolved manuscript copy in this document, and that a publication build must
 use, is:
 
 ```bash
-uv run python manuscript/generate_research_artifacts.py \
+uv run python docs/manuscript/generate_research_artifacts.py \
     --full-validation --publication
 ```
 

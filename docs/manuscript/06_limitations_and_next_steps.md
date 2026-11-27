@@ -80,5 +80,5 @@
 Changing values must enter the manuscript through the generator. The tracked
 source contains tokens; resolved output is disposable and must never be edited
 by hand. The one tracked file the generator itself writes is
-`manuscript/config.yaml`, for the reason recorded in the Reproducibility
+`docs/manuscript/config.yaml`, for the reason recorded in the Reproducibility
 section.

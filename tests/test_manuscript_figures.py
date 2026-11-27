@@ -156,7 +156,7 @@ class TestFigureLegibility:
         # lets a float claim one once it fills \floatpagefraction. At the
         # defaults (0.7 / 0.5) the two half-height evidence figures each took a
         # page carrying ~300 characters of caption and nothing else.
-        preamble = (repo_root / "manuscript" / "preamble.md").read_text("utf-8")
+        preamble = (repo_root / "docs" / "manuscript" / "preamble.md").read_text("utf-8")
         for command, value in (
             ("topfraction", "0.9"),
             ("bottomfraction", "0.9"),
@@ -203,7 +203,7 @@ class TestFigureLegibility:
     ) -> None:
         # The generator refuses a figure the preamble would send to a float
         # page, so the two have to name the same fraction.
-        preamble = (repo_root / "manuscript" / "preamble.md").read_text("utf-8")
+        preamble = (repo_root / "docs" / "manuscript" / "preamble.md").read_text("utf-8")
         assert (
             f"\\renewcommand{{\\floatpagefraction}}{{{generator.FLOAT_PAGE_FRACTION}}}"
             in preamble
@@ -213,7 +213,7 @@ class TestFigureLegibility:
         self, generator: ModuleType, repo_root: Path
     ) -> None:
         config = yaml.safe_load(
-            (repo_root / "manuscript" / "config.yaml").read_text(encoding="utf-8")
+            (repo_root / "docs" / "manuscript" / "config.yaml").read_text(encoding="utf-8")
         )
         rendering = config["rendering"]
         assert float(rendering["figure_height_fraction"]) == pytest.approx(

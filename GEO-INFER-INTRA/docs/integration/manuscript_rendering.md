@@ -51,7 +51,7 @@ acceptance, even when the external renderer exits successfully.
 
 ## Cover and output checks
 
-`manuscript/config.yaml` declares `paper.cover.image` and informative
+`docs/manuscript/config.yaml` declares `paper.cover.image` and informative
 `paper.cover.alt`. The cover uses the same generated `graphical_abstract.png`
 as the Abstract section: four panels connect the measured module themes,
 geospatial and inference components, verification loop and bounded claims.

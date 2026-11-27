@@ -12,7 +12,7 @@
 | `output/manuscript/` | Resolved publication copies consumed by a renderer. |
 
 : Evidence inventory of the generated artifacts. Each row names one artifact
-`manuscript/generate_research_artifacts.py` writes in the same pass that
+`docs/manuscript/generate_research_artifacts.py` writes in the same pass that
 produced this manuscript's figures and variables, together with the role it
 plays: the inventory and the variable map record what was measured, the
 verification record what was executed, the figure registry what was drawn and

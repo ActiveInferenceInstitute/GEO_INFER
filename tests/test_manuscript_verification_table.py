@@ -112,7 +112,7 @@ class TestVerificationTable:
 
     def test_the_token_is_authored_into_the_manuscript(self, repo_root) -> None:
         authored = (
-            repo_root / "manuscript" / "04_artifacts_and_evidence.md"
+            repo_root / "docs" / "manuscript" / "04_artifacts_and_evidence.md"
         ).read_text(encoding="utf-8")
         assert "{{VERIFICATION_TABLE}}" in authored
 
@@ -409,7 +409,7 @@ class TestRunVerification:
     ) -> None:
         for directory in ("src", "examples"):
             (tmp_path / "GEO-INFER-FIXTURE" / directory).mkdir(parents=True)
-        (tmp_path / "manuscript").mkdir()
+        (tmp_path / "docs" / "manuscript").mkdir(parents=True)
         self._fake_run(monkeypatch, generator, [(3, "x" * 2500, "")])
         results = generator.run_verification(tmp_path)
         assert len(results) == len(generator.VERIFICATION_COMMANDS)
@@ -423,7 +423,7 @@ class TestRunVerification:
     ) -> None:
         for directory in ("src", "examples"):
             (tmp_path / "GEO-INFER-FIXTURE" / directory).mkdir(parents=True)
-        (tmp_path / "manuscript").mkdir()
+        (tmp_path / "docs" / "manuscript").mkdir(parents=True)
         self._fake_run(
             monkeypatch, generator, [(1, "boom", "traceback"), (0, "ok", "")]
         )
@@ -474,7 +474,7 @@ class TestRunVerification:
         for module in ("GEO-INFER-Z", "GEO-INFER-A"):
             for directory in ("src", "examples"):
                 (tmp_path / module / directory).mkdir(parents=True)
-        (tmp_path / "manuscript").mkdir()
+        (tmp_path / "docs" / "manuscript").mkdir(parents=True)
         argv = generator._verification_argv(
             "python -m compileall -q GEO-INFER-*/src GEO-INFER-*/examples manuscript",
             tmp_path,

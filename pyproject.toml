@@ -435,5 +435,5 @@ ignore = [
 "**/examples/**" = ["NPY002"]
 "**/scripts/**" = ["NPY002"]
 "GEO-INFER-PLACE/locations/**" = ["NPY002"]
-"manuscript/**" = ["NPY002"]
+"docs/manuscript/**" = ["NPY002"]
 "tests/**" = ["NPY002"]

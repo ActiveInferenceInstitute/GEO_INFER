@@ -246,7 +246,7 @@ class TestCarriedEvidenceIsPublishedAsCarried:
         self, generator: ModuleType, repo_root: Path
     ) -> None:
         # A generated sentence nothing prints is not a disclosure.
-        section = (repo_root / "manuscript" / "04_artifacts_and_evidence.md").read_text(
+        section = (repo_root / "docs" / "manuscript" / "04_artifacts_and_evidence.md").read_text(
             encoding="utf-8"
         )
         assert "{{VERIFICATION_RECORD_PROVENANCE}}" in section

@@ -17,7 +17,7 @@ import pytest
 @pytest.fixture
 def bib_tree(tmp_path: Path) -> Path:
     root = tmp_path / "checkout"
-    manuscript = root / "manuscript"
+    manuscript = root / "docs" / "manuscript"
     manuscript.mkdir(parents=True)
     (manuscript / "references.bib").write_text(
         "@article{cited_entry,\n  title = {Cited},\n}\n\n"
@@ -26,7 +26,7 @@ def bib_tree(tmp_path: Path) -> Path:
     )
     (manuscript / "config.yaml").write_text(
         "bibliography:\n"
-        '  references_path: "manuscript/references.bib"\n'
+        '  references_path: "docs/manuscript/references.bib"\n'
         "  fail_on_missing: true\n"
         "  fail_on_unused: false\n",
         encoding="utf-8",
@@ -92,7 +92,7 @@ class TestBibliographyAudit:
             "fail_on_missing": True,
             "fail_on_unused": False,
         }
-        config = bib_tree / "manuscript" / "config.yaml"
+        config = bib_tree / "docs" / "manuscript" / "config.yaml"
         config.write_text(
             config.read_text(encoding="utf-8").replace(
                 "fail_on_unused: false", "fail_on_unused: true"
@@ -115,10 +115,10 @@ class TestPolicySectionAwareness:
     def test_a_reindented_bibliography_block_raises_instead_of_defaulting(
         self, generator: ModuleType, bib_tree: Path
     ) -> None:
-        config = bib_tree / "manuscript" / "config.yaml"
+        config = bib_tree / "docs" / "manuscript" / "config.yaml"
         config.write_text(
             "bibliography:\n"
-            '    references_path: "manuscript/references.bib"\n'
+            '    references_path: "docs/manuscript/references.bib"\n'
             "    fail_on_missing: true\n"
             "    fail_on_unused: true\n",
             encoding="utf-8",
@@ -129,13 +129,13 @@ class TestPolicySectionAwareness:
     def test_a_same_prefixed_key_in_another_section_is_ignored(
         self, generator: ModuleType, bib_tree: Path
     ) -> None:
-        config = bib_tree / "manuscript" / "config.yaml"
+        config = bib_tree / "docs" / "manuscript" / "config.yaml"
         config.write_text(
             "render:\n"
             "  fail_on_unused: true\n"
             "\n"
             "bibliography:\n"
-            '  references_path: "manuscript/references.bib"\n'
+            '  references_path: "docs/manuscript/references.bib"\n'
             "  fail_on_missing: true\n"
             "  fail_on_unused: false\n",
             encoding="utf-8",
@@ -148,10 +148,10 @@ class TestPolicySectionAwareness:
     def test_a_missing_fail_on_unused_key_raises(
         self, generator: ModuleType, bib_tree: Path
     ) -> None:
-        config = bib_tree / "manuscript" / "config.yaml"
+        config = bib_tree / "docs" / "manuscript" / "config.yaml"
         config.write_text(
             "bibliography:\n"
-            '  references_path: "manuscript/references.bib"\n'
+            '  references_path: "docs/manuscript/references.bib"\n'
             "  fail_on_missing: true\n",
             encoding="utf-8",
         )
@@ -200,7 +200,7 @@ def _settle_source(generator: ModuleType, root: Path, env: dict[str, str]) -> No
     git("commit", "-q", "-m", "bibliography fixture")
     generator.refresh_config_metadata(root, generator.config_metadata_values(root))
     if generator._dirty_file_count(root):
-        git("add", "manuscript/config.yaml")
+        git("add", "docs/manuscript/config.yaml")
         git("commit", "-q", "-m", "settle bibliography metadata")
 
 
@@ -222,20 +222,20 @@ def test_static_citation_failure_precedes_verification_and_output_writes(
 ) -> None:
     root = generatable_checkout
     if problem == "orphan":
-        (root / "manuscript/references.bib").write_text(
+        (root / "docs/manuscript/references.bib").write_text(
             "@book{orphan_entry, title={Uncited}}\n"
         )
         # Operational docs are excluded from the rendered publication. Module
         # chapters are included and are exercised separately below.
         for name in generator.EXCLUDED_MANUSCRIPT_DOCS:
-            (root / "manuscript" / name).write_text("[@orphan_entry]\n")
+            (root / "docs" / "manuscript" / name).write_text("[@orphan_entry]\n")
         match = "bibliography entries are never cited: orphan_entry"
     elif problem == "undefined":
-        (root / "manuscript/00_abstract.md").write_text("# Abstract\n[@ghost]\n")
+        (root / "docs/manuscript/00_abstract.md").write_text("# Abstract\n[@ghost]\n")
         match = "citations with no bibliography entry: ghost"
     else:
-        (root / "manuscript/sections").mkdir()
-        (root / "manuscript/sections/example.md").write_text("## Example\n[@ghost]\n")
+        (root / "docs/manuscript/sections").mkdir()
+        (root / "docs/manuscript/sections/example.md").write_text("## Example\n[@ghost]\n")
         match = "citations with no bibliography entry: ghost"
     _settle_source(generator, root, git_environment)
     prior = root / "output/data/research_verification.json"
@@ -243,7 +243,7 @@ def test_static_citation_failure_precedes_verification_and_output_writes(
     prior.write_bytes(b'{"prior": "retained evidence"}\n')
     (root / "output/prior.pdf").write_bytes(b"retained publication bytes\x00")
     before = _output_bytes(root)
-    config_before = (root / "manuscript/config.yaml").read_bytes()
+    config_before = (root / "docs/manuscript/config.yaml").read_bytes()
     admitted: list[bool] = []
 
     def unexpected_verification(*args, **kwargs):
@@ -255,7 +255,7 @@ def test_static_citation_failure_precedes_verification_and_output_writes(
         generator.generate(root, verify=True, reuse_verification=False)
     assert admitted == []
     assert _output_bytes(root) == before
-    assert (root / "manuscript/config.yaml").read_bytes() == config_before
+    assert (root / "docs/manuscript/config.yaml").read_bytes() == config_before
     assert generator._dirty_file_count(root) == 0
 
 
@@ -268,18 +268,18 @@ def test_false_policy_allows_generation_and_only_final_audit_warns(
     problem: str,
 ) -> None:
     root = generatable_checkout
-    config = root / "manuscript/config.yaml"
+    config = root / "docs/manuscript/config.yaml"
     key = "fail_on_unused" if problem == "orphan" else "fail_on_missing"
     config.write_text(config.read_text().replace(f"{key}: true", f"{key}: false"))
     if problem == "orphan":
-        (root / "manuscript/references.bib").write_text(
+        (root / "docs/manuscript/references.bib").write_text(
             "@book{orphan_entry, title={Uncited}}\n"
         )
     elif problem == "undefined":
-        (root / "manuscript/00_abstract.md").write_text("# Abstract\n[@ghost]\n")
+        (root / "docs/manuscript/00_abstract.md").write_text("# Abstract\n[@ghost]\n")
     else:
-        (root / "manuscript/sections").mkdir()
-        (root / "manuscript/sections/example.md").write_text("## Example\n[@ghost]\n")
+        (root / "docs/manuscript/sections").mkdir()
+        (root / "docs/manuscript/sections/example.md").write_text("## Example\n[@ghost]\n")
     _settle_source(generator, root, git_environment)
     generator.generate(root)
     written = root / "output/manuscript/00_abstract.md"
@@ -304,10 +304,10 @@ def test_existing_variable_can_supply_a_valid_bibliography_citation(
     project.write_text(
         project.read_text().replace('license = "MIT"', 'license = "MIT [@cited_entry]"')
     )
-    (root / "manuscript/references.bib").write_text(
+    (root / "docs/manuscript/references.bib").write_text(
         "@book{cited_entry, title={Used through existing variable}}\n"
     )
-    (root / "manuscript/00_abstract.md").write_text(
+    (root / "docs/manuscript/00_abstract.md").write_text(
         "# Abstract\nLicense: {{PROJECT_LICENSE}}\n"
     )
     _settle_source(generator, root, git_environment)
@@ -323,10 +323,10 @@ def test_chapter_only_citation_is_included_without_expanding_resolved_outputs(
     git_environment: dict[str, str],
 ) -> None:
     root = generatable_checkout
-    (root / "manuscript/references.bib").write_text(
+    (root / "docs/manuscript/references.bib").write_text(
         "@book{chapter_entry, title={Cited only by the rendered module catalog}}\n"
     )
-    chapters = root / "manuscript/sections"
+    chapters = root / "docs/manuscript/sections"
     chapters.mkdir()
     chapter = chapters / "example.md"
     chapter.write_text("## Example\nSee [@chapter_entry].\n")
@@ -349,7 +349,7 @@ def test_chapter_only_citation_is_included_without_expanding_resolved_outputs(
 def test_publication_preflight_keeps_catalog_chapter_text_literal(
     generator: ModuleType, bib_tree: Path
 ) -> None:
-    chapters = bib_tree / "manuscript/sections"
+    chapters = bib_tree / "docs/manuscript/sections"
     chapters.mkdir()
     (chapters / "example.md").write_text("{{PROJECT_LICENSE}}\n")
     top_level = _body(bib_tree, "[@cited_entry]\n")
@@ -366,10 +366,10 @@ def test_check_does_not_use_extra_output_markdown_to_rescue_orphan(
     git_environment: dict[str, str],
 ) -> None:
     root = generatable_checkout
-    (root / "manuscript/references.bib").write_text(
+    (root / "docs/manuscript/references.bib").write_text(
         "@book{cited_entry, title={Used in authored prose}}\n"
     )
-    chapters = root / "manuscript/sections"
+    chapters = root / "docs/manuscript/sections"
     chapters.mkdir()
     chapter = chapters / "example.md"
     chapter.write_text("## Example\n[@cited_entry]\n")
@@ -392,7 +392,7 @@ def test_resolved_audit_also_reads_rendered_catalog_chapters(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     root = generatable_checkout
-    chapters = root / "manuscript/sections"
+    chapters = root / "docs/manuscript/sections"
     chapters.mkdir()
     chapter = chapters / "example.md"
     chapter.write_text("## Example\nNo citation.\n")
@@ -418,7 +418,7 @@ def test_generated_citation_still_rejected_by_resolved_audit(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     root = generatable_checkout
-    (root / "manuscript/00_abstract.md").write_text("# Abstract\nNo static citation.\n")
+    (root / "docs/manuscript/00_abstract.md").write_text("# Abstract\nNo static citation.\n")
     _settle_source(generator, root, git_environment)
     original = generator.write_resolved_manuscript
 

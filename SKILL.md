@@ -26,8 +26,8 @@ underlying API's authority and side effects; skill loading grants none.
 ### Research source custody
 
 Commit source changes before preparing manuscript evidence. Run
-`uv run python manuscript/generate_research_artifacts.py --refresh-config`, then
-commit only `manuscript/config.yaml` as a separate final commit. Its measured
+`uv run python docs/manuscript/generate_research_artifacts.py --refresh-config`, then
+commit only `docs/manuscript/config.yaml` as a separate final commit. Its measured
 date excludes config-only commits, so that metadata reaches a fixed point.
 Clean generation refuses stale config before writing. Explicit `--allow-dirty`
 development builds retain their actual dirty source stamp; publication requires

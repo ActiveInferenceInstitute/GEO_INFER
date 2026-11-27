@@ -1019,7 +1019,7 @@ pass at that SHA.
 - Transient agent-cycle reports deleted (deep_review_2026_09_05.md plus three
   stale tracked assessment/execution reports) with references cleaned; the
   September review ledger and its compliance annex remain the durable
-  evidence record. `manuscript/README.md` was resynced by the sanctioned
+  evidence record. `docs/manuscript/README.md` was resynced by the sanctioned
   writer (+1 line: the final generator inventory lists
   `refresh_config_metadata`); generated signposts 1639/1639 current.
 

@@ -82,7 +82,7 @@ excluded on the CPU runners).
 | `build-smoke` | `python GEO-INFER-TEST/build_package_wheels.py` | one wheel per module builds |
 | `workflow-lint` | `actionlint` | 0 findings |
 | `test` (Python 3.11 and 3.12) | `run_unified_tests.py --category {unit,integration,performance,system} --timeout 600`; `run_unified_tests.py --h3-migration` | all pass |
-| `manuscript` | `manuscript/generate_research_artifacts.py --verify` and `--check`; `scripts/render_manuscript_pdf.py`; root `tests/` | all pass |
+| `manuscript` | `docs/manuscript/generate_research_artifacts.py --verify` and `--check`; `scripts/render_manuscript_pdf.py`; root `tests/` | all pass |
 | `slow-scheduled` (weekly) | `run_unified_tests.py --category slow --timeout 600` | all pass |
 
 All validator scripts live in `GEO-INFER-TEST/` and run through `uv run python`.

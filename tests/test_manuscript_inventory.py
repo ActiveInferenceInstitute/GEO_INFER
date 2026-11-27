@@ -17,7 +17,7 @@ import pytest
 
 def test_generator_rejects_catalog_drift(generator, tmp_path):
     """Generation checks its measured inventory before accepting narrative counts."""
-    sections = tmp_path / "manuscript" / "sections"
+    sections = tmp_path / "docs" / "manuscript" / "sections"
     sections.mkdir(parents=True)
     (sections / "space.md").write_text("The module has 7 test files.")
     inventory = SimpleNamespace(

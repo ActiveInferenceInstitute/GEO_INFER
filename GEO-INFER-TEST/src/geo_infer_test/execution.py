@@ -1044,7 +1044,7 @@ def run_coverage_analysis(timeout: int, fail_fast: bool = False) -> SuiteReport:
 
     for module in discover_workspace_test_targets():
         source_dirs = (
-            [module.path / "manuscript", module.path / "scripts"]
+            [module.path / "docs" / "manuscript", module.path / "scripts"]
             if module.name == "ROOT"
             else [module.path / "src"]
         )

@@ -37,7 +37,7 @@ gates; domain validity and hardware qualification remain separate concerns.
 
 Use the [module catalog](../modules/index.md) and
 [API reference policy](../api/reference.md) to find current interfaces. The
-repository's [manuscript bibliography](../../../manuscript/references.bib)
+repository's [manuscript bibliography](../../../docs/manuscript/references.bib)
 records scholarly references; [research artifacts](../integration/research_artifacts.md)
 explains the separate source-bound publication workflow.
 

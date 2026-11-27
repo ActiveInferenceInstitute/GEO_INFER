@@ -10,7 +10,7 @@ paper:
     image: "output/figures/graphical_abstract.png"
     alt: "Graphical abstract: modules grouped into themes composing into geospatial and inference models, verified by an evidence loop into executable claims."
   version: "0.4.0"  # generator-owned (PROJECT_VERSION)
-  date: "2026-11-17T06:47:48-08:00"  # generator-owned (MANUSCRIPT_SOURCE_DATE)
+  date: "2026-11-24T15:55:40-08:00"  # generator-owned (MANUSCRIPT_SOURCE_DATE)
 
 authors:
   - name: "Daniel Ari Friedman"
@@ -44,14 +44,14 @@ metadata:
   license: "CC BY-NC-SA 4.0"  # generator-owned (PROJECT_LICENSE)
   language: "en"
 
-manuscript_dir: "manuscript"
+manuscript_dir: "docs/manuscript"
 
 # Layout options consumed by the template renderer. figure_height_fraction is
 # the ``height=<fraction>\textheight`` bound applied to every \includegraphics.
 # The default 0.50 clamped every figure to half the text block, which scaled the
 # 45-row module inventory down to ~3pt type. The generator draws figures at the
 # printed size instead (see FIGURE_HEIGHT_FRACTION in
-# manuscript/generate_research_artifacts.py, which must match this value).
+# docs/manuscript/generate_research_artifacts.py, which must match this value).
 rendering:
   figure_height_fraction: 0.9
   front_matter_figure_height_fraction: 0.9
@@ -64,11 +64,11 @@ render:
     docx: false
     epub: false
 
-# Both gates are enforced by manuscript/generate_research_artifacts.py
+# Both gates are enforced by docs/manuscript/generate_research_artifacts.py
 # (audit_bibliography). No renderer code reads these keys, so before the
 # generator honoured them they described a check that did not run.
 bibliography:
-  references_path: "manuscript/references.bib"
+  references_path: "docs/manuscript/references.bib"
   fail_on_missing: true
   # Every entry in references.bib is now cited by the manuscript, so an
   # orphaned entry is a defect rather than a known state: audit_bibliography

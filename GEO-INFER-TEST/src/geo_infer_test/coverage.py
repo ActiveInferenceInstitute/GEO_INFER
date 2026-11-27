@@ -17,7 +17,7 @@ see xdist's execnet workers (the controller imports none of the source),
 while pytest-cov distributes coverage to workers and combines it.  The
 in-module pytest parallelism is two workers; the module process budget
 defaults to at most half the available CPUs, capped at four. ``--workers``
-sets that module budget explicitly. ROOT measures manuscript/scripts with
+sets that module budget explicitly. ROOT measures docs/manuscript/scripts with
 the registered manuscript profile, after package measurements finish.
 
 Output: one JSON object per module on stdout
@@ -118,7 +118,7 @@ def measure_module(module: str) -> dict:
             "-p",
             "no:cacheprovider",
             *(
-                (f"--cov={REPO_ROOT / 'manuscript'}", f"--cov={REPO_ROOT / 'scripts'}")
+                (f"--cov={REPO_ROOT / 'docs' / 'manuscript'}", f"--cov={REPO_ROOT / 'scripts'}")
                 if module == "ROOT"
                 else (f"--cov={package}",)
             ),

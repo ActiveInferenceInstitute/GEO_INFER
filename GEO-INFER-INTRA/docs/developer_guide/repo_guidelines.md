@@ -47,7 +47,7 @@ do not use destructive reset, checkout, or clean commands as a shortcut.
 
 Manuscript metadata is tracked source. After committing all source and generated
 signpost changes, run
-`uv run python manuscript/generate_research_artifacts.py --refresh-config` and commit only `manuscript/config.yaml` separately. The source
+`uv run python docs/manuscript/generate_research_artifacts.py --refresh-config` and commit only `docs/manuscript/config.yaml` separately. The source
 date excludes config-only commits, so this final commit leaves metadata stable.
 Clean generation rejects stale metadata before writing. Explicit `--allow-dirty`
 development builds record their actual dirty state; publication requires clean

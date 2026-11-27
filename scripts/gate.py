@@ -114,11 +114,11 @@ TEST_CATEGORY_COMMANDS: dict[str, str] = {
 # followed by the two registered ROOT profiles.
 MANUSCRIPT_ARTIFACT_COMMAND = (
     "uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 1800 -- "
-    "python manuscript/generate_research_artifacts.py --verify --rerun-verification"
+    "python docs/manuscript/generate_research_artifacts.py --verify --rerun-verification"
 )
 MANUSCRIPT_CONVERGENCE_COMMAND = (
     "uv run --no-sync python GEO-INFER-TEST/record_validation.py --timeout 600 -- "
-    "python manuscript/generate_research_artifacts.py --check"
+    "python docs/manuscript/generate_research_artifacts.py --check"
 )
 MANUSCRIPT_RENDER_COMMANDS = (
     "uv run python scripts/render_manuscript_pdf.py",
