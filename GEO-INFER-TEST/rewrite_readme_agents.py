@@ -704,7 +704,7 @@ def module_readme_notes(path: Path, module: ModuleInfo | None) -> str:
 - Each figure exports PNG, text-preserving SVG, typed JSON and source-stamped
   CSV with per-file SHA-256. `--check` also verifies the complete delivered
   byte set, including resolved manuscript files and the figure registry.
-  See [research artifact contracts](../GEO-INFER-INTRA/docs/integration/research_artifacts.md).
+  See [research artifact contracts](../../GEO-INFER-INTRA/docs/integration/research_artifacts.md).
 """
     if not module or path.parent != module.path:
         return ""

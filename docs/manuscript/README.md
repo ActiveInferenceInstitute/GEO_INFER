@@ -72,7 +72,7 @@ uv run python GEO-INFER-TEST/validate_repo_contracts.py --skip-import-smoke
 - Each figure exports PNG, text-preserving SVG, typed JSON and source-stamped
   CSV with per-file SHA-256. `--check` also verifies the complete delivered
   byte set, including resolved manuscript files and the figure registry.
-  See [research artifact contracts](../GEO-INFER-INTRA/docs/integration/research_artifacts.md).
+  See [research artifact contracts](../../GEO-INFER-INTRA/docs/integration/research_artifacts.md).
 
 ## Documentation Notes
 
