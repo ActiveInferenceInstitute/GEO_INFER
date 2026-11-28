@@ -105,7 +105,9 @@ jobs:
           version: "0.13.7"
           cache-dependency-glob: gnn/uv.lock
       - name: Install GNN locked runtime
-        run: uv sync --project gnn --locked --python 3.11 --extra dev --extra geo-infer
+        # The exporter owns its interpreter. GEO still runs its full matrix,
+        # including the 3.11 consumer paired with the 3.12 exporter.
+        run: uv sync --project gnn --locked --python 3.12 --extra dev --extra geo-infer
       - name: Run paired conformance and verify the exact candidate receipt
         # The validator invocation and every receipt assertion (schema,
         # success, both exact revisions, both clean worktrees, execution

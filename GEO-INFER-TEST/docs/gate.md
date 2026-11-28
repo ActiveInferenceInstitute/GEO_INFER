@@ -144,6 +144,8 @@ The `gnn` arm mirrors the required fleet check, not a new contract:
 - Workflow: `.github/workflows/gnn-interchange.yml`; job key `interchange`;
   the required check name `gnn conformance (pinned)` is the `3.12` matrix leg,
   and the `3.11` leg reports as `gnn interchange (3.11)`.
+  Each leg runs GEO with its matrix interpreter and the pinned GNN exporter
+  in a separate Python 3.12 environment.
 - Caller: `ci.yml` job `paired-interchange` (`uses: ./.github/workflows/gnn-interchange.yml`).
 - Validator: `GEO-INFER-TEST/validate_gnn_interchange.py --gnn-repo … --gnn-python … --output …`.
 - The workflow runs this arm, not its own copy of the command: `geo/.venv/bin/python
@@ -167,7 +169,7 @@ interpreter with the `geo-infer` extra:
 
 ```bash
 export GEO_INFER_GNN_REPO=/path/to/Generalized_Notation_Notation
-uv sync --project "$GEO_INFER_GNN_REPO" --locked --python 3.11 --extra dev --extra geo-infer
+uv sync --project "$GEO_INFER_GNN_REPO" --locked --python 3.12 --extra dev --extra geo-infer
 uv run --frozen python scripts/gate.py gnn
 ```
 
