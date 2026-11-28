@@ -258,7 +258,7 @@ def module_catalog_census_errors(
             if module.is_dir() and (module / "src").is_dir()
         }
     errors: list[str] = []
-    for section in sorted((root / "manuscript" / "sections").glob("*.md")):
+    for section in sorted((root / "docs" / "manuscript" / "sections").glob("*.md")):
         stated = _TEST_FILE_CENSUS.findall(section.read_text(encoding="utf-8"))
         if not stated:
             continue

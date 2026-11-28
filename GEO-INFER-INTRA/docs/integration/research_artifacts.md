@@ -1,7 +1,7 @@
 # Reusable research figures and publication artifacts
 
 The repository's manuscript producer is
-`manuscript/generate_research_artifacts.py`. It measures the current source,
+`docs/manuscript/generate_research_artifacts.py`. It measures the current source,
 resolves authored tokens, draws four figures, and records executed verification
 separately from repository file counts. Generated files belong under ignored
 `output/`; authored Markdown and bibliography remain the reviewable sources.
@@ -9,14 +9,14 @@ separately from repository file counts. Generated files belong under ignored
 ## Build and check a clean publication
 
 Commit source changes first. Refresh the four generator-owned metadata fields
-and commit only `manuscript/config.yaml` before measuring the clean checkout:
+and commit only `docs/manuscript/config.yaml` before measuring the clean checkout:
 
 ```bash
-uv run --frozen python manuscript/generate_research_artifacts.py --refresh-config
-git add manuscript/config.yaml
+uv run --frozen python docs/manuscript/generate_research_artifacts.py --refresh-config
+git add docs/manuscript/config.yaml
 git commit -m "Refresh manuscript source metadata"
-uv run --frozen python manuscript/generate_research_artifacts.py --full-validation --publication
-uv run --frozen python manuscript/generate_research_artifacts.py --check
+uv run --frozen python docs/manuscript/generate_research_artifacts.py --full-validation --publication
+uv run --frozen python docs/manuscript/generate_research_artifacts.py --check
 ```
 
 The explicit metadata commit reaches a fixed point because the manuscript's

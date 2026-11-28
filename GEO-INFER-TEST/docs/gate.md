@@ -185,10 +185,10 @@ composite action, so this gate documents no pin for it.
 
 The `manuscript` arm runs the repository's own producer and render path:
 
-- `manuscript/generate_research_artifacts.py` is the only producer of
+- `docs/manuscript/generate_research_artifacts.py` is the only producer of
   variables, captions, the figure registry and resolved manuscript copies.
 - `scripts/render_manuscript_pdf.py` is the only render script; it hydrates the
-  evidence bundle, combines the published sections in `manuscript/SYNTAX.md`
+  evidence bundle, combines the published sections in `docs/manuscript/SYNTAX.md`
   order, and runs Pandoc, `pandoc-crossref` and XeLaTeX fail-closed.
 - The arm requires `pandoc`, `pandoc-crossref` and `xelatex` on `PATH`; the
   render script names any missing tool and fails.

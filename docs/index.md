@@ -33,7 +33,8 @@ central [documentation hub](../GEO-INFER-INTRA/docs/index.md).
 - [Spatial / H3 reference](../GEO-INFER-INTRA/docs/geospatial/data_formats/h3/index.md)
 - [Test and release gates](../GEO-INFER-TEST/docs/index.md)
 - [Local gate arms and measured wall time](../GEO-INFER-TEST/docs/gate.md)
-- [Manuscript generation and evidence](../manuscript/README.md)
+- [Manuscript generation and evidence](manuscript/README.md)
+- [Research workflow and rendering](guides/research-workflow.md)
 - [Synthetic measurement-quality probe](../research/measurement-quality/README.md)
 
 ## Modules by theme

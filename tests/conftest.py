@@ -1,6 +1,6 @@
 """Fixtures for the manuscript-generator regression suite.
 
-These tests exercise ``manuscript/generate_research_artifacts.py`` directly.
+These tests exercise ``docs/manuscript/generate_research_artifacts.py`` directly.
 The generator is a standalone script rather than an installed package, so it is
 loaded by path and registered under a stable module name (frozen dataclasses
 need their defining module to be importable while the class body executes).
@@ -20,7 +20,7 @@ from types import ModuleType
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-GENERATOR_PATH = REPO_ROOT / "manuscript" / "generate_research_artifacts.py"
+GENERATOR_PATH = REPO_ROOT / "docs" / "manuscript" / "generate_research_artifacts.py"
 GENERATOR_MODULE = "geo_infer_manuscript_generator"
 
 
@@ -172,8 +172,8 @@ def generatable_checkout(generator: ModuleType, tmp_path: Path) -> Path:
     """
     root = tmp_path / "checkout"
     root.mkdir()
-    manuscript = root / "manuscript"
-    manuscript.mkdir()
+    manuscript = root / "docs" / "manuscript"
+    manuscript.mkdir(parents=True)
     (manuscript / "config.yaml").write_text(
         "paper:\n"
         '  version: "0.0.0"\n'
@@ -183,7 +183,7 @@ def generatable_checkout(generator: ModuleType, tmp_path: Path) -> Path:
         "metadata:\n"
         '  license: "unset"\n'
         "bibliography:\n"
-        '  references_path: "manuscript/references.bib"\n'
+        '  references_path: "docs/manuscript/references.bib"\n'
         "  fail_on_missing: true\n"
         "  fail_on_unused: true\n",
         encoding="utf-8",
@@ -222,7 +222,7 @@ def generatable_checkout(generator: ModuleType, tmp_path: Path) -> Path:
     # have been explicitly refreshed and committed after the source commit.
     generator.refresh_config_metadata(root, generator.config_metadata_values(root))
     for args in (
-        ["add", "manuscript/config.yaml"],
+        ["add", "docs/manuscript/config.yaml"],
         ["commit", "-q", "-m", "record manuscript metadata"],
     ):
         subprocess.run(

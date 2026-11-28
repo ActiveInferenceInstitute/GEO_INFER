@@ -4,6 +4,8 @@ Docs workspace within GEO-INFER.
 
 ## Contents
 
+- [guides/](guides/)
+- [manuscript/](manuscript/)
 - [documentation-index.md](documentation-index.md)
 - [index.md](index.md)
 

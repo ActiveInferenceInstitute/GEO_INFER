@@ -60,7 +60,7 @@ def test_fresh_clean_generation_preserves_tracked_config_bytes_and_permissions(
     generator: ModuleType, generatable_checkout: Path
 ):
     root = generatable_checkout
-    config = root / "manuscript/config.yaml"
+    config = root / "docs/manuscript/config.yaml"
     config.chmod(0o640)
     before = _snapshot(config)
     source_hash = generator._source_hash(root)
@@ -79,7 +79,7 @@ def test_stale_clean_generation_rejects_before_source_or_output_writes(
 ):
     root = generatable_checkout
     _stale_source(root, git_environment)
-    config = root / "manuscript/config.yaml"
+    config = root / "docs/manuscript/config.yaml"
     config.chmod(0o640)
     before = _snapshot(config)
     source_hash = generator._source_hash(root)
@@ -103,15 +103,15 @@ def test_failure_after_clean_generation_preflight_preserves_source_config(
     git_environment: dict[str, str],
 ):
     root = generatable_checkout
-    abstract = root / "manuscript/00_abstract.md"
+    abstract = root / "docs/manuscript/00_abstract.md"
     abstract.write_text("# Abstract\n\nMissing citation [@absent-entry].\n")
-    _git(root, git_environment, "add", "manuscript/00_abstract.md")
+    _git(root, git_environment, "add", "docs/manuscript/00_abstract.md")
     _git(root, git_environment, "commit", "-q", "-m", "add a bibliography regression")
     generator.refresh_config_metadata(root, generator.config_metadata_values(root))
     if generator._dirty_file_count(root):
-        _git(root, git_environment, "add", "manuscript/config.yaml")
+        _git(root, git_environment, "add", "docs/manuscript/config.yaml")
         _git(root, git_environment, "commit", "-q", "-m", "settle manuscript metadata")
-    config = root / "manuscript/config.yaml"
+    config = root / "docs/manuscript/config.yaml"
     config.chmod(0o640)
     before = _snapshot(config)
     retained = root / "output/data/prior-evidence.json"
@@ -133,7 +133,7 @@ def test_explicit_dirty_refresh_stamps_actual_post_refresh_tree(
     root = generatable_checkout
     _stale_source(root, git_environment)
     assert generator._dirty_file_count(root) == 0
-    config = root / "manuscript/config.yaml"
+    config = root / "docs/manuscript/config.yaml"
     config.chmod(0o640)
     original, mode = _snapshot(config)
     manifest = generator.generate(root, allow_dirty=True)
@@ -163,7 +163,7 @@ def test_refresh_only_cli_and_config_only_commit_reach_a_clean_fixed_point(
             "GIT_COMMITTER_DATE": source_date,
         },
     )
-    config = root / "manuscript/config.yaml"
+    config = root / "docs/manuscript/config.yaml"
     config.chmod(0o640)
     original, mode = _snapshot(config)
     measured_date = generator._manuscript_source_date(root)
@@ -176,9 +176,9 @@ def test_refresh_only_cli_and_config_only_commit_reach_a_clean_fixed_point(
     assert not (root / "output").exists()
     assert (
         _git(root, git_environment, "status", "--porcelain")
-        == "M manuscript/config.yaml"
+        == "M docs/manuscript/config.yaml"
     )
-    _git(root, git_environment, "add", "manuscript/config.yaml")
+    _git(root, git_environment, "add", "docs/manuscript/config.yaml")
     _git(
         root,
         {
@@ -223,7 +223,7 @@ def test_refresh_cli_rejects_conflicts_before_any_write(
 ):
     root = generatable_checkout
     _stale_source(root, git_environment)
-    config = root / "manuscript/config.yaml"
+    config = root / "docs/manuscript/config.yaml"
     config.chmod(0o640)
     before = _snapshot(config)
     result = _cli(generator, root, git_environment, "--refresh-config", conflict)
@@ -241,7 +241,7 @@ def test_publication_cannot_authorize_dirty_refresh_in_library_or_cli(
 ):
     root = generatable_checkout
     _stale_source(root, git_environment)
-    config = root / "manuscript/config.yaml"
+    config = root / "docs/manuscript/config.yaml"
     config.chmod(0o640)
     before = _snapshot(config)
     with pytest.raises(ValueError, match="publication requires clean source"):

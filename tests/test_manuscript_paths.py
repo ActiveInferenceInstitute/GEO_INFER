@@ -34,7 +34,7 @@ PUBLISHED = ("[0-9][0-9]_*.md", "S[0-9][0-9]_*.md")
 
 
 def _published_sources(repo_root: Path) -> list[Path]:
-    manuscript = repo_root / "manuscript"
+    manuscript = repo_root / "docs" / "manuscript"
     found: list[Path] = []
     for pattern in PUBLISHED:
         found.extend(sorted(manuscript.glob(pattern)))

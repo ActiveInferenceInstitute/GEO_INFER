@@ -1,7 +1,7 @@
 """The preamble file is executable input, not documentation with examples.
 
 ``infrastructure/rendering/_pdf_latex_helpers.extract_preamble`` concatenates
-*every* ```latex block in ``manuscript/preamble.md`` and injects the result
+*every* ```latex block in ``docs/manuscript/preamble.md`` and injects the result
 immediately before ``\\begin{document}``.  The file also carries the rationale
 for each setting, so it is natural to paste an illustrative LaTeX document into
 it — and a fence that says ``latex`` puts ``\\documentclass`` and
@@ -30,13 +30,13 @@ class TestPreambleBlocks:
         self, repo_root: Path
     ) -> None:
         blocks = LATEX_BLOCK.findall(
-            (repo_root / "manuscript" / "preamble.md").read_text(encoding="utf-8")
+            (repo_root / "docs" / "manuscript" / "preamble.md").read_text(encoding="utf-8")
         )
         assert blocks, "no latex-fenced block would be extracted from preamble.md"
 
     def test_no_extracted_block_carries_a_whole_document(self, repo_root: Path) -> None:
         blocks = LATEX_BLOCK.findall(
-            (repo_root / "manuscript" / "preamble.md").read_text(encoding="utf-8")
+            (repo_root / "docs" / "manuscript" / "preamble.md").read_text(encoding="utf-8")
         )
         offenders = [
             (command, block.strip().split("\n")[0])

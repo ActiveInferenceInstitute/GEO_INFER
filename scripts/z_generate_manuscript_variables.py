@@ -6,7 +6,7 @@ z_generate_manuscript_variables.py`` — in
 :func:`infrastructure.rendering._manuscript_source.run_manuscript_variable_script`,
 and when it is absent that function returns ``0`` with no log line, which the
 pipeline reads as "hydrated OK".  GEO-INFER's generator lives at
-``manuscript/generate_research_artifacts.py``, a path the template never looks
+``docs/manuscript/generate_research_artifacts.py``, a path the template never looks
 for, so the manuscript's own invariant — "changing values must enter the
 manuscript through the generator" — was enforced by human discipline alone and
 ``stage_03_render.py --project GEO-INFER`` would publish whatever happened to
@@ -34,7 +34,7 @@ Modes:
         one.  A stored record is reused when it names the same source hash,
         commit, and tier; otherwise the commands run here, which can exceed the
         renderer's bounded hydration timeout — pre-run
-        ``python manuscript/generate_research_artifacts.py --verify`` on a
+        ``python docs/manuscript/generate_research_artifacts.py --verify`` on a
         clean tree first.  A failing group is published with its return code
         and does not abort the render; only a publication build refuses.  The
         run is widened to cover every group the stored record already holds,
@@ -68,7 +68,7 @@ from pathlib import Path
 from types import ModuleType
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-GENERATOR_PATH = PROJECT_ROOT / "manuscript" / "generate_research_artifacts.py"
+GENERATOR_PATH = PROJECT_ROOT / "docs" / "manuscript" / "generate_research_artifacts.py"
 PUBLICATION_ENV = "GEO_INFER_MANUSCRIPT_PUBLICATION"
 VERIFY_ENV = "GEO_INFER_MANUSCRIPT_VERIFY"
 FULL_VALIDATION_ENV = "GEO_INFER_MANUSCRIPT_FULL_VALIDATION"

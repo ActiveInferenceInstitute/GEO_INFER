@@ -1,6 +1,6 @@
 """Tests that the published source fingerprint fingerprints what ships.
 
-``manuscript/config.yaml`` is both a generator-owned file and a hashed input.
+``docs/manuscript/config.yaml`` is both a generator-owned file and a hashed input.
 Writing it after the digest was taken made ``RESEARCH_SOURCE_HASH``
 irreproducible by the procedure its own glossary describes.
 """
@@ -19,8 +19,8 @@ import pytest
 @pytest.fixture
 def manuscript_tree(git_repo: Path) -> Path:
     """A checkout with the minimum shape the fingerprint helpers need."""
-    manuscript = git_repo / "manuscript"
-    manuscript.mkdir()
+    manuscript = git_repo / "docs" / "manuscript"
+    manuscript.mkdir(parents=True)
     (manuscript / "config.yaml").write_text(
         "paper:\n"
         '  version: "0.0.0"\n'
@@ -43,7 +43,7 @@ class TestSourceHashCoversConfig:
         self, generator: ModuleType, manuscript_tree: Path
     ) -> None:
         before = generator._source_hash(manuscript_tree)
-        config = manuscript_tree / "manuscript" / "config.yaml"
+        config = manuscript_tree / "docs" / "manuscript" / "config.yaml"
         config.write_text(config.read_text(encoding="utf-8") + "# touched\n", "utf-8")
         assert generator._source_hash(manuscript_tree) != before
 
@@ -74,14 +74,14 @@ class TestSourceHashCoversConfig:
         generator.refresh_config_metadata(
             manuscript_tree, generator.config_metadata_values(manuscript_tree)
         )
-        text = (manuscript_tree / "manuscript" / "config.yaml").read_text("utf-8")
+        text = (manuscript_tree / "docs" / "manuscript" / "config.yaml").read_text("utf-8")
         assert '  version: "1.2.3"  # generator-owned (PROJECT_VERSION)' in text
         assert '  license: "MIT"  # generator-owned (PROJECT_LICENSE)' in text
 
     def test_dry_run_reports_without_writing(
         self, generator: ModuleType, manuscript_tree: Path
     ) -> None:
-        config = manuscript_tree / "manuscript" / "config.yaml"
+        config = manuscript_tree / "docs" / "manuscript" / "config.yaml"
         original = config.read_text(encoding="utf-8")
         stale = generator.refresh_config_metadata(
             manuscript_tree,
@@ -99,10 +99,10 @@ class TestSourceHashCoversConfig:
 
 def _publish(generator: ModuleType, root: Path, **overrides: str) -> None:
     """Write a published-variables file that matches ``root`` unless overridden."""
-    (root / "manuscript/00_abstract.md").write_text(
+    (root / "docs/manuscript/00_abstract.md").write_text(
         "# Fixture abstract\n", encoding="utf-8"
     )
-    (root / "manuscript/references.bib").write_text("", encoding="utf-8")
+    (root / "docs/manuscript/references.bib").write_text("", encoding="utf-8")
     generator.refresh_config_metadata(root, generator.config_metadata_values(root))
     published = dict(generator.config_metadata_values(root))
     published["RESEARCH_SOURCE_HASH"] = generator._source_hash(root)
@@ -179,7 +179,7 @@ def _publish(generator: ModuleType, root: Path, **overrides: str) -> None:
     resolved.write_text("# Fixture abstract\n", encoding="utf-8")
     for filename in ("config.yaml", "references.bib"):
         (resolved.parent / filename).write_bytes(
-            (root / "manuscript" / filename).read_bytes()
+            (root / "docs" / "manuscript" / filename).read_bytes()
         )
     generator._write_json(data / "research_inventory.json", inventory.to_dict())
     files = [
@@ -255,8 +255,8 @@ class TestConfigDateIsSettleable:
         head_before = generator._run_git(manuscript_tree, "show", "-s", "--format=%cI")
         source_before = generator._manuscript_source_date(manuscript_tree)
         assert head_before == source_before
-        (manuscript_tree / "manuscript" / "config.yaml").write_text(
-            (manuscript_tree / "manuscript" / "config.yaml").read_text("utf-8")
+        (manuscript_tree / "docs" / "manuscript" / "config.yaml").write_text(
+            (manuscript_tree / "docs" / "manuscript" / "config.yaml").read_text("utf-8")
             + "# recorded\n",
             encoding="utf-8",
         )

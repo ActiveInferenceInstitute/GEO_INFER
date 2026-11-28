@@ -86,7 +86,7 @@ record evidence and outstanding acceptance requirements.
 - Developer workflow: [`GEO-INFER-INTRA/docs/developer_guide/index.md`](../GEO-INFER-INTRA/docs/developer_guide/index.md)
 - Test and release gates: [`GEO-INFER-TEST/docs/index.md`](../GEO-INFER-TEST/docs/index.md)
 - Local gate arms and measured wall time: [`GEO-INFER-TEST/docs/gate.md`](../GEO-INFER-TEST/docs/gate.md)
-- Manuscript generation and evidence: [`manuscript/README.md`](../manuscript/README.md)
+- Manuscript generation and evidence: [`docs/manuscript/README.md`](../docs/manuscript/README.md)
 - Reusable figures and artifact verification: [`research artifacts`](../GEO-INFER-INTRA/docs/integration/research_artifacts.md)
 - Active Inference reference: [`GEO-INFER-INTRA/docs/active_inference_guide.md`](../GEO-INFER-INTRA/docs/active_inference_guide.md)
 - Spatial/H3 reference: [`GEO-INFER-INTRA/docs/geospatial/data_formats/h3/index.md`](../GEO-INFER-INTRA/docs/geospatial/data_formats/h3/index.md)
@@ -184,8 +184,8 @@ the exact reproducible exception list.
 | Modules | 45 |
 | Python source files | 1046 |
 | Python test files | 832 |
-| Repository README.md files | 872 |
-| Repository AGENTS.md files | 872 |
+| Repository README.md files | 802 |
+| Repository AGENTS.md files | 802 |
 
 These are file inventories, not executed-test or coverage counts. Regenerate
 them with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.
@@ -216,9 +216,9 @@ them with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.
 - Model contract: `uv run python GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42`
 - Reproducible model audit: `uv run python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible`
 - Lint contract: `uv run --with 'ruff>=0.15.6,<0.16' ruff check .`
-- Manuscript variables, figures, captions, and resolved copies: `uv run python manuscript/generate_research_artifacts.py`
-- After source commits, refresh metadata with `uv run python manuscript/generate_research_artifacts.py --refresh-config`, then commit only `manuscript/config.yaml` separately before generating evidence.
-- Verify delivered PNG/SVG/JSON/CSV and resolved manuscript bytes with `uv run python manuscript/generate_research_artifacts.py --check`.
+- Manuscript variables, figures, captions, and resolved copies: `uv run python docs/manuscript/generate_research_artifacts.py`
+- After source commits, refresh metadata with `uv run python docs/manuscript/generate_research_artifacts.py --refresh-config`, then commit only `docs/manuscript/config.yaml` separately before generating evidence.
+- Verify delivered PNG/SVG/JSON/CSV and resolved manuscript bytes with `uv run python docs/manuscript/generate_research_artifacts.py --check`.
 - For an actual docxology/template PDF with the graphical-abstract cover, use the explicit optional [template rendering lane](../GEO-INFER-INTRA/docs/integration/manuscript_rendering.md); retain its template commit, interpreter and render receipt separately from publication verification.
 
 ## Repo-wide Change Workflow

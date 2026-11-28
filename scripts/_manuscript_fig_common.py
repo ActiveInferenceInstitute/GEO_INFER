@@ -4,7 +4,7 @@
 The scripts in this directory that are named ``manuscript_fig_*.py`` each
 render one publication figure into ``output/figures/``.  They mirror the
 geometry, raster density, palette, and save discipline of
-``manuscript/generate_research_artifacts.py`` — the builder that owns the
+``docs/manuscript/generate_research_artifacts.py`` — the builder that owns the
 core figure set — so a figure from either source is typeset at the same
 printed scale and a colour learned in one figure carries to every other
 one.  This module holds what all of them share; the figure-specific
@@ -71,7 +71,7 @@ def load_generator() -> ModuleType:
     read the *same* theme table and the *same* measurement code the
     published figures use — a private copy would drift.
     """
-    path = ROOT / "manuscript" / "generate_research_artifacts.py"
+    path = ROOT / "docs" / "manuscript" / "generate_research_artifacts.py"
     spec = importlib.util.spec_from_file_location("geo_infer_artifacts", path)
     if spec is None or spec.loader is None:  # pragma: no cover - structural
         raise RuntimeError(f"cannot load generator from {path}")

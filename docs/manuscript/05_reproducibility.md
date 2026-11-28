@@ -6,20 +6,20 @@ After committing authored source changes, refresh the generator-owned metadata
 explicitly:
 
 ```bash
-uv run python manuscript/generate_research_artifacts.py --refresh-config
+uv run python docs/manuscript/generate_research_artifacts.py --refresh-config
 ```
 
-Review and commit the resulting `manuscript/config.yaml` change as a separate
+Review and commit the resulting `docs/manuscript/config.yaml` change as a separate
 config-only commit. Then generate the inventory, figures, captions, variables,
 verification record, and resolved manuscript copies from the clean checkout:
 
 ```bash
-uv run python manuscript/generate_research_artifacts.py
-uv run python manuscript/generate_research_artifacts.py --verify
-uv run python manuscript/generate_research_artifacts.py --full-validation
-uv run python manuscript/generate_research_artifacts.py \
+uv run python docs/manuscript/generate_research_artifacts.py
+uv run python docs/manuscript/generate_research_artifacts.py --verify
+uv run python docs/manuscript/generate_research_artifacts.py --full-validation
+uv run python docs/manuscript/generate_research_artifacts.py \
     --full-validation --publication
-uv run python manuscript/generate_research_artifacts.py --check
+uv run python docs/manuscript/generate_research_artifacts.py --check
 ```
 
 The first command performs the source inventory and artifact generation. The
@@ -69,7 +69,7 @@ the artifact's contents.
 ## Generator-Owned Tracked Source
 
 One tracked file under `manuscript/` is written by the generator rather than
-by an author: `manuscript/config.yaml`. The renderer copies the tracked
+by an author: `docs/manuscript/config.yaml`. The renderer copies the tracked
 `config.yaml` over the token-resolved copy in `output/manuscript/` before
 rendering, so a variable token left in that file would reach the title page
 verbatim instead of being substituted. Four fields are therefore resolved into

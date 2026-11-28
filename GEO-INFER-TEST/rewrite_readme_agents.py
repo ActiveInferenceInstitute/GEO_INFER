@@ -23,7 +23,7 @@ MODULE_PREFIX = "GEO-INFER-"
 MAX_SYMBOLS = 20
 _TRACKED_FILES: set[Path] | None = None
 _COVERAGE_OUTPUT_SEGMENTS = frozenset({"output", "previews", "cache", "raw"})
-_COVERAGE_EXACT_SKIPS = frozenset({"manuscript/sections"})
+_COVERAGE_EXACT_SKIPS = frozenset({"docs/manuscript/sections"})
 
 
 class CoverageError(RuntimeError):
@@ -498,7 +498,7 @@ design before running it.
   under each `GEO-INFER-*/tests/`.
 - Run them from the repository root with `uv run python -m pytest tests/`.
 - Tests read the generated artifact set; run
-  `uv run python manuscript/generate_research_artifacts.py` first when a test
+  `uv run python docs/manuscript/generate_research_artifacts.py` first when a test
   reports missing outputs.
 """,
     ".github/workflows": """
@@ -637,7 +637,7 @@ DIRECTORY_AGENT_NOTES: dict[str, str] = {
 ## Manuscript Tooling Rules
 
 - Keep these scripts as thin orchestration surfaces over tracked data.
-- Regenerate with `uv run python manuscript/generate_research_artifacts.py`;
+- Regenerate with `uv run python docs/manuscript/generate_research_artifacts.py`;
   never hand-edit generated figures or the resolved manuscript.
 - Retain `docs/default-render-receipt.json` for default-lane PDF custody; do not
   mistake its source/byte record for fresh publication verification.
@@ -683,15 +683,15 @@ def module_readme_notes(path: Path, module: ModuleInfo | None) -> str:
   defines the measured indicators, exact local GNN evaluation, approximate
   spatial field, shared resource budget and interpretation limits.
 """
-    if path.parent == REPO_ROOT / "manuscript":
+    if path.parent == REPO_ROOT / "docs" / "manuscript":
         return """
 ## Research Verification
 
-- After committing source changes, run `uv run python manuscript/generate_research_artifacts.py --refresh-config`
-  and commit only `manuscript/config.yaml` separately. Config-only commits do
+- After committing source changes, run `uv run python docs/manuscript/generate_research_artifacts.py --refresh-config`
+  and commit only `docs/manuscript/config.yaml` separately. Config-only commits do
   not move the measured source date. Clean generation rejects stale metadata
   before any write; never restore old config after producing hash-bound output.
-- `uv run python manuscript/generate_research_artifacts.py --verify` runs the
+- `uv run python docs/manuscript/generate_research_artifacts.py --verify` runs the
   producer's verification groups and retains immutable execution receipts.
 - Static bibliography errors fail before verification or generated-output writes;
   the resolved manuscript is checked again after substitution.
@@ -704,7 +704,7 @@ def module_readme_notes(path: Path, module: ModuleInfo | None) -> str:
 - Each figure exports PNG, text-preserving SVG, typed JSON and source-stamped
   CSV with per-file SHA-256. `--check` also verifies the complete delivered
   byte set, including resolved manuscript files and the figure registry.
-  See [research artifact contracts](../GEO-INFER-INTRA/docs/integration/research_artifacts.md).
+  See [research artifact contracts](../../GEO-INFER-INTRA/docs/integration/research_artifacts.md).
 """
     if not module or path.parent != module.path:
         return ""
@@ -1095,7 +1095,7 @@ def module_agent_notes(path: Path, module: ModuleInfo | None) -> str:
     relative_dir = path.parent.relative_to(REPO_ROOT).as_posix()
     if relative_dir in DIRECTORY_AGENT_NOTES:
         return DIRECTORY_AGENT_NOTES[relative_dir]
-    if path.parent == REPO_ROOT / "manuscript":
+    if path.parent == REPO_ROOT / "docs" / "manuscript":
         return module_readme_notes(path, module)
     if not module or path.parent != module.path:
         return ""
@@ -1601,7 +1601,7 @@ record evidence and outstanding acceptance requirements.
 - Developer workflow: [`GEO-INFER-INTRA/docs/developer_guide/index.md`]({link_prefix}GEO-INFER-INTRA/docs/developer_guide/index.md)
 - Test and release gates: [`GEO-INFER-TEST/docs/index.md`]({link_prefix}GEO-INFER-TEST/docs/index.md)
 - Local gate arms and measured wall time: [`GEO-INFER-TEST/docs/gate.md`]({link_prefix}GEO-INFER-TEST/docs/gate.md)
-- Manuscript generation and evidence: [`manuscript/README.md`]({link_prefix}manuscript/README.md)
+- Manuscript generation and evidence: [`docs/manuscript/README.md`]({link_prefix}docs/manuscript/README.md)
 - Reusable figures and artifact verification: [`research artifacts`]({link_prefix}GEO-INFER-INTRA/docs/integration/research_artifacts.md)
 - Active Inference reference: [`GEO-INFER-INTRA/docs/active_inference_guide.md`]({link_prefix}GEO-INFER-INTRA/docs/active_inference_guide.md)
 - Spatial/H3 reference: [`GEO-INFER-INTRA/docs/geospatial/data_formats/h3/index.md`]({link_prefix}GEO-INFER-INTRA/docs/geospatial/data_formats/h3/index.md)
@@ -1682,9 +1682,9 @@ them with `uv run python GEO-INFER-TEST/rewrite_readme_agents.py`.
 - Model contract: `uv run python GEO-INFER-TEST/validate_model_contracts.py --strict --seed 42`
 - Reproducible model audit: `uv run python GEO-INFER-TEST/run_model_audit.py --seed 42 --reproducible`
 - Lint contract: `uv run --with 'ruff>=0.15.6,<0.16' ruff check .`
-- Manuscript variables, figures, captions, and resolved copies: `uv run python manuscript/generate_research_artifacts.py`
-- After source commits, refresh metadata with `uv run python manuscript/generate_research_artifacts.py --refresh-config`, then commit only `manuscript/config.yaml` separately before generating evidence.
-- Verify delivered PNG/SVG/JSON/CSV and resolved manuscript bytes with `uv run python manuscript/generate_research_artifacts.py --check`.
+- Manuscript variables, figures, captions, and resolved copies: `uv run python docs/manuscript/generate_research_artifacts.py`
+- After source commits, refresh metadata with `uv run python docs/manuscript/generate_research_artifacts.py --refresh-config`, then commit only `docs/manuscript/config.yaml` separately before generating evidence.
+- Verify delivered PNG/SVG/JSON/CSV and resolved manuscript bytes with `uv run python docs/manuscript/generate_research_artifacts.py --check`.
 - For an actual docxology/template PDF with the graphical-abstract cover, use the explicit optional [template rendering lane]({link_prefix}GEO-INFER-INTRA/docs/integration/manuscript_rendering.md); retain its template commit, interpreter and render receipt separately from publication verification.
 
 ## Repo-wide Change Workflow
@@ -1805,7 +1805,7 @@ uv run python GEO-INFER-TEST/validate_repo_contracts.py --strict-source-language
 uv run python GEO-INFER-TEST/validate_logging_hygiene.py
 uv run python GEO-INFER-TEST/validate_documentation.py --strict
 uv run python GEO-INFER-TEST/validate_skills.py --check-xrefs --warnings-fatal
-uv run python manuscript/generate_research_artifacts.py
+uv run python docs/manuscript/generate_research_artifacts.py
 uv run python GEO-INFER-TEST/run_unified_tests.py --category unit
 uv run python GEO-INFER-TEST/run_unified_tests.py --category integration
 uv run python GEO-INFER-TEST/run_unified_tests.py --category performance
@@ -1837,8 +1837,8 @@ The shared CPU CI action applies the same profile to subsequent processes.
 - Preserve captured Cascadia publisher bytes and LF replay outputs through the exact paths in root `.gitattributes`; do not normalize hash-bound archives.
 - Sync the shared workspace with `uv sync --all-packages --all-extras --all-groups`.
 - Keep module behavior in the owning `GEO-INFER-*` package under `src/`; keep scripts and examples as orchestration surfaces.
-- Treat `manuscript/generate_research_artifacts.py` as the only producer of manuscript variables, figure captions, figure registries, and resolved manuscript copies; never hand-edit ignored `output/`.
-- After source commits, run `uv run python manuscript/generate_research_artifacts.py --refresh-config` and commit only `manuscript/config.yaml` separately. Clean generation must not mutate tracked source; never restore stale config after generating hash-bound output.
+- Treat `docs/manuscript/generate_research_artifacts.py` as the only producer of manuscript variables, figure captions, figure registries, and resolved manuscript copies; never hand-edit ignored `output/`.
+- After source commits, run `uv run python docs/manuscript/generate_research_artifacts.py --refresh-config` and commit only `docs/manuscript/config.yaml` separately. Clean generation must not mutate tracked source; never restore stale config after generating hash-bound output.
 - Keep every module's local test inventory above the minimum release gate of four pytest files.
 - Put planned work in root `TODO.md` or a tracked issue; do not leave task markers in module source or tests.
 - Use module loggers in libraries and configure handlers only from CLI entrypoints.
@@ -1889,7 +1889,7 @@ def render_readme(
     content_lines = (
         "\n".join(
             f"- [{item}]({item})"
-            if rel == Path("docs") and item.endswith(".md")
+            if rel == Path("docs") and (item.endswith(".md") or item in dirs)
             else f"- `{item}`"
             for item in dirs + py_files + other_files
         )

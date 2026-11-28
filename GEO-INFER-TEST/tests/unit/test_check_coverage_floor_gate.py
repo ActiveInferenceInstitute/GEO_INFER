@@ -342,7 +342,7 @@ def test_root_manuscript_source_change_selects_root_profile(monkeypatch):
     module = _load_module()
     _fake_git_diff(
         monkeypatch,
-        "manuscript/generate_research_artifacts.py\n",
+        "docs/manuscript/generate_research_artifacts.py\n",
         "+behavior changed\n",
     )
     assert module._changed_modules("base", "head") == {"ROOT"}

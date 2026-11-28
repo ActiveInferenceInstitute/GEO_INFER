@@ -138,7 +138,7 @@ MODULE_THEMES: tuple[tuple[str, tuple[str, ...]], ...] = (
 TEXT_BLOCK_WIDTH_IN = 7.32
 TEXT_BLOCK_HEIGHT_IN = 9.82
 # Must stay in lock-step with ``rendering.figure_height_fraction`` in
-# manuscript/config.yaml, which is what the renderer writes into the
+# docs/manuscript/config.yaml, which is what the renderer writes into the
 # ``height=<fraction>\textheight`` bound on every \includegraphics.
 FIGURE_HEIGHT_FRACTION = 0.9
 MAX_FIGURE_HEIGHT_IN = TEXT_BLOCK_HEIGHT_IN * FIGURE_HEIGHT_FRACTION
@@ -158,7 +158,7 @@ INVENTORY_ROW_HEIGHT_IN = 0.17
 INVENTORY_FIGURE_CHROME_IN = 1.0
 # A float is granted a page of its own once it fills this fraction of the text
 # block, and such a page prints a caption and a folio and nothing else.  The
-# value is the ``\floatpagefraction`` set in manuscript/preamble.md; the
+# value is the ``\floatpagefraction`` set in docs/manuscript/preamble.md; the
 # inventory figure is laid out to stay under it once its caption is added.
 FLOAT_PAGE_FRACTION = 0.85
 # Inches a three-line figure caption occupies under the float at 10pt/12pt.
@@ -361,7 +361,7 @@ FULL_VALIDATION_TIMEOUT_SECONDS = 3600
 VERIFICATION_COMMANDS: tuple[tuple[str, str], ...] = (
     (
         "compile",
-        "python -m compileall -q GEO-INFER-*/src GEO-INFER-*/examples manuscript",
+        "python -m compileall -q GEO-INFER-*/src GEO-INFER-*/examples docs/manuscript",
     ),
     (
         "repository-contracts",
@@ -514,7 +514,7 @@ def _project_metadata(root: Path) -> dict[str, str]:
 
 def _source_hash(root: Path) -> str:
     digest = hashlib.sha256()
-    paths: set[Path] = set(_iter_files(root / "manuscript"))
+    paths: set[Path] = set(_iter_files(root / "docs" / "manuscript"))
     for module in _module_paths(root):
         paths.update(_python_files(module / "src"))
         paths.update(
@@ -2595,7 +2595,7 @@ _CONFIG_OWNED_FIELDS: tuple[tuple[str, str, str], ...] = (
 def _manuscript_source_date(root: Path) -> str:
     """Commit date of the last change to anything but the generator-owned config.
 
-    ``manuscript/config.yaml`` is tracked *and* generator-owned: it carries the
+    ``docs/manuscript/config.yaml`` is tracked *and* generator-owned: it carries the
     title-page date, derived from git.  Deriving it from ``HEAD`` makes the
     value un-settleable — recording the refreshed file creates a newer commit
     whose date the file no longer holds — so a clean-tree publication build
@@ -2612,7 +2612,7 @@ def _manuscript_source_date(root: Path) -> str:
         "--format=%cI",
         "--",
         ":/",
-        ":(top,exclude)manuscript/config.yaml",
+        ":(top,exclude)docs/manuscript/config.yaml",
         default="unavailable",
     )
 
@@ -2642,7 +2642,7 @@ def config_metadata_values(root: Path) -> dict[str, str]:
 def refresh_config_metadata(
     root: Path, variables: Mapping[str, str], *, dry_run: bool = False
 ) -> tuple[str, ...]:
-    """Write measured metadata into the authored ``manuscript/config.yaml``.
+    """Write measured metadata into the authored ``docs/manuscript/config.yaml``.
 
     The render template copies ``config.yaml`` verbatim, so a ``{{TOKEN}}``
     placed there is never substituted and reaches the title page as literal
@@ -2657,14 +2657,14 @@ def refresh_config_metadata(
     never absorb the write.
 
     Args:
-        root: Repository root holding ``manuscript/config.yaml``.
+        root: Repository root holding ``docs/manuscript/config.yaml``.
         variables: Resolved values keyed by the token each field is owned by.
         dry_run: Report the fields that are stale without writing them.
 
     Returns:
         The dotted names of the fields that changed (or would change).
     """
-    config = root / "manuscript" / "config.yaml"
+    config = root / "docs" / "manuscript" / "config.yaml"
     if not config.is_file():
         raise FileNotFoundError(config)
     lines = config.read_text(encoding="utf-8").splitlines(keepends=True)
@@ -2700,7 +2700,7 @@ def _resolved_artifact_files(root: Path) -> set[Path]:
     """Derive required resolved outputs from authored inputs, not a manifest."""
     return {
         root / "output/manuscript" / source.name
-        for source in (root / "manuscript").iterdir()
+        for source in (root / "docs" / "manuscript").iterdir()
         if source.is_file()
         and source.name not in EXCLUDED_MANUSCRIPT_DOCS
         and (source.suffix in {".md", ".bib"} or source.name == "config.yaml")
@@ -2711,7 +2711,7 @@ def _publication_manuscript_sources(root: Path) -> tuple[Path, ...]:
     """Select the same authored publication Markdown for preflight and output."""
     return tuple(
         source
-        for source in sorted((root / "manuscript").glob("*.md"))
+        for source in sorted((root / "docs" / "manuscript").glob("*.md"))
         if source.name not in EXCLUDED_MANUSCRIPT_DOCS
     )
 
@@ -2720,7 +2720,7 @@ def write_resolved_manuscript(
     root: Path, variables: Mapping[str, str]
 ) -> tuple[Path, ...]:
     """Write only publication manuscript files with all tokens resolved."""
-    source_dir = root / "manuscript"
+    source_dir = root / "docs" / "manuscript"
     output_dir = root / "output" / "manuscript"
     output_dir.mkdir(parents=True, exist_ok=True)
     for stale in output_dir.glob("*.md"):
@@ -2739,14 +2739,9 @@ def write_resolved_manuscript(
         )
         if missing:
             unresolved[source.name] = missing
-        # Resolved manuscripts live one directory shallower than the sources
-        # (output/manuscript/ vs manuscript/), so authored figure references
-        # written against the source layout are rewritten for the output
-        # layout. The literal rewrite assumes every figure reference spells
-        # the path exactly "../output/figures/" — CI pins that assumption in
-        # tests/test_manuscript_paths.py::TestFigurePathLiterals, which fails
-        # the build if any manuscript file introduces another spelling.
-        resolved = resolved.replace("../output/figures/", "../figures/")
+        # Source and resolved copies both sit two directories below the root.
+        # Use the shorter local asset path in the rendered copy.
+        resolved = resolved.replace("../../output/figures/", "../figures/")
         destination = output_dir / source.name
         destination.write_text(resolved, encoding="utf-8")
         written.append(destination)
@@ -2789,7 +2784,7 @@ _BIBLIOGRAPHY_POLICY: tuple[tuple[str, str, bool], ...] = (
 
 
 def bibliography_policy(root: Path) -> dict[str, bool]:
-    """Read the bibliography gate settings from ``manuscript/config.yaml``.
+    """Read the bibliography gate settings from ``docs/manuscript/config.yaml``.
 
     The read is section-aware: a key only counts while the scanner is inside
     the top-level ``bibliography:`` block, so a same-named key under another
@@ -2800,7 +2795,7 @@ def bibliography_policy(root: Path) -> dict[str, bool]:
     orphaned-citation gate exactly when the config was edited in a way the
     author believed had enabled it.
     """
-    config = root / "manuscript" / "config.yaml"
+    config = root / "docs" / "manuscript" / "config.yaml"
     text = config.read_text(encoding="utf-8") if config.is_file() else ""
     lines = text.splitlines()
     policy: dict[str, bool] = {}
@@ -2844,7 +2839,7 @@ def audit_bibliography(
         ``(uncited, undefined)`` — bibliography keys that no manuscript file
         cites, and citation keys with no bibliography entry.
     """
-    if not (root / "manuscript/references.bib").is_file():
+    if not (root / "docs/manuscript/references.bib").is_file():
         return (), ()
     return _bibliography_findings(
         root, _manuscript_citations(manuscript_files, variables=variables)
@@ -2868,7 +2863,7 @@ def _manuscript_citations(
 def _bibliography_findings(
     root: Path, cited: set[str]
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    bib = root / "manuscript" / "references.bib"
+    bib = root / "docs" / "manuscript" / "references.bib"
     if not bib.is_file():
         return (), ()
     entries = set(BIB_ENTRY_RE.findall(bib.read_text(encoding="utf-8")))
@@ -2887,11 +2882,11 @@ def _audit_publication_bibliography(
     """Audit resolved top-level prose plus the renderer's raw catalog chapters.
 
     Only top-level source preflight uses substitution. The renderer appends
-    every authored ``manuscript/sections/*.md`` unchanged after the catalog.
+    every authored ``docs/manuscript/sections/*.md`` unchanged after the catalog.
     """
     cited = _manuscript_citations(top_level_files, variables=variables)
     cited.update(
-        _manuscript_citations(sorted((root / "manuscript/sections").glob("*.md")))
+        _manuscript_citations(sorted((root / "docs/manuscript/sections").glob("*.md")))
     )
     return _bibliography_findings(root, cited)
 
@@ -2994,8 +2989,8 @@ def generate(
             "refusing to generate with stale tracked config metadata: "
             + ", ".join(stale_metadata)
             + ". After committing source changes, run "
-            "python manuscript/generate_research_artifacts.py --refresh-config "
-            "and commit only manuscript/config.yaml before generation."
+            "python docs/manuscript/generate_research_artifacts.py --refresh-config "
+            "and commit only docs/manuscript/config.yaml before generation."
         )
     # Resolve the existing variable surface in memory before checking source
     # citations: a reference used through a known substitution is not orphaned.
@@ -3320,7 +3315,7 @@ def check_published_artifacts(root: Path) -> tuple[str, ...]:
     republish an eleven-result record under a seven-group denominator and
     exit 0.
 
-    ``manuscript/config.yaml`` supplies the title page and is generator-owned.
+    ``docs/manuscript/config.yaml`` supplies the title page and is generator-owned.
     It is checked against the *published variables*, not against a fresh read
     of ``HEAD``: the file is tracked, so the commit that records it is always
     newer than the commit date it holds, and comparing to ``HEAD`` could never
@@ -3359,7 +3354,7 @@ def check_published_artifacts(root: Path) -> tuple[str, ...]:
         )
     else:
         problems.extend(
-            f"manuscript/config.yaml disagrees with the published build: {field}"
+            f"docs/manuscript/config.yaml disagrees with the published build: {field}"
             for field in refresh_config_metadata(root, published, dry_run=True)
         )
     problems.extend(_published_verification_problems(root, published))
@@ -3390,7 +3385,7 @@ def check_published_artifacts(root: Path) -> tuple[str, ...]:
 def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--root", type=Path, default=Path(__file__).resolve().parents[1]
+        "--root", type=Path, default=Path(__file__).resolve().parents[2]
     )
     parser.add_argument(
         "--verify",
@@ -3426,7 +3421,7 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help=(
             "only refresh generator-owned tracked config metadata and report "
-            "changed fields; commit only manuscript/config.yaml afterward"
+            "changed fields; commit only docs/manuscript/config.yaml afterward"
         ),
     )
     parser.add_argument(

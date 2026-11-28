@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SCRIPT_PATH = REPO_ROOT / "manuscript" / "generate_research_artifacts.py"
+SCRIPT_PATH = REPO_ROOT / "docs" / "manuscript" / "generate_research_artifacts.py"
 SPEC = importlib.util.spec_from_file_location(
     "geo_infer_manuscript_research", SCRIPT_PATH
 )
@@ -64,7 +64,7 @@ def test_every_authored_variable_has_a_generated_value(tmp_path):
     )
 
     tokens: set[str] = set()
-    for source in (REPO_ROOT / "manuscript").iterdir():
+    for source in (REPO_ROOT / "docs" / "manuscript").iterdir():
         if (
             source.suffix not in {".md", ".yaml"}
             or source.name in EXCLUDED_MANUSCRIPT_DOCS

@@ -20,6 +20,8 @@
 
 ## Local Contents
 
+- `guides/`
+- `manuscript/`
 - `documentation-index.md`
 - `index.md`
 

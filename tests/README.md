@@ -45,7 +45,7 @@ uv run python -m pytest tests
   under each `GEO-INFER-*/tests/`.
 - Run them from the repository root with `uv run python -m pytest tests/`.
 - Tests read the generated artifact set; run
-  `uv run python manuscript/generate_research_artifacts.py` first when a test
+  `uv run python docs/manuscript/generate_research_artifacts.py` first when a test
   reports missing outputs.
 
 ## Documentation Notes

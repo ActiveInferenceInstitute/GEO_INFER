@@ -32,7 +32,7 @@ the render, and a missing PDF fails the render.  Box warnings stay advisory:
 the layout tests own them.  The text block is set by the geometry package
 with ``margin=1.5cm`` on letterpaper (textwidth about 528.93673pt, textheight
 about 709.61173pt), matching ``metadata.geometry`` in
-``manuscript/config.yaml``; the layout floors in
+``docs/manuscript/config.yaml``; the layout floors in
 ``tests/test_manuscript_pdf_layout.py`` were calibrated against the
 previous 430.00462pt x 556.47656pt block and must be re-checked against
 the first render at the new margins.
@@ -57,12 +57,12 @@ from pathlib import Path
 from collections.abc import Sequence
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-GENERATOR = REPO_ROOT / "manuscript" / "generate_research_artifacts.py"
+GENERATOR = REPO_ROOT / "docs" / "manuscript" / "generate_research_artifacts.py"
 RESOLVED_DIR = REPO_ROOT / "output" / "manuscript"
 PDF_DIR = REPO_ROOT / "output" / "pdf"
 REQUIRED_TOOLS = ("pandoc", "pandoc-crossref", "xelatex")
 
-# The published section order from manuscript/SYNTAX.md.  Adding a section
+# The published section order from docs/manuscript/SYNTAX.md.  Adding a section
 # to the manuscript must extend this list deliberately: like the generator's
 # module table, the render refuses to drop a published file silently.
 SECTION_ORDER: tuple[str, ...] = (
@@ -86,13 +86,13 @@ RESOLVED_SUPPORT_FILES: tuple[str, ...] = (
 
 # The supplemental module catalog: ``S02_module_catalog.md`` is the authored
 # introduction and index; the per-module entries are concatenated after it
-# from ``manuscript/sections/*.md`` in alphabetical stem order at combine
+# from ``docs/manuscript/sections/*.md`` in alphabetical stem order at combine
 # time. Catalog files are tracked prose without tokens, labels, or figures,
 # so they render from the source tree directly and the generator's resolved
 # surface stays top-level. A missing or empty sections directory fails the
 # render rather than publishing a catalog with silently dropped modules.
 MODULE_CATALOG_ENTRY = "S02_module_catalog.md"
-MODULE_SECTIONS_DIR = REPO_ROOT / "manuscript" / "sections"
+MODULE_SECTIONS_DIR = REPO_ROOT / "docs" / "manuscript" / "sections"
 
 # The renderer rewrites the ``output/figures/`` prefix to ``../figures/``
 # inside Pandoc image targets only; ``tests/test_manuscript_paths.py`` holds
@@ -106,7 +106,7 @@ FIGURE_REWRITE = "../figures/"
 LATEX_BLOCK = re.compile(r"^```latex\s*\n(.*?)^```\s*$", re.MULTILINE | re.DOTALL)
 
 # Page geometry: letterpaper with 1.5cm margins, matching
-# metadata.geometry in manuscript/config.yaml. On letterpaper this is a
+# metadata.geometry in docs/manuscript/config.yaml. On letterpaper this is a
 # text block of about 528.93673pt x 709.61173pt (7.319in x 9.817in); the
 # generator's TEXT_BLOCK_* constants describe the same block and size and
 # bound every figure against it.
@@ -283,7 +283,7 @@ def _metadata_file() -> Path:
     """Write the Pandoc metadata block from the resolved config.yaml.
 
     The document class and base font size come from ``metadata.documentclass``
-    and ``metadata.fontsize`` in ``manuscript/config.yaml`` — the same values
+    and ``metadata.fontsize`` in ``docs/manuscript/config.yaml`` — the same values
     the template-lane renderer consumes — so the config's declared layout is
     honored by the PDF lane instead of silently overridden here.
     """

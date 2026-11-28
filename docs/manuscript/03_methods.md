@@ -312,7 +312,7 @@ does not establish that this lane renders a cover.
 
 The per-module entries of the Supplemental Module Catalog
 ([@sec:module_catalog]) are authored, one file per module under
-`manuscript/sections/`, named by the module's lowercase slug. Each entry is
+`docs/manuscript/sections/`, named by the module's lowercase slug. Each entry is
 verified against three surfaces rather than written from memory: the public
 interface is read from package exports in `__init__.py` and, where imports are
 submodule-specific, the owning implementation. Verification surfaces are checked
@@ -329,7 +329,7 @@ fixtures as field validation.
 The render wiring is deliberate and fail-closed: `S02_module_catalog.md`
 is a published section whose position in the section order is fixed in
 `scripts/render_manuscript_pdf.py`, and the combine step appends every
-`manuscript/sections/*.md` in alphabetical order after it, refusing to
+`docs/manuscript/sections/*.md` in alphabetical order after it, refusing to
 render if the catalog has no entries. The catalog's authoritative module
 set stays the generator's measured inventory — the index table is generated
 from it — so a prose entry can elaborate a module but cannot add one the

@@ -24,7 +24,7 @@ def seed_catalog(root, text):
     cache = module / "tests" / "__pycache__"
     cache.mkdir()
     (cache / "test_stale.py").write_text("# cached artifact\n")
-    sections = root / "manuscript" / "sections"
+    sections = root / "docs" / "manuscript" / "sections"
     sections.mkdir(parents=True)
     (sections / "space.md").write_text(text)
 
@@ -50,7 +50,7 @@ def test_catalog_claims_match_measured_tree(tmp_path, text, expected):
 
 def test_claim_for_unknown_module_is_rejected(tmp_path):
     seed_catalog(tmp_path, "See the generated inventory table.")
-    (tmp_path / "manuscript" / "sections" / "unknown.md").write_text(
+    (tmp_path / "docs" / "manuscript" / "sections" / "unknown.md").write_text(
         "There are 1 test files."
     )
     assert (
