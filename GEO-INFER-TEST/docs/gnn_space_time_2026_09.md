@@ -84,9 +84,10 @@ The paired interchange pins the companion GNN revision in
 alongside it (`tag`). The file carries the canonical importer schema
 `gnn-importer-pin/v1` together with `repository` and `recorded` fields; the
 current pin is `v5.1.0` at `75c834bd8519dc7b5adc4d24f16bf393cfd1ecdf`.
-`.github/workflows/gnn-interchange.yml` checks out GEO at the PR head SHA and
-GNN at that pin in two locked environments (Python 3.11 and 3.12); the job key
-is `interchange`, and its `3.12` leg publishes the required check name
+`.github/workflows/gnn-interchange.yml` checks out GEO at the PR candidate SHA
+and GNN at that pin. GEO runs on Python 3.11 and 3.12, with a separate locked
+GNN Python 3.12 environment in each leg. The job key is `interchange`. Its
+`3.12` leg publishes the required check name
 `gnn conformance (pinned)` while the `3.11` leg publishes
 `gnn interchange (3.11)`. `.github/GNN.md` records what that job parses and
 what it deliberately does not cover. The job's `gnn` arm validates the pin
@@ -105,22 +106,32 @@ companion, and neither file substitutes for the other. GNN `main` usually runs
 ahead of the pin, so bumping is a deliberate, reviewed companion-revision
 decision, never automatic:
 
-1. Diff GNN from the current pin to the target revision
-   (`git diff <pin>..<target>` in the GNN checkout) and review the change.
+1. Resolve the target GNN release tag to its full commit
+   (`git rev-parse --verify '<tag>^{commit}'` in the GNN checkout). Review the
+   changes from the current pin with `git diff <pin>..<target>`.
 2. Confirm contract-version compatibility: the consumer boundary
    `geo_infer_act.core.gnn_contract` (and its Gaussian and factored siblings)
    must still accept the `schema_version` values the target GNN exporters emit
    (`gnn-geo-infer/1`, `gnn-geo-infer/2`, `gnn-geo-infer/factored/1`).
-3. Open a PR that updates **only** `.github/gnn-pair.json` to the target
-   revision and its release tag; never mix a pin bump with consumer-contract
-   code changes. The published-companion identity check records whether the pin
-   still equals the published companion and accepts a reviewed pin ahead of it.
-4. Record the bounded lineage receipt in the PR: run the shared reader in the
-   environment built from the new pin (`python -m gnn.importers check --repo .
-   --json`), then `validate_gnn_pin_freshness.py --gnn-root <gnn>
-   --pin-report <report> --require-current`, and let the paired interchange CI
-   validate the new pair on the PR (the workflow triggers on the pin path);
-   merge once it is green.
+3. Update `revision`, `tag`, and `recorded` in `.github/gnn-pair.json`.
+   Update the revision and tag in `.github/GNN.md` in the same PR. Keep any
+   consumer-contract changes in a separate PR.
+4. From the GEO checkout, set `GNN_PYTHON` and `GNN_REPO` to the pinned
+   interpreter and checkout. Set `PIN_REPORT` to a new report path.
+
+   ```bash
+   "$GNN_PYTHON" -m gnn.importers check --repo . --require-pointer \
+     --workflow .github/workflows/gnn-interchange.yml --job interchange \
+     --json > "$PIN_REPORT"
+   python GEO-INFER-TEST/validate_gnn_pin_freshness.py --gnn-root "$GNN_REPO" \
+     --pin-report "$PIN_REPORT" --require-current
+   ```
+
+   Use the GEO environment for the lineage check and a GNN checkout with the
+   release tags and their ancestry available locally. Record the lineage
+   result and the [paired interchange receipts](gate.md#gnn-companion-conformance)
+   for both GEO Python versions on the PR. The JSON pin path triggers the
+   paired workflow when it is enabled.
 
 ## Publication receipt
 

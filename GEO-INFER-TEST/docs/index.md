@@ -104,8 +104,8 @@ leg publishes the required check name `gnn conformance (pinned)` while the
 - Validator: `validate_gnn_interchange.py`; run it locally with
   `scripts/gate.py gnn` and a GNN checkout at the pinned revision. The
   [gate guide](gate.md) lists the exact interpreter requirement.
-- Raising the pin is a reviewed change to `.github/gnn-pair.json`; the
-  procedure is in
+- Raising the pin updates `.github/gnn-pair.json` and the matching revision
+  and tag in `.github/GNN.md` together. Follow
   [the pair-pin bump section](gnn_space_time_2026_09.md#gnn-pair-pin-bump-procedure).
 
 ## Results and triage
