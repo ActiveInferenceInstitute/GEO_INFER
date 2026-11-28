@@ -278,7 +278,7 @@ def _gnn_interchange(args: argparse.Namespace) -> int:
     if not gnn_python.exists():
         print(
             f"gate gnn: no GNN interpreter at {gnn_python}; sync that checkout with "
-            "`uv sync --locked --python 3.11 --extra dev --extra geo-infer` or pass --gnn-python",
+            "`uv sync --locked --python 3.12 --extra dev --extra geo-infer` or pass --gnn-python",
             file=sys.stderr,
         )
         return 2

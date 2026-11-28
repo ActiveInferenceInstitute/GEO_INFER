@@ -375,6 +375,15 @@ def test_gnn_interchange_publishes_stable_check_name_and_selects_the_pin():
     # `gnn` arm runs from that checkout's interpreter.
     assert "pair['revision']" in pair_reader
     assert "re.fullmatch" not in pair_reader
+    geo_runtime = next(
+        step for step in steps if step.get("name") == "Install GEO locked runtime"
+    )
+    gnn_runtime = next(
+        step for step in steps if step.get("name") == "Install GNN locked runtime"
+    )
+    assert geo_runtime["env"]["GEO_PYTHON"] == "${{ matrix.python }}"
+    assert '--project geo --locked --python "$GEO_PYTHON"' in geo_runtime["run"]
+    assert "--project gnn --locked --python 3.12" in gnn_runtime["run"]
     runs = "\n".join(str(step.get("run", "")) for step in steps)
     assert "cp geo/.github/gnn-pair.json receipts/pair.json" in runs
 
